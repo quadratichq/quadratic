@@ -4,6 +4,7 @@ import { CreateTeamDialog } from '@/dashboard/components/CreateTeamDialog';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { QuadraticLogoType } from '@/dashboard/components/QuadraticLogoType';
 import { Action as FileAction } from '@/routes/files.$uuid';
+import { useRootRouteLoaderData } from '@/routes/index';
 import { TeamAction } from '@/routes/teams.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { Type } from '@/shared/components/Type';
@@ -47,7 +48,6 @@ import {
   useSubmit,
 } from 'react-router-dom';
 import QuadraticLogo from '../dashboard/components/quadratic-logo.svg';
-import { useRootRouteLoaderData } from '../router';
 
 const DRAWER_WIDTH = 264;
 

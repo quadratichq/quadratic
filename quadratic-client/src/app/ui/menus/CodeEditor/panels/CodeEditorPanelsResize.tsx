@@ -1,41 +1,43 @@
-import { ResizeControl } from '@/app/ui/menus/CodeEditor/ResizeControl';
-import {
-  CodeEditorPanelData,
-  MIN_WIDTH_PANEL,
-  MIN_WIDTH_VISIBLE_GRID,
-} from '@/app/ui/menus/CodeEditor/useCodeEditorPanelData';
-import { RefObject } from 'react';
+import { useCodeEditorContainer } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorContainer';
+import { memo, useEffect, useState } from 'react';
+import { ResizeControl } from './ResizeControl';
+import { CodeEditorPanelData, MIN_WIDTH_PANEL, MIN_WIDTH_VISIBLE_GRID } from './useCodeEditorPanelData';
 
 interface Props {
-  containerRef: RefObject<HTMLDivElement>;
   codeEditorPanelData: CodeEditorPanelData;
 }
 
 const MIN_WIDTH_EDITOR = 350;
 
-export const CodeEditorPanels = (props: Props) => {
-  const { containerRef, codeEditorPanelData } = props;
+export const CodeEditorPanels = memo((props: Props) => {
+  const { codeEditorPanelData } = props;
+
+  // we need to calculate the console height after a change in bottomHidden
+  const [consoleHeaderHeight, setConsoleHeaderHeight] = useState(0);
+
+  const container = useCodeEditorContainer();
+  useEffect(() => {
+    const setHeight = () => {
+      if (codeEditorPanelData.bottomHidden && container) {
+        const editor = container.firstChild as HTMLDivElement;
+        if (editor) {
+          const editorRect = editor.getBoundingClientRect();
+          setConsoleHeaderHeight(editorRect.height);
+        }
+      }
+    };
+    // ensures container is already rendered; otherwise we wait for the next tick
+    if (!container) {
+      setTimeout(setHeight, 0);
+    } else {
+      setHeight();
+    }
+  }, [codeEditorPanelData.bottomHidden, container]);
+
   return (
     <>
       {codeEditorPanelData.panelPosition === 'left' && (
         <>
-          {/* left-to-right: height of sections in panel */}
-          <ResizeControl
-            style={{
-              top: codeEditorPanelData.panelHeightPercentage + '%',
-              width: codeEditorPanelData.panelWidth + 'px',
-            }}
-            setState={(mouseEvent) => {
-              if (!containerRef.current) return;
-
-              const containerRect = containerRef.current?.getBoundingClientRect();
-              const newValue = ((mouseEvent.clientY - containerRect.top) / containerRect.height) * 100;
-              if (newValue >= 25 && newValue <= 75) {
-                codeEditorPanelData.setPanelHeightPercentage(newValue);
-              }
-            }}
-            position="HORIZONTAL"
-          />
           {/* left-to-right: outer edge */}
           <ResizeControl
             style={{ left: `-1px` }}
@@ -96,11 +98,17 @@ export const CodeEditorPanels = (props: Props) => {
           />
           {/* top-to-bottom: height of sections */}
           <ResizeControl
-            style={{ top: codeEditorPanelData.editorHeightPercentage + '%', width: '100%' }}
+            disabled={codeEditorPanelData.bottomHidden}
+            style={{
+              top: codeEditorPanelData.bottomHidden
+                ? consoleHeaderHeight + 'px'
+                : codeEditorPanelData.editorHeightPercentage + '%',
+              width: '100%',
+            }}
             setState={(mouseEvent) => {
-              if (!containerRef.current) return;
+              if (!container) return;
 
-              const containerRect = containerRef.current?.getBoundingClientRect();
+              const containerRect = container.getBoundingClientRect();
               const newTopHeight = ((mouseEvent.clientY - containerRect.top) / containerRect.height) * 100;
 
               if (newTopHeight >= 25 && newTopHeight <= 75) {
@@ -113,4 +121,4 @@ export const CodeEditorPanels = (props: Props) => {
       )}
     </>
   );
-};
+});

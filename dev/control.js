@@ -11,6 +11,7 @@ export class Control {
     client;
     multiplayer;
     files;
+    connector;
     python;
     rustClient;
     db;
@@ -23,6 +24,7 @@ export class Control {
         core: false,
         multiplayer: false,
         files: false,
+        connector: false,
         python: false,
         rustClient: false,
         types: false,
@@ -46,6 +48,7 @@ export class Control {
             this.kill("client"),
             this.kill("multiplayer"),
             this.kill("files"),
+            this.kill("connector"),
             this.kill("python"),
             this.kill("rustClient"),
         ]);
@@ -226,6 +229,7 @@ export class Control {
                     }
                     else {
                         this.runFiles();
+                        this.runConnection();
                     }
                 }
             }));
@@ -251,6 +255,7 @@ export class Control {
                     }
                     else {
                         this.runFiles();
+                        this.runConnection();
                     }
                 }
             });
@@ -319,6 +324,7 @@ export class Control {
         }, () => {
             if (!restart) {
                 this.runFiles();
+                this.runConnection();
             }
         }));
     }
@@ -368,6 +374,48 @@ export class Control {
                 this.ui.print("files", "killed", "red");
             }
             this.status.files = "killed";
+        }
+    }
+    async runConnection() {
+        if (this.quitting)
+            return;
+        if (this.status.connector === "killed")
+            return;
+        this.status.connector = false;
+        this.ui.print("connector");
+        await this.kill("connector");
+        this.signals.connector = new AbortController();
+        this.connector = spawn("cargo", this.cli.options.connector ? ["watch", "-x", "'run'"] : ["run"], {
+            signal: this.signals.connector.signal,
+            cwd: "quadratic-connection",
+            env: { ...process.env, RUST_LOG: "info" },
+        });
+        this.ui.printOutput("connector", (data) => {
+            this.handleResponse("connector", data, {
+                success: "listening on",
+                error: ["error[", "npm ERR!"],
+                start: "    Compiling",
+            });
+        });
+    }
+    async restartConnection() {
+        this.cli.options.connector = !this.cli.options.connector;
+        if (this.connector) {
+            this.runConnection();
+        }
+    }
+    async killConnection() {
+        if (this.status.connector === "killed") {
+            this.status.connector = false;
+            this.ui.print("connector", "restarting...");
+            this.runConnection();
+        }
+        else {
+            if (this.connector) {
+                await this.kill("connector");
+                this.ui.print("connector", "killed", "red");
+            }
+            this.status.connector = "killed";
         }
     }
     async runPython() {

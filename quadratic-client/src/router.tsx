@@ -1,80 +1,34 @@
 import * as CloudFilesMigration from '@/dashboard/CloudFilesMigrationRoute';
 import { BrowserCompatibilityLayoutRoute } from '@/dashboard/components/BrowserCompatibilityLayoutRoute';
-import { Empty } from '@/dashboard/components/Empty';
+import * as Page404 from '@/routes/404';
+import * as FileMeta from '@/routes/_file.$uuid';
 import * as Create from '@/routes/files.create';
+import * as Login from '@/routes/login';
+import * as LoginResult from '@/routes/login-result';
+import * as Logout from '@/routes/logout';
 import { apiClient } from '@/shared/api/apiClient';
-import { GlobalSnackbarProvider } from '@/shared/components/GlobalSnackbarProvider';
-import { Theme } from '@/shared/components/Theme';
-import { SUPPORT_EMAIL } from '@/shared/constants/appConstants';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
-import { Button } from '@/shared/shadcn/ui/button';
-import { initializeAnalytics } from '@/shared/utils/analytics';
-import { User } from '@auth0/auth0-spa-js';
-import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
-import * as Sentry from '@sentry/react';
-import localforage from 'localforage';
 import {
-  Link,
   Navigate,
-  Outlet,
   Route,
   ShouldRevalidateFunctionArgs,
   createBrowserRouter,
   createRoutesFromElements,
   redirect,
   useLocation,
-  useRouteError,
-  useRouteLoaderData,
 } from 'react-router-dom';
-import { authClient, protectedRouteLoaderWrapper } from './auth';
-
-// @ts-expect-error - for testing purposes
-window.lf = localforage;
-
-export type RootLoaderData = {
-  isAuthenticated: boolean;
-  loggedInUser?: User;
-};
-
-export const useRootRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.ROOT) as RootLoaderData;
-
-const dontRevalidateDialogs = ({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) => {
-  const currentUrlSearchParams = new URLSearchParams(currentUrl.search);
-  const nextUrlSearchParams = new URLSearchParams(nextUrl.search);
-
-  if (nextUrlSearchParams.get(SEARCH_PARAMS.DIALOG.KEY) || currentUrlSearchParams.get(SEARCH_PARAMS.DIALOG.KEY)) {
-    return false;
-  }
-  return true;
-};
+import { protectedRouteLoaderWrapper } from './auth';
+import * as IndexRoute from './routes/index';
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
     <>
       <Route
         path="/"
-        loader={async ({ request, params }): Promise<RootLoaderData | Response> => {
-          // All other routes get the same data
-          const isAuthenticated = await authClient.isAuthenticated();
-          const user = await authClient.user();
-
-          // This is where we determine whether we need to run a migration
-          // This redirect should trigger for every route _except_ the migration
-          // route (this prevents an infinite loop of redirects).
-          const url = new URL(request.url);
-          if (isAuthenticated && !url.pathname.startsWith('/cloud-migration')) {
-            if (await CloudFilesMigration.needsMigration()) {
-              return redirect('/cloud-migration');
-            }
-          }
-
-          initializeAnalytics(user);
-
-          return { isAuthenticated, loggedInUser: user };
-        }}
-        element={<Root />}
-        errorElement={<RootError />}
-        id="root"
+        id={ROUTE_LOADER_IDS.ROOT}
+        loader={IndexRoute.loader}
+        Component={IndexRoute.Component}
+        ErrorBoundary={IndexRoute.ErrorBoundary}
       >
         <Route path="file">
           {/* Check that the browser is supported _before_ we try to load anything from the API */}
@@ -83,13 +37,34 @@ export const router = createBrowserRouter(
             <Route
               path=":uuid"
               id={ROUTE_LOADER_IDS.FILE}
-              lazy={() => import('./dashboard/FileRoute')}
-              shouldRevalidate={({ currentUrl }) => {
-                // We don't want to revalidate anythin in the app
-                // because we don't have any 2-way data flow setup for the app
-                return false;
-              }}
-            />
+              lazy={() => import('./routes/file.$uuid')}
+              // We don't want to revalidate the initial file route because
+              // we don't have any 2-way data flow setup for the file contents
+              // But file metadata is handled in the pathless route below
+              shouldRevalidate={() => false}
+            >
+              {/* TODO: (connections) we need to figure out what to do here when it's a publicly viewable file */}
+              <Route path="" id={ROUTE_LOADER_IDS.FILE_METADATA} loader={FileMeta.loader}>
+                {/* TODO: (connections) consider popping a dialog right away, then loading the body for lazy loading */}
+                <Route path="connections" lazy={() => import('./routes/file.$uuid.connections')}>
+                  <Route
+                    index
+                    lazy={async () => {
+                      const { Index } = await import('./routes/file.$uuid.connections');
+                      return { Component: Index };
+                    }}
+                  />
+                  <Route
+                    path=":connectionUuid"
+                    lazy={() => import('./routes/file.$uuid.connections.$connectionUuid')}
+                  />
+                  <Route
+                    path="create/:connectionType"
+                    lazy={() => import('./routes/file.$uuid.connections.create.$connectionType')}
+                  />
+                </Route>
+              </Route>
+            </Route>
           </Route>
         </Route>
 
@@ -155,118 +130,28 @@ export const router = createBrowserRouter(
             </Route>
           </Route>
 
-          <Route
+          <Route // TODO: remove route
             path="/cloud-migration"
             element={<CloudFilesMigration.Component />}
             loader={CloudFilesMigration.loader}
           />
         </Route>
 
-        <Route
-          path="*"
-          element={
-            <Empty
-              title="404: not found"
-              description={
-                <>
-                  Check the URL and try again. Or, contact us for help at <a href={SUPPORT_EMAIL}>{SUPPORT_EMAIL}</a>
-                </>
-              }
-              Icon={ExclamationTriangleIcon}
-              actions={
-                <Button asChild variant="secondary">
-                  <Link to="/">Go home</Link>
-                </Button>
-              }
-            />
-          }
-        />
+        <Route path="*" Component={Page404.Component} />
       </Route>
-      <Route
-        path={ROUTES.LOGIN}
-        loader={async ({ request }) => {
-          const isAuthenticated = await authClient.isAuthenticated();
-
-          // If they’re logged in, redirect home
-          if (isAuthenticated) {
-            return redirect('/');
-          }
-
-          // If not, send them to Auth0
-          // Watch for a `from` query param, as unprotected routes will redirect
-          // to here for them to auth first
-          // Also watch for the presence of a `signup` query param, which means
-          // send the user to sign up flow, not login
-          const url = new URL(request.url);
-          const redirectTo = url.searchParams.get('from') || '/';
-          const isSignupFlow = url.searchParams.get('signup') !== null;
-          await authClient.login(redirectTo, isSignupFlow);
-
-          // auth0 will re-route us (above) but telling react-router where we
-          // are re-routing to makes sure that this doesn't end up in the history stack
-          return redirect(redirectTo);
-        }}
-      />
-      <Route
-        path={ROUTES.LOGIN_RESULT}
-        loader={async () => {
-          // try/catch here handles case where this _could_ error out and we
-          // have no errorElement so we just redirect back to home
-          try {
-            await authClient.handleSigninRedirect();
-            let isAuthenticated = await authClient.isAuthenticated();
-            if (isAuthenticated) {
-              // Acknowledge the user has just logged in. The backend may need
-              // to run some logic before making any other API calls in parallel
-              await apiClient.users.acknowledge();
-
-              let redirectTo = new URLSearchParams(window.location.search).get('redirectTo') || '/';
-              return redirect(redirectTo);
-            }
-          } catch (e) {
-            console.error(e);
-          }
-          return redirect('/');
-        }}
-      />
-      <Route
-        path={ROUTES.LOGOUT}
-        loader={async () => {
-          return redirect('/');
-        }}
-        action={async () => {
-          // We signout in a "resource route" that we can hit from a fetcher.Form
-          await authClient.logout();
-          return redirect('/');
-        }}
-      />
+      <Route path={ROUTES.LOGIN} loader={Login.loader} />
+      <Route path={ROUTES.LOGIN_RESULT} loader={LoginResult.loader} />
+      <Route path={ROUTES.LOGOUT} loader={Logout.loader} action={Logout.action} />
     </>
   )
 );
 
-function Root() {
-  return (
-    <Theme>
-      <GlobalSnackbarProvider>
-        <Outlet />
-      </GlobalSnackbarProvider>
-    </Theme>
-  );
-}
+function dontRevalidateDialogs({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) {
+  const currentUrlSearchParams = new URLSearchParams(currentUrl.search);
+  const nextUrlSearchParams = new URLSearchParams(nextUrl.search);
 
-function RootError() {
-  let error = useRouteError();
-  console.error(error);
-
-  Sentry.captureException({
-    message: `RootRoute error element triggered. ${error}`,
-  });
-
-  return (
-    <Empty
-      title="Something went wrong"
-      description="An unexpected error occurred. Try reloading the page or contact us if the error continues."
-      Icon={ExclamationTriangleIcon}
-    />
-  );
+  if (nextUrlSearchParams.get(SEARCH_PARAMS.DIALOG.KEY) || currentUrlSearchParams.get(SEARCH_PARAMS.DIALOG.KEY)) {
+    return false;
+  }
+  return true;
 }

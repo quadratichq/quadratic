@@ -133,7 +133,7 @@ pub(crate) async fn process_queue_for_room(
         .flat_map(|(_, message)| serde_json::from_str::<TransactionServer>(message))
         .collect::<Vec<TransactionServer>>();
 
-    tracing::info!(
+    tracing::trace!(
         "Found {} transaction(s) for room {file_id}",
         transactions.len()
     );

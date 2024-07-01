@@ -1,6 +1,6 @@
 import { events } from '@/app/events/events';
 import { FeedbackIcon } from '@/app/ui/icons';
-import { useRootRouteLoaderData } from '@/router';
+import { useRootRouteLoaderData } from '@/routes/index';
 import { Commit } from '@mui/icons-material';
 import { Stack, useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';

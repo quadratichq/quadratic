@@ -5,11 +5,12 @@ use smallvec::{smallvec, SmallVec};
 
 mod array;
 mod array_size;
-mod arrow;
+pub mod arrow;
 pub mod cell_values;
 pub mod cellvalue;
 mod convert;
 mod isblank;
+pub mod parquet;
 mod time;
 
 pub use array::Array;

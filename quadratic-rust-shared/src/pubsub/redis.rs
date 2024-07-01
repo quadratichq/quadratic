@@ -52,7 +52,7 @@ impl super::PubSub for RedisConnection {
     async fn connect(config: Config) -> Result<RedisConnection> {
         let client = client(config)?;
         let connection = RedisConnection {
-            pubsub: client.get_async_connection().await?.into_pubsub(),
+            pubsub: client.get_async_pubsub().await?,
             multiplex: client.get_multiplexed_async_connection().await?,
         };
         Ok(connection)

@@ -1,5 +1,5 @@
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { useRootRouteLoaderData } from '@/router';
+import { useRootRouteLoaderData } from '@/routes/index';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { isMac } from '@/shared/utils/isMac';

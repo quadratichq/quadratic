@@ -9,14 +9,15 @@ datasource db {
 }
 
 model User {
-    id           Int            @id @default(autoincrement())
-    auth0Id      String         @unique @map("auth0_id")
-    eduStatus    EduStatus?     @map("edu_status")
-    ownedFiles   File[]         @relation(name: "OwnerRelation")
-    createdFiles File[]         @relation(name: "CreatorRelation")
-    QFeedback    QFeedback[]
-    UserTeamRole UserTeamRole[]
-    UserFileRole UserFileRole[]
+    id                 Int                  @id @default(autoincrement())
+    auth0Id            String               @unique @map("auth0_id")
+    eduStatus          EduStatus?           @map("edu_status")
+    ownedFiles         File[]               @relation(name: "OwnerRelation")
+    createdFiles       File[]               @relation(name: "CreatorRelation")
+    QFeedback          QFeedback[]
+    UserTeamRole       UserTeamRole[]
+    UserFileRole       UserFileRole[]
+    UserConnectionRole UserConnectionRole[]
 
     @@index([auth0Id])
 }
@@ -125,6 +126,45 @@ enum TeamRole {
     OWNER
     EDITOR
     VIEWER
+}
+
+enum ConnectionRole {
+    OWNER
+    EDITOR
+    VIEWER
+}
+
+enum ConnectionType {
+    POSTGRES
+    MYSQL
+}
+
+model Connection {
+    // Generic details
+    id                 Int                  @id @default(autoincrement())
+    uuid               String               @unique @default(uuid()) // used in URLs
+    createdDate        DateTime             @default(now()) @map("created_date")
+    updatedDate        DateTime             @default(now()) @map("updated_date")
+    archived           DateTime?
+    name               String
+    UserConnectionRole UserConnectionRole[]
+    // secretArn       String // AWS Secret Manager ARN
+
+    // Type-specific details
+    type        ConnectionType
+    typeDetails Json
+}
+
+model UserConnectionRole {
+    id           Int            @id @default(autoincrement())
+    userId       Int
+    connectionId Int
+    user         User           @relation(fields: [userId], references: [id])
+    connection   Connection     @relation(fields: [connectionId], references: [id])
+    role         ConnectionRole
+    createdDate  DateTime       @default(now()) @map("created_date")
+
+    @@unique([userId, connectionId])
 }
 
 model UserTeamRole {

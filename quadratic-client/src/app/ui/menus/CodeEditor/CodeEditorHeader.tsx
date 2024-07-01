@@ -1,21 +1,22 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetPosTS } from '@/app/gridGL/types/size';
+import { getCodeCell, getConnectionUuid, getLanguage } from '@/app/helpers/codeCellLanguage';
+import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { CodeRun } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
+import { useFileMetaRouteLoaderData } from '@/routes/_file.$uuid';
 import { cn } from '@/shared/shadcn/utils';
-import { Close, PlayArrow, Stop, Subject } from '@mui/icons-material';
+import { Close, PlayArrow, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
-import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
-import { Formula, JavaScript, Python } from '../../icons';
 import { SnippetsPopover } from './SnippetsPopover';
 
 interface Props {
@@ -32,7 +33,13 @@ export const CodeEditorHeader = (props: Props) => {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
   const hasPermission = hasPermissionToEditFile(editorInteractionState.permissions);
-  const language = editorInteractionState.mode;
+  const codeCell = getCodeCell(editorInteractionState.mode);
+  const { connections } = useFileMetaRouteLoaderData();
+  const language = getLanguage(editorInteractionState.mode);
+
+  const connectionUuid = getConnectionUuid(editorInteractionState.mode);
+  const foundConnection = connections.find((connection) => connection.uuid === connectionUuid);
+  const currentConnectionName = foundConnection ? foundConnection.name : '';
 
   // Keep track of the current sheet ID so we know whether to show the sheet name or not
   const currentCodeEditorCellIsNotInActiveSheet = currentSheetId !== editorInteractionState.selectedCellSheet;
@@ -126,27 +133,23 @@ export const CodeEditorHeader = (props: Props) => {
             `after:pointer-events-none after:absolute after:-bottom-0.5 after:-right-0.5 after:h-3 after:w-3 after:rounded-full after:border-2 after:border-solid after:border-background after:bg-gray-400 after:content-['']`
         )}
       >
-        <TooltipHint title={`${language}${unsaved ? ' · Unsaved changes' : ''}`} placement="bottom">
+        <TooltipHint title={`${codeCell?.label}${unsaved ? ' · Unsaved changes' : ''}`} placement="bottom">
           <div className="flex items-center">
-            {language === 'Python' ? (
-              <Python sx={{ color: colors.languagePython }} fontSize="small" />
-            ) : language === 'Formula' ? (
-              <Formula sx={{ color: colors.languageFormula }} fontSize="small" />
-            ) : language === 'Javascript' ? (
-              <JavaScript sx={{ color: colors.languageJavascript }} fontSize="small" />
-            ) : (
-              <Subject fontSize="small" />
-            )}
+            <LanguageIcon language={codeCell?.id} fontSize="small" />
           </div>
         </TooltipHint>
       </div>
-      <div className="mx-2 flex truncate text-sm font-medium">
-        Cell ({cellLocation.x}, {cellLocation.y}) {unsaved && ' - Unsaved changes'}
-        {currentCodeEditorCellIsNotInActiveSheet && (
-          <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
+      <div className="mx-2 flex flex-col truncate">
+        <div className="text-sm font-medium leading-4">
+          Cell ({cellLocation.x}, {cellLocation.y})
+          {currentCodeEditorCellIsNotInActiveSheet && (
+            <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
+          )}
+        </div>
+        {currentConnectionName && (
+          <div className="text-xs leading-4 text-muted-foreground">Connection: {currentConnectionName}</div>
         )}
       </div>
-
       <div className="ml-auto flex flex-shrink-0 items-center gap-2">
         {isRunningComputation && (
           <TooltipHint title={'Python executing…'} placement="bottom">

@@ -1,4 +1,4 @@
-import { useRootRouteLoaderData } from '@/router';
+import { useRootRouteLoaderData } from '@/routes/index';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { KeyboardArrowDown } from '@mui/icons-material';
 import { IconButton, useTheme } from '@mui/material';

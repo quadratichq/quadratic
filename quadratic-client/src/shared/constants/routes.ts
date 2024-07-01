@@ -1,3 +1,5 @@
+import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+
 // Any routes referenced outside of the root router are stored here
 export const ROUTES = {
   LOGOUT: '/logout',
@@ -8,6 +10,16 @@ export const ROUTES = {
   FILES: '/files',
   FILES_SHARED_WITH_ME: '/files/shared-with-me',
   FILE: (uuid: string) => `/file/${uuid}`,
+  FILE_CONNECTIONS: (uuid: string) => `/file/${uuid}/connections`,
+  FILE_CONNECTIONS_CREATE: (uuid: string, type: string) => `/file/${uuid}/connections/create/${type}`,
+  FILE_CONNECTION: (fileUuid: string, connectionUuid: string) => `/file/${fileUuid}/connections/${connectionUuid}`,
+  CONNECTIONS: '/connections',
+  CONNECTIONS_CREATE: '/connections/create',
+  CONNECTIONS_CREATE_TYPE: (type: ConnectionType) => `/connections/create/${type}`,
+
+  // API routes are client-side routes to use react-router's data APIs (e.g. fetchers)
+  API_FILE: (uuid: string) => `/api/files/${uuid}`,
+  API_FILE_SHARING: (uuid: string) => `/api/files/${uuid}/sharing`,
   // TODO: rename to FILE and the current FILE to FILE_IN_APP (or something?)
   FILES_FILE: (uuid: string) => `/files/${uuid}`,
   FILES_SHARE: (uuid: string) => `/files/${uuid}/sharing`,
@@ -25,6 +37,7 @@ export const ROUTES = {
 export const ROUTE_LOADER_IDS = {
   ROOT: 'root',
   FILE: 'file',
+  FILE_METADATA: 'file-metadata',
   TEAM: 'team',
   DASHBOARD: 'dashboard',
 };

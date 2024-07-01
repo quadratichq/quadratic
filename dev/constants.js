@@ -9,6 +9,12 @@ export const COMPONENTS = {
         shortcut: "m",
     },
     files: { color: "yellow", dark: "yellow", name: "Files", shortcut: "f" },
+    connector: {
+        color: "blue",
+        dark: "blue",
+        name: "Connection",
+        shortcut: "n",
+    },
     python: {
         color: "blueBright",
         dark: "blueBright",

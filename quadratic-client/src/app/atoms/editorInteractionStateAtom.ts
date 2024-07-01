@@ -4,6 +4,7 @@ import { FilePermission } from 'quadratic-shared/typesAndSchemas';
 import { atom } from 'recoil';
 
 export interface EditorInteractionState {
+  showConnectionsMenu: boolean;
   showCellTypeMenu: boolean;
   showCodeEditor: boolean;
   showCommandPalette: boolean;
@@ -31,7 +32,9 @@ export interface EditorInteractionState {
   redo: boolean;
 }
 
+// TODO: rename to appState?
 export const editorInteractionStateDefault: EditorInteractionState = {
+  showConnectionsMenu: false,
   showCellTypeMenu: false,
   showCodeEditor: false,
   showCommandPalette: false,

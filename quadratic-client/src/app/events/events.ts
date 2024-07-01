@@ -87,6 +87,9 @@ interface EventTypes {
 
   offlineTransactions: (transactions: number, operations: number) => void;
 
+  connector: (query: string) => void;
+  connectorResponse: (buffer: ArrayBuffer) => void;
+
   codeEditor: () => void;
   cellMoving: (move: boolean) => void;
 
