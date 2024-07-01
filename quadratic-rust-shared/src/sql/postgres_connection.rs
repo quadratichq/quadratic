@@ -138,7 +138,7 @@ impl Connection for PostgresConnection {
     }
 
     fn to_arrow(row: &Self::Row, column: &Self::Column, index: usize) -> ArrowType {
-        println!("Column: {} ({})", column.name(), column.type_info().name());
+        // println!("Column: {} ({})", column.name(), column.type_info().name());
         match column.type_info().name() {
             "TEXT" | "VARCHAR" | "CHAR" | "CHAR(N)" | "NAME" | "CITEXT" => {
                 ArrowType::Utf8(convert_pg_type!(String, row, index))
