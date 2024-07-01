@@ -25,6 +25,54 @@ const subNet1 = config.require("subnet1");
 const subNet2 = config.require("subnet2");
 const vpcId = config.require("vpc-id");
 
+// Allocate Elastic IPs for the NAT Gateways
+const eip1 = new aws.ec2.Eip("nat-eip-1");
+const eip2 = new aws.ec2.Eip("nat-eip-2");
+
+// Create NAT Gateways in each public subnet
+const natGateway1 = new aws.ec2.NatGateway("nat-gateway-1", {
+  allocationId: eip1.id,
+  subnetId: subNet1,
+});
+
+const natGateway2 = new aws.ec2.NatGateway("nat-gateway-2", {
+  allocationId: eip2.id,
+  subnetId: subNet2,
+});
+
+// Create route tables for private subnets
+const privateRouteTable1 = new aws.ec2.RouteTable("private-route-table-1", {
+  vpcId: vpcId,
+  routes: [
+    {
+      cidrBlock: "0.0.0.0/0",
+      natGatewayId: natGateway1.id,
+    },
+  ],
+});
+
+const privateRouteTable2 = new aws.ec2.RouteTable("private-route-table-2", {
+  vpcId: vpcId,
+  routes: [
+    {
+      cidrBlock: "0.0.0.0/0",
+      natGatewayId: natGateway2.id,
+    },
+  ],
+});
+
+// Associate the private subnets with the route tables
+new aws.ec2.RouteTableAssociation("private-subnet-1-association", {
+  subnetId: subNet1,
+  routeTableId: privateRouteTable1.id,
+});
+
+new aws.ec2.RouteTableAssociation("private-subnet-2-association", {
+  subnetId: subNet2,
+  routeTableId: privateRouteTable2.id,
+});
+
+// create the instance
 const instance = new aws.ec2.Instance("connection-instance", {
   tags: {
     Name: `connection-instance-${connectionSubdomain}`,

@@ -6,7 +6,7 @@ import { multiplayerPublicDns } from "./multiplayer/multiplayer";
 
 import { filesPublicDns } from "./files/files";
 
-import { connectionPublicDns } from "./connection/connection_old";
+import { connectionPublicDns } from "./connection/connection";
 
 // Global exports
 export {
