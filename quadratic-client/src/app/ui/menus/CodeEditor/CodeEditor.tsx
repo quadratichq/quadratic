@@ -355,6 +355,7 @@ export const CodeEditor = () => {
   if (!showCodeEditor) {
     return null;
   }
+
   return (
     <div
       id="code-editor-container"

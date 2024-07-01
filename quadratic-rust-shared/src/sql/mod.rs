@@ -18,7 +18,7 @@ use std::{collections::BTreeMap, sync::Arc};
 use uuid::Uuid;
 
 use self::{mysql_connection::MySqlConnection, postgres_connection::PostgresConnection};
-use crate::{error::Result, SharedError, Sql};
+use crate::error::Result;
 use crate::{
     vec_arrow_type_to_array_ref, vec_string_arrow_type_to_array_ref,
     vec_time_arrow_type_to_array_ref,
