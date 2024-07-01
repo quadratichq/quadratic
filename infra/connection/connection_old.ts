@@ -17,7 +17,52 @@ const subNet1 = config.require("subnet1");
 const subNet2 = config.require("subnet2");
 const vpcId = config.require("vpc-id");
 
-////////////////////////////////////////////////////////
+// Allocate Elastic IPs for the NAT Gateways
+const eip1 = new aws.ec2.Eip("nat-eip-1");
+const eip2 = new aws.ec2.Eip("nat-eip-2");
+
+// Create NAT Gateways in each public subnet
+const natGateway1 = new aws.ec2.NatGateway("nat-gateway-1", {
+  allocationId: eip1.id,
+  subnetId: subNet1,
+});
+
+const natGateway2 = new aws.ec2.NatGateway("nat-gateway-2", {
+  allocationId: eip2.id,
+  subnetId: subNet2,
+});
+
+// Create route tables for private subnets
+const privateRouteTable1 = new aws.ec2.RouteTable("private-route-table-1", {
+  vpcId: vpcId,
+  routes: [
+    {
+      cidrBlock: "0.0.0.0/0",
+      natGatewayId: natGateway1.id,
+    },
+  ],
+});
+
+const privateRouteTable2 = new aws.ec2.RouteTable("private-route-table-2", {
+  vpcId: vpcId,
+  routes: [
+    {
+      cidrBlock: "0.0.0.0/0",
+      natGatewayId: natGateway2.id,
+    },
+  ],
+});
+
+// Associate the private subnets with the route tables
+new aws.ec2.RouteTableAssociation("private-subnet-1-association", {
+  subnetId: subNet1,
+  routeTableId: privateRouteTable1.id,
+});
+
+new aws.ec2.RouteTableAssociation("private-subnet-2-association", {
+  subnetId: subNet2,
+  routeTableId: privateRouteTable2.id,
+});
 
 // Create a security group to allow outbound traffic
 const securityGroup = new aws.ec2.SecurityGroup("service-sg", {
@@ -70,18 +115,18 @@ const repo = new awsx.ecr.Repository("connection-repo", {
 });
 
 // Build and publish a Docker image to a private ECR registry.
-const img = new awsx.ecr.Image("connection-image", {
-  repositoryUrl: repo.url,
-  context: "../",
-  dockerfile: "../quadratic-connection/Dockerfile",
-});
+// const img = new awsx.ecr.Image("connection-image", {
+//   repositoryUrl: repo.url,
+//   context: "../",
+//   dockerfile: "../quadratic-connection/Dockerfile",
+// });
 
 // Create a Fargate service task that can scale out.
 const appService = new awsx.classic.ecs.FargateService("app-svc", {
   cluster,
   taskDefinitionArgs: {
     container: {
-      image: img.imageUri,
+      image: `${ecrRegistryUrl}/${connectionECRName}:${dockerImageTag}`,
       cpu: 102 /*10% of 1024*/,
       memory: 50 /*MB*/,
       portMappings: [targetGroup],
@@ -96,11 +141,13 @@ const appService = new awsx.classic.ecs.FargateService("app-svc", {
           value: "https://dev-nje7dw8s.us.auth0.com/.well-known/jwks.json",
         },
         { name: "M2M_AUTH_TOKEN", value: "M2M_AUTH_TOKEN" },
+        { name: "STATIC_IPS", value: `${eip1.publicIp},${eip2.publicIp}` },
       ],
     },
   },
   desiredCount: 1,
   securityGroups: [securityGroup.id],
+  subnets: [subNet1, subNet2], // Ensure tasks are launched in subnets with NAT Gateways
 });
 
 // Get the hosted zone ID for domain
