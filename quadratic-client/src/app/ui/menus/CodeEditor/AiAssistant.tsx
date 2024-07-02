@@ -37,29 +37,23 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
     editorContent: [editorContent],
   } = useCodeEditor();
   const { isAuthenticated, loggedInUser: user } = useRootRouteLoaderData();
-  const { mode } = useRecoilValue(editorInteractionStateAtom);
-  const cellType = mode; // TODO: (connections) turn this into a proper string for the cell type, e.g. "Connection:Postgres"
+  const { mode, selectedCell } = useRecoilValue(editorInteractionStateAtom);
 
-  // TODO: Improve these messages. Pass current location and more docs.
-  // store in a separate location for different cells
+  // TODO: This is only sent with the first message, we should refresh the content with each message.
   const systemMessages = [
     {
       role: 'system',
-      content:
-        'You are a helpful assistant inside of a spreadsheet application called Quadratic. The cell type is: ' +
-        cellType,
-    },
-    {
-      role: 'system',
-      content: `here are the docs: ${QuadraticDocs}`,
-    },
-    {
-      role: 'system',
-      content: 'Currently, you are in a cell that is being edited. The code in the cell is:' + editorContent,
-    },
-    {
-      role: 'system',
-      content: 'If the code was recently run here is the std error:' + (consoleOutput?.stdErr ?? ''),
+      content: `
+You are a helpful assistant inside of a spreadsheet application called Quadratic. 
+Do not use any markdown syntax besides triple backticks for ${mode} code blocks. Do not reply with plain text code blocks.
+The cell type is ${mode}.
+The cell is located at ${selectedCell.x}, ${selectedCell.y}.
+Currently, you are in a cell that is being edited. The code in the cell is:
+\`\`\`${editorContent}\`\`\`
+If the code was recently run here is the result: 
+\`\`\`${consoleOutput}\`\`\`
+This is the documentation for Quadratic: 
+${QuadraticDocs}`,
     },
   ] as AiMessage[];
 
@@ -190,7 +184,7 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
 
   // This component is designed to fill the entire height of its parent container
   return (
-    <div className="flex h-full flex-col justify-between">
+    <>
       <div
         className="select-text overflow-y-auto whitespace-pre-wrap pb-2 pl-3 pr-4 text-sm outline-none"
         spellCheck={false}
@@ -314,6 +308,6 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
           )}
         </div>
       </form>
-    </div>
+    </>
   );
 };
