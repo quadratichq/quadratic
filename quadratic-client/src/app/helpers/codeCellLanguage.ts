@@ -40,6 +40,16 @@ export const getLanguage = (language?: CodeCellLanguage) => {
   return 'Formula';
 };
 
+export const getLanguageForMonaco = (language?: CodeCellLanguage): string => {
+  const supportedLanguage = getLanguage(language);
+
+  if (supportedLanguage === 'Connection') {
+    return 'Sql';
+  }
+
+  return supportedLanguage;
+};
+
 export const getConnectionUuid = (language?: CodeCellLanguage): string | undefined => {
   if (typeof language === 'object' && language.Connection) {
     return language.Connection.id;
