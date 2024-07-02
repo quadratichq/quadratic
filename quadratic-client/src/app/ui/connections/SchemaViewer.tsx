@@ -1,4 +1,5 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorSchemaStateAtom } from '@/app/atoms/editorSchemaStateAtom';
 import { getConnectionInfo } from '@/app/helpers/codeCellLanguage';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { SqlAdd } from '@/app/ui/icons';
@@ -8,7 +9,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { KeyboardArrowRight, Refresh } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 
 type Table = {
   name: string;
@@ -23,7 +24,7 @@ type Column = {
 };
 
 type LoadState = 'not-initialized' | 'loading' | 'loaded' | 'error';
-type SchemaData = Awaited<ReturnType<typeof connectionClient.schemas.get>>;
+export type SchemaData = Awaited<ReturnType<typeof connectionClient.schemas.get>>;
 
 interface Props {
   bottom?: boolean;
@@ -36,7 +37,7 @@ export const SchemaViewer = (props: Props) => {
   const connection = getConnectionInfo(mode);
   if (!connection) throw new Error('Expected a connection cell to be open.');
   const [expandAll, setExpandAll] = useState(false);
-  const [data, setData] = useState<SchemaData | null>(null);
+  const [data, setData] = useRecoilState(editorSchemaStateAtom);
 
   // needs to be a ref to ensure only fetch is only called once
   const loadState = useRef<LoadState>('not-initialized');
@@ -48,18 +49,27 @@ export const SchemaViewer = (props: Props) => {
     const newSchemaData = await connectionClient.schemas.get(connection.kind.toLowerCase() as any, connection.id);
     setLoadingAnimation(false);
     if (newSchemaData) {
-      setData(newSchemaData);
+      setData({
+        schema: newSchemaData,
+      });
       loadState.current = 'loaded';
     } else {
       loadState.current = 'error';
     }
-  }, [connection.id, connection.kind]);
+  }, [connection.id, connection.kind, setData]);
 
   useEffect(() => {
     if (loadState.current === 'not-initialized') {
       fetchData();
     }
   }, [fetchData, loadState]);
+
+  useEffect(() => {
+    // This function will run when the component is unmounted
+    return () => {
+      setData({ schema: undefined });
+    };
+  }, [setData]);
 
   return (
     <>
@@ -84,7 +94,7 @@ export const SchemaViewer = (props: Props) => {
       {data && (
         <div className="overflow-scroll px-3 text-sm">
           <ul>
-            {data.tables.map((table, i) => (
+            {data.schema?.tables.map((table, i) => (
               <TableListItem data={table} key={i} expandAll={expandAll} setExpandAll={setExpandAll} />
             ))}
           </ul>

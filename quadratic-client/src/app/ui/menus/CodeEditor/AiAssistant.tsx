@@ -1,4 +1,6 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorSchemaStateAtom } from '@/app/atoms/editorSchemaStateAtom';
+import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
@@ -38,6 +40,7 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   } = useCodeEditor();
   const { isAuthenticated, loggedInUser: user } = useRootRouteLoaderData();
   const { mode, selectedCell } = useRecoilValue(editorInteractionStateAtom);
+  const { schema } = useRecoilValue(editorSchemaStateAtom);
 
   // TODO: This is only sent with the first message, we should refresh the content with each message.
   const systemMessages = [
@@ -48,6 +51,7 @@ You are a helpful assistant inside of a spreadsheet application called Quadratic
 Do not use any markdown syntax besides triple backticks for ${mode} code blocks. Do not reply with plain text code blocks.
 The cell type is ${mode}.
 The cell is located at ${selectedCell.x}, ${selectedCell.y}.
+${getLanguage(mode) === 'Connection' ? 'The schema for the database is:```\n' + schema : '\n```'}
 Currently, you are in a cell that is being edited. The code in the cell is:
 \`\`\`${editorContent}\`\`\`
 If the code was recently run here is the result: 
