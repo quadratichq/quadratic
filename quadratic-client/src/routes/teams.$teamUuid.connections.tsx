@@ -1,5 +1,6 @@
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { apiClient } from '@/shared/api/apiClient';
+import { connectionClient } from '@/shared/api/connectionClient';
 import { Connections } from '@/shared/components/connections/Connections';
 import { useState } from 'react';
 import { LoaderFunctionArgs, useLoaderData } from 'react-router-dom';
@@ -13,8 +14,11 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
   const { teamUuid } = params;
   if (!teamUuid) throw new Error('No team UUID provided');
   // TODO: (connections) refine types here so it knows typeDetails is required
-  const connections = await apiClient.connections.list({ teamUuid });
-  return { connections, teamUuid };
+  const [connections, staticIps] = await Promise.all([
+    apiClient.connections.list({ teamUuid }),
+    connectionClient.staticIps.list(),
+  ]);
+  return { connections, teamUuid, staticIps };
 };
 
 export const useConnectionsState = () => {
@@ -27,7 +31,7 @@ export const useConnectionsState = () => {
 };
 
 export const Component = () => {
-  const { connections, teamUuid } = useLoaderData() as Awaited<ReturnType<typeof loader>>;
+  const { connections, teamUuid, staticIps } = useLoaderData() as Awaited<ReturnType<typeof loader>>;
   const [state, setState] = useConnectionsState();
 
   return (
@@ -62,6 +66,7 @@ export const Component = () => {
           // @ts-expect-error TODO: (connections) fix types here
           connections={connections}
           teamUuid={teamUuid}
+          staticIps={staticIps}
           state={state}
           setState={setState}
         />

@@ -20,13 +20,18 @@ type Props = {
   state: ConnectionState;
   setState: Dispatch<SetStateAction<ConnectionState>>;
   teamUuid: string;
+  staticIps: string[] | null;
+  // null means they're loading, otherwise should be an array
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
 };
 
-export const Connections = ({ connections, connectionsAreLoading, teamUuid, state, setState }: Props) => {
+export const Connections = ({ connections, connectionsAreLoading, teamUuid, staticIps, state, setState }: Props) => {
   // Modify our list of connections based on optimistic
   const fetchers = useFetchers();
+
+  // TODO(jimniels): implement in the UI
+  console.log('staticIps', staticIps);
 
   // Connection created? Add it to the list of connections
   const newConnectionFetcher = fetchers.find(
