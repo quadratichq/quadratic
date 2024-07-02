@@ -15,7 +15,8 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
   if (!teamUuid) throw new Error('No team UUID provided');
   // TODO: (connections) refine types here so it knows typeDetails is required
   const connections = await apiClient.connections.list({ teamUuid });
-  const staticIps = await connectionClient.staticIps.list();
+  const staticIps = (await connectionClient.staticIps.list())?.static_ips;
+  console.log('here', staticIps);
   return { connections, teamUuid, staticIps };
 };
 

@@ -36,7 +36,9 @@ const SqlSchema = z.object({
 });
 type SqlSchemaResponse = z.infer<typeof SqlSchema>;
 
-const StaticIpsSchema = z.array(z.string()).nonempty();
+const StaticIpsSchema = z.object({
+  static_ips: z.array(z.string()),
+});
 type StaticIpsResponse = z.infer<typeof StaticIpsSchema>;
 
 export const connectionClient = {
