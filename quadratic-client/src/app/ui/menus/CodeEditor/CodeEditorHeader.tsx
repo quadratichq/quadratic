@@ -2,8 +2,9 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
+import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
-import { CodeRun, PythonStateType } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
+import { CodeRun } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
 import { cn } from '@/shared/shadcn/utils';
 import { Close, PlayArrow, Stop, Subject } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
@@ -14,7 +15,7 @@ import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStat
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
-import { Formula, Python } from '../../icons';
+import { Formula, JavaScript, Python } from '../../icons';
 import { SnippetsPopover } from './SnippetsPopover';
 
 interface Props {
@@ -22,12 +23,12 @@ interface Props {
   unsaved: boolean;
 
   saveAndRunCell: () => void;
-  cancelPython: () => void;
+  cancelRun: () => void;
   closeEditor: () => void;
 }
 
 export const CodeEditorHeader = (props: Props) => {
-  const { cellLocation, unsaved, saveAndRunCell, cancelPython, closeEditor } = props;
+  const { cellLocation, unsaved, saveAndRunCell, cancelRun, closeEditor } = props;
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
   const hasPermission = hasPermissionToEditFile(editorInteractionState.permissions);
@@ -49,7 +50,7 @@ export const CodeEditorHeader = (props: Props) => {
   const [isRunningComputation, setIsRunningComputation] = useState<false | 'multiplayer' | 'player'>(false);
   useEffect(() => {
     // update running computation for player
-    const playerState = (_state: PythonStateType, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
+    const playerState = (_state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
       if (!cellLocation) return;
       if (
         current &&
@@ -105,9 +106,11 @@ export const CodeEditorHeader = (props: Props) => {
     };
 
     events.on('pythonState', playerState);
+    events.on('javascriptState', playerState);
     events.on('multiplayerUpdate', multiplayerUpdate);
     return () => {
       events.off('pythonState', playerState);
+      events.off('javascriptState', playerState);
       events.off('multiplayerUpdate', multiplayerUpdate);
     };
   }, [cellLocation]);
@@ -129,6 +132,8 @@ export const CodeEditorHeader = (props: Props) => {
               <Python sx={{ color: colors.languagePython }} fontSize="small" />
             ) : language === 'Formula' ? (
               <Formula sx={{ color: colors.languageFormula }} fontSize="small" />
+            ) : language === 'Javascript' ? (
+              <JavaScript sx={{ color: colors.languageJavascript }} fontSize="small" />
             ) : (
               <Subject fontSize="small" />
             )}
@@ -149,7 +154,7 @@ export const CodeEditorHeader = (props: Props) => {
           </TooltipHint>
         )}
         {hasPermission && <CodeEditorRefButton />}
-        {hasPermission && language === 'Python' && <SnippetsPopover />}
+        {hasPermission && ['Python', 'Javascript'].includes(language as string) && <SnippetsPopover />}
         {hasPermission &&
           (!isRunningComputation ? (
             <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
@@ -162,7 +167,7 @@ export const CodeEditorHeader = (props: Props) => {
           ) : (
             <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
               <span>
-                <IconButton size="small" color="primary" onClick={cancelPython} disabled={!isRunningComputation}>
+                <IconButton size="small" color="primary" onClick={cancelRun} disabled={!isRunningComputation}>
                   <Stop />
                 </IconButton>
               </span>
