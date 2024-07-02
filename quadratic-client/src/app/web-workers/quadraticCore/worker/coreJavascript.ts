@@ -31,19 +31,16 @@ class CoreJavascript {
         break;
 
       case 'javascriptCoreGetCells':
-        this.send({
-          type: 'coreJavascriptGetCells',
-          id: e.data.id,
-          cells: core.getCells(
-            e.data.transactionId,
-            e.data.x,
-            e.data.y,
-            e.data.w,
-            e.data.h,
-            e.data.sheet,
-            e.data.lineNumber
-          ),
-        });
+        this.handleGetCellsResponse(
+          e.data.id,
+          e.data.transactionId,
+          e.data.x,
+          e.data.y,
+          e.data.w,
+          e.data.h,
+          e.data.sheet,
+          e.data.lineNumber
+        );
         break;
 
       default:
@@ -58,6 +55,25 @@ class CoreJavascript {
     }
     this.coreJavascriptPort.postMessage(message);
   }
+
+  handleGetCellsResponse = (
+    id: number,
+    transactionId: string,
+    x: number,
+    y: number,
+    w: number,
+    h?: number,
+    sheet?: string,
+    lineNumber?: number
+  ) => {
+    const cellsString = core.getCells(transactionId, x, y, w, h, sheet, lineNumber);
+    const cells = cellsString.length > 0 ? (JSON.parse(cellsString) as JsGetCellResponse[]) : undefined;
+    this.send({
+      type: 'coreJavascriptGetCells',
+      id,
+      cells,
+    });
+  };
 
   sendRunJavascript = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
     this.lastTransactionId = transactionId;

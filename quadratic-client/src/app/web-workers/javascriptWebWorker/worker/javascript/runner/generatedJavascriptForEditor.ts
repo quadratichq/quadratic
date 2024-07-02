@@ -19,7 +19,7 @@ declare global {
     x1: number,
     y1?: number,
     sheetName?: string
-  ): Promise<(number | string | boolean | undefined)[][]>;
+  ): (number | string | boolean | undefined)[][];
 
   /**
    * Gets a cell relative to the current cell
@@ -29,7 +29,12 @@ declare global {
    * @param {number} deltaY1 Change in y relative to the code cell for second cell
    * @returns 2D array [y][x] of the cells
    */
-  function relCells(deltaX0: number, deltaY0: number, deltaX1: number, deltaY1: number): Promise<number | string | boolean | undefined>;
+  function relCells(
+    deltaX0: number,
+    deltaY0: number,
+    deltaX1: number,
+    deltaY1: number
+  ): number | string | boolean | undefined;
 
   /**
    * Alias for getCells: Get a range of cells from the sheet
@@ -46,7 +51,7 @@ declare global {
     x1: number,
     y1?: number,
     sheetName?: string
-  ): Promise<(number | string | boolean | undefined)[][]>;
+  ): (number | string | boolean | undefined)[][];
 
   /**
    * Get a single cell from the sheet
@@ -55,7 +60,7 @@ declare global {
    * @param sheetName optional name of the sheet to get the cell
    * @returns value of the cell
    */
-  function getCell(x: number, y: number, sheetName?: string): Promise<number | string | boolean | undefined>;
+  function getCell(x: number, y: number, sheetName?: string): number | string | boolean | undefined;
 
   /**
    * Alias for getCell - Get a single cell from the sheet
@@ -64,7 +69,7 @@ declare global {
    * @param sheetName The optional name of the sheet to get the cell
    * @returns value of the cell
    */
-  function c(x: number, y: number, sheetName?: string): Promise<number | string | boolean | undefined>;
+  function c(x: number, y: number, sheetName?: string): number | string | boolean | undefined;
 
   /**
    * Alias for getCell - Get a single cell from the sheet
@@ -73,7 +78,7 @@ declare global {
    * @param sheetName The optional name of the sheet to get the cell
    * @returns value of the cell
    */
-  function cell(x: number, y: number, sheetName?: string): Promise<number | string | boolean | undefined>;
+  function cell(x: number, y: number, sheetName?: string): number | string | boolean | undefined;
 
   /**
    * Gets the position of the code cell
@@ -87,7 +92,7 @@ declare global {
    * @param {number} deltaY Change in y relative to the code cell
    * @returns value of the cell
    */
-  function relCell(deltaX: number, deltaY: number): Promise<number | string | boolean | undefined>;
+  function relCell(deltaX: number, deltaY: number): number | string | boolean | undefined;
 
   /**
    * Alias for relCell - Gets a cell relative to the current cell
@@ -95,7 +100,7 @@ declare global {
    * @param {number} deltaY Change in y relative to code cell
    * @returns value of the cell
    */
-  function rc(deltaX: number, deltaY: number): Promise<number | string | boolean | undefined>;
+  function rc(deltaX: number, deltaY: number): number | string | boolean | undefined;
 
   /**
    * Get a range of cells from the sheet and create an array of object based on
@@ -112,34 +117,77 @@ declare global {
     x1: number,
     y1?: number,
     sheetName?: string
-  ): Promise<Record<string, number | string | boolean | undefined>[]>;
+  ): Record<string, number | string | boolean | undefined>[];
 }
 
-const javascriptSendMessageAwaitingResponse = async (
-  message:
-    | {
-        type: 'getCells';
-        x0: number;
-        y0: number;
-        x1: number;
-        y1?: number;
-        sheetName?: string;
-      }
-    | { type: 'getCellsError'; error: string }
-): Promise<(number | string | boolean | undefined)[][]> => {
-  return new Promise((resolve) => {
-    self.onmessage = (event) => resolve(event.data);
-    self.postMessage(message);
-  });
-};
-
-export const getCells = async (
+const getCellsDB = (
   x0: number,
   y0: number,
   x1: number,
   y1?: number,
   sheetName?: string
-): Promise<(number | string | boolean | undefined)[][]> => {
+): (number | string | boolean | undefined)[][] => {
+  try {
+    // This is a shared buffer that will be used to communicate with core
+    // The first 4 bytes are used to signal the python core that the data is ready
+    // The second 4 bytes are used to signal the length of the data
+    // The third 4 bytes are used to signal the id of the data
+    // Length of the cells string is unknown at this point
+    let sharedBuffer: SharedArrayBuffer | undefined = new SharedArrayBuffer(4 + 4 + 4);
+    let int32View: Int32Array | undefined = new Int32Array(sharedBuffer, 0, 3);
+    Atomics.store(int32View, 0, 0);
+
+    self.postMessage({ type: 'getCellsLength', sharedBuffer, x0, y0, x1, y1, sheetName });
+    let result = Atomics.wait(int32View, 0, 0);
+    const length = int32View[1];
+    if (result !== 'ok' || length === 0) return [];
+
+    const id = int32View[2];
+
+    // New shared buffer, which is sized to hold the cells string
+    sharedBuffer = new SharedArrayBuffer(4 + length);
+    int32View = new Int32Array(sharedBuffer, 0, 1);
+    Atomics.store(int32View, 0, 0);
+
+    self.postMessage({ type: 'getCellsData', id, sharedBuffer });
+    result = Atomics.wait(int32View, 0, 0);
+    if (result !== 'ok') return [];
+
+    let uint8View: Uint8Array | undefined = new Uint8Array(sharedBuffer, 4, length);
+
+    // Copy the data to a non-shared buffer, for decoding
+    const nonSharedBuffer = new ArrayBuffer(uint8View.byteLength);
+    const nonSharedView = new Uint8Array(nonSharedBuffer);
+    nonSharedView.set(uint8View);
+    sharedBuffer = undefined;
+    int32View = undefined;
+    uint8View = undefined;
+
+    const decoder = new TextDecoder();
+    const cellsStringified = decoder.decode(nonSharedView);
+    const cells = convertNullToUndefined(JSON.parse(cellsStringified) as (number | string | boolean | null)[][]);
+    return cells;
+  } catch (e) {
+    console.warn('[javascriptLibrary] getCells error', e);
+  }
+  return [];
+};
+
+// JSON.parse convert undefined to null,
+// so we need to convert null back to undefined
+function convertNullToUndefined(
+  arr: (number | string | boolean | null)[][]
+): (number | string | boolean | undefined)[][] {
+  return arr.map((subArr) => subArr.map((element) => (element === null ? undefined : element)));
+}
+
+export const getCells = (
+  x0: number,
+  y0: number,
+  x1: number,
+  y1?: number,
+  sheetName?: string
+): (number | string | boolean | undefined)[][] => {
   if (isNaN(x0) || isNaN(y0) || isNaN(x1)) {
     throw new Error(
       'getCells requires at least 3 arguments, received getCells(' +
@@ -154,19 +202,18 @@ export const getCells = async (
         (___line_number___ !== undefined ? ' at line ' + ___line_number___ : '')
     );
   }
-  return await javascriptSendMessageAwaitingResponse({ type: 'getCells', x0, y0, x1, y1, sheetName });
+  return getCellsDB(x0, y0, x1, y1, sheetName);
 };
-
 
 export const cells = getCells;
 
-export const getCellsWithHeadings = async (
+export const getCellsWithHeadings = (
   x0: number,
   y0: number,
   x1: number,
   y1?: number,
   sheetName?: string
-): Promise<Record<string, number | string | boolean | undefined>[]> => {
+): Record<string, number | string | boolean | undefined>[] => {
   if (isNaN(x0) || isNaN(y0) || isNaN(x1)) {
     throw new Error(
       'getCellsWithHeadings requires at least 3 arguments, received getCellsWithHeadings(' +
@@ -181,7 +228,7 @@ export const getCellsWithHeadings = async (
         (___line_number___ !== undefined ? ' at line ' + ___line_number___ : '')
     );
   }
-  const cells = await getCells(x0, y0, x1, y1, sheetName);
+  const cells = getCells(x0, y0, x1, y1, sheetName);
   const headers = cells[0];
   return cells.slice(1).map((row) => {
     const obj: Record<string, number | string | boolean | undefined> = {};
@@ -192,11 +239,7 @@ export const getCellsWithHeadings = async (
   });
 };
 
-export const getCell = async (
-  x: number,
-  y: number,
-  sheetName?: string
-): Promise<number | string | boolean | undefined> => {
+export const getCell = (x: number, y: number, sheetName?: string): number | string | boolean | undefined => {
   if (isNaN(x) || isNaN(y)) {
     throw new Error(
       'getCell requires at least 2 arguments, received getCell(' +
@@ -207,7 +250,7 @@ export const getCell = async (
         (___line_number___ !== undefined ? ' at line ' + ___line_number___ : '')
     );
   }
-  const results = await getCells(x, y, x, y, sheetName);
+  const results = getCells(x, y, x, y, sheetName);
   return results?.[0]?.[0];
 };
 
@@ -219,7 +262,7 @@ export const pos = (): { x: number; y: number } => {
   return { x: 0, y: 0 };
 };
 
-export const relCell = async (deltaX: number, deltaY: number) => {
+export const relCell = (deltaX: number, deltaY: number) => {
   const p = pos();
   if (isNaN(deltaX) || isNaN(deltaY)) {
     throw new Error(
@@ -232,10 +275,10 @@ export const relCell = async (deltaX: number, deltaY: number) => {
     );
   }
 
-  return await getCell(deltaX + p.x, deltaY + p.y);
+  return getCell(deltaX + p.x, deltaY + p.y);
 };
 
-export const relCells = async (deltaX0: number, deltaY0: number, deltaX1: number, deltaY1: number) => {
+export const relCells = (deltaX0: number, deltaY0: number, deltaX1: number, deltaY1: number) => {
   const p = pos();
   if (isNaN(deltaX0) || isNaN(deltaY0) || isNaN(deltaX1) || isNaN(deltaY1)) {
     throw new Error(
@@ -252,8 +295,8 @@ export const relCells = async (deltaX0: number, deltaY0: number, deltaX1: number
     );
   }
 
-  return await getCells(deltaX0 + p.x, deltaY0 + p.y, deltaX1 + p.x, deltaY1 + p.y);
-}
+  return getCells(deltaX0 + p.x, deltaY0 + p.y, deltaX1 + p.x, deltaY1 + p.y);
+};
 
 export const rc = relCell;
 `;
