@@ -62,7 +62,7 @@ export const ApiSchemasConnections = {
   '/v0/connections?file-uuid.GET.response': z.array(ConnectionSchema.omit({ typeDetails: true })),
 
   // Create connection
-  '/v0/connections.POST.request': ConnectionSchema.pick({
+  '/v0/team/:uuid/connections.POST.request': ConnectionSchema.pick({
     name: true,
     type: true,
     typeDetails: true,

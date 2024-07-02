@@ -322,9 +322,9 @@ export const apiClient = {
         ApiSchemas['/v0/connections/:uuid.GET.response']
       );
     },
-    async create(body: ApiTypes['/v0/connections.POST.request'], teamUuid: string) {
+    async create(body: ApiTypes['/v0/team/:uuid/connections.POST.request'], teamUuid: string) {
       return fetchFromApi(
-        `/v0/connections?teamUuid=${teamUuid}`,
+        `/v0/teams/${teamUuid}/connections`,
         { method: 'POST', body: JSON.stringify(body) },
         ApiSchemas['/v0/connections.POST.response']
       );

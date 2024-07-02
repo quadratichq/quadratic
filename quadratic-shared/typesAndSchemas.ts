@@ -398,20 +398,6 @@ export const ApiSchemas = {
    */
   ...ApiSchemasConnections,
 
-  // '/v0/connections.GET.response': z.array(
-  //   z.union([
-  //     ConnectionSchemaBase.merge(ConnectionTypePostgresSchema.pick({ type: true, name: true })),
-  //     ConnectionSchemaBase.merge(ConnectionTypeMysqlSchema.pick({ type: true, name: true })),
-  //   ])
-  // ),
-  // '/v0/connections.POST.request': z.union([ConnectionTypePostgresSchema, ConnectionTypeMysqlSchema]),
-  // '/v0/connections.POST.response': z.object({ uuid: z.string().uuid() }),
-  // '/v0/connections/:uuid.GET.response': z.any(),
-
-  '/v0/connections/:uuid/run.POST.request': z.any(), // TODO: (connections)
-  '/v0/connections/:uuid/run.POST.response': z.any(), // TODO: (connections)
-  '/v0/connections/supported.GET.response': z.array(connectionConfigurationZ), // TODO: (connections) remove
-
   /**
    *
    * Education

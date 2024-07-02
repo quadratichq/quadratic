@@ -57,7 +57,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 };
 
 export type CreateConnectionAction = ReturnType<typeof getCreateConnectionAction>;
-export const getCreateConnectionAction = (body: ApiTypes['/v0/connections.POST.request'], teamUuid: string) => {
+export const getCreateConnectionAction = (
+  body: ApiTypes['/v0/team/:uuid/connections.POST.request'],
+  teamUuid: string
+) => {
   return {
     action: 'create-connection',
     teamUuid,

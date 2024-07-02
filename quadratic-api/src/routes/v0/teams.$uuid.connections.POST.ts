@@ -12,33 +12,29 @@ import { ApiError } from '../../utils/ApiError';
 export default [validateAccessToken, userMiddleware, handler];
 
 const schema = z.object({
-  body: ApiSchemas['/v0/connections.POST.request'],
-  query: z.object({ teamUuid: z.string().uuid() }),
+  body: ApiSchemas['/v0/team/:uuid/connections.POST.request'],
+  params: z.object({ uuid: z.string().uuid() }),
 });
 
-/**
- * The front-end should call the connetion service BEFORE creating this
- * just to ensure it works.
- */
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connections.POST.response']>) {
   const {
     user: { id: userId },
   } = req;
   const {
     body: connection,
-    query: { teamUuid },
+    params: { uuid },
   } = parseRequest(req, schema);
   const {
     team: { id: teamId },
     userMakingRequest: { permissions },
-  } = await getTeam({ uuid: teamUuid, userId });
+  } = await getTeam({ uuid, userId });
 
   // Do you have permission?
   if (!permissions.includes('TEAM_EDIT')) {
     throw new ApiError(403, 'You don’t have access to this team');
   }
 
-  // Ok create the file
+  // Ok create the connection
   const { name, type, typeDetails } = connection;
   const result = await dbClient.connection.create({
     data: {
