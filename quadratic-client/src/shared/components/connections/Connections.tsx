@@ -6,7 +6,6 @@ import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { Dispatch, SetStateAction } from 'react';
 import { useFetchers } from 'react-router-dom';
-// @TODO: (connections) move this
 
 export type ConnectionsListConnection = {
   uuid: string;
@@ -21,7 +20,6 @@ type Props = {
   state: ConnectionState;
   setState: Dispatch<SetStateAction<ConnectionState>>;
   teamUuid: string;
-  // null means they're loading, otherwise should be an array
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
 };
@@ -88,10 +86,15 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
   return (
     <div className="flex flex-col gap-2">
       {state.view.name === 'CREATE' && (
-        <ConnectionFormCreate type={state.view.type} handleNavigateToListView={handleNavigateToListView} />
+        <ConnectionFormCreate
+          teamUuid={teamUuid}
+          type={state.view.type}
+          handleNavigateToListView={handleNavigateToListView}
+        />
       )}
       {state.view.name === 'EDIT' && (
         <ConnectionFormEdit
+          teamUuid={teamUuid}
           // @ts-expect-error
           connection={connections?.find((c) => c.uuid === state.view.connectionUuid)}
           handleNavigateToListView={handleNavigateToListView}

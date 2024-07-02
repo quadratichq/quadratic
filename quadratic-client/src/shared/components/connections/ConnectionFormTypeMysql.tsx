@@ -1,48 +1,44 @@
-import { getCreateConnectionAction, getUpdateConnectionAction } from '@/routes/_api.connections';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ConnectionFormMysqlSchema, ConnectionMysql } from 'quadratic-shared/typesAndSchemasConnections';
+import {
+  ConnectionNameSchema,
+  ConnectionTypeDetailsMysqlSchema,
+  ConnectionTypeSchema,
+} from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useSubmit } from 'react-router-dom';
 import { z } from 'zod';
+import { ConnectionFormProps } from './ConnectionForm';
 import { ConnectionFormActions, ValidateThenTestConnection } from './ConnectionFormActions';
 
+const ConnectionFormMysqlSchema = z.object({
+  name: ConnectionNameSchema,
+  type: z.literal(ConnectionTypeSchema.enum.MYSQL),
+  ...ConnectionTypeDetailsMysqlSchema.shape,
+});
 type FormValues = z.infer<typeof ConnectionFormMysqlSchema>;
 
 export function ConnectionFormTypeMysql({
+  handleSubmitForm,
   handleNavigateToListView,
   connection,
-}: {
-  handleNavigateToListView: () => void;
-  connection?: ConnectionMysql;
-}) {
+}: ConnectionFormProps) {
   const [hidePassword, setHidePassword] = useState(true);
-  const submit = useSubmit();
   const connectionUuid = connection?.uuid;
 
-  const defaultValues: FormValues = connection
-    ? {
-        name: connection.name,
-        type: connection.type,
-        host: connection.typeDetails.host,
-        port: connection.typeDetails.port,
-        database: connection.typeDetails.database,
-        username: connection.typeDetails.username,
-        password: '',
-      }
-    : {
-        name: '',
-        type: 'MYSQL',
-        host: '',
-        port: '3306',
-        database: 'mysql',
-        username: 'root',
-        password: '',
-      };
+  const defaultValues: FormValues = {
+    name: connection ? connection.name : '',
+    type: 'MYSQL',
+    host: connection ? String(connection.typeDetails.host) : '',
+    port: connection ? String(connection.typeDetails.port) : '3306',
+    database: connection ? String(connection.typeDetails.database) : 'mysql',
+    username: connection ? String(connection.typeDetails.username) : 'root',
+    password: '',
+  };
+
   const form = useForm<FormValues>({
     resolver: zodResolver(ConnectionFormMysqlSchema),
     defaultValues,
@@ -50,24 +46,7 @@ export function ConnectionFormTypeMysql({
 
   const onSubmit = (values: FormValues) => {
     const { name, type, ...typeDetails } = values;
-
-    // If nothing changed, don't submit. Just navigate back
-    // if (Object.keys(form.formState.dirtyFields).length === 0) {
-    //   return;
-    // }
-
-    // Update the connection
-    if (connectionUuid) {
-      const data = getUpdateConnectionAction(connectionUuid, { name, typeDetails });
-      submit(data, { action: '/_api/connections', method: 'POST', encType: 'application/json', navigate: false });
-      handleNavigateToListView();
-      return;
-    }
-
-    // Create a new connection
-    const data = getCreateConnectionAction({ name, type, typeDetails }, '8b125911-d3c8-490a-91bc-6dbacde16768');
-    submit(data, { action: '/_api/connections', method: 'POST', encType: 'application/json', navigate: false });
-    handleNavigateToListView();
+    handleSubmitForm({ name, type, typeDetails });
   };
 
   // Simulate a form submission to do validation, run the test, return result
