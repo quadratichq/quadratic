@@ -14,8 +14,10 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
 
   // TODO: (connections) get this working and split from /file/:uuid for revalidation
   // Also: how will it work for people who don't have an account?
-  const connections = await apiClient.connections.list({ fileUuid });
-  const staticIps = (await connectionClient.staticIps.list())?.static_ips;
+  const [connections, staticIps] = await Promise.all([
+    apiClient.connections.list({ fileUuid }),
+    connectionClient.staticIps.list(),
+  ]);
 
   return { connections, staticIps };
 };

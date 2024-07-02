@@ -83,14 +83,15 @@ export const connectionClient = {
     },
   },
   staticIps: {
-    list: async (): Promise<StaticIpsResponse | null> => {
+    list: async (): Promise<string[] | null> => {
       try {
         const res = await fetch(`${API_URL}/static-ips`, {
           method: 'GET',
           headers: new Headers(await jwtHeader()),
         });
         const data = await res.json();
-        return StaticIpsSchema.parse(data);
+        const { static_ips } = StaticIpsSchema.parse(data) as StaticIpsResponse;
+        return static_ips;
       } catch (err) {
         console.error('Failed to get the static ips from the connection service', err);
         return null;

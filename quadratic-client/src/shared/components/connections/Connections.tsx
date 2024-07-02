@@ -20,7 +20,7 @@ type Props = {
   state: ConnectionState;
   setState: Dispatch<SetStateAction<ConnectionState>>;
   teamUuid: string;
-  staticIps: string[] | undefined;
+  staticIps: string[] | null;
   // null means they're loading, otherwise should be an array
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;

@@ -12,8 +12,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     throw new Error('No team UUID provided');
   }
 
-  const connections = await apiClient.connections.list({ teamUuid });
-  const staticIps = (await connectionClient.staticIps.list())?.static_ips;
+  const [connections, staticIps] = await Promise.all([
+    apiClient.connections.list({ teamUuid }),
+    connectionClient.staticIps.list(),
+  ]);
   return { connections, staticIps };
 };
 
