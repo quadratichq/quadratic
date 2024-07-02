@@ -167,7 +167,7 @@ const getCellsDB = (
     const cells = JSON.parse(cellsStringified) as (number | string | boolean | undefined)[][];
     return cells;
   } catch (e) {
-    console.warn('[javascriptCore] getCells error', e);
+    console.warn('[javascriptLibrary] getCells error', e);
   }
   return [];
 };
