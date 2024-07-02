@@ -165,13 +165,21 @@ const getCellsDB = (
 
     const decoder = new TextDecoder();
     const cellsStringified = decoder.decode(nonSharedView);
-    const cells = JSON.parse(cellsStringified) as (number | string | boolean | undefined)[][];
+    const cells = convertNullToUndefined(JSON.parse(cellsStringified) as (number | string | boolean | null)[][]);
     return cells;
   } catch (e) {
-    console.warn('[javascriptCore] getCells error', e);
+    console.warn('[javascriptLibrary] getCells error', e);
   }
   return [];
 };
+
+// JSON.parse convert undefined to null,
+// so we need to convert null back to undefined
+function convertNullToUndefined(
+  arr: (number | string | boolean | null)[][]
+): (number | string | boolean | undefined)[][] {
+  return arr.map((subArr) => subArr.map((element) => (element === null ? undefined : element)));
+}
 
 export const getCells = (
   x0: number,
