@@ -26,20 +26,9 @@ services:
       file: docker-compose.base.yml
       service: localstack
     volumes:
+      - "./docker/localstack/scripts/init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh" # ready hook
       - "./docker/localstack/data:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
-    profiles:
-      - base
-      - all
-
-  aws-cli:
-    extends:
-      file: docker-compose.base.yml
-      service: aws-cli
-    depends_on:
-      - localstack
-    volumes:
-      - ./docker/localstack/cli:/aws
     profiles:
       - base
       - all

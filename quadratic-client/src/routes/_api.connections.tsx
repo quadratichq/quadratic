@@ -1,4 +1,5 @@
 import { apiClient } from '@/shared/api/apiClient';
+import { connectionClient } from '@/shared/api/connectionClient';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router-dom';
 
@@ -12,7 +13,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 
   const connections = await apiClient.connections.list({ teamUuid });
-  return connections;
+  const staticIps = (await connectionClient.staticIps.list())?.static_ips;
+  return { connections, staticIps };
 };
 
 type Action = CreateConnectionAction | UpdateConnectionAction | DeleteConnectionAction;
