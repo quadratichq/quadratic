@@ -1,4 +1,5 @@
 import { apiClient } from '@/shared/api/apiClient';
+import { connectionClient } from '@/shared/api/connectionClient';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router-dom';
 
@@ -11,8 +12,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     throw new Error('No team UUID provided');
   }
 
-  const connections = await apiClient.connections.list({ teamUuid });
-  return connections;
+  const [connections, staticIps] = await Promise.all([
+    apiClient.connections.list({ teamUuid }),
+    connectionClient.staticIps.list(),
+  ]);
+  return { connections, staticIps };
 };
 
 type Action = CreateConnectionAction | UpdateConnectionAction | DeleteConnectionAction;
