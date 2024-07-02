@@ -265,10 +265,10 @@ impl GridController {
             // cell may have been deleted before the async operation completed
             return Ok(());
         };
-        if !matches!(code_cell, CellValue::Code(_)) {
+        let CellValue::Code(code_cell_value) = code_cell else {
             // code may have been replaced while waiting for async operation
             return Ok(());
-        }
+        };
 
         let result = CodeRunResult::Err(error.clone());
 
@@ -293,7 +293,9 @@ impl GridController {
                 formatted_code_string: None,
                 result,
                 return_type: None,
-                line_number: error.span.map(|span| span.start),
+                line_number: error
+                    .span
+                    .map(|span| span.line_number_of_str(&code_cell_value.code) as u32),
                 output_type: None,
                 std_out: None,
                 std_err: Some(error.msg.to_string()),
