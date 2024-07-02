@@ -2,7 +2,6 @@ use std::io::Cursor;
 
 use anyhow::{anyhow, bail, Result};
 use lexicon_fractional_index::key_between;
-use regex::Regex;
 
 use crate::{
     cell_values::CellValues,
@@ -131,12 +130,10 @@ impl GridController {
         file_name: &str,
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![] as Vec<Operation>;
-        let error =
-            |message: String| anyhow!("Error parsing Excel file {}: {}", file_name, message);
+        let error = |e: XlsxError| anyhow!("Error parsing Excel file {file_name}: {e}");
 
         let cursor = Cursor::new(file);
-        let mut workbook: Xlsx<_> =
-            ExcelReader::new(cursor).map_err(|e: XlsxError| error(e.to_string()))?;
+        let mut workbook: Xlsx<_> = ExcelReader::new(cursor).map_err(error)?;
         let sheets = workbook.sheet_names().to_owned();
 
         // first cell in excel is A1, but first cell in quadratic is A0
@@ -147,9 +144,6 @@ impl GridController {
             y: row as i64 + 1,
         };
 
-        // remove the _xlfn. _xludf. prefix from the function name
-        let re = Regex::new(r"(?:^|[^A-Za-z\d])(?:_xlfn|_xludf)\.").unwrap();
-
         let mut order = key_between(&None, &None).unwrap_or("A0".to_string());
         for sheet_name in sheets {
             // add the sheet
@@ -157,9 +151,7 @@ impl GridController {
             order = key_between(&Some(order), &None).unwrap_or("A0".to_string());
 
             // values
-            let range = workbook
-                .worksheet_range(&sheet_name)
-                .map_err(|e: XlsxError| error(e.to_string()))?;
+            let range = workbook.worksheet_range(&sheet_name).map_err(error)?;
             let insert_at = range.start().map_or_else(Pos::default, xlsx_range_to_pos);
             for (y, row) in range.rows().enumerate() {
                 for (x, cell) in row.iter().enumerate() {
@@ -205,22 +197,19 @@ impl GridController {
             }
 
             // formulas
-            let formula = workbook
-                .worksheet_formula(&sheet_name)
-                .map_err(|e: XlsxError| error(e.to_string()))?;
+            let formula = workbook.worksheet_formula(&sheet_name).map_err(error)?;
             let insert_at = formula.start().map_or_else(Pos::default, xlsx_range_to_pos);
             let mut formula_compute_ops = vec![];
             for (y, row) in formula.rows().enumerate() {
                 for (x, cell) in row.iter().enumerate() {
                     if !cell.is_empty() {
-                        let code = re.replace_all(cell, "").into_owned();
                         let pos = Pos {
                             x: insert_at.x + x as i64,
                             y: insert_at.y + y as i64,
                         };
                         let cell_value = CellValue::Code(CodeCellValue {
                             language: CodeCellLanguage::Formula,
-                            code,
+                            code: cell.to_string(),
                         });
                         sheet.set_cell_value(pos, cell_value);
                         // add code compute operation, to generate code runs

@@ -3,7 +3,15 @@ use std::collections::HashSet;
 use lazy_static::lazy_static;
 
 pub fn is_valid_excel_function(name: &str) -> bool {
-    ALL_EXCEL_FUNCTIONS.contains(name.to_ascii_uppercase().as_str())
+    ALL_EXCEL_FUNCTIONS.contains(
+        remove_excel_function_prefix(name)
+            .to_ascii_uppercase()
+            .as_str(),
+    )
+}
+
+pub fn remove_excel_function_prefix(name: &str) -> String {
+    PREFIX_RE.replace(name, "").to_string()
 }
 
 lazy_static! {
@@ -11,6 +19,9 @@ lazy_static! {
   static ref ALL_EXCEL_FUNCTIONS: HashSet<&'static str> = {
       EXCEL_FUNCTIONS_LIST.iter().cloned().collect::<HashSet<&'static str>>()
   };
+
+  // regex to remove _xlfn. _xludf. prefix from the function name
+  static ref PREFIX_RE: regex::Regex = regex::Regex::new(r"^_xl(?:fn|udf)\.").unwrap();
 }
 
 const EXCEL_FUNCTIONS_LIST: [&str; 512] = [

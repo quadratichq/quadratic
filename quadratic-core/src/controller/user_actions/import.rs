@@ -49,10 +49,6 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-
-    use std::fs::File;
-    use std::io::Read;
-
     use crate::{
         grid::{CodeCellLanguage, CodeRunResult},
         test_util::{assert_cell_value_row, print_table},
@@ -163,12 +159,8 @@ mod tests {
     fn imports_a_simple_excel_file() {
         let mut grid_controller = GridController::test_blank();
         let pos = Pos { x: 0, y: 0 };
-        let mut file = File::open(EXCEL_FILE).unwrap();
-        let metadata = std::fs::metadata(EXCEL_FILE).expect("unable to read metadata");
-        let mut buffer = vec![0; metadata.len() as usize];
-        file.read_exact(&mut buffer).expect("buffer overflow");
-
-        let _ = grid_controller.import_excel(buffer, "basic.xlsx");
+        let file: Vec<u8> = std::fs::read(EXCEL_FILE).expect("Failed to read file");
+        let _ = grid_controller.import_excel(file, "basic.xlsx");
         let sheet_id = grid_controller.grid.sheets()[0].id;
 
         print_table(
@@ -224,12 +216,8 @@ mod tests {
     fn import_all_excel_functions() {
         let mut grid_controller = GridController::test_blank();
         let pos = Pos { x: 0, y: 0 };
-        let mut file = File::open(EXCEL_FUNCTIONS_FILE).unwrap();
-        let metadata = std::fs::metadata(EXCEL_FUNCTIONS_FILE).expect("unable to read metadata");
-        let mut buffer = vec![0; metadata.len() as usize];
-        file.read_exact(&mut buffer).expect("buffer overflow");
-
-        let _ = grid_controller.import_excel(buffer, "all_excel_functions.xlsx");
+        let file: Vec<u8> = std::fs::read(EXCEL_FUNCTIONS_FILE).expect("Failed to read file");
+        let _ = grid_controller.import_excel(file, "all_excel_functions.xlsx");
         let sheet_id = grid_controller.grid.sheets()[0].id;
 
         print_table(
@@ -269,13 +257,8 @@ mod tests {
         let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
-        let mut file = File::open(PARQUET_FILE).unwrap();
-        let metadata = std::fs::metadata(PARQUET_FILE).expect("unable to read metadata");
-        let mut buffer = vec![0; metadata.len() as usize];
-        file.read_exact(&mut buffer).expect("buffer overflow");
-
-        let _ =
-            grid_controller.import_parquet(sheet_id, buffer, "alltypes_plain.parquet", pos, None);
+        let file: Vec<u8> = std::fs::read(PARQUET_FILE).expect("Failed to read file");
+        let _ = grid_controller.import_parquet(sheet_id, file, "alltypes_plain.parquet", pos, None);
 
         print_table(
             &grid_controller,
