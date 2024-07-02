@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import z from 'zod';
 import dbClient from '../../dbClient';
 import { validateM2MAuth } from '../../internal/validateM2MAuth';
+import { getConnection } from '../../middleware/getConnection';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import { ApiError } from '../../utils/ApiError';
 
@@ -13,10 +14,9 @@ const schema = z.object({
 
 async function handler(req: Request, res: Response) {
   const {
-    params: { auth0Id },
+    params: { auth0Id, uuid },
   } = parseRequest(req, schema);
-
-  // TODO: (connection) Get team permissions
+  console.log('runs');
 
   // Get the user
   const user = await dbClient.user.findUnique({
@@ -28,30 +28,30 @@ async function handler(req: Request, res: Response) {
     throw new ApiError(400, 'The user with that auth0 ID could not be found.');
   }
 
-  return {
-    uuid: '',
-    name: '',
-    type: 'POSTGRES',
-    createdDate: '',
-    updatedDate: '',
-    // TODO: (connections) fix types, don't send sensitive info
-    // @ts-expect-error
-    typeDetails: JSON.parse(connection.typeDetails),
-  };
-
   // Get the connection
-  // const connection = await getConnection({ uuid, userId: user.id });
+  const { connection, team } = await getConnection({ uuid, userId: user.id });
+
+  // Do you have permission?
+  if (!team.userMakingRequest.permissions.includes('TEAM_EDIT')) {
+    throw new ApiError(403, 'You do not have permission to view this connection.');
+  }
+
+  // TODO: (connections) David D: allow password to be undefined
+  // @ts-expect-error
+  let typeDetails = JSON.parse(connection.typeDetails);
+  if (!typeDetails.password) {
+    typeDetails.password = '';
+  }
 
   // Return the data
-  // const data = {
-  //   uuid: connection.uuid,
-  //   name: connection.name,
-  //   type: connection.type,
-  //   createdDate: connection.createdDate.toISOString(),
-  //   updatedDate: connection.updatedDate.toISOString(),
-  //   // TODO: (connections) fix types, don't send sensitive info
-  //   // @ts-expect-error
-  //   typeDetails: JSON.parse(connection.typeDetails),
-  // };
-  // return res.status(200).json(data);
+  const data = {
+    uuid: connection.uuid,
+    name: connection.name,
+    type: connection.type,
+    createdDate: connection.createdDate.toISOString(),
+    updatedDate: connection.updatedDate.toISOString(),
+    typeDetails,
+  };
+
+  return res.status(200).json(data);
 }
