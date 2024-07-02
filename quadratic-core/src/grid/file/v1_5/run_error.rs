@@ -23,7 +23,7 @@ pub enum RunErrorMsg {
     Spill,
 
     // Miscellaneous errors
-    Unimplemented,
+    Unimplemented(Cow<'static, str>),
     UnknownError,
     InternalError(Cow<'static, str>),
 
@@ -90,7 +90,7 @@ impl RunError {
             msg: match error.msg.clone() {
                 crate::RunErrorMsg::PythonError(str) => RunErrorMsg::PythonError(str),
                 crate::RunErrorMsg::Spill => RunErrorMsg::Spill,
-                crate::RunErrorMsg::Unimplemented => RunErrorMsg::Unimplemented,
+                crate::RunErrorMsg::Unimplemented(str) => RunErrorMsg::Unimplemented(str),
                 crate::RunErrorMsg::UnknownError => RunErrorMsg::UnknownError,
                 crate::RunErrorMsg::InternalError(str) => RunErrorMsg::InternalError(str),
 
@@ -184,7 +184,7 @@ impl From<RunError> for crate::RunError {
             msg: match error.msg {
                 RunErrorMsg::PythonError(str) => crate::RunErrorMsg::PythonError(str),
                 RunErrorMsg::Spill => crate::RunErrorMsg::Spill,
-                RunErrorMsg::Unimplemented => crate::RunErrorMsg::Unimplemented,
+                RunErrorMsg::Unimplemented(str) => crate::RunErrorMsg::Unimplemented(str),
                 RunErrorMsg::UnknownError => crate::RunErrorMsg::UnknownError,
                 RunErrorMsg::InternalError(str) => crate::RunErrorMsg::InternalError(str),
 

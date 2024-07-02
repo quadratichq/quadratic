@@ -37,6 +37,10 @@ impl Span {
         let range: Range<usize> = self.into();
         &s[range]
     }
+    /// Returns the line number of the start of the span
+    pub fn line_number_of_str(self, s: &str) -> usize {
+        s[..self.start as usize].matches('\n').count() + 1
+    }
 }
 impl<T> From<Spanned<T>> for Span {
     fn from(spanned: Spanned<T>) -> Self {

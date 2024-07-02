@@ -26,7 +26,8 @@ fn new_fullmatch_regex(s: &str) -> Regex {
 
 /// Function call consisting of a letter or underscore followed by any letters,
 /// digits, and/or underscores terminated with a `(`.
-const FUNCTION_CALL_PATTERN: &str = r"[A-Za-z_][A-Za-z_\d]*\(";
+/// Can contain a `.` between parts of the function name.
+const FUNCTION_CALL_PATTERN: &str = r"[A-Za-z_](\.?[A-Za-z_\d])*\(";
 
 /// A1-style cell reference.
 ///

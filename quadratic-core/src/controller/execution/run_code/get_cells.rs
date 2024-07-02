@@ -3,7 +3,7 @@ use uuid::Uuid;
 use crate::{
     controller::{execution::TransactionType, GridController},
     error_core::CoreError,
-    Rect,
+    Rect, RunError, RunErrorMsg,
 };
 use serde::{Deserialize, Serialize};
 
@@ -52,12 +52,14 @@ impl GridController {
             } else {
                 // unable to find sheet by name, generate error
                 let mut msg = format!("Sheet '{}' not found", sheet_name);
-
                 if let Some(line_number) = line_number {
                     msg = format!("{} at line {}", msg, line_number);
                 }
-
-                let error = match self.code_cell_sheet_error(&mut transaction, &msg, line_number) {
+                let run_error = RunError {
+                    span: None,
+                    msg: RunErrorMsg::PythonError(msg.clone().into()),
+                };
+                let error = match self.code_cell_sheet_error(&mut transaction, &run_error) {
                     Ok(_) => CoreError::CodeCellSheetError(msg.to_owned()),
                     Err(err) => err,
                 };

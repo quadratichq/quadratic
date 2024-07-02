@@ -47,7 +47,7 @@ pub enum RunErrorMsg {
     Spill,
 
     // Miscellaneous errors
-    Unimplemented,
+    Unimplemented(Cow<'static, str>),
     UnknownError,
     InternalError(Cow<'static, str>),
 
@@ -111,8 +111,8 @@ impl fmt::Display for RunErrorMsg {
             Self::Spill => {
                 write!(f, "Spill error")
             }
-            Self::Unimplemented => {
-                write!(f, "This feature is unimplemented")
+            Self::Unimplemented(s) => {
+                write!(f, "This feature is unimplemented: {s}")
             }
             Self::UnknownError => {
                 write!(f, "(unknown error)")

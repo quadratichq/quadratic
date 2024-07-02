@@ -97,8 +97,9 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::ComputeCode { sheet_pos } = op {
-            if !transaction.is_user() {
-                unreachable!("Only a user transaction should have a ComputeCode");
+            if !transaction.is_user() && !transaction.is_server() {
+                dbgjs!("Only a user/server transaction should have a ComputeCode");
+                return;
             }
             let sheet_id = sheet_pos.sheet_id;
             let Some(sheet) = self.try_sheet(sheet_id) else {
