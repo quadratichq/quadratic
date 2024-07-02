@@ -35,9 +35,10 @@ export function ConnectionsMenu() {
           <DialogTitle>Team connections</DialogTitle>
         </DialogHeader>
         <Connections
-          connections={fetcher.data ? fetcher.data : []}
+          connections={fetcher.data ? fetcher.data.connections : []}
           connectionsAreLoading={fetcher.data === undefined}
           teamUuid={teamUuid}
+          staticIps={fetcher.data ? fetcher.data.staticIps : []}
           state={state}
           setState={setState}
         />
