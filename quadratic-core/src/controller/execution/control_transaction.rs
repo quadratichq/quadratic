@@ -145,11 +145,11 @@ impl GridController {
                     );
                     transaction.has_async = true;
                 } else {
-                    dbgjs!("[control_transactions] start_auto_resize_row_heights: Failed to serialize auto resize rows")
+                    dbgjs!("[control_transactions] start_auto_resize_row_heights: Failed to serialize auto resize rows");
                 }
             }
         } else {
-            dbgjs!("[control_transactions] start_auto_resize_row_heights: Sheet not found")
+            dbgjs!("[control_transactions] start_auto_resize_row_heights: Sheet not found");
         }
     }
 
