@@ -75,12 +75,10 @@ export class PointerCellMoving {
       throw new Error('Expected moving to be defined in pointerMoveMoving');
     }
     const sheet = sheets.sheet;
-    const position = sheet.getColumnRowFromScreen(world.x + this.moving.offset.x, world.y + this.moving.offset.y);
-    if (this.moving.toColumn !== position.column || this.moving.toRow !== position.row) {
-      this.moving.toColumn = position.column;
-      this.moving.toRow = position.row;
-      pixiApp.cellMoving.dirty = true;
-    }
+    const position = sheet.getColumnRowFromScreen(world.x, world.y);
+    this.moving.toColumn = position.column + this.moving.offset.x;
+    this.moving.toRow = position.row + this.moving.offset.y;
+    pixiApp.cellMoving.dirty = true;
   }
 
   private moveOverlaps(world: Point): false | 'corner' | 'top' | 'bottom' | 'left' | 'right' {
@@ -162,13 +160,11 @@ export class PointerCellMoving {
       this.state = 'hover';
       const screenRectangle = pixiApp.cursor.cursorRectangle;
       if (!screenRectangle) return false;
-      let adjustX = 0,
-        adjustY = 0;
-      if (overlap === 'right') {
-        adjustX = sheets.sheet.offsets.getColumnWidth(rectangle.right);
-      } else if (overlap === 'bottom') {
-        adjustY = sheets.sheet.offsets.getRowHeight(rectangle.bottom);
-      }
+
+      // the offset is the clamped value of the rectangle based on where the user clicks
+      const offset = sheets.sheet.getColumnRowFromScreen(world.x, world.y);
+      offset.column = Math.min(Math.max(offset.column, rectangle.left), rectangle.right);
+      offset.row = Math.min(Math.max(offset.row, rectangle.top), rectangle.bottom);
       this.moving = {
         column,
         row,
@@ -177,8 +173,8 @@ export class PointerCellMoving {
         toColumn: column,
         toRow: row,
         offset: {
-          x: screenRectangle.x - world.x + adjustX,
-          y: screenRectangle.y - world.y + adjustY,
+          x: rectangle.left - offset.column,
+          y: rectangle.top - offset.row,
         },
       };
       return true;
