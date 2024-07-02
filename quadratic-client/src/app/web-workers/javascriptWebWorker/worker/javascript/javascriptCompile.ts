@@ -79,7 +79,6 @@ export function javascriptAddLineNumberVars(transform: JavascriptTransformedCode
       add++;
     }
   }
-  console.log(s);
   return s;
 }
 

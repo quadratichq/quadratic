@@ -783,7 +783,7 @@ class Core {
     this.gridController.calculationComplete(JSON.stringify(results));
   }
 
-  getCells(transactionId: string, x: number, y: number, w: number, h: number, sheet?: string, lineNumber?: number) {
+  getCells(transactionId: string, x: number, y: number, w: number, h?: number, sheet?: string, lineNumber?: number) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     return this.gridController.calculationGetCells(transactionId, x, y, w, h, sheet, lineNumber);
   }

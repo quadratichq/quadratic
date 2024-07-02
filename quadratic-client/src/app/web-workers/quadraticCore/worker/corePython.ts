@@ -101,8 +101,9 @@ class CorePython {
   ) {
     const cells = core.getCells(transactionId, x, y, w, h, sheet, lineNumber);
     const int32View = new Int32Array(sharedBuffer, 0, 3);
-    Atomics.store(int32View, 1, cells.length);
-    if (cells.length !== 0) {
+    const length = cells.length;
+    Atomics.store(int32View, 1, length);
+    if (length !== 0) {
       const id = this.id++;
       this.getCellsResponses[id] = cells;
       Atomics.store(int32View, 2, id);
