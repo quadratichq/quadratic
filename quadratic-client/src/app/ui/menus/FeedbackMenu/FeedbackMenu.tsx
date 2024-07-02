@@ -1,4 +1,4 @@
-import { useRootRouteLoaderData } from '@/router';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { BUG_REPORT_URL, DISCORD, TWITTER } from '@/shared/constants/urls';

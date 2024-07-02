@@ -3,6 +3,7 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 
 export class UrlParamsUser {
@@ -78,7 +79,7 @@ export class UrlParamsUser {
 
       // if code editor is open, we use its x, y, and sheet name
       if (state.showCodeEditor && state.mode) {
-        url.set('code', state.mode.toLowerCase());
+        url.set('code', getLanguage(state.mode).toLowerCase());
         url.set('x', state.selectedCell.x.toString());
         url.set('y', state.selectedCell.y.toString());
         if (state.selectedCellSheet !== sheets.getFirst().id) {

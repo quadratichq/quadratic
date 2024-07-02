@@ -5,8 +5,8 @@ import { getTeamPermissions } from '../utils/permissions';
 /**
  * Takes the team's `uuid` and the `id` of the user making the request.
  *
- * Ensures that the team exists and the user has access to it. Then it attaches
- * data to the request about the team and the user's relationship to the team
+ * Ensures that the team exists and the user has access to it. Then it returns
+ * data about the team and the user's relationship to the team
  */
 export async function getTeam({ uuid, userId }: { uuid: string; userId: number }) {
   // Lookup the team

@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { ApiSchemasConnections } from './typesAndSchemasConnections';
 
 export const UserFileRoleSchema = z.enum(['EDITOR', 'VIEWER']);
 export type UserFileRole = z.infer<typeof UserFileRoleSchema>;
@@ -87,13 +88,71 @@ const FileSchema = z.object({
   thumbnail: z.string().url().nullable(),
 });
 
+const TeamFilesSchema = z.array(
+  z.object({
+    file: FileSchema.pick({
+      uuid: true,
+      name: true,
+      createdDate: true,
+      updatedDate: true,
+      publicLinkAccess: true,
+      thumbnail: true,
+    }),
+    userMakingRequest: z.object({
+      filePermissions: z.array(FilePermissionSchema),
+    }),
+  })
+);
+
+const ConnectionSchemaBase = z.object({
+  uuid: z.string().uuid(),
+  name: z.string(),
+  createdDate: z.string().datetime(),
+  updatedDate: z.string().datetime(),
+});
+
+// TODO: (connections) validate our string min/max here
+export const ConnectionTypePostgresSchema = z.object({
+  type: z.literal('POSTGRES'),
+  name: z.string().min(1, { message: 'Required' }).max(80),
+  host: z.string().min(1, { message: 'Required' }).max(255),
+  port: z.number().min(1).max(65535).optional(),
+  username: z.string().optional(),
+  password: z.string().optional(),
+  database: z.any(), // TODO: fix
+});
+export const ConnectionTypeMysqlSchema = z.object({
+  type: z.literal('MYSQL'),
+  name: z.string(),
+  // color
+});
+
+// TODO: (connections) duplicated with API
+export const connectionFieldZ = z.object({
+  name: z.string(),
+  description: z.string(),
+  type: z.string(),
+  sensitive: z.enum(['AWS_SECRET', 'ENCRYPTED', 'PLAINTEXT']),
+  required: z.boolean(),
+  default: z.string().optional(),
+});
+
+// TODO: (connections) duplicated with API
+export const connectionConfigurationZ = z.object({
+  name: z.string(),
+  type: z.enum(['POSTGRES']),
+  description: z.string(),
+  connectionFields: z.array(connectionFieldZ),
+  cellLevelInput: z.enum(['SINGLE_QUERY_EDITOR']),
+});
+
 // Zod schemas for API endpoints
 export const ApiSchemas = {
   /**
-   *
+   * ===========================================================================
    * Files
    * Note: these are all files the user owns, so permissions are implicit
-   *
+   * ===========================================================================
    */
   '/v0/files.GET.response': z.array(
     FileSchema.pick({
@@ -109,27 +168,30 @@ export const ApiSchemas = {
     name: FileSchema.shape.name,
     contents: z.string(),
     version: z.string(),
-    teamUuid: TeamSchema.shape.uuid.optional(),
+    teamUuid: TeamSchema.shape.uuid,
+    isPrivate: z.boolean().optional(),
   }),
   '/v0/files.POST.response': z.object({
     file: FileSchema.pick({ uuid: true, name: true }),
-    team: TeamSchema.pick({ uuid: true }).optional(),
+    team: TeamSchema.pick({ uuid: true }),
   }),
 
   /**
-   *
+   * ===========================================================================
    * File
    * Note: GET `/files/:uuid` may not have an authenticated user. All other
    * requests to this endpoint (or nested under it) require authentication
-   *
+   * ===========================================================================
    */
   '/v0/files/:uuid.GET.response': z.object({
     file: FileSchema,
-    team: TeamSchema.pick({ uuid: true, name: true }).optional(),
+    team: TeamSchema.pick({ uuid: true, name: true }),
     userMakingRequest: z.object({
       filePermissions: z.array(FilePermissionSchema),
-      isFileOwner: z.boolean(),
+      fileRelativeLocation: z.enum(['TEAM_PUBLIC', 'TEAM_PRIVATE']).optional(),
       fileRole: UserFileRoleSchema.optional(),
+      teamPermissions: z.array(TeamPermissionSchema).optional(),
+      teamRole: UserTeamRoleSchema.optional(),
     }),
   }),
   '/v0/files/:uuid.DELETE.response': z.object({
@@ -137,13 +199,11 @@ export const ApiSchemas = {
   }),
   '/v0/files/:uuid.PATCH.request': z.object({
     name: FileSchema.shape.name.optional(),
-    ownerUserId: BaseUserSchema.shape.id.optional(),
-    ownerTeamId: TeamSchema.shape.id.optional(),
+    ownerUserId: BaseUserSchema.shape.id.or(z.null()).optional(),
   }),
   '/v0/files/:uuid.PATCH.response': z.object({
     name: FileSchema.shape.name.optional(),
     ownerUserId: BaseUserSchema.shape.id.optional(),
-    ownerTeamId: TeamSchema.shape.id.optional(),
   }),
   '/v0/files/:uuid/thumbnail.POST.response': z.object({
     message: z.string(),
@@ -217,9 +277,9 @@ export const ApiSchemas = {
   '/v0/files/:uuid/invites/:inviteId.DELETE.response': z.object({ message: z.string() }),
 
   /**
-   *
+   * ===========================================================================
    * Feedback
-   *
+   * ===========================================================================
    */
   '/v0/feedback.POST.request': z.object({
     feedback: z.string(),
@@ -230,13 +290,14 @@ export const ApiSchemas = {
   }),
 
   /**
-   *
+   * ===========================================================================
    * Examples
    * Given the publicly-accessible URL of a (example) file in production,
    * duplicate it to the user's account.
-   *
+   * ===========================================================================
    */
   '/v0/examples.POST.request': z.object({
+    teamUuid: TeamSchema.shape.uuid,
     publicFileUrlInProduction: z
       .string()
       .url()
@@ -255,14 +316,15 @@ export const ApiSchemas = {
   '/v0/examples.POST.response': FileSchema.pick({ name: true, uuid: true }),
 
   /**
-   *
+   * ===========================================================================
    * Teams
-   *
+   * ===========================================================================
    */
   '/v0/teams.GET.response': z.object({
     teams: z.array(
       z.object({
         team: TeamSchema.pick({ id: true, uuid: true, name: true, activated: true }),
+        users: z.number(),
         userMakingRequest: z.object({
           teamPermissions: z.array(TeamPermissionSchema),
         }),
@@ -287,21 +349,8 @@ export const ApiSchemas = {
       status: TeamSubscriptionStatusSchema.optional(),
       currentPeriodEnd: z.string().optional(),
     }),
-    files: z.array(
-      z.object({
-        file: FileSchema.pick({
-          uuid: true,
-          name: true,
-          createdDate: true,
-          updatedDate: true,
-          publicLinkAccess: true,
-          thumbnail: true,
-        }),
-        userMakingRequest: z.object({
-          filePermissions: z.array(FilePermissionSchema),
-        }),
-      })
-    ),
+    files: TeamFilesSchema,
+    filesPrivate: TeamFilesSchema,
     users: z.array(TeamUserSchema),
     invites: z.array(z.object({ email: emailSchema, role: UserTeamRoleSchema, id: z.number() })),
   }),
@@ -336,11 +385,18 @@ export const ApiSchemas = {
   '/v0/teams/:uuid/billing/checkout/session.GET.response': z.object({ url: z.string() }),
 
   /**
-   *
+   * ===========================================================================
    * Users
-   *
+   * ===========================================================================
    */
   '/v0/users/acknowledge.GET.response': z.object({ message: z.string() }),
+
+  /**
+   * ===========================================================================
+   * Connections
+   * ===========================================================================
+   */
+  ...ApiSchemasConnections,
 
   /**
    *
@@ -355,6 +411,11 @@ export const ApiSchemas = {
   }),
 };
 
+/**
+ * ===========================================================================
+ * Dynamically export the types
+ * ===========================================================================
+ */
 type ApiKeys = keyof typeof ApiSchemas;
 export type ApiTypes = {
   [key in ApiKeys]: z.infer<(typeof ApiSchemas)[key]>;

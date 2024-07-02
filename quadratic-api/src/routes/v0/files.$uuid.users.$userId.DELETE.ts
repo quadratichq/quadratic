@@ -31,14 +31,14 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/use
   } = req as RequestWithUser;
   const userToDeleteId = Number(userIdString);
   const {
-    file: { id: fileId },
+    file: { id: fileId, ownerUserId },
     userMakingRequest,
   } = await getFile({ uuid: req.params.uuid, userId: userMakingRequestId });
 
   // Trying to delete yourself?
   if (userMakingRequestId === userToDeleteId) {
     // Not ok if you're the owner
-    if (userMakingRequest.isFileOwner) {
+    if (ownerUserId === userMakingRequest.id) {
       throw new ApiError(400, 'You cannot delete yourself as the file owner.');
     }
 

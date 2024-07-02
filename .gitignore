@@ -36,6 +36,7 @@ venv/*
 
 # Generated Rust files
 /target
+quadratic-connection/target/
 quadratic-core/target/
 quadratic-core/tmp.txt
 quadratic-files/target/
@@ -49,19 +50,21 @@ quadratic-api/.env.local
 quadratic-api/dist
 
 # Code Coverage
+quadratic-connection/coverage
 quadratic-core/coverage
-
-# Python deployment files
-quadratic-kernels/python-wasm/dist/
-quadratic-client/public/*.whl
-
 quadratic-files/coverage
 quadratic-multiplayer/coverage
 
-# Docker Data
+# Python Deployment files
+quadratic-kernels/python-wasm/dist/
+quadratic-client/public/*.whl
+
+# Docker Data Volumes
 docker/localstack/data
 docker/redis/data
 docker/postgres/data
+docker/postgres-connection/data
+docker/mysql-connection/data
 
 # JMeter
 jmeter.log

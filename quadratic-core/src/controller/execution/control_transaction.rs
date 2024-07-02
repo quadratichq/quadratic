@@ -1,3 +1,4 @@
+use chrono::Utc;
 use uuid::Uuid;
 
 use super::{GridController, TransactionType};
@@ -12,7 +13,9 @@ use crate::{
         transaction_types::JsCodeResult,
     },
     error_core::Result,
-    Pos,
+    grid::{CodeRun, CodeRunResult},
+    parquet::parquet_to_vec,
+    Pos, Value,
 };
 
 impl GridController {
@@ -123,6 +126,48 @@ impl GridController {
         self.finalize_transaction(&mut transaction);
         Ok(())
     }
+
+    /// Externally called when an async connection completes
+    pub fn connection_complete(
+        &mut self,
+        transaction_id: String,
+        data: Vec<u8>,
+        std_out: Option<String>,
+        std_err: Option<String>,
+    ) -> Result<()> {
+        let transaction_id = Uuid::parse_str(&transaction_id)?;
+        let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
+        let array = parquet_to_vec(data)?;
+
+        if let Some(current_sheet_pos) = transaction.current_sheet_pos {
+            let return_type = if array.is_empty() {
+                "Empty Array".to_string()
+            } else {
+                format!("{} x {} Array", array[0].len(), array.len())
+            };
+            let result = CodeRunResult::Ok(Value::Array(array.into()));
+
+            let code_run = CodeRun {
+                formatted_code_string: None,
+                result,
+                return_type: Some(return_type.clone()),
+                line_number: None,
+                output_type: Some(return_type),
+                std_out,
+                std_err,
+                spill_error: false,
+                last_modified: Utc::now(),
+                cells_accessed: transaction.cells_accessed.clone(),
+            };
+
+            self.start_transaction(&mut transaction);
+            self.finalize_code_run(&mut transaction, current_sheet_pos, Some(code_run), None);
+            transaction.waiting_for_async = None;
+            self.finalize_transaction(&mut transaction);
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -149,7 +194,11 @@ impl From<Pos> for CellHash {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{cell_values::CellValues, grid::GridBounds, CellValue, Pos, Rect, SheetPos};
+    use crate::{
+        cell_values::CellValues,
+        grid::{CodeCellLanguage, ConnectionKind, GridBounds},
+        CellValue, Pos, Rect, SheetPos,
+    };
 
     fn add_cell_value(sheet_pos: SheetPos, value: CellValue) -> Operation {
         Operation::SetCellValues {
@@ -295,6 +344,36 @@ mod tests {
             None,
             None,
         ));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_connection_complete() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_code_cell(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            CodeCellLanguage::Connection {
+                kind: ConnectionKind::Postgres,
+                id: Uuid::new_v4().to_string(),
+            },
+            "select * from table".into(),
+            None,
+        );
+
+        let transaction_id = gc.last_transaction().unwrap().id;
+
+        let result = gc.connection_complete(
+            transaction_id.to_string(),
+            vec![],
+            None,
+            Some("error".into()),
+        );
+
         assert!(result.is_ok());
     }
 }

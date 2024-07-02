@@ -44,6 +44,8 @@ export const colors = {
   languagePython: '#3776ab',
   languageFormula: '#8c1a6a',
   languageAI: '#1a8c5d',
+  languagePostgres: '#336791',
+  languageMysql: '#00758f',
   languageJavascript: '#ca8a04',
 
   // todo: this can be change for dark background

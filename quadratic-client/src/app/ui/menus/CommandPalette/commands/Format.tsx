@@ -8,7 +8,7 @@ import {
   QuoteIcon,
   TextNoneIcon,
 } from '@/app/ui/icons';
-import { hasPermissionToEditFile } from '../../../../actions';
+import { isAvailableBecauseCanEditFile } from '../../../../actions';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import {
   clearFormattingAndBorders,
@@ -27,7 +27,7 @@ const commands: CommandGroup = {
   commands: [
     {
       label: 'Clear formatting',
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return (
           <CommandPaletteListItem
@@ -42,42 +42,42 @@ const commands: CommandGroup = {
     },
     {
       label: 'Automatic',
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return <CommandPaletteListItem {...props} action={removeCellNumericFormat} icon={<MagicWandIcon />} />;
       },
     },
     {
       label: 'Currency',
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return <CommandPaletteListItem {...props} action={textFormatSetCurrency} icon={<DollarIcon />} />;
       },
     },
     {
       label: 'Percentage',
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return <CommandPaletteListItem {...props} action={textFormatSetPercentage} icon={<PercentIcon />} />;
       },
     },
     {
       label: 'Scientific',
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return <CommandPaletteListItem {...props} action={textFormatSetExponential} icon={<FunctionIcon />} />;
       },
     },
     {
       label: 'Toggle commas',
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return <CommandPaletteListItem {...props} action={setCellCommas} icon={<QuoteIcon />} />;
       },
     },
     {
       label: 'Increase decimal',
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return (
           <CommandPaletteListItem {...props} action={textFormatIncreaseDecimalPlaces} icon={<DecimalIncreaseIcon />} />
@@ -86,7 +86,7 @@ const commands: CommandGroup = {
     },
     {
       label: 'Decrease decimal',
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return (
           <CommandPaletteListItem {...props} action={textFormatDecreaseDecimalPlaces} icon={<DecimalDecreaseIcon />} />

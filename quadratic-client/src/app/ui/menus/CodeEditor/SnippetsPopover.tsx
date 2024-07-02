@@ -28,8 +28,10 @@ import snippetsJavascript from './snippetsJavascript';
 
 export function SnippetsPopover() {
   const { editorRef } = useCodeEditor();
+  const {
+    showSnippetsPopover: [showSnippetsPopover, setShowSnippetsPopover],
+  } = useCodeEditor();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const { showSnippetsPopover, setShowSnippetsPopover } = useCodeEditor();
   const theme = useTheme();
 
   useEffect(() => {

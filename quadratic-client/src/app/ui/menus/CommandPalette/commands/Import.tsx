@@ -1,6 +1,8 @@
-import { hasPermissionToEditFile } from '@/app/actions';
+import { isAvailableBecauseCanEditFile } from '@/app/actions';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CSV_IMPORT_MESSAGE, PARQUET_IMPORT_MESSAGE } from '@/shared/constants/appConstants';
+import { ROUTES } from '@/shared/constants/routes';
+import { useNavigate, useParams } from 'react-router-dom';
 import { CommandGroup, CommandPaletteListItem, CommandPaletteListItemDynamicProps } from '../CommandPaletteListItem';
 
 const commands: CommandGroup = {
@@ -8,7 +10,7 @@ const commands: CommandGroup = {
   commands: [
     {
       label: 'CSV',
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props: CommandPaletteListItemDynamicProps) => {
         const { addGlobalSnackbar } = useGlobalSnackbar();
         return (
@@ -23,7 +25,7 @@ const commands: CommandGroup = {
     },
     {
       label: 'Parquet',
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props: CommandPaletteListItemDynamicProps) => {
         const { addGlobalSnackbar } = useGlobalSnackbar();
         return (
@@ -31,6 +33,24 @@ const commands: CommandGroup = {
             {...props}
             action={() => {
               addGlobalSnackbar(PARQUET_IMPORT_MESSAGE);
+            }}
+          />
+        );
+      },
+    },
+    {
+      label: 'Connections',
+      // TODO: (connections) is this the right permission?
+      isAvailable: isAvailableBecauseCanEditFile,
+      Component: (props: CommandPaletteListItemDynamicProps) => {
+        const navigate = useNavigate();
+        const { uuid } = useParams();
+
+        return (
+          <CommandPaletteListItem
+            {...props}
+            action={() => {
+              if (uuid) navigate(ROUTES.FILE_CONNECTIONS(uuid), { replace: true });
             }}
           />
         );

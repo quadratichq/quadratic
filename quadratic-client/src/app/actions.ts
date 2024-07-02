@@ -3,19 +3,26 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { downloadFile, downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
 import { FileContextType } from '@/app/ui/components/FileProvider';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Action } from '@/routes/files.$uuid';
+import { getActionFileDuplicate } from '@/routes/files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { DOCUMENTATION_URL } from '@/shared/constants/urls';
-import { FilePermission, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
+import { ApiTypes, FilePermission, FilePermissionSchema, TeamPermission } from 'quadratic-shared/typesAndSchemas';
 import { NavigateFunction, SubmitFunction } from 'react-router-dom';
 import { SetterOrUpdater } from 'recoil';
 const { FILE_EDIT, FILE_DELETE } = FilePermissionSchema.enum;
 
+type IsAvailableArgs = {
+  filePermissions: FilePermission[];
+  isAuthenticated: boolean;
+  teamPermissions: TeamPermission[] | undefined;
+  fileRelativeLocation: ApiTypes['/v0/files/:uuid.GET.response']['userMakingRequest']['fileRelativeLocation'];
+};
+
 export type GenericAction = {
   label: string;
-  isAvailable?: (permissions: FilePermission[], isAuthenticated: boolean) => boolean;
+  isAvailable?: (args: IsAvailableArgs) => boolean;
   run?: (args: any) => void;
 
   // Future shortcuts
@@ -48,46 +55,46 @@ export type GenericAction = {
   // shortcut: Shortcut[] | Shortcut
 };
 
-// TODO: create generic hasPermission(permission, permissionToCheck) function
+// These are functions that can be used elsewhere in the code base to check permissions.
+// They’re more narrow than the generic `isAvailable` functions.
+export const hasPermissionToEditFile = (filePermissions: FilePermission[]) => filePermissions.includes(FILE_EDIT);
 
-export const hasPermissionToEditFile = (permissions: FilePermission[], isAuthenticated?: boolean) =>
-  permissions.includes(FILE_EDIT);
-const isLoggedIn = (permissions: FilePermission[], isAuthenticated: boolean) => isAuthenticated;
+// These are functions specific to kinds of actions that take the generic isAvailable fn signature
+// They are shared between actions here and command palette actions
+export const isAvailableBecauseCanEditFile = ({ filePermissions }: IsAvailableArgs) =>
+  hasPermissionToEditFile(filePermissions);
+const isAvailableBecauseLoggedIn = ({ isAuthenticated }: IsAvailableArgs) => isAuthenticated;
+const isAvailableBecauseFileLocationIsAccessibleAndWriteable = ({
+  fileRelativeLocation,
+  teamPermissions,
+}: IsAvailableArgs) => Boolean(fileRelativeLocation) && Boolean(teamPermissions?.includes('TEAM_EDIT'));
 
 export const createNewFileAction = {
   label: 'Create',
-  isAvailable: isLoggedIn,
-  run({ navigate }: { navigate: NavigateFunction }) {
-    navigate(ROUTES.CREATE_FILE);
+  isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
+  run({ navigate, teamUuid }: { navigate: NavigateFunction; teamUuid: string }) {
+    navigate(ROUTES.CREATE_FILE_PRIVATE(teamUuid));
   },
 };
 
 export const renameFileAction = {
   label: 'Rename',
-  isAvailable: hasPermissionToEditFile,
+  isAvailable: isAvailableBecauseCanEditFile,
 };
 
-export const duplicateFileWithUserAsOwnerAction = {
-  label: 'Duplicate in my files',
-  isAvailable: isLoggedIn,
-  async run({ uuid, submit }: { uuid: string; submit: SubmitFunction }) {
-    const data = { action: 'duplicate', redirect: true, withCurrentOwner: false } as Action['request.duplicate'];
-    submit(data, { method: 'POST', action: `/files/${uuid}`, encType: 'application/json' });
-  },
-};
-
-export const duplicateFileWithCurrentOwnerAction = {
+export const duplicateFileAction = {
   label: 'Duplicate',
-  isAvailable: isLoggedIn,
+  isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
   async run({ uuid, submit }: { uuid: string; submit: SubmitFunction }) {
-    const data = { action: 'duplicate', redirect: true, withCurrentOwner: true } as Action['request.duplicate'];
+    const data = getActionFileDuplicate({ redirect: true, isPrivate: true });
     submit(data, { method: 'POST', action: `/files/${uuid}`, encType: 'application/json' });
   },
 };
 
 export const downloadFileAction = {
   label: 'Download',
-  isAvailable: isLoggedIn,
+  // TODO: (connections) this should probably read from team connections to duplicate
+  isAvailable: isAvailableBecauseLoggedIn,
   async run({ name }: { name: FileContextType['name'] }) {
     downloadQuadraticFile(name, await quadraticCore.export());
   },
@@ -95,7 +102,7 @@ export const downloadFileAction = {
 
 export const deleteFile = {
   label: 'Delete',
-  isAvailable: (permissions: FilePermission[]) => permissions.includes(FILE_DELETE),
+  isAvailable: ({ filePermissions }: IsAvailableArgs) => filePermissions.includes(FILE_DELETE),
   // TODO: (enhancement) handle this async operation in the UI similar to /files/create
   async run({ uuid, addGlobalSnackbar }: { uuid: string; addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'] }) {
     if (window.confirm('Please confirm you want to delete this file.')) {
@@ -111,7 +118,7 @@ export const deleteFile = {
 
 export const provideFeedbackAction = {
   label: 'Feedback',
-  isAvailable: isLoggedIn,
+  isAvailable: isAvailableBecauseLoggedIn,
   run({ setEditorInteractionState }: { setEditorInteractionState: SetterOrUpdater<EditorInteractionState> }) {
     setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
   },
@@ -126,32 +133,32 @@ export const viewDocsAction = {
 
 export const cutAction = {
   label: 'Cut',
-  isAvailable: hasPermissionToEditFile,
+  isAvailable: isAvailableBecauseCanEditFile,
 };
 
 export const pasteAction = {
   label: 'Paste',
-  isAvailable: hasPermissionToEditFile,
+  isAvailable: isAvailableBecauseCanEditFile,
 };
 
 export const pasteActionValues = {
   label: 'Paste values only',
-  isAvailable: hasPermissionToEditFile,
+  isAvailable: isAvailableBecauseCanEditFile,
 };
 
 export const pasteActionFormats = {
   label: 'Paste formats only',
-  isAvailable: hasPermissionToEditFile,
+  isAvailable: isAvailableBecauseCanEditFile,
 };
 
 export const undoAction = {
   label: 'Undo',
-  isAvailable: hasPermissionToEditFile,
+  isAvailable: isAvailableBecauseCanEditFile,
 };
 
 export const redoAction = {
   label: 'Redo',
-  isAvailable: hasPermissionToEditFile,
+  isAvailable: isAvailableBecauseCanEditFile,
 };
 
 export const copyAction = {
@@ -160,17 +167,17 @@ export const copyAction = {
 
 export const rerunCellAction = {
   label: 'Run this code cell',
-  isAvailable: hasPermissionToEditFile,
+  isAvailable: isAvailableBecauseCanEditFile,
 };
 
 export const rerunAction = {
   label: 'Run all code cells in the file',
-  isAvailable: hasPermissionToEditFile,
+  isAvailable: isAvailableBecauseCanEditFile,
 };
 
 export const rerunSheetAction = {
   label: 'Run all code cells in the current sheet',
-  isAvailable: hasPermissionToEditFile,
+  isAvailable: isAvailableBecauseCanEditFile,
 };
 
 export const downloadSelectionAsCsvAction = {
@@ -189,5 +196,5 @@ export const findInSheets = {
 
 export const resizeColumnAction = {
   label: 'Resize column to fit data',
-  isAvailable: hasPermissionToEditFile,
+  isAvailable: isAvailableBecauseCanEditFile,
 };

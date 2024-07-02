@@ -7,6 +7,7 @@ export interface EditorInteractionState {
   showCellTypeMenu: boolean;
   showCodeEditor: boolean;
   showCommandPalette: boolean;
+  showConnectionsMenu: boolean;
   showGoToMenu: boolean;
   showFeedbackMenu: boolean;
   showShareFileMenu: boolean;
@@ -31,10 +32,12 @@ export interface EditorInteractionState {
   redo: boolean;
 }
 
+// TODO: rename to appState?
 export const editorInteractionStateDefault: EditorInteractionState = {
   showCellTypeMenu: false,
   showCodeEditor: false,
   showCommandPalette: false,
+  showConnectionsMenu: false,
   showGoToMenu: false,
   showFeedbackMenu: false,
   showShareFileMenu: false,

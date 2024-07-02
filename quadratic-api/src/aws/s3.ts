@@ -8,7 +8,7 @@ import {
   ENVIRONMENT,
 } from '../env-vars';
 const endpoint =
-  ENVIRONMENT === 'docker' ? 'http://localstack:4566' : ENVIRONMENT === 'local' ? 'http://localhost:4566' : undefined;
+  ENVIRONMENT === 'docker' ? 'http://localstack:4566' : ENVIRONMENT === 'local' ? 'http://0.0.0.0:4566' : undefined;
 
 // Initialize S3 client
 export const s3Client = new S3Client({

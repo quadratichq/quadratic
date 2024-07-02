@@ -54,6 +54,11 @@ export interface CoreClientUpgradeFile {
   id: number;
 }
 
+export interface ClientCoreInit {
+  type: 'clientCoreInit';
+  env: ImportMetaEnv;
+}
+
 export interface ClientCoreInitMultiplayer {
   type: 'clientCoreInitMultiplayer';
 }
@@ -247,6 +252,17 @@ export interface CoreClientHasRenderCells {
   type: 'coreClientHasRenderCells';
   id: number;
   hasRenderCells: boolean;
+}
+
+export interface CoreClientGetJwt {
+  type: 'coreClientGetJwt';
+  id: number;
+}
+
+export interface ClientCoreGetJwt {
+  type: 'clientCoreGetJwt';
+  id: number;
+  jwt: string;
 }
 
 //#endregion
@@ -862,10 +878,13 @@ export type ClientCoreMessage =
   | ClientCoreFindNextRow
   | ClientCoreCommitTransientResize
   | ClientCoreCommitSingleResize
+  | ClientCoreInit
   | ClientCoreInitPython
   | ClientCoreInitJavascript
   | ClientCoreImportExcel
   | ClientCoreCancelExecution
+  | ClientCoreGetJwt
+  | ClientCoreMoveCells
   | ClientCoreMoveCells
   | ClientCoreGetFormatAll
   | ClientCoreGetFormatColumn
@@ -915,6 +934,7 @@ export type CoreClientMessage =
   | CoreClientMultiplayerState
   | CoreClientOfflineTransactions
   | CoreClientUndoRedo
+  | CoreClientGetJwt
   | CoreClientImage
   | CoreClientGetFormatAll
   | CoreClientGetFormatColumn

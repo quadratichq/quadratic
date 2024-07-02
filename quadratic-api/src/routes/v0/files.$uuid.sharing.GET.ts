@@ -69,12 +69,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/sha
 
   // Assign the owner based on whether this is a team or user-owned file
   let owner: ApiTypes['/v0/files/:uuid/sharing.GET.response']['owner'];
-  if (dbFile.ownerTeam) {
-    owner = {
-      type: 'team',
-      name: dbFile.ownerTeam.name,
-    };
-  } else if (dbFile.ownerUser) {
+  if (dbFile.ownerUser) {
     const ownerUser = usersById[dbFile.ownerUser.id];
     owner = {
       type: 'user',
@@ -82,6 +77,11 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/sha
       email: ownerUser.email,
       name: ownerUser.name,
       picture: ownerUser.picture,
+    };
+  } else if (dbFile.ownerTeam) {
+    owner = {
+      type: 'team',
+      name: dbFile.ownerTeam.name,
     };
   } else {
     // TODO log to sentry. bad data
