@@ -1,48 +1,43 @@
-import { getCreateConnectionAction, getUpdateConnectionAction } from '@/routes/_api.connections';
 import { connectionClient } from '@/shared/api/connectionClient';
+import { ConnectionFormProps } from '@/shared/components/connections/ConnectionForm';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ConnectionFormPostgresSchema, ConnectionPostgres } from 'quadratic-shared/typesAndSchemasConnections';
+import {
+  ConnectionNameSchema,
+  ConnectionTypeDetailsPostgresSchema,
+  ConnectionTypeSchema,
+} from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useSubmit } from 'react-router-dom';
 import { z } from 'zod';
 import { ConnectionFormActions, ValidateThenTestConnection } from './ConnectionFormActions';
 
+const ConnectionFormPostgresSchema = z.object({
+  name: ConnectionNameSchema,
+  type: z.literal(ConnectionTypeSchema.enum.POSTGRES),
+  ...ConnectionTypeDetailsPostgresSchema.shape,
+});
 type FormValues = z.infer<typeof ConnectionFormPostgresSchema>;
 
 export function ConnectionFormTypePostgres({
+  handleSubmitForm,
   handleNavigateToListView,
   connection,
-}: {
-  handleNavigateToListView: () => void;
-  connection?: ConnectionPostgres;
-}) {
+}: ConnectionFormProps) {
   const [hidePassword, setHidePassword] = useState(true);
-  const submit = useSubmit();
   const connectionUuid = connection?.uuid;
 
-  const defaultValues: FormValues = connection
-    ? {
-        name: connection.name,
-        type: connection.type,
-        host: connection.typeDetails.host,
-        port: connection.typeDetails.port,
-        database: connection.typeDetails.database,
-        username: connection.typeDetails.username,
-        password: '',
-      }
-    : {
-        name: '',
-        type: 'POSTGRES',
-        host: '',
-        port: '5432',
-        database: 'postgres',
-        username: 'postgres',
-        password: '',
-      };
+  const defaultValues: FormValues = {
+    name: connection ? connection.name : '',
+    type: 'POSTGRES',
+    host: connection ? String(connection.typeDetails.host) : '',
+    port: connection ? String(connection.typeDetails.port) : '5432',
+    database: connection ? String(connection.typeDetails.database) : 'postgres',
+    username: connection ? String(connection.typeDetails.username) : 'postgres',
+    password: '',
+  };
   const form = useForm<FormValues>({
     resolver: zodResolver(ConnectionFormPostgresSchema),
     defaultValues,
@@ -50,24 +45,7 @@ export function ConnectionFormTypePostgres({
 
   const onSubmit = (values: FormValues) => {
     const { name, type, ...typeDetails } = values;
-
-    // If nothing changed, don't submit. Just navigate back
-    // if (Object.keys(form.formState.dirtyFields).length === 0) {
-    //   return;
-    // }
-
-    // Update the connection
-    if (connectionUuid) {
-      const data = getUpdateConnectionAction(connectionUuid, { name, typeDetails });
-      submit(data, { action: '/_api/connections', method: 'POST', encType: 'application/json', navigate: false });
-      handleNavigateToListView();
-      return;
-    }
-
-    // Create a new connection
-    const data = getCreateConnectionAction({ name, type, typeDetails }, '8b125911-d3c8-490a-91bc-6dbacde16768');
-    submit(data, { action: '/_api/connections', method: 'POST', encType: 'application/json', navigate: false });
-    handleNavigateToListView();
+    handleSubmitForm({ name, type, typeDetails });
   };
 
   // Simulate a form submission to do validation, run the test, return result

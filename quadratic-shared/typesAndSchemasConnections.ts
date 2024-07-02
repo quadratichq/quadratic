@@ -5,15 +5,30 @@ const transformEmptyStringToUndefined = (val: string | undefined) => (val === ''
 
 /**
  * =============================================================================
- * Shared
+ * Shared schemas
  * =============================================================================
  */
 
-export const ConnectionNameSchema = z.string().min(1, { message: 'Required' }).max(80);
-export const ConnectionTypesSchema = z.enum(['POSTGRES', 'MYSQL']);
-export type ConnectionType = z.infer<typeof ConnectionTypesSchema>;
+export const ConnectionNameSchema = z.string().min(1, { message: 'Required' });
+export const ConnectionTypeSchema = z.enum(['POSTGRES', 'MYSQL']);
+const ConnectionSchema = z.object({
+  createdDate: z.string().datetime(),
+  updatedDate: z.string().datetime(),
+  name: ConnectionNameSchema,
+  uuid: z.string().uuid(),
 
-export const ConnectionTypePostgresSchema = z.literal(ConnectionTypesSchema.enum.POSTGRES);
+  type: ConnectionTypeSchema,
+  typeDetails: z.record(z.string(), z.any()),
+});
+
+export type ConnectionType = z.infer<typeof ConnectionTypeSchema>;
+export type Connection = z.infer<typeof ConnectionSchema>;
+
+/**
+ * =============================================================================
+ * Schemas for individual connections
+ * =============================================================================
+ */
 export const ConnectionTypeDetailsPostgresSchema = z.object({
   host: z.string().min(1, { message: 'Required' }),
   port: z
@@ -33,54 +48,7 @@ export const ConnectionTypeDetailsPostgresSchema = z.object({
   username: z.string().min(1, { message: 'Required' }),
   password: z.string().optional().transform(transformEmptyStringToUndefined),
 });
-
-export const ConnectionTypeMysqlSchema = z.literal(ConnectionTypesSchema.enum.MYSQL);
 export const ConnectionTypeDetailsMysqlSchema = ConnectionTypeDetailsPostgresSchema;
-
-/**
- * =============================================================================
- * Forms
- * =============================================================================
- */
-export const ConnectionFormPostgresSchema = z.object({
-  name: ConnectionNameSchema,
-  type: ConnectionTypePostgresSchema,
-  ...ConnectionTypeDetailsPostgresSchema.shape,
-});
-export const ConnectionFormMysqlSchema = z.object({
-  name: ConnectionNameSchema,
-  type: ConnectionTypeMysqlSchema,
-  ...ConnectionTypeDetailsPostgresSchema.shape,
-});
-
-/**
- * =============================================================================
- * Schemas for individual connection API endpoints
- * =============================================================================
- */
-const ConnectionBaseSchema = z.object({
-  uuid: z.string().uuid(),
-  createdDate: z.string().datetime(),
-  updatedDate: z.string().datetime(),
-  name: ConnectionNameSchema,
-});
-
-export const ConnectionPostgresSchema = z.object({
-  ...ConnectionBaseSchema.shape,
-  type: ConnectionTypePostgresSchema,
-  typeDetails: ConnectionTypeDetailsPostgresSchema,
-});
-export type ConnectionPostgres = z.infer<typeof ConnectionPostgresSchema>;
-
-export const ConnectionMysqlSchema = z.object({
-  ...ConnectionBaseSchema.shape,
-  type: ConnectionTypeMysqlSchema,
-  typeDetails: ConnectionTypeDetailsMysqlSchema,
-});
-export type ConnectionMysql = z.infer<typeof ConnectionMysqlSchema>;
-
-const ConnectionSchema = z.union([ConnectionPostgresSchema, ConnectionMysqlSchema]);
-export type Connection = z.infer<typeof ConnectionSchema>;
 
 /**
  * =============================================================================
@@ -88,60 +56,25 @@ export type Connection = z.infer<typeof ConnectionSchema>;
  * =============================================================================
  */
 
-const GenericConnectionSchema = z.object({
-  uuid: z.string().uuid(),
-  createdDate: z.string().datetime(),
-  updatedDate: z.string().datetime(),
-  name: ConnectionNameSchema,
-
-  type: ConnectionTypesSchema,
-  typeDetails: z.union([ConnectionTypeDetailsPostgresSchema, ConnectionTypeDetailsMysqlSchema]),
-});
-
 export const ApiSchemasConnections = {
   // List connections
-  '/v0/connections?team-uuid.GET.response': z.array(GenericConnectionSchema),
-  '/v0/connections?file-uuid.GET.response': z.array(GenericConnectionSchema.omit({ typeDetails: true })),
-  // z.array(
-  //   z.union([ConnectionPostgresSchema.omit({ typeDetails: true }), ConnectionMysqlSchema.omit({ typeDetails: true })])
-  // ),
+  '/v0/connections?team-uuid.GET.response': z.array(ConnectionSchema),
+  '/v0/connections?file-uuid.GET.response': z.array(ConnectionSchema.omit({ typeDetails: true })),
 
   // Create connection
-  '/v0/connections.POST.request': GenericConnectionSchema.pick({
+  '/v0/connections.POST.request': ConnectionSchema.pick({
     name: true,
     type: true,
     typeDetails: true,
   }),
-  // z.union([
-  //   z.object({
-  //     name: ConnectionPostgresSchema.shape.name,
-  //     type: ConnectionPostgresSchema.shape.type,
-  //     typeDetails: ConnectionPostgresSchema.shape.typeDetails,
-  //   }),
-  //   z.object({
-  //     name: ConnectionMysqlSchema.shape.name,
-  //     type: ConnectionMysqlSchema.shape.type,
-  //     typeDetails: ConnectionMysqlSchema.shape.typeDetails,
-  //   }),
-  // ]),
-  '/v0/connections.POST.response': z.object({ uuid: z.string().uuid() }),
+  '/v0/connections.POST.response': ConnectionSchema.pick({ uuid: true }),
 
   // Get connection
-  '/v0/connections/:uuid.GET.response': GenericConnectionSchema,
+  '/v0/connections/:uuid.GET.response': ConnectionSchema,
 
   // Update connection
-  '/v0/connections/:uuid.PUT.request': GenericConnectionSchema.pick({ name: true, typeDetails: true }),
-  // z.union([
-  //   z.object({
-  //     name: ConnectionPostgresSchema.shape.name,
-  //     typeDetails: ConnectionPostgresSchema.shape.typeDetails,
-  //   }),
-  //   z.object({
-  //     name: ConnectionBaseSchema.shape.name,
-  //     typeDetails: ConnectionMysqlSchema.shape.typeDetails,
-  //   }),
-  // ]),
-  '/v0/connections/:uuid.PUT.response': GenericConnectionSchema,
+  '/v0/connections/:uuid.PUT.request': ConnectionSchema.pick({ name: true, typeDetails: true }),
+  '/v0/connections/:uuid.PUT.response': ConnectionSchema.omit({ typeDetails: true }),
 
   // Delete connection
   '/v0/connections/:uuid.DELETE.response': z.object({ message: z.string() }),
