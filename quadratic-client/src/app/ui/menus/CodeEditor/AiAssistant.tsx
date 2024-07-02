@@ -1,6 +1,6 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { editorSchemaStateAtom } from '@/app/atoms/editorSchemaStateAtom';
-import { getLanguage } from '@/app/helpers/codeCellLanguage';
+import { getConnectionKind, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
@@ -48,14 +48,15 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
       role: 'system',
       content: `
 You are a helpful assistant inside of a spreadsheet application called Quadratic. 
-Do not use any markdown syntax besides triple backticks for ${mode} code blocks. Do not reply with plain text code blocks.
-The cell type is ${mode}.
+Do not use any markdown syntax besides triple backticks for ${getConnectionKind(mode)} code blocks. 
+Do not reply with plain text code blocks.
+The cell type is ${getConnectionKind(mode)}.
 The cell is located at ${selectedCell.x}, ${selectedCell.y}.
-${getLanguage(mode) === 'Connection' ? 'The schema for the database is:```\n' + schema : '\n```'}
+${getLanguage(mode) === 'Connection' ? 'The schema for the database is:```\n' + JSON.stringify(schema) : '\n```'}
 Currently, you are in a cell that is being edited. The code in the cell is:
 \`\`\`${editorContent}\`\`\`
 If the code was recently run here is the result: 
-\`\`\`${consoleOutput}\`\`\`
+\`\`\`${JSON.stringify(consoleOutput)}\`\`\`
 This is the documentation for Quadratic: 
 ${QuadraticDocs}`,
     },

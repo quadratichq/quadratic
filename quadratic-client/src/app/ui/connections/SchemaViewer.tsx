@@ -64,13 +64,6 @@ export const SchemaViewer = (props: Props) => {
     }
   }, [fetchData, loadState]);
 
-  useEffect(() => {
-    // This function will run when the component is unmounted
-    return () => {
-      setData({ schema: undefined });
-    };
-  }, [setData]);
-
   return (
     <>
       <div style={{ position: 'absolute', top: bottom ? '3rem' : 3, right: 8, zIndex: 100 }}>
