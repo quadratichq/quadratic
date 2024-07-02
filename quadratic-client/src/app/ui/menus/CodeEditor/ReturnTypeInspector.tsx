@@ -1,3 +1,4 @@
+import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { DOCUMENTATION_JAVASCRIPT_RETURN_DATA, DOCUMENTATION_URL } from '@/shared/constants/urls';
@@ -14,7 +15,8 @@ interface ReturnTypeInspectorProps {
 export function ReturnTypeInspector({ evaluationResult, show, language }: ReturnTypeInspectorProps) {
   const theme = useTheme();
   let message: JSX.Element;
-  if (language === 'Python') {
+
+  if (getLanguage(language) === 'Python') {
     if (show) {
       message = (
         <>
@@ -53,7 +55,7 @@ export function ReturnTypeInspector({ evaluationResult, show, language }: Return
         </>
       );
     }
-  } else if (language === 'Javascript') {
+  } else if (getLanguage(language) === 'Javascript') {
     if (show && evaluationResult?.output_type) {
       message = (
         <>
@@ -74,6 +76,16 @@ export function ReturnTypeInspector({ evaluationResult, show, language }: Return
         </>
       );
     }
+  } else if (getLanguage(language) === 'Connection' && show && evaluationResult?.output_type) {
+    message = (
+      <>
+        Returned{' '}
+        <span className="rounded-md px-1 py-0.5" style={{ backgroundColor: theme.palette.grey[100] }}>
+          {evaluationResult.output_type}
+        </span>
+        .
+      </>
+    );
   } else {
     message = <></>;
   }

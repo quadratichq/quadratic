@@ -141,7 +141,7 @@ impl GridController {
 
         if let Some(current_sheet_pos) = transaction.current_sheet_pos {
             let return_type = if array.is_empty() {
-                "Empty Array".to_string()
+                "0 x 0 Array".to_string()
             } else {
                 format!("{} x {} Array", array[0].len(), array.len())
             };
@@ -151,7 +151,7 @@ impl GridController {
                 formatted_code_string: None,
                 result,
                 return_type: Some(return_type.clone()),
-                line_number: None,
+                line_number: Some(1),
                 output_type: Some(return_type),
                 std_out,
                 std_err,

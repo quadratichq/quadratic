@@ -80,7 +80,7 @@ pub(crate) async fn response_bytes(response: Response) -> Bytes {
         .into_future()
         .await
         .0
-        .unwrap()
+        .unwrap_or(Ok(Bytes::new()))
         .unwrap()
 }
 
