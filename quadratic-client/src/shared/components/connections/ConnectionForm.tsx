@@ -1,3 +1,4 @@
+import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { getCreateConnectionAction, getUpdateConnectionAction } from '@/routes/_api.connections';
 import { ConnectionFormTypeMysql } from '@/shared/components/connections/ConnectionFormTypeMysql';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
@@ -41,14 +42,21 @@ export function ConnectionFormCreate({
     handleSubmitForm,
   };
 
-  return <ConnectionForm type={type} props={props} />;
+  return (
+    <>
+      <ConnectionFormHeader type={type}>Create</ConnectionFormHeader>
+      <ConnectionForm type={type} props={props} />
+    </>
+  );
 }
 
 export function ConnectionFormEdit({
   connectionUuid,
+  connectionType,
   handleNavigateToListView,
 }: {
   connectionUuid: string;
+  connectionType: ConnectionType;
   handleNavigateToListView: () => void;
 }) {
   const submit = useSubmit();
@@ -68,22 +76,27 @@ export function ConnectionFormEdit({
     handleNavigateToListView();
   };
 
-  return fetcher.data?.ok ? (
-    <ConnectionForm
-      type={fetcher.data.connection.type}
-      props={{
-        connection: fetcher.data.connection,
-        handleNavigateToListView,
-        handleSubmitForm,
-      }}
-    />
-  ) : (
-    <div className="gap-2 pt-2">
-      <div className="flex flex-col gap-2">
-        <Skeleton className="h-4 w-32" />
-        <Skeleton className="h-8 w-full" />
-      </div>
-    </div>
+  return (
+    <>
+      <ConnectionFormHeader type={connectionType}>Edit</ConnectionFormHeader>
+      {fetcher.data?.ok ? (
+        <ConnectionForm
+          type={fetcher.data.connection.type}
+          props={{
+            connection: fetcher.data.connection,
+            handleNavigateToListView,
+            handleSubmitForm,
+          }}
+        />
+      ) : (
+        <div className="gap-2 pt-2">
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -96,5 +109,25 @@ function ConnectionForm({ type, props }: { type: ConnectionType; props: Connecti
     default:
       // This should never happen. Log to sentry?
       throw new Error('Unknown form type');
+  }
+}
+
+function ConnectionFormHeader({ type, children }: { type: ConnectionType; children: React.ReactNode }) {
+  return (
+    <h3 className="text-md flex gap-3 py-4">
+      <LanguageIcon language={type} /> {children} {getTypeDisplayName(type)} connection
+    </h3>
+  );
+}
+
+function getTypeDisplayName(type: ConnectionType) {
+  switch (type) {
+    case 'POSTGRES':
+      return 'Postgres';
+    case 'MYSQL':
+      return 'MySQL';
+    default:
+      // This should never happen. Log to sentry?
+      throw new Error('Unknown type');
   }
 }
