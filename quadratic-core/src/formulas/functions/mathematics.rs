@@ -65,6 +65,61 @@ fn get_functions() -> Vec<FormulaFunction> {
                 number.sqrt()
             }
         ),
+        formula_fn!(
+            /// Rounds a number up to the next multiple of `increment`. If
+            /// `number` and `increment` are both negative, rounds the number
+            /// down away from zero. Returns an error if `number` is positive
+            /// but `significance` is negative. Returns `0` if `increment` is
+            /// `0`.
+            #[examples("CEIL(6.5, 2)")]
+            #[zip_map]
+            fn CEIL([number]: f64, [increment]: (Spanned<f64>)) {
+                let Spanned {
+                    span: increment_span,
+                    inner: increment,
+                } = increment;
+
+                if number > 0.0 && increment < 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(increment_span));
+                }
+
+                // Yes, I know this condition is inconsistent with `FLOOR`. It's
+                // necessary for Excel compatibility.
+                if increment == 0.0 {
+                    0.0
+                } else {
+                    util::checked_div(increment_span, number, increment)?.ceil() * increment
+                }
+            }
+        ),
+        formula_fn!(
+            /// Rounds a number down to the next multiple of `increment`. If
+            /// `number` and `increment` are both negative, rounds the number up
+            /// toward zero. Returns an error if `number` is positive but
+            /// `significance` is negative, or if `increment` is `0` but
+            /// `number` is nonzero. Returns `0` if `increment` is `0` _and_
+            /// `number` is `0`.
+            #[examples("FLOOR(6.5, 2)")]
+            #[zip_map]
+            fn FLOOR([number]: f64, [increment]: (Spanned<f64>)) {
+                let Spanned {
+                    span: increment_span,
+                    inner: increment,
+                } = increment;
+
+                if number > 0.0 && increment < 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(increment_span));
+                }
+
+                // Yes, I know this condition is inconsistent with `CEILING`. It's
+                // necessary for Excel compatibility.
+                if increment == 0.0 && number == 0.0 {
+                    0.0
+                } else {
+                    util::checked_div(increment_span, number, increment)?.floor() * increment
+                }
+            }
+        ),
         // Constants
         formula_fn!(
             /// Returns π, the circle constant.
@@ -245,6 +300,64 @@ mod tests {
                 .unwrap_err()
                 .msg,
         );
+    }
+
+    #[test]
+    fn test_ceil() {
+        let g = Grid::new();
+        let test_cases = [
+            ("3.5", "2", Ok("4")),
+            ("2.5", "2", Ok("4")),
+            ("0.0", "2", Ok("0")),
+            ("-2.5", "2", Ok("-2")),
+            ("-3.5", "2", Ok("-2")),
+            ("3.5", "0", Ok("0")),
+            ("2.5", "0", Ok("0")),
+            ("0.0", "0", Ok("0")),
+            ("-2.5", "0", Ok("0")),
+            ("-3.5", "0", Ok("0")),
+            ("3.5", "-2", Err(RunErrorMsg::InvalidArgument)),
+            ("2.5", "-2", Err(RunErrorMsg::InvalidArgument)),
+            ("0.0", "-2", Ok("0")),
+            ("-2.5", "-2", Ok("-4")),
+            ("-3.5", "-2", Ok("-4")),
+        ];
+        for (n, increment, expected) in test_cases {
+            let formula = format!("CEIL({n}, {increment})");
+            match expected {
+                Ok(ok) => assert_eq!(ok, eval_to_string(&g, &formula)),
+                Err(err) => assert_eq!(err, eval_to_err(&g, &formula).msg),
+            }
+        }
+    }
+
+    #[test]
+    fn test_floor() {
+        let g = Grid::new();
+        let test_cases = [
+            ("3.5", "2", Ok("2")),
+            ("2.5", "2", Ok("2")),
+            ("0.0", "2", Ok("0")),
+            ("-2.5", "2", Ok("-4")),
+            ("-3.5", "2", Ok("-4")),
+            ("3.5", "0", Err(RunErrorMsg::DivideByZero)),
+            ("2.5", "0", Err(RunErrorMsg::DivideByZero)),
+            ("0.0", "0", Ok("0")),
+            ("-2.5", "0", Err(RunErrorMsg::DivideByZero)),
+            ("-3.5", "0", Err(RunErrorMsg::DivideByZero)),
+            ("3.5", "-2", Err(RunErrorMsg::InvalidArgument)),
+            ("2.5", "-2", Err(RunErrorMsg::InvalidArgument)),
+            ("0.0", "-2", Ok("0")),
+            ("-2.5", "-2", Ok("-2")),
+            ("-3.5", "-2", Ok("-2")),
+        ];
+        for (n, increment, expected) in test_cases {
+            let formula = format!("FLOOR({n}, {increment})");
+            match expected {
+                Ok(ok) => assert_eq!(ok, eval_to_string(&g, &formula)),
+                Err(err) => assert_eq!(err, eval_to_err(&g, &formula).msg),
+            }
+        }
     }
 
     #[test]
