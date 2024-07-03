@@ -68,7 +68,7 @@ export const KernelMenu = () => {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <BottomBarItem title="Kernel Menu" open={open}>
+        <BottomBarItem title="Kernel Menu" open={open} onClick={() => {}}>
           <div className="text-xs">Kernel</div>
           {running > 0 && (
             <div
