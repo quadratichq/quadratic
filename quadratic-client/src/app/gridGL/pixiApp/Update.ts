@@ -22,6 +22,9 @@ export class Update {
   // setting this to 0 ensures that on initial render, the viewport is properly scaled and updated
   private lastViewportScale = 0;
 
+  private lastScreenWidth = 0;
+  private lastScreenHeight = 0;
+
   constructor() {
     if (debugShowFPS) {
       this.fps = new FPS();
@@ -59,6 +62,11 @@ export class Update {
     if (this.lastViewportPosition.x !== viewport.x || this.lastViewportPosition.y !== viewport.y) {
       this.lastViewportPosition.x = viewport.x;
       this.lastViewportPosition.y = viewport.y;
+      dirty = true;
+    }
+    if (this.lastScreenWidth !== viewport.screenWidth || this.lastScreenHeight !== viewport.screenHeight) {
+      this.lastScreenWidth = viewport.screenWidth;
+      this.lastScreenHeight = viewport.screenHeight;
       dirty = true;
     }
     if (dirty) {
