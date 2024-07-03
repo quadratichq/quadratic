@@ -6,13 +6,13 @@ const snippets = [
 let data = await cell(x, y);
 
 // Or reference a range of cells (returns an array), replace x's and y's with coordinates
-data = await cells(x1, y1, x2, y2)
+let data = await cells(x1, y1, x2, y2);
 
 // Reference cell or range of cells in another sheet
-data = await cells(x1, y1, x2, y2, sheet_name)
+let data = await cells(x1, y1, x2, y2, sheet_name);
 
 // Returns the data to the sheet in a 2d array starting at the code cell
-return data`,
+return data;`,
   },
   {
     label: 'Return data to the sheet',
