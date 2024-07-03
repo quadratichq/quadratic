@@ -136,8 +136,8 @@ export class Cursor extends Graphics {
       this.cursorRectangle = new Rectangle(
         startCell.x,
         startCell.y,
-        this.endCell.x + this.endCell.width - this.startCell.x,
-        this.endCell.y + this.endCell.height - this.startCell.y
+        this.endCell.x + this.endCell.width - startCell.x,
+        this.endCell.y + this.endCell.height - startCell.y
       );
     } else {
       this.endCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
