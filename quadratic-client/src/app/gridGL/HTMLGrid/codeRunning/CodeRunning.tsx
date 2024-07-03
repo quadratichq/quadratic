@@ -50,6 +50,7 @@ export const CodeRunning = () => {
     };
     events.on('pythonState', updateRunningState);
     events.on('javascriptState', updateRunningState);
+    events.on('connectionState', updateRunningState);
   }, []);
 
   // update multiplayer's code runs

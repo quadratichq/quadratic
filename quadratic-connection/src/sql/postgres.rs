@@ -65,7 +65,11 @@ pub(crate) async fn query(
     let connection = get_connection(&state, &claims, &sql_query.connection_id)
         .await?
         .0;
-    query_generic::<PostgresConnection>(connection, state, sql_query).await
+    let response = query_generic::<PostgresConnection>(connection, state, sql_query).await;
+
+    tracing::warn!("query finished");
+
+    response
 }
 
 /// Get the schema of the database

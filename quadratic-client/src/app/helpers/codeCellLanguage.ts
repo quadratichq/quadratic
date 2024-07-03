@@ -40,14 +40,21 @@ export const getLanguage = (language?: CodeCellLanguage) => {
   return 'Formula';
 };
 
+// For languages that monaco supports, see https://github.com/microsoft/monaco-editor/tree/c321d0fbecb50ab8a5365fa1965476b0ae63fc87/src/basic-languages
+// note: the language id is case-insensitive
 export const getLanguageForMonaco = (language?: CodeCellLanguage): string => {
-  const supportedLanguage = getLanguage(language);
-
-  if (supportedLanguage === 'Connection') {
-    return 'Sql';
+  if (typeof language === 'string') {
+    return language.toLowerCase();
+  } else if (typeof language === 'object') {
+    switch (language.Connection.kind) {
+      case 'POSTGRES':
+        return 'pgsql';
+      case 'MYSQL':
+        return 'mysql';
+    }
   }
 
-  return supportedLanguage;
+  return 'formula';
 };
 
 export const getConnectionUuid = (language?: CodeCellLanguage): string | undefined => {

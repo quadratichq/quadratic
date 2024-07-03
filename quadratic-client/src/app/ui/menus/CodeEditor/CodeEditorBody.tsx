@@ -137,7 +137,7 @@ export const CodeEditorBody = (props: Props) => {
       // Only register language once
       if (registered) return;
 
-      if (monacoLanguage === 'Formula') {
+      if (monacoLanguage === 'formula') {
         monaco.languages.register({ id: 'Formula' });
         monaco.languages.setLanguageConfiguration('Formula', FormulaLanguageConfig);
         monaco.languages.setMonarchTokensProvider('Formula', FormulaTokenizerConfig);
@@ -147,7 +147,7 @@ export const CodeEditorBody = (props: Props) => {
         monaco.languages.registerHoverProvider('Formula', { provideHover });
       }
 
-      if (monacoLanguage === 'Python') {
+      if (monacoLanguage === 'python') {
         monaco.languages.register({ id: 'python' });
         monaco.languages.registerCompletionItemProvider('python', {
           provideCompletionItems: provideCompletionItemsPython,
@@ -165,14 +165,7 @@ export const CodeEditorBody = (props: Props) => {
         });
       }
 
-      if (monacoLanguage === 'Javascript') {
-        monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
-          diagnosticCodesToIgnore: [1108, 1375, 1378],
-        });
-        monaco.editor.createModel(javascriptLibraryForEditor, 'javascript');
-      }
-
-      if (monacoLanguage === 'Sql') {
+      if (monacoLanguage === 'javascript') {
         monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
           diagnosticCodesToIgnore: [1108, 1375, 1378],
         });
@@ -235,7 +228,7 @@ export const CodeEditorBody = (props: Props) => {
           showUnused: language === 'Javascript' ? false : true,
         }}
       />
-      {['Python', 'Javascript'].includes(language as string) && (
+      {['python', 'javascript', 'pgsql'].includes(monacoLanguage as string) && (
         <CodeEditorPlaceholder editorContent={editorContent} setEditorContent={setEditorContent} />
       )}
     </div>

@@ -61,6 +61,7 @@ interface EventTypes {
   pythonState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
   javascriptInit: (version: string) => void;
   javascriptState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
+  connectionState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
 
   updateCodeCell: (options: {
     sheetId: string;

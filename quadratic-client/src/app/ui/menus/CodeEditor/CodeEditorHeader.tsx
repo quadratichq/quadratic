@@ -114,10 +114,12 @@ export const CodeEditorHeader = (props: Props) => {
 
     events.on('pythonState', playerState);
     events.on('javascriptState', playerState);
+    events.on('connectionState', playerState);
     events.on('multiplayerUpdate', multiplayerUpdate);
     return () => {
       events.off('pythonState', playerState);
       events.off('javascriptState', playerState);
+      events.off('connectionState', playerState);
       events.off('multiplayerUpdate', multiplayerUpdate);
     };
   }, [cellLocation]);
@@ -152,12 +154,12 @@ export const CodeEditorHeader = (props: Props) => {
       </div>
       <div className="ml-auto flex flex-shrink-0 items-center gap-2">
         {isRunningComputation && (
-          <TooltipHint title={'Python executing…'} placement="bottom">
+          <TooltipHint title={`${language} executing…`} placement="bottom">
             <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
           </TooltipHint>
         )}
-        {hasPermission && <CodeEditorRefButton />}
-        {hasPermission && ['Python', 'Javascript'].includes(language as string) && <SnippetsPopover />}
+        {hasPermission && ['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
+        {hasPermission && ['Python', 'Javascript', 'Connection'].includes(language as string) && <SnippetsPopover />}
         {hasPermission &&
           (!isRunningComputation ? (
             <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
