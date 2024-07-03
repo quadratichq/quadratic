@@ -207,6 +207,19 @@ export class PointerCellMoving {
           this.moving.toRow,
           sheets.sheet.id
         );
+
+        // if we moved the code cell, we need to repopulate the code editor with
+        // unsaved content.
+        if (pixiAppSettings.unsavedEditorChanges) {
+          const state = pixiAppSettings.editorInteractionState;
+          if (state.selectedCellSheet === sheets.sheet.id && intersects.rectanglePoint(rectangle, new Point(state.selectedCell.x, state.selectedCell.y))) {
+            pixiAppSettings.setEditorInteractionState?.({
+              ...pixiAppSettings.editorInteractionState,
+              initialCode: pixiAppSettings.unsavedEditorChanges,
+              selectedCell: { x: state.selectedCell.x + this.moving.toColumn - this.moving.column, y: state.selectedCell.y + this.moving.toRow - this.moving.row },
+            });
+          }
+        }
       }
       this.reset();
       return true;
