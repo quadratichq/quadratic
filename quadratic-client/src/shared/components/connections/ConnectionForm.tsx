@@ -1,8 +1,10 @@
 import { getCreateConnectionAction, getUpdateConnectionAction } from '@/routes/_api.connections';
 import { ConnectionFormTypeMysql } from '@/shared/components/connections/ConnectionFormTypeMysql';
+import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { Connection, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { useSubmit } from 'react-router-dom';
+import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import { useEffect } from 'react';
+import { useFetcher, useSubmit } from 'react-router-dom';
 import { ConnectionFormTypePostgres } from './ConnectionFormTypePostgres';
 
 type ConnectionFormData = {
@@ -43,29 +45,46 @@ export function ConnectionFormCreate({
 }
 
 export function ConnectionFormEdit({
-  connection,
+  connectionUuid,
   handleNavigateToListView,
 }: {
-  connection: Connection;
+  connectionUuid: string;
   handleNavigateToListView: () => void;
 }) {
   const submit = useSubmit();
+  const fetcher = useFetcher();
+
+  useEffect(() => {
+    if (fetcher.state === 'idle' && fetcher.data === undefined) {
+      fetcher.load(`/_api/connections?connection-uuid=${connectionUuid}`);
+    }
+  }, [fetcher, connectionUuid]);
 
   const handleSubmitForm = (formData: ConnectionFormData) => {
     // Enhancement: if nothing changed, don't submit. Just navigate back
 
-    const data = getUpdateConnectionAction(connection.uuid, formData);
+    const data = getUpdateConnectionAction(connectionUuid, formData);
     submit(data, { action: '/_api/connections', method: 'POST', encType: 'application/json', navigate: false });
     handleNavigateToListView();
   };
 
-  const props: ConnectionFormProps = {
-    connection,
-    handleNavigateToListView,
-    handleSubmitForm,
-  };
-
-  return <ConnectionForm type={connection.type} props={props} />;
+  return fetcher.data?.ok ? (
+    <ConnectionForm
+      type={fetcher.data.connection.type}
+      props={{
+        connection: fetcher.data.connection,
+        handleNavigateToListView,
+        handleSubmitForm,
+      }}
+    />
+  ) : (
+    <div className="gap-2 pt-2">
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-8 w-full" />
+      </div>
+    </div>
+  );
 }
 
 function ConnectionForm({ type, props }: { type: ConnectionType; props: ConnectionFormProps }) {

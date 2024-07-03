@@ -3,21 +3,54 @@ import { connectionClient } from '@/shared/api/connectionClient';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router-dom';
 
+/**
+ *
+ * Loader
+ *
+ */
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
   const searchParams = new URLSearchParams(url.search);
+
+  // Load connections in a team
   const teamUuid = searchParams.get('team-uuid');
-  if (!teamUuid) {
-    // TODO: (connections) log to sentry
-    throw new Error('No team UUID provided');
+  if (teamUuid) {
+    const data = await getTeamConnections(teamUuid);
+    return data;
   }
 
+  // Load a connection
+  const connectionUuid = searchParams.get('connection-uuid');
+  if (connectionUuid) {
+    const data = await getConnection(connectionUuid);
+    return data;
+  }
+
+  // This should never be reached. If it does, that's a developer bug
+  // TODO: (connections) log to sentry
+  return { ok: false };
+};
+
+export type GetConnections = Awaited<ReturnType<typeof getTeamConnections>>;
+async function getTeamConnections(teamUuid: string) {
   const [connections, staticIps] = await Promise.all([
-    apiClient.connections.list({ teamUuid }),
+    apiClient.connections.list(teamUuid),
     connectionClient.staticIps.list(),
   ]);
-  return { connections, staticIps };
-};
+  return { ok: true, connections, staticIps };
+}
+
+export type GetConnection = Awaited<ReturnType<typeof getConnection>>;
+async function getConnection(connectionUuid: string) {
+  const connection = await apiClient.connections.get(connectionUuid);
+  return { ok: true, connection };
+}
+
+/**
+ *
+ * Action
+ *
+ */
 
 type Action = CreateConnectionAction | UpdateConnectionAction | DeleteConnectionAction;
 
@@ -91,5 +124,3 @@ export const getDeleteConnectionAction = (connectionUuid: string) => {
     connectionUuid,
   };
 };
-
-// TODO: (connections) make some nice error boundary routes for the dialog

@@ -64,7 +64,7 @@ export const hasPermissionToEditFile = (filePermissions: FilePermission[]) => fi
 export const isAvailableBecauseCanEditFile = ({ filePermissions }: IsAvailableArgs) =>
   hasPermissionToEditFile(filePermissions);
 const isAvailableBecauseLoggedIn = ({ isAuthenticated }: IsAvailableArgs) => isAuthenticated;
-const isAvailableBecauseFileLocationIsAccessibleAndWriteable = ({
+export const isAvailableBecauseFileLocationIsAccessibleAndWriteable = ({
   fileRelativeLocation,
   teamPermissions,
 }: IsAvailableArgs) => Boolean(fileRelativeLocation) && Boolean(teamPermissions?.includes('TEAM_EDIT'));

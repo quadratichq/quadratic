@@ -1,6 +1,5 @@
 import { BrowserCompatibilityLayoutRoute } from '@/dashboard/components/BrowserCompatibilityLayoutRoute';
 import * as Page404 from '@/routes/404';
-import * as FileMeta from '@/routes/_file.$uuid';
 import * as Login from '@/routes/login';
 import * as LoginResult from '@/routes/login-result';
 import * as Logout from '@/routes/logout';
@@ -37,12 +36,8 @@ export const router = createBrowserRouter(
               lazy={() => import('./routes/file.$uuid')}
               // We don't want to revalidate the initial file route because
               // we don't have any 2-way data flow setup for the file contents
-              // But file metadata is handled in the pathless route below
               shouldRevalidate={() => false}
-            >
-              {/* TODO: (connections) we need to figure out what to do here when it's a publicly viewable file */}
-              <Route path="" id={ROUTE_LOADER_IDS.FILE_METADATA} loader={FileMeta.loader} Component={() => null} />
-            </Route>
+            />
           </Route>
         </Route>
 

@@ -46,7 +46,6 @@ export const ROUTES = {
 export const ROUTE_LOADER_IDS = {
   ROOT: 'root',
   FILE: 'file',
-  FILE_METADATA: 'file-metadata',
   DASHBOARD: 'dashboard',
 };
 

@@ -11,9 +11,7 @@ export type ConnectionsListConnection = {
   uuid: string;
   name: string;
   createdDate: string;
-  updatedDate: string;
   type: ConnectionType;
-  typeDetails: any;
   disabled?: boolean;
 };
 type Props = {
@@ -21,7 +19,6 @@ type Props = {
   setState: Dispatch<SetStateAction<ConnectionState>>;
   teamUuid: string;
   staticIps: string[] | null;
-  // null means they're loading, otherwise should be an array
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
 };
@@ -99,9 +96,7 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
       )}
       {state.view.name === 'EDIT' && (
         <ConnectionFormEdit
-          teamUuid={teamUuid}
-          // @ts-expect-error
-          connection={connections?.find((c) => c.uuid === state.view.connectionUuid)}
+          connectionUuid={state.view.connectionUuid}
           handleNavigateToListView={handleNavigateToListView}
         />
       )}
@@ -116,19 +111,3 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
     </div>
   );
 };
-
-/*
-
-<DialogHeader>
-        <ConnectionsBreadcrumb />
-        <DialogTitle>{connectionName} connection</DialogTitle>
-        <DialogDescription>
-          For more information on {connectionName} connections,{' '}
-          <a href={connectionDocsLink} target="_blank" rel="noreferrer" className="underline hover:text-primary">
-            read the docs
-          </a>
-        </DialogDescription>
-      </DialogHeader>
-
-
-*/

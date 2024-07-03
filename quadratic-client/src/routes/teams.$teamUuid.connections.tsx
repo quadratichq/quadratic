@@ -13,9 +13,9 @@ export type ConnectionState = {
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const { teamUuid } = params;
   if (!teamUuid) throw new Error('No team UUID provided');
-  // TODO: (connections) refine types here so it knows typeDetails is required
+
   const [connections, staticIps] = await Promise.all([
-    apiClient.connections.list({ teamUuid }),
+    apiClient.connections.list(teamUuid),
     connectionClient.staticIps.list(),
   ]);
   return { connections, teamUuid, staticIps };
@@ -63,7 +63,6 @@ export const Component = () => {
       />
       <div className="max-w-lg">
         <Connections
-          // @ts-expect-error TODO: (connections) fix types here
           connections={connections}
           teamUuid={teamUuid}
           staticIps={staticIps}
