@@ -5,15 +5,10 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
 import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
-import BottomBarItem from './BottomBarItem';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { CodeRun, LanguageState } from '@/app/web-workers/languageTypes';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Tooltip, TooltipContent, TooltipProvider } from '@/shared/shadcn/ui/tooltip';
-import StopIcon from '@mui/icons-material/Stop';
-import { TooltipTrigger } from '@radix-ui/react-tooltip';
-import { useEffect, useState } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +17,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipProvider } from '@/shared/shadcn/ui/tooltip';
+import MemoryIcon from '@mui/icons-material/Memory';
+import StopIcon from '@mui/icons-material/Stop';
+import { TooltipTrigger } from '@radix-ui/react-tooltip';
+import { useEffect, useState } from 'react';
+import BottomBarItem from './BottomBarItem';
 
 export const KernelMenu = () => {
   const [disableRunCodeCell, setDisableRunCodeCell] = useState(true);
@@ -68,7 +69,7 @@ export const KernelMenu = () => {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <BottomBarItem title="Kernel Menu" open={open} onClick={() => {}}>
+        <BottomBarItem title="Kernel Menu" open={open} icon={<MemoryIcon fontSize="inherit" />} onClick={() => {}}>
           <div className="text-xs">Kernel</div>
           {running > 0 && (
             <div
