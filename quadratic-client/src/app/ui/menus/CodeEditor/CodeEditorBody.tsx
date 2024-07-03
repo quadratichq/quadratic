@@ -43,7 +43,7 @@ interface Props {
 }
 
 // need to track globally since monaco is a singleton
-let registered : Record<CodeCellLanguage, boolean>= {
+let registered: Record<CodeCellLanguage, boolean> = {
   Formula: false,
   Python: false,
   Javascript: false,
