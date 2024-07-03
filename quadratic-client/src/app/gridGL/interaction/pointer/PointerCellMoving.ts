@@ -212,11 +212,17 @@ export class PointerCellMoving {
         // unsaved content.
         if (pixiAppSettings.unsavedEditorChanges) {
           const state = pixiAppSettings.editorInteractionState;
-          if (state.selectedCellSheet === sheets.sheet.id && intersects.rectanglePoint(rectangle, new Point(state.selectedCell.x, state.selectedCell.y))) {
+          if (
+            state.selectedCellSheet === sheets.sheet.id &&
+            intersects.rectanglePoint(rectangle, new Point(state.selectedCell.x, state.selectedCell.y))
+          ) {
             pixiAppSettings.setEditorInteractionState?.({
               ...pixiAppSettings.editorInteractionState,
               initialCode: pixiAppSettings.unsavedEditorChanges,
-              selectedCell: { x: state.selectedCell.x + this.moving.toColumn - this.moving.column, y: state.selectedCell.y + this.moving.toRow - this.moving.row },
+              selectedCell: {
+                x: state.selectedCell.x + this.moving.toColumn - this.moving.column,
+                y: state.selectedCell.y + this.moving.toRow - this.moving.row,
+              },
             });
           }
         }
