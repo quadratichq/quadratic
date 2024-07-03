@@ -6,6 +6,7 @@ import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
+import { ApiError } from '../../utils/ApiError';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -20,7 +21,23 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
   const {
     params: { uuid },
   } = parseRequest(req, schema);
-  const { connection } = await getConnection({ uuid, userId });
+  const {
+    connection,
+    team: {
+      userMakingRequest: { permissions: teamPermissions },
+    },
+  } = await getConnection({ uuid, userId });
+
+  // Do you have permission?
+  if (!teamPermissions.includes('TEAM_EDIT')) {
+    throw new ApiError(403, 'You do not have permission to view this connection');
+  }
+
+  // TODO: (connections) fix types
+  // @ts-expect-error
+  const typeDetails = JSON.parse(connection.typeDetails);
+
+  const typeDetailsDesensitized = removeSensitiveInfoFromTypeDetails(connection.type, typeDetails);
 
   return res.status(200).json({
     uuid: connection.uuid,
@@ -28,8 +45,16 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
     type: connection.type,
     createdDate: connection.createdDate.toISOString(),
     updatedDate: connection.updatedDate.toISOString(),
-    // TODO: (connections) fix types
-    // @ts-expect-error
-    typeDetails: JSON.parse(connection.typeDetails),
+    typeDetails: typeDetailsDesensitized,
   });
+}
+
+function removeSensitiveInfoFromTypeDetails(type: string, typeDetails: Record<string, unknown>) {
+  if (type === 'POSTGRES' || type === 'MYSQL') {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...rest } = typeDetails;
+    return rest;
+  }
+
+  throw new ApiError(500, 'Unknown connection type');
 }

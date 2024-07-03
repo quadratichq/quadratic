@@ -66,7 +66,7 @@ export function ConnectionFormTypePostgres({
   return (
     <>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2" autoComplete="off">
           <FormField
             control={form.control}
             name="name"
