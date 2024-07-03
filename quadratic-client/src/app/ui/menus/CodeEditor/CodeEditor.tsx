@@ -280,8 +280,7 @@ export const CodeEditor = () => {
       }
     } else if (mode === 'Connection') {
       if (connectionState === 'running') {
-        console.log('Canceling connection execution');
-        const language: CodeCellLanguage = { Connection: { kind: 'POSTGRES', id: '' } };
+        const language: CodeCellLanguage = { Connection: {} as any };
         quadraticCore.sendCancelExecution(language);
       }
     }

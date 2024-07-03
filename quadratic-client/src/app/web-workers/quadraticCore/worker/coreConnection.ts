@@ -102,7 +102,15 @@ Total Time: ${headers.get('elapsed-total-ms')} ms`;
   };
 
   cancelExecution() {
-    this.controller.abort();
+    try {
+      this.controller.abort();
+    } catch (error: any) {
+      // handle the non-abort error only
+      if (error.name !== 'AbortError') {
+        throw error;
+      }
+    }
+
     this.controller = new AbortController();
     this.sendConnectionState('ready');
   }

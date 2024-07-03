@@ -158,9 +158,8 @@ export const KernelMenu = () => {
             <DropdownMenuLabel>Javascript</DropdownMenuLabel>
           </>
         )}
-        {/* TODO(ddimaria): implement */}
-        {/* {connectionCodeRunning && (
-          <DropdownMenuItem onClick={quadraticCore.cancelExecution}>
+        {connectionCodeRunning && (
+          <DropdownMenuItem onClick={() => quadraticCore.sendCancelExecution({ Connection: {} as any })}>
             <TooltipProvider>
               <Tooltip>
                 <TooltipContent>Stop running cell</TooltipContent>
@@ -177,7 +176,7 @@ export const KernelMenu = () => {
               </Tooltip>
             </TooltipProvider>
           </DropdownMenuItem>
-        )} */}
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           disabled={disableRunCodeCell}
