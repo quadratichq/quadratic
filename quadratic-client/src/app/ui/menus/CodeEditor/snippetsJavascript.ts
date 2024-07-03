@@ -2,10 +2,15 @@ const snippets = [
   {
     label: 'Read data from the sheet',
     keywords: 'reference cells',
-    code: `// Reference a single value from the sheet; replace x,y with coordinates
-let single_cell_data = await cell(x, y);
+    code: `x1 = 0;
+y1 = 0;
+x2 = 0;
+y2 = 0;
 
-// Or reference a range of cells (returns an array), replace x's and y's with coordinates
+// Reference a single value from the sheet
+let single_cell_data = await cell(x1, y1);
+
+// Reference a range of cells (returns an array)
 let range_data = await cells(x1, y1, x2, y2);
 
 // Reference cell or range of cells in another sheet
