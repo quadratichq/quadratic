@@ -99,8 +99,14 @@ impl Spanned<AstNodeContents> {
 
 impl Formula {
     /// Evaluates a formula.
-    pub fn eval(&self, ctx: &mut Ctx<'_>, only_parse: bool) -> CodeResult<Value> {
-        self.ast.eval(ctx, only_parse)?.into_non_error_value()
+    pub fn eval(&self, ctx: &mut Ctx<'_>) -> CodeResult<Value> {
+        self.ast.eval(ctx, false)?.into_non_error_value()
+    }
+
+    /// Checks the syntax of a formula.
+    pub fn check_syntax(&self, ctx: &mut Ctx<'_>) -> CodeResult<()> {
+        self.ast.eval(ctx, true)?;
+        Ok(())
     }
 }
 
