@@ -55,7 +55,7 @@ import {
   textFormatIncreaseDecimalPlaces,
   textFormatSetCurrency,
   textFormatSetExponential,
-  textFormatSetPercentage
+  textFormatSetPercentage,
 } from '@/app/ui/menus/TopBar/SubMenus/formatCells';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { Divider, IconButton, Toolbar } from '@mui/material';
@@ -410,7 +410,7 @@ export const FloatingContextMenu = (props: Props) => {
             <div>
               <TooltipHint title="Text wrap">
                 <IconButton size="small">
-                <TextOverflowIcon style={{ width: '20px', height: '20px' }} />
+                  <TextOverflowIcon style={{ width: '20px', height: '20px' }} />
                   <ExpandMoreIcon fontSize={'inherit'} style={{ fontSize: '12px' }} />
                 </IconButton>
               </TooltipHint>

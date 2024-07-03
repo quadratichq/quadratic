@@ -6,8 +6,8 @@ import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
-import { editor } from 'monaco-editor';
 import * as monaco from 'monaco-editor';
+import { editor } from 'monaco-editor';
 import DefaultEditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import TsEditorWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 
@@ -89,8 +89,10 @@ class InlineEditorMonaco {
     this.editor.focus();
   };
 
-  // Resizes the Monaco editor and returns the width.
-  resize = (
+  // Resizes the editor to the given width and height,
+  // and sets the text alignment and wrap.
+  // Returns the final width and height of the editor.
+  updateTextLayout = (
     width: number,
     height: number,
     textAlign: CellAlign,

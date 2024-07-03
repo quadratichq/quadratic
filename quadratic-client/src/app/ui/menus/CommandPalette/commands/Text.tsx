@@ -55,31 +55,21 @@ const commands: CommandGroup = {
       label: 'Left align',
       isAvailable: hasPermissionToEditFile,
       Component: (props) => {
-        return (
-          <CommandPaletteListItem {...props} icon={<TextAlignLeftIcon />} action={() => setAlign('left')} />
-        );
+        return <CommandPaletteListItem {...props} icon={<TextAlignLeftIcon />} action={() => setAlign('left')} />;
       },
     },
     {
       label: 'Center align',
       isAvailable: hasPermissionToEditFile,
       Component: (props) => {
-        return (
-          <CommandPaletteListItem
-            {...props}
-            icon={<TextAlignCenterIcon />}
-            action={() => setAlign('center')}
-          />
-        );
+        return <CommandPaletteListItem {...props} icon={<TextAlignCenterIcon />} action={() => setAlign('center')} />;
       },
     },
     {
       label: 'Right align',
       isAvailable: hasPermissionToEditFile,
       Component: (props) => {
-        return (
-          <CommandPaletteListItem {...props} icon={<TextAlignRightIcon />} action={() => setAlign('right')} />
-        );
+        return <CommandPaletteListItem {...props} icon={<TextAlignRightIcon />} action={() => setAlign('right')} />;
       },
     },
     {

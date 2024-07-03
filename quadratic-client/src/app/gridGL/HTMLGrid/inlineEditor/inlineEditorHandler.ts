@@ -290,7 +290,7 @@ class InlineEditorHandler {
   updateMonacoCellLayout = () => {
     if (!this.div || !this.cellOffsets || !this.location) return;
 
-    const { width, height } = inlineEditorMonaco.resize(
+    const { width, height } = inlineEditorMonaco.updateTextLayout(
       this.cellOffsets.width - CURSOR_THICKNESS * 2,
       this.cellOffsets.height - 4,
       this.renderCell?.align ?? 'left',

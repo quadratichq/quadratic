@@ -32,7 +32,7 @@ import {
   setItalic,
   setTextColor,
   setVerticalAlign,
-  setWrap
+  setWrap,
 } from '../formatCells';
 import './formatMenuStyles.scss';
 import { useGetBorderMenu } from './useGetBorderMenu';
