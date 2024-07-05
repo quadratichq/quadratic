@@ -142,10 +142,10 @@ pub struct Connection {
 #[serde(rename_all = "camelCase")]
 pub struct TypeDetails {
     pub host: String,
-    pub port: String,
-    pub username: String,
-    pub password: String,
-    pub database: String,
+    pub port: Option<String>,
+    pub username: Option<String>,
+    pub password: Option<String>,
+    pub database: Option<String>,
 }
 
 /// Retrieve user's connection from the quadratic API server.
