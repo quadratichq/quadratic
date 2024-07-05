@@ -43,6 +43,19 @@ export class Cursor extends Graphics {
     this.cursorRectangle = new Rectangle();
   }
 
+  get codeEditorColor(): number {
+    switch (pixiAppSettings.editorInteractionState.mode) {
+      case 'Python':
+        return colors.cellColorUserPython;
+      case 'Formula':
+        return colors.cellColorUserFormula;
+      case 'Javascript':
+        return colors.cellColorUserJavascript;
+      default:
+        return colors.independence;
+    }
+  }
+
   // draws cursor for current user
   private drawCursor() {
     const sheet = sheets.sheet;
@@ -168,12 +181,11 @@ export class Cursor extends Graphics {
       // have cursor color match code editor mode
       let color = colors.cursorCell;
       if (
-        inlineEditorHandler.getShowing(cell.x, cell.y) ||
-        (editorInteractionState.showCodeEditor &&
-          editor_selected_cell.x === cell.x &&
-          editor_selected_cell.y === cell.y)
+        editorInteractionState.showCodeEditor &&
+        editor_selected_cell.x === cell.x &&
+        editor_selected_cell.y === cell.y
       )
-        color = colors.cursorCell;
+        color = this.codeEditorColor;
       this.beginFill(color).drawShape(this.indicator).endFill();
     }
   }
@@ -192,14 +204,7 @@ export class Cursor extends Graphics {
         return;
       }
       offsets = sheets.sheet.getCellOffsets(cell.x, cell.y);
-      color =
-        editorInteractionState.mode === 'Python'
-          ? colors.cellColorUserPython
-          : editorInteractionState.mode === 'Formula'
-          ? colors.cellColorUserFormula
-          : editorInteractionState.mode === 'Javascript'
-          ? colors.cellColorUserJavascript
-          : colors.independence;
+      color = this.codeEditorColor;
     }
     if (!color || !offsets) return;
     this.lineStyle({
@@ -208,6 +213,10 @@ export class Cursor extends Graphics {
       alignment: 0.5,
     });
     this.drawRect(offsets.x, offsets.y, offsets.width, offsets.height);
+    const indicatorSize = hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions)
+      ? Math.max(INDICATOR_SIZE / pixiApp.viewport.scale.x, 4)
+      : 0;
+    this.indicator.width = this.indicator.height = indicatorSize;
   }
 
   // Besides the dirty flag, we also need to update the cursor when the viewport
