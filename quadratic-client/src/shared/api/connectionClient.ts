@@ -11,8 +11,8 @@ const jwtHeader = async (): Promise<HeadersInit> => {
   return { 'content-type': 'application/json', authorization: `Bearer ${jwt}` };
 };
 
-// TODO: (connections) these should come from the connection service definition for these endpoints
-// but for now, they are defined here
+// TODO: these should come from the connection service definition for these
+// endpoints but for now, they are defined here
 const TestSchema = z.object({ connected: z.boolean(), message: z.string().nullable() });
 export type TestConnectionResponse = z.infer<typeof TestSchema>;
 const SqlSchema = z.object({
