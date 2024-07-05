@@ -1,4 +1,8 @@
-import { DOCUMENTATION_CONNECTIONS_URL, TRUST_CENTER } from '@/shared/constants/urls';
+import {
+  DOCUMENTATION_CONNECTIONS_IP_LIST_URL,
+  DOCUMENTATION_CONNECTIONS_URL,
+  TRUST_CENTER,
+} from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { CopyIcon, ExternalLinkIcon } from '@radix-ui/react-icons';
@@ -24,7 +28,9 @@ export const ConnectionsSidebar = ({ staticIps }: { staticIps: string[] | null }
       {staticIpsContent && (
         <SidebarItem
           title="IP allow-list"
-          description="Data behind a firewall may require you explicitly allow our IP addresses. Add these to your allow-list:"
+          description="Data behind a firewall may require you explicitly allow our IP addresses."
+          linkText="Learn more"
+          linkHref={DOCUMENTATION_CONNECTIONS_IP_LIST_URL}
         >
           <pre className="relative mt-2 bg-accent px-3 py-2">
             <SidebarCopyButton contentToCopy={staticIpsContent} />
@@ -44,7 +50,7 @@ function SidebarItem({ title, description, linkText, linkHref, children }: any) 
         {linkText && linkHref && (
           <p className="inline hover:text-primary">
             {' '}
-            <a href={linkHref} className="underline ">
+            <a href={linkHref} target="_blank" rel="noreferrer" className="underline ">
               {linkText}
             </a>{' '}
             <ExternalLinkIcon className="inline" />
