@@ -159,7 +159,7 @@ export const CodeEditorHeader = (props: Props) => {
           </TooltipHint>
         )}
         {hasPermission && ['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
-        {hasPermission && ['Python', 'Javascript', 'Connection'].includes(language as string) && <SnippetsPopover />}
+        {hasPermission && ['Python', 'Javascript'].includes(language as string) && <SnippetsPopover />}
         {hasPermission &&
           (!isRunningComputation ? (
             <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
