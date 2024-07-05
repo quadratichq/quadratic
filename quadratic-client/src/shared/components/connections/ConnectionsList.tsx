@@ -1,7 +1,11 @@
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { connectionsByType } from '@/app/ui/connections/data';
 import { Type } from '@/shared/components/Type';
-import { ConnectionsListConnection } from '@/shared/components/connections/Connections';
+import {
+  ConnectionsListConnection,
+  NavigateToCreateView,
+  NavigateToEditView,
+} from '@/shared/components/connections/Connections';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
@@ -14,8 +18,8 @@ import { useState } from 'react';
 type Props = {
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
-  handleNavigateToCreateView: (type: ConnectionType) => void;
-  handleNavigateToEditView: (connectionUuid: string) => void;
+  handleNavigateToCreateView: NavigateToCreateView;
+  handleNavigateToEditView: NavigateToEditView;
 };
 
 export const ConnectionsList = ({
@@ -113,7 +117,7 @@ function ListItems({
       {filteredItems.map(({ uuid, name, type, createdDate, disabled }, i) => (
         <button
           onClick={() => {
-            handleNavigateToEditView(uuid);
+            handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
           }}
           disabled={disabled}
           key={uuid}
