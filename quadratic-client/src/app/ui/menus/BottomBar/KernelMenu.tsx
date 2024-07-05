@@ -152,10 +152,10 @@ export const KernelMenu = () => {
             </TooltipProvider>
           </DropdownMenuItem>
         )}
-        {javascriptCodeRunning && (
+        {connectionCodeRunning && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel>Javascript</DropdownMenuLabel>
+            <DropdownMenuLabel>Connection</DropdownMenuLabel>
           </>
         )}
         {connectionCodeRunning && (

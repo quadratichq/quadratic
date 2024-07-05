@@ -1,14 +1,8 @@
-import { SheetPosTS } from '@/app/gridGL/types/size';
+import { CodeRun } from '@/app/web-workers/CodeRun';
 
 export interface PythonClientLoadError {
   type: 'pythonClientLoadError';
   error?: string;
-}
-
-export interface CodeRun {
-  transactionId: string;
-  sheetPos: SheetPosTS;
-  code: string;
 }
 
 export interface PythonClientState {

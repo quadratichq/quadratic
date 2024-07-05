@@ -73,7 +73,6 @@ export const CodeEditorBody = (props: Props) => {
 
   useEffect(() => {
     const insertText = (text: string) => {
-      debugger;
       if (!editorRef.current) return;
       const position = editorRef.current.getPosition();
       const model = editorRef.current.getModel();
@@ -228,7 +227,8 @@ export const CodeEditorBody = (props: Props) => {
           showUnused: language === 'Javascript' ? false : true,
         }}
       />
-      {['python', 'javascript', 'pgsql'].includes(monacoLanguage as string) && (
+      {/* TODO(ddimaria): this can be brittle, consider checking for just non-formula */}
+      {['python', 'javascript', 'pgsql', 'mysql'].includes(monacoLanguage as string) && (
         <CodeEditorPlaceholder editorContent={editorContent} setEditorContent={setEditorContent} />
       )}
     </div>
