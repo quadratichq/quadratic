@@ -107,20 +107,12 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
               Examples
             </SidebarNavLink>
           )}
-          <SidebarNavLink
-            to={DOCUMENTATION_URL}
-            target="_blank"
-            className="group text-muted-foreground hover:text-foreground"
-          >
-            <ExternalLinkIcon className={cn(classNameIcons, 'opacity-70 group-hover:text-foreground')} />
+          <SidebarNavLink to={DOCUMENTATION_URL} target="_blank">
+            <ExternalLinkIcon className={classNameIcons} />
             Docs
           </SidebarNavLink>
-          <SidebarNavLink
-            to={CONTACT_URL}
-            target="_blank"
-            className="group text-muted-foreground hover:text-foreground"
-          >
-            <ExternalLinkIcon className={cn(classNameIcons, 'opacity-70 group-hover:text-foreground')} />
+          <SidebarNavLink to={CONTACT_URL} target="_blank">
+            <ExternalLinkIcon className={classNameIcons} />
             Contact us
           </SidebarNavLink>
         </div>
@@ -174,7 +166,7 @@ function SidebarNavLinkCreateButton({ to }: { to: string }) {
             </Link>
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Create new</TooltipContent>
+        <TooltipContent>Create file</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
