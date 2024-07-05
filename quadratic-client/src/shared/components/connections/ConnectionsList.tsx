@@ -1,11 +1,11 @@
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
-import { connectionsByType } from '@/app/ui/connections/data';
 import { Type } from '@/shared/components/Type';
 import {
   ConnectionsListConnection,
   NavigateToCreateView,
   NavigateToEditView,
 } from '@/shared/components/connections/Connections';
+import { connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
@@ -32,7 +32,6 @@ export const ConnectionsList = ({
 
   return (
     <>
-      {/* <p className="text-sm text-muted-foreground">Connetions let you pull outside data into your spreadsheets</p> */}
       <div className="grid gap-4">
         <div className="grid grid-cols-2 gap-4">
           {Object.entries(connectionsByType).map(([type, { Logo }], i) => (

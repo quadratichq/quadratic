@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
-import { SchemaViewer } from '@/app/ui/connections/SchemaViewer';
+import { SchemaViewer } from '@/app/ui/components/SchemaViewer';
 import { AiAssistant } from '@/app/ui/menus/CodeEditor/AiAssistant';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { PanelBox, calculatePanelBoxMinimizedSize } from '@/app/ui/menus/CodeEditor/panels/PanelBox';

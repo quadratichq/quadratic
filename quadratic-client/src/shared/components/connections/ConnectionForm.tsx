@@ -1,12 +1,11 @@
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { getCreateConnectionAction, getUpdateConnectionAction } from '@/routes/_api.connections';
-import { ConnectionFormTypeMysql } from '@/shared/components/connections/ConnectionFormTypeMysql';
+import { connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect } from 'react';
 import { useFetcher, useSubmit } from 'react-router-dom';
-import { ConnectionFormTypePostgres } from './ConnectionFormTypePostgres';
 
 type ConnectionFormData = {
   name: string;
@@ -101,33 +100,15 @@ export function ConnectionFormEdit({
 }
 
 function ConnectionForm({ type, props }: { type: ConnectionType; props: ConnectionFormProps }) {
-  switch (type) {
-    case 'POSTGRES':
-      return <ConnectionFormTypePostgres {...props} />;
-    case 'MYSQL':
-      return <ConnectionFormTypeMysql {...props} />;
-    default:
-      // This should never happen. Log to sentry?
-      throw new Error('Unknown form type');
-  }
+  const { Form } = connectionsByType[type];
+  return <Form {...props} />;
 }
 
 function ConnectionFormHeader({ type, children }: { type: ConnectionType; children: React.ReactNode }) {
+  const { name } = connectionsByType[type];
   return (
     <h3 className="text-md flex gap-3 py-4">
-      <LanguageIcon language={type} /> {children} {getTypeDisplayName(type)} connection
+      <LanguageIcon language={type} /> {children} {name} connection
     </h3>
   );
-}
-
-function getTypeDisplayName(type: ConnectionType) {
-  switch (type) {
-    case 'POSTGRES':
-      return 'Postgres';
-    case 'MYSQL':
-      return 'MySQL';
-    default:
-      // This should never happen. Log to sentry?
-      throw new Error('Unknown type');
-  }
 }
