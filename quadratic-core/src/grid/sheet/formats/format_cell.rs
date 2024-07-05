@@ -135,7 +135,11 @@ mod tests {
     use serial_test::serial;
 
     use crate::{
-        grid::{formats::Formats, js_types::JsRenderCell, CellAlign},
+        grid::{
+            formats::Formats,
+            js_types::{JsNumber, JsRenderCell},
+            CellAlign,
+        },
         wasm_bindings::js::{expect_js_call, hash_test},
     };
 
@@ -224,6 +228,7 @@ mod tests {
             value: "5".to_string(),
             align: Some(CellAlign::Right),
             bold: Some(true),
+            number: Some(JsNumber::default()),
             ..Default::default()
         }])
         .unwrap();
@@ -237,6 +242,7 @@ mod tests {
             y: pos.y,
             value: "5".to_string(),
             align: Some(CellAlign::Right),
+            number: Some(JsNumber::default()),
             ..Default::default()
         }])
         .unwrap();

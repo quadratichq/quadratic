@@ -29,8 +29,8 @@ impl Sheet {
         &self,
         cell_value: &CellValue,
         query: &String,
-        column: Option<&Column>,
-        pos: Pos,
+        _column: Option<&Column>,
+        _pos: Pos,
         case_sensitive: bool,
         whole_cell: bool,
         search_code: bool,
@@ -50,22 +50,22 @@ impl Sheet {
             }
             CellValue::Number(n) => {
                 // first test against unformatted number
-                if n.to_string() == *query || (!whole_cell && n.to_string().contains(query)) {
-                    true
-                } else {
-                    // test against any formatting applied to the number
-                    if let Some(column) = column.map_or(self.get_column(pos.x), Some) {
-                        // compare the number using its display value (eg, $ or % or commas)
-                        let numeric_format = column.numeric_format.get(pos.y);
-                        let numeric_decimals = column.numeric_decimals.get(pos.y);
-                        let numeric_commas = column.numeric_commas.get(pos.y);
-                        let display =
-                            cell_value.to_display(numeric_format, numeric_decimals, numeric_commas);
-                        display == *query || (!whole_cell && display.contains(query))
-                    } else {
-                        false
-                    }
-                }
+                n.to_string() == *query || (!whole_cell && n.to_string().contains(query))
+                // todo: we can no longer do this as we don't know the actual number rendering; only the renderer knows that
+                // else {
+                //     // test against any formatting applied to the number
+                //     if let Some(column) = column.map_or(self.get_column(pos.x), Some) {
+                //         // compare the number using its display value (eg, $ or % or commas)
+                //         let numeric_format = column.numeric_format.get(pos.y);
+                //         let numeric_decimals = column.numeric_decimals.get(pos.y);
+                //         let numeric_commas = column.numeric_commas.get(pos.y);
+                //         let display =
+                //             cell_value.to_display(numeric_format, numeric_decimals, numeric_commas);
+                //         display == *query || (!whole_cell && display.contains(query))
+                //     } else {
+                //         false
+                //     }
+                // }
             }
             CellValue::Logical(b) => {
                 let query = query.to_lowercase();

@@ -93,7 +93,7 @@ mod tests {
             active_transactions::pending_transaction::PendingTransaction, GridController,
         },
         grid::{
-            js_types::{JsRenderCell, JsRenderCellSpecial},
+            js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial},
             CellAlign, CodeCellLanguage, CodeRun, CodeRunResult,
         },
         Array, CellValue, Pos, Rect, SheetPos, Value,
@@ -104,14 +104,8 @@ mod tests {
             x,
             y,
             language: Some(CodeCellLanguage::Formula),
-            value: "".into(),
-            align: None,
-            vertical_align: None,
-            wrap: None,
-            bold: None,
-            italic: None,
-            text_color: None,
             special: Some(JsRenderCellSpecial::SpillError),
+            ..Default::default()
         }]
     }
 
@@ -127,12 +121,8 @@ mod tests {
             language,
             value: n.into(),
             align: Some(CellAlign::Right),
-            vertical_align: None,
-            wrap: None,
-            bold: None,
-            italic: None,
-            text_color: None,
-            special: None,
+            number: Some(JsNumber::default()),
+            ..Default::default()
         }]
     }
 
@@ -282,7 +272,7 @@ mod tests {
     }
 
     #[test]
-    fn test_check_spills_over_code() {
+    fn check_spills_over_code() {
         let mut gc = GridController::default();
         let sheet_id = gc.grid.sheet_ids()[0];
 

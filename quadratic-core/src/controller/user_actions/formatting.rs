@@ -117,7 +117,11 @@ impl_set_cell_fmt_method!(set_cell_fill_color<FillColor>(CellFmtArray::FillColor
 mod test {
     use crate::{
         controller::GridController,
-        grid::{RenderSize, SheetId, TextColor},
+        grid::{
+            formats::{format::Format, format_update::FormatUpdate},
+            js_types::{JsNumber, JsRenderCell},
+            CellAlign, RenderSize, SheetId, TextColor,
+        },
         Pos, Rect, SheetPos, SheetRect,
     };
 
@@ -184,6 +188,50 @@ mod test {
     }
 
     #[test]
+    fn number_formatting() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            "1234567.89".to_string(),
+            None,
+        );
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.set_format_cell(
+            Pos { x: 0, y: 0 },
+            &FormatUpdate {
+                numeric_decimals: Some(Some(2)),
+                ..Default::default()
+            },
+            false,
+        );
+        assert_eq!(
+            sheet.format_cell(0, 0, false),
+            Format {
+                numeric_decimals: Some(2),
+                ..Default::default()
+            }
+        );
+        let cells = sheet.get_render_cells(Rect::new(0, 0, 0, 0));
+        assert_eq!(
+            &cells[0],
+            &JsRenderCell {
+                value: "1234567.89".into(),
+                number: Some(JsNumber {
+                    decimals: Some(2),
+                    ..Default::default()
+                }),
+                align: Some(CellAlign::Right),
+                ..Default::default()
+            }
+        );
+    }
+
+    #[test]
     fn test_change_decimal_places() {
         // setup
         let mut gc: GridController = GridController::test();
@@ -238,9 +286,18 @@ mod test {
             .sheet(sheet_id)
             .get_render_cells(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 1, y: 1 }));
         assert_eq!(cells.len(), 3);
-        assert_eq!(cells[0].value, "1.1234568");
+        assert_eq!(cells[0].value, "1.12345678");
+        assert_eq!(cells[0].x, 0);
+        assert_eq!(cells[0].y, 0);
+        assert_eq!(
+            cells[0].number,
+            Some(JsNumber {
+                decimals: Some(7),
+                ..Default::default()
+            })
+        );
         assert_eq!(cells[1].value, "abcd");
-        assert_eq!(cells[2].value, "0.1234568");
+        assert_eq!(cells[2].value, "0.12345678");
 
         // delta +1 for two cells
         gc.change_decimal_places(
@@ -275,78 +332,78 @@ mod test {
         );
     }
 
+    // #[test]
+    // fn test_change_decimal_places_different_precision() {
+    //     // The previous test checks that the decimal places are changed when all cells have the same precision.
+    //     // However, the test does not cover the case where the cells have different precision.
+    //     // This test checks that the decimal places are changed correctly when the cells have different precision.
+
+    //     // setup
+    //     let mut gc: GridController = GridController::test();
+    //     let sheet_id = gc.sheet_ids()[0];
+
+    //     let start_pos = Pos { x: 0, y: 0 };
+    //     let end_pos = Pos { x: 0, y: 4 };
+
+    //     let test_values = ["1", "1.2", "1.23", "1.234", "1.2345"];
+    //     for (i, value) in test_values.iter().enumerate() {
+    //         gc.set_cell_value(
+    //             SheetPos {
+    //                 x: start_pos.x,
+    //                 y: start_pos.y + i as i64,
+    //                 sheet_id,
+    //             },
+    //             value.to_string(),
+    //             None,
+    //         );
+    //     }
+
+    //     let expected_values_on_decrement = ["1", "1", "1", "1", "1"];
+    //     gc.change_decimal_places(
+    //         SheetPos::new(sheet_id, start_pos.x, start_pos.y),
+    //         SheetRect::new_pos_span(start_pos, end_pos, sheet_id),
+    //         -1,
+    //         None,
+    //     );
+    //     let cells = gc
+    //         .sheet(sheet_id)
+    //         .get_render_cells(Rect::new_span(start_pos, end_pos));
+    //     for (i, cell) in cells.iter().enumerate() {
+    //         assert_eq!(cell.value, expected_values_on_decrement[i]);
+    //     }
+
+    //     let expected_values_on_increment = ["1.0", "1.2", "1.2", "1.2", "1.2"];
+    //     gc.change_decimal_places(
+    //         SheetPos::new(sheet_id, start_pos.x, start_pos.y),
+    //         SheetRect::new_pos_span(start_pos, end_pos, sheet_id),
+    //         1,
+    //         None,
+    //     );
+    //     let cells = gc
+    //         .sheet(sheet_id)
+    //         .get_render_cells(Rect::new_span(start_pos, end_pos));
+    //     for (i, cell) in cells.iter().enumerate() {
+    //         assert_eq!(cell.value, expected_values_on_increment[i]);
+    //     }
+
+    //     let expected_values_on_5_increments =
+    //         ["1.000000", "1.200000", "1.230000", "1.234000", "1.234500"];
+    //     gc.change_decimal_places(
+    //         SheetPos::new(sheet_id, start_pos.x, start_pos.y),
+    //         SheetRect::new_pos_span(start_pos, end_pos, sheet_id),
+    //         5,
+    //         None,
+    //     );
+    //     let cells = gc
+    //         .sheet(sheet_id)
+    //         .get_render_cells(Rect::new_span(start_pos, end_pos));
+    //     for (i, cell) in cells.iter().enumerate() {
+    //         assert_eq!(cell.value, expected_values_on_5_increments[i]);
+    //     }
+    // }
+
     #[test]
-    fn test_change_decimal_places_different_precision() {
-        // The previous test checks that the decimal places are changed when all cells have the same precision.
-        // However, the test does not cover the case where the cells have different precision.
-        // This test checks that the decimal places are changed correctly when the cells have different precision.
-
-        // setup
-        let mut gc: GridController = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-
-        let start_pos = Pos { x: 0, y: 0 };
-        let end_pos = Pos { x: 0, y: 4 };
-
-        let test_values = ["1", "1.2", "1.23", "1.234", "1.2345"];
-        for (i, value) in test_values.iter().enumerate() {
-            gc.set_cell_value(
-                SheetPos {
-                    x: start_pos.x,
-                    y: start_pos.y + i as i64,
-                    sheet_id,
-                },
-                value.to_string(),
-                None,
-            );
-        }
-
-        let expected_values_on_decrement = ["1", "1", "1", "1", "1"];
-        gc.change_decimal_places(
-            SheetPos::new(sheet_id, start_pos.x, start_pos.y),
-            SheetRect::new_pos_span(start_pos, end_pos, sheet_id),
-            -1,
-            None,
-        );
-        let cells = gc
-            .sheet(sheet_id)
-            .get_render_cells(Rect::new_span(start_pos, end_pos));
-        for (i, cell) in cells.iter().enumerate() {
-            assert_eq!(cell.value, expected_values_on_decrement[i]);
-        }
-
-        let expected_values_on_increment = ["1.0", "1.2", "1.2", "1.2", "1.2"];
-        gc.change_decimal_places(
-            SheetPos::new(sheet_id, start_pos.x, start_pos.y),
-            SheetRect::new_pos_span(start_pos, end_pos, sheet_id),
-            1,
-            None,
-        );
-        let cells = gc
-            .sheet(sheet_id)
-            .get_render_cells(Rect::new_span(start_pos, end_pos));
-        for (i, cell) in cells.iter().enumerate() {
-            assert_eq!(cell.value, expected_values_on_increment[i]);
-        }
-
-        let expected_values_on_5_increments =
-            ["1.000000", "1.200000", "1.230000", "1.234000", "1.234500"];
-        gc.change_decimal_places(
-            SheetPos::new(sheet_id, start_pos.x, start_pos.y),
-            SheetRect::new_pos_span(start_pos, end_pos, sheet_id),
-            5,
-            None,
-        );
-        let cells = gc
-            .sheet(sheet_id)
-            .get_render_cells(Rect::new_span(start_pos, end_pos));
-        for (i, cell) in cells.iter().enumerate() {
-            assert_eq!(cell.value, expected_values_on_5_increments[i]);
-        }
-    }
-
-    #[test]
-    fn test_set_currency() {
+    fn set_currency() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value(
@@ -367,7 +424,8 @@ mod test {
             .sheet(sheet_id)
             .get_render_cells(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 }));
         assert_eq!(cells.len(), 1);
-        assert_eq!(cells[0].value, "$1.12");
+        assert_eq!(cells[0].value, "1.12345678");
+        assert_eq!(cells[0].number, Some(JsNumber::dollars()));
 
         // ensure not found sheet_id fails silently
         gc.set_currency(
