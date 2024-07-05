@@ -1,8 +1,8 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
-import { CodeRun } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
 import { CircularProgress } from '@mui/material';
 import { useEffect, useState } from 'react';
 import './CodeRunning.css';

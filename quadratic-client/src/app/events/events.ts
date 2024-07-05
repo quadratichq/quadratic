@@ -12,10 +12,10 @@ import {
   SheetBounds,
   SheetInfo,
 } from '@/app/quadratic-core-types';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import { CellEdit, MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
-import { CodeRun } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
 import {
   CoreClientImage,
   CoreClientImportProgress,

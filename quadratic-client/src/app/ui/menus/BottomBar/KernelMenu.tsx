@@ -5,7 +5,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
 import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
-import { CodeRun } from '@/app/web-workers/CodeRun';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';

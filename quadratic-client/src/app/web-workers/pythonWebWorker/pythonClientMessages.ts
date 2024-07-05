@@ -1,4 +1,4 @@
-import { CodeRun } from '@/app/web-workers/CodeRun';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
 
 export interface PythonClientLoadError {
   type: 'pythonClientLoadError';
