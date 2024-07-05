@@ -189,7 +189,7 @@ export const HoverCell = () => {
         position: 'absolute',
         visibility: cell ? 'visible' : 'hidden',
         pointerEvents: 'none',
-        zIndex: 999999,
+        zIndex: 1000,
       }}
     >
       <div style={{ position: 'relative' }}>
