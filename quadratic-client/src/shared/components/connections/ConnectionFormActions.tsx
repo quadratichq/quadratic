@@ -1,5 +1,6 @@
-import { getDeleteConnectionAction } from '@/routes/_api.connections';
+import { getDeleteConnectionAction } from '@/routes/api.connections';
 import { TestConnectionResponse } from '@/shared/api/connectionClient';
+import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { CircularProgress } from '@mui/material';
@@ -108,7 +109,7 @@ export function ConnectionFormActions({
               if (doDelete) {
                 const data = getDeleteConnectionAction(connectionUuid);
                 submit(data, {
-                  action: '/_api/connections',
+                  action: ROUTES.API.CONNECTIONS,
                   method: 'POST',
                   encType: 'application/json',
                   navigate: false,

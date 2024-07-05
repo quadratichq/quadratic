@@ -2,6 +2,7 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { useFileRouteLoaderData } from '@/routes/file.$uuid';
 import { Connections } from '@/shared/components/connections/Connections';
+import { ROUTES } from '@/shared/constants/routes';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { useEffect } from 'react';
 import { useFetcher } from 'react-router-dom';
@@ -20,7 +21,7 @@ export function ConnectionsMenu() {
   // Fetch when this component mounts but only if the user has permission in the current team
   useEffect(() => {
     if (fetcher.state === 'idle' && fetcher.data === undefined && teamPermissions?.includes('TEAM_EDIT')) {
-      fetcher.load(`/_api/connections?team-uuid=${teamUuid}`);
+      fetcher.load(`${ROUTES.API.CONNECTIONS}?team-uuid=${teamUuid}`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

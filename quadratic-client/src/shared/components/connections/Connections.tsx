@@ -1,4 +1,4 @@
-import { CreateConnectionAction, DeleteConnectionAction, UpdateConnectionAction } from '@/routes/_api.connections';
+import { CreateConnectionAction, DeleteConnectionAction, UpdateConnectionAction } from '@/routes/api.connections';
 import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
 import { ConnectionsList } from '@/shared/components/connections/ConnectionsList';
 import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';

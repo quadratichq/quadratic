@@ -18,7 +18,7 @@ import '../../styles/floating-dialog.css';
 import { colors } from '@/app/theme/colors';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
-import { GetConnections } from '@/routes/_api.connections';
+import { GetConnections } from '@/routes/api.connections';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import {
   CommandDialog,

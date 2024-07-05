@@ -2,7 +2,7 @@ import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { TeamSwitcher } from '@/dashboard/components/TeamSwitcher';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { getActionFileMove } from '@/routes/files.$uuid';
+import { getActionFileMove } from '@/routes/api.files.$uuid';
 import { Type } from '@/shared/components/Type';
 import { TYPE } from '@/shared/constants/appConstants';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
@@ -223,7 +223,7 @@ function SidebarNavLink({
           const data = getActionFileMove(dropTarget);
           submit(data, {
             method: 'POST',
-            action: `/files/${uuid}`,
+            action: ROUTES.API.FILE(uuid),
             encType: 'application/json',
             navigate: false,
             fetcherKey: `move-file:${uuid}`,

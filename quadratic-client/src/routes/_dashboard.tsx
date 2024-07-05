@@ -109,8 +109,10 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
   }
 
   // If this was a request to the root of the app, re-route to the active team
-  if (new URL(request.url).pathname === '/') {
-    return redirect(ROUTES.TEAM(initialActiveTeamUuid));
+  const url = new URL(request.url);
+  if (url.pathname === '/') {
+    // If there are search params, keep 'em
+    return redirect(ROUTES.TEAM(initialActiveTeamUuid) + url.search);
   }
 
   /**

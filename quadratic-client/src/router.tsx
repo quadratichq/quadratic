@@ -29,7 +29,7 @@ export const router = createBrowserRouter(
         <Route path="file">
           {/* Check that the browser is supported _before_ we try to load anything from the API */}
           <Route element={<BrowserCompatibilityLayoutRoute />}>
-            <Route index element={<Navigate to={ROUTES.FILES} replace />} />
+            <Route index element={<Navigate to="/" replace />} />
             <Route
               path=":uuid"
               id={ROUTE_LOADER_IDS.FILE}
@@ -42,25 +42,29 @@ export const router = createBrowserRouter(
         </Route>
 
         <Route loader={protectedRouteLoaderWrapper(async () => null)}>
-          {/* Resource routes (these have no UI)
-              Putting them outside the nested tree lets you hit them directly without having to load other data */}
+          {/* Resource routes: these are accessible via the URL bar, but have no UI
+              Putting these outside the nested tree lets you hit them directly without having to load other data */}
           <Route
-            path={ROUTES.EDUCATION_ENROLL}
+            path="education/enroll"
             loader={async () => {
               // Check their status, then send them to the dashboard with the education dialog
               await apiClient.education.refresh();
-              return redirect(`${ROUTES.FILES}?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.EDUCATION}`);
+              return redirect(`/?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.EDUCATION}`);
             }}
           />
-          <Route path="files/:uuid" lazy={() => import('./routes/files.$uuid')} />
-          <Route path="files/:uuid/sharing" lazy={() => import('./routes/files.$uuid.sharing')} />
           <Route
             path="teams/:teamUuid/files/create"
             lazy={() => import('./routes/teams.$teamUuid.files.create')}
             shouldRevalidate={() => false}
           />
           <Route path="teams" index loader={() => redirect('/')} />
-          <Route path="_api/connections" lazy={() => import('./routes/_api.connections')} />
+
+          {/* API routes: these are used by fetchers but have no UI */}
+          <Route path="api">
+            <Route path="files/:uuid" lazy={() => import('./routes/api.files.$uuid')} />
+            <Route path="files/:uuid/sharing" lazy={() => import('./routes/api.files.$uuid.sharing')} />
+            <Route path="connections" lazy={() => import('./routes/api.connections')} />
+          </Route>
 
           {/* Dashboard UI routes */}
           <Route path="/" id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>

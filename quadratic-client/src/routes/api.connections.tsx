@@ -27,7 +27,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 
   // This should never be reached. If it does, that's a developer bug
-  // TODO: (connections) log to sentry
+  console.error('No `team-uuid` or `connection-uuid` provided');
   return { ok: false };
 };
 

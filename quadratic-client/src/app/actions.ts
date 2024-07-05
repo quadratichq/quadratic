@@ -3,7 +3,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { downloadFile, downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
 import { FileContextType } from '@/app/ui/components/FileProvider';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { getActionFileDuplicate } from '@/routes/files.$uuid';
+import { getActionFileDuplicate } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
@@ -87,7 +87,7 @@ export const duplicateFileAction = {
   isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
   async run({ uuid, submit }: { uuid: string; submit: SubmitFunction }) {
     const data = getActionFileDuplicate({ redirect: true, isPrivate: true });
-    submit(data, { method: 'POST', action: `/files/${uuid}`, encType: 'application/json' });
+    submit(data, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
   },
 };
 
@@ -108,7 +108,7 @@ export const deleteFile = {
     if (window.confirm('Please confirm you want to delete this file.')) {
       try {
         await apiClient.files.delete(uuid);
-        window.location.href = ROUTES.FILES;
+        window.location.href = '/';
       } catch (e) {
         addGlobalSnackbar('Failed to delete file. Try again.', { severity: 'error' });
       }

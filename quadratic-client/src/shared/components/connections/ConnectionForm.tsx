@@ -1,6 +1,7 @@
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
-import { getCreateConnectionAction, getUpdateConnectionAction } from '@/routes/_api.connections';
+import { getCreateConnectionAction, getUpdateConnectionAction } from '@/routes/api.connections';
 import { connectionsByType } from '@/shared/components/connections/connectionsByType';
+import { ROUTES } from '@/shared/constants/routes';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
@@ -32,7 +33,7 @@ export function ConnectionFormCreate({
 
   const handleSubmitForm = (formData: ConnectionFormData) => {
     const data = getCreateConnectionAction(formData, teamUuid);
-    submit(data, { action: '/_api/connections', method: 'POST', encType: 'application/json', navigate: false });
+    submit(data, { action: ROUTES.API.CONNECTIONS, method: 'POST', encType: 'application/json', navigate: false });
     handleNavigateToListView();
   };
 
@@ -63,7 +64,7 @@ export function ConnectionFormEdit({
 
   useEffect(() => {
     if (fetcher.state === 'idle' && fetcher.data === undefined) {
-      fetcher.load(`/_api/connections?connection-uuid=${connectionUuid}`);
+      fetcher.load(`${ROUTES.API.CONNECTIONS}?connection-uuid=${connectionUuid}`);
     }
   }, [fetcher, connectionUuid]);
 
@@ -71,7 +72,7 @@ export function ConnectionFormEdit({
     // Enhancement: if nothing changed, don't submit. Just navigate back
 
     const data = getUpdateConnectionAction(connectionUuid, formData);
-    submit(data, { action: '/_api/connections', method: 'POST', encType: 'application/json', navigate: false });
+    submit(data, { action: ROUTES.API.CONNECTIONS, method: 'POST', encType: 'application/json', navigate: false });
     handleNavigateToListView();
   };
 
