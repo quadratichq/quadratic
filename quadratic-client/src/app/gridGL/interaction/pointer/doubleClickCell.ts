@@ -11,50 +11,27 @@ export function doubleClickCell(options: {
   language?: CodeCellLanguage;
   cell?: string;
 }): void {
-  if (inlineEditorHandler.isEditingFormula()) return;
-
   const { language, cell, column, row } = options;
-  const settings = pixiAppSettings;
-
-  const hasPermission = hasPermissionToEditFile(settings.editorInteractionState.permissions);
-
-  if (!settings.setEditorInteractionState) return;
-
+  if (inlineEditorHandler.isEditingFormula()) return;
   if (multiplayer.cellIsBeingEdited(column, row, sheets.sheet.id)) return;
-
+  const hasPermission = hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions);
   if (language) {
     const formula = language === 'Formula';
-
-    if (settings.editorInteractionState.showCodeEditor) {
-      settings.setEditorInteractionState({
-        ...settings.editorInteractionState,
-        editorEscapePressed: false,
-        showCellTypeMenu: false,
-        waitingForEditorClose: {
-          selectedCell: { x: column, y: row },
-          selectedCellSheet: sheets.sheet.id,
-          mode: language,
-          showCellTypeMenu: !language,
-          inlineEditor: formula,
-        },
-      });
+    if (hasPermission && formula) {
+      pixiAppSettings.changeInput(true, cell);
     } else {
-      if (hasPermission && formula) {
-        settings.changeInput(true, cell);
-      } else {
-        settings.setEditorInteractionState({
-          ...settings.editorInteractionState,
-          showCellTypeMenu: false,
-          showCodeEditor: true,
-          selectedCell: { x: column, y: row },
-          selectedCellSheet: sheets.sheet.id,
-          mode: language,
-          editorEscapePressed: false,
-          waitingForEditorClose: undefined,
-        });
-      }
+      pixiAppSettings.setEditorInteractionState?.({
+        ...pixiAppSettings.editorInteractionState,
+        showCellTypeMenu: false,
+        showCodeEditor: true,
+        selectedCell: { x: column, y: row },
+        selectedCellSheet: sheets.sheet.id,
+        mode: language,
+        editorEscapePressed: false,
+        waitingForEditorClose: undefined,
+      });
     }
   } else if (hasPermission) {
-    settings.changeInput(true, cell);
+    pixiAppSettings.changeInput(true, cell);
   }
 }
