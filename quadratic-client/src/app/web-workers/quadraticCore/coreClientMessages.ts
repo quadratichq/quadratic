@@ -756,6 +756,7 @@ export interface CoreClientUpdateCodeCell {
 export interface ClientCoreImportExcel {
   type: 'clientCoreImportExcel';
   file: File;
+  cursor?: string;
   id: number;
 }
 

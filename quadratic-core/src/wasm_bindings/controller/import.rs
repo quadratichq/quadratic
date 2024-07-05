@@ -30,11 +30,30 @@ impl GridController {
 #[wasm_bindgen]
 impl GridController {
     #[wasm_bindgen(js_name = "importExcel")]
-    pub fn js_import_excel(file: Vec<u8>, file_name: &str) -> Result<GridController, JsValue> {
+    pub fn js_import_excel(
+        &mut self,
+        file: Vec<u8>,
+        file_name: &str,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        self.import_excel(file, file_name, cursor)
+            .map_err(|e| e.to_string())?;
+
+        Ok(())
+    }
+}
+
+#[wasm_bindgen]
+impl GridController {
+    #[wasm_bindgen(js_name = "importExcelNewFile")]
+    pub fn js_import_excel_new_file(
+        file: Vec<u8>,
+        file_name: &str,
+    ) -> Result<GridController, JsValue> {
         let grid = Grid::new_blank();
         let mut grid_controller = GridController::from_grid(grid, 0);
         grid_controller
-            .import_excel(file, file_name)
+            .import_excel(file, file_name, None)
             .map_err(|e| e.to_string())?;
 
         Ok(grid_controller)

@@ -21,9 +21,18 @@ impl GridController {
     /// Imports an Excel file into the grid.
     ///
     /// Returns a [`TransactionSummary`].
-    pub fn import_excel(&mut self, file: Vec<u8>, file_name: &str) -> Result<()> {
+    pub fn import_excel(
+        &mut self,
+        file: Vec<u8>,
+        file_name: &str,
+        cursor: Option<String>,
+    ) -> Result<()> {
         let ops = self.import_excel_operations(file, file_name)?;
-        self.server_apply_transaction(ops);
+        if cursor.is_some() {
+            self.start_user_transaction(ops, cursor, TransactionName::Import);
+        } else {
+            self.server_apply_transaction(ops);
+        }
         Ok(())
     }
 
@@ -160,7 +169,7 @@ mod tests {
         let mut buffer = vec![0; metadata.len() as usize];
         file.read_exact(&mut buffer).expect("buffer overflow");
 
-        let _ = grid_controller.import_excel(buffer, "temperature.xlsx");
+        let _ = grid_controller.import_excel(buffer, "temperature.xlsx", None);
         let sheet_id = grid_controller.grid.sheets()[0].id;
 
         print_table(

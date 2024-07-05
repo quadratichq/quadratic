@@ -1,15 +1,16 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/app/gridGL/types/size';
-import { isCsv, isParquet } from '@/app/helpers/files';
+import { isCsv, isExcel, isParquet } from '@/app/helpers/files';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { DragEvent, PropsWithChildren, useRef, useState } from 'react';
 
-export type DragAndDropFileType = 'csv' | 'parquet';
+export type DragAndDropFileType = 'csv' | 'excel' | 'parquet';
 
 const getFileType = (file: File): DragAndDropFileType => {
   if (isCsv(file)) return 'csv';
+  if (isExcel(file)) return 'excel';
   if (isParquet(file)) return 'parquet';
 
   throw new Error(`Unsupported file type`);
@@ -68,6 +69,11 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
 
         if (fileType === 'csv') {
           const error = await quadraticCore.importCsv(sheets.sheet.id, file, insertAtCellLocation);
+          if (error) {
+            addGlobalSnackbar(`Error loading ${file.name}: ${error}`, { severity: 'warning' });
+          }
+        } else if (fileType === 'excel') {
+          const { error } = await quadraticCore.importExcel(file, sheets.getCursorPosition());
           if (error) {
             addGlobalSnackbar(`Error loading ${file.name}: ${error}`, { severity: 'warning' });
           }

@@ -927,7 +927,8 @@ class QuadraticCore {
 
   // create a new grid file and import an xlsx file
   importExcel = async (
-    file: File
+    file: File,
+    cursor?: string
   ): Promise<{
     contents?: string;
     version?: string;
@@ -941,6 +942,7 @@ class QuadraticCore {
       this.send({
         type: 'clientCoreImportExcel',
         file,
+        cursor,
         id,
       });
     });

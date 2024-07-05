@@ -3,7 +3,7 @@ import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { DataIcon } from '@/app/ui/icons';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { CSV_IMPORT_MESSAGE, PARQUET_IMPORT_MESSAGE } from '@/shared/constants/appConstants';
+import { CSV_IMPORT_MESSAGE, EXCEL_IMPORT_MESSAGE, PARQUET_IMPORT_MESSAGE } from '@/shared/constants/appConstants';
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { MenuLineItem } from '../MenuLineItem';
@@ -28,6 +28,13 @@ export const DataMenu = () => {
           }}
         >
           <MenuLineItem primary="Import CSV" />
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            addGlobalSnackbar(EXCEL_IMPORT_MESSAGE);
+          }}
+        >
+          <MenuLineItem primary="Import Excel" />
         </MenuItem>
         <MenuItem
           onClick={() => {
