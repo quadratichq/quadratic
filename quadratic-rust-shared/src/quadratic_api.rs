@@ -145,7 +145,7 @@ pub struct TypeDetails {
     pub port: Option<String>,
     pub username: Option<String>,
     pub password: Option<String>,
-    pub database: Option<String>,
+    pub database: String,
 }
 
 /// Retrieve user's connection from the quadratic API server.
