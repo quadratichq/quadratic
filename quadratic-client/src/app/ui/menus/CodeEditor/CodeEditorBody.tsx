@@ -22,7 +22,7 @@ import { useEditorCellHighlights } from './useEditorCellHighlights';
 // import { typescriptLibrary } from '@/web-workers/javascriptWebWorker/worker/javascript/typescriptLibrary';
 import { events } from '@/app/events/events';
 import { SheetPosTS } from '@/app/gridGL/types/size';
-import { getLanguage } from '@/app/helpers/codeCellLanguage';
+import { getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
 import { SheetRect } from '@/app/quadratic-core-types';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { javascriptLibraryForEditor } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generatedJavascriptForEditor';
@@ -49,6 +49,7 @@ export const CodeEditorBody = (props: Props) => {
   const { editorContent, setEditorContent, closeEditor, evaluationResult, cellLocation } = props;
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const language = editorInteractionState.mode;
+  const monacoLanguage = getLanguageForMonaco(language);
   const readOnly = !hasPermissionToEditFile(editorInteractionState.permissions);
   const [didMount, setDidMount] = useState(false);
   const [isValidRef, setIsValidRef] = useState(false);
@@ -72,7 +73,6 @@ export const CodeEditorBody = (props: Props) => {
 
   useEffect(() => {
     const insertText = (text: string) => {
-      debugger;
       if (!editorRef.current) return;
       const position = editorRef.current.getPosition();
       const model = editorRef.current.getModel();
@@ -136,7 +136,7 @@ export const CodeEditorBody = (props: Props) => {
       // Only register language once
       if (registered) return;
 
-      if (language === 'Formula') {
+      if (monacoLanguage === 'formula') {
         monaco.languages.register({ id: 'Formula' });
         monaco.languages.setLanguageConfiguration('Formula', FormulaLanguageConfig);
         monaco.languages.setMonarchTokensProvider('Formula', FormulaTokenizerConfig);
@@ -146,7 +146,7 @@ export const CodeEditorBody = (props: Props) => {
         monaco.languages.registerHoverProvider('Formula', { provideHover });
       }
 
-      if (language === 'Python') {
+      if (monacoLanguage === 'python') {
         monaco.languages.register({ id: 'python' });
         monaco.languages.registerCompletionItemProvider('python', {
           provideCompletionItems: provideCompletionItemsPython,
@@ -164,7 +164,7 @@ export const CodeEditorBody = (props: Props) => {
         });
       }
 
-      if (language === 'Javascript') {
+      if (monacoLanguage === 'javascript') {
         monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
           diagnosticCodesToIgnore: [1108, 1375, 1378],
         });
@@ -207,7 +207,7 @@ export const CodeEditorBody = (props: Props) => {
       <Editor
         height="100%"
         width="100%"
-        language={getLanguage(language)}
+        language={monacoLanguage}
         value={editorContent}
         onChange={setEditorContent}
         onMount={onMount}
@@ -227,7 +227,8 @@ export const CodeEditorBody = (props: Props) => {
           showUnused: language === 'Javascript' ? false : true,
         }}
       />
-      {['Python', 'Javascript'].includes(language as string) && (
+      {/* TODO(ddimaria): this can be brittle, consider checking for just non-formula */}
+      {['python', 'javascript', 'pgsql', 'mysql'].includes(monacoLanguage as string) && (
         <CodeEditorPlaceholder editorContent={editorContent} setEditorContent={setEditorContent} />
       )}
     </div>

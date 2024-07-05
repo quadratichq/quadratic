@@ -1,8 +1,8 @@
 import { debugWebWorkers } from '@/app/debugFlags';
 import { JsGetCellResponse } from '@/app/quadratic-core-types';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { PyodideInterface, loadPyodide } from 'pyodide';
-import type { CodeRun } from '../pythonClientMessages';
 import type { CorePythonRun } from '../pythonCoreMessages';
 import type { InspectPython, PythonError, PythonSuccess, outputType } from '../pythonTypes';
 import { pythonClient } from './pythonClient';

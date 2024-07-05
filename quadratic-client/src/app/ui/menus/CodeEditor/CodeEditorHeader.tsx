@@ -4,9 +4,9 @@ import { SheetPosTS } from '@/app/gridGL/types/size';
 import { getCodeCell, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
-import { CodeRun } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
 import { cn } from '@/shared/shadcn/utils';
 import { Close, PlayArrow, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
@@ -114,10 +114,12 @@ export const CodeEditorHeader = (props: Props) => {
 
     events.on('pythonState', playerState);
     events.on('javascriptState', playerState);
+    events.on('connectionState', playerState);
     events.on('multiplayerUpdate', multiplayerUpdate);
     return () => {
       events.off('pythonState', playerState);
       events.off('javascriptState', playerState);
+      events.off('connectionState', playerState);
       events.off('multiplayerUpdate', multiplayerUpdate);
     };
   }, [cellLocation]);
@@ -152,11 +154,11 @@ export const CodeEditorHeader = (props: Props) => {
       </div>
       <div className="ml-auto flex flex-shrink-0 items-center gap-2">
         {isRunningComputation && (
-          <TooltipHint title={'Python executing…'} placement="bottom">
+          <TooltipHint title={`${language} executing…`} placement="bottom">
             <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
           </TooltipHint>
         )}
-        {hasPermission && <CodeEditorRefButton />}
+        {hasPermission && ['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
         {hasPermission && ['Python', 'Javascript'].includes(language as string) && <SnippetsPopover />}
         {hasPermission &&
           (!isRunningComputation ? (

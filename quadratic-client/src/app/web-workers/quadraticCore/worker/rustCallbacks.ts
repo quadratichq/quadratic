@@ -74,7 +74,10 @@ declare var self: WorkerGlobalScope &
     sendUndoRedo: (undo: string, redo: string) => void;
     sendConnection: (
       transactionId: string,
-      query: string,
+      x: number,
+      y: number,
+      sheetId: string,
+      code: string,
       connector_type: ConnectionKind,
       connection_id: String
     ) => void;
@@ -231,11 +234,11 @@ export const jsConnection = (
   x: number,
   y: number,
   sheetId: string,
-  query: string,
+  code: string,
   connector_type: ConnectionKind,
   connection_id: String
 ) => {
-  self.sendConnection(transactionId, query, connector_type, connection_id);
+  self.sendConnection(transactionId, x, y, sheetId, code, connector_type, connection_id);
 };
 
 export const jsSendImage = (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => {
