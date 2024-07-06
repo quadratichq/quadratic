@@ -11,7 +11,8 @@ results = None
 #
 # All functions variations are intentionally included.
 
-def getCell(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bool | None:
+
+def getCell(p_x: int, p_y: int, sheet: str = None) -> int | float | str | bool | None:
     """
     Reference a single cell in the grid.
 
@@ -34,7 +35,8 @@ def getCell(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bool | N
     else:
         return None
 
-def cell(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bool | None:
+
+def cell(p_x: int, p_y: int, sheet: str = None) -> int | float | str | bool | None:
     """
     Reference a single cell in the grid.
 
@@ -52,7 +54,8 @@ def cell(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bool | None
 
     return getCell(p_x, p_y, sheet)
 
-def c(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bool | None:
+
+def c(p_x: int, p_y: int, sheet: str = None) -> int | float | str | bool | None:
     """
     Reference a single cell in the grid.
 
@@ -71,7 +74,12 @@ def c(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bool | None:
     return getCell(p_x, p_y, sheet)
 
 
-def getCells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, first_row_header: bool=False) -> DataFrame:
+def getCells(
+    p0: Tuple[int, int],
+    p1: Tuple[int, int],
+    sheet: str = None,
+    first_row_header: bool = False,
+) -> DataFrame:
     """
     Reference multiple cells in the grid.
 
@@ -123,7 +131,13 @@ def getCells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, first_ro
 
     return df
 
-def cells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, first_row_header: bool=False) -> DataFrame:
+
+def cells(
+    p0: Tuple[int, int],
+    p1: Tuple[int, int],
+    sheet: str = None,
+    first_row_header: bool = False,
+) -> DataFrame:
     """
     Reference multiple cells in the grid.
 
@@ -142,6 +156,7 @@ def cells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, first_row_h
 
     return getCells(p0, p1, sheet, first_row_header)
 
+
 # This function is not used from here (it's a lambda function in run_python.py)
 # This is documented for pyright usage only
 def pos() -> tuple[int, int]:
@@ -156,6 +171,7 @@ def pos() -> tuple[int, int]:
     """
 
     return None
+
 
 # This function is not used from here (it's a lambda function in run_python.py)
 # This is documented for pyright usage only
@@ -176,9 +192,15 @@ def rel_cell(x: int, y: int) -> int | float | str | bool | None:
 
     return None
 
+
 # This function is not used from here (it's a lambda function in run_python.py)
 # This is documented for pyright usage only
-def rel_cells(first: tuple[int, int], second: tuple[int, int], sheet: str=None, first_row_header: bool=False) -> int | float | str | bool | None:
+def rel_cells(
+    first: tuple[int, int],
+    second: tuple[int, int],
+    sheet: str = None,
+    first_row_header: bool = False,
+) -> int | float | str | bool | None:
     """
     Relative reference to a single cell in the grid.
 
@@ -196,6 +218,7 @@ def rel_cells(first: tuple[int, int], second: tuple[int, int], sheet: str=None, 
     """
 
     return None
+
 
 # This function is not used from here (it's a lambda function in run_python.py)
 # This is documented for pyright usage only
