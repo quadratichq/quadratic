@@ -11,6 +11,7 @@ use std::str;
 use v1_6::schema::GridSchema;
 
 pub mod current;
+pub mod sheet_schema;
 mod v1_3;
 mod v1_4;
 mod v1_5;
@@ -78,7 +79,6 @@ fn import_binary(file_contents: &[u8]) -> Result<Grid> {
     // we're currently not doing anything with the file version, but will in
     // the future as we use different serialization and compression methods
     let _file_version = deserialize::<FileVersion>(header)?;
-
     let schema = decompress_and_deserialize::<GridSchema>(data)?;
     current::import(schema)
 }

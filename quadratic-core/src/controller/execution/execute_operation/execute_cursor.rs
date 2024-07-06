@@ -62,6 +62,25 @@ impl GridController {
             }
         }
     }
+
+    pub fn execute_set_cursor_selection(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if !transaction.is_user() {
+            return;
+        }
+        if let Operation::SetCursorSelection { selection } = op {
+            if cfg!(target_family = "wasm") && !transaction.is_server() {
+                if let Ok(json) = serde_json::to_string(&selection) {
+                    crate::wasm_bindings::js::jsSetCursorSelection(json);
+                }
+            } else if cfg!(test) {
+                transaction.cursor = Some(serde_json::to_string(&selection).unwrap());
+            }
+        }
+    }
 }
 
 #[cfg(test)]

@@ -80,10 +80,10 @@ impl GridController {
         let is_percentage =
             sheet.cell_numeric_format_kind(source.into()) == Some(NumericFormatKind::Percentage);
         let source_decimals = sheet
-            .decimal_places(source.into(), is_percentage)
+            .calculate_decimal_places(source.into(), is_percentage)
             .unwrap_or(0);
         let new_precision = i16::max(0, source_decimals + (delta as i16));
-        
+
         vec![Operation::SetCellFormats {
             sheet_rect,
             attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(

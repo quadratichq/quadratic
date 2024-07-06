@@ -52,6 +52,20 @@ pub type Borders = v1_5::Borders;
 pub type RunError = v1_5::RunError;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Format {
+    pub align: Option<CellAlign>,
+    pub wrap: Option<CellWrap>,
+    pub numeric_format: Option<NumericFormat>,
+    pub numeric_decimals: Option<i16>,
+    pub numeric_commas: Option<bool>,
+    pub bold: Option<bool>,
+    pub italic: Option<bool>,
+    pub text_color: Option<String>,
+    pub fill_color: Option<String>,
+    pub render_size: Option<RenderSize>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Sheet {
     pub id: Id,
     pub name: String,
@@ -61,6 +75,9 @@ pub struct Sheet {
     pub columns: Vec<(i64, Column)>,
     pub borders: Borders,
     pub code_runs: Vec<(Pos, CodeRun)>,
+    pub formats_all: Option<Format>,
+    pub formats_columns: Vec<(i64, (Format, i64))>,
+    pub formats_rows: Vec<(i64, (Format, i64))>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -135,6 +152,7 @@ pub enum CellValue {
     Instant(String),
     Duration(String),
     Error(RunError),
+    Image(String),
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -164,6 +182,7 @@ pub type CellBorder = v1_5::CellBorder;
 pub enum CodeCellLanguage {
     Python,
     Formula,
+    Javascript,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

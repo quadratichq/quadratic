@@ -61,6 +61,13 @@ export class CellsMarkers extends Container {
       } else if (codeCell.language === 'Formula') {
         child.texture = Texture.from('/images/formula-fx-icon.png');
         child.tint = isError ? 0xffffff : colors.cellColorUserFormula;
+      } else if (codeCell.language === 'Javascript') {
+        child.texture = Texture.from('/images/javascript-icon.png');
+        child.tint = isError ? colors.cellColorError : colors.cellColorUserJavascript;
+        if (isError) {
+          child.x -= 1;
+          child.y -= 1;
+        }
       }
     }
     this.markers.push({

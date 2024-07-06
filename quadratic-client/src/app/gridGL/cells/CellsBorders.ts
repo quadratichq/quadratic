@@ -38,8 +38,8 @@ export class CellsBorders extends Container {
     if (!this.borders) return;
     for (const border of this.borders.horizontal) {
       if (border.w === undefined) throw new Error('Expected border.w to be defined in CellsBorders.drawHorizontal');
-      const start = this.sheet.offsets.getCellOffsets(Number(border.x), Number(border.y));
-      const end = this.sheet.offsets.getCellOffsets(Number(border.x) + border.w, Number(border.y));
+      const start = this.sheet.getCellOffsets(Number(border.x), Number(border.y));
+      const end = this.sheet.getCellOffsets(Number(border.x) + border.w, Number(border.y));
       const color = border.style.color;
       this.sprites.push(
         ...drawCellBorder({
@@ -55,8 +55,8 @@ export class CellsBorders extends Container {
     if (!this.borders) return;
     for (const border of this.borders.vertical) {
       if (border.h === undefined) throw new Error('Expected border.h to be defined in CellsBorders.drawVertical');
-      const start = this.sheet.offsets.getCellOffsets(Number(border.x), Number(border.y));
-      const end = this.sheet.offsets.getCellOffsets(Number(border.x), Number(border.y) + border.h!);
+      const start = this.sheet.getCellOffsets(Number(border.x), Number(border.y));
+      const end = this.sheet.getCellOffsets(Number(border.x), Number(border.y) + border.h!);
       const color = border.style.color;
       this.sprites.push(
         ...drawCellBorder({

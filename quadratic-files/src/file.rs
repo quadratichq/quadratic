@@ -23,6 +23,7 @@ use quadratic_rust_shared::{
 use crate::{
     error::{FilesError, Result},
     state::{settings::Settings, State},
+    truncate::{add_processed_transaction, processed_transaction_key},
 };
 
 pub static GROUP_NAME: &str = "quadratic-file-service-1";
@@ -124,7 +125,7 @@ pub(crate) async fn process_queue_for_room(
     // get all transactions for the room in the queue
     let transactions = pubsub
         .connection
-        .get_messages_from(channel, &checkpoint_sequence_num.to_string())
+        .get_messages_from(channel, &checkpoint_sequence_num.to_string(), false)
         .await?
         .iter()
         .flat_map(|(_, message)| serde_json::from_str::<TransactionServer>(message))
@@ -189,8 +190,10 @@ pub(crate) async fn process_queue_for_room(
     // confirm that transactions have been processed
     pubsub
         .connection
-        .ack(channel, GROUP_NAME, keys, Some(active_channels))
+        .ack(channel, GROUP_NAME, keys, Some(active_channels), false)
         .await?;
+
+    drop(pubsub);
 
     // update the checkpoint in quadratic-api
     let key = &key(*file_id, last_sequence_num);
@@ -205,7 +208,22 @@ pub(crate) async fn process_queue_for_room(
     )
     .await?;
 
+    // add FILE_ID.SEQUENCE_NUM to the processed transactions channel
+    let message = processed_transaction_key(&file_id.to_string(), &last_sequence_num.to_string());
+    let processed_transactions_channel = state
+        .settings
+        .pubsub_processed_transactions_channel
+        .to_owned();
+
+    add_processed_transaction(
+        &Arc::clone(state),
+        &processed_transactions_channel,
+        &message,
+    )
+    .await?;
+
     state.stats.lock().await.last_processed_file_time = Some(Instant::now());
+    state.stats.lock().await.files_to_process_in_pubsub = 0;
 
     tracing::info!(
         "Processed sequence numbers {first_sequence_num} - {last_sequence_num} for room {file_id} in {:?}", start.elapsed()

@@ -1,16 +1,20 @@
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { Container, Rectangle } from 'pixi.js';
+import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
 import { CellsFills } from './CellsFills';
+import { CellsImage } from './cellsImages/CellsImage';
+import { CellsImages } from './cellsImages/CellsImages';
+import { CellsLabels } from './cellsLabel/CellsLabels';
 import { CellsMarkers } from './CellsMarkers';
 import { CellsSearch } from './CellsSearch';
-import { CellsLabels } from './cellsLabel/CellsLabels';
 
 export class CellsSheet extends Container {
   private cellsFills: CellsFills;
-  private cellsArray: CellsArray;
   private cellsBorders: CellsBorders;
+  cellsArray: CellsArray;
+  cellsImages: CellsImages;
 
   cellsMarkers: CellsMarkers;
   cellsLabels: CellsLabels;
@@ -29,6 +33,7 @@ export class CellsSheet extends Container {
     this.cellsArray = this.addChild(new CellsArray(this));
     this.cellsBorders = this.addChild(new CellsBorders(this));
     this.cellsMarkers = this.addChild(new CellsMarkers());
+    this.cellsImages = new CellsImages(this);
     this.visible = false;
   }
 
@@ -44,6 +49,8 @@ export class CellsSheet extends Container {
     this.cellsArray.visible = true;
     this.cellsArray.cheapCull(bounds);
     this.cellsFills.cheapCull(bounds);
+    this.cellsImages.cheapCull(bounds);
+    pixiApp.changeCellImages(this.cellsImages);
   }
 
   hide(): void {
@@ -65,10 +72,17 @@ export class CellsSheet extends Container {
 
   adjustOffsets() {
     this.cellsBorders.draw();
-    this.cellsFills.draw();
   }
 
   updateCellsArray() {
     this.cellsArray.updateCellsArray();
+  }
+
+  getCellsImages(): CellsImage[] {
+    return this.cellsImages.children;
+  }
+
+  update() {
+    this.cellsFills.update();
   }
 }

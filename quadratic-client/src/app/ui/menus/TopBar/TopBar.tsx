@@ -1,5 +1,4 @@
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
-import { Search } from '@/app/ui/components/Search';
 import { CommandPaletteIcon } from '@/app/ui/icons';
 import { SwitchApp } from '@/shared/shadcn/ui/switch';
 import { isElectron } from '@/shared/utils/isElectron';
@@ -56,6 +55,7 @@ export const TopBar = () => {
         // if clicked (not child clicked), maximize window. For electron.
         if (event.target === event.currentTarget) electronMaximizeCurrentWindow();
       }}
+      className="select-none"
     >
       <div
         className="flex items-stretch lg:basis-1/3"
@@ -110,7 +110,6 @@ export const TopBar = () => {
           <TopBarZoomMenu />
         </div>
       </div>
-      <Search />
     </Box>
   );
 };

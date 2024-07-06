@@ -1,5 +1,6 @@
 import { Coordinate } from '@/app/gridGL/types/size';
-import type { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
+import { ConsoleOutput as ConsoleOutputType } from '@/app/ui/menus/CodeEditor/CodeEditor';
+import { CodeEditorPanelData, PanelPosition } from '@/app/ui/menus/CodeEditor/useCodeEditorPanelData';
 import { useRootRouteLoaderData } from '@/router';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
@@ -10,33 +11,20 @@ import { useState } from 'react';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { colors } from '../../../theme/colors';
 import { AiAssistant } from './AiAssistant';
-import { PanelPosition } from './CodeEditor';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
 interface ConsoleProps {
-  consoleOutput?: { stdOut?: string; stdErr?: string };
-  editorMode: EditorInteractionState['mode'];
+  consoleOutput?: ConsoleOutputType;
   editorContent: string | undefined;
-  evaluationResult?: EvaluationResult;
   spillError?: Coordinate[];
-  panelPosition: PanelPosition;
-  panelHeightPercentage: number;
-  setPanelPosition: React.Dispatch<React.SetStateAction<PanelPosition>>;
+  codeEditorPanelData: CodeEditorPanelData;
+  editorInteractionState: EditorInteractionState;
 }
 
 type Tab = 'console' | 'ai-assistant';
 
 export function Console(props: ConsoleProps) {
-  const {
-    consoleOutput,
-    editorMode,
-    editorContent,
-    evaluationResult,
-    spillError,
-    panelPosition,
-    setPanelPosition,
-    panelHeightPercentage,
-  } = props;
+  const { consoleOutput, editorInteractionState, editorContent, spillError, codeEditorPanelData } = props;
   const { isAuthenticated } = useRootRouteLoaderData();
   const hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
   const [tab, setTab] = useState<Tab>('console');
@@ -50,10 +38,10 @@ export function Console(props: ConsoleProps) {
         onValueChange={(value) => {
           setTab(value as Tab);
         }}
-        className={cn('h-full', panelPosition === 'bottom' && 'grid grid-rows-[auto_1fr]')}
+        className={cn('h-full', codeEditorPanelData.panelPosition === 'bottom' && 'grid grid-rows-[auto_1fr]')}
       >
         {/* Only visible when panel is on the bottom */}
-        <div className={cn(panelPosition !== 'bottom' && 'hidden', 'px-3 pb-2 pt-2')}>
+        <div className={cn(codeEditorPanelData.panelPosition !== 'bottom' && 'hidden', 'px-3 pb-2 pt-2')}>
           <TabsList>
             <TabsTrigger
               value="console"
@@ -75,12 +63,16 @@ export function Console(props: ConsoleProps) {
           value="console"
           className={cn(
             'm-0 grid grid-rows-[auto_1fr] overflow-hidden',
-            panelPosition === 'bottom' && tab !== 'console' && 'hidden'
+            codeEditorPanelData.panelPosition === 'bottom' && tab !== 'console' && 'hidden'
           )}
-          style={panelPosition === 'left' ? { height: `${panelHeightPercentage}%` } : {}}
+          style={
+            codeEditorPanelData.panelPosition === 'left'
+              ? { height: `${codeEditorPanelData.panelHeightPercentage}%` }
+              : {}
+          }
         >
           {/* Only visible when panel is on the left */}
-          {panelPosition === 'left' && (
+          {codeEditorPanelData.panelPosition === 'left' && (
             <Type className={cn('flex items-center gap-2 px-3 py-3', consoleBadgeSharedClasses)}>Console</Type>
           )}
           <ConsoleOutput {...props} />
@@ -90,23 +82,26 @@ export function Console(props: ConsoleProps) {
           value="ai-assistant"
           className={cn(
             'm-0 grid overflow-hidden',
-            panelPosition === 'bottom' && 'grid-rows-[1fr_auto]',
-            panelPosition === 'left' && 'grid grid-rows-[auto_1fr_auto]',
-            panelPosition === 'bottom' && tab !== 'ai-assistant' && 'hidden'
+            codeEditorPanelData.panelPosition === 'bottom' && 'grid-rows-[1fr_auto]',
+            codeEditorPanelData.panelPosition === 'left' && 'grid grid-rows-[auto_1fr_auto]',
+            codeEditorPanelData.panelPosition === 'bottom' && tab !== 'ai-assistant' && 'hidden'
           )}
-          style={panelPosition === 'left' ? { height: `${100 - panelHeightPercentage}%` } : {}}
+          style={
+            codeEditorPanelData.panelPosition === 'left'
+              ? { height: `${100 - codeEditorPanelData.panelHeightPercentage}%` }
+              : {}
+          }
         >
-          {panelPosition === 'left' && (
+          {codeEditorPanelData.panelPosition === 'left' && (
             <Type className={cn(`gap-2 px-3 py-3`, consoleBadgeSharedClasses)}>AI assistant</Type>
           )}
 
           {isAuthenticated ? (
             <AiAssistant
-              // todo: fix this
-              evalResult={evaluationResult}
-              editorMode={editorMode}
+              consoleOutput={consoleOutput}
+              editorInteractionState={editorInteractionState}
               editorContent={editorContent}
-              isActive={true}
+              isActive={tab === 'ai-assistant'}
             />
           ) : (
             <Type className="px-3">
@@ -121,17 +116,17 @@ export function Console(props: ConsoleProps) {
       </Tabs>
 
       <Tabs
-        className={cn('absolute', panelPosition === 'bottom' ? 'right-2 top-2' : 'right-2 top-2')}
-        value={panelPosition}
+        className={cn('absolute', codeEditorPanelData.panelPosition === 'bottom' ? 'right-2 top-2' : 'right-2 top-2')}
+        value={codeEditorPanelData.panelPosition}
         onValueChange={(e) => {
-          setPanelPosition((prev: PanelPosition) => (prev === 'left' ? 'bottom' : 'left'));
+          codeEditorPanelData.setPanelPosition((prev: PanelPosition) => (prev === 'left' ? 'bottom' : 'left'));
         }}
       >
-        <TabsList className={panelPosition === 'left' ? 'h-8 py-0.5' : ''}>
-          <TabsTrigger value="bottom" className={panelPosition === 'left' ? 'py-0.5' : ''}>
+        <TabsList className={codeEditorPanelData.panelPosition === 'left' ? 'h-8 py-0.5' : ''}>
+          <TabsTrigger value="bottom" className={codeEditorPanelData.panelPosition === 'left' ? 'py-0.5' : ''}>
             <ViewStreamOutlined fontSize="small" />
           </TabsTrigger>
-          <TabsTrigger value="left" className={panelPosition === 'left' ? 'py-0.5' : ''}>
+          <TabsTrigger value="left" className={codeEditorPanelData.panelPosition === 'left' ? 'py-0.5' : ''}>
             <ViewStreamOutlined fontSize="small" className="rotate-90" />
           </TabsTrigger>
         </TabsList>
@@ -140,13 +135,7 @@ export function Console(props: ConsoleProps) {
   );
 }
 
-export function ConsoleOutput({
-  consoleOutput,
-  editorMode,
-  editorContent,
-  evaluationResult,
-  spillError,
-}: ConsoleProps) {
+export function ConsoleOutput({ consoleOutput, editorInteractionState, editorContent, spillError }: ConsoleProps) {
   let hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
   return (
     <div
@@ -191,9 +180,8 @@ export function ConsoleOutput({
         </>
       ) : (
         <div className="mt-1" style={{ ...codeEditorCommentStyles }}>
-          {editorMode === 'Python'
-            ? 'Print statements, standard out, and errors will show here.'
-            : 'Errors will show here.'}
+          {editorInteractionState.mode === 'Python' && <>Print statements, standard out, and errors will show here.</>}
+          {editorInteractionState.mode === 'Javascript' && <>Console output and errors will show here.</>}
         </div>
       )}
     </div>

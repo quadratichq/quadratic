@@ -1,4 +1,5 @@
 import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { downloadFile, downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
 import { FileContextType } from '@/app/ui/components/FileProvider';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -175,7 +176,7 @@ export const rerunSheetAction = {
 export const downloadSelectionAsCsvAction = {
   label: 'Download selection as CSV',
   async run({ fileName }: { fileName: string }) {
-    downloadFile(fileName, await quadraticCore.exportCsvSelection(), 'text/plain', 'csv');
+    downloadFile(fileName, await quadraticCore.exportCsvSelection(sheets.getRustSelection()), 'text/plain', 'csv');
   },
 };
 

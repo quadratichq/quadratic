@@ -6,13 +6,14 @@ import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '@/app/gridGL/HTMLGr
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { SheetPosTS } from '@/app/gridGL/types/size';
+import { LanguageState } from '@/app/web-workers/languageTypes';
 import { authClient, parseDomain } from '@/auth';
 import { displayName } from '@/shared/utils/userUtil';
 import { User } from '@auth0/auth0-spa-js';
 import * as Sentry from '@sentry/react';
 import { v4 as uuid } from 'uuid';
 import updateAlertVersion from '../../../../../updateAlertVersion.json';
-import { CodeRun, PythonStateType } from '../pythonWebWorker/pythonClientMessages';
+import { CodeRun } from '../pythonWebWorker/pythonClientMessages';
 import { quadraticCore } from '../quadraticCore/quadraticCore';
 import {
   ClientMultiplayerMessage,
@@ -23,7 +24,7 @@ import {
 import { MultiplayerUser, ReceiveRoom } from './multiplayerTypes';
 
 export class Multiplayer {
-  private worker: Worker;
+  private worker?: Worker;
 
   state: MultiplayerState = 'startup';
   sessionId: string;
@@ -45,18 +46,6 @@ export class Multiplayer {
   users: Map<string, MultiplayerUser> = new Map();
 
   constructor() {
-    this.worker = new Worker(new URL('./worker/multiplayer.worker.ts', import.meta.url), { type: 'module' });
-    this.worker.onmessage = this.handleMessage;
-    this.worker.onerror = (e) => {
-      console.warn(`[multiplayer.worker] error: ${e.message}`);
-      Sentry.captureException({
-        message: 'Error for multiplayer.worker',
-        level: 'error',
-        extra: {
-          error: e.message,
-        },
-      });
-    };
     this.sessionId = uuid();
 
     // this is only a partial solution mostly for desktop
@@ -78,7 +67,22 @@ export class Multiplayer {
     });
   }
 
-  private pythonState = (_state: PythonStateType, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
+  initWorker() {
+    this.worker = new Worker(new URL('./worker/multiplayer.worker.ts', import.meta.url), { type: 'module' });
+    this.worker.onmessage = this.handleMessage;
+    this.worker.onerror = (e) => {
+      console.warn(`[multiplayer.worker] error: ${e.message}`);
+      Sentry.captureException({
+        message: 'Error for multiplayer.worker',
+        level: 'error',
+        extra: {
+          error: e.message,
+        },
+      });
+    };
+  }
+
+  private pythonState = (_state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
     const codeRunning: SheetPosTS[] = [];
     if (current) {
       codeRunning.push(current.sheetPos);
@@ -109,12 +113,19 @@ export class Multiplayer {
         this.receiveUsersInRoom(e.data.room);
         break;
 
+      case 'multiplayerClientReload':
+        events.emit('needRefresh', 'force');
+        break;
+
       default:
         console.warn('Unhandled message type', e.data);
     }
   };
 
   private send(message: ClientMultiplayerMessage, port?: MessagePort) {
+    if (!this.worker) {
+      throw new Error('Expected Worker to be initialized in multiplayer.send');
+    }
     if (port) {
       this.worker.postMessage(message, [port]);
     } else {
@@ -162,6 +173,7 @@ export class Multiplayer {
           cursor: 0,
           active: false,
           code_editor: false,
+          inline_code_editor: false,
         },
         viewport: pixiApp.saveMultiplayerViewport(),
         codeRunning: JSON.stringify(this.codeRunning),
@@ -181,7 +193,7 @@ export class Multiplayer {
   cellIsBeingEdited(x: number, y: number, sheetId: string): { codeEditor: boolean; user: string } | undefined {
     for (const player of this.users.values()) {
       if (player.sheet_id === sheetId && player.cell_edit.active && player.parsedSelection) {
-        if (player.parsedSelection.cursor.x === x && player.parsedSelection.cursor.y === y) {
+        if (player.parsedSelection.cursorPosition.x === x && player.parsedSelection.cursorPosition.y === y) {
           const user = displayName(player, false);
           return { codeEditor: player.cell_edit.code_editor, user };
         }
@@ -205,7 +217,15 @@ export class Multiplayer {
     this.send({ type: 'clientMultiplayerSheet', sheetId: sheets.sheet.id });
   };
 
-  sendCellEdit(text: string, cursor: number, codeEditor: boolean, bold?: boolean, italic?: boolean) {
+  sendCellEdit(options: {
+    text: string;
+    cursor: number;
+    codeEditor: boolean;
+    inlineCodeEditor: boolean;
+    bold?: boolean;
+    italic?: boolean;
+  }) {
+    const { text, cursor, codeEditor, inlineCodeEditor, bold, italic } = options;
     this.send({
       type: 'clientMultiplayerCellEdit',
       cellEdit: {
@@ -213,6 +233,7 @@ export class Multiplayer {
         cursor,
         active: true,
         code_editor: codeEditor,
+        inline_code_editor: inlineCodeEditor,
         bold,
         italic,
       },
@@ -291,8 +312,8 @@ export class Multiplayer {
         if (player.parsedSelection) {
           // hide the label if the player is editing the cell
           pixiApp.cellsSheets.showLabel(
-            player.parsedSelection.cursor.x,
-            player.parsedSelection.cursor.y,
+            player.parsedSelection.cursorPosition.x,
+            player.parsedSelection.cursorPosition.y,
             player.sheet_id,
             !player.cell_edit.active
           );
@@ -305,7 +326,7 @@ export class Multiplayer {
     if (update.viewport) {
       player.viewport = update.viewport;
       if (pixiAppSettings.editorInteractionState.follow === player.session_id) {
-        pixiApp.loadMultiplayerViewport(JSON.parse(player.viewport));
+        pixiApp.viewport.loadMultiplayerViewport(JSON.parse(player.viewport));
       }
     }
 

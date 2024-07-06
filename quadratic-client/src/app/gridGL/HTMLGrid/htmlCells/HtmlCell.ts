@@ -106,6 +106,8 @@ export class HtmlCell {
       this.iframe.contentWindow.document.body.addEventListener(
         'wheel',
         (event) => {
+          event.stopPropagation();
+          event.preventDefault();
           const viewport = pixiApp.viewport;
           const wheel = viewport.plugins.get('wheel') as Wheel | null;
           if (!wheel) {
@@ -116,8 +118,6 @@ export class HtmlCell {
             x: bounding.left + event.clientX * viewport.scale.x - event.clientX,
             y: bounding.top + event.clientY * viewport.scale.y - event.clientY,
           });
-          event.stopPropagation();
-          event.preventDefault();
         },
         { passive: false }
       );
@@ -204,7 +204,7 @@ export class HtmlCell {
     if (right && bottom) {
       return 'corner';
     }
-    if (right && e.data.global.y > rect.top && e.data.global.y < rect.bottom) {
+    if (right && e.data.global.y + top > rect.top && e.data.global.y + top < rect.bottom) {
       return 'right';
     }
     if (bottom && e.data.global.x > rect.left && e.data.global.x < rect.right) {

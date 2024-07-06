@@ -1,12 +1,14 @@
 import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { AI } from '@/app/ui/icons';
+import { ConsoleOutput } from '@/app/ui/menus/CodeEditor/CodeEditor';
 import { authClient } from '@/auth';
 import { useRootRouteLoaderData } from '@/router';
 import { apiClient } from '@/shared/api/apiClient';
-import { Input } from '@/shared/shadcn/ui/input';
+import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Send, Stop } from '@mui/icons-material';
 import { Avatar, CircularProgress, IconButton } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
@@ -17,8 +19,8 @@ import { QuadraticDocs } from './QuadraticDocs';
 // todo: fix types
 
 interface Props {
-  editorMode: EditorInteractionState['mode'];
-  evalResult?: any; // TODO(ddimaria): fix type
+  editorInteractionState: EditorInteractionState;
+  consoleOutput?: ConsoleOutput;
   editorContent: string | undefined;
   isActive: boolean;
 }
@@ -28,30 +30,22 @@ type Message = {
   content: string;
 };
 
-export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }: Props) => {
-  const evalResultObj = evalResult;
-  const stdErr = evalResultObj?.std_err;
-
-  // TODO: Improve these messages. Pass current location and more docs.
-  // store in a separate location for different cells
+export const AiAssistant = ({ consoleOutput, editorInteractionState, editorContent, isActive }: Props) => {
+  // TODO: This is only sent with the first message, we should refresh the content with each message.
   const systemMessages = [
     {
       role: 'system',
-      content:
-        'You are a helpful assistant inside of a spreadsheet application called Quadratic. The cell type is: ' +
-        editorMode,
-    },
-    {
-      role: 'system',
-      content: `here are the docs: ${QuadraticDocs}`,
-    },
-    {
-      role: 'system',
-      content: 'Currently, you are in a cell that is being edited. The code in the cell is:' + editorContent,
-    },
-    {
-      role: 'system',
-      content: 'If the code was recently run here is the std error:' + stdErr,
+      content: `
+You are a helpful assistant inside of a spreadsheet application called Quadratic. 
+Do not use any markdown syntax besides triple backticks for ${editorInteractionState.mode} code blocks. Do not reply with plain text code blocks.
+The cell type is ${editorInteractionState.mode}.
+The cell is located at ${editorInteractionState.selectedCell.x}, ${editorInteractionState.selectedCell.y}.
+Currently, you are in a cell that is being edited. The code in the cell is:
+\`\`\`${editorContent}\`\`\`
+If the code was recently run here is the result: 
+\`\`\`${consoleOutput}\`\`\`
+This is the documentation for Quadratic: 
+${QuadraticDocs}`,
     },
   ] as Message[];
 
@@ -60,12 +54,17 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
   const [messages, setMessages] = useState<Message[]>([]);
   const controller = useRef<AbortController>();
   const { loggedInUser: user } = useRootRouteLoaderData();
-  const inputRef = useRef<HTMLInputElement | undefined>(undefined);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Focus the input when the tab comes into focus
   useEffect(() => {
-    if (isActive && inputRef.current) {
-      inputRef.current.focus();
+    if (isActive) {
+      window.requestAnimationFrame(() => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+          textarea.focus();
+        }
+      });
     }
   }, [isActive]);
 
@@ -81,7 +80,7 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
     const token = await authClient.getTokenOrRedirect();
     const updatedMessages = [...messages, { role: 'user', content: prompt }] as Message[];
     const request_body = {
-      model: 'gpt-4-32k',
+      model: 'gpt-4o',
       messages: [...systemMessages, ...updatedMessages],
     };
     setMessages(updatedMessages);
@@ -175,7 +174,7 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
   return (
     <>
       <div
-        className="overflow-y-auto whitespace-pre-wrap pb-2 pl-3 pr-4 text-sm outline-none"
+        className="select-text overflow-y-auto whitespace-pre-wrap pb-2 pl-3 pr-4 text-sm outline-none"
         spellCheck={false}
         onKeyDown={(e) => {
           if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
@@ -234,28 +233,41 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
         </div>
       </div>
       <form
-        className="z-10 flex gap-2 px-3 pb-2"
+        className="z-10 flex gap-2 px-3 pb-2 pt-2"
         onSubmit={(e) => {
           e.preventDefault();
         }}
       >
-        <Input
+        <Textarea
+          ref={textareaRef}
           id="prompt-input"
           value={prompt}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+          onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => {
             setPrompt(event.target.value);
           }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && prompt.length > 0) {
+          onKeyDown={(event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+            if (event.key === 'Enter') {
+              if (event.ctrlKey || event.shiftKey) {
+                return;
+              }
+
+              event.preventDefault();
+              if (prompt.trim().length === 0) {
+                return;
+              }
+
               submitPrompt();
+              event.currentTarget.focus();
             }
           }}
           autoComplete="off"
           placeholder="Ask a question"
+          autoHeight={true}
+          maxHeight="120px"
         />
 
-        <div className="relative flex items-center">
-          {loading && <CircularProgress size="1rem" className="absolute right-14 top-2.5" />}
+        <div className="relative flex items-end">
+          {loading && <CircularProgress size="1rem" className="absolute bottom-2.5 right-14" />}
           {loading ? (
             <TooltipHint title="Stop generating">
               <IconButton size="small" color="primary" onClick={abortPrompt} edge="end">
@@ -265,7 +277,11 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
           ) : (
             <ConditionalWrapper
               condition={prompt.length !== 0}
-              Wrapper={({ children }) => <TooltipHint title="Send">{children as React.ReactElement}</TooltipHint>}
+              Wrapper={({ children }) => (
+                <TooltipHint title="Send" shortcut={`${KeyboardSymbols.Command}↵`}>
+                  {children as React.ReactElement}
+                </TooltipHint>
+              )}
             >
               <IconButton
                 size="small"

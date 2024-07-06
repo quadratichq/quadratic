@@ -2,12 +2,12 @@ import { useMediaQuery } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { sheets } from '../../../grid/controller/Sheets';
 // import { getColumnA1Notation, getRowA1Notation } from '../../../gridGL/UI/gridHeadings/getA1Notation';
+import { events } from '@/app/events/events';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import BottomBarItem from './BottomBarItem';
 
 export const SelectionSummary = () => {
-  const cursor = sheets.sheet.cursor;
   const decimal_places = 9;
 
   const isBigEnoughForActiveSelectionStats = useMediaQuery('(min-width:1000px)');
@@ -16,35 +16,29 @@ export const SelectionSummary = () => {
   const [avg, setAvg] = useState<string | undefined>('');
   const [copied, setCopied] = useState(false);
 
-  const runCalculationOnActiveSelection = async () => {
-    let result = await quadraticCore.summarizeSelection(
-      decimal_places,
-      sheets.sheet.id,
-      sheets.sheet.cursor.getRectangle()
-    );
-    if (result) {
-      setCount(result.count.toString());
-      setSum(result.sum !== undefined ? result.sum.toString() : undefined);
-      setAvg(result.average !== undefined ? result.average.toString() : undefined);
-    } else {
-      setCount(undefined);
-      setSum(undefined);
-      setAvg(undefined);
-    }
-  };
+  const cursor = sheets.sheet.cursor;
 
   // Run async calculations to get the count/avg/sum meta info
   useEffect(() => {
-    if (cursor.multiCursor) {
-      runCalculationOnActiveSelection();
-    }
-  }, [
-    cursor.multiCursor,
-    cursor.originPosition.x,
-    cursor.originPosition.y,
-    cursor.terminalPosition.x,
-    cursor.terminalPosition.y,
-  ]);
+    const runCalculationOnActiveSelection = async () => {
+      if (!cursor.multiCursor && !cursor.columnRow) return;
+      let result = await quadraticCore.summarizeSelection(decimal_places, sheets.sheet.cursor.getRustSelection());
+      if (result) {
+        setCount(result.count.toString());
+        setSum(result.sum === null ? undefined : result.sum.toString());
+        setAvg(result.average === null ? undefined : result.average.toString());
+      } else {
+        setCount(undefined);
+        setSum(undefined);
+        setAvg(undefined);
+      }
+    };
+
+    events.on('cursorPosition', runCalculationOnActiveSelection);
+    return () => {
+      events.off('cursorPosition', runCalculationOnActiveSelection);
+    };
+  }, [cursor.columnRow, cursor.multiCursor]);
 
   const handleOnClick = (valueToCopy: string) => {
     navigator.clipboard.writeText(valueToCopy).then(() => {
@@ -55,7 +49,7 @@ export const SelectionSummary = () => {
 
   const tooltipTitle = copied ? 'Copied!' : 'Copy to clipboard';
 
-  if (isBigEnoughForActiveSelectionStats && cursor.multiCursor)
+  if (isBigEnoughForActiveSelectionStats && (cursor.multiCursor || cursor.columnRow))
     return (
       <>
         {sum && (

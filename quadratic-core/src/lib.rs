@@ -14,6 +14,7 @@ pub mod formulas;
 pub mod grid;
 mod position;
 mod rle;
+pub mod selection;
 pub mod sheet_offsets;
 mod span;
 pub mod test_util;

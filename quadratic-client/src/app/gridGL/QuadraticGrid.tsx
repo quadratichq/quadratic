@@ -1,5 +1,7 @@
 import { events } from '@/app/events/events';
 import { ImportProgress } from '@/app/ui/components/ImportProgress';
+import { Search } from '@/app/ui/components/Search';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { MouseEvent, useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
@@ -16,12 +18,11 @@ let spaceIsDown = false;
 export default function QuadraticGrid() {
   const [container, setContainer] = useState<HTMLDivElement>();
   const containerRef = useCallback((node: HTMLDivElement | null) => {
-    if (node) setContainer(node);
+    if (node) {
+      setContainer(node);
+      pixiApp.attach(node);
+    }
   }, []);
-
-  useEffect(() => {
-    if (container) pixiApp.attach(container);
-  }, [container]);
 
   const [panMode, setPanMode] = useState<PanMode>(PanMode.Disabled);
   useEffect(() => {
@@ -41,6 +42,11 @@ export default function QuadraticGrid() {
 
   // Right click menu
   const [showContextMenu, setShowContextMenu] = useState(false);
+
+  const { addGlobalSnackbar } = useGlobalSnackbar();
+  useEffect(() => {
+    pixiAppSettings.addGlobalSnackbar = addGlobalSnackbar;
+  }, [addGlobalSnackbar]);
 
   // Pan mode
   const onMouseUp = () => {
@@ -119,6 +125,7 @@ export default function QuadraticGrid() {
       <HTMLGridContainer parent={container} />
       <FloatingContextMenu container={container} showContextMenu={showContextMenu} />
       <ImportProgress />
+      <Search />
     </div>
   );
 }

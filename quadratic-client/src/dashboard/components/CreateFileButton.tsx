@@ -1,4 +1,4 @@
-import { isCsv, isExcel, isGrid, isParquet, stripExtension } from '@/app/helpers/files';
+import { getExtension, isCsv, isExcel, isGrid, isParquet, stripExtension } from '@/app/helpers/files';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
@@ -23,7 +23,7 @@ const getFileType = (file: File): UploadFileType => {
   if (isCsv(file)) return 'csv';
   if (isParquet(file)) return 'parquet';
 
-  throw new Error(`Unsupported file type: ${file}`);
+  throw new Error(`Unsupported file type: ${getExtension(file.name)}`);
 };
 
 // TODO this will need props when it becomes a button that can be used
@@ -38,6 +38,9 @@ export default function CreateFileButton() {
   const handleImport = async (e: ChangeEvent<HTMLInputElement>) => {
     // If nothing was selected, just exit
     if (!e.target.files) return;
+
+    // need to make sure quadratiCore's worker is initialized to call the Rust functions
+    quadraticCore.initWorker();
 
     try {
       // Get the file and it's contents

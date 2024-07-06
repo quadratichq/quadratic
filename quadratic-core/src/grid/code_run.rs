@@ -43,6 +43,22 @@ impl CodeRun {
         }
     }
 
+    /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
+    /// A spill or error returns None. Note: this assumes a CellValue::Code exists at the location.
+    pub fn cell_value_ref(&self, x: u32, y: u32) -> Option<&CellValue> {
+        if self.spill_error {
+            None
+        } else {
+            match &self.result {
+                CodeRunResult::Ok(value) => match value {
+                    Value::Single(v) => Some(v),
+                    Value::Array(a) => Some(a.get(x, y).ok()?),
+                },
+                CodeRunResult::Err(_) => None,
+            }
+        }
+    }
+
     /// Returns the size of the output array, or defaults to `_1X1` (since output always includes the code_cell).
     /// Note: this does not take spill_error into account.
     pub fn output_size(&self) -> ArraySize {
@@ -58,6 +74,14 @@ impl CodeRun {
     pub fn is_html(&self) -> bool {
         if let Some(code_cell_value) = self.cell_value_at(0, 0) {
             code_cell_value.is_html()
+        } else {
+            false
+        }
+    }
+
+    pub fn is_image(&self) -> bool {
+        if let Some(code_cell_value) = self.cell_value_at(0, 0) {
+            code_cell_value.is_image()
         } else {
             false
         }
@@ -97,7 +121,7 @@ impl CodeRun {
 pub enum CodeCellLanguage {
     Python,
     Formula,
-    // JavaScript,
+    Javascript,
     // Sql,
 }
 

@@ -12,9 +12,9 @@ import { sheets } from '../../../grid/controller/Sheets';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { colors } from '../../../theme/colors';
 import BottomBarItem from './BottomBarItem';
-import PythonStateItem from './PythonStateItem';
 import { SelectionSummary } from './SelectionSummary';
 import SyncState from './SyncState';
+import { KernelMenu } from './KernelMenu';
 
 export const BottomBar = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
@@ -28,9 +28,10 @@ export const BottomBar = () => {
     const updateCursor = () => {
       const cursor = sheets.sheet.cursor;
       setCursorPositionString(`(${cursor.cursorPosition.x}, ${cursor.cursorPosition.y})`);
-      if (cursor.multiCursor) {
+      if (cursor.multiCursor && cursor.multiCursor.length === 1) {
+        const multiCursor = cursor.multiCursor[0];
         setMultiCursorPositionString(
-          `(${cursor.multiCursor.originPosition.x}, ${cursor.multiCursor.originPosition.y}), (${cursor.multiCursor.terminalPosition.x}, ${cursor.multiCursor.terminalPosition.y})`
+          `(${multiCursor.left}, ${multiCursor.top}), (${multiCursor.right - 1}, ${multiCursor.bottom - 1})`
         );
       } else {
         setMultiCursorPositionString('');
@@ -107,7 +108,8 @@ export const BottomBar = () => {
       <Stack direction="row">
         <SelectionSummary />
         <SyncState />
-        {showOnDesktop && <PythonStateItem />}
+        <KernelMenu />
+        {/* {showOnDesktop && <PythonStateItem />} */}
         {provideFeedbackAction.isAvailable(permissions, isAuthenticated) && (
           <BottomBarItem
             icon={<FeedbackIcon fontSize="inherit" />}

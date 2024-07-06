@@ -11,7 +11,11 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRecoilState } from 'recoil';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { Diagnostic } from 'vscode-languageserver-types';
-import useLocalStorage from '@/shared/hooks/useLocalStorage';
+import { useJavascriptState } from '@/app/atoms/useJavascriptState';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { CodeEditorPanels } from '@/app/ui/menus/CodeEditor/CodeEditorPanels';
+import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/useCodeEditorPanelData';
+import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { cn } from '@/shared/shadcn/utils';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import { hasPermissionToEditFile } from '../../../actions';
@@ -24,43 +28,32 @@ import { CodeEditorBody } from './CodeEditorBody';
 import { CodeEditorProvider } from './CodeEditorContext';
 import { CodeEditorHeader } from './CodeEditorHeader';
 import { Console } from './Console';
-import { ResizeControl } from './ResizeControl';
 import { ReturnTypeInspector } from './ReturnTypeInspector';
 import { SaveChangesAlert } from './SaveChangesAlert';
-
-const MIN_WIDTH_EDITOR = 350;
-const MIN_WIDTH_PANEL = 300;
-const MIN_WIDTH_VISIBLE_GRID = 150;
-
-export type PanelPosition = 'bottom' | 'left';
 
 export const dispatchEditorAction = (name: string) => {
   window.dispatchEvent(new CustomEvent('run-editor-action', { detail: name }));
 };
+
+export interface ConsoleOutput {
+  stdOut?: string;
+  stdErr?: string;
+}
 
 export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
 
   const { pythonState } = usePythonState();
-  const [editorWidth, setEditorWidth] = useLocalStorage<number>(
-    'codeEditorWidth',
-    window.innerWidth * 0.35 // default to 35% of the window width
-  );
-  const [editorHeightPercentage, setEditorHeightPercentage] = useLocalStorage<number>('codeEditorHeightPercentage', 75);
-  const [panelWidth, setPanelWidth] = useLocalStorage('codeEditorPanelWidth', MIN_WIDTH_PANEL);
-  const [panelHeightPercentage, setPanelHeightPercentage] = useLocalStorage<number>(
-    'codeEditorPanelHeightPercentage',
-    50
-  );
-  const [panelPosition, setPanelPosition] = useLocalStorage<PanelPosition>('codeEditorPanelPosition', 'bottom');
+  const javascriptState = useJavascriptState();
+
   const containerRef = useRef<HTMLDivElement>(null);
 
   // update code cell
   const [codeString, setCodeString] = useState('');
 
   // code info
-  const [out, setOut] = useState<{ stdOut?: string; stdErr?: string } | undefined>(undefined);
+  const [out, setOut] = useState<ConsoleOutput | undefined>(undefined);
   const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | undefined>(undefined);
   const [spillError, setSpillError] = useState<Coordinate[] | undefined>();
   const [cellsAccessed, setCellsAccessed] = useState<SheetRect[] | undefined | null>();
@@ -69,6 +62,16 @@ export const CodeEditor = () => {
   const [editorContent, setEditorContent] = useState<string | undefined>(codeString);
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
+
+  // used to trigger vanilla changes to code editor
+  useEffect(() => {
+    events.emit('codeEditor');
+  }, [
+    showCodeEditor,
+    editorInteractionState.selectedCell.x,
+    editorInteractionState.selectedCell.y,
+    editorInteractionState.mode,
+  ]);
 
   const cellLocation: SheetPosTS = useMemo(() => {
     return {
@@ -79,7 +82,12 @@ export const CodeEditor = () => {
   }, [editorInteractionState]);
 
   const unsaved = useMemo(() => {
-    return editorContent !== codeString;
+    const unsaved = editorContent !== codeString;
+
+    // we use the for keyboardCell so we know whether we can delete a cell with
+    // the code editor open
+    pixiAppSettings.unsavedEditorChanges = unsaved;
+    return unsaved;
   }, [codeString, editorContent]);
 
   // handle someone trying to open a different code editor
@@ -94,15 +102,25 @@ export const CodeEditor = () => {
       else {
         const waitingForEditorClose = editorInteractionState.waitingForEditorClose;
         if (waitingForEditorClose) {
-          setEditorInteractionState((oldState) => ({
-            ...oldState,
-            selectedCell: waitingForEditorClose.selectedCell,
-            selectedCellSheet: waitingForEditorClose.selectedCellSheet,
-            mode: waitingForEditorClose.mode,
-            showCodeEditor: !waitingForEditorClose.showCellTypeMenu,
-            showCellTypeMenu: waitingForEditorClose.showCellTypeMenu,
-            waitingForEditorClose: undefined,
-          }));
+          if (waitingForEditorClose.inlineEditor) {
+            pixiAppSettings.changeInput(true);
+            setEditorInteractionState((oldState) => ({
+              ...oldState,
+              waitingForEditorClose: undefined,
+              showCodeEditor: false,
+            }));
+          } else {
+            setEditorInteractionState((oldState) => ({
+              ...oldState,
+              selectedCell: waitingForEditorClose.selectedCell,
+              selectedCellSheet: waitingForEditorClose.selectedCellSheet,
+              mode: waitingForEditorClose.mode,
+              showCodeEditor: !waitingForEditorClose.showCellTypeMenu && !waitingForEditorClose.inlineEditor,
+              showCellTypeMenu: waitingForEditorClose.showCellTypeMenu,
+              waitingForEditorClose: undefined,
+              initialCode: waitingForEditorClose.initialCode,
+            }));
+          }
         }
       }
     }
@@ -121,19 +139,18 @@ export const CodeEditor = () => {
           editorInteractionState.selectedCell.y
         ));
 
+      const initialCode = editorInteractionState.initialCode;
       if (codeCell) {
         setCodeString(codeCell.code_string);
         setCellsAccessed(codeCell.cells_accessed);
         setOut({ stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined });
-
-        if (!pushCodeCell) setEditorContent(codeCell.code_string);
-
+        if (!pushCodeCell) setEditorContent(initialCode ?? codeCell.code_string);
         const evaluationResult = codeCell.evaluation_result ? JSON.parse(codeCell.evaluation_result) : {};
         setEvaluationResult({ ...evaluationResult, ...codeCell.return_info });
         setSpillError(codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as Coordinate)));
       } else {
         setCodeString('');
-        if (!pushCodeCell) setEditorContent('');
+        if (!pushCodeCell) setEditorContent(initialCode ?? '');
         setEvaluationResult(undefined);
         setOut(undefined);
       }
@@ -162,9 +179,11 @@ export const CodeEditor = () => {
     cellLocation.sheetId,
     cellLocation.x,
     cellLocation.y,
+    editorInteractionState.initialCode,
     editorInteractionState.selectedCell.x,
     editorInteractionState.selectedCell.y,
     editorInteractionState.selectedCellSheet,
+    setEditorInteractionState,
   ]);
 
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
@@ -178,7 +197,7 @@ export const CodeEditor = () => {
 
   useEffect(() => {
     mixpanel.track('[CodeEditor].opened', { type: editorMode });
-    multiplayer.sendCellEdit('', 0, true);
+    multiplayer.sendCellEdit({ text: '', cursor: 0, codeEditor: true, inlineCodeEditor: false });
   }, [editorMode]);
 
   const closeEditor = useCallback(
@@ -190,8 +209,9 @@ export const CodeEditor = () => {
           ...oldState,
           editorEscapePressed: false,
           showCodeEditor: false,
+          initialCode: undefined,
         }));
-        pixiApp.highlightedCells.clear();
+        pixiApp.cellHighlights.clear();
         focusGrid();
         multiplayer.sendEndCellEdit();
       }
@@ -223,7 +243,6 @@ export const CodeEditor = () => {
       language,
       cursor: sheets.getCursorPosition(),
     });
-
     setCodeString(editorContent ?? '');
 
     mixpanel.track('[CodeEditor].cellRun', {
@@ -238,10 +257,16 @@ export const CodeEditor = () => {
     }
   };
 
-  const cancelPython = () => {
-    if (pythonState !== 'running') return;
-
-    pythonWebWorker.cancelExecution();
+  const cancelRun = () => {
+    if (editorInteractionState.mode === 'Python') {
+      if (pythonState === 'running') {
+        pythonWebWorker.cancelExecution();
+      }
+    } else if (editorInteractionState.mode === 'Javascript') {
+      if (javascriptState === 'running') {
+        javascriptWebWorker.cancelExecution();
+      }
+    }
   };
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -267,7 +292,7 @@ export const CodeEditor = () => {
     if ((event.metaKey || event.ctrlKey) && event.key === 'Escape') {
       event.preventDefault();
       event.stopPropagation();
-      cancelPython();
+      cancelRun();
     }
 
     // Command + Plus
@@ -304,62 +329,20 @@ export const CodeEditor = () => {
         selectedCell: waitingForEditorClose.selectedCell,
         selectedCellSheet: waitingForEditorClose.selectedCellSheet,
         mode: waitingForEditorClose.mode,
-        showCodeEditor: !waitingForEditorClose.showCellTypeMenu,
+        showCodeEditor: !waitingForEditorClose.showCellTypeMenu && !waitingForEditorClose.inlineEditor,
         showCellTypeMenu: waitingForEditorClose.showCellTypeMenu,
         waitingForEditorClose: undefined,
+        initialCode: waitingForEditorClose.initialCode,
       }));
+      if (waitingForEditorClose.inlineEditor) {
+        pixiAppSettings.changeInput(true);
+      }
     } else {
       closeEditor(true);
     }
   };
 
-  // Whenever we change the position of the panel to be left-to-right, make sure
-  // there's enough width for the editor and the panel
-  useEffect(() => {
-    if (panelPosition === 'left') {
-      if (editorWidth + panelWidth > window.innerWidth - MIN_WIDTH_VISIBLE_GRID) {
-        setPanelWidth(MIN_WIDTH_PANEL);
-        setEditorWidth(window.innerWidth - MIN_WIDTH_PANEL - MIN_WIDTH_VISIBLE_GRID);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [panelPosition]);
-
-  // When the window resizes, recalculate the appropriate proportions for
-  // the editor and the panel
-  useEffect(() => {
-    const handleResize = (event: any) => {
-      const width = event.target.innerWidth;
-
-      if (width < 1024) return;
-
-      const availableWidth = width - MIN_WIDTH_VISIBLE_GRID;
-      if (panelPosition === 'left' && panelWidth + editorWidth > availableWidth) {
-        const totalOldWidth = editorWidth + panelWidth;
-
-        setEditorWidth((oldEditorWidth) => {
-          const editorPercentage = oldEditorWidth / totalOldWidth;
-          return availableWidth * editorPercentage;
-        });
-
-        setPanelWidth((oldPanelWidth) => {
-          const panelPercentage = oldPanelWidth / totalOldWidth;
-          return availableWidth * panelPercentage;
-        });
-      } else if (panelPosition === 'bottom' && editorWidth > availableWidth) {
-        const totalOldWidth = editorWidth;
-        setEditorWidth((oldEditorWidth) => {
-          const editorPercentage = oldEditorWidth / totalOldWidth;
-          return availableWidth * editorPercentage;
-        });
-      }
-    };
-
-    window.addEventListener('resize', handleResize, true);
-    return () => {
-      window.removeEventListener('resize', handleResize, true);
-    };
-  }, [editorWidth, panelPosition, panelWidth, setEditorWidth, setPanelWidth]);
+  const codeEditorPanelData = useCodeEditorPanelData();
 
   if (!showCodeEditor) {
     return null;
@@ -370,25 +353,29 @@ export const CodeEditor = () => {
       <div
         ref={containerRef}
         className={cn(
-          'absolute bottom-0 right-0 top-0 z-[2] flex bg-background',
-          panelPosition === 'left' ? '' : 'flex-col'
+          'relative flex select-none bg-background',
+          codeEditorPanelData.panelPosition === 'left' ? '' : 'flex-col'
         )}
-        style={{ width: `${editorWidth + (panelPosition === 'left' ? panelWidth : 0)}px` }}
+        style={{
+          width: `${
+            codeEditorPanelData.editorWidth +
+            (codeEditorPanelData.panelPosition === 'left' ? codeEditorPanelData.panelWidth : 0)
+          }px`,
+          borderLeft: '1px solid black',
+        }}
       >
         <div
           id="QuadraticCodeEditorID"
-          className={cn('flex flex-col', panelPosition === 'left' ? 'order-2' : 'order-1')}
+          className={cn('flex flex-col', codeEditorPanelData.panelPosition === 'left' ? 'order-2' : 'order-1')}
           style={{
-            width: `${editorWidth}px`,
-            height: panelPosition === 'left' ? '100%' : `${editorHeightPercentage}%`,
+            width: `${codeEditorPanelData.editorWidth}px`,
+            height:
+              codeEditorPanelData.panelPosition === 'left' ? '100%' : `${codeEditorPanelData.editorHeightPercentage}%`,
           }}
           onKeyDownCapture={onKeyDownEditor}
           onPointerEnter={() => {
             // todo: handle multiplayer code editor here
             multiplayer.sendMouseMove();
-          }}
-          onPointerMove={(e) => {
-            e.stopPropagation();
           }}
         >
           {showSaveChangesAlert && (
@@ -415,7 +402,7 @@ export const CodeEditor = () => {
             cellLocation={cellLocation}
             unsaved={unsaved}
             saveAndRunCell={saveAndRunCell}
-            cancelPython={cancelPython}
+            cancelRun={cancelRun}
             closeEditor={() => closeEditor(false)}
           />
           <CodeEditorBody
@@ -424,126 +411,39 @@ export const CodeEditor = () => {
             closeEditor={closeEditor}
             evaluationResult={evaluationResult}
             cellsAccessed={!unsaved ? cellsAccessed : []}
+            cellLocation={cellLocation}
           />
-          {editorInteractionState.mode === 'Python' && (
+          {['Javascript', 'Python'].includes(editorInteractionState.mode as string) && (
             <ReturnTypeInspector
               evaluationResult={evaluationResult}
               show={Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved)}
+              language={editorInteractionState.mode}
             />
           )}
-
-          {/* Console Wrapper */}
         </div>
 
         <div
-          className={cn(panelPosition === 'left' ? 'order-1' : 'order-2', 'relative flex flex-col bg-background')}
+          className={cn(
+            codeEditorPanelData.panelPosition === 'left' ? 'order-1' : 'order-2',
+            'relative flex flex-col bg-background'
+          )}
           style={{
-            width: panelPosition === 'left' ? `${panelWidth}px` : '100%',
-            height: panelPosition === 'left' ? '100%' : `${100 - editorHeightPercentage}%`,
+            width: codeEditorPanelData.panelPosition === 'left' ? `${codeEditorPanelData.panelWidth}px` : '100%',
+            height:
+              codeEditorPanelData.panelPosition === 'left'
+                ? '100%'
+                : `${100 - codeEditorPanelData.editorHeightPercentage}%`,
           }}
         >
           <Console
             consoleOutput={out}
-            editorMode={editorMode}
             editorContent={editorContent}
-            evaluationResult={evaluationResult}
             spillError={spillError}
-            panelPosition={panelPosition}
-            setPanelPosition={setPanelPosition}
-            panelHeightPercentage={panelHeightPercentage}
+            codeEditorPanelData={codeEditorPanelData}
+            editorInteractionState={editorInteractionState}
           />
         </div>
-
-        {panelPosition === 'left' && (
-          <>
-            {/* left-to-right: height of sections in panel */}
-            <ResizeControl
-              style={{ top: panelHeightPercentage + '%', width: panelWidth + 'px' }}
-              setState={(mouseEvent) => {
-                if (!containerRef.current) return;
-
-                const containerRect = containerRef.current?.getBoundingClientRect();
-                const newValue = ((mouseEvent.clientY - containerRect.top) / containerRect.height) * 100;
-                if (newValue >= 25 && newValue <= 75) {
-                  setPanelHeightPercentage(newValue);
-                }
-              }}
-              position="HORIZONTAL"
-            />
-            {/* left-to-right: outer edge */}
-            <ResizeControl
-              style={{ left: `-1px` }}
-              setState={(mouseEvent) => {
-                const offsetFromRight = window.innerWidth - mouseEvent.x;
-                const min = MIN_WIDTH_PANEL + MIN_WIDTH_EDITOR;
-                const max = window.innerWidth - MIN_WIDTH_VISIBLE_GRID;
-
-                if (offsetFromRight > min && offsetFromRight < max) {
-                  const totalOldWidth = editorWidth + panelWidth;
-                  setEditorWidth((oldEditorWidth) => {
-                    const editorPercentage = oldEditorWidth / totalOldWidth;
-                    const newValue = offsetFromRight * editorPercentage;
-                    return newValue > MIN_WIDTH_EDITOR ? newValue : MIN_WIDTH_EDITOR;
-                  });
-                  setPanelWidth((oldPanelWidth) => {
-                    const panelPercentage = oldPanelWidth / totalOldWidth;
-                    const newValue = offsetFromRight * panelPercentage;
-                    return newValue > MIN_WIDTH_PANEL ? newValue : MIN_WIDTH_PANEL;
-                  });
-                }
-              }}
-              position="VERTICAL"
-            />
-            {/* left-to-right: middle line */}
-            <ResizeControl
-              style={{ left: `${panelWidth}px` }}
-              setState={(mouseEvent) => {
-                const offsetFromRight = window.innerWidth - mouseEvent.x;
-                const totalWidth = editorWidth + panelWidth;
-                const newEditorWidth = offsetFromRight;
-                const newPanelWidth = totalWidth - offsetFromRight;
-
-                if (newEditorWidth > MIN_WIDTH_EDITOR && newPanelWidth > MIN_WIDTH_PANEL) {
-                  setEditorWidth(newEditorWidth);
-                  setPanelWidth(newPanelWidth);
-                }
-              }}
-              position="VERTICAL"
-            />
-          </>
-        )}
-
-        {panelPosition === 'bottom' && (
-          <>
-            {/* top-to-bottom: editor width */}
-            <ResizeControl
-              style={{ left: '-1px' }}
-              setState={(mouseEvent) => {
-                const offsetFromRight = window.innerWidth - mouseEvent.x;
-                const min = MIN_WIDTH_EDITOR;
-                const max = window.innerWidth - MIN_WIDTH_VISIBLE_GRID;
-                const newValue = offsetFromRight > max ? max : offsetFromRight < min ? min : offsetFromRight;
-                setEditorWidth(newValue);
-              }}
-              position="VERTICAL"
-            />
-            {/* top-to-bottom: height of sections */}
-            <ResizeControl
-              style={{ top: editorHeightPercentage + '%', width: '100%' }}
-              setState={(mouseEvent) => {
-                if (!containerRef.current) return;
-
-                const containerRect = containerRef.current?.getBoundingClientRect();
-                const newTopHeight = ((mouseEvent.clientY - containerRect.top) / containerRect.height) * 100;
-
-                if (newTopHeight >= 25 && newTopHeight <= 75) {
-                  setEditorHeightPercentage(newTopHeight);
-                }
-              }}
-              position="HORIZONTAL"
-            />
-          </>
-        )}
+        <CodeEditorPanels containerRef={containerRef} codeEditorPanelData={codeEditorPanelData} />
       </div>
     </CodeEditorProvider>
   );

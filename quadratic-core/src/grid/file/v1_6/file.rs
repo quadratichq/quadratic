@@ -7,6 +7,7 @@ use crate::{grid::CodeCellLanguage, CellValue, CodeCellValue};
 
 pub fn export_cell_value(cell_value: &CellValue) -> current::CellValue {
     match cell_value {
+        CellValue::Blank => current::CellValue::Blank,
         CellValue::Text(text) => current::CellValue::Text(text.to_owned()),
         CellValue::Number(number) => export_cell_value_number(number),
         CellValue::Html(html) => current::CellValue::Html(html.to_owned()),
@@ -15,6 +16,7 @@ pub fn export_cell_value(cell_value: &CellValue) -> current::CellValue {
             language: match cell_code.language {
                 CodeCellLanguage::Python => current::CodeCellLanguage::Python,
                 CodeCellLanguage::Formula => current::CodeCellLanguage::Formula,
+                CodeCellLanguage::Javascript => current::CodeCellLanguage::Javascript,
             },
         }),
         CellValue::Logical(logical) => current::CellValue::Logical(*logical),
@@ -23,7 +25,7 @@ pub fn export_cell_value(cell_value: &CellValue) -> current::CellValue {
         CellValue::Error(error) => {
             current::CellValue::Error(current::RunError::from_grid_run_error(error))
         }
-        CellValue::Blank => current::CellValue::Blank,
+        CellValue::Image(image) => current::CellValue::Text(image.clone()),
     }
 }
 
@@ -41,6 +43,7 @@ pub fn import_cell_value_number(number: String) -> CellValue {
 
 pub fn import_cell_value(value: &current::CellValue) -> CellValue {
     match value {
+        current::CellValue::Blank => CellValue::Blank,
         current::CellValue::Text(text) => CellValue::Text(text.to_owned()),
         current::CellValue::Number(number) => import_cell_value_number(number.to_owned()),
         current::CellValue::Html(html) => CellValue::Html(html.to_owned()),
@@ -49,17 +52,18 @@ pub fn import_cell_value(value: &current::CellValue) -> CellValue {
             language: match code_cell.language {
                 current::CodeCellLanguage::Python => CodeCellLanguage::Python,
                 current::CodeCellLanguage::Formula => CodeCellLanguage::Formula,
+                current::CodeCellLanguage::Javascript => CodeCellLanguage::Javascript,
             },
         }),
         current::CellValue::Logical(logical) => CellValue::Logical(*logical),
-        current::CellValue::Instant(_instant) => {
-            todo!()
+        current::CellValue::Instant(instant) => {
+            CellValue::Instant(serde_json::from_str(instant).unwrap_or_default())
         }
-        current::CellValue::Duration(_duration) => {
-            todo!()
+        current::CellValue::Duration(duration) => {
+            CellValue::Duration(serde_json::from_str(duration).unwrap_or_default())
         }
         current::CellValue::Error(error) => CellValue::Error(Box::new((*error).clone().into())),
-        current::CellValue::Blank => CellValue::Blank,
+        current::CellValue::Image(text) => CellValue::Image(text.to_owned()),
     }
 }
 

@@ -7,13 +7,17 @@ import {
   JsRenderBorders,
   JsRenderCodeCell,
   JsRenderFill,
+  JsSheetFill,
+  Selection,
   SheetBounds,
   SheetInfo,
 } from '@/app/quadratic-core-types';
+import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import { CellEdit, MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
-import { CodeRun, PythonStateType } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
+import { CodeRun } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
 import {
+  CoreClientImage,
   CoreClientImportProgress,
   CoreClientTransactionProgress,
   CoreClientTransactionStart,
@@ -21,7 +25,7 @@ import {
 import EventEmitter from 'eventemitter3';
 
 interface EventTypes {
-  needRefresh: (state: 'required' | 'recommended') => void;
+  needRefresh: (state: 'required' | 'recommended' | 'force') => void;
 
   search: (found?: SheetPosTS[], current?: number) => void;
   hoverCell: (cell?: JsRenderCodeCell | EditingCell) => void;
@@ -38,22 +42,26 @@ interface EventTypes {
   changeSheet: () => void;
   sheetBounds: (sheetBounds: SheetBounds) => void;
 
-  setCursor: (cursor: string) => void;
+  setCursor: (cursor?: string, selection?: Selection) => void;
   cursorPosition: () => void;
   generateThumbnail: () => void;
-  changeInput: (input: boolean) => void;
+  changeInput: (input: boolean, initialValue?: string) => void;
   headingSize: (width: number, height: number) => void;
   gridSettings: () => void;
 
   sheetOffsets: (sheetId: string, column: number | undefined, row: number | undefined, size: number) => void;
   sheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
+  sheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
   htmlOutput: (html: JsHtmlOutput[]) => void;
   htmlUpdate: (html: JsHtmlOutput) => void;
   sheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
   renderCodeCells: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
 
   pythonInit: (version: string) => void;
-  pythonState: (state: PythonStateType, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
+  pythonState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
+  javascriptInit: (version: string) => void;
+  javascriptState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
+
   updateCodeCell: (options: {
     sheetId: string;
     x: number;
@@ -61,6 +69,7 @@ interface EventTypes {
     codeCell?: JsCodeCell;
     renderCodeCell?: JsRenderCodeCell;
   }) => void;
+  updateImage: (message: CoreClientImage) => void;
 
   importProgress: (message: CoreClientImportProgress) => void;
   transactionStart: (message: CoreClientTransactionStart) => void;
@@ -74,11 +83,14 @@ interface EventTypes {
   multiplayerFollow: () => void;
   multiplayerCodeRunning: (multiplayerUser: MultiplayerUser) => void;
 
-  resizeHeadingColumn: (column: number) => void;
+  resizeHeadingColumn: (sheetId: string, column: number) => void;
 
   offlineTransactions: (transactions: number, operations: number) => void;
 
+  codeEditor: () => void;
   cellMoving: (move: boolean) => void;
+
+  insertCodeEditorText: (text: string) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

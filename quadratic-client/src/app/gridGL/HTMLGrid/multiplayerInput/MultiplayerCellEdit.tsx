@@ -19,7 +19,7 @@ export const MultiplayerCellEdit = (props: Props) => {
   const [formatting, setFormatting] = useState<CellFormatSummary | undefined>();
   useEffect(() => {
     (async () => {
-      const format = await quadraticCore.getCellFormatSummary(sheet.id, input.location.x, input.location.y);
+      const format = await quadraticCore.getCellFormatSummary(sheet.id, input.location.x, input.location.y, true);
       setFormatting(format);
     })();
   }, [input.location, sheet.id]);

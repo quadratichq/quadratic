@@ -8,6 +8,7 @@ use crate::{
 };
 
 impl GridController {
+    // Supports deprecated SetCellFormats operation.
     pub(crate) fn execute_set_cell_formats(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -49,7 +50,23 @@ impl GridController {
 
             if !transaction.is_server() {
                 match &attr {
-                    CellFmtArray::RenderSize(_) => self.send_html_output_rect(&sheet_rect),
+                    CellFmtArray::RenderSize(_) => {
+                        // RenderSize is always sent as a 1,1 rect. TODO: we need to refactor formats to make it less generic.
+                        if let Some(sheet) = self.grid.try_sheet(sheet_rect.sheet_id) {
+                            if let Some(code_run) =
+                                sheet.code_run((sheet_rect.min.x, sheet_rect.min.y).into())
+                            {
+                                if code_run.is_html() {
+                                    self.send_html_output_rect(&sheet_rect);
+                                } else if code_run.is_image() {
+                                    self.send_image(
+                                        (sheet_rect.min.x, sheet_rect.min.y, sheet_rect.sheet_id)
+                                            .into(),
+                                    );
+                                }
+                            }
+                        }
+                    }
                     CellFmtArray::FillColor(_) => self.send_fill_cells(&sheet_rect),
                     _ => {
                         self.send_updated_bounds_rect(&sheet_rect, true);
@@ -72,5 +89,94 @@ impl GridController {
                 },
             );
         }
+    }
+
+    /// Executes SetCellFormatsSelection operation.
+    pub fn execute_set_cell_formats_selection(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::SetCellFormatsSelection { selection, formats } = op {
+            if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
+                let reverse_operations = sheet.set_formats_selection(&selection, &formats);
+
+                if !transaction.is_server() {
+                    self.send_updated_bounds_selection(&selection, true);
+                }
+
+                transaction.generate_thumbnail |= self.thumbnail_dirty_selection(&selection);
+
+                transaction
+                    .forward_operations
+                    .push(Operation::SetCellFormatsSelection { selection, formats });
+
+                transaction
+                    .reverse_operations
+                    .splice(0..0, reverse_operations.iter().cloned());
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::{
+        wasm_bindings::js::expect_js_call, CellValue, CodeCellValue, Pos, SheetRect, Value,
+    };
+    use chrono::Utc;
+    use serial_test::serial;
+    use std::collections::HashSet;
+
+    #[test]
+    #[serial]
+    fn execute_set_formats_render_size() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+
+        sheet.test_set_code_run_single(
+            0,
+            0,
+            crate::CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Javascript,
+                code: "code".to_string(),
+            }),
+        );
+        sheet.set_code_run(
+            Pos { x: 0, y: 0 },
+            Some(CodeRun {
+                formatted_code_string: None,
+                spill_error: false,
+                output_type: None,
+                std_err: None,
+                std_out: None,
+                result: CodeRunResult::Ok(Value::Single(CellValue::Image("image".to_string()))),
+                cells_accessed: HashSet::new(),
+                return_type: None,
+                line_number: None,
+                last_modified: Utc::now(),
+            }),
+        );
+
+        gc.set_cell_render_size(
+            SheetRect::from_numbers(0, 0, 1, 1, sheet_id),
+            Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string(),
+            }),
+            None,
+        );
+        let args = format!(
+            "{},{},{},{:?},{:?},{:?}",
+            sheet_id,
+            0,
+            0,
+            true,
+            Some("1".to_string()),
+            Some("2".to_string())
+        );
+        expect_js_call("jsSendImage", args, true);
     }
 }
