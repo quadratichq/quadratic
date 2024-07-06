@@ -7,17 +7,20 @@
  * populates the buffers for the relevant LabelMeshes based on this data.
  */
 
+import { Bounds } from '@/app/grid/sheet/Bounds';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
-import { CellAlign, CellVerticalAlign, CellWrap, JsRenderCell } from '@/app/quadratic-core-types';
+import { CellAlign, CellVerticalAlign, CellWrap, JsNumber, JsRenderCell } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { CELL_TEXT_MARGIN_LEFT } from '@/shared/constants/gridConstants';
 import { removeItems } from '@pixi/utils';
 import { Point, Rectangle } from 'pixi.js';
 import { RenderBitmapChar } from '../../renderBitmapFonts';
-import { CellsLabels } from './CellsLabels';
-import { LabelMeshes } from './LabelMeshes';
 import { extractCharCode, splitTextToCharacters } from './bitmapTextUtils';
+import { CellsLabels } from './CellsLabels';
+import { convertNumber } from './convertNumber';
+import { LabelMeshEntry } from './LabelMeshEntry';
+import { LabelMeshes } from './LabelMeshes';
 
 interface CharRenderData {
   charData: RenderBitmapChar;
@@ -46,6 +49,7 @@ export class CellLabel {
   visible = true;
 
   text: string;
+  number?: JsNumber;
 
   // created in updateFontName()
   fontName!: string;
@@ -98,7 +102,12 @@ export class CellLabel {
       case 'Chart':
         return CHART_TEXT;
       default:
-        return cell?.value;
+        if (cell.value !== undefined && cell.number) {
+          this.number = cell.number;
+          return convertNumber(cell.value, cell.number);
+        } else {
+          return cell?.value;
+        }
     }
   }
 
@@ -287,7 +296,7 @@ export class CellLabel {
       const charRenderData: CharRenderData = {
         labelMeshId,
         charData,
-        line: line,
+        line,
         charCode: charCode,
         prevSpaces: spaceCount,
         position: new Point(pos.x + charData.xOffset + this.letterSpacing / 2, pos.y + charData.yOffset),
@@ -370,8 +379,127 @@ export class CellLabel {
     this.calculatePosition();
   }
 
+  // replaces numbers with pound signs when the number overflows
+  private showPoundLabels(labelMeshes: LabelMeshes): Bounds {
+    const data = this.cellsLabels.bitmapFonts[this.fontName];
+    if (!data) throw new Error(`Expected BitmapFont ${this.fontName} to be defined in CellLabel.updateText`);
+
+    const scale = this.fontSize / data.size;
+    const color = this.tint ? convertTintToArray(this.tint) : undefined;
+
+    // keep track of the min/max x/y values for the viewRectangle
+    const bounds = new Bounds();
+
+    const charCode = extractCharCode('#');
+    const charData = data.chars[charCode];
+    const labelMeshId = labelMeshes.add(this.fontName, fontSize, charData.textureUid, !!this.tint);
+    const labelMesh = labelMeshes.get(labelMeshId);
+    const textureFrame = charData.frame;
+    const textureUvs = charData.uvs;
+    const buffer = labelMesh.getBuffer();
+
+    let x = 0;
+    const charWidth = charData.xAdvance * scale + this.letterSpacing;
+    const count = Math.floor(this.AABB.width / charWidth);
+    const textWidth = charWidth * count;
+
+    const actualLeft = this.AABB.left + (this.AABB.width - textWidth) / 2 - OPEN_SANS_FIX.x;
+    const actualRight = actualLeft + textWidth;
+    if (actualLeft < this.AABB.left) {
+      this.overflowLeft = this.AABB.left - actualLeft;
+    }
+    if (actualRight > this.AABB.right) {
+      this.overflowRight = actualRight - this.AABB.right;
+    }
+    this.position = new Point(actualLeft, this.AABB.top);
+
+    this.cellClipLeft = this.AABB.left;
+    this.cellClipRight = this.AABB.right;
+    this.cellClipTop = this.AABB.top;
+    this.cellClipBottom = this.AABB.bottom;
+    this.maxWidth = undefined;
+
+    for (let i = 0; i < count; i++) {
+      const xPos = this.position.x + x * scale + OPEN_SANS_FIX.x;
+      const yPos = this.position.y + OPEN_SANS_FIX.y;
+      this.insertBuffers({ buffer, bounds, xPos, yPos, textureFrame, textureUvs, scale, color });
+      x += charData.xAdvance + this.letterSpacing;
+    }
+
+    // this removes extra characters from the mesh after a clip
+    buffer.reduceSize(6 * (this.chars.length - count));
+
+    return bounds;
+  }
+
+  private insertBuffers(options: {
+    buffer: LabelMeshEntry;
+    xPos: number;
+    yPos: number;
+    textureFrame: any;
+    textureUvs: any;
+    scale: number;
+    color?: number[];
+    bounds: Bounds;
+  }) {
+    const { buffer, xPos, yPos, textureFrame, textureUvs, scale, color, bounds } = options;
+
+    const index = buffer.index;
+    const buffers = buffer;
+
+    buffers.indices![index * 6 + 0] = 0 + index * 4;
+    buffers.indices![index * 6 + 1] = 1 + index * 4;
+    buffers.indices![index * 6 + 2] = 2 + index * 4;
+    buffers.indices![index * 6 + 3] = 0 + index * 4;
+    buffers.indices![index * 6 + 4] = 2 + index * 4;
+    buffers.indices![index * 6 + 5] = 3 + index * 4;
+
+    buffers.vertices![index * 8 + 0] = xPos;
+    buffers.vertices![index * 8 + 1] = yPos;
+    const right = xPos + textureFrame.width * scale;
+    buffers.vertices![index * 8 + 2] = right;
+    buffers.vertices![index * 8 + 3] = yPos;
+    buffers.vertices![index * 8 + 4] = right;
+    const bottom = yPos + textureFrame.height * scale;
+    buffers.vertices![index * 8 + 5] = bottom;
+    buffers.vertices![index * 8 + 6] = xPos;
+    buffers.vertices![index * 8 + 7] = bottom;
+
+    bounds.add(xPos, yPos);
+    bounds.add(right, bottom);
+
+    buffers.uvs![index * 8 + 0] = textureUvs[0];
+    buffers.uvs![index * 8 + 1] = textureUvs[1];
+    buffers.uvs![index * 8 + 2] = textureUvs[2];
+    buffers.uvs![index * 8 + 3] = textureUvs[3];
+    buffers.uvs![index * 8 + 4] = textureUvs[4];
+    buffers.uvs![index * 8 + 5] = textureUvs[5];
+    buffers.uvs![index * 8 + 6] = textureUvs[6];
+    buffers.uvs![index * 8 + 7] = textureUvs[7];
+
+    if (color) {
+      buffers.colors![index * 16 + 0] = color[0];
+      buffers.colors![index * 16 + 1] = color[1];
+      buffers.colors![index * 16 + 2] = color[2];
+      buffers.colors![index * 16 + 3] = color[3];
+      buffers.colors![index * 16 + 4] = color[0];
+      buffers.colors![index * 16 + 5] = color[1];
+      buffers.colors![index * 16 + 6] = color[2];
+      buffers.colors![index * 16 + 7] = color[3];
+      buffers.colors![index * 16 + 8] = color[0];
+      buffers.colors![index * 16 + 9] = color[1];
+      buffers.colors![index * 16 + 10] = color[2];
+      buffers.colors![index * 16 + 11] = color[3];
+      buffers.colors![index * 16 + 12] = color[0];
+      buffers.colors![index * 16 + 13] = color[1];
+      buffers.colors![index * 16 + 14] = color[2];
+      buffers.colors![index * 16 + 15] = color[3];
+    }
+    buffer.index++;
+  }
+
   /** Adds the glyphs to the CellsLabels */
-  updateLabelMesh(labelMeshes: LabelMeshes): { minX: number; minY: number; maxX: number; maxY: number } | undefined {
+  updateLabelMesh(labelMeshes: LabelMeshes): Bounds | undefined {
     if (!this.visible) return;
 
     const data = this.cellsLabels.bitmapFonts[this.fontName];
@@ -379,11 +507,11 @@ export class CellLabel {
     const scale = this.fontSize / data.size;
     const color = this.tint ? convertTintToArray(this.tint) : undefined;
 
-    // keep track of the min/max x/y values for the viewRectangle
-    let minX = Infinity,
-      minY = Infinity,
-      maxX = -Infinity,
-      maxY = -Infinity;
+    if (this.number) {
+      return this.showPoundLabels(labelMeshes);
+    }
+
+    const bounds = new Bounds();
 
     for (let i = 0; i < this.chars.length; i++) {
       const char = this.chars[i];
@@ -411,63 +539,10 @@ export class CellLabel {
         // this removes extra characters from the mesh after a clip
         buffer.reduceSize(6);
       } else {
-        const index = buffer.index;
-        const buffers = buffer;
-
-        buffers.indices![index * 6 + 0] = 0 + index * 4;
-        buffers.indices![index * 6 + 1] = 1 + index * 4;
-        buffers.indices![index * 6 + 2] = 2 + index * 4;
-        buffers.indices![index * 6 + 3] = 0 + index * 4;
-        buffers.indices![index * 6 + 4] = 2 + index * 4;
-        buffers.indices![index * 6 + 5] = 3 + index * 4;
-
-        buffers.vertices![index * 8 + 0] = xPos;
-        buffers.vertices![index * 8 + 1] = yPos;
-        const right = xPos + textureFrame.width * scale;
-        buffers.vertices![index * 8 + 2] = right;
-        buffers.vertices![index * 8 + 3] = yPos;
-        buffers.vertices![index * 8 + 4] = right;
-        const bottom = yPos + textureFrame.height * scale;
-        buffers.vertices![index * 8 + 5] = bottom;
-        buffers.vertices![index * 8 + 6] = xPos;
-        buffers.vertices![index * 8 + 7] = bottom;
-
-        minX = Math.min(minX, xPos);
-        minY = Math.min(minY, yPos);
-        maxX = Math.max(maxX, right);
-        maxY = Math.max(maxY, bottom);
-
-        buffers.uvs![index * 8 + 0] = textureUvs[0];
-        buffers.uvs![index * 8 + 1] = textureUvs[1];
-        buffers.uvs![index * 8 + 2] = textureUvs[2];
-        buffers.uvs![index * 8 + 3] = textureUvs[3];
-        buffers.uvs![index * 8 + 4] = textureUvs[4];
-        buffers.uvs![index * 8 + 5] = textureUvs[5];
-        buffers.uvs![index * 8 + 6] = textureUvs[6];
-        buffers.uvs![index * 8 + 7] = textureUvs[7];
-
-        if (color) {
-          buffers.colors![index * 16 + 0] = color[0];
-          buffers.colors![index * 16 + 1] = color[1];
-          buffers.colors![index * 16 + 2] = color[2];
-          buffers.colors![index * 16 + 3] = color[3];
-          buffers.colors![index * 16 + 4] = color[0];
-          buffers.colors![index * 16 + 5] = color[1];
-          buffers.colors![index * 16 + 6] = color[2];
-          buffers.colors![index * 16 + 7] = color[3];
-          buffers.colors![index * 16 + 8] = color[0];
-          buffers.colors![index * 16 + 9] = color[1];
-          buffers.colors![index * 16 + 10] = color[2];
-          buffers.colors![index * 16 + 11] = color[3];
-          buffers.colors![index * 16 + 12] = color[0];
-          buffers.colors![index * 16 + 13] = color[1];
-          buffers.colors![index * 16 + 14] = color[2];
-          buffers.colors![index * 16 + 15] = color[3];
-        }
-        buffer.index++;
+        this.insertBuffers({ buffer, bounds, xPos, yPos, textureFrame, textureUvs, scale, color });
       }
     }
-    return { minX, minY, maxX, maxY };
+    return bounds;
   }
 
   // these are used to adjust column/row sizes without regenerating glyphs

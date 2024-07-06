@@ -10,7 +10,7 @@ use quadratic_core::{
     },
     grid::{
         js_types::{
-            JsCodeCell, JsHtmlOutput, JsRenderBorder, JsRenderBorders, JsRenderCell,
+            JsCodeCell, JsHtmlOutput, JsNumber, JsRenderBorder, JsRenderBorders, JsRenderCell,
             JsRenderCellSpecial, JsRenderCodeCell, JsRenderCodeCellState,
         },
         sheet::search::SearchOptions,
@@ -52,6 +52,7 @@ fn main() {
         JsRenderCodeCellState,
         JsRenderCellSpecial,
         JsRenderCell,
+        JsNumber,
         formulas::RangeRef,
         formulas::CellRef,
         formulas::CellRefCoord,
