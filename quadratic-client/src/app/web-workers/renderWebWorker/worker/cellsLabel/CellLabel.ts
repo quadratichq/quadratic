@@ -421,7 +421,7 @@ export class CellLabel {
 
     for (let i = 0; i < count; i++) {
       const xPos = this.position.x + x * scale + OPEN_SANS_FIX.x;
-      const yPos = this.position.y + OPEN_SANS_FIX.y;
+      const yPos = this.position.y + OPEN_SANS_FIX.y + charData.yOffset * scale;
       this.insertBuffers({ buffer, bounds, xPos, yPos, textureFrame, textureUvs, scale, color });
       x += charData.xAdvance + this.letterSpacing;
     }
@@ -507,7 +507,7 @@ export class CellLabel {
     const scale = this.fontSize / data.size;
     const color = this.tint ? convertTintToArray(this.tint) : undefined;
 
-    if (this.number) {
+    if (this.number && this.textWidth > this.AABB.width) {
       return this.showPoundLabels(labelMeshes);
     }
 
