@@ -1,15 +1,36 @@
+#cell-edit .monaco-editor .view-lines {
+  display: flex !important;
+}
+
+#cell-edit .monaco-editor[data-text-align='left'] .view-lines,
+#cell-edit .monaco-editor[data-text-align='justify'] .view-lines {
+  justify-content: left;
+}
+
+#cell-edit .monaco-editor[data-text-align='right'] .view-lines {
+  justify-content: right;
+}
+
+#cell-edit .monaco-editor[data-text-align='center'] .view-lines {
+  justify-content: center;
+}
+
 #cell-edit .monaco-editor[data-text-align='left'] .view-line {
+  width: min-content;
   text-align: left;
 }
 
 #cell-edit .monaco-editor[data-text-align='right'] .view-line {
+  width: min-content;
   text-align: right;
 }
 
 #cell-edit .monaco-editor[data-text-align='center'] .view-line {
+  width: min-content;
   text-align: center;
 }
 
 #cell-edit .monaco-editor[data-text-align='justify'] .view-line {
+  width: max-content;
   text-align: justify;
 }

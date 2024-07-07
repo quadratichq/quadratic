@@ -29,13 +29,14 @@ export const InlineEditor = () => {
           variant="ghost"
           style={{
             position: 'absolute',
+            display: 'flex',
             alignItems: 'center',
             borderRadius: '0',
             padding: '0',
             marginTop: '-0.23px',
             width: '23px',
             height: '23.23px',
-            right: '-23px',
+            right: '-24px',
             backgroundColor: colors.languageFormula,
           }}
         >

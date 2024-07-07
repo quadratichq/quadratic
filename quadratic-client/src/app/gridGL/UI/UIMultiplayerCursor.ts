@@ -2,7 +2,6 @@ import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer'
 import { Graphics } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { Coordinate } from '../types/size';
-import { CELL_INPUT_PADDING } from './Cursor';
 import { drawColumnRowCursor, drawMultiCursor } from './drawCursor';
 
 export const CURSOR_THICKNESS = 1;
@@ -41,8 +40,8 @@ export class UIMultiPlayerCursor extends Graphics {
       const cellEdit = document.querySelector(`.multiplayer-cell-edit-${sessionId}`) as HTMLDivElement;
       // it's possible that we run this before react creates the DOM element with this class
       if (cellEdit) {
-        if (cellEdit.offsetWidth + CELL_INPUT_PADDING > width) {
-          width = Math.max(cellEdit.offsetWidth + CELL_INPUT_PADDING, width);
+        if (cellEdit.offsetWidth + CURSOR_THICKNESS * 2 > width) {
+          width = Math.max(cellEdit.offsetWidth + CURSOR_THICKNESS * 2, width);
         }
       }
     }
