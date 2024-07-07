@@ -176,6 +176,11 @@ export class CellLabel {
     this.calculatePosition();
   }
 
+  changeVerticalAlign(verticalAlign?: CellVerticalAlign) {
+    this.verticalAlign = verticalAlign ?? 'top';
+    this.calculatePosition();
+  }
+
   changeTextColor(color?: string) {
     this.tint = color ? convertColorStringToTint(color) : undefined;
     this.dirty = true;
@@ -237,6 +242,14 @@ export class CellLabel {
         this.overflowRight = actualRight - this.AABB.right;
       }
       this.position = new Point(this.AABB.left, this.AABB.top);
+    }
+
+    if (this.verticalAlign === 'bottom') {
+      const actualTop = this.AABB.bottom - this.textHeight;
+      this.position.y = actualTop;
+    } else if (this.verticalAlign === 'middle') {
+      const actualTop = Math.max(this.AABB.top, this.AABB.top + (this.AABB.height - this.textHeight) / 2);
+      this.position.y = Math.max(actualTop, this.AABB.top);
     }
   }
 

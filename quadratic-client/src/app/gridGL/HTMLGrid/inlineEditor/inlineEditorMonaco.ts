@@ -113,18 +113,14 @@ class InlineEditorMonaco {
 
     // configure editor options and default layout
     this.editor.updateOptions({
-      wordWrap: textWrap === 'wrap' ? 'on' : 'off',
       padding: { top: 0, bottom: 0 },
     });
-    this.editor.layout({ width, height });
 
     // horizontal text alignment
     domNode.dataset.textAlign = textAlign;
 
-    const scrollWidth = textarea.scrollWidth;
-    const contentHeight = this.editor.getContentHeight();
-
     // vertical text alignment
+    const contentHeight = this.editor.getContentHeight();
     let paddingTop = 0;
     if (verticalAlign === 'middle') {
       paddingTop = Math.max((height - contentHeight) / 2, 0);
@@ -134,11 +130,13 @@ class InlineEditorMonaco {
 
     // set text wrap and padding for vertical text alignment
     this.editor.updateOptions({
+      wordWrap: textWrap === 'wrap' ? 'on' : 'off',
       padding: { top: paddingTop, bottom: 0 },
     });
 
     // set final width and height
-    width = textWrap === 'wrap' ? width : Math.max(scrollWidth + PADDING_FOR_GROWING_HORIZONTALLY, width);
+    const scrollWidth = textarea.scrollWidth;
+    width = textWrap === 'wrap' ? width : Math.max(width, scrollWidth + PADDING_FOR_GROWING_HORIZONTALLY);
     height = Math.max(contentHeight, height);
     this.editor.layout({ width, height });
 
@@ -151,7 +149,12 @@ class InlineEditorMonaco {
     }
     const selection = this.editor.getSelection();
     if (selection) {
-      const range = new monaco.Range(1, selection.getStartPosition().column, 1, selection.getEndPosition().column);
+      const range = new monaco.Range(
+        selection.startLineNumber,
+        selection.getStartPosition().column,
+        selection.endLineNumber,
+        selection.getEndPosition().column
+      );
       const model = this.getModel();
       model.applyEdits([{ range, text: '' }]);
     }
@@ -174,14 +177,17 @@ class InlineEditorMonaco {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in setColumn');
     }
-    this.editor.setPosition({ lineNumber: 1, column });
+    const { lineNumber } = this.getPosition();
+    this.editor.setPosition({ lineNumber, column });
+    this.editor.layout();
   }
 
   // Inserts text at cursor location and returns inserting position.
   insertTextAtCursor(text: string): number {
     const model = this.getModel();
+    const { lineNumber } = this.getPosition();
     const column = this.getCursorColumn();
-    const range = new monaco.Range(1, column, 1, column);
+    const range = new monaco.Range(lineNumber, column, lineNumber, column);
     model.applyEdits([{ range, text }]);
     this.setColumn(column + text.length);
     return column;
@@ -209,11 +215,11 @@ class InlineEditorMonaco {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in getCursorColumn');
     }
-    const editorPosition = this.editor.getPosition();
-    if (!editorPosition) {
+    const position = this.editor.getPosition();
+    if (!position) {
       throw new Error('Expected editorPosition to be defined in getCursorColumn');
     }
-    return editorPosition.column;
+    return position.column;
   }
 
   getSpanPosition(start: number): monaco.Position {
@@ -269,6 +275,7 @@ class InlineEditorMonaco {
       automaticLayout: false,
       readOnly: false,
       renderLineHighlight: 'none',
+      renderWhitespace: 'all',
       // quickSuggestions: false,
       glyphMargin: false,
       lineDecorationsWidth: 0,
@@ -280,10 +287,10 @@ class InlineEditorMonaco {
       contextmenu: false,
       links: false,
       minimap: { enabled: false },
-      overviewRulerLanes: 0,
       cursorWidth: CURSOR_THICKNESS,
       padding: { top: 0, bottom: 0 },
       hideCursorInOverviewRuler: true,
+      overviewRulerLanes: 0,
       overviewRulerBorder: false,
       wordWrap: 'off',
       wrappingStrategy: 'advanced',

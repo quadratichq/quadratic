@@ -28,10 +28,14 @@ const MINIMUM_MOVE_VIEWPORT = 50;
 class InlineEditorHandler {
   private div?: HTMLDivElement;
 
-  private cellOffsets?: Rectangle;
+  // this is used to display the formula expand button
+  private formulaExpandButton?: HTMLDivElement;
+
   private open = false;
   private showing = false;
 
+  x = 0;
+  y = 0;
   width = 0;
   height = 0;
   location?: SheetPosTS;
@@ -39,14 +43,10 @@ class InlineEditorHandler {
 
   cursorIsMoving = false;
 
-  private formatSummary?: CellFormatSummary;
   private renderCell?: JsRenderCell;
-
+  private formatSummary?: CellFormatSummary;
   temporaryBold: boolean | undefined;
   temporaryItalic: boolean | undefined;
-
-  // this is used to display the formula expand button
-  private formulaExpandButton?: HTMLDivElement;
 
   constructor() {
     events.on('changeInput', this.changeInput);
@@ -60,10 +60,7 @@ class InlineEditorHandler {
 
   private sheetOffsets = (sheetId: string) => {
     if (this.location?.sheetId === sheetId) {
-      this.cellOffsets = sheets.sheet.getCellOffsets(this.location.x, this.location.y);
       if (this.open) {
-        this.div?.style.setProperty('left', this.cellOffsets.x + CURSOR_THICKNESS + 'px');
-        this.div?.style.setProperty('top', this.cellOffsets.y + 2 + 'px');
         this.updateMonacoCellLayout();
       }
     }
@@ -71,13 +68,16 @@ class InlineEditorHandler {
 
   // Resets state after editing is complete.
   private reset() {
+    this.open = false;
+    this.cursorIsMoving = false;
+    this.x = this.y = this.width = this.height = 0;
     this.location = undefined;
+    this.formula = false;
+    this.renderCell = undefined;
+    this.formatSummary = undefined;
     this.temporaryBold = undefined;
     this.temporaryItalic = undefined;
     this.changeToFormula(false);
-    this.height = 0;
-    this.open = false;
-    this.cursorIsMoving = false;
     inlineEditorKeyboard.resetKeyboardPosition();
     inlineEditorFormula.clearDecorations();
     window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
@@ -181,8 +181,7 @@ class InlineEditorHandler {
           value = (await quadraticCore.getEditCell(this.location.sheetId, this.location.x, this.location.y)) || '';
         }
       }
-      inlineEditorMonaco.set(value);
-
+      this.renderCell = await quadraticCore.getRenderCell(this.location.sheetId, this.location.x, this.location.y);
       this.formatSummary = await quadraticCore.getCellFormatSummary(
         this.location.sheetId,
         this.location.x,
@@ -191,24 +190,13 @@ class InlineEditorHandler {
       );
       this.temporaryBold = this.formatSummary?.bold || undefined;
       this.temporaryItalic = this.formatSummary?.italic || undefined;
-      this.renderCell = await quadraticCore.getRenderCell(this.location.sheetId, this.location.x, this.location.y);
-
+      inlineEditorMonaco.set(value);
       inlineEditorMonaco.setBackgroundColor(
         this.formatSummary.fillColor ? convertColorStringToHex(this.formatSummary.fillColor) : '#ffffff'
       );
       this.updateFont();
       pixiApp.cellsSheets.updateCellsArray();
       this.sendMultiplayerUpdate();
-
-      this.cellOffsets = sheet.getCellOffsets(this.location.x, this.location.y);
-      this.div.style.left = this.cellOffsets.x + CURSOR_THICKNESS + 'px';
-      this.div.style.top = this.cellOffsets.y + 2 + 'px';
-      this.height = this.cellOffsets.height - 4;
-      if (!this.formulaExpandButton) {
-        throw new Error('Expected formulaExpandDiv to be defined in InlineEditorHandler');
-      }
-      this.formulaExpandButton.style.lineHeight = this.height + 'px';
-      inlineEditorMonaco.setColumn(value.length + 1);
       this.showDiv();
       this.changeToFormula(changeToFormula);
       this.updateMonacoCursorPosition();
@@ -270,7 +258,7 @@ class InlineEditorHandler {
   // Handles updates to the Monaco editor cursor position
   updateMonacoCursorPosition = () => {
     // this will get called upon opening (before variables are set), and after every cursor movement
-    if (!this.div || !this.cellOffsets || !this.location) return;
+    if (!this.location) return;
 
     const value = inlineEditorMonaco.get();
     if (value[0] === '=') {
@@ -288,17 +276,37 @@ class InlineEditorHandler {
   };
 
   updateMonacoCellLayout = () => {
-    if (!this.div || !this.cellOffsets || !this.location) return;
+    if (!this.location) return;
 
-    const { width, height } = inlineEditorMonaco.updateTextLayout(
-      this.cellOffsets.width - CURSOR_THICKNESS * 2,
-      this.cellOffsets.height - 4,
-      this.renderCell?.align ?? 'left',
-      this.renderCell?.verticalAlign ?? 'top',
-      this.renderCell?.wrap ?? 'overflow'
+    const { x, y, width, height } = sheets.sheet.getCellOffsets(this.location.x, this.location.y);
+    const cellOutlineOffset = CURSOR_THICKNESS * (this.formula ? 0.5 : 1);
+    const cellContentWidth = width - cellOutlineOffset * 2;
+    const cellContentHeight = height - cellOutlineOffset * 2;
+    const align = this.renderCell?.align ?? 'left';
+    const verticalAlign = this.renderCell?.verticalAlign ?? 'top';
+    const wrap = this.renderCell?.wrap ?? 'overflow';
+    const { width: inlineEditorWidth, height: inlineEditorHeight } = inlineEditorMonaco.updateTextLayout(
+      cellContentWidth,
+      cellContentHeight,
+      align,
+      verticalAlign,
+      wrap
     );
-    this.width = width;
-    this.height = height;
+
+    this.x = cellOutlineOffset + (align === 'right' ? Math.min(x, x + cellContentWidth - inlineEditorWidth) : x);
+    this.y =
+      cellOutlineOffset + (verticalAlign === 'bottom' ? Math.min(y, y + cellContentHeight - inlineEditorHeight) : y);
+    this.width = inlineEditorWidth;
+    this.height = inlineEditorHeight;
+
+    this.div?.style.setProperty('left', this.x + 'px');
+    this.div?.style.setProperty('top', this.y + 'px');
+
+    if (!this.formulaExpandButton) {
+      throw new Error('Expected formulaExpandDiv to be defined in InlineEditorHandler');
+    }
+    this.formulaExpandButton.style.lineHeight = this.height + 'px';
+
     pixiApp.cursor.dirty = true;
   };
 
@@ -311,12 +319,10 @@ class InlineEditorHandler {
     this.formula = formula;
     if (formula) {
       inlineEditorMonaco.setLanguage('Formula');
-      this.formulaExpandButton.style.display = 'block';
 
       // need to show the change to A1 notation
       pixiApp.headings.dirty = true;
     } else {
-      this.formulaExpandButton.style.display = 'none';
       inlineEditorMonaco.setLanguage('plaintext');
     }
 
