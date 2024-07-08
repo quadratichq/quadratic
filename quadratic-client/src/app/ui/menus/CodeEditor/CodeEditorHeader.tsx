@@ -1,16 +1,18 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetPosTS } from '@/app/gridGL/types/size';
-import { getCodeCell, getLanguage } from '@/app/helpers/codeCellLanguage';
+import { getCodeCell, getConnectionUuid, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import { GetConnections } from '@/routes/api.connections';
 import { cn } from '@/shared/shadcn/utils';
 import { Close, PlayArrow, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
 import { useEffect, useState } from 'react';
+import { useFetcher } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
@@ -33,13 +35,18 @@ export const CodeEditorHeader = (props: Props) => {
   const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
   const hasPermission = hasPermissionToEditFile(editorInteractionState.permissions);
   const codeCell = getCodeCell(editorInteractionState.mode);
-  // const { connections } = useFileMetaRouteLoaderData();
+  const connectionsFetcher = useFetcher<GetConnections>({ key: 'CONNECTIONS_FETCHER_KEY' });
   const language = getLanguage(editorInteractionState.mode);
 
-  // const connectionUuid = getConnectionUuid(editorInteractionState.mode);
-  // const foundConnection = connections.find((connection) => connection.uuid === connectionUuid);
-  // TODO: (connections) fix
-  const currentConnectionName = ''; // foundConnection ? foundConnection.name : '';
+  // Get the connection name (it's possible the user won't have access to it
+  // because they're in a file they have access to but not the team — or
+  // the connection was deleted)
+  let currentConnectionName = '';
+  if (connectionsFetcher.data) {
+    const connectionUuid = getConnectionUuid(editorInteractionState.mode);
+    const foundConnection = connectionsFetcher.data.connections.find(({ uuid }) => uuid === connectionUuid);
+    if (foundConnection) currentConnectionName = foundConnection.name;
+  }
 
   // Keep track of the current sheet ID so we know whether to show the sheet name or not
   const currentCodeEditorCellIsNotInActiveSheet = currentSheetId !== editorInteractionState.selectedCellSheet;
