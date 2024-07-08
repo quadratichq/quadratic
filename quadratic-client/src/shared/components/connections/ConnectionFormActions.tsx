@@ -1,5 +1,6 @@
 import { getDeleteConnectionAction } from '@/routes/api.connections';
-import { TestConnectionResponse } from '@/shared/api/connectionClient';
+import { connectionClient } from '@/shared/api/connectionClient';
+import { ConnectionFormValues } from '@/shared/components/connections/connectionsByType';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
@@ -10,18 +11,15 @@ import { UseFormReturn } from 'react-hook-form';
 import { useSubmit } from 'react-router-dom';
 
 type ConnectionState = 'idle' | 'loading' | 'success' | 'error';
-export type ValidateThenTestConnection = () => Promise<() => Promise<TestConnectionResponse>>;
 
 export function ConnectionFormActions({
   connectionUuid,
   form,
   handleNavigateToListView,
-  validateThenTest,
 }: {
   connectionUuid: string | undefined;
   form: UseFormReturn<any>;
   handleNavigateToListView: () => void;
-  validateThenTest: ValidateThenTestConnection;
 }) {
   const submit = useSubmit();
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
@@ -50,20 +48,21 @@ export function ConnectionFormActions({
               type="button"
               variant="secondary"
               disabled={connectionState === 'loading'}
-              onClick={() => {
-                validateThenTest()
-                  .then(async (test) => {
-                    setConnectionState('loading');
-                    const { connected, message } = await test();
-                    setConnectionError(connected === false && message ? message : '');
-                    setConnectionState(connected ? 'success' : 'error');
-                  })
-                  .catch(() => {
-                    // form validation failed, don't do anything
+              onClick={form.handleSubmit(async (values: ConnectionFormValues) => {
+                const { name, type, ...typeDetails } = values;
+                setConnectionState('loading');
+                try {
+                  const { connected, message } = await connectionClient.test.run({
+                    type,
+                    typeDetails,
                   });
-
-                // TODO: (connections) log to sentry if it fails?
-              }}
+                  setConnectionError(connected === false && message ? message : '');
+                  setConnectionState(connected ? 'success' : 'error');
+                } catch (e) {
+                  setConnectionError('Network error: failed to make connection.');
+                  setConnectionState('error');
+                }
+              })}
             >
               Test connection
             </Button>
@@ -76,7 +75,6 @@ export function ConnectionFormActions({
                 connectionState === 'error' && 'text-destructive'
               )}
             >
-              {/* {connectionState === 'idle' && <Type>Untested</Type>} */}
               {connectionState === 'success' && <CheckCircledIcon />}
               {connectionState === 'error' && <ExclamationTriangleIcon />}
             </div>

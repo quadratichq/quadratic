@@ -1,6 +1,7 @@
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { getCreateConnectionAction, getUpdateConnectionAction } from '@/routes/api.connections';
-import { connectionsByType } from '@/shared/components/connections/connectionsByType';
+import { ConnectionFormActions } from '@/shared/components/connections/ConnectionFormActions';
+import { ConnectionFormValues, connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { ROUTES } from '@/shared/constants/routes';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
@@ -8,15 +9,9 @@ import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect } from 'react';
 import { useFetcher, useSubmit } from 'react-router-dom';
 
-type ConnectionFormData = {
-  name: string;
-  type: ConnectionType;
-  typeDetails: ApiTypes['/v0/connections/:uuid.GET.response']['typeDetails'];
-};
-
 export type ConnectionFormProps = {
   handleNavigateToListView: () => void;
-  handleSubmitForm: (formData: ConnectionFormData) => void;
+  handleSubmitForm: (formValues: ConnectionFormValues) => void;
   connection?: ApiTypes['/v0/connections/:uuid.GET.response'];
 };
 
@@ -31,8 +26,9 @@ export function ConnectionFormCreate({
 }) {
   const submit = useSubmit();
 
-  const handleSubmitForm = (formData: ConnectionFormData) => {
-    const data = getCreateConnectionAction(formData, teamUuid);
+  const handleSubmitForm = (formValues: ConnectionFormValues) => {
+    const { name, type, ...typeDetails } = formValues;
+    const data = getCreateConnectionAction({ name, type, typeDetails }, teamUuid);
     submit(data, { action: ROUTES.API.CONNECTIONS, method: 'POST', encType: 'application/json', navigate: false });
     handleNavigateToListView();
   };
@@ -45,7 +41,7 @@ export function ConnectionFormCreate({
   return (
     <>
       <ConnectionFormHeader type={type}>Create</ConnectionFormHeader>
-      <ConnectionForm type={type} props={props} />
+      <ConnectionFormWrapper type={type} props={props} />
     </>
   );
 }
@@ -68,10 +64,10 @@ export function ConnectionFormEdit({
     }
   }, [fetcher, connectionUuid]);
 
-  const handleSubmitForm = (formData: ConnectionFormData) => {
+  const handleSubmitForm = (formValues: ConnectionFormValues) => {
     // Enhancement: if nothing changed, don't submit. Just navigate back
-
-    const data = getUpdateConnectionAction(connectionUuid, formData);
+    const { name, type, ...typeDetails } = formValues;
+    const data = getUpdateConnectionAction(connectionUuid, { name, typeDetails });
     submit(data, { action: ROUTES.API.CONNECTIONS, method: 'POST', encType: 'application/json', navigate: false });
     handleNavigateToListView();
   };
@@ -80,7 +76,7 @@ export function ConnectionFormEdit({
     <>
       <ConnectionFormHeader type={connectionType}>Edit</ConnectionFormHeader>
       {fetcher.data?.ok ? (
-        <ConnectionForm
+        <ConnectionFormWrapper
           type={fetcher.data.connection.type}
           props={{
             connection: fetcher.data.connection,
@@ -100,9 +96,19 @@ export function ConnectionFormEdit({
   );
 }
 
-function ConnectionForm({ type, props }: { type: ConnectionType; props: ConnectionFormProps }) {
-  const { Form } = connectionsByType[type];
-  return <Form {...props} />;
+function ConnectionFormWrapper({ type, props }: { type: ConnectionType; props: ConnectionFormProps }) {
+  const { ConnectionForm, useConnectionForm } = connectionsByType[type];
+  const { form } = useConnectionForm(props.connection);
+
+  return (
+    <ConnectionForm handleSubmitForm={props.handleSubmitForm} form={form}>
+      <ConnectionFormActions
+        form={form}
+        handleNavigateToListView={props.handleNavigateToListView}
+        connectionUuid={props.connection?.uuid}
+      />
+    </ConnectionForm>
+  );
 }
 
 function ConnectionFormHeader({ type, children }: { type: ConnectionType; children: React.ReactNode }) {

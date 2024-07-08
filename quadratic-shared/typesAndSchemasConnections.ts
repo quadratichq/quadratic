@@ -11,6 +11,7 @@ const transformEmptyStringToUndefined = (val: string | undefined) => (val === ''
 
 export const ConnectionNameSchema = z.string().min(1, { message: 'Required' });
 export const ConnectionTypeSchema = z.enum(['POSTGRES', 'MYSQL']);
+const ConnectionTypeDetailsSchema = z.record(z.string(), z.any());
 const ConnectionSchema = z.object({
   createdDate: z.string().datetime(),
   updatedDate: z.string().datetime(),
@@ -18,9 +19,10 @@ const ConnectionSchema = z.object({
   uuid: z.string().uuid(),
 
   type: ConnectionTypeSchema,
-  typeDetails: z.record(z.string(), z.any()),
+  typeDetails: ConnectionTypeDetailsSchema,
 });
 
+export type ConnectionTypeDetails = z.infer<typeof ConnectionTypeDetailsSchema>;
 export type ConnectionType = z.infer<typeof ConnectionTypeSchema>;
 export type Connection = z.infer<typeof ConnectionSchema>;
 
