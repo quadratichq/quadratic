@@ -170,7 +170,14 @@ impl AstNode {
                         let args = FormulaFnArgs::new(arg_values, self.span, f.name);
                         (f.eval)(&mut *ctx, only_parse, args)?
                     }
-                    None => return Err(RunErrorMsg::BadFunctionName.with_span(func.span)),
+                    None => {
+                        if functions::excel::is_valid_excel_function(func_name) {
+                            return Err(RunErrorMsg::Unimplemented(func_name.clone().into())
+                                .with_span(func.span));
+                        } else {
+                            return Err(RunErrorMsg::BadFunctionName.with_span(func.span));
+                        }
+                    }
                 }
             }
 
