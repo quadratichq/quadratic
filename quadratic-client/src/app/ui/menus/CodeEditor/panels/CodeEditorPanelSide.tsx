@@ -132,7 +132,7 @@ export function CodeEditorPanelSide(props: Props) {
       />
       <PanelBox
         id="panel-1"
-        title="AI Assistant"
+        title="AI assistant"
         open={panels[1].open}
         toggleOpen={panels[1].toggleOpen}
         height={panels[1].height}

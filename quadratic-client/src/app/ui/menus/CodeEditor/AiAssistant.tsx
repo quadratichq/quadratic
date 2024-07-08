@@ -257,7 +257,7 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
                     fontSize: '0.8rem',
                     marginBottom: '0.5rem',
                   }}
-                  alt="AI Assistant"
+                  alt="AI assistant"
                 >
                   <AI sx={{ color: colors.languageAI }}></AI>
                 </Avatar>
