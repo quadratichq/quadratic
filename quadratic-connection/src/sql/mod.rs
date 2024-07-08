@@ -31,6 +31,7 @@ pub(crate) async fn query_generic<T: Connection>(
 ) -> Result<impl IntoResponse> {
     let mut headers = HeaderMap::new();
     let start = Instant::now();
+    let max_response_bytes = state.settings.max_response_bytes;
 
     // let connection = get_connection(&*state, &claims, &sql_query.connection_id).await?;
     // headers.insert("ELAPSED-API-CONNECTION-MS", time_header(start));
@@ -41,10 +42,13 @@ pub(crate) async fn query_generic<T: Connection>(
     headers.insert("ELAPSED-DATABASE-CONNECTION-MS", time_header(start_connect));
 
     let start_query = Instant::now();
-    let rows = connection.query(pool, &sql_query.query).await?;
+    let (rows, over_the_limit) = connection
+        .query(pool, &sql_query.query, Some(max_response_bytes))
+        .await?;
 
     headers.insert("RECORD-COUNT", number_header(rows.len()));
     headers.insert("ELAPSED-DATABASE-QUERY-MS", time_header(start_query));
+    headers.insert("OVER-THE-LIMIT", number_header(over_the_limit));
 
     let start_conversion = Instant::now();
     let parquet = T::to_parquet(rows)?;
