@@ -147,8 +147,6 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
           }),
         },
       })),
-    // Don't return the user's private files if they don't have edit access to the team
-    // TODO: (connections) check the permissions for this and make sure it's right
     filesPrivate: dbFiles
       .filter((file) => file.ownerUserId)
       .map((file) => ({
