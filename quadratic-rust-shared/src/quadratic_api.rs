@@ -159,6 +159,13 @@ pub async fn get_connection(
     let client = get_client(&url, jwt);
     let response = client.send().await?;
 
+    // return a better error to the user
+    if response.status() == StatusCode::NOT_FOUND {
+        return Err(SharedError::QuadraticApi(format!(
+            "Connection {connection_id} not found"
+        )));
+    }
+
     handle_response(&response)?;
 
     Ok(response.json::<Connection>().await?)
