@@ -213,7 +213,7 @@ export class CellsTextHash {
         const column = offsets.getXPlacement(label + cellLabel.overflowRight).index + 1;
 
         // we need to add all columns that are overlapped
-        for (let i = cellLabel.location.x; i <= column; i++) {
+        for (let i = cellLabel.location.x + 1; i <= column; i++) {
           this.overflowGridLines.push({ x: i, y: cellLabel.location.y });
         }
       }
