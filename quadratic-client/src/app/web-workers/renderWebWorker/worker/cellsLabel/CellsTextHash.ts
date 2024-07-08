@@ -207,10 +207,11 @@ export class CellsTextHash {
     this.overflowGridLines = [];
     const offsets = this.cellsLabels.sheetOffsets;
     this.labels.forEach((cellLabel) => {
-      if (cellLabel.overflowRight) {
+      const overflowRight = (cellLabel.overflowRight ?? 0) - (cellLabel.clipRight ?? 0);
+      if (overflowRight) {
         // get the column from the overflowRight (which is in screen coordinates)
         const label = offsets.getColumnPlacement(cellLabel.location.x).position;
-        const column = offsets.getXPlacement(label + cellLabel.overflowRight).index + 1;
+        const column = offsets.getXPlacement(label + overflowRight).index + 1;
 
         // we need to add all columns that are overlapped
         for (let i = cellLabel.location.x + 1; i <= column; i++) {
@@ -218,10 +219,11 @@ export class CellsTextHash {
         }
       }
 
-      if (cellLabel.overflowLeft) {
+      const overflowLeft = (cellLabel.overflowLeft ?? 0) - (cellLabel.clipLeft ?? 0);
+      if (overflowLeft) {
         // get the column from the overflowLeft (which is in screen coordinates)
         const label = offsets.getColumnPlacement(cellLabel.location.x).position;
-        const column = offsets.getXPlacement(label - cellLabel.overflowLeft).index + 1;
+        const column = offsets.getXPlacement(label - overflowLeft).index + 1;
 
         // we need to add all columns that are overlapped
         for (let i = column; i <= cellLabel.location.x; i++) {

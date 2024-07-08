@@ -88,6 +88,9 @@ export class CellsLabels extends Container {
         const bounds = pixiApp.viewport.getVisibleBounds();
         if (intersects.rectangleRectangle(cellsTextHash.viewRectangle, bounds)) {
           cellsTextHash.show();
+          if (pixiApp.gridLines) {
+            pixiApp.gridLines.dirty = true;
+          }
           pixiApp.setViewportDirty();
         } else {
           cellsTextHash.hide();
