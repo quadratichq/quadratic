@@ -11,6 +11,7 @@
 
 import { debugShowHashUpdates, debugShowLoadingHashes } from '@/app/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
+import { Coordinate } from '@/app/gridGL/types/size';
 import { JsRenderCell } from '@/app/quadratic-core-types';
 import { Rectangle } from 'pixi.js';
 import { renderClient } from '../renderClient';
@@ -35,6 +36,9 @@ export class CellsTextHash {
 
   // index into the labels by location key (column,row)
   private labels: Map<string, CellLabel>;
+
+  // tracks which grid lines should not be drawn for this hash
+  private overflowGridLines: Coordinate[] = [];
 
   hashX: number;
   hashY: number;
@@ -105,7 +109,13 @@ export class CellsTextHash {
   }
 
   sendViewRectangle() {
-    renderClient.sendCellsTextHashClear(this.cellsLabels.sheetId, this.hashX, this.hashY, this.viewRectangle);
+    renderClient.sendCellsTextHashClear(
+      this.cellsLabels.sheetId,
+      this.hashX,
+      this.hashY,
+      this.viewRectangle,
+      this.overflowGridLines
+    );
   }
 
   async update(): Promise<boolean> {
@@ -193,6 +203,33 @@ export class CellsTextHash {
     this.leftClip = clipLeft;
     this.rightClip = clipRight;
 
+    // calculate grid line overflow after clipping the hash
+    this.overflowGridLines = [];
+    const offsets = this.cellsLabels.sheetOffsets;
+    this.labels.forEach((cellLabel) => {
+      if (cellLabel.overflowRight) {
+        // get the column from the overflowRight (which is in screen coordinates)
+        const label = offsets.getColumnPlacement(cellLabel.location.x).position;
+        const column = offsets.getXPlacement(label + cellLabel.overflowRight).index + 1;
+
+        // we need to add all columns that are overlapped
+        for (let i = cellLabel.location.x; i <= column; i++) {
+          this.overflowGridLines.push({ x: i, y: cellLabel.location.y });
+        }
+      }
+
+      if (cellLabel.overflowLeft) {
+        // get the column from the overflowLeft (which is in screen coordinates)
+        const label = offsets.getColumnPlacement(cellLabel.location.x).position;
+        const column = offsets.getXPlacement(label - cellLabel.overflowLeft).index + 1;
+
+        // we need to add all columns that are overlapped
+        for (let i = column; i <= cellLabel.location.x; i++) {
+          this.overflowGridLines.push({ x: i, y: cellLabel.location.y });
+        }
+      }
+    });
+
     return updatedHashes;
   }
 
@@ -273,7 +310,13 @@ export class CellsTextHash {
     }
 
     // prepares the client's CellsTextHash for new content
-    renderClient.sendCellsTextHashClear(this.cellsLabels.sheetId, this.hashX, this.hashY, this.viewRectangle);
+    renderClient.sendCellsTextHashClear(
+      this.cellsLabels.sheetId,
+      this.hashX,
+      this.hashY,
+      this.viewRectangle,
+      this.overflowGridLines
+    );
 
     // completes the rendering for the CellsTextHash
     this.labelMeshes.finalize();
