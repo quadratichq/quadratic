@@ -26,14 +26,19 @@ async function handler(
 ) {
   const {
     params: { uuid },
-    body: { name, ownerUserId, ownerTeamId },
+    body: { name, ownerUserId },
   } = parseRequest(req, schema);
   const {
     user: { id: userId },
   } = req;
   const {
-    userMakingRequest: { filePermissions },
+    userMakingRequest: { filePermissions, id: userMakingRequestId },
   } = await getFile({ uuid, userId });
+
+  // Can't change both at once
+  if (ownerUserId && name) {
+    return res.status(400).json({ error: { message: 'You can only change one thing at a time' } });
+  }
 
   // Can they edit this file?
   if (!filePermissions.includes(FILE_EDIT)) {
@@ -59,64 +64,46 @@ async function handler(
   // Moving the file?
   //
 
-  // We won't accept a request to do both. That's invalid.
-  if (ownerUserId && ownerTeamId) {
-    throw new ApiError(400, 'Cannot move to both a user and a team');
-  }
-
-  // Ensure that either the specified user or team exists
-  if (ownerUserId) {
-    const user = await dbClient.user.findUnique({ where: { id: ownerUserId } });
-    if (!user) {
-      throw new ApiError(400, 'User does not exist');
-    }
-  }
-  if (ownerTeamId) {
-    const team = await dbClient.team.findUnique({ where: { id: ownerTeamId } });
-    if (!team) {
-      throw new ApiError(400, 'Team does not exist');
-    }
-  }
-
-  // Do you have permission to move?
-  // (Permissions must come after knowing a team exists otherwise you get
-  // a 403 for a team that doesn’t exist)
+  // Do you have permission to move? (You can't move someone else's private file, for example)
   if (!filePermissions.includes(FILE_MOVE)) {
     throw new ApiError(403, 'Permission denied');
   }
 
-  // Moving to a user?
+  // Moving to a user's private (team) files?
   if (ownerUserId) {
-    const newFile = await dbClient.file.update({
+    // The specified user must be the same person making the request
+    if (ownerUserId !== userMakingRequestId) {
+      throw new ApiError(400, 'You can only move your own files');
+    }
+
+    const modifiedFile = await dbClient.file.update({
       where: {
         uuid,
       },
       data: {
         ownerUserId,
-        ownerTeamId: null,
       },
     });
-    if (!newFile.ownerUserId) {
+    if (!modifiedFile.ownerUserId) {
       throw new ApiError(500, 'Failed to move file. Make sure the specified file and user exist.');
     }
-    return res.status(200).json({ ownerUserId: newFile.ownerUserId });
+    return res.status(200).json({ ownerUserId: modifiedFile.ownerUserId });
   }
 
-  // Moving to a team?
-  if (ownerTeamId) {
-    const newFile = await dbClient.file.update({
+  // Moving to a team's public files?
+  if (ownerUserId === null) {
+    const modifiedFile = await dbClient.file.update({
       where: {
         uuid,
       },
       data: {
         ownerUserId: null,
-        ownerTeamId,
       },
     });
-    if (!newFile.ownerTeamId) {
+    if (modifiedFile.ownerUserId !== null) {
       throw new ApiError(500, 'Failed to move file. Make sure the specified team and user exist.');
     }
-    return res.status(200).json({ ownerTeamId: newFile.ownerTeamId });
+    return res.status(200).json({ ownerUserId: undefined });
   }
 
   // We don’t know what you're asking for

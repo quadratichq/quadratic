@@ -63,6 +63,7 @@ declare var self: WorkerGlobalScope &
     sendTransactionStart: (transactionId: string, transactionType: TransactionName) => void;
     sendTransactionProgress: (transactionId: String, remainingOperations: number) => void;
     sendRunPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
+    sendRunJavascript: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
     sendUpdateCodeCell: (
       sheetId: string,
       x: number,
@@ -73,10 +74,14 @@ declare var self: WorkerGlobalScope &
     sendUndoRedo: (undo: string, redo: string) => void;
     sendConnection: (
       transactionId: string,
-      query: string,
+      x: number,
+      y: number,
+      sheetId: string,
+      code: string,
       connector_type: ConnectionKind,
       connection_id: String
     ) => void;
+    sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -200,6 +205,10 @@ export const jsRunPython = (transactionId: string, x: number, y: number, sheetId
   self.sendRunPython(transactionId, x, y, sheetId, code);
 };
 
+export const jsRunJavascript = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
+  self.sendRunJavascript(transactionId, x, y, sheetId, code);
+};
+
 export const jsUpdateCodeCell = (
   sheetId: string,
   x: bigint,
@@ -225,11 +234,15 @@ export const jsConnection = (
   x: number,
   y: number,
   sheetId: string,
-  query: string,
+  code: string,
   connector_type: ConnectionKind,
   connection_id: String
 ) => {
-  self.sendConnection(transactionId, query, connector_type, connection_id);
+  self.sendConnection(transactionId, x, y, sheetId, code, connector_type, connection_id);
+};
+
+export const jsSendImage = (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => {
+  self.sendImage(sheetId, x, y, image, w, h);
 };
 
 export const jsSheetMetaFills = (sheetId: string, sheetMetaFillsStringified: string) => {

@@ -29,8 +29,13 @@ async function handler(req: Request, res: Response) {
   }
 
   // Get the connection
-  const connection = await getConnection({ uuid, userId: user.id });
+  const { connection, team } = await getConnection({ uuid, userId: user.id });
   const typeDetails = decryptFromEnv(connection.typeDetails?.toString('utf-8') || '');
+
+  // Do you have permission?
+  if (!team.userMakingRequest.permissions.includes('TEAM_EDIT')) {
+    throw new ApiError(403, 'You do not have permission to view this connection.');
+  }
 
   // Return the data
   const data = {
@@ -41,5 +46,6 @@ async function handler(req: Request, res: Response) {
     updatedDate: connection.updatedDate.toISOString(),
     typeDetails: JSON.parse(typeDetails),
   };
+
   return res.status(200).json(data);
 }

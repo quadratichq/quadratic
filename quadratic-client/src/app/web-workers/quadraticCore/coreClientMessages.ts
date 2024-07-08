@@ -20,6 +20,7 @@ import {
   SummarizeSelectionResult,
   TransactionName,
 } from '@/app/quadratic-core-types';
+import { CodeRun } from '../CodeRun';
 import { MultiplayerState } from '../multiplayerWebWorker/multiplayerClientMessages';
 
 //#region Initialize
@@ -68,8 +69,23 @@ export interface CoreClientMultiplayerState {
   state: MultiplayerState;
 }
 
+export interface CoreClientConnectionState {
+  type: 'coreClientConnectionState';
+  state: 'loading' | 'ready' | 'error' | 'running';
+
+  // current cell being executed
+  current?: CodeRun;
+
+  // cells awaiting execution
+  awaitingExecution?: CodeRun[];
+}
+
 export interface ClientCoreInitPython {
   type: 'clientCoreInitPython';
+}
+
+export interface ClientCoreInitJavascript {
+  type: 'clientCoreInitJavascript';
 }
 
 export interface ClientCoreExport {
@@ -812,6 +828,16 @@ export interface CoreClientSetCursorSelection {
 
 //#endregion
 
+export interface CoreClientImage {
+  type: 'coreClientImage';
+  sheetId: string;
+  x: number;
+  y: number;
+  image?: string;
+  w?: string;
+  h?: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -866,6 +892,7 @@ export type ClientCoreMessage =
   | ClientCoreCommitSingleResize
   | ClientCoreInit
   | ClientCoreInitPython
+  | ClientCoreInitJavascript
   | ClientCoreImportExcel
   | ClientCoreCancelExecution
   | ClientCoreGetJwt
@@ -917,9 +944,11 @@ export type CoreClientMessage =
   | CoreClientUpdateCodeCell
   | CoreClientImportExcel
   | CoreClientMultiplayerState
+  | CoreClientConnectionState
   | CoreClientOfflineTransactions
   | CoreClientUndoRedo
   | CoreClientGetJwt
+  | CoreClientImage
   | CoreClientGetFormatAll
   | CoreClientGetFormatColumn
   | CoreClientGetFormatRow

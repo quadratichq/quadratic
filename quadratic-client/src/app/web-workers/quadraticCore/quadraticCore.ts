@@ -138,6 +138,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientMultiplayerState') {
       events.emit('multiplayerState', e.data.state);
       return;
+    } else if (e.data.type === 'coreClientConnectionState') {
+      events.emit('connectionState', e.data.state, e.data.current, e.data.awaitingExecution);
+      return;
     } else if (e.data.type === 'coreClientOfflineTransactionStats') {
       events.emit('offlineTransactions', e.data.transactions, e.data.operations);
       return;
@@ -148,6 +151,9 @@ class QuadraticCore {
       const jwt = await authClient.getTokenOrRedirect();
       const data = e.data as CoreClientGetJwt;
       this.send({ type: 'clientCoreGetJwt', id: data.id, jwt });
+      return;
+    } else if (e.data.type === 'coreClientImage') {
+      events.emit('updateImage', e.data);
       return;
     } else if (e.data.type === 'coreClientSheetMetaFills') {
       events.emit('sheetMetaFills', e.data.sheetId, e.data.fills);
@@ -163,7 +169,7 @@ class QuadraticCore {
         this.waitingForResponse[e.data.id](e.data);
         delete this.waitingForResponse[e.data.id];
       } else {
-        console.warn('No resolve for message in quadraticCore', e.data.id);
+        console.warn('No resolve for message in quadraticCore', e.data);
       }
     }
 
@@ -925,6 +931,10 @@ class QuadraticCore {
 
   sendPythonInit(port: MessagePort) {
     this.send({ type: 'clientCoreInitPython' }, port);
+  }
+
+  sendJavascriptInit(port: MessagePort) {
+    this.send({ type: 'clientCoreInitJavascript' }, port);
   }
 
   sendCancelExecution(language: CodeCellLanguage) {

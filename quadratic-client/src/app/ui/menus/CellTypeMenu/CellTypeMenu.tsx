@@ -3,15 +3,22 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { LinkNewTab } from '@/app/ui/components/LinkNewTab';
-import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
+import { JavaScript } from '@/app/ui/icons';
+import {
+  DOCUMENTATION_FORMULAS_URL,
+  DOCUMENTATION_JAVASCRIPT_URL,
+  DOCUMENTATION_PYTHON_URL,
+  DOCUMENTATION_URL,
+} from '@/shared/constants/urls';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 import '../../styles/floating-dialog.css';
 
+import { colors } from '@/app/theme/colors';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
-import { useFileMetaRouteLoaderData } from '@/routes/_file.$uuid';
-import { ROUTES } from '@/shared/constants/routes';
+import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
+import { GetConnections } from '@/routes/api.connections';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import {
   CommandDialog,
@@ -22,11 +29,11 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/shared/shadcn/ui/command';
-import { Add } from '@mui/icons-material';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useFetcher } from 'react-router-dom';
 
 export interface CellTypeOption {
   name: string;
+  searchStrings?: string[];
   mode: CodeCellLanguage;
   icon: any;
   description: string | JSX.Element;
@@ -34,7 +41,7 @@ export interface CellTypeOption {
   experimental?: boolean;
 }
 
-let CELL_TYPE_OPTIONS = [
+let CELL_TYPE_OPTIONS: CellTypeOption[] = [
   {
     name: 'Python',
     mode: 'Python',
@@ -48,6 +55,7 @@ let CELL_TYPE_OPTIONS = [
   },
   {
     name: 'Formula',
+    searchStrings: ['fx', 'functions', 'formulas'],
     mode: 'Formula',
     icon: <LanguageIcon language="Formula" />,
     description: (
@@ -57,31 +65,27 @@ let CELL_TYPE_OPTIONS = [
       </>
     ),
   },
-
-  // todo: (connections) create CodeCellLanguage for these types in Rust (when ready to implement)
-  // {
-  //   name: 'SQL Query',
-  //   mode: 'Connection',
-  //   icon: <Sql sx={{ color: colors.languageAI }} />,
-  //   description: 'Import your data with queries.',
-  //   disabled: false,
-  // },
   {
     name: 'JavaScript',
-    icon: <LanguageIcon language="Javascript" />,
-    description: 'The world’s most popular programming language.',
-    disabled: true,
+    searchStrings: ['js'],
+    mode: 'Javascript',
+    icon: <JavaScript sx={{ color: colors.languageJavascript }} />,
+    description: (
+      <>
+        Script with modern ES modules{' '}
+        <LinkNewTabWrapper href={DOCUMENTATION_JAVASCRIPT_URL}>and more</LinkNewTabWrapper>.
+      </>
+    ),
     experimental: true,
   },
-] as CellTypeOption[];
+];
 
 export default function CellTypeMenu() {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const setCellTypeMenuOpenedCount = useSetRecoilState(cellTypeMenuOpenedCountAtom);
-  const { connections } = useFileMetaRouteLoaderData();
-  const navigate = useNavigate();
-  const { uuid } = useParams() as { uuid: string };
-  const searchlabel = 'Choose a cell type…';
+  const fetcher = useFetcher<GetConnections>({ key: 'CONNECTIONS_FETCHER_KEY' });
+
+  const searchLabel = 'Choose a cell type…';
 
   useEffect(() => {
     mixpanel.track('[CellTypeMenu].opened');
@@ -99,6 +103,7 @@ export default function CellTypeMenu() {
 
   const openEditor = useCallback(
     (mode: CodeCellLanguage) => {
+      mixpanel.track('[CellTypeMenu].selected', { mode });
       setEditorInteractionState({
         ...editorInteractionState,
         showCodeEditor: true,
@@ -111,7 +116,7 @@ export default function CellTypeMenu() {
 
   return (
     <CommandDialog dialogProps={{ open: true, onOpenChange: close }} commandProps={{}}>
-      <CommandInput placeholder={searchlabel} id="CellTypeMenuInputID" />
+      <CommandInput placeholder={searchLabel} id="CellTypeMenuInputID" />
       <CommandList id="CellTypeMenuID">
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading="Languages">
@@ -129,34 +134,37 @@ export default function CellTypeMenu() {
         </CommandGroup>
 
         <CommandSeparator />
-        <CommandGroup heading="Connections">
-          {connections.map(({ name, type, uuid }) => (
+        {fetcher.data?.connections && (
+          <CommandGroup heading="Connections">
+            {fetcher.data.connections.map(({ name, type, uuid }) => (
+              <CommandItemWrapper
+                key={uuid}
+                uuid={uuid}
+                name={name}
+                description={`${type === 'POSTGRES' ? 'PostgreSQL' : 'SQL'}`}
+                icon={<LanguageIcon language={type} />}
+                onSelect={() => openEditor({ Connection: { kind: type, id: uuid } })}
+              />
+            ))}
             <CommandItemWrapper
-              key={uuid}
-              name={name}
-              description={`${type === 'POSTGRES' ? 'PostgreSQL' : 'SQL'}`}
-              icon={<LanguageIcon language={type} />}
-              onSelect={() => openEditor({ Connection: { kind: type, id: uuid } })}
+              name="Manage connections"
+              // TODO: (connections) correct URL here / cleanup description
+              description={
+                <>
+                  Connect to Postgres, MySQL, <LinkNewTabWrapper href={DOCUMENTATION_URL}>and more</LinkNewTabWrapper>
+                </>
+              }
+              icon={<ConnectionsIcon className="text-muted-foreground opacity-80" />}
+              onSelect={() => {
+                setEditorInteractionState({
+                  ...editorInteractionState,
+                  showCellTypeMenu: false,
+                  showConnectionsMenu: true,
+                });
+              }}
             />
-          ))}
-          <CommandItemWrapper
-            name="Create or manage connections"
-            // TODO: (connections) correct URL here
-            description={
-              <>
-                Connect to Postgres, MySQL, <LinkNewTabWrapper href={DOCUMENTATION_URL}>and more</LinkNewTabWrapper>
-              </>
-            }
-            icon={<Add />}
-            onSelect={() => {
-              setEditorInteractionState({
-                ...editorInteractionState,
-                showCellTypeMenu: false,
-              });
-              navigate(ROUTES.FILE_CONNECTIONS(uuid), { replace: true });
-            }}
-          />
-        </CommandGroup>
+          </CommandGroup>
+        )}
       </CommandList>
     </CommandDialog>
   );
@@ -169,6 +177,7 @@ function CommandItemWrapper({
   experimental,
   description,
   onSelect,
+  uuid,
 }: {
   disabled?: boolean;
   icon: React.ReactNode;
@@ -176,9 +185,10 @@ function CommandItemWrapper({
   experimental?: boolean;
   description: string | JSX.Element;
   onSelect: () => void;
+  uuid?: string;
 }) {
   return (
-    <CommandItem disabled={disabled} onSelect={onSelect}>
+    <CommandItem disabled={disabled} onSelect={onSelect} value={name + (uuid ? uuid : '')}>
       <div className="mr-4">{icon}</div>
       <div className="flex flex-col">
         <span className="flex items-center">

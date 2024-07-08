@@ -1,5 +1,5 @@
 import { usePythonState } from '@/app/atoms/usePythonState';
-import { PythonStateType } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
+import { LanguageState } from '@/app/web-workers/languageTypes';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import {
   DropdownMenu,
@@ -14,7 +14,7 @@ import { CircularProgress, useTheme } from '@mui/material';
 import { useState } from 'react';
 import BottomBarItem from './BottomBarItem';
 
-const uiLabelByPythonState: Record<PythonStateType, string> = {
+const uiLabelByPythonState: Record<LanguageState, string> = {
   error: 'error loading',
   ready: 'idle',
   loading: 'loading…',

@@ -6,7 +6,7 @@ import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { AI } from '@/app/ui/icons';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { authClient } from '@/auth';
-import { useRootRouteLoaderData } from '@/routes/index';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
@@ -190,9 +190,9 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
 
   // This component is designed to fill the entire height of its parent container
   return (
-    <div className="grid h-full grid-rows-[1fr_auto]">
+    <div className="flex h-full flex-col justify-between">
       <div
-        className="overflow-y-auto whitespace-pre-wrap pb-2 pl-3 pr-4 text-sm outline-none"
+        className="select-text overflow-y-auto whitespace-pre-wrap pb-2 pl-3 pr-4 text-sm outline-none"
         spellCheck={false}
         onKeyDown={(e) => {
           if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
@@ -269,13 +269,12 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
                 return;
               }
 
+              event.preventDefault();
               if (prompt.trim().length === 0) {
-                event.preventDefault();
                 return;
               }
 
               submitPrompt();
-              event.preventDefault();
               event.currentTarget.focus();
             }
           }}

@@ -1,5 +1,5 @@
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { useFileRouteLoaderData } from '@/routes/file.$uuid';
-import { useRootRouteLoaderData } from '@/routes/index';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
@@ -57,7 +57,7 @@ function FileLocation() {
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
     team,
-    userMakingRequest: { isFileOwner, fileRole },
+    userMakingRequest: { fileRelativeLocation },
   } = useFileRouteLoaderData();
   const linkProps = {
     reloadDocument: true,
@@ -72,22 +72,16 @@ function FileLocation() {
   // Figure out the user's relationship to the file and the link back to its
   // location in the dashboard
   let DashboardLink;
-  if (team) {
+  if (fileRelativeLocation === 'TEAM_PUBLIC') {
     DashboardLink = (
       <Link to={ROUTES.TEAM(team.uuid)} {...linkProps} title={team.name}>
         {team.name}
       </Link>
     );
-  } else if (isFileOwner) {
+  } else if (fileRelativeLocation === 'TEAM_PRIVATE') {
     DashboardLink = (
-      <Link to={ROUTES.FILES} {...linkProps} title="My files">
-        My files
-      </Link>
-    );
-  } else if (fileRole) {
-    DashboardLink = (
-      <Link to={ROUTES.FILES_SHARED_WITH_ME} {...linkProps} title="Shared with me">
-        Shared with me
+      <Link to={ROUTES.TEAM_FILES_PRIVATE(team.uuid)} {...linkProps} title="Private files">
+        Private
       </Link>
     );
   }

@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
+import { createTeam } from '../../tests/testDataGenerator';
 import { encryptFromEnv } from '../../utils/crypto';
 
 beforeAll(async () => {
@@ -15,6 +16,13 @@ beforeAll(async () => {
     },
   });
 
+  const team = await createTeam({
+    team: {
+      uuid: '00000000-0000-0000-0000-000000000000',
+    },
+    users: [{ userId: userWithConnection.id, role: 'OWNER' }],
+  });
+
   const typeDetails = {
     host: 'localhost',
     port: '5432',
@@ -27,22 +35,24 @@ beforeAll(async () => {
     data: {
       uuid: '00000000-0000-0000-0000-000000000000',
       name: 'First connection',
+      teamId: team.id,
       type: 'POSTGRES',
       typeDetails: Buffer.from(encryptFromEnv(JSON.stringify(typeDetails))),
-      UserConnectionRole: {
-        create: {
-          userId: userWithConnection.id,
-          role: 'OWNER',
-        },
-      },
+      // UserConnectionRole: {
+      //   create: {
+      //     userId: userWithConnection.id,
+      //     role: 'OWNER',
+      //   },
+      // },
     },
   });
 });
 
 afterAll(async () => {
   await dbClient.$transaction([
-    dbClient.userConnectionRole.deleteMany(),
     dbClient.connection.deleteMany(),
+    dbClient.userTeamRole.deleteMany(),
+    dbClient.team.deleteMany(),
     dbClient.user.deleteMany(),
   ]);
 });

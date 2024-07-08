@@ -1,11 +1,11 @@
 import { Coordinate } from '@/app/gridGL/types/size';
 import { AiMessage } from '@/app/ui/menus/CodeEditor/AiAssistant';
 import { CodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditor';
-import { PanelTab } from '@/app/ui/menus/CodeEditor/CodeEditorPanelBottom';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { Monaco } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
 import React, { createContext, useContext, useRef, useState } from 'react';
+import { PanelTab } from './panels//CodeEditorPanelBottom';
 
 type Context = {
   aiAssistant: {
@@ -19,7 +19,7 @@ type Context = {
     { stdOut?: string; stdErr?: string } | undefined,
     React.Dispatch<React.SetStateAction<{ stdOut?: string; stdErr?: string } | undefined>>
   ];
-  containerRef: React.RefObject<HTMLDivElement>;
+  // containerRef: React.RefObject<HTMLDivElement>;
   editorContent: [string | undefined, React.Dispatch<React.SetStateAction<string | undefined>>];
   evaluationResult: [EvaluationResult | undefined, React.Dispatch<React.SetStateAction<EvaluationResult | undefined>>];
   editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>;
@@ -38,7 +38,7 @@ const CodeEditorContext = createContext<Context>({
   },
   codeString: ['', () => {}],
   consoleOutput: [undefined, () => {}],
-  containerRef: { current: null },
+  // containerRef: { current: null },
   editorContent: [undefined, () => {}],
   editorRef: { current: null },
   evaluationResult: [undefined, () => {}],
@@ -57,7 +57,7 @@ export const CodeEditorProvider = () => {
   };
   const codeString = useState<Context['codeString'][0]>(''); // update code cell
   const consoleOutput = useState<Context['consoleOutput'][0]>(undefined);
-  const containerRef = useRef<Context['containerRef']['current']>(null);
+  // const containerRef = useRef<Context['containerRef']['current']>(null);
   const editorContent = useState<Context['editorContent'][0]>(codeString[0]);
   const editorRef = useRef<Context['editorRef']['current']>(null);
   const evaluationResult = useState<Context['evaluationResult'][0]>(undefined);
@@ -71,7 +71,7 @@ export const CodeEditorProvider = () => {
       value={{
         aiAssistant,
         consoleOutput,
-        containerRef,
+        // containerRef,
         codeString,
         editorRef,
         editorContent,

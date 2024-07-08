@@ -6,6 +6,7 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
+import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import {
   JsCodeCell,
   JsHtmlOutput,
@@ -18,9 +19,11 @@ import {
   SheetInfo,
   TransactionName,
 } from '@/app/quadratic-core-types';
+import { coreConnection } from '@/app/web-workers/quadraticCore/worker/coreConnection';
 import { MultiplayerState } from '../../multiplayerWebWorker/multiplayerClientMessages';
 import { ClientCoreGetJwt, ClientCoreLoad, ClientCoreMessage, CoreClientMessage } from '../coreClientMessages';
 import { core } from './core';
+import { coreJavascript } from './coreJavascript';
 import { coreMultiplayer } from './coreMultiplayer';
 import { corePython } from './corePython';
 import { offline } from './offline';
@@ -75,6 +78,7 @@ declare var self: WorkerGlobalScope &
       renderCodeCell?: JsRenderCodeCell
     ) => void;
     sendUndoRedo: (undo: boolean, redo: boolean) => void;
+    sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
   };
 
 class CoreClient {
@@ -104,7 +108,7 @@ class CoreClient {
     self.sendTransactionProgress = coreClient.sendTransactionProgress;
     self.sendUpdateCodeCell = coreClient.sendUpdateCodeCell;
     self.sendUndoRedo = coreClient.sendUndoRedo;
-
+    self.sendImage = coreClient.sendImage;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -448,6 +452,10 @@ class CoreClient {
         corePython.init(e.ports[0]);
         return;
 
+      case 'clientCoreInitJavascript':
+        coreJavascript.init(e.ports[0]);
+        break;
+
       case 'clientCoreImportExcel':
         this.send({ type: 'coreClientImportExcel', id: e.data.id, ...(await core.importExcel(e.data)) });
         return;
@@ -461,8 +469,13 @@ class CoreClient {
         return;
 
       case 'clientCoreCancelExecution':
-        if (e.data.language === 'Python') {
+        const langauge = getLanguage(e.data.language);
+        if (langauge === 'Python') {
           corePython.cancelExecution();
+        } else if (langauge === 'Javascript') {
+          coreJavascript.cancelExecution();
+        } else if (langauge === 'Connection') {
+          coreConnection.cancelExecution();
         } else {
           console.warn("Unhandled language in 'clientCoreCancelExecution'", e.data.language);
         }
@@ -633,6 +646,9 @@ class CoreClient {
       this.send({ type: 'coreClientGetJwt', id });
     });
   }
+  sendImage = (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => {
+    this.send({ type: 'coreClientImage', sheetId, x, y, image, w, h });
+  };
 }
 
 export const coreClient = new CoreClient();

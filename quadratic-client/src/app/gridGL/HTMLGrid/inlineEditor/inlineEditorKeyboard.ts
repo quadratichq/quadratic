@@ -25,6 +25,7 @@ class InlineEditorKeyboard {
 
     // Escape key
     if (e.code === 'Escape') {
+      e.stopPropagation();
       if (inlineEditorHandler.cursorIsMoving) {
         inlineEditorHandler.cursorIsMoving = false;
         inlineEditorFormula.removeInsertingCells();
@@ -32,20 +33,19 @@ class InlineEditorKeyboard {
       } else {
         inlineEditorHandler.close(0, 0, true);
       }
-      e.stopPropagation();
     }
 
     // Enter key
     else if (e.code === 'Enter') {
-      inlineEditorHandler.close(0, 1, false);
       e.stopPropagation();
+      inlineEditorHandler.close(0, 1, false);
     }
 
     // Tab key
     else if (e.code === 'Tab') {
-      inlineEditorHandler.close(e.shiftKey ? -1 : 1, 0, false);
       e.stopPropagation();
       e.preventDefault();
+      inlineEditorHandler.close(e.shiftKey ? -1 : 1, 0, false);
     }
 
     // Horizontal arrow keys
@@ -54,30 +54,29 @@ class InlineEditorKeyboard {
       const target = isRight ? inlineEditorMonaco.getLastColumn() : 1;
       if (inlineEditorHandler.isEditingFormula()) {
         if (inlineEditorHandler.cursorIsMoving) {
-          await keyboardPosition(e);
           e.stopPropagation();
+          await keyboardPosition(e);
         } else {
           const column = inlineEditorMonaco.getCursorColumn();
           if (column === target) {
             // if we're not moving and the formula is valid, close the editor
+            e.stopPropagation();
             if (inlineEditorFormula.isFormulaValid()) {
               inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
-              e.stopPropagation();
             } else {
               if (isRight) {
                 inlineEditorHandler.cursorIsMoving = true;
                 inlineEditorFormula.addInsertingCells(column);
                 await keyboardPosition(e);
               }
-              e.stopPropagation();
             }
           }
         }
       } else {
         const column = inlineEditorMonaco.getCursorColumn();
         if (column === target) {
-          inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
           e.stopPropagation();
+          inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
         }
       }
     }
@@ -92,25 +91,24 @@ class InlineEditorKeyboard {
     // Backspace key cancels cursorIsMoving and removes any inserted cells.
     else if (e.code === 'Backspace') {
       if (inlineEditorHandler.cursorIsMoving) {
+        e.stopPropagation();
+        e.preventDefault();
         inlineEditorFormula.removeInsertingCells();
         inlineEditorFormula.endInsertingCells();
         this.resetKeyboardPosition();
-        e.stopPropagation();
-        e.preventDefault();
       }
     }
 
     // Vertical arrow keys
     else if (e.code === 'ArrowDown' || e.code === 'ArrowUp') {
       if (inlineEditorHandler.isEditingFormula()) {
+        e.stopPropagation();
         if (inlineEditorHandler.cursorIsMoving) {
           await keyboardPosition(e);
-          e.stopPropagation();
         } else {
           // if we're not moving and the formula is valid, close the editor
           if (inlineEditorFormula.isFormulaValid()) {
             inlineEditorHandler.close(0, e.code === 'ArrowDown' ? 1 : -1, false);
-            e.stopPropagation();
             return;
           }
           const location = inlineEditorHandler.location;
@@ -121,11 +119,10 @@ class InlineEditorKeyboard {
           inlineEditorFormula.addInsertingCells(column);
           inlineEditorHandler.cursorIsMoving = true;
           await keyboardPosition(e);
-          e.stopPropagation();
         }
       } else {
-        inlineEditorHandler.close(0, e.code === 'ArrowDown' ? 1 : -1, false);
         e.stopPropagation();
+        inlineEditorHandler.close(0, e.code === 'ArrowDown' ? 1 : -1, false);
       }
     }
 
@@ -161,6 +158,8 @@ class InlineEditorKeyboard {
 
     // trigger cell type menu
     else if (e.code === 'Slash' && inlineEditorMonaco.get().length === 0) {
+      e.preventDefault();
+      e.stopPropagation();
       pixiAppSettings.changeInput(false);
       const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setEditorInteractionState?.({
@@ -169,8 +168,6 @@ class InlineEditorKeyboard {
         selectedCell: { x: cursor.x, y: cursor.y },
         selectedCellSheet: sheets.sheet.id,
       });
-      e.preventDefault();
-      e.stopPropagation();
     }
     // Fallback for all other keys (used to end cursorIsMoving and return
     // control to the formula box)

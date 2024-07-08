@@ -1,7 +1,8 @@
 import { useUndo } from '@/app/events/useUndo';
+import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
-import { useRootRouteLoaderData } from '@/routes/index';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
@@ -28,6 +29,7 @@ export default function QuadraticApp() {
     // Load python and populate web workers (if supported)
     if (!isMobile && hasPermissionToEditFile(permissions)) {
       pythonWebWorker.init();
+      javascriptWebWorker.init();
     }
   }, [permissions]);
 

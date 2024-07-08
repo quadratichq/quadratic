@@ -189,6 +189,10 @@ export const updateBillingIfNecessary = async (team: Team) => {
       return;
     }
 
+  if (!team.stripeCustomerId) {
+    return;
+  }
+
   // retrieve the customer
   const customer = await stripe.customers.retrieve(team.stripeCustomerId, {
     expand: ['subscriptions'],
