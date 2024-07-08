@@ -46,6 +46,32 @@ impl Selection {
         }
     }
 
+    /// Creates a selection with columns
+    pub fn columns(columns: &[i64], sheet_id: SheetId) -> Self {
+        Selection {
+            sheet_id,
+            x: columns[0],
+            y: 0,
+            rects: None,
+            rows: None,
+            columns: Some(columns.to_vec()),
+            all: false,
+        }
+    }
+
+    /// Creates a selection with rows
+    pub fn rows(rows: &[i64], sheet_id: SheetId) -> Self {
+        Selection {
+            sheet_id,
+            x: 0,
+            y: rows[0],
+            rects: None,
+            rows: Some(rows.to_vec()),
+            columns: None,
+            all: false,
+        }
+    }
+
     /// Creates a selection via  single rect
     pub fn rect(rect: Rect, sheet_id: SheetId) -> Self {
         Selection {
@@ -481,5 +507,41 @@ mod test {
 
         // all is always count = 1
         assert_eq!(selection.count(), 1);
+    }
+
+    #[test]
+    fn selection_columns() {
+        let sheet_id = SheetId::test();
+        let selection = Selection::columns(&[1, 2, 3], sheet_id);
+        assert_eq!(
+            selection,
+            Selection {
+                sheet_id,
+                x: 1,
+                y: 0,
+                rects: None,
+                rows: None,
+                columns: Some(vec![1, 2, 3]),
+                all: false
+            }
+        );
+    }
+
+    #[test]
+    fn selection_rows() {
+        let sheet_id = SheetId::test();
+        let selection = Selection::rows(&[1, 2, 3], sheet_id);
+        assert_eq!(
+            selection,
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 1,
+                rects: None,
+                rows: Some(vec![1, 2, 3]),
+                columns: None,
+                all: false
+            }
+        );
     }
 }
