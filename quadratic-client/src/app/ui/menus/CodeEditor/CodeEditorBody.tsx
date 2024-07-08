@@ -71,7 +71,6 @@ export const CodeEditorBody = (props: Props) => {
 
   useEffect(() => {
     const insertText = (text: string) => {
-      debugger;
       if (!editorRef.current) return;
       const position = editorRef.current.getPosition();
       const model = editorRef.current.getModel();
