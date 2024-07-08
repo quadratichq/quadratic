@@ -667,7 +667,13 @@ function ManageUser({
               value={activeRole}
               onValueChange={(value: 'DELETE' | (typeof roles)[0]) => {
                 if (value === 'DELETE' && onDelete) {
-                  onDelete(fetcherDelete.submit, userId);
+                  const msg = isLoggedInUser
+                    ? 'Please confirm you want to leave this team. Your private files will be made public to the team.'
+                    : 'Please confirm you want to remove this person from the team. Their private files will be made public to the team.';
+                  const result = window.confirm(msg);
+                  if (result) {
+                    onDelete(fetcherDelete.submit, userId);
+                  }
                 } else if (onUpdate) {
                   const role = value as (typeof roles)[0];
                   onUpdate(fetcherUpdate.submit, userId, role);
