@@ -9,7 +9,7 @@ const encryption_key = Buffer.from(ENCRYPTION_KEY, 'hex');
 
 // Encrypts the given text using the given key.
 // Store the IV with the encrypted text (prepended).
-const encrypt = (key: Buffer, text: string): string => {
+export const encrypt = (key: Buffer, text: string): string => {
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv(algorithm, key, iv);
   const encrypted = Buffer.concat([cipher.update(text), cipher.final()]);
@@ -25,7 +25,7 @@ export const encryptFromEnv = (text: string): string => {
 
 // Decrypts the given encrypted text using the given key.
 // The IV is prepended to the encrypted text.
-const decrypt = (key: Buffer, encryptedText: string): string => {
+export const decrypt = (key: Buffer, encryptedText: string): string => {
   const [ivHex, encryptedHex] = encryptedText.split(':');
 
   if (!ivHex || !encryptedHex) {

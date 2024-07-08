@@ -1,5 +1,12 @@
 import crypto from 'crypto';
-import { decrypt, encrypt, hexStringToBuffer } from './crypto';
+import { decrypt, encrypt } from './crypto';
+
+// Convert a hex string to a buffer.
+//
+// Note: hex strings don't start with 0x
+const hexStringToBuffer = (key: string): Buffer => {
+  return Buffer.from(key, 'hex');
+};
 
 describe('Encryption and Decryption', () => {
   const keyBytes = crypto.randomBytes(32);
