@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider } from '@/shared/shadcn/ui/tooltip';
+import MemoryIcon from '@mui/icons-material/Memory';
 import StopIcon from '@mui/icons-material/Stop';
 import { TooltipTrigger } from '@radix-ui/react-tooltip';
 import { useEffect, useState } from 'react';
@@ -80,7 +81,7 @@ export const KernelMenu = () => {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <BottomBarItem title="Kernel Menu" open={open}>
+        <BottomBarItem title="Kernel Menu" open={open} icon={<MemoryIcon fontSize="inherit" />} onClick={() => {}}>
           <div className="text-xs">Kernel</div>
           {running > 0 && (
             <div

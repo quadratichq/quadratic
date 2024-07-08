@@ -1,8 +1,5 @@
 import { authClient } from '@/auth';
-import {
-  ConnectionTypeDetailsMysqlSchema,
-  ConnectionTypeDetailsPostgresSchema,
-} from 'quadratic-shared/typesAndSchemasConnections';
+import { ConnectionType, ConnectionTypeDetails } from 'quadratic-shared/typesAndSchemasConnections';
 import z from 'zod';
 const API_URL = import.meta.env.VITE_QUADRATIC_CONNECTION_URL;
 
@@ -14,7 +11,7 @@ const jwtHeader = async (): Promise<HeadersInit> => {
 // TODO: these should come from the connection service definition for these
 // endpoints but for now, they are defined here
 const TestSchema = z.object({ connected: z.boolean(), message: z.string().nullable() });
-export type TestConnectionResponse = z.infer<typeof TestSchema>;
+
 const SqlSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -58,14 +55,10 @@ export const connectionClient = {
     },
   },
   test: {
-    run: async ({
-      type,
-      typeDetails,
-    }:
-      | { type: 'postgres'; typeDetails: z.infer<typeof ConnectionTypeDetailsPostgresSchema> }
-      | { type: 'mysql'; typeDetails: z.infer<typeof ConnectionTypeDetailsMysqlSchema> }) => {
+    run: async ({ type, typeDetails }: { type: ConnectionType; typeDetails: ConnectionTypeDetails }) => {
       try {
-        const res = await fetch(`${API_URL}/${type}/test`, {
+        const typeLower = type.toLowerCase();
+        const res = await fetch(`${API_URL}/${typeLower}/test`, {
           method: 'POST',
           headers: new Headers(await jwtHeader()),
           body: JSON.stringify(typeDetails),
