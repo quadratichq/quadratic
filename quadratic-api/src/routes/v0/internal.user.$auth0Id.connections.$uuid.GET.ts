@@ -30,7 +30,7 @@ async function handler(req: Request, res: Response) {
 
   // Get the connection
   const { connection, team } = await getConnection({ uuid, userId: user.id });
-  const typeDetails = decryptFromEnv(connection.typeDetails?.toString('utf-8') || '');
+  const typeDetails = decryptFromEnv(connection.typeDetails.toString('utf-8'));
 
   // Do you have permission?
   if (!team.userMakingRequest.permissions.includes('TEAM_EDIT')) {

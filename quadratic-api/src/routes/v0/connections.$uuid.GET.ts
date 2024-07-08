@@ -34,9 +34,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
     throw new ApiError(403, 'You do not have permission to view this connection');
   }
 
-  // TODO: (connections) fix types
-  // @ts-expect-error
-
   const typeDetails = JSON.parse(decryptFromEnv(connection.typeDetails.toString()));
   const typeDetailsDesensitized = removeSensitiveInfoFromTypeDetails(connection.type, typeDetails);
 
