@@ -26,6 +26,7 @@ export type AiMessage = {
 
 export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const aiResponseRef = useRef<HTMLDivElement>(null);
   const {
     aiAssistant: {
       prompt: [prompt, setPrompt],
@@ -71,6 +72,13 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
       });
     }
   }, [autoFocus]);
+
+  // Scroll to the bottom of the AI content when component mounts
+  useEffect(() => {
+    if (aiResponseRef.current) {
+      aiResponseRef.current.scrollTop = aiResponseRef.current.scrollHeight;
+    }
+  }, []);
 
   const abortPrompt = () => {
     controllerRef.current?.abort();
@@ -192,6 +200,7 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   return (
     <div className="flex h-full flex-col justify-between">
       <div
+        ref={aiResponseRef}
         className="select-text overflow-y-auto whitespace-pre-wrap pb-2 pl-3 pr-4 text-sm outline-none"
         spellCheck={false}
         onKeyDown={(e) => {
