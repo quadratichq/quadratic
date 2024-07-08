@@ -77,14 +77,14 @@ export const insertCellRef = (editorInteractionState: EditorInteractionState, re
       const start = { x: multiCursor.left, y: multiCursor.top };
       const end = { x: multiCursor.right - 1, y: multiCursor.bottom - 1 };
       if (sheet) {
-        ref = `getCells(${start.x}, ${start.y}, ${end.x}, ${end.y}, '${sheet}')`;
+        ref = `cells(${start.x}, ${start.y}, ${end.x}, ${end.y}, '${sheet}')`;
       } else {
         if (relative) {
           ref = `relCells(${start.x - selectedCell.x}, ${start.y - selectedCell.y}, ${end.x - selectedCell.x}, ${
             end.y - selectedCell.y
           })`;
         } else {
-          ref = `getCells(${start.x}, ${start.y}, ${end.x}, ${end.y})`;
+          ref = `cells(${start.x}, ${start.y}, ${end.x}, ${end.y})`;
         }
       }
     } else {
