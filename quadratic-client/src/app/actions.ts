@@ -93,7 +93,6 @@ export const duplicateFileAction = {
 
 export const downloadFileAction = {
   label: 'Download',
-  // TODO: (connections) this should probably read from team connections to duplicate
   isAvailable: isAvailableBecauseLoggedIn,
   async run({ name }: { name: FileContextType['name'] }) {
     downloadQuadraticFile(name, await quadraticCore.export());

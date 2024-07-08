@@ -148,7 +148,6 @@ export default function CellTypeMenu() {
             ))}
             <CommandItemWrapper
               name="Manage connections"
-              // TODO: (connections) correct URL here / cleanup description
               description={
                 <>
                   Connect to Postgres, MySQL, <LinkNewTabWrapper href={DOCUMENTATION_URL}>and more</LinkNewTabWrapper>

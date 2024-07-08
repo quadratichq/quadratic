@@ -1,4 +1,5 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
@@ -39,7 +40,15 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   } = useCodeEditor();
   const { isAuthenticated, loggedInUser: user } = useRootRouteLoaderData();
   const { mode } = useRecoilValue(editorInteractionStateAtom);
-  const cellType = mode; // TODO: (connections) turn this into a proper string for the cell type, e.g. "Connection:Postgres"
+  const cellType = getCodeCell(mode);
+
+  // Type we pass to the AI for the cell, e.g. "javascript" or "connection::postgres"
+  let aiCellType = '';
+  if (cellType) {
+    if ('type' in cellType) aiCellType += `${cellType.type}::`;
+    aiCellType += cellType.label;
+  }
+  aiCellType += aiCellType.toLowerCase();
 
   // TODO: Improve these messages. Pass current location and more docs.
   // store in a separate location for different cells
@@ -48,7 +57,7 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
       role: 'system',
       content:
         'You are a helpful assistant inside of a spreadsheet application called Quadratic. The cell type is: ' +
-        cellType,
+        aiCellType,
     },
     {
       role: 'system',
