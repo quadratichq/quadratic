@@ -80,9 +80,9 @@ export const insertCellRef = (editorInteractionState: EditorInteractionState, re
         ref = `await cells(${start.x}, ${start.y}, ${end.x}, ${end.y}, '${sheet}')`;
       } else {
         if (relative) {
-          ref = `await relCells(${start.x - selectedCell.x}, ${start.y - selectedCell.y}, ${
-            end.x - selectedCell.x
-          }, ${end.y - selectedCell.y})`;
+          ref = `await relCells(${start.x - selectedCell.x}, ${start.y - selectedCell.y}, ${end.x - selectedCell.x}, ${
+            end.y - selectedCell.y
+          })`;
         } else {
           ref = `await cells(${start.x}, ${start.y}, ${end.x}, ${end.y})`;
         }
