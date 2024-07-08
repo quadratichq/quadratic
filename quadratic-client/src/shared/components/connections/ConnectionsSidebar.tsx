@@ -45,7 +45,7 @@ export const ConnectionsSidebar = ({ staticIps }: { staticIps: string[] | null }
 function SidebarItem({ title, description, linkText, linkHref, children }: any) {
   return (
     <div>
-      <div className="">
+      <div>
         <h3 className="inline font-medium">{title}:</h3> <p className="inline text-muted-foreground">{description}</p>
         {linkText && linkHref && (
           <p className="inline hover:text-primary">

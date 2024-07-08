@@ -11,7 +11,7 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { cn } from '@/shared/shadcn/utils';
 import { timeAgo } from '@/shared/utils/timeAgo';
-import { Cross2Icon, MagnifyingGlassIcon, PlusIcon } from '@radix-ui/react-icons';
+import { Cross2Icon, PlusIcon } from '@radix-ui/react-icons';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 
@@ -65,10 +65,8 @@ export const ConnectionsList = ({
               }}
             >
               <div className="relative">
-                <MagnifyingGlassIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search connections"
-                  className="pl-8"
+                  placeholder="Filter by name"
                   value={filterQuery}
                   onChange={(e) => setFilterQuery(e.target.value)}
                   autoFocus
