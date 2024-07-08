@@ -1,4 +1,4 @@
-import { CodeRun } from '../languageTypes';
+import { CodeRun } from '../CodeRun';
 
 export interface JavascriptClientLoadError {
   type: 'javascriptClientLoadError';

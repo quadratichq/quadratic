@@ -20,6 +20,7 @@ import {
   SummarizeSelectionResult,
   TransactionName,
 } from '@/app/quadratic-core-types';
+import { CodeRun } from '../CodeRun';
 import { MultiplayerState } from '../multiplayerWebWorker/multiplayerClientMessages';
 
 //#region Initialize
@@ -66,6 +67,17 @@ export interface ClientCoreInitMultiplayer {
 export interface CoreClientMultiplayerState {
   type: 'coreClientMultiplayerState';
   state: MultiplayerState;
+}
+
+export interface CoreClientConnectionState {
+  type: 'coreClientConnectionState';
+  state: 'loading' | 'ready' | 'error' | 'running';
+
+  // current cell being executed
+  current?: CodeRun;
+
+  // cells awaiting execution
+  awaitingExecution?: CodeRun[];
 }
 
 export interface ClientCoreInitPython {
@@ -932,6 +944,7 @@ export type CoreClientMessage =
   | CoreClientUpdateCodeCell
   | CoreClientImportExcel
   | CoreClientMultiplayerState
+  | CoreClientConnectionState
   | CoreClientOfflineTransactions
   | CoreClientUndoRedo
   | CoreClientGetJwt

@@ -2,7 +2,7 @@ import { usePythonState } from '@/app/atoms/usePythonState';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Coordinate, SheetPosTS } from '@/app/gridGL/types/size';
-import { JsCodeCell, JsRenderCodeCell, Pos, SheetRect } from '@/app/quadratic-core-types';
+import { CodeCellLanguage, JsCodeCell, JsRenderCodeCell, Pos, SheetRect } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import mixpanel from 'mixpanel-browser';
@@ -10,6 +10,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { Diagnostic } from 'vscode-languageserver-types';
+import { useConnectionState } from '@/app/atoms/useConnectionState';
 import { useJavascriptState } from '@/app/atoms/useJavascriptState';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
@@ -57,6 +58,7 @@ export const CodeEditor = () => {
   } = useCodeEditor();
   const { pythonState } = usePythonState();
   const javascriptState = useJavascriptState();
+  const connectionState = useConnectionState();
 
   const [cellsAccessed, setCellsAccessed] = useState<SheetRect[] | undefined | null>();
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
@@ -251,11 +253,13 @@ export const CodeEditor = () => {
       language: editorMode,
       cursor: sheets.getCursorPosition(),
     });
+
     setCodeString(editorContent ?? '');
 
     mixpanel.track('[CodeEditor].cellRun', {
       type: mode,
     });
+
     // Google Ads Conversion for running a cell
     if (googleAnalyticsAvailable()) {
       //@ts-expect-error
@@ -266,13 +270,18 @@ export const CodeEditor = () => {
   };
 
   const cancelRun = () => {
-    if (editorInteractionState.mode === 'Python') {
+    if (mode === 'Python') {
       if (pythonState === 'running') {
         pythonWebWorker.cancelExecution();
       }
-    } else if (editorInteractionState.mode === 'Javascript') {
+    } else if (mode === 'Javascript') {
       if (javascriptState === 'running') {
         javascriptWebWorker.cancelExecution();
+      }
+    } else if (mode === 'Connection') {
+      if (connectionState === 'running') {
+        const language: CodeCellLanguage = { Connection: {} as any };
+        quadraticCore.sendCancelExecution(language);
       }
     }
   };

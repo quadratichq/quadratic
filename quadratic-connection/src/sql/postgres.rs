@@ -37,19 +37,19 @@ async fn get_connection(
             updated_date: "".into(),
             type_details: quadratic_rust_shared::quadratic_api::TypeDetails {
                 host: "0.0.0.0".into(),
-                port: "5433".into(),
-                username: "user".into(),
-                password: "password".into(),
+                port: Some("5433".into()),
+                username: Some("user".into()),
+                password: Some("password".into()),
                 database: "postgres-connection".into(),
             },
         }
     };
 
     let pg_connection = PostgresConnection::new(
-        Some(connection.type_details.username.to_owned()),
-        Some(connection.type_details.password.to_owned()),
+        connection.type_details.username.to_owned(),
+        connection.type_details.password.to_owned(),
         connection.type_details.host.to_owned(),
-        Some(connection.type_details.port.to_owned()),
+        connection.type_details.port.to_owned(),
         Some(connection.type_details.database.to_owned()),
     );
 

@@ -1,15 +1,15 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
-import { SchemaViewer } from '@/app/ui/connections/SchemaViewer';
+import { SchemaViewer } from '@/app/ui/components/SchemaViewer';
 import { AiAssistant } from '@/app/ui/menus/CodeEditor/AiAssistant';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
+import { Button } from '@/shared/shadcn/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { cn } from '@/shared/shadcn/utils';
+import { ChevronRightIcon } from '@radix-ui/react-icons';
 import { useRecoilValue } from 'recoil';
 import { CodeEditorPanelData } from './useCodeEditorPanelData';
-import { ChevronRightIcon } from '@radix-ui/react-icons';
-import { Button } from '@/shared/shadcn/ui/button';
 
 export type PanelTab = 'console' | 'ai-assistant' | 'data-browser';
 

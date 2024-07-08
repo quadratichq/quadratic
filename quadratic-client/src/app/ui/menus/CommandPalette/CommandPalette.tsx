@@ -1,4 +1,5 @@
-import { useRootRouteLoaderData } from '@/routes/index';
+import { useRootRouteLoaderData } from '@/routes/_root';
+import { useFileRouteLoaderData } from '@/routes/file.$uuid';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandList } from '@/shared/shadcn/ui/command';
 import fuzzysort from 'fuzzysort';
 import mixpanel from 'mixpanel-browser';
@@ -22,6 +23,9 @@ import viewCommandGroup from './commands/View';
 
 export const CommandPalette = () => {
   const { isAuthenticated } = useRootRouteLoaderData();
+  const {
+    userMakingRequest: { fileRelativeLocation, teamPermissions },
+  } = useFileRouteLoaderData();
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [activeSearchValue, setActiveSearchValue] = useState<string>('');
   const { permissions } = editorInteractionState;
@@ -76,7 +80,11 @@ export const CommandPalette = () => {
             const { label, keywords, isAvailable } = command;
 
             // Is the command even available?
-            if (isAvailable && isAvailable(permissions, isAuthenticated) !== true) {
+            if (
+              isAvailable &&
+              isAvailable({ filePermissions: permissions, isAuthenticated, teamPermissions, fileRelativeLocation }) !==
+                true
+            ) {
               return;
             }
 

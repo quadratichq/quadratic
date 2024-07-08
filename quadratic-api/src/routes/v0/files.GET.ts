@@ -5,19 +5,24 @@ import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { RequestWithUser } from '../../types/Request';
+import { ResponseError } from '../../types/Response';
 
 export default [validateAccessToken, userMiddleware, handler];
 
-async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.GET.response']>) {
+async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.GET.response'] | ResponseError>) {
   const {
     user: { id },
     query: { shared },
   } = req;
 
+  if (shared !== 'with-me') {
+    return res.status(400).json({ error: { message: 'Invalid query parameter' } });
+  }
+
   // Fetch either 1) files owned by the user, or 2) files shared with the user
   const dbFiles = await dbClient.file.findMany({
     where: {
-      ...(shared === 'with-me' ? { UserFileRole: { some: { userId: id } } } : { ownerUserId: id }),
+      UserFileRole: { some: { userId: id } },
       deleted: false,
     },
     select: {

@@ -7,6 +7,7 @@ import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
+import { ApiError } from '../../utils/ApiError';
 // import { CreateSecret } from '../connections/awsSecret';
 
 export default [validateAccessToken, userMiddleware, handler];
@@ -26,10 +27,16 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
     body: newConnection,
     params: { uuid },
   } = parseRequest(req, schema);
+  const {
+    team: {
+      userMakingRequest: { permissions },
+    },
+  } = await getConnection({ uuid, userId });
 
-  // get connection from DB, this ensures the user has access to it
-  // TODO: (connections) ensure they have write access...?
-  await getConnection({ uuid, userId });
+  // Do you have permission?
+  if (!permissions.includes('TEAM_EDIT')) {
+    throw new ApiError(403, 'You do not have permission to update this connection');
+  }
 
   const { name, typeDetails } = newConnection;
   const updatedConnection = await dbClient.connection.update({

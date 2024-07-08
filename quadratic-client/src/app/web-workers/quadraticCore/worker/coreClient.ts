@@ -6,6 +6,7 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
+import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import {
   JsCodeCell,
   JsHtmlOutput,
@@ -18,6 +19,7 @@ import {
   SheetInfo,
   TransactionName,
 } from '@/app/quadratic-core-types';
+import { coreConnection } from '@/app/web-workers/quadraticCore/worker/coreConnection';
 import { MultiplayerState } from '../../multiplayerWebWorker/multiplayerClientMessages';
 import { ClientCoreGetJwt, ClientCoreLoad, ClientCoreMessage, CoreClientMessage } from '../coreClientMessages';
 import { core } from './core';
@@ -467,10 +469,13 @@ class CoreClient {
         return;
 
       case 'clientCoreCancelExecution':
-        if (e.data.language === 'Python') {
+        const langauge = getLanguage(e.data.language);
+        if (langauge === 'Python') {
           corePython.cancelExecution();
-        } else if (e.data.language === 'Javascript') {
+        } else if (langauge === 'Javascript') {
           coreJavascript.cancelExecution();
+        } else if (langauge === 'Connection') {
+          coreConnection.cancelExecution();
         } else {
           console.warn("Unhandled language in 'clientCoreCancelExecution'", e.data.language);
         }
