@@ -61,6 +61,7 @@ class CoreConnection {
     let buffer = new ArrayBuffer(0);
     let std_out = '';
     let std_err = '';
+    let extra = '';
     let codeRun: CodeRun = {
       transactionId,
       sheetPos: { x, y, sheetId },
@@ -89,13 +90,12 @@ class CoreConnection {
 
         const headers = response.headers;
         const isOverTheLimit = headers.get('over-the-limit') === 'true';
-        std_out = isOverTheLimit
-          ? 'Exceeded maximum allowed bytes, not all available records returned.'
-          : `Query returned ${headers.get('record-count')} records in ${headers.get('elapsed-total-ms')} ms.`;
+        std_out = isOverTheLimit ? 'Exceeded maximum allowed bytes, not all available records returned.' : '';
+        extra = `${headers.get('record-count')} records in ${headers.get('elapsed-total-ms')}ms`;
       }
 
       // send the parquet bytes to core
-      core.connectionComplete(transactionId, buffer, std_out, std_err.replace(/\\/g, '').replace(/"/g, ''));
+      core.connectionComplete(transactionId, buffer, std_out, std_err.replace(/\\/g, '').replace(/"/g, ''), extra);
       this.sendConnectionState('ready');
     } catch (e) {
       console.error(`Error fetching ${url}`, e);

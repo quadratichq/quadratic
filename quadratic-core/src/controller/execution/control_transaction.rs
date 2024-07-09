@@ -134,17 +134,24 @@ impl GridController {
         data: Vec<u8>,
         std_out: Option<String>,
         std_err: Option<String>,
+        extra: Option<String>,
     ) -> Result<()> {
         let transaction_id = Uuid::parse_str(&transaction_id)?;
         let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
         let array = parquet_to_vec(data)?;
 
         if let Some(current_sheet_pos) = transaction.current_sheet_pos {
-            let return_type = if array.is_empty() {
-                "0 x 0 Array".to_string()
+            let mut return_type = if array.is_empty() {
+                "0×0 Array".to_string()
             } else {
-                format!("{} x {} Array", array[0].len(), array.len())
+                // subtract 1 from the length to account for the header row
+                format!("{}×{} Array", array[0].len(), 0.max(array.len() - 1))
             };
+
+            if let Some(extra) = extra {
+                return_type = format!("{return_type}\n{extra}");
+            }
+
             let result = CodeRunResult::Ok(Value::Array(array.into()));
 
             let code_run = CodeRun {
