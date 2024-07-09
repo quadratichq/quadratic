@@ -21,7 +21,7 @@ export const CodeHint = () => {
   useEffect(() => {
     const updateCursor = async () => {
       const { x, y } = sheets.sheet.cursor.cursorPosition;
-      const newCellHasValue = await quadraticCore.hasRenderCells(sheets.sheet.id, x, y, 0, 0);
+      const newCellHasValue = await quadraticCore.hasRenderCells(sheets.sheet.id, x, y, 1, 1);
       setHide(true);
       setCellHasValue(newCellHasValue);
 
