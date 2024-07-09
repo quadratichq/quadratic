@@ -28,7 +28,10 @@ class PixiAppSettings {
   private lastSettings: GridSettings;
   private _panMode: PanMode;
   private _input: Input;
-  unsavedEditorChanges = false;
+
+  // Keeps track of code editor content. This is used when moving code cells to
+  // keep track of any unsaved changes, and keyboardCell.
+  unsavedEditorChanges?: string;
 
   temporarilyHideCellTypeOutlines = false;
   editorInteractionState = editorInteractionStateDefault;
