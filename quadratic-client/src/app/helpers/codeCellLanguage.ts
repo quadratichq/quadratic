@@ -12,7 +12,7 @@ export type CodeCellIds = keyof typeof codeCellsById;
 
 export const codeCellIsAConnection = (language?: CodeCellLanguage) => {
   const cell = getCodeCell(language);
-  return cell && 'type' in cell && cell.type === 'connection';
+  return Boolean(cell && 'type' in cell && cell.type === 'connection');
 };
 
 export const getCodeCell = (language?: CodeCellLanguage) => {
