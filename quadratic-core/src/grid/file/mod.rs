@@ -65,6 +65,7 @@ impl GridFile {
 /// Imports a file. We check if the first character is `{` to determine if it is
 /// a JSON file.
 pub fn import(file_contents: &[u8]) -> Result<Grid> {
+    dbgjs!(file_contents[0]);
     if file_contents[0] == b'{' {
         import_json(str::from_utf8(file_contents)?)
     } else {
@@ -277,5 +278,18 @@ mod tests {
         let exported = export(&imported).unwrap();
         let imported_copy = import(&exported).unwrap();
         assert_eq!(imported_copy, imported);
+    }
+
+    #[test]
+    fn creates_a_blank_current_file() {
+        let mut grid = Grid::new();
+
+        // todo: this does not work
+        let exported = export(&mut grid).unwrap();
+        println!("{:?}", exported);
+        // let _imported = import(&_exported).unwrap();
+        // println!("{:#?}", imported.sheets()[0].borders);
+        // // println!("{:?}", serde_json::to_string(&sheet.column_).unwrap());
+        // println!("{:#?}", &sheets[0].borders.per_cell.borders);
     }
 }

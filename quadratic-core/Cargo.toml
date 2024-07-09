@@ -20,6 +20,10 @@ path = "src/bin/docgen.rs"
 name = "export_types"
 path = "src/bin/export_types.rs"
 
+[[bin]]
+name = "generate_blank_current_file"
+path = "src/bin/generate_blank_current_file.rs"
+
 [features]
 default = ["console_error_panic_hook", "js"]
 # "js" feature is disabled for testing (particularly WASI benchmarks)
