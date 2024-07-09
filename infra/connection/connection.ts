@@ -4,7 +4,6 @@ import * as pulumi from "@pulumi/pulumi";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
 import { runDockerImageBashScript } from "../helpers/runDockerImageBashScript";
 import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
-import { redisHost, redisPort } from "../shared/redis";
 import {
   connectionEc2SecurityGroup,
   connectionNlbSecurityGroup,
@@ -25,6 +24,12 @@ const subNet1 = config.require("subnet1");
 const subNet2 = config.require("subnet2");
 const vpcId = config.require("vpc-id");
 
+// Allocate Elastic IP for the instance so it remands the same after deployments
+const eip = new aws.ec2.Eip("nat-eip-1", {
+  vpc: true,
+});
+
+// create the instance
 const instance = new aws.ec2.Instance("connection-instance", {
   tags: {
     Name: `connection-instance-${connectionSubdomain}`,
@@ -36,18 +41,29 @@ const instance = new aws.ec2.Instance("connection-instance", {
   ami: latestAmazonLinuxAmi.id,
   // Run Setup script on instance boot to create connection systemd service
   userDataReplaceOnChange: true,
-  userData: pulumi.all([redisHost, redisPort]).apply(([host, port]) =>
+  userData: eip.publicIp.apply((publicIp) =>
     runDockerImageBashScript(
       connectionECRName,
       dockerImageTag,
       "quadratic-connection-development",
       {
         QUADRATIC_API_URI: quadraticApiUri,
+        STATIC_IPS: `${publicIp}`,
       },
       true
     )
   ),
+  associatePublicIpAddress: true,
 });
+
+// Allocate an Elastic IP for the instance
+const eipAssociation = new aws.ec2.EipAssociation(
+  "connection-instance-eip-association",
+  {
+    instanceId: instance.id,
+    allocationId: eip.id,
+  }
+);
 
 // Create a new Network Load Balancer
 const nlb = new aws.lb.LoadBalancer("connection-nlb", {
