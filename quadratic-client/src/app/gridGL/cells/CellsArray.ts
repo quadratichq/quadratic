@@ -3,7 +3,8 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { Coordinate } from '@/app/gridGL/types/size';
-import { JsRenderCodeCell } from '@/app/quadratic-core-types';
+import { JsCodeCell, JsRenderCodeCell, RunError } from '@/app/quadratic-core-types';
+import mixpanel from 'mixpanel-browser';
 import { Container, Graphics, ParticleContainer, Point, Rectangle, Sprite, Texture } from 'pixi.js';
 import { colors } from '../../theme/colors';
 import { dashedTextures } from '../dashedTextures';
@@ -66,14 +67,37 @@ export class CellsArray extends Container {
     }
   };
 
-  private updateCodeCell = (options: { sheetId: string; x: number; y: number; renderCodeCell?: JsRenderCodeCell }) => {
-    if (options.sheetId === this.cellsSheet.sheetId) {
-      if (options.renderCodeCell) {
-        this.codeCells.set(this.key(options.x, options.y), options.renderCodeCell);
+  private updateCodeCell = (options: {
+    sheetId: string;
+    x: number;
+    y: number;
+    renderCodeCell?: JsRenderCodeCell;
+    codeCell?: JsCodeCell;
+  }) => {
+    const { sheetId, x, y, renderCodeCell, codeCell } = options;
+    if (sheetId === this.cellsSheet.sheetId) {
+      if (renderCodeCell) {
+        this.codeCells.set(this.key(x, y), renderCodeCell);
       } else {
-        this.codeCells.delete(this.key(options.x, options.y));
+        this.codeCells.delete(this.key(x, y));
       }
       this.create();
+
+      if (!!codeCell && codeCell.std_err !== null && codeCell.evaluation_result) {
+        try {
+          // std_err is not null, so evaluation_result will be RunError
+          const runError = JSON.parse(codeCell.evaluation_result) as RunError;
+          // track unimplemented errors
+          if (typeof runError.msg === 'object' && 'Unimplemented' in runError.msg) {
+            mixpanel.track('[CellsArray].updateCodeCell', {
+              type: codeCell.language,
+              error: runError.msg,
+            });
+          }
+        } catch (error) {
+          console.error('[CellsArray] Error parsing codeCell.evaluation_result', error);
+        }
+      }
     }
   };
 
