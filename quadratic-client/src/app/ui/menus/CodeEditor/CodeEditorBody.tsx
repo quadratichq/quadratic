@@ -55,9 +55,9 @@ export const CodeEditorBody = (props: Props) => {
   const language = editorInteractionState.mode;
   const monacoLanguage = getLanguageForMonaco(language);
   const isConnection = codeCellIsAConnection(language);
-  const readOnly =
-    !hasPermissionToEditFile(editorInteractionState.permissions) ||
-    !(isConnection && teamPermissions?.includes('TEAM_EDIT'));
+  const canEdit =
+    hasPermissionToEditFile(editorInteractionState.permissions) &&
+    (isConnection ? teamPermissions?.includes('TEAM_EDIT') : true);
   const [didMount, setDidMount] = useState(false);
   const [isValidRef, setIsValidRef] = useState(false);
   const { editorRef, monacoRef } = useCodeEditor();
@@ -220,7 +220,7 @@ export const CodeEditorBody = (props: Props) => {
         onMount={onMount}
         options={{
           theme: 'light',
-          readOnly,
+          readOnly: !canEdit,
           minimap: { enabled: true },
           overviewRulerLanes: 0,
           hideCursorInOverviewRuler: true,
