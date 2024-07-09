@@ -26,7 +26,9 @@ const subNet2 = config.require("subnet2");
 const vpcId = config.require("vpc-id");
 
 // Allocate Elastic IP for the instance so it remands the same after deployments
-const eip = new aws.ec2.Eip("nat-eip-1");
+const eip = new aws.ec2.Eip("nat-eip-1", {
+  vpc: true,
+});
 
 // create the instance
 const instance = new aws.ec2.Instance("connection-instance", {
@@ -52,7 +54,7 @@ const instance = new aws.ec2.Instance("connection-instance", {
       true
     )
   ),
-  associatePublicIpAddress: false,
+  associatePublicIpAddress: true,
 });
 
 // Allocate an Elastic IP for the instance
