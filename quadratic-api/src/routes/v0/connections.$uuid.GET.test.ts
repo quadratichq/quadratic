@@ -1,6 +1,8 @@
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
+import { createTeam } from '../../tests/testDataGenerator';
+import { encryptFromEnv } from '../../utils/crypto';
 
 beforeAll(async () => {
   const userWithConnection = await dbClient.user.create({
@@ -14,32 +16,43 @@ beforeAll(async () => {
     },
   });
 
+  const team = await createTeam({
+    team: {
+      uuid: '00000000-0000-0000-0000-000000000000',
+    },
+    users: [{ userId: userWithConnection.id, role: 'OWNER' }],
+  });
+
+  const typeDetails = {
+    host: 'localhost',
+    port: '5432',
+    database: 'postgres',
+    username: 'root',
+    password: 'password',
+  };
+
   await dbClient.connection.create({
     data: {
       uuid: '00000000-0000-0000-0000-000000000000',
       name: 'First connection',
+      teamId: team.id,
       type: 'POSTGRES',
-      typeDetails: JSON.stringify({
-        host: 'localhost',
-        port: '5432',
-        database: 'postgres',
-        username: 'root',
-        password: 'password',
-      }),
-      UserConnectionRole: {
-        create: {
-          userId: userWithConnection.id,
-          role: 'OWNER',
-        },
-      },
+      typeDetails: Buffer.from(encryptFromEnv(JSON.stringify(typeDetails))),
+      // UserConnectionRole: {
+      //   create: {
+      //     userId: userWithConnection.id,
+      //     role: 'OWNER',
+      //   },
+      // },
     },
   });
 });
 
 afterAll(async () => {
   await dbClient.$transaction([
-    dbClient.userConnectionRole.deleteMany(),
     dbClient.connection.deleteMany(),
+    dbClient.userTeamRole.deleteMany(),
+    dbClient.team.deleteMany(),
     dbClient.user.deleteMany(),
   ]);
 });

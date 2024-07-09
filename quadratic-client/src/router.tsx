@@ -1,8 +1,5 @@
-import * as CloudFilesMigration from '@/dashboard/CloudFilesMigrationRoute';
 import { BrowserCompatibilityLayoutRoute } from '@/dashboard/components/BrowserCompatibilityLayoutRoute';
 import * as Page404 from '@/routes/404';
-import * as FileMeta from '@/routes/_file.$uuid';
-import * as Create from '@/routes/files.create';
 import * as Login from '@/routes/login';
 import * as LoginResult from '@/routes/login-result';
 import * as Logout from '@/routes/logout';
@@ -15,10 +12,9 @@ import {
   createBrowserRouter,
   createRoutesFromElements,
   redirect,
-  useLocation,
 } from 'react-router-dom';
 import { protectedRouteLoaderWrapper } from './auth';
-import * as IndexRoute from './routes/index';
+import * as RootRoute from './routes/_root';
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -26,83 +22,52 @@ export const router = createBrowserRouter(
       <Route
         path="/"
         id={ROUTE_LOADER_IDS.ROOT}
-        loader={IndexRoute.loader}
-        Component={IndexRoute.Component}
-        ErrorBoundary={IndexRoute.ErrorBoundary}
+        loader={RootRoute.loader}
+        Component={RootRoute.Component}
+        ErrorBoundary={RootRoute.ErrorBoundary}
       >
         <Route path="file">
           {/* Check that the browser is supported _before_ we try to load anything from the API */}
           <Route element={<BrowserCompatibilityLayoutRoute />}>
-            <Route index element={<Navigate to={ROUTES.FILES} replace />} />
+            <Route index element={<Navigate to="/" replace />} />
             <Route
               path=":uuid"
               id={ROUTE_LOADER_IDS.FILE}
               lazy={() => import('./routes/file.$uuid')}
               // We don't want to revalidate the initial file route because
               // we don't have any 2-way data flow setup for the file contents
-              // But file metadata is handled in the pathless route below
               shouldRevalidate={() => false}
-            >
-              {/* TODO: (connections) we need to figure out what to do here when it's a publicly viewable file */}
-              <Route path="" id={ROUTE_LOADER_IDS.FILE_METADATA} loader={FileMeta.loader}>
-                {/* TODO: (connections) consider popping a dialog right away, then loading the body for lazy loading */}
-                <Route path="connections" lazy={() => import('./routes/file.$uuid.connections')}>
-                  <Route
-                    index
-                    lazy={async () => {
-                      const { Index } = await import('./routes/file.$uuid.connections');
-                      return { Component: Index };
-                    }}
-                  />
-                  <Route
-                    path=":connectionUuid"
-                    lazy={() => import('./routes/file.$uuid.connections.$connectionUuid')}
-                  />
-                  <Route
-                    path="create/:connectionType"
-                    lazy={() => import('./routes/file.$uuid.connections.create.$connectionType')}
-                  />
-                </Route>
-              </Route>
-            </Route>
+            />
           </Route>
         </Route>
 
         <Route loader={protectedRouteLoaderWrapper(async () => null)}>
+          {/* Resource routes: these are accessible via the URL bar, but have no UI
+              Putting these outside the nested tree lets you hit them directly without having to load other data */}
           <Route
-            index
-            Component={() => {
-              const { search } = useLocation();
-              return <Navigate to={ROUTES.FILES + search} replace />;
-            }}
-          />
-          <Route
-            path={ROUTES.CREATE_FILE}
-            loader={Create.loader}
-            action={Create.action}
-            shouldRevalidate={() => false}
-          />
-          <Route
-            path={ROUTES.EDUCATION_ENROLL}
+            path="education/enroll"
             loader={async () => {
               // Check their status, then send them to the dashboard with the education dialog
               await apiClient.education.refresh();
-              return redirect(`${ROUTES.FILES}?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.EDUCATION}`);
+              return redirect(`/?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.EDUCATION}`);
             }}
           />
-
           <Route
-            id={ROUTE_LOADER_IDS.DASHBOARD}
-            lazy={() => import('./routes/_dashboard')}
-            shouldRevalidate={dontRevalidateDialogs}
-          >
-            <Route path={ROUTES.FILES}>
-              <Route index lazy={() => import('./routes/files')} shouldRevalidate={dontRevalidateDialogs} />
+            path="teams/:teamUuid/files/create"
+            lazy={() => import('./routes/teams.$teamUuid.files.create')}
+            shouldRevalidate={() => false}
+          />
+          <Route path="teams" index loader={() => redirect('/')} />
 
-              {/* Resource routes */}
-              <Route path=":uuid" lazy={() => import('./routes/files.$uuid')} />
-              <Route path=":uuid/sharing" lazy={() => import('./routes/files.$uuid.sharing')} />
-            </Route>
+          {/* API routes: these are used by fetchers but have no UI */}
+          <Route path="api">
+            <Route path="files/:uuid" lazy={() => import('./routes/api.files.$uuid')} />
+            <Route path="files/:uuid/sharing" lazy={() => import('./routes/api.files.$uuid.sharing')} />
+            <Route path="connections" lazy={() => import('./routes/api.connections')} />
+          </Route>
+
+          {/* Dashboard UI routes */}
+          <Route path="/" id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>
             <Route
               path={ROUTES.FILES_SHARED_WITH_ME}
               lazy={() => import('./routes/files.shared-with-me')}
@@ -119,22 +84,17 @@ export const router = createBrowserRouter(
               shouldRevalidate={dontRevalidateDialogs}
             />
 
-            <Route path={ROUTES.TEAMS}>
-              <Route index element={<Navigate to={ROUTES.FILES} replace />} />
-              <Route
-                path=":uuid"
-                id={ROUTE_LOADER_IDS.TEAM}
-                lazy={() => import('./routes/teams.$uuid')}
-                shouldRevalidate={dontRevalidateDialogs}
-              />
+            <Route path="teams">
+              <Route path="create" lazy={() => import('./routes/teams.create')} />
+              <Route path=":teamUuid" lazy={() => import('./routes/teams.$teamUuid')}>
+                <Route index lazy={() => import('./routes/teams.$teamUuid.index')} />
+                <Route path="files/private" lazy={() => import('./routes/teams.$teamUuid.files.private')} />
+                <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />
+                <Route path="settings" lazy={() => import('./routes/teams.$teamUuid.settings')} />
+                <Route path="connections" lazy={() => import('./routes/teams.$teamUuid.connections')} />
+              </Route>
             </Route>
           </Route>
-
-          <Route // TODO: remove route
-            path="/cloud-migration"
-            element={<CloudFilesMigration.Component />}
-            loader={CloudFilesMigration.loader}
-          />
         </Route>
 
         <Route path="*" Component={Page404.Component} />
@@ -143,7 +103,12 @@ export const router = createBrowserRouter(
       <Route path={ROUTES.LOGIN_RESULT} loader={LoginResult.loader} />
       <Route path={ROUTES.LOGOUT} loader={Logout.loader} action={Logout.action} />
     </>
-  )
+  ),
+  {
+    future: {
+      v7_fetcherPersist: true,
+    },
+  }
 );
 
 function dontRevalidateDialogs({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) {

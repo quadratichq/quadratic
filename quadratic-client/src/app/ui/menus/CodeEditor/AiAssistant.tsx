@@ -1,4 +1,5 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
@@ -6,7 +7,7 @@ import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { AI } from '@/app/ui/icons';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { authClient } from '@/auth';
-import { useRootRouteLoaderData } from '@/routes/index';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
@@ -26,6 +27,7 @@ export type AiMessage = {
 
 export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const aiResponseRef = useRef<HTMLDivElement>(null);
   const {
     aiAssistant: {
       prompt: [prompt, setPrompt],
@@ -38,7 +40,15 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   } = useCodeEditor();
   const { isAuthenticated, loggedInUser: user } = useRootRouteLoaderData();
   const { mode } = useRecoilValue(editorInteractionStateAtom);
-  const cellType = mode; // TODO: (connections) turn this into a proper string for the cell type, e.g. "Connection:Postgres"
+  const cellType = getCodeCell(mode);
+
+  // Type we pass to the AI for the cell, e.g. "javascript" or "connection::postgres"
+  let aiCellType = '';
+  if (cellType) {
+    if ('type' in cellType) aiCellType += `${cellType.type}::`;
+    aiCellType += cellType.label;
+  }
+  aiCellType += aiCellType.toLowerCase();
 
   // TODO: Improve these messages. Pass current location and more docs.
   // store in a separate location for different cells
@@ -47,7 +57,7 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
       role: 'system',
       content:
         'You are a helpful assistant inside of a spreadsheet application called Quadratic. The cell type is: ' +
-        cellType,
+        aiCellType,
     },
     {
       role: 'system',
@@ -71,6 +81,13 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
       });
     }
   }, [autoFocus]);
+
+  // Scroll to the bottom of the AI content when component mounts
+  useEffect(() => {
+    if (aiResponseRef.current) {
+      aiResponseRef.current.scrollTop = aiResponseRef.current.scrollHeight;
+    }
+  }, []);
 
   const abortPrompt = () => {
     controllerRef.current?.abort();
@@ -192,6 +209,7 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   return (
     <div className="flex h-full flex-col justify-between">
       <div
+        ref={aiResponseRef}
         className="select-text overflow-y-auto whitespace-pre-wrap pb-2 pl-3 pr-4 text-sm outline-none"
         spellCheck={false}
         onKeyDown={(e) => {
@@ -239,7 +257,7 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
                     fontSize: '0.8rem',
                     marginBottom: '0.5rem',
                   }}
-                  alt="AI Assistant"
+                  alt="AI assistant"
                 >
                   <AI sx={{ color: colors.languageAI }}></AI>
                 </Avatar>
