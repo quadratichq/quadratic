@@ -87,8 +87,10 @@ fn get_functions() -> Vec<FormulaFunction> {
 #[cfg(test)]
 mod tests {
     use crate::{formulas::tests::*, Pos};
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_formula_if() {
         let form = parse_formula("IF(A1='q', 'yep', 'nope')", pos![A0]).unwrap();
 

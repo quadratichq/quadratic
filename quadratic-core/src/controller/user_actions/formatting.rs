@@ -120,8 +120,10 @@ mod test {
         grid::{RenderSize, SheetId, TextColor},
         Pos, Rect, SheetPos, SheetRect,
     };
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_set_cell_text_color_undo_redo() {
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
@@ -184,6 +186,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_change_decimal_places() {
         // setup
         let mut gc: GridController = GridController::test();
@@ -276,6 +279,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_change_decimal_places_different_precision() {
         // The previous test checks that the decimal places are changed when all cells have the same precision.
         // However, the test does not cover the case where the cells have different precision.
@@ -346,6 +350,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_set_currency() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -382,6 +387,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_set_output_size() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -396,6 +402,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_set_cell_render_size() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

@@ -170,8 +170,10 @@ mod tests {
     use crate::{controller::operations::operation::Operation, grid::SheetId};
 
     use super::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_to_transaction() {
         let sheet_id = SheetId::new();
         let name = "Sheet 1".to_string();

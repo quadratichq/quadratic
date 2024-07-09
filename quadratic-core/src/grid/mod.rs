@@ -32,7 +32,7 @@ pub mod formats;
 pub mod formatting;
 mod ids;
 pub mod js_types;
-mod resize;
+pub mod resize;
 pub mod search;
 pub mod series;
 pub mod sheet;

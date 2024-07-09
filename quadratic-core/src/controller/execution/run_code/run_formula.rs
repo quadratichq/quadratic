@@ -63,6 +63,7 @@ mod test {
     use std::{collections::HashSet, str::FromStr};
 
     use bigdecimal::BigDecimal;
+    use serial_test::parallel;
     use uuid::Uuid;
 
     use crate::{
@@ -80,6 +81,7 @@ mod test {
     };
 
     #[test]
+    #[parallel]
     fn test_execute_operation_set_cell_values_formula() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -117,6 +119,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_multiple_formula() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -184,6 +187,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_deleting_to_trigger_compute() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -232,6 +236,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_js_code_result_to_code_cell_value_single() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -273,6 +278,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_js_code_result_to_code_cell_value_array() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -337,6 +343,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_undo_redo_spill_change() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -413,6 +420,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_formula_error() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

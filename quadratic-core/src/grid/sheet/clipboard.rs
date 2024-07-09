@@ -280,8 +280,10 @@ mod tests {
         controller::{operations::clipboard::PasteSpecial, GridController},
         Rect,
     };
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn copy_to_clipboard_exclude() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

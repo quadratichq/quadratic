@@ -86,8 +86,10 @@ fn get_functions() -> Vec<FormulaFunction> {
 #[cfg(test)]
 mod tests {
     use crate::{formulas::tests::*, Pos};
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_sum() {
         let g = Grid::new();
         assert_eq!(
@@ -139,6 +141,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_sumif() {
         let g = Grid::new();
         assert_eq!("15", eval_to_string(&g, "SUMIF(0..10, \"<=5\")"));
@@ -151,6 +154,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_product() {
         let g = Grid::new();
         assert_eq!(
@@ -190,6 +194,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_abs() {
         let g = Grid::new();
         assert_eq!("10", eval_to_string(&g, "ABS(-10)"));
@@ -221,6 +226,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_sqrt() {
         let g = Grid::new();
         crate::util::assert_f64_approx_eq(3.0_f64.sqrt(), &eval_to_string(&g, "SQRT(3)"));
@@ -252,6 +258,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_pi() {
         let g = Grid::new();
         assert!(eval_to_string(&g, "PI()").starts_with("3.14159"));
@@ -270,6 +277,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_tau() {
         let g = Grid::new();
         assert!(eval_to_string(&g, "TAU()").starts_with("6.283"));

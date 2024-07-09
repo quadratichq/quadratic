@@ -286,14 +286,17 @@ impl From<Format> for FormatUpdate {
 mod test {
     use super::*;
     use crate::grid::{CellAlign, CellWrap, NumericFormat, NumericFormatKind, RenderSize};
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn is_default() {
         let format = Format::default();
         assert!(format.is_default());
     }
 
     #[test]
+    #[parallel]
     fn clear() {
         let mut format = Format {
             align: Some(CellAlign::Center),
@@ -331,6 +334,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn needs_to_clear_cell_format_for_parent() {
         let format = Format {
             align: Some(CellAlign::Center),
@@ -394,6 +398,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn merge_update_into() {
         let mut format = Format::default();
         let update = super::FormatUpdate {
@@ -448,6 +453,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn combine() {
         let cell = Format {
             bold: Some(false),
@@ -500,6 +506,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn format_to_format_update_ref() {
         let format = Format {
             align: Some(CellAlign::Center),
@@ -549,6 +556,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn format_to_format_update() {
         let format = Format {
             align: Some(CellAlign::Center),
@@ -598,6 +606,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn to_replace() {
         let format_update: FormatUpdate = Format::default().to_replace();
         assert_eq!(

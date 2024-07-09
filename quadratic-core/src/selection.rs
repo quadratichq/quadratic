@@ -207,8 +207,10 @@ impl FromStr for Selection {
 #[cfg(test)]
 mod test {
     use super::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn selection_from_str_rects() {
         let s = r#"{"sheet_id":{"id":"00000000-0000-0000-0000-000000000000"},"x":0,"y":1,"rects":[{"min":{"x":0,"y":1},"max":{"x":3,"y":4}}],"rows":null,"columns":null,"all":false}"#;
         let selection: Selection = Selection::from_str(s).unwrap();
@@ -227,6 +229,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn selection_from_str_rows() {
         let s = r#"{"sheet_id":{"id":"00000000-0000-0000-0000-000000000000"},"x":0,"y":3,"rects":null,"rows":[3,5],"columns":null,"all":false}"#;
         let selection: Selection = Selection::from_str(s).unwrap();
@@ -245,6 +248,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn selection_from_str_columns() {
         let s = r#"{"sheet_id":{"id":"00000000-0000-0000-0000-000000000000"},"x":7,"y":0,"rects":null,"rows":null,"columns":[7, 8, 9],"all":false}"#;
         let selection: Selection = Selection::from_str(s).unwrap();
@@ -263,6 +267,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn selection_from_str_all() {
         let s = r#"{"sheet_id":{"id":"00000000-0000-0000-0000-000000000000"},"x":0,"y":0,"rects":null,"rows":null,"columns":null,"all":true}"#;
         let selection: Selection = Selection::from_str(s).unwrap();
@@ -281,6 +286,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn selection_from_rect() {
         let rect = Rect::from_numbers(0, 0, 1, 1);
         let selection = Selection::rect(rect, SheetId::test());
@@ -299,6 +305,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn selection_from_pos() {
         let selection = Selection::pos(0, 0, SheetId::test());
         assert_eq!(
@@ -316,6 +323,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn selection_from_sheet_rect() {
         let sheet_rect = SheetRect::from_numbers(0, 0, 1, 1, SheetId::test());
         let selection = Selection::sheet_rect(sheet_rect);
@@ -334,6 +342,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn largest_rect() {
         let sheet_id = SheetId::test();
         let selection = Selection {
@@ -369,6 +378,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn pos_in_selection() {
         let sheet_id = SheetId::test();
         let selection = Selection {
@@ -408,6 +418,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn origin() {
         let sheet_id = SheetId::test();
         let selection = Selection {
@@ -427,6 +438,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn translate() {
         let sheet_id = SheetId::test();
         let selection = Selection {
@@ -456,6 +468,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn count() {
         let sheet_id = SheetId::test();
         let selection = Selection {

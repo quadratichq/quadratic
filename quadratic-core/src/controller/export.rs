@@ -46,8 +46,10 @@ mod tests {
 
     use super::*;
     use crate::Rect;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn exports_a_csv() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

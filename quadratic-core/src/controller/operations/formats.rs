@@ -21,8 +21,10 @@ impl GridController {
 mod tests {
     use super::*;
     use crate::Rect;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn clear_format_selection_operations() {
         let gc = GridController::test();
         let selection = Selection {

@@ -420,8 +420,10 @@ mod test {
     use super::*;
     use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::grid::formats::format_update::FormatUpdate;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn move_cell_operations() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -433,6 +435,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn paste_clipboard_cells_columns() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -470,6 +473,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn paste_clipboard_cells_rows() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -507,6 +511,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn paste_clipboard_cells_all() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -549,6 +554,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn sheet_formats_operations_column_rows() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

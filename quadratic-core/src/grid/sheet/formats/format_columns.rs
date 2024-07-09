@@ -159,12 +159,13 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::serial;
+    use serial_test::{parallel, serial};
 
     use super::*;
     use crate::{grid::formats::format_update::FormatUpdate, wasm_bindings::js::expect_js_call};
 
     #[test]
+    #[parallel]
     fn format_column() {
         let mut sheet = Sheet::test();
         assert_eq!(sheet.format_column(0), Format::default());
@@ -188,6 +189,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn try_format_column() {
         let mut sheet = Sheet::test();
         assert_eq!(sheet.try_format_column(0), None);
@@ -211,6 +213,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn set_format_columns() {
         let mut sheet = Sheet::test();
         let formats = Formats::repeat(
@@ -280,6 +283,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn set_format_columns_remove_cell_formatting() {
         let mut sheet = Sheet::test();
         sheet.test_set_format(
@@ -340,8 +344,8 @@ mod tests {
         );
     }
 
-    #[serial]
     #[test]
+    #[serial]
     fn set_format_columns_fills() {
         let mut sheet = Sheet::test();
         sheet.test_set_format(
@@ -394,6 +398,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn timestamp() {
         let mut sheet = Sheet::test();
         let formats = Formats::repeat(
@@ -417,6 +422,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn cleared() {
         let mut sheet = Sheet::test();
         sheet.set_formats_columns(

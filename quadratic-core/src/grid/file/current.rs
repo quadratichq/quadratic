@@ -759,8 +759,7 @@ fn export_formats(formats: &BTreeMap<i64, (Format, i64)>) -> Vec<(i64, (current:
 
 pub fn export_rows_size(sheet: &Sheet) -> Vec<(i64, current::Resize)> {
     sheet
-        .rows_resize
-        .iter_resize()
+        .iter_row_resize()
         .map(|(y, resize)| {
             (
                 y,

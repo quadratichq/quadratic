@@ -173,8 +173,10 @@ mod test {
         selection::Selection,
         CellValue, Rect, SheetPos,
     };
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test() {
         let mut client = GridController::test();
         let sheet_id = SheetId::test();
@@ -205,6 +207,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn boolean_to_cell_value() {
         let mut gc = GridController::test();
         let sheet_pos = SheetPos {
@@ -238,6 +241,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn number_to_cell_value() {
         let mut gc = GridController::test();
         let sheet_pos = SheetPos {
@@ -272,6 +276,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn problematic_number() {
         let mut gc = GridController::test();
         let value = "980E92207901934";
@@ -287,6 +292,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn delete_cells_operations() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

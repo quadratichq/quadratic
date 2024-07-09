@@ -12,7 +12,6 @@ use crate::{
         transaction_types::JsCodeResult,
     },
     error_core::Result,
-    grid::{js_types::JsRowHeight, SheetId},
     Pos,
 };
 
@@ -124,51 +123,6 @@ impl GridController {
         self.finalize_transaction(&mut transaction);
         Ok(())
     }
-
-    pub fn start_auto_resize_row_heights(
-        &self,
-        transaction: &mut PendingTransaction,
-        sheet_id: SheetId,
-        rows: Vec<i64>,
-    ) {
-        if !cfg!(target_family = "wasm") || cfg!(test) || !transaction.is_user() {
-            return;
-        }
-
-        if let Some(sheet) = self.try_sheet(sheet_id) {
-            if let Some(auto_resize_rows) = sheet.get_auto_resize_rows(rows) {
-                if let Ok(rows_string) = serde_json::to_string(&auto_resize_rows) {
-                    crate::wasm_bindings::js::jsRequestRowHeights(
-                        transaction.id.to_string(),
-                        sheet_id.to_string(),
-                        rows_string,
-                    );
-                    transaction.has_async = true;
-                } else {
-                    dbgjs!("[control_transactions] start_auto_resize_row_heights: Failed to serialize auto resize rows");
-                }
-            }
-        } else {
-            dbgjs!("[control_transactions] start_auto_resize_row_heights: Sheet not found");
-        }
-    }
-
-    pub fn complete_auto_resize_row_heights(
-        &mut self,
-        transaction_id: Uuid,
-        sheet_id: SheetId,
-        row_heights: Vec<JsRowHeight>,
-    ) -> Result<()> {
-        let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
-        transaction.operations.push_back(Operation::ResizeRows {
-            sheet_id,
-            row_heights,
-        });
-        transaction.has_async = false;
-        self.start_transaction(&mut transaction);
-        self.finalize_transaction(&mut transaction);
-        Ok(())
-    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -196,6 +150,7 @@ impl From<Pos> for CellHash {
 mod tests {
     use super::*;
     use crate::{cell_values::CellValues, grid::GridBounds, CellValue, Pos, Rect, SheetPos};
+    use serial_test::parallel;
 
     fn add_cell_value(sheet_pos: SheetPos, value: CellValue) -> Operation {
         Operation::SetCellValues {
@@ -214,6 +169,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_transactions_finalize_transaction() {
         let mut gc = GridController::test();
         let (operation, operation_undo) = get_operations(&mut gc);
@@ -261,6 +217,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_transactions_undo_redo() {
         let mut gc = GridController::test();
         let (operation, operation_undo) = get_operations(&mut gc);
@@ -285,6 +242,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_transactions_updated_bounds_in_transaction() {
         let mut gc = GridController::test();
         let (operation, _) = get_operations(&mut gc);
@@ -303,6 +261,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_transactions_cell_hash() {
         let hash = "test".to_string();
         let cell_hash = CellHash(hash.clone());
@@ -314,6 +273,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_js_calculation_complete() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

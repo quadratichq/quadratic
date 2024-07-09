@@ -66,4 +66,19 @@ impl GridController {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    // CellFmtArray::Wrap(_)
+    // CellFmtArray::NumericFormat(_)
+    // CellFmtArray::NumericDecimals(_)
+    // CellFmtArray::NumericCommas(_)
+    // CellFmtArray::Bold(_)
+    // CellFmtArray::Italic(_)
+
+    // SetCellFormatsSelection
+
+    // SetCellValues
+
+    // ComputeCode
+
+    // ResizeColumn
+}

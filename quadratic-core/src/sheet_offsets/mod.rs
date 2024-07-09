@@ -243,7 +243,10 @@ impl SheetOffsets {
 
 #[cfg(test)]
 mod test {
+    use serial_test::parallel;
+
     #[test]
+    #[parallel]
     fn screen_rect_cell_offsets() {
         let sheet = super::SheetOffsets::default();
         let rect = super::Rect::from_numbers(0, 0, 1, 1);
@@ -262,6 +265,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn rect_cell_offsets() {
         let sheet = super::SheetOffsets::default();
         let rect = super::Rect::from_numbers(0, 0, 1, 1);

@@ -22,8 +22,10 @@ fn get_functions() -> Vec<FormulaFunction> {
 #[cfg(test)]
 mod tests {
     use crate::formulas::tests::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_formula_concat() {
         let g = Grid::new();
         assert_eq!(

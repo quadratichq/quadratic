@@ -98,8 +98,10 @@ fn get_functions() -> Vec<FormulaFunction> {
 #[cfg(test)]
 mod tests {
     use crate::formulas::tests::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     #[allow(clippy::identity_op)]
     fn test_formula_math_operators() {
         let g = Grid::new();
@@ -114,6 +116,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_formula_math_operators_on_empty_string() {
         // Empty string should coerce to zero
 

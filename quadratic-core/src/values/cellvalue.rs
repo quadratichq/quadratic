@@ -556,14 +556,17 @@ mod test {
         grid::{NumericFormat, NumericFormatKind, Sheet},
         CellValue,
     };
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_cell_value_to_display_text() {
         let cv = CellValue::Text(String::from("hello"));
         assert_eq!(cv.to_display(None, None, None), String::from("hello"));
     }
 
     #[test]
+    #[parallel]
     fn test_cell_value_to_display_currency() {
         let cv = CellValue::Number(BigDecimal::from_str("123123.1233").unwrap());
         assert_eq!(
@@ -652,6 +655,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_cell_value_to_display_percentage() {
         let cv = CellValue::Number(BigDecimal::from_str("0.015").unwrap());
         assert_eq!(
@@ -694,6 +698,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_unpack_percentage() {
         let value = String::from("1238.12232%");
         assert_eq!(
@@ -703,6 +708,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_unpack_currency() {
         let value = String::from("$123.123");
         assert_eq!(
@@ -721,6 +727,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_exponential_display() {
         let value = CellValue::Number(BigDecimal::from_str("98172937192739718923.12312").unwrap());
         assert_eq!(
@@ -748,6 +755,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_with_commas() {
         let value = BigDecimal::from_str("123123123");
         assert_eq!(CellValue::with_commas(value.unwrap()), "123,123,123");
@@ -763,6 +771,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_image() {
         let value = CellValue::Image("test".into());
         assert_eq!(value.to_string(), "test");
@@ -774,6 +783,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_is_image() {
         let value = CellValue::Image("test".into());
         assert!(value.is_image());

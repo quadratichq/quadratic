@@ -159,8 +159,10 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn override_cell_formats() {
         let sheet = Sheet::test();
         let rect = Rect::from_numbers(0, 0, 2, 2);

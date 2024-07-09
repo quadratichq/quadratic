@@ -129,6 +129,9 @@ impl GridController {
             row_heights,
         } = op
         {
+            if row_heights.is_empty() {
+                return;
+            }
             let Some(sheet) = self.try_sheet_mut(sheet_id) else {
                 // sheet may have been deleted
                 return;

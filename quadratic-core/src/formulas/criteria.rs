@@ -194,6 +194,7 @@ impl CompareFn {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::parallel;
 
     fn make_criterion(v: impl Into<CellValue>) -> Criterion {
         Criterion::try_from(Spanned::new(0, 0, &v.into())).unwrap()
@@ -204,6 +205,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_formula_comparison_criteria() {
         // Excel is much more strict than we are about types. At the time this
         // code was written, we don't have a strong type system in Quadratic, so
@@ -348,6 +350,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_formula_wildcards() {
         fn test_wildcard(
             criteria_string: &str,

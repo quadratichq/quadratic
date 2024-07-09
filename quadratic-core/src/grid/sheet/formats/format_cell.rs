@@ -132,7 +132,7 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::serial;
+    use serial_test::{parallel, serial};
 
     use crate::{
         grid::{formats::Formats, js_types::JsRenderCell, CellAlign},
@@ -142,6 +142,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[parallel]
     fn format_cell() {
         let mut sheet = Sheet::test();
         assert_eq!(sheet.format_cell(0, 0, false), Format::default());
@@ -192,8 +193,8 @@ mod tests {
         );
     }
 
-    #[serial]
     #[test]
+    #[serial]
     fn set_format_cell() {
         let mut sheet = Sheet::test();
         let update = FormatUpdate {
@@ -245,6 +246,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn decimal_places() {
         let mut sheet = Sheet::test();
         assert_eq!(sheet.decimal_places(0, 0), None);

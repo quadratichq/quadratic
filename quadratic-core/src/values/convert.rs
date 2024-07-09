@@ -303,8 +303,10 @@ impl CoerceInto for Spanned<Value> {
 #[cfg(test)]
 mod test {
     use crate::CellValue;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_convert_from_str_to_cell_value() {
         assert_eq!(CellValue::from("$1.22"), CellValue::Text("$1.22".into()));
 
