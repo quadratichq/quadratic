@@ -18,7 +18,7 @@ import { Point, Rectangle } from 'pixi.js';
 import { RenderBitmapChar } from '../../renderBitmapFonts';
 import { extractCharCode, splitTextToCharacters } from './bitmapTextUtils';
 import { CellsLabels } from './CellsLabels';
-import { convertNumber } from './convertNumber';
+import { convertNumber, reduceDecimals } from './convertNumber';
 import { LabelMeshEntry } from './LabelMeshEntry';
 import { LabelMeshes } from './LabelMeshes';
 
@@ -49,6 +49,7 @@ export class CellLabel {
   visible = true;
 
   text: string;
+  private displayedText?: string;
   number?: JsNumber;
 
   // created in updateFontName()
@@ -254,7 +255,7 @@ export class CellLabel {
   }
 
   /** Calculates the text glyphs and positions */
-  public updateText(labelMeshes: LabelMeshes): void {
+  public updateText(labelMeshes: LabelMeshes, originalText = this.text): void {
     if (!this.visible) return;
 
     const data = this.cellsLabels.bitmapFonts[this.fontName];
@@ -263,7 +264,7 @@ export class CellLabel {
     this.chars = [];
     const lineWidths: number[] = [];
     const lineSpaces: number[] = [];
-    const text = this.text.replace(/(?:\r\n|\r)/g, '\n') || ' ';
+    const text = originalText.replace(/(?:\r\n|\r)/g, '\n') || ' ';
     const charsInput = splitTextToCharacters(text);
     const scale = this.fontSize / data.size;
     const maxWidth = this.maxWidth;
@@ -388,7 +389,7 @@ export class CellLabel {
       }
       this.horizontalAlignOffsets.push(alignOffset);
     }
-
+    this.displayedText = text;
     this.calculatePosition();
   }
 
@@ -520,8 +521,24 @@ export class CellLabel {
     const scale = this.fontSize / data.size;
     const color = this.tint ? convertTintToArray(this.tint) : undefined;
 
-    if (this.number && this.textWidth > this.AABB.width) {
-      return this.showPoundLabels(labelMeshes);
+    // This attempts to reduce the decimal precision to ensure the number fits
+    // within the cell. If it doesn't, it shows the pounds
+    if (this.number && this.textWidth > this.AABB.width && this.displayedText) {
+      let digits: number | undefined = undefined;
+      let text = this.text;
+      do {
+        console.log('reduceDecimals', this.displayedText, text, this.number, digits);
+        const result = reduceDecimals(this.displayedText, text, this.number, digits);
+
+        // we cannot reduce decimals anymore, so we show pound characters
+        if (!result) {
+          return this.showPoundLabels(labelMeshes);
+        }
+        digits = result.currentFractionDigits - 1;
+        text = result.number;
+        this.updateText(labelMeshes, text);
+        console.log(digits, text, this.textWidth, this.AABB.width);
+      } while (this.textWidth > this.AABB.width && digits >= 0);
     }
 
     const bounds = new Bounds();
