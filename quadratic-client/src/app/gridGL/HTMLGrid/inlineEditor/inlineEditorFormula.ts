@@ -151,7 +151,7 @@ class InlineEditorFormula {
   // smart and we do not have this information.
   private formulaIsReadyToClose() {
     const lastCharacter = inlineEditorMonaco.getCharBeforeCursor();
-    return ![',', '+', '-', '*', '/', '%', '=', '<', '>', '&', '.'].includes(lastCharacter);
+    return ![',', '+', '-', '*', '/', '%', '=', '<', '>', '&', '.', '(', '{'].includes(lastCharacter);
   }
 
   // Returns whether we are editing a formula only if it is valid (used for
