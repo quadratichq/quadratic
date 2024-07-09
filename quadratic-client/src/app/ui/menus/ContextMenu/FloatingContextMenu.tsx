@@ -221,7 +221,7 @@ export const FloatingContextMenu = (props: Props) => {
       }
     }
 
-    if (cursor.columnRow?.all) {
+    if (cursor.columnRow?.all || cursor.multiCursor) {
       const screen = viewport.toScreen(viewportBounds.x + viewportBounds.width / 2, viewportBounds.y);
       x = screen.x - menuDiv.current.offsetWidth / 2;
       y = screen.y + VERTICAL_PADDING + rowHeader;
