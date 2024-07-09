@@ -9,8 +9,6 @@ import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { authClient } from '@/auth';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
-import { Type } from '@/shared/components/Type';
-import { ROUTES } from '@/shared/constants/routes';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Send, Stop } from '@mui/icons-material';
 import { Avatar, CircularProgress, IconButton } from '@mui/material';
@@ -38,7 +36,7 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
     consoleOutput: [consoleOutput],
     editorContent: [editorContent],
   } = useCodeEditor();
-  const { isAuthenticated, loggedInUser: user } = useRootRouteLoaderData();
+  const { loggedInUser: user } = useRootRouteLoaderData();
   const { mode } = useRecoilValue(editorInteractionStateAtom);
   const cellType = getCodeCell(mode);
 
@@ -191,19 +189,6 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   };
 
   const displayMessages = messages.filter((message, index) => message.role !== 'system');
-
-  // If we're not auth'd, don't let them use this thing
-  if (!isAuthenticated) {
-    return (
-      <Type className="px-3 text-muted-foreground">
-        You must{' '}
-        <a href={ROUTES.LOGIN} className="underline hover:text-primary">
-          log in to Quadratic
-        </a>{' '}
-        to use the AI assistant.
-      </Type>
-    );
-  }
 
   // This component is designed to fill the entire height of its parent container
   return (

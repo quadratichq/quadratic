@@ -6,6 +6,7 @@ import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { PanelBox, calculatePanelBoxMinimizedSize } from '@/app/ui/menus/CodeEditor/panels/PanelBox';
 import { useCodeEditorContainer } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorContainer';
 import { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function CodeEditorPanelSide(props: Props) {
+  const { isAuthenticated } = useRootRouteLoaderData();
   const container = useCodeEditorContainer();
   const minimizedSize = useMemo(() => {
     const minimizedSize = calculatePanelBoxMinimizedSize();
@@ -124,22 +126,26 @@ export function CodeEditorPanelSide(props: Props) {
       >
         <Console />
       </PanelBox>
-      <ResizeControl
-        style={{ top: panels[0].height }}
-        disabled={!panels[0].open || (!panels[1].open && !panels[2]?.open)}
-        position="HORIZONTAL"
-        setState={(e) => changeResizeBar(e, true)}
-      />
-      <PanelBox
-        id="panel-1"
-        title="AI assistant"
-        open={panels[1].open}
-        toggleOpen={panels[1].toggleOpen}
-        height={panels[1].height}
-      >
-        <AiAssistant />
-      </PanelBox>
-      {isConnection && panels.length === 3 && (
+      {isAuthenticated && (
+        <>
+          <ResizeControl
+            style={{ top: panels[0].height }}
+            disabled={!panels[0].open || (!panels[1].open && !panels[2]?.open)}
+            position="HORIZONTAL"
+            setState={(e) => changeResizeBar(e, true)}
+          />
+          <PanelBox
+            id="panel-1"
+            title="AI assistant"
+            open={panels[1].open}
+            toggleOpen={panels[1].toggleOpen}
+            height={panels[1].height}
+          >
+            <AiAssistant />
+          </PanelBox>
+        </>
+      )}
+      {isAuthenticated && isConnection && panels.length === 3 && (
         <ResizeControl
           style={{ top: panels[0].height + panels[1].height }}
           disabled={!panels[1].open && !panels[2]?.open}
@@ -147,7 +153,7 @@ export function CodeEditorPanelSide(props: Props) {
           setState={(e) => changeResizeBar(e, false)}
         />
       )}
-      {isConnection && (
+      {isAuthenticated && isConnection && (
         <PanelBox
           id="panel-2"
           title="Data browser"

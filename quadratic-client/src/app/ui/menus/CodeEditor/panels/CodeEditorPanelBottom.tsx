@@ -4,6 +4,7 @@ import { SchemaViewer } from '@/app/ui/components/SchemaViewer';
 import { AiAssistant } from '@/app/ui/menus/CodeEditor/AiAssistant';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { cn } from '@/shared/shadcn/utils';
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function CodeEditorPanelBottom(props: Props) {
+  const { isAuthenticated } = useRootRouteLoaderData();
   const {
     consoleOutput: [consoleOutput],
     panelBottomActiveTab: [tab, setTab],
@@ -58,9 +60,8 @@ export function CodeEditorPanelBottom(props: Props) {
           >
             Console
           </TabsTrigger>
-          <TabsTrigger value="ai-assistant">AI assistant</TabsTrigger>
-          {/* TODO: (connections) if it's sql and you have permission */}
-          {isConnection && <TabsTrigger value="data-browser">Data browser</TabsTrigger>}
+          {isAuthenticated && <TabsTrigger value="ai-assistant">AI assistant</TabsTrigger>}
+          {isAuthenticated && isConnection && <TabsTrigger value="data-browser">Data browser</TabsTrigger>}
         </TabsList>
       </div>
 
@@ -68,11 +69,13 @@ export function CodeEditorPanelBottom(props: Props) {
         {!bottomHidden && <Console />}
       </TabsContent>
 
-      <TabsContent value="ai-assistant" className="m-0 block grow overflow-scroll">
-        {!bottomHidden && <AiAssistant autoFocus={true} />}
-      </TabsContent>
+      {isAuthenticated && (
+        <TabsContent value="ai-assistant" className="m-0 block grow overflow-scroll">
+          {!bottomHidden && <AiAssistant autoFocus={true} />}
+        </TabsContent>
+      )}
 
-      {isConnection && (
+      {isAuthenticated && isConnection && (
         <TabsContent value="data-browser" className="m-0 block grow overflow-scroll">
           {/* TODO: (connections) permissions */}
           {!bottomHidden && <SchemaViewer bottom />}
