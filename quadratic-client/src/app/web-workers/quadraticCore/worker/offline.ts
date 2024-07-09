@@ -79,6 +79,8 @@ class Offline {
               operations: r.operations ?? 0,
             };
           });
+        // set the index to the length of the results so that we can add new transactions to the end
+        this.index = results.length;
         this.stats = {
           transactions: results.length,
           operations: results.reduce((acc, r) => acc + r.operations, 0),
@@ -150,13 +152,19 @@ class Offline {
       }
     }
 
-    unsentTransactions?.forEach((tx) => {
-      // we remove the transaction is there was a problem applying it (eg, if
-      // the schema has changed since it was saved offline)
-      if (!core.applyOfflineUnsavedTransaction(tx.transactionId, tx.transactions)) {
-        this.markTransactionSent(tx.transactionId);
+    // We need to apply the transactions in the opposite order to which they
+    // were saved because core will rollback old transactions before applying
+    // new ones
+    if (unsentTransactions?.length) {
+      for (let i = unsentTransactions.length - 1; i >= 0; i--) {
+        const tx = unsentTransactions[i];
+        // we remove the transaction is there was a problem applying it (eg, if
+        // the schema has changed since it was saved offline)
+        if (!core.applyOfflineUnsavedTransaction(tx.transactionId, tx.transactions)) {
+          this.markTransactionSent(tx.transactionId);
+        }
       }
-    });
+    }
   }
 
   // Used by tests to clear all entries from the indexedDb for this fileId

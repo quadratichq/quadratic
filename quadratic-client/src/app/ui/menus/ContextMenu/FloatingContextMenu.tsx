@@ -65,6 +65,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import './floatingMenuStyles.scss';
 
+// todo: this file needs to be broken up and rewritten
+
 interface Props {
   container?: HTMLDivElement;
   showContextMenu: boolean;
@@ -172,6 +174,10 @@ export const FloatingContextMenu = (props: Props) => {
       moreMenuToggle(false);
     }
 
+    if (cursor.columnRow?.all) {
+      visibility = true;
+    }
+
     // Apply visibility
     // menuDiv.current.style.visibility = visibility;
     if (visibility === true) {
@@ -223,6 +229,12 @@ export const FloatingContextMenu = (props: Props) => {
       if (y + menuDiv.current.offsetHeight >= container.offsetTop + container.offsetHeight) {
         y = container.offsetTop + HORIZONTAL_PADDING + rowHeader;
       }
+    }
+
+    if (cursor.columnRow?.all || cursor.multiCursor) {
+      const screen = viewport.toScreen(viewportBounds.x + viewportBounds.width / 2, viewportBounds.y);
+      x = screen.x - menuDiv.current.offsetWidth / 2;
+      y = screen.y + VERTICAL_PADDING + rowHeader;
     }
 
     // Generate transform CSS
