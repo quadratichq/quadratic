@@ -42,7 +42,6 @@ export function PermissionOverlay() {
   }
 
   // If you can't edit the file, we've got a message for you
-  // TODO: (connections) this should probably read from team connections
   if (!permissions.includes(FILE_EDIT)) {
     return (
       <FixedBottomAlert>
