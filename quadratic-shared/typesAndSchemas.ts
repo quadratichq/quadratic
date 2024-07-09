@@ -146,7 +146,7 @@ export const ApiSchemas = {
     team: TeamSchema.pick({ uuid: true, name: true }),
     userMakingRequest: z.object({
       filePermissions: z.array(FilePermissionSchema),
-      fileRelativeLocation: z.enum(['TEAM_PUBLIC', 'TEAM_PRIVATE']).optional(),
+      fileTeamPrivacy: z.enum(['PRIVATE_TO_ME', 'PRIVATE_TO_SOMEONE_ELSE', 'PUBLIC_TO_TEAM']).optional(),
       fileRole: UserFileRoleSchema.optional(),
       teamPermissions: z.array(TeamPermissionSchema).optional(),
       teamRole: UserTeamRoleSchema.optional(),

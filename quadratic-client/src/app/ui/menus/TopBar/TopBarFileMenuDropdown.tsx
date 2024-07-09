@@ -21,7 +21,7 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
-    userMakingRequest: { fileRelativeLocation, teamPermissions },
+    userMakingRequest: { fileTeamPrivacy, teamPermissions },
   } = useFileRouteLoaderData();
   const { permissions } = editorInteractionState;
 
@@ -29,7 +29,7 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
     return null;
   }
 
-  const isAvailableArgs = { filePermissions: permissions, fileRelativeLocation, isAuthenticated, teamPermissions };
+  const isAvailableArgs = { filePermissions: permissions, fileTeamPrivacy, isAuthenticated, teamPermissions };
 
   return (
     <Menu
