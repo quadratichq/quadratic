@@ -141,7 +141,7 @@ function TableListItem({
             />
           </div>
           <div className="flex items-center">
-            {/* TODO (connections) handle really long names */}
+            {/* TODO: (connections) handle really long names */}
             {name}
             {/* <div className="ml-1 text-right text-xs text-muted-foreground">({columns.length})</div> */}
           </div>
@@ -159,7 +159,7 @@ function TableListItem({
       </div>
       {expanded && (
         <ul className="pl-3 pr-2">
-          {/* TODO (connections) handle when there are 0 columns in a table */}
+          {/* TODO: (connections) handle when there are 0 columns in a table */}
           {columns.map(({ name, type, is_nullable }, k) => (
             <li key={k} className="border border-l border-transparent border-l-border pl-3">
               <div className="flex w-full items-center gap-1 py-0.5 pl-2">

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
-import { SchemaViewer } from '@/app/ui/connections/SchemaViewer';
+import { SchemaViewer } from '@/app/ui/components/SchemaViewer';
 import { AiAssistant } from '@/app/ui/menus/CodeEditor/AiAssistant';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { PanelBox, calculatePanelBoxMinimizedSize } from '@/app/ui/menus/CodeEditor/panels/PanelBox';
@@ -132,7 +132,7 @@ export function CodeEditorPanelSide(props: Props) {
       />
       <PanelBox
         id="panel-1"
-        title="AI Assistant"
+        title="AI assistant"
         open={panels[1].open}
         toggleOpen={panels[1].toggleOpen}
         height={panels[1].height}

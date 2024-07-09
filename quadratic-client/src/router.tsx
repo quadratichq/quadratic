@@ -1,6 +1,5 @@
 import { BrowserCompatibilityLayoutRoute } from '@/dashboard/components/BrowserCompatibilityLayoutRoute';
 import * as Page404 from '@/routes/404';
-import * as FileMeta from '@/routes/_file.$uuid';
 import * as Login from '@/routes/login';
 import * as LoginResult from '@/routes/login-result';
 import * as Logout from '@/routes/logout';
@@ -30,42 +29,42 @@ export const router = createBrowserRouter(
         <Route path="file">
           {/* Check that the browser is supported _before_ we try to load anything from the API */}
           <Route element={<BrowserCompatibilityLayoutRoute />}>
-            <Route index element={<Navigate to={ROUTES.FILES} replace />} />
+            <Route index element={<Navigate to="/" replace />} />
             <Route
               path=":uuid"
               id={ROUTE_LOADER_IDS.FILE}
               lazy={() => import('./routes/file.$uuid')}
               // We don't want to revalidate the initial file route because
               // we don't have any 2-way data flow setup for the file contents
-              // But file metadata is handled in the pathless route below
               shouldRevalidate={() => false}
-            >
-              {/* TODO: (connections) we need to figure out what to do here when it's a publicly viewable file */}
-              <Route path="" id={ROUTE_LOADER_IDS.FILE_METADATA} loader={FileMeta.loader} Component={() => null} />
-            </Route>
+            />
           </Route>
         </Route>
 
         <Route loader={protectedRouteLoaderWrapper(async () => null)}>
-          {/* Resource routes (these have no UI)
-              Putting them outside the nested tree lets you hit them directly without having to load other data */}
+          {/* Resource routes: these are accessible via the URL bar, but have no UI
+              Putting these outside the nested tree lets you hit them directly without having to load other data */}
           <Route
-            path={ROUTES.EDUCATION_ENROLL}
+            path="education/enroll"
             loader={async () => {
               // Check their status, then send them to the dashboard with the education dialog
               await apiClient.education.refresh();
-              return redirect(`${ROUTES.FILES}?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.EDUCATION}`);
+              return redirect(`/?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.EDUCATION}`);
             }}
           />
-          <Route path="files/:uuid" lazy={() => import('./routes/files.$uuid')} />
-          <Route path="files/:uuid/sharing" lazy={() => import('./routes/files.$uuid.sharing')} />
           <Route
             path="teams/:teamUuid/files/create"
             lazy={() => import('./routes/teams.$teamUuid.files.create')}
             shouldRevalidate={() => false}
           />
           <Route path="teams" index loader={() => redirect('/')} />
-          <Route path="_api/connections" lazy={() => import('./routes/_api.connections')} />
+
+          {/* API routes: these are used by fetchers but have no UI */}
+          <Route path="api">
+            <Route path="files/:uuid" lazy={() => import('./routes/api.files.$uuid')} />
+            <Route path="files/:uuid/sharing" lazy={() => import('./routes/api.files.$uuid.sharing')} />
+            <Route path="connections" lazy={() => import('./routes/api.connections')} />
+          </Route>
 
           {/* Dashboard UI routes */}
           <Route path="/" id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>

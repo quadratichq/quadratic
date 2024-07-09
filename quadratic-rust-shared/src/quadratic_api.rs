@@ -142,9 +142,9 @@ pub struct Connection {
 #[serde(rename_all = "camelCase")]
 pub struct TypeDetails {
     pub host: String,
-    pub port: String,
-    pub username: String,
-    pub password: String,
+    pub port: Option<String>,
+    pub username: Option<String>,
+    pub password: Option<String>,
     pub database: String,
 }
 
@@ -158,6 +158,13 @@ pub async fn get_connection(
     let url = format!("{base_url}/v0/internal/user/{user_id}/connections/{connection_id}");
     let client = get_client(&url, jwt);
     let response = client.send().await?;
+
+    // return a better error to the user
+    if response.status() == StatusCode::NOT_FOUND {
+        return Err(SharedError::QuadraticApi(format!(
+            "Connection {connection_id} not found"
+        )));
+    }
 
     handle_response(&response)?;
 

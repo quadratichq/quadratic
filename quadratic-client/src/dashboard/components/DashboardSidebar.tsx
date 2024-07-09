@@ -2,7 +2,7 @@ import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { TeamSwitcher } from '@/dashboard/components/TeamSwitcher';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { getActionFileMove } from '@/routes/files.$uuid';
+import { getActionFileMove } from '@/routes/api.files.$uuid';
 import { Type } from '@/shared/components/Type';
 import { TYPE } from '@/shared/constants/appConstants';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
@@ -107,20 +107,12 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
               Examples
             </SidebarNavLink>
           )}
-          <SidebarNavLink
-            to={DOCUMENTATION_URL}
-            target="_blank"
-            className="group text-muted-foreground hover:text-foreground"
-          >
-            <ExternalLinkIcon className={cn(classNameIcons, 'opacity-70 group-hover:text-foreground')} />
+          <SidebarNavLink to={DOCUMENTATION_URL} target="_blank">
+            <ExternalLinkIcon className={classNameIcons} />
             Docs
           </SidebarNavLink>
-          <SidebarNavLink
-            to={CONTACT_URL}
-            target="_blank"
-            className="group text-muted-foreground hover:text-foreground"
-          >
-            <ExternalLinkIcon className={cn(classNameIcons, 'opacity-70 group-hover:text-foreground')} />
+          <SidebarNavLink to={CONTACT_URL} target="_blank">
+            <ExternalLinkIcon className={classNameIcons} />
             Contact us
           </SidebarNavLink>
         </div>
@@ -174,7 +166,7 @@ function SidebarNavLinkCreateButton({ to }: { to: string }) {
             </Link>
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Create new</TooltipContent>
+        <TooltipContent>Create file</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
@@ -231,7 +223,7 @@ function SidebarNavLink({
           const data = getActionFileMove(dropTarget);
           submit(data, {
             method: 'POST',
-            action: `/files/${uuid}`,
+            action: ROUTES.API.FILE(uuid),
             encType: 'application/json',
             navigate: false,
             fetcherKey: `move-file:${uuid}`,

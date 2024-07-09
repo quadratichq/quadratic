@@ -37,19 +37,19 @@ async fn get_connection(
             updated_date: "".into(),
             type_details: quadratic_rust_shared::quadratic_api::TypeDetails {
                 host: "0.0.0.0".into(),
-                port: "3306".into(),
-                username: "user".into(),
-                password: "password".into(),
+                port: Some("3306".into()),
+                username: Some("user".into()),
+                password: Some("password".into()),
                 database: "mysql-connection".into(),
             },
         }
     };
 
     let pg_connection = MySqlConnection::new(
-        Some(connection.type_details.username.to_owned()),
-        Some(connection.type_details.password.to_owned()),
+        connection.type_details.username.to_owned(),
+        connection.type_details.password.to_owned(),
         connection.type_details.host.to_owned(),
-        Some(connection.type_details.port.to_owned()),
+        connection.type_details.port.to_owned(),
         Some(connection.type_details.database.to_owned()),
     );
 
@@ -94,11 +94,13 @@ mod tests {
     use super::*;
     use crate::{
         num_vec, test_connection,
-        test_util::{get_claims, new_state, str_vec, validate_parquet},
+        test_util::{get_claims, new_state, response_bytes, str_vec, validate_parquet},
     };
     use arrow::datatypes::Date32Type;
     use arrow_schema::{DataType, TimeUnit};
+    use bytes::Bytes;
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
+    use http::StatusCode;
     use quadratic_rust_shared::sql::{SchemaColumn, SchemaTable};
     use tracing_test::traced_test;
     use uuid::Uuid;
@@ -357,5 +359,24 @@ mod tests {
 
         validate_parquet(response, expected).await;
         // assert_eq!(response.status(), 200);
+    }
+
+    #[tokio::test]
+    #[traced_test]
+    async fn mysql_query_max_response_bytes() {
+        let connection_id = Uuid::new_v4();
+        let sql_query = SqlQuery {
+            query: "select * from all_native_data_types order by id limit 1".into(),
+            connection_id,
+        };
+        let mut state = Extension(new_state().await);
+        state.settings.max_response_bytes = 0;
+        let data = query(state, get_claims(), Json(sql_query)).await.unwrap();
+        let response = data.into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response_bytes(response).await;
+        assert_eq!(body, Bytes::new());
     }
 }

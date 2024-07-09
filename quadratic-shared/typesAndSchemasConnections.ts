@@ -11,6 +11,7 @@ const transformEmptyStringToUndefined = (val: string | undefined) => (val === ''
 
 export const ConnectionNameSchema = z.string().min(1, { message: 'Required' });
 export const ConnectionTypeSchema = z.enum(['POSTGRES', 'MYSQL']);
+const ConnectionTypeDetailsSchema = z.record(z.string(), z.any());
 const ConnectionSchema = z.object({
   createdDate: z.string().datetime(),
   updatedDate: z.string().datetime(),
@@ -18,9 +19,10 @@ const ConnectionSchema = z.object({
   uuid: z.string().uuid(),
 
   type: ConnectionTypeSchema,
-  typeDetails: z.record(z.string(), z.any()),
+  typeDetails: ConnectionTypeDetailsSchema,
 });
 
+export type ConnectionTypeDetails = z.infer<typeof ConnectionTypeDetailsSchema>;
 export type ConnectionType = z.infer<typeof ConnectionTypeSchema>;
 export type Connection = z.infer<typeof ConnectionSchema>;
 
@@ -58,8 +60,9 @@ export const ConnectionTypeDetailsMysqlSchema = ConnectionTypeDetailsPostgresSch
 
 export const ApiSchemasConnections = {
   // List connections
-  '/v0/connections?team-uuid.GET.response': z.array(ConnectionSchema),
-  '/v0/connections?file-uuid.GET.response': z.array(ConnectionSchema.omit({ typeDetails: true })),
+  '/v0/teams/:uuid/connections.GET.response': z.array(
+    ConnectionSchema.pick({ uuid: true, name: true, createdDate: true, type: true })
+  ),
 
   // Create connection
   '/v0/team/:uuid/connections.POST.request': ConnectionSchema.pick({
@@ -74,7 +77,7 @@ export const ApiSchemasConnections = {
 
   // Update connection
   '/v0/connections/:uuid.PUT.request': ConnectionSchema.pick({ name: true, typeDetails: true }),
-  '/v0/connections/:uuid.PUT.response': ConnectionSchema.omit({ typeDetails: true }),
+  '/v0/connections/:uuid.PUT.response': ConnectionSchema,
 
   // Delete connection
   '/v0/connections/:uuid.DELETE.response': z.object({ message: z.string() }),
