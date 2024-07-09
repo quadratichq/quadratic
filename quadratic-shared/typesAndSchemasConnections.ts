@@ -77,7 +77,7 @@ export const ApiSchemasConnections = {
 
   // Update connection
   '/v0/connections/:uuid.PUT.request': ConnectionSchema.pick({ name: true, typeDetails: true }),
-  '/v0/connections/:uuid.PUT.response': ConnectionSchema.omit({ typeDetails: true }),
+  '/v0/connections/:uuid.PUT.response': ConnectionSchema,
 
   // Delete connection
   '/v0/connections/:uuid.DELETE.response': z.object({ message: z.string() }),

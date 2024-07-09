@@ -218,7 +218,6 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
       };
     });
 
-  // TODO: (connections) shouldn't say everyone on team has access if it's a private file
   const disallowedEmails: string[] = [
     ...(owner.type === 'user' ? [owner.email] : []),
     ...users.map((user) => user.email),

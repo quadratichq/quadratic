@@ -17,7 +17,7 @@ type IsAvailableArgs = {
   filePermissions: FilePermission[];
   isAuthenticated: boolean;
   teamPermissions: TeamPermission[] | undefined;
-  fileRelativeLocation: ApiTypes['/v0/files/:uuid.GET.response']['userMakingRequest']['fileRelativeLocation'];
+  fileTeamPrivacy: ApiTypes['/v0/files/:uuid.GET.response']['userMakingRequest']['fileTeamPrivacy'];
 };
 
 export type GenericAction = {
@@ -65,9 +65,9 @@ export const isAvailableBecauseCanEditFile = ({ filePermissions }: IsAvailableAr
   hasPermissionToEditFile(filePermissions);
 const isAvailableBecauseLoggedIn = ({ isAuthenticated }: IsAvailableArgs) => isAuthenticated;
 export const isAvailableBecauseFileLocationIsAccessibleAndWriteable = ({
-  fileRelativeLocation,
+  fileTeamPrivacy,
   teamPermissions,
-}: IsAvailableArgs) => Boolean(fileRelativeLocation) && Boolean(teamPermissions?.includes('TEAM_EDIT'));
+}: IsAvailableArgs) => Boolean(fileTeamPrivacy) && Boolean(teamPermissions?.includes('TEAM_EDIT'));
 
 export const createNewFileAction = {
   label: 'Create',

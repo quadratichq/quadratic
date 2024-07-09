@@ -1,7 +1,9 @@
+import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { useFileRouteLoaderData } from '@/routes/file.$uuid';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
+import { LockOutlined } from '@mui/icons-material';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
@@ -57,7 +59,7 @@ function FileLocation() {
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
     team,
-    userMakingRequest: { fileRelativeLocation },
+    userMakingRequest: { fileTeamPrivacy },
   } = useFileRouteLoaderData();
   const linkProps = {
     reloadDocument: true,
@@ -71,31 +73,34 @@ function FileLocation() {
 
   // Figure out the user's relationship to the file and the link back to its
   // location in the dashboard
-  let DashboardLink;
-  if (fileRelativeLocation === 'TEAM_PUBLIC') {
-    DashboardLink = (
-      <Link to={ROUTES.TEAM(team.uuid)} {...linkProps} title={team.name}>
-        {team.name}
-      </Link>
-    );
-  } else if (fileRelativeLocation === 'TEAM_PRIVATE') {
-    DashboardLink = (
-      <Link to={ROUTES.TEAM_FILES_PRIVATE(team.uuid)} {...linkProps} title="Private files">
-        Private
-      </Link>
-    );
+  let dashboardLinkTo = '';
+  if (fileTeamPrivacy === 'PUBLIC_TO_TEAM') {
+    dashboardLinkTo = ROUTES.TEAM(team.uuid);
+  } else if (fileTeamPrivacy === 'PRIVATE_TO_ME') {
+    dashboardLinkTo = ROUTES.TEAM_FILES_PRIVATE(team.uuid);
+  } else if (fileTeamPrivacy === 'PRIVATE_TO_SOMEONE_ELSE') {
+    dashboardLinkTo = ROUTES.TEAM_FILES(team.uuid);
   }
 
   // They must be seeing the file because the public link is being used
-  if (!DashboardLink) {
+  if (!dashboardLinkTo) {
     return null;
   }
 
   return (
     <>
-      <Type className="hidden text-muted-foreground hover:text-foreground hover:underline md:block">
-        {DashboardLink}
-      </Type>
+      <span className="flex items-center gap-1">
+        {fileTeamPrivacy !== 'PUBLIC_TO_TEAM' && (
+          <TooltipHint title="Private">
+            <LockOutlined sx={{ width: 16, height: 16 }} className="text-muted-foreground" />
+          </TooltipHint>
+        )}
+        <Type className="hidden text-muted-foreground hover:text-foreground hover:underline md:block">
+          <Link to={dashboardLinkTo} {...linkProps}>
+            {team.name}
+          </Link>
+        </Type>
+      </span>
       <Type variant="body2" className="hidden select-none text-muted-foreground opacity-50 md:block">
         /
       </Type>

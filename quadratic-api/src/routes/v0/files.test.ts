@@ -137,7 +137,7 @@ describe('READ - GET /v0/files/:uuid with auth and owned file', () => {
           'FILE_MOVE',
           'FILE_DELETE',
         ]);
-        expect(res.body.userMakingRequest.fileRelativeLocation).toBe('TEAM_PUBLIC');
+        expect(res.body.userMakingRequest.fileTeamPrivacy).toBe('PUBLIC_TO_TEAM');
       }); // OK
   });
 });
@@ -154,7 +154,7 @@ describe('READ - GET /v0/files/:uuid with auth and another users file shared rea
         expect(res.body).toHaveProperty('file');
         expect(res.body).toHaveProperty('userMakingRequest');
         expect(res.body.userMakingRequest.filePermissions).toEqual(['FILE_VIEW']);
-        expect(res.body.userMakingRequest.fileRelativeLocation).toBe(undefined);
+        expect(res.body.userMakingRequest.fileTeamPrivacy).toBe(undefined);
       });
   });
 });

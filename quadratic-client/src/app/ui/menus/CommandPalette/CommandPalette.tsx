@@ -24,7 +24,7 @@ import viewCommandGroup from './commands/View';
 export const CommandPalette = () => {
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
-    userMakingRequest: { fileRelativeLocation, teamPermissions },
+    userMakingRequest: { fileTeamPrivacy, teamPermissions },
   } = useFileRouteLoaderData();
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [activeSearchValue, setActiveSearchValue] = useState<string>('');
@@ -82,8 +82,7 @@ export const CommandPalette = () => {
             // Is the command even available?
             if (
               isAvailable &&
-              isAvailable({ filePermissions: permissions, isAuthenticated, teamPermissions, fileRelativeLocation }) !==
-                true
+              isAvailable({ filePermissions: permissions, isAuthenticated, teamPermissions, fileTeamPrivacy }) !== true
             ) {
               return;
             }

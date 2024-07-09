@@ -118,7 +118,7 @@ describe('POST /v0/files', () => {
           expect(res.body.team.uuid).toEqual('00000000-0000-4000-8000-000000000001');
           expect(res.body).toHaveProperty('userMakingRequest');
           expect(res.body.userMakingRequest).toHaveProperty('filePermissions');
-          expect(res.body.userMakingRequest.fileRelativeLocation).toEqual('TEAM_PUBLIC');
+          expect(res.body.userMakingRequest.fileTeamPrivacy).toEqual('PUBLIC_TO_TEAM');
         });
     });
 
@@ -135,7 +135,7 @@ describe('POST /v0/files', () => {
           expect(res.body).toHaveProperty('file');
           expect(res.body).toHaveProperty('userMakingRequest');
           expect(res.body.userMakingRequest).toHaveProperty('filePermissions');
-          expect(res.body.userMakingRequest.fileRelativeLocation).toEqual('TEAM_PRIVATE');
+          expect(res.body.userMakingRequest.fileTeamPrivacy).toEqual('PRIVATE_TO_ME');
           expect(res.body.file.name).toEqual('new_file_with_name');
           expect(res.body.file.lastCheckpointVersion).toEqual('1.0.0');
         });

@@ -47,11 +47,11 @@ export const QuadraticMenu = () => {
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
     team: { uuid: teamUuid },
-    userMakingRequest: { fileRelativeLocation, teamPermissions },
+    userMakingRequest: { fileTeamPrivacy, teamPermissions },
   } = useFileRouteLoaderData();
   const { permissions } = editorInteractionState;
 
-  const isAvailableArgs = { filePermissions: permissions, fileRelativeLocation, isAuthenticated, teamPermissions };
+  const isAvailableArgs = { filePermissions: permissions, fileTeamPrivacy, isAuthenticated, teamPermissions };
 
   // For mobile, set Headers to not visible by default
   useEffect(() => {
