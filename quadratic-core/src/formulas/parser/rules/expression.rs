@@ -347,7 +347,7 @@ impl SyntaxRule for FunctionCall {
 /// Matches a single cell reference.
 #[derive(Debug, Copy, Clone)]
 pub struct CellReferenceExpression;
-impl_display!(for CellReferenceExpression, "cell reference, such as 'A6' or '$ZB$3'");
+impl_display!(for CellReferenceExpression, "cell reference such as 'A6' or '$ZB$3'");
 impl SyntaxRule for CellReferenceExpression {
     type Output = AstNode;
 
@@ -379,7 +379,7 @@ impl SyntaxRule for ParenExpression {
 /// Matches an array literal.
 #[derive(Debug, Copy, Clone)]
 pub struct ArrayLiteral;
-impl_display!(for ArrayLiteral, "array literal, such as '{{1, 2; 3, 4}}'");
+impl_display!(for ArrayLiteral, "array literal such as '{{1, 2; 3, 4}}'");
 impl SyntaxRule for ArrayLiteral {
     type Output = AstNode;
 
