@@ -212,8 +212,10 @@ mod test {
     };
 
     use super::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn simple_search() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
@@ -228,6 +230,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn case_sensitive_search() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
@@ -259,6 +262,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn whole_cell_search() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
@@ -308,6 +312,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn whole_cell_search_case_sensitive() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Text("hello world".into()));
@@ -358,6 +363,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn search_numbers() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Number(123.into()));
@@ -381,6 +387,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn search_display_numbers() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -455,6 +462,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn search_code_runs() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(
@@ -500,6 +508,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn search_within_code_runs() {
         let mut sheet = Sheet::test();
         let code_run = CodeRun {

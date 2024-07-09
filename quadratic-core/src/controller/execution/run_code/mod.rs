@@ -233,6 +233,7 @@ impl GridController {
                         None,
                     );
                     transaction.waiting_for_async = None;
+                    transaction.has_async = false;
                 }
                 _ => {
                     return Err(CoreError::UnhandledLanguage(
@@ -408,13 +409,14 @@ impl GridController {
 mod test {
     use std::collections::HashSet;
 
-    use serial_test::serial;
+    use serial_test::{parallel, serial};
 
     use crate::{wasm_bindings::js::expect_js_call_count, CodeCellValue};
 
     use super::*;
 
     #[test]
+    #[parallel]
     fn test_finalize_code_cell() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];

@@ -162,8 +162,10 @@ impl Offsets {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_offsets_structure() {
         let mut offsets = Offsets::new(10.0);
         assert_eq!(offsets.get_size(0), 10.0);
@@ -205,6 +207,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_offsets_move() {
         let mut offsets = Offsets::new(10.0);
         for i in 0..10 {
@@ -224,6 +227,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_find_offsets_default() {
         let offsets = Offsets::new(10.0);
 
@@ -240,6 +244,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_find_offsets_changed() {
         let mut offsets = Offsets::new(10.0);
         offsets.set_size(0, 20.0);
@@ -264,6 +269,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_changes() {
         let mut first = Offsets::new(10.0);
         first.set_size(0, 20.0);

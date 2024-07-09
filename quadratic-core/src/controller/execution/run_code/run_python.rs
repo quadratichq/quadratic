@@ -38,8 +38,10 @@ mod tests {
         ArraySize, CellValue, Pos, Rect,
     };
     use bigdecimal::BigDecimal;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_run_python() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -86,6 +88,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_python_hello_world() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -123,6 +126,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_python_addition_with_cell_reference() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -191,6 +195,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_python_cell_reference_change() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -291,6 +296,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_python_array_output_variable_length() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -337,6 +343,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_python_cancellation() {
         // creates a dummy python program
         let mut gc = GridController::test();
@@ -374,6 +381,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_python_does_not_replace_output_until_complete() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -499,6 +507,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_python_multiple_calculations() {
         // Tests in column 0, and y: 0 = "1", y: 1 = "c(0,0) + 1", y: 2 = "c(0, 1) + 1"
         let mut gc = GridController::test();

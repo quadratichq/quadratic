@@ -52,8 +52,10 @@ mod tests {
     use crate::grid::Sheet;
     use crate::selection::Selection;
     use crate::{Pos, Rect};
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn summarize_rects() {
         let mut sheet = Sheet::test();
 
@@ -93,6 +95,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn summarize_rounding() {
         let mut sheet = Sheet::test();
         sheet.test_set_value_number(1, 1, "9.1234567891");
@@ -116,6 +119,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn summary_too_large() {
         let mut sheet = Sheet::test();
 
@@ -137,6 +141,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn summarize_trailing_zeros() {
         let mut sheet = Sheet::test();
         sheet.test_set_value_number(-1, -1, "0.00100000000000");
@@ -158,6 +163,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn summarize_columns() {
         let mut sheet = Sheet::test();
         for i in 0..10 {
@@ -181,6 +187,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn summarize_rows() {
         let mut sheet = Sheet::test();
         for i in 0..10 {
@@ -204,6 +211,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn summarize_all() {
         let mut sheet = Sheet::test();
         for i in 0..10 {

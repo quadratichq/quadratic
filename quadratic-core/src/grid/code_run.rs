@@ -161,8 +161,10 @@ pub enum CodeRunResult {
 mod test {
     use super::*;
     use crate::{grid::SheetId, Array};
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_output_size() {
         let sheet_id = SheetId::new();
         let code_run = CodeRun {
@@ -220,6 +222,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_output_sheet_rect_spill_error() {
         let sheet_id = SheetId::new();
         let code_run = CodeRun {

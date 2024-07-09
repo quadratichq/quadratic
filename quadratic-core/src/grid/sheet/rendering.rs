@@ -469,7 +469,7 @@ mod tests {
     use std::collections::HashSet;
 
     use chrono::Utc;
-    use serial_test::serial;
+    use serial_test::{parallel, serial};
 
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
@@ -488,6 +488,7 @@ mod tests {
     };
 
     #[test]
+    #[parallel]
     fn has_render_cells() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -536,6 +537,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn get_render_cells() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -645,6 +647,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_get_html_output() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -715,6 +718,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_get_code_cells() {
         let sheet = Sheet::test();
         let code_cell = CellValue::Code(CodeCellValue {
@@ -775,6 +779,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_get_render_cells_code() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -805,6 +810,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn render_cells_boolean() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -831,6 +837,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn render_code_cell() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -869,8 +876,8 @@ mod tests {
         );
     }
 
-    #[serial]
     #[test]
+    #[serial]
     fn render_images() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -952,6 +959,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn get_sheet_fills() {
         let mut sheet = Sheet::test();
         assert_eq!(sheet.get_sheet_fills(), JsSheetFill::default());

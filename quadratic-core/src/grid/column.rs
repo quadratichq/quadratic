@@ -370,8 +370,10 @@ impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq>
 #[cfg(test)]
 mod test {
     use super::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn column_data_set_range() {
         let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
 
@@ -398,6 +400,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn has_blocks_in_range() {
         let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
 
@@ -416,6 +419,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn format() {
         let mut cd: Column = Column::new(0);
 
@@ -477,6 +481,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn format_range() {
         let mut cd: Column = Column::new(0);
 

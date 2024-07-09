@@ -409,6 +409,7 @@ mod tests {
         CodeCellValue, Rect,
     };
     use bigdecimal::BigDecimal;
+    use serial_test::parallel;
     use std::str::FromStr;
 
     /// Used to test whether the results of a selection has a position and value.
@@ -417,6 +418,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn selection_all() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(
@@ -449,6 +451,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn selection_columns() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(
@@ -493,6 +496,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn selection_rows() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(
@@ -525,6 +529,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn selection_rects_values() {
         let mut sheet = Sheet::test();
         // create a 3x3 array at 0,0
@@ -579,6 +584,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn selection_rects_code() {
         let mut sheet = Sheet::test();
 
@@ -649,6 +655,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn selection() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(
@@ -682,6 +689,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn selection_bounds() {
         let mut sheet = Sheet::test();
         let sheet_id = sheet.id;
@@ -744,6 +752,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn format_selection() {
         let mut sheet = Sheet::test();
         let sheet_id = sheet.id;

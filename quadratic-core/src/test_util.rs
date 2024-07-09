@@ -289,8 +289,10 @@ mod test {
     use crate::grid::formats::format_update::FormatUpdate;
 
     use super::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn print_table_sheet_format() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

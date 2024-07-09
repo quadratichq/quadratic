@@ -13,9 +13,7 @@ use crate::{
         transaction_types::JsCodeResult,
     },
     error_core::Result,
-    grid::{CodeRun, CodeRunResult},
-    parquet::parquet_to_vec,
-    Pos, Value,
+    Pos,
 };
 
 impl GridController {
@@ -201,11 +199,13 @@ impl From<Pos> for CellHash {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{cell_values::CellValues, grid::GridBounds, CellValue, Pos, Rect, SheetPos};
     use crate::{
         cell_values::CellValues,
         grid::{CodeCellLanguage, ConnectionKind, GridBounds},
         CellValue, Pos, Rect, SheetPos,
     };
+    use serial_test::parallel;
 
     fn add_cell_value(sheet_pos: SheetPos, value: CellValue) -> Operation {
         Operation::SetCellValues {
@@ -224,6 +224,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_transactions_finalize_transaction() {
         let mut gc = GridController::test();
         let (operation, operation_undo) = get_operations(&mut gc);
@@ -271,6 +272,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_transactions_undo_redo() {
         let mut gc = GridController::test();
         let (operation, operation_undo) = get_operations(&mut gc);
@@ -295,6 +297,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_transactions_updated_bounds_in_transaction() {
         let mut gc = GridController::test();
         let (operation, _) = get_operations(&mut gc);
@@ -313,6 +316,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_transactions_cell_hash() {
         let hash = "test".to_string();
         let cell_hash = CellHash(hash.clone());
@@ -324,6 +328,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_js_calculation_complete() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

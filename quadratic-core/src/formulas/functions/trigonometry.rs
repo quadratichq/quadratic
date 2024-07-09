@@ -145,9 +145,11 @@ mod tests {
         }
     }
 
+    use serial_test::parallel;
     use std::f64::consts::{FRAC_1_SQRT_2, PI, SQRT_2};
 
     #[test]
+    #[parallel]
     fn test_formula_radian_degree_conversion() {
         let g = Grid::new();
 
@@ -156,6 +158,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_formula_trigonometry() {
         let g = Grid::new();
 
@@ -349,6 +352,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_formula_inverse_trigonometry() {
         let test_cases = &[
             (-1.0, -0.5 * PI),
@@ -479,6 +483,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_atan2() {
         let g = Grid::new();
 

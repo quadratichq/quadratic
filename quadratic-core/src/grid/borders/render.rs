@@ -47,11 +47,12 @@ mod tests {
     use crate::{Pos, Rect};
 
     use super::*;
+    use serial_test::parallel;
 
     // mod timing {
     //     use super::*;
     //
-    //     #[test]
+    //     #[test]#[parallel]
     //     fn single_block() {
     //         for _ in 0..5 {
     //             let mut sheet =
@@ -83,6 +84,7 @@ mod tests {
         use super::*;
 
         #[test]
+        #[parallel]
         fn single_block() {
             let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
             let rect = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 6, y: 15 });
@@ -109,6 +111,7 @@ mod tests {
         }
 
         #[test]
+        #[parallel]
         fn two_blocks_merge_for_render() {
             let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
             let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 4, y: 10 });
@@ -140,6 +143,7 @@ mod tests {
         }
 
         #[test]
+        #[parallel]
         fn two_vertical_blocks_with_gap() {
             let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
             let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 6, y: 15 });
@@ -181,6 +185,7 @@ mod tests {
         }
 
         #[test]
+        #[parallel]
         fn insert_different_color_border_across_block() {
             let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
             let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 6, y: 15 });
@@ -223,6 +228,7 @@ mod tests {
         }
 
         #[test]
+        #[parallel]
         fn undo_horizontal_adjacent_insertion() {
             let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
             let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 4, y: 11 });
@@ -254,6 +260,7 @@ mod tests {
         }
 
         #[test]
+        #[parallel]
         fn undo_insert_different_color_border_across_block() {
             let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
             let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 6, y: 15 });
@@ -296,6 +303,7 @@ mod tests {
         use super::*;
 
         #[test]
+        #[parallel]
         fn single_block() {
             let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
             let rect = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 6, y: 15 });
@@ -322,6 +330,7 @@ mod tests {
         }
 
         #[test]
+        #[parallel]
         fn two_blocks_merge_for_render() {
             let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
             let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 3, y: 11 });
@@ -353,6 +362,7 @@ mod tests {
         }
 
         #[test]
+        #[parallel]
         fn two_horizontal_blocks_with_gap() {
             let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
             let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 5, y: 13 });
@@ -390,6 +400,7 @@ mod tests {
         }
 
         #[test]
+        #[parallel]
         fn insert_different_color_border_across_block() {
             let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
             let rect_1 = Rect::new_span(Pos { x: 2, y: 11 }, Pos { x: 7, y: 14 });
@@ -432,6 +443,7 @@ mod tests {
         }
 
         #[test]
+        #[parallel]
         fn undo_insert_different_color_border_across_block() {
             let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
             let rect_1 = Rect::new_span(Pos { x: 2, y: 11 }, Pos { x: 7, y: 14 });

@@ -40,8 +40,10 @@ mod test {
         grid::{CodeCellLanguage, CodeRun, CodeRunResult},
         CellValue, Pos, SheetPos, SheetRect, Value,
     };
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_graph() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -110,6 +112,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn dependencies_near_input() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

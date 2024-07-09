@@ -83,10 +83,12 @@ mod tests {
     use crate::controller::formula::{parse_formula, CellRefSpan, FormulaParseResult};
     use crate::formulas::{CellRef, CellRefCoord, RangeRef};
     use crate::Span;
+    use serial_test::parallel;
 
     /// Run this test with `--nocapture` to generate the example for the
     /// `parse_formula()` docs.
     #[test]
+    #[parallel]
     fn example_parse_formula_output() {
         let example_result = FormulaParseResult {
             parse_error_msg: Some("Bad argument count".to_string()),
@@ -122,6 +124,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn text_parse_formula_output() {
         let result = parse_formula("'Sheet 2'!A0", crate::Pos::ORIGIN);
         assert_eq!(result.parse_error_msg, None);

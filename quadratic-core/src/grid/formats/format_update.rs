@@ -209,8 +209,10 @@ impl From<&FormatUpdate> for Format {
 mod tests {
     use super::*;
     use crate::grid::NumericFormatKind;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn is_default() {
         let format = FormatUpdate::default();
         assert!(format.is_default());
@@ -223,6 +225,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn cleared() {
         assert_eq!(
             FormatUpdate::cleared(),
@@ -243,6 +246,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn html_changed() {
         let format = FormatUpdate {
             render_size: Some(Some(RenderSize {
@@ -264,6 +268,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn render_cells_changed() {
         let format = FormatUpdate {
             align: Some(None),
@@ -324,6 +329,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn fill_changed() {
         let format = FormatUpdate {
             fill_color: Some(None),
@@ -348,6 +354,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn combine() {
         let format1 = FormatUpdate {
             align: Some(Some(CellAlign::Center)),
@@ -419,6 +426,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn clear_update() {
         let format = FormatUpdate {
             align: Some(Some(CellAlign::Center)),
@@ -456,6 +464,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn format_update_to_format() {
         let update = FormatUpdate {
             align: Some(Some(CellAlign::Center)),
@@ -505,6 +514,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn serialize_format_update() {
         let update = FormatUpdate {
             align: Some(None),

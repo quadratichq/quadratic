@@ -409,6 +409,7 @@ mod test {
         CodeCellValue, SheetPos,
     };
     use bigdecimal::BigDecimal;
+    use serial_test::parallel;
     use std::str::FromStr;
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
@@ -450,6 +451,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_current_decimal_places_value() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
@@ -467,6 +469,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn decimal_places() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -502,6 +505,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_current_decimal_places_text() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
@@ -517,6 +521,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_current_decimal_places_float() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
@@ -533,6 +538,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_cell_numeric_format_kind() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
         let column = sheet.get_or_create_column(0);
@@ -551,6 +557,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_set_cell_values() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 4, y: 1 });
         let vals = vec!["a", "1", "$1.11"];
@@ -573,6 +580,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn delete_cell_values() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -591,6 +599,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn delete_cell_values_code() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -632,6 +641,7 @@ mod test {
     // }
 
     #[test]
+    #[parallel]
     fn test_get_cell_value() {
         let (grid, sheet_id, _) = test_setup_basic();
         let sheet = grid.sheet(sheet_id);
@@ -641,6 +651,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_get_set_formatting_value() {
         let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.sheet(sheet_id).clone();
@@ -653,6 +664,7 @@ mod test {
     // TODO(ddimaria): use the code below numeric format kinds are in place
     #[ignore]
     #[test]
+    #[parallel]
     fn test_cell_numeric_format_kinds() {
         let (grid, sheet_id, _) = test_setup_basic();
         let sheet = grid.sheet(sheet_id).clone();
@@ -671,6 +683,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_cell_format_summary() {
         let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.sheet(sheet_id).clone();
@@ -704,6 +717,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_columns() {
         let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.sheet(sheet_id).clone();
@@ -733,6 +747,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn display_value_blanks() {
         let mut sheet = Sheet::test();
         let pos = Pos { x: 0, y: 0 };

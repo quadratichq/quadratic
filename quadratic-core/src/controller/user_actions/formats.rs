@@ -263,8 +263,10 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{controller::GridController, grid::CellWrap, selection::Selection, Rect};
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn set_align_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -291,6 +293,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn set_vertical_align_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -317,6 +320,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn set_bold_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -340,6 +344,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn set_cell_wrap_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -366,6 +371,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn set_numeric_format_currency() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -395,6 +401,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn set_numeric_format_exponential() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -425,6 +432,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn set_numeric_format_percentage() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -455,6 +463,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn toggle_commas_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -500,6 +509,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn set_italic_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -523,6 +533,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn set_text_color_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -549,6 +560,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn set_fill_color_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -575,6 +587,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn change_decimal_places_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -603,6 +616,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn clear_format() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -646,6 +660,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn clear_format_column() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -687,6 +702,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn set_format_column_row() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

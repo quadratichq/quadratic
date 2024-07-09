@@ -210,4 +210,7 @@ mod tests {
         let rows = sheet.get_auto_resize_rows(sheet_rect.y_range().collect());
         assert!(rows.is_empty());
     }
+
+    // convert to manual on commit_offsets_resize
+    // convert to auto on commit_single_resize
 }
