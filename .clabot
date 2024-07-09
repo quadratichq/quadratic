@@ -14,7 +14,8 @@
     "tmiller",
     "dependabot",
     "dependabot[bot]",
-    "AyushAgrawal-A2"
+    "AyushAgrawal-A2",
+    "golok727"
   ],
   "message": "We require contributors to sign our Contributor License Agreement, and we don\"t have one on file for you. In order for us to review and merge your code, please contact our team at https://www.quadratichq.com/contact."
 }
