@@ -86,6 +86,21 @@ impl OpPrecedence {
     }
 }
 
+/// Matches an expression or nothing.
+#[derive(Debug, Copy, Clone)]
+pub struct OptionalExpression;
+impl_display!(for OptionalExpression, "expression or nothing");
+impl SyntaxRule for OptionalExpression {
+    type Output = ast::AstNode;
+
+    fn prefix_matches(&self, p: Parser<'_>) -> bool {
+        Expression.prefix_matches(p) || EmptyExpression.prefix_matches(p)
+    }
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
+        parse_one_of!(p, [Expression, EmptyExpression])
+    }
+}
+
 /// Matches an expression.
 #[derive(Debug, Copy, Clone)]
 pub struct Expression;
@@ -117,10 +132,9 @@ impl SyntaxRule for ExpressionWithPrecedence {
                 Token::LBracket => false,
                 Token::LBrace => true,
 
-                //  These match because an expression in a list or array or
-                //  functional call is allowed to be empty.
-                Token::RParen | Token::RBracket | Token::RBrace => true,
-                Token::ArgSep | Token::RowSep => true,
+                //  These only match for expressions that can be empty.
+                Token::RParen | Token::RBracket | Token::RBrace => false,
+                Token::ArgSep | Token::RowSep => false,
 
                 Token::Eql | Token::Neq | Token::Lt | Token::Gt | Token::Lte | Token::Gte => false,
 
@@ -169,7 +183,6 @@ impl SyntaxRule for ExpressionWithPrecedence {
                     ArrayLiteral.map(Some),
                     BoolExpression.map(Some),
                     ParenExpression.map(Some),
-                    EmptyExpression.map(Some),
                 ],
             )
             .transpose()
@@ -328,7 +341,7 @@ impl SyntaxRule for FunctionCall {
         p.prev();
 
         let spanned_args = p.parse(List {
-            inner: Expression,
+            inner: OptionalExpression,
             sep: Token::ArgSep,
             start: Token::FunctionCall,
             end: Token::RParen,
@@ -393,7 +406,7 @@ impl SyntaxRule for ArrayLiteral {
         let mut rows = vec![vec![]];
         p.parse(Token::LBrace)?;
         loop {
-            rows.last_mut().unwrap().push(p.parse(Expression)?);
+            rows.last_mut().unwrap().push(p.parse(OptionalExpression)?);
             match p.next() {
                 Some(Token::ArgSep) => (),                // next cell within row
                 Some(Token::RowSep) => rows.push(vec![]), // start a new row
