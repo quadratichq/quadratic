@@ -94,7 +94,7 @@ impl GridController {
                     sheet_id,
                     row,
                     new_size: old_size,
-                    client_resized: old_client_resize,
+                    client_resized: false,
                 },
             );
 
