@@ -7,7 +7,7 @@ import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect, redirectDocument } from 'react-router-dom';
 
-const getFailUrl = (path: string = ROUTES.FILES) => {
+const getFailUrl = (path: string = '/') => {
   let params = new URLSearchParams();
   params.append(snackbarMsgQueryParam, 'Failed to create file. Try again.');
   params.append(snackbarSeverityQueryParam, 'error');

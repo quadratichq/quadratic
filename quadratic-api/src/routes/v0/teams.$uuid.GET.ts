@@ -84,7 +84,6 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
   const dbFiles = dbTeam.File ? dbTeam.File : [];
   const dbUsers = dbTeam.UserTeamRole ? dbTeam.UserTeamRole : [];
   const dbInvites = dbTeam.TeamInvite ? dbTeam.TeamInvite : [];
-  const dbConnections = dbTeam.Connection ? dbTeam.Connection : [];
 
   // Get user info from auth0
   const auth0UsersById = await getUsersFromAuth0(dbUsers.map(({ user }) => user));
@@ -148,30 +147,26 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
           }),
         },
       })),
-    // Don't return the user's private files if they don't have edit access to the team
-    // TODO: (connections) check the permissions for this and make sure it's right
-    filesPrivate: userMakingRequest.permissions.includes('TEAM_EDIT')
-      ? dbFiles
-          .filter((file) => file.ownerUserId)
-          .map((file) => ({
-            file: {
-              uuid: file.uuid,
-              name: file.name,
-              createdDate: file.createdDate.toISOString(),
-              updatedDate: file.updatedDate.toISOString(),
-              publicLinkAccess: file.publicLinkAccess,
-              thumbnail: file.thumbnail,
+    filesPrivate: dbFiles
+      .filter((file) => file.ownerUserId)
+      .map((file) => ({
+        file: {
+          uuid: file.uuid,
+          name: file.name,
+          createdDate: file.createdDate.toISOString(),
+          updatedDate: file.updatedDate.toISOString(),
+          publicLinkAccess: file.publicLinkAccess,
+          thumbnail: file.thumbnail,
+        },
+        userMakingRequest: {
+          filePermissions: getFilePermissions({
+            publicLinkAccess: file.publicLinkAccess,
+            userFileRelationship: {
+              context: 'private-to-me',
             },
-            userMakingRequest: {
-              filePermissions: getFilePermissions({
-                publicLinkAccess: file.publicLinkAccess,
-                userFileRelationship: {
-                  context: 'private-to-me',
-                },
-              }),
-            },
-          }))
-      : [],
+          }),
+        },
+      })),
   };
 
   return res.status(200).json(response);

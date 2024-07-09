@@ -206,7 +206,7 @@ pub(crate) async fn healthcheck() -> impl IntoResponse {
 }
 
 pub(crate) async fn static_ips() -> Result<Json<StaticIpsResponse>> {
-    let static_ips = config()?.static_ips.iter().cloned().collect();
+    let static_ips = config()?.static_ips.to_vec();
     let response = StaticIpsResponse { static_ips };
 
     Ok(response.into())

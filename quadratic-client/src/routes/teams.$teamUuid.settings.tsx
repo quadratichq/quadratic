@@ -4,7 +4,6 @@ import { getActionUpdateTeam } from '@/routes/teams.$teamUuid';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
-import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { ReactNode, useEffect, useState } from 'react';
 import { Navigate, useFetcher, useSubmit } from 'react-router-dom';
@@ -40,7 +39,7 @@ export const Component = () => {
     });
   };
 
-  // TODO: (connections) move this to the settings page
+  // One day, when we have billing, we can add something akin to this
   //
   // {teamPermissions.includes('TEAM_BILLING_EDIT') && (
   //   <DropdownMenuItem
@@ -77,14 +76,6 @@ export const Component = () => {
           </Type>
           <div className="flex items-center gap-2">
             <Input value={value} onChange={(e) => setValue(e.target.value)} onBlur={onBlur} />
-          </div>
-        </Row>
-        <Row>
-          <Type variant="body2" className="font-bold">
-            Billing
-          </Type>
-          <div className="flex items-center gap-2">
-            <Button variant="outline">Manage</Button>
           </div>
         </Row>
       </div>

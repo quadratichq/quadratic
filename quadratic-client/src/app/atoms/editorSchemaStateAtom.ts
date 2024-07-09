@@ -1,5 +1,5 @@
+import { SchemaData } from '@/app/ui/menus/CodeEditor/useSchemaData';
 import { atom } from 'recoil';
-import { SchemaData } from '../ui/connections/SchemaViewer';
 
 export interface EditorSchemaState {
   schema?: SchemaData;

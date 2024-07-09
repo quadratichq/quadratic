@@ -1,15 +1,11 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { editorSchemaStateAtom } from '@/app/atoms/editorSchemaStateAtom';
-import { getConnectionInfo } from '@/app/helpers/codeCellLanguage';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { SqlAdd } from '@/app/ui/icons';
-import { connectionClient } from '@/shared/api/connectionClient';
+import { useSchemaData } from '@/app/ui/menus/CodeEditor/useSchemaData';
 import { Type } from '@/shared/components/Type';
 import { cn } from '@/shared/shadcn/utils';
 import { KeyboardArrowRight, Refresh } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useCallback, useState } from 'react';
 
 type Table = {
   name: string;
@@ -23,46 +19,15 @@ type Column = {
   type: string;
 };
 
-type LoadState = 'not-initialized' | 'loading' | 'loaded' | 'error';
-export type SchemaData = Awaited<ReturnType<typeof connectionClient.schemas.get>>;
-
 interface Props {
   bottom?: boolean;
 }
 
 export const SchemaViewer = (props: Props) => {
   const { bottom } = props;
-  const { mode } = useRecoilValue(editorInteractionStateAtom);
-
-  const connection = getConnectionInfo(mode);
-  if (!connection) throw new Error('Expected a connection cell to be open.');
   const [expandAll, setExpandAll] = useState(false);
-  const [data, setData] = useRecoilState(editorSchemaStateAtom);
-
-  // needs to be a ref to ensure only fetch is only called once
-  const loadState = useRef<LoadState>('not-initialized');
-  const [loadingAnimation, setLoadingAnimation] = useState(false);
-  const fetchData = useCallback(async () => {
-    if (loadState.current === 'loading') return;
-    loadState.current = 'loading';
-    setLoadingAnimation(true);
-    const newSchemaData = await connectionClient.schemas.get(connection.kind.toLowerCase() as any, connection.id);
-    setLoadingAnimation(false);
-    if (newSchemaData) {
-      setData({
-        schema: newSchemaData,
-      });
-      loadState.current = 'loaded';
-    } else {
-      loadState.current = 'error';
-    }
-  }, [connection.id, connection.kind, setData]);
-
-  useEffect(() => {
-    if (loadState.current === 'not-initialized') {
-      fetchData();
-    }
-  }, [fetchData, loadState]);
+  const { loadState, data, fetchData } = useSchemaData();
+  const loadingAnimation = loadState.current === 'loading';
 
   return (
     <>

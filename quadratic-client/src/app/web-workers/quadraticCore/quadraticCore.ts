@@ -138,6 +138,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientMultiplayerState') {
       events.emit('multiplayerState', e.data.state);
       return;
+    } else if (e.data.type === 'coreClientConnectionState') {
+      events.emit('connectionState', e.data.state, e.data.current, e.data.awaitingExecution);
+      return;
     } else if (e.data.type === 'coreClientOfflineTransactionStats') {
       events.emit('offlineTransactions', e.data.transactions, e.data.operations);
       return;

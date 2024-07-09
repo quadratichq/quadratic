@@ -1,37 +1,36 @@
-import { CreateConnectionAction, DeleteConnectionAction, UpdateConnectionAction } from '@/routes/_api.connections';
-import { ConnectionState } from '@/routes/teams.$teamUuid.connections';
+import { CreateConnectionAction, DeleteConnectionAction, UpdateConnectionAction } from '@/routes/api.connections';
 import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
 import { ConnectionsList } from '@/shared/components/connections/ConnectionsList';
+import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { Dispatch, SetStateAction } from 'react';
+import { useState } from 'react';
 import { useFetchers } from 'react-router-dom';
 
 export type ConnectionsListConnection = {
   uuid: string;
   name: string;
   createdDate: string;
-  updatedDate: string;
   type: ConnectionType;
-  typeDetails: any;
   disabled?: boolean;
 };
 type Props = {
-  state: ConnectionState;
-  setState: Dispatch<SetStateAction<ConnectionState>>;
   teamUuid: string;
   staticIps: string[] | null;
-  // null means they're loading, otherwise should be an array
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
 };
+export type NavigateToEditView = (props: { connectionUuid: string; connectionType: ConnectionType }) => void;
+export type NavigateToCreateView = (type: ConnectionType) => void;
 
-export const Connections = ({ connections, connectionsAreLoading, teamUuid, staticIps, state, setState }: Props) => {
-  // Modify our list of connections based on optimistic
+export const Connections = ({ connections, connectionsAreLoading, teamUuid, staticIps }: Props) => {
+  const [activeConnectionUuid, setActiveConnectionUuid] = useState<string | undefined>();
+  const [activeConnectionType, setActiveConnectionType] = useState<ConnectionType | undefined>();
+
+  /**
+   * Optimistic UI
+   */
   const fetchers = useFetchers();
-
-  // TODO(jimniels): implement in the UI
-  console.log('staticIps', staticIps);
 
   // Connection created? Add it to the list of connections
   const newConnectionFetcher = fetchers.find(
@@ -82,53 +81,52 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
     });
   }
 
-  const handleNavigateToListView = () => setState((prev) => ({ ...prev, view: { name: 'LIST' } }));
-  const handleNavigateToCreateView = (type: ConnectionType) =>
-    setState((prev) => ({ ...prev, view: { name: 'CREATE', type } }));
-  const handleNavigateToEditView = (connectionUuid: string) =>
-    setState((prev) => ({ ...prev, view: { name: 'EDIT', connectionUuid } }));
+  /**
+   * Navigation
+   */
+  const handleNavigateToListView = () => {
+    setActiveConnectionUuid(undefined);
+    setActiveConnectionType(undefined);
+  };
+  const handleNavigateToCreateView: NavigateToCreateView = (connectionType) => {
+    setActiveConnectionType(connectionType);
+    setActiveConnectionUuid(undefined);
+  };
+  const handleNavigateToEditView: NavigateToEditView = ({ connectionType, connectionUuid }) => {
+    setActiveConnectionUuid(connectionUuid);
+    setActiveConnectionType(connectionType);
+  };
 
   return (
-    <div className="flex flex-col gap-2">
-      {state.view.name === 'CREATE' && (
-        <ConnectionFormCreate
-          teamUuid={teamUuid}
-          type={state.view.type}
-          handleNavigateToListView={handleNavigateToListView}
-        />
-      )}
-      {state.view.name === 'EDIT' && (
-        <ConnectionFormEdit
-          teamUuid={teamUuid}
-          // @ts-expect-error
-          connection={connections?.find((c) => c.uuid === state.view.connectionUuid)}
-          handleNavigateToListView={handleNavigateToListView}
-        />
-      )}
-      {state.view.name === 'LIST' && (
-        <ConnectionsList
-          connections={connections}
-          connectionsAreLoading={connectionsAreLoading}
-          handleNavigateToCreateView={handleNavigateToCreateView}
-          handleNavigateToEditView={handleNavigateToEditView}
-        />
-      )}
+    <div className="flex flex-col gap-8 md:flex-row">
+      <div className="flex flex-col gap-2 md:w-2/3">
+        {activeConnectionUuid && activeConnectionType ? (
+          <ConnectionFormEdit
+            connectionUuid={activeConnectionUuid}
+            connectionType={activeConnectionType}
+            handleNavigateToListView={handleNavigateToListView}
+          />
+        ) : activeConnectionType ? (
+          <ConnectionFormCreate
+            teamUuid={teamUuid}
+            type={activeConnectionType}
+            handleNavigateToListView={handleNavigateToListView}
+          />
+        ) : (
+          <ConnectionsList
+            connections={connections}
+            connectionsAreLoading={connectionsAreLoading}
+            handleNavigateToCreateView={handleNavigateToCreateView}
+            handleNavigateToEditView={handleNavigateToEditView}
+          />
+        )}
+      </div>
+
+      <div className="h-[1px] w-full bg-border md:h-auto md:w-[1px]"></div>
+
+      <div className="md:w-1/3">
+        <ConnectionsSidebar staticIps={staticIps} />
+      </div>
     </div>
   );
 };
-
-/*
-
-<DialogHeader>
-        <ConnectionsBreadcrumb />
-        <DialogTitle>{connectionName} connection</DialogTitle>
-        <DialogDescription>
-          For more information on {connectionName} connections,{' '}
-          <a href={connectionDocsLink} target="_blank" rel="noreferrer" className="underline hover:text-primary">
-            read the docs
-          </a>
-        </DialogDescription>
-      </DialogHeader>
-
-
-*/

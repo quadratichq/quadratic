@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { UserTeamRole } from 'quadratic-shared/typesAndSchemas';
 import dbClient from '../dbClient';
+import { encryptFromEnv } from '../utils/crypto';
 
 type UserData = Parameters<typeof dbClient.user.create>[0]['data'];
 type FileData = Parameters<typeof dbClient.file.create>[0]['data'];
@@ -115,7 +116,7 @@ function getRequiredConnectionData(type: ConnectionType) {
   return {
     name: 'Test Connection',
     type,
-    typeDetails: JSON.stringify(getDefaultConnectionTypeDetails(type)),
+    typeDetails: Buffer.from(encryptFromEnv(JSON.stringify(getDefaultConnectionTypeDetails(type)))),
   };
 }
 

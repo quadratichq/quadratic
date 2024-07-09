@@ -1,5 +1,4 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { editorSchemaStateAtom } from '@/app/atoms/editorSchemaStateAtom';
 import { getConnectionKind, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
@@ -7,6 +6,7 @@ import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { AI } from '@/app/ui/icons';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { useSchemaData } from '@/app/ui/menus/CodeEditor/useSchemaData';
 import { authClient } from '@/auth';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
@@ -28,6 +28,7 @@ export type AiMessage = {
 
 export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const aiResponseRef = useRef<HTMLDivElement>(null);
   const {
     aiAssistant: {
       prompt: [prompt, setPrompt],
@@ -40,7 +41,9 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   } = useCodeEditor();
   const { isAuthenticated, loggedInUser: user } = useRootRouteLoaderData();
   const { mode, selectedCell } = useRecoilValue(editorInteractionStateAtom);
-  const { schema } = useRecoilValue(editorSchemaStateAtom);
+
+  const { loadState, data } = useSchemaData();
+  const isLoadedConnection = getLanguage(mode) === 'Connection' && loadState.current === 'loaded';
 
   // TODO: This is only sent with the first message, we should refresh the content with each message.
   const systemMessages = [
@@ -52,7 +55,7 @@ Do not use any markdown syntax besides triple backticks for ${getConnectionKind(
 Do not reply with plain text code blocks.
 The cell type is ${getConnectionKind(mode)}.
 The cell is located at ${selectedCell.x}, ${selectedCell.y}.
-${getLanguage(mode) === 'Connection' ? 'The schema for the database is:```\n' + JSON.stringify(schema) : '\n```'}
+${isLoadedConnection ? 'The schema for the database is:```\n' + JSON.stringify(data) : '\n```'}
 Currently, you are in a cell that is being edited. The code in the cell is:
 \`\`\`${editorContent}\`\`\`
 If the code was recently run here is the result: 
@@ -70,6 +73,13 @@ ${QuadraticDocs}`,
       });
     }
   }, [autoFocus]);
+
+  // Scroll to the bottom of the AI content when component mounts
+  useEffect(() => {
+    if (aiResponseRef.current) {
+      aiResponseRef.current.scrollTop = aiResponseRef.current.scrollHeight;
+    }
+  }, []);
 
   const abortPrompt = () => {
     controllerRef.current?.abort();
@@ -191,6 +201,7 @@ ${QuadraticDocs}`,
   return (
     <>
       <div
+        ref={aiResponseRef}
         className="select-text overflow-y-auto whitespace-pre-wrap pb-2 pl-3 pr-4 text-sm outline-none"
         spellCheck={false}
         onKeyDown={(e) => {
@@ -238,7 +249,7 @@ ${QuadraticDocs}`,
                     fontSize: '0.8rem',
                     marginBottom: '0.5rem',
                   }}
-                  alt="AI Assistant"
+                  alt="AI assistant"
                 >
                   <AI sx={{ color: colors.languageAI }}></AI>
                 </Avatar>

@@ -65,7 +65,6 @@ fn clean_errors(error: impl ToString) -> String {
 
 impl From<SharedError> for ConnectionError {
     fn from(error: SharedError) -> Self {
-        #[allow(clippy::match_single_binding)]
         match error {
             SharedError::Auth(error) => ConnectionError::Authentication(error.to_string()),
             SharedError::Sql(error) => ConnectionError::Query(error.to_string()),

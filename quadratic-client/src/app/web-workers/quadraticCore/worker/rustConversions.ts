@@ -23,7 +23,7 @@ export function rectangleToRect(rectangle: Rectangle | RectangleLike): String {
 export function numbersToRect(x: number, y: number, width: number, height: number): string {
   const rect: Rect = {
     min: { x: BigInt(x), y: BigInt(y) },
-    max: { x: BigInt(x + width), y: BigInt(y + height) },
+    max: { x: BigInt(x + width - 1), y: BigInt(y + height - 1) },
   };
   return JSON.stringify(rect, bigIntReplacer);
 }

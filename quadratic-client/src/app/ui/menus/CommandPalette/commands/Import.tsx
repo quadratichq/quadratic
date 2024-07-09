@@ -1,8 +1,8 @@
-import { isAvailableBecauseCanEditFile } from '@/app/actions';
+import { isAvailableBecauseCanEditFile, isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CSV_IMPORT_MESSAGE, PARQUET_IMPORT_MESSAGE } from '@/shared/constants/appConstants';
-import { ROUTES } from '@/shared/constants/routes';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useSetRecoilState } from 'recoil';
 import { CommandGroup, CommandPaletteListItem, CommandPaletteListItemDynamicProps } from '../CommandPaletteListItem';
 
 const commands: CommandGroup = {
@@ -40,17 +40,15 @@ const commands: CommandGroup = {
     },
     {
       label: 'Connections',
-      // TODO: (connections) is this the right permission?
-      isAvailable: isAvailableBecauseCanEditFile,
+      isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
       Component: (props: CommandPaletteListItemDynamicProps) => {
-        const navigate = useNavigate();
-        const { uuid } = useParams();
+        const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
 
         return (
           <CommandPaletteListItem
             {...props}
             action={() => {
-              if (uuid) navigate(ROUTES.FILE_CONNECTIONS(uuid), { replace: true });
+              setEditorInteractionState((prev) => ({ ...prev, showConnectionsMenu: true }));
             }}
           />
         );

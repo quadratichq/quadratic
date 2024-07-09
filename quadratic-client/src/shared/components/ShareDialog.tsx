@@ -1,4 +1,4 @@
-import { Action as FileShareAction } from '@/routes/files.$uuid.sharing';
+import { Action as FileShareAction } from '@/routes/api.files.$uuid.sharing';
 import { TeamAction } from '@/routes/teams.$teamUuid';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
@@ -199,7 +199,7 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
     owner,
   } = data;
   const fetchers = useFetchers();
-  const action = ROUTES.FILES_SHARE(uuid);
+  const action = ROUTES.API.FILE_SHARING(uuid);
   const canEditFile = filePermissions.includes('FILE_EDIT');
 
   sortLoggedInUserFirst(users, loggedInUserId);
@@ -400,7 +400,7 @@ export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: s
   // On the initial mount, load the data (if it's not there already)
   useEffect(() => {
     if (fetcher.state === 'idle' && !fetcher.data) {
-      fetcher.load(ROUTES.FILES_SHARE(uuid));
+      fetcher.load(ROUTES.API.FILE_SHARING(uuid));
     }
   }, [fetcher, uuid]);
 
@@ -446,7 +446,7 @@ export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: s
                 <button
                   className="underline"
                   onClick={() => {
-                    fetcher.load(ROUTES.FILES_SHARE(uuid));
+                    fetcher.load(ROUTES.API.FILE_SHARING(uuid));
                   }}
                 >
                   try again
@@ -667,7 +667,13 @@ function ManageUser({
               value={activeRole}
               onValueChange={(value: 'DELETE' | (typeof roles)[0]) => {
                 if (value === 'DELETE' && onDelete) {
-                  onDelete(fetcherDelete.submit, userId);
+                  const msg = isLoggedInUser
+                    ? 'Please confirm you want to leave this team. Your private files will be made public to the team.'
+                    : 'Please confirm you want to remove this person from the team. Their private files will be made public to the team.';
+                  const result = window.confirm(msg);
+                  if (result) {
+                    onDelete(fetcherDelete.submit, userId);
+                  }
                 } else if (onUpdate) {
                   const role = value as (typeof roles)[0];
                   onUpdate(fetcherUpdate.submit, userId, role);
@@ -833,7 +839,7 @@ function ListItemPublicLink({
   disabled: boolean;
 }) {
   const fetcher = useFetcher();
-  const fetcherUrl = ROUTES.FILES_SHARE(uuid);
+  const fetcherUrl = ROUTES.API.FILE_SHARING(uuid);
 
   // If we're updating, optimistically show the next value
   if (fetcher.state !== 'idle' && isJsonObject(fetcher.json)) {
