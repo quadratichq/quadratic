@@ -37,7 +37,7 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
     consoleOutput: [consoleOutput],
     editorContent: [editorContent],
   } = useCodeEditor();
-  const { isAuthenticated, loggedInUser: user } = useRootRouteLoaderData();
+  const { loggedInUser: user } = useRootRouteLoaderData();
   const { mode, selectedCell } = useRecoilValue(editorInteractionStateAtom);
 
   const { loadState, data } = useSchemaData();
@@ -53,11 +53,13 @@ Do not use any markdown syntax besides triple backticks for ${getConnectionKind(
 Do not reply with plain text code blocks.
 The cell type is ${getConnectionKind(mode)}.
 The cell is located at ${selectedCell.x}, ${selectedCell.y}.
-${isLoadedConnection ? 'The schema for the database is:```\n' + JSON.stringify(data) : '\n```'}
+${isLoadedConnection ? 'The schema for the database is:```json\n' + JSON.stringify(data) + '\n```' : ``}
 Currently, you are in a cell that is being edited. The code in the cell is:
-\`\`\`${editorContent}\`\`\`
+\`\`\`${getConnectionKind(mode)}
+${editorContent}\`\`\`
 If the code was recently run here is the result: 
-\`\`\`${JSON.stringify(consoleOutput)}\`\`\`
+\`\`\`
+${JSON.stringify(consoleOutput)}\`\`\`
 This is the documentation for Quadratic: 
 ${QuadraticDocs}`,
     },
