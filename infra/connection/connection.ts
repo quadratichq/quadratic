@@ -4,7 +4,6 @@ import * as pulumi from "@pulumi/pulumi";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
 import { runDockerImageBashScript } from "../helpers/runDockerImageBashScript";
 import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
-import { redisHost, redisPort } from "../shared/redis";
 import {
   connectionEc2SecurityGroup,
   connectionNlbSecurityGroup,
@@ -42,14 +41,14 @@ const instance = new aws.ec2.Instance("connection-instance", {
   ami: latestAmazonLinuxAmi.id,
   // Run Setup script on instance boot to create connection systemd service
   userDataReplaceOnChange: true,
-  userData: pulumi.all([redisHost, redisPort]).apply(([host, port]) =>
+  userData: eip.publicIp.apply((publicIp) =>
     runDockerImageBashScript(
       connectionECRName,
       dockerImageTag,
       "quadratic-connection-development",
       {
         QUADRATIC_API_URI: quadraticApiUri,
-        STATIC_IPS: `${eip.publicIp.get()}`,
+        STATIC_IPS: `${publicIp}`,
       },
       true
     )
