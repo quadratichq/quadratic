@@ -35,7 +35,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
   }
 
   const typeDetails = JSON.parse(decryptFromEnv(connection.typeDetails.toString()));
-  const typeDetailsDesensitized = removeSensitiveInfoFromTypeDetails(connection.type, typeDetails);
+  // const typeDetailsDesensitized = removeSensitiveInfoFromTypeDetails(connection.type, typeDetails);
 
   return res.status(200).json({
     uuid: connection.uuid,
@@ -43,16 +43,16 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
     type: connection.type,
     createdDate: connection.createdDate.toISOString(),
     updatedDate: connection.updatedDate.toISOString(),
-    typeDetails: typeDetailsDesensitized,
+    typeDetails,
   });
 }
 
-function removeSensitiveInfoFromTypeDetails(type: string, typeDetails: Record<string, unknown>) {
-  if (type === 'POSTGRES' || type === 'MYSQL') {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...rest } = typeDetails;
-    return rest;
-  }
+// function removeSensitiveInfoFromTypeDetails(type: string, typeDetails: Record<string, unknown>) {
+//   if (type === 'POSTGRES' || type === 'MYSQL') {
+//     // eslint-disable-next-line @typescript-eslint/no-unused-vars
+//     const { password, ...rest } = typeDetails;
+//     return rest;
+//   }
 
-  throw new ApiError(500, 'Unknown connection type');
-}
+//   throw new ApiError(500, 'Unknown connection type');
+// }

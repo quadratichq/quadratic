@@ -23,11 +23,11 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
   const defaultValues: FormValues = {
     name: connection ? connection.name : '',
     type: 'MYSQL',
-    host: connection ? String(connection.typeDetails.host) : '',
-    port: connection ? String(connection.typeDetails.port) : '3306',
-    database: connection ? String(connection.typeDetails.database) : 'mysql',
-    username: connection ? String(connection.typeDetails.username) : 'root',
-    password: '',
+    host: String(connection?.typeDetails?.host || ''),
+    port: String(connection?.typeDetails?.port || '3306'),
+    database: String(connection?.typeDetails?.database || 'mysql'),
+    username: String(connection?.typeDetails?.username || 'root'),
+    password: String(connection?.typeDetails?.password || ''),
   };
 
   const form = useForm<FormValues>({

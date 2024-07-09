@@ -23,11 +23,11 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
   const defaultValues: FormValues = {
     name: connection ? connection.name : '',
     type: 'POSTGRES',
-    host: connection ? String(connection.typeDetails.host) : '',
-    port: connection ? String(connection.typeDetails.port) : '5432',
-    database: connection ? String(connection.typeDetails.database) : 'postgres',
-    username: connection ? String(connection.typeDetails.username) : 'postgres',
-    password: '',
+    host: String(connection?.typeDetails?.host || ''),
+    port: String(connection?.typeDetails?.port || '5432'),
+    database: String(connection?.typeDetails?.database || 'postgres'),
+    username: String(connection?.typeDetails?.username || 'postgres'),
+    password: String(connection?.typeDetails?.password || ''),
   };
 
   const form = useForm<FormValues>({
