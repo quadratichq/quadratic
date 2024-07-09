@@ -49,7 +49,7 @@ const instance = new aws.ec2.Instance("connection-instance", {
       "quadratic-connection-development",
       {
         QUADRATIC_API_URI: quadraticApiUri,
-        STATIC_IPS: `${eip.publicIp}`,
+        STATIC_IPS: `${eip.publicIp.get()}`,
       },
       true
     )
