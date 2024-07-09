@@ -2,6 +2,7 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { createTeam } from '../../tests/testDataGenerator';
+import { encryptFromEnv } from '../../utils/crypto';
 
 beforeAll(async () => {
   const userWithConnection = await dbClient.user.create({
@@ -22,19 +23,21 @@ beforeAll(async () => {
     users: [{ userId: userWithConnection.id, role: 'OWNER' }],
   });
 
+  const typeDetails = {
+    host: 'localhost',
+    port: '5432',
+    database: 'postgres',
+    username: 'root',
+    password: 'password',
+  };
+
   await dbClient.connection.create({
     data: {
       uuid: '00000000-0000-0000-0000-000000000000',
       name: 'First connection',
       teamId: team.id,
       type: 'POSTGRES',
-      typeDetails: JSON.stringify({
-        host: 'localhost',
-        port: '5432',
-        database: 'postgres',
-        username: 'root',
-        password: 'password',
-      }),
+      typeDetails: Buffer.from(encryptFromEnv(JSON.stringify(typeDetails))),
       // UserConnectionRole: {
       //   create: {
       //     userId: userWithConnection.id,

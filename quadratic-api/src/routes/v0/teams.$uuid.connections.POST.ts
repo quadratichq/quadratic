@@ -8,6 +8,7 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
+import { encryptFromEnv } from '../../utils/crypto';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -41,7 +42,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
       name,
       teamId,
       type,
-      typeDetails: JSON.stringify(typeDetails),
+      typeDetails: Buffer.from(encryptFromEnv(JSON.stringify(typeDetails))),
     },
   });
 
