@@ -526,8 +526,8 @@ export class CellLabel {
     if (this.number && this.textWidth > this.AABB.width && this.displayedText) {
       let digits: number | undefined = undefined;
       let text = this.text;
+      let infinityProtection = 0;
       do {
-        console.log('reduceDecimals', this.displayedText, text, this.number, digits);
         const result = reduceDecimals(this.displayedText, text, this.number, digits);
 
         // we cannot reduce decimals anymore, so we show pound characters
@@ -537,8 +537,7 @@ export class CellLabel {
         digits = result.currentFractionDigits - 1;
         text = result.number;
         this.updateText(labelMeshes, text);
-        console.log(digits, text, this.textWidth, this.AABB.width);
-      } while (this.textWidth > this.AABB.width && digits >= 0);
+      } while (this.textWidth > this.AABB.width && digits >= 0 && infinityProtection++ < 1000);
     }
 
     const bounds = new Bounds();
