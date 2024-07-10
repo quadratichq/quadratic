@@ -92,7 +92,8 @@ export const CodeEditor = () => {
 
     // we use the for keyboardCell so we know whether we can delete a cell with
     // the code editor open
-    pixiAppSettings.unsavedEditorChanges = unsaved;
+    pixiAppSettings.unsavedEditorChanges = unsaved ? editorContent : undefined;
+
     return unsaved;
   }, [codeString, editorContent]);
 
