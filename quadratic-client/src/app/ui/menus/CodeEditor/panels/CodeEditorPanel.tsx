@@ -1,9 +1,14 @@
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { PanelPositionBottomIcon, PanelPositionLeftIcon } from '@/app/ui/icons';
 import { CodeEditorPanelData, PanelPosition } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import { useRootRouteLoaderData } from '@/routes/_root';
+import { useFileRouteLoaderData } from '@/routes/file.$uuid';
 import { cn } from '@/shared/shadcn/utils';
 import { IconButton } from '@mui/material';
-import { memo, MouseEvent, useCallback } from 'react';
+import { MouseEvent, memo, useCallback } from 'react';
+import { useRecoilValue } from 'recoil';
 import { CodeEditorPanelBottom } from './CodeEditorPanelBottom';
 import { CodeEditorPanelSide } from './CodeEditorPanelSide';
 
@@ -12,6 +17,12 @@ interface Props {
 }
 
 export const CodeEditorPanel = memo((props: Props) => {
+  const { isAuthenticated } = useRootRouteLoaderData();
+  const {
+    userMakingRequest: { teamPermissions },
+  } = useFileRouteLoaderData();
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const isConnection = codeCellIsAConnection(editorInteractionState.mode);
   const { codeEditorPanelData } = props;
   const { panelPosition, setPanelPosition } = codeEditorPanelData;
 
@@ -22,6 +33,9 @@ export const CodeEditorPanel = memo((props: Props) => {
     },
     [setPanelPosition]
   );
+
+  const showDataBrowser = Boolean(isAuthenticated && isConnection && teamPermissions?.includes('TEAM_EDIT'));
+  const showAiAssistant = Boolean(isAuthenticated);
 
   return (
     <>
@@ -34,8 +48,20 @@ export const CodeEditorPanel = memo((props: Props) => {
         </TooltipHint>
       </div>
 
-      {panelPosition === 'left' && <CodeEditorPanelSide codeEditorPanelData={props.codeEditorPanelData} />}
-      {panelPosition === 'bottom' && <CodeEditorPanelBottom codeEditorPanelData={props.codeEditorPanelData} />}
+      {panelPosition === 'left' && (
+        <CodeEditorPanelSide
+          showDataBrowser={showDataBrowser}
+          showAiAssistant={showAiAssistant}
+          codeEditorPanelData={props.codeEditorPanelData}
+        />
+      )}
+      {panelPosition === 'bottom' && (
+        <CodeEditorPanelBottom
+          showDataBrowser={showDataBrowser}
+          showAiAssistant={showAiAssistant}
+          codeEditorPanelData={props.codeEditorPanelData}
+        />
+      )}
     </>
   );
 });

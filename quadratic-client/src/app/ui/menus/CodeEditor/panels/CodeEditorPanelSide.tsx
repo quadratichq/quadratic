@@ -6,7 +6,7 @@ import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { PanelBox, calculatePanelBoxMinimizedSize } from '@/app/ui/menus/CodeEditor/panels/PanelBox';
 import { useCodeEditorContainer } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorContainer';
 import { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
-import { useRootRouteLoaderData } from '@/routes/_root';
+import { useFileRouteLoaderData } from '@/routes/file.$uuid';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
@@ -14,17 +14,20 @@ import { ResizeControl } from './ResizeControl';
 
 interface Props {
   codeEditorPanelData: CodeEditorPanelData;
+  showDataBrowser: boolean;
+  showAiAssistant: boolean;
 }
 
-export function CodeEditorPanelSide(props: Props) {
-  const { isAuthenticated } = useRootRouteLoaderData();
+export function CodeEditorPanelSide({ showDataBrowser, showAiAssistant, codeEditorPanelData }: Props) {
+  const {
+    userMakingRequest: { teamPermissions },
+  } = useFileRouteLoaderData();
   const container = useCodeEditorContainer();
   const minimizedSize = useMemo(() => {
     const minimizedSize = calculatePanelBoxMinimizedSize();
     return minimizedSize;
   }, []);
 
-  const { codeEditorPanelData } = props;
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const isConnection = codeCellIsAConnection(editorInteractionState.mode);
 
@@ -126,7 +129,7 @@ export function CodeEditorPanelSide(props: Props) {
       >
         <Console />
       </PanelBox>
-      {isAuthenticated && (
+      {showAiAssistant && (
         <>
           <ResizeControl
             style={{ top: panels[0].height }}
@@ -145,24 +148,25 @@ export function CodeEditorPanelSide(props: Props) {
           </PanelBox>
         </>
       )}
-      {isAuthenticated && isConnection && panels.length === 3 && (
-        <ResizeControl
-          style={{ top: panels[0].height + panels[1].height }}
-          disabled={!panels[1].open && !panels[2]?.open}
-          position="HORIZONTAL"
-          setState={(e) => changeResizeBar(e, false)}
-        />
-      )}
-      {isAuthenticated && isConnection && (
-        <PanelBox
-          id="panel-2"
-          title="Data browser"
-          open={panels[2].open}
-          toggleOpen={panels[2].toggleOpen}
-          height={panels[2].height}
-        >
-          <SchemaViewer />
-        </PanelBox>
+      {/* panels.length === 3 */}
+      {showDataBrowser && (
+        <>
+          <ResizeControl
+            style={{ top: panels[0].height + panels[1].height }}
+            disabled={!panels[1].open && !panels[2]?.open}
+            position="HORIZONTAL"
+            setState={(e) => changeResizeBar(e, false)}
+          />
+          <PanelBox
+            id="panel-2"
+            title="Data browser"
+            open={panels[2].open}
+            toggleOpen={panels[2].toggleOpen}
+            height={panels[2].height}
+          >
+            <SchemaViewer />
+          </PanelBox>
+        </>
       )}
     </div>
   );

@@ -1,35 +1,32 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
 import { SchemaViewer } from '@/app/ui/components/SchemaViewer';
 import { AiAssistant } from '@/app/ui/menus/CodeEditor/AiAssistant';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
-import { useRootRouteLoaderData } from '@/routes/_root';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { cn } from '@/shared/shadcn/utils';
 import { ChevronRightIcon } from '@radix-ui/react-icons';
-import { useRecoilValue } from 'recoil';
 import { CodeEditorPanelData } from './useCodeEditorPanelData';
 
 export type PanelTab = 'console' | 'ai-assistant' | 'data-browser';
 
 interface Props {
   codeEditorPanelData: CodeEditorPanelData;
+  showDataBrowser: boolean;
+  showAiAssistant: boolean;
 }
 
-export function CodeEditorPanelBottom(props: Props) {
-  const { isAuthenticated } = useRootRouteLoaderData();
+export function CodeEditorPanelBottom({
+  codeEditorPanelData: { bottomHidden, setBottomHidden },
+  showDataBrowser,
+  showAiAssistant,
+}: Props) {
   const {
     consoleOutput: [consoleOutput],
     panelBottomActiveTab: [tab, setTab],
     spillError: [spillError],
   } = useCodeEditor();
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
-  const isConnection = codeCellIsAConnection(editorInteractionState.mode);
-
-  const { bottomHidden, setBottomHidden } = props.codeEditorPanelData;
 
   return (
     <Tabs
@@ -60,8 +57,8 @@ export function CodeEditorPanelBottom(props: Props) {
           >
             Console
           </TabsTrigger>
-          {isAuthenticated && <TabsTrigger value="ai-assistant">AI assistant</TabsTrigger>}
-          {isAuthenticated && isConnection && <TabsTrigger value="data-browser">Data browser</TabsTrigger>}
+          {showAiAssistant && <TabsTrigger value="ai-assistant">AI assistant</TabsTrigger>}
+          {showDataBrowser && <TabsTrigger value="data-browser">Data browser</TabsTrigger>}
         </TabsList>
       </div>
 
@@ -69,13 +66,13 @@ export function CodeEditorPanelBottom(props: Props) {
         {!bottomHidden && <Console />}
       </TabsContent>
 
-      {isAuthenticated && (
+      {showAiAssistant && (
         <TabsContent value="ai-assistant" className="m-0 block grow overflow-scroll">
           {!bottomHidden && <AiAssistant autoFocus={true} />}
         </TabsContent>
       )}
 
-      {isAuthenticated && isConnection && (
+      {showDataBrowser && (
         <TabsContent value="data-browser" className="m-0 block grow overflow-scroll">
           {/* TODO: (connections) permissions */}
           {!bottomHidden && <SchemaViewer bottom />}

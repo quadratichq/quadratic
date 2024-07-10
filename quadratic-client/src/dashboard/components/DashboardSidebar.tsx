@@ -51,7 +51,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         </Type>
         <div className="grid gap-0.5">
           <div className="relative">
-            <SidebarNavLink to={ROUTES.TEAM(activeTeamUuid)} dropTarget={canEditTeam ? null : undefined}>
+            <SidebarNavLink to={ROUTES.TEAM(activeTeamUuid)} dropTarget={null}>
               <FileIcon className={classNameIcons} />
               Files
             </SidebarNavLink>
@@ -80,15 +80,13 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         >
           Private
         </Type>
-        {canEditTeam && (
-          <div className="relative">
-            <SidebarNavLink to={ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)} dropTarget={ownerUserId}>
-              <FileIcon className={classNameIcons} />
-              Files
-            </SidebarNavLink>
-            <SidebarNavLinkCreateButton to={ROUTES.CREATE_FILE_PRIVATE(activeTeamUuid)} />
-          </div>
-        )}
+        <div className="relative">
+          <SidebarNavLink to={ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)} dropTarget={ownerUserId}>
+            <FileIcon className={classNameIcons} />
+            Files
+          </SidebarNavLink>
+          <SidebarNavLinkCreateButton to={ROUTES.CREATE_FILE_PRIVATE(activeTeamUuid)} />
+        </div>
         <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
           <Share2Icon className={classNameIcons} />
           Shared with me

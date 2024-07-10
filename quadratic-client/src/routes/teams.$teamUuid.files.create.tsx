@@ -64,7 +64,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     } = await apiClient.files.create({ teamUuid, isPrivate });
     return redirectDocument(ROUTES.FILE(uuid));
   } catch (error) {
-    return redirect(getFailUrl());
+    return redirect(getFailUrl(ROUTES.TEAM(teamUuid)));
   }
 };
 
