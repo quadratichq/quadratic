@@ -1,8 +1,10 @@
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
+import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { Connections } from '@/shared/components/connections/Connections';
-import { LoaderFunctionArgs, useLoaderData } from 'react-router-dom';
+import { ROUTES } from '@/shared/constants/routes';
+import { LoaderFunctionArgs, Navigate, useLoaderData } from 'react-router-dom';
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const { teamUuid } = params;
@@ -17,6 +19,15 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
 
 export const Component = () => {
   const { connections, teamUuid, staticIps } = useLoaderData() as Awaited<ReturnType<typeof loader>>;
+  const {
+    activeTeam: {
+      userMakingRequest: { teamPermissions },
+    },
+  } = useDashboardRouteLoaderData();
+
+  if (!teamPermissions?.includes('TEAM_EDIT')) {
+    return <Navigate to={ROUTES.TEAM(teamUuid)} />;
+  }
 
   return (
     <>

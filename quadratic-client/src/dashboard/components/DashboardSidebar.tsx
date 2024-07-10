@@ -51,16 +51,18 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         </Type>
         <div className="grid gap-0.5">
           <div className="relative">
-            <SidebarNavLink to={ROUTES.TEAM(activeTeamUuid)} dropTarget={null}>
+            <SidebarNavLink to={ROUTES.TEAM(activeTeamUuid)} dropTarget={canEditTeam ? null : undefined}>
               <FileIcon className={classNameIcons} />
               Files
             </SidebarNavLink>
             {canEditTeam && <SidebarNavLinkCreateButton to={ROUTES.CREATE_FILE(activeTeamUuid)} />}
           </div>
-          <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
-            <ConnectionsIcon className={classNameIcons} />
-            Connections
-          </SidebarNavLink>
+          {canEditTeam && (
+            <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
+              <ConnectionsIcon className={classNameIcons} />
+              Connections
+            </SidebarNavLink>
+          )}
           <SidebarNavLink to={ROUTES.TEAM_MEMBERS(activeTeamUuid)}>
             <PersonIcon className={classNameIcons} />
             Members
