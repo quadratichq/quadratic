@@ -67,18 +67,468 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    // CellFmtArray::Wrap(_)
-    // CellFmtArray::NumericFormat(_)
-    // CellFmtArray::NumericDecimals(_)
-    // CellFmtArray::NumericCommas(_)
-    // CellFmtArray::Bold(_)
-    // CellFmtArray::Italic(_)
+    use crate::{
+        controller::{
+            active_transactions::pending_transaction::PendingTransaction,
+            operations::operation::Operation, GridController,
+        },
+        grid::{
+            formats::{format_update::FormatUpdate, Formats},
+            js_types::JsRowHeight,
+            CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, NumericFormat,
+            NumericFormatKind, RenderSize, SheetId,
+        },
+        selection::Selection,
+        sheet_offsets::resize_transient::TransientResize,
+        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
+        CellValue, Pos, SheetPos,
+    };
 
-    // SetCellFormatsSelection
+    use serial_test::serial;
 
-    // SetCellValues
+    fn mock_auto_resize_row_heights(
+        gc: &mut GridController,
+        sheet_id: SheetId,
+        ops: Vec<Operation>,
+        row_heights: Vec<JsRowHeight>, // mock response from renderer
+    ) {
+        // manually set has_async to true, as this is disabled in test mode by default
+        let mut transaction = PendingTransaction {
+            has_async: true,
+            operations: ops.into(),
+            ..Default::default()
+        };
+        gc.start_transaction(&mut transaction);
+        // mock callback from renderer
+        let _ = gc.complete_auto_resize_row_heights(transaction.id, sheet_id, row_heights);
+    }
 
-    // ComputeCode
+    #[test]
+    #[serial]
+    fn test_auto_resize_row_heights_on_set_cell_value() {
+        clear_js_calls();
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos {
+            x: 0,
+            y: 0,
+            sheet_id,
+        };
+        let ops = gc.set_cell_value_operations(
+            sheet_pos,
+            "test_auto_resize_row_heights_on_set_cell_value".to_string(),
+        );
+        // mock response from renderer
+        let row_heights = vec![JsRowHeight {
+            row: 0,
+            height: 40f64,
+        }];
+        let row_heights_string = serde_json::to_string(&row_heights).unwrap();
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights);
 
-    // ResizeColumn
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(sheet_pos.into()),
+            Some(CellValue::Text(
+                "test_auto_resize_row_heights_on_set_cell_value".to_string()
+            ))
+        );
+        // should trigger auto resize row heights and request row heights from renderer
+        let transaction_id = gc.last_transaction().unwrap().id;
+        expect_js_call(
+            "jsRequestRowHeights",
+            format!("{},{},{}", transaction_id, sheet_id, "[0]"),
+            false,
+        );
+
+        // should resize row 0 to 40, as per mock response from renderer
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(0), 40f64);
+
+        // should send resized row heights to renderer and client
+        expect_js_call(
+            "jsResizeRowHeights",
+            format!("{},{}", sheet_id, row_heights_string),
+            true,
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_auto_resize_row_heights_on_set_cell_format() {
+        clear_js_calls();
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // should trigger auto resize row heights for wrap
+        let ops = vec![Operation::SetCellFormatsSelection {
+            selection: Selection::pos(0, 0, sheet_id),
+            formats: Formats::repeat(
+                FormatUpdate {
+                    wrap: Some(Some(CellWrap::Overflow)),
+                    ..FormatUpdate::default()
+                },
+                1,
+            ),
+        }];
+        let row_heights = vec![JsRowHeight {
+            row: 0,
+            height: 40f64,
+        }];
+        let row_heights_string = serde_json::to_string(&row_heights).unwrap();
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights);
+        let transaction_id = gc.last_transaction().unwrap().id;
+        expect_js_call(
+            "jsRequestRowHeights",
+            format!("{},{},{}", transaction_id, sheet_id, "[0]"),
+            false,
+        );
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(0), 40f64);
+        expect_js_call(
+            "jsResizeRowHeights",
+            format!("{},{}", sheet_id, row_heights_string),
+            true,
+        );
+
+        // should trigger auto resize row heights for numeric format
+        let ops = vec![Operation::SetCellFormatsSelection {
+            selection: Selection::pos(0, 1, sheet_id),
+            formats: Formats::repeat(
+                FormatUpdate {
+                    numeric_format: Some(Some(NumericFormat {
+                        kind: NumericFormatKind::Currency,
+                        symbol: None,
+                    })),
+                    ..FormatUpdate::default()
+                },
+                1,
+            ),
+        }];
+        let row_heights = vec![JsRowHeight {
+            row: 1,
+            height: 41f64,
+        }];
+        let row_heights_string = serde_json::to_string(&row_heights).unwrap();
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights);
+        let transaction_id = gc.last_transaction().unwrap().id;
+        expect_js_call(
+            "jsRequestRowHeights",
+            format!("{},{},{}", transaction_id, sheet_id, "[1]"),
+            false,
+        );
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(1), 41f64);
+        expect_js_call(
+            "jsResizeRowHeights",
+            format!("{},{}", sheet_id, row_heights_string),
+            true,
+        );
+
+        // should trigger auto resize row heights for numeric decimals
+        let ops = vec![Operation::SetCellFormatsSelection {
+            selection: Selection::pos(0, 2, sheet_id),
+            formats: Formats::repeat(
+                FormatUpdate {
+                    numeric_decimals: Some(Some(2)),
+                    ..FormatUpdate::default()
+                },
+                1,
+            ),
+        }];
+        let row_heights = vec![JsRowHeight {
+            row: 2,
+            height: 42f64,
+        }];
+        let row_heights_string = serde_json::to_string(&row_heights).unwrap();
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights);
+        let transaction_id = gc.last_transaction().unwrap().id;
+        expect_js_call(
+            "jsRequestRowHeights",
+            format!("{},{},{}", transaction_id, sheet_id, "[2]"),
+            false,
+        );
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(2), 42f64);
+        expect_js_call(
+            "jsResizeRowHeights",
+            format!("{},{}", sheet_id, row_heights_string),
+            true,
+        );
+
+        // should trigger auto resize row heights for numeric commas
+        let ops = vec![Operation::SetCellFormatsSelection {
+            selection: Selection::pos(0, 3, sheet_id),
+            formats: Formats::repeat(
+                FormatUpdate {
+                    numeric_commas: Some(Some(true)),
+                    ..FormatUpdate::default()
+                },
+                1,
+            ),
+        }];
+        let row_heights = vec![JsRowHeight {
+            row: 3,
+            height: 43f64,
+        }];
+        let row_heights_string = serde_json::to_string(&row_heights).unwrap();
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights);
+        let transaction_id = gc.last_transaction().unwrap().id;
+        expect_js_call(
+            "jsRequestRowHeights",
+            format!("{},{},{}", transaction_id, sheet_id, "[3]"),
+            false,
+        );
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(3), 43f64);
+        expect_js_call(
+            "jsResizeRowHeights",
+            format!("{},{}", sheet_id, row_heights_string),
+            true,
+        );
+
+        // should trigger auto resize row heights for bold
+        let ops = vec![Operation::SetCellFormatsSelection {
+            selection: Selection::pos(0, 4, sheet_id),
+            formats: Formats::repeat(
+                FormatUpdate {
+                    bold: Some(Some(true)),
+                    ..FormatUpdate::default()
+                },
+                1,
+            ),
+        }];
+        let row_heights = vec![JsRowHeight {
+            row: 4,
+            height: 44f64,
+        }];
+        let row_heights_string = serde_json::to_string(&row_heights).unwrap();
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights);
+        let transaction_id = gc.last_transaction().unwrap().id;
+        expect_js_call(
+            "jsRequestRowHeights",
+            format!("{},{},{}", transaction_id, sheet_id, "[4]"),
+            false,
+        );
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(4), 44f64);
+        expect_js_call(
+            "jsResizeRowHeights",
+            format!("{},{}", sheet_id, row_heights_string),
+            true,
+        );
+
+        // should trigger auto resize row heights for italic
+        let ops = vec![Operation::SetCellFormatsSelection {
+            selection: Selection::pos(0, 5, sheet_id),
+            formats: Formats::repeat(
+                FormatUpdate {
+                    italic: Some(Some(true)),
+                    ..FormatUpdate::default()
+                },
+                1,
+            ),
+        }];
+        let row_heights = vec![JsRowHeight {
+            row: 5,
+            height: 45f64,
+        }];
+        let row_heights_string = serde_json::to_string(&row_heights).unwrap();
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights);
+        let transaction_id = gc.last_transaction().unwrap().id;
+        expect_js_call(
+            "jsRequestRowHeights",
+            format!("{},{},{}", transaction_id, sheet_id, "[5]"),
+            false,
+        );
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(5), 45f64);
+        expect_js_call(
+            "jsResizeRowHeights",
+            format!("{},{}", sheet_id, row_heights_string),
+            true,
+        );
+
+        // should not trigger auto resize row heights for other formats
+        let ops = vec![Operation::SetCellFormatsSelection {
+            selection: Selection::pos(0, 0, sheet_id),
+            formats: Formats::repeat(
+                FormatUpdate {
+                    align: Some(Some(CellAlign::Center)),
+                    vertical_align: Some(Some(CellVerticalAlign::Middle)),
+                    text_color: Some(Some("red".to_string())),
+                    fill_color: Some(Some("blue".to_string())),
+                    render_size: Some(Some(RenderSize {
+                        w: "1".to_string(),
+                        h: "2".to_string(),
+                    })),
+                    ..FormatUpdate::default()
+                },
+                1,
+            ),
+        }];
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, vec![]);
+        expect_js_call_count("jsRequestRowHeights", 0, false);
+        expect_js_call_count("jsResizeRowHeights", 0, false);
+    }
+
+    #[test]
+    #[serial]
+    fn test_auto_resize_row_heights_on_compute_code() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos {
+            x: 0,
+            y: 0,
+            sheet_id,
+        };
+        gc.set_code_cell(
+            sheet_pos,
+            CodeCellLanguage::Formula,
+            "1+1".to_string(),
+            None,
+        );
+        clear_js_calls();
+
+        let ops = vec![Operation::ComputeCode { sheet_pos }];
+        let row_heights = vec![JsRowHeight {
+            row: 0,
+            height: 40f64,
+        }];
+        let row_heights_string = serde_json::to_string(&row_heights).unwrap();
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights);
+        let transaction_id = gc.last_transaction().unwrap().id;
+        expect_js_call(
+            "jsRequestRowHeights",
+            format!("{},{},{}", transaction_id, sheet_id, "[0]"),
+            false,
+        );
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(0), 40f64);
+        expect_js_call(
+            "jsResizeRowHeights",
+            format!("{},{}", sheet_id, row_heights_string),
+            true,
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_auto_resize_row_heights_on_offset_resize() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos {
+            x: 0,
+            y: 0,
+            sheet_id,
+        };
+        gc.set_cell_values(
+            sheet_pos,
+            vec![vec!["zero"], vec!["one"], vec!["two"], vec!["three"]],
+            None,
+        );
+
+        // set row 1 to Manually resized
+        gc.commit_offsets_resize(
+            sheet_id,
+            TransientResize {
+                row: Some(1),
+                column: None,
+                old_size: gc.sheet(sheet_id).offsets.row_height(1),
+                new_size: 40.0,
+            },
+            None,
+        );
+
+        clear_js_calls();
+
+        // resize column 0 should trigger auto resize row heights for rows 0, 2, 3
+        gc.commit_offsets_resize(
+            sheet_id,
+            TransientResize {
+                row: None,
+                column: Some(0),
+                old_size: gc.sheet(sheet_id).offsets.column_width(0),
+                new_size: 100.0,
+            },
+            None,
+        );
+        let transaction_id = gc.last_transaction().unwrap().id;
+        expect_js_call(
+            "jsRequestRowHeights",
+            format!("{},{},{}", transaction_id, sheet_id, "[0,2,3]"),
+            true,
+        );
+
+        // set row 1 to Auto resized
+        gc.commit_single_resize(sheet_id, None, Some(1), 25f64, None);
+        // resize column 0 should trigger auto resize row heights for rows 0, 1, 2, 3
+        gc.commit_offsets_resize(
+            sheet_id,
+            TransientResize {
+                row: None,
+                column: Some(0),
+                old_size: gc.sheet(sheet_id).offsets.column_width(0),
+                new_size: 100.0,
+            },
+            None,
+        );
+        let transaction_id = gc.last_transaction().unwrap().id;
+        expect_js_call(
+            "jsRequestRowHeights",
+            format!("{},{},{}", transaction_id, sheet_id, "[0,1,2,3]"),
+            true,
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_auto_resize_row_heights_on_user_transaction_only() {
+        clear_js_calls();
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos {
+            x: 0,
+            y: 0,
+            sheet_id,
+        };
+        let ops = gc.set_cell_value_operations(
+            sheet_pos,
+            "test_auto_resize_row_heights_on_user_transaction_only".to_string(),
+        );
+        // mock response from renderer
+        let row_heights = vec![JsRowHeight {
+            row: 0,
+            height: 40f64,
+        }];
+        let row_heights_string = serde_json::to_string(&row_heights).unwrap();
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops.clone(), row_heights);
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(sheet_pos.into()),
+            Some(CellValue::Text(
+                "test_auto_resize_row_heights_on_user_transaction_only".to_string()
+            ))
+        );
+        let transaction_id = gc.last_transaction().unwrap().id;
+        expect_js_call(
+            "jsRequestRowHeights",
+            format!("{},{},{}", transaction_id, sheet_id, "[0]"),
+            false,
+        );
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(0), 40f64);
+        expect_js_call(
+            "jsResizeRowHeights",
+            format!("{},{}", sheet_id, row_heights_string),
+            true,
+        );
+
+        // should not trigger auto resize row heights for undo / redo transaction
+        gc.undo(None);
+        gc.redo(None);
+        expect_js_call_count("jsRequestRowHeights", 0, false);
+
+        // should not trigger auto resize row heights for multiplayer transactions
+        let mut other_gc = GridController::test();
+        other_gc.grid_mut().sheets_mut()[0].id = sheet_id;
+        other_gc.received_transaction(transaction_id, 1, ops);
+        let sheet = other_gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Text(
+                "test_auto_resize_row_heights_on_user_transaction_only".to_string()
+            ))
+        );
+        expect_js_call_count("jsRequestRowHeights", 0, true);
+    }
 }
