@@ -1,11 +1,12 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { getCodeCell } from '@/app/helpers/codeCellLanguage';
+import { getConnectionKind, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { AI } from '@/app/ui/icons';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { useSchemaData } from '@/app/ui/menus/CodeEditor/useSchemaData';
 import { authClient } from '@/auth';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
@@ -37,37 +38,30 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
     editorContent: [editorContent],
   } = useCodeEditor();
   const { loggedInUser: user } = useRootRouteLoaderData();
-  const { mode } = useRecoilValue(editorInteractionStateAtom);
-  const cellType = getCodeCell(mode);
+  const { mode, selectedCell } = useRecoilValue(editorInteractionStateAtom);
 
-  // Type we pass to the AI for the cell, e.g. "javascript" or "connection::postgres"
-  let aiCellType = '';
-  if (cellType) {
-    if ('type' in cellType) aiCellType += `${cellType.type}::`;
-    aiCellType += cellType.label;
-  }
-  aiCellType += aiCellType.toLowerCase();
+  const { loadState, data } = useSchemaData();
+  const isLoadedConnection = getLanguage(mode) === 'Connection' && loadState.current === 'loaded';
 
-  // TODO: Improve these messages. Pass current location and more docs.
-  // store in a separate location for different cells
+  // TODO: This is only sent with the first message, we should refresh the content with each message.
   const systemMessages = [
     {
       role: 'system',
-      content:
-        'You are a helpful assistant inside of a spreadsheet application called Quadratic. The cell type is: ' +
-        aiCellType,
-    },
-    {
-      role: 'system',
-      content: `here are the docs: ${QuadraticDocs}`,
-    },
-    {
-      role: 'system',
-      content: 'Currently, you are in a cell that is being edited. The code in the cell is:' + editorContent,
-    },
-    {
-      role: 'system',
-      content: 'If the code was recently run here is the std error:' + (consoleOutput?.stdErr ?? ''),
+      content: `
+You are a helpful assistant inside of a spreadsheet application called Quadratic. 
+Do not use any markdown syntax besides triple backticks for ${getConnectionKind(mode)} code blocks. 
+Do not reply with plain text code blocks.
+The cell type is ${getConnectionKind(mode)}.
+The cell is located at ${selectedCell.x}, ${selectedCell.y}.
+${isLoadedConnection ? 'The schema for the database is:```json\n' + JSON.stringify(data) + '\n```' : ``}
+Currently, you are in a cell that is being edited. The code in the cell is:
+\`\`\`${getConnectionKind(mode)}
+${editorContent}\`\`\`
+If the code was recently run here is the result: 
+\`\`\`
+${JSON.stringify(consoleOutput)}\`\`\`
+This is the documentation for Quadratic: 
+${QuadraticDocs}`,
     },
   ] as AiMessage[];
 
@@ -192,7 +186,7 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
 
   // This component is designed to fill the entire height of its parent container
   return (
-    <div className="flex h-full flex-col justify-between">
+    <>
       <div
         ref={aiResponseRef}
         className="select-text overflow-y-auto whitespace-pre-wrap pb-2 pl-3 pr-4 text-sm outline-none"
@@ -317,6 +311,6 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
           )}
         </div>
       </form>
-    </div>
+    </>
   );
 };

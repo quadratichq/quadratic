@@ -1,9 +1,9 @@
-import { useRef, useState } from 'react';
 import Editor from '@monaco-editor/react';
-import { Box, IconButton, Stack, useTheme } from '@mui/material';
 import { ContentCopy } from '@mui/icons-material';
-import { TooltipHint } from './TooltipHint';
+import { Box, IconButton, Stack, useTheme } from '@mui/material';
+import { useRef, useState } from 'react';
 import { codeEditorBaseStyles } from '../menus/CodeEditor/styles';
+import { TooltipHint } from './TooltipHint';
 
 interface Props {
   code: string;
@@ -28,6 +28,13 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
   const handleEditorDidMount = (editor: any) => {
     editorRef.current = editor;
   };
+
+  let syntax = language;
+  if (syntax.toLowerCase() === 'postgres') {
+    syntax = 'sql';
+  } else if (syntax.toLowerCase() === 'mysql') {
+    syntax = 'sql';
+  }
 
   return (
     <Box style={codeEditorBaseStyles}>
@@ -63,7 +70,7 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
         }}
       >
         <Editor
-          language={language}
+          language={syntax}
           value={code}
           height="100%"
           width="100%"

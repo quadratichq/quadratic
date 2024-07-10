@@ -383,7 +383,7 @@ export const CodeEditor = () => {
       <div
         id="QuadraticCodeEditorID"
         className={cn(
-          'flex min-h-0 shrink flex-col',
+          'flex min-h-0 shrink select-none flex-col',
           codeEditorPanelData.panelPosition === 'left' ? 'order-2' : 'order-1'
         )}
         style={{

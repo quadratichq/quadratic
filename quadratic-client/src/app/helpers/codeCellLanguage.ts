@@ -72,3 +72,11 @@ export const getConnectionInfo = (language?: CodeCellLanguage): { id: string; ki
 
   return undefined;
 };
+
+export const getConnectionKind = (language?: CodeCellLanguage): string | undefined => {
+  if (typeof language === 'object' && language.Connection) {
+    return language.Connection.kind;
+  }
+
+  return undefined;
+};
