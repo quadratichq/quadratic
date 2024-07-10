@@ -11,16 +11,12 @@ export function keyboardClipboard(props: {
 
   // Command + Shift + C
   if (fullClipboardSupport() && (event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'c') {
-    event.preventDefault();
-    event.stopPropagation();
     copySelectionToPNG(addGlobalSnackbar);
     return true;
   }
 
   // Command + Shift + E
   if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'e') {
-    event.preventDefault();
-    event.stopPropagation();
     downloadSelectionAsCsvAction.run({ fileName });
     return true;
   }

@@ -26,11 +26,11 @@ function inCodeEditor(editorInteractionState: EditorInteractionState, cursor: Sh
   return false;
 }
 
-export async function keyboardCell(options: {
+export function keyboardCell(options: {
   event: React.KeyboardEvent<HTMLElement>;
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
-}): Promise<boolean> {
+}): boolean {
   const { event, editorInteractionState, setEditorInteractionState } = options;
 
   const sheet = sheets.sheet;
@@ -41,7 +41,6 @@ export async function keyboardCell(options: {
 
   if (event.key === 'Tab') {
     // move single cursor one right
-    event.preventDefault();
     const delta = event.shiftKey ? -1 : 1;
     cursor.changePosition({
       keyboardMovePosition: {
@@ -53,20 +52,23 @@ export async function keyboardCell(options: {
         y: cursorPosition.y,
       },
     });
+    return true;
   }
 
-  if (event.key === 'Enter') {
+  if (event.key === 'Enter' || event.key === 'F2') {
     if (!inlineEditorHandler.isEditingFormula()) {
-      event.preventDefault();
       const column = cursorPosition.x;
       const row = cursorPosition.y;
-      const code = await quadraticCore.getCodeCell(sheets.sheet.id, column, row);
-      if (code) {
-        doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
-      } else {
-        const cell = await quadraticCore.getEditCell(sheets.sheet.id, column, row);
-        doubleClickCell({ column, row, cell });
-      }
+      quadraticCore.getCodeCell(sheets.sheet.id, column, row).then((code) => {
+        if (code) {
+          doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
+        } else {
+          quadraticCore.getEditCell(sheets.sheet.id, column, row).then((cell) => {
+            doubleClickCell({ column, row, cell });
+          });
+        }
+      });
+      return true;
     }
   }
 
@@ -76,7 +78,6 @@ export async function keyboardCell(options: {
   }
 
   if (event.key === 'Backspace' || event.key === 'Delete') {
-    event.preventDefault();
     if (inCodeEditor(editorInteractionState, cursor)) {
       if (!pixiAppSettings.unsavedEditorChanges) {
         setEditorInteractionState((state) => ({
@@ -94,74 +95,76 @@ export async function keyboardCell(options: {
     }
     // delete a range or a single cell, depending on if MultiCursor is active
     quadraticCore.deleteCellValues(sheets.getRustSelection(), sheets.getCursorPosition());
+    return true;
   }
 
   if (event.key === '/') {
     const x = cursorPosition.x;
     const y = cursorPosition.y;
-    const cell = await quadraticCore.getRenderCell(sheets.sheet.id, x, y);
-    if (cell?.language) {
-      event.preventDefault();
-      if (editorInteractionState.showCodeEditor) {
-        // Open code editor, or move change editor if already open.
-        setEditorInteractionState({
-          ...editorInteractionState,
-          showCellTypeMenu: false,
-          waitingForEditorClose: {
+    quadraticCore.getRenderCell(sheets.sheet.id, x, y).then((cell) => {
+      if (cell?.language) {
+        if (editorInteractionState.showCodeEditor) {
+          // Open code editor, or move change editor if already open.
+          setEditorInteractionState({
+            ...editorInteractionState,
+            showCellTypeMenu: false,
+            waitingForEditorClose: {
+              selectedCell: { x: x, y: y },
+              selectedCellSheet: sheets.sheet.id,
+              mode: cell.language,
+              showCellTypeMenu: false,
+              initialCode: undefined,
+            },
+          });
+        } else {
+          setEditorInteractionState({
+            ...editorInteractionState,
+            showCellTypeMenu: false,
             selectedCell: { x: x, y: y },
             selectedCellSheet: sheets.sheet.id,
             mode: cell.language,
-            showCellTypeMenu: false,
+            showCodeEditor: true,
+            initialCode: undefined,
+          });
+        }
+      } else if (editorInteractionState.showCodeEditor) {
+        // code editor is already open, so check it for save before closing
+        setEditorInteractionState({
+          ...editorInteractionState,
+          waitingForEditorClose: {
+            showCellTypeMenu: true,
+            selectedCell: { x: x, y: y },
+            selectedCellSheet: sheets.sheet.id,
+            mode: 'Python',
             initialCode: undefined,
           },
         });
       } else {
+        // just open the code editor selection menu
         setEditorInteractionState({
           ...editorInteractionState,
-          showCellTypeMenu: false,
-          selectedCell: { x: x, y: y },
-          selectedCellSheet: sheets.sheet.id,
-          mode: cell.language,
-          showCodeEditor: true,
-          initialCode: undefined,
-        });
-      }
-    } else if (editorInteractionState.showCodeEditor) {
-      // code editor is already open, so check it for save before closing
-      setEditorInteractionState({
-        ...editorInteractionState,
-        waitingForEditorClose: {
           showCellTypeMenu: true,
           selectedCell: { x: x, y: y },
           selectedCellSheet: sheets.sheet.id,
-          mode: 'Python',
+          mode: undefined,
           initialCode: undefined,
-        },
-      });
-    } else {
-      // just open the code editor selection menu
-      setEditorInteractionState({
-        ...editorInteractionState,
-        showCellTypeMenu: true,
-        selectedCell: { x: x, y: y },
-        selectedCellSheet: sheets.sheet.id,
-        mode: undefined,
-        initialCode: undefined,
-      });
-    }
+        });
+      }
+    });
+    return true;
   }
 
   if (isAllowedFirstChar(event.key)) {
-    event.preventDefault();
     const cursorPosition = cursor.cursorPosition;
-    const code = await quadraticCore.getCodeCell(sheets.sheet.id, cursorPosition.x, cursorPosition.y);
-
-    // open code cell unless this is the actual code cell. In this case we can overwrite it
-    if (code && (Number(code.x) !== cursorPosition.x || Number(code.y) !== cursorPosition.y)) {
-      doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
-    } else {
-      pixiAppSettings.changeInput(true, event.key);
-    }
+    quadraticCore.getCodeCell(sheets.sheet.id, cursorPosition.x, cursorPosition.y).then((code) => {
+      // open code cell unless this is the actual code cell. In this case we can overwrite it
+      if (code && (Number(code.x) !== cursorPosition.x || Number(code.y) !== cursorPosition.y)) {
+        doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
+      } else {
+        pixiAppSettings.changeInput(true, event.key);
+      }
+    });
+    return true;
   }
 
   return false;

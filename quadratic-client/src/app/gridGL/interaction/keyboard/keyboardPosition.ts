@@ -354,19 +354,19 @@ async function moveCursor(event: KeyboardEvent, deltaX: number, deltaY: number) 
   }
 }
 
-export async function keyboardPosition(event: KeyboardEvent): Promise<boolean> {
+export function keyboardPosition(event: KeyboardEvent): boolean {
   switch (event.key) {
     case 'ArrowUp':
-      await moveCursor(event, 0, -1);
+      moveCursor(event, 0, -1);
       return true;
     case 'ArrowRight':
-      await moveCursor(event, 1, 0);
+      moveCursor(event, 1, 0);
       return true;
     case 'ArrowLeft':
-      await moveCursor(event, -1, 0);
+      moveCursor(event, -1, 0);
       return true;
     case 'ArrowDown':
-      await moveCursor(event, 0, 1);
+      moveCursor(event, 0, 1);
       return true;
     case 'Home':
       handleHomeKey(event);
