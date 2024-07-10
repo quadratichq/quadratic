@@ -3,6 +3,7 @@ import { editorSchemaStateAtom } from '@/app/atoms/editorSchemaStateAtom';
 import { getConnectionInfo } from '@/app/helpers/codeCellLanguage';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { SqlAdd } from '@/app/ui/icons';
+import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { Type } from '@/shared/components/Type';
 import { cn } from '@/shared/shadcn/utils';
@@ -107,22 +108,22 @@ function TableListItem({
   setExpandAll: any;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  // const { editorRef } = useCodeEditor();
+  const { editorRef } = useCodeEditor();
   const expanded = isExpanded || expandAll;
 
-  const onQuery = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+  const onQuery = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
 
-    // if (editorRef.current) {
-    //   const selection = editorRef.current.getSelection();
-    //   if (!selection) return;
-    //   const id = { major: 1, minor: 1 };
-    //   const text = `SELECT * FROM "${name}" LIMIT 100`;
-    //   const op = { identifier: id, range: selection, text: text, forceMoveMarkers: true };
-    //   editorRef.current.executeEdits('my-source', [op]);
-    //   editorRef.current.focus();
-    // }
-  }, []);
+    if (editorRef.current) {
+      const selection = editorRef.current.getSelection();
+      if (!selection) return;
+      const id = { major: 1, minor: 1 };
+      const text = `SELECT * FROM "${name}" LIMIT 100`;
+      const op = { identifier: id, range: selection, text: text, forceMoveMarkers: true };
+      editorRef.current.executeEdits('my-source', [op]);
+      editorRef.current.focus();
+    }
+  };
 
   return (
     <li>
@@ -136,18 +137,14 @@ function TableListItem({
           if (expandAll) setExpandAll(false);
         }}
       >
-        <div className="flex items-center">
+        <div className="flex items-center truncate">
           <div className="h-6 w-6">
             <KeyboardArrowRight
               fontSize="inherit"
               className={cn(expanded && 'rotate-90', 'text-xs text-muted-foreground')}
             />
           </div>
-          <div className="flex items-center">
-            {/* TODO: (connections) handle really long names */}
-            {name}
-            {/* <div className="ml-1 text-right text-xs text-muted-foreground">({columns.length})</div> */}
-          </div>
+          <div className="truncate">{name}</div>
         </div>
 
         <TooltipHint title="Query this table">
