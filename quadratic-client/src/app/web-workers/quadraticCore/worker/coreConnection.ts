@@ -91,7 +91,7 @@ class CoreConnection {
         const headers = response.headers;
         const isOverTheLimit = headers.get('over-the-limit') === 'true';
         std_out = isOverTheLimit ? 'Exceeded maximum allowed bytes, not all available records returned.' : '';
-        extra = `${headers.get('record-count')} records in ${headers.get('elapsed-total-ms')}ms`;
+        extra = ` in ${headers.get('elapsed-total-ms')}ms`;
       }
 
       // send the parquet bytes to core

@@ -84,7 +84,7 @@ export function ReturnTypeInspector({ evaluationResult, show, language }: Return
         <span className="rounded-md px-1 py-0.5" style={{ backgroundColor: theme.palette.grey[100] }}>
           {fullMessage[0]}
         </span>
-        ({fullMessage[1]})
+        {fullMessage[1]}.
       </>
     );
   } else {
