@@ -74,7 +74,6 @@ export function CodeEditorPanelBottom({
 
       {showDataBrowser && (
         <TabsContent value="data-browser" className="m-0 block grow overflow-scroll">
-          {/* TODO: (connections) permissions */}
           {!bottomHidden && <SchemaViewer bottom />}
         </TabsContent>
       )}
