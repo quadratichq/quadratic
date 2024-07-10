@@ -289,6 +289,18 @@ mod tests {
 
     #[test]
     #[parallel]
+    fn test_sum_with_tuples() {
+        let g = Grid::new();
+        assert_eq!("10", eval_to_string(&g, "SUM(({1, 2}, {3, 4}))"));
+        assert_eq!("21", eval_to_string(&g, "SUM(({1, 2}, {3; 4}, {5, 6}))"));
+
+        // Test nested tuples
+        assert_eq!("21", eval_to_string(&g, "SUM((({1, 2}, {3; 4}), {5, 6}))"));
+        assert_eq!("21", eval_to_string(&g, "SUM(({1, 2}, ({3; 4}, {5, 6})))"));
+    }
+
+    #[test]
+    #[parallel]
     fn test_sumif() {
         let g = Grid::new();
         assert_eq!("15", eval_to_string(&g, "SUMIF(0..10, \"<=5\")"));

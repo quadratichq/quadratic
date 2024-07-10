@@ -1,4 +1,4 @@
-use super::{CellValue, Value};
+use super::{Array, CellValue, Value};
 
 pub trait IsBlank {
     /// Returns whether the value is blank. The empty string is considered
@@ -27,7 +27,8 @@ impl IsBlank for Value {
     fn is_blank(&self) -> bool {
         match self {
             Value::Single(v) => v.is_blank(),
-            Value::Array(a) => a.cell_values_slice().iter().all(|v| v.is_blank()),
+            Value::Array(a) => a.is_blank(),
+            Value::Tuple(t) => t.is_blank(),
         }
     }
 }
@@ -35,5 +36,17 @@ impl IsBlank for Value {
 impl IsBlank for CellValue {
     fn is_blank(&self) -> bool {
         matches!(self, CellValue::Blank)
+    }
+}
+
+impl IsBlank for Array {
+    fn is_blank(&self) -> bool {
+        self.cell_values_slice().is_blank()
+    }
+}
+
+impl<T: IsBlank> IsBlank for [T] {
+    fn is_blank(&self) -> bool {
+        self.iter().all(|v| v.is_blank())
     }
 }

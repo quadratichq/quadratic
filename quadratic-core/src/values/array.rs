@@ -67,12 +67,11 @@ impl From<CellValue> for Array {
         }
     }
 }
-impl From<Value> for Array {
-    fn from(value: Value) -> Self {
-        match value {
-            Value::Single(value) => Array::from(value),
-            Value::Array(array) => array,
-        }
+impl TryFrom<Value> for Array {
+    type Error = RunErrorMsg;
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        value.into_array()
     }
 }
 

@@ -29,7 +29,7 @@ pub enum AstNodeContents {
         func: Spanned<String>,
         args: Vec<AstNode>,
     },
-    Paren(Box<AstNode>),
+    Paren(Vec<AstNode>),
     Array(Vec<Vec<AstNode>>),
     CellRef(CellRef),
     String(String),
@@ -51,7 +51,7 @@ impl fmt::Display for AstNodeContents {
                 write!(f, ")")?;
                 Ok(())
             }
-            AstNodeContents::Paren(contents) => write!(f, "({contents})"),
+            AstNodeContents::Paren(contents) => write!(f, "({})", contents.iter().join(", ")),
             AstNodeContents::Array(a) => write!(
                 f,
                 "{{{}}}",
@@ -74,7 +74,11 @@ impl AstNodeContents {
                 s if s.chars().all(|c| c.is_alphanumeric() || c == '_') => "function call",
                 _ => "expression",
             },
-            AstNodeContents::Paren(contents) => contents.inner.type_string(),
+            AstNodeContents::Paren(contents) => match contents.len() {
+                0 => "empty tuple", // shouldn't ever happen
+                1 => contents[0].inner.type_string(),
+                _ => "tuple",
+            },
             AstNodeContents::Array(_) => "array literal",
             AstNodeContents::CellRef(_) => "cell reference",
             AstNodeContents::String(_) => "string literal",
@@ -87,7 +91,7 @@ impl Spanned<AstNodeContents> {
     pub fn to_cell_ref(&self) -> CodeResult<CellRef> {
         match &self.inner {
             AstNodeContents::CellRef(cellref) => Ok(cellref.clone()),
-            AstNodeContents::Paren(contents) => contents.to_cell_ref(),
+            AstNodeContents::Paren(contents) if contents.len() == 1 => contents[0].to_cell_ref(),
             _ => Err(RunErrorMsg::Expected {
                 expected: "cell reference".into(),
                 got: Some(self.inner.type_string().into()),
@@ -115,7 +119,6 @@ impl AstNode {
         let value = match &self.inner {
             AstNodeContents::Empty => CellValue::Blank.into(),
 
-            // Cell range
             AstNodeContents::FunctionCall { func, args } if func.inner == ":" => {
                 if args.len() != 2 {
                     internal_error!("invalid arguments to cell range operator");
@@ -187,7 +190,21 @@ impl AstNode {
                 }
             }
 
-            AstNodeContents::Paren(expr) => expr.eval(ctx, only_parse)?.inner,
+            AstNodeContents::Paren(contents) => {
+                let mut expressions: Vec<Array> = contents
+                    .iter()
+                    .map(|expr| CodeResult::Ok(expr.eval(ctx, only_parse)?.inner.into_arrays()))
+                    .flatten_ok()
+                    .try_collect()?;
+                if expressions.len() == 1 {
+                    expressions
+                        .pop()
+                        .ok_or(RunErrorMsg::InternalError("empty parens".into()))?
+                        .into()
+                } else {
+                    Value::Tuple(expressions)
+                }
+            }
 
             AstNodeContents::Array(a) => {
                 let is_empty = a.iter().flatten().next().is_none();

@@ -456,9 +456,6 @@ macro_rules! formula_fn_convert_arg {
     (@convert $value:expr, Value -> Spanned< CellValue > $(>)?) => {
         $value.into_cell_value()?
     };
-    (@convert $value:expr, Value -> Spanned< Array > $(>)?) => {
-        $value.map(Array::from)
-    };
     (@convert $value:expr, Value -> Spanned< $arg_type:ty > $(>)?) => {
         $value.try_coerce::<$arg_type>()?
     };

@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use regex::Regex;
 use smallvec::smallvec;
 
@@ -890,7 +891,7 @@ mod tests {
                         let h_result = eval(&grid_hlookup, &h_formula);
                         let results = [&v_result, &h_result]
                             .into_iter()
-                            .flat_map(|a| a.cell_values_slice());
+                            .flat_map(|a| a.cell_values_slice().unwrap());
 
                         if if_not_found.is_blank() {
                             for v in results {
