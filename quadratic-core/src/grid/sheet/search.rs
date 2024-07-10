@@ -51,21 +51,19 @@ impl Sheet {
             CellValue::Number(n) => {
                 if n.to_string() == *query || (!whole_cell && n.to_string().contains(query)) {
                     true
+                } else if let Some(column) = column.map_or(self.get_column(pos.x), Some) {
+                    // compare the number using its display value (eg, $ or % or commas)
+                    let numeric_format = column.numeric_format.get(pos.y);
+                    let numeric_decimals = column.numeric_decimals.get(pos.y);
+                    let numeric_commas = column.numeric_commas.get(pos.y);
+                    let display = cell_value.to_number_display(
+                        numeric_format,
+                        numeric_decimals,
+                        numeric_commas,
+                    );
+                    display == *query || (!whole_cell && display.contains(query))
                 } else {
-                    if let Some(column) = column.map_or(self.get_column(pos.x), Some) {
-                        // compare the number using its display value (eg, $ or % or commas)
-                        let numeric_format = column.numeric_format.get(pos.y);
-                        let numeric_decimals = column.numeric_decimals.get(pos.y);
-                        let numeric_commas = column.numeric_commas.get(pos.y);
-                        let display = cell_value.to_number_display(
-                            numeric_format,
-                            numeric_decimals,
-                            numeric_commas,
-                        );
-                        display == *query || (!whole_cell && display.contains(query))
-                    } else {
-                        false
-                    }
+                    false
                 }
             }
             CellValue::Logical(b) => {
