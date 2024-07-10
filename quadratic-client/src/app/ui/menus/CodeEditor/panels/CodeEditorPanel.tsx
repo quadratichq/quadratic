@@ -40,9 +40,9 @@ export const CodeEditorPanel = memo((props: Props) => {
   return (
     <>
       {/* Panel position (left/bottom) control */}
-      <div className={cn('absolute z-10', panelPosition === 'bottom' ? 'right-1.5 top-1.5' : 'right-0.5 top-0.5')}>
+      <div className={cn('absolute z-10', panelPosition === 'bottom' ? 'right-1.5 top-2' : 'right-0.5 top-0.5')}>
         <TooltipHint title={panelPosition === 'bottom' ? 'Move panel left' : 'Move panel bottom'}>
-          <IconButton onClick={changePanelPosition}>
+          <IconButton onClick={changePanelPosition} size="small">
             {panelPosition === 'left' ? <PanelPositionBottomIcon /> : <PanelPositionLeftIcon />}
           </IconButton>
         </TooltipHint>
