@@ -6,6 +6,7 @@ use lazy_static::lazy_static;
 
 #[macro_use]
 mod macros;
+pub mod excel;
 mod logic;
 mod lookup;
 mod mathematics;
@@ -22,7 +23,11 @@ use crate::{
 };
 
 pub fn lookup_function(name: &str) -> Option<&'static FormulaFunction> {
-    ALL_FUNCTIONS.get(name.to_ascii_uppercase().as_str())
+    ALL_FUNCTIONS.get(
+        excel::remove_excel_function_prefix(name)
+            .to_ascii_uppercase()
+            .as_str(),
+    )
 }
 
 pub const CATEGORIES: &[FormulaFunctionCategory] = &[
