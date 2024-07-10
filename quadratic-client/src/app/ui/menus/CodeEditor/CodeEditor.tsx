@@ -62,7 +62,6 @@ export const CodeEditor = () => {
 
   const [cellsAccessed, setCellsAccessed] = useState<SheetRect[] | undefined | null>();
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
-
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
 
@@ -360,6 +359,7 @@ export const CodeEditor = () => {
   };
 
   const codeEditorPanelData = useCodeEditorPanelData();
+  const showReturnType = Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved);
 
   if (!showCodeEditor) {
     return null;
@@ -434,11 +434,11 @@ export const CodeEditor = () => {
           cellsAccessed={!unsaved ? cellsAccessed : []}
           cellLocation={cellLocation}
         />
-        {editorInteractionState.mode !== 'Formula' && (
+        {editorInteractionState.mode !== 'Formula' && showReturnType && (
           <ReturnTypeInspector
             language={editorInteractionState.mode}
             evaluationResult={evaluationResult}
-            show={Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved)}
+            show={showReturnType}
           />
         )}
       </div>
