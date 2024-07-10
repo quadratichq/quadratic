@@ -112,9 +112,10 @@ impl GridController {
         data: JsValue,
         std_out: Option<String>,
         std_err: Option<String>,
+        extra: Option<String>,
     ) -> Result<(), JsValue> {
         let data = Uint8Array::new(&data);
-        self.connection_complete(transaction_id, data.to_vec(), std_out, std_err)
+        self.connection_complete(transaction_id, data.to_vec(), std_out, std_err, extra)
             .map_err(|e| e.to_string())?;
 
         Ok(())
