@@ -22,10 +22,6 @@ export const useSchemaData = () => {
   const fetchData = useCallback(async () => {
     if (loadState.current === 'loading') return;
 
-    console.log('fetching data');
-    console.log('useSchemaData');
-    console.log('connection', connection.id);
-
     loadState.current = 'loading';
 
     const newSchemaData = await connectionClient.schemas.get(connection.kind.toLowerCase() as any, connection.id);
