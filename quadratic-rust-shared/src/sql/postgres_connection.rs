@@ -96,7 +96,8 @@ impl Connection for PostgresConnection {
             let mut bytes = 0;
             let mut stream = sqlx::query(sql).fetch(&mut pool);
 
-            while let Some(Ok(row)) = stream.next().await {
+            while let Some(row) = stream.next().await {
+                let row = row.map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
                 bytes += row.len() as u64;
 
                 if bytes > max_bytes {
