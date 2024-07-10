@@ -1,7 +1,7 @@
 use std::{fmt, str::FromStr};
 
 use anyhow::{bail, Result};
-use bigdecimal::{BigDecimal, Zero};
+use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
 use chrono::{TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -113,35 +113,35 @@ impl CellValue {
         }
     }
 
-    // fn add_commas(s: &str) -> String {
-    //     s.as_bytes()
-    //         .rchunks(3)
-    //         .rev()
-    //         .map(std::str::from_utf8)
-    //         .collect::<Result<Vec<&str>, _>>()
-    //         .unwrap()
-    //         .join(",")
-    // }
+    fn add_commas(s: &str) -> String {
+        s.as_bytes()
+            .rchunks(3)
+            .rev()
+            .map(std::str::from_utf8)
+            .collect::<Result<Vec<&str>, _>>()
+            .unwrap()
+            .join(",")
+    }
 
-    // /// converts a BigDecimal to a String w/commas
-    // fn with_commas(bd: BigDecimal) -> String {
-    //     let mut s = bd.to_string();
-    //     let negative = s.starts_with('-');
-    //     s = s.trim_start_matches('-').to_string();
-    //     let n = if s.contains('.') {
-    //         let mut parts = s.split('.');
-    //         let left = parts.next().unwrap();
-    //         let right = parts.next().unwrap();
-    //         format!("{}.{}", CellValue::add_commas(left), right)
-    //     } else {
-    //         CellValue::add_commas(&s)
-    //     };
-    //     if negative {
-    //         format!("-{}", n)
-    //     } else {
-    //         n
-    //     }
-    // }
+    /// converts a BigDecimal to a String w/commas
+    fn with_commas(bd: BigDecimal) -> String {
+        let mut s = bd.to_string();
+        let negative = s.starts_with('-');
+        s = s.trim_start_matches('-').to_string();
+        let n = if s.contains('.') {
+            let mut parts = s.split('.');
+            let left = parts.next().unwrap();
+            let right = parts.next().unwrap();
+            format!("{}.{}", CellValue::add_commas(left), right)
+        } else {
+            CellValue::add_commas(&s)
+        };
+        if negative {
+            format!("-{}", n)
+        } else {
+            n
+        }
+    }
 
     pub fn to_display(&self) -> String {
         match self {
@@ -149,65 +149,6 @@ impl CellValue {
             CellValue::Text(s) => s.to_string(),
             CellValue::Html(s) => s.to_string(),
             CellValue::Number(n) => n.to_string(),
-            // {
-            //     let numeric_format = numeric_format.unwrap_or_default();
-            //     let use_commas = numeric_commas.is_some_and(|c| c)
-            //         || (numeric_commas.is_none()
-            //             && numeric_format.kind == NumericFormatKind::Currency);
-            //     let result: BigDecimal = if numeric_format.kind == NumericFormatKind::Percentage {
-            //         n * 100
-            //     } else {
-            //         n.clone()
-            //     };
-            //     let mut number = if numeric_format.kind == NumericFormatKind::Exponential {
-            //         let num = result.to_f64().unwrap_or_default();
-            //         if let Some(decimals) = numeric_decimals {
-            //             format!("{:.precision$e}", num, precision = decimals as usize)
-            //         } else {
-            //             format!("{:.e}", num)
-            //         }
-            //     } else if let Some(decimals) = numeric_decimals {
-            //         let scaled =
-            //             result.with_scale_round(decimals as i64, bigdecimal::RoundingMode::HalfUp);
-            //         if use_commas {
-            //             CellValue::with_commas(scaled)
-            //         } else {
-            //             scaled.to_string()
-            //         }
-            //     } else if numeric_format.kind == NumericFormatKind::Percentage {
-            //         let s = result.to_string();
-            //         if s.contains('.') {
-            //             s.trim_end_matches('0').to_string()
-            //         } else {
-            //             s
-            //         }
-            //     } else if use_commas {
-            //         CellValue::with_commas(result)
-            //     } else {
-            //         result.to_string()
-            //     };
-            //     match numeric_format.kind {
-            //         NumericFormatKind::Currency => {
-            //             let mut currency = if n.is_negative() {
-            //                 number = number.trim_start_matches('-').to_string();
-            //                 String::from("-")
-            //             } else {
-            //                 String::new()
-            //             };
-            //             if let Some(symbol) = numeric_format.symbol.as_ref() {
-            //                 currency.push_str(&symbol.clone());
-            //             }
-            //             currency.push_str(&number);
-            //             currency
-            //         }
-            //         NumericFormatKind::Percentage => {
-            //             number.push('%');
-            //             number
-            //         }
-            //         NumericFormatKind::Number => number,
-            //         NumericFormatKind::Exponential => number,
-            //     }
-            // }
             CellValue::Logical(true) => "true".to_string(),
             CellValue::Logical(false) => "false".to_string(),
             CellValue::Instant(_) => todo!("repr of Instant"),
@@ -217,6 +158,76 @@ impl CellValue {
             // these should not render
             CellValue::Code(_) => String::new(),
             CellValue::Image(_) => String::new(),
+        }
+    }
+
+    pub fn to_number_display(
+        &self,
+        numeric_format: Option<NumericFormat>,
+        numeric_decimals: Option<i16>,
+        numeric_commas: Option<bool>,
+    ) -> String {
+        match self {
+            CellValue::Number(n) => {
+                let numeric_format = numeric_format.unwrap_or_default();
+                let use_commas = numeric_commas.is_some_and(|c| c)
+                    || (numeric_commas.is_none()
+                        && numeric_format.kind == NumericFormatKind::Currency);
+                let result: BigDecimal = if numeric_format.kind == NumericFormatKind::Percentage {
+                    n * 100
+                } else {
+                    n.clone()
+                };
+                let mut number = if numeric_format.kind == NumericFormatKind::Exponential {
+                    let num = result.to_f64().unwrap_or_default();
+                    if let Some(decimals) = numeric_decimals {
+                        format!("{:.precision$e}", num, precision = decimals as usize)
+                    } else {
+                        format!("{:.e}", num)
+                    }
+                } else if let Some(decimals) = numeric_decimals {
+                    let scaled =
+                        result.with_scale_round(decimals as i64, bigdecimal::RoundingMode::HalfUp);
+                    if use_commas {
+                        CellValue::with_commas(scaled)
+                    } else {
+                        scaled.to_string()
+                    }
+                } else if numeric_format.kind == NumericFormatKind::Percentage {
+                    let s = result.to_string();
+                    if s.contains('.') {
+                        s.trim_end_matches('0').to_string()
+                    } else {
+                        s
+                    }
+                } else if use_commas {
+                    CellValue::with_commas(result)
+                } else {
+                    result.to_string()
+                };
+                match numeric_format.kind {
+                    NumericFormatKind::Currency => {
+                        let mut currency = if n.is_negative() {
+                            number = number.trim_start_matches('-').to_string();
+                            String::from("-")
+                        } else {
+                            String::new()
+                        };
+                        if let Some(symbol) = numeric_format.symbol.as_ref() {
+                            currency.push_str(&symbol.clone());
+                        }
+                        currency.push_str(&number);
+                        currency
+                    }
+                    NumericFormatKind::Percentage => {
+                        number.push('%');
+                        number
+                    }
+                    NumericFormatKind::Number => number,
+                    NumericFormatKind::Exponential => number,
+                }
+            }
+            _ => String::new(),
         }
     }
 
@@ -544,11 +555,7 @@ impl CellValue {
 
 #[cfg(test)]
 mod test {
-    use std::str::FromStr;
-
-    use bigdecimal::BigDecimal;
-
-    use crate::{grid::Sheet, CellValue};
+    use super::*;
 
     #[test]
     fn test_cell_value_to_display_text() {
@@ -569,6 +576,132 @@ mod test {
 
         let cv = CellValue::Number(BigDecimal::from_str("123.0").unwrap());
         assert_eq!(cv.to_display(), String::from("123.0"));
+    }
+
+    #[test]
+    fn test_cell_value_to_display_currency() {
+        let cv = CellValue::Number(BigDecimal::from_str("123123.1233").unwrap());
+        assert_eq!(
+            cv.to_number_display(
+                Some(NumericFormat {
+                    kind: NumericFormatKind::Currency,
+                    symbol: Some(String::from("$")),
+                }),
+                Some(2),
+                None
+            ),
+            String::from("$123,123.12")
+        );
+        assert_eq!(
+            cv.to_number_display(
+                Some(NumericFormat {
+                    kind: NumericFormatKind::Currency,
+                    symbol: Some(String::from("$")),
+                }),
+                Some(2),
+                Some(false)
+            ),
+            String::from("$123123.12")
+        );
+        let cv = CellValue::Number(BigDecimal::from_str("-123123.1233").unwrap());
+        assert_eq!(
+            cv.to_number_display(
+                Some(NumericFormat {
+                    kind: NumericFormatKind::Currency,
+                    symbol: Some(String::from("$")),
+                }),
+                Some(2),
+                None
+            ),
+            String::from("-$123,123.12")
+        );
+        assert_eq!(
+            cv.to_number_display(
+                Some(NumericFormat {
+                    kind: NumericFormatKind::Currency,
+                    symbol: Some(String::from("$")),
+                }),
+                Some(2),
+                Some(true)
+            ),
+            String::from("-$123,123.12")
+        );
+        assert_eq!(
+            cv.to_number_display(
+                Some(NumericFormat {
+                    kind: NumericFormatKind::Currency,
+                    symbol: Some(String::from("$")),
+                }),
+                Some(2),
+                Some(false)
+            ),
+            String::from("-$123123.12")
+        );
+        let cv = CellValue::Number(BigDecimal::from_str("123.1255").unwrap());
+        assert_eq!(
+            cv.to_number_display(
+                Some(NumericFormat {
+                    kind: NumericFormatKind::Currency,
+                    symbol: Some(String::from("$")),
+                }),
+                Some(2),
+                None
+            ),
+            String::from("$123.13")
+        );
+        let cv = CellValue::Number(BigDecimal::from_str("123.0").unwrap());
+        assert_eq!(
+            cv.to_number_display(
+                Some(NumericFormat {
+                    kind: NumericFormatKind::Currency,
+                    symbol: Some(String::from("$")),
+                }),
+                Some(2),
+                None
+            ),
+            String::from("$123.00")
+        );
+    }
+
+    #[test]
+    fn test_cell_value_to_display_percentage() {
+        let cv = CellValue::Number(BigDecimal::from_str("0.015").unwrap());
+        assert_eq!(
+            cv.to_number_display(
+                Some(NumericFormat {
+                    kind: NumericFormatKind::Percentage,
+                    symbol: None,
+                }),
+                None,
+                None,
+            ),
+            String::from("1.5%")
+        );
+
+        let cv = CellValue::Number(BigDecimal::from_str("0.9912239").unwrap());
+        assert_eq!(
+            cv.to_number_display(
+                Some(NumericFormat {
+                    kind: NumericFormatKind::Percentage,
+                    symbol: None,
+                }),
+                Some(4),
+                Some(false),
+            ),
+            String::from("99.1224%")
+        );
+        let cv = CellValue::Number(BigDecimal::from_str("1231123123.9912239").unwrap());
+        assert_eq!(
+            cv.to_number_display(
+                Some(NumericFormat {
+                    kind: NumericFormatKind::Percentage,
+                    symbol: None,
+                }),
+                Some(4),
+                Some(true),
+            ),
+            String::from("123,112,312,399.1224%")
+        );
     }
 
     #[test]
