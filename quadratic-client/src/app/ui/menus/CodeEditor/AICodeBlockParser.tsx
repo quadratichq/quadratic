@@ -1,4 +1,3 @@
-import { Stack } from '@mui/material';
 import { CodeSnippet } from '../../components/CodeSnippet';
 
 // Regular expression to match code blocks
@@ -32,9 +31,5 @@ export function parseCodeBlocks(input: string): Array<string | JSX.Element> {
 }
 
 export function CodeBlockParser({ input }: { input: string }): JSX.Element {
-  return (
-    <Stack gap={2} className="select-text">
-      {parseCodeBlocks(input)}
-    </Stack>
-  );
+  return <div className="flex select-text flex-col gap-4 whitespace-normal">{parseCodeBlocks(input)}</div>;
 }

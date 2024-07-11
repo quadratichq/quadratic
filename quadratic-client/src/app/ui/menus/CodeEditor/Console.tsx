@@ -12,6 +12,7 @@ export function Console() {
   const { mode } = useRecoilValue(editorInteractionStateAtom);
   const hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
 
+  // Designed to live in a box that takes up the full height of its container
   return (
     <div
       contentEditable={hasOutput}
@@ -24,7 +25,7 @@ export function Console() {
           e.preventDefault();
         }
       }}
-      className="overflow-y-auto whitespace-pre-wrap pl-3 pr-4 outline-none"
+      className="h-full overflow-y-auto whitespace-pre-wrap pl-3 pr-4 outline-none"
       style={codeEditorBaseStyles}
       // Disable Grammarly
       data-gramm="false"

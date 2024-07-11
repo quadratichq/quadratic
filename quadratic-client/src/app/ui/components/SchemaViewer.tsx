@@ -65,8 +65,9 @@ export const SchemaViewer = (props: Props) => {
     }
   }, [fetchData, loadState]);
 
+  // Designed to live in a box that takes up the full height of its container
   return (
-    <>
+    <div className="h-full overflow-scroll text-sm">
       <div className={cn('absolute z-50', bottom ? 'right-12 top-2.5' : 'right-1 top-1')}>
         <TooltipHint title="Refresh schema">
           <IconButton size="small" onClick={fetchData}>
@@ -84,15 +85,13 @@ export const SchemaViewer = (props: Props) => {
         </Type>
       )}
       {data && (
-        <div className="overflow-scroll text-sm">
-          <ul>
-            {data.schema?.tables.map((table, i) => (
-              <TableListItem data={table} key={i} expandAll={expandAll} setExpandAll={setExpandAll} />
-            ))}
-          </ul>
-        </div>
+        <ul>
+          {data.schema?.tables.map((table, i) => (
+            <TableListItem data={table} key={i} expandAll={expandAll} setExpandAll={setExpandAll} />
+          ))}
+        </ul>
       )}
-    </>
+    </div>
   );
 };
 
@@ -157,21 +156,26 @@ function TableListItem({
       </div>
       {expanded && (
         <ul className="pl-5 pr-2">
-          {/* TODO: (connections) handle when there are 0 columns in a table */}
-          {columns.map(({ name, type, is_nullable }, k) => (
-            <li key={k} className="border border-l border-transparent border-l-border pl-3">
-              <div className="flex w-full items-center gap-1 py-0.5 pl-2">
-                <div className="truncate after:ml-1 after:text-muted-foreground after:opacity-30 after:content-['/']">
-                  {name}
-                </div>
+          {columns.length ? (
+            <div className="border border-l border-transparent border-l-border pl-3">
+              <Type className="font-mono text-sm italic text-muted-foreground">[No columns]</Type>
+            </div>
+          ) : (
+            columns.map(({ name, type, is_nullable }, k) => (
+              <li key={k} className="border border-l border-transparent border-l-border pl-3">
+                <div className="flex w-full items-center gap-1 py-0.5 pl-2">
+                  <div className="truncate after:ml-1 after:text-muted-foreground after:opacity-30 after:content-['/']">
+                    {name}
+                  </div>
 
-                <div className="flex items-center gap-1 font-mono text-sm text-muted-foreground">
-                  {type}
-                  {is_nullable && '?'}
+                  <div className="flex items-center gap-1 font-mono text-sm text-muted-foreground">
+                    {type}
+                    {is_nullable && '?'}
+                  </div>
                 </div>
-              </div>
-            </li>
-          ))}
+              </li>
+            ))
+          )}
         </ul>
       )}
     </li>

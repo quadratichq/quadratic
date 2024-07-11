@@ -184,12 +184,12 @@ ${QuadraticDocs}`,
 
   const displayMessages = messages.filter((message, index) => message.role !== 'system');
 
-  // This component is designed to fill the entire height of its parent container
+  // Designed to live in a box that takes up the full height of its container
   return (
-    <>
+    <div className="grid h-full grid-rows-[1fr_auto]">
       <div
         ref={aiResponseRef}
-        className="select-text overflow-y-auto whitespace-pre-wrap pb-2 pl-3 pr-4 text-sm outline-none"
+        className="select-text overflow-y-auto whitespace-pre-wrap pl-3 pr-4 text-sm outline-none"
         spellCheck={false}
         onKeyDown={(e) => {
           if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
@@ -203,7 +203,7 @@ ${QuadraticDocs}`,
         data-gramm_editor="false"
         data-enable-grammarly="false"
       >
-        <div id="ai-streaming-output">
+        <div id="ai-streaming-output" className="pb-2">
           {displayMessages.map((message, index) => (
             <div
               key={index}
@@ -248,7 +248,7 @@ ${QuadraticDocs}`,
         </div>
       </div>
       <form
-        className="z-10 flex gap-2 px-3 pb-2 pt-2"
+        className="z-10 flex gap-2 px-3 pb-2"
         onSubmit={(e) => {
           e.preventDefault();
         }}
@@ -311,6 +311,6 @@ ${QuadraticDocs}`,
           )}
         </div>
       </form>
-    </>
+    </div>
   );
 };

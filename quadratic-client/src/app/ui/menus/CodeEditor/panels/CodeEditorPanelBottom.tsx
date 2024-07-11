@@ -12,13 +12,13 @@ export type PanelTab = 'console' | 'ai-assistant' | 'data-browser';
 
 interface Props {
   codeEditorPanelData: CodeEditorPanelData;
-  showDataBrowser: boolean;
+  showSchemaViewer: boolean;
   showAiAssistant: boolean;
 }
 
 export function CodeEditorPanelBottom({
   codeEditorPanelData: { bottomHidden, setBottomHidden },
-  showDataBrowser,
+  showSchemaViewer,
   showAiAssistant,
 }: Props) {
   const {
@@ -57,23 +57,23 @@ export function CodeEditorPanelBottom({
           >
             Console
           </TabsTrigger>
-          {showAiAssistant && <TabsTrigger value="data-browser">Schema</TabsTrigger>}
-          {showDataBrowser && <TabsTrigger value="ai-assistant">AI Assistant</TabsTrigger>}
+          {showSchemaViewer && <TabsTrigger value="data-browser">Schema</TabsTrigger>}
+          {showAiAssistant && <TabsTrigger value="ai-assistant">AI Assistant</TabsTrigger>}
         </TabsList>
       </div>
 
-      <TabsContent value="console" className="m-0 block grow overflow-scroll">
+      <TabsContent value="console" className="m-0 block grow overflow-hidden">
         {!bottomHidden && <Console />}
       </TabsContent>
 
       {showAiAssistant && (
-        <TabsContent value="ai-assistant" className="m-0 block grow overflow-scroll">
+        <TabsContent value="ai-assistant" className="m-0 block grow overflow-hidden">
           {!bottomHidden && <AiAssistant autoFocus={true} />}
         </TabsContent>
       )}
 
-      {showDataBrowser && (
-        <TabsContent value="data-browser" className="m-0 block grow overflow-scroll">
+      {showSchemaViewer && (
+        <TabsContent value="data-browser" className="m-0 block grow overflow-hidden">
           {!bottomHidden && <SchemaViewer bottom />}
         </TabsContent>
       )}

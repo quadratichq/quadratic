@@ -14,11 +14,11 @@ import { ResizeControl } from './ResizeControl';
 
 interface Props {
   codeEditorPanelData: CodeEditorPanelData;
-  showDataBrowser: boolean;
+  showSchemaViewer: boolean;
   showAiAssistant: boolean;
 }
 
-export function CodeEditorPanelSide({ showDataBrowser, showAiAssistant, codeEditorPanelData }: Props) {
+export function CodeEditorPanelSide({ showSchemaViewer, showAiAssistant, codeEditorPanelData }: Props) {
   const {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
@@ -149,7 +149,7 @@ export function CodeEditorPanelSide({ showDataBrowser, showAiAssistant, codeEdit
         </>
       )}
       {/* panels.length === 3 */}
-      {showDataBrowser && (
+      {showSchemaViewer && (
         <>
           <ResizeControl
             style={{ top: panels[0].height + panels[1].height }}

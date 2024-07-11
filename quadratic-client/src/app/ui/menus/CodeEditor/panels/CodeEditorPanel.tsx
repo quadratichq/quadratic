@@ -34,7 +34,7 @@ export const CodeEditorPanel = memo((props: Props) => {
     [setPanelPosition]
   );
 
-  const showDataBrowser = Boolean(isAuthenticated && isConnection && teamPermissions?.includes('TEAM_EDIT'));
+  const showSchemaViewer = Boolean(isAuthenticated && isConnection && teamPermissions?.includes('TEAM_EDIT'));
   const showAiAssistant = Boolean(isAuthenticated);
 
   return (
@@ -50,14 +50,14 @@ export const CodeEditorPanel = memo((props: Props) => {
 
       {panelPosition === 'left' && (
         <CodeEditorPanelSide
-          showDataBrowser={showDataBrowser}
+          showSchemaViewer={showSchemaViewer}
           showAiAssistant={showAiAssistant}
           codeEditorPanelData={props.codeEditorPanelData}
         />
       )}
       {panelPosition === 'bottom' && (
         <CodeEditorPanelBottom
-          showDataBrowser={showDataBrowser}
+          showSchemaViewer={showSchemaViewer}
           showAiAssistant={showAiAssistant}
           codeEditorPanelData={props.codeEditorPanelData}
         />
