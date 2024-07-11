@@ -9,8 +9,8 @@ export const ROUTES = {
   FILE: (uuid: string) => `/file/${uuid}`,
 
   CREATE_FILE: (teamUuid: string) => `/teams/${teamUuid}/files/create`,
-  CREATE_FILE_EXAMPLE: (teamUuid: string, publicFileUrlInProduction: string) =>
-    `/teams/${teamUuid}/files/create?example=${publicFileUrlInProduction}`,
+  CREATE_FILE_EXAMPLE: (teamUuid: string, publicFileUrlInProduction: string, isPrivate: boolean) =>
+    `/teams/${teamUuid}/files/create?example=${publicFileUrlInProduction}${isPrivate ? '&private' : ''}`,
   CREATE_FILE_PRIVATE: (teamUuid: string) => `/teams/${teamUuid}/files/create?private`,
   TEAMS: `/teams`,
   TEAMS_CREATE: `/teams/create`,

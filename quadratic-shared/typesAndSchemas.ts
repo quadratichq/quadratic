@@ -256,6 +256,7 @@ export const ApiSchemas = {
    */
   '/v0/examples.POST.request': z.object({
     teamUuid: TeamSchema.shape.uuid,
+    isPrivate: z.boolean(),
     publicFileUrlInProduction: z
       .string()
       .url()
