@@ -136,7 +136,7 @@ export function CodeEditorPanelSide(props: Props) {
           />
           <PanelBox
             id="panel-1"
-            title="AI assistant"
+            title="AI Assistant"
             open={panels[1].open}
             toggleOpen={panels[1].toggleOpen}
             height={panels[1].height}
@@ -156,7 +156,7 @@ export function CodeEditorPanelSide(props: Props) {
       {isAuthenticated && isConnection && (
         <PanelBox
           id="panel-2"
-          title="Data browser"
+          title="Schema"
           open={panels[2].open}
           toggleOpen={panels[2].toggleOpen}
           height={panels[2].height}

@@ -236,7 +236,7 @@ ${QuadraticDocs}`,
                     fontSize: '0.8rem',
                     marginBottom: '0.5rem',
                   }}
-                  alt="AI assistant"
+                  alt="AI Assistant"
                 >
                   <AI sx={{ color: colors.languageAI }}></AI>
                 </Avatar>

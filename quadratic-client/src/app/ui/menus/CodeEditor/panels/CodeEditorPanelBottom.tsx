@@ -60,8 +60,8 @@ export function CodeEditorPanelBottom(props: Props) {
           >
             Console
           </TabsTrigger>
-          {isAuthenticated && <TabsTrigger value="ai-assistant">AI assistant</TabsTrigger>}
-          {isAuthenticated && isConnection && <TabsTrigger value="data-browser">Data browser</TabsTrigger>}
+          {isAuthenticated && isConnection && <TabsTrigger value="data-browser">Schema</TabsTrigger>}
+          {isAuthenticated && <TabsTrigger value="ai-assistant">AI Assistant</TabsTrigger>}
         </TabsList>
       </div>
 
