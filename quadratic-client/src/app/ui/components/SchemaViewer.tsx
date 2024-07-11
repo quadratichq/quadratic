@@ -3,6 +3,7 @@ import { editorSchemaStateAtom } from '@/app/atoms/editorSchemaStateAtom';
 import { getConnectionInfo } from '@/app/helpers/codeCellLanguage';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { SqlAdd } from '@/app/ui/icons';
+import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { Type } from '@/shared/components/Type';
 import { cn } from '@/shared/shadcn/utils';
@@ -66,14 +67,12 @@ export const SchemaViewer = (props: Props) => {
 
   return (
     <>
-      <div style={{ position: 'absolute', top: bottom ? '3rem' : 3, right: 8, zIndex: 100 }}>
-        <div>
-          <TooltipHint title="Refresh schema">
-            <IconButton size="small" onClick={fetchData}>
-              <Refresh fontSize="small" className={loadingAnimation ? 'animate-spin' : ''} />
-            </IconButton>
-          </TooltipHint>
-        </div>
+      <div className={cn('absolute z-50', bottom ? 'right-12 top-2.5' : 'right-1 top-1')}>
+        <TooltipHint title="Refresh schema">
+          <IconButton size="small" onClick={fetchData}>
+            <Refresh fontSize="small" className={loadingAnimation ? 'animate-spin' : ''} />
+          </IconButton>
+        </TooltipHint>
       </div>
       {loadState.current === 'error' && (
         <Type className="m-3 mt-0 text-destructive">
@@ -85,7 +84,7 @@ export const SchemaViewer = (props: Props) => {
         </Type>
       )}
       {data && (
-        <div className="overflow-scroll px-3 text-sm">
+        <div className="overflow-scroll text-sm">
           <ul>
             {data.schema?.tables.map((table, i) => (
               <TableListItem data={table} key={i} expandAll={expandAll} setExpandAll={setExpandAll} />
@@ -107,28 +106,28 @@ function TableListItem({
   setExpandAll: any;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  // const { editorRef } = useCodeEditor();
+  const { editorRef } = useCodeEditor();
   const expanded = isExpanded || expandAll;
 
-  const onQuery = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+  const onQuery = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
 
-    // if (editorRef.current) {
-    //   const selection = editorRef.current.getSelection();
-    //   if (!selection) return;
-    //   const id = { major: 1, minor: 1 };
-    //   const text = `SELECT * FROM "${name}" LIMIT 100`;
-    //   const op = { identifier: id, range: selection, text: text, forceMoveMarkers: true };
-    //   editorRef.current.executeEdits('my-source', [op]);
-    //   editorRef.current.focus();
-    // }
-  }, []);
+    if (editorRef.current) {
+      const selection = editorRef.current.getSelection();
+      if (!selection) return;
+      const id = { major: 1, minor: 1 };
+      const text = `SELECT * FROM "${name}" LIMIT 100`;
+      const op = { identifier: id, range: selection, text: text, forceMoveMarkers: true };
+      editorRef.current.executeEdits('my-source', [op]);
+      editorRef.current.focus();
+    }
+  };
 
   return (
     <li>
       <div
         className={cn(
-          'group/item sticky top-0 z-10 flex w-full cursor-default items-stretch justify-between gap-1 bg-background pr-1 hover:bg-accent',
+          'group/item sticky top-0 z-10 flex w-full cursor-default items-stretch justify-between gap-1 bg-background px-2 hover:bg-accent',
           expanded && 'bgz-accent'
         )}
         onClick={() => {
@@ -136,18 +135,14 @@ function TableListItem({
           if (expandAll) setExpandAll(false);
         }}
       >
-        <div className="flex items-center">
-          <div className="h-6 w-6">
+        <div className="flex items-center truncate">
+          <div className="flex h-6 w-6 items-center justify-center">
             <KeyboardArrowRight
               fontSize="inherit"
               className={cn(expanded && 'rotate-90', 'text-xs text-muted-foreground')}
             />
           </div>
-          <div className="flex items-center">
-            {/* TODO: (connections) handle really long names */}
-            {name}
-            {/* <div className="ml-1 text-right text-xs text-muted-foreground">({columns.length})</div> */}
-          </div>
+          <div className="truncate">{name}</div>
         </div>
 
         <TooltipHint title="Query this table">
@@ -161,7 +156,7 @@ function TableListItem({
         </TooltipHint>
       </div>
       {expanded && (
-        <ul className="pl-3 pr-2">
+        <ul className="pl-5 pr-2">
           {/* TODO: (connections) handle when there are 0 columns in a table */}
           {columns.map(({ name, type, is_nullable }, k) => (
             <li key={k} className="border border-l border-transparent border-l-border pl-3">

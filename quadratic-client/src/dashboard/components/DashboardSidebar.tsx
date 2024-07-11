@@ -57,10 +57,12 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             </SidebarNavLink>
             {canEditTeam && <SidebarNavLinkCreateButton to={ROUTES.CREATE_FILE(activeTeamUuid)} />}
           </div>
-          <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
-            <ConnectionsIcon className={classNameIcons} />
-            Connections
-          </SidebarNavLink>
+          {canEditTeam && (
+            <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
+              <ConnectionsIcon className={classNameIcons} />
+              Connections
+            </SidebarNavLink>
+          )}
           <SidebarNavLink to={ROUTES.TEAM_MEMBERS(activeTeamUuid)}>
             <PersonIcon className={classNameIcons} />
             Members
@@ -80,15 +82,13 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         >
           Private
         </Type>
-        {canEditTeam && (
-          <div className="relative">
-            <SidebarNavLink to={ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)} dropTarget={ownerUserId}>
-              <FileIcon className={classNameIcons} />
-              Files
-            </SidebarNavLink>
-            <SidebarNavLinkCreateButton to={ROUTES.CREATE_FILE_PRIVATE(activeTeamUuid)} />
-          </div>
-        )}
+        <div className="relative">
+          <SidebarNavLink to={ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)} dropTarget={ownerUserId}>
+            <FileIcon className={classNameIcons} />
+            Files
+          </SidebarNavLink>
+          <SidebarNavLinkCreateButton to={ROUTES.CREATE_FILE_PRIVATE(activeTeamUuid)} />
+        </div>
         <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
           <Share2Icon className={classNameIcons} />
           Shared with me
