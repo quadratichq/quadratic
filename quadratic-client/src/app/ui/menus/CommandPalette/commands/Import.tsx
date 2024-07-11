@@ -9,7 +9,7 @@ const commands: CommandGroup = {
   heading: 'Import',
   commands: [
     {
-      label: 'CSV',
+      label: 'From CSV',
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props: CommandPaletteListItemDynamicProps) => {
         const { addGlobalSnackbar } = useGlobalSnackbar();
@@ -24,7 +24,7 @@ const commands: CommandGroup = {
       },
     },
     {
-      label: 'Parquet',
+      label: 'From Parquet',
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props: CommandPaletteListItemDynamicProps) => {
         const { addGlobalSnackbar } = useGlobalSnackbar();
@@ -39,7 +39,23 @@ const commands: CommandGroup = {
       },
     },
     {
-      label: 'Connections',
+      label: 'From connection',
+      isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
+      Component: (props: CommandPaletteListItemDynamicProps) => {
+        const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+
+        return (
+          <CommandPaletteListItem
+            {...props}
+            action={() => {
+              setEditorInteractionState((prev) => ({ ...prev, showCellTypeMenu: true }));
+            }}
+          />
+        );
+      },
+    },
+    {
+      label: 'Manage connections',
       isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
       Component: (props: CommandPaletteListItemDynamicProps) => {
         const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);

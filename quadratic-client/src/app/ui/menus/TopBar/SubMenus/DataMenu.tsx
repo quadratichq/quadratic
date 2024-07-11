@@ -42,15 +42,30 @@ export const DataMenu = () => {
             addGlobalSnackbar(CSV_IMPORT_MESSAGE);
           }}
         >
-          <MenuLineItem primary="Import CSV" />
+          <MenuLineItem primary="Import from CSV" />
         </MenuItem>
         <MenuItem
           onClick={() => {
             addGlobalSnackbar(PARQUET_IMPORT_MESSAGE);
           }}
         >
-          <MenuLineItem primary="Import Parquet" />
+          <MenuLineItem primary="Import from Parquet" />
         </MenuItem>
+        <MenuItem
+          onClick={() => {
+            setEditorInteractionState((prev) => ({ ...prev, showCellTypeMenu: true }));
+          }}
+        >
+          <MenuLineItem primary="Import from connection" />
+        </MenuItem>
+        {showManageConnections && (
+          <>
+            <MenuDivider />
+            <MenuItem onClick={() => setEditorInteractionState((prev) => ({ ...prev, showConnectionsMenu: true }))}>
+              <MenuLineItem primary="Manage connections" />
+            </MenuItem>
+          </>
+        )}
         <MenuDivider />
         <MenuItem
           onClick={() => {
@@ -62,14 +77,6 @@ export const DataMenu = () => {
             secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'E'}
           />
         </MenuItem>
-        {showManageConnections && (
-          <>
-            <MenuDivider />
-            <MenuItem onClick={() => setEditorInteractionState((prev) => ({ ...prev, showConnectionsMenu: true }))}>
-              <MenuLineItem primary="Manage connections" />
-            </MenuItem>
-          </>
-        )}
       </Menu>
     </>
   );
