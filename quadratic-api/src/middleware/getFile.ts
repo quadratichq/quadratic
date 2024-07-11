@@ -55,7 +55,7 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
   // Only define the relationship if they're logged in
   if (userId !== undefined) {
     if (file.ownerUserId === userId) {
-      userFileRelationship = { context: 'private-to-me' };
+      userFileRelationship = { context: 'private-to-me', teamRole };
     } else if (file.ownerUserId) {
       userFileRelationship = { context: 'private-to-someone-else', fileRole };
     } else {

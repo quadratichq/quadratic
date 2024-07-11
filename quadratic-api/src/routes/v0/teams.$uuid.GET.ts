@@ -163,6 +163,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
             publicLinkAccess: file.publicLinkAccess,
             userFileRelationship: {
               context: 'private-to-me',
+              teamRole: userMakingRequest.role,
             },
           }),
         },

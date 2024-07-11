@@ -71,9 +71,21 @@ describe('getFilePermissions', () => {
     // --------------
 
     // File in a team, but it's private to the current user
-    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { context: 'private-to-me' } }, 'VEMD'],
-    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { context: 'private-to-me' } }, 'VEMD'],
-    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { context: 'private-to-me' } }, 'VEMD'],
+    // TODO this will require the team to know whether you can move it or not
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { context: 'private-to-me', teamRole: 'OWNER' } }, 'VEMD'],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { context: 'private-to-me', teamRole: 'OWNER' } }, 'VEMD'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { context: 'private-to-me', teamRole: 'OWNER' } }, 'VEMD'],
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { context: 'private-to-me', teamRole: 'EDITOR' } }, 'VEMD'],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { context: 'private-to-me', teamRole: 'EDITOR' } }, 'VEMD'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { context: 'private-to-me', teamRole: 'EDITOR' } }, 'VEMD'],
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { context: 'private-to-me', teamRole: 'VIEWER' } }, 'VED'],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { context: 'private-to-me', teamRole: 'VIEWER' } }, 'VED'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { context: 'private-to-me', teamRole: 'VIEWER' } }, 'VED'],
+    // This should never happen, but if it does, we should default to the lowest access
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { context: 'private-to-me', teamRole: undefined } }, ''],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { context: 'private-to-me', teamRole: undefined } }, 'V'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { context: 'private-to-me', teamRole: undefined } }, 'VE'],
+    
 
     // File in a team, but it's private to someone other than the current user
     [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { context: 'private-to-someone-else', fileRole: undefined } }, ''],
