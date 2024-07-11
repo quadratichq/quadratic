@@ -20,7 +20,7 @@ export function ReturnTypeInspector({ evaluationResult, show, language }: Return
     if (show) {
       message = (
         <>
-          Line {evaluationResult?.line_number} returned a{' '}
+          Line {evaluationResult?.line_number} returned{' '}
           <span className="rounded-md px-1 py-0.5" style={{ backgroundColor: theme.palette.grey[100] }}>
             {evaluationResult?.output_type}
           </span>
