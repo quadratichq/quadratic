@@ -68,7 +68,7 @@ export const SchemaViewer = (props: Props) => {
   // Designed to live in a box that takes up the full height of its container
   return (
     <div className="h-full overflow-scroll text-sm">
-      <div className={cn('absolute z-50', bottom ? 'right-12 top-2.5' : 'right-1 top-1')}>
+      <div className={cn('absolute z-50', bottom ? 'right-12 top-1.5' : 'right-1 top-1')}>
         <TooltipHint title="Refresh schema">
           <IconButton size="small" onClick={fetchData}>
             <Refresh fontSize="small" className={loadingAnimation ? 'animate-spin' : ''} />

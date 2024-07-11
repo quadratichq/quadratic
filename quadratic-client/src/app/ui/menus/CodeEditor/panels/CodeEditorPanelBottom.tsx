@@ -36,7 +36,7 @@ export function CodeEditorPanelBottom({
       }}
       className={'grid h-full grid-rows-[auto_1fr]'}
     >
-      <div className={'flex items-center px-2 pb-2 pt-2'}>
+      <div className={'flex items-center px-2 pt-0.5'}>
         <Button variant={'link'} onClick={() => setBottomHidden(!bottomHidden)} className="mr-2 p-0">
           <ChevronRightIcon
             className={cn(
@@ -49,9 +49,9 @@ export function CodeEditorPanelBottom({
           <TabsTrigger
             value="console"
             className={cn(
-              `relative font-medium after:absolute after:right-1 after:top-1`,
+              `relative font-medium after:absolute after:right-1 after:top-4`,
               // Special indicators when the console isn't active and there's output
-              tab !== 'console' && hasOutput && `after:h-[5px] after:w-[5px] after:rounded-full after:content-['']`,
+              tab !== 'console' && hasOutput && `after:h-[4px] after:w-[4px] after:rounded-full after:content-['']`,
               tab !== 'console' && consoleOutput?.stdErr ? 'after:bg-destructive' : 'after:bg-muted-foreground'
             )}
           >
