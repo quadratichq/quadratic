@@ -1,16 +1,16 @@
 import { sheets } from '@/app/grid/controller/Sheets.js';
+import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCells';
 
 export function keyboardSelect(event: React.KeyboardEvent<HTMLElement>): boolean {
-  const key = event.key.toLowerCase();
-  // Command + A -> Select all cells
-  if ((event.metaKey || event.ctrlKey) && (key === 'a' || (event.shiftKey && key === ' '))) {
+  // Select all
+  if (matchShortcut('select_all', event)) {
     selectAllCells();
     return true;
   }
 
-  // Command + Space -> Select column
-  if ((event.metaKey || event.ctrlKey) && key === ' ') {
+  // Select column
+  if (matchShortcut('select_column', event)) {
     const cursor = sheets.sheet.cursor;
     if (cursor.columnRow?.all || cursor.columnRow?.rows?.length) {
       selectAllCells();
@@ -27,8 +27,8 @@ export function keyboardSelect(event: React.KeyboardEvent<HTMLElement>): boolean
     return true;
   }
 
-  // Shift + Space -> Select row
-  if (event.shiftKey && key === ' ') {
+  // Select row
+  if (matchShortcut('select_row', event)) {
     const cursor = sheets.sheet.cursor;
     if (cursor.columnRow?.all || cursor.columnRow?.columns?.length) {
       selectAllCells();

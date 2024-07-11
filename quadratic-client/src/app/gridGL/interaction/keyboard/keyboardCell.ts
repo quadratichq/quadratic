@@ -1,5 +1,6 @@
 import { SheetCursor } from '@/app/grid/sheet/SheetCursor';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { hasPermissionToEditFile } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
@@ -32,30 +33,43 @@ export function keyboardCell(options: {
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
 }): boolean {
   const { event, editorInteractionState, setEditorInteractionState } = options;
-
   const sheet = sheets.sheet;
   const cursor = sheet.cursor;
   const cursorPosition = cursor.cursorPosition;
-
   const hasPermission = hasPermissionToEditFile(editorInteractionState.permissions);
 
-  if (event.key === 'Tab') {
-    // move single cursor one right
-    const delta = event.shiftKey ? -1 : 1;
+  // Move cursor right, don't clear selection
+  if (matchShortcut('move_cursor_right_with_selection', event)) {
     cursor.changePosition({
       keyboardMovePosition: {
-        x: cursorPosition.x + delta,
+        x: cursorPosition.x + 1,
         y: cursorPosition.y,
       },
       cursorPosition: {
-        x: cursorPosition.x + delta,
+        x: cursorPosition.x + 1,
         y: cursorPosition.y,
       },
     });
     return true;
   }
 
-  if (event.key === 'Enter' || event.key === 'F2') {
+  // Move cursor left, don't clear selection
+  if (matchShortcut('move_cursor_left_with_selection', event)) {
+    cursor.changePosition({
+      keyboardMovePosition: {
+        x: cursorPosition.x - 1,
+        y: cursorPosition.y,
+      },
+      cursorPosition: {
+        x: cursorPosition.x - 1,
+        y: cursorPosition.y,
+      },
+    });
+    return true;
+  }
+
+  // Edit cell
+  if (matchShortcut('edit_cell', event)) {
     if (!inlineEditorHandler.isEditingFormula()) {
       const column = cursorPosition.x;
       const row = cursorPosition.y;
@@ -77,7 +91,8 @@ export function keyboardCell(options: {
     return false;
   }
 
-  if (event.key === 'Backspace' || event.key === 'Delete') {
+  // Delete cell
+  if (matchShortcut('delete_cell', event)) {
     if (inCodeEditor(editorInteractionState, cursor)) {
       if (!pixiAppSettings.unsavedEditorChanges) {
         setEditorInteractionState((state) => ({
@@ -98,7 +113,8 @@ export function keyboardCell(options: {
     return true;
   }
 
-  if (event.key === '/') {
+  // Show code editor
+  if (matchShortcut('show_code_editor', event)) {
     const x = cursorPosition.x;
     const y = cursorPosition.y;
     quadraticCore.getRenderCell(sheets.sheet.id, x, y).then((cell) => {

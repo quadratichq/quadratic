@@ -1,4 +1,5 @@
 import { sheets } from '@/app/grid/controller/Sheets.js';
+import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker.js';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore.js';
 import { hasPermissionToEditFile } from '../../../actions';
@@ -18,31 +19,8 @@ export function keyboardViewport(options: {
   const { event, editorInteractionState, setEditorInteractionState, presentationMode, setPresentationMode } = options;
   const { pointer } = pixiApp;
 
-  if (
-    ((event.metaKey || event.ctrlKey) && (event.shiftKey || event.altKey) && event.key === 'PageUp') ||
-    (event.altKey && (event.key === 'ArrowUp' || event.key === 'ArrowRight'))
-  ) {
-    if (sheets.size > 1) {
-      const nextSheet = sheets.getNext(sheets.sheet.order) ?? sheets.getFirst();
-      sheets.current = nextSheet.id;
-    }
-    return true;
-  }
-
-  if (
-    ((event.metaKey || event.ctrlKey) && (event.shiftKey || event.altKey) && event.key === 'PageDown') ||
-    (event.altKey && (event.key === 'ArrowDown' || event.key === 'ArrowLeft'))
-  ) {
-    if (sheets.size > 1) {
-      const previousSheet = sheets.getPrevious(sheets.sheet.order) ?? sheets.getLast();
-      sheets.current = previousSheet.id;
-    }
-    return true;
-  }
-
-  if (event.altKey) return false;
-
-  if ((event.metaKey || event.ctrlKey) && (event.key === 'p' || event.key === 'k' || event.key === '/')) {
+  // Show command palette
+  if (matchShortcut('show_command_palette', event)) {
     setEditorInteractionState({
       ...editorInteractionState,
       showFeedbackMenu: false,
@@ -54,12 +32,14 @@ export function keyboardViewport(options: {
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.key === '.') {
+  // Toggle presentation mode
+  if (matchShortcut('toggle_presentation_mode', event)) {
     setPresentationMode(!presentationMode);
     return true;
   }
 
-  if (!(event.metaKey || event.ctrlKey) && event.key === 'Escape') {
+  // Close overlay
+  if (matchShortcut('close_overlay', event)) {
     if (presentationMode) {
       setPresentationMode(false);
       return true;
@@ -73,7 +53,8 @@ export function keyboardViewport(options: {
     return pointer.handleEscape();
   }
 
-  if ((event.metaKey || event.ctrlKey) && (event.key === 'g' || event.key === 'j')) {
+  // Show go to menu
+  if (matchShortcut('show_go_to_menu', event)) {
     setEditorInteractionState({
       ...editorInteractionState,
       showFeedbackMenu: false,
@@ -84,33 +65,57 @@ export function keyboardViewport(options: {
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.key === '=') {
+  // Zoom in
+  if (matchShortcut('zoom_in', event)) {
     zoomIn();
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.key === '-') {
+  // Zoom out
+  if (matchShortcut('zoom_out', event)) {
     zoomOut();
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.key === '8') {
+  // Zoom to selection
+  if (matchShortcut('zoom_to_selection', event)) {
     zoomToSelection();
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.key === '9') {
+  // Zoom to fit
+  if (matchShortcut('zoom_to_fit', event)) {
     zoomToFit();
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.key === '0') {
+  // Zoom to 100%
+  if (matchShortcut('zoom_to_100', event)) {
     zoomTo100();
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.key === 's') {
+  // Save
+  if (matchShortcut('save', event)) {
     // don't do anything on Command+S
+    return true;
+  }
+
+  // Switch to next sheet
+  if (matchShortcut('switch_sheet_next', event)) {
+    if (sheets.size > 1) {
+      const nextSheet = sheets.getNext(sheets.sheet.order) ?? sheets.getFirst();
+      sheets.current = nextSheet.id;
+    }
+    return true;
+  }
+
+  // Switch to previous sheet
+  if (matchShortcut('switch_sheet_previous', event)) {
+    if (sheets.size > 1) {
+      const previousSheet = sheets.getPrevious(sheets.sheet.order) ?? sheets.getLast();
+      sheets.current = previousSheet.id;
+    }
     return true;
   }
 
@@ -119,22 +124,26 @@ export function keyboardViewport(options: {
     return false;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.key === '\\') {
+  // Clear formatting and borders
+  if (matchShortcut('clear_formatting_borders', event)) {
     clearFormattingAndBorders();
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
+  // Toggle bold
+  if (matchShortcut('toggle_bold', event)) {
     setBold();
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
+  // Toggle italic
+  if (matchShortcut('toggle_italic', event)) {
     setItalic();
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.key === 'r') {
+  // Fill right
+  if (matchShortcut('fill_right', event)) {
     const cursor = sheets.sheet.cursor;
     if (cursor.columnRow?.all || cursor.columnRow?.rows) return true;
     if (cursor.columnRow?.columns && cursor.multiCursor) return true;
@@ -187,7 +196,8 @@ export function keyboardViewport(options: {
     return true;
   }
 
-  if ((event.metaKey || event.ctrlKey) && event.key === 'd') {
+  // Fill down
+  if (matchShortcut('fill_down', event)) {
     const cursor = sheets.sheet.cursor;
     if (cursor.columnRow?.all || cursor.columnRow?.columns) return true;
     if (cursor.columnRow?.rows && cursor.multiCursor) return true;
@@ -240,8 +250,8 @@ export function keyboardViewport(options: {
     return true;
   }
 
-  // Command + Escape
-  if ((event.metaKey || event.ctrlKey) && event.key === 'Escape') {
+  // Cancel execution
+  if (matchShortcut('cancel_execution', event)) {
     pythonWebWorker.cancelExecution();
     javascriptWebWorker.cancelExecution();
   }
