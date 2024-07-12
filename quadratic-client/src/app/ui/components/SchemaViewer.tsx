@@ -60,7 +60,7 @@ export const SchemaViewer = (props: Props) => {
             ))}
           </ul>
         ) : (
-          <Type className="m-3 mt-0 text-destructive">
+          <Type className="mx-3 my-2 text-destructive">
             Error loading data schema.{' '}
             <button className="underline" onClick={reloadSchema}>
               Try again
