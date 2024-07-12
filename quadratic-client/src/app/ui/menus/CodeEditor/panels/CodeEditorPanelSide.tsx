@@ -148,12 +148,16 @@ export function CodeEditorPanelSide({ showSchemaViewer, showAiAssistant, codeEdi
           </PanelBox>
         </>
       )}
-      {/* panels.length === 3 */}
+
       {showSchemaViewer && (
         <>
           <ResizeControl
             style={{ top: panels[0].height + panels[1].height }}
-            disabled={!panels[1].open && !panels[2]?.open}
+            disabled={
+              (panels[0].open && panels[1].open && !panels[2].open) ||
+              (panels[0].open && !panels[1].open && !panels[2].open) ||
+              (!panels[0].open && !panels[1].open)
+            }
             position="HORIZONTAL"
             setState={(e) => changeResizeBar(e, false)}
           />
