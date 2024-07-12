@@ -33,10 +33,13 @@ export function CodeEditorPanelBottom({
       value={tab}
       onValueChange={(value) => {
         setTab(value as PanelTab);
+        if (bottomHidden) {
+          setBottomHidden((prev) => !prev);
+        }
       }}
       className={'grid h-full grid-rows-[auto_1fr]'}
     >
-      <div className={'flex items-center px-2 pt-0.5'}>
+      <div className={cn('flex items-center px-2 pt-0.5', bottomHidden && 'border-t border-border')}>
         <Button variant={'link'} onClick={() => setBottomHidden(!bottomHidden)} className="mr-2 p-0">
           <ChevronRightIcon
             className={cn(
