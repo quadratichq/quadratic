@@ -1,12 +1,12 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { getConnectionKind, getLanguage } from '@/app/helpers/codeCellLanguage';
+import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { AI } from '@/app/ui/icons';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
-import { useSchemaData } from '@/app/ui/menus/CodeEditor/useSchemaData';
+import { useConnectionSchemaFetcher } from '@/app/ui/menus/CodeEditor/useConnectionSchemaFetcher';
 import { authClient } from '@/auth';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
@@ -39,9 +39,13 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   } = useCodeEditor();
   const { loggedInUser: user } = useRootRouteLoaderData();
   const { mode, selectedCell } = useRecoilValue(editorInteractionStateAtom);
+  const connection = getConnectionInfo(mode);
 
-  const { loadState, data } = useSchemaData();
-  const isLoadedConnection = getLanguage(mode) === 'Connection' && loadState.current === 'loaded';
+  const { schemaFetcher } = useConnectionSchemaFetcher({ uuid: connection?.id, type: connection?.kind });
+  let schemaJsonForAi = '';
+  if (schemaFetcher.data && schemaFetcher.data.ok && schemaFetcher.data.data) {
+    schemaJsonForAi = JSON.stringify(schemaFetcher.data.data);
+  }
 
   // TODO: This is only sent with the first message, we should refresh the content with each message.
   const systemMessages = [
@@ -53,7 +57,7 @@ Do not use any markdown syntax besides triple backticks for ${getConnectionKind(
 Do not reply with plain text code blocks.
 The cell type is ${getConnectionKind(mode)}.
 The cell is located at ${selectedCell.x}, ${selectedCell.y}.
-${isLoadedConnection ? 'The schema for the database is:```json\n' + JSON.stringify(data) + '\n```' : ``}
+${schemaJsonForAi ? `The schema for the database is:\`\`\`json\n${schemaJsonForAi}\n\`\`\`` : ``}
 Currently, you are in a cell that is being edited. The code in the cell is:
 \`\`\`${getConnectionKind(mode)}
 ${editorContent}\`\`\`

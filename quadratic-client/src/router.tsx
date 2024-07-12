@@ -64,6 +64,10 @@ export const router = createBrowserRouter(
             <Route path="files/:uuid" lazy={() => import('./routes/api.files.$uuid')} />
             <Route path="files/:uuid/sharing" lazy={() => import('./routes/api.files.$uuid.sharing')} />
             <Route path="connections" lazy={() => import('./routes/api.connections')} />
+            <Route
+              path="connections/:uuid/schema/:type"
+              lazy={() => import('./routes/api.connections.$uuid.schema.$type')}
+            />
           </Route>
 
           {/* Dashboard UI routes */}

@@ -1,16 +1,16 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { editorSchemaStateAtom } from '@/app/atoms/editorSchemaStateAtom';
 import { getConnectionInfo } from '@/app/helpers/codeCellLanguage';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { SqlAdd } from '@/app/ui/icons';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { useConnectionSchemaFetcher } from '@/app/ui/menus/CodeEditor/useConnectionSchemaFetcher';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { Type } from '@/shared/components/Type';
 import { cn } from '@/shared/shadcn/utils';
 import { KeyboardArrowRight, Refresh } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useState } from 'react';
+import { useRecoilValue } from 'recoil';
 
 type Table = {
   name: string;
@@ -24,7 +24,6 @@ type Column = {
   type: string;
 };
 
-type LoadState = 'not-initialized' | 'loading' | 'loaded' | 'error';
 export type SchemaData = Awaited<ReturnType<typeof connectionClient.schemas.get>>;
 
 interface Props {
@@ -37,60 +36,39 @@ export const SchemaViewer = (props: Props) => {
 
   const connection = getConnectionInfo(mode);
   if (!connection) throw new Error('Expected a connection cell to be open.');
+
   const [expandAll, setExpandAll] = useState(false);
-  const [data, setData] = useRecoilState(editorSchemaStateAtom);
 
-  // needs to be a ref to ensure only fetch is only called once
-  const loadState = useRef<LoadState>('not-initialized');
-  const [loadingAnimation, setLoadingAnimation] = useState(false);
-  const fetchData = useCallback(async () => {
-    if (loadState.current === 'loading') return;
-    loadState.current = 'loading';
-    setLoadingAnimation(true);
-    const newSchemaData = await connectionClient.schemas.get(connection.kind.toLowerCase() as any, connection.id);
-    setLoadingAnimation(false);
-    if (newSchemaData) {
-      setData({
-        schema: newSchemaData,
-      });
-      loadState.current = 'loaded';
-    } else {
-      loadState.current = 'error';
-    }
-  }, [connection.id, connection.kind, setData]);
-
-  useEffect(() => {
-    if (loadState.current === 'not-initialized') {
-      fetchData();
-    }
-  }, [fetchData, loadState]);
+  const { schemaFetcher, reloadSchema } = useConnectionSchemaFetcher({ uuid: connection.id, type: connection.kind });
+  const isLoading = schemaFetcher.state !== 'idle';
 
   // Designed to live in a box that takes up the full height of its container
   return (
     <div className="h-full overflow-scroll text-sm">
       <div className={cn('absolute z-50', bottom ? 'right-12 top-1.5' : 'right-1 top-1')}>
         <TooltipHint title="Refresh schema">
-          <IconButton size="small" onClick={fetchData}>
-            <Refresh fontSize="small" className={loadingAnimation ? 'animate-spin' : ''} />
+          <IconButton size="small" onClick={reloadSchema}>
+            <Refresh fontSize="small" className={isLoading ? 'animate-spin' : ''} />
           </IconButton>
         </TooltipHint>
       </div>
-      {loadState.current === 'error' && (
-        <Type className="m-3 mt-0 text-destructive">
-          Error loading data schema.{' '}
-          <button className="underline" onClick={fetchData}>
-            Try again
-          </button>{' '}
-          or contact us.
-        </Type>
-      )}
-      {data && (
-        <ul>
-          {data.schema?.tables.map((table, i) => (
-            <TableListItem data={table} key={i} expandAll={expandAll} setExpandAll={setExpandAll} />
-          ))}
-        </ul>
-      )}
+      {schemaFetcher.data ? (
+        schemaFetcher.data.ok ? (
+          <ul>
+            {schemaFetcher.data?.data?.tables.map((table, i) => (
+              <TableListItem data={table} key={i} expandAll={expandAll} setExpandAll={setExpandAll} />
+            ))}
+          </ul>
+        ) : (
+          <Type className="m-3 mt-0 text-destructive">
+            Error loading data schema.{' '}
+            <button className="underline" onClick={reloadSchema}>
+              Try again
+            </button>{' '}
+            or contact us.
+          </Type>
+        )
+      ) : null}
     </div>
   );
 };
@@ -115,7 +93,7 @@ function TableListItem({
       const selection = editorRef.current.getSelection();
       if (!selection) return;
       const id = { major: 1, minor: 1 };
-      const text = `SELECT * FROM "${name}" LIMIT 100`;
+      const text = `SELECT * FROM ${name} LIMIT 100`;
       const op = { identifier: id, range: selection, text: text, forceMoveMarkers: true };
       editorRef.current.executeEdits('my-source', [op]);
       editorRef.current.focus();
