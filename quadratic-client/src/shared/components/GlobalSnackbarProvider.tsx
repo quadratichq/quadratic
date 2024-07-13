@@ -12,7 +12,7 @@ export const snackbarSeverityQueryParam = 'snackbar-severity';
  */
 
 export interface GlobalSnackbar {
-  addGlobalSnackbar: (message: string, options?: { severity?: 'error' | 'warning' }) => void;
+  addGlobalSnackbar: (message: string, options?: { severity?: 'error' | 'warning' | 'success' }) => void;
 }
 const defaultContext: GlobalSnackbar = {
   addGlobalSnackbar: () => {

@@ -14,8 +14,10 @@ import {
 import { timeAgo } from '@/shared/utils/timeAgo';
 import { Check, ErrorOutline } from '@mui/icons-material';
 import { CircularProgress, Tooltip, useTheme } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import BottomBarItem from './BottomBarItem';
+
+const TIMEOUT_TO_SHOW_DISCONNECT_MESSAGE = 1000;
 
 export default function SyncState() {
   const theme = useTheme();
@@ -23,13 +25,34 @@ export default function SyncState() {
   const [syncState, setSyncState] = useState<MultiplayerState>(multiplayer.state);
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
+  const [disconnectMessage, setDisconnectMessage] = useState(false);
+  const timeout = useRef<number | null>(null);
   useEffect(() => {
-    const updateState = (state: MultiplayerState) => setSyncState(state);
+    const updateState = (state: MultiplayerState) => {
+      if (state === 'waiting to reconnect' || state === 'no internet') {
+        if (!timeout.current && !disconnectMessage) {
+          timeout.current = window.setTimeout(() => {
+            addGlobalSnackbar('Connection to the Quadratic server was lost. Your changes are only saved locally.', { severity: 'error' });
+            timeout.current = null;
+            setDisconnectMessage(true);
+          }, TIMEOUT_TO_SHOW_DISCONNECT_MESSAGE);
+        }
+      }
+      if (state === 'connected' && timeout.current) {
+        window.clearTimeout(timeout.current);
+        timeout.current = null;
+      }
+      if (state === 'connected' && disconnectMessage) {
+        setDisconnectMessage(false);
+        addGlobalSnackbar('Connection to the Quadratic server was reestablished.', { severity: 'success'})
+      }
+      setSyncState(state);
+    };
     events.on('multiplayerState', updateState);
     return () => {
       events.off('multiplayerState', updateState);
     };
-  }, []);
+  }, [addGlobalSnackbar, disconnectMessage]);
 
   const [unsavedTransactions, setUnsavedTransactions] = useState(0);
   useEffect(() => {
