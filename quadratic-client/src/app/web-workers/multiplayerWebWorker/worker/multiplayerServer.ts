@@ -56,10 +56,8 @@ export class MultiplayerServer {
   private sessionId?: string;
   private fileId?: string;
   private user?: User;
-  private anonymous?: boolean;
 
   private connectionTimeout: number | undefined;
-  private brokenConnection = false;
 
   private userData?: UserData;
 
@@ -78,7 +76,7 @@ export class MultiplayerServer {
     this.sessionId = message.sessionId;
     this.fileId = message.fileId;
     this.user = message.user;
-    this.anonymous = message.anonymous;
+
     this.userData = {
       sheetId: message.sheetId,
       selection: message.selection,
@@ -128,19 +126,16 @@ export class MultiplayerServer {
 
     this.websocket.addEventListener('close', () => {
       if (debugShowMultiplayer) console.log('[Multiplayer] websocket closed unexpectedly.');
-      this.brokenConnection = true;
       this.state = 'waiting to reconnect';
       this.reconnect();
     });
     this.websocket.addEventListener('error', (e) => {
       if (debugShowMultiplayer) console.log('[Multiplayer] websocket error', e);
-      this.brokenConnection = true;
       this.state = 'waiting to reconnect';
       this.reconnect();
     });
     this.websocket.addEventListener('open', () => {
       if (debugShow) console.log('[Multiplayer] websocket connected.');
-      this.brokenConnection = false;
       this.state = 'connected';
       this.enterFileRoom();
       this.waitingForConnection.forEach((resolve) => resolve(0));

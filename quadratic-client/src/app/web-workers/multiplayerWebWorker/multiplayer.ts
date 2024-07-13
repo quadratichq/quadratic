@@ -101,6 +101,9 @@ export class Multiplayer {
         this.state = e.data.state;
         if (this.state === 'no internet' || this.state === 'waiting to reconnect') {
           this.clearAllUsers();
+          this.brokenConnection = true;
+        } else if (this.state === 'connected') {
+          this.brokenConnection = false;
         }
         events.emit('multiplayerState', this.state);
         break;
