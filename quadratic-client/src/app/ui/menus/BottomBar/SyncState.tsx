@@ -33,7 +33,8 @@ export default function SyncState() {
         if (!timeout.current && !disconnectMessage) {
           timeout.current = window.setTimeout(() => {
             addGlobalSnackbar('Connection to the Quadratic server was lost. Your changes are only saved locally.', {
-              severity: 'error',
+              severity: 'warning',
+              button: { title: 'Refresh', callback: () => window.location.reload() },
             });
             timeout.current = null;
             setDisconnectMessage(true);
