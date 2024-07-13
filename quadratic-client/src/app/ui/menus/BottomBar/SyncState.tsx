@@ -40,7 +40,7 @@ export default function SyncState() {
 
     const offlineTransactionsApplied = (timestamps: number[]) => {
       if (timestamps.length === 0) return;
-      const to = timeAgo(timestamps[timestamps.length - 1])
+      const to = timeAgo(timestamps[timestamps.length - 1]);
       const message = `We applied ${timestamps.length} unsynced changes from ${to}. You can undo these changes.`;
       addGlobalSnackbar(message, { severity: 'warning' });
     };
