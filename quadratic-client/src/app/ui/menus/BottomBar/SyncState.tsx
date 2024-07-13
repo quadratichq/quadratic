@@ -32,7 +32,9 @@ export default function SyncState() {
       if (state === 'waiting to reconnect' || state === 'no internet') {
         if (!timeout.current && !disconnectMessage) {
           timeout.current = window.setTimeout(() => {
-            addGlobalSnackbar('Connection to the Quadratic server was lost. Your changes are only saved locally.', { severity: 'error' });
+            addGlobalSnackbar('Connection to the Quadratic server was lost. Your changes are only saved locally.', {
+              severity: 'error',
+            });
             timeout.current = null;
             setDisconnectMessage(true);
           }, TIMEOUT_TO_SHOW_DISCONNECT_MESSAGE);
@@ -44,7 +46,7 @@ export default function SyncState() {
       }
       if (state === 'connected' && disconnectMessage) {
         setDisconnectMessage(false);
-        addGlobalSnackbar('Connection to the Quadratic server was reestablished.', { severity: 'success'})
+        addGlobalSnackbar('Connection to the Quadratic server was reestablished.', { severity: 'success' });
       }
       setSyncState(state);
     };
