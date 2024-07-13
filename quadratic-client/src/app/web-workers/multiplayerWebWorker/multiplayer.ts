@@ -93,7 +93,7 @@ export class Multiplayer {
     if (this.codeRunning) this.sendCodeRunning(codeRunning);
   };
 
-  private handleMessage = (e: MessageEvent<MultiplayerClientMessage>) => {
+  private handleMessage = async (e: MessageEvent<MultiplayerClientMessage>) => {
     if (debugWebWorkersMessages) console.log(`[Multiplayer] message: ${e.data.type}`);
 
     switch (e.data.type) {
@@ -115,6 +115,11 @@ export class Multiplayer {
 
       case 'multiplayerClientReload':
         events.emit('needRefresh', 'force');
+        break;
+
+      case 'multiplayerClientRefreshJwt':
+        await this.addJwtCookie(true);
+        this.send({ type: 'clientMultiplayerRefreshJwt', id: e.data.id });
         break;
 
       default:

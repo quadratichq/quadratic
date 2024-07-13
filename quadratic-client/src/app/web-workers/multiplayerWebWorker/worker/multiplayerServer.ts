@@ -110,12 +110,14 @@ export class MultiplayerServer {
     multiplayerClient.sendState(state);
   }
 
-  private connect() {
+  private async connect() {
     if (this.state === 'connecting' || this.state === 'waiting to reconnect') {
       return;
     }
 
     this.state = 'connecting';
+    await multiplayerClient.sendRefreshJwt();
+
     this.websocket = new WebSocket(import.meta.env.VITE_QUADRATIC_MULTIPLAYER_URL);
     this.websocket.addEventListener('message', this.handleMessage);
 
