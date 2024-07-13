@@ -1,6 +1,6 @@
-import CloseIcon from '@mui/icons-material/Close';
-import { Alert, AlertColor, IconButton, Snackbar } from '@mui/material';
-import * as React from 'react';
+// import CloseIcon from '@mui/icons-material/Close';
+import { Alert, AlertColor, Snackbar } from '@mui/material';
+import { useEffect, createContext, useContext, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '../shadcn/ui/button';
 
@@ -27,13 +27,13 @@ const defaultContext: GlobalSnackbar = {
     );
   },
 };
-export const GlobalSnackbarContext = React.createContext(defaultContext);
+export const GlobalSnackbarContext = createContext(defaultContext);
 
 /**
  * Consumer
  */
 
-export const useGlobalSnackbar: () => GlobalSnackbar = () => React.useContext(GlobalSnackbarContext);
+export const useGlobalSnackbar: () => GlobalSnackbar = () => useContext(GlobalSnackbarContext);
 
 /**
  * Provider
@@ -48,23 +48,25 @@ interface Message {
 }
 
 export function GlobalSnackbarProvider({ children }: { children: React.ReactElement }) {
-  const [messageQueue, setMessageQueue] = React.useState<readonly Message[]>([]);
-  const [open, setOpen] = React.useState(false);
-  const [stayOpen, setStayOpen] = React.useState(false);
-  const [activeMessage, setActiveMessage] = React.useState<Message | undefined>(undefined);
+  const [messageQueue, setMessageQueue] = useState<readonly Message[]>([]);
+  const [open, setOpen] = useState(false);
+  const [stayOpen, setStayOpen] = useState(false);
+  const [activeMessage, setActiveMessage] = useState<Message | undefined>(undefined);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (messageQueue.length && !activeMessage) {
       // Set a new snack when we don't have an active one
       setActiveMessage({ ...messageQueue[0] });
       setMessageQueue((prev) => prev.slice(1));
       setStayOpen(!!messageQueue[0].stayOpen);
       setOpen(true);
-    } else if (messageQueue.length && activeMessage && open) {
-      // Close an active snack when a new one is added
-      setOpen(false);
     }
+
+    // we don't want a new message to replace the current message until the timer expires
+    // else if (messageQueue.length && activeMessage && open) {
+    //   setOpen(false);
+    // }
   }, [messageQueue, activeMessage, open]);
 
   /*
@@ -76,7 +78,7 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
    *
    * Can add a button to the snackbar by passing options { button: { title: string, callback: Function } }
    */
-  const addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'] = React.useCallback(
+  const addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'] = useCallback(
     (message: string, options?: SnackbarOptions) => {
       setMessageQueue((prev) => [
         ...prev,
@@ -109,7 +111,7 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
     ? {
         children: (
           <Alert severity={activeMessage.severity} variant="filled" onClose={handleClose}>
-            <div className="column center flex px-1">
+            <div className="column center flex px-0.5">
               {activeMessage.message}
               {activeMessage?.button && (
                 <Button variant="outline" onClick={() => activeMessage.button?.callback()}>
@@ -123,7 +125,7 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
     : { message: activeMessage?.message };
 
   // If the route has these query params (when it loads), we'll throw up a snackbar too
-  React.useEffect(() => {
+  useEffect(() => {
     const msg = searchParams.get(snackbarMsgQueryParam);
     const severity = searchParams.get(snackbarSeverityQueryParam);
 
@@ -146,13 +148,6 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
         onClose={handleClose}
         TransitionProps={{ onExited: handleExited }}
         {...otherProps}
-        action={
-          <>
-            <IconButton aria-label="close" color="inherit" sx={{ p: 0.5 }} onClick={handleClose}>
-              <CloseIcon fontSize="small" sx={{ opacity: '.5', ':hover': { opacity: 1 } }} />
-            </IconButton>
-          </>
-        }
       />
     </GlobalSnackbarContext.Provider>
   );

@@ -16,6 +16,7 @@ import { Check, ErrorOutline } from '@mui/icons-material';
 import { CircularProgress, Tooltip, useTheme } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import BottomBarItem from './BottomBarItem';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 const TIMEOUT_TO_SHOW_DISCONNECT_MESSAGE = 1000;
 
@@ -68,7 +69,17 @@ export default function SyncState() {
       if (timestamps.length === 0) return;
       const to = timeAgo(timestamps[timestamps.length - 1]);
       const message = `We applied ${timestamps.length} unsynced changes from ${to}. You can undo these changes.`;
-      addGlobalSnackbar(message, { severity: 'warning' });
+      addGlobalSnackbar(message, {
+        severity: 'warning',
+        button: {
+          title: 'Undo',
+          callback: () => {
+            for (let i = 0; i < timestamps.length; i++) {
+              quadraticCore.undo();
+            }
+          },
+        },
+      });
     };
     events.on('offlineTransactionsApplied', offlineTransactionsApplied);
 
