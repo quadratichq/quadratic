@@ -5,6 +5,11 @@ export const DOCUMENTATION_FORMULAS_URL = `${DOCUMENTATION_URL}/formulas`;
 export const DOCUMENTATION_JAVASCRIPT_URL = `${DOCUMENTATION_URL}/javascript`;
 export const DOCUMENTATION_JAVASCRIPT_RETURN_DATA = `${DOCUMENTATION_URL}/javascript/return-data-to-the-sheet`;
 export const DOCUMENTATION_FILES_URL = `${DOCUMENTATION_URL}/files`;
+
+// todo...
+export const DOCUMENTATION_OFFLINE = `${DOCUMENTATION_URL}/offline`;
+export const DOCUMENTATION_LOST_CONNECTION = `${DOCUMENTATION_URL}/connection`;
+
 export const BUG_REPORT_URL = 'https://github.com/quadratichq/quadratic/issues';
 export const DISCORD = 'https://discord.gg/quadratic';
 export const TWITTER = 'https://twitter.com/quadratichq';

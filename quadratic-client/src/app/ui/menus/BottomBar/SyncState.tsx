@@ -17,6 +17,7 @@ import { CircularProgress, Tooltip, useTheme } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import BottomBarItem from './BottomBarItem';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { DOCUMENTATION_LOST_CONNECTION, DOCUMENTATION_OFFLINE } from '@/shared/constants/urls';
 
 const TIMEOUT_TO_SHOW_DISCONNECT_MESSAGE = 1000;
 
@@ -33,7 +34,16 @@ export default function SyncState() {
       if (state === 'waiting to reconnect' || state === 'no internet') {
         if (!timeout.current && !disconnectMessage) {
           timeout.current = window.setTimeout(() => {
-            addGlobalSnackbar('Connection to the Quadratic server was lost. Your changes are only saved locally.', {
+            const message = (
+              <div>
+                Connection to the Quadratic server was lost. Your changes are only saved locally.{' '}
+                <a className="underline" href={DOCUMENTATION_LOST_CONNECTION}>
+                  Learn more
+                </a>
+                .
+              </div>
+            );
+            addGlobalSnackbar(message, {
               severity: 'warning',
               button: { title: 'Refresh', callback: () => window.location.reload() },
             });
@@ -68,7 +78,15 @@ export default function SyncState() {
     const offlineTransactionsApplied = (timestamps: number[]) => {
       if (timestamps.length === 0) return;
       const to = timeAgo(timestamps[timestamps.length - 1]);
-      const message = `We applied ${timestamps.length} unsynced changes from ${to}. You can undo these changes.`;
+      const message = (
+        <div>
+          We applied {timestamps.length} unsynced changes from {to}. You can undo these changes.{' '}
+          <a className="underline" href={DOCUMENTATION_OFFLINE}>
+            Learn More
+          </a>
+          .
+        </div>
+      );
       addGlobalSnackbar(message, {
         severity: 'warning',
         button: {

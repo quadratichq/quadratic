@@ -18,7 +18,7 @@ interface SnackbarOptions {
 }
 
 export interface GlobalSnackbar {
-  addGlobalSnackbar: (message: string, options?: SnackbarOptions) => void;
+  addGlobalSnackbar: (message: string | JSX.Element, options?: SnackbarOptions) => void;
 }
 const defaultContext: GlobalSnackbar = {
   addGlobalSnackbar: () => {
@@ -41,7 +41,7 @@ export const useGlobalSnackbar: () => GlobalSnackbar = () => useContext(GlobalSn
 
 interface Message {
   key: number;
-  message: string;
+  message: string | JSX.Element;
   severity?: AlertColor;
   button?: { title: string; callback: Function };
   stayOpen?: boolean;
@@ -79,7 +79,7 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
    * Can add a button to the snackbar by passing options { button: { title: string, callback: Function } }
    */
   const addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'] = useCallback(
-    (message: string, options?: SnackbarOptions) => {
+    (message: string | JSX.Element, options?: SnackbarOptions) => {
       setMessageQueue((prev) => [
         ...prev,
         {
