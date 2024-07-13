@@ -91,7 +91,7 @@ class Offline {
               transactionId: r.transactionId,
               transactions: r.transaction,
               operations: r.operations ?? 0,
-              timestamp: r.timeStamp,
+              timestamp: r.timestamp,
             };
           });
         // set the index to the length of the results so that we can add new transactions to the end
@@ -101,10 +101,8 @@ class Offline {
           operations: results.reduce((acc, r) => acc + r.operations, 0),
         };
         coreClient.sendOfflineTransactionStats();
-        console.log(results);
-        coreClient.sendOfflineTransactionsApplied(
-          results.flatMap((r) => (r.timestamp ? [r.timestamp] : [])).sort((a, b) => b - a)
-        );
+        const timestamps = results.flatMap((r) => (r.timestamp ? [r.timestamp] : [])).sort((a, b) => a - b);
+        coreClient.sendOfflineTransactionsApplied(timestamps);
         resolve(results);
       };
     });

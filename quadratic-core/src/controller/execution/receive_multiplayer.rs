@@ -153,8 +153,6 @@ impl GridController {
     }
 
     /// Used by the client to ensure transactions are applied in order
-    ///
-    /// Returns a [`TransactionSummary`] that will be rendered by the client.
     fn client_apply_transaction(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -259,6 +257,7 @@ impl GridController {
             }
         } else {
             let transaction = &mut PendingTransaction {
+                id: transaction_id,
                 transaction_type: TransactionType::Unsaved,
                 ..Default::default()
             };
