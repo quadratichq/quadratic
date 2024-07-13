@@ -2,6 +2,7 @@ import { events } from '@/app/events/events';
 import { pluralize } from '@/app/helpers/pluralize';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { timeAgo } from '@/shared/utils/timeAgo';
 import { Check, ErrorOutline } from '@mui/icons-material';
 import { CircularProgress, Tooltip, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';
@@ -19,6 +21,7 @@ export default function SyncState() {
   const theme = useTheme();
 
   const [syncState, setSyncState] = useState<MultiplayerState>(multiplayer.state);
+  const { addGlobalSnackbar } = useGlobalSnackbar();
 
   useEffect(() => {
     const updateState = (state: MultiplayerState) => setSyncState(state);
@@ -34,10 +37,20 @@ export default function SyncState() {
       setUnsavedTransactions(transactions);
     };
     events.on('offlineTransactions', updateUnsavedTransactions);
+
+    const offlineTransactionsApplied = (timestamps: number[]) => {
+      if (timestamps.length === 0) return;
+      const to = timeAgo(timestamps[timestamps.length - 1])
+      const message = `We applied ${timestamps.length} unsynced changes from ${to}. You can undo these changes.`;
+      addGlobalSnackbar(message, { severity: 'warning' });
+    };
+    events.on('offlineTransactionsApplied', offlineTransactionsApplied);
+
     return () => {
       events.off('offlineTransactions', updateUnsavedTransactions);
+      events.off('offlineTransactionsApplied', offlineTransactionsApplied);
     };
-  }, []);
+  }, [addGlobalSnackbar]);
 
   const [open, setOpen] = useState(false);
 

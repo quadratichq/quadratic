@@ -86,6 +86,7 @@ interface EventTypes {
   resizeHeadingColumn: (sheetId: string, column: number) => void;
 
   offlineTransactions: (transactions: number, operations: number) => void;
+  offlineTransactionsApplied: (timestamps: number[]) => void;
 
   codeEditor: () => void;
   cellMoving: (move: boolean) => void;

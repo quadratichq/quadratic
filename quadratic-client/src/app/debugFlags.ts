@@ -56,6 +56,9 @@ export const debugShowLoadingHashes = debug && false;
 
 export const debugShowFileIO = debug && false;
 
+// shows messages related to offline transaction
+export const debugOffline = debug && true;
+
 export const debugGridSettings = debug && false;
 
 export const debugShowMultiplayer = debug && false;
