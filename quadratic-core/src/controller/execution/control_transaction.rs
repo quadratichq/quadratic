@@ -54,7 +54,6 @@ impl GridController {
                 }
                 TransactionType::Unsaved => {
                     let undo = transaction.to_undo_transaction();
-                    dbgjs!(&undo);
                     self.undo_stack.push(undo.clone());
                     self.redo_stack.clear();
                 }
