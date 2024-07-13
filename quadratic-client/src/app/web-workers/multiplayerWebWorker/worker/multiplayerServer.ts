@@ -89,7 +89,7 @@ export class MultiplayerServer {
       x: message.x,
       y: message.y,
     };
-    this.connect();
+    this.connect(true);
 
     self.addEventListener('online', () => {
       if (this.state === 'no internet') {
@@ -110,13 +110,18 @@ export class MultiplayerServer {
     multiplayerClient.sendState(state);
   }
 
-  private async connect() {
+  // Attempt to connect to the server.
+  // @param skipFetchJwt If true, don't fetch a new JWT from the client
+  // (only true on first connection, since client already provided the jwt)
+  private async connect(skipFetchJwt = false) {
     if (this.state === 'connecting' || this.state === 'waiting to reconnect') {
       return;
     }
 
     this.state = 'connecting';
-    await multiplayerClient.sendRefreshJwt();
+    if (!skipFetchJwt) {
+      await multiplayerClient.sendRefreshJwt();
+    }
 
     this.websocket = new WebSocket(import.meta.env.VITE_QUADRATIC_MULTIPLAYER_URL);
     this.websocket.addEventListener('message', this.handleMessage);
