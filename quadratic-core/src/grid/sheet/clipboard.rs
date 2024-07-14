@@ -14,7 +14,11 @@ impl Sheet {
     /// Copies the selection to the clipboard.
     ///
     /// Returns the copied SheetRect, plain text, and html.
-    pub fn copy_to_clipboard(&self, selection: &Selection) -> Result<(String, String), String> {
+    pub fn copy_to_clipboard(
+        &self,
+        selection: &Selection,
+        is_move: bool,
+    ) -> Result<(String, String), String> {
         let mut clipboard_origin = ClipboardOrigin::default();
         let mut html = String::from("<tbody>");
         let mut plain_text = String::new();
@@ -171,58 +175,60 @@ impl Sheet {
             }
 
             // allow copying of code_run values (unless CellValue::Code is also in the clipboard)
-            self.iter_code_output_in_rect(bounds)
-                .filter(|(_, code_cell)| !code_cell.spill_error)
-                .for_each(|(output_rect, code_cell)| {
-                    // only change the cells if the CellValue::Code is not in the selection box
-                    let code_pos = Pos {
-                        x: output_rect.min.x,
-                        y: output_rect.min.y,
-                    };
-                    let x_start = if output_rect.min.x > bounds.min.x {
-                        output_rect.min.x
-                    } else {
-                        bounds.min.x
-                    };
-                    let y_start = if output_rect.min.y > bounds.min.y {
-                        output_rect.min.y
-                    } else {
-                        bounds.min.y
-                    };
-                    let x_end = if output_rect.max.x < bounds.max.x {
-                        output_rect.max.x
-                    } else {
-                        bounds.max.x
-                    };
-                    let y_end = if output_rect.max.y < bounds.max.y {
-                        output_rect.max.y
-                    } else {
-                        bounds.max.y
-                    };
+            if !is_move {
+                self.iter_code_output_in_rect(bounds)
+                    .filter(|(_, code_cell)| !code_cell.spill_error)
+                    .for_each(|(output_rect, code_cell)| {
+                        // only change the cells if the CellValue::Code is not in the selection box
+                        let code_pos = Pos {
+                            x: output_rect.min.x,
+                            y: output_rect.min.y,
+                        };
+                        let x_start = if output_rect.min.x > bounds.min.x {
+                            output_rect.min.x
+                        } else {
+                            bounds.min.x
+                        };
+                        let y_start = if output_rect.min.y > bounds.min.y {
+                            output_rect.min.y
+                        } else {
+                            bounds.min.y
+                        };
+                        let x_end = if output_rect.max.x < bounds.max.x {
+                            output_rect.max.x
+                        } else {
+                            bounds.max.x
+                        };
+                        let y_end = if output_rect.max.y < bounds.max.y {
+                            output_rect.max.y
+                        } else {
+                            bounds.max.y
+                        };
 
-                    // add the CellValue to cells if the code is not included in the clipboard
-                    let include_in_cells = !bounds.contains(code_pos);
+                        // add the CellValue to cells if the code is not included in the clipboard
+                        let include_in_cells = !bounds.contains(code_pos);
 
-                    // add the code_run output to clipboard.values
-                    for y in y_start..=y_end {
-                        for x in x_start..=x_end {
-                            if let Some(value) = code_cell
-                                .cell_value_at((x - code_pos.x) as u32, (y - code_pos.y) as u32)
-                            {
-                                let pos = Pos {
-                                    x: x - bounds.min.x,
-                                    y: y - bounds.min.y,
-                                };
-                                if selection.pos_in_selection(Pos { x, y }) {
-                                    if include_in_cells {
-                                        cells.set(pos.x as u32, pos.y as u32, value.clone());
+                        // add the code_run output to clipboard.values
+                        for y in y_start..=y_end {
+                            for x in x_start..=x_end {
+                                if let Some(value) = code_cell
+                                    .cell_value_at((x - code_pos.x) as u32, (y - code_pos.y) as u32)
+                                {
+                                    let pos = Pos {
+                                        x: x - bounds.min.x,
+                                        y: y - bounds.min.y,
+                                    };
+                                    if selection.pos_in_selection(Pos { x, y }) {
+                                        if include_in_cells {
+                                            cells.set(pos.x as u32, pos.y as u32, value.clone());
+                                        }
+                                        values.set(pos.x as u32, pos.y as u32, value);
                                     }
-                                    values.set(pos.x as u32, pos.y as u32, value);
                                 }
                             }
                         }
-                    }
-                });
+                    });
+            }
         }
 
         let (formats, borders) = if let Some(bounds) = sheet_bounds {
@@ -288,13 +294,16 @@ mod tests {
         sheet.test_set_values(0, 0, 4, 1, vec!["1", "2", "3", "4"]);
 
         let (_, html) = sheet
-            .copy_to_clipboard(&Selection {
-                rects: Some(vec![
-                    Rect::single_pos(Pos { x: 0, y: 0 }),
-                    Rect::from_numbers(2, 0, 2, 1),
-                ]),
-                ..Default::default()
-            })
+            .copy_to_clipboard(
+                &Selection {
+                    rects: Some(vec![
+                        Rect::single_pos(Pos { x: 0, y: 0 }),
+                        Rect::from_numbers(2, 0, 2, 1),
+                    ]),
+                    ..Default::default()
+                },
+                false,
+            )
             .unwrap();
 
         gc.paste_from_clipboard(

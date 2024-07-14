@@ -13,7 +13,7 @@ impl GridController {
         selection: &Selection,
         cursor: Option<String>,
     ) -> Result<(String, String), String> {
-        let (ops, plain_text, html) = self.cut_to_clipboard_operations(selection)?;
+        let (ops, plain_text, html) = self.cut_to_clipboard_operations(selection, false)?;
         self.start_user_transaction(ops, cursor, TransactionName::CutClipboard);
         Ok((plain_text, html))
     }
@@ -131,14 +131,14 @@ mod test {
 
         let selection = Selection::rect(rect, sheet_id);
         let sheet = gc.sheet(sheet_id);
-        let (plain_text, _) = sheet.copy_to_clipboard(&selection).unwrap();
+        let (plain_text, _) = sheet.copy_to_clipboard(&selection, false).unwrap();
         assert_eq!(plain_text, String::from("1, 1\t\t\n\t\t12"));
 
         let selection = Selection::rect(
             Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 3, y: 3 }),
             sheet_id,
         );
-        let clipboard = sheet.copy_to_clipboard(&selection).unwrap();
+        let clipboard = sheet.copy_to_clipboard(&selection, false).unwrap();
 
         // paste using plain_text
         let mut gc = GridController::default();
@@ -223,7 +223,7 @@ mod test {
             },
             sheet_id,
         );
-        let clipboard = sheet.copy_to_clipboard(&selection).unwrap();
+        let clipboard = sheet.copy_to_clipboard(&selection, false).unwrap();
 
         // paste using html on a new grid controller
         let mut gc = GridController::default();
@@ -318,7 +318,7 @@ mod test {
             Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 3, y: 1 }),
             sheet_id,
         );
-        let clipboard = sheet.copy_to_clipboard(&selection).unwrap();
+        let clipboard = sheet.copy_to_clipboard(&selection, false).unwrap();
 
         // paste using html on a new grid controller
         let mut gc = GridController::default();
@@ -367,7 +367,7 @@ mod test {
             Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 }),
             sheet_id,
         );
-        let clipboard = sheet.copy_to_clipboard(&selection).unwrap();
+        let clipboard = sheet.copy_to_clipboard(&selection, false).unwrap();
 
         gc.paste_from_clipboard(
             Selection::pos(3, 3, sheet_id),
@@ -440,10 +440,13 @@ mod test {
         }));
 
         let (_, html) = sheet
-            .copy_to_clipboard(&Selection::rect(
-                Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 4, y: 4 }),
-                sheet_id,
-            ))
+            .copy_to_clipboard(
+                &Selection::rect(
+                    Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 4, y: 4 }),
+                    sheet_id,
+                ),
+                false,
+            )
             .unwrap();
         gc.paste_from_clipboard(
             Selection::pos(0, 10, sheet_id),
@@ -518,14 +521,14 @@ mod test {
 
         let selection = Selection::rect(rect, sheet_id);
         let sheet = gc.sheet(sheet_id);
-        let (plain_text, _) = sheet.copy_to_clipboard(&selection).unwrap();
+        let (plain_text, _) = sheet.copy_to_clipboard(&selection, false).unwrap();
         assert_eq!(plain_text, String::from("1, 1\t\t\n\t\t12"));
 
         let selection = Selection::rect(
             Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 3, y: 3 }),
             sheet_id,
         );
-        let clipboard = sheet.copy_to_clipboard(&selection).unwrap();
+        let clipboard = sheet.copy_to_clipboard(&selection, false).unwrap();
         let pasted_output = clipboard.1;
 
         gc.paste_from_clipboard(
@@ -562,7 +565,7 @@ mod test {
         // generate the html from the values above
         let sheet = gc.sheet(sheet_id);
         let (_, html) = sheet
-            .copy_to_clipboard(&Selection::rect(src_pos.into(), sheet_id))
+            .copy_to_clipboard(&Selection::rect(src_pos.into(), sheet_id), false)
             .unwrap();
 
         let get_value = |gc: &GridController, x, y| {
@@ -620,13 +623,16 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         let (plain, html) = sheet
-            .copy_to_clipboard(&Selection::rect(
-                Rect {
-                    min: Pos { x: 1, y: 1 },
-                    max: Pos { x: 3, y: 1 },
-                },
-                sheet_id,
-            ))
+            .copy_to_clipboard(
+                &Selection::rect(
+                    Rect {
+                        min: Pos { x: 1, y: 1 },
+                        max: Pos { x: 3, y: 1 },
+                    },
+                    sheet_id,
+                ),
+                false,
+            )
             .unwrap();
 
         gc.paste_from_clipboard(
@@ -688,7 +694,7 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let (plain_text, html) = sheet.copy_to_clipboard(&selection).unwrap();
+        let (plain_text, html) = sheet.copy_to_clipboard(&selection, false).unwrap();
         assert_eq!(plain_text, String::from("\t\t\n\t1\t\n\t\t12"));
 
         let mut gc = GridController::default();
@@ -744,7 +750,7 @@ mod test {
             sheet_id,
         );
         let sheet = gc.sheet(sheet_id);
-        let clipboard = sheet.copy_to_clipboard(&selection).unwrap();
+        let clipboard = sheet.copy_to_clipboard(&selection, false).unwrap();
 
         // paste using html on a new grid controller
         let mut gc = GridController::default();
@@ -786,6 +792,7 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id);
+
         assert_eq!(
             sheet.display_value((10, 10).into()),
             Some(CellValue::Number(BigDecimal::from(1)))
@@ -813,6 +820,25 @@ mod test {
     }
 
     #[test]
+    fn move_cells_no_code_results() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        set_formula_code_cell(&mut gc, sheet_id, "{1, 2, 3; 4, 5, 6}", 0, 0);
+        set_cell_value(&mut gc, sheet_id, "100", 0, 2);
+
+        gc.move_cells(
+            SheetRect::new_pos_span((1, 0).into(), (1, 1).into(), sheet_id),
+            (10, 10, sheet_id).into(),
+            None,
+        );
+
+        // should not move results of code, only code value
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.display_value((10, 10).into()), None);
+    }
+
+    #[test]
     fn copy_cell_formats() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -835,10 +861,13 @@ mod test {
         );
 
         let clipboard = sheet
-            .copy_to_clipboard(&Selection::rect(
-                Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 4, y: 4 }),
-                sheet_id,
-            ))
+            .copy_to_clipboard(
+                &Selection::rect(
+                    Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 4, y: 4 }),
+                    sheet_id,
+                ),
+                false,
+            )
             .unwrap();
 
         let mut gc = GridController::test();

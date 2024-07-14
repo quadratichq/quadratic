@@ -61,15 +61,22 @@ pub struct Clipboard {
 }
 
 impl GridController {
+    /// Cuts content of Selection to clipboard.
+    ///
+    /// Normally, code values are included in the clipboard when the
+    /// CellValue::Code is not in the Selection. When is_move is true, we skip
+    /// the code results since we don't want to move the code results separate
+    /// from the code cell.
     pub fn cut_to_clipboard_operations(
         &mut self,
         selection: &Selection,
+        is_move: bool,
     ) -> Result<(Vec<Operation>, String, String), String> {
         let sheet = self
             .try_sheet(selection.sheet_id)
             .ok_or("Unable to find Sheet")?;
 
-        let (plain_text, html) = sheet.copy_to_clipboard(selection)?;
+        let (plain_text, html) = sheet.copy_to_clipboard(selection, is_move)?;
         let operations = self.delete_values_and_formatting_operations(selection);
         Ok((operations, plain_text, html))
     }
@@ -439,13 +446,16 @@ mod test {
         let sheet = gc.sheet_mut(sheet_id);
         sheet.test_set_values(0, 5, 1, 5, vec!["1", "2", "3", "4", "5"]);
         let (_, html) = sheet
-            .copy_to_clipboard(&Selection {
-                sheet_id,
-                x: 0,
-                y: 0,
-                columns: Some(vec![0]),
-                ..Default::default()
-            })
+            .copy_to_clipboard(
+                &Selection {
+                    sheet_id,
+                    x: 0,
+                    y: 0,
+                    columns: Some(vec![0]),
+                    ..Default::default()
+                },
+                false,
+            )
             .unwrap();
         let operations = gc
             .paste_html_operations(
@@ -476,13 +486,16 @@ mod test {
         let sheet = gc.sheet_mut(sheet_id);
         sheet.test_set_values(5, 2, 5, 1, vec!["1", "2", "3", "4", "5"]);
         let (_, html) = sheet
-            .copy_to_clipboard(&Selection {
-                sheet_id,
-                x: 0,
-                y: 2,
-                rows: Some(vec![2]),
-                ..Default::default()
-            })
+            .copy_to_clipboard(
+                &Selection {
+                    sheet_id,
+                    x: 0,
+                    y: 2,
+                    rows: Some(vec![2]),
+                    ..Default::default()
+                },
+                false,
+            )
             .unwrap();
         let operations = gc
             .paste_html_operations(
@@ -515,13 +528,16 @@ mod test {
         sheet.calculate_bounds();
 
         let (_, html) = sheet
-            .copy_to_clipboard(&Selection {
-                sheet_id,
-                x: 0,
-                y: 0,
-                all: true,
-                ..Default::default()
-            })
+            .copy_to_clipboard(
+                &Selection {
+                    sheet_id,
+                    x: 0,
+                    y: 0,
+                    all: true,
+                    ..Default::default()
+                },
+                false,
+            )
             .unwrap();
         gc.add_sheet(None);
 
@@ -576,14 +592,17 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         let (_, html) = sheet
-            .copy_to_clipboard(&Selection {
-                sheet_id,
-                x: 1,
-                y: 3,
-                columns: Some(vec![1, 2]),
-                rows: Some(vec![3, 4]),
-                ..Default::default()
-            })
+            .copy_to_clipboard(
+                &Selection {
+                    sheet_id,
+                    x: 1,
+                    y: 3,
+                    columns: Some(vec![1, 2]),
+                    rows: Some(vec![3, 4]),
+                    ..Default::default()
+                },
+                false,
+            )
             .unwrap();
 
         gc.paste_from_clipboard(

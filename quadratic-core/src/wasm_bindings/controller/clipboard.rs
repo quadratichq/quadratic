@@ -15,7 +15,7 @@ impl GridController {
     pub fn js_copy_to_clipboard(&self, selection: String) -> Result<JsValue, JsValue> {
         let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
         let sheet = self.try_sheet(selection.sheet_id).ok_or("No Sheet found")?;
-        let (plain_text, html) = sheet.copy_to_clipboard(&selection)?;
+        let (plain_text, html) = sheet.copy_to_clipboard(&selection, false)?;
         let output = JsClipboard { plain_text, html };
         Ok(serde_wasm_bindgen::to_value(&output).map_err(|e| e.to_string())?)
     }
