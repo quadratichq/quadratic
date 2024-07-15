@@ -101,6 +101,15 @@ export const apiClient = {
         );
       },
     },
+    files: {
+      async list(teamUuid: string, isPrivate: boolean = false) {
+        return fetchFromApi(
+          `/v0/teams/${teamUuid}/files?private=${isPrivate}`,
+          { method: 'GET' },
+          ApiSchemas['/v0/teams/:uuid/files.GET.response']
+        );
+      },
+    },
   },
 
   files: {

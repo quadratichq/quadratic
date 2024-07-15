@@ -4,12 +4,24 @@ import { Empty } from '@/dashboard/components/Empty';
 import { FilesList } from '@/dashboard/components/FilesList';
 import { FilesListEmptyState } from '@/dashboard/components/FilesListEmptyState';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { apiClient } from '@/shared/api/apiClient';
 import { FileIcon } from '@radix-ui/react-icons';
+import { LoaderFunctionArgs, useLoaderData } from 'react-router-dom';
+
+type LoaderData = Awaited<ReturnType<typeof loader>>;
+
+export const loader = async ({ params }: LoaderFunctionArgs) => {
+  const teamUuid = params.teamUuid;
+  if (!teamUuid) throw new Error('No team UUID provided');
+
+  const data = await apiClient.teams.files.list(teamUuid, false);
+  return data;
+};
 
 export const Component = () => {
+  const { files } = useLoaderData() as LoaderData;
   const {
     activeTeam: {
-      files,
       userMakingRequest: { teamPermissions },
     },
   } = useDashboardRouteLoaderData();

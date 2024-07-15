@@ -316,6 +316,15 @@ export const ApiSchemas = {
   '/v0/teams/:uuid.PATCH.request': TeamSchema.pick({ name: true }),
   '/v0/teams/:uuid.PATCH.response': TeamSchema.pick({ name: true }),
 
+  '/v0/teams/:uuid/files.GET.response': z.object({
+    files: TeamFilesSchema,
+    userMakingRequest: z.object({
+      id: TeamUserSchema.shape.id,
+      teamPermissions: z.array(TeamPermissionSchema),
+      teamRole: UserTeamRoleSchema,
+    }),
+  }),
+
   '/v0/teams/:uuid/invites.POST.request': TeamUserSchema.pick({ email: true, role: true }),
   '/v0/teams/:uuid/invites.POST.response': z
     .object({

@@ -1,7 +1,7 @@
-import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { apiClient } from '@/shared/api/apiClient';
 import { Box, useTheme } from '@mui/material';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
-import { useRouteError } from 'react-router-dom';
+import { LoaderFunctionArgs, useLoaderData, useRouteError } from 'react-router-dom';
 import { debugShowUILogs } from '../app/debugFlags';
 import CreateFileButton from '../dashboard/components/CreateFileButton';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
@@ -9,12 +9,20 @@ import { Empty } from '../dashboard/components/Empty';
 import { FilesList } from '../dashboard/components/FilesList';
 import { FilesListEmptyState } from '../dashboard/components/FilesListEmptyState';
 
-export const Component = () => {
-  const {
-    activeTeam: { filesPrivate },
-  } = useDashboardRouteLoaderData();
+type LoaderData = Awaited<ReturnType<typeof loader>>;
 
-  const files = filesPrivate.map(
+export const loader = async ({ params }: LoaderFunctionArgs) => {
+  const teamUuid = params.teamUuid;
+  if (!teamUuid) throw new Error('No team UUID provided');
+
+  const data = await apiClient.teams.files.list(teamUuid, true);
+  return data;
+};
+
+export const Component = () => {
+  const { files } = useLoaderData() as LoaderData;
+
+  const privateFiles = files.map(
     ({
       file: { name, uuid, createdDate, updatedDate, publicLinkAccess, thumbnail },
       userMakingRequest: { filePermissions },
@@ -32,7 +40,7 @@ export const Component = () => {
   return (
     <>
       <DashboardHeader title="Private files" actions={<CreateFileButton isPrivate />} />
-      <FilesList files={files} emptyState={<FilesListEmptyState isPrivate />} />
+      <FilesList files={privateFiles} emptyState={<FilesListEmptyState isPrivate />} />
     </>
   );
 };
