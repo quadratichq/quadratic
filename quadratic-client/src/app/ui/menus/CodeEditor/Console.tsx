@@ -57,7 +57,7 @@ export function Console() {
           {consoleOutput?.stdOut}
         </>
       ) : (
-        <div className="mt-1" style={{ ...codeEditorCommentStyles }}>
+        <div className="mt-1 select-none" style={{ ...codeEditorCommentStyles }}>
           {codeCell?.id === 'Python' && <>Print statements, standard out, and errors will show here.</>}
           {codeCell?.id === 'Javascript' && <>Console output and errors will show here.</>}
           {codeCell?.type === 'connection' && <>Errors will show here.</>}
