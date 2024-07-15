@@ -17,39 +17,42 @@ async function main() {
    * are going to have some of these teams lying around. We clean them up so they
    * don't see them when they login.
    *
+   * Additionally: this script SHOULD run first, as we don't want to migrate files
+   * to a team that was not activated.
+   *
    * NOTE:
    * After this migration, every team should be `activated === null`
    * so we should remove `activated` from the schema in a later commit.
    *
    */
-  console.log('Cleaning up unactivated teams...');
+  console.log('Cleaning up unactivated teams:');
   const unactivatedTeams = await prisma.team.findMany({
     where: { activated: false },
+    select: { id: true, UserTeamRole: true },
   });
 
   if (unactivatedTeams.length > 0) {
-    console.log('Found %s unactivated teams. Deleting...', unactivatedTeams.length);
     for (const team of unactivatedTeams) {
-      // Select all userTeamRoles in this team and delete them
-      const userTeamRoles = await prisma.userTeamRole.findMany({
-        where: { teamId: team.id },
-      });
-      console.log(`  Team ${team.id}: deleting ${userTeamRoles.length} roles`);
-      for (const userTeamRole of userTeamRoles) {
+      try {
         if (COMMIT) {
-          await prisma.userTeamRole.delete({
-            where: { id: userTeamRole.id },
+          await prisma.$transaction(async (prisma) => {
+            // Delete all user roles associated with this team
+            await prisma.userTeamRole.deleteMany({
+              where: { teamId: team.id },
+            });
+
+            // Delete the team
+            await prisma.team.delete({
+              where: { id: team.id },
+            });
           });
         }
-      }
 
-      // Then delete the team
-      if (COMMIT) {
-        await prisma.team.delete({
-          where: { id: team.id },
-        });
+        console.log('  Team %s: deleted team and %s role(s)', team.id, team.UserTeamRole.length);
+      } catch (e) {
+        console.error('  Team %s: failed to delete team and roles', team.id);
+        console.error(e);
       }
-      console.log(`  Team ${team.id}: deleted`);
     }
   }
 
@@ -60,7 +63,7 @@ async function main() {
    *   2) Move all files they own to a team
    *
    */
-  console.log('Migrating users to teams...');
+  console.log('Migrating users to teams:');
 
   // In "old" schema we're working against, a File would have an `ownerTeamId`
   // or `ownerUserId` to represent that the file belongs to a team OR a user
@@ -71,27 +74,29 @@ async function main() {
     where: {
       ownedFiles: {
         some: {
+          // If we have to run this script again, we want to make sure we're selecting
+          // files that haven't been moved yet.
           ownerUserId: { not: null },
+          ownerTeamId: null,
         },
       },
     },
     select: {
       id: true,
       ownedFiles: true,
+      UserTeamRole: true,
     },
   });
 
   // Loop through every user and move their files to a team
   for (const user of users) {
     // Get all teams the user belongs to
-    const userTeamRoles = await prisma.userTeamRole.findMany({
-      where: { userId: user.id },
-    });
-    let oldestTeamId: undefined | number = undefined;
+    const userTeamRoles = user.UserTeamRole;
+    let oldestTeamId = userTeamRoles.length === 0 ? undefined : userTeamRoles[0].teamId;
+    let createdNewTeam = false;
 
     // If they don't have a team, create one
     if (userTeamRoles.length === 0) {
-      console.log(`  User ${user.id}: 0 teams, creating one...`);
       if (COMMIT) {
         const team = await prisma.team.create({
           data: {
@@ -104,33 +109,47 @@ async function main() {
                 },
               ],
             },
+            // Must set this to activated so we don't delete later if we have to run this script again
+            activated: true,
+            // TODO: expects `stripeCustomerId` but not required in new schema
+            // so we should leave this out of the script
+            stripeCustomerId: String(Date.now()),
           },
         });
         oldestTeamId = team.id;
       }
-    } else {
-      oldestTeamId = userTeamRoles[0].teamId;
-      console.log(`  User ${user.id}: ${userTeamRoles.length} teams`);
+      createdNewTeam = true;
     }
 
-    // Iterate through every file the user owns and move it to the oldest team as a draft
-    for (const file of user.ownedFiles) {
-      // Remove the user as owner and set the team as owner
-      console.log(`    File ${file.id}: moving to team ${oldestTeamId}`);
+    // Move all the user's personal files to a team they belong to
+    try {
+      let updatedFilesCount = 0;
       if (COMMIT) {
-        await prisma.file.update({
-          where: { id: file.id },
+        const updatedFiles = await prisma.file.updateMany({
+          where: {
+            ownerUserId: user.id,
+          },
           data: {
             // TODO: should the file remain private on the team, or public?
             // If it's private, that means when the user logs in next they won't see their files!
             // If it's public, that means they'll see them when they login but anyone who joins the team will see them too.
-
-            ownerUserId: null,
-            // OR: leave `ownerUserId` as it is, which means its a private file on the team
+            ownerUserId: null, // OR: leave `ownerUserId` as it is, which means its a private file on the team
             ownerTeamId: oldestTeamId,
           },
         });
+        updatedFilesCount = updatedFiles.count;
+      } else {
+        updatedFilesCount = user.ownedFiles.length;
       }
+
+      console.log(
+        '  User %s: moved %s file(s) to %s team',
+        user.id,
+        updatedFilesCount,
+        createdNewTeam ? 'NEW' : 'EXISITING'
+      );
+    } catch (e) {
+      console.log('  User %s: failed to move file(s)', user.id);
     }
   }
 }
