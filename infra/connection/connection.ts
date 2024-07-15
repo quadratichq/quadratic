@@ -1,6 +1,7 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 
+import { isPreviewEnvironment } from "../helpers/isPreviewEnvironment";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
 import { runDockerImageBashScript } from "../helpers/runDockerImageBashScript";
 import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
@@ -61,6 +62,16 @@ export const connectionEc2SecurityGroup = new aws.ec2.SecurityGroup(
     ],
   }
 );
+
+if (isPreviewEnvironment)
+  new aws.ec2.SecurityGroupRule(`connection-ssh-ingress-rule`, {
+    type: "ingress",
+    fromPort: 22,
+    toPort: 22,
+    protocol: "tcp",
+    cidrBlocks: ["0.0.0.0/0"],
+    securityGroupId: connectionEc2SecurityGroup.id,
+  });
 
 // Create Subnets
 const subnet1 = new aws.ec2.Subnet("connection-subnet-1", {
