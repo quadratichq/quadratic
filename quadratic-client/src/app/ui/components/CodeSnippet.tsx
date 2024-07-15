@@ -29,10 +29,10 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
     editorRef.current = editor;
   };
 
-  let syntax = language;
-  if (syntax.toLowerCase() === 'postgres') {
+  let syntax = language.toLowerCase();
+  if (syntax === 'postgres') {
     syntax = 'sql';
-  } else if (syntax.toLowerCase() === 'mysql') {
+  } else if (syntax === 'mysql') {
     syntax = 'sql';
   }
 

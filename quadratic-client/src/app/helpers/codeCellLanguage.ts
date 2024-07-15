@@ -78,5 +78,9 @@ export const getConnectionKind = (language?: CodeCellLanguage): string | undefin
     return language.Connection.kind;
   }
 
+  if (typeof language === 'string') {
+    return language;
+  }
+
   return undefined;
 };
