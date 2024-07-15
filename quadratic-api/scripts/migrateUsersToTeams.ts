@@ -65,7 +65,7 @@ async function main() {
       if (COMMIT) {
         const team = await prisma.team.create({
           data: {
-            name: 'Personal',
+            name: 'My Team',
             UserTeamRole: {
               create: [
                 {
