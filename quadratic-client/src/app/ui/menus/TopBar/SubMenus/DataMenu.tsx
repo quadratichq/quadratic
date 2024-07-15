@@ -51,21 +51,22 @@ export const DataMenu = () => {
         >
           <MenuLineItem primary="Import from Parquet" />
         </MenuItem>
+        <MenuDivider />
         <MenuItem
           onClick={() => {
             setEditorInteractionState((prev) => ({ ...prev, showCellTypeMenu: true }));
           }}
         >
-          <MenuLineItem primary="Import from connection" />
+          <MenuLineItem primary="Use a connection" />
         </MenuItem>
         {showManageConnections && (
           <>
-            <MenuDivider />
             <MenuItem onClick={() => setEditorInteractionState((prev) => ({ ...prev, showConnectionsMenu: true }))}>
               <MenuLineItem primary="Manage connections" />
             </MenuItem>
           </>
         )}
+
         <MenuDivider />
         <MenuItem
           onClick={() => {
