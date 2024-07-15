@@ -4,10 +4,6 @@ import * as pulumi from "@pulumi/pulumi";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
 import { runDockerImageBashScript } from "../helpers/runDockerImageBashScript";
 import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
-import {
-  connectionEc2SecurityGroup,
-  connectionNlbSecurityGroup,
-} from "../shared/securityGroups";
 const config = new pulumi.Config();
 
 // Configuration from command line
@@ -27,6 +23,44 @@ const vpc = new aws.ec2.Vpc("connection-vpc", {
   enableDnsHostnames: true,
   tags: { Name: "connection-vpc" },
 });
+
+// Create a Security Group for the Connection NLB
+export const connectionNlbSecurityGroup = new aws.ec2.SecurityGroup(
+  "connection-nlb-security-group-1",
+  {
+    vpcId: vpc.id,
+    ingress: [
+      {
+        protocol: "tcp",
+        fromPort: 443,
+        toPort: 443,
+        cidrBlocks: ["0.0.0.0/0"],
+      },
+    ],
+    egress: [
+      { protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
+    ],
+  }
+);
+
+// Create a Security Group for the Multiplayer EC2 instance
+export const connectionEc2SecurityGroup = new aws.ec2.SecurityGroup(
+  "connection-sg-1",
+  {
+    vpcId: vpc.id,
+    ingress: [
+      {
+        protocol: "tcp",
+        fromPort: 80,
+        toPort: 80,
+        securityGroups: [connectionNlbSecurityGroup.id],
+      },
+    ],
+    egress: [
+      { protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
+    ],
+  }
+);
 
 // Create Subnets
 const subnet1 = new aws.ec2.Subnet("connection-subnet-1", {
