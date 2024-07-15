@@ -10,17 +10,26 @@ async function main() {
 
   /**
    *
-   * Select all teams that are not activated and do the necessary
-   * transactions to delete them
+   * Select all teams that are not activated and delete them.
+   *
+   * WHY:
+   * Because users who tried to create a team before, but bailed via stripe,
+   * are going to have some of these teams lying around. We clean them up so they
+   * don't see them when they login.
+   *
+   * NOTE:
+   * After this migration, every team should be `activated === null`
+   * so we should remove `activated` from the schema in a later commit.
    *
    */
-  console.log('Deleting unactivated teams...');
-  const teams = await prisma.team.findMany({
+  console.log('Cleaning up unactivated teams...');
+  const unactivatedTeams = await prisma.team.findMany({
     where: { activated: false },
   });
 
-  if (teams.length > 0) {
-    for (const team of teams) {
+  if (unactivatedTeams.length > 0) {
+    console.log('Found %s unactivated teams. Deleting...', unactivatedTeams.length);
+    for (const team of unactivatedTeams) {
       // Select all userTeamRoles in this team and delete them
       const userTeamRoles = await prisma.userTeamRole.findMany({
         where: { teamId: team.id },
@@ -33,6 +42,7 @@ async function main() {
           });
         }
       }
+
       // Then delete the team
       if (COMMIT) {
         await prisma.team.delete({
@@ -46,12 +56,32 @@ async function main() {
   /**
    *
    * Iterate through all users and:
-   *   1) Make sure they have a team (if not create one)
+   *   1) Make sure they have a team (if they don't, create one)
    *   2) Move all files they own to a team
    *
    */
   console.log('Migrating users to teams...');
-  const users = await prisma.user.findMany(); // TODO: select users who have files they own
+
+  // In "old" schema we're working against, a File would have an `ownerTeamId`
+  // or `ownerUserId` to represent that the file belongs to a team OR a user
+  // but never both.
+  //
+  // So we want to select all users who own files and process them
+  const users = await prisma.user.findMany({
+    where: {
+      ownedFiles: {
+        some: {
+          ownerUserId: { not: null },
+        },
+      },
+    },
+    select: {
+      id: true,
+      ownedFiles: true,
+    },
+  });
+
+  // Loop through every user and move their files to a team
   for (const user of users) {
     // Get all teams the user belongs to
     const userTeamRoles = await prisma.userTeamRole.findMany({
@@ -74,9 +104,6 @@ async function main() {
                 },
               ],
             },
-            // TODO: remove these
-            stripeCustomerId: 'foo',
-            activated: true,
           },
         });
         oldestTeamId = team.id;
@@ -86,21 +113,20 @@ async function main() {
       console.log(`  User ${user.id}: ${userTeamRoles.length} teams`);
     }
 
-    // Select all files the user owns
-    const files = await prisma.file.findMany({
-      where: { ownerUserId: user.id },
-    });
-
     // Iterate through every file the user owns and move it to the oldest team as a draft
-    for (const file of files) {
+    for (const file of user.ownedFiles) {
       // Remove the user as owner and set the team as owner
       console.log(`    File ${file.id}: moving to team ${oldestTeamId}`);
       if (COMMIT) {
         await prisma.file.update({
           where: { id: file.id },
           data: {
-            // ownerUserId: null,
-            // leave ownerUserId as that means it's the user's draft in this team
+            // TODO: should the file remain private on the team, or public?
+            // If it's private, that means when the user logs in next they won't see their files!
+            // If it's public, that means they'll see them when they login but anyone who joins the team will see them too.
+
+            ownerUserId: null,
+            // OR: leave `ownerUserId` as it is, which means its a private file on the team
             ownerTeamId: oldestTeamId,
           },
         });
