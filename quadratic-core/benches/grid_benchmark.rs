@@ -57,7 +57,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             let pos = Pos { x: 10000, y: 10000 };
             let sheet = gc.try_sheet(sheet_id).unwrap();
             let contents = sheet
-                .copy_to_clipboard(&Selection::sheet_rect(sheet_rect))
+                .copy_to_clipboard(&Selection::sheet_rect(sheet_rect), false)
                 .unwrap();
             gc.paste_from_clipboard(
                 Selection::rect(pos.into(), sheet_id),
@@ -81,7 +81,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             let pos = Pos { x: 10000, y: 10000 };
             let sheet = gc.try_sheet(sheet_id).unwrap();
             let contents = sheet
-                .copy_to_clipboard(&Selection::sheet_rect(sheet_rect))
+                .copy_to_clipboard(&Selection::sheet_rect(sheet_rect), false)
                 .unwrap();
             gc.paste_from_clipboard(
                 Selection::rect(pos.into(), sheet_id),
