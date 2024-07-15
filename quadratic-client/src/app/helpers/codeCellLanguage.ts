@@ -1,9 +1,9 @@
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 
 const codeCellsById = {
-  Formula: { id: 'Formula', label: 'Formula' },
-  Javascript: { id: 'Javascript', label: 'JavaScript' },
-  Python: { id: 'Python', label: 'Python' },
+  Formula: { id: 'Formula', label: 'Formula', type: undefined },
+  Javascript: { id: 'Javascript', label: 'JavaScript', type: undefined },
+  Python: { id: 'Python', label: 'Python', type: undefined },
   POSTGRES: { id: 'POSTGRES', label: 'Postgres', type: 'connection' },
   MYSQL: { id: 'MYSQL', label: 'MySQL', type: 'connection' },
 } as const;

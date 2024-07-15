@@ -11,6 +11,7 @@ import { Command } from './CommandPaletteListItem';
 import { BordersHook } from './commands/Borders';
 import codeCommandGroup from './commands/Code';
 import { columnRowCommandGroup } from './commands/ColumnRow';
+import connectionsCommandGroup from './commands/Connections';
 import editCommandGroup from './commands/Edit';
 import fileCommandGroup from './commands/File';
 import formatCommandGroup from './commands/Format';
@@ -53,6 +54,7 @@ export const CommandPalette = () => {
     fileCommandGroup,
     viewCommandGroup,
     importCommandGroup,
+    connectionsCommandGroup,
     borderCommandGroup,
     textCommandGroup,
     formatCommandGroup,

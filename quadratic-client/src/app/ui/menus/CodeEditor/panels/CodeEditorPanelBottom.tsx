@@ -39,7 +39,7 @@ export function CodeEditorPanelBottom({
       }}
       className={'grid h-full grid-rows-[auto_1fr]'}
     >
-      <div className={cn('flex items-center px-2 pt-0.5', bottomHidden && 'border-t border-border')}>
+      <div className={cn('flex select-none items-center px-2 pt-0.5', bottomHidden && 'border-t border-border')}>
         <Button variant={'link'} onClick={() => setBottomHidden(!bottomHidden)} className="mr-2 p-0">
           <ChevronRightIcon
             className={cn(
@@ -65,7 +65,7 @@ export function CodeEditorPanelBottom({
         </TabsList>
       </div>
 
-      <TabsContent value="console" className="m-0 grow overflow-hidden">
+      <TabsContent value="console" className="m-0 grow overflow-hidden pt-2">
         {!bottomHidden && <Console />}
       </TabsContent>
 
