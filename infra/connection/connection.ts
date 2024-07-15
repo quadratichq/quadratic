@@ -15,63 +15,99 @@ const connectionSubdomain = config.require("connection-subdomain");
 const dockerImageTag = config.require("docker-image-tag");
 const quadraticApiUri = config.require("quadratic-api-uri");
 const connectionECRName = config.require("connection-ecr-repo-name");
-const ecrRegistryUrl = config.require("ecr-registry-url");
 
 // Configuration from Pulumi ESC
 const domain = config.require("domain");
 const certificateArn = config.require("certificate-arn");
-const subNet1 = config.require("subnet1");
-const subNet2 = config.require("subnet2");
-const vpcId = config.require("vpc-id");
 
-// Allocate Elastic IP for the instance so it remands the same after deployments
-const eip = new aws.ec2.Eip("nat-eip-1", {
+// Create a new VPC
+const vpc = new aws.ec2.Vpc("connection-vpc", {
+  cidrBlock: "10.0.0.0/16",
+  enableDnsSupport: true,
+  enableDnsHostnames: true,
+  tags: { Name: "connection-vpc" },
+});
+
+// Create Subnets
+const subnet1 = new aws.ec2.Subnet("connection-subnet-1", {
+  vpcId: vpc.id,
+  cidrBlock: "10.0.1.0/24",
+  availabilityZone: "us-west-2a",
+  tags: { Name: "connection-subnet-1" },
+});
+
+const subnet2 = new aws.ec2.Subnet("connection-subnet-2", {
+  vpcId: vpc.id,
+  cidrBlock: "10.0.2.0/24",
+  availabilityZone: "us-west-2b",
+  tags: { Name: "connection-subnet-2" },
+});
+
+// Create an Internet Gateway
+const internetGateway = new aws.ec2.InternetGateway("connection-igw", {
+  vpcId: vpc.id,
+  tags: { Name: "connection-igw" },
+});
+
+// Create a NAT Gateway
+const natEip1 = new aws.ec2.Eip("nat-eip-1", {
   vpc: true,
 });
 
-// create the instance
-const instance = new aws.ec2.Instance("connection-instance", {
-  tags: {
-    Name: `connection-instance-${connectionSubdomain}`,
-  },
-  instanceType: "t2.micro",
-  iamInstanceProfile: instanceProfileIAMContainerRegistry,
-  vpcSecurityGroupIds: [connectionEc2SecurityGroup.id],
-  subnetId: subNet1, // Assign a subnet, otherwise a random one will be chosen which could be disconnected from the NLB
-  ami: latestAmazonLinuxAmi.id,
-  // Run Setup script on instance boot to create connection systemd service
-  userDataReplaceOnChange: true,
-  userData: eip.publicIp.apply((publicIp) =>
-    runDockerImageBashScript(
-      connectionECRName,
-      dockerImageTag,
-      "quadratic-connection-development",
-      {
-        QUADRATIC_API_URI: quadraticApiUri,
-        STATIC_IPS: `${publicIp}`,
-      },
-      true
-    )
-  ),
-  associatePublicIpAddress: true,
+const natEip2 = new aws.ec2.Eip("nat-eip-2", {
+  vpc: true,
 });
 
-// Allocate an Elastic IP for the instance
-const eipAssociation = new aws.ec2.EipAssociation(
-  "connection-instance-eip-association",
-  {
-    instanceId: instance.id,
-    allocationId: eip.id,
-  }
-);
+const natGateway1 = new aws.ec2.NatGateway("connection-nat-gateway-1", {
+  allocationId: natEip1.id,
+  subnetId: subnet1.id,
+  tags: { Name: "connection-nat-gateway-1" },
+});
 
-// Create a new Network Load Balancer
-const nlb = new aws.lb.LoadBalancer("connection-nlb", {
-  internal: false,
-  loadBalancerType: "network",
-  subnets: [subNet1, subNet2],
-  enableCrossZoneLoadBalancing: true,
-  securityGroups: [connectionNlbSecurityGroup.id],
+const natGateway2 = new aws.ec2.NatGateway("connection-nat-gateway-2", {
+  allocationId: natEip2.id,
+  subnetId: subnet2.id,
+  tags: { Name: "connection-nat-gateway-2" },
+});
+
+// Create a Route Table
+const routeTable = new aws.ec2.RouteTable("connection-route-table", {
+  vpcId: vpc.id,
+  routes: [{ cidrBlock: "0.0.0.0/0", gatewayId: internetGateway.id }],
+  tags: { Name: "connection-route-table" },
+});
+
+// Associate Subnets with Route Table
+new aws.ec2.RouteTableAssociation("connection-subnet-1-association", {
+  subnetId: subnet1.id,
+  routeTableId: routeTable.id,
+});
+
+new aws.ec2.RouteTableAssociation("connection-subnet-2-association", {
+  subnetId: subnet2.id,
+  routeTableId: routeTable.id,
+});
+
+// Create an Auto Scaling Group
+const launchConfiguration = new aws.ec2.LaunchConfiguration("connection-lc", {
+  instanceType: "t2.micro",
+  iamInstanceProfile: instanceProfileIAMContainerRegistry,
+  imageId: latestAmazonLinuxAmi.id,
+  securityGroups: [connectionEc2SecurityGroup.id],
+  userData: natEip1.publicIp.apply((publicIp1) =>
+    natEip2.publicIp.apply((publicIp2) =>
+      runDockerImageBashScript(
+        connectionECRName,
+        dockerImageTag,
+        "quadratic-connection-development",
+        {
+          QUADRATIC_API_URI: quadraticApiUri,
+          STATIC_IPS: `${publicIp1},${publicIp2}`,
+        },
+        true
+      )
+    )
+  ),
 });
 
 // Create a new Target Group
@@ -79,17 +115,33 @@ const targetGroup = new aws.lb.TargetGroup("connection-nlb-tg", {
   port: 80,
   protocol: "TCP",
   targetType: "instance",
-  vpcId: vpcId,
+  vpcId: vpc.id,
 });
 
-// Attach the instance to the new Target Group
-const targetGroupAttachment = new aws.lb.TargetGroupAttachment(
-  "connection-attach-instance-tg",
-  {
-    targetId: instance.id,
-    targetGroupArn: targetGroup.arn,
-  }
-);
+const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
+  vpcZoneIdentifiers: [subnet1.id, subnet2.id],
+  launchConfiguration: launchConfiguration.id,
+  minSize: 2,
+  maxSize: 4,
+  desiredCapacity: 2,
+  tags: [
+    {
+      key: "Name",
+      value: `connection-instance-${connectionSubdomain}`,
+      propagateAtLaunch: true,
+    },
+  ],
+  targetGroupArns: [targetGroup.arn],
+});
+
+// Create a new Network Load Balancer
+const nlb = new aws.lb.LoadBalancer("connection-nlb", {
+  internal: false,
+  loadBalancerType: "network",
+  subnets: [subnet1.id, subnet2.id],
+  enableCrossZoneLoadBalancing: true,
+  securityGroups: [connectionNlbSecurityGroup.id],
+});
 
 // Create NLB Listener for TLS on port 443
 const nlbListener = new aws.lb.Listener("connection-nlb-listener", {
