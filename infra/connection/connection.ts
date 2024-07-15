@@ -115,22 +115,48 @@ const natGateway2 = new aws.ec2.NatGateway("connection-nat-gateway-2", {
   tags: { Name: "connection-nat-gateway-2" },
 });
 
-// Create a Route Table
-const routeTable = new aws.ec2.RouteTable("connection-route-table", {
-  vpcId: vpc.id,
-  routes: [{ cidrBlock: "0.0.0.0/0", gatewayId: internetGateway.id }],
-  tags: { Name: "connection-route-table" },
-});
+// Create Route Tables
+const publicRouteTable = new aws.ec2.RouteTable(
+  "connection-public-route-table",
+  {
+    vpcId: vpc.id,
+    routes: [{ cidrBlock: "0.0.0.0/0", gatewayId: internetGateway.id }],
+    tags: { Name: "connection-public-route-table" },
+  }
+);
 
-// Associate Subnets with Route Table
-new aws.ec2.RouteTableAssociation("connection-subnet-1-association", {
+const privateRouteTable1 = new aws.ec2.RouteTable(
+  "connection-private-route-table-1",
+  {
+    vpcId: vpc.id,
+    routes: [{ cidrBlock: "0.0.0.0/0", natGatewayId: natGateway1.id }],
+    tags: { Name: "connection-private-route-table-1" },
+  }
+);
+
+const privateRouteTable2 = new aws.ec2.RouteTable(
+  "connection-private-route-table-2",
+  {
+    vpcId: vpc.id,
+    routes: [{ cidrBlock: "0.0.0.0/0", natGatewayId: natGateway2.id }],
+    tags: { Name: "connection-private-route-table-2" },
+  }
+);
+
+// Associate Subnets with Route Tables
+new aws.ec2.RouteTableAssociation("connection-public-subnet-1-association", {
   subnetId: subnet1.id,
-  routeTableId: routeTable.id,
+  routeTableId: publicRouteTable.id,
 });
 
-new aws.ec2.RouteTableAssociation("connection-subnet-2-association", {
+new aws.ec2.RouteTableAssociation("connection-private-subnet-1-association", {
+  subnetId: subnet1.id,
+  routeTableId: privateRouteTable1.id,
+});
+
+new aws.ec2.RouteTableAssociation("connection-private-subnet-2-association", {
   subnetId: subnet2.id,
-  routeTableId: routeTable.id,
+  routeTableId: privateRouteTable2.id,
 });
 
 // Create an Auto Scaling Group
