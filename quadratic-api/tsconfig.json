@@ -10,6 +10,6 @@
     "sourceMap": true,
     "outDir": "dist"
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "scripts/**/*.ts", "src/routes/v0/connections.GET.test.ts"],
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "scripts/**/*.ts"],
   "exclude": ["src/**/*.test.ts"]
 }
