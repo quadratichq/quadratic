@@ -9,11 +9,27 @@ interface ConnectionInputPasswordProps extends InputProps {
 export const ConnectionInputPassword: React.FC<ConnectionInputPasswordProps> = (props) => {
   const { hidePassword } = props;
 
+  // Override the display of the input if the password is being hidden
+  const propsOverrides = hidePassword
+    ? {
+        value: '',
+        placeholder:
+          typeof props.value === 'string'
+            ? props.value
+                .split('')
+                .map(() => '•')
+                .join('')
+            : '',
+        disabled: true,
+      }
+    : {};
+
   return (
     <Input
       autoComplete="off" // Tells browser to not save password (often ignored)
-      type={hidePassword ? 'hidden' : 'text'} // Use hidden instead of password to prevent browser from saving password
+      type={'text'}
       {...props}
+      {...propsOverrides}
     />
   );
 };
