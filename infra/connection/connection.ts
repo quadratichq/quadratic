@@ -1,13 +1,21 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 
+import { isPreviewEnvironment } from "../helpers/isPreviewEnvironment";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
 import { runDockerImageBashScript } from "../helpers/runDockerImageBashScript";
 import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
 import {
   connectionEc2SecurityGroup,
+  connectionEip1,
+  connectionEip2,
   connectionNlbSecurityGroup,
-} from "../shared/securityGroups";
+  connectionPrivateSubnet1,
+  connectionPrivateSubnet2,
+  connectionPublicSubnet1,
+  connectionPublicSubnet2,
+  connectionVPC,
+} from "./connection_network";
 const config = new pulumi.Config();
 
 // Configuration from command line
@@ -15,63 +23,31 @@ const connectionSubdomain = config.require("connection-subdomain");
 const dockerImageTag = config.require("docker-image-tag");
 const quadraticApiUri = config.require("quadratic-api-uri");
 const connectionECRName = config.require("connection-ecr-repo-name");
-const ecrRegistryUrl = config.require("ecr-registry-url");
 
 // Configuration from Pulumi ESC
 const domain = config.require("domain");
 const certificateArn = config.require("certificate-arn");
-const subNet1 = config.require("subnet1");
-const subNet2 = config.require("subnet2");
-const vpcId = config.require("vpc-id");
 
-// Allocate Elastic IP for the instance so it remands the same after deployments
-const eip = new aws.ec2.Eip("nat-eip-1", {
-  vpc: true,
-});
-
-// create the instance
-const instance = new aws.ec2.Instance("connection-instance", {
-  tags: {
-    Name: `connection-instance-${connectionSubdomain}`,
-  },
+// Create an Auto Scaling Group
+const launchConfiguration = new aws.ec2.LaunchConfiguration("connection-lc", {
   instanceType: "t2.micro",
   iamInstanceProfile: instanceProfileIAMContainerRegistry,
-  vpcSecurityGroupIds: [connectionEc2SecurityGroup.id],
-  subnetId: subNet1, // Assign a subnet, otherwise a random one will be chosen which could be disconnected from the NLB
-  ami: latestAmazonLinuxAmi.id,
-  // Run Setup script on instance boot to create connection systemd service
-  userDataReplaceOnChange: true,
-  userData: eip.publicIp.apply((publicIp) =>
-    runDockerImageBashScript(
-      connectionECRName,
-      dockerImageTag,
-      "quadratic-connection-development",
-      {
-        QUADRATIC_API_URI: quadraticApiUri,
-        STATIC_IPS: `${publicIp}`,
-      },
-      true
+  imageId: latestAmazonLinuxAmi.id,
+  securityGroups: [connectionEc2SecurityGroup.id],
+  userData: connectionEip1.publicIp.apply((publicIp1) =>
+    connectionEip2.publicIp.apply((publicIp2) =>
+      runDockerImageBashScript(
+        connectionECRName,
+        dockerImageTag,
+        "quadratic-connection-development",
+        {
+          QUADRATIC_API_URI: quadraticApiUri,
+          STATIC_IPS: `${publicIp1},${publicIp2}`,
+        },
+        true
+      )
     )
   ),
-  associatePublicIpAddress: true,
-});
-
-// Allocate an Elastic IP for the instance
-const eipAssociation = new aws.ec2.EipAssociation(
-  "connection-instance-eip-association",
-  {
-    instanceId: instance.id,
-    allocationId: eip.id,
-  }
-);
-
-// Create a new Network Load Balancer
-const nlb = new aws.lb.LoadBalancer("connection-nlb", {
-  internal: false,
-  loadBalancerType: "network",
-  subnets: [subNet1, subNet2],
-  enableCrossZoneLoadBalancing: true,
-  securityGroups: [connectionNlbSecurityGroup.id],
 });
 
 // Create a new Target Group
@@ -79,17 +55,42 @@ const targetGroup = new aws.lb.TargetGroup("connection-nlb-tg", {
   port: 80,
   protocol: "TCP",
   targetType: "instance",
-  vpcId: vpcId,
+  vpcId: connectionVPC.id,
 });
 
-// Attach the instance to the new Target Group
-const targetGroupAttachment = new aws.lb.TargetGroupAttachment(
-  "connection-attach-instance-tg",
-  {
-    targetId: instance.id,
-    targetGroupArn: targetGroup.arn,
-  }
-);
+// Calculate the number of instances to launch
+let minSize = 2;
+let maxSize = 5;
+let desiredCapacity = 2;
+if (isPreviewEnvironment) minSize = maxSize = desiredCapacity = 1;
+
+const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
+  vpcZoneIdentifiers: [
+    connectionPrivateSubnet1.id,
+    connectionPrivateSubnet2.id,
+  ],
+  launchConfiguration: launchConfiguration.id,
+  minSize,
+  maxSize,
+  desiredCapacity,
+  tags: [
+    {
+      key: "Name",
+      value: `connection-instance-${connectionSubdomain}`,
+      propagateAtLaunch: true,
+    },
+  ],
+  targetGroupArns: [targetGroup.arn],
+});
+
+// Create a new Network Load Balancer
+const nlb = new aws.lb.LoadBalancer("connection-nlb", {
+  internal: false,
+  loadBalancerType: "network",
+  subnets: [connectionPublicSubnet1.id, connectionPublicSubnet2.id],
+  enableCrossZoneLoadBalancing: true,
+  securityGroups: [connectionNlbSecurityGroup.id],
+});
 
 // Create NLB Listener for TLS on port 443
 const nlbListener = new aws.lb.Listener("connection-nlb-listener", {
