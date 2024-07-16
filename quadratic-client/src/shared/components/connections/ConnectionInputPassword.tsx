@@ -1,16 +1,14 @@
+import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
+import { forwardRef, useState } from 'react';
 
-// extend typeof Input to include hidePassword prop
 type InputProps = React.ComponentProps<typeof Input>;
-interface ConnectionInputPasswordProps extends InputProps {
-  hidePassword?: boolean;
-}
 
-export const ConnectionInputPassword: React.FC<ConnectionInputPasswordProps> = (props) => {
-  const { hidePassword } = props;
+export const ConnectionInputPassword = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
+  const [hidePassword, setHidePassword] = useState(props.value !== '');
 
   // Override the display of the input if the password is being hidden
-  const propsOverrides = hidePassword
+  const overrides = hidePassword
     ? {
         value: '',
         placeholder:
@@ -25,11 +23,24 @@ export const ConnectionInputPassword: React.FC<ConnectionInputPasswordProps> = (
     : {};
 
   return (
-    <Input
-      autoComplete="off" // Tells browser to not save password (often ignored)
-      type={'text'}
-      {...props}
-      {...propsOverrides}
-    />
+    <div className="relative">
+      <Input
+        autoComplete="off" // Tells browser to not save password (often ignored)
+        type={'text'}
+        className="pr-14"
+        ref={ref}
+        {...props}
+        {...overrides}
+      />
+      <Button
+        variant="ghost"
+        size="sm"
+        className="absolute right-0.5 top-0.5 text-muted-foreground hover:bg-transparent"
+        type="button"
+        onClick={() => setHidePassword((prev) => !prev)}
+      >
+        {hidePassword ? 'Show' : 'Hide'}
+      </Button>
+    </div>
   );
-};
+});
