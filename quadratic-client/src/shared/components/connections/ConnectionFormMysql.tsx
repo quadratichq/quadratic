@@ -1,3 +1,4 @@
+import { ConnectionInputPassword } from '@/shared/components/connections/ConnectionInputPassword';
 import { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
@@ -39,7 +40,7 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
 };
 
 export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, children, handleSubmitForm }) => {
-  const [hidePassword, setHidePassword] = useState(true);
+  const [hidePassword, setHidePassword] = useState(form.getValues('password') !== '');
 
   return (
     <Form {...form}>
@@ -121,7 +122,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
                 <FormLabel>Password</FormLabel>
                 <FormControl>
                   <div className="relative">
-                    <Input autoComplete="off" {...field} type={hidePassword ? 'password' : 'text'} className="pr-14" />
+                    <ConnectionInputPassword {...field} hidePassword={hidePassword} className="pr-14" />
                     <Button
                       variant="ghost"
                       size="sm"

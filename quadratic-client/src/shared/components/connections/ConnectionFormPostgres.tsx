@@ -1,3 +1,4 @@
+import { ConnectionInputPassword } from '@/shared/components/connections/ConnectionInputPassword';
 import { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
@@ -8,7 +9,7 @@ import {
   ConnectionTypeDetailsPostgresSchema,
   ConnectionTypeSchema,
 } from 'quadratic-shared/typesAndSchemasConnections';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -39,27 +40,11 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
 };
 
 export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, children, handleSubmitForm }) => {
-  const [hidePassword, setHidePassword] = useState(false);
-
-  // Hide the password field after a short delay
-  // This prevents chrome from asking to save the password
-  // because on the first render of the page the input is a text field.
-  useEffect(() => {
-    setTimeout(() => {
-      setHidePassword(true);
-    }, 100);
-  }, []);
+  const [hidePassword, setHidePassword] = useState(form.getValues('password') !== '');
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={() => {
-          setHidePassword(false); // makes it less likely that the browser will ask to save the password
-          form.handleSubmit(handleSubmitForm);
-        }}
-        className="space-y-2"
-        autoComplete="off"
-      >
+      <form onSubmit={form.handleSubmit(handleSubmitForm)} className="space-y-2" autoComplete="off">
         <FormField
           control={form.control}
           name="name"
@@ -137,7 +122,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
                 <FormLabel>Password</FormLabel>
                 <FormControl>
                   <div className="relative">
-                    <Input autoComplete="off" {...field} type={hidePassword ? 'password' : 'text'} className="pr-14" />
+                    <ConnectionInputPassword {...field} hidePassword={hidePassword} className="pr-14" />
                     <Button
                       variant="ghost"
                       size="sm"
