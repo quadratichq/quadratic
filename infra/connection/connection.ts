@@ -25,6 +25,121 @@ const vpc = new aws.ec2.Vpc("connection-vpc", {
   tags: { Name: "connection-vpc" },
 });
 
+// Create an Internet Gateway
+const internetGateway = new aws.ec2.InternetGateway("connection-igw", {
+  vpcId: vpc.id,
+  tags: { Name: "connection-igw" },
+});
+
+// Create Elastic IPs
+const natEip1 = new aws.ec2.Eip("nat-eip-1", {
+  vpc: true,
+});
+
+const natEip2 = new aws.ec2.Eip("nat-eip-2", {
+  vpc: true,
+});
+
+// Create public subnets
+const publicSubnet1 = new aws.ec2.Subnet("connection-public-subnet-1", {
+  vpcId: vpc.id,
+  cidrBlock: "10.0.1.0/24",
+  availabilityZone: "us-west-2a",
+  mapPublicIpOnLaunch: true,
+  tags: { Name: "connection-public-subnet-1" },
+});
+
+const publicSubnet2 = new aws.ec2.Subnet("connection-public-subnet-2", {
+  vpcId: vpc.id,
+  cidrBlock: "10.0.2.0/24",
+  availabilityZone: "us-west-2b",
+  mapPublicIpOnLaunch: true,
+  tags: { Name: "connection-public-subnet-2" },
+});
+
+// Create a NAT Gateway in each public subnet
+const natGateway1 = new aws.ec2.NatGateway("nat-gateway-1", {
+  allocationId: natEip1.id,
+  subnetId: publicSubnet1.id,
+  tags: { Name: "nat-gateway-1" },
+});
+
+const natGateway2 = new aws.ec2.NatGateway("nat-gateway-2", {
+  allocationId: natEip2.id,
+  subnetId: publicSubnet2.id,
+  tags: { Name: "nat-gateway-2" },
+});
+
+// Create private subnets
+const privateSubnet1 = new aws.ec2.Subnet("connection-private-subnet-1", {
+  vpcId: vpc.id,
+  cidrBlock: "10.0.3.0/24",
+  availabilityZone: "us-west-2a",
+  tags: { Name: "connection-private-subnet-1" },
+});
+
+const privateSubnet2 = new aws.ec2.Subnet("connection-private-subnet-2", {
+  vpcId: vpc.id,
+  cidrBlock: "10.0.4.0/24",
+  availabilityZone: "us-west-2b",
+  tags: { Name: "connection-private-subnet-2" },
+});
+
+// Create route tables
+const publicRouteTable = new aws.ec2.RouteTable("public-route-table", {
+  vpcId: vpc.id,
+  routes: [
+    {
+      cidrBlock: "0.0.0.0/0",
+      gatewayId: internetGateway.id,
+    },
+  ],
+  tags: { Name: "public-route-table" },
+});
+
+const privateRouteTable1 = new aws.ec2.RouteTable("private-route-table-1", {
+  vpcId: vpc.id,
+  routes: [
+    {
+      cidrBlock: "0.0.0.0/0",
+      natGatewayId: natGateway1.id,
+    },
+  ],
+  tags: { Name: "private-route-table-1" },
+});
+
+const privateRouteTable2 = new aws.ec2.RouteTable("private-route-table-2", {
+  vpcId: vpc.id,
+  routes: [
+    {
+      cidrBlock: "0.0.0.0/0",
+      natGatewayId: natGateway2.id,
+    },
+  ],
+  tags: { Name: "private-route-table-2" },
+});
+
+// Associate subnets with route tables
+new aws.ec2.RouteTableAssociation("public-route-table-association-1", {
+  subnetId: publicSubnet1.id,
+  routeTableId: publicRouteTable.id,
+});
+
+new aws.ec2.RouteTableAssociation("public-route-table-association-2", {
+  subnetId: publicSubnet2.id,
+  routeTableId: publicRouteTable.id,
+});
+
+new aws.ec2.RouteTableAssociation("private-route-table-association-1", {
+  subnetId: privateSubnet1.id,
+  routeTableId: privateRouteTable1.id,
+});
+
+new aws.ec2.RouteTableAssociation("private-route-table-association-2", {
+  subnetId: privateSubnet2.id,
+  routeTableId: privateRouteTable2.id,
+});
+
 // Create a Security Group for the Connection NLB
 export const connectionNlbSecurityGroup = new aws.ec2.SecurityGroup(
   "connection-nlb-security-group-1",
@@ -73,92 +188,6 @@ if (isPreviewEnvironment)
     securityGroupId: connectionEc2SecurityGroup.id,
   });
 
-// Create Subnets
-const subnet1 = new aws.ec2.Subnet("connection-subnet-1", {
-  vpcId: vpc.id,
-  cidrBlock: "10.0.1.0/24",
-  availabilityZone: "us-west-2a",
-  tags: { Name: "connection-subnet-1" },
-});
-
-const subnet2 = new aws.ec2.Subnet("connection-subnet-2", {
-  vpcId: vpc.id,
-  cidrBlock: "10.0.2.0/24",
-  availabilityZone: "us-west-2b",
-  tags: { Name: "connection-subnet-2" },
-});
-
-// Create an Internet Gateway
-const internetGateway = new aws.ec2.InternetGateway("connection-igw", {
-  vpcId: vpc.id,
-  tags: { Name: "connection-igw" },
-});
-
-// Create a NAT Gateway
-const natEip1 = new aws.ec2.Eip("nat-eip-1", {
-  vpc: true,
-});
-
-const natEip2 = new aws.ec2.Eip("nat-eip-2", {
-  vpc: true,
-});
-
-const natGateway1 = new aws.ec2.NatGateway("connection-nat-gateway-1", {
-  allocationId: natEip1.id,
-  subnetId: subnet1.id,
-  tags: { Name: "connection-nat-gateway-1" },
-});
-
-const natGateway2 = new aws.ec2.NatGateway("connection-nat-gateway-2", {
-  allocationId: natEip2.id,
-  subnetId: subnet2.id,
-  tags: { Name: "connection-nat-gateway-2" },
-});
-
-// Create Route Tables
-const publicRouteTable = new aws.ec2.RouteTable(
-  "connection-public-route-table",
-  {
-    vpcId: vpc.id,
-    routes: [{ cidrBlock: "0.0.0.0/0", gatewayId: internetGateway.id }],
-    tags: { Name: "connection-public-route-table" },
-  }
-);
-
-const privateRouteTable1 = new aws.ec2.RouteTable(
-  "connection-private-route-table-1",
-  {
-    vpcId: vpc.id,
-    routes: [{ cidrBlock: "0.0.0.0/0", natGatewayId: natGateway1.id }],
-    tags: { Name: "connection-private-route-table-1" },
-  }
-);
-
-const privateRouteTable2 = new aws.ec2.RouteTable(
-  "connection-private-route-table-2",
-  {
-    vpcId: vpc.id,
-    routes: [{ cidrBlock: "0.0.0.0/0", natGatewayId: natGateway2.id }],
-    tags: { Name: "connection-private-route-table-2" },
-  }
-);
-
-// Associate Subnets with Route Tables
-new aws.ec2.RouteTableAssociation("connection-public-subnet-1-association", {
-  subnetId: subnet1.id,
-  routeTableId: publicRouteTable.id,
-});
-
-new aws.ec2.RouteTableAssociation("connection-private-subnet-1-association", {
-  subnetId: subnet1.id,
-  routeTableId: privateRouteTable1.id,
-});
-
-new aws.ec2.RouteTableAssociation("connection-private-subnet-2-association", {
-  subnetId: subnet2.id,
-  routeTableId: privateRouteTable2.id,
-});
-
 // Create an Auto Scaling Group
 const launchConfiguration = new aws.ec2.LaunchConfiguration("connection-lc", {
   instanceType: "t2.micro",
@@ -190,7 +219,7 @@ const targetGroup = new aws.lb.TargetGroup("connection-nlb-tg", {
 });
 
 const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
-  vpcZoneIdentifiers: [subnet1.id, subnet2.id],
+  vpcZoneIdentifiers: [privateSubnet1.id, privateSubnet2.id],
   launchConfiguration: launchConfiguration.id,
   minSize: 2,
   maxSize: 4,
@@ -209,7 +238,7 @@ const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
 const nlb = new aws.lb.LoadBalancer("connection-nlb", {
   internal: false,
   loadBalancerType: "network",
-  subnets: [subnet1.id, subnet2.id],
+  subnets: [publicSubnet1.id, publicSubnet2.id],
   enableCrossZoneLoadBalancing: true,
   securityGroups: [connectionNlbSecurityGroup.id],
 });
