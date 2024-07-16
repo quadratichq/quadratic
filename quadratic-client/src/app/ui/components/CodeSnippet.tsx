@@ -1,6 +1,7 @@
+import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import Editor from '@monaco-editor/react';
-import { ContentCopy } from '@mui/icons-material';
-import { Box, IconButton, Stack, useTheme } from '@mui/material';
+import { ContentCopy, ContentPasteGoOutlined } from '@mui/icons-material';
+import { IconButton } from '@mui/material';
 import { useRef, useState } from 'react';
 import { codeEditorBaseStyles } from '../menus/CodeEditor/styles';
 import { TooltipHint } from './TooltipHint';
@@ -11,16 +12,15 @@ interface Props {
 }
 
 export function CodeSnippet({ code, language = 'plaintext' }: Props) {
-  const [tooltipMsg, setTooltipMsg] = useState<string>('Click to copy');
+  const [tooltipMsg, setTooltipMsg] = useState<string>('Copy');
   const editorRef = useRef(null);
-  const theme = useTheme();
 
   const handleClick = (e: any) => {
     if (editorRef.current) {
       navigator.clipboard.writeText(code);
       setTooltipMsg('Copied!');
       setTimeout(() => {
-        setTooltipMsg('Click to copy');
+        setTooltipMsg('Copy');
       }, 2000);
     }
   };
@@ -37,36 +37,24 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
   }
 
   return (
-    <Box style={codeEditorBaseStyles}>
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        spacing={1}
-        sx={{
-          backgroundColor: theme.palette.grey['100'],
-          pt: theme.spacing(0.5),
-          pb: theme.spacing(0.5),
-          // 10px on Monaco + 2px border
-          pr: '12px',
-          pl: '12px',
-        }}
-      >
-        <Box sx={{ color: 'text.secondary' }}>{language}</Box>
+    <div style={codeEditorBaseStyles} className="overflow-hidden rounded border shadow-sm">
+      <div className="flex flex-row items-center justify-between gap-2 bg-accent px-3 py-1">
+        <div className="lowercase text-muted-foreground">{language}</div>
 
-        <TooltipHint title={tooltipMsg}>
-          <IconButton onClick={handleClick} size="small">
-            <ContentCopy fontSize="inherit" />
-          </IconButton>
-        </TooltipHint>
-      </Stack>
+        <div className="flex items-center gap-1">
+          <CodeEditorInsertButton text={code} />
+          <TooltipHint title={tooltipMsg}>
+            <IconButton onClick={handleClick} size="small">
+              <ContentCopy fontSize="inherit" color="inherit" className="text-muted-foreground" />
+            </IconButton>
+          </TooltipHint>
+        </div>
+      </div>
       <div
+        className="relative pt-2"
         style={{
           // calculate height based on number of lines
-          height: `${Math.ceil(code.split('\n').length) * 19}px`,
-          position: 'relative',
-          border: `2px solid ${theme.palette.grey['100']}`,
-          borderTop: 'none',
+          height: `${Math.ceil(code.split('\n').length) * 19 + 16}px`,
         }}
       >
         <Editor
@@ -94,6 +82,29 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
           onMount={handleEditorDidMount}
         />
       </div>
-    </Box>
+    </div>
+  );
+}
+
+function CodeEditorInsertButton({ text }: { text: string }) {
+  const { editorRef } = useCodeEditor();
+
+  const handleClick = () => {
+    if (editorRef.current) {
+      const selection = editorRef.current.getSelection();
+      if (!selection) return;
+      const id = { major: 1, minor: 1 };
+      const op = { identifier: id, range: selection, text, forceMoveMarkers: true };
+      editorRef.current.executeEdits('my-source', [op]);
+      editorRef.current.focus();
+    }
+  };
+
+  return (
+    <TooltipHint title={'Paste in editor'}>
+      <IconButton size="small" onClick={handleClick}>
+        <ContentPasteGoOutlined fontSize="inherit" color="inherit" className="text-muted-foreground" />
+      </IconButton>
+    </TooltipHint>
   );
 }
