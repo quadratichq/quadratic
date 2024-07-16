@@ -1,13 +1,12 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getConnectionInfo } from '@/app/helpers/codeCellLanguage';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
-import { SqlAdd } from '@/app/ui/icons';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { useConnectionSchemaFetcher } from '@/app/ui/menus/CodeEditor/useConnectionSchemaFetcher';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { Type } from '@/shared/components/Type';
 import { cn } from '@/shared/shadcn/utils';
-import { KeyboardArrowRight, Refresh } from '@mui/icons-material';
+import { ContentPasteGoOutlined, KeyboardArrowRight, Refresh } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import { useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -90,12 +89,17 @@ function TableListItem({
     e.stopPropagation();
 
     if (editorRef.current) {
-      const selection = editorRef.current.getSelection();
-      if (!selection) return;
-      const id = { major: 1, minor: 1 };
-      const text = `SELECT * FROM ${name} LIMIT 100`;
-      const op = { identifier: id, range: selection, text: text, forceMoveMarkers: true };
-      editorRef.current.executeEdits('my-source', [op]);
+      const model = editorRef.current.getModel();
+      if (!model) return;
+
+      const range = model.getFullModelRange();
+      editorRef.current.executeEdits('insert-query', [
+        {
+          range,
+          text: `SELECT * FROM ${name} LIMIT 100`,
+        },
+      ]);
+
       editorRef.current.focus();
     }
   };
@@ -122,13 +126,13 @@ function TableListItem({
           <div className="truncate">{name}</div>
         </div>
 
-        <TooltipHint title="Query this table">
+        <TooltipHint title="Paste query">
           <IconButton
             size="small"
             className={`${expanded ? '' : 'opacity-0'} group-hover/item:opacity-100`}
             onClick={onQuery}
           >
-            <SqlAdd fontSize="inherit" />
+            <ContentPasteGoOutlined fontSize="inherit" />
           </IconButton>
         </TooltipHint>
       </div>

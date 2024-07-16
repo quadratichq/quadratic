@@ -89,13 +89,20 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
 function CodeEditorInsertButton({ text }: { text: string }) {
   const { editorRef } = useCodeEditor();
 
+  // Replace what's in the editor with the given text
   const handleClick = () => {
     if (editorRef.current) {
-      const selection = editorRef.current.getSelection();
-      if (!selection) return;
-      const id = { major: 1, minor: 1 };
-      const op = { identifier: id, range: selection, text, forceMoveMarkers: true };
-      editorRef.current.executeEdits('my-source', [op]);
+      const model = editorRef.current.getModel();
+      if (!model) return;
+
+      const range = model.getFullModelRange();
+      editorRef.current.executeEdits('insert-code', [
+        {
+          range,
+          text,
+        },
+      ]);
+
       editorRef.current.focus();
     }
   };
