@@ -1,4 +1,4 @@
-import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
+import { ConnectionsIcon, SharedWithMeIcon } from '@/dashboard/components/CustomRadixIcons';
 import { TeamSwitcher } from '@/dashboard/components/TeamSwitcher';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
@@ -14,7 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shar
 import { cn } from '@/shared/shadcn/utils';
 import { SchoolOutlined } from '@mui/icons-material';
 import { AvatarImage } from '@radix-ui/react-avatar';
-import { ExternalLinkIcon, FileIcon, GearIcon, MixIcon, PersonIcon, PlusIcon, Share2Icon } from '@radix-ui/react-icons';
+import { ExternalLinkIcon, FileIcon, GearIcon, MixIcon, PersonIcon, PlusIcon } from '@radix-ui/react-icons';
 import { ReactNode, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigation, useSearchParams, useSubmit } from 'react-router-dom';
 
@@ -90,7 +90,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           <SidebarNavLinkCreateButton to={ROUTES.CREATE_FILE_PRIVATE(activeTeamUuid)} />
         </div>
         <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
-          <Share2Icon className={classNameIcons} />
+          <SharedWithMeIcon className={classNameIcons} />
           Shared with me
         </SidebarNavLink>
 
