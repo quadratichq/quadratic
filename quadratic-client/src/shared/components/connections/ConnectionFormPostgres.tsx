@@ -8,7 +8,7 @@ import {
   ConnectionTypeDetailsPostgresSchema,
   ConnectionTypeSchema,
 } from 'quadratic-shared/typesAndSchemasConnections';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -39,11 +39,27 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
 };
 
 export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, children, handleSubmitForm }) => {
-  const [hidePassword, setHidePassword] = useState(true);
+  const [hidePassword, setHidePassword] = useState(false);
+
+  // Hide the password field after a short delay
+  // This prevents chrome from asking to save the password
+  // because on the first render of the page the input is a text field.
+  useEffect(() => {
+    setTimeout(() => {
+      setHidePassword(true);
+    }, 100);
+  }, []);
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmitForm)} className="space-y-2" autoComplete="off">
+      <form
+        onSubmit={() => {
+          setHidePassword(false); // makes it less likely that the browser will ask to save the password
+          form.handleSubmit(handleSubmitForm);
+        }}
+        className="space-y-2"
+        autoComplete="off"
+      >
         <FormField
           control={form.control}
           name="name"
