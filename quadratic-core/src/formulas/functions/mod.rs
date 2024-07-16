@@ -22,6 +22,8 @@ use crate::{
     SpannedIterExt, Value,
 };
 
+pub use lookup::IndexFunctionArgs;
+
 pub fn lookup_function(name: &str) -> Option<&'static FormulaFunction> {
     ALL_FUNCTIONS.get(
         excel::remove_excel_function_prefix(name)
@@ -67,7 +69,7 @@ pub struct FormulaFnArgs {
     args_popped: usize,
 }
 impl FormulaFnArgs {
-    /// Constructs a set of arguments values.
+    /// Constructs a list of arguments values.
     pub fn new(
         values: impl Into<VecDeque<Spanned<Value>>>,
         span: Span,

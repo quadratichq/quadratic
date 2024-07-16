@@ -341,6 +341,14 @@ impl FromStr for SheetPos {
     }
 }
 
+impl SheetPos {
+    pub fn pos(&self) -> Pos {
+        let x = self.x;
+        let y = self.y;
+        Pos { x, y }
+    }
+}
+
 /// Used for referencing a range during computation.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
@@ -480,6 +488,20 @@ impl SheetRect {
             x: self.min.x,
             y: self.min.y,
             sheet_id: self.sheet_id,
+        }
+    }
+
+    /// Returns the position of the cell at the given offset (0-indexed) within
+    /// the rectangle, or `None` if the coordinates are outside the rectangle.
+    pub fn index_cell(&self, x: u32, y: u32) -> Option<SheetPos> {
+        if (x as usize) < self.width() && (y as usize) < self.height() {
+            Some(SheetPos {
+                x: self.min.x + x as i64,
+                y: self.min.y + y as i64,
+                sheet_id: self.sheet_id,
+            })
+        } else {
+            None
         }
     }
 }

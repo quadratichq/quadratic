@@ -2,7 +2,7 @@ use itertools::Itertools;
 use regex::Regex;
 use smallvec::smallvec;
 
-use crate::ArraySize;
+use crate::{ArraySize, CodeResultExt};
 
 use super::*;
 
@@ -21,9 +21,10 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[examples("INDIRECT(\"Cn7\")", "INDIRECT(\"F\" & B0)")]
             #[zip_map]
             fn INDIRECT(ctx: Ctx, [cellref_string]: (Spanned<String>)) {
-                let pos = CellRef::parse_a1(&cellref_string.inner, ctx.sheet_pos.into())
+                let cell_ref = CellRef::parse_a1(&cellref_string.inner, ctx.sheet_pos.into())
                     .ok_or(RunErrorMsg::BadCellReference.with_span(cellref_string.span))?;
-                ctx.get_cell(&pos, cellref_string.span)?.inner
+                let pos = ctx.resolve_ref(&cell_ref, cellref_string.span)?.inner;
+                ctx.get_cell(pos, cellref_string.span)?.inner
             }
         ),
         formula_fn!(
@@ -328,6 +329,50 @@ fn get_functions() -> Vec<FormulaFunction> {
                 let index = lookup(needle, haystack, match_mode, search_mode)?
                     .ok_or(RunErrorMsg::NoMatch)?;
                 index as i64 + 1 // 1-indexed
+            }
+        ),
+        formula_fn!(
+            /// Returns the element in `range` at a given `row` and `column`. If
+            /// the array is a single row, then `row` may be omitted; otherwise
+            /// it is required. If the array is a single column, then `column`
+            /// may be omitted; otherwise it is required.
+            ///
+            /// If `range` is a group of multiple range references, then the
+            /// extra parameter `range_num` indicates which range to index from.
+            ///
+            /// When `range` is a range references or a group of range
+            /// references, `INDEX` may be used as part of a new range
+            /// reference.
+            #[examples(
+                "INDEX({1, 2, 3; 4, 5, 6}, 1, 3)",
+                "INDEX(A1:A100, 42)",
+                "INDEX(A6:Q6, 12)",
+                "INDEX((A1:B6, C1:D6, D1:D100), 1, 5, C6)",
+                "E1:INDEX((A1:B6, C1:D6, D1:D100), 1, 5, C6)",
+                "INDEX((A1:B6, C1:D6, D1:D100), 1, 5, C6):E1",
+                "INDEX(A3:Q3, A2):INDEX(A6:Q6, A2)"
+            )]
+            fn INDEX(
+                span: Span,
+                range: (Spanned<Vec<Array>>),
+                row: (Option<Spanned<i64>>),
+                column: (Option<Spanned<i64>>),
+                range_num: (Option<Spanned<i64>>),
+            ) {
+                let args = IndexFunctionArgs::from_values(
+                    |i| Some(range.inner.get(i)?.size()),
+                    row,
+                    column,
+                    range_num,
+                )?;
+                range
+                    .inner
+                    .get(args.tuple_index)
+                    .ok_or(RunErrorMsg::IndexOutOfBounds.with_span(span))?
+                    .get(args.x, args.y)
+                    .cloned()
+                    .with_span(span)?
+                    .inner
             }
         ),
     ]
@@ -1172,5 +1217,62 @@ mod tests {
         );
         assert_eq!("1", eval_to_string(&g, &make_match_formula_str("*U")));
         assert_eq!("2", eval_to_string(&g, &make_match_formula_str("Na?pa")));
+    }
+
+    #[test]
+    fn test_index() {
+        let mut g = Grid::new();
+
+        let s = "INDEX({1, 2, 3; 4, 5, 6}, 1, 3)";
+        assert_eq!("3", eval_to_string(&g, s));
+
+        let s = "INDEX(A1:A100, 42)";
+        g.sheets_mut()[0].set_cell_value(pos![A42], "funny number");
+        assert_eq!("funny number", eval_to_string(&g, s));
+
+        let s = "INDEX(A6:Q6, 12)";
+        g.sheets_mut()[0].set_cell_value(pos![L6], "twelfth");
+        assert_eq!("twelfth", eval_to_string(&g, s));
+
+        let s = "INDEX((A1:B6, C1:D6, D1:D100), 5, 1, C6)";
+        g.sheets_mut()[0].set_cell_value(pos![A5], "aaa");
+        g.sheets_mut()[0].set_cell_value(pos![C5], "ccc");
+        g.sheets_mut()[0].set_cell_value(pos![D5], "ddd");
+        g.sheets_mut()[0].set_cell_value(pos![C6], 1);
+        assert_eq!("aaa", eval_to_string(&g, s));
+        g.sheets_mut()[0].set_cell_value(pos![C6], 2);
+        assert_eq!("ccc", eval_to_string(&g, s));
+        g.sheets_mut()[0].set_cell_value(pos![C6], 3);
+        assert_eq!("ddd", eval_to_string(&g, s));
+        g.sheets_mut()[0].set_cell_value(pos![C6], 4);
+        assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
+        g.sheets_mut()[0].set_cell_value(pos![C6], -1);
+        assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
+        g.sheets_mut()[0].set_cell_value(pos![C6], i64::MAX);
+        assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
+        g.sheets_mut()[0].set_cell_value(pos![C6], i64::MIN);
+        assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
+
+        let s = "INDEX(A3:Q3, A2):INDEX(A6:Q6, A2)";
+        g.sheets_mut()[0].set_cell_value(pos![A2], 12);
+        g.sheets_mut()[0].set_cell_value(pos![L3], "l3");
+        g.sheets_mut()[0].set_cell_value(pos![L4], "l4");
+        g.sheets_mut()[0].set_cell_value(pos![L5], "l5");
+        g.sheets_mut()[0].set_cell_value(pos![L6], "l6");
+        assert_eq!("{l3; l4; l5; l6}", eval_to_string(&g, s));
+
+        let s = "E1:INDEX((A1:B6, C1:D6, D1:D100), 1, 5, C6)";
+        g.sheets_mut()[0].set_cell_value(pos![C6], "2");
+        assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
+
+        let s = "E1:INDEX((A1:B6, C1:D6, D1:D100), 5, 1, C6)";
+        let array_size = eval(&g, s).into_array().unwrap().size();
+        assert_eq!(array_size.w.get(), 3);
+        assert_eq!(array_size.h.get(), 5);
+
+        let s = "INDEX((A1:B6, C1:D6, D1:D100), 5, 1, C6):E1";
+        let array_size = eval(&g, s).into_array().unwrap().size();
+        assert_eq!(array_size.w.get(), 3);
+        assert_eq!(array_size.h.get(), 5);
     }
 }

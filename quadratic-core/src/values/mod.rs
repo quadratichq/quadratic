@@ -127,10 +127,13 @@ impl Value {
         match self {
             Value::Single(value) => Ok(value),
             Value::Array(a) => a.get(x, y),
-            Value::Tuple(_) => Err(RunErrorMsg::Expected {
-                expected: "single value or array".into(),
-                got: Some("tuple".into()),
-            }),
+            Value::Tuple(arrays) => match arrays.first() {
+                Some(a) => a.get(x, y),
+                None => Err(RunErrorMsg::Expected {
+                    expected: "value or array".into(),
+                    got: Some("empty tuple".into()),
+                }),
+            },
         }
     }
 
@@ -175,7 +178,10 @@ impl Spanned<Value> {
                 span: self.span,
                 inner: array,
             }),
-            Value::Tuple(_) => None,
+            Value::Tuple(arrays) => Some(Spanned {
+                span: self.span,
+                inner: arrays.first()?,
+            }),
         }
     }
 

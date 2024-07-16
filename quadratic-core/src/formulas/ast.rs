@@ -6,7 +6,8 @@ use smallvec::smallvec;
 
 use super::*;
 use crate::{
-    Array, ArraySize, CellValue, CodeResult, CoerceInto, Pos, RunErrorMsg, Spanned, Value,
+    Array, ArraySize, CellValue, CodeResult, CodeResultExt, CoerceInto, RunErrorMsg, SheetRect,
+    Span, Spanned, Value,
 };
 
 /// Abstract syntax tree of a formula expression.
@@ -87,19 +88,6 @@ impl AstNodeContents {
         }
     }
 }
-impl Spanned<AstNodeContents> {
-    pub fn to_cell_ref(&self) -> CodeResult<CellRef> {
-        match &self.inner {
-            AstNodeContents::CellRef(cellref) => Ok(cellref.clone()),
-            AstNodeContents::Paren(contents) if contents.len() == 1 => contents[0].to_cell_ref(),
-            _ => Err(RunErrorMsg::Expected {
-                expected: "cell reference".into(),
-                got: Some(self.inner.type_string().into()),
-            }
-            .with_span(self.span)),
-        }
-    }
-}
 
 impl Formula {
     /// Evaluates a formula.
@@ -115,67 +103,29 @@ impl Formula {
 }
 
 impl AstNode {
-    fn eval<'ctx: 'a, 'a>(&'a self, ctx: &'a mut Ctx<'ctx>, only_parse: bool) -> CodeResult {
-        let value = match &self.inner {
-            AstNodeContents::Empty => CellValue::Blank.into(),
+    fn eval<'expr, 'ctx: 'expr>(
+        &'expr self,
+        ctx: &'expr mut Ctx<'ctx>,
+        only_parse: bool,
+    ) -> CodeResult {
+        let value: Value = match &self.inner {
+            AstNodeContents::Empty => Value::Single(CellValue::Blank),
 
-            AstNodeContents::FunctionCall { func, args } if func.inner == ":" => {
-                if args.len() != 2 {
-                    internal_error!("invalid arguments to cell range operator");
-                }
-                let ref1 = args[0].to_cell_ref()?;
-                let ref2 = args[1].to_cell_ref()?;
-                let sheet_name = ref1.sheet.clone();
-                let corner1 = ref1.resolve_from(ctx.sheet_pos.into());
-                let corner2 = ref2.resolve_from(ctx.sheet_pos.into());
-
-                let x1 = std::cmp::min(corner1.x, corner2.x);
-                let y1 = std::cmp::min(corner1.y, corner2.y);
-
-                let x2 = std::cmp::max(corner1.x, corner2.x);
-                let y2 = std::cmp::max(corner1.y, corner2.y);
-
-                let width = x2
-                    .saturating_sub(x1)
-                    .saturating_add(1)
-                    .try_into()
-                    .unwrap_or(u32::MAX);
-                let height = y2
-                    .saturating_sub(y1)
-                    .saturating_add(1)
-                    .try_into()
-                    .unwrap_or(u32::MAX);
-                if std::cmp::max(width, height) > crate::limits::CELL_RANGE_LIMIT {
-                    return Err(RunErrorMsg::ArrayTooBig.with_span(self.span));
-                }
-
-                // todo: this should call a new ctx.get_cells to push a full SheetRect to cells_accessed instead of an array of SheetPos
-                let mut flat_array = smallvec![];
-                // Reuse the same `CellRef` object so that we don't have to
-                // clone `sheet_name.`
-                let mut cell_ref = CellRef::absolute(sheet_name, Pos::ORIGIN); // We'll overwrite the position.
-                for y in y1..=y2 {
-                    cell_ref.y = CellRefCoord::Absolute(y);
-                    for x in x1..=x2 {
-                        cell_ref.x = CellRefCoord::Absolute(x);
-                        flat_array.push(ctx.get_cell(&cell_ref, self.span)?.inner);
-                    }
-                }
-
-                let size = ArraySize::new_or_err(width, height)?;
-                Array::new_row_major(size, flat_array)?.into()
+            AstNodeContents::FunctionCall { func, .. } if func.inner == ":" => {
+                let range = self.to_range_ref(ctx, only_parse)?;
+                let rect = ctx.resolve_range_ref(&range.inner, self.span)?;
+                Value::Array(ctx.get_cell_array(rect.inner, self.span)?.inner)
             }
 
             // Other operator/function
             AstNodeContents::FunctionCall { func, args } => {
-                let mut arg_values = vec![];
-                for arg in args {
-                    arg_values.push(arg.eval(&mut *ctx, only_parse)?);
-                }
-
                 let func_name = &func.inner;
                 match functions::lookup_function(func_name) {
                     Some(f) => {
+                        let arg_values: Vec<Spanned<Value>> = args
+                            .iter()
+                            .map(|arg| arg.eval(&mut *ctx, only_parse))
+                            .try_collect()?;
                         let args = FormulaFnArgs::new(arg_values, self.span, f.name);
                         (f.eval)(&mut *ctx, only_parse, args)?
                     }
@@ -230,7 +180,8 @@ impl AstNode {
 
             // Single cell references return 1x1 arrays for Excel compatibility.
             AstNodeContents::CellRef(cell_ref) => {
-                Array::from(ctx.get_cell(cell_ref, self.span)?.inner).into()
+                let pos = ctx.resolve_ref(cell_ref, self.span)?.inner;
+                Array::from(ctx.get_cell(pos, self.span)?.inner).into()
             }
 
             AstNodeContents::String(s) => Value::from(s.to_string()),
@@ -243,4 +194,156 @@ impl AstNode {
             inner: value,
         })
     }
+
+    /// Evaluates the expression to a tuple of range references, or returns an
+    /// error if this cannot be done
+    fn to_range_ref_tuple<'expr, 'ctx: 'expr>(
+        &'expr self,
+        ctx: &'expr mut Ctx<'ctx>,
+        only_parse: bool,
+    ) -> CodeResult<Vec<Spanned<RangeRef>>> {
+        match &self.inner {
+            AstNodeContents::Paren(contents) => contents
+                .iter()
+                .map(|expr| expr.to_range_ref_tuple(ctx, only_parse))
+                .flatten_ok()
+                .try_collect(),
+            _ => Ok(vec![self.to_range_ref(ctx, only_parse)?]),
+        }
+    }
+
+    /// Evaluates the expression to a cell range reference, or returns an error
+    /// if this cannot be done.
+    fn to_range_ref<'expr, 'ctx: 'expr>(
+        &'expr self,
+        ctx: &'expr mut Ctx<'ctx>,
+        only_parse: bool,
+    ) -> CodeResult<Spanned<RangeRef>> {
+        match &self.inner {
+            AstNodeContents::FunctionCall { func, args } if func.inner == ":" => {
+                eval_cell_range_op(ctx, args, self.span)
+            }
+            AstNodeContents::Paren(contents) if contents.len() == 1 => {
+                contents[0].to_range_ref(ctx, only_parse)
+            }
+            AstNodeContents::CellRef(cell_ref) => Ok(RangeRef::Cell {
+                pos: cell_ref.clone(),
+            })
+            .with_span(self.span),
+            _ => Err(RunErrorMsg::Expected {
+                expected: "cell range reference".into(),
+                got: Some(self.inner.type_string().into()),
+            }
+            .with_span(self.span)),
+        }
+    }
+
+    /// Evaluates the expression to a cell reference, or returns an error if this cannot be done.
+    fn to_cell_ref<'expr, 'ctx: 'expr>(
+        &'expr self,
+        ctx: &'expr mut Ctx<'ctx>,
+        only_parse: bool,
+    ) -> CodeResult<CellRef> {
+        match &self.inner {
+            AstNodeContents::CellRef(cellref) => Ok(cellref.clone()),
+            AstNodeContents::Paren(contents) if contents.len() == 1 => {
+                contents[0].to_cell_ref(ctx, only_parse)
+            }
+            AstNodeContents::FunctionCall { func, args }
+                if func.inner.eq_ignore_ascii_case("INDEX") =>
+            {
+                // Get ranges
+                let range_rects: Vec<Spanned<SheetRect>> = args
+                    .first()
+                    .ok_or(
+                        RunErrorMsg::MissingRequiredArgument {
+                            func_name: "INDEX".into(),
+                            arg_name: "range".into(),
+                        }
+                        .with_span(func.span),
+                    )?
+                    .to_range_ref_tuple(ctx, only_parse)?
+                    .into_iter()
+                    .map(|range_ref| ctx.resolve_range_ref(&range_ref.inner, self.span))
+                    .try_collect()?;
+
+                // Get other arguments
+                let arg_values: Vec<Spanned<Value>> = args
+                    .iter()
+                    .skip(1)
+                    .map(|arg| arg.eval(&mut *ctx, only_parse))
+                    .try_collect()?;
+                let mut args = FormulaFnArgs::new(arg_values, self.span, "INDEX");
+                let row = args
+                    .take_next_optional()
+                    .map(CoerceInto::try_coerce)
+                    .transpose()?;
+                let column = args
+                    .take_next_optional()
+                    .map(CoerceInto::try_coerce)
+                    .transpose()?;
+                let range_num = args
+                    .take_next_optional()
+                    .map(CoerceInto::try_coerce)
+                    .transpose()?;
+                args.error_if_more_args()?;
+
+                if only_parse {
+                    // Don't evaluate; just return a dummy value to let the
+                    // caller know that this expression is valid.
+                    return Ok(CellRef {
+                        sheet: None,
+                        x: CellRefCoord::Relative(0),
+                        y: CellRefCoord::Relative(0),
+                    });
+                }
+
+                let args = super::functions::IndexFunctionArgs::from_values(
+                    |i| Some(range_rects.get(i as usize)?.inner.size()),
+                    row,
+                    column,
+                    range_num,
+                )?;
+
+                let indexed_pos = &range_rects[args.tuple_index as usize]
+                    .inner
+                    .index_cell(args.x, args.y)
+                    .ok_or(RunErrorMsg::IndexOutOfBounds.with_span(self.span))?;
+
+                let sheet = ctx
+                    .grid
+                    .try_sheet(indexed_pos.sheet_id)
+                    .ok_or(RunErrorMsg::IndexOutOfBounds.with_span(self.span))?;
+
+                Ok(CellRef {
+                    sheet: Some(sheet.name.clone()),
+                    x: CellRefCoord::Absolute(indexed_pos.x),
+                    y: CellRefCoord::Absolute(indexed_pos.y),
+                })
+            }
+            _ => Err(RunErrorMsg::Expected {
+                expected: "cell reference".into(),
+                got: Some(self.inner.type_string().into()),
+            }
+            .with_span(self.span)),
+        }
+    }
+}
+
+fn eval_cell_range_op(
+    ctx: &mut Ctx<'_>,
+    args: &[AstNode],
+    span: Span,
+) -> CodeResult<Spanned<RangeRef>> {
+    if args.len() != 2 {
+        internal_error!("invalid arguments to cell range operator");
+    }
+
+    let ref1 = args[0].to_cell_ref(ctx, false)?;
+    let ref2 = args[1].to_cell_ref(ctx, false)?;
+    Ok(RangeRef::CellRange {
+        start: ref1,
+        end: ref2,
+    })
+    .with_span(span)
 }
