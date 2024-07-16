@@ -86,7 +86,9 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
     initialActiveTeamUuid = uuidFromUrl;
 
     // 2) Check localstorage for a team UUID
-  } else if (uuidFromLocalStorage) {
+    // If what's in localstorage is not in the list of teams — e.g. you lost
+    // access to a team —  we'll skip this step
+  } else if (uuidFromLocalStorage && teams.find((team) => team.team.uuid === uuidFromLocalStorage)) {
     initialActiveTeamUuid = uuidFromLocalStorage;
 
     // 3) there's no default preference (yet), so pick the 1st one in the API
