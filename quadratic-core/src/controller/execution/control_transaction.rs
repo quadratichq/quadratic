@@ -127,6 +127,7 @@ impl GridController {
         Ok(())
     }
 
+    // todo: this should be moved to after_calculation_async() so it's similar to Python and JS
     /// Externally called when an async connection completes
     pub fn connection_complete(
         &mut self,
@@ -167,10 +168,10 @@ impl GridController {
                 cells_accessed: transaction.cells_accessed.clone(),
             };
 
-            self.start_transaction(&mut transaction);
             self.finalize_code_run(&mut transaction, current_sheet_pos, Some(code_run), None);
             transaction.waiting_for_async = None;
-            self.finalize_transaction(&mut transaction);
+
+            self.start_transaction(&mut transaction);
         }
 
         Ok(())
