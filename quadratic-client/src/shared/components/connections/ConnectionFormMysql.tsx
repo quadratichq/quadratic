@@ -1,5 +1,5 @@
+import { ConnectionInputPassword } from '@/shared/components/connections/ConnectionInputPassword';
 import { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
-import { Button } from '@/shared/shadcn/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,7 +8,6 @@ import {
   ConnectionTypeDetailsMysqlSchema,
   ConnectionTypeSchema,
 } from 'quadratic-shared/typesAndSchemasConnections';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -39,8 +38,6 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
 };
 
 export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, children, handleSubmitForm }) => {
-  const [hidePassword, setHidePassword] = useState(true);
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmitForm)} className="space-y-2" autoComplete="off">
@@ -120,18 +117,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                  <div className="relative">
-                    <Input autoComplete="off" {...field} type={hidePassword ? 'password' : 'text'} className="pr-14" />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0.5 top-0.5 text-muted-foreground hover:bg-transparent"
-                      type="button"
-                      onClick={() => setHidePassword((prev) => !prev)}
-                    >
-                      {hidePassword ? 'Show' : 'Hide'}
-                    </Button>
-                  </div>
+                  <ConnectionInputPassword {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
