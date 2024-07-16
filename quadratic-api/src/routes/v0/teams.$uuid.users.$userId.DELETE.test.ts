@@ -129,14 +129,16 @@ describe('DELETE /v0/teams/:uuid/users/:userId', () => {
       await request(app)
         .delete(`/v0/teams/00000000-0000-4000-8000-000000000001/users/${userId}`)
         .set('Authorization', `Bearer ValidToken user3`)
-        .expect(200);
+        .expect(200)
+        .expect((res) => expect(res.body.redirect).toBe(true));
     });
     it('allows owners to remove themselves from a team IF there’s at least one other owner', async () => {
       const userId = await getUserIdByAuth0Id('user1');
       await request(app)
         .delete(`/v0/teams/00000000-0000-4000-8000-000000000002/users/${userId}`)
         .set('Authorization', `Bearer ValidToken user1`)
-        .expect(200);
+        .expect(200)
+        .expect((res) => expect(res.body.redirect).toBe(true));
     });
     it('does not allow owners to remove themselves from a team IF they’re the only owner', async () => {
       const userId = await getUserIdByAuth0Id('user1');
