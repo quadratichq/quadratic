@@ -135,10 +135,6 @@ function TableListItem({
       {expanded && (
         <ul className="pl-5 pr-2">
           {columns.length ? (
-            <div className="border border-l border-transparent border-l-border pl-3">
-              <Type className="font-mono text-sm italic text-muted-foreground">[No columns]</Type>
-            </div>
-          ) : (
             columns.map(({ name, type, is_nullable }, k) => (
               <li key={k} className="border border-l border-transparent border-l-border pl-3">
                 <div className="flex w-full items-center gap-1 py-0.5 pl-2">
@@ -153,6 +149,10 @@ function TableListItem({
                 </div>
               </li>
             ))
+          ) : (
+            <div className="border border-l border-transparent border-l-border pl-3">
+              <Type className="font-mono text-sm italic text-muted-foreground">[No columns]</Type>
+            </div>
           )}
         </ul>
       )}
