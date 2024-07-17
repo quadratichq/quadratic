@@ -108,7 +108,7 @@ function CodeEditorInsertButton({ text }: { text: string }) {
   };
 
   return (
-    <TooltipHint title={'Paste in editor'}>
+    <TooltipHint title={'Insert and replace'}>
       <IconButton size="small" onClick={handleClick}>
         <ContentPasteGoOutlined fontSize="inherit" color="inherit" className="text-muted-foreground" />
       </IconButton>

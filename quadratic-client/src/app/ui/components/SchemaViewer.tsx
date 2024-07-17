@@ -126,7 +126,7 @@ function TableListItem({
           <div className="truncate">{name}</div>
         </div>
 
-        <TooltipHint title="Paste query">
+        <TooltipHint title="Insert query">
           <IconButton
             size="small"
             className={`${expanded ? '' : 'opacity-0'} group-hover/item:opacity-100`}
