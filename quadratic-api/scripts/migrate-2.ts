@@ -43,7 +43,6 @@ async function main() {
   // transaction so if anything fails, we can retry the whole thing on a user-by-user basis.
   for (const user of users) {
     prisma.$transaction(async (prisma) => {
-      // TODO needToCreateNewTeam
       let needToCreateNewTeam = user.UserTeamRole.length === 0;
       let idOfTeamToMoveFilesTo = needToCreateNewTeam
         ? COMMIT
@@ -77,10 +76,11 @@ async function main() {
           await prisma.file.updateMany({
             where: {
               ownerUserId: user.id,
+              ownerTeamId: null,
             },
             data: {
               // If a new team was created, move the files to being public on the team
-              // Otherwise, move the files to being private on the exisiting team
+              // Otherwise, move the files to being private on the existing team
               ...(needToCreateNewTeam ? { ownerUserId: null } : {}), // leaving `ownerUserId` as it's current value means it'll be a private file to the user on their team
               ownerTeamId: idOfTeamToMoveFilesTo,
             },
@@ -91,7 +91,7 @@ async function main() {
           'User %s: moved %s file(s) to %s team',
           user.id,
           user.ownedFiles.length,
-          needToCreateNewTeam ? 'NEW' : 'EXISITING'
+          needToCreateNewTeam ? 'NEW' : 'EXISTING'
         );
       } catch (e) {
         console.log('User %s: failed to move file(s)', user.id);
