@@ -18,14 +18,20 @@ const ConnectionFormPostgresSchema = z.object({
 });
 type FormValues = z.infer<typeof ConnectionFormPostgresSchema>;
 
+const DEFAULTS = {
+  PORT: '5432',
+  DATABASE: 'postgres',
+  USERNAME: 'postgres',
+};
+
 export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => {
   const defaultValues: FormValues = {
     name: connection ? connection.name : '',
     type: 'POSTGRES',
     host: String(connection?.typeDetails?.host || ''),
-    port: String(connection?.typeDetails?.port || '5432'),
-    database: String(connection?.typeDetails?.database || 'postgres'),
-    username: String(connection?.typeDetails?.username || 'postgres'),
+    port: String(connection?.typeDetails?.port || DEFAULTS.PORT),
+    database: String(connection?.typeDetails?.database || ''),
+    username: String(connection?.typeDetails?.username || ''),
     password: String(connection?.typeDetails?.password || ''),
   };
 
@@ -75,7 +81,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
               <FormItem>
                 <FormLabel>Port</FormLabel>
                 <FormControl>
-                  <Input autoComplete="off" {...field} />
+                  <Input autoComplete="off" placeholder={DEFAULTS.PORT} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -89,7 +95,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
             <FormItem>
               <FormLabel>Database</FormLabel>
               <FormControl>
-                <Input autoComplete="off" {...field} />
+                <Input autoComplete="off" placeholder={DEFAULTS.DATABASE} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -104,7 +110,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
               <FormItem>
                 <FormLabel>Username</FormLabel>
                 <FormControl>
-                  <Input autoComplete="off" {...field} />
+                  <Input autoComplete="off" placeholder={DEFAULTS.USERNAME} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

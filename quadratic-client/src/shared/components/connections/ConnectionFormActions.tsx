@@ -5,6 +5,8 @@ import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { CircularProgress } from '@mui/material';
 import { CheckCircledIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons';
+import mixpanel from 'mixpanel-browser';
+import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { useSubmit } from 'react-router-dom';
@@ -12,10 +14,12 @@ import { useSubmit } from 'react-router-dom';
 type ConnectionState = 'idle' | 'loading' | 'success' | 'error';
 
 export function ConnectionFormActions({
+  connectionType,
   connectionUuid,
   form,
   handleNavigateToListView,
 }: {
+  connectionType: ConnectionType;
   connectionUuid: string | undefined;
   form: UseFormReturn<any>;
   handleNavigateToListView: () => void;
@@ -49,6 +53,7 @@ export function ConnectionFormActions({
               disabled={connectionState === 'loading'}
               onClick={form.handleSubmit(async (values: ConnectionFormValues) => {
                 const { name, type, ...typeDetails } = values;
+                mixpanel.track('[Connections].test', { type });
                 setConnectionState('loading');
 
                 try {
@@ -106,6 +111,7 @@ export function ConnectionFormActions({
             onClick={() => {
               const doDelete = window.confirm('Please confirm you want delete this connection. This cannot be undone.');
               if (doDelete) {
+                mixpanel.track('[Connections].delete', { type: connectionType });
                 const data = getDeleteConnectionAction(connectionUuid);
                 submit(data, {
                   action: ROUTES.API.CONNECTIONS,
