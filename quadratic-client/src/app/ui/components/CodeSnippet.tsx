@@ -2,6 +2,7 @@ import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import Editor from '@monaco-editor/react';
 import { ContentCopy, ContentPasteGoOutlined } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
+import mixpanel from 'mixpanel-browser';
 import { useRef, useState } from 'react';
 import { codeEditorBaseStyles } from '../menus/CodeEditor/styles';
 import { TooltipHint } from './TooltipHint';
@@ -16,6 +17,7 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
   const editorRef = useRef(null);
 
   const handleClick = (e: any) => {
+    mixpanel.track('[AI].code.copy', { language });
     if (editorRef.current) {
       navigator.clipboard.writeText(code);
       setTooltipMsg('Copied!');
@@ -42,7 +44,7 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
         <div className="lowercase text-muted-foreground">{language}</div>
 
         <div className="flex items-center gap-1">
-          <CodeEditorInsertButton text={code} />
+          <CodeEditorInsertButton text={code} language={language} />
           <TooltipHint title={tooltipMsg}>
             <IconButton onClick={handleClick} size="small">
               <ContentCopy fontSize="inherit" color="inherit" className="text-muted-foreground" />
@@ -86,11 +88,13 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
   );
 }
 
-function CodeEditorInsertButton({ text }: { text: string }) {
+function CodeEditorInsertButton({ language, text }: { language: Props['language']; text: string }) {
   const { editorRef } = useCodeEditor();
 
   // Replace what's in the editor with the given text
   const handleClick = () => {
+    mixpanel.track('[AI].code.copy', { language });
+
     if (editorRef.current) {
       const model = editorRef.current.getModel();
       if (!model) return;

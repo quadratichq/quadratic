@@ -1,4 +1,5 @@
 import { connectionClient } from '@/shared/api/connectionClient';
+import mixpanel from 'mixpanel-browser';
 import { useEffect } from 'react';
 import { useFetcher } from 'react-router-dom';
 
@@ -31,5 +32,11 @@ export const useConnectionSchemaFetcher = ({ uuid, type }: { uuid: string | unde
     }
   }, [fetcher, fetcherUrl]);
 
-  return { schemaFetcher: fetcher, reloadSchema: () => fetcher.load(fetcherUrl) };
+  return {
+    schemaFetcher: fetcher,
+    reloadSchema: () => {
+      mixpanel.track('[Connections].schemaViewer.refresh');
+      fetcher.load(fetcherUrl);
+    },
+  };
 };

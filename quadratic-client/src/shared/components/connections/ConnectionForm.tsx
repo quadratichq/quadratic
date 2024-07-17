@@ -4,6 +4,7 @@ import { ConnectionFormActions } from '@/shared/components/connections/Connectio
 import { ConnectionFormValues, connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { ROUTES } from '@/shared/constants/routes';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
+import mixpanel from 'mixpanel-browser';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect } from 'react';
@@ -28,6 +29,7 @@ export function ConnectionFormCreate({
 
   const handleSubmitForm = (formValues: ConnectionFormValues) => {
     const { name, type, ...typeDetails } = formValues;
+    mixpanel.track('[Connections].create', { type });
     const data = getCreateConnectionAction({ name, type, typeDetails }, teamUuid);
     submit(data, { action: ROUTES.API.CONNECTIONS, method: 'POST', encType: 'application/json', navigate: false });
     handleNavigateToListView();
@@ -67,6 +69,7 @@ export function ConnectionFormEdit({
   const handleSubmitForm = (formValues: ConnectionFormValues) => {
     // Enhancement: if nothing changed, don't submit. Just navigate back
     const { name, type, ...typeDetails } = formValues;
+    mixpanel.track('[Connections].edit', { type });
     const data = getUpdateConnectionAction(connectionUuid, { name, typeDetails });
     submit(data, { action: ROUTES.API.CONNECTIONS, method: 'POST', encType: 'application/json', navigate: false });
     handleNavigateToListView();
@@ -106,6 +109,7 @@ function ConnectionFormWrapper({ type, props }: { type: ConnectionType; props: C
         form={form}
         handleNavigateToListView={props.handleNavigateToListView}
         connectionUuid={props.connection?.uuid}
+        connectionType={type}
       />
     </ConnectionForm>
   );

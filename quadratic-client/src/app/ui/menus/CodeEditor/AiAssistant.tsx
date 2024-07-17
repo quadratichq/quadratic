@@ -13,6 +13,7 @@ import { apiClient } from '@/shared/api/apiClient';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Send, Stop } from '@mui/icons-material';
 import { Avatar, CircularProgress, IconButton } from '@mui/material';
+import mixpanel from 'mixpanel-browser';
 import { useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 import { CodeBlockParser } from './AICodeBlockParser';
@@ -86,6 +87,7 @@ ${QuadraticDocs}`,
   }, []);
 
   const abortPrompt = () => {
+    mixpanel.track('[AI].prompt.cancel', { language: getConnectionKind(mode) });
     controllerRef.current?.abort();
     setLoading(false);
   };
@@ -274,6 +276,8 @@ ${QuadraticDocs}`,
               if (prompt.trim().length === 0) {
                 return;
               }
+
+              mixpanel.track('[AI].prompt.send', { language: getConnectionKind(mode) });
 
               submitPrompt();
               event.currentTarget.focus();

@@ -8,6 +8,7 @@ import { Type } from '@/shared/components/Type';
 import { cn } from '@/shared/shadcn/utils';
 import { ContentPasteGoOutlined, KeyboardArrowRight, Refresh } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
+import mixpanel from 'mixpanel-browser';
 import { useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -95,6 +96,8 @@ function TableListItem({
 
   const onQuery = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
+
+    mixpanel.track('[Connections].schemaViewer.insertQuery');
 
     if (editorRef.current) {
       const model = editorRef.current.getModel();
