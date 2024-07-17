@@ -3,7 +3,7 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { expectError } from '../../tests/helpers';
-import { createFile } from '../../tests/testDataGenerator';
+import { createFile, createTeam } from '../../tests/testDataGenerator';
 
 const getInviteIdByEmail = async (email: string) => {
   const invite = await dbClient.fileInvite.findFirst({
@@ -38,11 +38,18 @@ beforeEach(async () => {
       auth0Id: 'userNoRole',
     },
   });
+
+  const team = await createTeam({
+    team: {
+      uuid: '00000000-0000-0000-0000-000000000000',
+    },
+    users: [{ userId: userOwner.id, role: 'OWNER' }],
+  });
+
   await createFile({
     data: {
       creatorUserId: userOwner.id,
-      ownerUserId: userOwner.id,
-      contents: Buffer.from('contents_0'),
+      ownerTeamId: team.id,
       version: '1.4',
       name: 'Personal File',
       uuid: '00000000-0000-4000-8000-000000000001',
@@ -73,8 +80,10 @@ afterEach(async () => {
   await dbClient.$transaction([
     dbClient.fileInvite.deleteMany(),
     dbClient.userFileRole.deleteMany(),
+    dbClient.userTeamRole.deleteMany(),
     dbClient.fileCheckpoint.deleteMany(),
     dbClient.file.deleteMany(),
+    dbClient.team.deleteMany(),
     dbClient.user.deleteMany(),
   ]);
 });
@@ -102,7 +111,7 @@ describe('DELETE /v0/files/:uuid/invites/:inviteId', () => {
   });
 
   describe('deleting an invite', () => {
-    describe('when the file belongs to you', () => {
+    describe('when the file is in a team you belong to', () => {
       it('responds with a 200 to delete an EDITOR invite', async () => {
         const inviteId = await getInviteIdByEmail('fileEditor@example.com');
         await request(app)
@@ -123,7 +132,7 @@ describe('DELETE /v0/files/:uuid/invites/:inviteId', () => {
       });
     });
 
-    describe('when the file belongs to another user', () => {
+    describe('when the file is not in a team you belong to, but you have access via an invite to the file', () => {
       // Test results should be identical if file is NOT_SHARED or READONLY
       const access = ['NOT_SHARED', 'READONLY'] as LinkPermission[];
       for (const publicLinkAccess of access) {
