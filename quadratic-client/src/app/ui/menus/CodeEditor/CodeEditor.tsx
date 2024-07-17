@@ -15,6 +15,7 @@ import { useJavascriptState } from '@/app/atoms/useJavascriptState';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { CodeEditorToolbar } from '@/app/ui/menus/CodeEditor/CodeEditorToolbar';
 import { CodeEditorPanel } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanel';
 import { CodeEditorPanels } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelsResize';
 import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
@@ -368,100 +369,103 @@ export const CodeEditor = () => {
 
   return (
     <div
-      id="code-editor-container"
-      className={cn(
-        'relative flex h-full bg-background',
-        codeEditorPanelData.panelPosition === 'left' ? '' : 'flex-col'
-      )}
+      className="relative flex flex-col"
       style={{
         width: `${
           codeEditorPanelData.editorWidth +
           (codeEditorPanelData.panelPosition === 'left' ? codeEditorPanelData.panelWidth : 0)
         }px`,
-        borderLeft: '1px solid black',
+        borderLeft: '1px solid transparent',
       }}
     >
-      <div
-        id="QuadraticCodeEditorID"
-        className={cn(
-          'flex min-h-0 shrink select-none flex-col',
-          codeEditorPanelData.panelPosition === 'left' ? 'order-2' : 'order-1'
-        )}
-        style={{
-          width: `${codeEditorPanelData.editorWidth}px`,
-          height:
-            codeEditorPanelData.panelPosition === 'left' || codeEditorPanelData.bottomHidden
-              ? '100%'
-              : `${codeEditorPanelData.editorHeightPercentage}%`,
-        }}
-        onKeyDownCapture={onKeyDownEditor}
-        onPointerEnter={() => {
-          // todo: handle multiplayer code editor here
-          multiplayer.sendMouseMove();
-        }}
-      >
-        {showSaveChangesAlert && (
-          <SaveChangesAlert
-            onCancel={() => {
-              setShowSaveChangesAlert(!showSaveChangesAlert);
-              setEditorInteractionState((old) => ({
-                ...old,
-                editorEscapePressed: false,
-                waitingForEditorClose: undefined,
-              }));
-            }}
-            onSave={() => {
-              saveAndRunCell();
-              afterDialog();
-            }}
-            onDiscard={() => {
-              afterDialog();
-            }}
-          />
-        )}
-
-        <CodeEditorHeader
+      <div className="border-b border-border">
+        <CodeEditorToolbar
           cellLocation={cellLocation}
           unsaved={unsaved}
-          saveAndRunCell={saveAndRunCell}
-          cancelRun={cancelRun}
           closeEditor={() => closeEditor(false)}
+          codeEditorPanelData={codeEditorPanelData}
         />
-        <CodeEditorBody
-          editorContent={editorContent}
-          setEditorContent={setEditorContent}
-          closeEditor={closeEditor}
-          evaluationResult={evaluationResult}
-          cellsAccessed={!unsaved ? cellsAccessed : []}
-          cellLocation={cellLocation}
-        />
-        {editorInteractionState.mode !== 'Formula' && showReturnType && (
-          <ReturnTypeInspector
-            language={editorInteractionState.mode}
-            evaluationResult={evaluationResult}
-            show={showReturnType}
-          />
-        )}
       </div>
-
       <div
-        className={cn(
-          codeEditorPanelData.panelPosition === 'left' ? 'order-1' : 'order-2',
-          'relative flex flex-col bg-background'
-        )}
-        style={{
-          width: codeEditorPanelData.panelPosition === 'left' ? `${codeEditorPanelData.panelWidth}px` : '100%',
-          height:
-            codeEditorPanelData.panelPosition === 'left'
-              ? '100%'
-              : codeEditorPanelData.bottomHidden
-              ? 'auto'
-              : 100 - codeEditorPanelData.editorHeightPercentage + '%',
-        }}
+        id="code-editor-container"
+        className={cn('flex h-full bg-background', codeEditorPanelData.panelPosition === 'left' ? '' : 'flex-col')}
       >
-        <CodeEditorPanel codeEditorPanelData={codeEditorPanelData} />
+        <div
+          id="QuadraticCodeEditorID"
+          className={cn(
+            'flex min-h-0 shrink select-none flex-col',
+            codeEditorPanelData.panelPosition === 'left' ? 'order-2' : 'order-1'
+          )}
+          style={{
+            width: `${codeEditorPanelData.editorWidth}px`,
+            height:
+              codeEditorPanelData.panelPosition === 'left' || codeEditorPanelData.bottomHidden
+                ? '100%'
+                : `${codeEditorPanelData.editorHeightPercentage}%`,
+          }}
+          onKeyDownCapture={onKeyDownEditor}
+          onPointerEnter={() => {
+            // todo: handle multiplayer code editor here
+            multiplayer.sendMouseMove();
+          }}
+        >
+          {showSaveChangesAlert && (
+            <SaveChangesAlert
+              onCancel={() => {
+                setShowSaveChangesAlert(!showSaveChangesAlert);
+                setEditorInteractionState((old) => ({
+                  ...old,
+                  editorEscapePressed: false,
+                  waitingForEditorClose: undefined,
+                }));
+              }}
+              onSave={() => {
+                saveAndRunCell();
+                afterDialog();
+              }}
+              onDiscard={() => {
+                afterDialog();
+              }}
+            />
+          )}
+
+          <CodeEditorHeader cancelRun={cancelRun} cellLocation={cellLocation} saveAndRunCell={saveAndRunCell} />
+          <CodeEditorBody
+            editorContent={editorContent}
+            setEditorContent={setEditorContent}
+            closeEditor={closeEditor}
+            evaluationResult={evaluationResult}
+            cellsAccessed={!unsaved ? cellsAccessed : []}
+            cellLocation={cellLocation}
+          />
+          {editorInteractionState.mode !== 'Formula' && showReturnType && (
+            <ReturnTypeInspector
+              language={editorInteractionState.mode}
+              evaluationResult={evaluationResult}
+              show={showReturnType}
+            />
+          )}
+        </div>
+
+        <div
+          className={cn(
+            codeEditorPanelData.panelPosition === 'left' ? 'order-1' : 'order-2',
+            'relative flex flex-col bg-background'
+          )}
+          style={{
+            width: codeEditorPanelData.panelPosition === 'left' ? `${codeEditorPanelData.panelWidth}px` : '100%',
+            height:
+              codeEditorPanelData.panelPosition === 'left'
+                ? '100%'
+                : codeEditorPanelData.bottomHidden
+                ? 'auto'
+                : 100 - codeEditorPanelData.editorHeightPercentage + '%',
+          }}
+        >
+          <CodeEditorPanel codeEditorPanelData={codeEditorPanelData} />
+        </div>
+        <CodeEditorPanels codeEditorPanelData={codeEditorPanelData} />
       </div>
-      <CodeEditorPanels codeEditorPanelData={codeEditorPanelData} />
     </div>
   );
 };
