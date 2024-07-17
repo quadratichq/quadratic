@@ -42,7 +42,7 @@ export function TeamSwitcher({ appIsLoading }: Props) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className="flex justify-between px-3 font-semibold">
-          <div className="truncate">{optimisticActiveTeamName}</div>
+          <div className="select-none truncate">{optimisticActiveTeamName}</div>
           <div className="relative">
             <CaretSortIcon />
             <ReloadIcon
