@@ -234,10 +234,7 @@ export const CodeEditorBody = (props: Props) => {
           showUnused: language === 'Javascript' ? false : true,
         }}
       />
-      {/* TODO(ddimaria): this can be brittle, consider checking for just non-formula */}
-      {['python', 'javascript', 'pgsql', 'mysql'].includes(monacoLanguage as string) && (
-        <CodeEditorPlaceholder editorContent={editorContent} setEditorContent={setEditorContent} />
-      )}
+      <CodeEditorPlaceholder editorContent={editorContent} setEditorContent={setEditorContent} />
     </div>
   );
 };
