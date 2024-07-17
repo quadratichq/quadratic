@@ -55,7 +55,13 @@ export const SchemaViewer = (props: Props) => {
         schemaFetcher.data.ok ? (
           <ul>
             {schemaFetcher.data?.data?.tables.map((table, i) => (
-              <TableListItem data={table} key={i} expandAll={expandAll} setExpandAll={setExpandAll} />
+              <TableListItem
+                data={table}
+                key={i}
+                expandAll={expandAll}
+                setExpandAll={setExpandAll}
+                query={getTableQuery({ table, connectionKind: connection.kind })}
+              />
             ))}
           </ul>
         ) : (
@@ -73,13 +79,15 @@ export const SchemaViewer = (props: Props) => {
 };
 
 function TableListItem({
-  data: { name, columns },
+  data: { name, columns, schema },
   expandAll,
   setExpandAll,
+  query,
 }: {
   data: Table;
   expandAll: boolean;
   setExpandAll: any;
+  query: string;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { editorRef } = useCodeEditor();
@@ -96,7 +104,7 @@ function TableListItem({
       editorRef.current.executeEdits('insert-query', [
         {
           range,
-          text: `SELECT * FROM ${name} LIMIT 100`,
+          text: query,
         },
       ]);
 
@@ -162,4 +170,15 @@ function TableListItem({
       )}
     </li>
   );
+}
+
+function getTableQuery({ table: { name, schema }, connectionKind }: { table: Table; connectionKind: string }) {
+  switch (connectionKind) {
+    case 'POSTGRES':
+      return `SELECT * FROM "${schema}"."${name}" LIMIT 100`;
+    case 'MYSQL':
+      return `SELECT * FROM \`${schema}\`.\`${name}\` LIMIT 100`;
+    default:
+      return '';
+  }
 }
