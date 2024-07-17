@@ -23,14 +23,18 @@ const connectionSubdomain = config.require("connection-subdomain");
 const dockerImageTag = config.require("docker-image-tag");
 const quadraticApiUri = config.require("quadratic-api-uri");
 const connectionECRName = config.require("connection-ecr-repo-name");
+const connectionPulumiEscEnvironmentName = config.require(
+  "connection-pulumi-esc-environment-name"
+);
 
 // Configuration from Pulumi ESC
 const domain = config.require("domain");
 const certificateArn = config.require("certificate-arn");
+const instanceSize = config.require("connection-instance-size");
 
 // Create an Auto Scaling Group
 const launchConfiguration = new aws.ec2.LaunchConfiguration("connection-lc", {
-  instanceType: "t2.micro",
+  instanceType: instanceSize,
   iamInstanceProfile: instanceProfileIAMContainerRegistry,
   imageId: latestAmazonLinuxAmi.id,
   securityGroups: [connectionEc2SecurityGroup.id],
@@ -39,7 +43,7 @@ const launchConfiguration = new aws.ec2.LaunchConfiguration("connection-lc", {
       runDockerImageBashScript(
         connectionECRName,
         dockerImageTag,
-        "quadratic-connection-development",
+        connectionPulumiEscEnvironmentName,
         {
           QUADRATIC_API_URI: quadraticApiUri,
           STATIC_IPS: `${publicIp1},${publicIp2}`,
