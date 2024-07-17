@@ -434,21 +434,21 @@ mod tests {
     #[test]
     fn test_floor_math_and_ceiling_math() {
         let g = Grid::new();
-        let test_inputs = &[3.5, 2.5, 0.0, -2.5, 3.5];
+        let test_inputs = &[3.5, 2.5, 0.0, -2.5, -3.5];
         let test_cases: &[([i64; 5], fn(f64) -> String)] = &[
-            ([4, 3, 0, -2, 4], |n| format!("CEILING.MATH({n})")),
-            ([4, 3, 0, -3, 4], |n| format!("CEILING.MATH({n},, -1)")),
-            ([4, 4, 0, -2, 4], |n| format!("CEILING.MATH({n}, 2)")),
-            ([4, 4, 0, -2, 4], |n| format!("CEILING.MATH({n}, -2)")),
-            ([4, 4, 0, -4, 4], |n| format!("CEILING.MATH({n}, 2, -1)")),
-            ([4, 4, 0, -4, 4], |n| format!("CEILING.MATH({n}, -2, -1)")),
+            ([4, 3, 0, -2, -3], |n| format!("CEILING.MATH({n})")),
+            ([4, 3, 0, -3, -4], |n| format!("CEILING.MATH({n},, -1)")),
+            ([4, 4, 0, -2, -2], |n| format!("CEILING.MATH({n}, 2)")),
+            ([4, 4, 0, -2, -2], |n| format!("CEILING.MATH({n}, -2)")),
+            ([4, 4, 0, -4, -4], |n| format!("CEILING.MATH({n}, 2, -1)")),
+            ([4, 4, 0, -4, -4], |n| format!("CEILING.MATH({n}, -2, -1)")),
             ([0, 0, 0, 0, 0], |n| format!("CEILING.MATH({n}, 0)")),
-            ([3, 2, 0, -3, 3], |n| format!("FLOOR.MATH({n})")),
-            ([3, 2, 0, -2, 3], |n| format!("FLOOR.MATH({n},, -1)")),
-            ([2, 2, 0, -4, 2], |n| format!("FLOOR.MATH({n}, 2)")),
-            ([2, 2, 0, -4, 2], |n| format!("FLOOR.MATH({n}, -2)")),
-            ([2, 2, 0, -2, 2], |n| format!("FLOOR.MATH({n}, 2, -1)")),
-            ([2, 2, 0, -2, 2], |n| format!("FLOOR.MATH({n}, -2, -1)")),
+            ([3, 2, 0, -3, -4], |n| format!("FLOOR.MATH({n})")),
+            ([3, 2, 0, -2, -3], |n| format!("FLOOR.MATH({n},, -1)")),
+            ([2, 2, 0, -4, -4], |n| format!("FLOOR.MATH({n}, 2)")),
+            ([2, 2, 0, -4, -4], |n| format!("FLOOR.MATH({n}, -2)")),
+            ([2, 2, 0, -2, -2], |n| format!("FLOOR.MATH({n}, 2, -1)")),
+            ([2, 2, 0, -2, -2], |n| format!("FLOOR.MATH({n}, -2, -1)")),
             ([0, 0, 0, 0, 0], |n| format!("FLOOR.MATH({n}, 0)")),
         ];
         for (expected_results, formula_gen_fn) in test_cases {
