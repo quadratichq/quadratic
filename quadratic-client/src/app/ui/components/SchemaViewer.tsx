@@ -115,10 +115,9 @@ function TableListItem({
   return (
     <li>
       <div
-        className={cn(
-          'group/item sticky top-0 z-10 flex w-full cursor-default items-stretch justify-between gap-1 bg-background px-2 hover:bg-accent',
-          expanded && 'bgz-accent'
-        )}
+        className={
+          'group/item sticky top-0 z-10 flex w-full cursor-default items-stretch justify-between gap-1 bg-background px-2 hover:bg-accent'
+        }
         onClick={() => {
           setIsExpanded((prev) => !prev);
           if (expandAll) setExpandAll(false);
