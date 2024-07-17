@@ -7,7 +7,7 @@ import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { useFileRouteLoaderData } from '@/routes/file.$uuid';
-import { PlayArrow, Stop } from '@mui/icons-material';
+import { PlayCircleFilled, StopCircleOutlined } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -122,19 +122,27 @@ export const CodeEditorHeader = (props: Props) => {
         {hasPermission &&
           (!isRunningComputation ? (
             <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
-              <span>
-                <IconButton id="QuadraticCodeEditorRunButtonID" size="small" color="primary" onClick={saveAndRunCell}>
-                  <PlayArrow fontSize="small" />
-                </IconButton>
-              </span>
+              <IconButton
+                id="QuadraticCodeEditorRunButtonID"
+                size="small"
+                color="primary"
+                onClick={saveAndRunCell}
+                style={{ margin: '0 -1px' }}
+              >
+                <PlayCircleFilled />
+              </IconButton>
             </TooltipHint>
           ) : (
             <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
-              <span>
-                <IconButton size="small" color="primary" onClick={cancelRun} disabled={!isRunningComputation}>
-                  <Stop fontSize="small" />
-                </IconButton>
-              </span>
+              <IconButton
+                size="small"
+                color="primary"
+                onClick={cancelRun}
+                disabled={!isRunningComputation}
+                style={{ margin: '0 -1px' }}
+              >
+                <StopCircleOutlined />
+              </IconButton>
             </TooltipHint>
           ))}
       </div>
