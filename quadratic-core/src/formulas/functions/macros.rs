@@ -75,9 +75,10 @@ macro_rules! see_docs_for_more_about_wildcards {
 ///
 /// - `#[doc = "..."]` (or doc comments using `///`) - user-facing documentation
 /// - `#[operator]` - removes the function from documentation
+/// - `#[name = "..."]` - overrides the function name
 /// - `#[examples("EXAMPLE()", "EXAMPLE(A, B)")]` - example usages
 /// - `#[zip_map]` - if certain arguments are arrays, **zip** them together
-///                       and **map** a **pure** function over them.
+///                  and **map** a **pure** function over them.
 ///
 /// # Parameter syntax
 ///
@@ -97,8 +98,7 @@ macro_rules! see_docs_for_more_about_wildcards {
 /// Generic types:
 /// - `arg: Option< ... >` - optional argument (type is `Option< ... >`)
 /// - `arg: Iter< ... >` - repeating argument (type is `impl Iterator<Item= ... >`)
-/// - `arg: Spanned< ... >` - include span information (type is `Spanned< ...
-///                           >`)
+/// - `arg: Spanned< ... >` - include span information (type is `Spanned< ... >`)
 /// - `arg: Spanned<Option< ... >>` - optional argument with span information
 ///                                   (type is `Option<Spanned< ... >>`)
 ///
@@ -136,6 +136,7 @@ macro_rules! formula_fn {
         #[doc = $doc:expr]
         $(#[doc = $additional_doc:expr])*
         $(#[include_args_in_completion($include_args_in_completion:expr)])?
+        $(#[name = $name_str:literal])?
         #[examples($($example_str:expr),+ $(,)?)]
         $(#[$($attr:tt)*])*
         fn $fn_name:ident( $($params:tt)* ) { $($body:tt)* }
@@ -146,7 +147,7 @@ macro_rules! formula_fn {
         let include_args_in_completion = [$($include_args_in_completion, )? true][0];
 
         $crate::formulas::functions::FormulaFunction {
-            name: stringify!($fn_name),
+            name: $(if true { $name_str } else)? { stringify!($fn_name) },
             arg_completion: include_args_in_completion.then(|| {
                 $crate::formulas::params::arg_completion_string(&params_list)
             }),

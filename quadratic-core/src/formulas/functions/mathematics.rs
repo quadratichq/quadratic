@@ -120,6 +120,77 @@ fn get_functions() -> Vec<FormulaFunction> {
                 }
             }
         ),
+        formula_fn!(
+            /// Rounds a number up or away from zero to the next multiple of
+            /// `increment`. If `increment` is omitted, it is assumed to be `1`.
+            /// The sign of `increment` is ignored.
+            ///
+            /// If `negative_mode` is positive or zero, then `number` is rounded
+            /// up, toward positive infinity. If `negative_mode` is negative,
+            /// then `number` is rounded away from zero. These are equivalent
+            /// when `number` is positive, so in this case `negative_mode` has
+            /// no effect.
+            ///
+            /// If `increment` is zero, returns zero.
+            #[name = "CEILING.MATH"]
+            #[examples(
+                "CEILING.MATH(6.5)",
+                "CEILING.MATH(6.5, 2)",
+                "CEILING.MATH(-12, 5)",
+                "CEILING.MATH(-12, 5, -1)"
+            )]
+            #[zip_map]
+            fn CEILING_MATH(
+                [number]: f64,
+                [increment]: (Option<f64>),
+                [negative_mode]: (Option<f64>),
+            ) {
+                let increment = increment.unwrap_or(1.0).abs();
+
+                if increment == 0.0 {
+                    0.0
+                } else if negative_mode.unwrap_or(1.0) < 0.0 && number < 0.0 {
+                    (number / increment).floor() * increment
+                } else {
+                    (number / increment).ceil() * increment
+                }
+            }
+        ),
+        formula_fn!(
+            /// Rounds a number down or toward zero to the next multiple of
+            /// `increment`. If `increment` is omitted, it is assumed to be `1`.
+            /// The sign of `increment` is ignored.
+            ///
+            /// If `negative_mode` is positive or zero, then `number` is rounded
+            /// down, toward negative infinity. If `negative_mode` is negative,
+            /// then `number` is rounded toward zero. These are equivalent when
+            /// `number` is positive, so in this case `negative_mode` has no
+            /// effect.
+            ///
+            /// If `increment` is zero, returns zero.
+            #[name = "FLOOR.MATH"]
+            #[examples(
+                "FLOOR.MATH(6.5)",
+                "FLOOR.MATH(6.5, 2)",
+                "FLOOR.MATH(-12, 5)",
+                "FLOOR.MATH(-12, 5, -1)"
+            )]
+            #[zip_map]
+            fn FLOOR_MATH(
+                [number]: f64,
+                [increment]: (Option<f64>),
+                [negative_mode]: (Option<f64>),
+            ) {
+                let increment = increment.unwrap_or(1.0).abs();
+                if increment == 0.0 {
+                    0.0
+                } else if negative_mode.unwrap_or(1.0) < 0.0 && number < 0.0 {
+                    (number / increment).ceil() * increment
+                } else {
+                    (number / increment).floor() * increment
+                }
+            }
+        ),
         // Constants
         formula_fn!(
             /// Returns π, the circle constant.
@@ -357,6 +428,34 @@ mod tests {
                 Ok(ok) => assert_eq!(ok, eval_to_string(&g, &formula)),
                 Err(err) => assert_eq!(err, eval_to_err(&g, &formula).msg),
             }
+        }
+    }
+
+    #[test]
+    fn test_floor_math_and_ceiling_math() {
+        let g = Grid::new();
+        let test_inputs = &[3.5, 2.5, 0.0, -2.5, 3.5];
+        let test_cases: &[([i64; 5], fn(f64) -> String)] = &[
+            ([4, 3, 0, -2, 4], |n| format!("CEILING.MATH({n})")),
+            ([4, 3, 0, -3, 4], |n| format!("CEILING.MATH({n},, -1)")),
+            ([4, 4, 0, -2, 4], |n| format!("CEILING.MATH({n}, 2)")),
+            ([4, 4, 0, -2, 4], |n| format!("CEILING.MATH({n}, -2)")),
+            ([4, 4, 0, -4, 4], |n| format!("CEILING.MATH({n}, 2, -1)")),
+            ([4, 4, 0, -4, 4], |n| format!("CEILING.MATH({n}, -2, -1)")),
+            ([0, 0, 0, 0, 0], |n| format!("CEILING.MATH({n}, 0)")),
+            ([3, 2, 0, -3, 3], |n| format!("FLOOR.MATH({n})")),
+            ([3, 2, 0, -2, 3], |n| format!("FLOOR.MATH({n},, -1)")),
+            ([2, 2, 0, -4, 2], |n| format!("FLOOR.MATH({n}, 2)")),
+            ([2, 2, 0, -4, 2], |n| format!("FLOOR.MATH({n}, -2)")),
+            ([2, 2, 0, -2, 2], |n| format!("FLOOR.MATH({n}, 2, -1)")),
+            ([2, 2, 0, -2, 2], |n| format!("FLOOR.MATH({n}, -2, -1)")),
+            ([0, 0, 0, 0, 0], |n| format!("FLOOR.MATH({n}, 0)")),
+        ];
+        for (expected_results, formula_gen_fn) in test_cases {
+            assert_eq!(
+                expected_results.map(|n| n.to_string()),
+                test_inputs.map(|n| eval_to_string(&g, &formula_gen_fn(n)))
+            );
         }
     }
 
