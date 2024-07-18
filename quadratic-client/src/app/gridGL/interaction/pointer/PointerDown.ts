@@ -149,9 +149,7 @@ export class PointerDown {
         const inSelection = this.inSelectionRange(column, row);
         if (inSelection === 'except') {
         } else if (inSelection) {
-          cursor.changeExcept({
-            except:
-          })
+          // cursor.changeExcept({});
         }
         const multiCursor = cursor.multiCursor ?? [new Rectangle(cursorPosition.x, cursorPosition.y, 1, 1)];
         multiCursor.push(new Rectangle(column, row, 1, 1));
