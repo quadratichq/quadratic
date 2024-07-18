@@ -142,9 +142,12 @@ export const ApiSchemas = {
    * ===========================================================================
    */
   '/v0/files/:uuid.GET.response': z.object({
-    file: FileSchema,
+    file: FileSchema.extend({
+      ownerUserId: BaseUserSchema.shape.id.optional(),
+    }),
     team: TeamSchema.pick({ uuid: true, name: true }),
     userMakingRequest: z.object({
+      id: BaseUserSchema.shape.id.optional(),
       filePermissions: z.array(FilePermissionSchema),
       fileTeamPrivacy: z.enum(['PRIVATE_TO_ME', 'PRIVATE_TO_SOMEONE_ELSE', 'PUBLIC_TO_TEAM']).optional(),
       fileRole: UserFileRoleSchema.optional(),

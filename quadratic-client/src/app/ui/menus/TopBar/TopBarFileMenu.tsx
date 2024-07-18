@@ -1,9 +1,7 @@
-import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { useFileRouteLoaderData } from '@/routes/file.$uuid';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
-import { LockOutlined } from '@mui/icons-material';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
@@ -58,8 +56,9 @@ export const TopBarFileMenu = () => {
 function FileLocation() {
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
+    file: { ownerUserId },
     team,
-    userMakingRequest: { fileTeamPrivacy },
+    userMakingRequest: { fileRole, teamRole, id: userId },
   } = useFileRouteLoaderData();
   const linkProps = {
     reloadDocument: true,
@@ -71,36 +70,42 @@ function FileLocation() {
     return null;
   }
 
-  // Figure out the user's relationship to the file and the link back to its
-  // location in the dashboard
-  let dashboardLinkTo = '';
-  if (fileTeamPrivacy === 'PUBLIC_TO_TEAM') {
-    dashboardLinkTo = ROUTES.TEAM(team.uuid);
-  } else if (fileTeamPrivacy === 'PRIVATE_TO_ME') {
-    dashboardLinkTo = ROUTES.TEAM_FILES_PRIVATE(team.uuid);
-  } else if (fileTeamPrivacy === 'PRIVATE_TO_SOMEONE_ELSE') {
-    dashboardLinkTo = ROUTES.TEAM_FILES(team.uuid);
+  let dashboardLink = null;
+  console.log(ownerUserId, userId, fileRole, teamRole);
+  if (ownerUserId && ownerUserId === userId) {
+    // my private file
+    dashboardLink = (
+      <Link to={ROUTES.TEAM_FILES_PRIVATE(team.uuid)} {...linkProps}>
+        Private
+      </Link>
+    );
+  } else if (ownerUserId === undefined && teamRole) {
+    // public team file
+    dashboardLink = (
+      <Link to={ROUTES.TEAM_FILES(team.uuid)} {...linkProps}>
+        {team.name}
+      </Link>
+    );
+  } else if (fileRole) {
+    dashboardLink = (
+      <Link to={ROUTES.FILES_SHARED_WITH_ME} {...linkProps}>
+        Shared with me
+      </Link>
+    );
+    // location = 'SHARED';
   }
 
   // They must be seeing the file because the public link is being used
-  if (!dashboardLinkTo) {
+  if (dashboardLink === null) {
     return null;
   }
 
   return (
     <>
-      <span className="flex items-center gap-1">
-        {fileTeamPrivacy !== 'PUBLIC_TO_TEAM' && (
-          <TooltipHint title="Private">
-            <LockOutlined sx={{ width: 16, height: 16 }} className="text-muted-foreground" />
-          </TooltipHint>
-        )}
-        <Type className="hidden text-muted-foreground hover:text-foreground hover:underline md:block">
-          <Link to={dashboardLinkTo} {...linkProps}>
-            {team.name}
-          </Link>
-        </Type>
-      </span>
+      <Type className="hidden text-muted-foreground hover:text-foreground hover:underline md:block">
+        {dashboardLink}
+      </Type>
+
       <Type variant="body2" className="hidden select-none text-muted-foreground opacity-50 md:block">
         /
       </Type>

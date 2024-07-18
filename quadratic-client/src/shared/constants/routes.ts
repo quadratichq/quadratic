@@ -18,7 +18,7 @@ export const ROUTES = {
   TEAM_CONNECTIONS: (teamUuid: string) => `/teams/${teamUuid}/connections`,
   TEAM_CONNECTION_CREATE: (teamUuid: string, connectionType: string) =>
     `/teams/${teamUuid}/connections/create/${connectionType}`,
-  TEAM_FILES: (teamUuid: string) => `/teams/${teamUuid}/files`,
+  TEAM_FILES: (teamUuid: string) => `/teams/${teamUuid}`,
   TEAM_FILES_PRIVATE: (teamUuid: string) => `/teams/${teamUuid}/files/private`,
   TEAM_MEMBERS: (teamUuid: string) => `/teams/${teamUuid}/members`,
   TEAM_SETTINGS: (teamUuid: string) => `/teams/${teamUuid}/settings`,
