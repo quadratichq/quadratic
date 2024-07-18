@@ -158,7 +158,7 @@ const updateTeamStatus = async (
   await dbClient.team.update({
     where: { stripeCustomerId: customerId },
     data: {
-      activated: true, // activate the team
+      // activated: true, // activate the team
       stripeSubscriptionId,
       stripeSubscriptionStatus,
       stripeCurrentPeriodEnd: endDate,

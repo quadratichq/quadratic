@@ -23,7 +23,6 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams.GET.respo
           uuid: true,
           name: true,
           createdDate: true,
-          activated: true,
           // Count the number of users in each team
           _count: {
             select: {
