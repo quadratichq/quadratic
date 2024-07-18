@@ -48,19 +48,5 @@ services:
       - DISABLE_CORS_CHECKS=true
       - EXTRA_CORS_ALLOWED_ORIGINS=*
 
-  aws-cli:
-    image: amazon/aws-cli
-    depends_on:
-      - localstack
-    environment:
-      - AWS_ACCESS_KEY_ID=test
-      - AWS_SECRET_ACCESS_KEY=test
-      - AWS_DEFAULT_REGION=us-east-2
-    entrypoint: /bin/sh -c
-    command: >
-      "
-        aws --endpoint-url=http://localstack:4566 s3api create-bucket --bucket quadratic-api-docker --region us-east-1
-      "
-
 networks:
   host:
