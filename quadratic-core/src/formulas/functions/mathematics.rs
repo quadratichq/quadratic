@@ -191,6 +191,27 @@ fn get_functions() -> Vec<FormulaFunction> {
                 }
             }
         ),
+        formula_fn!(
+            /// Rounds a number down to the next integer. Always rounds toward
+            /// negative infinity.
+            #[examples("INT(3.9)", "INT(-2.1)")]
+            #[zip_map]
+            fn INT([number]: f64) {
+                number.floor()
+            }
+        ),
+        formula_fn!(
+            /// Returns the remainder after dividing `number` by `divisor`. The
+            /// result always has the same sign as `divisor`.
+            ///
+            /// Note that `INT(n / d) * d + MOD(n, d)` always equals `n` (up to
+            /// floating-point precision).
+            #[examples("MOD(3.9, 3)", "MOD(-2.1, 3)")]
+            #[zip_map]
+            fn MOD(span: Span, [number]: f64, [divisor]: f64) {
+                number - util::checked_div(span, number, divisor)?.floor() * divisor
+            }
+        ),
         // Constants
         formula_fn!(
             /// Returns π, the circle constant.
@@ -211,6 +232,8 @@ fn get_functions() -> Vec<FormulaFunction> {
 
 #[cfg(test)]
 mod tests {
+    use proptest::proptest;
+
     use crate::{formulas::tests::*, Pos};
 
     #[test]
@@ -456,6 +479,33 @@ mod tests {
                 expected_results.map(|n| n.to_string()),
                 test_inputs.map(|n| eval_to_string(&g, &formula_gen_fn(n)))
             );
+        }
+    }
+
+    #[test]
+    fn test_int() {
+        let g = Grid::new();
+        assert_eq!(
+            "{-3, -2, -1, 0, 0, 1, 2}",
+            eval_to_string(&g, "INT({-2.9, -1.1, -0.1, 0, 0.1, 1.1, 2.9})")
+        );
+    }
+
+    #[test]
+    fn test_mod() {
+        let g = Grid::new();
+        assert_eq!("-0.5", eval_to_string(&g, "MOD(1.5, -1)"));
+        assert_eq!("{0; 1; 0; 1; 0; 1}", eval_to_string(&g, "MOD(0..5, 2)"));
+        // Test division by zero
+        assert_eq!(RunErrorMsg::DivideByZero, eval_to_err(&g, "MOD(1, 0)").msg);
+    }
+
+    proptest! {
+        #[test]
+        fn proptest_int_mod_invariant(n in -100.0..100.0_f64, d in -100.0..100.0_f64) {
+            let g = Grid::new();
+            let should_equal_n = eval(&g, &format!("INT({n} / {d}) * {d} + MOD({n}, {d})")).coerce_nonblank::<f64>().unwrap();
+            assert!((should_equal_n - n).abs() < 0.01);
         }
     }
 
