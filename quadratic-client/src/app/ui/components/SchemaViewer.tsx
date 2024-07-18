@@ -70,8 +70,8 @@ export const SchemaViewer = (props: Props) => {
             Error loading data schema.{' '}
             <button className="underline" onClick={reloadSchema}>
               Try again
-            </button>{' '}
-            or contact us.
+            </button>
+            .
           </Type>
         )
       ) : null}

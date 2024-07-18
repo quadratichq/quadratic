@@ -41,17 +41,15 @@ type StaticIpsResponse = z.infer<typeof StaticIpsSchema>;
 export const connectionClient = {
   schemas: {
     get: async (connectionType: 'postgres' | 'mysql', connectionId: string): Promise<SqlSchemaResponse | null> => {
-      try {
-        const res = await fetch(`${API_URL}/${connectionType}/schema/${connectionId}`, {
-          method: 'GET',
-          headers: new Headers(await jwtHeader()),
-        });
-        const data = await res.json();
-        return SqlSchema.parse(data);
-      } catch (err) {
-        console.error('Failed to get the schema from the connection service', err);
-        return null;
+      const res = await fetch(`${API_URL}/${connectionType}/schema/${connectionId}`, {
+        method: 'GET',
+        headers: new Headers(await jwtHeader()),
+      });
+      if (!res.ok) {
+        throw new Error('Failed to get the schema from the connection service');
       }
+      const data = await res.json();
+      return SqlSchema.parse(data);
     },
   },
   test: {
