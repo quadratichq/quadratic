@@ -428,15 +428,7 @@ mod tests {
         );
         sheet.test_set_code_run_array(-1, -10, vec!["1", "2", "3"], true);
 
-        let selection = Selection {
-            sheet_id: sheet.id,
-            x: 0,
-            y: 0,
-            rects: None,
-            rows: None,
-            columns: None,
-            all: true,
-        };
+        let selection = Selection::all(sheet.id);
 
         let results = sheet.selection(&selection, None, false).unwrap();
         assert_eq!(results.len(), 12);
@@ -472,12 +464,8 @@ mod tests {
 
         let selection = Selection {
             sheet_id: sheet.id,
-            x: 0,
-            y: 0,
-            rects: None,
-            rows: None,
             columns: Some(vec![0, 1, -1]),
-            all: false,
+            ..Default::default()
         };
 
         let results = sheet.selection(&selection, None, false).unwrap();
@@ -506,12 +494,8 @@ mod tests {
 
         let selection = Selection {
             sheet_id: sheet.id,
-            x: 0,
-            y: 0,
-            rects: None,
             rows: Some(vec![0, 1, -10]),
-            columns: None,
-            all: false,
+            ..Default::default()
         };
 
         let results = sheet.selection(&selection, None, false).unwrap();
@@ -543,12 +527,8 @@ mod tests {
             .selection(
                 &Selection {
                     sheet_id: sheet.id,
-                    x: 0,
-                    y: 0,
                     rects: Some(rects.clone()),
-                    rows: None,
-                    columns: None,
-                    all: false,
+                    ..Default::default()
                 },
                 None,
                 false,
@@ -565,12 +545,8 @@ mod tests {
             .selection(
                 &Selection {
                     sheet_id: sheet.id,
-                    x: 0,
-                    y: 0,
                     rects: Some(rects),
-                    rows: None,
-                    columns: None,
-                    all: false,
+                    ..Default::default()
                 },
                 Some(3),
                 false,
@@ -593,12 +569,8 @@ mod tests {
             .selection(
                 &Selection {
                     sheet_id: sheet.id,
-                    x: 0,
-                    y: 0,
                     rects: Some(rects.clone()),
-                    rows: None,
-                    columns: None,
-                    all: false,
+                    ..Default::default()
                 },
                 None,
                 false,
@@ -611,12 +583,8 @@ mod tests {
             .selection(
                 &Selection {
                     sheet_id: sheet.id,
-                    x: 0,
-                    y: 0,
                     rects: Some(rects.clone()),
-                    rows: None,
-                    columns: None,
-                    all: false,
+                    ..Default::default()
                 },
                 Some(1),
                 false,
@@ -627,12 +595,8 @@ mod tests {
             .selection(
                 &Selection {
                     sheet_id: sheet.id,
-                    x: 0,
-                    y: 0,
                     rects: Some(rects),
-                    rows: None,
-                    columns: None,
-                    all: false,
+                    ..Default::default()
                 },
                 None,
                 true,
@@ -662,12 +626,10 @@ mod tests {
 
         let selection = Selection {
             sheet_id: sheet.id,
-            x: 0,
-            y: 0,
             rects: Some(vec![Rect::single_pos(Pos { x: 0, y: 0 })]),
             rows: Some(vec![4]),
             columns: Some(vec![2]),
-            all: false,
+            ..Default::default()
         };
 
         let results = sheet.selection(&selection, None, false).unwrap();

@@ -22,6 +22,45 @@ export class PointerDown {
   // flag that ensures that if pointerUp triggers during setTimeout, pointerUp is still called (see below)
   private afterShowInput?: boolean;
 
+  // Returns whether the given point is within the current selection range.
+  // If the point is within except then it returns 'except'.
+  private inSelectionRange(x: number, y: number): boolean | 'except' {
+    const sheet = sheets.sheet;
+    const cursor = sheet.cursor;
+    if (cursor.except) {
+      for (const rect of cursor.except) {
+        if (x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height) {
+          return 'except';
+        }
+      }
+    }
+    if (cursor.multiCursor) {
+      for (const rect of cursor.multiCursor) {
+        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+          return true;
+        }
+      }
+    }
+    if (cursor.columnRow) {
+      if (cursor.columnRow.all) {
+        return true;
+      }
+
+      if (cursor.columnRow.columns) {
+        if (cursor.columnRow.columns.includes(x)) {
+          return true;
+        }
+      }
+
+      if (cursor.columnRow.rows) {
+        if (cursor.columnRow.rows.includes(y)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   async pointerDown(world: Point, event: PointerEvent) {
     if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || event.button === 1) return;
     const sheet = sheets.sheet;
@@ -107,6 +146,13 @@ export class PointerDown {
       const cursorPosition = cursor.cursorPosition;
       if (cursor.multiCursor || column !== cursorPosition.x || row !== cursorPosition.y) {
         event.stopPropagation();
+        const inSelection = this.inSelectionRange(column, row);
+        if (inSelection === 'except') {
+        } else if (inSelection) {
+          cursor.changeExcept({
+            except:
+          })
+        }
         const multiCursor = cursor.multiCursor ?? [new Rectangle(cursorPosition.x, cursorPosition.y, 1, 1)];
         multiCursor.push(new Rectangle(column, row, 1, 1));
         cursor.changePosition({

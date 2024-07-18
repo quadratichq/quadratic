@@ -124,24 +124,8 @@ mod test {
     fn thumbnail_dirty_selection_all() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        assert!(!gc.thumbnail_dirty_selection(&Selection {
-            sheet_id: SheetId::test(),
-            x: 0,
-            y: 0,
-            rects: None,
-            rows: None,
-            columns: None,
-            all: true,
-        }));
-        assert!(gc.thumbnail_dirty_selection(&Selection {
-            sheet_id,
-            x: 0,
-            y: 0,
-            rects: None,
-            rows: None,
-            columns: None,
-            all: true,
-        }));
+        assert!(!gc.thumbnail_dirty_selection(&Selection::all(SheetId::test())));
+        assert!(gc.thumbnail_dirty_selection(&Selection::all(sheet_id)));
     }
 
     #[test]
@@ -150,41 +134,25 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         assert!(!gc.thumbnail_dirty_selection(&Selection {
             sheet_id: SheetId::test(),
-            x: 0,
-            y: 0,
-            rects: None,
-            rows: None,
             columns: Some(vec![0]),
-            all: false,
+            ..Default::default()
         }));
         assert!(gc.thumbnail_dirty_selection(&Selection {
             sheet_id,
-            x: 0,
-            y: 0,
-            rects: None,
-            rows: None,
             columns: Some(vec![0]),
-            all: false,
+            ..Default::default()
         }));
         let sheet = gc.sheet(sheet_id);
         let max_column = sheet.offsets.thumbnail().max.x;
         assert!(gc.thumbnail_dirty_selection(&Selection {
             sheet_id,
-            x: 0,
-            y: 0,
-            rects: None,
-            rows: None,
             columns: Some(vec![max_column]),
-            all: false,
+            ..Default::default()
         }));
         assert!(!gc.thumbnail_dirty_selection(&Selection {
             sheet_id,
-            x: 0,
-            y: 0,
-            rects: None,
-            rows: None,
             columns: Some(vec![max_column + 1]),
-            all: false,
+            ..Default::default()
         }));
     }
 
@@ -194,41 +162,25 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         assert!(!gc.thumbnail_dirty_selection(&Selection {
             sheet_id: SheetId::test(),
-            x: 0,
-            y: 0,
-            rects: None,
             rows: Some(vec![0]),
-            columns: None,
-            all: false,
+            ..Default::default()
         }));
         assert!(gc.thumbnail_dirty_selection(&Selection {
             sheet_id,
-            x: 0,
-            y: 0,
-            rects: None,
             rows: Some(vec![0]),
-            columns: None,
-            all: false,
+            ..Default::default()
         }));
         let sheet = gc.sheet(sheet_id);
         let max_row = sheet.offsets.thumbnail().max.y;
         assert!(gc.thumbnail_dirty_selection(&Selection {
             sheet_id,
-            x: 0,
-            y: 0,
-            rects: None,
             rows: Some(vec![max_row]),
-            columns: None,
-            all: false,
+            ..Default::default()
         }));
         assert!(!gc.thumbnail_dirty_selection(&Selection {
             sheet_id,
-            x: 0,
-            y: 0,
-            rects: None,
             rows: Some(vec![max_row + 1]),
-            columns: None,
-            all: false,
+            ..Default::default()
         }));
     }
 
@@ -238,33 +190,23 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         assert!(!gc.thumbnail_dirty_selection(&Selection {
             sheet_id: SheetId::test(),
-            x: 0,
-            y: 0,
             rects: Some(vec![Rect {
                 min: Pos { x: 0, y: 0 },
                 max: Pos { x: 1, y: 1 },
             }]),
-            rows: None,
-            columns: None,
-            all: false,
+            ..Default::default()
         }));
         assert!(gc.thumbnail_dirty_selection(&Selection {
             sheet_id,
-            x: 0,
-            y: 0,
             rects: Some(vec![Rect {
                 min: Pos { x: 0, y: 0 },
                 max: Pos { x: 1, y: 1 },
             }]),
-            rows: None,
-            columns: None,
-            all: false,
+            ..Default::default()
         }));
         let sheet = gc.sheet(sheet_id);
         assert!(gc.thumbnail_dirty_selection(&Selection {
             sheet_id,
-            x: 0,
-            y: 0,
             rects: Some(vec![Rect {
                 min: Pos { x: 0, y: 0 },
                 max: Pos {
@@ -272,14 +214,10 @@ mod test {
                     y: sheet.offsets.thumbnail().max.y
                 },
             }]),
-            rows: None,
-            columns: None,
-            all: false,
+            ..Default::default()
         }));
         assert!(!gc.thumbnail_dirty_selection(&Selection {
             sheet_id,
-            x: 0,
-            y: 0,
             rects: Some(vec![Rect {
                 min: Pos {
                     x: sheet.offsets.thumbnail().max.x + 1,
@@ -290,21 +228,15 @@ mod test {
                     y: sheet.offsets.thumbnail().max.y + 2
                 },
             }]),
-            rows: None,
-            columns: None,
-            all: false,
+            ..Default::default()
         }));
         assert!(!gc.thumbnail_dirty_selection(&Selection {
             sheet_id,
-            x: 0,
-            y: 0,
             rects: Some(vec![Rect {
                 min: Pos { x: -2, y: -2 },
                 max: Pos { x: -1, y: -1 },
             }]),
-            rows: None,
-            columns: None,
-            all: false,
+            ..Default::default()
         }));
     }
 }

@@ -253,12 +253,8 @@ mod test {
         gc.set_align_selection(
             Selection {
                 sheet_id,
-                x: 0,
-                y: 0,
                 rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
-                rows: None,
-                columns: None,
-                all: false,
+                ..Default::default()
             },
             crate::grid::CellAlign::Center,
             None,
@@ -279,12 +275,8 @@ mod test {
         gc.set_bold_selection(
             Selection {
                 sheet_id,
-                x: 0,
-                y: 0,
                 rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
-                rows: None,
-                columns: None,
-                all: false,
+                ..Default::default()
             },
             true,
             None,
@@ -302,12 +294,8 @@ mod test {
         gc.set_cell_wrap_selection(
             Selection {
                 sheet_id,
-                x: 0,
-                y: 0,
                 rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
-                rows: None,
-                columns: None,
-                all: false,
+                ..Default::default()
             },
             CellWrap::Clip,
             None,
@@ -328,12 +316,8 @@ mod test {
         gc.set_currency_selection(
             Selection {
                 sheet_id,
-                x: 0,
-                y: 0,
                 rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
-                rows: None,
-                columns: None,
-                all: false,
+                ..Default::default()
             },
             "€".to_string(),
             None,
@@ -357,12 +341,8 @@ mod test {
         gc.set_numeric_format_selection(
             Selection {
                 sheet_id,
-                x: 0,
-                y: 0,
                 rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
-                rows: None,
-                columns: None,
-                all: false,
+                ..Default::default()
             },
             crate::grid::NumericFormatKind::Exponential,
             None,
@@ -387,12 +367,8 @@ mod test {
         gc.set_numeric_format_selection(
             Selection {
                 sheet_id,
-                x: 0,
-                y: 0,
                 rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
-                rows: None,
-                columns: None,
-                all: false,
+                ..Default::default()
             },
             crate::grid::NumericFormatKind::Percentage,
             None,
@@ -417,12 +393,8 @@ mod test {
         gc.set_commas_selection(
             Selection {
                 sheet_id,
-                x: 0,
-                y: 0,
                 rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
-                rows: None,
-                columns: None,
-                all: false,
+                ..Default::default()
             },
             true,
             None,
@@ -437,12 +409,8 @@ mod test {
         gc.set_commas_selection(
             Selection {
                 sheet_id,
-                x: 0,
-                y: 0,
                 rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
-                rows: None,
-                columns: None,
-                all: false,
+                ..Default::default()
             },
             false,
             None,
@@ -462,12 +430,8 @@ mod test {
         gc.set_italic_selection(
             Selection {
                 sheet_id,
-                x: 0,
-                y: 0,
                 rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
-                rows: None,
-                columns: None,
-                all: false,
+                ..Default::default()
             },
             true,
             None,
@@ -485,12 +449,8 @@ mod test {
         gc.set_text_color_selection(
             Selection {
                 sheet_id,
-                x: 0,
-                y: 0,
                 rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
-                rows: None,
-                columns: None,
-                all: false,
+                ..Default::default()
             },
             Some("red".to_string()),
             None,
@@ -511,12 +471,8 @@ mod test {
         gc.set_fill_color_selection(
             Selection {
                 sheet_id,
-                x: 0,
-                y: 0,
                 rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
-                rows: None,
-                columns: None,
-                all: false,
+                ..Default::default()
             },
             Some("blue".to_string()),
             None,
@@ -539,12 +495,8 @@ mod test {
         gc.change_decimal_places_selection(
             Selection {
                 sheet_id,
-                x: 0,
-                y: 0,
                 rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
-                rows: None,
-                columns: None,
-                all: false,
+                ..Default::default()
             },
             2,
             None,
@@ -565,12 +517,8 @@ mod test {
         gc.set_text_color_selection(
             Selection {
                 sheet_id,
-                x: 0,
-                y: 0,
                 rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
-                rows: None,
-                columns: None,
-                all: false,
+                ..Default::default()
             },
             Some("red".to_string()),
             None,
@@ -586,12 +534,8 @@ mod test {
         gc.clear_format(
             Selection {
                 sheet_id,
-                x: 0,
-                y: 0,
                 rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
-                rows: None,
-                columns: None,
-                all: false,
+                ..Default::default()
             },
             None,
         )
@@ -608,12 +552,8 @@ mod test {
         gc.set_text_color_selection(
             Selection {
                 sheet_id,
-                x: 0,
-                y: 0,
-                rects: None,
-                rows: None,
                 columns: Some(vec![0]),
-                all: false,
+                ..Default::default()
             },
             Some("red".to_string()),
             None,
@@ -626,12 +566,8 @@ mod test {
         gc.clear_format(
             Selection {
                 sheet_id,
-                x: 0,
-                y: 0,
-                rects: None,
-                rows: None,
                 columns: Some(vec![0]),
-                all: false,
+                ..Default::default()
             },
             None,
         )

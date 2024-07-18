@@ -32,6 +32,7 @@ export interface SheetCursorSave {
   cursorPosition: Coordinate;
   multiCursor?: RectangleLike[];
   columnRow?: ColumnRowCursor;
+  except?: RectangleLike[];
 }
 
 export class SheetCursor {
@@ -46,6 +47,7 @@ export class SheetCursor {
   cursorPosition: Coordinate;
   multiCursor?: Rectangle[];
   columnRow?: ColumnRowCursor;
+  except?: Rectangle[];
 
   constructor(sheet: Sheet) {
     this.sheetId = sheet.id;
@@ -72,6 +74,7 @@ export class SheetCursor {
       cursorPosition: this.cursorPosition,
       multiCursor: this.multiCursor?.map((rect) => ({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })),
       columnRow: this.columnRow,
+      except: this.except?.map((rect) => ({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })),
     };
   }
 
@@ -80,6 +83,7 @@ export class SheetCursor {
     this.cursorPosition = value.cursorPosition;
     this.multiCursor = value.multiCursor?.map((rect) => new Rectangle(rect.x, rect.y, rect.width, rect.height));
     this.columnRow = value.columnRow;
+    this.except = value.except?.map((rect) => new Rectangle(rect.x, rect.y, rect.width, rect.height));
     multiplayer.sendSelection(this.getMultiplayerSelection());
     pixiApp.cursor.dirty = true;
   }
@@ -116,8 +120,49 @@ export class SheetCursor {
       };
     }
 
+    if (selection.except) {
+      this.except = selection.except.map(
+        (rect) =>
+          new Rectangle(
+            Number(rect.min.x),
+            Number(rect.min.y),
+            Number(rect.max.x - rect.min.x),
+            Number(rect.max.y - rect.min.y)
+          )
+      );
+    } else {
+      this.except = undefined;
+    }
+
     multiplayer.sendSelection(this.getMultiplayerSelection());
     pixiApp.cursor.dirty = true;
+  }
+
+  // todo: once the other PR merges w/updates to ensureVisible, uncomment out Coordinates
+  changeExcept(
+    options: { point?: Coordinate; rectangle?: Rectangle; remove: Coordinate; clear?: boolean },
+    test?: boolean
+  ) {
+    let ensureVisible = false; // boolean | Coordinate;
+    if (options.clear) {
+      this.except = undefined;
+    } else if (options.point) {
+      this.except = [new Rectangle(options.point.x, options.point.y, 1, 1)];
+      ensureVisible = true; // { x: options.point.x, y: options.point.y };
+    } else if (options.rectangle) {
+      if (!this.except?.length) {
+        throw new Error('Expected except to be defined when extending to a rectangle');
+      }
+      this.except = [...this.except.slice(0, this.except.length - 1), options.rectangle];
+      ensureVisible = true; // todo
+    }
+
+    if (!test) {
+      pixiApp.updateCursorPosition({ ensureVisible });
+      if (!inlineEditorHandler.cursorIsMoving) {
+        multiplayer.sendSelection(this.getMultiplayerSelection());
+      }
+    }
   }
 
   // Changes the cursor position. If multiCursor or columnRow is set to null,
@@ -150,6 +195,7 @@ export class SheetCursor {
     } else if (options.keyboardMovePosition) {
       this.keyboardMovePosition = options.keyboardMovePosition;
     }
+
     if (!test) {
       pixiApp.updateCursorPosition({ ensureVisible: options.ensureVisible ?? true });
       if (!inlineEditorHandler.cursorIsMoving) {
@@ -164,6 +210,7 @@ export class SheetCursor {
       cursorPosition: this.cursorPosition,
       multiCursor: this.multiCursor,
       columnRow: this.columnRow,
+      except: this.except,
     });
   }
 
@@ -205,6 +252,13 @@ export class SheetCursor {
         },
       ];
     }
+    let except: Rect[] | null = null;
+    if (this.except) {
+      except = this.except.map((rect) => ({
+        min: { x: BigInt(rect.x), y: BigInt(rect.y) },
+        max: { x: BigInt(rect.x + rect.width - 1), y: BigInt(rect.y + rect.height - 1) },
+      }));
+    }
     return {
       sheet_id,
       x: BigInt(this.cursorPosition.x),
@@ -213,6 +267,7 @@ export class SheetCursor {
       columns,
       rows,
       all,
+      except,
     };
   }
 

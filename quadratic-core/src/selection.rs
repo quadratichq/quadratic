@@ -17,6 +17,9 @@ pub struct Selection {
     pub rows: Option<Vec<i64>>,
     pub columns: Option<Vec<i64>>,
     pub all: bool,
+
+    // Remove rects from the selection
+    pub except: Option<Vec<Rect>>,
 }
 
 impl Selection {
@@ -27,9 +30,7 @@ impl Selection {
             x: sheet_rect.min.x,
             y: sheet_rect.min.y,
             rects: Some(vec![sheet_rect.into()]),
-            rows: None,
-            columns: None,
-            all: false,
+            ..Default::default()
         }
     }
 
@@ -37,12 +38,8 @@ impl Selection {
     pub fn all(sheet_id: SheetId) -> Self {
         Selection {
             sheet_id,
-            x: 0,
-            y: 0,
-            rects: None,
-            rows: None,
-            columns: None,
             all: true,
+            ..Default::default()
         }
     }
 
@@ -51,11 +48,8 @@ impl Selection {
         Selection {
             sheet_id,
             x: columns[0],
-            y: 0,
-            rects: None,
-            rows: None,
             columns: Some(columns.to_vec()),
-            all: false,
+            ..Default::default()
         }
     }
 
@@ -63,12 +57,9 @@ impl Selection {
     pub fn rows(rows: &[i64], sheet_id: SheetId) -> Self {
         Selection {
             sheet_id,
-            x: 0,
             y: rows[0],
-            rects: None,
             rows: Some(rows.to_vec()),
-            columns: None,
-            all: false,
+            ..Default::default()
         }
     }
 
@@ -79,9 +70,7 @@ impl Selection {
             x: rect.min.x,
             y: rect.min.y,
             rects: Some(vec![rect]),
-            rows: None,
-            columns: None,
-            all: false,
+            ..Default::default()
         }
     }
 
@@ -92,9 +81,7 @@ impl Selection {
             x,
             y,
             rects: Some(vec![Rect::from_numbers(x, y, 1, 1)]),
-            rows: None,
-            columns: None,
-            all: false,
+            ..Default::default()
         }
     }
 
@@ -242,12 +229,10 @@ mod test {
             selection,
             Selection {
                 sheet_id: SheetId::test(),
-                x: 0,
                 y: 1,
+                x: 0,
                 rects: Some(vec![Rect::from_numbers(0, 1, 4, 4)]),
-                rows: None,
-                columns: None,
-                all: false
+                ..Default::default()
             }
         );
     }
@@ -262,10 +247,8 @@ mod test {
                 sheet_id: SheetId::test(),
                 x: 0,
                 y: 3,
-                rects: None,
                 rows: Some(vec!(3, 5)),
-                columns: None,
-                all: false
+                ..Default::default()
             }
         );
     }
@@ -280,10 +263,8 @@ mod test {
                 x: 7,
                 y: 0,
                 sheet_id: SheetId::test(),
-                rects: None,
-                rows: None,
                 columns: Some(vec!(7, 8, 9)),
-                all: false
+                ..Default::default()
             }
         );
     }
@@ -295,13 +276,9 @@ mod test {
         assert_eq!(
             selection,
             Selection {
-                x: 0,
-                y: 0,
                 sheet_id: SheetId::test(),
-                rects: None,
-                rows: None,
-                columns: None,
-                all: true
+                all: true,
+                ..Default::default()
             }
         );
     }
@@ -313,13 +290,9 @@ mod test {
         assert_eq!(
             selection,
             Selection {
-                x: 0,
-                y: 0,
                 sheet_id: SheetId::test(),
                 rects: Some(vec!(rect)),
-                rows: None,
-                columns: None,
-                all: false
+                ..Default::default()
             }
         );
     }
@@ -330,13 +303,9 @@ mod test {
         assert_eq!(
             selection,
             Selection {
-                x: 0,
-                y: 0,
                 sheet_id: SheetId::test(),
                 rects: Some(vec!(Rect::from_numbers(0, 0, 1, 1))),
-                rows: None,
-                columns: None,
-                all: false
+                ..Default::default()
             }
         );
     }
@@ -348,13 +317,9 @@ mod test {
         assert_eq!(
             selection,
             Selection {
-                x: 0,
-                y: 0,
                 sheet_id: SheetId::test(),
                 rects: Some(vec!(Rect::from_numbers(0, 0, 1, 1))),
-                rows: None,
-                columns: None,
-                all: false
+                ..Default::default()
             }
         );
     }
@@ -491,7 +456,7 @@ mod test {
             rects: Some(vec![Rect::from_numbers(1, 2, 3, 4)]),
             columns: Some(vec![1, 2, 3]),
             rows: Some(vec![4, 5, 6]),
-            all: false,
+            ..Default::default()
         };
         assert_eq!(selection.count(), 18);
 
@@ -503,6 +468,7 @@ mod test {
             columns: Some(vec![1, 2, 3]),
             rows: Some(vec![4, 5, 6]),
             all: true,
+            ..Default::default()
         };
 
         // all is always count = 1
@@ -519,10 +485,8 @@ mod test {
                 sheet_id,
                 x: 1,
                 y: 0,
-                rects: None,
-                rows: None,
                 columns: Some(vec![1, 2, 3]),
-                all: false
+                ..Default::default()
             }
         );
     }
@@ -537,10 +501,8 @@ mod test {
                 sheet_id,
                 x: 0,
                 y: 1,
-                rects: None,
                 rows: Some(vec![1, 2, 3]),
-                columns: None,
-                all: false
+                ..Default::default()
             }
         );
     }

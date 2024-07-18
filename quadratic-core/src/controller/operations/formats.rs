@@ -27,12 +27,8 @@ mod tests {
         let gc = GridController::test();
         let selection = Selection {
             sheet_id: gc.sheet_ids()[0],
-            x: 0,
-            y: 0,
             rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
-            rows: None,
-            columns: None,
-            all: false,
+            ..Default::default()
         };
         let ops = gc.clear_format_selection_operations(&selection);
         assert_eq!(
