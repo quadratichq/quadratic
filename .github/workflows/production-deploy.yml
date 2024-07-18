@@ -28,6 +28,7 @@ jobs:
     needs: 
     - multiplayer_production
     - files_production
+    - connection_production
     name: Update Infrastructure with Pulumi
     runs-on: ubuntu-latest
     steps:
