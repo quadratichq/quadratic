@@ -70,29 +70,29 @@ function FileLocation() {
     return null;
   }
 
+  // Determine where the file is located and where we link back to
   let dashboardLink = null;
-  console.log(ownerUserId, userId, fileRole, teamRole);
   if (ownerUserId && ownerUserId === userId) {
-    // my private file
+    // My private file
     dashboardLink = (
       <Link to={ROUTES.TEAM_FILES_PRIVATE(team.uuid)} {...linkProps}>
         Private
       </Link>
     );
   } else if (ownerUserId === undefined && teamRole) {
-    // public team file
+    // Team file
     dashboardLink = (
       <Link to={ROUTES.TEAM_FILES(team.uuid)} {...linkProps}>
         {team.name}
       </Link>
     );
   } else if (fileRole) {
+    // File i was invited to
     dashboardLink = (
       <Link to={ROUTES.FILES_SHARED_WITH_ME} {...linkProps}>
         Shared with me
       </Link>
     );
-    // location = 'SHARED';
   }
 
   // They must be seeing the file because the public link is being used
