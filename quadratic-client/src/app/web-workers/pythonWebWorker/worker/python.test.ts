@@ -7,6 +7,7 @@ vi.mock('./pythonClient.ts', () => {
   return {
     pythonClient: {
       sendInit: () => (pythonState = 'ready'),
+      getJwt: () => {},
       sendPythonState: (state: LanguageState) => (pythonState = state),
     },
   };
