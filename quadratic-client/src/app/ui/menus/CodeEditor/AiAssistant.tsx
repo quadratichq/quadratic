@@ -58,7 +58,15 @@ Do not use any markdown syntax besides triple backticks for ${getConnectionKind(
 Do not reply with plain text code blocks.
 The cell type is ${getConnectionKind(mode)}.
 The cell is located at ${selectedCell.x}, ${selectedCell.y}.
-${schemaJsonForAi ? `The schema for the database is:\`\`\`json\n${schemaJsonForAi}\n\`\`\`` : ``}
+${
+  schemaJsonForAi
+    ? [
+        `The schema for the database is:\`\`\`json\n${schemaJsonForAi}\n\`\`\``,
+        'When generating postgres queries, put schema and table names in quotes, e.g. "schema"."TableName".',
+        'When generating mysql queries, put schema and table names in backticks, e.g. `schema`.`TableName`.',
+      ].join('\n')
+    : ``
+}
 Currently, you are in a cell that is being edited. The code in the cell is:
 \`\`\`${getConnectionKind(mode)}
 ${editorContent}\`\`\`
