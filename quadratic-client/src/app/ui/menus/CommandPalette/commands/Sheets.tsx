@@ -2,7 +2,7 @@ import { events } from '@/app/events/events';
 import { SheetDeleteIcon, SheetDuplicateIcon, SheetGoToIcon, SheetIcon } from '@/app/ui/icons';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useEffect, useMemo, useState } from 'react';
-import { hasPermissionToEditFile } from '../../../../actions';
+import { isAvailableBecauseCanEditFile } from '../../../../actions';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { focusGrid } from '../../../../helpers/focusGrid';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
@@ -18,7 +18,7 @@ const ListItems = () => {
         {
           label: 'Create',
           keywords: ['create sheets', 'new sheets'],
-          isAvailable: hasPermissionToEditFile,
+          isAvailable: isAvailableBecauseCanEditFile,
           Component: (props) => {
             return (
               <CommandPaletteListItem
@@ -31,7 +31,7 @@ const ListItems = () => {
         },
         {
           label: 'Duplicate',
-          isAvailable: hasPermissionToEditFile,
+          isAvailable: isAvailableBecauseCanEditFile,
           Component: (props) => {
             return (
               <CommandPaletteListItem
@@ -44,7 +44,7 @@ const ListItems = () => {
         },
         {
           label: 'Delete',
-          isAvailable: hasPermissionToEditFile,
+          isAvailable: isAvailableBecauseCanEditFile,
           Component: (props) => {
             return (
               <CommandPaletteListItem

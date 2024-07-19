@@ -29,7 +29,6 @@ beforeEach(async () => {
     data: {
       name: 'Personal File',
       uuid: '00000000-0000-4000-8000-000000000001',
-      stripeCustomerId: 'cus_123',
       UserTeamRole: {
         create: [
           { userId: userOwner.id, role: 'OWNER' },
