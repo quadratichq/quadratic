@@ -49,8 +49,12 @@ impl<'ctx> Ctx<'ctx> {
         span: Span,
     ) -> CodeResult<Spanned<SheetRect>> {
         match range {
-            RangeRef::RowRange { .. } => Err(RunErrorMsg::Unimplemented.with_span(span)),
-            RangeRef::ColRange { .. } => Err(RunErrorMsg::Unimplemented.with_span(span)),
+            RangeRef::RowRange { .. } => {
+                Err(RunErrorMsg::Unimplemented("row range".into()).with_span(span))
+            }
+            RangeRef::ColRange { .. } => {
+                Err(RunErrorMsg::Unimplemented("column range".into()).with_span(span))
+            }
             RangeRef::CellRange { start, end } => {
                 let sheet_pos_start = self.resolve_ref(start, span)?.inner;
                 let sheet_pos_end = self.resolve_ref(end, span)?.inner;
