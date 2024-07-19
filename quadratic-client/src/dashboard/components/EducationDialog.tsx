@@ -1,6 +1,6 @@
 import { authClient } from '@/auth';
-import { useRootRouteLoaderData } from '@/router';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, QUADRATIC_FOR_EDUCATION } from '@/shared/constants/urls';
 import { Badge } from '@/shared/shadcn/ui/badge';

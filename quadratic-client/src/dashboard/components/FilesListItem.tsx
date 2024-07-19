@@ -1,7 +1,11 @@
-import { deleteFile, downloadFileAction, duplicateFileWithCurrentOwnerAction, renameFileAction } from '@/app/actions';
+import { deleteFile, downloadFileAction, duplicateFileAction, renameFileAction } from '@/app/actions';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { Action as FileAction } from '@/routes/files.$uuid';
-import { useTeamRouteLoaderData } from '@/routes/teams.$uuid';
+import {
+  Action as FileAction,
+  getActionFileDelete,
+  getActionFileDuplicate,
+  getActionFileMove,
+} from '@/routes/api.files.$uuid';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button as Btn } from '@/shared/shadcn/ui/button';
@@ -17,7 +21,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { DotsVerticalIcon, FileIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { useEffect, useRef, useState } from 'react';
-import { Link, SubmitOptions, useFetcher, useLocation, useSubmit } from 'react-router-dom';
+import { Link, SubmitOptions, useFetcher, useMatch, useSubmit } from 'react-router-dom';
 import { DialogRenameItem } from './DialogRenameItem';
 import { FilesListExampleFile, FilesListUserFile } from './FilesList';
 import { FilesListItemCore } from './FilesListItemCore';
@@ -64,25 +68,25 @@ export function FilesListItemUserFile({
   const fetcherMove = useFetcher({ key: 'move-file:' + file.uuid });
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [open, setOpen] = useState<boolean>(false);
-  const teamRouteLoaderData = useTeamRouteLoaderData();
-  const location = useLocation();
+  const {
+    activeTeam: {
+      team: { uuid: activeTeamUuid },
+    },
+  } = useDashboardRouteLoaderData();
   const fileDragRef = useRef<HTMLDivElement>(null);
   const {
-    teams,
     userMakingRequest: { id: userId },
   } = useDashboardRouteLoaderData();
 
-  // Determine if the user can move files
-  // If we're looking at the user's personal files, make sure they have edit access to another team
-  // If we're looking at a team, make sure they have edit access to the curent team
-  const isPersonalFilesRoute = location.pathname === ROUTES.FILES;
-  const isTeamRoute = teamRouteLoaderData !== undefined;
-  const canMoveFiles =
-    (isPersonalFilesRoute &&
-      teams.filter(({ userMakingRequest: { teamPermissions } }) => teamPermissions.includes('TEAM_EDIT')).length > 0) ||
-    (isTeamRoute && teamRouteLoaderData.userMakingRequest.teamPermissions.includes('TEAM_EDIT'));
-
   const { name, thumbnail, uuid, publicLinkAccess, permissions } = file;
+  const actionUrl = ROUTES.API.FILE(uuid);
+
+  // Determine if the user can move files
+  // If we're looking at the user's private files, make sure they have edit access to the team
+  // If we're looking at a team, make sure they have edit access to the curent team
+  const isTeamPrivateFilesRoute = Boolean(useMatch(ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)));
+  const isTeamPublicFilesRoute = Boolean(useMatch(ROUTES.TEAM(activeTeamUuid)));
+  const canMoveFiles = (isTeamPrivateFilesRoute || isTeamPublicFilesRoute) && permissions.includes('FILE_MOVE');
 
   const description =
     viewPreferences.sort === Sort.Created
@@ -90,7 +94,7 @@ export function FilesListItemUserFile({
       : `Modified ${timeAgo(file.updatedDate)}`;
   const fetcherSubmitOpts: SubmitOptions = {
     method: 'POST',
-    action: ROUTES.FILES_FILE(uuid),
+    action: actionUrl,
     encType: 'application/json',
   };
   const failedToDelete = fetcherDelete.data && !fetcherDelete.data.ok;
@@ -124,9 +128,7 @@ export function FilesListItemUserFile({
 
   const handleDelete = () => {
     if (window.confirm(`Confirm you want to delete the file: “${name}”`)) {
-      const data: FileAction['request.delete'] = {
-        action: 'delete',
-      };
+      const data = getActionFileDelete();
       fetcherDelete.submit(data, fetcherSubmitOpts);
     }
   };
@@ -139,10 +141,7 @@ export function FilesListItemUserFile({
   };
 
   const handleDuplicate = () => {
-    const data: FileAction['request.duplicate'] = {
-      action: 'duplicate',
-      withCurrentOwner: true,
-    };
+    const data = getActionFileDuplicate({ redirect: false, isPrivate: isTeamPrivateFilesRoute ? true : false });
     fetcherDuplicate.submit(data, fetcherSubmitOpts);
   };
 
@@ -213,9 +212,7 @@ export function FilesListItemUserFile({
                     <DropdownMenuItem onClick={handleShare}>Share</DropdownMenuItem>
                   )}
                   {permissions.includes('FILE_EDIT') && (
-                    <DropdownMenuItem onClick={handleDuplicate}>
-                      {duplicateFileWithCurrentOwnerAction.label}
-                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleDuplicate}>{duplicateFileAction.label}</DropdownMenuItem>
                   )}
                   {permissions.includes('FILE_EDIT') && (
                     <DropdownMenuItem onClick={() => setOpen(true)}>{renameFileAction.label}</DropdownMenuItem>
@@ -224,54 +221,38 @@ export function FilesListItemUserFile({
                   {canMoveFiles && (
                     <>
                       <DropdownMenuSeparator />
-                      {!isPersonalFilesRoute && (
+                      {isTeamPublicFilesRoute && (
                         <DropdownMenuItem
                           onClick={() => {
-                            const data: FileAction['request.move'] = {
-                              action: 'move',
-                              ownerUserId: userId,
-                            };
+                            const data = getActionFileMove(userId);
                             submit(data, {
                               method: 'POST',
-                              action: `/files/${uuid}`,
+                              action: actionUrl,
                               encType: 'application/json',
                               navigate: false,
                               fetcherKey: `move-file:${uuid}`,
                             });
                           }}
                         >
-                          Move to my files
+                          Move to private files
                         </DropdownMenuItem>
                       )}
-                      {teams
-                        .filter(
-                          ({ team, userMakingRequest: { teamPermissions } }) =>
-                            team.activated &&
-                            teamPermissions.includes('TEAM_EDIT') &&
-                            (isTeamRoute ? teamRouteLoaderData.team.uuid !== team.uuid : true)
-                        )
-                        .map(({ team }) => (
-                          <DropdownMenuItem
-                            className="block truncate"
-                            key={team.uuid}
-                            onClick={() => {
-                              const data: FileAction['request.move'] = {
-                                action: 'move',
-                                ownerTeamId: team.id,
-                              };
-                              submit(data, {
-                                method: 'POST',
-                                action: `/files/${uuid}`,
-                                encType: 'application/json',
-                                navigate: false,
-                                fetcherKey: `move-file:${uuid}`,
-                              });
-                            }}
-                          >
-                            Move to {team.name}
-                          </DropdownMenuItem>
-                        ))
-                        .slice(0, 2)}
+                      {isTeamPrivateFilesRoute && (
+                        <DropdownMenuItem
+                          onClick={() => {
+                            const data = getActionFileMove(null);
+                            submit(data, {
+                              method: 'POST',
+                              action: actionUrl,
+                              encType: 'application/json',
+                              navigate: false,
+                              fetcherKey: `move-file:${uuid}`,
+                            });
+                          }}
+                        >
+                          Move to team files
+                        </DropdownMenuItem>
+                      )}
                     </>
                   )}
 
