@@ -341,14 +341,6 @@ impl FromStr for SheetPos {
     }
 }
 
-impl SheetPos {
-    pub fn pos(&self) -> Pos {
-        let x = self.x;
-        let y = self.y;
-        Pos { x, y }
-    }
-}
-
 /// Used for referencing a range during computation.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]

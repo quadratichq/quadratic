@@ -52,12 +52,12 @@ impl<'ctx> Ctx<'ctx> {
             RangeRef::RowRange { .. } => Err(RunErrorMsg::Unimplemented.with_span(span)),
             RangeRef::ColRange { .. } => Err(RunErrorMsg::Unimplemented.with_span(span)),
             RangeRef::CellRange { start, end } => {
-                let sheet_pos1 = self.resolve_ref(start, span)?.inner;
-                let sheet_pos2 = self.resolve_ref(end, span)?.inner;
+                let sheet_pos_start = self.resolve_ref(start, span)?.inner;
+                let sheet_pos_end = self.resolve_ref(end, span)?.inner;
                 Ok(SheetRect::new_pos_span(
-                    sheet_pos1.pos(),
-                    sheet_pos2.pos(),
-                    sheet_pos1.sheet_id,
+                    sheet_pos_start.into(),
+                    sheet_pos_end.into(),
+                    sheet_pos_start.sheet_id,
                 ))
                 .with_span(span)
             }
@@ -83,7 +83,7 @@ impl<'ctx> Ctx<'ctx> {
             .try_sheet(sheet_pos.sheet_id)
             .ok_or(RunErrorMsg::BadCellReference.with_span(span))?;
         let value = sheet
-            .display_value(sheet_pos.pos())
+            .display_value(sheet_pos.into())
             .unwrap_or(CellValue::Blank);
         Ok(value).with_span(span)
     }
