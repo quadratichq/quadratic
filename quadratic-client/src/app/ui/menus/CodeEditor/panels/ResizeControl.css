@@ -1,6 +1,6 @@
 /* Shared styles for the 1px line */
 .resize-control {
-  background-color: var(--resize-control-background);
+  background-color: hsl(var(--border));
   z-index: 1;
 }
 

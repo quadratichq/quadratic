@@ -1,15 +1,17 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetPosTS } from '@/app/gridGL/types/size';
-import { codeCellIsAConnection, getLanguage } from '@/app/helpers/codeCellLanguage';
+import { getCodeCell, getConnectionUuid, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import { GetConnections } from '@/routes/api.connections';
 import { useFileRouteLoaderData } from '@/routes/file.$uuid';
 import { PlayCircleFilled, StopCircleOutlined } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
 import { useEffect, useState } from 'react';
+import { useFetcher } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
@@ -29,11 +31,11 @@ export const CodeEditorHeader = (props: Props) => {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const codeCell = getCodeCell(editorInteractionState.mode);
 
-  const isConnection = codeCellIsAConnection(editorInteractionState.mode);
   const hasPermission =
     hasPermissionToEditFile(editorInteractionState.permissions) &&
-    (isConnection ? teamPermissions?.includes('TEAM_EDIT') : true);
+    (codeCell?.type === 'connection' ? teamPermissions?.includes('TEAM_EDIT') : true);
 
   const language = getLanguage(editorInteractionState.mode);
 
@@ -108,12 +110,25 @@ export const CodeEditorHeader = (props: Props) => {
     };
   }, [cellLocation]);
 
+  // Get the connection name (it's possible the user won't have access to it
+  // because they're in a file they have access to but not the team — or
+  // the connection was deleted)
+  const connectionsFetcher = useFetcher<GetConnections>({ key: 'CONNECTIONS_FETCHER_KEY' });
+  let currentConnectionName = '';
+  if (connectionsFetcher.data) {
+    const connectionUuid = getConnectionUuid(editorInteractionState.mode);
+    const foundConnection = connectionsFetcher.data.connections.find(({ uuid }) => uuid === connectionUuid);
+    if (foundConnection) currentConnectionName = foundConnection.name;
+  }
+
   return (
     <div className="flex items-center px-2 py-1">
-      <div className="ml-1 flex flex-col text-sm font-medium leading-4">Code</div>
+      <div className="ml-1 flex flex-col text-sm font-medium leading-4">
+        {codeCell?.type === 'connection' ? <>Connection: {currentConnectionName}</> : codeCell?.label}
+      </div>
       <div className="ml-auto flex flex-shrink-0 items-center gap-2">
         {isRunningComputation && (
-          <TooltipHint title={`${language} executing…`} placement="bottom">
+          <TooltipHint title={`Executing…`} placement="bottom">
             <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
           </TooltipHint>
         )}

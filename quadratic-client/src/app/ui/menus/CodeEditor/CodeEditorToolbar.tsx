@@ -1,15 +1,13 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetPosTS } from '@/app/gridGL/types/size';
-import { getCodeCell, getConnectionUuid } from '@/app/helpers/codeCellLanguage';
+import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { PanelPositionBottomIcon, PanelPositionLeftIcon } from '@/app/ui/icons';
 import { PanelPosition } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
-import { GetConnections } from '@/routes/api.connections';
 import { Circle, Close } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
-import { useFetcher } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { TooltipHint } from '../../components/TooltipHint';
@@ -26,17 +24,6 @@ export const CodeEditorToolbar = (props: Props) => {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
   const codeCell = getCodeCell(editorInteractionState.mode);
-  const connectionsFetcher = useFetcher<GetConnections>({ key: 'CONNECTIONS_FETCHER_KEY' });
-
-  // Get the connection name (it's possible the user won't have access to it
-  // because they're in a file they have access to but not the team — or
-  // the connection was deleted)
-  let currentConnectionName = '';
-  if (connectionsFetcher.data) {
-    const connectionUuid = getConnectionUuid(editorInteractionState.mode);
-    const foundConnection = connectionsFetcher.data.connections.find(({ uuid }) => uuid === connectionUuid);
-    if (foundConnection) currentConnectionName = foundConnection.name;
-  }
 
   // Keep track of the current sheet ID so we know whether to show the sheet name or not
   const currentCodeEditorCellIsNotInActiveSheet = currentSheetId !== editorInteractionState.selectedCellSheet;
@@ -63,36 +50,27 @@ export const CodeEditorToolbar = (props: Props) => {
   if (!cellLocation) return null;
 
   return (
-    <div className="flex items-center px-2 py-1">
-      <div className={`relative`}>
-        <TooltipHint title={String(codeCell?.label)} placement="bottom">
-          <div className="flex items-center">
-            <LanguageIcon language={codeCell?.id} fontSize="small" />
+    <div className="flex h-10 items-stretch pr-2">
+      <div
+        className={
+          'relative flex items-center gap-2 border-r border-border pl-2 pr-1 after:absolute after:-bottom-[1px] after:left-0 after:h-[1px] after:w-full after:bg-background after:content-[""]'
+        }
+      >
+        <div className={'flex items-stretch gap-2'}>
+          <TooltipHint title={String(codeCell?.label)} placement="bottom">
+            <div className="flex items-center">
+              <LanguageIcon language={codeCell?.id} sx={{ fontSize: '16px' }} />
+            </div>
+          </TooltipHint>
+          <div className="flex items-center truncate">
+            <div className="text-sm leading-4">
+              Cell ({cellLocation.x}, {cellLocation.y})
+              {currentCodeEditorCellIsNotInActiveSheet && (
+                <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
+              )}
+            </div>
           </div>
-        </TooltipHint>
-      </div>
-      <div className="mx-2 flex flex-col truncate">
-        <div className="text-sm font-medium leading-4">
-          Cell ({cellLocation.x}, {cellLocation.y})
-          {currentCodeEditorCellIsNotInActiveSheet && (
-            <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
-          )}
         </div>
-        {currentConnectionName && (
-          <div className="text-xs leading-4 text-muted-foreground">Connection: {currentConnectionName}</div>
-        )}
-      </div>
-      <div className="ml-auto flex flex-shrink-0 items-center gap-2">
-        <TooltipHint title={panelPosition === 'bottom' ? 'Move panel left' : 'Move panel bottom'}>
-          <IconButton onClick={changePanelPosition} size="small">
-            {panelPosition === 'left' ? (
-              <PanelPositionBottomIcon fontSize="small" />
-            ) : (
-              <PanelPositionLeftIcon fontSize="small" />
-            )}
-          </IconButton>
-        </TooltipHint>
-
         <TooltipHint title={'Close'} shortcut="ESC" placement="bottom">
           <IconButton
             id="QuadraticCodeEditorCloseButtonID"
@@ -114,7 +92,7 @@ export const CodeEditorToolbar = (props: Props) => {
                 : {}),
             }}
           >
-            <Close id="btn-close" fontSize="small" />
+            <Close id="btn-close" fontSize="small" sx={{ fontSize: '15px' }} />
             {unsaved && (
               <Circle
                 id="btn-unsaved"
@@ -125,6 +103,17 @@ export const CodeEditorToolbar = (props: Props) => {
                   fontSize: '12px',
                 }}
               />
+            )}
+          </IconButton>
+        </TooltipHint>
+      </div>
+      <div className="ml-auto flex flex-shrink-0 items-center gap-2">
+        <TooltipHint title={panelPosition === 'bottom' ? 'Move panel left' : 'Move panel bottom'}>
+          <IconButton onClick={changePanelPosition} size="small">
+            {panelPosition === 'left' ? (
+              <PanelPositionBottomIcon fontSize="small" />
+            ) : (
+              <PanelPositionLeftIcon fontSize="small" />
             )}
           </IconButton>
         </TooltipHint>

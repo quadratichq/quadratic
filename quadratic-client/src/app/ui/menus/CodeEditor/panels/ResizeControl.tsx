@@ -21,7 +21,6 @@ export function ResizeControl({ disabled, setState, position, style }: ResizeCon
         ...style,
         // @ts-expect-error typescript doesn't like us setting CSS custom properties
         '--resize-control-highlight': colors.quadraticPrimary,
-        '--resize-control-background': colors.mediumGray,
       }}
       onMouseDown={(e) => {
         if (disabled) return;
