@@ -3,7 +3,10 @@ use std::str::FromStr;
 use bigdecimal::BigDecimal;
 
 use super::schema::{self as current};
-use crate::{grid::CodeCellLanguage, CellValue, CodeCellValue};
+use crate::{
+    grid::{CodeCellLanguage, ConnectionKind},
+    CellValue, CodeCellValue,
+};
 
 pub fn export_cell_value(cell_value: &CellValue) -> current::CellValue {
     match cell_value {
@@ -17,6 +20,15 @@ pub fn export_cell_value(cell_value: &CellValue) -> current::CellValue {
                 CodeCellLanguage::Python => current::CodeCellLanguage::Python,
                 CodeCellLanguage::Formula => current::CodeCellLanguage::Formula,
                 CodeCellLanguage::Javascript => current::CodeCellLanguage::Javascript,
+                CodeCellLanguage::Connection { kind, ref id } => {
+                    current::CodeCellLanguage::Connection {
+                        kind: match kind {
+                            ConnectionKind::Postgres => current::ConnectionKind::Postgres,
+                            ConnectionKind::Mysql => current::ConnectionKind::Mysql,
+                        },
+                        id: id.clone(),
+                    }
+                }
             },
         }),
         CellValue::Logical(logical) => current::CellValue::Logical(*logical),
@@ -53,6 +65,15 @@ pub fn import_cell_value(value: &current::CellValue) -> CellValue {
                 current::CodeCellLanguage::Python => CodeCellLanguage::Python,
                 current::CodeCellLanguage::Formula => CodeCellLanguage::Formula,
                 current::CodeCellLanguage::Javascript => CodeCellLanguage::Javascript,
+                current::CodeCellLanguage::Connection { ref kind, ref id } => {
+                    CodeCellLanguage::Connection {
+                        kind: match kind {
+                            current::ConnectionKind::Postgres => ConnectionKind::Postgres,
+                            current::ConnectionKind::Mysql => ConnectionKind::Mysql,
+                        },
+                        id: id.clone(),
+                    }
+                }
             },
         }),
         current::CellValue::Logical(logical) => CellValue::Logical(*logical),

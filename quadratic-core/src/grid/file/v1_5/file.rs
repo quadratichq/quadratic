@@ -21,7 +21,7 @@ fn upgrade_column(x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
                             v1_5::CellValue::Blank => v1_6::CellValue::Blank,
                             v1_5::CellValue::Code(code_cell) => {
                                 v1_6::CellValue::Code(v1_6::CodeCell {
-                                    language: match code_cell.language {
+                                    language: match &code_cell.language {
                                         v1_5::CodeCellLanguage::Python => {
                                             v1_6::CodeCellLanguage::Python
                                         }
@@ -30,6 +30,19 @@ fn upgrade_column(x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
                                         }
                                         v1_5::CodeCellLanguage::Javascript => {
                                             v1_6::CodeCellLanguage::Python
+                                        }
+                                        v1_5::CodeCellLanguage::Connection { kind, ref id } => {
+                                            v1_6::CodeCellLanguage::Connection {
+                                                kind: match kind {
+                                                    v1_5::ConnectionKind::Postgres => {
+                                                        v1_6::ConnectionKind::Postgres
+                                                    }
+                                                    v1_5::ConnectionKind::Mysql => {
+                                                        v1_6::ConnectionKind::Mysql
+                                                    }
+                                                },
+                                                id: id.clone(),
+                                            }
                                         }
                                     },
                                     code: code_cell.code.clone(),

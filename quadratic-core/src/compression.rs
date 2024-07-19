@@ -40,7 +40,7 @@ where
 pub fn decompress(data: &[u8]) -> Result<Vec<u8>> {
     let writer = Vec::new();
     let mut decoder = ZlibDecoder::new(writer);
-    decoder.write_all(&data[..])?;
+    decoder.write_all(&data)?;
 
     Ok(decoder.finish()?)
 }
@@ -49,10 +49,10 @@ pub fn deserialize<T>(data: &[u8]) -> Result<T>
 where
     T: DeserializeOwned,
 {
-    Ok(bincode::deserialize::<T>(&data)?)
+    Ok(bincode::deserialize::<T>(data)?)
 }
 
-pub fn add_header<'a>(header: Vec<u8>, data: Vec<u8>) -> Result<Vec<u8>> {
+pub fn add_header(header: Vec<u8>, data: Vec<u8>) -> Result<Vec<u8>> {
     // add the delimiter to the header
     let mut output = [header, vec![HEADER_DELIMITER]].concat();
 
@@ -62,7 +62,7 @@ pub fn add_header<'a>(header: Vec<u8>, data: Vec<u8>) -> Result<Vec<u8>> {
     Ok(output)
 }
 
-pub fn remove_header<'a>(data: &[u8]) -> Result<(&[u8], &[u8])> {
+pub fn remove_header(data: &[u8]) -> Result<(&[u8], &[u8])> {
     let index = data
         .iter()
         .position(|&r| r == HEADER_DELIMITER)

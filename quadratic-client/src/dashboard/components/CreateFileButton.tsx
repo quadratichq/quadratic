@@ -26,14 +26,12 @@ const getFileType = (file: File): UploadFileType => {
   throw new Error(`Unsupported file type: ${getExtension(file.name)}`);
 };
 
-// TODO this will need props when it becomes a button that can be used
-// on the team page as well as the user's files page
-export default function CreateFileButton() {
+export default function CreateFileButton({ isPrivate }: { isPrivate?: boolean }) {
   const [open, onOpenChange] = useState<boolean>(false);
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const submit = useSubmit();
-  const { uuid } = useParams();
-  const actionUrl = uuid ? ROUTES.CREATE_FILE_IN_TEAM(uuid) : ROUTES.CREATE_FILE;
+  const { teamUuid } = useParams() as { teamUuid: string };
+  const actionUrl = isPrivate ? ROUTES.CREATE_FILE_PRIVATE(teamUuid) : ROUTES.CREATE_FILE(teamUuid);
 
   const handleImport = async (e: ChangeEvent<HTMLInputElement>) => {
     // If nothing was selected, just exit

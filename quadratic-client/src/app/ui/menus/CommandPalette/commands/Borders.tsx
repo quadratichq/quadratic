@@ -10,8 +10,8 @@ import {
   BorderTopIcon,
   BorderVerticalIcon,
 } from '@/app/ui/icons';
-import { hasPermissionToEditFile } from '../../../../actions';
-import { ChangeBorder, useBorders, UseBordersResults } from '../../TopBar/SubMenus/useBorders';
+import { isAvailableBecauseCanEditFile } from '../../../../actions';
+import { ChangeBorder, UseBordersResults, useBorders } from '../../TopBar/SubMenus/useBorders';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
 export const BordersHook = (): CommandGroup => {
@@ -32,7 +32,7 @@ export const BordersHook = (): CommandGroup => {
       {
         label: 'Border none',
         keywords: ['Remove borders', 'Clear borders'],
-        isAvailable: hasPermissionToEditFile,
+        isAvailable: isAvailableBecauseCanEditFile,
         Component: (props) => {
           return (
             <CommandPaletteListItem
@@ -67,7 +67,7 @@ function generateListItem(
 ) {
   const item: CommandGroup['commands'][0] = {
     label,
-    isAvailable: hasPermissionToEditFile,
+    isAvailable: isAvailableBecauseCanEditFile,
     Component: (props) => {
       return (
         <CommandPaletteListItem
