@@ -32,12 +32,20 @@ const domain = config.require("domain");
 const certificateArn = config.require("certificate-arn");
 const instanceSize = config.require("connection-instance-size");
 
-// Create an Auto Scaling Group
-const launchConfiguration = new aws.ec2.LaunchConfiguration("connection-lc", {
+// Create a new Target Group
+const targetGroup = new aws.lb.TargetGroup("connection-nlb-tg", {
+  port: 80,
+  protocol: "TCP",
+  targetType: "instance",
+  vpcId: connectionVPC.id,
+});
+
+// Step 1: Create or update the Launch Template
+const launchTemplate = new aws.ec2.LaunchTemplate("connection-lt", {
   instanceType: instanceSize,
   iamInstanceProfile: instanceProfileIAMContainerRegistry,
   imageId: latestAmazonLinuxAmi.id,
-  securityGroups: [connectionEc2SecurityGroup.id],
+  securityGroupNames: [connectionEc2SecurityGroup.name],
   userData: connectionEip1.publicIp.apply((publicIp1) =>
     connectionEip2.publicIp.apply((publicIp2) =>
       runDockerImageBashScript(
@@ -54,13 +62,7 @@ const launchConfiguration = new aws.ec2.LaunchConfiguration("connection-lc", {
   ),
 });
 
-// Create a new Target Group
-const targetGroup = new aws.lb.TargetGroup("connection-nlb-tg", {
-  port: 80,
-  protocol: "TCP",
-  targetType: "instance",
-  vpcId: connectionVPC.id,
-});
+// Step 2: Create or update the Auto Scaling Group to use the new Launch Template
 
 // Calculate the number of instances to launch
 let minSize = 2;
@@ -73,7 +75,10 @@ const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
     connectionPrivateSubnet1.id,
     connectionPrivateSubnet2.id,
   ],
-  launchConfiguration: launchConfiguration.id,
+  launchTemplate: {
+    id: launchTemplate.id,
+    version: "$Latest",
+  },
   minSize,
   maxSize,
   desiredCapacity,
@@ -85,6 +90,12 @@ const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
     },
   ],
   targetGroupArns: [targetGroup.arn],
+  instanceRefresh: {
+    strategy: "Rolling",
+    preferences: {
+      minHealthyPercentage: 90,
+    },
+  },
 });
 
 // Create a new Network Load Balancer
