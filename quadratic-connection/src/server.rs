@@ -86,13 +86,19 @@ pub(crate) fn app(state: State) -> Result<Router> {
         // allow requests from any origin
         .allow_methods([Method::GET, Method::POST, Method::CONNECT])
         .allow_origin(Any)
-        .allow_headers([
-            CONTENT_TYPE,
-            AUTHORIZATION,
-            ACCEPT,
-            ORIGIN,
-            HeaderName::from_static("proxy"),
-        ])
+        //
+        // TODO(ddimaria): uncomment when we move proxy to a separate service
+        //
+        // .allow_headers([
+        //     CONTENT_TYPE,
+        //     AUTHORIZATION,
+        //     ACCEPT,
+        //     ORIGIN,
+        //     HeaderName::from_static("proxy"),
+        // ])
+        //
+        // required for the proxy
+        .allow_headers(Any)
         .expose_headers(Any);
 
     // get the auth middleware
