@@ -4,15 +4,11 @@
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
 use axum::{
-    http::{
-        header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE, ORIGIN},
-        Method, StatusCode,
-    },
+    http::{header::AUTHORIZATION, Method, StatusCode},
     response::IntoResponse,
     routing::{any, get, post},
     Extension, Json, Router,
 };
-use http::HeaderName;
 use jsonwebtoken::jwk::JwkSet;
 use quadratic_rust_shared::auth::jwt::get_jwks;
 use quadratic_rust_shared::sql::Connection;
