@@ -45,7 +45,7 @@ const launchTemplate = new aws.ec2.LaunchTemplate("connection-lt", {
   instanceType: instanceSize,
   iamInstanceProfile: instanceProfileIAMContainerRegistry,
   imageId: latestAmazonLinuxAmi.id,
-  securityGroupNames: [connectionEc2SecurityGroup.name],
+  vpcSecurityGroupIds: [connectionEc2SecurityGroup.id],
   userData: connectionEip1.publicIp.apply((publicIp1) =>
     connectionEip2.publicIp.apply((publicIp2) =>
       runDockerImageBashScript(
