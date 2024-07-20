@@ -36,7 +36,10 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{grid::resize::Resize, Pos, Rect};
+    use crate::{
+        controller::GridController, grid::resize::Resize,
+        sheet_offsets::resize_transient::TransientResize, Pos, Rect,
+    };
     use serial_test::parallel;
 
     #[test]
@@ -209,6 +212,70 @@ mod tests {
         // check new auto resized rows should be None
         let rows = sheet.get_auto_resize_rows(sheet_rect.y_range().collect());
         assert!(rows.is_empty());
+    }
+
+    #[test]
+    #[parallel]
+    fn test_convert_to_manual_resize_on_commit_offsets_resize() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid().sheets()[0].id;
+        let old_size = 100.0;
+        let new_size = 200.0;
+
+        // resize column, should not change row resize
+        let transient_resize = TransientResize {
+            column: Some(0),
+            row: None,
+            old_size,
+            new_size,
+        };
+        gc.commit_offsets_resize(sheet_id, transient_resize, None);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.offsets.column_width(0), new_size);
+        assert_eq!(Resize::Auto, sheet.get_row_resize(0));
+        assert_eq!(Resize::Auto, sheet.get_row_resize(1));
+
+        // resize row, should change row resize to Manual
+        let transient_resize = TransientResize {
+            column: None,
+            row: Some(0),
+            old_size,
+            new_size,
+        };
+        gc.commit_offsets_resize(sheet_id, transient_resize, None);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.offsets.row_height(0), new_size);
+        assert_eq!(Resize::Manual, sheet.get_row_resize(0));
+        assert_eq!(Resize::Auto, sheet.get_row_resize(1));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_convert_to_auto_resize_on_commit_single_resize() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid().sheets()[0].id;
+        let old_size = 100.0;
+        let new_size = 200.0;
+
+        // resize row, should change row resize to Manual
+        let transient_resize = TransientResize {
+            column: None,
+            row: Some(0),
+            old_size,
+            new_size,
+        };
+        gc.commit_offsets_resize(sheet_id, transient_resize, None);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.offsets.row_height(0), 200f64);
+        assert_eq!(Resize::Manual, sheet.get_row_resize(0));
+        assert_eq!(Resize::Auto, sheet.get_row_resize(1));
+
+        // resize column, should change row resize to Auto
+        gc.commit_single_resize(sheet_id, None, Some(0), 300f64, None);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.offsets.row_height(0), 300f64);
+        assert_eq!(Resize::Auto, sheet.get_row_resize(0));
+        assert_eq!(Resize::Auto, sheet.get_row_resize(1));
     }
 
     // convert to manual on commit_offsets_resize
