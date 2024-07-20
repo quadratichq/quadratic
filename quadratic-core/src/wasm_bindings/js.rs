@@ -112,7 +112,7 @@ extern "C" {
     );
 
     // cells: Vec<Pos>
-    pub fn jsRequestRowHeights(transaction_id: String, sheet_id: String, cells: String);
+    pub fn jsRequestRowHeights(transaction_id: String, sheet_id: String, rows: String);
     // row_heights: Vec<JsRowHeight>
     pub fn jsResizeRowHeights(sheet_id: String, row_heights: String /*Vec<JsRowHeight>*/);
 }
@@ -540,11 +540,11 @@ pub fn jsSendImage(
 pub fn jsRequestRowHeights(
     transaction_id: String,
     sheet_id: String,
-    cells: String, /*Vec<Pos>*/
+    rows: String, /*Vec<i64>*/
 ) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsRequestRowHeights",
-        format!("{},{},{}", transaction_id, sheet_id, cells),
+        format!("{},{},{}", transaction_id, sheet_id, rows),
     ));
 }
 

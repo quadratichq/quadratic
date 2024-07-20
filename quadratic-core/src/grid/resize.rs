@@ -46,3 +46,85 @@ impl ResizeMap {
         self.resize_map.iter().map(|(&k, v)| (k, v))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serial_test::parallel;
+
+    #[test]
+    #[parallel]
+    fn test_default_behavior() {
+        let resize_map = ResizeMap::default();
+        assert_eq!(resize_map.get_resize(0), Resize::Auto);
+        assert_eq!(resize_map.get_resize(100), Resize::Auto);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_set_and_get_resize() {
+        let mut resize_map = ResizeMap::default();
+
+        // Set and get for a single index
+        assert_eq!(resize_map.set_resize(0, Resize::Manual), Resize::Auto);
+        assert_eq!(resize_map.get_resize(0), Resize::Manual);
+
+        // Set and get for multiple indices
+        assert_eq!(resize_map.set_resize(1, Resize::Manual), Resize::Auto);
+        assert_eq!(resize_map.set_resize(2, Resize::Auto), Resize::Auto);
+        assert_eq!(resize_map.get_resize(1), Resize::Manual);
+        assert_eq!(resize_map.get_resize(2), Resize::Auto);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_reset() {
+        let mut resize_map = ResizeMap::default();
+
+        // Set a value and then reset it
+        resize_map.set_resize(0, Resize::Manual);
+        assert_eq!(resize_map.reset(0), Resize::Manual);
+        assert_eq!(resize_map.get_resize(0), Resize::Auto);
+
+        // Reset a value that wasn't set (should return default)
+        assert_eq!(resize_map.reset(1), Resize::Auto);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_set_to_default() {
+        let mut resize_map = ResizeMap::default();
+
+        // Setting to non-default then back to default should remove the entry
+        resize_map.set_resize(0, Resize::Manual);
+        assert_eq!(resize_map.set_resize(0, Resize::Auto), Resize::Manual);
+        assert_eq!(resize_map.get_resize(0), Resize::Auto);
+        assert!(resize_map.iter_resize().next().is_none());
+    }
+
+    #[test]
+    #[parallel]
+    fn test_iter_resize() {
+        let mut resize_map = ResizeMap::default();
+
+        resize_map.set_resize(0, Resize::Manual);
+        resize_map.set_resize(2, Resize::Manual);
+        resize_map.set_resize(1, Resize::Auto); // This should not be stored
+
+        let items: Vec<_> = resize_map.iter_resize().collect();
+        assert_eq!(items, vec![(0, &Resize::Manual), (2, &Resize::Manual)]);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_serde() {
+        let mut resize_map = ResizeMap::default();
+        resize_map.set_resize(0, Resize::Manual);
+        resize_map.set_resize(2, Resize::Manual);
+
+        let serialized = serde_json::to_string(&resize_map).unwrap();
+        let deserialized: ResizeMap = serde_json::from_str(&serialized).unwrap();
+
+        assert_eq!(resize_map, deserialized);
+    }
+}

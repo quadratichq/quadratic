@@ -138,20 +138,17 @@ impl GridController {
         }
 
         if let Some(sheet) = self.try_sheet(sheet_id) {
-            if let Some(auto_resize_rows) = sheet.get_auto_resize_rows(rows) {
-                if let Ok(rows_string) = serde_json::to_string(&auto_resize_rows) {
-                    crate::wasm_bindings::js::jsRequestRowHeights(
-                        transaction.id.to_string(),
-                        sheet_id.to_string(),
-                        rows_string,
-                    );
-                    transaction.has_async = true;
-                } else {
-                    dbgjs!("[control_transactions] start_auto_resize_row_heights: Failed to serialize auto resize rows");
-                }
+            let auto_resize_rows = sheet.get_auto_resize_rows(rows);
+            if let Ok(rows_string) = serde_json::to_string(&auto_resize_rows) {
+                crate::wasm_bindings::js::jsRequestRowHeights(
+                    transaction.id.to_string(),
+                    sheet_id.to_string(),
+                    rows_string,
+                );
+                transaction.has_async = true;
+            } else {
+                dbgjs!("[control_transactions] start_auto_resize_row_heights: Failed to serialize auto resize rows");
             }
-        } else {
-            dbgjs!("[control_transactions] start_auto_resize_row_heights: Sheet not found");
         }
     }
 
