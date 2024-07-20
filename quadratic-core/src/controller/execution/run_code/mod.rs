@@ -12,6 +12,7 @@ use crate::{
 };
 
 pub mod get_cells;
+pub mod run_connection;
 pub mod run_formula;
 pub mod run_javascript;
 pub mod run_python;
@@ -192,7 +193,7 @@ impl GridController {
                 ))
             }
         };
-        match transaction.waiting_for_async {
+        match &transaction.waiting_for_async {
             None => {
                 return Err(CoreError::TransactionNotFound("Expected transaction to be waiting_for_async to be defined in transaction::complete".into()));
             }
@@ -242,8 +243,7 @@ impl GridController {
     pub(super) fn code_cell_sheet_error(
         &mut self,
         transaction: &mut PendingTransaction,
-        error_msg: &str,
-        line_number: Option<u32>,
+        error: &RunError,
     ) -> Result<()> {
         let sheet_pos = match transaction.current_sheet_pos {
             Some(sheet_pos) => sheet_pos,
@@ -266,18 +266,12 @@ impl GridController {
             // cell may have been deleted before the async operation completed
             return Ok(());
         };
-        if !matches!(code_cell, CellValue::Code(_)) {
+        let CellValue::Code(code_cell_value) = code_cell else {
             // code may have been replaced while waiting for async operation
             return Ok(());
-        }
+        };
 
-        let msg = RunErrorMsg::PythonError(error_msg.to_owned().into());
-        let span = line_number.map(|line_number| Span {
-            start: line_number,
-            end: line_number,
-        });
-        let error = RunError { span, msg };
-        let result = CodeRunResult::Err(error);
+        let result = CodeRunResult::Err(error.clone());
 
         let new_code_run = match sheet.code_run(pos) {
             Some(old_code_run) => {
@@ -288,7 +282,7 @@ impl GridController {
                     line_number: old_code_run.line_number,
                     output_type: old_code_run.output_type.clone(),
                     std_out: None,
-                    std_err: Some(error_msg.to_owned()),
+                    std_err: Some(error.msg.to_string()),
                     spill_error: false,
                     last_modified: Utc::now(),
 
@@ -300,10 +294,12 @@ impl GridController {
                 formatted_code_string: None,
                 result,
                 return_type: None,
-                line_number,
+                line_number: error
+                    .span
+                    .map(|span| span.line_number_of_str(&code_cell_value.code) as u32),
                 output_type: None,
                 std_out: None,
-                std_err: Some(error_msg.to_owned()),
+                std_err: Some(error.msg.to_string()),
                 spill_error: false,
                 last_modified: Utc::now(),
                 cells_accessed: transaction.cells_accessed.clone(),
