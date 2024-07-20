@@ -6,8 +6,6 @@ use crate::sheet_offsets::resize_transient::TransientResize;
 impl GridController {
     /// Commits a transient resize from a local version of SheetOffsets.
     /// see js_get_resize_to_apply
-    ///
-    /// Returns a [`TransactionSummary`].
     pub fn commit_offsets_resize(
         &mut self,
         sheet_id: SheetId,
