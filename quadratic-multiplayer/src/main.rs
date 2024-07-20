@@ -3,7 +3,6 @@
 //! A multiplayer server for Quadratic.  Supports user presence and mouse
 //! tracking for a shared file.
 
-mod auth;
 mod background_worker;
 mod config;
 mod error;

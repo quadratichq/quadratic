@@ -1,3 +1,4 @@
+import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { DOCUMENTATION_JAVASCRIPT_RETURN_DATA, DOCUMENTATION_URL } from '@/shared/constants/urls';
@@ -14,22 +15,48 @@ interface ReturnTypeInspectorProps {
 export function ReturnTypeInspector({ evaluationResult, show, language }: ReturnTypeInspectorProps) {
   const theme = useTheme();
   let message: JSX.Element;
-  if (language === 'Python') {
-    message = (
-      <>
-        The last line is returned to the sheet.{' '}
-        <Link
-          to={DOCUMENTATION_URL + '/writing-python/return-data-to-the-sheet'}
-          target="_blank"
-          rel="nofollow"
-          className="underline"
-        >
-          Learn more.
-        </Link>{' '}
-      </>
-    );
-  } else if (language === 'Javascript') {
-    if (evaluationResult?.output_type) {
+
+  if (getLanguage(language) === 'Python') {
+    if (show) {
+      message = (
+        <>
+          Line {evaluationResult?.line_number} returned{' '}
+          <span className="rounded-md px-1 py-0.5" style={{ backgroundColor: theme.palette.grey[100] }}>
+            {evaluationResult?.output_type}
+          </span>
+          {evaluationResult?.output_type === 'NoneType' && (
+            <>
+              {' '}
+              <Link
+                to={DOCUMENTATION_URL + '/writing-python/return-data-to-the-sheet'}
+                target="_blank"
+                rel="nofollow"
+                className="underline"
+              >
+                read the docs
+              </Link>{' '}
+              to learn more
+            </>
+          )}
+        </>
+      );
+    } else {
+      message = (
+        <>
+          The last line is returned to the sheet.{' '}
+          <Link
+            to={DOCUMENTATION_URL + '/writing-python/return-data-to-the-sheet'}
+            target="_blank"
+            rel="nofollow"
+            className="underline"
+          >
+            Learn more.
+          </Link>{' '}
+        </>
+      );
+    }
+  } else if (getLanguage(language) === 'Javascript') {
+    if (show && evaluationResult?.output_type) {
       message = (
         <>
           Returned{' '}
@@ -49,33 +76,20 @@ export function ReturnTypeInspector({ evaluationResult, show, language }: Return
         </>
       );
     }
+  } else if (getLanguage(language) === 'Connection' && show && evaluationResult?.output_type) {
+    const fullMessage = evaluationResult.output_type.split('\n');
+    message = (
+      <>
+        Returned{' '}
+        <span className="rounded-md px-1 py-0.5" style={{ backgroundColor: theme.palette.grey[100] }}>
+          {fullMessage[0]}
+        </span>
+        {fullMessage[1]}.
+      </>
+    );
   } else {
     message = <></>;
   }
-
-  if (show && language === 'Python')
-    message = (
-      <>
-        Line {evaluationResult?.line_number} returned a{' '}
-        <span className="rounded-md px-1 py-0.5" style={{ backgroundColor: theme.palette.grey[100] }}>
-          {evaluationResult?.output_type}
-        </span>
-        {evaluationResult?.output_type === 'NoneType' && (
-          <>
-            {' '}
-            <Link
-              to={DOCUMENTATION_URL + '/writing-python/return-data-to-the-sheet'}
-              target="_blank"
-              rel="nofollow"
-              className="underline"
-            >
-              read the docs
-            </Link>{' '}
-            to learn more
-          </>
-        )}
-      </>
-    );
 
   return (
     <div

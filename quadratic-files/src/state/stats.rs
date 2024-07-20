@@ -37,7 +37,11 @@ impl Display for Stats {
             channels_to_truncate_in_pubsub: self.channels_to_truncate_in_pubsub,
         };
 
-        write!(f, "{}", serde_json::to_string(&stats).unwrap())
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(&stats).map_err(|_| std::fmt::Error)?
+        )
     }
 }
 
