@@ -111,17 +111,25 @@ export const apiClient = {
     async get(uuid: string) {
       return fetchFromApi(`/v0/files/${uuid}`, { method: 'GET' }, ApiSchemas['/v0/files/:uuid.GET.response']);
     },
-    async create(
-      file: Omit<ApiTypes['/v0/files.POST.request'], 'teamUuid'> = {
-        name: 'Untitled',
-        contents: JSON.stringify(DEFAULT_FILE),
-        version: DEFAULT_FILE.version,
-      },
-      teamUuid?: ApiTypes['/v0/files.POST.request']['teamUuid']
-    ) {
+    async create({
+      file,
+      teamUuid,
+      isPrivate,
+    }: {
+      file?: Pick<ApiTypes['/v0/files.POST.request'], 'name' | 'contents' | 'version'>;
+      teamUuid: ApiTypes['/v0/files.POST.request']['teamUuid'];
+      isPrivate: ApiTypes['/v0/files.POST.request']['isPrivate'];
+    }) {
+      if (file === undefined) {
+        file = {
+          name: 'Untitled',
+          contents: JSON.stringify(DEFAULT_FILE),
+          version: DEFAULT_FILE.version,
+        };
+      }
       return fetchFromApi(
         `/v0/files`,
-        { method: 'POST', body: JSON.stringify({ ...file, teamUuid }) },
+        { method: 'POST', body: JSON.stringify({ ...file, teamUuid, isPrivate }) },
         ApiSchemas['/v0/files.POST.response']
       );
     },
@@ -136,7 +144,7 @@ export const apiClient = {
       const checkpointData = await fetch(checkpointUrl).then((res) => res.text());
       downloadQuadraticFile(file.name, checkpointData);
     },
-    async duplicate(uuid: string, withCurrentOwner: boolean) {
+    async duplicate(uuid: string, isPrivate?: boolean) {
       mixpanel.track('[Files].duplicateFile', { id: uuid });
       // Get the file we want to duplicate
       const {
@@ -150,16 +158,15 @@ export const apiClient = {
       // Create it on the server
       const {
         file: { uuid: newFileUuid },
-      } = await apiClient.files.create(
-        {
+      } = await apiClient.files.create({
+        file: {
           name: name + ' (Copy)',
           version: lastCheckpointVersion,
           contents: lastCheckpointContents,
         },
-        // If we're duplicating with the current owner, denote the team (if present,
-        // otherwise it duplicates to the user's personal files)
-        withCurrentOwner ? team?.uuid : undefined
-      );
+        teamUuid: team.uuid,
+        isPrivate,
+      });
 
       // If present, fetch the thumbnail of the file we just dup'd and
       // save it to the new file we just created
@@ -270,8 +277,7 @@ export const apiClient = {
   },
 
   examples: {
-    async duplicate(publicFileUrlInProduction: string) {
-      const body: ApiTypes['/v0/examples.POST.request'] = { publicFileUrlInProduction };
+    async duplicate(body: ApiTypes['/v0/examples.POST.request']) {
       return fetchFromApi(
         `/v0/examples`,
         { method: 'POST', body: JSON.stringify(body) },
@@ -291,6 +297,44 @@ export const apiClient = {
     },
     async refresh() {
       return fetchFromApi(`/v0/education`, { method: 'POST' }, ApiSchemas['/v0/education.POST.response']);
+    },
+  },
+
+  connections: {
+    async list(teamUuid: string) {
+      return fetchFromApi(
+        `/v0/teams/${teamUuid}/connections`,
+        { method: 'GET' },
+        ApiSchemas['/v0/teams/:uuid/connections.GET.response']
+      );
+    },
+    async get(uuid: string) {
+      return fetchFromApi(
+        `/v0/connections/${uuid}`,
+        { method: 'GET' },
+        ApiSchemas['/v0/connections/:uuid.GET.response']
+      );
+    },
+    async create(body: ApiTypes['/v0/team/:uuid/connections.POST.request'], teamUuid: string) {
+      return fetchFromApi(
+        `/v0/teams/${teamUuid}/connections`,
+        { method: 'POST', body: JSON.stringify(body) },
+        ApiSchemas['/v0/connections.POST.response']
+      );
+    },
+    async update(uuid: string, body: ApiTypes['/v0/connections/:uuid.PUT.request']) {
+      return fetchFromApi(
+        `/v0/connections/${uuid}`,
+        { method: 'PUT', body: JSON.stringify(body) },
+        ApiSchemas['/v0/connections/:uuid.PUT.response']
+      );
+    },
+    async delete(uuid: string) {
+      return fetchFromApi(
+        `/v0/connections/${uuid}`,
+        { method: 'DELETE' },
+        ApiSchemas['/v0/connections/:uuid.DELETE.response']
+      );
     },
   },
 

@@ -1,133 +1,77 @@
-import * as CloudFilesMigration from '@/dashboard/CloudFilesMigrationRoute';
 import { BrowserCompatibilityLayoutRoute } from '@/dashboard/components/BrowserCompatibilityLayoutRoute';
-import { Empty } from '@/dashboard/components/Empty';
-import * as Create from '@/routes/files.create';
+import * as Page404 from '@/routes/404';
+import * as Login from '@/routes/login';
+import * as LoginResult from '@/routes/login-result';
+import * as Logout from '@/routes/logout';
 import { apiClient } from '@/shared/api/apiClient';
-import { GlobalSnackbarProvider } from '@/shared/components/GlobalSnackbarProvider';
-import { Theme } from '@/shared/components/Theme';
-import { SUPPORT_EMAIL } from '@/shared/constants/appConstants';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
-import { Button } from '@/shared/shadcn/ui/button';
-import { initializeAnalytics } from '@/shared/utils/analytics';
-import { User } from '@auth0/auth0-spa-js';
-import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
-import * as Sentry from '@sentry/react';
-import localforage from 'localforage';
 import {
-  Link,
   Navigate,
-  Outlet,
   Route,
   ShouldRevalidateFunctionArgs,
   createBrowserRouter,
   createRoutesFromElements,
   redirect,
-  useLocation,
-  useRouteError,
-  useRouteLoaderData,
 } from 'react-router-dom';
-import { authClient, protectedRouteLoaderWrapper } from './auth';
-
-// @ts-expect-error - for testing purposes
-window.lf = localforage;
-
-export type RootLoaderData = {
-  isAuthenticated: boolean;
-  loggedInUser?: User;
-};
-
-export const useRootRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.ROOT) as RootLoaderData;
-
-const dontRevalidateDialogs = ({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) => {
-  const currentUrlSearchParams = new URLSearchParams(currentUrl.search);
-  const nextUrlSearchParams = new URLSearchParams(nextUrl.search);
-
-  if (nextUrlSearchParams.get(SEARCH_PARAMS.DIALOG.KEY) || currentUrlSearchParams.get(SEARCH_PARAMS.DIALOG.KEY)) {
-    return false;
-  }
-  return true;
-};
+import { protectedRouteLoaderWrapper } from './auth';
+import * as RootRoute from './routes/_root';
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
     <>
       <Route
         path="/"
-        loader={async ({ request, params }): Promise<RootLoaderData | Response> => {
-          // All other routes get the same data
-          const isAuthenticated = await authClient.isAuthenticated();
-          const user = await authClient.user();
-
-          // This is where we determine whether we need to run a migration
-          // This redirect should trigger for every route _except_ the migration
-          // route (this prevents an infinite loop of redirects).
-          const url = new URL(request.url);
-          if (isAuthenticated && !url.pathname.startsWith('/cloud-migration')) {
-            if (await CloudFilesMigration.needsMigration()) {
-              return redirect('/cloud-migration');
-            }
-          }
-
-          initializeAnalytics(user);
-
-          return { isAuthenticated, loggedInUser: user };
-        }}
-        element={<Root />}
-        errorElement={<RootError />}
-        id="root"
+        id={ROUTE_LOADER_IDS.ROOT}
+        loader={RootRoute.loader}
+        Component={RootRoute.Component}
+        ErrorBoundary={RootRoute.ErrorBoundary}
       >
         <Route path="file">
           {/* Check that the browser is supported _before_ we try to load anything from the API */}
           <Route element={<BrowserCompatibilityLayoutRoute />}>
-            <Route index element={<Navigate to={ROUTES.FILES} replace />} />
+            <Route index element={<Navigate to="/" replace />} />
             <Route
               path=":uuid"
               id={ROUTE_LOADER_IDS.FILE}
-              lazy={() => import('./dashboard/FileRoute')}
-              shouldRevalidate={({ currentUrl }) => {
-                // We don't want to revalidate anythin in the app
-                // because we don't have any 2-way data flow setup for the app
-                return false;
-              }}
+              lazy={() => import('./routes/file.$uuid')}
+              // We don't want to revalidate the initial file route because
+              // we don't have any 2-way data flow setup for the file contents
+              shouldRevalidate={() => false}
             />
           </Route>
         </Route>
 
         <Route loader={protectedRouteLoaderWrapper(async () => null)}>
+          {/* Resource routes: these are accessible via the URL bar, but have no UI
+              Putting these outside the nested tree lets you hit them directly without having to load other data */}
           <Route
-            index
-            Component={() => {
-              const { search } = useLocation();
-              return <Navigate to={ROUTES.FILES + search} replace />;
-            }}
-          />
-          <Route
-            path={ROUTES.CREATE_FILE}
-            loader={Create.loader}
-            action={Create.action}
-            shouldRevalidate={() => false}
-          />
-          <Route
-            path={ROUTES.EDUCATION_ENROLL}
+            path="education/enroll"
             loader={async () => {
               // Check their status, then send them to the dashboard with the education dialog
               await apiClient.education.refresh();
-              return redirect(`${ROUTES.FILES}?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.EDUCATION}`);
+              return redirect(`/?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.EDUCATION}`);
             }}
           />
-
           <Route
-            id={ROUTE_LOADER_IDS.DASHBOARD}
-            lazy={() => import('./routes/_dashboard')}
-            shouldRevalidate={dontRevalidateDialogs}
-          >
-            <Route path={ROUTES.FILES}>
-              <Route index lazy={() => import('./routes/files')} shouldRevalidate={dontRevalidateDialogs} />
+            path="teams/:teamUuid/files/create"
+            lazy={() => import('./routes/teams.$teamUuid.files.create')}
+            shouldRevalidate={() => false}
+          />
+          <Route path="teams" index loader={() => redirect('/')} />
 
-              {/* Resource routes */}
-              <Route path=":uuid" lazy={() => import('./routes/files.$uuid')} />
-              <Route path=":uuid/sharing" lazy={() => import('./routes/files.$uuid.sharing')} />
-            </Route>
+          {/* API routes: these are used by fetchers but have no UI */}
+          <Route path="api">
+            <Route path="files/:uuid" lazy={() => import('./routes/api.files.$uuid')} />
+            <Route path="files/:uuid/sharing" lazy={() => import('./routes/api.files.$uuid.sharing')} />
+            <Route path="connections" lazy={() => import('./routes/api.connections')} />
+            <Route
+              path="connections/:uuid/schema/:type"
+              lazy={() => import('./routes/api.connections.$uuid.schema.$type')}
+            />
+          </Route>
+
+          {/* Dashboard UI routes */}
+          <Route path="/" id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>
             <Route
               path={ROUTES.FILES_SHARED_WITH_ME}
               lazy={() => import('./routes/files.shared-with-me')}
@@ -144,129 +88,39 @@ export const router = createBrowserRouter(
               shouldRevalidate={dontRevalidateDialogs}
             />
 
-            <Route path={ROUTES.TEAMS}>
-              <Route index element={<Navigate to={ROUTES.FILES} replace />} />
-              <Route
-                path=":uuid"
-                id={ROUTE_LOADER_IDS.TEAM}
-                lazy={() => import('./routes/teams.$uuid')}
-                shouldRevalidate={dontRevalidateDialogs}
-              />
+            <Route path="teams">
+              <Route path="create" lazy={() => import('./routes/teams.create')} />
+              <Route path=":teamUuid" lazy={() => import('./routes/teams.$teamUuid')}>
+                <Route index lazy={() => import('./routes/teams.$teamUuid.index')} />
+                <Route path="files/private" lazy={() => import('./routes/teams.$teamUuid.files.private')} />
+                <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />
+                <Route path="settings" lazy={() => import('./routes/teams.$teamUuid.settings')} />
+                <Route path="connections" lazy={() => import('./routes/teams.$teamUuid.connections')} />
+              </Route>
             </Route>
           </Route>
-
-          <Route
-            path="/cloud-migration"
-            element={<CloudFilesMigration.Component />}
-            loader={CloudFilesMigration.loader}
-          />
         </Route>
 
-        <Route
-          path="*"
-          element={
-            <Empty
-              title="404: not found"
-              description={
-                <>
-                  Check the URL and try again. Or, contact us for help at <a href={SUPPORT_EMAIL}>{SUPPORT_EMAIL}</a>
-                </>
-              }
-              Icon={ExclamationTriangleIcon}
-              actions={
-                <Button asChild variant="secondary">
-                  <Link to="/">Go home</Link>
-                </Button>
-              }
-            />
-          }
-        />
+        <Route path="*" Component={Page404.Component} />
       </Route>
-      <Route
-        path={ROUTES.LOGIN}
-        loader={async ({ request }) => {
-          const isAuthenticated = await authClient.isAuthenticated();
-
-          // If they’re logged in, redirect home
-          if (isAuthenticated) {
-            return redirect('/');
-          }
-
-          // If not, send them to Auth0
-          // Watch for a `from` query param, as unprotected routes will redirect
-          // to here for them to auth first
-          // Also watch for the presence of a `signup` query param, which means
-          // send the user to sign up flow, not login
-          const url = new URL(request.url);
-          const redirectTo = url.searchParams.get('from') || '/';
-          const isSignupFlow = url.searchParams.get('signup') !== null;
-          await authClient.login(redirectTo, isSignupFlow);
-
-          // auth0 will re-route us (above) but telling react-router where we
-          // are re-routing to makes sure that this doesn't end up in the history stack
-          return redirect(redirectTo);
-        }}
-      />
-      <Route
-        path={ROUTES.LOGIN_RESULT}
-        loader={async () => {
-          // try/catch here handles case where this _could_ error out and we
-          // have no errorElement so we just redirect back to home
-          try {
-            await authClient.handleSigninRedirect();
-            let isAuthenticated = await authClient.isAuthenticated();
-            if (isAuthenticated) {
-              // Acknowledge the user has just logged in. The backend may need
-              // to run some logic before making any other API calls in parallel
-              await apiClient.users.acknowledge();
-
-              let redirectTo = new URLSearchParams(window.location.search).get('redirectTo') || '/';
-              return redirect(redirectTo);
-            }
-          } catch (e) {
-            console.error(e);
-          }
-          return redirect('/');
-        }}
-      />
-      <Route
-        path={ROUTES.LOGOUT}
-        loader={async () => {
-          return redirect('/');
-        }}
-        action={async () => {
-          // We signout in a "resource route" that we can hit from a fetcher.Form
-          await authClient.logout();
-          return redirect('/');
-        }}
-      />
+      <Route path={ROUTES.LOGIN} loader={Login.loader} />
+      <Route path={ROUTES.LOGIN_RESULT} loader={LoginResult.loader} />
+      <Route path={ROUTES.LOGOUT} loader={Logout.loader} action={Logout.action} />
     </>
-  )
+  ),
+  {
+    future: {
+      v7_fetcherPersist: true,
+    },
+  }
 );
 
-function Root() {
-  return (
-    <Theme>
-      <GlobalSnackbarProvider>
-        <Outlet />
-      </GlobalSnackbarProvider>
-    </Theme>
-  );
-}
+function dontRevalidateDialogs({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) {
+  const currentUrlSearchParams = new URLSearchParams(currentUrl.search);
+  const nextUrlSearchParams = new URLSearchParams(nextUrl.search);
 
-function RootError() {
-  let error = useRouteError();
-  console.error(error);
-
-  Sentry.captureException({
-    message: `RootRoute error element triggered. ${error}`,
-  });
-
-  return (
-    <Empty
-      title="Something went wrong"
-      description="An unexpected error occurred. Try reloading the page or contact us if the error continues."
-      Icon={ExclamationTriangleIcon}
-    />
-  );
+  if (nextUrlSearchParams.get(SEARCH_PARAMS.DIALOG.KEY) || currentUrlSearchParams.get(SEARCH_PARAMS.DIALOG.KEY)) {
+    return false;
+  }
+  return true;
 }
