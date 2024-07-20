@@ -74,7 +74,7 @@ const commands: CommandGroup = {
     },
     {
       label: 'Align top',
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return (
           <CommandPaletteListItem
@@ -87,7 +87,7 @@ const commands: CommandGroup = {
     },
     {
       label: 'Align middle',
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return (
           <CommandPaletteListItem
@@ -100,7 +100,7 @@ const commands: CommandGroup = {
     },
     {
       label: 'Align bottom',
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return (
           <CommandPaletteListItem
@@ -113,21 +113,21 @@ const commands: CommandGroup = {
     },
     {
       label: 'Text overflow',
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return <CommandPaletteListItem {...props} icon={<TextOverflowIcon />} action={() => setWrap('overflow')} />;
       },
     },
     {
       label: 'Text wrap',
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return <CommandPaletteListItem {...props} icon={<WrapTextIcon />} action={() => setWrap('wrap')} />;
       },
     },
     {
       label: 'Text clip',
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return <CommandPaletteListItem {...props} icon={<TextClipIcon />} action={() => setWrap('clip')} />;
       },
