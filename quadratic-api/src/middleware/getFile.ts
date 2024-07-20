@@ -1,7 +1,6 @@
-import * as Sentry from '@sentry/node';
 import dbClient from '../dbClient';
 import { ApiError } from '../utils/ApiError';
-import { getFilePermissions } from '../utils/permissions';
+import { getFilePermissions, getTeamPermissions } from '../utils/permissions';
 
 /**
  * Most of the time, `userId` will be defined because the user will be logged in.
@@ -39,18 +38,11 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
     throw new ApiError(410, 'File has been deleted');
   }
 
+  // TODO: what if the team has been archived? We don't support this yet, but we
+  // will one day when we implement archiving a team.
+
   // FYI: the included relational data is not always filtered on the `where`
   // clause because `userId` is possibly `undefined`
-  const isFileOwner = file.ownerUserId === userId;
-  if (isFileOwner && file.ownerTeamId) {
-    Sentry.captureException({
-      message: 'File cannot be owned by a user and a team at the same time',
-      extra: {
-        fileUuid: file.uuid,
-      },
-    });
-    throw new ApiError(500, 'File cannot be owned by a user and a team at the same time');
-  }
   const teamRole =
     file.ownerTeam && file.ownerTeam.UserTeamRole[0] && file.ownerTeam.UserTeamRole[0].userId === userId
       ? file.ownerTeam.UserTeamRole[0].role
@@ -59,20 +51,15 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
     file.UserFileRole[0] && file.UserFileRole[0].userId === userId ? file.UserFileRole[0].role : undefined;
 
   // Determine the user's relationship to the file
-  //
-  // TODO: probably want to use this as part of the `userMakingRequest` object
-  // as it encompasses all _expected_ possibilities of the user's relationship
-  // with the file (whereas, for example, `isFileOwner` being true and `teamRole`
-  // having a value at the same time is considered an invalid combo in the codebase).
   let userFileRelationship: Parameters<typeof getFilePermissions>[0]['userFileRelationship'] = undefined;
   // Only define the relationship if they're logged in
   if (userId !== undefined) {
-    if (isFileOwner) {
-      userFileRelationship = { owner: 'me' };
+    if (file.ownerUserId === userId) {
+      userFileRelationship = { context: 'private-to-me', teamRole };
     } else if (file.ownerUserId) {
-      userFileRelationship = { owner: 'another-user', fileRole };
-    } else if (file.ownerTeamId) {
-      userFileRelationship = { owner: 'team', teamRole, fileRole };
+      userFileRelationship = { context: 'private-to-someone-else', fileRole };
+    } else {
+      userFileRelationship = { context: 'public-to-team', teamRole, fileRole };
     }
   }
 
@@ -85,14 +72,16 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
     throw new ApiError(403, 'Permission denied');
   }
 
+  const teamPermissions = teamRole ? getTeamPermissions(teamRole) : undefined;
+
   return {
     file,
     userMakingRequest: {
       filePermissions,
       fileRole,
+      teamPermissions,
       teamRole,
       id: userId,
-      isFileOwner,
     },
   };
 }

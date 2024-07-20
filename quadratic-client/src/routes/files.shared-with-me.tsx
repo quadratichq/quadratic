@@ -3,7 +3,6 @@ import { apiClient } from '@/shared/api/apiClient';
 import { ExclamationTriangleIcon, FileIcon } from '@radix-ui/react-icons';
 import { LoaderFunctionArgs, useLoaderData, useRouteError } from 'react-router-dom';
 import { debugShowUILogs } from '../app/debugFlags';
-import CreateFileButton from '../dashboard/components/CreateFileButton';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 import { Empty } from '../dashboard/components/Empty';
 
@@ -27,7 +26,7 @@ export const Component = () => {
 
   return (
     <>
-      <DashboardHeader title="Files shared with me" actions={<CreateFileButton />} />
+      <DashboardHeader title="Files shared with me" />
       <FilesList
         files={files}
         emptyState={

@@ -104,6 +104,10 @@ impl From<Vec<Vec<&str>>> for Array {
 
 impl From<Vec<Vec<CellValue>>> for Array {
     fn from(v: Vec<Vec<CellValue>>) -> Self {
+        if v.is_empty() {
+            return Array::new_empty(ArraySize::_1X1);
+        }
+
         let w = v[0].len();
         let h = v.len();
         Array {

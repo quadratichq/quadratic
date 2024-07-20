@@ -42,3 +42,10 @@ impl JsCodeResult {
         }
     }
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+pub struct JsConnectionResult {
+    pub transaction_id: String,
+    pub data: Vec<u8>,
+}
