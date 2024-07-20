@@ -40,6 +40,12 @@ export function doubleClickCell(options: {
       });
     } else {
       if (hasPermission && formula) {
+        const cursor = sheets.sheet.cursor.cursorPosition;
+
+        // ensure we're in the right cell (which may change if we double clicked on a CodeRun)
+        if (cursor.x !== column || cursor.y !== row) {
+          sheets.sheet.cursor.changePosition({ cursorPosition: { x: column, y: row } });
+        }
         settings.changeInput(true, cell);
       } else {
         settings.setEditorInteractionState({
