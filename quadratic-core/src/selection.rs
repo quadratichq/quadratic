@@ -523,6 +523,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn selection_columns() {
         let sheet_id = SheetId::test();
         let selection = Selection::columns(&[1, 2, 3], sheet_id);
@@ -541,6 +542,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn selection_rows() {
         let sheet_id = SheetId::test();
         let selection = Selection::rows(&[1, 2, 3], sheet_id);

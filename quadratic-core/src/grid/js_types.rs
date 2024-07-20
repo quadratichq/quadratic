@@ -250,8 +250,10 @@ impl fmt::Display for JsRowHeight {
 mod test {
     use super::JsNumber;
     use crate::grid::{formats::format::Format, NumericFormat};
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn to_js_number() {
         let format = Format {
             numeric_decimals: Some(2),

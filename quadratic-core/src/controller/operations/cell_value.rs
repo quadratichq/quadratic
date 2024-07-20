@@ -310,6 +310,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn delete_columns() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

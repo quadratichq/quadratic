@@ -156,6 +156,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn from_str() {
         // this is a real example of a transaction that was failing to parse; it
         // can be deleted if it ever causes problems

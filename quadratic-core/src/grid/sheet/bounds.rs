@@ -614,6 +614,7 @@ mod test {
 
     proptest! {
         #[test]
+        #[parallel]
         fn proptest_sheet_writes(writes: Vec<(Pos, CellValue)>) {
             proptest_sheet_writes_internal(writes);
         }

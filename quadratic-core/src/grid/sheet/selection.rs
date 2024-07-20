@@ -825,6 +825,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_selection_rects_values() {
         let mut sheet = Sheet::test();
         let sheet_id = sheet.id;
