@@ -122,8 +122,8 @@ export class CellsTextHash {
           this.cellsLabels.sheetId,
           this.AABB.x,
           this.AABB.y,
-          this.AABB.width,
-          this.AABB.height
+          this.AABB.width + 1,
+          this.AABB.height + 1
         );
       } else if (dirty === 'show') {
         // if dirty === 'show' then we only need to update the visibility of the

@@ -6,8 +6,8 @@ use lexicon_fractional_index::key_between;
 use crate::{
     cell_values::CellValues,
     controller::GridController,
-    grid::{file::sheet_schema::export_sheet, Sheet, SheetId},
-    CellValue, Pos, SheetPos,
+    grid::{file::sheet_schema::export_sheet, CodeCellLanguage, Sheet, SheetId},
+    CellValue, CodeCellValue, Pos, SheetPos,
 };
 use bytes::Bytes;
 use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
@@ -130,14 +130,19 @@ impl GridController {
         file_name: &str,
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![] as Vec<Operation>;
-        let insert_at = Pos::default();
-        let error =
-            |message: String| anyhow!("Error parsing Excel file {}: {}", file_name, message);
+        let error = |e: XlsxError| anyhow!("Error parsing Excel file {file_name}: {e}");
 
         let cursor = Cursor::new(file);
-        let mut workbook: Xlsx<_> =
-            ExcelReader::new(cursor).map_err(|e: XlsxError| error(e.to_string()))?;
+        let mut workbook: Xlsx<_> = ExcelReader::new(cursor).map_err(error)?;
         let sheets = workbook.sheet_names().to_owned();
+
+        // first cell in excel is A1, but first cell in quadratic is A0
+        // so we need to offset rows by 1, so that values are inserted in the original A1 notations cell
+        // this is required so that cell references (A1 notations) in formulas are correct
+        let xlsx_range_to_pos = |(row, col)| Pos {
+            x: col as i64,
+            y: row as i64 + 1,
+        };
 
         let mut order = key_between(&None, &None).unwrap_or("A0".to_string());
         for sheet_name in sheets {
@@ -145,13 +150,12 @@ impl GridController {
             let mut sheet = Sheet::new(SheetId::new(), sheet_name.to_owned(), order.clone());
             order = key_between(&Some(order), &None).unwrap_or("A0".to_string());
 
-            let range = workbook
-                .worksheet_range(&sheet_name)
-                .map_err(|e: XlsxError| error(e.to_string()))?;
-
+            // values
+            let range = workbook.worksheet_range(&sheet_name).map_err(error)?;
+            let insert_at = range.start().map_or_else(Pos::default, xlsx_range_to_pos);
             for (y, row) in range.rows().enumerate() {
-                for (x, col) in row.iter().enumerate() {
-                    let cell_value = match col {
+                for (x, cell) in row.iter().enumerate() {
+                    let cell_value = match cell {
                         ExcelData::Empty => continue,
                         ExcelData::String(value) => CellValue::Text(value.to_string()),
                         ExcelData::DateTimeIso(ref value) => CellValue::Text(value.to_string()),
@@ -191,12 +195,36 @@ impl GridController {
                     );
                 }
             }
+
+            // formulas
+            let formula = workbook.worksheet_formula(&sheet_name).map_err(error)?;
+            let insert_at = formula.start().map_or_else(Pos::default, xlsx_range_to_pos);
+            let mut formula_compute_ops = vec![];
+            for (y, row) in formula.rows().enumerate() {
+                for (x, cell) in row.iter().enumerate() {
+                    if !cell.is_empty() {
+                        let pos = Pos {
+                            x: insert_at.x + x as i64,
+                            y: insert_at.y + y as i64,
+                        };
+                        let cell_value = CellValue::Code(CodeCellValue {
+                            language: CodeCellLanguage::Formula,
+                            code: cell.to_string(),
+                        });
+                        sheet.set_cell_value(pos, cell_value);
+                        // add code compute operation, to generate code runs
+                        formula_compute_ops.push(Operation::ComputeCode {
+                            sheet_pos: pos.to_sheet_pos(sheet.id),
+                        });
+                    }
+                }
+            }
             // add new sheets
             ops.push(Operation::AddSheetSchema {
                 schema: export_sheet(&sheet),
             });
+            ops.extend(formula_compute_ops);
         }
-
         Ok(ops)
     }
 
@@ -241,7 +269,7 @@ impl GridController {
 
             for col_index in 0..num_cols {
                 let col = batch.column(col_index);
-                let values: CellValues = col.into();
+                let values: CellValues = col.try_into()?;
 
                 let operations = Operation::SetCellValues {
                     sheet_pos: (
@@ -394,19 +422,22 @@ mod test {
         let sheet = gc.sheet(sheet_id);
 
         assert_eq!(
-            sheet.cell_value((0, 0).into()),
+            sheet.cell_value((0, 1).into()),
             Some(CellValue::Number(1.into()))
         );
         assert_eq!(
-            sheet.cell_value((2, 9).into()),
+            sheet.cell_value((2, 10).into()),
             Some(CellValue::Number(12.into()))
         );
-        assert_eq!(sheet.cell_value((0, 5).into()), None);
+        assert_eq!(sheet.cell_value((0, 6).into()), None);
         assert_eq!(
-            sheet.cell_value((3, 1).into()),
-            Some(CellValue::Number(3.into()))
+            sheet.cell_value((3, 2).into()),
+            Some(CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "C1:C5".into()
+            }))
         );
-        assert_eq!(sheet.cell_value((3, 0).into()), None);
+        assert_eq!(sheet.cell_value((3, 1).into()), None);
     }
 
     #[test]

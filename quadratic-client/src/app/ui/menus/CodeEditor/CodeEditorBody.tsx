@@ -23,10 +23,12 @@ import { useEditorCellHighlights } from './useEditorCellHighlights';
 // import { typescriptLibrary } from '@/web-workers/javascriptWebWorker/worker/javascript/typescriptLibrary';
 import { events } from '@/app/events/events';
 import { SheetPosTS } from '@/app/gridGL/types/size';
+import { codeCellIsAConnection, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
 import { SheetRect } from '@/app/quadratic-core-types';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { javascriptLibraryForEditor } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generatedJavascriptForEditor';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
+import { useFileRouteLoaderData } from '@/routes/file.$uuid';
 import useEventListener from '@/shared/hooks/useEventListener';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
 import { useEditorReturn } from './useEditorReturn';
@@ -51,9 +53,16 @@ let registered: Record<CodeCellLanguage, boolean> = {
 
 export const CodeEditorBody = (props: Props) => {
   const { editorContent, setEditorContent, closeEditor, evaluationResult, cellLocation } = props;
+  const {
+    userMakingRequest: { teamPermissions },
+  } = useFileRouteLoaderData();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const language = editorInteractionState.mode;
-  const readOnly = !hasPermissionToEditFile(editorInteractionState.permissions);
+  const monacoLanguage = getLanguageForMonaco(language);
+  const isConnection = codeCellIsAConnection(language);
+  const canEdit =
+    hasPermissionToEditFile(editorInteractionState.permissions) &&
+    (isConnection ? teamPermissions?.includes('TEAM_EDIT') : true);
   const [didMount, setDidMount] = useState(false);
   const [isValidRef, setIsValidRef] = useState(false);
   const { editorRef, monacoRef } = useCodeEditor();
@@ -76,7 +85,6 @@ export const CodeEditorBody = (props: Props) => {
 
   useEffect(() => {
     const insertText = (text: string) => {
-      debugger;
       if (!editorRef.current) return;
       const position = editorRef.current.getPosition();
       const model = editorRef.current.getModel();
@@ -138,7 +146,7 @@ export const CodeEditorBody = (props: Props) => {
       setDidMount(true);
 
       // Only register language once
-      if (language === 'Formula' && !registered.Formula) {
+      if (monacoLanguage === 'formula' && !registered.Formula) {
         monaco.languages.register({ id: 'formula' });
         monaco.languages.setLanguageConfiguration('formula', FormulaLanguageConfig);
         monaco.languages.setMonarchTokensProvider('formula', FormulaTokenizerConfig);
@@ -149,7 +157,7 @@ export const CodeEditorBody = (props: Props) => {
         registered.Formula = true;
       }
 
-      if (language === 'Python' && !registered.Python) {
+      if (monacoLanguage === 'python' && !registered.Python) {
         monaco.languages.register({ id: 'python' });
         monaco.languages.registerCompletionItemProvider('python', {
           provideCompletionItems: provideCompletionItemsPython,
@@ -168,7 +176,7 @@ export const CodeEditorBody = (props: Props) => {
         registered.Python = true;
       }
 
-      if (language === 'Javascript' && !registered.Javascript) {
+      if (monacoLanguage === 'javascript' && !registered.Javascript) {
         monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
           diagnosticCodesToIgnore: [1108, 1375, 1378],
         });
@@ -210,21 +218,13 @@ export const CodeEditorBody = (props: Props) => {
       <Editor
         height="100%"
         width="100%"
-        language={
-          language === 'Python'
-            ? 'python'
-            : language === 'Javascript'
-            ? 'javascript'
-            : language === 'Formula'
-            ? 'formula'
-            : undefined
-        }
+        language={monacoLanguage}
         value={editorContent}
         onChange={setEditorContent}
         onMount={onMount}
         options={{
           theme: 'light',
-          readOnly,
+          readOnly: !canEdit,
           minimap: { enabled: true },
           overviewRulerLanes: 0,
           hideCursorInOverviewRuler: true,
@@ -238,9 +238,7 @@ export const CodeEditorBody = (props: Props) => {
           showUnused: language === 'Javascript' ? false : true,
         }}
       />
-      {['Python', 'Javascript'].includes(language as string) && (
-        <CodeEditorPlaceholder editorContent={editorContent} setEditorContent={setEditorContent} />
-      )}
+      <CodeEditorPlaceholder editorContent={editorContent} setEditorContent={setEditorContent} />
     </div>
   );
 };
