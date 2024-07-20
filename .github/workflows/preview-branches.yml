@@ -19,6 +19,7 @@ jobs:
     needs:
      - files_preview
      - multiplayer_preview
+     - connection_preview
     name: Create or Update Infrastructure with Pulumi
     runs-on: ubuntu-latest
     steps:
@@ -52,6 +53,7 @@ jobs:
 
         pulumi config set multiplayer-subdomain multiplayer-pr-${{ env.PR_ID }}
         pulumi config set files-subdomain files-pr-${{ env.PR_ID }}
+        pulumi config set connection-subdomain connection-pr-${{ env.PR_ID }}
         pulumi config set docker-image-tag pr-${{ env.PR_ID }}
         pulumi config set quadratic-api-uri https://quadratic-api-dev-pr-${{ env.PR_ID }}.herokuapp.com
         pulumi config set is-preview true
@@ -121,6 +123,33 @@ jobs:
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f quadratic-files/Dockerfile .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
+  connection_preview:
+    runs-on: ubuntu-latest-8-cores 
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build, Tag, and Push Image to Amazon ECR
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: quadratic-connection-development
+        IMAGE_TAG: pr-${{ github.event.pull_request.number }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f quadratic-connection/Dockerfile .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
   # client_preview:
   #   needs: infra
