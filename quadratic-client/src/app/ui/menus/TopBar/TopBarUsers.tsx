@@ -3,7 +3,7 @@ import { MULTIPLAYER_COLORS } from '@/app/gridGL/HTMLGrid/multiplayerCursor/mult
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { useRootRouteLoaderData } from '@/router';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { displayInitials, displayName } from '@/shared/utils/userUtil';
 import { Avatar, AvatarGroup, IconButton } from '@mui/material';
 import { EyeOpenIcon } from '@radix-ui/react-icons';

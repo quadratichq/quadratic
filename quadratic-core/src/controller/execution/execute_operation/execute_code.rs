@@ -123,6 +123,9 @@ impl GridController {
                 CodeCellLanguage::Formula => {
                     self.run_formula(transaction, sheet_pos, code);
                 }
+                CodeCellLanguage::Connection { kind, id } => {
+                    self.run_connection(transaction, sheet_pos, code, kind, id);
+                }
                 CodeCellLanguage::Javascript => {
                     self.run_javascript(transaction, sheet_pos, code);
                 }

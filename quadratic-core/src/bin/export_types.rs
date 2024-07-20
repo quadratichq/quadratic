@@ -14,7 +14,7 @@ use quadratic_core::{
             JsRenderCellSpecial, JsRenderCodeCell, JsRenderCodeCellState,
         },
         sheet::search::SearchOptions,
-        BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage,
+        BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage, ConnectionKind,
     },
     selection::Selection,
     sheet_offsets::{
@@ -46,6 +46,7 @@ fn main() {
 
     s += &generate_type_declarations!(
         CodeCellLanguage,
+        ConnectionKind,
         JsHtmlOutput,
         JsCodeCell,
         JsRenderCodeCell,

@@ -7,7 +7,8 @@ use crate::grid::{
     formatting::RenderSize,
     generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
     CellVerticalAlign, CellWrap, CodeCellLanguage, CodeRun, CodeRunResult, Column, ColumnData,
-    Grid, GridBounds, NumericFormat, NumericFormatKind, Sheet, SheetBorders, SheetId,
+    ConnectionKind, Grid, GridBounds, NumericFormat, NumericFormatKind, Sheet, SheetBorders,
+    SheetId,
 };
 use crate::sheet_offsets::SheetOffsets;
 use crate::{CellValue, CodeCellValue, Pos, Rect, Value};
@@ -195,6 +196,17 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
                         language: match code_cell.language {
                             current::CodeCellLanguage::Python => CodeCellLanguage::Python,
                             current::CodeCellLanguage::Formula => CodeCellLanguage::Formula,
+                            current::CodeCellLanguage::Connection { ref kind, ref id } => {
+                                CodeCellLanguage::Connection {
+                                    kind: match kind {
+                                        current::ConnectionKind::Postgres => {
+                                            ConnectionKind::Postgres
+                                        }
+                                        current::ConnectionKind::Mysql => ConnectionKind::Mysql,
+                                    },
+                                    id: id.clone(),
+                                }
+                            }
                             current::CodeCellLanguage::Javascript => CodeCellLanguage::Javascript,
                         },
                     }),
@@ -630,6 +642,19 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                                                 }
                                                 CodeCellLanguage::Formula => {
                                                     current::CodeCellLanguage::Formula
+                                                }
+                                                CodeCellLanguage::Connection { kind, ref id } => {
+                                                    current::CodeCellLanguage::Connection {
+                                                        kind: match kind {
+                                                            ConnectionKind::Postgres => {
+                                                                current::ConnectionKind::Postgres
+                                                            }
+                                                            ConnectionKind::Mysql => {
+                                                                current::ConnectionKind::Mysql
+                                                            }
+                                                        },
+                                                        id: id.clone(),
+                                                    }
                                                 }
                                                 CodeCellLanguage::Javascript => {
                                                     current::CodeCellLanguage::Javascript

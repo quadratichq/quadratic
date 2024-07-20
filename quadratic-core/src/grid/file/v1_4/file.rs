@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use crate::grid::file::v1_4::schema as v1_4;
-use crate::grid::file::v1_5::schema::{self as v1_5, CellAlign, ColumnRepeat};
+use crate::grid::file::v1_5::schema::{self as v1_5, CellAlign, CodeCellLanguage, ColumnRepeat};
 use anyhow::Result;
 use chrono::DateTime;
 
@@ -32,11 +32,16 @@ fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, 
         .for_each(|(cell_ref, code_cell_value)| {
             if cell_ref.column == column.id {
                 let pos = cell_ref_to_pos(sheet, cell_ref);
-                let language = match code_cell_value.language.to_lowercase().as_str() {
-                    "python" => Some(v1_5::CodeCellLanguage::Python),
-                    "formula" => Some(v1_5::CodeCellLanguage::Formula),
-                    _ => Some(v1_5::CodeCellLanguage::Formula), // this should not happen
-                };
+                let language = Some(
+                    serde_json::from_str::<CodeCellLanguage>(&code_cell_value.language)
+                        .unwrap_or(CodeCellLanguage::Formula),
+                );
+                // let language = match code_cell_value.language.to_lowercase().as_str() {
+                //     "python" => Some(v1_5::CodeCellLanguage::Python),
+                //     "formula" => Some(v1_5::CodeCellLanguage::Formula),
+                //     "connector" => Some(v1_5::CodeCellLanguage::Connection),
+                //     _ => Some(v1_5::CodeCellLanguage::Formula), // this should not happen
+                // };
                 if let Some(language) = language {
                     values.insert(
                         pos.y.to_string(),

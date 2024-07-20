@@ -2,6 +2,7 @@
 resolver = "2"
 
 members = [
+    "quadratic-connection",
     "quadratic-core",
     "quadratic-files",
     "quadratic-multiplayer",
