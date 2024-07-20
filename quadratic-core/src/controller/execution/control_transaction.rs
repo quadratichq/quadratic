@@ -1,3 +1,4 @@
+use chrono::Utc;
 use uuid::Uuid;
 
 use super::{GridController, TransactionType};
@@ -12,163 +13,208 @@ use crate::{
         transaction_types::JsCodeResult,
     },
     error_core::Result,
-    grid::{js_types::JsRowHeight, SheetId},
-    Pos,
+    grid::{CodeRun, CodeRunResult},
+    Pos, Value,
 };
 
-impl GridController {
-    // loop compute cycle until complete or an async call is made
-    pub(super) fn start_transaction(&mut self, transaction: &mut PendingTransaction) {
-        if cfg!(target_family = "wasm") && !transaction.is_server() {
-            let transaction_name = serde_json::to_string(&transaction.transaction_name)
-                .unwrap_or("Unknown".to_string());
-            crate::wasm_bindings::js::jsTransactionStart(
-                transaction.id.to_string(),
-                transaction_name,
-            );
+// loop compute cycle until complete or an async call is made
+pub(super) fn start_transaction(&mut self, transaction: &mut PendingTransaction) {
+    if cfg!(target_family = "wasm") && !transaction.is_server() {
+        let transaction_name =
+            serde_json::to_string(&transaction.transaction_name).unwrap_or("Unknown".to_string());
+        crate::wasm_bindings::js::jsTransactionStart(transaction.id.to_string(), transaction_name);
+    }
+    loop {
+        if transaction.operations.is_empty() {
+            transaction.complete = true;
+            break;
         }
-        loop {
-            if transaction.operations.is_empty() {
-                transaction.complete = true;
-                break;
-            }
 
-            self.execute_operation(transaction);
-            if transaction.has_async {
-                self.transactions.add_async_transaction(transaction);
-                break;
-            }
+        self.execute_operation(transaction);
+        if transaction.has_async {
+            self.transactions.add_async_transaction(transaction);
+            break;
         }
     }
+}
 
-    /// Finalizes the transaction and pushes it to the various stacks (if needed)
-    pub(super) fn finalize_transaction(&mut self, transaction: &mut PendingTransaction) {
-        if transaction.complete {
-            match transaction.transaction_type {
-                TransactionType::User => {
-                    let undo = transaction.to_undo_transaction();
-                    self.undo_stack.push(undo.clone());
-                    self.redo_stack.clear();
-                    self.transactions
-                        .unsaved_transactions
-                        .insert_or_replace(transaction, true);
-                }
-                TransactionType::Undo => {
-                    let undo = transaction.to_undo_transaction();
-                    self.redo_stack.push(undo.clone());
-                    self.transactions
-                        .unsaved_transactions
-                        .insert_or_replace(transaction, true);
-                }
-                TransactionType::Redo => {
-                    let undo = transaction.to_undo_transaction();
-                    self.undo_stack.push(undo.clone());
-                    self.transactions
-                        .unsaved_transactions
-                        .insert_or_replace(transaction, true);
-                }
-                TransactionType::Multiplayer => (),
-                TransactionType::Server => (),
-                TransactionType::Unset => panic!("Expected a transaction type"),
+/// Finalizes the transaction and pushes it to the various stacks (if needed)
+pub(super) fn finalize_transaction(&mut self, transaction: &mut PendingTransaction) {
+    if transaction.complete {
+        match transaction.transaction_type {
+            TransactionType::User => {
+                let undo = transaction.to_undo_transaction();
+                self.undo_stack.push(undo.clone());
+                self.redo_stack.clear();
+                self.transactions
+                    .unsaved_transactions
+                    .insert_or_replace(transaction, true);
             }
-        }
-        transaction.send_transaction();
-
-        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            crate::wasm_bindings::js::jsUndoRedo(
-                !self.undo_stack.is_empty(),
-                !self.redo_stack.is_empty(),
-            );
+            TransactionType::Undo => {
+                let undo = transaction.to_undo_transaction();
+                self.redo_stack.push(undo.clone());
+                self.transactions
+                    .unsaved_transactions
+                    .insert_or_replace(transaction, true);
+            }
+            TransactionType::Redo => {
+                let undo = transaction.to_undo_transaction();
+                self.undo_stack.push(undo.clone());
+                self.transactions
+                    .unsaved_transactions
+                    .insert_or_replace(transaction, true);
+            }
+            TransactionType::Multiplayer => (),
+            TransactionType::Server => (),
+            TransactionType::Unset => panic!("Expected a transaction type"),
         }
     }
+    transaction.send_transaction();
 
-    pub fn start_user_transaction(
-        &mut self,
-        operations: Vec<Operation>,
-        cursor: Option<String>,
-        transaction_name: TransactionName,
-    ) {
-        let mut transaction = PendingTransaction {
-            transaction_type: TransactionType::User,
-            operations: operations.into(),
-            cursor,
-            transaction_name,
-            ..Default::default()
-        };
+    if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+        crate::wasm_bindings::js::jsUndoRedo(
+            !self.undo_stack.is_empty(),
+            !self.redo_stack.is_empty(),
+        );
+    }
+}
+
+pub fn start_user_transaction(
+    &mut self,
+    operations: Vec<Operation>,
+    cursor: Option<String>,
+    transaction_name: TransactionName,
+) {
+    let mut transaction = PendingTransaction {
+        transaction_type: TransactionType::User,
+        operations: operations.into(),
+        cursor,
+        transaction_name,
+        ..Default::default()
+    };
+    self.start_transaction(&mut transaction);
+    self.finalize_transaction(&mut transaction);
+}
+
+pub fn start_undo_transaction(
+    &mut self,
+    transaction: Transaction,
+    transaction_type: TransactionType,
+    cursor: Option<String>,
+) {
+    let mut pending = transaction.to_undo_transaction(transaction_type, cursor);
+    pending.id = Uuid::new_v4();
+    self.start_transaction(&mut pending);
+    self.finalize_transaction(&mut pending);
+}
+
+/// Externally called when an async calculation completes
+pub fn calculation_complete(&mut self, result: JsCodeResult) -> Result<()> {
+    let transaction_id = Uuid::parse_str(&result.transaction_id)?;
+    let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
+
+    if result.cancel_compute.unwrap_or(false) {
         self.start_transaction(&mut transaction);
-        self.finalize_transaction(&mut transaction);
     }
 
-    pub fn start_undo_transaction(
-        &mut self,
-        transaction: Transaction,
-        transaction_type: TransactionType,
-        cursor: Option<String>,
-    ) {
-        let mut pending = transaction.to_undo_transaction(transaction_type, cursor);
-        pending.id = Uuid::new_v4();
-        self.start_transaction(&mut pending);
-        self.finalize_transaction(&mut pending);
+    self.after_calculation_async(&mut transaction, result)?;
+    self.finalize_transaction(&mut transaction);
+    Ok(())
+}
+
+pub fn start_auto_resize_row_heights(
+    &self,
+    transaction: &mut PendingTransaction,
+    sheet_id: SheetId,
+    rows: Vec<i64>,
+) {
+    if !cfg!(target_family = "wasm") || cfg!(test) || !transaction.is_user() {
+        return;
     }
 
-    /// Externally called when an async calculation completes
-    pub fn calculation_complete(&mut self, result: JsCodeResult) -> Result<()> {
-        let transaction_id = Uuid::parse_str(&result.transaction_id)?;
-        let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
-
-        if result.cancel_compute.unwrap_or(false) {
-            self.start_transaction(&mut transaction);
-        }
-
-        self.after_calculation_async(&mut transaction, result)?;
-        self.finalize_transaction(&mut transaction);
-        Ok(())
-    }
-
-    pub fn start_auto_resize_row_heights(
-        &self,
-        transaction: &mut PendingTransaction,
-        sheet_id: SheetId,
-        rows: Vec<i64>,
-    ) {
-        if !cfg!(target_family = "wasm") || cfg!(test) || !transaction.is_user() {
-            return;
-        }
-
-        if let Some(sheet) = self.try_sheet(sheet_id) {
-            if let Some(auto_resize_rows) = sheet.get_auto_resize_rows(rows) {
-                if let Ok(rows_string) = serde_json::to_string(&auto_resize_rows) {
-                    crate::wasm_bindings::js::jsRequestRowHeights(
-                        transaction.id.to_string(),
-                        sheet_id.to_string(),
-                        rows_string,
-                    );
-                    transaction.has_async = true;
-                } else {
-                    dbgjs!("[control_transactions] start_auto_resize_row_heights: Failed to serialize auto resize rows");
-                }
+    if let Some(sheet) = self.try_sheet(sheet_id) {
+        if let Some(auto_resize_rows) = sheet.get_auto_resize_rows(rows) {
+            if let Ok(rows_string) = serde_json::to_string(&auto_resize_rows) {
+                crate::wasm_bindings::js::jsRequestRowHeights(
+                    transaction.id.to_string(),
+                    sheet_id.to_string(),
+                    rows_string,
+                );
+                transaction.has_async = true;
+            } else {
+                dbgjs!("[control_transactions] start_auto_resize_row_heights: Failed to serialize auto resize rows");
             }
+        }
+    } else {
+        dbgjs!("[control_transactions] start_auto_resize_row_heights: Sheet not found");
+    }
+}
+
+pub fn complete_auto_resize_row_heights(
+    &mut self,
+    transaction_id: Uuid,
+    sheet_id: SheetId,
+    row_heights: Vec<JsRowHeight>,
+) -> Result<()> {
+    let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
+    transaction.operations.push_back(Operation::ResizeRows {
+        sheet_id,
+        row_heights,
+    });
+    transaction.has_async = false;
+    self.start_transaction(&mut transaction);
+    self.finalize_transaction(&mut transaction);
+
+    Ok(())
+}
+
+/// Externally called when an async connection completes
+pub fn connection_complete(
+    &mut self,
+    transaction_id: String,
+    data: Vec<u8>,
+    std_out: Option<String>,
+    std_err: Option<String>,
+    extra: Option<String>,
+) -> Result<()> {
+    let transaction_id = Uuid::parse_str(&transaction_id)?;
+    let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
+    let array = parquet_to_vec(data)?;
+
+    if let Some(current_sheet_pos) = transaction.current_sheet_pos {
+        let mut return_type = if array.is_empty() {
+            "0×0 Array".to_string()
         } else {
-            dbgjs!("[control_transactions] start_auto_resize_row_heights: Sheet not found");
-        }
-    }
+            // subtract 1 from the length to account for the header row
+            format!("{}×{} Array", array[0].len(), 0.max(array.len() - 1))
+        };
 
-    pub fn complete_auto_resize_row_heights(
-        &mut self,
-        transaction_id: Uuid,
-        sheet_id: SheetId,
-        row_heights: Vec<JsRowHeight>,
-    ) -> Result<()> {
-        let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
-        transaction.operations.push_back(Operation::ResizeRows {
-            sheet_id,
-            row_heights,
-        });
-        transaction.has_async = false;
+        if let Some(extra) = extra {
+            return_type = format!("{return_type}\n{extra}");
+        }
+
+        let result = CodeRunResult::Ok(Value::Array(array.into()));
+
+        let code_run = CodeRun {
+            formatted_code_string: None,
+            result,
+            return_type: Some(return_type.clone()),
+            line_number: Some(1),
+            output_type: Some(return_type),
+            std_out,
+            std_err,
+            spill_error: false,
+            last_modified: Utc::now(),
+            cells_accessed: transaction.cells_accessed.clone(),
+        };
+
+        self.finalize_code_run(&mut transaction, current_sheet_pos, Some(code_run), None);
+        transaction.waiting_for_async = None;
         self.start_transaction(&mut transaction);
         self.finalize_transaction(&mut transaction);
-        Ok(())
     }
+
+    Ok(())
 }
 
 #[derive(Debug, PartialEq)]
@@ -195,7 +241,11 @@ impl From<Pos> for CellHash {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{cell_values::CellValues, grid::GridBounds, CellValue, Pos, Rect, SheetPos};
+    use crate::{
+        cell_values::CellValues,
+        grid::{CodeCellLanguage, ConnectionKind, GridBounds},
+        CellValue, Pos, Rect, SheetPos,
+    };
 
     fn add_cell_value(sheet_pos: SheetPos, value: CellValue) -> Operation {
         Operation::SetCellValues {
@@ -341,6 +391,37 @@ mod tests {
             None,
             None,
         ));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_connection_complete() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_code_cell(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            CodeCellLanguage::Connection {
+                kind: ConnectionKind::Postgres,
+                id: Uuid::new_v4().to_string(),
+            },
+            "select * from table".into(),
+            None,
+        );
+
+        let transaction_id = gc.last_transaction().unwrap().id;
+
+        let result = gc.connection_complete(
+            transaction_id.to_string(),
+            vec![],
+            None,
+            Some("error".into()),
+            None,
+        );
+
         assert!(result.is_ok());
     }
 }

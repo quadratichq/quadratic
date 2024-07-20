@@ -2,34 +2,25 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { expectError, getUserIdByAuth0Id } from '../../tests/helpers';
-import { createFile } from '../../tests/testDataGenerator';
+import { createFile, createTeam, createUsers } from '../../tests/testDataGenerator';
 
 beforeEach(async () => {
-  const userOwner = await dbClient.user.create({
-    data: {
-      auth0Id: 'userOwner',
-    },
-  });
-  const userEditor = await dbClient.user.create({
-    data: {
-      auth0Id: 'userEditor',
-    },
-  });
-  const userViewer = await dbClient.user.create({
-    data: {
-      auth0Id: 'userViewer',
-    },
-  });
-  await dbClient.user.create({
-    data: {
-      auth0Id: 'userWithoutRole',
-    },
+  const [userOwner, userEditor, userViewer] = await createUsers([
+    'userOwner',
+    'userEditor',
+    'userViewer',
+    'userWithoutRole',
+  ]);
+
+  const team = await createTeam({
+    users: [{ userId: userOwner.id, role: 'OWNER' }],
   });
 
   await createFile({
     data: {
       creatorUserId: userOwner.id,
       ownerUserId: userOwner.id,
+      ownerTeamId: team.id,
       name: 'Test Team 1',
       uuid: '00000000-0000-4000-8000-000000000001',
       UserFileRole: {

@@ -237,6 +237,13 @@ pub enum CodeCellLanguage {
     Python,
     Formula,
     Javascript,
+    Connection { kind: ConnectionKind, id: String },
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ConnectionKind {
+    Postgres,
+    Mysql,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

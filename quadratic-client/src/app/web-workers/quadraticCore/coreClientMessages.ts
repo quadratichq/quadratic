@@ -23,6 +23,7 @@ import {
   SummarizeSelectionResult,
   TransactionName,
 } from '@/app/quadratic-core-types';
+import { CodeRun } from '../CodeRun';
 import { MultiplayerState } from '../multiplayerWebWorker/multiplayerClientMessages';
 
 //#region Initialize
@@ -57,6 +58,11 @@ export interface CoreClientUpgradeFile {
   id: number;
 }
 
+export interface ClientCoreInit {
+  type: 'clientCoreInit';
+  env: ImportMetaEnv;
+}
+
 export interface ClientCoreInitMultiplayer {
   type: 'clientCoreInitMultiplayer';
 }
@@ -64,6 +70,17 @@ export interface ClientCoreInitMultiplayer {
 export interface CoreClientMultiplayerState {
   type: 'coreClientMultiplayerState';
   state: MultiplayerState;
+}
+
+export interface CoreClientConnectionState {
+  type: 'coreClientConnectionState';
+  state: 'loading' | 'ready' | 'error' | 'running';
+
+  // current cell being executed
+  current?: CodeRun;
+
+  // cells awaiting execution
+  awaitingExecution?: CodeRun[];
 }
 
 export interface ClientCoreInitPython {
@@ -250,6 +267,17 @@ export interface CoreClientHasRenderCells {
   type: 'coreClientHasRenderCells';
   id: number;
   hasRenderCells: boolean;
+}
+
+export interface CoreClientGetJwt {
+  type: 'coreClientGetJwt';
+  id: number;
+}
+
+export interface ClientCoreGetJwt {
+  type: 'clientCoreGetJwt';
+  id: number;
+  jwt: string;
 }
 
 //#endregion
@@ -887,10 +915,13 @@ export type ClientCoreMessage =
   | ClientCoreFindNextRow
   | ClientCoreCommitTransientResize
   | ClientCoreCommitSingleResize
+  | ClientCoreInit
   | ClientCoreInitPython
   | ClientCoreInitJavascript
   | ClientCoreImportExcel
   | ClientCoreCancelExecution
+  | ClientCoreGetJwt
+  | ClientCoreMoveCells
   | ClientCoreMoveCells
   | ClientCoreGetFormatAll
   | ClientCoreGetFormatColumn
@@ -938,8 +969,10 @@ export type CoreClientMessage =
   | CoreClientUpdateCodeCell
   | CoreClientImportExcel
   | CoreClientMultiplayerState
+  | CoreClientConnectionState
   | CoreClientOfflineTransactions
   | CoreClientUndoRedo
+  | CoreClientGetJwt
   | CoreClientImage
   | CoreClientGetFormatAll
   | CoreClientGetFormatColumn

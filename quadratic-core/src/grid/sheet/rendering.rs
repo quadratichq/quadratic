@@ -165,7 +165,7 @@ impl Sheet {
                         span: None,
                         msg: RunErrorMsg::Spill,
                     })),
-                    Some(code.language),
+                    Some(code.language.to_owned()),
                 ));
             } else if let Some(error) = run.get_error() {
                 cells.push(self.get_render_cell(
@@ -173,7 +173,7 @@ impl Sheet {
                     code_rect.min.y,
                     None,
                     &CellValue::Error(Box::new(error)),
-                    Some(code.language),
+                    Some(code.language.to_owned()),
                 ));
             } else {
                 // find overlap of code_rect into rect
@@ -206,7 +206,7 @@ impl Sheet {
                         );
                         if let Some(value) = value {
                             let language = if x == code_rect.min.x && y == code_rect.min.y {
-                                Some(code.language)
+                                Some(code.language.to_owned())
                             } else {
                                 None
                             };
@@ -413,7 +413,7 @@ impl Sheet {
                                 y: pos.y as i32,
                                 w,
                                 h,
-                                language: code.language,
+                                language: code.language.to_owned(),
                                 state,
                                 spill_error,
                             })
