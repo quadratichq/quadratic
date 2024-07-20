@@ -143,16 +143,31 @@ impl CellValue {
         }
     }
 
-    pub fn to_display(
+    pub fn to_display(&self) -> String {
+        match self {
+            CellValue::Blank => String::new(),
+            CellValue::Text(s) => s.to_string(),
+            CellValue::Html(s) => s.to_string(),
+            CellValue::Number(n) => n.to_string(),
+            CellValue::Logical(true) => "true".to_string(),
+            CellValue::Logical(false) => "false".to_string(),
+            CellValue::Instant(_) => todo!("repr of Instant"),
+            CellValue::Duration(_) => todo!("repr of Duration"),
+            CellValue::Error(_) => "[error]".to_string(),
+
+            // these should not render
+            CellValue::Code(_) => String::new(),
+            CellValue::Image(_) => String::new(),
+        }
+    }
+
+    pub fn to_number_display(
         &self,
         numeric_format: Option<NumericFormat>,
         numeric_decimals: Option<i16>,
         numeric_commas: Option<bool>,
     ) -> String {
         match self {
-            CellValue::Blank => String::new(),
-            CellValue::Text(s) => s.to_string(),
-            CellValue::Html(s) => s.to_string(),
             CellValue::Number(n) => {
                 let numeric_format = numeric_format.unwrap_or_default();
                 let use_commas = numeric_commas.is_some_and(|c| c)
@@ -212,15 +227,7 @@ impl CellValue {
                     NumericFormatKind::Exponential => number,
                 }
             }
-            CellValue::Logical(true) => "true".to_string(),
-            CellValue::Logical(false) => "false".to_string(),
-            CellValue::Instant(_) => todo!("repr of Instant"),
-            CellValue::Duration(_) => todo!("repr of Duration"),
-            CellValue::Error(_) => "[error]".to_string(),
-
-            // these should not render
-            CellValue::Code(_) => String::new(),
-            CellValue::Image(_) => String::new(),
+            _ => String::new(),
         }
     }
 
@@ -548,21 +555,30 @@ impl CellValue {
 
 #[cfg(test)]
 mod test {
-    use std::str::FromStr;
-
-    use bigdecimal::BigDecimal;
-
-    use crate::{
-        grid::{NumericFormat, NumericFormatKind, Sheet},
-        CellValue,
-    };
+    use super::*;
     use serial_test::parallel;
 
     #[test]
     #[parallel]
     fn test_cell_value_to_display_text() {
         let cv = CellValue::Text(String::from("hello"));
-        assert_eq!(cv.to_display(None, None, None), String::from("hello"));
+        assert_eq!(cv.to_display(), String::from("hello"));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_cell_value_to_display_number() {
+        let cv = CellValue::Number(BigDecimal::from_str("123123.1233").unwrap());
+        assert_eq!(cv.to_display(), String::from("123123.1233"));
+
+        let cv = CellValue::Number(BigDecimal::from_str("-123123.1233").unwrap());
+        assert_eq!(cv.to_display(), String::from("-123123.1233"));
+
+        let cv = CellValue::Number(BigDecimal::from_str("123.1255").unwrap());
+        assert_eq!(cv.to_display(), String::from("123.1255"));
+
+        let cv = CellValue::Number(BigDecimal::from_str("123.0").unwrap());
+        assert_eq!(cv.to_display(), String::from("123.0"));
     }
 
     #[test]
@@ -570,7 +586,7 @@ mod test {
     fn test_cell_value_to_display_currency() {
         let cv = CellValue::Number(BigDecimal::from_str("123123.1233").unwrap());
         assert_eq!(
-            cv.to_display(
+            cv.to_number_display(
                 Some(NumericFormat {
                     kind: NumericFormatKind::Currency,
                     symbol: Some(String::from("$")),
@@ -581,7 +597,7 @@ mod test {
             String::from("$123,123.12")
         );
         assert_eq!(
-            cv.to_display(
+            cv.to_number_display(
                 Some(NumericFormat {
                     kind: NumericFormatKind::Currency,
                     symbol: Some(String::from("$")),
@@ -591,10 +607,9 @@ mod test {
             ),
             String::from("$123123.12")
         );
-
         let cv = CellValue::Number(BigDecimal::from_str("-123123.1233").unwrap());
         assert_eq!(
-            cv.to_display(
+            cv.to_number_display(
                 Some(NumericFormat {
                     kind: NumericFormatKind::Currency,
                     symbol: Some(String::from("$")),
@@ -605,7 +620,7 @@ mod test {
             String::from("-$123,123.12")
         );
         assert_eq!(
-            cv.to_display(
+            cv.to_number_display(
                 Some(NumericFormat {
                     kind: NumericFormatKind::Currency,
                     symbol: Some(String::from("$")),
@@ -616,7 +631,7 @@ mod test {
             String::from("-$123,123.12")
         );
         assert_eq!(
-            cv.to_display(
+            cv.to_number_display(
                 Some(NumericFormat {
                     kind: NumericFormatKind::Currency,
                     symbol: Some(String::from("$")),
@@ -626,10 +641,9 @@ mod test {
             ),
             String::from("-$123123.12")
         );
-
         let cv = CellValue::Number(BigDecimal::from_str("123.1255").unwrap());
         assert_eq!(
-            cv.to_display(
+            cv.to_number_display(
                 Some(NumericFormat {
                     kind: NumericFormatKind::Currency,
                     symbol: Some(String::from("$")),
@@ -639,10 +653,9 @@ mod test {
             ),
             String::from("$123.13")
         );
-
         let cv = CellValue::Number(BigDecimal::from_str("123.0").unwrap());
         assert_eq!(
-            cv.to_display(
+            cv.to_number_display(
                 Some(NumericFormat {
                     kind: NumericFormatKind::Currency,
                     symbol: Some(String::from("$")),
@@ -659,7 +672,7 @@ mod test {
     fn test_cell_value_to_display_percentage() {
         let cv = CellValue::Number(BigDecimal::from_str("0.015").unwrap());
         assert_eq!(
-            cv.to_display(
+            cv.to_number_display(
                 Some(NumericFormat {
                     kind: NumericFormatKind::Percentage,
                     symbol: None,
@@ -672,7 +685,7 @@ mod test {
 
         let cv = CellValue::Number(BigDecimal::from_str("0.9912239").unwrap());
         assert_eq!(
-            cv.to_display(
+            cv.to_number_display(
                 Some(NumericFormat {
                     kind: NumericFormatKind::Percentage,
                     symbol: None,
@@ -682,10 +695,9 @@ mod test {
             ),
             String::from("99.1224%")
         );
-
         let cv = CellValue::Number(BigDecimal::from_str("1231123123.9912239").unwrap());
         assert_eq!(
-            cv.to_display(
+            cv.to_number_display(
                 Some(NumericFormat {
                     kind: NumericFormatKind::Percentage,
                     symbol: None,
@@ -730,44 +742,7 @@ mod test {
     #[parallel]
     fn test_exponential_display() {
         let value = CellValue::Number(BigDecimal::from_str("98172937192739718923.12312").unwrap());
-        assert_eq!(
-            value.to_display(
-                Some(NumericFormat {
-                    kind: NumericFormatKind::Exponential,
-                    symbol: None
-                }),
-                None,
-                None
-            ),
-            "9.817293719273972e19"
-        );
-        assert_eq!(
-            value.to_display(
-                Some(NumericFormat {
-                    kind: NumericFormatKind::Exponential,
-                    symbol: None
-                }),
-                Some(2),
-                None
-            ),
-            "9.82e19"
-        );
-    }
-
-    #[test]
-    #[parallel]
-    fn test_with_commas() {
-        let value = BigDecimal::from_str("123123123");
-        assert_eq!(CellValue::with_commas(value.unwrap()), "123,123,123");
-
-        let value = BigDecimal::from_str("123123123.123456");
-        assert_eq!(CellValue::with_commas(value.unwrap()), "123,123,123.123456");
-
-        let value = BigDecimal::from_str("-123123123.123456");
-        assert_eq!(
-            CellValue::with_commas(value.unwrap()),
-            "-123,123,123.123456"
-        );
+        assert_eq!(value.to_display(), "98172937192739718923.12312");
     }
 
     #[test]

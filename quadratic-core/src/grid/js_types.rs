@@ -2,8 +2,9 @@ use core::fmt;
 
 use serde::{Deserialize, Serialize};
 
+use super::formats::format::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
-use super::CodeCellLanguage;
+use super::{CodeCellLanguage, NumericFormat};
 use crate::grid::BorderStyle;
 use crate::{Pos, SheetRect};
 
@@ -15,6 +16,38 @@ pub enum JsRenderCellSpecial {
     RunError,
     True,
     False,
+}
+
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ts_rs::TS)]
+pub struct JsNumber {
+    pub decimals: Option<i16>,
+    pub commas: Option<bool>,
+    pub format: Option<NumericFormat>,
+}
+
+impl JsNumber {
+    /// Create a JsNumber for dollars with 2 decimal places.
+    #[cfg(test)]
+    pub fn dollars() -> Self {
+        JsNumber {
+            decimals: Some(2),
+            format: Some(NumericFormat {
+                kind: crate::grid::NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }),
+            ..Default::default()
+        }
+    }
+}
+
+impl From<&Format> for JsNumber {
+    fn from(format: &Format) -> Self {
+        JsNumber {
+            decimals: format.numeric_decimals,
+            commas: format.numeric_commas,
+            format: format.numeric_format.clone(),
+        }
+    }
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -44,6 +77,9 @@ pub struct JsRenderCell {
     pub text_color: Option<String>,
 
     pub special: Option<JsRenderCellSpecial>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub number: Option<JsNumber>,
 }
 
 #[cfg(test)]
@@ -55,12 +91,8 @@ impl JsRenderCell {
             value: value.to_string(),
             language,
             align: Some(CellAlign::Right),
-            vertical_align: None,
-            wrap: None,
-            bold: None,
-            italic: None,
-            text_color: None,
-            special: None,
+            number: Some(JsNumber::default()),
+            ..Default::default()
         }
     }
 }
@@ -70,15 +102,7 @@ impl From<Pos> for JsRenderCell {
         Self {
             x: pos.x,
             y: pos.y,
-            value: "".to_string(),
-            language: None,
-            align: None,
-            vertical_align: None,
-            wrap: None,
-            bold: None,
-            italic: None,
-            text_color: None,
-            special: None,
+            ..Default::default()
         }
     }
 }
@@ -219,5 +243,38 @@ pub struct JsRowHeight {
 impl fmt::Display for JsRowHeight {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "JsRowHeight(row: {}, height: {})", self.row, self.height)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::JsNumber;
+    use crate::grid::{formats::format::Format, NumericFormat};
+
+    #[test]
+    fn to_js_number() {
+        let format = Format {
+            numeric_decimals: Some(2),
+            numeric_commas: Some(true),
+            numeric_format: Some(NumericFormat {
+                kind: crate::grid::NumericFormatKind::Currency,
+                symbol: Some("€".to_string()),
+            }),
+            ..Default::default()
+        };
+
+        let js_number: JsNumber = (&format).into();
+        assert_eq!(js_number.decimals, Some(2));
+        assert_eq!(js_number.commas, Some(true));
+        assert_eq!(
+            js_number.format,
+            Some(NumericFormat {
+                kind: crate::grid::NumericFormatKind::Currency,
+                symbol: Some("€".to_string()),
+            })
+        );
+
+        let js_number: JsNumber = (&Format::default()).into();
+        assert_eq!(js_number, JsNumber::default());
     }
 }

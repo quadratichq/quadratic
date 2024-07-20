@@ -361,6 +361,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_connection_complete() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
