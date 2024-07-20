@@ -3,12 +3,14 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
 import checker from 'vite-plugin-checker';
+import svgr from 'vite-plugin-svgr';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig(() => {
   const plugins = [
     react(),
     tsconfigPaths(),
+    svgr(),
     checker({
       typescript: true,
       eslint: {
@@ -39,7 +41,7 @@ export default defineConfig(() => {
   return {
     build: {
       outDir: '../build',
-      sourcemap: true, // Source map generation must be turned on
+      sourcemap: process.env.VERCEL_ENV !== 'preview' || process.env.VITEST !== 'true', // Source map generation must be turned on
     },
     publicDir: './public',
     assetsInclude: ['**/*.py'],
@@ -47,6 +49,7 @@ export default defineConfig(() => {
       port: 3000,
     },
     resolve: {
+      preserveSymlinks: process.env.VERCEL_ENV !== 'preview' || process.env.VITEST !== 'true',
       alias: {
         '@': path.resolve(__dirname, './src'),
       },

@@ -1,7 +1,8 @@
 // This file is the main entry point for the javascript worker. It handles
 // managing the Javascript runners, which is where the code is executed.
 
-import type { CodeRun, LanguageState } from '@/app/web-workers/languageTypes';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
+import type { LanguageState } from '@/app/web-workers/languageTypes';
 import * as esbuild from 'esbuild-wasm';
 import { CoreJavascriptRun } from '../../javascriptCoreMessages';
 import { javascriptClient } from '../javascriptClient';

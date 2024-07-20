@@ -1,9 +1,11 @@
-import { useRef, useState } from 'react';
+import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import Editor from '@monaco-editor/react';
-import { Box, IconButton, Stack, useTheme } from '@mui/material';
-import { ContentCopy } from '@mui/icons-material';
-import { TooltipHint } from './TooltipHint';
+import { ContentCopy, ContentPasteGoOutlined } from '@mui/icons-material';
+import { IconButton } from '@mui/material';
+import mixpanel from 'mixpanel-browser';
+import { useRef, useState } from 'react';
 import { codeEditorBaseStyles } from '../menus/CodeEditor/styles';
+import { TooltipHint } from './TooltipHint';
 
 interface Props {
   code: string;
@@ -11,16 +13,16 @@ interface Props {
 }
 
 export function CodeSnippet({ code, language = 'plaintext' }: Props) {
-  const [tooltipMsg, setTooltipMsg] = useState<string>('Click to copy');
+  const [tooltipMsg, setTooltipMsg] = useState<string>('Copy');
   const editorRef = useRef(null);
-  const theme = useTheme();
 
   const handleClick = (e: any) => {
+    mixpanel.track('[AI].code.copy', { language });
     if (editorRef.current) {
       navigator.clipboard.writeText(code);
       setTooltipMsg('Copied!');
       setTimeout(() => {
-        setTooltipMsg('Click to copy');
+        setTooltipMsg('Copy');
       }, 2000);
     }
   };
@@ -29,41 +31,36 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
     editorRef.current = editor;
   };
 
-  return (
-    <Box style={codeEditorBaseStyles}>
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        spacing={1}
-        sx={{
-          backgroundColor: theme.palette.grey['100'],
-          pt: theme.spacing(0.5),
-          pb: theme.spacing(0.5),
-          // 10px on Monaco + 2px border
-          pr: '12px',
-          pl: '12px',
-        }}
-      >
-        <Box sx={{ color: 'text.secondary' }}>{language}</Box>
+  let syntax = language.toLowerCase();
+  if (syntax === 'postgres') {
+    syntax = 'sql';
+  } else if (syntax === 'mysql') {
+    syntax = 'sql';
+  }
 
-        <TooltipHint title={tooltipMsg}>
-          <IconButton onClick={handleClick} size="small">
-            <ContentCopy fontSize="inherit" />
-          </IconButton>
-        </TooltipHint>
-      </Stack>
+  return (
+    <div style={codeEditorBaseStyles} className="overflow-hidden rounded border shadow-sm">
+      <div className="flex flex-row items-center justify-between gap-2 bg-accent px-3 py-1">
+        <div className="lowercase text-muted-foreground">{language}</div>
+
+        <div className="flex items-center gap-1">
+          <CodeEditorInsertButton text={code} language={language} />
+          <TooltipHint title={tooltipMsg}>
+            <IconButton onClick={handleClick} size="small">
+              <ContentCopy fontSize="inherit" color="inherit" className="text-muted-foreground" />
+            </IconButton>
+          </TooltipHint>
+        </div>
+      </div>
       <div
+        className="relative pt-2"
         style={{
           // calculate height based on number of lines
-          height: `${Math.ceil(code.split('\n').length) * 19}px`,
-          position: 'relative',
-          border: `2px solid ${theme.palette.grey['100']}`,
-          borderTop: 'none',
+          height: `${Math.ceil(code.split('\n').length) * 19 + 16}px`,
         }}
       >
         <Editor
-          language={language}
+          language={syntax}
           value={code}
           height="100%"
           width="100%"
@@ -87,6 +84,38 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
           onMount={handleEditorDidMount}
         />
       </div>
-    </Box>
+    </div>
+  );
+}
+
+function CodeEditorInsertButton({ language, text }: { language: Props['language']; text: string }) {
+  const { editorRef } = useCodeEditor();
+
+  // Replace what's in the editor with the given text
+  const handleClick = () => {
+    mixpanel.track('[AI].code.copy', { language });
+
+    if (editorRef.current) {
+      const model = editorRef.current.getModel();
+      if (!model) return;
+
+      const range = model.getFullModelRange();
+      editorRef.current.executeEdits('insert-code', [
+        {
+          range,
+          text,
+        },
+      ]);
+
+      editorRef.current.focus();
+    }
+  };
+
+  return (
+    <TooltipHint title={'Insert and replace'}>
+      <IconButton size="small" onClick={handleClick}>
+        <ContentPasteGoOutlined fontSize="inherit" color="inherit" className="text-muted-foreground" />
+      </IconButton>
+    </TooltipHint>
   );
 }

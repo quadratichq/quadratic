@@ -59,13 +59,18 @@ class Core {
     this.next();
   }
 
-  private next = () => {
+  private allowEventLoop() {
+    return new Promise((ok) => setTimeout(ok, 0));
+  }
+
+  private next = async () => {
     if (this.clientQueue.length) {
       this.clientQueue.shift()?.();
     } else if (this.renderQueue.length) {
       this.renderQueue.shift()?.();
     }
-    setTimeout(this.next, 0);
+    await this.allowEventLoop();
+    this.next();
   };
 
   // Creates a Grid form a file. Initializes bother coreClient and coreRender w/metadata.
@@ -765,6 +770,7 @@ class Core {
       this.gridController.commitOffsetsResize(sheetId, transientResize, cursor);
     });
   }
+
   commitSingleResize(
     sheetId: string,
     column: number | undefined,
@@ -781,6 +787,11 @@ class Core {
   calculationComplete(results: JsCodeResult) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.calculationComplete(JSON.stringify(results));
+  }
+
+  connectionComplete(transactionId: string, data: ArrayBuffer, std_out?: string, std_err?: string, extra?: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.connectionComplete(transactionId, data as Uint8Array, std_out, std_err, extra);
   }
 
   getCells(transactionId: string, x: number, y: number, w: number, h?: number, sheet?: string, lineNumber?: number) {
