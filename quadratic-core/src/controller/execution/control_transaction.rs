@@ -13,7 +13,7 @@ use crate::{
         transaction_types::JsCodeResult,
     },
     error_core::Result,
-    grid::{js_types::JsRowHeight, CodeRun, CodeRunResult, SheetId},
+    grid::{CodeRun, CodeRunResult},
     parquet::parquet_to_vec,
     Pos, Value,
 };
@@ -124,49 +124,6 @@ impl GridController {
 
         self.after_calculation_async(&mut transaction, result)?;
         self.finalize_transaction(&mut transaction);
-        Ok(())
-    }
-
-    pub fn start_auto_resize_row_heights(
-        &self,
-        transaction: &mut PendingTransaction,
-        sheet_id: SheetId,
-        rows: Vec<i64>,
-    ) {
-        if !cfg!(target_family = "wasm") || cfg!(test) || !transaction.is_user() {
-            return;
-        }
-
-        if let Some(sheet) = self.try_sheet(sheet_id) {
-            let auto_resize_rows = sheet.get_auto_resize_rows(rows);
-            if let Ok(rows_string) = serde_json::to_string(&auto_resize_rows) {
-                crate::wasm_bindings::js::jsRequestRowHeights(
-                    transaction.id.to_string(),
-                    sheet_id.to_string(),
-                    rows_string,
-                );
-                transaction.has_async = true;
-            } else {
-                dbgjs!("[control_transactions] start_auto_resize_row_heights: Failed to serialize auto resize rows");
-            }
-        }
-    }
-
-    pub fn complete_auto_resize_row_heights(
-        &mut self,
-        transaction_id: Uuid,
-        sheet_id: SheetId,
-        row_heights: Vec<JsRowHeight>,
-    ) -> Result<()> {
-        let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
-        transaction.operations.push_back(Operation::ResizeRows {
-            sheet_id,
-            row_heights,
-        });
-        transaction.has_async = false;
-        self.start_transaction(&mut transaction);
-        self.finalize_transaction(&mut transaction);
-
         Ok(())
     }
 
