@@ -19,7 +19,6 @@ beforeAll(async () => {
     data: {
       name: 'Test Team 1',
       uuid: '00000000-0000-4000-8000-000000000001',
-      stripeCustomerId: '1',
       UserTeamRole: {
         create: [
           {
