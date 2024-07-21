@@ -144,12 +144,13 @@ export class Cursor extends Graphics {
       // endCell is only interesting for one multiCursor since we use it to draw
       // the indicator, which is only active for one multiCursor
       const multiCursor = cursor.multiCursor[0];
+      const startCell = sheet.getCellOffsets(multiCursor.left, multiCursor.top);
       this.endCell = sheet.getCellOffsets(multiCursor.right - 1, multiCursor.bottom - 1);
       this.cursorRectangle = new Rectangle(
-        this.startCell.x,
-        this.startCell.y,
-        this.endCell.x + this.endCell.width - this.startCell.x,
-        this.endCell.y + this.endCell.height - this.startCell.y
+        startCell.x,
+        startCell.y,
+        this.endCell.x + this.endCell.width - startCell.x,
+        this.endCell.y + this.endCell.height - startCell.y
       );
     } else {
       this.endCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
