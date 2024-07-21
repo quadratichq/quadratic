@@ -17,14 +17,15 @@ use axum_extra::TypedHeader;
 use futures::stream::StreamExt;
 use futures_util::stream::SplitSink;
 use futures_util::SinkExt;
+use serde::{Deserialize, Serialize};
 use std::ops::ControlFlow;
 use std::{net::SocketAddr, sync::Arc};
 use tokio::sync::Mutex;
+use quadratic_rust_shared::auth::jwt::{authorize, get_jwks};
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::{
-    auth::{authorize, get_jwks},
     background_worker,
     config::config,
     error::{ErrorLevel, MpError, Result},
@@ -33,6 +34,12 @@ use crate::{
     },
     state::{connection::PreConnection, State},
 };
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Claims {
+    sub: String,
+    exp: usize,
+}
 
 /// Construct the application router.  This is separated out so that it can be
 /// integration tested.
@@ -142,7 +149,7 @@ async fn ws_handler(
                     .clone()
                     .ok_or_else(|| auth_error("No JWKS found"))?;
 
-                authorize(&jwks, token, false, true)?;
+                authorize::<Claims>(&jwks, token, false, true)?;
 
                 jwt = Some(token.to_owned());
 

@@ -10,6 +10,9 @@ export const DOCUMENTATION_FILES_URL = `${DOCUMENTATION_URL}/files`;
 export const DOCUMENTATION_OFFLINE = `${DOCUMENTATION_URL}/offline`;
 export const DOCUMENTATION_LOST_CONNECTION = `${DOCUMENTATION_URL}/connection`;
 
+export const DOCUMENTATION_CONNECTIONS_URL = `${DOCUMENTATION_URL}/connections`;
+export const DOCUMENTATION_CONNECTIONS_IP_LIST_URL = `${DOCUMENTATION_CONNECTIONS_URL}/security#ip-allow-list`;
+export const TRUST_CENTER = 'https://trust.quadratichq.com';
 export const BUG_REPORT_URL = 'https://github.com/quadratichq/quadratic/issues';
 export const DISCORD = 'https://discord.gg/quadratic';
 export const TWITTER = 'https://twitter.com/quadratichq';
