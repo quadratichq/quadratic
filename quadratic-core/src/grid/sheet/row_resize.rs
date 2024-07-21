@@ -11,7 +11,7 @@ impl Sheet {
         self.rows_resize.set_resize(row, value)
     }
 
-    pub fn iter_row_resize(&self) -> impl '_ + Iterator<Item = (i64, &Resize)> {
+    pub fn iter_row_resize(&self) -> impl '_ + Iterator<Item = (i64, Resize)> {
         self.rows_resize.iter_resize()
     }
 
@@ -73,6 +73,7 @@ mod tests {
         assert_eq!(sheet.get_row_resize(7), Resize::Manual);
         assert_eq!(sheet.get_row_resize(5), Resize::Auto);
     }
+
     #[test]
     #[parallel]
     fn test_set_row_resize() {
@@ -113,9 +114,9 @@ mod tests {
         sheet.set_row_resize(7, Resize::Manual);
 
         // Test interaction with iter_row_resize
-        let mut resizes: Vec<(i64, &Resize)> = sheet.iter_row_resize().collect();
+        let mut resizes: Vec<(i64, Resize)> = sheet.iter_row_resize().collect();
         resizes.sort_by_key(|&(k, _)| k);
-        assert_eq!(resizes, vec![(3, &Resize::Manual), (7, &Resize::Manual)]);
+        assert_eq!(resizes, vec![(3, Resize::Manual), (7, Resize::Manual)]);
 
         // Test interaction with update_row_resize
         let old_client_resize = sheet.update_row_resize(3, false);
@@ -145,9 +146,10 @@ mod tests {
     #[parallel]
     fn test_iter_row_resize_empty() {
         let sheet = Sheet::test();
-        let resizes: Vec<(i64, &Resize)> = sheet.iter_row_resize().collect();
+        let resizes: Vec<(i64, Resize)> = sheet.iter_row_resize().collect();
         assert!(resizes.is_empty());
     }
+
     #[test]
     #[parallel]
     fn test_iter_row_resize_multiple() {
@@ -155,9 +157,9 @@ mod tests {
         sheet.set_row_resize(3, Resize::Manual);
         sheet.set_row_resize(7, Resize::Manual);
 
-        let mut resizes: Vec<(i64, &Resize)> = sheet.iter_row_resize().collect();
+        let mut resizes: Vec<(i64, Resize)> = sheet.iter_row_resize().collect();
         resizes.sort_by_key(|&(k, _)| k); // Sort by key for consistent ordering
-        assert_eq!(resizes, vec![(3, &Resize::Manual), (7, &Resize::Manual)]);
+        assert_eq!(resizes, vec![(3, Resize::Manual), (7, Resize::Manual)]);
     }
 
     #[test]
@@ -277,7 +279,4 @@ mod tests {
         assert_eq!(Resize::Auto, sheet.get_row_resize(0));
         assert_eq!(Resize::Auto, sheet.get_row_resize(1));
     }
-
-    // convert to manual on commit_offsets_resize
-    // convert to auto on commit_single_resize
 }

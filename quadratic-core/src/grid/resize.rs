@@ -42,8 +42,8 @@ impl ResizeMap {
         self.resize_map.remove(&index).unwrap_or(self.default)
     }
 
-    pub fn iter_resize(&self) -> impl '_ + Iterator<Item = (i64, &Resize)> {
-        self.resize_map.iter().map(|(&k, v)| (k, v))
+    pub fn iter_resize(&self) -> impl '_ + Iterator<Item = (i64, Resize)> {
+        self.resize_map.iter().map(|(&k, &v)| (k, v))
     }
 }
 
@@ -112,7 +112,7 @@ mod tests {
         resize_map.set_resize(1, Resize::Auto); // This should not be stored
 
         let items: Vec<_> = resize_map.iter_resize().collect();
-        assert_eq!(items, vec![(0, &Resize::Manual), (2, &Resize::Manual)]);
+        assert_eq!(items, vec![(0, Resize::Manual), (2, Resize::Manual)]);
     }
 
     #[test]

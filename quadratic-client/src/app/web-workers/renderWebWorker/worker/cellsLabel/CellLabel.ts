@@ -12,7 +12,7 @@ import { Coordinate } from '@/app/gridGL/types/size';
 import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
 import { CellAlign, CellVerticalAlign, CellWrap, JsNumber, JsRenderCell } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
-import { CELL_TEXT_MARGIN_LEFT } from '@/shared/constants/gridConstants';
+import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT } from '@/shared/constants/gridConstants';
 import { removeItems } from '@pixi/utils';
 import { Point, Rectangle } from 'pixi.js';
 import { RenderBitmapChar } from '../../renderBitmapFonts';
@@ -353,7 +353,7 @@ export class CellLabel {
     }
 
     this.textWidth = maxLineWidth * scale;
-    this.textHeight = textHeight * scale;
+    this.textHeight = Math.max(textHeight * scale, CELL_HEIGHT);
 
     // calculate the unwrapped text width, content can be multi-line due to \n or \r
     let curUnwrappedTextWidth = 0;

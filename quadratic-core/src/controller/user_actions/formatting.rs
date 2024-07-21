@@ -191,7 +191,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn number_formatting() {
+    fn test_number_formatting() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value(
@@ -235,6 +235,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_change_decimal_places() {
         // setup
         let mut gc: GridController = GridController::test();
@@ -408,7 +409,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn set_currency() {
+    fn test_set_currency() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value(

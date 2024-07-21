@@ -277,7 +277,7 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn check_spills_over_code() {
+    fn test_check_spills_over_code() {
         let mut gc = GridController::default();
         let sheet_id = gc.grid.sheet_ids()[0];
 

@@ -201,8 +201,11 @@ impl From<Pos> for CellHash {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::grid::{CodeCellLanguage, ConnectionKind};
-    use crate::{cell_values::CellValues, grid::GridBounds, CellValue, Pos, Rect, SheetPos};
+    use crate::{
+        cell_values::CellValues,
+        grid::{CodeCellLanguage, ConnectionKind, GridBounds},
+        CellValue, Pos, Rect, SheetPos,
+    };
     use serial_test::parallel;
 
     fn add_cell_value(sheet_pos: SheetPos, value: CellValue) -> Operation {
@@ -358,6 +361,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_connection_complete() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

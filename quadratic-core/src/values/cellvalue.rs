@@ -566,6 +566,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_cell_value_to_display_number() {
         let cv = CellValue::Number(BigDecimal::from_str("123123.1233").unwrap());
         assert_eq!(cv.to_display(), String::from("123123.1233"));

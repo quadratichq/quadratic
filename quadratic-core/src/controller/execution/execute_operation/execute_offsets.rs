@@ -26,7 +26,7 @@ impl GridController {
                     sheet_id,
                     column,
                     new_size,
-                    client_resized: false,
+                    client_resized,
                 });
 
             let old_size = sheet.offsets.set_column_width(column, new_size);
@@ -84,9 +84,11 @@ impl GridController {
                 sheet_id,
                 row,
                 new_size,
-                client_resized: false,
+                client_resized,
             });
+
             let old_size = sheet.offsets.set_row_height(row, new_size);
+            let old_client_resize = sheet.update_row_resize(row, client_resized);
 
             transaction.reverse_operations.insert(
                 0,
@@ -94,7 +96,7 @@ impl GridController {
                     sheet_id,
                     row,
                     new_size: old_size,
-                    client_resized: false,
+                    client_resized: old_client_resize,
                 },
             );
 

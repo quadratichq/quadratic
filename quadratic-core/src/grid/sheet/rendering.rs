@@ -538,7 +538,7 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn get_render_cells() {
+    fn test_get_render_cells() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
