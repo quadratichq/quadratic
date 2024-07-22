@@ -43,7 +43,9 @@ const targetGroup = new aws.lb.TargetGroup("connection-nlb-tg", {
 // Step 1: Create or update the Launch Template
 const launchTemplate = new aws.ec2.LaunchTemplate("connection-lt", {
   instanceType: instanceSize,
-  iamInstanceProfile: instanceProfileIAMContainerRegistry,
+  iamInstanceProfile: {
+    name: instanceProfileIAMContainerRegistry.name,
+  },
   imageId: latestAmazonLinuxAmi.id,
   vpcSecurityGroupIds: [connectionEc2SecurityGroup.id],
   userData: connectionEip1.publicIp.apply((publicIp1) =>
