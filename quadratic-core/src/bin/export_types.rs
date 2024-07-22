@@ -1,7 +1,9 @@
 use std::fs::create_dir_all;
 
 use controller::operations::clipboard::PasteSpecial;
-use grid::{formats::format::Format, js_types::JsSheetFill};
+use grid::{
+    formats::format::Format, js_types::JsSheetFill, sheet::validations::validation::ValidationCell,
+};
 use quadratic_core::{
     color::Rgba,
     controller::{
@@ -99,6 +101,7 @@ fn main() {
         Format,
         JsSheetFill,
         ColumnRow,
+        ValidationCell,
     );
 
     if create_dir_all("../quadratic-client/src/app/quadratic-core-types").is_ok() {

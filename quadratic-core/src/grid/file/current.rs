@@ -375,6 +375,9 @@ pub fn import_sheet(sheet: &current::Sheet) -> Result<Sheet> {
         format_all: sheet.formats_all.as_ref().map(import_format),
         formats_columns: import_formats(&sheet.formats_columns),
         formats_rows: import_formats(&sheet.formats_rows),
+
+        // todo...
+        validations: Default::default(),
     };
     new_sheet.recalculate_bounds();
     import_borders_builder(&mut new_sheet, sheet);
