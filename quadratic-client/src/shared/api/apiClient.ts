@@ -116,14 +116,14 @@ export const apiClient = {
       teamUuid,
       isPrivate,
     }: {
-      file?: Pick<ApiTypes['/v0/files.POST.request'], 'name' | 'contents' | 'version'>;
+      // TODO(ddimaria): remove Partial and "contents" once we duplicate directly on S3
+      file?: Partial<Pick<ApiTypes['/v0/files.POST.request'], 'name' | 'contents' | 'version'>>;
       teamUuid: ApiTypes['/v0/files.POST.request']['teamUuid'];
       isPrivate: ApiTypes['/v0/files.POST.request']['isPrivate'];
     }) {
       if (file === undefined) {
         file = {
           name: 'Untitled',
-          contents: JSON.stringify(DEFAULT_FILE),
           version: DEFAULT_FILE.version,
         };
       }
