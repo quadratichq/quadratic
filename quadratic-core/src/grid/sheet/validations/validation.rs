@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
+use uuid::Uuid;
 
 use crate::{grid::Sheet, CellValue};
 
@@ -12,7 +13,7 @@ pub struct ValidationMessage {
     pub message: Option<String>,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum ValidationStyle {
     #[default]
     Warning,
@@ -20,7 +21,7 @@ pub enum ValidationStyle {
     Information,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct ValidationError {
     pub show: bool,
     pub style: ValidationStyle,
@@ -28,8 +29,9 @@ pub struct ValidationError {
     pub message: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct Validation {
+    pub id: Uuid,
     pub name: Option<String>,
     pub rule: ValidationRule,
     pub message: ValidationMessage,
