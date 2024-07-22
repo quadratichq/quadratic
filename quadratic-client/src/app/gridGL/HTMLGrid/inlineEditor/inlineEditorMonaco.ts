@@ -138,6 +138,25 @@ class InlineEditorMonaco {
     this.editor.setPosition({ lineNumber: 1, column });
   }
 
+  // set bracket highlighting and auto closing behavior
+  setBracketConfig(enabled: boolean) {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in getModel');
+    }
+    this.editor.updateOptions({
+      autoClosingBrackets: enabled ? 'always' : 'never',
+      matchBrackets: enabled ? 'always' : 'never',
+    });
+
+    const model = this.getModel();
+    model.updateOptions({
+      bracketColorizationOptions: {
+        enabled,
+        independentColorPoolPerBracketType: enabled,
+      },
+    });
+  }
+
   // Inserts text at cursor location and returns inserting position.
   insertTextAtCursor(text: string): number {
     const model = this.getModel();
@@ -221,6 +240,7 @@ class InlineEditorMonaco {
   setLanguage(language: 'Formula' | 'plaintext') {
     const model = this.getModel();
     editor.setModelLanguage(model, language);
+    this.setBracketConfig(language === 'Formula');
   }
 
   // Creates the Monaco editor and attaches it to the given div (this should
