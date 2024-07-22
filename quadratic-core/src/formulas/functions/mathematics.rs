@@ -71,9 +71,9 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// down away from zero. Returns an error if `number` is positive
             /// but `significance` is negative. Returns `0` if `increment` is
             /// `0`.
-            #[examples("CEIL(6.5, 2)")]
+            #[examples("CEILING(6.5, 2)")]
             #[zip_map]
-            fn CEIL([number]: f64, [increment]: (Spanned<f64>)) {
+            fn CEILING([number]: f64, [increment]: (Spanned<f64>)) {
                 let Spanned {
                     span: increment_span,
                     inner: increment,
@@ -397,7 +397,7 @@ mod tests {
     }
 
     #[test]
-    fn test_ceil() {
+    fn test_ceiling() {
         let g = Grid::new();
         let test_cases = [
             ("3.5", "2", Ok("4")),
@@ -417,12 +417,19 @@ mod tests {
             ("-3.5", "-2", Ok("-4")),
         ];
         for (n, increment, expected) in test_cases {
-            let formula = format!("CEIL({n}, {increment})");
+            let formula = format!("CEILING({n}, {increment})");
             match expected {
                 Ok(ok) => assert_eq!(ok, eval_to_string(&g, &formula)),
                 Err(err) => assert_eq!(err, eval_to_err(&g, &formula).msg),
             }
         }
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "CEILING".into(),
+                arg_name: "increment".into(),
+            },
+            eval_to_err(&g, "CEILING(3.5)").msg,
+        );
     }
 
     #[test]
@@ -452,6 +459,13 @@ mod tests {
                 Err(err) => assert_eq!(err, eval_to_err(&g, &formula).msg),
             }
         }
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "FLOOR".into(),
+                arg_name: "increment".into(),
+            },
+            eval_to_err(&g, "FLOOR(3.5)").msg,
+        );
     }
 
     #[test]
