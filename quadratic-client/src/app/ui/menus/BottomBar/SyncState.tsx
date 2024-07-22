@@ -17,7 +17,7 @@ import { CircularProgress, Tooltip, useTheme } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import BottomBarItem from './BottomBarItem';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { DOCUMENTATION_LOST_CONNECTION, DOCUMENTATION_OFFLINE } from '@/shared/constants/urls';
+import { DOCUMENTATION_OFFLINE } from '@/shared/constants/urls';
 
 const TIMEOUT_TO_SHOW_DISCONNECT_MESSAGE = 1000;
 
@@ -37,7 +37,7 @@ export default function SyncState() {
             const message = (
               <div>
                 Connection to the Quadratic server was lost. Your changes are only saved locally.{' '}
-                <a className="underline" href={DOCUMENTATION_LOST_CONNECTION}>
+                <a className="underline" href={DOCUMENTATION_OFFLINE}>
                   Learn more
                 </a>
                 .
