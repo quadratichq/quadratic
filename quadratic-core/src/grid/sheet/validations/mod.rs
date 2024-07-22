@@ -102,7 +102,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn js_validation_cell() {
+    fn validation_cell() {
         let sheet = Sheet::test();
 
         let mut validations = Validations::default();

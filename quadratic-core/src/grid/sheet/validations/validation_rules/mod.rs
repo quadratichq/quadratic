@@ -5,17 +5,18 @@ use crate::CellValue;
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
+use validation_checkbox::ValidationCheckbox;
 use validation_list::ValidationList;
 
 use super::super::Sheet;
 
+pub mod validation_checkbox;
 pub mod validation_list;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum ValidationRule {
     List(ValidationList),
-    // Checkbox(ValidationCheckBox),
-    None,
+    Checkbox(ValidationCheckbox),
 }
 
 impl ValidationRule {
@@ -23,7 +24,7 @@ impl ValidationRule {
     pub fn validate(&self, sheet: &Sheet, value: &CellValue) -> bool {
         match &self {
             ValidationRule::List(list) => ValidationList::validate(sheet, list, value),
-            ValidationRule::None => true,
+            ValidationRule::Checkbox(_) => ValidationCheckbox::validate(value),
         }
     }
 }
