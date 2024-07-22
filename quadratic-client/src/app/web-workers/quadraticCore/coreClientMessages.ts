@@ -829,6 +829,11 @@ export interface CoreClientOfflineTransactions {
   operations: number;
 }
 
+export interface CoreClientOfflineTransactionsApplied {
+  type: 'coreClientOfflineTransactionsApplied';
+  timestamps: number[];
+}
+
 export interface CoreClientUndoRedo {
   type: 'coreClientUndoRedo';
   undo: boolean;
@@ -980,4 +985,5 @@ export type CoreClientMessage =
   | CoreClientGetFormatCell
   | CoreClientSheetMetaFills
   | CoreClientSetCursorSelection
+  | CoreClientOfflineTransactionsApplied
   | CoreClientResizeRowHeights;

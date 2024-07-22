@@ -19,6 +19,7 @@ pub enum TransactionType {
     Redo,
     Multiplayer,
     Server,
+    Unsaved,
 }
 
 impl GridController {

@@ -90,6 +90,7 @@ interface EventTypes {
   resizeHeadingRow: (sheetId: string, row: number) => void;
 
   offlineTransactions: (transactions: number, operations: number) => void;
+  offlineTransactionsApplied: (timestamps: number[]) => void;
 
   connector: (query: string) => void;
   connectorResponse: (buffer: ArrayBuffer) => void;

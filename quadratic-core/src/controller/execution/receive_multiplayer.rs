@@ -153,8 +153,6 @@ impl GridController {
     }
 
     /// Used by the client to ensure transactions are applied in order
-    ///
-    /// Returns a [`TransactionSummary`] that will be rendered by the client.
     fn client_apply_transaction(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -239,8 +237,6 @@ impl GridController {
     }
 
     /// Called by TS for each offline transaction it has in its offline queue.
-    ///
-    /// Returns a [`TransactionSummary`] that will be rendered by the client.
     pub fn apply_offline_unsaved_transaction(
         &mut self,
         transaction_id: Uuid,
@@ -261,32 +257,16 @@ impl GridController {
             }
         } else {
             let transaction = &mut PendingTransaction {
-                transaction_type: TransactionType::Multiplayer,
+                id: transaction_id,
+                transaction_type: TransactionType::Unsaved,
                 ..Default::default()
             };
             transaction
                 .operations
                 .extend(unsaved_transaction.forward.operations.clone());
 
-            // apply unsaved transaction
-            self.rollback_unsaved_transactions();
             self.start_transaction(transaction);
-            self.reapply_unsaved_transactions();
-
-            self.transactions
-                .unsaved_transactions
-                .push(unsaved_transaction.clone());
-            if cfg!(target_family = "wasm") {
-                if let Ok(operations) =
-                    serde_json::to_string(&unsaved_transaction.forward.operations)
-                {
-                    crate::wasm_bindings::js::jsSendTransaction(
-                        transaction_id.to_string(),
-                        operations,
-                    );
-                }
-            }
-            transaction.send_transaction();
+            self.finalize_transaction(transaction);
         }
     }
 }
