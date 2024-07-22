@@ -222,6 +222,14 @@ class InlineEditorMonaco {
     return { bounds, position };
   }
 
+  getCharBeforeCursor(): string {
+    const formula = inlineEditorMonaco.get();
+    const position = inlineEditorMonaco.getPosition();
+    const line = formula.split('\n')[position.lineNumber - 1];
+    const lastCharacter = line[position.column - 2];
+    return lastCharacter;
+  }
+
   createDecorationsCollection(newDecorations: editor.IModelDeltaDecoration[]) {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in createDecorationsCollection');
