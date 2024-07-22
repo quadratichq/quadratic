@@ -67,16 +67,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
             render={({ field }) => (
               <FormItem className="col-span-2">
                 <FormLabel>
-                  Hostname (IP or{' '}
-                  <a
-                    href="https://www.cloudns.net/blog/fqdn-fully-qualified-domain-name/"
-                    rel="noreferrer"
-                    target="_blank"
-                    className="underline hover:text-primary"
-                  >
-                    FQDN
-                  </a>
-                  )
+                  Hostname (IP or domain)
                 </FormLabel>
                 <FormControl>
                   <Input autoComplete="off" {...field} />
