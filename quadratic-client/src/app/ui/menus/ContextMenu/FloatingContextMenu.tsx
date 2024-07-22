@@ -9,6 +9,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
@@ -57,6 +58,7 @@ import {
   textFormatSetExponential,
   textFormatSetPercentage,
 } from '@/app/ui/menus/TopBar/SubMenus/formatCells';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { Divider, IconButton, Toolbar } from '@mui/material';
 import { ControlledMenu, Menu, MenuDivider, MenuInstance, MenuItem, useMenuState } from '@szhsin/react-menu';
@@ -252,6 +254,29 @@ export const FloatingContextMenu = (props: Props) => {
     return transform;
   }, [container, showContextMenu, editorInteractionState.permissions, moreMenuProps.state, moreMenuToggle]);
 
+  // formatting state at cursor position
+  const [cursorBold, setCursorBold] = useState(false);
+  const [cursorItalic, setCursorItalic] = useState(false);
+  const [cursorTextColor, setCursorTextColor] = useState<string>('');
+  const [cursorAlign, setCursorAlign] = useState<CellAlign>('left');
+  const [cursorVerticalAlign, setCursorVerticalAlign] = useState<CellVerticalAlign>('top');
+  const [cursorWrap, setCursorWrap] = useState<CellWrap>('overflow');
+
+  // fetch render cell from core and update formatting state at cursor position
+  const updateContextMenuState = useCallback(async () => {
+    const renderCell = await quadraticCore.getRenderCell(
+      sheets.current,
+      sheets.sheet.cursor.cursorPosition.x,
+      sheets.sheet.cursor.cursorPosition.y
+    );
+    setCursorBold(renderCell?.bold || false);
+    setCursorItalic(renderCell?.italic || false);
+    setCursorTextColor(renderCell?.textColor || '');
+    setCursorAlign(renderCell?.align || 'left');
+    setCursorVerticalAlign(renderCell?.verticalAlign || 'top');
+    setCursorWrap(renderCell?.wrap || 'overflow');
+  }, []);
+
   // trigger is used to hide the menu when cellMoving
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_, setTrigger] = useState(0);
@@ -266,16 +291,18 @@ export const FloatingContextMenu = (props: Props) => {
     window.addEventListener('resize', updateContextMenuCSSTransform);
     window.addEventListener('keyup', updateContextMenuCSSTransform);
     events.on('cellMoving', trigger);
+    events.on('cursorPosition', updateContextMenuState);
 
     return () => {
       viewport.removeListener('moved', updateContextMenuCSSTransform);
       viewport.removeListener('moved-end', updateContextMenuCSSTransform);
       document.removeEventListener('pointerup', updateContextMenuCSSTransform);
       window.removeEventListener('resize', updateContextMenuCSSTransform);
-      window.addEventListener('keyup', updateContextMenuCSSTransform);
+      window.removeEventListener('keyup', updateContextMenuCSSTransform);
       events.off('cellMoving', trigger);
+      events.off('cursorPosition', updateContextMenuState);
     };
-  }, [updateContextMenuCSSTransform]);
+  }, [updateContextMenuCSSTransform, updateContextMenuState]);
 
   // set input's initial position correctly
   const transform = updateContextMenuCSSTransform();
@@ -314,14 +341,28 @@ export const FloatingContextMenu = (props: Props) => {
         }}
       >
         <TooltipHint title="Bold" shortcut={KeyboardSymbols.Command + 'B'}>
-          <IconButton size="small" onClick={async () => setBold()} sx={iconBtnSx}>
-            <FontBoldIcon fontSize={iconSize} />
+          <IconButton
+            size="small"
+            onClick={async () => {
+              await setBold();
+              updateContextMenuState();
+            }}
+            sx={iconBtnSx}
+          >
+            <FontBoldIcon fontSize={iconSize} style={{ color: cursorBold ? 'black' : 'inherit' }} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Italic" shortcut={KeyboardSymbols.Command + 'I'}>
-          <IconButton size="small" onClick={() => setItalic()} sx={iconBtnSx}>
-            <FontItalicIcon fontSize={iconSize} />
+          <IconButton
+            size="small"
+            onClick={async () => {
+              await setItalic();
+              updateContextMenuState();
+            }}
+            sx={iconBtnSx}
+          >
+            <FontItalicIcon fontSize={iconSize} style={{ color: cursorItalic ? 'black' : 'inherit' }} />
           </IconButton>
         </TooltipHint>
         <Menu
@@ -331,7 +372,7 @@ export const FloatingContextMenu = (props: Props) => {
             <div>
               <TooltipHint title="Text color">
                 <IconButton size="small" sx={iconBtnSx}>
-                  <TextColorIcon fontSize={iconSize} />
+                  <TextColorIcon fontSize={iconSize} style={{ color: cursorTextColor ? cursorTextColor : 'inherit' }} />
                 </IconButton>
               </TooltipHint>
             </div>
@@ -342,11 +383,13 @@ export const FloatingContextMenu = (props: Props) => {
               textColorRef.current?.closeMenu();
               setTextColor(color);
               focusGrid();
+              updateContextMenuState();
             }}
             onClear={() => {
               textColorRef.current?.closeMenu();
               setTextColor(undefined);
               focusGrid();
+              updateContextMenuState();
             }}
           />
         </Menu>
@@ -359,7 +402,7 @@ export const FloatingContextMenu = (props: Props) => {
             <div>
               <TooltipHint title="Horizontal align">
                 <IconButton size="small" sx={iconBtnSx}>
-                  <TextAlignLeftIcon fontSize={iconSize} />
+                  {AlignIcon(cursorAlign)}
                   <ExpandMoreIcon fontSize={'inherit'} style={{ fontSize: '12px' }} />
                 </IconButton>
               </TooltipHint>
@@ -368,17 +411,38 @@ export const FloatingContextMenu = (props: Props) => {
         >
           <div style={{ padding: '0px 4px' }}>
             <TooltipHint title="Align left">
-              <IconButton size="small" onClick={() => setAlign('left')} sx={iconBtnSx}>
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setAlign('left');
+                  setCursorAlign('left');
+                }}
+                sx={iconBtnSx}
+              >
                 <TextAlignLeftIcon fontSize={iconSize} />
               </IconButton>
             </TooltipHint>
             <TooltipHint title="Align center">
-              <IconButton size="small" onClick={() => setAlign('center')} sx={iconBtnSx}>
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setAlign('center');
+                  setCursorAlign('center');
+                }}
+                sx={iconBtnSx}
+              >
                 <TextAlignCenterIcon fontSize={iconSize} />
               </IconButton>
             </TooltipHint>
             <TooltipHint title="Align right">
-              <IconButton size="small" onClick={() => setAlign('right')} sx={iconBtnSx}>
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setAlign('right');
+                  setCursorAlign('right');
+                }}
+                sx={iconBtnSx}
+              >
                 <TextAlignRightIcon fontSize={iconSize} />
               </IconButton>
             </TooltipHint>
@@ -391,7 +455,7 @@ export const FloatingContextMenu = (props: Props) => {
             <div>
               <TooltipHint title="Vertical align">
                 <IconButton size="small" sx={iconBtnSx}>
-                  <TextVerticalAlignTopIcon fontSize={iconSize} />
+                  {VerticalAlignIcon(cursorVerticalAlign)}
                   <ExpandMoreIcon fontSize={'inherit'} style={{ fontSize: '12px' }} />
                 </IconButton>
               </TooltipHint>
@@ -400,17 +464,38 @@ export const FloatingContextMenu = (props: Props) => {
         >
           <div style={{ padding: '0px 4px' }}>
             <TooltipHint title="Top align">
-              <IconButton size="small" onClick={() => setVerticalAlign('top')} sx={iconBtnSx}>
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setVerticalAlign('top');
+                  setCursorVerticalAlign('top');
+                }}
+                sx={iconBtnSx}
+              >
                 <TextVerticalAlignTopIcon fontSize={iconSize} />
               </IconButton>
             </TooltipHint>
             <TooltipHint title="Middle align">
-              <IconButton size="small" onClick={() => setVerticalAlign('middle')} sx={iconBtnSx}>
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setVerticalAlign('middle');
+                  setCursorVerticalAlign('middle');
+                }}
+                sx={iconBtnSx}
+              >
                 <TextVerticalAlignMiddleIcon fontSize={iconSize} />
               </IconButton>
             </TooltipHint>
             <TooltipHint title="Bottom align">
-              <IconButton size="small" onClick={() => setVerticalAlign('bottom')} sx={iconBtnSx}>
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setVerticalAlign('bottom');
+                  setCursorVerticalAlign('bottom');
+                }}
+                sx={iconBtnSx}
+              >
                 <TextVerticalAlignBottomIcon fontSize={iconSize} />
               </IconButton>
             </TooltipHint>
@@ -423,7 +508,7 @@ export const FloatingContextMenu = (props: Props) => {
             <div>
               <TooltipHint title="Text wrap">
                 <IconButton size="small" sx={iconBtnSx}>
-                  <TextOverflowIcon style={{ width: '20px', height: '20px' }} />
+                  {WrapIcon(cursorWrap)}
                   <ExpandMoreIcon fontSize={'inherit'} style={{ fontSize: '12px' }} />
                 </IconButton>
               </TooltipHint>
@@ -432,17 +517,38 @@ export const FloatingContextMenu = (props: Props) => {
         >
           <div style={{ padding: '0px 4px' }}>
             <TooltipHint title="Overflow">
-              <IconButton size="small" onClick={() => setWrap('overflow')} sx={iconBtnSx}>
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setWrap('overflow');
+                  setCursorWrap('overflow');
+                }}
+                sx={iconBtnSx}
+              >
                 <TextOverflowIcon style={{ width: '20px', height: '20px' }} />
               </IconButton>
             </TooltipHint>
             <TooltipHint title="Wrap">
-              <IconButton size="small" onClick={() => setWrap('wrap')} sx={iconBtnSx}>
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setWrap('wrap');
+                  setCursorWrap('wrap');
+                }}
+                sx={iconBtnSx}
+              >
                 <WrapTextIcon fontSize={iconSize} />
               </IconButton>
             </TooltipHint>
             <TooltipHint title="Clip">
-              <IconButton size="small" onClick={() => setWrap('clip')} sx={iconBtnSx}>
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setWrap('clip');
+                  setCursorWrap('clip');
+                }}
+                sx={iconBtnSx}
+              >
                 <TextClipIcon style={{ width: '20px', height: '20px' }} />
               </IconButton>
             </TooltipHint>
@@ -618,3 +724,36 @@ function MenuDividerVertical() {
     />
   );
 }
+
+const AlignIcon = (align: CellAlign) => {
+  switch (align) {
+    case 'center':
+      return <TextAlignCenterIcon fontSize={'inherit'} />;
+    case 'right':
+      return <TextAlignRightIcon fontSize={'inherit'} />;
+    default:
+      return <TextAlignLeftIcon fontSize={'inherit'} />;
+  }
+};
+
+const VerticalAlignIcon = (verticalAlign: CellVerticalAlign) => {
+  switch (verticalAlign) {
+    case 'middle':
+      return <TextVerticalAlignMiddleIcon fontSize={'inherit'} />;
+    case 'bottom':
+      return <TextVerticalAlignBottomIcon fontSize={'inherit'} />;
+    default:
+      return <TextVerticalAlignTopIcon fontSize={'inherit'} />;
+  }
+};
+
+const WrapIcon = (wrap: CellWrap) => {
+  switch (wrap) {
+    case 'wrap':
+      return <WrapTextIcon fontSize={'inherit'} />;
+    case 'clip':
+      return <TextClipIcon fontSize={'inherit'} />;
+    default:
+      return <TextOverflowIcon fontSize={'inherit'} />;
+  }
+};
