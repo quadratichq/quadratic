@@ -100,7 +100,7 @@ const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
 
 // Create a new Network Load Balancer
 const nlb = new aws.lb.LoadBalancer("connection-nlb", {
-  name: `connection-nlb-${connectionSubdomain}`,
+  name: connectionSubdomain,
   internal: false,
   loadBalancerType: "network",
   subnets: [connectionPublicSubnet1.id, connectionPublicSubnet2.id],
