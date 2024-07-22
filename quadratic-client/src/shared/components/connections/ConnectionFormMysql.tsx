@@ -66,9 +66,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
             name="host"
             render={({ field }) => (
               <FormItem className="col-span-2">
-                <FormLabel>
-                  Hostname (IP or domain)
-                </FormLabel>
+                <FormLabel>Hostname (IP or domain)</FormLabel>
                 <FormControl>
                   <Input autoComplete="off" {...field} />
                 </FormControl>
