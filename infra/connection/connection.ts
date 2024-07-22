@@ -44,17 +44,15 @@ const targetGroup = new aws.lb.TargetGroup("connection-nlb-tg", {
 const userData = pulumi
   .all([connectionEip1.publicIp, connectionEip2.publicIp])
   .apply(([publicIp1, publicIp2]) =>
-    connectionEip2.publicIp.apply((publicIp2) =>
-      runDockerImageBashScript(
-        connectionECRName,
-        dockerImageTag,
-        connectionPulumiEscEnvironmentName,
-        {
-          QUADRATIC_API_URI: quadraticApiUri,
-          STATIC_IPS: `${publicIp1},${publicIp2}`,
-        },
-        true
-      )
+    runDockerImageBashScript(
+      connectionECRName,
+      dockerImageTag,
+      connectionPulumiEscEnvironmentName,
+      {
+        QUADRATIC_API_URI: quadraticApiUri,
+        STATIC_IPS: `${publicIp1},${publicIp2}`,
+      },
+      true
     )
   );
 
