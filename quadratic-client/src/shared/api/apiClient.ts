@@ -75,7 +75,6 @@ export const apiClient = {
         );
       },
       async delete(uuid: string, inviteId: string) {
-        console.log(`DELETE to /v0/teams/${uuid}/invites/${inviteId}`);
         return fetchFromApi(
           `/v0/teams/${uuid}/invites/${inviteId}`,
           {
@@ -127,6 +126,7 @@ export const apiClient = {
           version: DEFAULT_FILE.version,
         };
       }
+
       return fetchFromApi(
         `/v0/files`,
         { method: 'POST', body: JSON.stringify({ ...file, teamUuid, isPrivate }) },

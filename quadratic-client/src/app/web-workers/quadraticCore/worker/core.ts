@@ -6,7 +6,6 @@
  */
 
 import { debugWebWorkers } from '@/app/debugFlags';
-import { readFileAsArrayBuffer } from '@/app/helpers/files';
 import {
   CellAlign,
   CellFormatSummary,
@@ -74,7 +73,7 @@ class Core {
     this.next();
   };
 
-  // Creates a Grid form a file. Initializes bother coreClient and coreRender w/metadata.
+  // Creates a Grid from a file. Initializes bother coreClient and coreRender w/metadata.
   async loadFile(message: ClientCoreLoad, renderPort: MessagePort): Promise<{ version: string } | { error: string }> {
     coreRender.init(renderPort);
     const results = await Promise.all([this.loadGridFile(message.url), initCore()]);
@@ -818,8 +817,7 @@ class Core {
   ): Promise<{ contents?: Uint8Array; version?: string; error?: string }> {
     await initCore();
     try {
-      const fileBytes = await readFileAsArrayBuffer(message.file);
-      const gc = GridController.importExcel(fileBytes, message.file.name);
+      const gc = GridController.importExcel(message.file, message.fileName);
       const contents = gc.exportToFile();
       return { contents: contents, version: gc.getVersion() };
     } catch (error: unknown) {

@@ -783,7 +783,8 @@ export interface CoreClientUpdateCodeCell {
 
 export interface ClientCoreImportExcel {
   type: 'clientCoreImportExcel';
-  file: File;
+  file: Uint8Array;
+  fileName: string;
   id: number;
 }
 

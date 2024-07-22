@@ -65,7 +65,6 @@ impl GridFile {
 /// Imports a file. We check if the first character is `{` to determine if it is
 /// a JSON file.
 pub fn import(file_contents: &[u8]) -> Result<Grid> {
-    dbgjs!(file_contents[0]);
     if file_contents[0] == b'{' {
         import_json(str::from_utf8(file_contents)?)
     } else {

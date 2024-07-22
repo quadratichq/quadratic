@@ -17,7 +17,7 @@ const schema = z.object({
 
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.POST.response']>) {
   const {
-    body: { name, version, teamUuid, isPrivate },
+    body: { name, contents, version, teamUuid, isPrivate },
   } = parseRequest(req, schema);
   const {
     user: { id: userId },
@@ -42,7 +42,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.P
   }
 
   // Ok, create it!
-  const dbFile = await createFile({ name, userId, teamId, version, isPrivate });
+  const dbFile = await createFile({ name, userId, teamId, contents, version, isPrivate });
   return res.status(201).json({
     file: { uuid: dbFile.uuid, name: dbFile.name },
     team: {

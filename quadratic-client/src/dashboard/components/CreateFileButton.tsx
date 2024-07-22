@@ -45,15 +45,15 @@ export default function CreateFileButton({ isPrivate }: { isPrivate?: boolean })
       const file: File = e.target.files[0];
       let data: { name: string; version: string; contents: string } | undefined;
 
+      const contents = await file.arrayBuffer().catch((e) => null);
+
+      if (!contents) return null;
+
+      const buffer = new Uint8Array(contents);
+
       switch (getFileType(file)) {
         case 'grid':
           mixpanel.track('[Files].importGrid', { fileName: file.name });
-
-          const contents = await file.arrayBuffer().catch((e) => null);
-
-          if (!contents) return null;
-
-          const buffer = new Uint8Array(contents);
 
           try {
             const { grid, version } = await quadraticCore.upgradeGridFile(buffer, 0);
@@ -64,6 +64,7 @@ export default function CreateFileButton({ isPrivate }: { isPrivate?: boolean })
               contents: Buffer.from(new Uint8Array(grid)).toString('base64'),
             };
           } catch (e) {
+            console.warn(e);
             addGlobalSnackbar('Import failed: invalid `.grid` file.', { severity: 'error' });
             return;
           }
@@ -72,7 +73,7 @@ export default function CreateFileButton({ isPrivate }: { isPrivate?: boolean })
 
         case 'excel':
           mixpanel.track('[Files].importExcel', { fileName: file.name });
-          const importedFile = await quadraticCore.importExcel(file);
+          const importedFile = await quadraticCore.importExcel(buffer, file.name);
 
           if (importedFile?.error) {
             addGlobalSnackbar(importedFile.error, { severity: 'warning' });
@@ -82,7 +83,7 @@ export default function CreateFileButton({ isPrivate }: { isPrivate?: boolean })
             data = {
               name: file.name ? stripExtension(file.name) : 'Untitled',
               version: importedFile.version,
-              contents: importedFile.contents,
+              contents: Buffer.from(new Uint8Array(importedFile.contents)).toString('base64'),
             };
           }
           break;

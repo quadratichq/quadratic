@@ -259,6 +259,10 @@ fn upgrade_code_runs(sheet: &v1_5::Sheet) -> Vec<(v1_6::Pos, v1_6::CodeRun)> {
                                         v1_6::OutputValue::Single(v1_6::CellValue::Number(
                                             value.value.to_owned(),
                                         ))
+                                    } else if value.type_field.to_lowercase() == "logical" {
+                                        v1_6::OutputValue::Single(v1_6::CellValue::Logical(
+                                            v1_5::string_bool(&value.value),
+                                        ))
                                     } else if value.type_field.to_lowercase() == "html" {
                                         v1_6::OutputValue::Single(v1_6::CellValue::Html(
                                             value.value.to_owned(),

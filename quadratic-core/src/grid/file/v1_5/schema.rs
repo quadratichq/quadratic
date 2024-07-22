@@ -189,6 +189,13 @@ pub enum CellValue {
     Image(String),
 }
 
+pub fn string_bool(s: &str) -> bool {
+    match s.to_ascii_lowercase().as_str() {
+        "true" => true,
+        _ => false,
+    }
+}
+
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ColumnRepeat<T> {
     pub value: T,
