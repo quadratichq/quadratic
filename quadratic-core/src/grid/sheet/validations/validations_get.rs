@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-use crate::{grid::Sheet, CellValue, Pos};
+use crate::{grid::Sheet, selection::Selection, CellValue, Pos};
 
 use super::{
     validation::{Validation, ValidationCell},
@@ -9,12 +9,66 @@ use super::{
 };
 
 impl Validations {
-    /// Gets a Validation for a Pos.
-    pub fn validation(&self, pos: Pos) -> Option<&Validation> {
-        self.cell_validations
-            .get(&pos)
-            .map(|id| self.validations.get(id))
-            .flatten()
+    fn validation_from_id(&self, id: Uuid) -> Option<&Validation> {
+        self.validations.get(&id)
+    }
+
+    /// Gets a Validation for a Selection. Note, this will only return a Validation if it matches the entire selection.
+    pub fn validation(&self, selection: Selection) -> Option<&Validation> {
+        if selection.all {
+            return self.all.map(|id| self.validation_from_id(id)).flatten();
+        }
+        let mut found: Option<Uuid> = None;
+        if let Some(rows) = selection.rows {
+            for selection_row in rows {
+                if let Some(row) = self.row_validations.get(&selection_row) {
+                    if let Some(found_id) = found {
+                        if found_id != *row {
+                            return None;
+                        }
+                    } else {
+                        found = Some(*row);
+                    }
+                } else {
+                    return None;
+                }
+            }
+        }
+        if let Some(columns) = selection.columns {
+            for selection_column in columns {
+                if let Some(column) = self.column_validations.get(&selection_column) {
+                    if let Some(found_id) = found {
+                        if found_id != *column {
+                            return None;
+                        }
+                    } else {
+                        found = Some(*column);
+                    }
+                } else {
+                    return None;
+                }
+            }
+        }
+        if let Some(rects) = selection.rects {
+            for rect in rects {
+                for row in rect.min.y..=rect.max.y {
+                    for column in rect.min.x..=rect.max.x {
+                        if let Some(cell) = self.cell_validations.get(&(column, row).into()) {
+                            if let Some(found_id) = found {
+                                if found_id != *cell {
+                                    return None;
+                                }
+                            } else {
+                                found = Some(*cell);
+                            }
+                        } else {
+                            return None;
+                        }
+                    }
+                }
+            }
+        }
+        found.map(|id| self.validation_from_id(id)).flatten()
     }
 
     /// Gets a validation Uuid for a pos.
@@ -24,7 +78,7 @@ impl Validations {
 
     // Validate a cell value against its validation rule.
     pub fn validate(&self, sheet: &Sheet, pos: Pos, cell_value: &CellValue) -> bool {
-        if let Some(rule) = self.validation(pos) {
+        if let Some(rule) = self.validation(Selection::pos(pos.x, pos.y, sheet.id)) {
             rule.validate(sheet, cell_value)
         } else {
             true
@@ -33,7 +87,7 @@ impl Validations {
 
     /// Gets a JsValidationCell, which is used to display the validation message in the UI.
     pub fn validation_cell(&self, pos: Pos, sheet: &Sheet) -> Option<ValidationCell> {
-        let validation = self.validation(pos)?;
+        let validation = self.validation(Selection::pos(pos.x, pos.y, sheet.id))?;
         let drop_down = match &validation.rule {
             ValidationRule::List(list) => ValidationList::to_drop_down(sheet, list),
             _ => None,

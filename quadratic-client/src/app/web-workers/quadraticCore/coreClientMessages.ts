@@ -19,6 +19,7 @@ import {
   SheetRect,
   SummarizeSelectionResult,
   TransactionName,
+  Validation,
 } from '@/app/quadratic-core-types';
 import { CodeRun } from '../CodeRun';
 import { MultiplayerState } from '../multiplayerWebWorker/multiplayerClientMessages';
@@ -838,6 +839,18 @@ export interface CoreClientImage {
   h?: string;
 }
 
+export interface ClientCoreGetValidation {
+  type: 'clientCoreGetValidation';
+  id: number;
+  selection: String;
+}
+
+export interface CoreClientGetValidation {
+  type: 'coreClientGetValidation';
+  id: number;
+  validation: Validation | undefined;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -901,7 +914,8 @@ export type ClientCoreMessage =
   | ClientCoreGetFormatAll
   | ClientCoreGetFormatColumn
   | ClientCoreGetFormatRow
-  | ClientCoreGetFormatCell;
+  | ClientCoreGetFormatCell
+  | ClientCoreGetValidation;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -954,4 +968,5 @@ export type CoreClientMessage =
   | CoreClientGetFormatRow
   | CoreClientGetFormatCell
   | CoreClientSheetMetaFills
-  | CoreClientSetCursorSelection;
+  | CoreClientSetCursorSelection
+  | CoreClientGetValidation;

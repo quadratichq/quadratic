@@ -501,6 +501,14 @@ class CoreClient {
         core.moveCells(e.data);
         return;
 
+      case 'clientCoreGetValidation':
+        this.send({
+          type: 'coreClientGetValidation',
+          id: e.data.id,
+          validation: await core.getValidation(e.data.selection),
+        });
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core

@@ -12,9 +12,7 @@ export const Validation = () => {
 
   useEffect(() => {
     const changeValidation = async () => {
-      const cursor = sheets.sheet.cursor;
-      if (cursor.)
-      const validation = await quadraticCore.getValidation()
+      setValidation(await quadraticCore.getValidation(sheets.getRustSelection()));
     };
     events.on('cursorPosition', changeValidation);
     return () => {

@@ -1,13 +1,18 @@
+use selection::Selection;
+
 use super::*;
 
 #[wasm_bindgen]
 impl GridController {
-    #[wasm_bindgen(js_name = "getCellValidation")]
-    pub fn js_cell_validation(&self, x: i64, y: i64, sheet_id: String) -> String {
-        let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
+    #[wasm_bindgen(js_name = "getValidation")]
+    pub fn js_validation(&self, selection: String) -> String {
+        let Ok(selection) = Selection::from_str(&selection) else {
             return String::new();
         };
-        let validation = sheet.validations.validation(Pos { x, y });
+        let Some(sheet) = self.try_sheet(selection.sheet_id) else {
+            return String::new();
+        };
+        let validation = sheet.validations.validation(selection);
         serde_json::to_string(&validation).unwrap_or_default()
     }
 }

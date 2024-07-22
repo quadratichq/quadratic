@@ -24,6 +24,7 @@ import {
   SheetPos,
   SheetRect,
   SummarizeSelectionResult,
+  Validation,
 } from '@/app/quadratic-core-types';
 import { authClient } from '@/auth';
 import { Rectangle } from 'pixi.js';
@@ -961,6 +962,24 @@ class QuadraticCore {
       });
     });
   };
+
+  //#endregion
+
+  //#region Data Validation
+
+  getValidation(selection: String): Promise<Validation | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { validation: Validation | undefined }) => {
+        resolve(message.validation);
+      };
+      this.send({
+        type: 'clientCoreGetValidation',
+        id,
+        selection,
+      });
+    });
+  }
 
   //#endregion
 }

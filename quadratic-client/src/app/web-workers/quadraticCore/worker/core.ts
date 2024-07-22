@@ -21,6 +21,7 @@ import {
   Selection,
   SheetPos,
   SummarizeSelectionResult,
+  Validation,
 } from '@/app/quadratic-core-types';
 import initCore, { GridController } from '@/app/quadratic-core/quadratic_core';
 import { MultiplayerCoreReceiveTransaction } from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
@@ -28,6 +29,7 @@ import * as Sentry from '@sentry/react';
 import {
   ClientCoreFindNextColumn,
   ClientCoreFindNextRow,
+  ClientCoreGetValidation,
   ClientCoreImportExcel,
   ClientCoreLoad,
   ClientCoreMoveCells,
@@ -906,6 +908,11 @@ class Core {
       JSON.stringify(dest, bigIntReplacer),
       message.cursor
     );
+  }
+
+  getValidation(message: ClientCoreGetValidation): Validation | undefined {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    return this.gridController.getCellValidation();
   }
 }
 
