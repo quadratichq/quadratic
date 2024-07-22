@@ -36,7 +36,7 @@ class InlineEditorKeyboard {
     }
 
     // Enter key
-    else if (e.code === 'Enter') {
+    else if (e.code === 'Enter' && !e.shiftKey) {
       e.stopPropagation();
       inlineEditorHandler.close(0, 1, false);
     }
