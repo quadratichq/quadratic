@@ -630,8 +630,14 @@ class CoreClient {
   sendOfflineTransactionStats() {
     this.send({
       type: 'coreClientOfflineTransactionStats',
-      transactions: offline.stats.transactions,
-      operations: offline.stats.operations,
+      ...offline.stats,
+    });
+  }
+
+  sendOfflineTransactionsApplied(timestamps: number[]) {
+    this.send({
+      type: 'coreClientOfflineTransactionsApplied',
+      timestamps,
     });
   }
 
