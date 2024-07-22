@@ -41,22 +41,6 @@ const targetGroup = new aws.lb.TargetGroup("connection-nlb-tg", {
 });
 
 // Step 1: Create or update the Launch Template
-const userData = pulumi
-  .all([connectionEip1.publicIp, connectionEip2.publicIp])
-  .apply(([publicIp1, publicIp2]) =>
-    runDockerImageBashScript(
-      connectionECRName,
-      dockerImageTag,
-      connectionPulumiEscEnvironmentName,
-      {
-        QUADRATIC_API_URI: quadraticApiUri,
-        STATIC_IPS: `${publicIp1},${publicIp2}`,
-      },
-      true
-    )
-  );
-
-console.log("userData: ", userData);
 const launchTemplate = new aws.ec2.LaunchTemplate("connection-lt", {
   instanceType: instanceSize,
   iamInstanceProfile: {
@@ -64,7 +48,20 @@ const launchTemplate = new aws.ec2.LaunchTemplate("connection-lt", {
   },
   imageId: latestAmazonLinuxAmi.id,
   vpcSecurityGroupIds: [connectionEc2SecurityGroup.id],
-  userData: userData,
+  userData: connectionEip1.publicIp.apply((publicIp1) =>
+    connectionEip2.publicIp.apply((publicIp2) =>
+      runDockerImageBashScript(
+        connectionECRName,
+        dockerImageTag,
+        connectionPulumiEscEnvironmentName,
+        {
+          QUADRATIC_API_URI: quadraticApiUri,
+          STATIC_IPS: `${publicIp1},${publicIp2}`,
+        },
+        true
+      )
+    )
+  ),
 });
 
 // Step 2: Create or update the Auto Scaling Group to use the new Launch Template
