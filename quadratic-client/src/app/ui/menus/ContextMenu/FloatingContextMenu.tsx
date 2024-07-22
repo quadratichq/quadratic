@@ -281,6 +281,7 @@ export const FloatingContextMenu = (props: Props) => {
   const transform = updateContextMenuCSSTransform();
 
   const iconSize = 'small';
+  const iconBtnSx = { borderRadius: '2px' };
 
   return (
     <div
@@ -307,19 +308,19 @@ export const FloatingContextMenu = (props: Props) => {
     >
       <Toolbar
         style={{
-          padding: '2px 4px',
+          padding: '4px',
           minHeight: '0px',
           color: colors.darkGray,
         }}
       >
         <TooltipHint title="Bold" shortcut={KeyboardSymbols.Command + 'B'}>
-          <IconButton size="small" onClick={async () => setBold()}>
+          <IconButton size="small" onClick={async () => setBold()} sx={iconBtnSx}>
             <FontBoldIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Italic" shortcut={KeyboardSymbols.Command + 'I'}>
-          <IconButton size="small" onClick={() => setItalic()}>
+          <IconButton size="small" onClick={() => setItalic()} sx={iconBtnSx}>
             <FontItalicIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
@@ -329,7 +330,7 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Text color">
-                <IconButton size="small">
+                <IconButton size="small" sx={iconBtnSx}>
                   <TextColorIcon fontSize={iconSize} />
                 </IconButton>
               </TooltipHint>
@@ -357,7 +358,7 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Horizontal align">
-                <IconButton size="small">
+                <IconButton size="small" sx={iconBtnSx}>
                   <TextAlignLeftIcon fontSize={iconSize} />
                   <ExpandMoreIcon fontSize={'inherit'} style={{ fontSize: '12px' }} />
                 </IconButton>
@@ -367,17 +368,17 @@ export const FloatingContextMenu = (props: Props) => {
         >
           <div style={{ padding: '0px 4px' }}>
             <TooltipHint title="Align left">
-              <IconButton size="small" onClick={() => setAlign('left')}>
+              <IconButton size="small" onClick={() => setAlign('left')} sx={iconBtnSx}>
                 <TextAlignLeftIcon fontSize={iconSize} />
               </IconButton>
             </TooltipHint>
             <TooltipHint title="Align center">
-              <IconButton size="small" onClick={() => setAlign('center')}>
+              <IconButton size="small" onClick={() => setAlign('center')} sx={iconBtnSx}>
                 <TextAlignCenterIcon fontSize={iconSize} />
               </IconButton>
             </TooltipHint>
             <TooltipHint title="Align right">
-              <IconButton size="small" onClick={() => setAlign('right')}>
+              <IconButton size="small" onClick={() => setAlign('right')} sx={iconBtnSx}>
                 <TextAlignRightIcon fontSize={iconSize} />
               </IconButton>
             </TooltipHint>
@@ -389,7 +390,7 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Vertical align">
-                <IconButton size="small">
+                <IconButton size="small" sx={iconBtnSx}>
                   <TextVerticalAlignTopIcon fontSize={iconSize} />
                   <ExpandMoreIcon fontSize={'inherit'} style={{ fontSize: '12px' }} />
                 </IconButton>
@@ -399,17 +400,17 @@ export const FloatingContextMenu = (props: Props) => {
         >
           <div style={{ padding: '0px 4px' }}>
             <TooltipHint title="Top align">
-              <IconButton size="small" onClick={() => setVerticalAlign('top')}>
+              <IconButton size="small" onClick={() => setVerticalAlign('top')} sx={iconBtnSx}>
                 <TextVerticalAlignTopIcon fontSize={iconSize} />
               </IconButton>
             </TooltipHint>
             <TooltipHint title="Middle align">
-              <IconButton size="small" onClick={() => setVerticalAlign('middle')}>
+              <IconButton size="small" onClick={() => setVerticalAlign('middle')} sx={iconBtnSx}>
                 <TextVerticalAlignMiddleIcon fontSize={iconSize} />
               </IconButton>
             </TooltipHint>
             <TooltipHint title="Bottom align">
-              <IconButton size="small" onClick={() => setVerticalAlign('bottom')}>
+              <IconButton size="small" onClick={() => setVerticalAlign('bottom')} sx={iconBtnSx}>
                 <TextVerticalAlignBottomIcon fontSize={iconSize} />
               </IconButton>
             </TooltipHint>
@@ -421,7 +422,7 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Text wrap">
-                <IconButton size="small">
+                <IconButton size="small" sx={iconBtnSx}>
                   <TextOverflowIcon style={{ width: '20px', height: '20px' }} />
                   <ExpandMoreIcon fontSize={'inherit'} style={{ fontSize: '12px' }} />
                 </IconButton>
@@ -431,17 +432,17 @@ export const FloatingContextMenu = (props: Props) => {
         >
           <div style={{ padding: '0px 4px' }}>
             <TooltipHint title="Overflow">
-              <IconButton size="small" onClick={() => setWrap('overflow')}>
+              <IconButton size="small" onClick={() => setWrap('overflow')} sx={iconBtnSx}>
                 <TextOverflowIcon style={{ width: '20px', height: '20px' }} />
               </IconButton>
             </TooltipHint>
             <TooltipHint title="Wrap">
-              <IconButton size="small" onClick={() => setWrap('wrap')}>
+              <IconButton size="small" onClick={() => setWrap('wrap')} sx={iconBtnSx}>
                 <WrapTextIcon fontSize={iconSize} />
               </IconButton>
             </TooltipHint>
             <TooltipHint title="Clip">
-              <IconButton size="small" onClick={() => setWrap('clip')}>
+              <IconButton size="small" onClick={() => setWrap('clip')} sx={iconBtnSx}>
                 <TextClipIcon style={{ width: '20px', height: '20px' }} />
               </IconButton>
             </TooltipHint>
@@ -456,7 +457,7 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Fill color">
-                <IconButton size="small">
+                <IconButton size="small" sx={iconBtnSx}>
                   <PaintBucketIcon fontSize={iconSize} />
                 </IconButton>
               </TooltipHint>
@@ -479,7 +480,7 @@ export const FloatingContextMenu = (props: Props) => {
         {!borders ? (
           <TooltipHint title="Borders">
             <span>
-              <IconButton size="small" disabled={true}>
+              <IconButton size="small" disabled={true} sx={iconBtnSx}>
                 <BorderAllIcon fontSize={iconSize} />
               </IconButton>
             </span>
@@ -490,7 +491,7 @@ export const FloatingContextMenu = (props: Props) => {
               <div>
                 <TooltipHint title="Borders">
                   <span>
-                    <IconButton size="small">
+                    <IconButton size="small" sx={iconBtnSx}>
                       <BorderAllIcon fontSize={iconSize} />
                     </IconButton>
                   </span>
@@ -504,51 +505,51 @@ export const FloatingContextMenu = (props: Props) => {
         <MenuDividerVertical />
 
         <TooltipHint title="Format automatically">
-          <IconButton size="small" onClick={() => removeCellNumericFormat()}>
+          <IconButton size="small" onClick={() => removeCellNumericFormat()} sx={iconBtnSx}>
             <MagicWandIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Format as currency">
-          <IconButton size="small" onClick={() => textFormatSetCurrency()}>
+          <IconButton size="small" onClick={() => textFormatSetCurrency()} sx={iconBtnSx}>
             <DollarIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Format as percentage">
-          <IconButton size="small" onClick={() => textFormatSetPercentage()}>
+          <IconButton size="small" onClick={() => textFormatSetPercentage()} sx={iconBtnSx}>
             <PercentIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Format as scientific">
-          <IconButton size="small" onClick={() => textFormatSetExponential()}>
+          <IconButton size="small" onClick={() => textFormatSetExponential()} sx={iconBtnSx}>
             <FunctionIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Decrease decimal places">
-          <IconButton size="small" onClick={() => textFormatDecreaseDecimalPlaces()}>
+          <IconButton size="small" onClick={() => textFormatDecreaseDecimalPlaces()} sx={iconBtnSx}>
             <DecimalDecreaseIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Increase decimal places">
-          <IconButton size="small" onClick={() => textFormatIncreaseDecimalPlaces()}>
+          <IconButton size="small" onClick={() => textFormatIncreaseDecimalPlaces()} sx={iconBtnSx}>
             <DecimalIncreaseIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <MenuDividerVertical />
         <TooltipHint title="Clear formatting" shortcut={KeyboardSymbols.Command + '\\'}>
-          <IconButton size="small" onClick={clearFormattingAndBorders}>
+          <IconButton size="small" onClick={clearFormattingAndBorders} sx={iconBtnSx}>
             <TextNoneIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
         {fullClipboardSupport() && <MenuDividerVertical />}
         {fullClipboardSupport() && (
           <TooltipHint title="More commands…">
-            <IconButton size="small" onClick={() => moreMenuToggle()} ref={moreMenuButtonRef}>
+            <IconButton size="small" onClick={() => moreMenuToggle()} ref={moreMenuButtonRef} sx={iconBtnSx}>
               <DotsHorizontalIcon fontSize={iconSize} />
             </IconButton>
           </TooltipHint>
