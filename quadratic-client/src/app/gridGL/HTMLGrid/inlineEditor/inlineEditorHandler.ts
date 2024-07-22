@@ -35,7 +35,7 @@ class InlineEditorHandler {
 
   width = 0;
   location?: SheetPosTS;
-  formula = false;
+  formula: boolean | undefined = undefined;
 
   cursorIsMoving = false;
 
@@ -218,7 +218,7 @@ class InlineEditorHandler {
       text: inlineEditorMonaco.get(),
       cursor: inlineEditorMonaco.getCursorColumn() - 1,
       codeEditor: false,
-      inlineCodeEditor: this.formula,
+      inlineCodeEditor: !!this.formula,
       bold: this.temporaryBold,
       italic: this.temporaryItalic,
     });
