@@ -31,11 +31,11 @@ export const Component = () => {
             <div className="hidden lg:block">
               <Link to={ROUTES.TEAM_MEMBERS(teamUuid)}>
                 <AvatarGroup
-                  max={3}
+                  max={6}
                   sx={{ cursor: 'pointer', pr: 0 }}
                   slotProps={{ additionalAvatar: { sx: avatarSxProps } }}
                 >
-                  <Avatar alt="More" sx={{ ...avatarSxProps }} className="text-sm">
+                  <Avatar alt="Add" sx={{ ...avatarSxProps }} className="text-sm">
                     <Add fontSize="inherit" />
                   </Avatar>
                   {users.map((user, key) => (

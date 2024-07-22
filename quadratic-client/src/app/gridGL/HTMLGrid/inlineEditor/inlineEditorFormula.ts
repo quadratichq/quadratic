@@ -149,9 +149,9 @@ class InlineEditorFormula {
   // returned as valid for the `handleCellPointerDown` call. I think Excel
   // actually knows that it's waiting for a cell reference. Our parser is not as
   // smart and we do not have this information.
-  private formulaIsReadyToClose(formula: string) {
-    const lastCharacter = formula.trim().slice(-1);
-    return lastCharacter !== ',';
+  private formulaIsReadyToClose() {
+    const lastCharacter = inlineEditorMonaco.getCharBeforeCursor();
+    return ![',', '+', '-', '*', '/', '%', '=', '<', '>', '&', '.', '(', '{'].includes(lastCharacter);
   }
 
   // Returns whether we are editing a formula only if it is valid (used for
@@ -164,8 +164,8 @@ class InlineEditorFormula {
 
     const location = inlineEditorHandler.location;
     if (!location) return false;
+    if (!this.formulaIsReadyToClose()) return false;
     const formula = (testFormula ?? inlineEditorMonaco.get()).slice(1);
-    if (!this.formulaIsReadyToClose(formula)) return false;
     if (!checkFormula(formula, location.x, location.y)) {
       if (skipCloseParenthesisCheck) {
         return false;
