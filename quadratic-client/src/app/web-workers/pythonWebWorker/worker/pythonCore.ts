@@ -1,13 +1,10 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
 import { JsGetCellResponse } from '@/app/quadratic-core-types';
-import type { CorePythonGetCells, CorePythonMessage, PythonCoreMessage } from '../pythonCoreMessages';
+import type { CorePythonMessage, PythonCoreMessage } from '../pythonCoreMessages';
 import type { PythonRun } from '../pythonTypes';
 import { python } from './python';
-
-class PythonCore {
+export class PythonCore {
   private coreMessagePort?: MessagePort;
-  private id = 0;
-  private waitingForResponse: Record<number, Function> = {};
 
   init(messagePort: MessagePort) {
     this.coreMessagePort = messagePort;
@@ -29,19 +26,6 @@ class PythonCore {
         python.runPython(e.data);
         return;
     }
-
-    if (e.data.id !== undefined) {
-      const response = this.waitingForResponse[e.data.id];
-      if (response) {
-        response(e.data);
-        delete this.waitingForResponse[e.data.id];
-        return;
-      } else {
-        console.error(`[pythonCore] no response for id ${e.data.id}`);
-      }
-    }
-
-    console.warn("[pythonCore] didn't handle message", e.data);
   };
 
   sendPythonResults(transactionId: string, results: PythonRun) {
@@ -52,7 +36,7 @@ class PythonCore {
     });
   }
 
-  sendGetCells(
+  getCells(
     transactionId: string,
     x: number,
     y: number,
@@ -60,12 +44,51 @@ class PythonCore {
     h: number,
     sheet?: string,
     lineNumber?: number
-  ): Promise<JsGetCellResponse[] | undefined> {
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: CorePythonGetCells) => resolve(message.cells);
-      this.send({ type: 'pythonCoreGetCells', transactionId, id, x, y, w, h, sheet, lineNumber });
-    });
+  ): JsGetCellResponse[] | undefined {
+    try {
+      // This is a shared buffer that will be used to communicate with core
+      // The first 4 bytes are used to signal the python core that the data is ready
+      // The second 4 bytes are used to signal the length of the data
+      // The third 4 bytes are used to signal the id of the data
+      // Length of the cells string is unknown at this point
+      let sharedBuffer: SharedArrayBuffer | undefined = new SharedArrayBuffer(4 + 4 + 4);
+      let int32View: Int32Array | undefined = new Int32Array(sharedBuffer, 0, 3);
+      Atomics.store(int32View, 0, 0);
+
+      this.send({ type: 'pythonCoreGetCellsLength', sharedBuffer, transactionId, x, y, w, h, sheet, lineNumber });
+      let result = Atomics.wait(int32View, 0, 0);
+      const length = int32View[1];
+      if (result !== 'ok' || length === 0) return undefined;
+
+      const id = int32View[2];
+
+      // New shared buffer, which is sized to hold the cells string
+      sharedBuffer = new SharedArrayBuffer(4 + length);
+      int32View = new Int32Array(sharedBuffer, 0, 1);
+      Atomics.store(int32View, 0, 0);
+
+      this.send({ type: 'pythonCoreGetCellsData', id, sharedBuffer });
+      result = Atomics.wait(int32View, 0, 0);
+      if (result !== 'ok') return undefined;
+
+      let uint8View: Uint8Array | undefined = new Uint8Array(sharedBuffer, 4, length);
+
+      // Copy the data to a non-shared buffer, for decoding
+      const nonSharedBuffer = new ArrayBuffer(uint8View.byteLength);
+      const nonSharedView = new Uint8Array(nonSharedBuffer);
+      nonSharedView.set(uint8View);
+      sharedBuffer = undefined;
+      int32View = undefined;
+      uint8View = undefined;
+
+      const decoder = new TextDecoder();
+      const cellsStringified = decoder.decode(nonSharedView);
+      const cells = JSON.parse(cellsStringified) as JsGetCellResponse[];
+      return cells;
+    } catch (e) {
+      console.warn('[pythonCore] getCells error', e);
+    }
+    return undefined;
   }
 }
 
