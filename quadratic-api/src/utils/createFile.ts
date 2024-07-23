@@ -16,36 +16,38 @@ export async function createFile({
   teamId: number;
   isPrivate?: boolean;
 }) {
-  // Create file in db
-  const dbFile = await dbClient.file.create({
-    data: {
-      creatorUserId: userId,
-      name,
-      ownerTeamId: teamId,
-      // Is the file public to the entire team or private to the user creating it?
-      ...(isPrivate ? { ownerUserId: userId } : {}),
-    },
-    select: {
-      id: true,
-      uuid: true,
-      name: true,
-      ownerTeam: true,
-    },
+  return await dbClient.$transaction(async (transaction) => {
+    // Create file in db
+    const dbFile = await transaction.file.create({
+      data: {
+        creatorUserId: userId,
+        name,
+        ownerTeamId: teamId,
+        // Is the file public to the entire team or private to the user creating it?
+        ...(isPrivate ? { ownerUserId: userId } : {}),
+      },
+      select: {
+        id: true,
+        uuid: true,
+        name: true,
+        ownerTeam: true,
+      },
+    });
+
+    // Upload file contents to S3 and create a checkpoint
+    const { uuid, id: fileId } = dbFile;
+    const response = await uploadStringAsFileS3(`${uuid}-0.grid`, contents);
+
+    await transaction.fileCheckpoint.create({
+      data: {
+        fileId,
+        sequenceNumber: 0,
+        s3Bucket: response.bucket,
+        s3Key: response.key,
+        version: version,
+      },
+    });
+
+    return dbFile;
   });
-
-  // Upload file contents to S3 and create a checkpoint
-  const { uuid, id: fileId } = dbFile;
-  const response = await uploadStringAsFileS3(`${uuid}-0.grid`, contents);
-
-  await dbClient.fileCheckpoint.create({
-    data: {
-      fileId,
-      sequenceNumber: 0,
-      s3Bucket: response.bucket,
-      s3Key: response.key,
-      version: version,
-    },
-  });
-
-  return dbFile;
 }

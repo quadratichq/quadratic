@@ -82,7 +82,7 @@ export function FilesListItemUserFile({
   const actionUrl = ROUTES.API.FILE(uuid);
 
   // Determine if the user can move files
-  // If we're looking at the user's private files, make sure they have edit access to another team
+  // If we're looking at the user's private files, make sure they have edit access to the team
   // If we're looking at a team, make sure they have edit access to the curent team
   const isTeamPrivateFilesRoute = Boolean(useMatch(ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)));
   const isTeamPublicFilesRoute = Boolean(useMatch(ROUTES.TEAM(activeTeamUuid)));

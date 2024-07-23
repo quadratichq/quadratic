@@ -39,7 +39,7 @@ export const PanelBox = (props: Props) => {
           {title}
         </div>
       </Button>
-      <div className={cn('grow overflow-scroll', open ? 'block' : 'hidden')}>{children}</div>
+      <div className={'h-full overflow-hidden' + (open ? '' : 'hidden')}>{children}</div>
     </div>
   );
 };

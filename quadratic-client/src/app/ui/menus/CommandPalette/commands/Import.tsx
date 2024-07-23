@@ -1,8 +1,6 @@
-import { isAvailableBecauseCanEditFile, isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { isAvailableBecauseCanEditFile } from '@/app/actions';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CSV_IMPORT_MESSAGE, PARQUET_IMPORT_MESSAGE } from '@/shared/constants/appConstants';
-import { useSetRecoilState } from 'recoil';
 import { CommandGroup, CommandPaletteListItem, CommandPaletteListItemDynamicProps } from '../CommandPaletteListItem';
 
 const commands: CommandGroup = {
@@ -33,22 +31,6 @@ const commands: CommandGroup = {
             {...props}
             action={() => {
               addGlobalSnackbar(PARQUET_IMPORT_MESSAGE);
-            }}
-          />
-        );
-      },
-    },
-    {
-      label: 'Connections',
-      isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
-      Component: (props: CommandPaletteListItemDynamicProps) => {
-        const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
-
-        return (
-          <CommandPaletteListItem
-            {...props}
-            action={() => {
-              setEditorInteractionState((prev) => ({ ...prev, showConnectionsMenu: true }));
             }}
           />
         );

@@ -789,10 +789,10 @@ class Core {
     this.gridController.calculationComplete(JSON.stringify(results));
   }
 
-  connectionComplete(transactionId: string, data: ArrayBuffer, std_out?: string, std_err?: string) {
+  connectionComplete(transactionId: string, data: ArrayBuffer, std_out?: string, std_err?: string, extra?: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
 
-    this.gridController.connectionComplete(transactionId, data as Uint8Array, std_out, std_err);
+    this.gridController.connectionComplete(transactionId, data as Uint8Array, std_out, std_err, extra);
   }
 
   getCells(

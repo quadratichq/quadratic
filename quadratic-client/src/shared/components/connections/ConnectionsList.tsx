@@ -1,4 +1,6 @@
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
+import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
+import { Empty } from '@/dashboard/components/Empty';
 import { Type } from '@/shared/components/Type';
 import {
   ConnectionsListConnection,
@@ -56,7 +58,7 @@ export const ConnectionsList = ({
           </div>
         )}
 
-        {!connectionsAreLoading && connections.length > 0 && (
+        {!connectionsAreLoading && connections.length ? (
           <>
             <form
               className="grid gap-4"
@@ -90,6 +92,12 @@ export const ConnectionsList = ({
               handleNavigateToEditView={handleNavigateToEditView}
             />
           </>
+        ) : (
+          <Empty
+            title="No connections"
+            description="Create a connection from the options above, then open a spreadsheet and pull in data from it."
+            Icon={ConnectionsIcon}
+          />
         )}
       </div>
     </>

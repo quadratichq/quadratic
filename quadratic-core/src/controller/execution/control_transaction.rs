@@ -55,6 +55,11 @@ impl GridController {
                         .unsaved_transactions
                         .insert_or_replace(transaction, true);
                 }
+                TransactionType::Unsaved => {
+                    let undo = transaction.to_undo_transaction();
+                    self.undo_stack.push(undo.clone());
+                    self.redo_stack.clear();
+                }
                 TransactionType::Undo => {
                     let undo = transaction.to_undo_transaction();
                     self.redo_stack.push(undo.clone());
@@ -134,17 +139,24 @@ impl GridController {
         data: Vec<u8>,
         std_out: Option<String>,
         std_err: Option<String>,
+        extra: Option<String>,
     ) -> Result<()> {
         let transaction_id = Uuid::parse_str(&transaction_id)?;
         let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
         let array = parquet_to_vec(data)?;
 
         if let Some(current_sheet_pos) = transaction.current_sheet_pos {
-            let return_type = if array.is_empty() {
-                "0 x 0 Array".to_string()
+            let mut return_type = if array.is_empty() {
+                "0×0 Array".to_string()
             } else {
-                format!("{} x {} Array", array[0].len(), array.len())
+                // subtract 1 from the length to account for the header row
+                format!("{}×{} Array", array[0].len(), 0.max(array.len() - 1))
             };
+
+            if let Some(extra) = extra {
+                return_type = format!("{return_type}\n{extra}");
+            }
+
             let result = CodeRunResult::Ok(Value::Array(array.into()));
 
             let code_run = CodeRun {
@@ -160,9 +172,9 @@ impl GridController {
                 cells_accessed: transaction.cells_accessed.clone(),
             };
 
-            self.start_transaction(&mut transaction);
             self.finalize_code_run(&mut transaction, current_sheet_pos, Some(code_run), None);
             transaction.waiting_for_async = None;
+            self.start_transaction(&mut transaction);
             self.finalize_transaction(&mut transaction);
         }
 
@@ -372,6 +384,7 @@ mod tests {
             vec![],
             None,
             Some("error".into()),
+            None,
         );
 
         assert!(result.is_ok());

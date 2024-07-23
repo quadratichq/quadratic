@@ -1,13 +1,14 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetPosTS } from '@/app/gridGL/types/size';
-import { getCodeCell, getConnectionUuid, getLanguage } from '@/app/helpers/codeCellLanguage';
+import { codeCellIsAConnection, getCodeCell, getConnectionUuid, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { GetConnections } from '@/routes/api.connections';
+import { useFileRouteLoaderData } from '@/routes/file.$uuid';
 import { cn } from '@/shared/shadcn/utils';
 import { Close, PlayArrow, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
@@ -31,9 +32,15 @@ interface Props {
 
 export const CodeEditorHeader = (props: Props) => {
   const { cellLocation, unsaved, saveAndRunCell, cancelRun, closeEditor } = props;
+  const {
+    userMakingRequest: { teamPermissions },
+  } = useFileRouteLoaderData();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
-  const hasPermission = hasPermissionToEditFile(editorInteractionState.permissions);
+  const isConnection = codeCellIsAConnection(editorInteractionState.mode);
+  const hasPermission =
+    hasPermissionToEditFile(editorInteractionState.permissions) &&
+    (isConnection ? teamPermissions?.includes('TEAM_EDIT') : true);
   const codeCell = getCodeCell(editorInteractionState.mode);
   const connectionsFetcher = useFetcher<GetConnections>({ key: 'CONNECTIONS_FETCHER_KEY' });
   const language = getLanguage(editorInteractionState.mode);

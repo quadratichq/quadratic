@@ -23,10 +23,15 @@ export async function createUser({ auth0Id }: Partial<UserData>) {
 
   return user;
 }
+export async function createUsers(auth0Ids: string[]) {
+  const users = await Promise.all(auth0Ids.map((auth0Id) => createUser({ auth0Id })));
+  return users;
+}
 
 /**
  *
  * Creating a file
+ * TODO: require the ownerTeamId
  *
  */
 export async function createFile({ data }: { data: FileData }) {

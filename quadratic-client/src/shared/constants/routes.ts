@@ -9,8 +9,8 @@ export const ROUTES = {
   FILE: (uuid: string) => `/file/${uuid}`,
 
   CREATE_FILE: (teamUuid: string) => `/teams/${teamUuid}/files/create`,
-  CREATE_FILE_EXAMPLE: (teamUuid: string, publicFileUrlInProduction: string) =>
-    `/teams/${teamUuid}/files/create?example=${publicFileUrlInProduction}`,
+  CREATE_FILE_EXAMPLE: (teamUuid: string, publicFileUrlInProduction: string, isPrivate: boolean) =>
+    `/teams/${teamUuid}/files/create?example=${publicFileUrlInProduction}${isPrivate ? '&private' : ''}`,
   CREATE_FILE_PRIVATE: (teamUuid: string) => `/teams/${teamUuid}/files/create?private`,
   TEAMS: `/teams`,
   TEAMS_CREATE: `/teams/create`,
@@ -18,7 +18,7 @@ export const ROUTES = {
   TEAM_CONNECTIONS: (teamUuid: string) => `/teams/${teamUuid}/connections`,
   TEAM_CONNECTION_CREATE: (teamUuid: string, connectionType: string) =>
     `/teams/${teamUuid}/connections/create/${connectionType}`,
-  TEAM_FILES: (teamUuid: string) => `/teams/${teamUuid}/files`,
+  TEAM_FILES: (teamUuid: string) => `/teams/${teamUuid}`,
   TEAM_FILES_PRIVATE: (teamUuid: string) => `/teams/${teamUuid}/files/private`,
   TEAM_MEMBERS: (teamUuid: string) => `/teams/${teamUuid}/members`,
   TEAM_SETTINGS: (teamUuid: string) => `/teams/${teamUuid}/settings`,

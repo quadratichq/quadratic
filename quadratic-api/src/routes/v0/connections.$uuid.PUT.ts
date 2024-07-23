@@ -9,7 +9,6 @@ import { parseRequest } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 import { encryptFromEnv } from '../../utils/crypto';
-// import { CreateSecret } from '../connections/awsSecret';
 
 export default [validateAccessToken, userMiddleware, handler];
 

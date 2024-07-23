@@ -1,21 +1,24 @@
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
-import { createFile } from '../../tests/testDataGenerator';
+import { createFile, createTeam, createUsers } from '../../tests/testDataGenerator';
 
 beforeAll(async () => {
-  const user1 = await dbClient.user.create({
-    data: {
-      auth0Id: 'user1',
-    },
+  const [user1, user2] = await createUsers(['user1', 'user2']);
+
+  const team = await createTeam({
+    users: [
+      { userId: user1.id, role: 'OWNER' },
+      { userId: user2.id, role: 'EDITOR' },
+    ],
   });
-  const user2 = await dbClient.user.create({ data: { auth0Id: 'user2' } });
 
   // Your file (with 1 invite and 1 user)
   await createFile({
     data: {
       creatorUserId: user1.id,
       ownerUserId: user1.id,
+      ownerTeamId: team.id,
       name: 'file-owned-by-user-1',
       uuid: '00000000-0000-4000-8000-000000000001',
       FileInvite: {
@@ -37,6 +40,7 @@ beforeAll(async () => {
     data: {
       creatorUserId: user2.id,
       ownerUserId: user2.id,
+      ownerTeamId: team.id,
       name: 'file-owned-by-user-2',
       uuid: '00000000-0000-4000-8000-000000000002',
       UserFileRole: {
@@ -52,6 +56,7 @@ beforeAll(async () => {
     data: {
       creatorUserId: user2.id,
       ownerUserId: user2.id,
+      ownerTeamId: team.id,
       name: 'Test file',
       uuid: '00000000-0000-4000-8000-000000000003',
     },
@@ -61,6 +66,7 @@ beforeAll(async () => {
     data: {
       creatorUserId: user2.id,
       ownerUserId: user2.id,
+      ownerTeamId: team.id,
       name: 'Test file',
       uuid: '00000000-0000-4000-8000-000000000004',
       publicLinkAccess: 'READONLY',
@@ -140,12 +146,11 @@ describe('GET /v0/files/:uuid/sharing', () => {
       await request(app)
         .get('/v0/files/00000000-0000-4000-8000-000000000001/sharing')
         .set('Authorization', `Bearer ValidToken user1`)
-        // .expect((res) => console.log(res.body))
         .expect(200)
         .expect(expectSharingData)
         .expect((res) => {
           expect(res.body.userMakingRequest.fileRole).toBeUndefined();
-          expect(res.body.userMakingRequest.teamRole).toBeUndefined();
+          expect(res.body.userMakingRequest.teamRole).toBe('OWNER');
           expect(res.body.users).toHaveLength(1);
           expect(res.body.invites).toHaveLength(1);
         });

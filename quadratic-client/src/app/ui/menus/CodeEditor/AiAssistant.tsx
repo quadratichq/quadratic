@@ -1,19 +1,19 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { getCodeCell } from '@/app/helpers/codeCellLanguage';
+import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { AI } from '@/app/ui/icons';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { useConnectionSchemaFetcher } from '@/app/ui/menus/CodeEditor/useConnectionSchemaFetcher';
 import { authClient } from '@/auth';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
-import { Type } from '@/shared/components/Type';
-import { ROUTES } from '@/shared/constants/routes';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Send, Stop } from '@mui/icons-material';
 import { Avatar, CircularProgress, IconButton } from '@mui/material';
+import mixpanel from 'mixpanel-browser';
 import { useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 import { CodeBlockParser } from './AICodeBlockParser';
@@ -38,38 +38,35 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
     consoleOutput: [consoleOutput],
     editorContent: [editorContent],
   } = useCodeEditor();
-  const { isAuthenticated, loggedInUser: user } = useRootRouteLoaderData();
-  const { mode } = useRecoilValue(editorInteractionStateAtom);
-  const cellType = getCodeCell(mode);
+  const { loggedInUser: user } = useRootRouteLoaderData();
+  const { mode, selectedCell } = useRecoilValue(editorInteractionStateAtom);
+  const connection = getConnectionInfo(mode);
 
-  // Type we pass to the AI for the cell, e.g. "javascript" or "connection::postgres"
-  let aiCellType = '';
-  if (cellType) {
-    if ('type' in cellType) aiCellType += `${cellType.type}::`;
-    aiCellType += cellType.label;
+  const { schemaFetcher } = useConnectionSchemaFetcher({ uuid: connection?.id, type: connection?.kind });
+  let schemaJsonForAi = '';
+  if (schemaFetcher.data && schemaFetcher.data.ok && schemaFetcher.data.data) {
+    schemaJsonForAi = JSON.stringify(schemaFetcher.data.data);
   }
-  aiCellType += aiCellType.toLowerCase();
 
-  // TODO: Improve these messages. Pass current location and more docs.
-  // store in a separate location for different cells
+  // TODO: This is only sent with the first message, we should refresh the content with each message.
   const systemMessages = [
     {
       role: 'system',
-      content:
-        'You are a helpful assistant inside of a spreadsheet application called Quadratic. The cell type is: ' +
-        aiCellType,
-    },
-    {
-      role: 'system',
-      content: `here are the docs: ${QuadraticDocs}`,
-    },
-    {
-      role: 'system',
-      content: 'Currently, you are in a cell that is being edited. The code in the cell is:' + editorContent,
-    },
-    {
-      role: 'system',
-      content: 'If the code was recently run here is the std error:' + (consoleOutput?.stdErr ?? ''),
+      content: `
+You are a helpful assistant inside of a spreadsheet application called Quadratic. 
+Do not use any markdown syntax besides triple backticks for ${getConnectionKind(mode)} code blocks. 
+Do not reply with plain text code blocks.
+The cell type is ${getConnectionKind(mode)}.
+The cell is located at ${selectedCell.x}, ${selectedCell.y}.
+${schemaJsonForAi ? `The schema for the database is:\`\`\`json\n${schemaJsonForAi}\n\`\`\`` : ``}
+Currently, you are in a cell that is being edited. The code in the cell is:
+\`\`\`${getConnectionKind(mode)}
+${editorContent}\`\`\`
+If the code was recently run here is the result: 
+\`\`\`
+${JSON.stringify(consoleOutput)}\`\`\`
+This is the documentation for Quadratic: 
+${QuadraticDocs}`,
     },
   ] as AiMessage[];
 
@@ -90,6 +87,7 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   }, []);
 
   const abortPrompt = () => {
+    mixpanel.track('[AI].prompt.cancel', { language: getConnectionKind(mode) });
     controllerRef.current?.abort();
     setLoading(false);
   };
@@ -192,25 +190,12 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
 
   const displayMessages = messages.filter((message, index) => message.role !== 'system');
 
-  // If we're not auth'd, don't let them use this thing
-  if (!isAuthenticated) {
-    return (
-      <Type className="px-3 text-muted-foreground">
-        You must{' '}
-        <a href={ROUTES.LOGIN} className="underline hover:text-primary">
-          log in to Quadratic
-        </a>{' '}
-        to use the AI assistant.
-      </Type>
-    );
-  }
-
-  // This component is designed to fill the entire height of its parent container
+  // Designed to live in a box that takes up the full height of its container
   return (
-    <div className="flex h-full flex-col justify-between">
+    <div className="grid h-full grid-rows-[1fr_auto]">
       <div
         ref={aiResponseRef}
-        className="select-text overflow-y-auto whitespace-pre-wrap pb-2 pl-3 pr-4 text-sm outline-none"
+        className="select-text overflow-y-auto whitespace-pre-wrap pl-3 pr-4 text-sm outline-none"
         spellCheck={false}
         onKeyDown={(e) => {
           if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
@@ -224,7 +209,7 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
         data-gramm_editor="false"
         data-enable-grammarly="false"
       >
-        <div id="ai-streaming-output">
+        <div id="ai-streaming-output" className="pb-2">
           {displayMessages.map((message, index) => (
             <div
               key={index}
@@ -257,7 +242,7 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
                     fontSize: '0.8rem',
                     marginBottom: '0.5rem',
                   }}
-                  alt="AI assistant"
+                  alt="AI Assistant"
                 >
                   <AI sx={{ color: colors.languageAI }}></AI>
                 </Avatar>
@@ -269,7 +254,7 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
         </div>
       </div>
       <form
-        className="z-10 flex gap-2 px-3 pb-2 pt-2"
+        className="z-10 flex gap-2 px-3 pb-2"
         onSubmit={(e) => {
           e.preventDefault();
         }}
@@ -291,6 +276,8 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
               if (prompt.trim().length === 0) {
                 return;
               }
+
+              mixpanel.track('[AI].prompt.send', { language: getConnectionKind(mode) });
 
               submitPrompt();
               event.currentTarget.focus();

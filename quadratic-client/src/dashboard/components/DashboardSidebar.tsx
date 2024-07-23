@@ -1,4 +1,4 @@
-import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
+import { ConnectionsIcon, SharedWithMeIcon } from '@/dashboard/components/CustomRadixIcons';
 import { TeamSwitcher } from '@/dashboard/components/TeamSwitcher';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
@@ -14,7 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shar
 import { cn } from '@/shared/shadcn/utils';
 import { SchoolOutlined } from '@mui/icons-material';
 import { AvatarImage } from '@radix-ui/react-avatar';
-import { ExternalLinkIcon, FileIcon, GearIcon, MixIcon, PersonIcon, PlusIcon, Share2Icon } from '@radix-ui/react-icons';
+import { ExternalLinkIcon, FileIcon, GearIcon, MixIcon, PersonIcon, PlusIcon } from '@radix-ui/react-icons';
 import { ReactNode, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigation, useSearchParams, useSubmit } from 'react-router-dom';
 
@@ -57,10 +57,12 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             </SidebarNavLink>
             {canEditTeam && <SidebarNavLinkCreateButton to={ROUTES.CREATE_FILE(activeTeamUuid)} />}
           </div>
-          <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
-            <ConnectionsIcon className={classNameIcons} />
-            Connections
-          </SidebarNavLink>
+          {canEditTeam && (
+            <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
+              <ConnectionsIcon className={classNameIcons} />
+              Connections
+            </SidebarNavLink>
+          )}
           <SidebarNavLink to={ROUTES.TEAM_MEMBERS(activeTeamUuid)}>
             <PersonIcon className={classNameIcons} />
             Members
@@ -80,17 +82,15 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         >
           Private
         </Type>
-        {canEditTeam && (
-          <div className="relative">
-            <SidebarNavLink to={ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)} dropTarget={ownerUserId}>
-              <FileIcon className={classNameIcons} />
-              Files
-            </SidebarNavLink>
-            <SidebarNavLinkCreateButton to={ROUTES.CREATE_FILE_PRIVATE(activeTeamUuid)} />
-          </div>
-        )}
+        <div className="relative">
+          <SidebarNavLink to={ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)} dropTarget={ownerUserId}>
+            <FileIcon className={classNameIcons} />
+            Files
+          </SidebarNavLink>
+          <SidebarNavLinkCreateButton to={ROUTES.CREATE_FILE_PRIVATE(activeTeamUuid)} />
+        </div>
         <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
-          <Share2Icon className={classNameIcons} />
+          <SharedWithMeIcon className={classNameIcons} />
           Shared with me
         </SidebarNavLink>
 

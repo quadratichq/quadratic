@@ -30,14 +30,19 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
   // Determine what kind of file creation we're doing:
   const { searchParams } = new URL(request.url);
+  const isPrivate = searchParams.get('private') !== null;
 
   // 1.
   // Clone an example file by passing the file id, e.g.
-  // /teams/:teamUuid/files/create?example=:publicFileUrlInProduction
+  // /teams/:teamUuid/files/create?example=:publicFileUrlInProduction&{isPrivate?}
   const exampleUrl = searchParams.get('example');
   if (exampleUrl) {
     try {
-      const { uuid, name } = await apiClient.examples.duplicate({ publicFileUrlInProduction: exampleUrl, teamUuid });
+      const { uuid, name } = await apiClient.examples.duplicate({
+        publicFileUrlInProduction: exampleUrl,
+        teamUuid,
+        isPrivate,
+      });
       mixpanel.track('[Files].newExampleFile', { fileName: name });
       return redirectDocument(ROUTES.FILE(uuid));
     } catch (error) {
@@ -56,7 +61,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // If there's no query params for the kind of file to create, just create a
   // new, blank file. If it's private, that's passed as a query param
   // /teams/:teamUuid/files/create?private
-  const isPrivate = searchParams.get('private') !== null;
   mixpanel.track('[Files].newFile', { isPrivate });
   try {
     const {
@@ -64,7 +68,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     } = await apiClient.files.create({ teamUuid, isPrivate });
     return redirectDocument(ROUTES.FILE(uuid));
   } catch (error) {
-    return redirect(getFailUrl());
+    return redirect(getFailUrl(ROUTES.TEAM(teamUuid)));
   }
 };
 

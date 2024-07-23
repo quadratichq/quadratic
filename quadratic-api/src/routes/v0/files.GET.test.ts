@@ -19,7 +19,6 @@ beforeAll(async () => {
   const team = await dbClient.team.create({
     data: {
       name: 'Test team',
-      stripeCustomerId: '1',
       UserTeamRole: {
         create: [
           {

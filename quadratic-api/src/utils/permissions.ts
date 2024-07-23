@@ -50,7 +50,7 @@ export const getFilePermissions = ({
     // Not logged in
     | undefined
     // Logged in + file is on a team + it's private to me
-    | { context: 'private-to-me' }
+    | { context: 'private-to-me', teamRole: UserTeamRole | undefined }
     // Logged in + file is on a team + it's private to another user + it was shared with me
     | { context: 'private-to-someone-else'; fileRole: UserFileRole | undefined }
     // Logged in + file is public to team
@@ -82,9 +82,17 @@ export const getFilePermissions = ({
 
   // Otherwise, they are logged in, so:
 
-  // 2. Is the file private to the current user? Give 'em full permissions
+  // 2. Is the file private to the current user?
   if (userFileRelationship.context === 'private-to-me') {
-    permissions.add(FILE_VIEW).add(FILE_EDIT).add(FILE_DELETE).add(FILE_MOVE);
+    // Access depends on their role in the team
+    if (
+      userFileRelationship.teamRole === UserTeamRoleSchema.enum.OWNER ||
+      userFileRelationship.teamRole === UserTeamRoleSchema.enum.EDITOR
+    ) {
+      permissions.add(FILE_VIEW).add(FILE_EDIT).add(FILE_DELETE).add(FILE_MOVE);
+    } else if (userFileRelationship.teamRole === UserTeamRoleSchema.enum.VIEWER) {
+      permissions.add(FILE_VIEW).add(FILE_EDIT).add(FILE_DELETE);
+    }
     return Array.from(permissions);
   }
 

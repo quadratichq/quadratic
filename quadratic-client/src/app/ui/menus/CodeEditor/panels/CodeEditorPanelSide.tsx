@@ -6,6 +6,7 @@ import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { PanelBox, calculatePanelBoxMinimizedSize } from '@/app/ui/menus/CodeEditor/panels/PanelBox';
 import { useCodeEditorContainer } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorContainer';
 import { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import { useFileRouteLoaderData } from '@/routes/file.$uuid';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
@@ -13,16 +14,20 @@ import { ResizeControl } from './ResizeControl';
 
 interface Props {
   codeEditorPanelData: CodeEditorPanelData;
+  showSchemaViewer: boolean;
+  showAiAssistant: boolean;
 }
 
-export function CodeEditorPanelSide(props: Props) {
+export function CodeEditorPanelSide({ showSchemaViewer, showAiAssistant, codeEditorPanelData }: Props) {
+  const {
+    userMakingRequest: { teamPermissions },
+  } = useFileRouteLoaderData();
   const container = useCodeEditorContainer();
   const minimizedSize = useMemo(() => {
     const minimizedSize = calculatePanelBoxMinimizedSize();
     return minimizedSize;
   }, []);
 
-  const { codeEditorPanelData } = props;
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const isConnection = codeCellIsAConnection(editorInteractionState.mode);
 
@@ -124,39 +129,48 @@ export function CodeEditorPanelSide(props: Props) {
       >
         <Console />
       </PanelBox>
-      <ResizeControl
-        style={{ top: panels[0].height }}
-        disabled={!panels[0].open || (!panels[1].open && !panels[2]?.open)}
-        position="HORIZONTAL"
-        setState={(e) => changeResizeBar(e, true)}
-      />
-      <PanelBox
-        id="panel-1"
-        title="AI assistant"
-        open={panels[1].open}
-        toggleOpen={panels[1].toggleOpen}
-        height={panels[1].height}
-      >
-        <AiAssistant />
-      </PanelBox>
-      {isConnection && panels.length === 3 && (
-        <ResizeControl
-          style={{ top: panels[0].height + panels[1].height }}
-          disabled={!panels[1].open && !panels[2]?.open}
-          position="HORIZONTAL"
-          setState={(e) => changeResizeBar(e, false)}
-        />
+      {showAiAssistant && (
+        <>
+          <ResizeControl
+            style={{ top: panels[0].height }}
+            disabled={!panels[0].open || (!panels[1].open && !panels[2]?.open)}
+            position="HORIZONTAL"
+            setState={(e) => changeResizeBar(e, true)}
+          />
+          <PanelBox
+            id="panel-1"
+            title="AI Assistant"
+            open={panels[1].open}
+            toggleOpen={panels[1].toggleOpen}
+            height={panels[1].height}
+          >
+            <AiAssistant />
+          </PanelBox>
+        </>
       )}
-      {isConnection && (
-        <PanelBox
-          id="panel-2"
-          title="Data browser"
-          open={panels[2].open}
-          toggleOpen={panels[2].toggleOpen}
-          height={panels[2].height}
-        >
-          <SchemaViewer />
-        </PanelBox>
+
+      {showSchemaViewer && (
+        <>
+          <ResizeControl
+            style={{ top: panels[0].height + panels[1].height }}
+            disabled={
+              (panels[0].open && panels[1].open && !panels[2].open) ||
+              (panels[0].open && !panels[1].open && !panels[2].open) ||
+              (!panels[0].open && !panels[1].open)
+            }
+            position="HORIZONTAL"
+            setState={(e) => changeResizeBar(e, false)}
+          />
+          <PanelBox
+            id="panel-2"
+            title="Schema"
+            open={panels[2].open}
+            toggleOpen={panels[2].toggleOpen}
+            height={panels[2].height}
+          >
+            <SchemaViewer />
+          </PanelBox>
+        </>
       )}
     </div>
   );

@@ -1,5 +1,5 @@
+import { ConnectionInputPassword } from '@/shared/components/connections/ConnectionInputPassword';
 import { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
-import { Button } from '@/shared/shadcn/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,7 +8,6 @@ import {
   ConnectionTypeDetailsMysqlSchema,
   ConnectionTypeSchema,
 } from 'quadratic-shared/typesAndSchemasConnections';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -19,14 +18,20 @@ const ConnectionFormMysqlSchema = z.object({
 });
 type FormValues = z.infer<typeof ConnectionFormMysqlSchema>;
 
+const DEFAULTS = {
+  PORT: '3306',
+  DATABASE: 'mysql',
+  USERNAME: 'root',
+};
+
 export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => {
   const defaultValues: FormValues = {
     name: connection ? connection.name : '',
     type: 'MYSQL',
     host: String(connection?.typeDetails?.host || ''),
-    port: String(connection?.typeDetails?.port || '3306'),
-    database: String(connection?.typeDetails?.database || 'mysql'),
-    username: String(connection?.typeDetails?.username || 'root'),
+    port: String(connection?.typeDetails?.port || DEFAULTS.PORT),
+    database: String(connection?.typeDetails?.database || ''),
+    username: String(connection?.typeDetails?.username || ''),
     password: String(connection?.typeDetails?.password || ''),
   };
 
@@ -39,8 +44,6 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
 };
 
 export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, children, handleSubmitForm }) => {
-  const [hidePassword, setHidePassword] = useState(true);
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmitForm)} className="space-y-2" autoComplete="off">
@@ -49,7 +52,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Name</FormLabel>
+              <FormLabel>Connection name</FormLabel>
               <FormControl>
                 <Input autoComplete="off" {...field} autoFocus />
               </FormControl>
@@ -63,7 +66,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
             name="host"
             render={({ field }) => (
               <FormItem className="col-span-2">
-                <FormLabel>Host</FormLabel>
+                <FormLabel>Hostname (IP or domain)</FormLabel>
                 <FormControl>
                   <Input autoComplete="off" {...field} />
                 </FormControl>
@@ -76,9 +79,9 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
             name="port"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Port</FormLabel>
+                <FormLabel>Port number</FormLabel>
                 <FormControl>
-                  <Input autoComplete="off" {...field} />
+                  <Input autoComplete="off" placeholder={`e.g. ${DEFAULTS.PORT}`} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -90,9 +93,9 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
           name="database"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Database</FormLabel>
+              <FormLabel>Database name</FormLabel>
               <FormControl>
-                <Input autoComplete="off" {...field} />
+                <Input autoComplete="off" placeholder={`e.g. ${DEFAULTS.DATABASE}`} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -107,7 +110,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
               <FormItem>
                 <FormLabel>Username</FormLabel>
                 <FormControl>
-                  <Input autoComplete="off" {...field} />
+                  <Input autoComplete="off" placeholder={`e.g. ${DEFAULTS.USERNAME}`} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -120,18 +123,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                  <div className="relative">
-                    <Input autoComplete="off" {...field} type={hidePassword ? 'password' : 'text'} className="pr-14" />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0.5 top-0.5 text-muted-foreground hover:bg-transparent"
-                      type="button"
-                      onClick={() => setHidePassword((prev) => !prev)}
-                    >
-                      {hidePassword ? 'Show' : 'Hide'}
-                    </Button>
-                  </div>
+                  <ConnectionInputPassword {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

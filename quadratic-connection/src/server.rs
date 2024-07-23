@@ -4,15 +4,11 @@
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
 use axum::{
-    http::{
-        header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE, ORIGIN},
-        Method, StatusCode,
-    },
+    http::{header::AUTHORIZATION, Method, StatusCode},
     response::IntoResponse,
     routing::{any, get, post},
     Extension, Json, Router,
 };
-use http::HeaderName;
 use jsonwebtoken::jwk::JwkSet;
 use quadratic_rust_shared::auth::jwt::get_jwks;
 use quadratic_rust_shared::sql::Connection;
@@ -86,13 +82,19 @@ pub(crate) fn app(state: State) -> Result<Router> {
         // allow requests from any origin
         .allow_methods([Method::GET, Method::POST, Method::CONNECT])
         .allow_origin(Any)
-        .allow_headers([
-            CONTENT_TYPE,
-            AUTHORIZATION,
-            ACCEPT,
-            ORIGIN,
-            HeaderName::from_static("proxy"),
-        ])
+        //
+        // TODO(ddimaria): uncomment when we move proxy to a separate service
+        //
+        // .allow_headers([
+        //     CONTENT_TYPE,
+        //     AUTHORIZATION,
+        //     ACCEPT,
+        //     ORIGIN,
+        //     HeaderName::from_static("proxy"),
+        // ])
+        //
+        // required for the proxy
+        .allow_headers(Any)
         .expose_headers(Any);
 
     // get the auth middleware

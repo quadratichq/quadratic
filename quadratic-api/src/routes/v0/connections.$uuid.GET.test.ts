@@ -1,50 +1,18 @@
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
-import { createTeam } from '../../tests/testDataGenerator';
-import { encryptFromEnv } from '../../utils/crypto';
+import { createTeam, createUser } from '../../tests/testDataGenerator';
 
 beforeAll(async () => {
-  const userWithConnection = await dbClient.user.create({
-    data: {
-      auth0Id: 'userWithConnection',
-    },
-  });
-  await dbClient.user.create({
-    data: {
-      auth0Id: 'userWithoutConnection',
-    },
-  });
+  const teamOwner = await createUser({ auth0Id: 'teamOwner' });
+  await createUser({ auth0Id: 'teamViewer' });
 
-  const team = await createTeam({
+  await createTeam({
     team: {
       uuid: '00000000-0000-0000-0000-000000000000',
     },
-    users: [{ userId: userWithConnection.id, role: 'OWNER' }],
-  });
-
-  const typeDetails = {
-    host: 'localhost',
-    port: '5432',
-    database: 'postgres',
-    username: 'root',
-    password: 'password',
-  };
-
-  await dbClient.connection.create({
-    data: {
-      uuid: '00000000-0000-0000-0000-000000000000',
-      name: 'First connection',
-      teamId: team.id,
-      type: 'POSTGRES',
-      typeDetails: Buffer.from(encryptFromEnv(JSON.stringify(typeDetails))),
-      // UserConnectionRole: {
-      //   create: {
-      //     userId: userWithConnection.id,
-      //     role: 'OWNER',
-      //   },
-      // },
-    },
+    users: [{ userId: teamOwner.id, role: 'OWNER' }],
+    connections: [{ uuid: '10000000-0000-0000-0000-000000000000', type: 'POSTGRES' }],
   });
 });
 
@@ -58,27 +26,11 @@ afterAll(async () => {
 });
 
 describe('GET /v0/connections/:uuid', () => {
-  // TODO: (connections) move some of these tests into the connection middleware
-  // TODO: (connections) archived connection
-  describe('bad request', () => {
-    it('responds with a 400 for an invalid uuid', async () => {
-      await request(app)
-        .get('/v0/connections/foo')
-        .set('Authorization', `Bearer ValidToken userWithConnection`)
-        .expect(400);
-    });
-    it('responds with a 404 for a connection that does not exist', async () => {
-      await request(app)
-        .get('/v0/connections/10000000-0000-0000-0000-000000000000')
-        .set('Authorization', `Bearer ValidToken userWithConnection`)
-        .expect(404);
-    });
-  });
-  describe('a connection you own', () => {
+  describe('a team editor/owner', () => {
     it('responds with a connection', async () => {
       await request(app)
-        .get('/v0/connections/00000000-0000-0000-0000-000000000000')
-        .set('Authorization', `Bearer ValidToken userWithConnection`)
+        .get('/v0/connections/10000000-0000-0000-0000-000000000000')
+        .set('Authorization', `Bearer ValidToken teamOwner`)
         .expect(200)
         .expect(({ body }) => {
           expect(body.uuid).toBeDefined();
@@ -87,18 +39,16 @@ describe('GET /v0/connections/:uuid', () => {
           expect(body.updatedDate).toBeDefined();
           expect(body.type).toBeDefined();
           expect(body.typeDetails).toBeDefined();
+          expect(body.typeDetails).toBeInstanceOf(Object);
         });
     });
   });
-  // TODO: (connections) sharing connections
-  // describe('a connection you’ve been added to as an editor', () => {
-  //   it.todo('responds with sharing data');
-  // });
-  describe('a connection you don’t have access to', () => {
+
+  describe('a team viewer', () => {
     it('responds with a 403', async () => {
       await request(app)
-        .get('/v0/connections/00000000-0000-0000-0000-000000000000')
-        .set('Authorization', `Bearer ValidToken userWithoutConnection`)
+        .get('/v0/connections/10000000-0000-0000-0000-000000000000')
+        .set('Authorization', `Bearer ValidToken teamViewer`)
         .expect(403);
     });
   });

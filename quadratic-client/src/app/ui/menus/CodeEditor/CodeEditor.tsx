@@ -62,7 +62,6 @@ export const CodeEditor = () => {
 
   const [cellsAccessed, setCellsAccessed] = useState<SheetRect[] | undefined | null>();
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
-
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
 
@@ -93,7 +92,8 @@ export const CodeEditor = () => {
 
     // we use the for keyboardCell so we know whether we can delete a cell with
     // the code editor open
-    pixiAppSettings.unsavedEditorChanges = unsaved;
+    pixiAppSettings.unsavedEditorChanges = unsaved ? editorContent : undefined;
+
     return unsaved;
   }, [codeString, editorContent]);
 
@@ -360,6 +360,7 @@ export const CodeEditor = () => {
   };
 
   const codeEditorPanelData = useCodeEditorPanelData();
+  const showReturnType = Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved);
 
   if (!showCodeEditor) {
     return null;
@@ -383,7 +384,7 @@ export const CodeEditor = () => {
       <div
         id="QuadraticCodeEditorID"
         className={cn(
-          'flex min-h-0 shrink flex-col',
+          'flex min-h-0 shrink select-none flex-col',
           codeEditorPanelData.panelPosition === 'left' ? 'order-2' : 'order-1'
         )}
         style={{
@@ -434,11 +435,11 @@ export const CodeEditor = () => {
           cellsAccessed={!unsaved ? cellsAccessed : []}
           cellLocation={cellLocation}
         />
-        {editorInteractionState.mode !== 'Formula' && (
+        {editorInteractionState.mode !== 'Formula' && showReturnType && (
           <ReturnTypeInspector
             language={editorInteractionState.mode}
             evaluationResult={evaluationResult}
-            show={Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved)}
+            show={showReturnType}
           />
         )}
       </div>
