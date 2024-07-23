@@ -10,7 +10,7 @@ export async function javascriptConvertOutputType(
   x?: number,
   y?: number
 ): Promise<{ output: [string, string]; displayType: string } | null> {
-  if (Array.isArray(value)) {
+  if (Array.isArray(value) && value.flat().length !== 0) {
     return null;
   }
   if (typeof value === 'number') {
@@ -53,6 +53,9 @@ export async function javascriptConvertOutputType(
     return null;
   } else if (typeof value === 'boolean') {
     return { output: [value ? 'true' : 'false', 'logical'], displayType: 'boolean' };
+  } else if (Array.isArray(value)) {
+    // this handles the case where the value.flat() is empty
+    return { output: ['', 'array'], displayType: 'empty array' };
   } else {
     message.push(
       `WARNING: Unsupported output type "${typeof value}" ${
@@ -83,7 +86,7 @@ export async function javascriptConvertOutputArray(
   column: number,
   row: number
 ): Promise<{ output: [string, string][][]; displayType: string } | null> {
-  if (!Array.isArray(value) || value.length === 0) {
+  if (!Array.isArray(value) || value.length === 0 || value.flat().length === 0) {
     return null;
   }
   const types: Set<string> = new Set();
