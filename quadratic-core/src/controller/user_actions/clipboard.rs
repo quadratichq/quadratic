@@ -186,6 +186,9 @@ mod test {
                 text_color: None,
                 fill_color: None,
                 commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None
             }
         );
         assert_eq!(
@@ -200,6 +203,9 @@ mod test {
                 text_color: None,
                 fill_color: None,
                 commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None
             }
         );
     }
@@ -721,6 +727,9 @@ mod test {
                 text_color: None,
                 fill_color: None,
                 commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None
             }
         );
         assert_eq!(
@@ -731,6 +740,9 @@ mod test {
                 text_color: None,
                 fill_color: None,
                 commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None
             }
         );
     }
@@ -873,6 +885,9 @@ mod test {
                 text_color: None,
                 fill_color: None,
                 commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None
             }
         );
         assert_eq!(
@@ -883,6 +898,9 @@ mod test {
                 text_color: None,
                 fill_color: Some("red".to_string()),
                 commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None
             }
         );
     }
