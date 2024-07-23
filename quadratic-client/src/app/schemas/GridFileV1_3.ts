@@ -1,5 +1,4 @@
 import z from 'zod';
-import { GridFileV1_2 } from './GridFileV1_2';
 
 // Shared schemas
 const ArrayOutputBaseSchema = z.array(z.any());
@@ -89,23 +88,3 @@ export const GridFileSchemaV1_3 = z.object({
 });
 export type GridFileV1_3 = z.infer<typeof GridFileSchemaV1_3>;
 export type ArrayOutputBase = z.infer<typeof ArrayOutputBaseSchema>;
-
-/**
- * Given a v1_2 file, update it to a v1_3 file
- */
-export function upgradeV1_2toV1_3(file: GridFileV1_2): GridFileV1_3 {
-  // File meta information was removed from the file and added as column
-  // information in the database. This includes:
-  // `filename` - removed from file, renamed to `name` in db
-  // `id` - removed from file, renamed to `uuid` in db
-  // `created` - removed from file, renamed to `created_date` in db
-  // `modified` - removed from file, renamed to `updated_date` in db
-  const { filename, created, modified, id, ...rest } = file;
-
-  const result: GridFileV1_3 = {
-    ...rest,
-    version: '1.3',
-  };
-
-  return result;
-}

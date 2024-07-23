@@ -1,21 +1,5 @@
 import z from 'zod';
-import { GridFileSchemaV1_0 } from './GridFileV1_0';
-import { GridFileSchemaV1_1 } from './GridFileV1_1';
-import { GridFileSchemaV1_2 } from './GridFileV1_2';
 import { ArrayOutputBase, GridFileSchemaV1_3, GridFileV1_3 } from './GridFileV1_3';
-
-/**
- * Export types for the grid files
- */
-
-// Type representing one of any of the grid files
-export const GridFilesSchema = z.union([
-  GridFileSchemaV1_0,
-  GridFileSchemaV1_1,
-  GridFileSchemaV1_2,
-  GridFileSchemaV1_3,
-]);
-export type GridFiles = z.infer<typeof GridFilesSchema>;
 
 // Map the most recent file schema to the one that will be used in the code
 // (Code always assumes the most recent file)
