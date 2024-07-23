@@ -57,7 +57,7 @@ pub fn parse_and_check_formula(formula_string: &str, x: i64, y: i64) -> bool {
             let grid = Grid::new();
             let sheet_id = grid.sheet_ids()[0];
             let mut ctx = Ctx::new(&grid, pos.to_sheet_pos(sheet_id));
-            parsed.eval(&mut ctx, true).is_ok()
+            parsed.check_syntax(&mut ctx).is_ok()
         }
         Err(_) => false,
     }

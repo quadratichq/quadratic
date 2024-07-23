@@ -140,10 +140,7 @@ mod tests {
         let sheet_id = sheet.id;
 
         let mut ctx = Ctx::new(&g, pos![nAn1].to_sheet_pos(sheet_id));
-        assert_eq!(
-            "7.5".to_string(),
-            form.eval(&mut ctx, false).unwrap().to_string(),
-        );
+        assert_eq!("7.5".to_string(), form.eval(&mut ctx).unwrap().to_string(),);
 
         assert_eq!(
             "17",
@@ -159,6 +156,7 @@ mod tests {
         assert_eq!("0", eval_to_string(&g, "AVERAGE(,)"));
 
         // Test with no arguments
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
             RunErrorMsg::MissingRequiredArgument {
                 func_name: "AVERAGE".into(),
@@ -166,10 +164,7 @@ mod tests {
             },
             parse_formula("AVERAGE()", Pos::ORIGIN)
                 .unwrap()
-                .eval(
-                    &mut Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id)),
-                    false
-                )
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -228,6 +223,7 @@ mod tests {
     #[parallel]
     fn test_count() {
         let g = Grid::new();
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
             RunErrorMsg::MissingRequiredArgument {
                 func_name: "COUNT".into(),
@@ -235,10 +231,7 @@ mod tests {
             },
             parse_formula("COUNT()", Pos::ORIGIN)
                 .unwrap()
-                .eval(
-                    &mut Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id)),
-                    false
-                )
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -258,6 +251,7 @@ mod tests {
     #[parallel]
     fn test_counta() {
         let g = Grid::new();
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
             RunErrorMsg::MissingRequiredArgument {
                 func_name: "COUNTA".into(),
@@ -265,10 +259,7 @@ mod tests {
             },
             parse_formula("COUNTA()", Pos::ORIGIN)
                 .unwrap()
-                .eval(
-                    &mut Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id)),
-                    false
-                )
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );

@@ -92,6 +92,7 @@ mod tests {
     #[parallel]
     fn test_sum() {
         let g = Grid::new();
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
             RunErrorMsg::Expected {
                 expected: "number".into(),
@@ -108,10 +109,7 @@ mod tests {
             },
             parse_formula("SUM()", Pos::ORIGIN)
                 .unwrap()
-                .eval(
-                    &mut Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id)),
-                    false
-                )
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -157,6 +155,7 @@ mod tests {
     #[parallel]
     fn test_product() {
         let g = Grid::new();
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
             RunErrorMsg::MissingRequiredArgument {
                 func_name: "PRODUCT".into(),
@@ -164,10 +163,7 @@ mod tests {
             },
             parse_formula("PRODUCT()", Pos::ORIGIN)
                 .unwrap()
-                .eval(
-                    &mut Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id)),
-                    false
-                )
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -207,7 +203,7 @@ mod tests {
             },
             parse_formula("ABS()", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx, false)
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -219,7 +215,7 @@ mod tests {
             },
             parse_formula("ABS(16, 17)", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx, false)
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -239,7 +235,7 @@ mod tests {
             },
             parse_formula("SQRT()", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx, false)
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -251,7 +247,7 @@ mod tests {
             },
             parse_formula("SQRT(16, 17)", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx, false)
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -270,7 +266,7 @@ mod tests {
             },
             parse_formula("PI(16)", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx, false)
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -289,7 +285,7 @@ mod tests {
             },
             parse_formula("TAU(16)", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx, false)
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
