@@ -104,6 +104,10 @@ impl From<Vec<Vec<&str>>> for Array {
 
 impl From<Vec<Vec<CellValue>>> for Array {
     fn from(v: Vec<Vec<CellValue>>) -> Self {
+        if v.is_empty() {
+            return Array::new_empty(ArraySize::_1X1);
+        }
+
         let w = v[0].len();
         let h = v.len();
         Array {
@@ -322,6 +326,12 @@ impl Spanned<Array> {
     pub fn array_linear_length(&self, axis: Axis) -> CodeResult<NonZeroU32> {
         self.check_array_size_on(axis.other_axis(), 1)?;
         Ok(self.inner.size()[axis])
+    }
+    /// Checks that an array is linear (width=1 or height=1), then returns it if
+    /// it is.
+    pub fn try_as_linear_array(&self) -> CodeResult<&[CellValue]> {
+        self.array_linear_axis()?; // Check that the array is linear.
+        Ok(&self.inner.values)
     }
 
     /// Checks the size of the array on one axis, returning an error if it does
