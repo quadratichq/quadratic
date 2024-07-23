@@ -150,7 +150,7 @@ class InlineEditorFormula {
   // actually knows that it's waiting for a cell reference. Our parser is not as
   // smart and we do not have this information.
   private formulaIsReadyToClose() {
-    const lastCharacter = inlineEditorMonaco.getCharBeforeCursor();
+    const lastCharacter = inlineEditorMonaco.getNonWhitespaceCharBeforeCursor();
     return ![',', '+', '-', '*', '/', '%', '=', '<', '>', '&', '.', '(', '{'].includes(lastCharacter);
   }
 

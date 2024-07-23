@@ -222,11 +222,15 @@ class InlineEditorMonaco {
     return { bounds, position };
   }
 
-  getCharBeforeCursor(): string {
+  getNonWhitespaceCharBeforeCursor(): string {
     const formula = inlineEditorMonaco.get();
     const position = inlineEditorMonaco.getPosition();
     const line = formula.split('\n')[position.lineNumber - 1];
-    const lastCharacter = line[position.column - 2];
+    const lastCharacter =
+      line
+        .substring(0, position.column - 2)
+        .trimEnd()
+        .at(-1) ?? '';
     return lastCharacter;
   }
 
