@@ -278,17 +278,4 @@ mod tests {
         let imported_copy = import(&exported).unwrap();
         assert_eq!(imported_copy, imported);
     }
-
-    #[test]
-    fn creates_a_blank_current_file() {
-        let mut grid = Grid::new();
-
-        // todo: this does not work
-        let exported = export(&mut grid).unwrap();
-        println!("{:?}", exported);
-        // let _imported = import(&_exported).unwrap();
-        // println!("{:#?}", imported.sheets()[0].borders);
-        // // println!("{:?}", serde_json::to_string(&sheet.column_).unwrap());
-        // println!("{:#?}", &sheets[0].borders.per_cell.borders);
-    }
 }

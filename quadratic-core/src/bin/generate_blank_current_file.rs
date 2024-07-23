@@ -12,8 +12,8 @@ fn write(path: &str, data: &[u8]) {
 }
 
 fn main() {
-    let mut grid = Grid::new();
-    let data = export(&mut grid).expect("failed to export to blank file");
+    let grid = Grid::new();
+    let data = export(&grid).expect("failed to export to blank file");
     let bytes = data.as_bytes();
 
     write(OUT_PATH_RUST_SHARED, bytes);

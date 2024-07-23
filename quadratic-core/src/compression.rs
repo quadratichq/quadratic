@@ -40,7 +40,7 @@ where
 pub fn decompress(data: &[u8]) -> Result<Vec<u8>> {
     let writer = Vec::new();
     let mut decoder = ZlibDecoder::new(writer);
-    decoder.write_all(&data)?;
+    decoder.write_all(data)?;
 
     Ok(decoder.finish()?)
 }
