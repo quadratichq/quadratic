@@ -10,7 +10,6 @@
 import { Coordinate } from '@/app/gridGL/types/size';
 import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
 import { CellAlign, JsRenderCell } from '@/app/quadratic-core-types';
-import { CellAlignment } from '@/app/schemas';
 import { colors } from '@/app/theme/colors';
 import { removeItems } from '@pixi/utils';
 import { Point, Rectangle } from 'pixi.js';
@@ -74,7 +73,7 @@ export class CellLabel {
   overflowRight?: number;
   overflowLeft?: number;
 
-  alignment: CellAlignment;
+  alignment?: CellAlign;
 
   dirty = true;
 
