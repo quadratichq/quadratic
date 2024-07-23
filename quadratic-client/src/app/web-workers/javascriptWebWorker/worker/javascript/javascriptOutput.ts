@@ -34,7 +34,7 @@ export function javascriptConvertOutputType(
     message.push(
       'WARNING: Unsupported output type: `Promise`' +
         (x !== undefined && y !== undefined ? `at cell(${column + x}, ${row + y})` : '') +
-        '. Likely you are missing `await` before a call that returns a Promise, e.g., `await getCells(...)`.'
+        '. Likely you are missing `await` before a call that returns a Promise, e.g., `await fetch(...)`.'
     );
     return null;
   } else if (typeof value === 'function') {
