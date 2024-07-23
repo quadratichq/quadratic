@@ -38,6 +38,7 @@ const PADDING_FOR_GROWING_HORIZONTALLY = 20;
 
 class InlineEditorMonaco {
   private editor?: editor.IStandaloneCodeEditor;
+  private suggestionWidgetShowing: boolean = false;
 
   // Helper function to get the model without having to check if editor or model
   // is defined.
@@ -300,8 +301,22 @@ class InlineEditorMonaco {
       language: inlineEditorHandler.formula ? 'formula' : undefined,
     });
 
+    const suggestionWidget = (this.editor.getContribution('editor.contrib.suggestController') as any | undefined)
+      ?.widget;
+    if (suggestionWidget) {
+      suggestionWidget.value.onDidShow(() => {
+        this.suggestionWidgetShowing = true;
+      });
+      suggestionWidget.value.onDidHide(() => {
+        this.suggestionWidgetShowing = false;
+      });
+    }
+
+    this.editor.onKeyDown((e) => {
+      if (this.suggestionWidgetShowing) return;
+      inlineEditorKeyboard.keyDown(e.browserEvent);
+    });
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.updateMonacoCursorPosition);
-    this.editor.onKeyDown((e) => inlineEditorKeyboard.keyDown(e.browserEvent));
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.keepCursorVisible);
   }
 
