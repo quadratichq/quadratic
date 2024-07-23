@@ -5,8 +5,8 @@ import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineE
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
-import { editor } from 'monaco-editor';
 import * as monaco from 'monaco-editor';
+import { editor } from 'monaco-editor';
 import DefaultEditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import TsEditorWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 
@@ -138,6 +138,25 @@ class InlineEditorMonaco {
     this.editor.setPosition({ lineNumber: 1, column });
   }
 
+  // set bracket highlighting and auto closing behavior
+  setBracketConfig(enabled: boolean) {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in getModel');
+    }
+    this.editor.updateOptions({
+      autoClosingBrackets: enabled ? 'always' : 'never',
+      matchBrackets: enabled ? 'always' : 'never',
+    });
+
+    const model = this.getModel();
+    model.updateOptions({
+      bracketColorizationOptions: {
+        enabled,
+        independentColorPoolPerBracketType: enabled,
+      },
+    });
+  }
+
   // Inserts text at cursor location and returns inserting position.
   insertTextAtCursor(text: string): number {
     const model = this.getModel();
@@ -203,6 +222,14 @@ class InlineEditorMonaco {
     return { bounds, position };
   }
 
+  getCharBeforeCursor(): string {
+    const formula = inlineEditorMonaco.get();
+    const position = inlineEditorMonaco.getPosition();
+    const line = formula.split('\n')[position.lineNumber - 1];
+    const lastCharacter = line[position.column - 2];
+    return lastCharacter;
+  }
+
   createDecorationsCollection(newDecorations: editor.IModelDeltaDecoration[]) {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in createDecorationsCollection');
@@ -213,6 +240,7 @@ class InlineEditorMonaco {
   setLanguage(language: 'Formula' | 'plaintext') {
     const model = this.getModel();
     editor.setModelLanguage(model, language);
+    this.setBracketConfig(language === 'Formula');
   }
 
   // Creates the Monaco editor and attaches it to the given div (this should
