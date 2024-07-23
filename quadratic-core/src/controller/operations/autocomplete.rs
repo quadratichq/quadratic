@@ -321,8 +321,6 @@ impl GridController {
         range: &Rect,
     ) -> Result<Vec<Operation>> {
         let mut format_ops = vec![];
-        let mut values = vec![];
-        let mut formats = vec![];
         let mut ops = selection
             .x_range()
             .rev()
@@ -345,15 +343,13 @@ impl GridController {
                     format_ops.extend(apply_formats(format_rect, &format));
                 });
 
-                formats.extend(format);
-                let (operations, cell_values) = self.apply_auto_complete(
+                let (operations, _) = self.apply_auto_complete(
                     sheet_id,
                     false,
                     &source_col.into(),
                     &target_col,
                     None,
                 )?;
-                values.extend(cell_values);
 
                 Ok(operations)
             })
@@ -371,8 +367,6 @@ impl GridController {
         range: &Rect,
     ) -> Result<Vec<Operation>> {
         let mut format_ops = vec![];
-        let mut values = vec![];
-        let mut formats = vec![];
         let mut ops = selection
             .x_range()
             .map(|x| {
@@ -407,15 +401,13 @@ impl GridController {
                     format_ops.extend(apply_formats(format_rect, &format));
                 });
 
-                formats.extend(format);
-                let (operations, cell_values) = self.apply_auto_complete(
+                let (operations, _) = self.apply_auto_complete(
                     sheet_id,
                     true,
                     &source_col.into(),
                     &target_col,
                     None,
                 )?;
-                values.extend(cell_values);
 
                 Ok(operations)
             })

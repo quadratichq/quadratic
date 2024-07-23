@@ -15,7 +15,7 @@ use crate::{
     error_core::Result,
     grid::{CodeRun, CodeRunResult},
     parquet::parquet_to_vec,
-    Pos, Value,
+    Pos, SheetRect, Value,
 };
 
 impl GridController {
@@ -79,6 +79,13 @@ impl GridController {
                 TransactionType::Unset => panic!("Expected a transaction type"),
             }
         }
+        if let Some(sheet_rect) = transaction.batch_client_updates {
+            self.send_updated_bounds_rect(&sheet_rect, true);
+            self.send_render_cells(&sheet_rect);
+            self.send_fill_cells(&sheet_rect);
+            self.send_html_output_rect(&sheet_rect);
+            transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
+        }
         transaction.send_transaction();
 
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
@@ -94,12 +101,14 @@ impl GridController {
         operations: Vec<Operation>,
         cursor: Option<String>,
         transaction_name: TransactionName,
+        client_update_rect: Option<SheetRect>,
     ) {
         let mut transaction = PendingTransaction {
             transaction_type: TransactionType::User,
             operations: operations.into(),
             cursor,
             transaction_name,
+            batch_client_updates: client_update_rect,
             ..Default::default()
         };
         self.start_transaction(&mut transaction);
@@ -283,7 +292,12 @@ mod tests {
         assert!(!gc.has_undo());
         assert!(!gc.has_redo());
 
-        gc.start_user_transaction(vec![operation.clone()], None, TransactionName::Unknown);
+        gc.start_user_transaction(
+            vec![operation.clone()],
+            None,
+            TransactionName::Unknown,
+            None,
+        );
         assert!(gc.has_undo());
         assert!(!gc.has_redo());
         assert_eq!(vec![operation_undo.clone()], gc.undo_stack[0].operations);

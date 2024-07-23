@@ -14,7 +14,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<(String, String), String> {
         let (ops, plain_text, html) = self.cut_to_clipboard_operations(selection)?;
-        self.start_user_transaction(ops, cursor, TransactionName::CutClipboard);
+        self.start_user_transaction(ops, cursor, TransactionName::CutClipboard, None);
         Ok((plain_text, html))
     }
 
@@ -29,7 +29,12 @@ impl GridController {
         // first try html
         if let Some(html) = html {
             if let Ok(ops) = self.paste_html_operations(&selection, html, special) {
-                return self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
+                return self.start_user_transaction(
+                    ops,
+                    cursor,
+                    TransactionName::PasteClipboard,
+                    None,
+                );
             }
         }
         // if not quadratic html, then use the plain text
@@ -37,13 +42,13 @@ impl GridController {
         if let Some(plain_text) = plain_text {
             let dest_pos = selection.origin();
             let ops = self.paste_plain_text_operations(dest_pos, plain_text, special);
-            self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
+            self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard, None);
         }
     }
 
     pub fn move_cells(&mut self, source: SheetRect, dest: SheetPos, cursor: Option<String>) {
         let ops = self.move_cells_operations(source, dest);
-        self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
+        self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard, None);
     }
 }
 

@@ -30,15 +30,14 @@ impl GridController {
 
             let old_size = sheet.offsets.set_column_width(column, new_size);
 
-            transaction.reverse_operations.insert(
-                0,
-                Operation::ResizeColumn {
+            transaction
+                .reverse_operations
+                .push(Operation::ResizeColumn {
                     sheet_id,
                     column,
                     new_size: old_size,
                     client_resized: false,
-                },
-            );
+                });
 
             if transaction.is_user() {
                 transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
@@ -81,15 +80,12 @@ impl GridController {
             });
             let old_size = sheet.offsets.set_row_height(row, new_size);
 
-            transaction.reverse_operations.insert(
-                0,
-                Operation::ResizeRow {
-                    sheet_id,
-                    row,
-                    new_size: old_size,
-                    client_resized: false,
-                },
-            );
+            transaction.reverse_operations.push(Operation::ResizeRow {
+                sheet_id,
+                row,
+                new_size: old_size,
+                client_resized: false,
+            });
 
             if transaction.is_user_undo_redo() {
                 transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {

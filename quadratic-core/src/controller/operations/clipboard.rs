@@ -460,7 +460,7 @@ mod test {
                 PasteSpecial::None,
             )
             .unwrap();
-        gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
+        gc.start_user_transaction(operations, None, TransactionName::PasteClipboard, None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -497,7 +497,7 @@ mod test {
                 PasteSpecial::None,
             )
             .unwrap();
-        gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
+        gc.start_user_transaction(operations, None, TransactionName::PasteClipboard, None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -539,7 +539,7 @@ mod test {
                 PasteSpecial::None,
             )
             .unwrap();
-        gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
+        gc.start_user_transaction(operations, None, TransactionName::PasteClipboard, None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(

@@ -59,6 +59,9 @@ pub struct PendingTransaction {
 
     // cursor saved for an Undo or Redo
     pub cursor_undo_redo: Option<String>,
+
+    // client updates (render_cell, sheet_fill, html_output) is batched for large transactions
+    pub batch_client_updates: Option<SheetRect>,
 }
 
 impl Default for PendingTransaction {
@@ -80,6 +83,7 @@ impl Default for PendingTransaction {
             complete: false,
             generate_thumbnail: false,
             cursor_undo_redo: None,
+            batch_client_updates: None,
         }
     }
 }
@@ -91,6 +95,7 @@ impl PendingTransaction {
             sequence_num,
             operations: self.operations.clone().into(),
             cursor: self.cursor.clone(),
+            batch_client_updates: self.batch_client_updates,
         }
     }
 
@@ -101,16 +106,21 @@ impl PendingTransaction {
             sequence_num: None,
             operations: self.forward_operations.clone(),
             cursor: None,
+            batch_client_updates: self.batch_client_updates,
         }
     }
 
     /// Creates a transaction to save to the Undo/Redo stack
     pub fn to_undo_transaction(&self) -> Transaction {
+        let mut operations = self.reverse_operations.clone();
+        operations.reverse();
+
         Transaction {
             id: self.id,
             sequence_num: None,
-            operations: self.reverse_operations.clone(),
+            operations,
             cursor: self.cursor.clone(),
+            batch_client_updates: self.batch_client_updates,
         }
     }
 
@@ -197,6 +207,7 @@ mod tests {
         transaction
             .reverse_operations
             .clone_from(&reverse_operations);
+        transaction.reverse_operations.reverse();
         let forward_transaction = transaction.to_forward_transaction();
         assert_eq!(forward_transaction.id, transaction.id);
         assert_eq!(forward_transaction.operations, forward_operations);

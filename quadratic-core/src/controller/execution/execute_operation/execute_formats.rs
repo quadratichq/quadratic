@@ -48,7 +48,7 @@ impl GridController {
                 ),
             };
 
-            if !transaction.is_server() {
+            if !transaction.is_server() && transaction.batch_client_updates.is_none() {
                 match &attr {
                     CellFmtArray::RenderSize(_) => {
                         // RenderSize is always sent as a 1,1 rect. TODO: we need to refactor formats to make it less generic.
@@ -75,19 +75,20 @@ impl GridController {
                 };
             }
 
-            transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
+            if transaction.batch_client_updates.is_none() {
+                transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
+            }
 
             transaction
                 .forward_operations
                 .push(Operation::SetCellFormats { sheet_rect, attr });
 
-            transaction.reverse_operations.insert(
-                0,
-                Operation::SetCellFormats {
+            transaction
+                .reverse_operations
+                .push(Operation::SetCellFormats {
                     sheet_rect,
                     attr: old_attr,
-                },
-            );
+                });
         }
     }
 
@@ -113,7 +114,7 @@ impl GridController {
 
                 transaction
                     .reverse_operations
-                    .splice(0..0, reverse_operations.iter().cloned());
+                    .extend(reverse_operations.iter().cloned());
             }
         }
     }

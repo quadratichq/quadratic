@@ -49,17 +49,18 @@ impl GridController {
                             self.check_all_spills(transaction, sheet_rect.sheet_id);
                         }
 
-                        transaction.reverse_operations.insert(
-                            0,
-                            Operation::SetCellValues {
+                        transaction
+                            .reverse_operations
+                            .push(Operation::SetCellValues {
                                 sheet_pos,
                                 values: old_values,
-                            },
-                        );
+                            });
                     }
-                    transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
-
-                    if !transaction.is_server() {
+                    if transaction.batch_client_updates.is_none() {
+                        transaction.generate_thumbnail |=
+                            self.thumbnail_dirty_sheet_rect(&sheet_rect);
+                    }
+                    if !transaction.is_server() && transaction.batch_client_updates.is_none() {
                         self.send_updated_bounds(sheet_rect.sheet_id);
                         self.send_render_cells(&sheet_rect);
                     }

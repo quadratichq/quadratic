@@ -262,7 +262,7 @@ export const FloatingContextMenu = (props: Props) => {
       viewport.removeListener('moved-end', updateContextMenuCSSTransform);
       document.removeEventListener('pointerup', updateContextMenuCSSTransform);
       window.removeEventListener('resize', updateContextMenuCSSTransform);
-      window.addEventListener('keyup', updateContextMenuCSSTransform);
+      window.removeEventListener('keyup', updateContextMenuCSSTransform);
       events.off('cellMoving', trigger);
     };
   }, [updateContextMenuCSSTransform]);
