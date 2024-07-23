@@ -10,7 +10,7 @@ use crate::{
 };
 
 impl GridController {
-    fn clear_border_op(sheet: &Sheet, rect: &Rect) -> Operation {
+    pub(crate) fn clear_border_op(sheet: &Sheet, rect: &Rect) -> Operation {
         let selections = vec![BorderSelection::Clear];
         let cur_borders = get_rect_borders(sheet, rect);
         let new_borders = generate_borders(sheet, rect, selections.clone(), None);
@@ -55,8 +55,9 @@ mod tests {
     #[test]
     fn clear_format_selection_operations() {
         let gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
         let selection = Selection {
-            sheet_id: gc.sheet_ids()[0],
+            sheet_id,
             x: 0,
             y: 0,
             rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
@@ -67,10 +68,16 @@ mod tests {
         let ops = gc.clear_format_selection_operations(&selection);
         assert_eq!(
             ops,
-            vec![Operation::SetCellFormatsSelection {
-                selection,
-                formats: Formats::repeat(FormatUpdate::cleared(), 1),
-            }]
+            vec![
+                Operation::SetCellFormatsSelection {
+                    selection,
+                    formats: Formats::repeat(FormatUpdate::cleared(), 1),
+                },
+                GridController::clear_border_op(
+                    gc.sheet(sheet_id),
+                    &Rect::from_numbers(0, 0, 1, 1)
+                )
+            ]
         );
     }
 }
