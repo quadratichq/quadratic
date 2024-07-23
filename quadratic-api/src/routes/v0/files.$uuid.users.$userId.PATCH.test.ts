@@ -2,7 +2,7 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { expectError, getUserIdByAuth0Id } from '../../tests/helpers';
-import { createFile, createTeam, createUsers } from '../../tests/testDataGenerator';
+import { clearDb, createFile, createTeam, createUsers } from '../../tests/testDataGenerator';
 
 beforeEach(async () => {
   const [userOwner, userEditor, userViewer] = await createUsers([
@@ -33,16 +33,7 @@ beforeEach(async () => {
   });
 });
 
-afterEach(async () => {
-  await dbClient.$transaction([
-    dbClient.userTeamRole.deleteMany(),
-    dbClient.team.deleteMany(),
-    dbClient.userFileRole.deleteMany(),
-    dbClient.fileCheckpoint.deleteMany(),
-    dbClient.file.deleteMany(),
-    dbClient.user.deleteMany(),
-  ]);
-});
+afterEach(clearDb);
 
 const expectRole = (role: string) => (res: request.Response) => {
   expect(res.body.role).toBe(role);

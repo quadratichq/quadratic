@@ -1,7 +1,6 @@
 import request from 'supertest';
 import { app } from '../../app';
-import dbClient from '../../dbClient';
-import { createFile, createTeam, createUser } from '../../tests/testDataGenerator';
+import { clearDb, createFile, createTeam, createUser } from '../../tests/testDataGenerator';
 
 beforeAll(async () => {
   const teamUser1 = await createUser({
@@ -101,17 +100,7 @@ beforeAll(async () => {
   });
 });
 
-afterAll(async () => {
-  await dbClient.$transaction([
-    dbClient.fileInvite.deleteMany(),
-    dbClient.userFileRole.deleteMany(),
-    dbClient.userTeamRole.deleteMany(),
-    dbClient.team.deleteMany(),
-    dbClient.fileCheckpoint.deleteMany(),
-    dbClient.file.deleteMany(),
-    dbClient.user.deleteMany(),
-  ]);
-});
+afterAll(clearDb);
 
 describe('PATCH /v0/files/:uuid/sharing', () => {
   describe('public team files', () => {

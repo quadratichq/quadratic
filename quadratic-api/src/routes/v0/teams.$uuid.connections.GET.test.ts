@@ -1,8 +1,7 @@
 import request from 'supertest';
 import { app } from '../../app';
-import dbClient from '../../dbClient';
 import { expectError } from '../../tests/helpers';
-import { createConnection, createTeam, createUser } from '../../tests/testDataGenerator';
+import { clearDb, createConnection, createTeam, createUser } from '../../tests/testDataGenerator';
 
 beforeAll(async () => {
   const teamUserOwner = await createUser({ auth0Id: 'teamUserOwner' });
@@ -27,14 +26,7 @@ beforeAll(async () => {
   });
 });
 
-afterAll(async () => {
-  await dbClient.$transaction([
-    dbClient.connection.deleteMany(),
-    dbClient.userTeamRole.deleteMany(),
-    dbClient.team.deleteMany(),
-    dbClient.user.deleteMany(),
-  ]);
-});
+afterAll(clearDb);
 
 describe('GET /v0/teams/:uuid/connections', () => {
   describe('get all connections in a team', () => {

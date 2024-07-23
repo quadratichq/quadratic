@@ -1,6 +1,5 @@
-import dbClient from '../dbClient';
 import { getUserIdByAuth0Id } from '../tests/helpers';
-import { createTeam, createUser } from '../tests/testDataGenerator';
+import { clearDb, createTeam, createUser } from '../tests/testDataGenerator';
 import { ApiError } from '../utils/ApiError';
 import { getConnection } from './getConnection';
 
@@ -20,14 +19,7 @@ beforeAll(async () => {
   });
 });
 
-afterAll(async () => {
-  await dbClient.$transaction([
-    dbClient.connection.deleteMany(),
-    dbClient.userTeamRole.deleteMany(),
-    dbClient.team.deleteMany(),
-    dbClient.user.deleteMany(),
-  ]);
-});
+afterAll(clearDb);
 
 describe('getConnection()', () => {
   describe('non-existent connection', () => {
