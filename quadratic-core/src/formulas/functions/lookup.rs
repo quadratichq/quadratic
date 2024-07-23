@@ -378,6 +378,74 @@ fn get_functions() -> Vec<FormulaFunction> {
     ]
 }
 
+/// Arguments to the `INDEX` function.
+#[derive(Debug, Copy, Clone)]
+pub struct IndexFunctionArgs {
+    /// Which range (0-indexed) to return from.
+    pub tuple_index: usize,
+    /// X coordinate (0-indexed) within the range.
+    pub x: u32,
+    /// Y coordinate (0-indexed) within the range.
+    pub y: u32,
+}
+impl IndexFunctionArgs {
+    pub fn from_values(
+        get_array_size: impl FnOnce(usize) -> Option<ArraySize>,
+        mut row: Option<Spanned<i64>>,
+        mut column: Option<Spanned<i64>>,
+        range_num: Option<Spanned<i64>>,
+    ) -> CodeResult<Self> {
+        let (tuple_index, array_size) = match range_num {
+            // IIFE to mimic try_block
+            Some(v) => (|| {
+                let i = v.inner.saturating_sub(1).try_into().ok()?;
+                Some((i, get_array_size(i)?))
+            })()
+            .ok_or_else(|| RunErrorMsg::IndexOutOfBounds.with_span(v.span))?,
+            None => {
+                let array_size = get_array_size(0).ok_or(RunErrorMsg::InternalError(
+                    "get_array_size(0) returned None".into(),
+                ))?;
+                (0, array_size)
+            }
+        };
+
+        let w = array_size.w.get() as i64;
+        let h = array_size.h.get() as i64;
+        if h == 1 && column.is_none() {
+            std::mem::swap(&mut row, &mut column);
+        }
+
+        let x;
+        match column {
+            Some(column) => {
+                x = column.inner.saturating_sub(1);
+                if !(0 <= x && x < w) {
+                    return Err(RunErrorMsg::IndexOutOfBounds.with_span(column));
+                }
+            }
+            None => x = 0,
+        }
+
+        let y;
+        match row {
+            Some(row) => {
+                y = row.inner.saturating_sub(1);
+                if !(0 <= y && y < h) {
+                    return Err(RunErrorMsg::IndexOutOfBounds.with_span(row));
+                }
+            }
+            None => y = 0,
+        }
+
+        Ok(Self {
+            tuple_index,
+            x: x as u32,
+            y: y as u32,
+        })
+    }
+}
+
 /// Performs a `LOOKUP` and returns the index of the best match (0-indexed).
 fn lookup<V: ToString + AsRef<CellValue>>(
     needle: &CellValue,
