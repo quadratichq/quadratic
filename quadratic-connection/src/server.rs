@@ -205,7 +205,7 @@ pub(crate) async fn serve() -> Result<()> {
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct HealthResponse {
-    pub status: String,
+    pub version: String,
 }
 
 pub(crate) async fn healthcheck() -> Json<HealthResponse> {
