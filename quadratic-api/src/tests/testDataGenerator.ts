@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { UserTeamRole } from 'quadratic-shared/typesAndSchemas';
 import dbClient from '../dbClient';
+import { encryptFromEnv } from '../utils/crypto';
 
 type UserData = Parameters<typeof dbClient.user.create>[0]['data'];
 type FileData = Parameters<typeof dbClient.file.create>[0]['data'];
@@ -22,10 +23,15 @@ export async function createUser({ auth0Id }: Partial<UserData>) {
 
   return user;
 }
+export async function createUsers(auth0Ids: string[]) {
+  const users = await Promise.all(auth0Ids.map((auth0Id) => createUser({ auth0Id })));
+  return users;
+}
 
 /**
  *
  * Creating a file
+ * TODO: require the ownerTeamId
  *
  */
 export async function createFile({ data }: { data: FileData }) {
@@ -115,7 +121,7 @@ function getRequiredConnectionData(type: ConnectionType) {
   return {
     name: 'Test Connection',
     type,
-    typeDetails: JSON.stringify(getDefaultConnectionTypeDetails(type)),
+    typeDetails: Buffer.from(encryptFromEnv(JSON.stringify(getDefaultConnectionTypeDetails(type)))),
   };
 }
 

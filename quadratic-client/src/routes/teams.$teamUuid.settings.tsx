@@ -20,16 +20,15 @@ export const Component = () => {
   const fetcher = useFetcher({ key: 'update-team' });
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [value, setValue] = useState<string>(team.name);
+  const disabled = value === '' || value === team.name || fetcher.state !== 'idle';
 
-  const onBlur = (e: any) => {
-    const value = e.target.value;
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
 
-    // Don't do anything if the name didn't change
-    if (value === team.name) {
+    if (disabled) {
       return;
     }
 
-    // Save it to the API
     const data = getActionUpdateTeam({ name: value });
     submit(data, {
       method: 'POST',
@@ -40,7 +39,7 @@ export const Component = () => {
     });
   };
 
-  // TODO: (connections) move this to the settings page
+  // One day, when we have billing, we can add something akin to this
   //
   // {teamPermissions.includes('TEAM_BILLING_EDIT') && (
   //   <DropdownMenuItem
@@ -75,17 +74,12 @@ export const Component = () => {
           <Type variant="body2" className="font-bold">
             Name
           </Type>
-          <div className="flex items-center gap-2">
-            <Input value={value} onChange={(e) => setValue(e.target.value)} onBlur={onBlur} />
-          </div>
-        </Row>
-        <Row>
-          <Type variant="body2" className="font-bold">
-            Billing
-          </Type>
-          <div className="flex items-center gap-2">
-            <Button variant="outline">Manage</Button>
-          </div>
+          <form className="flex items-center gap-2" onSubmit={handleSubmit}>
+            <Input value={value} onChange={(e) => setValue(e.target.value)} />
+            <Button type="submit" disabled={disabled} variant="secondary">
+              Save
+            </Button>
+          </form>
         </Row>
       </div>
     </>
@@ -94,7 +88,7 @@ export const Component = () => {
 
 function Row(props: { children: ReactNode }) {
   return (
-    <div className={`grid max-w-lg items-center`} style={{ gridTemplateColumns: '160px 1fr' }}>
+    <div className={`flex grid-cols-[160px_1fr] flex-col gap-2 sm:grid sm:max-w-lg sm:items-center`}>
       {props.children}
     </div>
   );

@@ -1,16 +1,19 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetPosTS } from '@/app/gridGL/types/size';
-import { getCodeCell, getLanguage } from '@/app/helpers/codeCellLanguage';
+import { codeCellIsAConnection, getCodeCell, getConnectionUuid, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
-import { CodeRun } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
+import { GetConnections } from '@/routes/api.connections';
+import { useFileRouteLoaderData } from '@/routes/file.$uuid';
 import { cn } from '@/shared/shadcn/utils';
 import { Close, PlayArrow, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
 import { useEffect, useState } from 'react';
+import { useFetcher } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
@@ -29,17 +32,28 @@ interface Props {
 
 export const CodeEditorHeader = (props: Props) => {
   const { cellLocation, unsaved, saveAndRunCell, cancelRun, closeEditor } = props;
+  const {
+    userMakingRequest: { teamPermissions },
+  } = useFileRouteLoaderData();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
-  const hasPermission = hasPermissionToEditFile(editorInteractionState.permissions);
+  const isConnection = codeCellIsAConnection(editorInteractionState.mode);
+  const hasPermission =
+    hasPermissionToEditFile(editorInteractionState.permissions) &&
+    (isConnection ? teamPermissions?.includes('TEAM_EDIT') : true);
   const codeCell = getCodeCell(editorInteractionState.mode);
-  // const { connections } = useFileMetaRouteLoaderData();
+  const connectionsFetcher = useFetcher<GetConnections>({ key: 'CONNECTIONS_FETCHER_KEY' });
   const language = getLanguage(editorInteractionState.mode);
 
-  // const connectionUuid = getConnectionUuid(editorInteractionState.mode);
-  // const foundConnection = connections.find((connection) => connection.uuid === connectionUuid);
-  // TODO: (connections) fix
-  const currentConnectionName = ''; // foundConnection ? foundConnection.name : '';
+  // Get the connection name (it's possible the user won't have access to it
+  // because they're in a file they have access to but not the team — or
+  // the connection was deleted)
+  let currentConnectionName = '';
+  if (connectionsFetcher.data) {
+    const connectionUuid = getConnectionUuid(editorInteractionState.mode);
+    const foundConnection = connectionsFetcher.data.connections.find(({ uuid }) => uuid === connectionUuid);
+    if (foundConnection) currentConnectionName = foundConnection.name;
+  }
 
   // Keep track of the current sheet ID so we know whether to show the sheet name or not
   const currentCodeEditorCellIsNotInActiveSheet = currentSheetId !== editorInteractionState.selectedCellSheet;
@@ -114,10 +128,12 @@ export const CodeEditorHeader = (props: Props) => {
 
     events.on('pythonState', playerState);
     events.on('javascriptState', playerState);
+    events.on('connectionState', playerState);
     events.on('multiplayerUpdate', multiplayerUpdate);
     return () => {
       events.off('pythonState', playerState);
       events.off('javascriptState', playerState);
+      events.off('connectionState', playerState);
       events.off('multiplayerUpdate', multiplayerUpdate);
     };
   }, [cellLocation]);
@@ -152,11 +168,11 @@ export const CodeEditorHeader = (props: Props) => {
       </div>
       <div className="ml-auto flex flex-shrink-0 items-center gap-2">
         {isRunningComputation && (
-          <TooltipHint title={'Python executing…'} placement="bottom">
+          <TooltipHint title={`${language} executing…`} placement="bottom">
             <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
           </TooltipHint>
         )}
-        {hasPermission && <CodeEditorRefButton />}
+        {hasPermission && ['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
         {hasPermission && ['Python', 'Javascript'].includes(language as string) && <SnippetsPopover />}
         {hasPermission &&
           (!isRunningComputation ? (

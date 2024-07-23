@@ -86,7 +86,6 @@ export default function QuadraticUI() {
       </div>
 
       {!presentationMode && !isEmbed && <BottomBar />}
-      {editorInteractionState.showConnectionsMenu && <ConnectionsMenu />}
       {editorInteractionState.showFeedbackMenu && <FeedbackMenu />}
       {editorInteractionState.showShareFileMenu && (
         <ShareFileDialog
@@ -105,6 +104,7 @@ export default function QuadraticUI() {
       )}
       {presentationMode && <PresentationModeHint />}
 
+      <ConnectionsMenu />
       <PermissionOverlay />
       {!isEmbed && <PermissionOverlay />}
       <UpdateAlertVersion />

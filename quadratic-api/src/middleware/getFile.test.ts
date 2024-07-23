@@ -18,7 +18,6 @@ beforeEach(async () => {
   const team = await dbClient.team.create({
     data: {
       name: 'Test Team 1',
-      stripeCustomerId: '1',
       UserTeamRole: {
         create: [
           {

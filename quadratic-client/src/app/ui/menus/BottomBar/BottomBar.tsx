@@ -25,10 +25,10 @@ export const BottomBar = () => {
   const [cursorPositionString, setCursorPositionString] = useState('');
   const [multiCursorPositionString, setMultiCursorPositionString] = useState('');
   const {
-    userMakingRequest: { fileRelativeLocation, teamPermissions },
+    userMakingRequest: { fileTeamPrivacy, teamPermissions },
   } = useFileRouteLoaderData();
 
-  const isAvailableArgs = { filePermissions: permissions, fileRelativeLocation, isAuthenticated, teamPermissions };
+  const isAvailableArgs = { filePermissions: permissions, fileTeamPrivacy, isAuthenticated, teamPermissions };
 
   useEffect(() => {
     const updateCursor = () => {

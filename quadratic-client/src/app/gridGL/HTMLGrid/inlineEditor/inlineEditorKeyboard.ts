@@ -121,6 +121,7 @@ class InlineEditorKeyboard {
           await keyboardPosition(e);
         }
       } else {
+        e.stopPropagation();
         inlineEditorHandler.close(0, e.code === 'ArrowDown' ? 1 : -1, false);
       }
     }

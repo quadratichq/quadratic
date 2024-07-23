@@ -1,26 +1,28 @@
-import { getDeleteConnectionAction } from '@/routes/_api.connections';
-import { TestConnectionResponse } from '@/shared/api/connectionClient';
+import { getDeleteConnectionAction } from '@/routes/api.connections';
+import { connectionClient } from '@/shared/api/connectionClient';
+import { ConnectionFormValues } from '@/shared/components/connections/connectionsByType';
+import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
-import { cn } from '@/shared/shadcn/utils';
 import { CircularProgress } from '@mui/material';
 import { CheckCircledIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons';
+import mixpanel from 'mixpanel-browser';
+import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { useSubmit } from 'react-router-dom';
 
 type ConnectionState = 'idle' | 'loading' | 'success' | 'error';
-export type ValidateThenTestConnection = () => Promise<() => Promise<TestConnectionResponse>>;
 
 export function ConnectionFormActions({
+  connectionType,
   connectionUuid,
   form,
   handleNavigateToListView,
-  validateThenTest,
 }: {
+  connectionType: ConnectionType;
   connectionUuid: string | undefined;
   form: UseFormReturn<any>;
   handleNavigateToListView: () => void;
-  validateThenTest: ValidateThenTestConnection;
 }) {
   const submit = useSubmit();
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
@@ -29,16 +31,15 @@ export function ConnectionFormActions({
 
   const formData = form.watch();
 
-  // If the user changed some data in the form while it was idle,
-  // we'll reset the state of the connection so they know it's not valid anymore
+  // If the user changed some data, reset the state of the connection so they
+  // know it's not valid anymore
   useEffect(() => {
-    if (connectionState === 'idle') return;
     const hasChanges = Object.keys(formData).some((key) => formData[key] !== formDataSnapshot[key]);
     if (hasChanges) {
       setConnectionState('idle');
       setFormDataSnapshot(formData);
     }
-  }, [formData, formDataSnapshot, connectionState]);
+  }, [formData, formDataSnapshot]);
 
   return (
     <div className="flex flex-col gap-4 pt-4">
@@ -47,38 +48,42 @@ export function ConnectionFormActions({
           <div className="mr-auto flex items-center gap-2">
             <Button
               type="button"
-              variant="secondary"
+              className="w-32"
+              variant={connectionState === 'success' ? 'success' : 'secondary'}
               disabled={connectionState === 'loading'}
-              onClick={() => {
-                validateThenTest()
-                  .then(async (test) => {
-                    setConnectionState('loading');
-                    const { connected, message } = await test();
-                    setConnectionError(connected === false && message ? message : '');
-                    setConnectionState(connected ? 'success' : 'error');
-                  })
-                  .catch(() => {
-                    // form validation failed, don't do anything
-                  });
+              onClick={form.handleSubmit(async (values: ConnectionFormValues) => {
+                const { name, type, ...typeDetails } = values;
+                mixpanel.track('[Connections].test', { type });
+                setConnectionState('loading');
 
-                // TODO: (connections) log to sentry if it fails?
-              }}
+                try {
+                  const { connected, message } = await connectionClient.test.run({
+                    type,
+                    typeDetails,
+                  });
+                  setConnectionError(connected === false && message ? message : '');
+                  setConnectionState(connected ? 'success' : 'error');
+                } catch (e) {
+                  setConnectionError('Network error: failed to make connection.');
+                  setConnectionState('error');
+                }
+              })}
             >
-              Test connection
-            </Button>
-            {connectionState === 'loading' && <CircularProgress style={{ width: 18, height: 18 }} />}
-            <div
-              className={cn(
-                `ml-auto flex items-center gap-1 pr-1 font-medium`,
-                (connectionState === 'idle' || connectionState === 'loading') && 'text-muted-foreground',
-                connectionState === 'success' && 'text-success',
-                connectionState === 'error' && 'text-destructive'
+              {connectionState === 'success' ? (
+                <>
+                  <CheckCircledIcon className="mr-1" /> Connected
+                </>
+              ) : connectionState === 'loading' ? (
+                <CircularProgress style={{ width: 18, height: 18 }} />
+              ) : (
+                'Test'
               )}
-            >
-              {/* {connectionState === 'idle' && <Type>Untested</Type>} */}
-              {connectionState === 'success' && <CheckCircledIcon />}
-              {connectionState === 'error' && <ExclamationTriangleIcon />}
-            </div>
+            </Button>
+            {connectionState === 'error' && (
+              <div className={`ml-auto flex items-center gap-1 pr-1 font-medium text-destructive`}>
+                <ExclamationTriangleIcon />
+              </div>
+            )}
           </div>
 
           <Button variant="outline" onClick={handleNavigateToListView} type="button">
@@ -106,9 +111,10 @@ export function ConnectionFormActions({
             onClick={() => {
               const doDelete = window.confirm('Please confirm you want delete this connection. This cannot be undone.');
               if (doDelete) {
+                mixpanel.track('[Connections].delete', { type: connectionType });
                 const data = getDeleteConnectionAction(connectionUuid);
                 submit(data, {
-                  action: '/_api/connections',
+                  action: ROUTES.API.CONNECTIONS,
                   method: 'POST',
                   encType: 'application/json',
                   navigate: false,

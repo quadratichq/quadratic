@@ -49,15 +49,16 @@ async function handler(
   }
   const lastCheckpointDataUrl = await generatePresignedUrl(checkpoint.s3Key);
 
-  // Location of the file relative to the user making the request
-  // If it was shared _somehow_, e.g. direct invite or public link,
-  // we just leave it undefined
-  let fileRelativeLocation: ApiTypes['/v0/files/:uuid.GET.response']['userMakingRequest']['fileRelativeLocation'] =
-    undefined;
+  // Privacy of the file as it relates to the user making the request.
+  // `undefined` means it was shared _somehow_, e.g. direct invite or public link,
+  // but the user doesn't have access to the file's team
+  let fileTeamPrivacy: ApiTypes['/v0/files/:uuid.GET.response']['userMakingRequest']['fileTeamPrivacy'] = undefined;
   if (ownerUserId === userId) {
-    fileRelativeLocation = 'TEAM_PRIVATE';
+    fileTeamPrivacy = 'PRIVATE_TO_ME';
+  } else if (ownerUserId !== null && teamRole) {
+    fileTeamPrivacy = 'PRIVATE_TO_SOMEONE_ELSE';
   } else if (ownerUserId === null && teamRole) {
-    fileRelativeLocation = 'TEAM_PUBLIC';
+    fileTeamPrivacy = 'PUBLIC_TO_TEAM';
   }
 
   const data = {
@@ -71,14 +72,16 @@ async function handler(
       lastCheckpointVersion: checkpoint?.version,
       lastCheckpointDataUrl,
       thumbnail: thumbnailSignedUrl,
+      ownerUserId: ownerUserId ? ownerUserId : undefined,
     },
     // TODO: (team-schema) these should be guaranteed after shipping the new schema
     // @ts-expect-error
     team: { uuid: ownerTeam.uuid, name: ownerTeam.name },
     userMakingRequest: {
+      id: userId,
       filePermissions,
-      fileRelativeLocation,
       fileRole,
+      fileTeamPrivacy,
       teamRole,
       teamPermissions,
     },

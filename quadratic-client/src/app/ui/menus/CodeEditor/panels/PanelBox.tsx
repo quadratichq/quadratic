@@ -28,7 +28,7 @@ export const PanelBox = (props: Props) => {
 
   return (
     <div id={id} className={`relative flex flex-col overflow-scroll`} style={{ height }}>
-      <Button variant={'ghost'} onClick={toggleOpen} className="p-0">
+      <Button variant="ghost" onClick={toggleOpen} className="p-0 hover:bg-transparent">
         <div className={'flex w-full items-center px-2 pb-2 pt-2'}>
           <ChevronRightIcon
             className={cn(
@@ -39,7 +39,7 @@ export const PanelBox = (props: Props) => {
           {title}
         </div>
       </Button>
-      <div className={cn('grow overflow-scroll', open ? 'block' : 'hidden')}>{children}</div>
+      <div className={'h-full overflow-hidden' + (open ? '' : 'hidden')}>{children}</div>
     </div>
   );
 };

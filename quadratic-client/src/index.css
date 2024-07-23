@@ -58,13 +58,3 @@ a {
   content: '›' !important;
   font-size: 1.125rem !important;
 }
-
-/* Hide stepper controls on input number */
-input.no-stepper[type='number']::-webkit-inner-spin-button,
-input.no-stepper[type='number']::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-input[type='number'].no-stepper {
-  -moz-appearance: textfield;
-}

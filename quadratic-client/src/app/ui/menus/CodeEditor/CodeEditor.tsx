@@ -2,7 +2,7 @@ import { usePythonState } from '@/app/atoms/usePythonState';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Coordinate, SheetPosTS } from '@/app/gridGL/types/size';
-import { JsCodeCell, JsRenderCodeCell, Pos, SheetRect } from '@/app/quadratic-core-types';
+import { CodeCellLanguage, JsCodeCell, JsRenderCodeCell, Pos, SheetRect } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import mixpanel from 'mixpanel-browser';
@@ -10,6 +10,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { Diagnostic } from 'vscode-languageserver-types';
+import { useConnectionState } from '@/app/atoms/useConnectionState';
 import { useJavascriptState } from '@/app/atoms/useJavascriptState';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
@@ -57,10 +58,10 @@ export const CodeEditor = () => {
   } = useCodeEditor();
   const { pythonState } = usePythonState();
   const javascriptState = useJavascriptState();
+  const connectionState = useConnectionState();
 
   const [cellsAccessed, setCellsAccessed] = useState<SheetRect[] | undefined | null>();
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
-
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
 
@@ -91,7 +92,8 @@ export const CodeEditor = () => {
 
     // we use the for keyboardCell so we know whether we can delete a cell with
     // the code editor open
-    pixiAppSettings.unsavedEditorChanges = unsaved;
+    pixiAppSettings.unsavedEditorChanges = unsaved ? editorContent : undefined;
+
     return unsaved;
   }, [codeString, editorContent]);
 
@@ -251,11 +253,13 @@ export const CodeEditor = () => {
       language: editorMode,
       cursor: sheets.getCursorPosition(),
     });
+
     setCodeString(editorContent ?? '');
 
     mixpanel.track('[CodeEditor].cellRun', {
       type: mode,
     });
+
     // Google Ads Conversion for running a cell
     if (googleAnalyticsAvailable()) {
       //@ts-expect-error
@@ -266,13 +270,18 @@ export const CodeEditor = () => {
   };
 
   const cancelRun = () => {
-    if (editorInteractionState.mode === 'Python') {
+    if (mode === 'Python') {
       if (pythonState === 'running') {
         pythonWebWorker.cancelExecution();
       }
-    } else if (editorInteractionState.mode === 'Javascript') {
+    } else if (mode === 'Javascript') {
       if (javascriptState === 'running') {
         javascriptWebWorker.cancelExecution();
+      }
+    } else if (mode === 'Connection') {
+      if (connectionState === 'running') {
+        const language: CodeCellLanguage = { Connection: {} as any };
+        quadraticCore.sendCancelExecution(language);
       }
     }
   };
@@ -351,10 +360,12 @@ export const CodeEditor = () => {
   };
 
   const codeEditorPanelData = useCodeEditorPanelData();
+  const showReturnType = Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved);
 
   if (!showCodeEditor) {
     return null;
   }
+
   return (
     <div
       id="code-editor-container"
@@ -373,7 +384,7 @@ export const CodeEditor = () => {
       <div
         id="QuadraticCodeEditorID"
         className={cn(
-          'flex min-h-0 shrink flex-col',
+          'flex min-h-0 shrink select-none flex-col',
           codeEditorPanelData.panelPosition === 'left' ? 'order-2' : 'order-1'
         )}
         style={{
@@ -424,11 +435,11 @@ export const CodeEditor = () => {
           cellsAccessed={!unsaved ? cellsAccessed : []}
           cellLocation={cellLocation}
         />
-        {editorInteractionState.mode !== 'Formula' && (
+        {editorInteractionState.mode !== 'Formula' && showReturnType && (
           <ReturnTypeInspector
             language={editorInteractionState.mode}
             evaluationResult={evaluationResult}
-            show={Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved)}
+            show={showReturnType}
           />
         )}
       </div>

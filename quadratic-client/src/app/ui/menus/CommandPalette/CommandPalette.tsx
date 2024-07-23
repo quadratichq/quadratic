@@ -11,6 +11,7 @@ import { Command } from './CommandPaletteListItem';
 import { BordersHook } from './commands/Borders';
 import codeCommandGroup from './commands/Code';
 import { columnRowCommandGroup } from './commands/ColumnRow';
+import connectionsCommandGroup from './commands/Connections';
 import editCommandGroup from './commands/Edit';
 import fileCommandGroup from './commands/File';
 import formatCommandGroup from './commands/Format';
@@ -24,7 +25,7 @@ import viewCommandGroup from './commands/View';
 export const CommandPalette = () => {
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
-    userMakingRequest: { fileRelativeLocation, teamPermissions },
+    userMakingRequest: { fileTeamPrivacy, teamPermissions },
   } = useFileRouteLoaderData();
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [activeSearchValue, setActiveSearchValue] = useState<string>('');
@@ -53,6 +54,7 @@ export const CommandPalette = () => {
     fileCommandGroup,
     viewCommandGroup,
     importCommandGroup,
+    connectionsCommandGroup,
     borderCommandGroup,
     textCommandGroup,
     formatCommandGroup,
@@ -82,8 +84,7 @@ export const CommandPalette = () => {
             // Is the command even available?
             if (
               isAvailable &&
-              isAvailable({ filePermissions: permissions, isAuthenticated, teamPermissions, fileRelativeLocation }) !==
-                true
+              isAvailable({ filePermissions: permissions, isAuthenticated, teamPermissions, fileTeamPrivacy }) !== true
             ) {
               return;
             }

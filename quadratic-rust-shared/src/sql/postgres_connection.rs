@@ -1,8 +1,10 @@
 use std::collections::BTreeMap;
 
 use arrow::datatypes::Date32Type;
+use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
+use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::{
@@ -45,6 +47,7 @@ impl PostgresConnection {
     }
 }
 
+#[async_trait]
 impl Connection for PostgresConnection {
     type Conn = PgConnection;
     type Row = PgRow;
@@ -80,13 +83,39 @@ impl Connection for PostgresConnection {
         Ok(pool)
     }
 
-    async fn query(&self, mut pool: Self::Conn, sql: &str) -> Result<Vec<Self::Row>> {
-        let rows = sqlx::query(sql)
-            .fetch_all(&mut pool)
-            .await
-            .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
+    async fn query(
+        &self,
+        mut pool: Self::Conn,
+        sql: &str,
+        max_bytes: Option<u64>,
+    ) -> Result<(Vec<Self::Row>, bool)> {
+        let mut rows = vec![];
+        let mut over_the_limit = false;
 
-        Ok(rows)
+        if let Some(max_bytes) = max_bytes {
+            let mut bytes = 0;
+            let mut stream = sqlx::query(sql).fetch(&mut pool);
+
+            while let Some(row) = stream.next().await {
+                let row = row.map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
+                bytes += row.len() as u64;
+
+                if bytes > max_bytes {
+                    over_the_limit = true;
+                    break;
+                }
+
+                rows.push(row);
+            }
+            tracing::info!("Query executed with {bytes} bytes");
+        } else {
+            rows = sqlx::query(sql)
+                .fetch_all(&mut pool)
+                .await
+                .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
+        }
+
+        Ok((rows, over_the_limit))
     }
 
     async fn schema(&self, pool: Self::Conn) -> Result<DatabaseSchema> {
@@ -103,7 +132,7 @@ impl Connection for PostgresConnection {
                     and c.table_catalog = '{database}'
             order by c.table_name, c.ordinal_position, c.column_name");
 
-        let rows = self.query(pool, &sql).await?;
+        let (rows, _) = self.query(pool, &sql, None).await?;
 
         let mut schema = DatabaseSchema {
             database: self.database.to_owned().unwrap_or_default(),
@@ -237,11 +266,12 @@ mod tests {
     async fn test_postgres_connection() {
         let connection = new_postgres_connection();
         let pool = connection.connect().await.unwrap();
-        let rows = connection
+        let (rows, _) = connection
             // .query(pool, "select * from \"FileCheckpoint\" limit 10")
             .query(
                 pool,
                 "select * from all_native_data_types order by id limit 1",
+                None,
             )
             .await
             .unwrap();

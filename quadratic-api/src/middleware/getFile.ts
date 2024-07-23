@@ -38,7 +38,8 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
     throw new ApiError(410, 'File has been deleted');
   }
 
-  // TODO: (connections) what if the team has been archived?
+  // TODO: what if the team has been archived? We don't support this yet, but we
+  // will one day when we implement archiving a team.
 
   // FYI: the included relational data is not always filtered on the `where`
   // clause because `userId` is possibly `undefined`
@@ -54,7 +55,7 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
   // Only define the relationship if they're logged in
   if (userId !== undefined) {
     if (file.ownerUserId === userId) {
-      userFileRelationship = { context: 'private-to-me' };
+      userFileRelationship = { context: 'private-to-me', teamRole };
     } else if (file.ownerUserId) {
       userFileRelationship = { context: 'private-to-someone-else', fileRole };
     } else {

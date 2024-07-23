@@ -3,7 +3,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { downloadFile, downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
 import { FileContextType } from '@/app/ui/components/FileProvider';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { getActionFileDuplicate } from '@/routes/files.$uuid';
+import { getActionFileDuplicate } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
@@ -17,7 +17,7 @@ type IsAvailableArgs = {
   filePermissions: FilePermission[];
   isAuthenticated: boolean;
   teamPermissions: TeamPermission[] | undefined;
-  fileRelativeLocation: ApiTypes['/v0/files/:uuid.GET.response']['userMakingRequest']['fileRelativeLocation'];
+  fileTeamPrivacy: ApiTypes['/v0/files/:uuid.GET.response']['userMakingRequest']['fileTeamPrivacy'];
 };
 
 export type GenericAction = {
@@ -64,10 +64,10 @@ export const hasPermissionToEditFile = (filePermissions: FilePermission[]) => fi
 export const isAvailableBecauseCanEditFile = ({ filePermissions }: IsAvailableArgs) =>
   hasPermissionToEditFile(filePermissions);
 const isAvailableBecauseLoggedIn = ({ isAuthenticated }: IsAvailableArgs) => isAuthenticated;
-const isAvailableBecauseFileLocationIsAccessibleAndWriteable = ({
-  fileRelativeLocation,
+export const isAvailableBecauseFileLocationIsAccessibleAndWriteable = ({
+  fileTeamPrivacy,
   teamPermissions,
-}: IsAvailableArgs) => Boolean(fileRelativeLocation) && Boolean(teamPermissions?.includes('TEAM_EDIT'));
+}: IsAvailableArgs) => Boolean(fileTeamPrivacy) && Boolean(teamPermissions?.includes('TEAM_EDIT'));
 
 export const createNewFileAction = {
   label: 'Create',
@@ -87,13 +87,12 @@ export const duplicateFileAction = {
   isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
   async run({ uuid, submit }: { uuid: string; submit: SubmitFunction }) {
     const data = getActionFileDuplicate({ redirect: true, isPrivate: true });
-    submit(data, { method: 'POST', action: `/files/${uuid}`, encType: 'application/json' });
+    submit(data, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
   },
 };
 
 export const downloadFileAction = {
   label: 'Download',
-  // TODO: (connections) this should probably read from team connections to duplicate
   isAvailable: isAvailableBecauseLoggedIn,
   async run({ name }: { name: FileContextType['name'] }) {
     downloadQuadraticFile(name, await quadraticCore.export());
@@ -108,7 +107,7 @@ export const deleteFile = {
     if (window.confirm('Please confirm you want to delete this file.')) {
       try {
         await apiClient.files.delete(uuid);
-        window.location.href = ROUTES.FILES;
+        window.location.href = '/';
       } catch (e) {
         addGlobalSnackbar('Failed to delete file. Try again.', { severity: 'error' });
       }

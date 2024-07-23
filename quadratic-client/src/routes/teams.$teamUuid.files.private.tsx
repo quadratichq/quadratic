@@ -1,8 +1,7 @@
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { ROUTES } from '@/shared/constants/routes';
 import { Box, useTheme } from '@mui/material';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
-import { Navigate, useRouteError } from 'react-router-dom';
+import { useRouteError } from 'react-router-dom';
 import { debugShowUILogs } from '../app/debugFlags';
 import CreateFileButton from '../dashboard/components/CreateFileButton';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
@@ -12,11 +11,7 @@ import { FilesListEmptyState } from '../dashboard/components/FilesListEmptyState
 
 export const Component = () => {
   const {
-    activeTeam: {
-      team: { uuid },
-      filesPrivate,
-      userMakingRequest: { teamPermissions },
-    },
+    activeTeam: { filesPrivate },
   } = useDashboardRouteLoaderData();
 
   const files = filesPrivate.map(
@@ -33,11 +28,6 @@ export const Component = () => {
       permissions: filePermissions,
     })
   );
-
-  // Make sure they have permission to view this route
-  if (!teamPermissions.includes('TEAM_EDIT')) {
-    return <Navigate to={ROUTES.TEAM(uuid)} />;
-  }
 
   return (
     <>

@@ -301,18 +301,11 @@ export const apiClient = {
   },
 
   connections: {
-    async list(args: { teamUuid: string } | { fileUuid: string }) {
-      if ('teamUuid' in args) {
-        return fetchFromApi(
-          `/v0/connections?team-uuid=${args.teamUuid}`,
-          { method: 'GET' },
-          ApiSchemas['/v0/connections?team-uuid.GET.response']
-        );
-      }
+    async list(teamUuid: string) {
       return fetchFromApi(
-        `/v0/connections?file-uuid=${args.fileUuid}`,
+        `/v0/teams/${teamUuid}/connections`,
         { method: 'GET' },
-        ApiSchemas['/v0/connections?file-uuid.GET.response']
+        ApiSchemas['/v0/teams/:uuid/connections.GET.response']
       );
     },
     async get(uuid: string) {
