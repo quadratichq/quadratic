@@ -203,8 +203,18 @@ pub(crate) async fn serve() -> Result<()> {
     Ok(())
 }
 
-pub(crate) async fn healthcheck() -> impl IntoResponse {
-    StatusCode::OK
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+pub struct HealthResponse {
+    pub status: String,
+    pub version: String,
+}
+
+pub(crate) async fn healthcheck() -> Json<HealthResponse> {
+    HealthResponse {
+        status: "ok".into(),
+        version: env!("CARGO_PKG_VERSION").into(),
+    }
+    .into()
 }
 
 pub(crate) async fn static_ips() -> Result<Json<StaticIpsResponse>> {
