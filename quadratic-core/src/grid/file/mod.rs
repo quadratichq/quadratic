@@ -1,6 +1,6 @@
 use crate::compression::{
     add_header, decompress_and_deserialize, deserialize, remove_header, serialize,
-    serialize_and_compress,
+    serialize_and_compress, CompressionFormat, SerializationFormat,
 };
 
 use super::Grid;
@@ -18,6 +18,9 @@ mod v1_5;
 mod v1_6;
 
 pub static CURRENT_VERSION: &str = "1.6";
+pub static SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Json;
+pub static COMPRESSION_FORMAT: CompressionFormat = CompressionFormat::Zlib;
+pub static HEADER_SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Bincode;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FileVersion {
@@ -78,8 +81,9 @@ fn import_binary(file_contents: &[u8]) -> Result<Grid> {
 
     // we're currently not doing anything with the file version, but will in
     // the future as we use different serialization and compression methods
-    let _file_version = deserialize::<FileVersion>(header)?;
-    let schema = decompress_and_deserialize::<GridSchema>(data)?;
+    let _file_version = deserialize::<FileVersion>(&HEADER_SERIALIZATION_FORMAT, header)?;
+    let schema =
+        decompress_and_deserialize::<GridSchema>(&SERIALIZATION_FORMAT, &COMPRESSION_FORMAT, data)?;
     current::import(schema)
 }
 
@@ -97,10 +101,14 @@ pub fn export(grid: &Grid) -> Result<Vec<u8>> {
     let version = FileVersion {
         version: CURRENT_VERSION.into(),
     };
-    let header = serialize(&version)?;
+    let header = serialize(&HEADER_SERIALIZATION_FORMAT, &version)?;
 
     let converted = current::export(grid)?;
-    let compressed = serialize_and_compress::<GridSchema>(&converted)?;
+    let compressed = serialize_and_compress::<GridSchema>(
+        &SERIALIZATION_FORMAT,
+        &COMPRESSION_FORMAT,
+        &converted,
+    )?;
     let data = add_header(header, compressed)?;
 
     Ok(data)
