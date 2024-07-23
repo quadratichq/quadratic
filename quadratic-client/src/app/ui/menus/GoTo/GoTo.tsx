@@ -21,6 +21,7 @@ export const GoTo = () => {
       ...state,
       showGoToMenu: false,
     }));
+    setTimeout(() => focusGrid());
   };
 
   const coordinates = getCoordinatesFromUserInput(value);
@@ -58,7 +59,7 @@ export const GoTo = () => {
     });
     moveViewport({ topLeft: cursorPosition });
     closeMenu();
-    focusGrid();
+    setTimeout(() => focusGrid());
   };
 
   return (
