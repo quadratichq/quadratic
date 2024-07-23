@@ -2,19 +2,19 @@ const snippets = [
   {
     label: 'Read data from the sheet',
     keywords: 'reference cells',
-    code: `x1 = 0;
-y1 = 0;
-x2 = 0;
-y2 = 0;
+    code: `let x1 = 0;
+let y1 = 0;
+let x2 = 0;
+let y2 = 0;
 
 // Reference a single value from the sheet
-let single_cell_data = await cell(x1, y1);
+let single_cell_data = cell(x1, y1);
 
 // Reference a range of cells (returns an array)
-let range_data = await cells(x1, y1, x2, y2);
+let range_data = cells(x1, y1, x2, y2);
 
 // Reference cell or range of cells in another sheet
-let range_other_sheet_data = await cells(x1, y1, x2, y2, sheet_name);
+let range_other_sheet_data = cells(x1, y1, x2, y2, 'Sheet 1');
 
 // Returns the data to the sheet in a 2d array starting at the code cell
 return range_data;`,
