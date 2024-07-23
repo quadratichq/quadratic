@@ -221,7 +221,7 @@ impl AstNode {
     ) -> CodeResult<Spanned<RangeRef>> {
         match &self.inner {
             AstNodeContents::FunctionCall { func, args } if func.inner == ":" => {
-                eval_cell_range_op(ctx, args, self.span)
+                eval_cell_range_op(ctx, args, self.span, only_parse)
             }
             AstNodeContents::Paren(contents) if contents.len() == 1 => {
                 contents[0].to_range_ref(ctx, only_parse)
@@ -299,13 +299,13 @@ impl AstNode {
                 }
 
                 let args = super::functions::IndexFunctionArgs::from_values(
-                    |i| Some(range_rects.get(i as usize)?.inner.size()),
+                    |i| Some(range_rects.get(i)?.inner.size()),
                     row,
                     column,
                     range_num,
                 )?;
 
-                let indexed_pos = &range_rects[args.tuple_index as usize]
+                let indexed_pos = &range_rects[args.tuple_index]
                     .inner
                     .index_cell(args.x, args.y)
                     .ok_or(RunErrorMsg::IndexOutOfBounds.with_span(self.span))?;
@@ -334,13 +334,14 @@ fn eval_cell_range_op(
     ctx: &mut Ctx<'_>,
     args: &[AstNode],
     span: Span,
+    only_parse: bool,
 ) -> CodeResult<Spanned<RangeRef>> {
     if args.len() != 2 {
         internal_error!("invalid arguments to cell range operator");
     }
 
-    let ref1 = args[0].to_cell_ref(ctx, false)?;
-    let ref2 = args[1].to_cell_ref(ctx, false)?;
+    let ref1 = args[0].to_cell_ref(ctx, only_parse)?;
+    let ref2 = args[1].to_cell_ref(ctx, only_parse)?;
     Ok(RangeRef::CellRange {
         start: ref1,
         end: ref2,

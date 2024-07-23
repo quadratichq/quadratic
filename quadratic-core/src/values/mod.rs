@@ -218,7 +218,7 @@ impl Spanned<Value> {
                 array = t
                     .into_iter()
                     .flat_map(|a| a.into_cell_values_vec())
-                    .collect()
+                    .collect();
             }
         };
 
