@@ -270,6 +270,7 @@ function handleShiftKey(deltaX: number, deltaY: number) {
     columnRow: null,
     multiCursor,
     keyboardMovePosition: newMovePosition,
+    ensureVisible: { x: newMovePosition.x, y: newMovePosition.y },
   });
   if (!inlineEditorHandler.cursorIsMoving) {
     pixiAppSettings.changeInput(false);
