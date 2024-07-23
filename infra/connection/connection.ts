@@ -54,6 +54,7 @@ const launchConfiguration = new aws.ec2.LaunchConfiguration("connection-lc", {
     )
   ),
 });
+
 // Create a new Target Group
 const targetGroup = new aws.lb.TargetGroup("connection-nlb-tg", {
   port: 80,
@@ -75,11 +76,6 @@ const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
       value: `connection-instance-${connectionSubdomain}`,
       propagateAtLaunch: true,
     },
-    // {
-    //   key: "userDataHash",
-    //   value: launchConfiguration.userData.apply((u) => sha256(u)),
-    //   propagateAtLaunch: true,
-    // },
   ],
   vpcZoneIdentifiers: [
     connectionPrivateSubnet1.id,
@@ -95,7 +91,6 @@ const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
     preferences: {
       minHealthyPercentage: 50,
     },
-    // triggers: ["tag"],
   },
 });
 
