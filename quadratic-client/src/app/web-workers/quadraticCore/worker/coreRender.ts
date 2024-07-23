@@ -6,13 +6,13 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import { SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import { JsRenderCell, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 import { CoreRenderMessage, RenderCoreMessage, RenderCoreRequestRenderCells } from '../coreRenderMessages';
 import { core } from './core';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
-    sendCompleteRenderCells: (sheetId: string, hashX: number, hashY: number, cells: string) => void;
+    sendCompleteRenderCells: (sheetId: string, hashX: number, hashY: number, cells: JsRenderCell[]) => void;
     sendSheetInfoRender: (sheetInfo: SheetInfo[]) => void;
     sendSheetInfoUpdateRender: (sheetInfo: SheetInfo) => void;
     sendAddSheetRender: (sheetInfo: SheetInfo) => void;
@@ -68,8 +68,8 @@ class CoreRender {
     this.send({ type: 'coreRenderRenderCells', cells, id: data.id });
   }
 
-  sendCompleteRenderCells = (sheetId: string, hashX: number, hashY: number, cells: string) => {
-    this.send({ type: 'coreRenderCompleteRenderCells', sheetId, hashX, hashY, cells });
+  sendCompleteRenderCells = (sheetId: string, hashX: number, hashY: number, renderCells: JsRenderCell[]) => {
+    this.send({ type: 'coreRenderCompleteRenderCells', sheetId, hashX, hashY, renderCells });
   };
 
   sendSheetInfoRender = (sheetInfo: SheetInfo[]) => {

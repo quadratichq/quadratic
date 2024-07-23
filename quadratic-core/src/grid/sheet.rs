@@ -261,6 +261,9 @@ impl Sheet {
             text_color: column.text_color.get(pos.y),
             fill_color: column.fill_color.get(pos.y),
             numeric_commas: column.numeric_commas.get(pos.y),
+            align: column.align.get(pos.y),
+            vertical_align: column.vertical_align.get(pos.y),
+            wrap: column.wrap.get(pos.y),
             ..Default::default()
         });
         let format = if include_sheet_info {
@@ -279,6 +282,9 @@ impl Sheet {
             text_color: format.text_color,
             fill_color: format.fill_color,
             commas: format.numeric_commas,
+            align: format.align,
+            vertical_align: format.vertical_align,
+            wrap: format.wrap,
         }
     }
 
@@ -700,6 +706,9 @@ mod test {
             text_color: None,
             fill_color: None,
             commas: None,
+            align: None,
+            vertical_align: None,
+            wrap: None,
         };
         assert_eq!(value, cell_format_summary);
 

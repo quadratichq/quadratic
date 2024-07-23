@@ -168,6 +168,10 @@ pub struct CellFormatSummary {
 
     pub text_color: Option<String>,
     pub fill_color: Option<String>,
+
+    pub align: Option<CellAlign>,
+    pub vertical_align: Option<CellVerticalAlign>,
+    pub wrap: Option<CellWrap>,
 }
 
 #[derive(Serialize, PartialEq, Debug)]

@@ -14,7 +14,7 @@ import { SheetPosTS } from '@/app/gridGL/types/size';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToHex } from '@/app/helpers/convertColor';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { CellFormatSummary, JsRenderCell } from '@/app/quadratic-core-types';
+import { CellFormatSummary } from '@/app/quadratic-core-types';
 import { createFormulaStyleHighlights } from '@/app/ui/menus/CodeEditor/useEditorCellHighlights';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -43,7 +43,6 @@ class InlineEditorHandler {
 
   cursorIsMoving = false;
 
-  private renderCell?: JsRenderCell;
   private formatSummary?: CellFormatSummary;
   temporaryBold: boolean | undefined;
   temporaryItalic: boolean | undefined;
@@ -73,7 +72,6 @@ class InlineEditorHandler {
     this.x = this.y = this.width = this.height = 0;
     this.location = undefined;
     this.formula = false;
-    this.renderCell = undefined;
     this.formatSummary = undefined;
     this.temporaryBold = undefined;
     this.temporaryItalic = undefined;
@@ -181,11 +179,12 @@ class InlineEditorHandler {
           value = (await quadraticCore.getEditCell(this.location.sheetId, this.location.x, this.location.y)) || '';
         }
       }
-      const [renderCell, formatSummary] = await Promise.all([
-        quadraticCore.getRenderCell(this.location.sheetId, this.location.x, this.location.y),
-        quadraticCore.getCellFormatSummary(this.location.sheetId, this.location.x, this.location.y, true),
-      ]);
-      this.renderCell = renderCell;
+      const formatSummary = await quadraticCore.getCellFormatSummary(
+        this.location.sheetId,
+        this.location.x,
+        this.location.y,
+        true
+      );
       this.formatSummary = formatSummary;
       this.temporaryBold = this.formatSummary?.bold || undefined;
       this.temporaryItalic = this.formatSummary?.italic || undefined;
@@ -281,9 +280,9 @@ class InlineEditorHandler {
     const cellOutlineOffset = CURSOR_THICKNESS * (this.formula ? 0.5 : 1);
     const cellContentWidth = width - cellOutlineOffset * 2;
     const cellContentHeight = height - cellOutlineOffset * 2;
-    const align = this.renderCell?.align ?? 'left';
-    const verticalAlign = this.renderCell?.verticalAlign ?? 'top';
-    const wrap = this.renderCell?.wrap ?? 'overflow';
+    const align = this.formatSummary?.align ?? 'left';
+    const verticalAlign = this.formatSummary?.verticalAlign ?? 'top';
+    const wrap = this.formatSummary?.wrap ?? 'overflow';
     const { width: inlineEditorWidth, height: inlineEditorHeight } = inlineEditorMonaco.updateTextLayout(
       cellContentWidth,
       cellContentHeight,

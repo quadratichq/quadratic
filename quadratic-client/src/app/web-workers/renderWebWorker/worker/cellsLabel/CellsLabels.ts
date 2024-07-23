@@ -368,8 +368,7 @@ export class CellsLabels {
     }
   }
 
-  completeRenderCells(hashX: number, hashY: number, cells: string): void {
-    const renderCells: JsRenderCell[] = JSON.parse(cells);
+  completeRenderCells(hashX: number, hashY: number, renderCells: JsRenderCell[]): void {
     const key = this.getHashKey(hashX, hashY);
     let cellsHash = this.cellsTextHash.get(key);
     if (!cellsHash) {

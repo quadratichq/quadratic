@@ -298,12 +298,6 @@ export interface CoreClientGetRenderCell {
   id: number;
 }
 
-export interface CoreClientRenderCodeCells {
-  type: 'coreClientRenderCodeCells';
-  sheetId: string;
-  codeCells: JsRenderCodeCell[];
-}
-
 export interface CoreClientHtmlOutput {
   type: 'coreClientHtmlOutput';
   html: JsHtmlOutput[];
@@ -618,6 +612,12 @@ export interface CoreClientSheetBorders {
   type: 'coreClientSheetBorders';
   sheetId: string;
   borders: JsRenderBorders;
+}
+
+export interface CoreClientSheetRenderCells {
+  type: 'coreClientSheetRenderCells';
+  sheetId: string;
+  renderCells: JsRenderCell[];
 }
 
 export interface CoreClientSheetCodeCellRender {
@@ -935,7 +935,6 @@ export type ClientCoreMessage =
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
-  | CoreClientRenderCodeCells
   | CoreClientGetEditCell
   | CoreClientCellHasContent
   | CoreClientGetCellFormatSummary
@@ -966,6 +965,7 @@ export type CoreClientMessage =
   | CoreClientGenerateThumbnail
   | CoreClientLoad
   | CoreClientSheetBorders
+  | CoreClientSheetRenderCells
   | CoreClientSheetCodeCellRender
   | CoreClientSheetBoundsUpdate
   | CoreClientImportProgress

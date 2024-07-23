@@ -7,7 +7,7 @@
  */
 
 import { debugShowCellHashesInfo } from '@/app/debugFlags';
-import { JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import { JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 import init from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../renderBitmapFonts';
@@ -108,10 +108,10 @@ class RenderText {
   };
 
   // Called before first render when all text visible in the viewport has been rendered and sent to the client
-  completeRenderCells(message: { sheetId: string; hashX: number; hashY: number; cells: string }) {
+  completeRenderCells(message: { sheetId: string; hashX: number; hashY: number; renderCells: JsRenderCell[] }) {
     const cellsLabels = this.cellsLabels.get(message.sheetId);
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.completeRenderCells');
-    cellsLabels.completeRenderCells(message.hashX, message.hashY, message.cells);
+    cellsLabels.completeRenderCells(message.hashX, message.hashY, message.renderCells);
   }
 
   addSheet(sheetInfo: SheetInfo) {

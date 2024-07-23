@@ -5,6 +5,7 @@ import {
   JsCodeCell,
   JsHtmlOutput,
   JsRenderBorders,
+  JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
   JsSheetFill,
@@ -27,7 +28,7 @@ declare var self: WorkerGlobalScope &
       width: number,
       height: number
     ) => void;
-    sendCompleteRenderCells: (sheetId: string, hashX: number, hashY: number, cells: string) => void;
+    sendCompleteRenderCells: (sheetId: string, hashX: number, hashY: number, cells: JsRenderCell[]) => void;
     sendAddSheetClient: (sheetInfo: SheetInfo, user: boolean) => void;
     sendDeleteSheetClient: (sheetId: string, user: boolean) => void;
     sendSheetInfoClient: (sheets: SheetInfo[]) => void;
@@ -57,6 +58,7 @@ declare var self: WorkerGlobalScope &
     sendSheetHtml: (html: JsHtmlOutput[]) => void;
     sendUpdateHtml: (html: JsHtmlOutput) => void;
     sendGenerateThumbnail: () => void;
+    sendSheetRenderCells: (sheetId: string, renderCells: JsRenderCell[]) => void;
     sendSheetCodeCell: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
     sendSheetBoundsUpdateClient: (sheetBounds: SheetBounds) => void;
     sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
@@ -111,7 +113,9 @@ export const jsImportProgress = (
 };
 
 export const jsRenderCellSheets = (sheetId: string, hashX: bigint, hashY: bigint, cells: string /*JsRenderCell[]*/) => {
-  self.sendCompleteRenderCells(sheetId, Number(hashX), Number(hashY), cells);
+  const renderCells = JSON.parse(cells) as JsRenderCell[];
+  self.sendSheetRenderCells(sheetId, renderCells);
+  self.sendCompleteRenderCells(sheetId, Number(hashX), Number(hashY), renderCells);
 };
 
 export const jsAddSheet = (sheetInfoStringified: string, user: boolean) => {

@@ -134,7 +134,7 @@ export class CellsTextHash {
         // refetching the cell contents.
         cells = false;
       } else {
-        cells = dirty as JsRenderCell[];
+        cells = dirty;
       }
 
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating ${this.hashX}, ${this.hashY}`);

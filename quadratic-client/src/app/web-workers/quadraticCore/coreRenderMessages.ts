@@ -42,7 +42,7 @@ export interface CoreRenderCompleteRenderCells {
   sheetId: string;
   hashX: number;
   hashY: number;
-  cells: string;
+  renderCells: JsRenderCell[];
 }
 
 export interface CoreRenderAddSheet {

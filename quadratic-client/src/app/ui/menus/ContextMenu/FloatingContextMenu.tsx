@@ -267,18 +267,14 @@ export const FloatingContextMenu = (props: Props) => {
   const updateContextMenuState = useCallback(async () => {
     const sheetId = sheets.current;
     const location = sheets.sheet.cursor.cursorPosition;
-    const [renderCell, formatSummary] = await Promise.all([
-      quadraticCore.getRenderCell(sheetId, location.x, location.y),
-      quadraticCore.getCellFormatSummary(sheetId, location.x, location.y, true),
-    ]);
-    setCursorBold(renderCell?.bold ?? false);
-    setCursorItalic(renderCell?.italic ?? false);
-    setCursorTextColor(renderCell?.textColor ?? '');
-    setCursorAlign(renderCell?.align ?? 'left');
-    setCursorVerticalAlign(renderCell?.verticalAlign ?? 'top');
-    setCursorWrap(renderCell?.wrap ?? 'overflow');
-
-    const fillColor = formatSummary?.fillColor ?? '';
+    const formatSummary = await quadraticCore.getCellFormatSummary(sheetId, location.x, location.y, true);
+    setCursorBold(!!formatSummary.bold);
+    setCursorItalic(!!formatSummary.italic);
+    setCursorTextColor(formatSummary.textColor ?? '');
+    setCursorAlign(formatSummary.align ?? 'left');
+    setCursorVerticalAlign(formatSummary.verticalAlign ?? 'top');
+    setCursorWrap(formatSummary.wrap ?? 'overflow');
+    const fillColor = formatSummary.fillColor ?? '';
     setCursorFillColor(fillColor === 'blank' ? '' : fillColor);
   }, []);
 
@@ -297,6 +293,7 @@ export const FloatingContextMenu = (props: Props) => {
     window.addEventListener('keyup', updateContextMenuCSSTransform);
     events.on('cellMoving', trigger);
     events.on('cursorPosition', updateContextMenuState);
+    events.on('renderCells', updateContextMenuState);
 
     return () => {
       viewport.removeListener('moved', updateContextMenuCSSTransform);
@@ -306,6 +303,7 @@ export const FloatingContextMenu = (props: Props) => {
       window.removeEventListener('keyup', updateContextMenuCSSTransform);
       events.off('cellMoving', trigger);
       events.off('cursorPosition', updateContextMenuState);
+      events.off('renderCells', updateContextMenuState);
     };
   }, [updateContextMenuCSSTransform, updateContextMenuState]);
 
@@ -349,6 +347,7 @@ export const FloatingContextMenu = (props: Props) => {
           <IconButton
             size="small"
             onClick={async () => {
+              setCursorBold((prev) => !prev);
               await setBold();
               updateContextMenuState();
             }}
@@ -362,6 +361,7 @@ export const FloatingContextMenu = (props: Props) => {
           <IconButton
             size="small"
             onClick={async () => {
+              setCursorItalic((prev) => !prev);
               await setItalic();
               updateContextMenuState();
             }}

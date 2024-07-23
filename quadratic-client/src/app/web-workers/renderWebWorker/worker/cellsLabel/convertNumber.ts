@@ -52,7 +52,6 @@ export const reduceDecimals = (
       currentFractionDigits = split[1].length - 1;
     }
     const updated = convertNumber(original, format, currentFractionDigits);
-    console.log(updated, currentFractionDigits);
     if (updated !== current) {
       return { number: updated, currentFractionDigits };
     }

@@ -11,6 +11,7 @@ import {
   JsCodeCell,
   JsHtmlOutput,
   JsRenderBorders,
+  JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
   JsRowHeight,
@@ -59,6 +60,7 @@ declare var self: WorkerGlobalScope &
     sendUpdateHtml: (html: JsHtmlOutput) => void;
     sendGenerateThumbnail: () => void;
     sendSheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
+    sendSheetRenderCells: (sheetId: string, renderCells: JsRenderCell[]) => void;
     sendSheetCodeCell: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
     sendSheetBoundsUpdateClient: (sheetBounds: SheetInfo) => void;
     sendTransactionStart: (
@@ -104,6 +106,7 @@ class CoreClient {
     self.sendUpdateHtml = coreClient.sendUpdateHtml;
     self.sendGenerateThumbnail = coreClient.sendGenerateThumbnail;
     self.sendSheetBorders = coreClient.sendSheetBorders;
+    self.sendSheetRenderCells = coreClient.sendSheetRenderCells;
     self.sendSheetCodeCell = coreClient.sendSheetCodeCell;
     self.sendSheetBoundsUpdateClient = coreClient.sendSheetBoundsUpdate;
     self.sendTransactionStart = coreClient.sendTransactionStart;
@@ -602,6 +605,10 @@ class CoreClient {
 
   sendSheetBorders = (sheetId: string, borders: JsRenderBorders) => {
     this.send({ type: 'coreClientSheetBorders', sheetId, borders });
+  };
+
+  sendSheetRenderCells = (sheetId: string, renderCells: JsRenderCell[]) => {
+    this.send({ type: 'coreClientSheetRenderCells', sheetId, renderCells });
   };
 
   sendSheetCodeCell = (sheetId: string, codeCells: JsRenderCodeCell[]) => {

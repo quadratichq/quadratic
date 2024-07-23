@@ -5,6 +5,7 @@ import {
   JsCodeCell,
   JsHtmlOutput,
   JsRenderBorders,
+  JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
   JsRowHeight,
@@ -56,6 +57,7 @@ interface EventTypes {
   htmlOutput: (html: JsHtmlOutput[]) => void;
   htmlUpdate: (html: JsHtmlOutput) => void;
   sheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
+  renderCells: (sheetId: string, codeCells: JsRenderCell[]) => void;
   renderCodeCells: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
   resizeRowHeights: (sheetId: string, rowHeights: JsRowHeight[]) => void;
 
