@@ -146,7 +146,6 @@ class Sheets {
   get sheet(): Sheet {
     const sheet = this.sheets.find((sheet) => sheet.id === this.current);
     if (!sheet) {
-      if (!this.sheets.length) console.log('Sheet not defined. This is expected during hmr loading');
       // these lines remove some console errors during hmr loading.
       const sheet = new Sheet(
         {

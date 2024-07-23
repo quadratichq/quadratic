@@ -1,7 +1,7 @@
 import { events } from '@/app/events/events';
 import { FeedbackIcon } from '@/app/ui/icons';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { useFileRouteLoaderData } from '@/routes/file.$uuid';
+import { useFileRouteLoaderData } from '@/routes/useFileRouteLoaderData';
 import { Commit } from '@mui/icons-material';
 import { Stack, useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';

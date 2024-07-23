@@ -33,7 +33,11 @@ export class Pointer {
     viewport.on('pointermove', this.pointerMove);
     viewport.on('pointerup', this.pointerUp);
     viewport.on('pointerupoutside', this.pointerUp);
-    pixiApp.canvas.addEventListener('pointerleave', this.pointerLeave);
+
+    // canvas may not be defined during hmr
+    if (pixiApp.canvas) {
+      pixiApp.canvas.addEventListener('pointerleave', this.pointerLeave);
+    }
     window.addEventListener('blur', this.pointerLeave);
     window.addEventListener('visibilitychange', this.visibilityChange);
   }

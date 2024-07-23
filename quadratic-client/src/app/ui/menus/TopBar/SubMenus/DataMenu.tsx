@@ -4,7 +4,7 @@ import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { DataIcon } from '@/app/ui/icons';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { useFileRouteLoaderData } from '@/routes/file.$uuid';
+import { useFileRouteLoaderData } from '@/routes/useFileRouteLoaderData';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CSV_IMPORT_MESSAGE, PARQUET_IMPORT_MESSAGE } from '@/shared/constants/appConstants';
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';

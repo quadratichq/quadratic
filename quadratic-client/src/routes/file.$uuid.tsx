@@ -5,12 +5,12 @@ import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import initRustClient from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { VersionComparisonResult, compareVersions } from '@/app/schemas/compareVersions';
-import QuadraticApp from '@/app/ui/QuadraticApp';
+import { QuadraticApp } from '@/app/ui/QuadraticApp';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { initWorkers } from '@/app/web-workers/workers';
 import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
 import { apiClient } from '@/shared/api/apiClient';
-import { ROUTES, ROUTE_LOADER_IDS } from '@/shared/constants/routes';
+import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
@@ -24,7 +24,6 @@ import {
   redirect,
   useLoaderData,
   useRouteError,
-  useRouteLoaderData,
 } from 'react-router-dom';
 import { MutableSnapshot, RecoilRoot } from 'recoil';
 import { Empty } from '../dashboard/components/Empty';
@@ -175,5 +174,3 @@ export const ErrorBoundary = () => {
     />
   );
 };
-
-export const useFileRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.FILE) as FileData;
