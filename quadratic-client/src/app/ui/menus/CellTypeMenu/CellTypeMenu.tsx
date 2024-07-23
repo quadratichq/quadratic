@@ -98,7 +98,7 @@ export default function CellTypeMenu() {
       ...editorInteractionState,
       showCellTypeMenu: false,
     });
-    setTimeout(() => focusGrid());
+    setTimeout(() => focusGrid(), 100);
   }, [editorInteractionState, setEditorInteractionState]);
 
   const openEditor = useCallback(
