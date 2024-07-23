@@ -228,7 +228,7 @@ class InlineEditorMonaco {
     const line = formula.split('\n')[position.lineNumber - 1];
     const lastCharacter =
       line
-        .substring(0, position.column - 2)
+        .substring(0, position.column - 1) // 1-indexed to 0-indexed
         .trimEnd()
         .at(-1) ?? '';
     return lastCharacter;
