@@ -181,13 +181,12 @@ class InlineEditorHandler {
           value = (await quadraticCore.getEditCell(this.location.sheetId, this.location.x, this.location.y)) || '';
         }
       }
-      this.renderCell = await quadraticCore.getRenderCell(this.location.sheetId, this.location.x, this.location.y);
-      this.formatSummary = await quadraticCore.getCellFormatSummary(
-        this.location.sheetId,
-        this.location.x,
-        this.location.y,
-        true
-      );
+      const [renderCell, formatSummary] = await Promise.all([
+        quadraticCore.getRenderCell(this.location.sheetId, this.location.x, this.location.y),
+        quadraticCore.getCellFormatSummary(this.location.sheetId, this.location.x, this.location.y, true),
+      ]);
+      this.renderCell = renderCell;
+      this.formatSummary = formatSummary;
       this.temporaryBold = this.formatSummary?.bold || undefined;
       this.temporaryItalic = this.formatSummary?.italic || undefined;
       inlineEditorMonaco.set(value);

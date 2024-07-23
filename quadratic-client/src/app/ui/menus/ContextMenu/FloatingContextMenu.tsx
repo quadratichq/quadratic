@@ -257,24 +257,29 @@ export const FloatingContextMenu = (props: Props) => {
   // formatting state at cursor position
   const [cursorBold, setCursorBold] = useState(false);
   const [cursorItalic, setCursorItalic] = useState(false);
-  const [cursorTextColor, setCursorTextColor] = useState<string>('');
+  const [cursorTextColor, setCursorTextColor] = useState('');
   const [cursorAlign, setCursorAlign] = useState<CellAlign>('left');
   const [cursorVerticalAlign, setCursorVerticalAlign] = useState<CellVerticalAlign>('top');
   const [cursorWrap, setCursorWrap] = useState<CellWrap>('overflow');
+  const [cursorFillColor, setCursorFillColor] = useState('');
 
   // fetch render cell from core and update formatting state at cursor position
   const updateContextMenuState = useCallback(async () => {
-    const renderCell = await quadraticCore.getRenderCell(
-      sheets.current,
-      sheets.sheet.cursor.cursorPosition.x,
-      sheets.sheet.cursor.cursorPosition.y
-    );
-    setCursorBold(renderCell?.bold || false);
-    setCursorItalic(renderCell?.italic || false);
-    setCursorTextColor(renderCell?.textColor || '');
-    setCursorAlign(renderCell?.align || 'left');
-    setCursorVerticalAlign(renderCell?.verticalAlign || 'top');
-    setCursorWrap(renderCell?.wrap || 'overflow');
+    const sheetId = sheets.current;
+    const location = sheets.sheet.cursor.cursorPosition;
+    const [renderCell, formatSummary] = await Promise.all([
+      quadraticCore.getRenderCell(sheetId, location.x, location.y),
+      quadraticCore.getCellFormatSummary(sheetId, location.x, location.y, true),
+    ]);
+    setCursorBold(renderCell?.bold ?? false);
+    setCursorItalic(renderCell?.italic ?? false);
+    setCursorTextColor(renderCell?.textColor ?? '');
+    setCursorAlign(renderCell?.align ?? 'left');
+    setCursorVerticalAlign(renderCell?.verticalAlign ?? 'top');
+    setCursorWrap(renderCell?.wrap ?? 'overflow');
+
+    const fillColor = formatSummary?.fillColor ?? '';
+    setCursorFillColor(fillColor === 'blank' ? '' : fillColor);
   }, []);
 
   // trigger is used to hide the menu when cellMoving
@@ -564,7 +569,10 @@ export const FloatingContextMenu = (props: Props) => {
             <div>
               <TooltipHint title="Fill color">
                 <IconButton size="small" sx={iconBtnSx}>
-                  <PaintBucketIcon fontSize={iconSize} />
+                  <PaintBucketIcon
+                    fontSize={iconSize}
+                    style={{ color: cursorFillColor ? cursorFillColor : 'inherit' }}
+                  />
                 </IconButton>
               </TooltipHint>
             </div>
@@ -575,11 +583,13 @@ export const FloatingContextMenu = (props: Props) => {
               fillColorRef.current?.closeMenu();
               setFillColor(color);
               focusGrid();
+              updateContextMenuState();
             }}
             onClear={() => {
               fillColorRef.current?.closeMenu();
               clearFillColor();
               focusGrid();
+              updateContextMenuState();
             }}
           />
         </Menu>
