@@ -190,6 +190,8 @@ export class PixiApp {
   };
 
   attach(parent: HTMLDivElement): void {
+    if (!this.canvas) return;
+
     this.parent = parent;
     parent.appendChild(this.canvas);
     this.resize();
