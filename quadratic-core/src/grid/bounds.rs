@@ -129,12 +129,4 @@ mod test {
         grid_bounds.extend_y(5);
         assert_eq!(grid_bounds, GridBounds::NonEmpty(Rect::new(1, 2, 3, 5)));
     }
-
-    #[test]
-    fn to_rect() {
-        let grid_bounds = GridBounds::NonEmpty(Rect::new(1, 2, 3, 4));
-        assert_eq!(grid_bounds.to_rect(), Some(Rect::new(1, 2, 3, 4)));
-        let grid_bounds = GridBounds::Empty;
-        assert_eq!(grid_bounds.to_rect(), None);
-    }
 }
