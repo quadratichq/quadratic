@@ -1,5 +1,5 @@
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { useFileRouteLoaderData } from '@/routes/useFileRouteLoaderData';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandList } from '@/shared/shadcn/ui/command';
 import fuzzysort from 'fuzzysort';
 import mixpanel from 'mixpanel-browser';
