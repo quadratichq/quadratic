@@ -1,21 +1,24 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetPosTS } from '@/app/gridGL/types/size';
+import { codeCellIsAConnection, getCodeCell, getConnectionUuid, getLanguage } from '@/app/helpers/codeCellLanguage';
+import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
-import { CodeRun } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
+import { GetConnections } from '@/routes/api.connections';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { cn } from '@/shared/shadcn/utils';
-import { Close, PlayArrow, Stop, Subject } from '@mui/icons-material';
+import { Close, PlayArrow, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
 import { useEffect, useState } from 'react';
+import { useFetcher } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
-import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
-import { Formula, JavaScript, Python } from '../../icons';
 import { SnippetsPopover } from './SnippetsPopover';
 
 interface Props {
@@ -29,10 +32,28 @@ interface Props {
 
 export const CodeEditorHeader = (props: Props) => {
   const { cellLocation, unsaved, saveAndRunCell, cancelRun, closeEditor } = props;
+  const {
+    userMakingRequest: { teamPermissions },
+  } = useFileRouteLoaderData();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
-  const hasPermission = hasPermissionToEditFile(editorInteractionState.permissions);
-  const language = editorInteractionState.mode;
+  const isConnection = codeCellIsAConnection(editorInteractionState.mode);
+  const hasPermission =
+    hasPermissionToEditFile(editorInteractionState.permissions) &&
+    (isConnection ? teamPermissions?.includes('TEAM_EDIT') : true);
+  const codeCell = getCodeCell(editorInteractionState.mode);
+  const connectionsFetcher = useFetcher<GetConnections>({ key: 'CONNECTIONS_FETCHER_KEY' });
+  const language = getLanguage(editorInteractionState.mode);
+
+  // Get the connection name (it's possible the user won't have access to it
+  // because they're in a file they have access to but not the team — or
+  // the connection was deleted)
+  let currentConnectionName = '';
+  if (connectionsFetcher.data) {
+    const connectionUuid = getConnectionUuid(editorInteractionState.mode);
+    const foundConnection = connectionsFetcher.data.connections.find(({ uuid }) => uuid === connectionUuid);
+    if (foundConnection) currentConnectionName = foundConnection.name;
+  }
 
   // Keep track of the current sheet ID so we know whether to show the sheet name or not
   const currentCodeEditorCellIsNotInActiveSheet = currentSheetId !== editorInteractionState.selectedCellSheet;
@@ -107,10 +128,12 @@ export const CodeEditorHeader = (props: Props) => {
 
     events.on('pythonState', playerState);
     events.on('javascriptState', playerState);
+    events.on('connectionState', playerState);
     events.on('multiplayerUpdate', multiplayerUpdate);
     return () => {
       events.off('pythonState', playerState);
       events.off('javascriptState', playerState);
+      events.off('connectionState', playerState);
       events.off('multiplayerUpdate', multiplayerUpdate);
     };
   }, [cellLocation]);
@@ -126,34 +149,30 @@ export const CodeEditorHeader = (props: Props) => {
             `after:pointer-events-none after:absolute after:-bottom-0.5 after:-right-0.5 after:h-3 after:w-3 after:rounded-full after:border-2 after:border-solid after:border-background after:bg-gray-400 after:content-['']`
         )}
       >
-        <TooltipHint title={`${language}${unsaved ? ' · Unsaved changes' : ''}`} placement="bottom">
+        <TooltipHint title={`${codeCell?.label}${unsaved ? ' · Unsaved changes' : ''}`} placement="bottom">
           <div className="flex items-center">
-            {language === 'Python' ? (
-              <Python sx={{ color: colors.languagePython }} fontSize="small" />
-            ) : language === 'Formula' ? (
-              <Formula sx={{ color: colors.languageFormula }} fontSize="small" />
-            ) : language === 'Javascript' ? (
-              <JavaScript sx={{ color: colors.languageJavascript }} fontSize="small" />
-            ) : (
-              <Subject fontSize="small" />
-            )}
+            <LanguageIcon language={codeCell?.id} fontSize="small" />
           </div>
         </TooltipHint>
       </div>
-      <div className="mx-2 flex truncate text-sm font-medium">
-        Cell ({cellLocation.x}, {cellLocation.y}) {unsaved && ' - Unsaved changes'}
-        {currentCodeEditorCellIsNotInActiveSheet && (
-          <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
+      <div className="mx-2 flex flex-col truncate">
+        <div className="text-sm font-medium leading-4">
+          Cell ({cellLocation.x}, {cellLocation.y})
+          {currentCodeEditorCellIsNotInActiveSheet && (
+            <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
+          )}
+        </div>
+        {currentConnectionName && (
+          <div className="text-xs leading-4 text-muted-foreground">Connection: {currentConnectionName}</div>
         )}
       </div>
-
       <div className="ml-auto flex flex-shrink-0 items-center gap-2">
         {isRunningComputation && (
-          <TooltipHint title={'Python executing…'} placement="bottom">
+          <TooltipHint title={`${language} executing…`} placement="bottom">
             <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
           </TooltipHint>
         )}
-        {hasPermission && <CodeEditorRefButton />}
+        {hasPermission && ['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
         {hasPermission && ['Python', 'Javascript'].includes(language as string) && <SnippetsPopover />}
         {hasPermission &&
           (!isRunningComputation ? (

@@ -1,6 +1,6 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { useFileRouteLoaderData } from '@/dashboard/FileRoute';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';

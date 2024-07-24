@@ -3,6 +3,8 @@ import { UICellImages } from '@/app/gridGL/UI/UICellImages';
 import { UICellMoving } from '@/app/gridGL/UI/UICellMoving';
 import { CellHighlights } from '@/app/gridGL/UI/cellHighlights/CellHighlights';
 import { CellsImages } from '@/app/gridGL/cells/cellsImages/CellsImages';
+import { ensureVisible } from '@/app/gridGL/interaction/viewportHelper';
+import { Coordinate } from '@/app/gridGL/types/size';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
@@ -25,7 +27,6 @@ import { BoxCells } from '../UI/boxCells';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { CellsSheets } from '../cells/CellsSheets';
 import { Pointer } from '../interaction/pointer/Pointer';
-import { ensureVisible } from '../interaction/viewportHelper';
 import { pixiAppSettings } from './PixiAppSettings';
 import { Update } from './Update';
 import { Viewport } from './Viewport';
@@ -190,6 +191,8 @@ export class PixiApp {
   };
 
   attach(parent: HTMLDivElement): void {
+    if (!this.canvas) return;
+
     this.parent = parent;
     parent.appendChild(this.canvas);
     this.resize();
@@ -309,18 +312,14 @@ export class PixiApp {
     });
   }
 
-  updateCursorPosition(
-    options = {
-      ensureVisible: true,
-    }
-  ): void {
+  updateCursorPosition(visible: boolean | Coordinate = true) {
     this.cursor.dirty = true;
     this.cellHighlights.dirty = true;
     this.headings.dirty = true;
     if (!pixiAppSettings.showCellTypeOutlines) {
       this.cellsSheets.updateCellsArray();
     }
-    if (options.ensureVisible) ensureVisible();
+    if (visible) ensureVisible(visible !== true ? visible : undefined);
     events.emit('cursorPosition');
   }
 

@@ -1,5 +1,5 @@
-import { useFileRouteLoaderData } from '@/dashboard/FileRoute';
-import { useRootRouteLoaderData } from '@/router';
+import { useRootRouteLoaderData } from '@/routes/_root';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
@@ -56,8 +56,9 @@ export const TopBarFileMenu = () => {
 function FileLocation() {
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
+    file: { ownerUserId },
     team,
-    userMakingRequest: { isFileOwner, fileRole },
+    userMakingRequest: { fileRole, teamRole, id: userId },
   } = useFileRouteLoaderData();
   const linkProps = {
     reloadDocument: true,
@@ -69,39 +70,42 @@ function FileLocation() {
     return null;
   }
 
-  // Figure out the user's relationship to the file and the link back to its
-  // location in the dashboard
-  let DashboardLink;
-  if (team) {
-    DashboardLink = (
-      <Link to={ROUTES.TEAM(team.uuid)} {...linkProps} title={team.name}>
+  // Determine where the file is located and where we link back to
+  let dashboardLink = null;
+  if (ownerUserId && ownerUserId === userId) {
+    // My private file
+    dashboardLink = (
+      <Link to={ROUTES.TEAM_FILES_PRIVATE(team.uuid)} {...linkProps}>
+        Private
+      </Link>
+    );
+  } else if (ownerUserId === undefined && teamRole) {
+    // Team file
+    dashboardLink = (
+      <Link to={ROUTES.TEAM_FILES(team.uuid)} {...linkProps}>
         {team.name}
       </Link>
     );
-  } else if (isFileOwner) {
-    DashboardLink = (
-      <Link to={ROUTES.FILES} {...linkProps} title="My files">
-        My files
-      </Link>
-    );
   } else if (fileRole) {
-    DashboardLink = (
-      <Link to={ROUTES.FILES_SHARED_WITH_ME} {...linkProps} title="Shared with me">
+    // File i was invited to
+    dashboardLink = (
+      <Link to={ROUTES.FILES_SHARED_WITH_ME} {...linkProps}>
         Shared with me
       </Link>
     );
   }
 
   // They must be seeing the file because the public link is being used
-  if (!DashboardLink) {
+  if (dashboardLink === null) {
     return null;
   }
 
   return (
     <>
       <Type className="hidden text-muted-foreground hover:text-foreground hover:underline md:block">
-        {DashboardLink}
+        {dashboardLink}
       </Type>
+
       <Type variant="body2" className="hidden select-none text-muted-foreground opacity-50 md:block">
         /
       </Type>

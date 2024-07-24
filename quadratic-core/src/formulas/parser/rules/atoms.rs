@@ -23,7 +23,7 @@ impl SyntaxRule for StringLiteral {
 /// Matches an numeric literal.
 #[derive(Debug, Copy, Clone)]
 pub struct NumericLiteral;
-impl_display!(for NumericLiteral, "numeric literal, such as '42' or '6.022e23'");
+impl_display!(for NumericLiteral, "numeric literal such as '42' or '6.022e23'");
 impl SyntaxRule for NumericLiteral {
     type Output = AstNode;
 
@@ -50,7 +50,7 @@ impl SyntaxRule for NumericLiteral {
 /// reference.
 #[derive(Debug, Copy, Clone)]
 pub struct SheetRefPrefix;
-impl_display!(for SheetRefPrefix, "sheet reference, such as 'MySheet!' or '\"Sheet 2\"!'");
+impl_display!(for SheetRefPrefix, "sheet reference such as 'MySheet!' or '\"Sheet 2\"!'");
 impl SyntaxRule for SheetRefPrefix {
     type Output = String;
 
@@ -84,7 +84,7 @@ impl SyntaxRule for SheetRefPrefix {
 /// Matches a single cell reference.
 #[derive(Debug, Copy, Clone)]
 pub struct CellReference;
-impl_display!(for CellReference, "cell reference, such as 'A6' or '$ZB$3'");
+impl_display!(for CellReference, "cell reference such as 'A6' or '$ZB$3'");
 impl SyntaxRule for CellReference {
     type Output = Spanned<CellRef>;
 
@@ -122,7 +122,7 @@ impl SyntaxRule for CellReference {
 /// part of an expression.
 #[derive(Debug, Copy, Clone)]
 pub struct CellRangeReference;
-impl_display!(for CellRangeReference, "cell range reference, such as 'A6:D10' or '$ZB$3'");
+impl_display!(for CellRangeReference, "cell range reference such as 'A6:D10' or '$ZB$3'");
 impl SyntaxRule for CellRangeReference {
     type Output = Spanned<RangeRef>;
 
@@ -146,7 +146,7 @@ impl SyntaxRule for CellRangeReference {
 
 #[derive(Debug, Copy, Clone)]
 pub struct BoolExpression;
-impl_display!(for BoolExpression, "boolean, either 'TRUE' or 'FALSE'");
+impl_display!(for BoolExpression, "boolean such as 'TRUE' or 'FALSE'");
 impl SyntaxRule for BoolExpression {
     type Output = AstNode;
 
