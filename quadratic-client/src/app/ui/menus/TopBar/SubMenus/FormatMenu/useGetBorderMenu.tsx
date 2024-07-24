@@ -33,7 +33,7 @@ export function useGetBorderMenu(): JSX.Element | null {
 
   const { changeBorders } = useBorders();
 
-  const [multiCursor, setMultiCursor] = useState(!!sheets.sheet.cursor.multiCursor);
+  const [multiCursor, setMultiCursor] = useState(!!sheets.sheet?.cursor.multiCursor);
   const clearSelection = useCallback(() => {
     setBorderSelection('clear');
     setMultiCursor(!!sheets.sheet.cursor.multiCursor);

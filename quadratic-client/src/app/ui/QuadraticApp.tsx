@@ -13,7 +13,7 @@ import { pixiApp } from '../gridGL/pixiApp/PixiApp';
 import QuadraticUIContext from './QuadraticUIContext';
 import { QuadraticLoading } from './loading/QuadraticLoading';
 
-export default function QuadraticApp() {
+export function QuadraticApp() {
   const { loggedInUser } = useRootRouteLoaderData();
 
   const [loading, setLoading] = useState(true);
