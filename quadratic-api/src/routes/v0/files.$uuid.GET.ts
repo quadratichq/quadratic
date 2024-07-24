@@ -74,7 +74,7 @@ async function handler(
       thumbnail: thumbnailSignedUrl,
       ownerUserId: ownerUserId ? ownerUserId : undefined,
     },
-    team: { uuid: ownerTeam.uuid, name: ownerTeam.name },
+    team: { uuid: (ownerTeam as any).uuid, name: (ownerTeam as any).name },
     userMakingRequest: {
       id: userId,
       filePermissions,
