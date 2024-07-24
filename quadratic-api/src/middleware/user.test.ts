@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { app } from '../app';
 import dbClient from '../dbClient';
-import { createFile } from '../tests/testDataGenerator';
+import { clearDb, createFile } from '../tests/testDataGenerator';
 
 beforeEach(async () => {
   // Create a user
@@ -55,18 +55,7 @@ beforeEach(async () => {
   });
 });
 
-afterEach(async () => {
-  await dbClient.$transaction([
-    dbClient.fileInvite.deleteMany(),
-    dbClient.teamInvite.deleteMany(),
-    dbClient.userTeamRole.deleteMany(),
-    dbClient.userFileRole.deleteMany(),
-    dbClient.fileCheckpoint.deleteMany(),
-    dbClient.file.deleteMany(),
-    dbClient.user.deleteMany(),
-    dbClient.team.deleteMany(),
-  ]);
-});
+afterEach(clearDb);
 
 jest.mock('auth0', () => {
   return {
