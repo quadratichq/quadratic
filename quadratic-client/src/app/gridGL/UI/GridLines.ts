@@ -1,5 +1,6 @@
 //! Draws grid lines on the canvas. The grid lines fade as the user zooms out,
-//! and disappears at higher zoom levels.
+//! and disappears at higher zoom levels. We remove lines between cells that
+//! overflow (and in the future, merged cells).
 
 import { Graphics, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
@@ -28,7 +29,7 @@ export class GridLines extends Graphics {
     this.lineStyle({ width: 1, color: colors.gridLines, alpha: 0.125, alignment: 0.5, native: false });
     const range = this.drawHorizontalLines(bounds);
     this.drawVerticalLines(bounds, range);
-    this.dirty = true;
+    this.dirty = false;
   }
 
   update(bounds = pixiApp.viewport.getVisibleBounds(), scale = pixiApp.viewport.scale.x, forceRefresh = false) {

@@ -3,7 +3,7 @@
 import { Coordinate } from '@/app/gridGL/types/size';
 
 export class GridOverflowLines {
-  private overflowLines: Map<Coordinate, string>;
+  private overflowLines: Map<string, string>;
 
   constructor() {
     this.overflowLines = new Map();
@@ -19,7 +19,7 @@ export class GridOverflowLines {
     });
 
     coordinates.forEach((coordinate) => {
-      this.overflowLines.set(coordinate, hashKey);
+      this.overflowLines.set(`${coordinate.x},${coordinate.y}`, hashKey);
     });
   }
 
@@ -32,13 +32,13 @@ export class GridOverflowLines {
     }
 
     // create a list of y coordinates that need removing
-    const lines = [...this.overflowLines];
-    const inRangeSorted = lines
-      .filter((coordinate) => {
-        const { x, y } = coordinate[0];
-        return x === column && y >= row[0] && y <= row[1];
-      })
-      .map((coordinate) => coordinate[0].y);
+    const inRangeSorted = [];
+    for (let y = row[0]; y <= row[1]; y++) {
+      const key = `${column},${y}`;
+      if (this.overflowLines.has(key)) {
+        inRangeSorted.push(y);
+      }
+    }
 
     // if there are no gaps, then draw the entire screen
     if (inRangeSorted.length === 0) {
