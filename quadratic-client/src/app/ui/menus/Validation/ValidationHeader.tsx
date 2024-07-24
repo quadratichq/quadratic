@@ -16,8 +16,8 @@ export const ValidationHeader = () => {
   }, [setEditorInteractionState]);
 
   return (
-    <div className="flex items-center justify-between">
-      <div className="whitespace-nowrap text-sm font-medium leading-4">Data Validation</div>
+    <div className="flex items-center justify-between border-b border-b-gray-100 pb-2">
+      <div className="whitespace-nowrap font-medium leading-4">Data Validation</div>
       <TooltipHint title="Close" shortcut="ESC" placement="bottom">
         <IconButton size="small" onClick={close}>
           <Close />
