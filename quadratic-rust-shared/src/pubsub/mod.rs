@@ -47,7 +47,7 @@ pub trait PubSub {
         &mut self,
         channel: &str,
         key: &str,
-        value: &str,
+        value: &[u8],
         active_channel: Option<&str>,
     ) -> impl Future<Output = Result<()>> + Send;
 
@@ -70,25 +70,25 @@ pub trait PubSub {
         keys: Option<&str>,
         max_messages: usize,
         preserve_sequence: bool,
-    ) -> impl Future<Output = Result<Vec<(String, String)>>> + Send;
+    ) -> impl Future<Output = Result<Vec<(String, Vec<u8>)>>> + Send;
 
     fn get_messages_before(
         &mut self,
         channel: &str,
         id: &str,
         preserve_sequence: bool,
-    ) -> impl Future<Output = Result<Vec<(String, String)>>> + Send;
+    ) -> impl Future<Output = Result<Vec<(String, Vec<u8>)>>> + Send;
 
     fn get_messages_from(
         &mut self,
         channel: &str,
         id: &str,
         preserve_sequence: bool,
-    ) -> impl Future<Output = Result<Vec<(String, String)>>> + Send;
+    ) -> impl Future<Output = Result<Vec<(String, Vec<u8>)>>> + Send;
 
     fn last_message(
         &mut self,
         channel: &str,
         preserve_sequence: bool,
-    ) -> impl Future<Output = Result<(String, String)>> + Send;
+    ) -> impl Future<Output = Result<(String, Vec<u8>)>> + Send;
 }

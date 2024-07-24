@@ -5,7 +5,6 @@
 //! * converting pending transaction to a completed transaction
 
 use std::collections::{HashSet, VecDeque};
-
 use uuid::Uuid;
 
 use crate::{
@@ -122,9 +121,10 @@ impl PendingTransaction {
             && !self.is_server()
         {
             let transaction_id = self.id.to_string();
-            match serde_json::to_string(&self.forward_operations) {
+
+            match Transaction::serialize_and_compress(&self.forward_operations) {
                 Ok(ops) => {
-                    crate::wasm_bindings::js::jsSendTransaction(transaction_id, ops);
+                    crate::wasm_bindings::js::jsSendTransaction(transaction_id, &ops);
                 }
                 Err(e) => {
                     dbgjs!(format!("Failed to serialize forward operations: {}", e));

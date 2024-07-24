@@ -38,7 +38,7 @@ pub(crate) enum MessageRequest {
         id: Uuid,
         session_id: Uuid,
         file_id: Uuid,
-        operations: String,
+        operations: Vec<u8>,
     },
     GetTransactions {
         file_id: Uuid,

@@ -17,11 +17,11 @@ use axum_extra::TypedHeader;
 use futures::stream::StreamExt;
 use futures_util::stream::SplitSink;
 use futures_util::SinkExt;
+use quadratic_rust_shared::auth::jwt::{authorize, get_jwks};
 use serde::{Deserialize, Serialize};
 use std::ops::ControlFlow;
 use std::{net::SocketAddr, sync::Arc};
 use tokio::sync::Mutex;
-use quadratic_rust_shared::auth::jwt::{authorize, get_jwks};
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -339,6 +339,7 @@ pub(crate) mod tests {
         http::{self, Request},
     };
     use quadratic_core::controller::operations::operation::Operation;
+    use quadratic_core::controller::transaction::Transaction;
     use quadratic_core::grid::SheetId;
 
     use tower::ServiceExt;
@@ -533,17 +534,18 @@ pub(crate) mod tests {
             name: "test".to_string(),
         }];
         let id = Uuid::new_v4();
-        let operations = serde_json::to_string(&operations).unwrap();
+        let compressed_ops = Transaction::serialize_and_compress(&operations).unwrap();
+
         let request = MessageRequest::Transaction {
             id,
             session_id,
             file_id,
-            operations: operations.clone(),
+            operations: compressed_ops.clone(),
         };
         let expected = MessageResponse::Transaction {
             id,
             file_id,
-            operations,
+            operations: compressed_ops,
             sequence_num: 1,
         };
 

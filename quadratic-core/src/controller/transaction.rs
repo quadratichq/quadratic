@@ -1,10 +1,18 @@
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use crate::compression::{
+    decompress_and_deserialize, serialize_and_compress, CompressionFormat, SerializationFormat,
+};
 
 use super::{
     active_transactions::pending_transaction::PendingTransaction, execution::TransactionType,
     operations::operation::Operation, GridController,
 };
+
+pub static SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Json;
+pub static COMPRESSION_FORMAT: CompressionFormat = CompressionFormat::Zlib;
 
 // Transaction created by client
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
@@ -30,6 +38,22 @@ impl Transaction {
             ..Default::default()
         }
     }
+
+    pub fn serialize_and_compress(opearations: &Vec<Operation>) -> Result<Vec<u8>> {
+        serialize_and_compress::<Vec<Operation>>(
+            &SERIALIZATION_FORMAT,
+            &COMPRESSION_FORMAT,
+            opearations,
+        )
+    }
+
+    pub fn decompress_and_deserialize(opearations: &Vec<u8>) -> Result<Vec<Operation>> {
+        decompress_and_deserialize::<Vec<Operation>>(
+            &SERIALIZATION_FORMAT,
+            &COMPRESSION_FORMAT,
+            &opearations,
+        )
+    }
 }
 
 // Transaction received from Server
@@ -37,7 +61,7 @@ impl Transaction {
 pub struct TransactionServer {
     pub id: Uuid,
     pub file_id: Uuid,
-    pub operations: Vec<Operation>,
+    pub operations: Vec<u8>,
     pub sequence_num: u64,
 }
 
@@ -45,10 +69,12 @@ pub struct TransactionServer {
 #[allow(clippy::from_over_into)]
 impl Into<Transaction> for TransactionServer {
     fn into(self) -> Transaction {
+        let operations = Transaction::decompress_and_deserialize(&self.operations).unwrap();
+
         Transaction {
             id: self.id,
             sequence_num: Some(self.sequence_num),
-            operations: self.operations,
+            operations,
             cursor: None,
         }
     }

@@ -37,7 +37,7 @@ impl PubSub {
         &mut self,
         id: Uuid,
         file_id: Uuid,
-        operations: Vec<Operation>,
+        operations: Vec<u8>,
         sequence_num: u64,
     ) -> Result<u64> {
         let transaction = TransactionServer {
@@ -47,7 +47,6 @@ impl PubSub {
             sequence_num,
         };
 
-        let transaction = serde_json::to_string(&transaction)?;
         let active_channels = match self.config {
             PubSubConfig::RedisStreams(ref config) => config.active_channels.as_str(),
             _ => "active_channels",
@@ -57,7 +56,7 @@ impl PubSub {
             .publish(
                 &file_id.to_string(),
                 &sequence_num.to_string(),
-                &transaction,
+                transaction,
                 Some(active_channels),
             )
             .await?;
@@ -103,7 +102,7 @@ impl State {
         &self,
         id: Uuid,
         file_id: Uuid,
-        operations: Vec<Operation>,
+        operations: Vec<u8>,
         sequence_num: u64,
     ) -> Result<u64> {
         self.pubsub
@@ -117,7 +116,7 @@ impl State {
         &self,
         file_id: &Uuid,
         min_sequence_num: u64,
-    ) -> Result<Vec<TransactionServer>> {
+    ) -> Result<Vec<u8>> {
         Ok(self
             .pubsub
             .lock()
@@ -126,8 +125,8 @@ impl State {
             .get_messages_from(&file_id.to_string(), &min_sequence_num.to_string(), false)
             .await?
             .iter()
-            .flat_map(|(_, message)| serde_json::from_str::<TransactionServer>(message))
-            .collect::<Vec<TransactionServer>>())
+            .flat_map(|(_, message)| message)
+            .collect::<Vec<u8>>())
     }
 
     /// Get the last message from the PubSub channel

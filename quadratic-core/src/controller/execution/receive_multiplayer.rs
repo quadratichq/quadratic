@@ -1,13 +1,18 @@
 use std::collections::VecDeque;
 
 use super::TransactionType;
-use crate::controller::{
-    active_transactions::{
-        pending_transaction::PendingTransaction, unsaved_transactions::UnsavedTransaction,
+use crate::{
+    compression::{
+        decompress_and_deserialize, serialize_and_compress, CompressionFormat, SerializationFormat,
     },
-    operations::operation::Operation,
-    transaction::TransactionServer,
-    GridController,
+    controller::{
+        active_transactions::{
+            pending_transaction::PendingTransaction, unsaved_transactions::UnsavedTransaction,
+        },
+        operations::operation::Operation,
+        transaction::{Transaction, TransactionServer},
+        GridController,
+    },
 };
 use chrono::{Duration, TimeDelta, Utc};
 use uuid::Uuid;
@@ -223,13 +228,16 @@ impl GridController {
 
         // combine all transaction into one transaction
         transactions.iter().for_each(|t| {
+            let operations = Transaction::decompress_and_deserialize(&t.operations).unwrap();
+
             let mut transaction = PendingTransaction {
                 id: t.id,
                 transaction_type: TransactionType::Multiplayer,
-                operations: t.operations.clone().into(),
+                operations: operations.into(),
                 cursor: None,
                 ..Default::default()
             };
+
             self.client_apply_transaction(&mut transaction, t.sequence_num);
         });
         self.reapply_unsaved_transactions();
@@ -246,14 +254,13 @@ impl GridController {
         if let Some(transaction) = self.transactions.unsaved_transactions.find(transaction_id) {
             // send it to the server if we've not successfully sent it to the server
             if cfg!(target_family = "wasm") && !transaction.sent_to_server {
-                if let Ok(operations) =
-                    serde_json::to_string(&unsaved_transaction.forward.operations)
-                {
-                    crate::wasm_bindings::js::jsSendTransaction(
-                        transaction_id.to_string(),
-                        operations,
-                    );
-                }
+                let compressed_ops =
+                    Transaction::serialize_and_compress(&unsaved_transaction.forward.operations)
+                        .unwrap();
+                crate::wasm_bindings::js::jsSendTransaction(
+                    transaction_id.to_string(),
+                    &compressed_ops,
+                );
             }
         } else {
             let transaction = &mut PendingTransaction {
@@ -275,7 +282,7 @@ impl GridController {
 mod tests {
     use super::*;
     use crate::{
-        controller::{transaction_types::JsCodeResult, GridController},
+        controller::{transaction::Transaction, transaction_types::JsCodeResult, GridController},
         grid::{CodeCellLanguage, Sheet},
         CellValue, CodeCellValue, Pos, SheetPos,
     };
@@ -627,6 +634,10 @@ mod tests {
             None,
         );
         let other_1_operations = other.last_transaction().unwrap().operations.clone();
+        println!("other_1_operations: {:?}", other_1_operations);
+        let other_1_operations_compressed =
+            Transaction::serialize_and_compress(&other_1_operations).unwrap();
+
         other.set_cell_value(
             SheetPos {
                 x: 1,
@@ -637,6 +648,8 @@ mod tests {
             None,
         );
         let other_2_operations = other.last_transaction().unwrap().operations.clone();
+        let other_2_operations_compressed =
+            Transaction::serialize_and_compress(&other_2_operations).unwrap();
 
         client.receive_sequence_num(2);
 
@@ -651,13 +664,13 @@ mod tests {
                 file_id: Uuid::new_v4(),
                 id: Uuid::new_v4(),
                 sequence_num: 1,
-                operations: other_1_operations,
+                operations: other_1_operations_compressed,
             },
             TransactionServer {
                 file_id: Uuid::new_v4(),
                 id: Uuid::new_v4(),
                 sequence_num: 2,
-                operations: other_2_operations,
+                operations: other_2_operations_compressed,
             },
         ]);
         assert_eq!(client.transactions.last_sequence_num, 2);
@@ -696,6 +709,8 @@ mod tests {
             None,
         );
         let other_operations = other.last_transaction().unwrap().operations.clone();
+        let other_operations_compressed =
+            Transaction::serialize_and_compress(&other_operations).unwrap();
 
         client.set_code_cell(
             SheetPos {
@@ -722,7 +737,7 @@ mod tests {
             file_id: Uuid::new_v4(),
             id: Uuid::new_v4(),
             sequence_num: 1,
-            operations: other_operations,
+            operations: other_operations_compressed,
         }]);
 
         assert_eq!(
@@ -784,6 +799,8 @@ mod tests {
             None,
         );
         let other_operations = other.last_transaction().unwrap().operations.clone();
+        let other_operations_compressed =
+            Transaction::serialize_and_compress(&other_operations).unwrap();
 
         client.set_code_cell(
             SheetPos {
@@ -816,7 +833,7 @@ mod tests {
             file_id: Uuid::new_v4(),
             id: Uuid::new_v4(),
             sequence_num: 1,
-            operations: other_operations,
+            operations: other_operations_compressed,
         }]);
 
         // expect this to be None since the async client.set_code_cell overwrites the other's multiplayer transaction

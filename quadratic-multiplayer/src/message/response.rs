@@ -6,6 +6,7 @@ use crate::error::{ErrorLevel, MpError};
 use crate::state::settings::MinVersion;
 use crate::state::user::{User, UserStateUpdate};
 use dashmap::DashMap;
+use quadratic_core::controller::transaction::Transaction;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -26,10 +27,10 @@ pub(crate) enum MessageResponse {
         id: Uuid,
         file_id: Uuid,
         sequence_num: u64,
-        operations: String,
+        operations: Vec<u8>,
     },
     Transactions {
-        transactions: String,
+        transactions: Vec<Transaction>,
     },
     EnterRoom {
         file_id: Uuid,

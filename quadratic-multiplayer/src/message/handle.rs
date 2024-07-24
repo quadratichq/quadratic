@@ -182,15 +182,15 @@ pub(crate) async fn handle_message(
                 session_id
             );
 
-            // unpack the operations or return an error
-            let operations_unpacked: Vec<Operation> = serde_json::from_str(&operations)?;
+            // // unpack the operations or return an error
+            // let operations_unpacked: Vec<Operation> = serde_json::from_str(&operations)?;
 
             // get and increment the room's sequence_num
             let room_sequence_num = get_mut_room!(state, file_id)?.increment_sequence_num();
 
             // add the transaction to the transaction queue
             let sequence_num = state
-                .push_pubsub(id, file_id, operations_unpacked, room_sequence_num)
+                .push_pubsub(id, file_id, operations.clone(), room_sequence_num)
                 .await?;
 
             // broadcast the transaction to all users in the room
@@ -247,9 +247,7 @@ pub(crate) async fn handle_message(
                 }));
             }
 
-            let response = MessageResponse::Transactions {
-                transactions: serde_json::to_string(&transactions)?,
-            };
+            let response = MessageResponse::Transactions { transactions };
 
             Ok(Some(response))
         }
@@ -297,6 +295,7 @@ pub(crate) async fn handle_message(
 #[cfg(test)]
 pub(crate) mod tests {
     use quadratic_core::controller::operations::operation::Operation;
+    use quadratic_core::controller::transaction::Transaction;
     use quadratic_core::grid::SheetId;
     use tokio::net::TcpStream;
     use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
@@ -456,23 +455,23 @@ pub(crate) mod tests {
         let (socket, state, _, file_id, user_1, _) = setup().await;
         let id = Uuid::new_v4();
         let session_id = user_1.session_id;
-        let operations = serde_json::to_string(&vec![Operation::SetSheetColor {
+        let operations = vec![Operation::SetSheetColor {
             sheet_id: SheetId::new(),
             color: Some("red".to_string()),
-        }])
-        .unwrap();
+        }];
+        let compressed_ops = Transaction::serialize_and_compress(&operations).unwrap();
 
         let request = MessageRequest::Transaction {
             id,
             file_id,
             session_id,
-            operations: operations.clone(),
+            operations: compressed_ops.clone(),
         };
 
         let response = MessageResponse::Transaction {
             id,
             file_id,
-            operations: operations.clone(),
+            operations: compressed_ops.clone(),
             sequence_num: 1,
         };
 
@@ -494,10 +493,10 @@ pub(crate) mod tests {
             min_sequence_num: 1,
         };
 
-        let string_operations = operations.to_string();
-        let response = MessageResponse::Transactions {
-            transactions: format!("[{{\"id\":\"{id}\",\"file_id\":\"{file_id}\",\"operations\":{string_operations},\"sequence_num\":1}}]"),
-        };
+        // let string_operations = compressed_ops;
+        // let response = MessageResponse::Transactions {
+        //     transactions: format!("[{{\"id\":\"{id}\",\"file_id\":\"{file_id}\",\"operations\":{string_operations},\"sequence_num\":1}}]"),
+        // };
 
         // expect an empty array since there are no transactions
         test_handle(
