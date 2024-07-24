@@ -1,3 +1,4 @@
+import { Markdown } from '@/app/ui/components/Markdown';
 import { CodeSnippet } from '../../components/CodeSnippet';
 
 // Regular expression to match code blocks
@@ -14,7 +15,7 @@ export function parseCodeBlocks(input: string): Array<string | JSX.Element> {
 
     // Add any text before the current code block
     if (lastIndex < match.index) {
-      blocks.push(input.substring(lastIndex, match.index));
+      blocks.push(<Markdown>{input.substring(lastIndex, match.index)}</Markdown>);
     }
 
     // Add the code block as a CodeSnippet component
@@ -24,7 +25,7 @@ export function parseCodeBlocks(input: string): Array<string | JSX.Element> {
 
   // Add any remaining text after the last code block
   if (lastIndex < input.length) {
-    blocks.push(input.substring(lastIndex));
+    blocks.push(<Markdown>{input.substring(lastIndex)}</Markdown>);
   }
 
   return blocks;
