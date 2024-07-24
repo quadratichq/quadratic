@@ -48,7 +48,7 @@ pub fn find_cell_references(source: &str, pos: Pos) -> Vec<Spanned<RangeRef>> {
 /// Parses and checks whether the formula has the correct arguments (which has
 /// to run eval with `only_parse = true`).
 pub fn parse_and_check_formula(formula_string: &str, x: i64, y: i64) -> bool {
-    // We are not running any calculations, so an empty Grid are fine for
+    // We are not running any calculations, so an empty Grid is fine for
     // purposes of evaluating the formula for correctness. (Especially since we
     // do not have the actual Grid when running this formula in RustClient.)
     let pos = (x, y).into();
@@ -318,5 +318,23 @@ mod tests {
         assert!(!parse_and_check_formula("NOT_A_FUNCTION()", 0, 0));
         assert!(parse_and_check_formula("SUM(10, 20, 30)", 0, 0));
         assert!(parse_and_check_formula("SUM(A1, A2, A3, A4)", 0, 0));
+    }
+
+    #[test]
+    fn test_formula_empty_expressions() {
+        assert!(parse_and_check_formula("PI()", 0, 0)); // SUM doesn't like taking zero arguments
+
+        // Empty expressions should work in formula arguments
+        assert!(parse_and_check_formula("SUM(,)", 0, 0));
+        assert!(parse_and_check_formula("SUM(,,)", 0, 0));
+        assert!(parse_and_check_formula("SUM(1,,)", 0, 0));
+        assert!(parse_and_check_formula("SUM(,1,)", 0, 0));
+        assert!(parse_and_check_formula("SUM(,,1)", 0, 0));
+
+        // ... But not in operator arguments
+        assert!(!parse_and_check_formula("1*", 0, 0));
+        assert!(!parse_and_check_formula("*1", 0, 0));
+        assert!(!parse_and_check_formula("(1*)*1", 0, 0));
+        assert!(!parse_and_check_formula("(*1)*1", 0, 0));
     }
 }

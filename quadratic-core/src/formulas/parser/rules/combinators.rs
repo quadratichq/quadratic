@@ -59,7 +59,7 @@ impl<R: fmt::Display> fmt::Display for Surround<R> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{}, surrounded by {} and {}",
+            "{} surrounded by {} and {}",
             self.inner, self.start, self.end,
         )
     }
@@ -106,7 +106,7 @@ impl<R: fmt::Display> fmt::Display for List<R> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{}-separated list of {}, surrounded by {} and {}",
+            "{}-separated list of {} surrounded by {} and {}",
             self.sep_name, self.inner, self.start, self.end,
         )
     }

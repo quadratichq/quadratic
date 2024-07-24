@@ -87,11 +87,13 @@ export class PointerDown {
             columnRow: event.metaKey || event.ctrlKey ? undefined : null,
             keyboardMovePosition: { x: column, y: row },
             multiCursor,
+            ensureVisible: false,
           });
         } else {
           cursor.changePosition({
             keyboardMovePosition: { x: column, y: row },
             multiCursor: [newRectangle],
+            ensureVisible: false,
           });
         }
       }
@@ -112,6 +114,7 @@ export class PointerDown {
         cursor.changePosition({
           cursorPosition: { x: column, y: row },
           multiCursor,
+          ensureVisible: false,
         });
         this.active = true;
         this.position = new Point(column, row);
@@ -141,6 +144,7 @@ export class PointerDown {
           ? cursor.multiCursor.slice(0, cursor.multiCursor.length - 1)
           : null,
       columnRow: event.metaKey || event.ctrlKey ? cursor.columnRow : null,
+      ensureVisible: false,
     });
     this.pointerMoved = false;
   }
@@ -183,6 +187,7 @@ export class PointerDown {
           columnRow,
           keyboardMovePosition: { x: this.position.x, y: this.position.y },
           cursorPosition: { x: this.position.x, y: this.position.y },
+          ensureVisible: false,
         });
       }
       this.previousPosition = new Point(this.position.x, this.position.y);
@@ -212,6 +217,7 @@ export class PointerDown {
           keyboardMovePosition: { x: column, y: row },
           cursorPosition: { x: this.position.x, y: this.position.y },
           multiCursor,
+          ensureVisible: false,
         });
         if (inlineEditorHandler.isOpen() && !inlineEditorHandler.isEditingFormula()) {
           pixiAppSettings.changeInput(false);
