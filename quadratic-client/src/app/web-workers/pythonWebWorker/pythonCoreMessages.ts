@@ -1,4 +1,3 @@
-import { JsGetCellResponse } from '@/app/quadratic-core-types';
 import { PythonRun } from './pythonTypes';
 
 export interface CorePythonRun {
@@ -16,9 +15,9 @@ export interface PythonCoreResults {
   results: PythonRun;
 }
 
-export interface PythonCoreGetCells {
-  type: 'pythonCoreGetCells';
-  id: number;
+export interface PythonCoreGetCellsLength {
+  type: 'pythonCoreGetCellsLength';
+  sharedBuffer: SharedArrayBuffer;
   transactionId: string;
   x: number;
   y: number;
@@ -28,12 +27,12 @@ export interface PythonCoreGetCells {
   lineNumber?: number;
 }
 
-export interface CorePythonGetCells {
-  type: 'corePythonGetCells';
+export interface PythonCoreGetCellsData {
+  type: 'pythonCoreGetCellsData';
   id: number;
-  cells?: JsGetCellResponse[];
+  sharedBuffer: SharedArrayBuffer;
 }
 
-export type CorePythonMessage = CorePythonRun | CorePythonGetCells;
+export type CorePythonMessage = CorePythonRun;
 
-export type PythonCoreMessage = PythonCoreResults | PythonCoreGetCells;
+export type PythonCoreMessage = PythonCoreResults | PythonCoreGetCellsLength | PythonCoreGetCellsData;
