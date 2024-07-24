@@ -45,11 +45,19 @@ impl GridController {
 
     /// Finalizes the transaction and pushes it to the various stacks (if needed)
     pub(super) fn finalize_transaction(&mut self, transaction: &mut PendingTransaction) {
+        if let Some(sheet_rect) = transaction.batch_client_updates {
+            self.send_updated_bounds_rect(&sheet_rect, true);
+            self.send_render_cells(&sheet_rect);
+            self.send_fill_cells(&sheet_rect);
+            self.send_html_output_rect(&sheet_rect);
+            transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
+        }
+
         if transaction.complete {
             match transaction.transaction_type {
                 TransactionType::User => {
                     let undo = transaction.to_undo_transaction();
-                    self.undo_stack.push(undo.clone());
+                    self.undo_stack.push(undo);
                     self.redo_stack.clear();
                     self.transactions
                         .unsaved_transactions
@@ -57,19 +65,19 @@ impl GridController {
                 }
                 TransactionType::Unsaved => {
                     let undo = transaction.to_undo_transaction();
-                    self.undo_stack.push(undo.clone());
+                    self.undo_stack.push(undo);
                     self.redo_stack.clear();
                 }
                 TransactionType::Undo => {
                     let undo = transaction.to_undo_transaction();
-                    self.redo_stack.push(undo.clone());
+                    self.redo_stack.push(undo);
                     self.transactions
                         .unsaved_transactions
                         .insert_or_replace(transaction, true);
                 }
                 TransactionType::Redo => {
                     let undo = transaction.to_undo_transaction();
-                    self.undo_stack.push(undo.clone());
+                    self.undo_stack.push(undo);
                     self.transactions
                         .unsaved_transactions
                         .insert_or_replace(transaction, true);
@@ -79,13 +87,7 @@ impl GridController {
                 TransactionType::Unset => panic!("Expected a transaction type"),
             }
         }
-        if let Some(sheet_rect) = transaction.batch_client_updates {
-            self.send_updated_bounds_rect(&sheet_rect, true);
-            self.send_render_cells(&sheet_rect);
-            self.send_fill_cells(&sheet_rect);
-            self.send_html_output_rect(&sheet_rect);
-            transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
-        }
+
         transaction.send_transaction();
 
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
