@@ -6,7 +6,6 @@ import mixpanel from 'mixpanel-browser';
 import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { focusGrid } from '../../../helpers/focusGrid';
 import { Command } from './CommandPaletteListItem';
 import { BordersHook } from './commands/Borders';
 import codeCommandGroup from './commands/Code';
@@ -38,9 +37,6 @@ export const CommandPalette = () => {
       showCellTypeMenu: false,
       showCommandPalette: false,
     }));
-    setTimeout(() => {
-      focusGrid();
-    }, 100);
   };
 
   useEffect(() => {

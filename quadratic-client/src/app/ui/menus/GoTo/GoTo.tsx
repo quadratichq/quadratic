@@ -2,7 +2,6 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 import { sheets } from '@/app/grid/controller/Sheets';
 import { moveViewport } from '@/app/gridGL/interaction/viewportHelper';
 import { Coordinate } from '@/app/gridGL/types/size';
-import { focusGrid } from '@/app/helpers/focusGrid';
 import '@/app/ui/styles/floating-dialog.css';
 import { CommandDialog, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
 import { ArrowForward } from '@mui/icons-material';
@@ -21,7 +20,6 @@ export const GoTo = () => {
       ...state,
       showGoToMenu: false,
     }));
-    setTimeout(() => focusGrid(), 100);
   };
 
   const coordinates = getCoordinatesFromUserInput(value);
@@ -59,7 +57,6 @@ export const GoTo = () => {
     });
     moveViewport({ topLeft: cursorPosition });
     closeMenu();
-    setTimeout(() => focusGrid(), 100);
   };
 
   return (

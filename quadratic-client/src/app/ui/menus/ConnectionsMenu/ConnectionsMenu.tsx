@@ -1,5 +1,4 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { focusGrid } from '@/app/helpers/focusGrid';
 import { useFileRouteLoaderData } from '@/routes/file.$uuid';
 import { Connections } from '@/shared/components/connections/Connections';
 import { ROUTES } from '@/shared/constants/routes';
@@ -31,7 +30,6 @@ export function ConnectionsMenu() {
       open={editorInteractionState.showConnectionsMenu}
       onOpenChange={() => {
         setEditorInteractionState((prev) => ({ ...prev, showConnectionsMenu: false }));
-        focusGrid();
       }}
     >
       <DialogContent
