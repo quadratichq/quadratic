@@ -25,7 +25,7 @@ export const TopBarZoomMenu = () => {
     focusGrid();
   }, []);
 
-  // focus canvas after the format menu closes
+  // focus canvas after the zoom menu closes
   const onMenuChange = useCallback((event: MenuChangeEvent) => {
     if (!event.open) focusGrid();
   }, []);
