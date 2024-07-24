@@ -71,7 +71,7 @@ export const KernelMenu = () => {
     };
   });
 
-  const [running, setRunning] = useState(1);
+  const [running, setRunning] = useState(0);
   useEffect(() => {
     setRunning((pythonCodeRunning ? 1 : 0) + (javascriptCodeRunning ? 1 : 0) + (connectionCodeRunning ? 1 : 0));
   }, [pythonCodeRunning, javascriptCodeRunning, connectionCodeRunning]);
