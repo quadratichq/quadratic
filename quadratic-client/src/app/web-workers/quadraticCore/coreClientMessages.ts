@@ -847,7 +847,7 @@ export interface CoreClientImage {
 export interface ClientCoreGetValidation {
   type: 'clientCoreGetValidation';
   id: number;
-  selection: String;
+  selection: Selection;
 }
 
 export interface CoreClientGetValidation {

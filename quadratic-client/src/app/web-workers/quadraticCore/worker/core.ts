@@ -28,7 +28,6 @@ import * as Sentry from '@sentry/react';
 import {
   ClientCoreFindNextColumn,
   ClientCoreFindNextRow,
-  ClientCoreGetValidation,
   ClientCoreImportExcel,
   ClientCoreLoad,
   ClientCoreMoveCells,
@@ -896,9 +895,12 @@ class Core {
     );
   }
 
-  getValidation(message: ClientCoreGetValidation): Validation | undefined {
+  getValidation(selection: Selection): Validation | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    return this.gridController.getCellValidation();
+    const validation = this.gridController.getValidation(JSON.stringify(selection, bigIntReplacer));
+    if (validation) {
+      return JSON.parse(validation);
+    }
   }
 }
 

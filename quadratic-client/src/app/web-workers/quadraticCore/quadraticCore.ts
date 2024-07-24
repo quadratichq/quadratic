@@ -970,7 +970,7 @@ class QuadraticCore {
 
   //#region Data Validation
 
-  getValidation(selection: String): Promise<Validation | undefined> {
+  getValidation(selection: Selection): Promise<Validation | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: { validation: Validation | undefined }) => {

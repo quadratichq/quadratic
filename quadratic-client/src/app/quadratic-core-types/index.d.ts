@@ -56,4 +56,4 @@ export interface Format { align: CellAlign | null, wrap: CellWrap | null, numeri
 export interface JsSheetFill { columns: Array<[bigint, [string, bigint]]>, rows: Array<[bigint, [string, bigint]]>, all: string | null, }
 export interface ColumnRow { column: number, row: number, }
 export interface ValidationCell { title: string | null, message: string | null, drop_down: Array<string> | null, }
-export interface Validation { name: string | null, rule: ValidationRule, message: ValidationMessage, error: ValidationError, }
+export interface Validation { id: string, name: string | null, rule: ValidationRule, message: ValidationMessage, error: ValidationError, }

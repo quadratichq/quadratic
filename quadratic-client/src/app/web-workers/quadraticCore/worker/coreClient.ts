@@ -469,12 +469,12 @@ class CoreClient {
         return;
 
       case 'clientCoreCancelExecution':
-        const langauge = getLanguage(e.data.language);
-        if (langauge === 'Python') {
+        const language = getLanguage(e.data.language);
+        if (language === 'Python') {
           corePython.cancelExecution();
-        } else if (langauge === 'Javascript') {
+        } else if (language === 'Javascript') {
           coreJavascript.cancelExecution();
-        } else if (langauge === 'Connection') {
+        } else if (language === 'Connection') {
           coreConnection.cancelExecution();
         } else {
           console.warn("Unhandled language in 'clientCoreCancelExecution'", e.data.language);
@@ -505,7 +505,7 @@ class CoreClient {
         this.send({
           type: 'coreClientGetValidation',
           id: e.data.id,
-          validation: await core.getValidation(e.data.selection),
+          validation: core.getValidation(e.data.selection),
         });
         return;
 
