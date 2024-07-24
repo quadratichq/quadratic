@@ -8,14 +8,14 @@ import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom'
 import QuadraticGrid from '../gridGL/QuadraticGrid';
 import { pixiApp } from '../gridGL/pixiApp/PixiApp';
 import { isEmbed } from '../helpers/isEmbed';
-import TopBar from '../ui/menus/TopBar';
+import { TopBar } from '../ui/menus/TopBar/TopBar';
 import { UpdateAlertVersion } from './UpdateAlertVersion';
 import { useFileContext } from './components/FileProvider';
 import { FileUploadWrapper } from './components/FileUploadWrapper';
 import { Following } from './components/Following';
 import { PermissionOverlay } from './components/PermissionOverlay';
 import PresentationModeHint from './components/PresentationModeHint';
-import BottomBar from './menus/BottomBar';
+import { BottomBar } from './menus/BottomBar/BottomBar';
 import CellTypeMenu from './menus/CellTypeMenu';
 import CommandPalette from './menus/CommandPalette';
 import FeedbackMenu from './menus/FeedbackMenu';
