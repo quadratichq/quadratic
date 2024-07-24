@@ -2,6 +2,7 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { auth0Mock } from '../../tests/auth0Mock';
+import { clearDb } from '../../tests/testDataGenerator';
 
 beforeAll(async () => {
   await dbClient.user.create({
@@ -21,9 +22,7 @@ beforeAll(async () => {
   });
 });
 
-afterAll(async () => {
-  await dbClient.$transaction([dbClient.user.deleteMany()]);
-});
+afterAll(clearDb);
 
 const auth0Users = [
   {

@@ -59,8 +59,8 @@ model File {
     // a user, or a user to a team.
     ownerUser   User? @relation(name: "OwnerRelation", fields: [ownerUserId], references: [id])
     ownerUserId Int?
-    ownerTeam   Team? @relation(fields: [ownerTeamId], references: [id])
-    ownerTeamId Int?  @map("owner_team_id")
+    ownerTeam   Team  @relation(fields: [ownerTeamId], references: [id])
+    ownerTeamId Int   @map("owner_team_id")
 
     publicLinkAccess LinkPermission   @default(NOT_SHARED) @map("public_link_access")
     times_updated    Int              @default(1) // unused to delete
@@ -110,11 +110,6 @@ model Team {
     TeamInvite   TeamInvite[]
     File         File[]
     Connection   Connection[]
-
-    // TODO: (team-schema) remove this once the migration is complete and this
-    // is no longer relevant to any teams.
-    // Unactivated teams have never completed billing and have never been used
-    activated Boolean @default(false)
 
     // Billing
     stripeCustomerId              String?             @unique @map("stripe_customer_id")

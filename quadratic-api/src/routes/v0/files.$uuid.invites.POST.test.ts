@@ -2,7 +2,7 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { expectError } from '../../tests/helpers';
-import { createFile, createTeam, createUser } from '../../tests/testDataGenerator';
+import { clearDb, createFile, createTeam, createUser } from '../../tests/testDataGenerator';
 
 beforeEach(async () => {
   // Create some users & team
@@ -43,17 +43,7 @@ beforeEach(async () => {
   });
 });
 
-afterEach(async () => {
-  await dbClient.$transaction([
-    dbClient.fileInvite.deleteMany(),
-    dbClient.userFileRole.deleteMany(),
-    dbClient.userTeamRole.deleteMany(),
-    dbClient.fileCheckpoint.deleteMany(),
-    dbClient.file.deleteMany(),
-    dbClient.team.deleteMany(),
-    dbClient.user.deleteMany(),
-  ]);
-});
+afterEach(clearDb);
 
 // Mock auth0 client calls
 const auth0Users = [

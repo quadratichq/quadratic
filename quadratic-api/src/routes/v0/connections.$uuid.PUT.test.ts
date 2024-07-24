@@ -2,7 +2,7 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { expectError } from '../../tests/helpers';
-import { createTeam, createUser } from '../../tests/testDataGenerator';
+import { clearDb, createTeam, createUser } from '../../tests/testDataGenerator';
 
 beforeAll(async () => {
   const teamUserOwner = await createUser({ auth0Id: 'teamUserOwner' });
@@ -21,14 +21,7 @@ beforeAll(async () => {
   });
 });
 
-afterAll(async () => {
-  await dbClient.$transaction([
-    dbClient.connection.deleteMany(),
-    dbClient.userTeamRole.deleteMany(),
-    dbClient.team.deleteMany(),
-    dbClient.user.deleteMany(),
-  ]);
-});
+afterAll(clearDb);
 
 const validPayload = {
   name: 'Updated connection',

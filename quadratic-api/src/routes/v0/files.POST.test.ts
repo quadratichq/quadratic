@@ -2,6 +2,7 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { expectError } from '../../tests/helpers';
+import { clearDb } from '../../tests/testDataGenerator';
 
 beforeAll(async () => {
   // Create a test user
@@ -41,15 +42,7 @@ beforeAll(async () => {
   });
 });
 
-afterAll(async () => {
-  await dbClient.$transaction([
-    dbClient.userTeamRole.deleteMany(),
-    dbClient.team.deleteMany(),
-    dbClient.fileCheckpoint.deleteMany(),
-    dbClient.file.deleteMany(),
-    dbClient.user.deleteMany(),
-  ]);
-});
+afterAll(clearDb);
 
 const validPayload = {
   name: 'new_file_with_name',

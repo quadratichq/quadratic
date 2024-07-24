@@ -1,7 +1,6 @@
 import request from 'supertest';
 import { app } from '../../app';
-import dbClient from '../../dbClient';
-import { createFile, createTeam, createUsers } from '../../tests/testDataGenerator';
+import { clearDb, createFile, createTeam, createUsers } from '../../tests/testDataGenerator';
 
 beforeAll(async () => {
   const [user1, user2] = await createUsers(['user1', 'user2']);
@@ -74,17 +73,7 @@ beforeAll(async () => {
   });
 });
 
-afterAll(async () => {
-  await dbClient.$transaction([
-    dbClient.fileInvite.deleteMany(),
-    dbClient.userFileRole.deleteMany(),
-    dbClient.userTeamRole.deleteMany(),
-    dbClient.team.deleteMany(),
-    dbClient.fileCheckpoint.deleteMany(),
-    dbClient.file.deleteMany(),
-    dbClient.user.deleteMany(),
-  ]);
-});
+afterAll(clearDb);
 
 // Mock Auth0 getUser
 jest.mock('auth0', () => {

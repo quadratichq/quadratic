@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
+import { clearDb } from '../../tests/testDataGenerator';
 
 beforeEach(async () => {
   // Create some users & a team
@@ -43,13 +44,7 @@ beforeEach(async () => {
   });
 });
 
-afterEach(async () => {
-  const deleteTeamUsers = dbClient.userTeamRole.deleteMany();
-  const deleteUsers = dbClient.user.deleteMany();
-  const deleteTeams = dbClient.team.deleteMany();
-
-  await dbClient.$transaction([deleteTeamUsers, deleteUsers, deleteTeams]);
-});
+afterEach(clearDb);
 
 describe('PATCH /v0/teams/:uuid', () => {
   describe('sending a bad request', () => {
