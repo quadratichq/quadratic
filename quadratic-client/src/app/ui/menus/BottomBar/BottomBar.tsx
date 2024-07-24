@@ -76,6 +76,7 @@ export const BottomBar = () => {
         display: 'flex',
         justifyContent: 'space-between',
         userSelect: 'none',
+        zIndex: 1,
       }}
     >
       <Stack direction="row">
