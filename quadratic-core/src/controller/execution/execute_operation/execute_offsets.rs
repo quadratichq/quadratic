@@ -19,6 +19,12 @@ impl GridController {
                 // sheet may have been deleted
                 return;
             };
+
+            let old_size = sheet.offsets.set_column_width(column, new_size);
+            if old_size == new_size {
+                return;
+            }
+
             transaction
                 .forward_operations
                 .push(Operation::ResizeColumn {
@@ -27,8 +33,6 @@ impl GridController {
                     new_size,
                     client_resized: false,
                 });
-
-            let old_size = sheet.offsets.set_column_width(column, new_size);
 
             transaction
                 .reverse_operations
@@ -72,13 +76,18 @@ impl GridController {
                 // sheet may have been deleted
                 return;
             };
+
+            let old_size = sheet.offsets.set_row_height(row, new_size);
+            if old_size == new_size {
+                return;
+            }
+
             transaction.forward_operations.push(Operation::ResizeRow {
                 sheet_id,
                 row,
                 new_size,
                 client_resized: false,
             });
-            let old_size = sheet.offsets.set_row_height(row, new_size);
 
             transaction.reverse_operations.push(Operation::ResizeRow {
                 sheet_id,

@@ -18,6 +18,10 @@ impl GridController {
                 Some(sheet) => {
                     // update individual cell values and collect old_values
                     let old_values = sheet.merge_cell_values(sheet_pos.into(), &values);
+                    if old_values == values {
+                        return;
+                    }
+
                     if cfg!(target_family = "wasm")
                         && !transaction.is_server()
                         && values.into_iter().any(|(_, _, value)| value.is_html())

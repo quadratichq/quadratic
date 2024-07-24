@@ -47,6 +47,9 @@ impl GridController {
                     self.set_cell_formats_for_type::<RenderSize>(&sheet_rect, output_size),
                 ),
             };
+            if old_attr == attr {
+                return;
+            }
 
             if !transaction.is_server() && transaction.batch_client_updates.is_none() {
                 match &attr {

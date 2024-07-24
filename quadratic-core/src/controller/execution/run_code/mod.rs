@@ -70,6 +70,9 @@ impl GridController {
         } else {
             sheet.code_runs.shift_remove(&pos)
         };
+        if old_code_run == new_code_run {
+            return;
+        }
 
         if cfg!(target_family = "wasm") || cfg!(test) {
             // if there was html here, send the html update to the client
