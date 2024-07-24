@@ -1,21 +1,27 @@
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
-import { connectionsByType } from '@/app/ui/connections/data';
+import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
+import { Empty } from '@/dashboard/components/Empty';
 import { Type } from '@/shared/components/Type';
-import { ConnectionsListConnection } from '@/shared/components/connections/Connections';
+import {
+  ConnectionsListConnection,
+  NavigateToCreateView,
+  NavigateToEditView,
+} from '@/shared/components/connections/Connections';
+import { connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { cn } from '@/shared/shadcn/utils';
 import { timeAgo } from '@/shared/utils/timeAgo';
-import { Cross2Icon, MagnifyingGlassIcon, PlusIcon } from '@radix-ui/react-icons';
+import { Cross2Icon, PlusIcon } from '@radix-ui/react-icons';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 
 type Props = {
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
-  handleNavigateToCreateView: (type: ConnectionType) => void;
-  handleNavigateToEditView: (connectionUuid: string) => void;
+  handleNavigateToCreateView: NavigateToCreateView;
+  handleNavigateToEditView: NavigateToEditView;
 };
 
 export const ConnectionsList = ({
@@ -28,7 +34,6 @@ export const ConnectionsList = ({
 
   return (
     <>
-      {/* <p className="text-sm text-muted-foreground">Connetions let you pull outside data into your spreadsheets</p> */}
       <div className="grid gap-4">
         <div className="grid grid-cols-2 gap-4">
           {Object.entries(connectionsByType).map(([type, { Logo }], i) => (
@@ -53,7 +58,7 @@ export const ConnectionsList = ({
           </div>
         )}
 
-        {!connectionsAreLoading && connections.length > 0 && (
+        {!connectionsAreLoading && connections.length ? (
           <>
             <form
               className="grid gap-4"
@@ -62,10 +67,8 @@ export const ConnectionsList = ({
               }}
             >
               <div className="relative">
-                <MagnifyingGlassIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search connections"
-                  className="pl-8"
+                  placeholder="Filter by name"
                   value={filterQuery}
                   onChange={(e) => setFilterQuery(e.target.value)}
                   autoFocus
@@ -89,6 +92,12 @@ export const ConnectionsList = ({
               handleNavigateToEditView={handleNavigateToEditView}
             />
           </>
+        ) : (
+          <Empty
+            title="No connections"
+            description="Create a connection from the options above, then open a spreadsheet and pull in data from it."
+            Icon={ConnectionsIcon}
+          />
         )}
       </div>
     </>
@@ -113,7 +122,7 @@ function ListItems({
       {filteredItems.map(({ uuid, name, type, createdDate, disabled }, i) => (
         <button
           onClick={() => {
-            handleNavigateToEditView(uuid);
+            handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
           }}
           disabled={disabled}
           key={uuid}

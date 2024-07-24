@@ -1,4 +1,3 @@
-import { useTeamRouteDialog } from '@/dashboard/hooks/useTeamRouteDialog';
 import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
@@ -17,11 +16,10 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import { TeamSchema } from 'quadratic-shared/typesAndSchemas';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { ActionFunctionArgs, redirect, useFetcher } from 'react-router-dom';
+import { ActionFunctionArgs, redirect, useFetcher, useLocation, useNavigate, useParams } from 'react-router-dom';
 import z from 'zod';
-
 type ActionData = {
   name: string;
   picture?: string;
@@ -44,7 +42,10 @@ const FormSchema = z.object({
 });
 
 export const Component = () => {
-  const { open, onClose } = useTeamRouteDialog();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { teamUuid } = useParams() as { teamUuid: string };
+  const [open, setOpen] = useState(true);
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const fetcher = useFetcher();
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -54,6 +55,18 @@ export const Component = () => {
     },
   });
 
+  // Open by default. When it closes, close it immediately then navigate.
+  useEffect(() => {
+    if (!open) {
+      if (location.key !== 'default') {
+        navigate(-1);
+      } else {
+        navigate(ROUTES.TEAM(teamUuid));
+      }
+    }
+  }, [open, navigate, teamUuid, location.key]);
+
+  // Show some UI if the team creation failed
   useEffect(() => {
     if (fetcher.state === 'idle' && fetcher.data && fetcher.data.ok === false) {
       addGlobalSnackbar('Failed to create team. Try again', { severity: 'error' });
@@ -63,6 +76,8 @@ export const Component = () => {
   const onSubmit = async (data: z.infer<typeof FormSchema>) => {
     fetcher.submit(data, { method: 'POST', encType: 'application/json' });
   };
+
+  const onClose = () => setOpen(false);
 
   const disabled = fetcher.state !== 'idle';
 

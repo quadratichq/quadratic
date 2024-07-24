@@ -42,7 +42,7 @@ export function TeamSwitcher({ appIsLoading }: Props) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className="flex justify-between px-3 font-semibold">
-          <div className="truncate">{optimisticActiveTeamName}</div>
+          <div className="select-none truncate">{optimisticActiveTeamName}</div>
           <div className="relative">
             <CaretSortIcon />
             <ReloadIcon
@@ -58,10 +58,6 @@ export function TeamSwitcher({ appIsLoading }: Props) {
 
         {teams.map(({ team: { uuid, name }, users }) => {
           const isActive = activeTeamUuid === uuid;
-
-          // TODO: (connections) get these from the API
-          const isPaid = false;
-
           return (
             <DropdownMenuItem key={uuid} asChild>
               <Link
@@ -74,8 +70,6 @@ export function TeamSwitcher({ appIsLoading }: Props) {
                   if (isNewTabOrWindow) {
                     return;
                   }
-
-                  // setActiveTeamUuid(uuid);
                 }}
               >
                 {/* <IconWrapper>
@@ -86,7 +80,7 @@ export function TeamSwitcher({ appIsLoading }: Props) {
                 <div className="flex flex-col">
                   <div>{name}</div>
                   <Type variant="caption">
-                    {isPaid ? 'Paid' : 'Free'} · {users} member{users === 1 ? '' : 's'}
+                    {users} member{users === 1 ? '' : 's'}
                   </Type>
                 </div>
                 {/* <div className="ml-auto flex h-6 w-6 items-center justify-center">

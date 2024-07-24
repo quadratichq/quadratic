@@ -3,7 +3,7 @@
 
 ## ![quadratic icon small](https://user-images.githubusercontent.com/3479421/162039117-02f85f2c-e382-4ed8-ac39-64efab17a144.svg) **_The technical multiplayer spreadsheet, with Python, SQL, and AI_**
 
-Modern multiplayer spreadsheet with Python, AI, and SQL built-in. 
+Modern multiplayer spreadsheet with Python, AI, and SQL built-in.
 
 Built with Rust + WASM + WebGL to run seamlessly at 60+ FPS in the browser.
 
@@ -47,7 +47,7 @@ _Quadratic is in Beta._
 - [x] Charts and graphs
 - [x] Teams support
 - [x] JavaScript support
-- [ ] SQL database support
+- [x] SQL database support (Postgres, MySQL)
 - [ ] Data warehouse support (Snowflake, DataBricks, etc)
 - [ ] Self-host on your infrastructure
 

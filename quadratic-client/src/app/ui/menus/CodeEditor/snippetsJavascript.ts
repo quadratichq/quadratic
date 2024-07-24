@@ -2,29 +2,34 @@ const snippets = [
   {
     label: 'Read data from the sheet',
     keywords: 'reference cells',
-    code: `// Reference a single value from the sheet; replace x,y with coordinates
-let data = await cell(x, y);
+    code: `let x1 = 0;
+let y1 = 0;
+let x2 = 0;
+let y2 = 0;
 
-// Or reference a range of cells (returns an array), replace x's and y's with coordinates
-data = await cells(x1, y1, x2, y2)
+// Reference a single value from the sheet
+let single_cell_data = cell(x1, y1);
+
+// Reference a range of cells (returns an array)
+let range_data = cells(x1, y1, x2, y2);
 
 // Reference cell or range of cells in another sheet
-data = await cells(x1, y1, x2, y2, sheet_name)
+let range_other_sheet_data = cells(x1, y1, x2, y2, 'Sheet 1');
 
 // Returns the data to the sheet in a 2d array starting at the code cell
-return data`,
+return range_data;`,
   },
   {
     label: 'Return data to the sheet',
     keywords: 'return value',
     code: `// displays vertically - 1x4
-let x = [1,2,3,4]
+let x = [1,2,3,4];
 
 // displays horizontally - 4x1
-let y = [[1,2,3,4]]
+let y = [[1,2,3,4]];
 
 // 4x2
-let z = [[1,2,3,4],[1,2,3,4]]
+let z = [[1,2,3,4],[1,2,3,4]];
 
 return x;`,
   },
@@ -37,7 +42,7 @@ let json = await res.json();
 
 console.log(json);
 
-let as = [Object.keys(json), Object.values(json)]
+let as = [Object.keys(json), Object.values(json)];
 
 return as;`,
   },
@@ -49,20 +54,20 @@ let d = rc(-1, 0);
 
 // above for one cell to the left is equivalent to the following
 let cellPos = pos();
-let data = getCell(cellPos['x'] - 1, cellPos['y']);
+let data = cell(cellPos['x'] - 1, cellPos['y']);
 
 // one cell left
-d = rc(-1, 0);
+let d_left = rc(-1, 0);
 // one cell up
-d = rc(0, -1);
+let d_up = rc(0, -1);
 // one cell right
-d = rc(1, 0);
+let d_right = rc(1, 0);
 // one cell down
-d = rc(0, 1);
+let d_down = rc(0, 1);
 // five cells left, five cells down
-d = rc(-5, 5);
+let d_left_down = rc(-5, 5);
 
-return d;`,
+return d_left_down;`,
   },
   {
     label: 'Create a line chart',
@@ -73,10 +78,10 @@ let canvas = new OffscreenCanvas(800, 450);
 let context = canvas.getContext('2d');
 
 // create data
-let data = [['1999', '2000', '2001', '2002', '2003'],[2478, 5267, 734, 784, 433]]
+let data = [['1999', '2000', '2001', '2002', '2003'],[2478, 5267, 734, 784, 433]];
 
 // print data to console
-console.log(data)
+console.log(data);
 
 // Create chart
 new Chart(canvas, {
@@ -112,10 +117,10 @@ let canvas = new OffscreenCanvas(800, 450);
 let context = canvas.getContext('2d');
 
 // create data
-let data = [['Africa', 'Asia', 'Europe', 'Latin America', 'North America'],[2478, 5267, 734, 784, 433]]
+let data = [['Africa', 'Asia', 'Europe', 'Latin America', 'North America'],[2478, 5267, 734, 784, 433]];
 
 // print data to console
-console.log(data)
+console.log(data);
 
 // Create chart
 new Chart(canvas, {

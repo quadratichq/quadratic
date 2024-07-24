@@ -5,14 +5,18 @@ import { expectError } from '../../tests/helpers';
 import { createConnection, createTeam, createUser } from '../../tests/testDataGenerator';
 
 beforeAll(async () => {
-  const teamUser = await createUser({ auth0Id: 'teamUser' });
+  const teamUserOwner = await createUser({ auth0Id: 'teamUserOwner' });
+  const teamUserViewer = await createUser({ auth0Id: 'teamUserViewer' });
   await createUser({ auth0Id: 'noTeamUser' });
 
   const team = await createTeam({
     team: {
       uuid: '00000000-0000-0000-0000-000000000000',
     },
-    users: [{ userId: teamUser.id, role: 'OWNER' }],
+    users: [
+      { userId: teamUserOwner.id, role: 'OWNER' },
+      { userId: teamUserViewer.id, role: 'VIEWER' },
+    ],
     connections: [{ type: 'POSTGRES', name: 'Created first' }],
   });
 
@@ -32,32 +36,27 @@ afterAll(async () => {
   ]);
 });
 
-describe('GET /v0/connections', () => {
-  describe('get all connections for a team user', () => {
-    it('responds with connection data', async () => {
+describe('GET /v0/teams/:uuid/connections', () => {
+  describe('get all connections in a team', () => {
+    it('responds with connection data for a team owner', async () => {
       await request(app)
-        .get('/v0/connections?team-uuid=00000000-0000-0000-0000-000000000000')
-        .set('Authorization', `Bearer ValidToken teamUser`)
+        .get('/v0/teams/00000000-0000-0000-0000-000000000000/connections')
+        .set('Authorization', `Bearer ValidToken teamUserOwner`)
         .expect(200)
         .expect((res) => {
           expect(res.body.length).toBe(2);
           expect(res.body[0].uuid).toBeDefined();
           expect(res.body[0].name).toBeDefined();
           expect(res.body[0].createdDate).toBeDefined();
-          expect(res.body[0].updatedDate).toBeDefined();
           expect(res.body[0].type).toBeDefined();
-          expect(res.body[0].typeDetails).toBeDefined();
 
           expect(res.body[0].name).toBe('Created second');
           expect(res.body[1].name).toBe('Created first');
         });
     });
-  });
-
-  describe('get all connections for non-team user', () => {
-    it('responds with a 403 if the file is private', async () => {
+    it('responds with a 403 for a user not part of the team', async () => {
       await request(app)
-        .get('/v0/connections?team-uuid=00000000-0000-0000-0000-000000000000')
+        .get('/v0/teams/00000000-0000-0000-0000-000000000000/connections')
         .set('Authorization', `Bearer ValidToken noTeamUser`)
         .expect(403)
         .expect(expectError);

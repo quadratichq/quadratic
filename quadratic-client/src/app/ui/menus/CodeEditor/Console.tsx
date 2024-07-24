@@ -1,3 +1,4 @@
+import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
@@ -10,8 +11,10 @@ export function Console() {
     spillError: [spillError],
   } = useCodeEditor();
   const { mode } = useRecoilValue(editorInteractionStateAtom);
+  const codeCell = getCodeCell(mode);
   const hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
 
+  // Designed to live in a box that takes up the full height of its container
   return (
     <div
       contentEditable={hasOutput}
@@ -24,7 +27,7 @@ export function Console() {
           e.preventDefault();
         }
       }}
-      className="overflow-y-auto whitespace-pre-wrap pl-3 pr-4 outline-none"
+      className="h-full overflow-y-auto whitespace-pre-wrap pl-3 pr-4 outline-none"
       style={codeEditorBaseStyles}
       // Disable Grammarly
       data-gramm="false"
@@ -54,9 +57,10 @@ export function Console() {
           {consoleOutput?.stdOut}
         </>
       ) : (
-        <div className="mt-1" style={{ ...codeEditorCommentStyles }}>
-          {mode === 'Python' && <>Print statements, standard out, and errors will show here.</>}
-          {mode === 'Javascript' && <>Console output and errors will show here.</>}
+        <div className="mt-1 select-none" style={{ ...codeEditorCommentStyles }}>
+          {codeCell?.id === 'Python' && <>Print statements, standard out, and errors will show here.</>}
+          {codeCell?.id === 'Javascript' && <>Console output and errors will show here.</>}
+          {codeCell?.type === 'connection' && <>Errors will show here.</>}
         </div>
       )}
     </div>

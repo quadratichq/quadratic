@@ -86,7 +86,9 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
     initialActiveTeamUuid = uuidFromUrl;
 
     // 2) Check localstorage for a team UUID
-  } else if (uuidFromLocalStorage) {
+    // If what's in localstorage is not in the list of teams — e.g. you lost
+    // access to a team —  we'll skip this step
+  } else if (uuidFromLocalStorage && teams.find((team) => team.team.uuid === uuidFromLocalStorage)) {
     initialActiveTeamUuid = uuidFromLocalStorage;
 
     // 3) there's no default preference (yet), so pick the 1st one in the API
@@ -95,7 +97,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
 
     // 4) there's no teams in the API, so create one and send the user to it
   } else if (teams.length === 0) {
-    const newTeam = await apiClient.teams.create({ name: 'My team' });
+    const newTeam = await apiClient.teams.create({ name: 'My Team' });
     return redirectDocument(ROUTES.TEAM(newTeam.uuid));
   }
 
@@ -109,8 +111,10 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
   }
 
   // If this was a request to the root of the app, re-route to the active team
-  if (new URL(request.url).pathname === '/') {
-    return redirect(ROUTES.TEAM(initialActiveTeamUuid));
+  const url = new URL(request.url);
+  if (url.pathname === '/') {
+    // If there are search params, keep 'em
+    return redirect(ROUTES.TEAM(initialActiveTeamUuid) + url.search);
   }
 
   /**

@@ -104,48 +104,6 @@ const TeamFilesSchema = z.array(
   })
 );
 
-const ConnectionSchemaBase = z.object({
-  uuid: z.string().uuid(),
-  name: z.string(),
-  createdDate: z.string().datetime(),
-  updatedDate: z.string().datetime(),
-});
-
-// TODO: (connections) validate our string min/max here
-export const ConnectionTypePostgresSchema = z.object({
-  type: z.literal('POSTGRES'),
-  name: z.string().min(1, { message: 'Required' }).max(80),
-  host: z.string().min(1, { message: 'Required' }).max(255),
-  port: z.number().min(1).max(65535).optional(),
-  username: z.string().optional(),
-  password: z.string().optional(),
-  database: z.any(), // TODO: fix
-});
-export const ConnectionTypeMysqlSchema = z.object({
-  type: z.literal('MYSQL'),
-  name: z.string(),
-  // color
-});
-
-// TODO: (connections) duplicated with API
-export const connectionFieldZ = z.object({
-  name: z.string(),
-  description: z.string(),
-  type: z.string(),
-  sensitive: z.enum(['AWS_SECRET', 'ENCRYPTED', 'PLAINTEXT']),
-  required: z.boolean(),
-  default: z.string().optional(),
-});
-
-// TODO: (connections) duplicated with API
-export const connectionConfigurationZ = z.object({
-  name: z.string(),
-  type: z.enum(['POSTGRES']),
-  description: z.string(),
-  connectionFields: z.array(connectionFieldZ),
-  cellLevelInput: z.enum(['SINGLE_QUERY_EDITOR']),
-});
-
 // Zod schemas for API endpoints
 export const ApiSchemas = {
   /**
@@ -184,11 +142,14 @@ export const ApiSchemas = {
    * ===========================================================================
    */
   '/v0/files/:uuid.GET.response': z.object({
-    file: FileSchema,
+    file: FileSchema.extend({
+      ownerUserId: BaseUserSchema.shape.id.optional(),
+    }),
     team: TeamSchema.pick({ uuid: true, name: true }),
     userMakingRequest: z.object({
+      id: BaseUserSchema.shape.id.optional(),
       filePermissions: z.array(FilePermissionSchema),
-      fileRelativeLocation: z.enum(['TEAM_PUBLIC', 'TEAM_PRIVATE']).optional(),
+      fileTeamPrivacy: z.enum(['PRIVATE_TO_ME', 'PRIVATE_TO_SOMEONE_ELSE', 'PUBLIC_TO_TEAM']).optional(),
       fileRole: UserFileRoleSchema.optional(),
       teamPermissions: z.array(TeamPermissionSchema).optional(),
       teamRole: UserTeamRoleSchema.optional(),
@@ -298,6 +259,7 @@ export const ApiSchemas = {
    */
   '/v0/examples.POST.request': z.object({
     teamUuid: TeamSchema.shape.uuid,
+    isPrivate: z.boolean(),
     publicFileUrlInProduction: z
       .string()
       .url()

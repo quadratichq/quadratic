@@ -49,7 +49,6 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid/use
 
     // Delete!
     await removeUserFromTeam(userToDeleteId, teamId);
-    // TODO: write tests that a user deleteing themselves has `redirect` in the response
     return res.status(200).json({ ...resSuccess, redirect: true });
   }
 

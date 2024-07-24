@@ -1,14 +1,15 @@
 // This file is the main entry point for the javascript worker. It handles
 // managing the Javascript runners, which is where the code is executed.
 
-import type { CodeRun, LanguageState } from '@/app/web-workers/languageTypes';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
+import type { LanguageState } from '@/app/web-workers/languageTypes';
 import * as esbuild from 'esbuild-wasm';
 import { CoreJavascriptRun } from '../../javascriptCoreMessages';
 import { javascriptClient } from '../javascriptClient';
 import { JavascriptAPI } from './javascriptAPI';
 import { javascriptFindSyntaxError, prepareJavascriptCode, transformCode } from './javascriptCompile';
 import { javascriptErrorResult, javascriptResults } from './javascriptResults';
-import { JavascriptRunnerGetCells, RunnerJavascriptMessage } from './javascriptRunnerMessages';
+import { RunnerJavascriptMessage } from './javascriptRunnerMessages';
 import { javascriptLibraryLines } from './runner/generateJavascriptForRunner';
 
 export const LINE_NUMBER_VAR = '___line_number___';
@@ -16,6 +17,8 @@ export const LINE_NUMBER_VAR = '___line_number___';
 export class Javascript {
   private api: JavascriptAPI;
   private awaitingExecution: CodeRun[];
+  private id = 0;
+  private getCellsResponses: Record<number, string> = {};
 
   state: LanguageState = 'loading';
 
@@ -124,16 +127,42 @@ export class Javascript {
           this.state = 'ready';
           setTimeout(this.next, 0);
           runner.terminate();
-        } else if (e.data.type === 'getCells') {
-          this.api.getCells(e.data.x0, e.data.y0, e.data.x1, e.data.y1, e.data.sheetName).then((results) => {
-            if (results) {
-              const message: JavascriptRunnerGetCells = results;
-              runner.postMessage(message);
+        } else if (e.data.type === 'getCellsLength') {
+          const { sharedBuffer, x0, y0, x1, y1, sheetName } = e.data;
+          this.api.getCells(x0, y0, x1, y1, sheetName).then((cells) => {
+            const int32View = new Int32Array(sharedBuffer, 0, 3);
+            if (cells) {
+              const cellsString = JSON.stringify(cells);
+              const length = cellsString.length;
+              Atomics.store(int32View, 1, length);
+              const id = this.id++;
+              this.getCellsResponses[id] = cellsString;
+              Atomics.store(int32View, 2, id);
+              Atomics.store(int32View, 0, 1);
+              Atomics.notify(int32View, 0, 1);
             } else {
+              Atomics.store(int32View, 1, 0);
+              Atomics.store(int32View, 0, 1);
+              Atomics.notify(int32View, 0, 1);
               this.state = 'ready';
               setTimeout(this.next, 0);
             }
           });
+        } else if (e.data.type === 'getCellsData') {
+          const { id, sharedBuffer } = e.data;
+          const cells = this.getCellsResponses[id];
+          delete this.getCellsResponses[id];
+          const int32View = new Int32Array(sharedBuffer, 0, 1);
+          if (cells === undefined) {
+            console.error('[javascript] No cells found for id:', e.data.id);
+          } else {
+            const encoder = new TextEncoder();
+            const encodedCells = encoder.encode(cells);
+            const uint8View = new Uint8Array(e.data.sharedBuffer, 4, encodedCells.length);
+            uint8View.set(encodedCells);
+          }
+          Atomics.store(int32View, 0, 1);
+          Atomics.notify(int32View, 0, 1);
         } else if (e.data.type === 'error') {
           let errorLine: number | undefined;
           let errorColumn: number | undefined;

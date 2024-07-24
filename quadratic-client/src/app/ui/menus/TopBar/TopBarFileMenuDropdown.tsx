@@ -1,5 +1,5 @@
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { useFileRouteLoaderData } from '@/routes/file.$uuid';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { KeyboardArrowDown } from '@mui/icons-material';
 import { IconButton, useTheme } from '@mui/material';
@@ -21,7 +21,7 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
-    userMakingRequest: { fileRelativeLocation, teamPermissions },
+    userMakingRequest: { fileTeamPrivacy, teamPermissions },
   } = useFileRouteLoaderData();
   const { permissions } = editorInteractionState;
 
@@ -29,7 +29,7 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
     return null;
   }
 
-  const isAvailableArgs = { filePermissions: permissions, fileRelativeLocation, isAuthenticated, teamPermissions };
+  const isAvailableArgs = { filePermissions: permissions, fileTeamPrivacy, isAuthenticated, teamPermissions };
 
   return (
     <Menu

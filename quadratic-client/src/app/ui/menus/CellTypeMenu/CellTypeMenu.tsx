@@ -17,7 +17,8 @@ import '../../styles/floating-dialog.css';
 
 import { colors } from '@/app/theme/colors';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
-import { useFileMetaRouteLoaderData } from '@/routes/_file.$uuid';
+import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
+import { GetConnections } from '@/routes/api.connections';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import {
   CommandDialog,
@@ -28,7 +29,7 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/shared/shadcn/ui/command';
-import { Add } from '@mui/icons-material';
+import { useFetcher } from 'react-router-dom';
 
 export interface CellTypeOption {
   name: string;
@@ -82,7 +83,8 @@ let CELL_TYPE_OPTIONS: CellTypeOption[] = [
 export default function CellTypeMenu() {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const setCellTypeMenuOpenedCount = useSetRecoilState(cellTypeMenuOpenedCountAtom);
-  const { connections } = useFileMetaRouteLoaderData();
+  const fetcher = useFetcher<GetConnections>({ key: 'CONNECTIONS_FETCHER_KEY' });
+
   const searchLabel = 'Choose a cell type…';
 
   useEffect(() => {
@@ -132,35 +134,36 @@ export default function CellTypeMenu() {
         </CommandGroup>
 
         <CommandSeparator />
-        <CommandGroup heading="Connections">
-          {connections.map(({ name, type, uuid }) => (
+        {fetcher.data?.connections && (
+          <CommandGroup heading="Connections">
+            {fetcher.data.connections.map(({ name, type, uuid }) => (
+              <CommandItemWrapper
+                key={uuid}
+                uuid={uuid}
+                name={name}
+                description={`${type === 'POSTGRES' ? 'PostgreSQL' : 'SQL'}`}
+                icon={<LanguageIcon language={type} />}
+                onSelect={() => openEditor({ Connection: { kind: type, id: uuid } })}
+              />
+            ))}
             <CommandItemWrapper
-              key={uuid}
-              uuid={uuid}
-              name={name}
-              description={`${type === 'POSTGRES' ? 'PostgreSQL' : 'SQL'}`}
-              icon={<LanguageIcon language={type} />}
-              onSelect={() => openEditor({ Connection: { kind: type, id: uuid } })}
+              name="Manage connections"
+              description={
+                <>
+                  Connect to Postgres, MySQL, <LinkNewTabWrapper href={DOCUMENTATION_URL}>and more</LinkNewTabWrapper>
+                </>
+              }
+              icon={<ConnectionsIcon className="text-muted-foreground opacity-80" />}
+              onSelect={() => {
+                setEditorInteractionState({
+                  ...editorInteractionState,
+                  showCellTypeMenu: false,
+                  showConnectionsMenu: true,
+                });
+              }}
             />
-          ))}
-          <CommandItemWrapper
-            name="Create or manage connections"
-            // TODO: (connections) correct URL here / cleanup description
-            description={
-              <>
-                Connect to Postgres, MySQL, <LinkNewTabWrapper href={DOCUMENTATION_URL}>and more</LinkNewTabWrapper>
-              </>
-            }
-            icon={<Add />}
-            onSelect={() => {
-              setEditorInteractionState({
-                ...editorInteractionState,
-                showCellTypeMenu: false,
-                showConnectionsMenu: true,
-              });
-            }}
-          />
-        </CommandGroup>
+          </CommandGroup>
+        )}
       </CommandList>
     </CommandDialog>
   );

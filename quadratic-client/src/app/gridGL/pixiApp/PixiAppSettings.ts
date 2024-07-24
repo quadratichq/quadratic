@@ -28,7 +28,10 @@ class PixiAppSettings {
   private lastSettings: GridSettings;
   private _panMode: PanMode;
   private _input: Input;
-  unsavedEditorChanges = false;
+
+  // Keeps track of code editor content. This is used when moving code cells to
+  // keep track of any unsaved changes, and keyboardCell.
+  unsavedEditorChanges?: string;
 
   temporarilyHideCellTypeOutlines = false;
   editorInteractionState = editorInteractionStateDefault;
@@ -83,8 +86,14 @@ class PixiAppSettings {
   ): void {
     this.editorInteractionState = editorInteractionState;
     this.setEditorInteractionState = setEditorInteractionState;
-    pixiApp.headings.dirty = true;
-    pixiApp.cursor.dirty = true;
+
+    // these ifs are needed to because pixiApp may be in a bad state during hmr
+    if (pixiApp.headings) {
+      pixiApp.headings.dirty = true;
+    }
+    if (pixiApp.cursor) {
+      pixiApp.cursor.dirty = true;
+    }
   }
 
   get showGridLines(): boolean {

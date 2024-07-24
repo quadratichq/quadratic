@@ -121,6 +121,7 @@ class InlineEditorKeyboard {
           await keyboardPosition(e);
         }
       } else {
+        e.stopPropagation();
         inlineEditorHandler.close(0, e.code === 'ArrowDown' ? 1 : -1, false);
       }
     }
@@ -200,6 +201,7 @@ class InlineEditorKeyboard {
       multiCursor: null,
       columnRow: null,
       keyboardMovePosition: position,
+      ensureVisible: true,
     });
     if (sheets.sheet.id !== location.sheetId) {
       sheets.current = location.sheetId;

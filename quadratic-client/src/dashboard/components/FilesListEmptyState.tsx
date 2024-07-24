@@ -32,7 +32,8 @@ export const FilesListEmptyState = ({ isPrivate }: { isPrivate?: boolean }) => {
                 <Link
                   to={ROUTES.CREATE_FILE_EXAMPLE(
                     activeTeamUuid,
-                    'https://app.quadratichq.com/file/abb7cb2f-2cc7-46bb-9c83-a86f0c8d4834'
+                    'https://app.quadratichq.com/file/abb7cb2f-2cc7-46bb-9c83-a86f0c8d4834',
+                    Boolean(isPrivate)
                   )}
                   reloadDocument
                   onClick={() => {

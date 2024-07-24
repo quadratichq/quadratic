@@ -32,7 +32,6 @@ export interface EditorInteractionState {
   redo: boolean;
 }
 
-// TODO: rename to appState?
 export const editorInteractionStateDefault: EditorInteractionState = {
   showCellTypeMenu: false,
   showCodeEditor: false,

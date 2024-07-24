@@ -1,7 +1,7 @@
 import { events } from '@/app/events/events';
 import { FeedbackIcon } from '@/app/ui/icons';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { useFileRouteLoaderData } from '@/routes/file.$uuid';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Commit } from '@mui/icons-material';
 import { Stack, useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';
@@ -25,10 +25,10 @@ export const BottomBar = () => {
   const [cursorPositionString, setCursorPositionString] = useState('');
   const [multiCursorPositionString, setMultiCursorPositionString] = useState('');
   const {
-    userMakingRequest: { fileRelativeLocation, teamPermissions },
+    userMakingRequest: { fileTeamPrivacy, teamPermissions },
   } = useFileRouteLoaderData();
 
-  const isAvailableArgs = { filePermissions: permissions, fileRelativeLocation, isAuthenticated, teamPermissions };
+  const isAvailableArgs = { filePermissions: permissions, fileTeamPrivacy, isAuthenticated, teamPermissions };
 
   useEffect(() => {
     const updateCursor = () => {
@@ -80,6 +80,7 @@ export const BottomBar = () => {
         display: 'flex',
         justifyContent: 'space-between',
         userSelect: 'none',
+        zIndex: 1,
       }}
     >
       <Stack direction="row">

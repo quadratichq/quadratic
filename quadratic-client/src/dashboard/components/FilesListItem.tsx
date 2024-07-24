@@ -5,7 +5,7 @@ import {
   getActionFileDelete,
   getActionFileDuplicate,
   getActionFileMove,
-} from '@/routes/files.$uuid';
+} from '@/routes/api.files.$uuid';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button as Btn } from '@/shared/shadcn/ui/button';
@@ -79,9 +79,10 @@ export function FilesListItemUserFile({
   } = useDashboardRouteLoaderData();
 
   const { name, thumbnail, uuid, publicLinkAccess, permissions } = file;
+  const actionUrl = ROUTES.API.FILE(uuid);
 
   // Determine if the user can move files
-  // If we're looking at the user's private files, make sure they have edit access to another team
+  // If we're looking at the user's private files, make sure they have edit access to the team
   // If we're looking at a team, make sure they have edit access to the curent team
   const isTeamPrivateFilesRoute = Boolean(useMatch(ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)));
   const isTeamPublicFilesRoute = Boolean(useMatch(ROUTES.TEAM(activeTeamUuid)));
@@ -93,7 +94,7 @@ export function FilesListItemUserFile({
       : `Modified ${timeAgo(file.updatedDate)}`;
   const fetcherSubmitOpts: SubmitOptions = {
     method: 'POST',
-    action: ROUTES.FILES_FILE(uuid),
+    action: actionUrl,
     encType: 'application/json',
   };
   const failedToDelete = fetcherDelete.data && !fetcherDelete.data.ok;
@@ -226,7 +227,7 @@ export function FilesListItemUserFile({
                             const data = getActionFileMove(userId);
                             submit(data, {
                               method: 'POST',
-                              action: `/files/${uuid}`,
+                              action: actionUrl,
                               encType: 'application/json',
                               navigate: false,
                               fetcherKey: `move-file:${uuid}`,
@@ -242,7 +243,7 @@ export function FilesListItemUserFile({
                             const data = getActionFileMove(null);
                             submit(data, {
                               method: 'POST',
-                              action: `/files/${uuid}`,
+                              action: actionUrl,
                               encType: 'application/json',
                               navigate: false,
                               fetcherKey: `move-file:${uuid}`,

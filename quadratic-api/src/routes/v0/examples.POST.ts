@@ -20,7 +20,7 @@ const schema = z.object({
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/examples.POST.response']>) {
   const { id: userId } = req.user;
   const {
-    body: { publicFileUrlInProduction, teamUuid },
+    body: { publicFileUrlInProduction, teamUuid, isPrivate },
   } = parseRequest(req, schema);
   const {
     team,
@@ -54,7 +54,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/example
       contents: fileContents,
       version: lastCheckpointVersion,
       teamId: team.id,
-      isPrivate: true,
+      isPrivate,
     });
     return res.status(201).json({ uuid: dbFile.uuid, name: dbFile.name });
   } catch (e) {
