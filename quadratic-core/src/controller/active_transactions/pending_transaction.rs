@@ -61,7 +61,7 @@ pub struct PendingTransaction {
     pub cursor_undo_redo: Option<String>,
 
     // client updates (render_cell, sheet_fill, html_output) is batched for large transactions
-    pub batch_client_updates: Option<SheetRect>,
+    pub batch_client_update_rect: Option<SheetRect>,
 }
 
 impl Default for PendingTransaction {
@@ -83,7 +83,7 @@ impl Default for PendingTransaction {
             complete: false,
             generate_thumbnail: false,
             cursor_undo_redo: None,
-            batch_client_updates: None,
+            batch_client_update_rect: None,
         }
     }
 }
@@ -95,7 +95,7 @@ impl PendingTransaction {
             sequence_num,
             operations: self.operations.clone().into(),
             cursor: self.cursor.clone(),
-            batch_client_updates: self.batch_client_updates,
+            batch_client_update_rect: self.batch_client_update_rect,
         }
     }
 
@@ -106,7 +106,7 @@ impl PendingTransaction {
             sequence_num: None,
             operations: self.forward_operations.clone(),
             cursor: None,
-            batch_client_updates: self.batch_client_updates,
+            batch_client_update_rect: self.batch_client_update_rect,
         }
     }
 
@@ -120,7 +120,7 @@ impl PendingTransaction {
             sequence_num: None,
             operations,
             cursor: self.cursor.clone(),
-            batch_client_updates: self.batch_client_updates,
+            batch_client_update_rect: self.batch_client_update_rect,
         }
     }
 

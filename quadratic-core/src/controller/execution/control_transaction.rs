@@ -45,7 +45,7 @@ impl GridController {
 
     /// Finalizes the transaction and pushes it to the various stacks (if needed)
     pub(super) fn finalize_transaction(&mut self, transaction: &mut PendingTransaction) {
-        if let Some(sheet_rect) = transaction.batch_client_updates {
+        if let Some(sheet_rect) = transaction.batch_client_update_rect {
             self.send_updated_bounds_rect(&sheet_rect, true);
             self.send_render_cells(&sheet_rect);
             self.send_fill_cells(&sheet_rect);
@@ -110,7 +110,7 @@ impl GridController {
             operations: operations.into(),
             cursor,
             transaction_name,
-            batch_client_updates: client_update_rect,
+            batch_client_update_rect: client_update_rect,
             ..Default::default()
         };
         self.start_transaction(&mut transaction);

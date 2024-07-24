@@ -15,7 +15,7 @@ pub struct Transaction {
     pub sequence_num: Option<u64>,
     pub operations: Vec<Operation>,
     pub cursor: Option<String>,
-    pub batch_client_updates: Option<SheetRect>,
+    pub batch_client_update_rect: Option<SheetRect>,
 }
 
 impl Transaction {
@@ -30,7 +30,7 @@ impl Transaction {
             cursor_undo_redo: self.cursor.clone(),
             transaction_type,
             operations: self.operations.clone().into(),
-            batch_client_updates: self.batch_client_updates,
+            batch_client_update_rect: self.batch_client_update_rect,
             ..Default::default()
         }
     }
@@ -53,8 +53,7 @@ impl Into<Transaction> for TransactionServer {
             id: self.id,
             sequence_num: Some(self.sequence_num),
             operations: self.operations,
-            cursor: None,
-            batch_client_updates: None,
+            ..Default::default()
         }
     }
 }

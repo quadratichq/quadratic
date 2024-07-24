@@ -50,7 +50,7 @@ impl GridController {
 
             if cfg!(target_family = "wasm")
                 && !transaction.is_server()
-                && transaction.batch_client_updates.is_none()
+                && transaction.batch_client_update_rect.is_none()
             {
                 crate::wasm_bindings::js::jsTransactionProgress(
                     transaction.id.to_string(),

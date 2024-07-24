@@ -60,16 +60,13 @@
   ],
   "rust-analyzer.checkOnSave": true,
   "rust-analyzer.cargo.unsetTest": true,
-  "rust-analyzer.checkOnSave.command": "clippy",
+  // "rust-analyzer.checkOnSave.command": "clippy",
   "files.associations": {
     "*.grid": "json"
   },
   "jest.rootPath": "quadratic-client",
   "typescript.preferences.importModuleSpecifier": "non-relative",
   "editor.defaultFormatter": null,
-  "[python]": {
-    "editor.defaultFormatter": "ms-python.black-formatter"
-  },
   "[rust]": {
     "editor.defaultFormatter": "rust-lang.rust-analyzer",
     "editor.formatOnSave": true
@@ -79,17 +76,6 @@
     "editor.formatOnSave": true
   },
   "[typescriptreact]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "[jsonc]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "[scss]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "spellright.language": ["en-GB-10-1."],
-  "spellright.documentTypes": ["markdown", "latex", "plaintext", "python", "rust", "typescript"],
-  "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   }
 }
