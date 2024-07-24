@@ -71,7 +71,7 @@ export const KernelMenu = () => {
     };
   });
 
-  const [running, setRunning] = useState(0);
+  const [running, setRunning] = useState(1);
   useEffect(() => {
     setRunning((pythonCodeRunning ? 1 : 0) + (javascriptCodeRunning ? 1 : 0) + (connectionCodeRunning ? 1 : 0));
   }, [pythonCodeRunning, javascriptCodeRunning, connectionCodeRunning]);
@@ -85,8 +85,8 @@ export const KernelMenu = () => {
           <div className="text-xs">Kernel</div>
           {running > 0 && (
             <div
-              className="absolute top-1 rounded-full px-1 text-xs text-white"
-              style={{ background: colors.darkGray }}
+              className="absolute right-0 top-0 rounded-full px-1 text-white"
+              style={{ background: colors.darkGray, fontSize: '0.5rem' }}
             >
               {running}
             </div>
