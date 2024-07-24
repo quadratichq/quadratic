@@ -78,8 +78,7 @@ export const editorInteractionStateAtom = atom({
             newValue.showShareFileMenu ||
             newValue.showSearch;
           if (oldModalShow && !newModelShow) {
-            // Schedule focusGrid to run after re-render
-            setTimeout(() => focusGrid());
+            focusGrid();
           }
         }
       });
