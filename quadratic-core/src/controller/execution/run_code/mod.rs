@@ -211,7 +211,6 @@ impl GridController {
                     );
 
                     transaction.waiting_for_async = None;
-                    transaction.has_async = false;
                     self.finalize_code_run(
                         transaction,
                         current_sheet_pos,
@@ -233,7 +232,6 @@ impl GridController {
                         None,
                     );
                     transaction.waiting_for_async = None;
-                    transaction.has_async = false;
                 }
                 _ => {
                     return Err(CoreError::UnhandledLanguage(
@@ -313,7 +311,6 @@ impl GridController {
             },
         };
         transaction.waiting_for_async = None;
-        transaction.has_async = false;
         self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
 
         Ok(())

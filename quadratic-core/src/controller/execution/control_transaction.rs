@@ -36,8 +36,7 @@ impl GridController {
             }
 
             self.execute_operation(transaction);
-            if transaction.has_async {
-                self.transactions.add_async_transaction(transaction);
+            if transaction.has_async > 0 {
                 break;
             }
         }
@@ -45,6 +44,10 @@ impl GridController {
 
     /// Finalizes the transaction and pushes it to the various stacks (if needed)
     pub(super) fn finalize_transaction(&mut self, transaction: &mut PendingTransaction) {
+        if transaction.has_async > 0 {
+            return;
+        }
+
         if transaction.complete {
             match transaction.transaction_type {
                 TransactionType::User => {

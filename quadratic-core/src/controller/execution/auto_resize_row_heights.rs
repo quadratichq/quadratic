@@ -12,7 +12,7 @@ use crate::{
 
 impl GridController {
     pub fn start_auto_resize_row_heights(
-        &self,
+        &mut self,
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         rows: Vec<i64>,
@@ -35,7 +35,7 @@ impl GridController {
                 // don't set has_async in test mode,
                 // as we will not receive renderer callback during tests and the transaction will never complete
                 if !cfg!(test) {
-                    transaction.has_async = true;
+                    self.transactions.add_async_transaction(transaction);
                 }
             } else {
                 dbgjs!("[control_transactions] start_auto_resize_row_heights: Failed to serialize auto resize rows");
@@ -58,7 +58,6 @@ impl GridController {
                 row_heights,
             });
         }
-        transaction.has_async = false;
         self.start_transaction(&mut transaction);
         self.finalize_transaction(&mut transaction);
         Ok(())
@@ -92,12 +91,12 @@ mod tests {
         ops: Vec<Operation>,
         row_heights: Vec<JsRowHeight>, // mock response from renderer
     ) {
-        // manually set has_async to true, as this is disabled in test mode by default
         let mut transaction = PendingTransaction {
-            has_async: true,
             operations: ops.into(),
             ..Default::default()
         };
+        // manually add async transaction, as this is disabled in test mode by default
+        gc.transactions.add_async_transaction(&mut transaction);
         gc.start_transaction(&mut transaction);
         // mock callback from renderer
         let _ = gc.complete_auto_resize_row_heights(transaction.id, sheet_id, row_heights);

@@ -40,7 +40,7 @@ pub struct PendingTransaction {
     pub forward_operations: Vec<Operation>,
 
     // tracks whether there are any async calls (which changes how the transaction is finalized)
-    pub has_async: bool,
+    pub has_async: i64,
 
     // used by Code Cell execution to track dependencies
     pub cells_accessed: HashSet<SheetRect>,
@@ -73,7 +73,7 @@ impl Default for PendingTransaction {
             operations: VecDeque::new(),
             reverse_operations: Vec::new(),
             forward_operations: Vec::new(),
-            has_async: false,
+            has_async: 0,
             cells_accessed: HashSet::new(),
             current_sheet_pos: None,
             waiting_for_async: None,

@@ -94,7 +94,7 @@ impl GridController {
             .cells_accessed
             .insert(rect.to_sheet_rect(sheet.id));
 
-        self.transactions.add_async_transaction(&transaction);
+        self.transactions.add_async_transaction(&mut transaction);
 
         Ok(response)
     }
