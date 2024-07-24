@@ -64,15 +64,17 @@ export function isColumnVisible(column: number): boolean {
 
 // Makes a cell visible in the viewport
 export function cellVisible(
-  column = sheets.sheet.cursor.cursorPosition.x,
-  row = sheets.sheet.cursor.cursorPosition.y
+  coordinate: Coordinate = {
+    x: sheets.sheet.cursor.cursorPosition.x,
+    y: sheets.sheet.cursor.cursorPosition.y,
+  }
 ): boolean {
   // returns true if the cursor is visible in the viewport
   const { viewport, headings } = pixiApp;
   const sheet = sheets.sheet;
   const headingSize = headings.headingSize;
 
-  const cell = sheet.getCellOffsets(column, row);
+  const cell = sheet.getCellOffsets(coordinate.x, coordinate.y);
   let is_off_screen = false;
 
   if (cell.x + headingSize.width < viewport.left) {
@@ -95,8 +97,8 @@ export function cellVisible(
 }
 
 // Ensures the cursor is always visible
-export function ensureVisible(): void {
-  if (!cellVisible()) {
+export function ensureVisible(visible: Coordinate | undefined) {
+  if (!cellVisible(visible)) {
     pixiApp.viewportChanged();
   }
 }
