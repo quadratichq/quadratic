@@ -380,6 +380,7 @@ class InlineEditorHandler {
           x: position.x + deltaX,
           y: position.y + deltaY,
         },
+        ensureVisible: true,
       });
     }
 
