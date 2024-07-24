@@ -134,7 +134,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let column = 0;
-        let new_size = 100.0;
+        let new_size = 120.0;
         gc.commit_single_resize(sheet_id, Some(column), None, new_size, None);
         let column_width = gc
             .grid
