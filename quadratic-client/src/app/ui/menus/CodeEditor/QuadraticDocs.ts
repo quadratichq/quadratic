@@ -1392,47 +1392,47 @@ In Quadratic, reference individual cells from JavaScript for single values or re
 Referencing individual cells
 To reference an individual cell, use the global function cell (or c for short) which returns the cell value.
 // NOTE: cell is (x,y), so cell(2,3) means column 2, row 3 
-let data = await cell(2, 3);
+let data = cell(2, 3);
 
 return data;
 You can reference cells and use them directly. 
-let data = await c(0, 0) + await c(0, 1) # Adds cell 0, 0 and cell 0, 1
+let data = c(0, 0) + c(0, 1) # Adds cell 0, 0 and cell 0, 1
 
-let data = await c(0, 0) == await c(0, 1) # Is cell 0, 0 equal to cell 0, 1 ?
+let data = c(0, 0) == c(0, 1) # Is cell 0, 0 equal to cell 0, 1 ?
 Any time cells dependent on other cells update the dependent cell will also update. This means your code will execute in one cell if it is dependent on another. This is the behavior you want in almost all situations, including user inputs in the sheet that cause calculation in a JavaScript cell. 
 Referencing a range of cells
 To reference a range of cells, use the global function cells. This returns an array.
 
-let data = await getCells(x1, y1, x2, y2)
+let data = getCells(x1, y1, x2, y2)
 Referencing another sheet
 To reference another sheet's cells or range of cells use the following: 
-let data = await getCells(x1, y1, x2, y2, 'sheet_name')
+let data = getCells(x1, y1, x2, y2, 'sheet_name')
 
 Relative references
 Reference cells relative to the cell you're currently in with relative cell references in JavaScript. 
 Get position of current cell
 Keyword pos() returns the current cell's position. 
 # if the current position is cell (1,1) this would return an object with values 1,1
-let cellPos = await pos();
+let cellPos = pos();
 Reference values in relative cells
 Reference the values of cells relative the current position. 
 // c is the cell one cell to the left of the current cell, use either rel_cell or rc
-let d = await rc(-1, 0);
+let d = rc(-1, 0);
 
 // above for one cell to the left is equivalent to the following 
-let cellPos = await pos();
+let cellPos = pos();
 let data = getCell(cellPos['x'] - 1, cellPos['y']);
 
 // one cell left
-let d = await rc(-1, 0);
+let d = rc(-1, 0);
 // one cell up 
-let d = await rc(0, -1);
+let d = rc(0, -1);
 // one cell right 
-let d = await rc(1, 0);
+let d = rc(1, 0);
 // one cell down
-let d = await rc(0, 1);
+let d = rc(0, 1);
 // five cells left, five cells down
-let d = await rc(-5, 5);
+let d = rc(-5, 5);
 
 return d;
 

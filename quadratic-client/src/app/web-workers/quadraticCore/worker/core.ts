@@ -14,7 +14,6 @@ import {
   Format,
   JsCodeCell,
   JsCodeResult,
-  JsGetCellResponse,
   JsRenderCell,
   MinMax,
   SearchOptions,
@@ -771,6 +770,7 @@ class Core {
       this.gridController.commitOffsetsResize(sheetId, transientResize, cursor);
     });
   }
+
   commitSingleResize(
     sheetId: string,
     column: number | undefined,
@@ -791,26 +791,12 @@ class Core {
 
   connectionComplete(transactionId: string, data: ArrayBuffer, std_out?: string, std_err?: string, extra?: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-
     this.gridController.connectionComplete(transactionId, data as Uint8Array, std_out, std_err, extra);
   }
 
-  getCells(
-    transactionId: string,
-    x: number,
-    y: number,
-    w: number,
-    h?: number,
-    sheet?: string,
-    lineNumber?: number
-  ): JsGetCellResponse[] | undefined {
+  getCells(transactionId: string, x: number, y: number, w: number, h?: number, sheet?: string, lineNumber?: number) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    try {
-      const cellsStringified = this.gridController.calculationGetCells(transactionId, x, y, w, h, sheet, lineNumber);
-      return cellsStringified ? (JSON.parse(cellsStringified) as JsGetCellResponse[]) : undefined;
-    } catch (e) {
-      // there was an error getting the cells (likely, an unknown sheet name)
-    }
+    return this.gridController.calculationGetCells(transactionId, x, y, w, h, sheet, lineNumber);
   }
 
   async importExcel(message: ClientCoreImportExcel): Promise<{ contents?: string; version?: string; error?: string }> {
