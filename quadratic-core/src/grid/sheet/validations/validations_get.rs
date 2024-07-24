@@ -100,18 +100,8 @@ impl Validations {
     }
 
     /// Gets all validations in the Sheet.
-    pub fn all_validations(&self) -> Vec<(Uuid, &Validation, Vec<Pos>)> {
-        self.validations
-            .iter()
-            .map(|(uuid, validation)| {
-                let positions = self
-                    .cell_validations
-                    .iter()
-                    .filter_map(|(pos, id)| if id == uuid { Some(*pos) } else { None })
-                    .collect();
-                (*uuid, validation, positions)
-            })
-            .collect()
+    pub fn validations_all(&self) -> Vec<&Validation> {
+        self.validations.
     }
 }
 

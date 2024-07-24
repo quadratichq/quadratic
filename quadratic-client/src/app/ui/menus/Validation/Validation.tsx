@@ -15,16 +15,21 @@ import { getSelectionRange } from '@/app/grid/sheet/selection';
 export const Validation = () => {
   const [range, setRange] = useState(getSelectionRange(sheets.sheet.cursor));
   const [validation, setValidation] = useState<ValidationRust | undefined>();
+  const [validations, setValidations] = useState<ValidationRust[]>([]);
 
   useEffect(() => {
-    const changeValidation = async () => {
-      setValidation(await quadraticCore.getValidation(sheets.getRustSelection()));
+    const getValidations = async () => {
+      const v = await quadraticCore.getValidations(sheets.sheet.id);
     };
-    events.on('cursorPosition', changeValidation);
-    return () => {
-      events.off('cursorPosition', changeValidation);
+
+    const getValidation = async () => {
+      const v = await quadraticCore.getValidation(sheets.getRustSelection());
+      setValidation(v);
     };
+    getValidation();
   }, []);
+
+  const [name, setName] = useState('');
 
   return (
     <div

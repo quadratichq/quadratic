@@ -984,6 +984,20 @@ class QuadraticCore {
     });
   }
 
+  getValidations(sheetId: string): Promise<Validation[]> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { validations: Validation[] }) => {
+        resolve(message.validations);
+      };
+      this.send({
+        type: 'clientCoreGetValidations',
+        id,
+        sheetId,
+      });
+    });
+  }
+
   //#endregion
 }
 

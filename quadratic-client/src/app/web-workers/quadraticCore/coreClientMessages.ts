@@ -856,6 +856,18 @@ export interface CoreClientGetValidation {
   validation: Validation | undefined;
 }
 
+export interface ClientCoreGetValidations {
+  type: 'clientCoreGetValidations';
+  id: number;
+  sheetId: string;
+}
+
+export interface CoreClientGetValidations {
+  type: 'coreClientGetValidations';
+  id: number;
+  validations: Validation[];
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -920,7 +932,8 @@ export type ClientCoreMessage =
   | ClientCoreGetFormatColumn
   | ClientCoreGetFormatRow
   | ClientCoreGetFormatCell
-  | ClientCoreGetValidation;
+  | ClientCoreGetValidation
+  | ClientCoreGetValidations;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -975,4 +988,5 @@ export type CoreClientMessage =
   | CoreClientSheetMetaFills
   | CoreClientSetCursorSelection
   | CoreClientGetValidation
-  | CoreClientOfflineTransactionsApplied;
+  | CoreClientOfflineTransactionsApplied
+  | CoreClientGetValidations;
