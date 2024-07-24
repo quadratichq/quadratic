@@ -99,14 +99,8 @@ mod tests {
         let sheet_id = sheet.id;
 
         let mut ctx = Ctx::new(&g, pos![A0].to_sheet_pos(sheet_id));
-        assert_eq!(
-            "yep".to_string(),
-            form.eval(&mut ctx, false).unwrap().to_string()
-        );
+        assert_eq!("yep".to_string(), form.eval(&mut ctx).unwrap().to_string());
         let mut ctx = Ctx::new(&g, pos![B0].to_sheet_pos(sheet_id));
-        assert_eq!(
-            "nope".to_string(),
-            form.eval(&mut ctx, false).unwrap().to_string()
-        );
+        assert_eq!("nope".to_string(), form.eval(&mut ctx).unwrap().to_string());
     }
 }

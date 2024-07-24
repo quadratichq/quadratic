@@ -17,7 +17,7 @@ impl GridController {
         let mut ctx = Ctx::new(self.grid(), sheet_pos);
         transaction.current_sheet_pos = Some(sheet_pos);
         match parse_formula(&code, sheet_pos.into()) {
-            Ok(parsed) => match parsed.eval(&mut ctx, false) {
+            Ok(parsed) => match parsed.eval(&mut ctx) {
                 Ok(value) => {
                     transaction.cells_accessed = ctx.cells_accessed;
                     let new_code_run = CodeRun {

@@ -30,7 +30,7 @@ impl GridController {
                     },
                 );
 
-                if cfg!(target_family = "wasm") && !transaction.is_server() {
+                if cfg!(test) || (cfg!(target_family = "wasm") && !transaction.is_server()) {
                     self.send_updated_bounds(sheet_rect.sheet_id);
                     if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
                         if let Ok(borders) = serde_json::to_string(&sheet.render_borders()) {
