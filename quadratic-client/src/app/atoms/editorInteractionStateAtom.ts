@@ -79,7 +79,7 @@ export const editorInteractionStateAtom = atom({
             newValue.showSearch;
           if (oldModalShow && !newModelShow) {
             // Schedule focusGrid to run after re-render
-            queueMicrotask(() => focusGrid());
+            setTimeout(() => focusGrid());
           }
         }
       });
