@@ -67,7 +67,7 @@ export function CodeEditorPanelBottom({
 
       <TabsContent value="console" className="m-0 grow overflow-hidden">
         {!bottomHidden && (
-          <div className="pt-2">
+          <div className="h-full pt-2">
             <Console />
           </div>
         )}
