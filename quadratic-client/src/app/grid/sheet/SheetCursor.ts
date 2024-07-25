@@ -128,7 +128,7 @@ export class SheetCursor {
       columnRow?: ColumnRowCursor | null;
       cursorPosition?: Coordinate;
       keyboardMovePosition?: Coordinate;
-      ensureVisible?: boolean;
+      ensureVisible?: boolean | Coordinate;
     },
     test?: boolean
   ) {
@@ -151,7 +151,7 @@ export class SheetCursor {
       this.keyboardMovePosition = options.keyboardMovePosition;
     }
     if (!test) {
-      pixiApp.updateCursorPosition({ ensureVisible: options.ensureVisible ?? true });
+      pixiApp.updateCursorPosition(options.ensureVisible ?? true);
       if (!inlineEditorHandler.cursorIsMoving) {
         multiplayer.sendSelection(this.getMultiplayerSelection());
       }

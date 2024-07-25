@@ -25,7 +25,6 @@ import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
-import { focusGrid } from '../../../helpers/focusGrid';
 import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/pythonWebWorker';
 import './CodeEditor.css';
 import { CodeEditorBody } from './CodeEditorBody';
@@ -225,7 +224,6 @@ export const CodeEditor = () => {
           initialCode: undefined,
         }));
         pixiApp.cellHighlights.clear();
-        focusGrid();
         multiplayer.sendEndCellEdit();
       }
     },

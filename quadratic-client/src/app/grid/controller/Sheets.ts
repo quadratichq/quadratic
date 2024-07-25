@@ -146,7 +146,22 @@ class Sheets {
   get sheet(): Sheet {
     const sheet = this.sheets.find((sheet) => sheet.id === this.current);
     if (!sheet) {
-      throw new Error('Expected to find sheet based on id');
+      // these lines remove some console errors during hmr loading.
+      const sheet = new Sheet(
+        {
+          sheet_id: 'error',
+          name: 'Error',
+          order: 'A0',
+          color: 'red',
+          offsets: '',
+          bounds: { type: 'empty' },
+          bounds_without_formatting: { type: 'empty' },
+        },
+        true
+      );
+      this.sheets.push(sheet);
+      this._current = sheet.id;
+      return sheet;
     }
     return sheet;
   }

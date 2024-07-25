@@ -1,3 +1,4 @@
+import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
 import { SheetCursor } from '@/app/grid/sheet/SheetCursor';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
@@ -115,58 +116,7 @@ export function keyboardCell(options: {
 
   // Show code editor
   if (matchShortcut('show_code_editor', event)) {
-    const x = cursorPosition.x;
-    const y = cursorPosition.y;
-    quadraticCore.getRenderCell(sheets.sheet.id, x, y).then((cell) => {
-      if (cell?.language) {
-        if (editorInteractionState.showCodeEditor) {
-          // Open code editor, or move change editor if already open.
-          setEditorInteractionState({
-            ...editorInteractionState,
-            showCellTypeMenu: false,
-            waitingForEditorClose: {
-              selectedCell: { x: x, y: y },
-              selectedCellSheet: sheets.sheet.id,
-              mode: cell.language,
-              showCellTypeMenu: false,
-              initialCode: undefined,
-            },
-          });
-        } else {
-          setEditorInteractionState({
-            ...editorInteractionState,
-            showCellTypeMenu: false,
-            selectedCell: { x: x, y: y },
-            selectedCellSheet: sheets.sheet.id,
-            mode: cell.language,
-            showCodeEditor: true,
-            initialCode: undefined,
-          });
-        }
-      } else if (editorInteractionState.showCodeEditor) {
-        // code editor is already open, so check it for save before closing
-        setEditorInteractionState({
-          ...editorInteractionState,
-          waitingForEditorClose: {
-            showCellTypeMenu: true,
-            selectedCell: { x: x, y: y },
-            selectedCellSheet: sheets.sheet.id,
-            mode: 'Python',
-            initialCode: undefined,
-          },
-        });
-      } else {
-        // just open the code editor selection menu
-        setEditorInteractionState({
-          ...editorInteractionState,
-          showCellTypeMenu: true,
-          selectedCell: { x: x, y: y },
-          selectedCellSheet: sheets.sheet.id,
-          mode: undefined,
-          initialCode: undefined,
-        });
-      }
-    });
+    openCodeEditor();
     return true;
   }
 

@@ -226,6 +226,7 @@ class InlineEditorKeyboard {
       multiCursor: null,
       columnRow: null,
       keyboardMovePosition: position,
+      ensureVisible: true,
     });
     if (sheets.sheet.id !== location.sheetId) {
       sheets.current = location.sheetId;
