@@ -16,7 +16,7 @@ impl Validations {
     /// Gets a Validation for a Selection. Note, this will only return a Validation if it matches the entire selection.
     pub fn validation(&self, selection: Selection) -> Option<&Validation> {
         if selection.all {
-            return self.all.map(|id| self.validation_from_id(id)).flatten();
+            return self.all.and_then(|id| self.validation_from_id(id));
         }
         let mut found: Option<Uuid> = None;
         if let Some(rows) = selection.rows {
@@ -68,7 +68,7 @@ impl Validations {
                 }
             }
         }
-        found.map(|id| self.validation_from_id(id)).flatten()
+        found.and_then(|id| self.validation_from_id(id))
     }
 
     /// Gets a validation Uuid for a pos.
@@ -146,7 +146,7 @@ mod tests {
         validations.validations.insert(
             id,
             Validation {
-                id: Uuid::new_v4(),
+                id,
                 name: String::new(),
                 rule: ValidationRule::List(ValidationList {
                     source: ValidationListSource::List(vec!["test".to_string()]),

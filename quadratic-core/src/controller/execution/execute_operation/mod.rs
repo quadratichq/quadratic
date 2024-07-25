@@ -49,7 +49,7 @@ impl GridController {
                 }
 
                 Operation::SetValidationSelection { .. } => {
-                    self.execute_set_validation_selection(transaction, op)
+                    self.execute_set_validation_selection(transaction, op);
                 }
                 Operation::AddValidation { .. } => self.execute_add_validation(transaction, op),
             }

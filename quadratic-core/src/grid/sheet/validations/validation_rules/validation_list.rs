@@ -43,10 +43,8 @@ impl ValidationList {
         }
         match &list.source {
             ValidationListSource::Selection(selection) => {
-                let Some(values) = sheet.selection(selection, None, false) else {
-                    return None;
-                };
-                Some(values.iter().map(|(_, value)| value.to_string()).collect())
+                let values = sheet.selection(selection, None, false)?;
+                Some(values.values().map(|value| value.to_string()).collect())
             }
             ValidationListSource::List(list) => Some(list.clone()),
         }
@@ -116,6 +114,6 @@ mod tests {
             ignore_blank: true,
             drop_down: false,
         };
-        assert_eq!(ValidationList::to_drop_down(&sheet, &list), None)
+        assert_eq!(ValidationList::to_drop_down(&sheet, &list), None);
     }
 }

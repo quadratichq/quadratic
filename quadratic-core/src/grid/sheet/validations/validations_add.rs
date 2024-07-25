@@ -61,11 +61,6 @@ impl Validations {
         sheet_id: SheetId,
     ) -> Vec<Operation> {
         let mut reverse = vec![];
-
-        // if validation was deleted, then nothing more to do
-        if self.validations.get(&id).is_none() {
-            return reverse;
-        }
         let old = self.column_validations.get(&column);
         reverse.push(Operation::SetValidationSelection {
             selection: Selection::columns(&[column], sheet_id),
@@ -80,11 +75,6 @@ impl Validations {
     /// cell_validations for cells that are in the row.
     fn link_validation_row(&mut self, row: i64, id: Uuid, sheet_id: SheetId) -> Vec<Operation> {
         let mut reverse = vec![];
-
-        // if validation was deleted, then nothing more to do
-        if self.validations.get(&id).is_none() {
-            return reverse;
-        }
         let old = self.row_validations.get(&row);
         reverse.push(Operation::SetValidationSelection {
             selection: Selection::rows(&[row], sheet_id),
@@ -98,11 +88,6 @@ impl Validations {
     // Links a validation for a rect to an existing Validation.
     fn link_validation_rect(&mut self, rect: Rect, id: Uuid, sheet_id: SheetId) -> Vec<Operation> {
         let mut reverse = vec![];
-
-        // if validation was deleted, then nothing more to do
-        if self.validations.get(&id).is_none() {
-            return reverse;
-        }
         for pos in rect.iter() {
             let old = self.cell_validations.get(&pos);
             reverse.push(Operation::SetValidationSelection {
@@ -118,12 +103,6 @@ impl Validations {
     /// Returns reverse operations.
     fn link_validation_all(&mut self, id: Uuid, sheet_id: SheetId) -> Vec<Operation> {
         let mut reverse = vec![];
-
-        // if validation was deleted, then nothing more to do
-        if self.validations.get(&id).is_none() {
-            return reverse;
-        }
-
         reverse.push(Operation::SetValidationSelection {
             selection: Selection::all(sheet_id),
             validation_id: self.all,
@@ -381,7 +360,7 @@ mod tests {
         assert_eq!(sheet.validations.row_validations.len(), 0);
         assert_eq!(
             sheet.validations.all,
-            Some(sheet.validations.validations.keys().next().unwrap().clone())
+            Some(*sheet.validations.validations.keys().next().unwrap())
         );
     }
 
