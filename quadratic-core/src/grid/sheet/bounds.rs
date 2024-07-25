@@ -344,7 +344,7 @@ impl Sheet {
 mod test {
     use crate::{
         controller::GridController,
-        grid::{CellAlign, CodeCellLanguage, GridBounds, Sheet},
+        grid::{CellAlign, CellWrap, CodeCellLanguage, GridBounds, Sheet},
         CellValue, Pos, Rect, SheetPos, SheetRect,
     };
     use proptest::proptest;
@@ -401,8 +401,8 @@ mod test {
             CellValue::Text(String::from("test")),
         );
         let _ = sheet.set_cell_value(Pos { x: 100, y: 80 }, CellValue::Text(String::from("test")));
-        let _ = sheet
-            .set_formatting_value::<CellAlign>(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
+        let _ =
+            sheet.set_formatting_value::<CellWrap>(Pos { x: 100, y: 200 }, Some(CellWrap::Wrap));
         assert!(sheet.recalculate_bounds());
 
         assert_eq!(sheet.column_bounds(100, true), Some((-50, 80)));

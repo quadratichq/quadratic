@@ -62,7 +62,7 @@ impl GridController {
 mod test {
     use crate::{
         controller::GridController,
-        grid::{NumericDecimals, NumericFormat, SheetId},
+        grid::{NumericCommas, NumericDecimals, NumericFormat, SheetId},
         selection::Selection,
         CellValue, Pos, Rect, SheetPos,
     };
@@ -162,6 +162,10 @@ mod test {
                 .display_value(sheet_pos.into())
                 .unwrap_or_default()
         };
+        let get_cell_numeric_commas = |g: &GridController| {
+            g.sheet(sheet_id)
+                .get_formatting_value::<NumericCommas>(sheet_pos.into())
+        };
         let get_cell_numeric_format = |g: &GridController| {
             g.sheet(sheet_id)
                 .get_formatting_value::<NumericFormat>(sheet_pos.into())
@@ -181,6 +185,7 @@ mod test {
             get_cell_value(&gc),
             CellValue::Number(BigDecimal::from_str("1.22").unwrap())
         );
+        assert_eq!(get_cell_numeric_commas(&gc), None);
         assert_eq!(
             get_cell_numeric_format(&gc),
             Some(NumericFormat {

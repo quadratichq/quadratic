@@ -606,9 +606,12 @@ mod test {
         let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.sheet(sheet_id).clone();
         let _ = sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
-        let value = sheet.get_formatting_value::<Bold>((2, 1).into());
+        let bold: Option<bool> = sheet.get_formatting_value::<Bold>((2, 1).into());
+        assert_eq!(bold, Some(true));
 
-        assert_eq!(value, Some(true));
+        let _ = sheet.set_formatting_value::<Italic>((2, 1).into(), Some(true));
+        let italic = sheet.get_formatting_value::<Italic>((2, 1).into());
+        assert_eq!(italic, Some(true));
     }
 
     // TODO(ddimaria): use the code below numeric format kinds are in place
