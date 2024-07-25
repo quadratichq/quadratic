@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
-import { createFile } from '../../tests/testDataGenerator';
+import { clearDb, createFile } from '../../tests/testDataGenerator';
 
 beforeAll(async () => {
   // Create a test user
@@ -54,17 +54,7 @@ beforeAll(async () => {
   });
 });
 
-afterAll(async () => {
-  await dbClient.$transaction([
-    dbClient.fileInvite.deleteMany(),
-    dbClient.userFileRole.deleteMany(),
-    dbClient.userTeamRole.deleteMany(),
-    dbClient.team.deleteMany(),
-    dbClient.fileCheckpoint.deleteMany(),
-    dbClient.file.deleteMany(),
-    dbClient.user.deleteMany(),
-  ]);
-});
+afterAll(clearDb);
 
 describe('READ - GET /v0/files/:uuid file not found, no auth', () => {
   it('responds with json', async () => {

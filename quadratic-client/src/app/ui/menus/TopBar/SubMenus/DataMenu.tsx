@@ -1,3 +1,4 @@
+import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
 import { downloadSelectionAsCsvAction, isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
@@ -37,6 +38,10 @@ export const DataMenu = () => {
           </TopBarMenuItem>
         )}
       >
+        <MenuItem onClick={openCodeEditor}>
+          <MenuLineItem primary="Open Code Editor" secondary={'/'} />
+        </MenuItem>
+        <MenuDivider />
         <MenuItem
           onClick={() => {
             addGlobalSnackbar(CSV_IMPORT_MESSAGE);
