@@ -52,8 +52,8 @@ impl GridController {
     }
 
     /// Starts a transaction to delete values and formatting in a given rect, and updates dependent cells.
-    pub fn delete_values_and_formatting(&mut self, selection: Selection, cursor: Option<String>) {
-        let ops = self.delete_values_and_formatting_operations(&selection);
+    pub fn delete_values_and_formatting(&mut self, selection: &Selection, cursor: Option<String>) {
+        let ops = self.delete_values_and_formatting_operations(selection);
         self.start_user_transaction(ops, cursor, TransactionName::SetCells, None);
     }
 }
@@ -69,6 +69,7 @@ mod test {
     use std::str::FromStr;
 
     use bigdecimal::BigDecimal;
+    use serial_test::parallel;
 
     #[test]
     fn test_set_cell_value_undo_redo() {
@@ -240,6 +241,32 @@ mod test {
         assert_eq!(cells[0].value, "1.12345678");
 
         // ensure not found sheet_id fails silently
-        gc.clear_formatting(&selection, None);
+        gc.clear_formatting(&Selection::pos(0, 0, SheetId::new()), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn delete_values_and_formatting() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            String::from("1.12345678"),
+            None,
+        );
+        let selection = Selection::pos(0, 0, sheet_id);
+        let _ = gc.set_currency_selection(selection.clone(), "$".to_string(), None);
+        gc.delete_values_and_formatting(&selection, None);
+        let cells = gc
+            .sheet(sheet_id)
+            .get_render_cells(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 }));
+        assert_eq!(cells.len(), 0);
+
+        // ensure not found sheet_id fails silently
+        gc.delete_values_and_formatting(&Selection::pos(0, 0, SheetId::new()), None);
     }
 }

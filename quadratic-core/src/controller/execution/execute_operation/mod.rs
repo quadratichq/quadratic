@@ -48,7 +48,7 @@ impl GridController {
                 }
             }
 
-            if cfg!(target_family = "wasm")
+            if (cfg!(target_family = "wasm") || cfg!(test))
                 && !transaction.is_server()
                 && transaction.batch_client_update_rect.is_none()
             {

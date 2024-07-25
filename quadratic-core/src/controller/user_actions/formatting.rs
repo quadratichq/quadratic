@@ -62,13 +62,6 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats, None);
     }
 
-    pub fn get_all_cell_formats(&self, sheet_rect: SheetRect) -> Vec<CellFmtArray> {
-        let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) else {
-            return vec![];
-        };
-        sheet.get_all_cell_formats(sheet_rect, None)
-    }
-
     pub fn set_cell_render_size(
         &mut self,
         sheet_rect: SheetRect,
