@@ -187,9 +187,8 @@ class QuadraticCore {
   };
 
   private send(message: ClientCoreMessage, extra?: MessagePort | Transferable) {
-    if (!this.worker) {
-      throw new Error('Expected worker to be initialized in quadraticCore.send');
-    }
+    // worker may not be defined during hmr
+    if (!this.worker) return;
 
     if (extra) {
       this.worker.postMessage(message, [extra]);

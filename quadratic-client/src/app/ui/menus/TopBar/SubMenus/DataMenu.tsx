@@ -1,10 +1,11 @@
+import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
 import { downloadSelectionAsCsvAction, isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { DataIcon } from '@/app/ui/icons';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { useFileRouteLoaderData } from '@/routes/file.$uuid';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CSV_IMPORT_MESSAGE, PARQUET_IMPORT_MESSAGE } from '@/shared/constants/appConstants';
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
@@ -37,6 +38,10 @@ export const DataMenu = () => {
           </TopBarMenuItem>
         )}
       >
+        <MenuItem onClick={openCodeEditor}>
+          <MenuLineItem primary="Open Code Editor" secondary={'/'} />
+        </MenuItem>
+        <MenuDivider />
         <MenuItem
           onClick={() => {
             addGlobalSnackbar(CSV_IMPORT_MESSAGE);

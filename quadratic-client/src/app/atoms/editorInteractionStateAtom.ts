@@ -1,7 +1,8 @@
 import { Coordinate } from '@/app/gridGL/types/size';
+import { focusGrid } from '@/app/helpers/focusGrid.js';
 import { CodeCellLanguage, SearchOptions } from '@/app/quadratic-core-types';
 import { FilePermission } from 'quadratic-shared/typesAndSchemas';
-import { atom } from 'recoil';
+import { atom, DefaultValue } from 'recoil';
 
 export interface EditorInteractionState {
   showCellTypeMenu: boolean;
@@ -58,4 +59,33 @@ export const editorInteractionStateDefault: EditorInteractionState = {
 export const editorInteractionStateAtom = atom({
   key: 'editorInteractionState', // unique ID (with respect to other atoms/selectors)
   default: editorInteractionStateDefault,
+  effects: [
+    // this effect is used to focus the grid when the modal is closed
+    ({ onSet }) => {
+      onSet((newValue, oldValue) => {
+        if (oldValue instanceof DefaultValue) return;
+        const oldModalShow =
+          oldValue.showCellTypeMenu ||
+          oldValue.showCodeEditor ||
+          oldValue.showCommandPalette ||
+          oldValue.showConnectionsMenu ||
+          oldValue.showGoToMenu ||
+          oldValue.showFeedbackMenu ||
+          oldValue.showShareFileMenu ||
+          oldValue.showSearch;
+        const newModelShow =
+          newValue.showCellTypeMenu ||
+          newValue.showCodeEditor ||
+          newValue.showCommandPalette ||
+          newValue.showConnectionsMenu ||
+          newValue.showGoToMenu ||
+          newValue.showFeedbackMenu ||
+          newValue.showShareFileMenu ||
+          newValue.showSearch;
+        if (oldModalShow && !newModelShow) {
+          focusGrid();
+        }
+      });
+    },
+  ],
 });
