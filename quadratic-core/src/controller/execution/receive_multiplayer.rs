@@ -634,7 +634,6 @@ mod tests {
             None,
         );
         let other_1_operations = other.last_transaction().unwrap().operations.clone();
-        println!("other_1_operations: {:?}", other_1_operations);
         let other_1_operations_compressed =
             Transaction::serialize_and_compress(&other_1_operations).unwrap();
 
