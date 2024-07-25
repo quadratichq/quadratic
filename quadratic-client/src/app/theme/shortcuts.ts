@@ -7,7 +7,7 @@ export const defaultShortcuts = {
   grid_pan_mode: ['Space'],
 
   // keyboardViewport.ts
-  show_command_palette: ['Cmd + P', 'Cmd + P', 'Cmd + /'],
+  show_command_palette: ['Cmd + P', 'Cmd + /'],
   toggle_presentation_mode: ['Cmd + .'],
   close_overlay: ['Escape'],
   show_go_to_menu: ['Cmd + G', 'Cmd + J'],
