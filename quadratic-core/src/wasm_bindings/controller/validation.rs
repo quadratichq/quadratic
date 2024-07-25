@@ -17,7 +17,7 @@ impl GridController {
     }
 
     /// Returns a stringified version of Vec<Validation>
-    #[wasm_bindgen(js_name = "getValidation")]
+    #[wasm_bindgen(js_name = "getValidations")]
     pub fn js_validations(&self, sheet_id: String) -> String {
         let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
             return String::new();
