@@ -3,7 +3,7 @@ use uuid::Uuid;
 use crate::{grid::Sheet, selection::Selection, CellValue, Pos};
 
 use super::{
-    validation::{Validation, ValidationCell},
+    validation::{Validation, ValidationCell, ValidationCreate},
     validation_rules::{validation_list::ValidationList, ValidationRule},
     Validations,
 };
@@ -101,7 +101,7 @@ impl Validations {
 
     /// Gets all validations in the Sheet.
     pub fn validations_all(&self) -> Vec<&Validation> {
-        self.validations.
+        self.validations.values().collect()
     }
 }
 
@@ -121,7 +121,7 @@ mod tests {
             id,
             Validation {
                 id: Uuid::new_v4(),
-                name: None,
+                name: String::new(),
                 rule: ValidationRule::List(ValidationList {
                     source: ValidationListSource::List(vec!["test".to_string()]),
                     ignore_blank: true,
@@ -137,5 +137,38 @@ mod tests {
         assert_eq!(cell.title, None);
         assert_eq!(cell.message, None);
         assert_eq!(cell.drop_down, Some(vec!["test".to_string()]));
+    }
+
+    #[test]
+    fn validations_all() {
+        let mut validations = Validations::default();
+        let id = Uuid::new_v4();
+        validations.validations.insert(
+            id,
+            Validation {
+                id: Uuid::new_v4(),
+                name: String::new(),
+                rule: ValidationRule::List(ValidationList {
+                    source: ValidationListSource::List(vec!["test".to_string()]),
+                    ignore_blank: true,
+                    drop_down: true,
+                }),
+                message: Default::default(),
+                error: Default::default(),
+            },
+        );
+
+        let all = validations.validations_all();
+        assert_eq!(all.len(), 1);
+        assert_eq!(all[0].id, id);
+    }
+
+    #[test]
+    fn validation_id() {
+        let mut validations = Validations::default();
+        let id = Uuid::new_v4();
+        validations.cell_validations.insert((0, 0).into(), id);
+
+        assert_eq!(validations.validation_id((0, 0).into()), Some(id));
     }
 }

@@ -32,6 +32,14 @@ pub struct ValidationError {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct Validation {
     pub id: Uuid,
+    pub name: String,
+    pub rule: ValidationRule,
+    pub message: ValidationMessage,
+    pub error: ValidationError,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+pub struct ValidationCreate {
     pub name: Option<String>,
     pub rule: ValidationRule,
     pub message: ValidationMessage,

@@ -9,6 +9,7 @@ pub mod execute_formats;
 pub mod execute_move_cells;
 pub mod execute_offsets;
 pub mod execute_sheets;
+pub mod execute_validation;
 pub mod execute_values;
 
 impl GridController {
@@ -46,6 +47,8 @@ impl GridController {
                 Operation::SetCursorSelection { .. } => {
                     self.execute_set_cursor_selection(transaction, op);
                 }
+
+                Operation::SetValidation { .. } => self.execute_set_validation(transaction, op),
             }
 
             if cfg!(target_family = "wasm") && !transaction.is_server() {

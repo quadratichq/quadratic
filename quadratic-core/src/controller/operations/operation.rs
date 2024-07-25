@@ -1,11 +1,12 @@
 use core::fmt;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::{
     cell_values::CellValues,
     grid::{
-        file::sheet_schema::SheetSchema, formats::Formats, formatting::CellFmtArray, CodeRun,
-        Sheet, SheetBorders, SheetId,
+        file::sheet_schema::SheetSchema, formats::Formats, formatting::CellFmtArray,
+        sheet::validations::validation::Validation, CodeRun, Sheet, SheetBorders, SheetId,
     },
     selection::Selection,
     SheetPos, SheetRect,
@@ -116,6 +117,18 @@ pub enum Operation {
         source: SheetRect,
         dest: SheetPos,
     },
+
+    // adds a validation to the list of possible validations
+    AddValidation {
+        validation_id: Uuid,
+        validation: Option<Validation>,
+    },
+
+    // applies a validation to a selection
+    SetValidationSelection {
+        selection: Selection,
+        validation: Option<Uuid>,
+    },
 }
 
 impl fmt::Display for Operation {
@@ -207,6 +220,26 @@ impl fmt::Display for Operation {
             }
             Operation::AddSheetSchema { schema } => {
                 write!(fmt, "AddSheetSchema {{ schema: {:?} }}", schema)
+            }
+            Operation::AddValidation {
+                validation_id,
+                validation,
+            } => {
+                write!(
+                    fmt,
+                    "AddValidation {{ validation_id: {} validation: {:?} }}",
+                    validation_id, validation
+                )
+            }
+            Operation::SetValidationSelection {
+                selection,
+                validation,
+            } => {
+                write!(
+                    fmt,
+                    "SetValidation {{ selection: {:?} validation: {:?} }}",
+                    selection, validation
+                )
             }
         }
     }

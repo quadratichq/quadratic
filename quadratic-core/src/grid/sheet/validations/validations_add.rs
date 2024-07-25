@@ -1,8 +1,10 @@
 use uuid::Uuid;
 
-use crate::{selection::Selection, Pos, Rect};
+use crate::{
+    controller::operations::operation::Operation, grid::SheetId, selection::Selection, Pos, Rect,
+};
 
-use super::{validation::Validation, Validations};
+use super::Validations;
 
 impl Validations {
     /// Cleans up validations that are no longer needed.
@@ -53,24 +55,37 @@ impl Validations {
         }
     }
 
-    fn link_validation_all(&mut self, id: Uuid) {
+    fn link_validation_all(&mut self, id: Uuid, sheet_id: SheetId) -> Vec<Operation> {
         // if validation was deleted, then nothing more to do
         if self.validations.get(&id).is_none() {
-            return;
+            return vec![];
+        }
+
+        let mut reverse = vec![];
+        if let Some(all) = self.all {
+            reverse.push(Operation::SetValidation {
+                selection: Selection::all(sheet_id),
+                validation: Some(self.validations[&all].clone()),
+            });
         }
         self.all = Some(id);
         self.cell_validations.clear();
         self.column_validations.clear();
         self.row_validations.clear();
+
+        reverse
     }
 
-    pub fn link_validation(&mut self, selection: Selection, id: Uuid) {
+    pub fn link_validation(&mut self, selection: Selection, id: Uuid) -> Vec<Operation> {
+        let mut reverse = vec![];
+
         if selection.all {
-            self.link_validation_all(id);
+            reverse.extend(self.link_validation_all(id, selection.sheet_id));
         }
+
         if let Some(columns) = selection.columns {
             columns.iter().for_each(|column| {
-                self.link_validation_column(*column, id);
+                reverse.extend(self.link_validation_column(*column, id));
             });
         }
         if let Some(rows) = selection.rows {
@@ -84,11 +99,24 @@ impl Validations {
             });
         }
         self.cleanup();
+
+        reverse
     }
 
-    /// Adds a new validation to the sheet.
-    pub fn add_validation(&mut self, selection: Selection, validation: Validation) {
-        let id = validation.id;
+    /// Creates a new validation and applies it to the selection
+    pub fn add_validation(&mut self, validation: Validation, selection: Selection) {
+        // let name = create
+        //     .name
+        //     .unwrap_or(format!("Validation {}", self.validations.len() + 1));
+
+        // let id = Uuid::new_v4();
+        // let validation = Validation {
+        //     id,
+        //     name,
+        //     rule: create.rule,
+        //     message: create.message,
+        //     error: create.error,
+        // };
         self.validations.insert(id, validation);
         self.link_validation(selection, id);
     }
@@ -97,9 +125,12 @@ impl Validations {
 #[cfg(test)]
 mod tests {
     use crate::grid::{
-        sheet::validations::validation_rules::{
-            validation_list::{ValidationList, ValidationListSource},
-            ValidationRule,
+        sheet::validations::{
+            validation::Validation,
+            validation_rules::{
+                validation_list::{ValidationList, ValidationListSource},
+                ValidationRule,
+            },
         },
         Sheet,
     };

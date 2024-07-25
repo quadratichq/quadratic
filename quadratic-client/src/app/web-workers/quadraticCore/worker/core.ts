@@ -902,6 +902,12 @@ class Core {
       return JSON.parse(validation);
     }
   }
+
+  getValidations(sheetId: string): Validation[] {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const validations = this.gridController.getValidations(sheetId);
+    return JSON.parse(validations);
+  }
 }
 
 export const core = new Core();
