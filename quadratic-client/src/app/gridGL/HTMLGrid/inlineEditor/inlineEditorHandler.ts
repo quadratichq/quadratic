@@ -35,7 +35,7 @@ class InlineEditorHandler {
 
   width = 0;
   location?: SheetPosTS;
-  formula = false;
+  formula: boolean | undefined = undefined;
 
   cursorIsMoving = false;
 
@@ -218,7 +218,7 @@ class InlineEditorHandler {
       text: inlineEditorMonaco.get(),
       cursor: inlineEditorMonaco.getCursorColumn() - 1,
       codeEditor: false,
-      inlineCodeEditor: this.formula,
+      inlineCodeEditor: !!this.formula,
       bold: this.temporaryBold,
       italic: this.temporaryItalic,
     });
@@ -290,12 +290,10 @@ class InlineEditorHandler {
     this.formula = formula;
     if (formula) {
       inlineEditorMonaco.setLanguage('Formula');
-      this.formulaExpandButton.style.display = 'block';
 
       // need to show the change to A1 notation
       pixiApp.headings.dirty = true;
     } else {
-      this.formulaExpandButton.style.display = 'none';
       inlineEditorMonaco.setLanguage('plaintext');
     }
 
@@ -380,6 +378,7 @@ class InlineEditorHandler {
           x: position.x + deltaX,
           y: position.y + deltaY,
         },
+        ensureVisible: true,
       });
     }
 
@@ -409,17 +408,17 @@ class InlineEditorHandler {
 
   // Attaches the inline editor to a div created by React in InlineEditor.tsx
   attach(div: HTMLDivElement) {
-    if (this.div) throw new Error('Inline editor already attached');
+    // we only want to call this once
+    if (!this.div) {
+      inlineEditorMonaco.attach(div);
+    }
     this.div = div;
 
-    inlineEditorMonaco.attach(div);
-
-    const expandButton = div.childNodes[1] as HTMLDivElement | undefined;
+    const expandButton = div?.childNodes[1] as HTMLDivElement | undefined;
     if (expandButton) {
       this.formulaExpandButton = expandButton;
+      this.formulaExpandButton.removeEventListener('click', this.openCodeEditor);
       this.formulaExpandButton.addEventListener('click', this.openCodeEditor);
-    } else {
-      throw new Error('Expected expandButton to be defined in attach');
     }
     this.hideDiv();
   }
@@ -453,9 +452,8 @@ class InlineEditorHandler {
   }
 
   hideDiv() {
-    if (!this.div) {
-      throw new Error('Expected div to be defined in hideDiv');
-    }
+    if (!this.div) return;
+
     // We need to use visibility instead of display to avoid an annoying warning
     // with <Tooltip>.
     this.div.style.visibility = 'hidden';

@@ -17,6 +17,16 @@ export default defineConfig(() => {
         lintCommand: 'eslint --ext .ts,.tsx src',
       },
     }),
+    {
+      name: 'configure-server',
+      configureServer(server) {
+        server.middlewares.use((_req, res, next) => {
+          res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
+          res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+          next();
+        });
+      },
+    }
   ];
   if (process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_AUTH_TOKEN !== 'none') {
     plugins.push(

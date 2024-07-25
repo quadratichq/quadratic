@@ -22,7 +22,7 @@ class Cell:
         self.type_name = type_name
 
 
-async def mock_GetCellsDB(
+def mock_GetCellsDB(
     x1: int, y1: int, x2: int, y2: int, sheet: str = None, line: int = False
 ):
     out = []
@@ -79,71 +79,64 @@ class TestTesting(IsolatedAsyncioTestCase):
     def test_attempt_fix_await(self):
         self.assertEqual(attempt_fix_await("1 + 1"), "1 + 1")
 
-        # simple adding await
-        self.assertEqual(
-            attempt_fix_await("a = cells(0, 0)"), "a = (await cells(0, 0))"
-        )
-        self.assertEqual(attempt_fix_await("a = cell(0, 0)"), "a = (await cell(0, 0))")
-        self.assertEqual(attempt_fix_await("a = c(0, 0)"), "a = (await c(0, 0))")
-        self.assertEqual(
-            attempt_fix_await("a = rel_cell(0, 0)"), "a = (await rel_cell(0, 0))"
-        )
-        self.assertEqual(
-            attempt_fix_await("a = rel_cells(0, 0)"), "a = (await rel_cells(0, 0))"
-        )
-        self.assertEqual(attempt_fix_await("a = rc(0, 0)"), "a = (await rc(0, 0))")
-        self.assertEqual(
-            attempt_fix_await("a = getCells(0, 0)"), "a = (await getCells(0, 0))"
-        )
+        # simple without await
+        self.assertEqual(attempt_fix_await("a = cells(0, 0)"), "a = cells(0, 0)")
+        self.assertEqual(attempt_fix_await("a = cell(0, 0)"), "a = cell(0, 0)")
+        self.assertEqual(attempt_fix_await("a = c(0, 0)"), "a = c(0, 0)")
+        self.assertEqual(attempt_fix_await("a = rel_cell(0, 0)"), "a = rel_cell(0, 0)")
+        self.assertEqual(attempt_fix_await("a = rc(0, 0)"), "a = rc(0, 0)")
+        self.assertEqual(attempt_fix_await("a = getCells(0, 0)"), "a = getCells(0, 0)")
 
         # simple already has await
+        self.assertEqual(attempt_fix_await("a = await cells(0, 0)"), "a = cells(0, 0)")
+        self.assertEqual(attempt_fix_await("a = await cell(0, 0)"), "a = cell(0, 0)")
+        self.assertEqual(attempt_fix_await("a = await c(0, 0)"), "a = c(0, 0)")
         self.assertEqual(
-            attempt_fix_await("a = await cells(0, 0)"), "a = (await cells(0, 0))"
+            attempt_fix_await("a = await rel_cell(0, 0)"), "a = rel_cell(0, 0)"
         )
+        self.assertEqual(attempt_fix_await("a = await rc(0, 0)"), "a = rc(0, 0)")
         self.assertEqual(
-            attempt_fix_await("a = await cell(0, 0)"), "a = (await cell(0, 0))"
-        )
-        self.assertEqual(attempt_fix_await("a = await c(0, 0)"), "a = (await c(0, 0))")
-        self.assertEqual(
-            attempt_fix_await("a = await getCells(0, 0)"), "a = (await getCells(0, 0))"
+            attempt_fix_await("a = await getCells(0, 0)"), "a = getCells(0, 0)"
         )
 
         # other
         self.assertEqual(attempt_fix_await("a = cac(0, 0)"), "a = cac(0, 0)")
-        self.assertEqual(attempt_fix_await("c(0, 0)"), "(await c(0, 0))")
-        self.assertEqual(attempt_fix_await("int(c(0,0))"), "int((await c(0,0)))")
+        self.assertEqual(attempt_fix_await("c(0, 0)"), "c(0, 0)")
+        self.assertEqual(attempt_fix_await("int(c(0,0))"), "int(c(0,0))")
+        self.assertEqual(attempt_fix_await("int(await c(0,0))"), "int(c(0,0))")
         self.assertEqual(
-            attempt_fix_await("float((await c(2, -4)).value)"),
-            "float(((await c(2, -4))).value)",
+            attempt_fix_await("float(c(2, -4).value)"), "float(c(2, -4).value)"
         )
         self.assertEqual(
-            attempt_fix_await("float(c(2, -4).value)"),
-            "float((await c(2, -4)).value)",
+            attempt_fix_await("float((await c(2, -4)).value)"),
+            "float((c(2, -4)).value)",
         )
         self.assertEqual(
             attempt_fix_await("cells((0,0), (0,10)).sum()"),
-            "(await cells((0,0), (0,10))).sum()",
+            "cells((0,0), (0,10)).sum()",
         )
-        self.assertEqual(
-            attempt_fix_await("c(0, 0)\nc(0, 0)"), "(await c(0, 0))\n(await c(0, 0))"
-        )
+        self.assertEqual(attempt_fix_await("c(0, 0)\nc(0, 0)"), "c(0, 0)\nc(0, 0)")
 
         # convert c((x,y), ...) cell((x,y), ...) to cells((x,y), ...)
         self.assertEqual(
-            attempt_fix_await("c((0,0), (0,10), (10,10), (10,0)).sum()"),
-            "(await cells((0,0), (0,10), (10,10), (10,0))).sum()",
+            attempt_fix_await("await c((0,0), (0,10), (10,10), (10,0)).sum()"),
+            "cells((0,0), (0,10), (10,10), (10,0)).sum()",
         )
         self.assertEqual(
-            attempt_fix_await("cell((0,0), (0,10), (10,10), (10,0)).sum()"),
-            "(await cells((0,0), (0,10), (10,10), (10,0))).sum()",
+            attempt_fix_await("await c((0,0), (0,10), (10,10), (10,0)).sum()"),
+            "cells((0,0), (0,10), (10,10), (10,0)).sum()",
         )
         self.assertEqual(
-            attempt_fix_await("cells((0,0), (0,10), (10,10), (10,0)).sum()"),
-            "(await cells((0,0), (0,10), (10,10), (10,0))).sum()",
+            attempt_fix_await("await cell((0,0), (0,10), (10,10), (10,0)).sum()"),
+            "cells((0,0), (0,10), (10,10), (10,0)).sum()",
         )
         self.assertEqual(
-            attempt_fix_await("gc((0,0), (0,10), (10,10), (10,0)).sum()"),
-            "gc((0,0), (0,10), (10,10), (10,0)).sum()",
+            attempt_fix_await("await cells((0,0), (0,10), (10,10), (10,0)).sum()"),
+            "cells((0,0), (0,10), (10,10), (10,0)).sum()",
+        )
+        self.assertEqual(
+            attempt_fix_await("await gc((0,0), (0,10), (10,10), (10,0)).sum()"),
+            "await gc((0,0), (0,10), (10,10), (10,0)).sum()",
         )
 
 
@@ -221,20 +214,20 @@ class TestErrorMessaging(TestCase):
 
 
 class TestQuadraticApi(IsolatedAsyncioTestCase):
-    async def test_getCells_2d_array(self):
-        cells = await getCells((0, 0), (1, 1), first_row_header=False)
+    def test_getCells_2d_array(self):
+        cells = getCells((0, 0), (1, 1), first_row_header=False)
         assert cells.equals(
             pd.DataFrame(
                 [["hello 0", "hello 1"], ["hello 0", "hello 1"]], columns=[0, 1]
             )
         )
 
-    async def test_getCells_1d_array(self):
-        cells = await getCells((0, 0), (0, 1), first_row_header=False)
+    def test_getCells_1d_array(self):
+        cells = getCells((0, 0), (0, 1), first_row_header=False)
         assert cells.equals(pd.DataFrame([["hello 0"], ["hello 0"]], columns=[0]))
 
-    async def test_getCells_1d_array_header(self):
-        cells = await getCells((0, 0), (0, 1), first_row_header=True)
+    def test_getCells_1d_array_header(self):
+        cells = getCells((0, 0), (0, 1), first_row_header=True)
         assert cells.equals(pd.DataFrame([["hello 0"]], columns=["hello 0"]))
 
 

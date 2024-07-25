@@ -5,6 +5,7 @@ export const DOCUMENTATION_FORMULAS_URL = `${DOCUMENTATION_URL}/formulas`;
 export const DOCUMENTATION_JAVASCRIPT_URL = `${DOCUMENTATION_URL}/javascript`;
 export const DOCUMENTATION_JAVASCRIPT_RETURN_DATA = `${DOCUMENTATION_URL}/javascript/return-data-to-the-sheet`;
 export const DOCUMENTATION_FILES_URL = `${DOCUMENTATION_URL}/files`;
+export const DOCUMENTATION_OFFLINE = `${DOCUMENTATION_URL}/#local-saving`;
 export const DOCUMENTATION_CONNECTIONS_URL = `${DOCUMENTATION_URL}/connections`;
 export const DOCUMENTATION_CONNECTIONS_IP_LIST_URL = `${DOCUMENTATION_CONNECTIONS_URL}/security#ip-allow-list`;
 export const TRUST_CENTER = 'https://trust.quadratichq.com';

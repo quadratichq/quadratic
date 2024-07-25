@@ -16,6 +16,7 @@ import {
   connectionPublicSubnet2,
   connectionVPC,
 } from "./connection_network";
+
 const config = new pulumi.Config();
 
 // Configuration from command line
@@ -69,6 +70,13 @@ let desiredCapacity = 2;
 if (isPreviewEnvironment) minSize = maxSize = desiredCapacity = 1;
 
 const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
+  tags: [
+    {
+      key: "Name",
+      value: `connection-instance-${connectionSubdomain}`,
+      propagateAtLaunch: true,
+    },
+  ],
   vpcZoneIdentifiers: [
     connectionPrivateSubnet1.id,
     connectionPrivateSubnet2.id,
@@ -77,18 +85,19 @@ const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
   minSize,
   maxSize,
   desiredCapacity,
-  tags: [
-    {
-      key: "Name",
-      value: `connection-instance-${connectionSubdomain}`,
-      propagateAtLaunch: true,
-    },
-  ],
   targetGroupArns: [targetGroup.arn],
+  instanceRefresh: {
+    strategy: "Rolling",
+    preferences: {
+      minHealthyPercentage: 50,
+      instanceWarmup: "60",
+    },
+  },
 });
 
 // Create a new Network Load Balancer
 const nlb = new aws.lb.LoadBalancer("connection-nlb", {
+  name: `nlb-${connectionSubdomain}`,
   internal: false,
   loadBalancerType: "network",
   subnets: [connectionPublicSubnet1.id, connectionPublicSubnet2.id],

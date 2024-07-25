@@ -144,6 +144,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientOfflineTransactionStats') {
       events.emit('offlineTransactions', e.data.transactions, e.data.operations);
       return;
+    } else if (e.data.type === 'coreClientOfflineTransactionsApplied') {
+      events.emit('offlineTransactionsApplied', e.data.timestamps);
+      return;
     } else if (e.data.type === 'coreClientUndoRedo') {
       events.emit('undoRedo', e.data.undo, e.data.redo);
       return;
@@ -183,9 +186,8 @@ class QuadraticCore {
   };
 
   private send(message: ClientCoreMessage, extra?: MessagePort | Transferable) {
-    if (!this.worker) {
-      throw new Error('Expected worker to be initialized in quadraticCore.send');
-    }
+    // worker may not be defined during hmr
+    if (!this.worker) return;
 
     if (extra) {
       this.worker.postMessage(message, [extra]);

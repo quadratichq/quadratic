@@ -2,7 +2,7 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { expectError } from '../../tests/helpers';
-import { createFile } from '../../tests/testDataGenerator';
+import { clearDb, createFile } from '../../tests/testDataGenerator';
 
 beforeAll(async () => {
   const userOwner = await dbClient.user.create({
@@ -75,15 +75,7 @@ beforeAll(async () => {
   });
 });
 
-afterAll(async () => {
-  await dbClient.$transaction([
-    dbClient.userTeamRole.deleteMany(),
-    dbClient.team.deleteMany(),
-    dbClient.fileCheckpoint.deleteMany(),
-    dbClient.file.deleteMany(),
-    dbClient.user.deleteMany(),
-  ]);
-});
+afterAll(clearDb);
 
 describe('PATCH /v0/files/:uuid', () => {
   describe('bad request', () => {

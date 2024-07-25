@@ -87,6 +87,7 @@ interface EventTypes {
   resizeHeadingColumn: (sheetId: string, column: number) => void;
 
   offlineTransactions: (transactions: number, operations: number) => void;
+  offlineTransactionsApplied: (timestamps: number[]) => void;
 
   connector: (query: string) => void;
   connectorResponse: (buffer: ArrayBuffer) => void;

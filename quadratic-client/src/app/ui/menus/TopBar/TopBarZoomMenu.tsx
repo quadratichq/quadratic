@@ -1,6 +1,6 @@
 import { events } from '@/app/events/events';
 import { Typography } from '@mui/material';
-import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
+import { Menu, MenuChangeEvent, MenuDivider, MenuItem } from '@szhsin/react-menu';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useState } from 'react';
 import { zoomInOut, zoomToFit, zoomToSelection } from '../../../gridGL/helpers/zoom';
@@ -25,8 +25,14 @@ export const TopBarZoomMenu = () => {
     focusGrid();
   }, []);
 
+  // focus canvas after the zoom menu closes
+  const onMenuChange = useCallback((event: MenuChangeEvent) => {
+    if (!event.open) focusGrid();
+  }, []);
+
   return (
     <Menu
+      onMenuChange={onMenuChange}
       menuButton={({ open }) => (
         <TopBarMenuItem title="Zoom options" open={open} className="w-[70px] self-stretch">
           <Typography variant="subtitle2" color="inherit" fontSize=".8125rem">

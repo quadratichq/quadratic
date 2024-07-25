@@ -80,25 +80,25 @@ export const insertCellRef = (editorInteractionState: EditorInteractionState, re
       const start = { x: multiCursor.left, y: multiCursor.top };
       const end = { x: multiCursor.right - 1, y: multiCursor.bottom - 1 };
       if (sheet) {
-        ref = `await cells(${start.x}, ${start.y}, ${end.x}, ${end.y}, '${sheet}')`;
+        ref = `cells(${start.x}, ${start.y}, ${end.x}, ${end.y}, '${sheet}')`;
       } else {
         if (relative) {
-          ref = `await relCells(${start.x - selectedCell.x}, ${start.y - selectedCell.y}, ${end.x - selectedCell.x}, ${
+          ref = `relCells(${start.x - selectedCell.x}, ${start.y - selectedCell.y}, ${end.x - selectedCell.x}, ${
             end.y - selectedCell.y
           })`;
         } else {
-          ref = `await cells(${start.x}, ${start.y}, ${end.x}, ${end.y})`;
+          ref = `cells(${start.x}, ${start.y}, ${end.x}, ${end.y})`;
         }
       }
     } else {
       const location = cursor.cursorPosition;
       if (sheet) {
-        ref = `await cell(${location.x}, ${location.y}, '${sheet}')`;
+        ref = `cell(${location.x}, ${location.y}, '${sheet}')`;
       } else {
         if (relative) {
-          ref = `await relCell(${location.x - selectedCell.x}, ${location.y - selectedCell.y})`;
+          ref = `relCell(${location.x - selectedCell.x}, ${location.y - selectedCell.y})`;
         } else {
-          ref = `await cell(${location.x}, ${location.y})`;
+          ref = `cell(${location.x}, ${location.y})`;
         }
       }
     }

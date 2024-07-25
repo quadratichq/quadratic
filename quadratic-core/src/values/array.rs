@@ -327,6 +327,12 @@ impl Spanned<Array> {
         self.check_array_size_on(axis.other_axis(), 1)?;
         Ok(self.inner.size()[axis])
     }
+    /// Checks that an array is linear (width=1 or height=1), then returns it if
+    /// it is.
+    pub fn try_as_linear_array(&self) -> CodeResult<&[CellValue]> {
+        self.array_linear_axis()?; // Check that the array is linear.
+        Ok(&self.inner.values)
+    }
 
     /// Checks the size of the array on one axis, returning an error if it does
     /// not match exactly.

@@ -56,10 +56,8 @@ export class MultiplayerServer {
   private sessionId?: string;
   private fileId?: string;
   private user?: User;
-  private anonymous?: boolean;
 
   private connectionTimeout: number | undefined;
-  private brokenConnection = false;
 
   private userData?: UserData;
 
@@ -78,7 +76,7 @@ export class MultiplayerServer {
     this.sessionId = message.sessionId;
     this.fileId = message.fileId;
     this.user = message.user;
-    this.anonymous = message.anonymous;
+
     this.userData = {
       sheetId: message.sheetId,
       selection: message.selection,
@@ -89,7 +87,7 @@ export class MultiplayerServer {
       x: message.x,
       y: message.y,
     };
-    this.connect();
+    this.connect(true);
 
     self.addEventListener('online', () => {
       if (this.state === 'no internet') {
@@ -110,30 +108,34 @@ export class MultiplayerServer {
     multiplayerClient.sendState(state);
   }
 
-  private connect() {
+  // Attempt to connect to the server.
+  // @param skipFetchJwt If true, don't fetch a new JWT from the client
+  // (only true on first connection, since client already provided the jwt)
+  private async connect(skipFetchJwt = false) {
     if (this.state === 'connecting' || this.state === 'waiting to reconnect') {
       return;
     }
 
     this.state = 'connecting';
+    if (!skipFetchJwt) {
+      await multiplayerClient.sendRefreshJwt();
+    }
+
     this.websocket = new WebSocket(import.meta.env.VITE_QUADRATIC_MULTIPLAYER_URL);
     this.websocket.addEventListener('message', this.handleMessage);
 
     this.websocket.addEventListener('close', () => {
       if (debugShowMultiplayer) console.log('[Multiplayer] websocket closed unexpectedly.');
-      this.brokenConnection = true;
       this.state = 'waiting to reconnect';
       this.reconnect();
     });
     this.websocket.addEventListener('error', (e) => {
       if (debugShowMultiplayer) console.log('[Multiplayer] websocket error', e);
-      this.brokenConnection = true;
       this.state = 'waiting to reconnect';
       this.reconnect();
     });
     this.websocket.addEventListener('open', () => {
       if (debugShow) console.log('[Multiplayer] websocket connected.');
-      this.brokenConnection = false;
       this.state = 'connected';
       this.enterFileRoom();
       this.waitingForConnection.forEach((resolve) => resolve(0));

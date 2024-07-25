@@ -55,6 +55,11 @@ impl GridController {
                         .unsaved_transactions
                         .insert_or_replace(transaction, true);
                 }
+                TransactionType::Unsaved => {
+                    let undo = transaction.to_undo_transaction();
+                    self.undo_stack.push(undo.clone());
+                    self.redo_stack.clear();
+                }
                 TransactionType::Undo => {
                     let undo = transaction.to_undo_transaction();
                     self.redo_stack.push(undo.clone());

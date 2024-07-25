@@ -9,7 +9,7 @@ use crate::{Pos, SheetPos};
 pub(crate) fn try_eval_at(grid: &Grid, pos: SheetPos, s: &str) -> CodeResult<Value> {
     println!("Evaluating formula {s:?} at {pos:?}");
     let mut ctx = Ctx::new(grid, pos);
-    parse_formula(s, Pos::ORIGIN)?.eval(&mut ctx, false)
+    parse_formula(s, Pos::ORIGIN)?.eval(&mut ctx)
 }
 #[track_caller]
 pub(crate) fn eval_at(grid: &Grid, sheet_pos: SheetPos, s: &str) -> Value {
@@ -62,14 +62,14 @@ fn test_formula_cell_ref() {
     let mut ctx = Ctx::new(&g, pos![D4].to_sheet_pos(sheet_id));
     assert_eq!(
         RunErrorMsg::CircularReference,
-        form.eval(&mut ctx, false).unwrap_err().msg,
+        form.eval(&mut ctx).unwrap_err().msg,
     );
 
     // Evaluate at B2
     let mut ctx = Ctx::new(&g, pos![B2].to_sheet_pos(sheet_id));
     assert_eq!(
         "11111".to_string(),
-        form.eval(&mut ctx, false).unwrap().to_string(),
+        form.eval(&mut ctx).unwrap().to_string(),
     );
 }
 
@@ -82,7 +82,7 @@ fn test_formula_circular_array_ref() {
 
     assert_eq!(
         RunErrorMsg::CircularReference,
-        form.eval(&mut ctx, false).unwrap_err().msg,
+        form.eval(&mut ctx).unwrap_err().msg,
     );
 }
 

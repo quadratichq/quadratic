@@ -70,7 +70,6 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// return the corresponding cell in another horizontal row, or an
             /// error if no match is found.
             ///
-            ///
             /// If `is_sorted` is `TRUE`, this function uses a [binary search
             /// algorithm](https://en.wikipedia.org/wiki/Binary_search_algorithm),
             /// so the first row of `search_range` must be sorted, with smaller
@@ -274,10 +273,66 @@ fn get_functions() -> Vec<FormulaFunction> {
                 Array::new_row_major(result_size, final_output_array)?
             }
         ),
+        formula_fn!(
+            /// Searches for a value in a range and returns the index of the
+            /// first match, starting from 1.
+            ///
+            /// If `match_mode` is `1` (the default), then the index of the
+            /// _greatest value less than_ `search_key` will be returned. In
+            /// this mode, `search_range` must be sorted in ascending order,
+            /// with smaller values at the top or left and larger values at the
+            /// bottom or right; otherwise the result of this function will be
+            /// meaningless.
+            ///
+            /// If `match_mode` is `-1`, then the index of the _smallest value
+            /// greater than_ `search_key` will be returned. In this mode,
+            /// `search_range` must be sorted in ascending order, with larger
+            /// values at the top or left and smaller values at the bottom or
+            /// right; otherwise the result of this function will be
+            /// meaningless.
+            ///
+            /// If `match_mode` is `0`, then the index of the first value
+            /// _equal_ to `search_key` will be returned. In this mode,
+            /// `search_range` may be in any order. `search_key` may also be a
+            /// wildcard.
+            ///
+            #[doc = see_docs_for_more_about_wildcards!()]
+            #[examples(
+                "MATCH(12, {10, 20, 30})",
+                "MATCH(19, {10, 20, 30}, -1)",
+                "MATCH(\"A\", {\"a\"; \"b\"; \"c\"}, 0)"
+            )]
+            #[zip_map]
+            fn MATCH(
+                [search_key]: CellValue,
+                search_range: (Spanned<Array>),
+                match_mode: (Option<f64>),
+            ) {
+                let match_mode = match_mode.unwrap_or(1.0);
+                let (match_mode, search_mode) = if match_mode > 0.0 {
+                    (
+                        LookupMatchMode::NextSmaller,
+                        LookupSearchMode::BinaryAscending,
+                    )
+                } else if match_mode < 0.0 {
+                    (
+                        LookupMatchMode::NextLarger,
+                        LookupSearchMode::BinaryDescending,
+                    )
+                } else {
+                    (LookupMatchMode::Wildcard, LookupSearchMode::LinearForward)
+                };
+                let needle = search_key;
+                let haystack = search_range.try_as_linear_array()?;
+                let index = lookup(needle, haystack, match_mode, search_mode)?
+                    .ok_or(RunErrorMsg::NoMatch)?;
+                index as i64 + 1 // 1-indexed
+            }
+        ),
     ]
 }
 
-/// Performs a `LOOKUP` and returns the index of the best match.
+/// Performs a `LOOKUP` and returns the index of the best match (0-indexed).
 fn lookup<V: ToString + AsRef<CellValue>>(
     needle: &CellValue,
     haystack: &[V],
@@ -505,7 +560,7 @@ mod tests {
         let mut ctx = Ctx::new(&g, pos![D5].to_sheet_pos(sheet_id));
         assert_eq!(
             RunErrorMsg::CircularReference,
-            form.eval(&mut ctx, false).unwrap_err().msg,
+            form.eval(&mut ctx).unwrap_err().msg,
         );
 
         assert_eq!("35".to_string(), eval_to_string(&g, "INDIRECT(\"D5\")"));
@@ -1025,5 +1080,85 @@ mod tests {
                 eval_to_string(&g, &format!("XLOOKUP({i}, A1:A6, B1:B6)")),
             );
         }
+    }
+
+    #[test]
+    fn test_match() {
+        let mut g = Grid::new();
+        let sheet = &mut g.sheets_mut()[0];
+
+        // Produce the following grid:
+        // 11 21 31 41 51 61
+        // 12 22 32 42 52 62
+        // 13 23 33 43 53 63
+        // 14 24 34 44 54 64
+        // 15 25 35 45 55 65
+        // 16 26 36 46 56 66
+        for x in 1..=6 {
+            for y in 1..=6 {
+                let _ = sheet.set_cell_value(Pos { x, y }, x * 10 + y);
+            }
+        }
+
+        // next smaller (horizontal)
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, "MATCH(10, B1:B6)").msg
+        );
+        assert_eq!("1", eval_to_string(&g, "MATCH(11, B1:B6)"));
+        assert_eq!("2", eval_to_string(&g, "MATCH(12.9, B1:B6)"));
+        assert_eq!("6", eval_to_string(&g, "MATCH(99999, B1:B6)"));
+
+        // next smaller (vertical)
+        assert_eq!("1", eval_to_string(&g, "MATCH(11, B1:G1)"));
+        assert_eq!("4", eval_to_string(&g, "MATCH(50, B1:G1)"));
+        assert_eq!("6", eval_to_string(&g, "MATCH(99999, B1:G1)"));
+
+        // single cell range
+        assert_eq!(RunErrorMsg::NoMatch, eval_to_err(&g, "MATCH(10, B1)").msg);
+        assert_eq!("1", eval_to_string(&g, "MATCH(11, B1)"));
+        assert_eq!("1", eval_to_string(&g, "MATCH(12, B1)"));
+
+        // error on bad range
+        assert_eq!(
+            RunErrorMsg::NonLinearArray,
+            eval_to_err(&g, "MATCH(99999, B1:G6)").msg,
+        );
+
+        // next larger
+        let make_match_formula_str =
+            |search_key| format!("MATCH({search_key}, {{16, 15, 14, 13, 12, 11}}, -1)");
+        assert_eq!("6", eval_to_string(&g, &make_match_formula_str(-999999.0)));
+        assert_eq!("4", eval_to_string(&g, &make_match_formula_str(12.9)));
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, &make_match_formula_str(999999.0)).msg,
+        );
+
+        // equal
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, "MATCH(0, C3:C5, 0)").msg,
+        );
+        assert_eq!("1", eval_to_string(&g, "MATCH(23, C3:C5, 0)"));
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, "MATCH(24.5, C3:C5, 0)").msg,
+        );
+        assert_eq!("3", eval_to_string(&g, "MATCH(25, C3:C5, 0)"));
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, "MATCH(99999, C3:C5, 0)").msg,
+        );
+
+        // wildcard
+        let make_match_formula_str =
+            |search_key| format!("MATCH(\"{search_key}\", {{\"lipu\", \"nanpa\", \"suli\"}}, 0)");
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, &make_match_formula_str("U*")).msg,
+        );
+        assert_eq!("1", eval_to_string(&g, &make_match_formula_str("*U")));
+        assert_eq!("2", eval_to_string(&g, &make_match_formula_str("Na?pa")));
     }
 }

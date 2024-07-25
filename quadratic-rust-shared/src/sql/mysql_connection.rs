@@ -264,7 +264,7 @@ mod tests {
         let columns = row.columns();
         let to_arrow = |index: usize| MySqlConnection::to_arrow(row, &columns[index], index);
 
-        assert_eq!(over_the_limit, false);
+        assert!(!over_the_limit);
 
         assert_eq!(to_arrow(0), ArrowType::Int32(1));
         assert_eq!(to_arrow(1), ArrowType::Int8(127));

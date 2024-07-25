@@ -30,26 +30,18 @@ class Python {
     this.init();
   }
 
-  private getCells = async (
+  private getCells = (
     x0: number,
     y0: number,
     x1: number,
     y1: number,
     sheet?: string,
     lineNumber?: number
-  ): Promise<JsGetCellResponse[] | undefined> => {
+  ): JsGetCellResponse[] | undefined => {
     if (!this.transactionId) {
       throw new Error('No transactionId in getCells');
     }
-    const cells = await pythonCore.sendGetCells(
-      this.transactionId,
-      x0,
-      y0,
-      x1 - x0 + 1,
-      y1 - y0 + 1,
-      sheet,
-      lineNumber
-    );
+    const cells = pythonCore.getCells(this.transactionId, x0, y0, x1 - x0 + 1, y1 - y0 + 1, sheet, lineNumber);
     if (!cells) {
       // we reload pyodide if there is an error getting cells
       this.init();

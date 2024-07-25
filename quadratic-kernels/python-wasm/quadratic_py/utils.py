@@ -19,30 +19,21 @@ def attempt_fix_await(code: str) -> str:
         code,
     )  # captures c((x,y), ...) cell((x,y), ...)
 
-    # Wrap known async functions with "(await <function-call>)" to improve the UX
+    # Remove await from c( cell( cells[ getCells( rel_cell( rc(, as these are now synchronous
     code = re.sub(
-        r"(^|\W)(?:await +)?(c(?:ells?)?\((?:[^\(\)]*|\([^\)]*\))*\))",
-        r"\1(await \2)",
-        code,
+        r"(^|\W)(?:await +)(c(?:ells?)?\((?:[^\(\)]*|\([^\)]*\))*\))", r"\1\2", code
     )  # captures c( cell( cells(
     code = re.sub(
-        r"(^|\W)(?:await +)?(cells\[[^\]]*\])", r"\1(await \2)", code
+        r"(^|\W)(?:await +)(cells\[[^\]]*\])", r"\1\2", code
     )  # captures cells[
     code = re.sub(
-        r"(^|\W)(?:await +)?(getCells?\((?:[^\(\)]*|\([^\)]*\))*\))",
-        r"\1(await \2)",
-        code,
+        r"(^|\W)(?:await +)(getCells?\((?:[^\(\)]*|\([^\)]*\))*\))", r"\1\2", code
     )  # captures get_cell( get_cells(
     code = re.sub(
-        r"(^|\W)(?:await +)?(rel_cell\([^\)]*\))", r"\1(await \2)", code
+        r"(^|\W)(?:await +)(rel_cell\([^\)]*\))", r"\1\2", code
     )  # captures rel_cell(
     code = re.sub(
-        r"(^|\W)(?:await +)?(rel_cells\((?:[^\(\)]*|\([^\)]*\))*\))",
-        r"\1(await \2)",
-        code,
-    )  # captures get_cell( get_cells(
-    code = re.sub(
-        r"(^|\W)(?:await +)?(rc\((?:[^\(\)]*|\([^\)]*\))*\))", r"\1(await \2)", code
+        r"(^|\W)(?:await +)(rc\((?:[^\(\)]*|\([^\)]*\))*\))", r"\1\2", code
     )  # captures rc(
 
     return code
