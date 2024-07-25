@@ -53,6 +53,7 @@ impl Into<Transaction> for TransactionServer {
             id: self.id,
             sequence_num: Some(self.sequence_num),
             operations: self.operations,
+            cursor: None,
             ..Default::default()
         }
     }
