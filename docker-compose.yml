@@ -196,30 +196,30 @@ services:
     networks:
       - host
 
-  # quadratic-connection:
-  #   build:
-  #     context: .
-  #     dockerfile: quadratic-connection/Dockerfile
-  #     args:
-  #       - binary=quadratic-connection
-  #   env_file:
-  #     - quadratic-connection/.env.docker
-  #   # override env vars here
-  #   environment:
-  #     QUADRATIC_API_URI: http://host.docker.internal:8000
-  #     RUST_LOG: info
-  #   restart: "always"
-  #   ports:
-  #     - "3003:3003"
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #     quadratic-api:
-  #       condition: service_started
-  #   profiles:
-  #     - backend
-  #     - quadratic-connection
-  #     - all
+  quadratic-connection:
+    build:
+      context: .
+      dockerfile: quadratic-connection/Dockerfile
+      args:
+        - binary=quadratic-connection
+    env_file:
+      - quadratic-connection/.env.docker
+    # override env vars here
+    environment:
+      QUADRATIC_API_URI: http://host.docker.internal:8000
+      RUST_LOG: info
+    restart: "always"
+    ports:
+      - "3003:3003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      quadratic-api:
+        condition: service_started
+    profiles:
+      - backend
+      - quadratic-connection
+      - all
 
   quadratic-connection:
     build:
