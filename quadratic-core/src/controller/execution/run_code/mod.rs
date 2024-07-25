@@ -203,7 +203,7 @@ impl GridController {
                 return Err(CoreError::TransactionNotFound("Expected transaction to be waiting_for_async to be defined in transaction::complete".into()));
             }
             Some(waiting_for_async) => match waiting_for_async {
-                CodeCellLanguage::Python => {
+                CodeCellLanguage::Python | CodeCellLanguage::Javascript => {
                     let new_code_run = self.js_code_result_to_code_cell_value(
                         transaction,
                         result,
@@ -217,21 +217,6 @@ impl GridController {
                         Some(new_code_run),
                         None,
                     );
-                }
-                CodeCellLanguage::Javascript => {
-                    let new_code_run = self.js_code_result_to_code_cell_value(
-                        transaction,
-                        result,
-                        current_sheet_pos,
-                    );
-
-                    self.finalize_code_run(
-                        transaction,
-                        current_sheet_pos,
-                        Some(new_code_run),
-                        None,
-                    );
-                    transaction.waiting_for_async = None;
                 }
                 _ => {
                     return Err(CoreError::UnhandledLanguage(

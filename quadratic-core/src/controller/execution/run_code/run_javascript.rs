@@ -22,11 +22,12 @@ impl GridController {
         }
         // stop the computation cycle until async returns
         transaction.current_sheet_pos = Some(sheet_pos);
-        transaction.waiting_for_async = Some(CodeCellLanguage::Python);
+        transaction.waiting_for_async = Some(CodeCellLanguage::Javascript);
         self.transactions.add_async_transaction(transaction);
     }
 }
 
+// TODO: Change tests to CodeCellLanguage::Javascript
 #[cfg(test)]
 mod tests {
     use super::*;

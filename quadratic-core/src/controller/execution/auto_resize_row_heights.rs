@@ -32,7 +32,7 @@ impl GridController {
                     sheet_id.to_string(),
                     rows_string,
                 );
-                // don't set has_async in test mode,
+                // don't add_async_transaction in test mode,
                 // as we will not receive renderer callback during tests and the transaction will never complete
                 if !cfg!(test) {
                     self.transactions.add_async_transaction(transaction);
@@ -69,7 +69,8 @@ mod tests {
     use crate::{
         controller::{
             active_transactions::pending_transaction::PendingTransaction,
-            operations::operation::Operation, GridController,
+            execution::run_code::get_cells::JsGetCellResponse, operations::operation::Operation,
+            transaction_types::JsCodeResult, GridController,
         },
         grid::{
             formats::{format_update::FormatUpdate, Formats},
@@ -83,6 +84,7 @@ mod tests {
         CellValue, Pos, SheetPos,
     };
 
+    use bigdecimal::BigDecimal;
     use serial_test::serial;
 
     fn mock_auto_resize_row_heights(
@@ -95,9 +97,13 @@ mod tests {
             operations: ops.into(),
             ..Default::default()
         };
+        let has_async = transaction.has_async;
         // manually add async transaction, as this is disabled in test mode by default
         gc.transactions.add_async_transaction(&mut transaction);
+        assert_eq!(transaction.has_async, has_async + 1);
+
         gc.start_transaction(&mut transaction);
+
         // mock callback from renderer
         let _ = gc.complete_auto_resize_row_heights(transaction.id, sheet_id, row_heights);
     }
@@ -148,6 +154,10 @@ mod tests {
             format!("{},{}", sheet_id, row_heights_string),
             true,
         );
+
+        // transaction should be completed
+        let async_transaction = gc.transactions.get_async_transaction(transaction_id);
+        assert!(async_transaction.is_err());
     }
 
     #[test]
@@ -361,11 +371,15 @@ mod tests {
         mock_auto_resize_row_heights(&mut gc, sheet_id, ops, vec![]);
         expect_js_call_count("jsRequestRowHeights", 0, false);
         expect_js_call_count("jsResizeRowHeights", 0, false);
+
+        // transaction should be completed
+        let async_transaction = gc.transactions.get_async_transaction(transaction_id);
+        assert!(async_transaction.is_err());
     }
 
     #[test]
     #[serial]
-    fn test_auto_resize_row_heights_on_compute_code() {
+    fn test_auto_resize_row_heights_on_compute_code_formula() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet_pos = SheetPos {
@@ -400,6 +414,111 @@ mod tests {
             format!("{},{}", sheet_id, row_heights_string),
             true,
         );
+
+        // transaction should be completed
+        let async_transaction = gc.transactions.get_async_transaction(transaction_id);
+        assert!(async_transaction.is_err());
+    }
+
+    #[test]
+    #[serial]
+    fn test_auto_resize_row_heights_on_compute_code_python() {
+        clear_js_calls();
+
+        // run 2 async operations in a transaction
+        // run_python & resize_row_heights
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos {
+            x: 0,
+            y: 1,
+            sheet_id,
+        };
+
+        // python code cell
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            "9".into(),
+            None,
+        );
+        let code = "c(0, 0) + 1".to_string();
+        let ops = gc.set_code_cell_operations(sheet_pos, CodeCellLanguage::Python, code.clone());
+
+        // resize rows
+        let row_heights = vec![JsRowHeight {
+            row: 0,
+            height: 40f64,
+        }];
+        let row_heights_string = serde_json::to_string(&row_heights).unwrap();
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights);
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(0), 21f64);
+
+        let transaction = gc.async_transactions().first().unwrap();
+        assert_eq!(transaction.has_async, 1);
+        let transaction_id = transaction.id;
+
+        let cells =
+            gc.calculation_get_cells(transaction_id.to_string(), 0, 0, 1, Some(1), None, None);
+        assert!(cells.is_ok());
+        assert_eq!(
+            cells,
+            Ok(vec![JsGetCellResponse {
+                x: 0,
+                y: 0,
+                value: "9".into(),
+                type_name: "number".into(),
+            }])
+        );
+        // pending cal
+        let transaction = gc.async_transactions().first().unwrap();
+        assert_eq!(transaction.has_async, 1);
+
+        assert!(gc
+            .calculation_complete(JsCodeResult::new(
+                transaction_id.to_string(),
+                true,
+                None,
+                None,
+                Some(vec!["10".into(), "number".into()]),
+                None,
+                None,
+                None,
+                None,
+            ))
+            .is_ok());
+        let sheet = gc.try_sheet(sheet_id).unwrap();
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 1 }),
+            Some(CellValue::Number(BigDecimal::from(10)))
+        );
+
+        expect_js_call(
+            "jsRunPython",
+            format!("{},{},{},{},{}", transaction_id, 0, 1, sheet_id, code),
+            false,
+        );
+        expect_js_call(
+            "jsRequestRowHeights",
+            format!("{},{},{}", transaction_id, sheet_id, "[1]"),
+            false,
+        );
+        expect_js_call(
+            "jsResizeRowHeights",
+            format!("{},{}", sheet_id, row_heights_string),
+            true,
+        );
+
+        // row resized to 40
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(0), 40f64);
+
+        // transaction should be completed
+        let async_transaction = gc.transactions.get_async_transaction(transaction_id);
+        assert!(async_transaction.is_err());
     }
 
     #[test]
@@ -469,6 +588,10 @@ mod tests {
             format!("{},{},{}", transaction_id, sheet_id, "[0,1,2,3]"),
             true,
         );
+
+        // transaction should be completed
+        let async_transaction = gc.transactions.get_async_transaction(transaction_id);
+        assert!(async_transaction.is_err());
     }
 
     #[test]
@@ -529,5 +652,9 @@ mod tests {
             ))
         );
         expect_js_call_count("jsRequestRowHeights", 0, true);
+
+        // transaction should be completed
+        let async_transaction = gc.transactions.get_async_transaction(transaction_id);
+        assert!(async_transaction.is_err());
     }
 }
