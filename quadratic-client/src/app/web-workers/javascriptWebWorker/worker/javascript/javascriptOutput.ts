@@ -2,15 +2,15 @@
 // display type for use in the Code Editor.
 
 // Converts a single cell output and sets the displayType.
-export async function javascriptConvertOutputType(
+export function javascriptConvertOutputType(
   message: string[],
   value: any,
   column: number,
   row: number,
   x?: number,
   y?: number
-): Promise<{ output: [string, string]; displayType: string } | null> {
-  if (Array.isArray(value)) {
+): { output: [string, string]; displayType: string } | null {
+  if (Array.isArray(value) && value.flat().length !== 0) {
     return null;
   }
   if (typeof value === 'number') {
@@ -34,7 +34,7 @@ export async function javascriptConvertOutputType(
     message.push(
       'WARNING: Unsupported output type: `Promise`' +
         (x !== undefined && y !== undefined ? `at cell(${column + x}, ${row + y})` : '') +
-        '. Likely you are missing `await` before a call that returns a Promise, e.g., `await getCells(...)`.'
+        '. Likely you are missing `await` before a call that returns a Promise, e.g., `await fetch(...)`.'
     );
     return null;
   } else if (typeof value === 'function') {
@@ -53,6 +53,9 @@ export async function javascriptConvertOutputType(
     return null;
   } else if (typeof value === 'boolean') {
     return { output: [value ? 'true' : 'false', 'logical'], displayType: 'boolean' };
+  } else if (Array.isArray(value)) {
+    // this handles the case where the value.flat() is empty
+    return { output: ['', 'array'], displayType: 'empty array' };
   } else {
     message.push(
       `WARNING: Unsupported output type "${typeof value}" ${
@@ -77,13 +80,13 @@ export function javascriptFormatDisplayType(types: Set<string>, twoDimensional: 
 }
 
 // Converts an array output and sets the displayType.
-export async function javascriptConvertOutputArray(
+export function javascriptConvertOutputArray(
   message: string[],
   value: any,
   column: number,
   row: number
-): Promise<{ output: [string, string][][]; displayType: string } | null> {
-  if (!Array.isArray(value) || value.length === 0) {
+): { output: [string, string][][]; displayType: string } | null {
+  if (!Array.isArray(value) || value.length === 0 || value.flat().length === 0) {
     return null;
   }
   const types: Set<string> = new Set();
@@ -97,7 +100,7 @@ export async function javascriptConvertOutputArray(
       const rowEntry: any[] = [];
       output.push(rowEntry);
       for (const key of keys) {
-        const outputValue = await javascriptConvertOutputType(message, v[key], column, row, 0, y);
+        const outputValue = javascriptConvertOutputType(message, v[key], column, row, 0, y);
         if (outputValue) {
           types.add(outputValue.displayType);
           rowEntry.push(outputValue.output);
@@ -111,7 +114,7 @@ export async function javascriptConvertOutputArray(
   // Otherwise, it's probably a 1D array of values
   else if (!Array.isArray(value[0])) {
     for (const [y, v] of value.entries()) {
-      const outputValue = await javascriptConvertOutputType(message, v, column, row, 0, y);
+      const outputValue = javascriptConvertOutputType(message, v, column, row, 0, y);
       types.add(outputValue?.displayType || 'text');
       if (outputValue) {
         types.add(outputValue.displayType);
@@ -133,7 +136,7 @@ export async function javascriptConvertOutputArray(
           types.add('undefined');
         } else {
           const v2 = v[i];
-          const outputValue = await javascriptConvertOutputType(message, v2, column, row, i, y);
+          const outputValue = javascriptConvertOutputType(message, v2, column, row, i, y);
           if (outputValue) {
             types.add(outputValue.displayType);
             output[y].push(outputValue.output);

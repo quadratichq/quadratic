@@ -116,34 +116,13 @@ impl GridController {
     pub fn delete_cells_operations(&self, selection: &Selection) -> Vec<Operation> {
         let mut ops = vec![];
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-            // Find all cells with values.
-            if let Some(values) = sheet.selection(selection, None, true) {
-                // Find the minimum x and y values of the selection, which will
-                // populate CellValues.
-                let mut min_x = i64::MAX;
-                let mut min_y = i64::MAX;
-                let mut cell_values = CellValues::new(0, 0);
-                values.iter().for_each(|(pos, _value)| {
-                    min_x = min_x.min(pos.x);
-                    min_y = min_y.min(pos.y);
+            let rects = sheet.selection_rects_values(selection);
+            for rect in rects {
+                let cell_values = CellValues::new(rect.width(), rect.height());
+                ops.push(Operation::SetCellValues {
+                    sheet_pos: (rect.min.x, rect.min.y, selection.sheet_id).into(),
+                    values: cell_values,
                 });
-                if min_x != i64::MAX && min_y != i64::MAX && !values.is_empty() {
-                    values.iter().for_each(|(pos, _value)| {
-                        cell_values.set(
-                            (pos.x - min_x) as u32,
-                            (pos.y - min_y) as u32,
-                            CellValue::Blank,
-                        );
-                    });
-                    ops.push(Operation::SetCellValues {
-                        sheet_pos: SheetPos {
-                            x: min_x,
-                            y: min_y,
-                            sheet_id: selection.sheet_id,
-                        },
-                        values: cell_values,
-                    });
-                }
             }
         };
         ops
@@ -319,11 +298,56 @@ mod test {
                     y: 2,
                     sheet_id
                 },
-                values: CellValues::from_cell_value_vec(vec![vec![
-                    CellValue::Blank,
-                    CellValue::Blank
-                ]])
+                values: CellValues::new(2, 1)
             }]
+        );
+    }
+
+    #[test]
+    fn delete_columns() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 2,
+            sheet_id,
+        };
+        gc.set_cell_value(sheet_pos, "hello".to_string(), None);
+
+        let sheet_pos_2 = SheetPos {
+            x: 2,
+            y: 2,
+            sheet_id,
+        };
+        gc.set_code_cell(
+            sheet_pos_2,
+            CodeCellLanguage::Formula,
+            "5 + 5".to_string(),
+            None,
+        );
+        let selection = Selection::columns(&[1, 2], sheet_id);
+        let operations = gc.delete_cells_operations(&selection);
+        assert_eq!(operations.len(), 2);
+        assert_eq!(
+            operations,
+            vec![
+                Operation::SetCellValues {
+                    sheet_pos: SheetPos {
+                        x: 1,
+                        y: 2,
+                        sheet_id
+                    },
+                    values: CellValues::new(1, 1)
+                },
+                Operation::SetCellValues {
+                    sheet_pos: SheetPos {
+                        x: 2,
+                        y: 2,
+                        sheet_id
+                    },
+                    values: CellValues::new(1, 1)
+                }
+            ]
         );
     }
 }

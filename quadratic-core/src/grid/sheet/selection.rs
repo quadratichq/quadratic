@@ -19,6 +19,7 @@ impl Sheet {
     /// 2. Columns
     /// 3. Rows
     /// 4. Rects
+    ///
     /// If the selection is empty or the count > max_count then it returns None.
     /// It ignores CellValue::Blank, and CellValue::Code (since it uses the CodeRun instead).
     ///
@@ -361,6 +362,43 @@ impl Sheet {
             }
         }
         cells.into_iter().collect()
+    }
+
+    /// Returns a vec of Rects for a selection. This is useful for creating
+    /// Operation::SetCellValues so we don't overlap areas that are not
+    /// selected.
+    ///
+    /// todo: this returns CodeRuns bounds as well. We probably should make the
+    /// CodeRuns optional as they're not needed for things like
+    /// delete_cell_operations operations. But it doesn't do any harm.
+    pub fn selection_rects_values(&self, selection: &Selection) -> Vec<Rect> {
+        let mut rects = vec![];
+        if selection.all {
+            if let GridBounds::NonEmpty(bounds) = self.bounds(false) {
+                rects.push(bounds);
+            }
+        }
+
+        if let Some(columns) = selection.columns.as_ref() {
+            for x in columns.iter() {
+                if let Some((min, max)) = self.column_bounds(*x, false) {
+                    rects.push(Rect::new(*x, min, *x, max));
+                }
+            }
+        }
+
+        if let Some(rows) = selection.rows.as_ref() {
+            for y in rows.iter() {
+                if let Some((min, max)) = self.row_bounds(*y, false) {
+                    rects.push(Rect::new(min, *y, max, *y));
+                }
+            }
+        }
+
+        if let Some(rects_selection) = selection.rects.as_ref() {
+            rects.extend(rects_selection.iter().cloned());
+        }
+        rects
     }
 }
 
@@ -776,5 +814,66 @@ mod tests {
         assert!(results
             .iter()
             .any(|(pos, format)| *pos == Pos { x: 1, y: 1 } && format.bold == Some(false)));
+    }
+
+    #[test]
+    fn test_selection_rects_values() {
+        let mut sheet = Sheet::test();
+        let sheet_id = sheet.id;
+
+        let selection = Selection {
+            sheet_id,
+            ..Default::default()
+        };
+        assert_eq!(sheet.selection_rects_values(&selection), vec![]);
+
+        sheet.test_set_values(0, 0, 2, 2, vec!["1", "2", "a", "b"]);
+        sheet.test_set_code_run_array(-1, -1, vec!["c", "d", "e"], true);
+
+        let selection = Selection {
+            sheet_id,
+            rects: Some(vec![Rect::from_numbers(-4, -4, 10, 10)]),
+            ..Default::default()
+        };
+        assert_eq!(
+            sheet.selection_rects_values(&selection),
+            vec![Rect::from_numbers(-4, -4, 10, 10)]
+        );
+
+        let selection = Selection {
+            sheet_id,
+            columns: Some(vec![-1, 0]),
+            ..Default::default()
+        };
+        // note, this includes the CodeRuns bounds as well because of a
+        // limitation in sheet.column_bounds
+        assert_eq!(
+            sheet.selection_rects_values(&selection),
+            vec![Rect::new(-1, -1, -1, 1), Rect::new(0, 0, 0, 1)]
+        );
+
+        let selection = Selection {
+            sheet_id,
+            columns: Some(vec![5, 6]),
+            ..Default::default()
+        };
+        assert_eq!(sheet.selection_rects_values(&selection), vec![]);
+
+        let selection = Selection {
+            sheet_id,
+            rows: Some(vec![-1, 0]),
+            ..Default::default()
+        };
+        assert_eq!(
+            sheet.selection_rects_values(&selection),
+            vec![Rect::new(-1, -1, -1, -1), Rect::new(-1, 0, 1, 0)]
+        );
+
+        let selection = Selection {
+            sheet_id,
+            rows: Some(vec![-10, -11]),
+            ..Default::default()
+        };
+        assert_eq!(sheet.selection_rects_values(&selection), vec![]);
     }
 }

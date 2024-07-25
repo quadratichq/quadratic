@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { app } from '../app';
 import dbClient from '../dbClient';
-import { createFile } from '../tests/testDataGenerator';
+import { clearDb, createFile } from '../tests/testDataGenerator';
 
 beforeEach(async () => {
   // Create a user
@@ -11,30 +11,11 @@ beforeEach(async () => {
     },
   });
 
-  // Create a file with an invite
-  await createFile({
-    data: {
-      name: 'Test File 1',
-      uuid: '00000000-0000-4000-8000-000000000001',
-      creatorUserId: user1.id,
-      ownerUserId: user1.id,
-      FileInvite: {
-        create: [
-          {
-            email: 'johndoe@example.com',
-            role: 'EDITOR',
-          },
-        ],
-      },
-    },
-  });
-
   // Create a team with an invite
-  await dbClient.team.create({
+  const team = await dbClient.team.create({
     data: {
-      name: 'Test Team 1',
+      name: 'Test Team',
       uuid: '00000000-0000-4000-8000-000000000002',
-      stripeCustomerId: '1',
       UserTeamRole: {
         create: [
           {
@@ -53,20 +34,28 @@ beforeEach(async () => {
       },
     },
   });
+
+  // Create a file with an invite
+  await createFile({
+    data: {
+      name: 'Test File 1',
+      uuid: '00000000-0000-4000-8000-000000000001',
+      creatorUserId: user1.id,
+      ownerUserId: user1.id,
+      ownerTeamId: team.id,
+      FileInvite: {
+        create: [
+          {
+            email: 'johndoe@example.com',
+            role: 'EDITOR',
+          },
+        ],
+      },
+    },
+  });
 });
 
-afterEach(async () => {
-  await dbClient.$transaction([
-    dbClient.fileInvite.deleteMany(),
-    dbClient.teamInvite.deleteMany(),
-    dbClient.userTeamRole.deleteMany(),
-    dbClient.userFileRole.deleteMany(),
-    dbClient.fileCheckpoint.deleteMany(),
-    dbClient.file.deleteMany(),
-    dbClient.user.deleteMany(),
-    dbClient.team.deleteMany(),
-  ]);
-});
+afterEach(clearDb);
 
 jest.mock('auth0', () => {
   return {
@@ -92,20 +81,39 @@ jest.mock('auth0', () => {
   };
 });
 
-describe('A user coming in to the system for the first time', () => {
-  describe('accessing _any_ endpoint', () => {
-    it('creates the user in the database', async () => {
+describe('A user coming in to the system for the first time and accessing _any_ endpoint', () => {
+  describe('user with outstanding invite to team/file', () => {
+    it('creates user in the database and associates them with outstanding invites to team/file', async () => {
+      // State before
       const userBefore = await dbClient.user.findUnique({
         where: {
           auth0Id: 'firstTimeUser',
         },
       });
       expect(userBefore).toBe(null);
+
+      const teamInvitesBefore = await dbClient.teamInvite.findMany({
+        where: {
+          email: 'johndoe@example.com',
+        },
+      });
+      expect(teamInvitesBefore.length).toBe(1);
+
+      const fileInvitesBefore = await dbClient.fileInvite.findMany({
+        where: {
+          email: 'johndoe@example.com',
+        },
+      });
+      expect(fileInvitesBefore.length).toBe(1);
+
+      // Make request
       await request(app)
-        .get('/v0/files')
+        .get('/v0/education')
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken firstTimeUser`)
         .expect(200);
+
+      // State after
       const userAfter = await dbClient.user.findUnique({
         where: {
           auth0Id: 'firstTimeUser',
@@ -113,48 +121,20 @@ describe('A user coming in to the system for the first time', () => {
       });
       expect(userAfter).toHaveProperty('id');
       expect(userAfter).toHaveProperty('auth0Id');
-    });
-  });
-  describe('accessing a team', () => {
-    it('deletes invites when they log in and gives them access', async () => {
-      const invitesBefore = await dbClient.teamInvite.findMany({
+
+      const teamInvitesAfter = await dbClient.teamInvite.findMany({
         where: {
           email: 'johndoe@example.com',
         },
       });
-      expect(invitesBefore.length).toBe(1);
-      await request(app)
-        .get('/v0/teams/00000000-0000-4000-8000-000000000002')
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken firstTimeUser`)
-        .expect(200);
-      const invitesAfter = await dbClient.teamInvite.findMany({
+      expect(teamInvitesAfter.length).toBe(0);
+
+      const fileInvitesAfter = await dbClient.fileInvite.findMany({
         where: {
           email: 'johndoe@example.com',
         },
       });
-      expect(invitesAfter.length).toBe(0);
-    });
-  });
-  describe('accessing a file', () => {
-    it('deletes invites when they log in and gives them access', async () => {
-      const invitesBefore = await dbClient.fileInvite.findMany({
-        where: {
-          email: 'johndoe@example.com',
-        },
-      });
-      expect(invitesBefore.length).toBe(1);
-      await request(app)
-        .get('/v0/files/00000000-0000-4000-8000-000000000001')
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken firstTimeUser`)
-        .expect(200);
-      const invitesAfter = await dbClient.fileInvite.findMany({
-        where: {
-          email: 'johndoe@example.com',
-        },
-      });
-      expect(invitesAfter.length).toBe(0);
+      expect(fileInvitesAfter.length).toBe(0);
     });
   });
 });

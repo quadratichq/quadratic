@@ -88,7 +88,7 @@ pub enum Operation {
         // notified of the resize. For manual resizing, the original client is
         // updated as the user drags the column/row so they don't need to be
         // notified again.
-        #[serde(skip_serializing_if = "std::ops::Not::not")]
+        #[serde(default)]
         client_resized: bool,
     },
     ResizeRow {
@@ -97,7 +97,7 @@ pub enum Operation {
         new_size: f64,
 
         // See note in ResizeColumn.
-        #[serde(skip_serializing_if = "std::ops::Not::not")]
+        #[serde(default)]
         client_resized: bool,
     },
 

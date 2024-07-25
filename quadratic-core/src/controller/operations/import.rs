@@ -269,7 +269,7 @@ impl GridController {
 
             for col_index in 0..num_cols {
                 let col = batch.column(col_index);
-                let values: CellValues = col.into();
+                let values: CellValues = col.try_into()?;
 
                 let operations = Operation::SetCellValues {
                     sheet_pos: (

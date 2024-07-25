@@ -2,36 +2,34 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { expectError } from '../../tests/helpers';
-import { createFile } from '../../tests/testDataGenerator';
+import { clearDb, createFile, createTeam, createUser } from '../../tests/testDataGenerator';
 
 beforeEach(async () => {
   // Create some users & team
-  const userOwner = await dbClient.user.create({
-    data: {
-      auth0Id: 'userOwner',
-    },
+  const userOwner = await createUser({
+    auth0Id: 'userOwner',
   });
-  const userEditor = await dbClient.user.create({
-    data: {
-      auth0Id: 'userEditor',
-    },
+  const userEditor = await createUser({
+    auth0Id: 'userEditor',
   });
-  const userViewer = await dbClient.user.create({
-    data: {
-      auth0Id: 'userViewer',
-    },
+  const userViewer = await createUser({
+    auth0Id: 'userViewer',
   });
-  await dbClient.user.create({
-    data: {
-      auth0Id: 'userNoRole',
-    },
+  await createUser({
+    auth0Id: 'userNoRole',
   });
+
+  const team = await createTeam({
+    users: [{ userId: userOwner.id, role: 'OWNER' }],
+  });
+
   await createFile({
     data: {
       name: 'Personal File',
       uuid: '00000000-0000-4000-8000-000000000001',
       creatorUserId: userOwner.id,
       ownerUserId: userOwner.id,
+      ownerTeamId: team.id,
       UserFileRole: {
         create: [
           { userId: userEditor.id, role: 'EDITOR' },
@@ -45,15 +43,7 @@ beforeEach(async () => {
   });
 });
 
-afterEach(async () => {
-  await dbClient.$transaction([
-    dbClient.fileInvite.deleteMany(),
-    dbClient.userFileRole.deleteMany(),
-    dbClient.fileCheckpoint.deleteMany(),
-    dbClient.file.deleteMany(),
-    dbClient.user.deleteMany(),
-  ]);
-});
+afterEach(clearDb);
 
 // Mock auth0 client calls
 const auth0Users = [

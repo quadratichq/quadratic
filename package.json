@@ -61,6 +61,7 @@
     "gen:pyright:worker": "npm run gen:pyright:worker --workspace=quadratic-kernels/python-wasm"
   },
   "dependencies": {
+    "tsc": "^2.0.4",
     "vitest": "^1.5.0",
     "zod": "^3.22.4"
   },

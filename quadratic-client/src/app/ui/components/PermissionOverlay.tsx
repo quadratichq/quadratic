@@ -1,6 +1,5 @@
-import { duplicateFileWithUserAsOwnerAction } from '@/app/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { useRootRouteLoaderData } from '@/router';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -9,16 +8,14 @@ import { Cross2Icon } from '@radix-ui/react-icons';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import React, { useState } from 'react';
 import { isMobile } from 'react-device-detect';
-import { Link, useParams, useSubmit } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 const { FILE_EDIT } = FilePermissionSchema.enum;
 
 export function PermissionOverlay() {
   const [isOpen, setIsOpen] = useState<boolean>(true);
   const { permissions } = useRecoilValue(editorInteractionStateAtom);
-  const { uuid } = useParams() as { uuid: string };
   const theme = useTheme();
-  const submit = useSubmit();
   const { isAuthenticated } = useRootRouteLoaderData();
 
   // This component assumes that the file can be viewed in some way, either by
@@ -49,16 +46,8 @@ export function PermissionOverlay() {
     return (
       <FixedBottomAlert>
         <Type>
-          <strong>Read-only.</strong> To edit this file, make a duplicate in your files.
+          <strong>Read-only.</strong> Ask the owner for permission to edit this file.
         </Type>
-        <Button
-          className="flex-shrink-0"
-          variant="outline"
-          size="sm"
-          onClick={() => duplicateFileWithUserAsOwnerAction.run({ uuid, submit })}
-        >
-          {duplicateFileWithUserAsOwnerAction.label}
-        </Button>
       </FixedBottomAlert>
     );
   }

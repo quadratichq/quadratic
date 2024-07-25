@@ -97,6 +97,9 @@ export class Sheet {
 
   // @returns screen position of a cell
   getCellOffsets(column: number, row: number): Rectangle {
+    // this check is needed b/c offsets may be in a weird state during hmr
+    if (!this.offsets.getCellOffsets) return new Rectangle();
+
     const screenRectStringified = this.offsets.getCellOffsets(column, row);
     const screenRect = JSON.parse(screenRectStringified);
     return new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);

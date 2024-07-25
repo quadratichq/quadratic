@@ -1,4 +1,4 @@
-use reqwest::{Response, StatusCode};
+use reqwest::{RequestBuilder, Response, StatusCode};
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
 use uuid::Uuid;
@@ -51,21 +51,25 @@ pub struct Checkpoint {
 }
 
 /// Retrieve file perms from the quadratic API server.
+pub fn get_client(url: &str, jwt: &str) -> RequestBuilder {
+    if jwt.is_empty() {
+        reqwest::Client::new().get(url)
+    } else {
+        reqwest::Client::new()
+            .get(url)
+            .header("Authorization", format!("Bearer {}", jwt))
+    }
+}
+
+/// Retrieve file perms from the quadratic API server.
 pub async fn get_file_perms(
     base_url: &str,
     jwt: String,
     file_id: Uuid,
 ) -> Result<(Vec<FilePermRole>, u64)> {
     let url = format!("{base_url}/v0/files/{file_id}");
-    let response = if jwt.is_empty() {
-        reqwest::Client::new().get(url).send()
-    } else {
-        reqwest::Client::new()
-            .get(url)
-            .header("Authorization", format!("Bearer {}", jwt))
-            .send()
-    }
-    .await?;
+    let client = get_client(&url, &jwt);
+    let response = client.send().await?;
 
     handle_response(&response)?;
 
@@ -84,15 +88,9 @@ pub async fn get_file_checkpoint(
     file_id: &Uuid,
 ) -> Result<LastCheckpoint> {
     let url = format!("{base_url}/v0/internal/file/{file_id}/checkpoint");
-    let response = if jwt.is_empty() {
-        reqwest::Client::new().get(url).send()
-    } else {
-        reqwest::Client::new()
-            .get(url)
-            .header("Authorization", format!("Bearer {}", jwt))
-            .send()
-    }
-    .await?;
+    let client = get_client(&url, jwt);
+    let response = client.send().await?;
+
     handle_response(&response)?;
 
     Ok(response.json::<Checkpoint>().await?.last_checkpoint)
@@ -129,12 +127,56 @@ pub async fn set_file_checkpoint(
     Ok(deserialized)
 }
 
+#[derive(Debug, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Connection {
+    pub uuid: Uuid,
+    pub name: String,
+    pub r#type: String,
+    pub created_date: String,
+    pub updated_date: String,
+    pub type_details: TypeDetails,
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct TypeDetails {
+    pub host: String,
+    pub port: Option<String>,
+    pub username: Option<String>,
+    pub password: Option<String>,
+    pub database: String,
+}
+
+/// Retrieve user's connection from the quadratic API server.
+pub async fn get_connection(
+    base_url: &str,
+    jwt: &str,
+    user_id: &str,
+    connection_id: &Uuid,
+) -> Result<Connection> {
+    let url = format!("{base_url}/v0/internal/user/{user_id}/connections/{connection_id}");
+    let client = get_client(&url, jwt);
+    let response = client.send().await?;
+
+    // return a better error to the user
+    if response.status() == StatusCode::NOT_FOUND {
+        return Err(SharedError::QuadraticApi(format!(
+            "Connection {connection_id} not found"
+        )));
+    }
+
+    handle_response(&response)?;
+
+    Ok(response.json::<Connection>().await?)
+}
+
 fn handle_response(response: &Response) -> Result<()> {
     match response.status() {
         StatusCode::OK => Ok(()),
         StatusCode::FORBIDDEN => Err(SharedError::QuadraticApi("Forbidden".into())),
         StatusCode::UNAUTHORIZED => Err(SharedError::QuadraticApi("Unauthorized".into())),
-        StatusCode::NOT_FOUND => Err(SharedError::QuadraticApi("File not found".into())),
+        StatusCode::NOT_FOUND => Err(SharedError::QuadraticApi("Not found".into())),
         _ => Err(SharedError::QuadraticApi(format!(
             "Unexpected response: {:?}",
             response

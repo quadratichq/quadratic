@@ -1,3 +1,5 @@
+import { CodeEditorProvider } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import ConnectionsMenu from '@/app/ui/menus/ConnectionsMenu';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { useEffect } from 'react';
 import { useNavigation, useParams } from 'react-router';
@@ -5,17 +7,15 @@ import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import QuadraticGrid from '../gridGL/QuadraticGrid';
 import { pixiApp } from '../gridGL/pixiApp/PixiApp';
-import { focusGrid } from '../helpers/focusGrid';
 import { isEmbed } from '../helpers/isEmbed';
-import CodeEditor from '../ui/menus/CodeEditor';
-import TopBar from '../ui/menus/TopBar';
+import { TopBar } from '../ui/menus/TopBar/TopBar';
 import { UpdateAlertVersion } from './UpdateAlertVersion';
 import { useFileContext } from './components/FileProvider';
 import { FileUploadWrapper } from './components/FileUploadWrapper';
 import { Following } from './components/Following';
 import { PermissionOverlay } from './components/PermissionOverlay';
 import PresentationModeHint from './components/PresentationModeHint';
-import BottomBar from './menus/BottomBar';
+import { BottomBar } from './menus/BottomBar/BottomBar';
 import CellTypeMenu from './menus/CellTypeMenu';
 import CommandPalette from './menus/CommandPalette';
 import FeedbackMenu from './menus/FeedbackMenu';
@@ -70,7 +70,7 @@ export default function QuadraticUI() {
           <QuadraticGrid />
           {!presentationMode && <SheetBar />}
         </FileUploadWrapper>
-        {editorInteractionState.showCodeEditor && <CodeEditor />}
+        {editorInteractionState.showCodeEditor && <CodeEditorProvider />}
         <Following follow={follow} />
         <div
           style={{
@@ -93,15 +93,15 @@ export default function QuadraticUI() {
               ...prevState,
               showShareFileMenu: false,
             }));
-            setTimeout(() => {
-              focusGrid();
-            }, 200);
           }}
           name={name}
           uuid={uuid}
         />
       )}
       {presentationMode && <PresentationModeHint />}
+
+      <ConnectionsMenu />
+      <PermissionOverlay />
       {!isEmbed && <PermissionOverlay />}
       <UpdateAlertVersion />
     </div>

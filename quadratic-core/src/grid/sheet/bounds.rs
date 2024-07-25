@@ -107,6 +107,13 @@ impl Sheet {
         }
     }
 
+    pub fn format_bounds(&self) -> Option<Rect> {
+        match self.format_bounds {
+            GridBounds::Empty => None,
+            GridBounds::NonEmpty(rect) => Some(rect),
+        }
+    }
+
     /// Returns the lower and upper bounds of a column, or `None` if the column
     /// is empty.
     ///

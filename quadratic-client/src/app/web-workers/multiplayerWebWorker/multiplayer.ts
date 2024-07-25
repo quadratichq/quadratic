@@ -6,6 +6,7 @@ import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '@/app/gridGL/HTMLGr
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { SheetPosTS } from '@/app/gridGL/types/size';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { authClient, parseDomain } from '@/auth';
 import { displayName } from '@/shared/utils/userUtil';
@@ -13,7 +14,6 @@ import { User } from '@auth0/auth0-spa-js';
 import * as Sentry from '@sentry/react';
 import { v4 as uuid } from 'uuid';
 import updateAlertVersion from '../../../../../updateAlertVersion.json';
-import { CodeRun } from '../pythonWebWorker/pythonClientMessages';
 import { quadraticCore } from '../quadraticCore/quadraticCore';
 import {
   ClientMultiplayerMessage,
@@ -93,7 +93,7 @@ export class Multiplayer {
     if (this.codeRunning) this.sendCodeRunning(codeRunning);
   };
 
-  private handleMessage = (e: MessageEvent<MultiplayerClientMessage>) => {
+  private handleMessage = async (e: MessageEvent<MultiplayerClientMessage>) => {
     if (debugWebWorkersMessages) console.log(`[Multiplayer] message: ${e.data.type}`);
 
     switch (e.data.type) {
@@ -101,6 +101,9 @@ export class Multiplayer {
         this.state = e.data.state;
         if (this.state === 'no internet' || this.state === 'waiting to reconnect') {
           this.clearAllUsers();
+          this.brokenConnection = true;
+        } else if (this.state === 'connected') {
+          this.brokenConnection = false;
         }
         events.emit('multiplayerState', this.state);
         break;
@@ -115,6 +118,11 @@ export class Multiplayer {
 
       case 'multiplayerClientReload':
         events.emit('needRefresh', 'force');
+        break;
+
+      case 'multiplayerClientRefreshJwt':
+        await this.addJwtCookie(true);
+        this.send({ type: 'clientMultiplayerRefreshJwt', id: e.data.id });
         break;
 
       default:

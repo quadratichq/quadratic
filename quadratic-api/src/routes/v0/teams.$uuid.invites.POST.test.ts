@@ -2,6 +2,7 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { expectError } from '../../tests/helpers';
+import { clearDb } from '../../tests/testDataGenerator';
 
 beforeEach(async () => {
   // Create some users & team
@@ -29,7 +30,6 @@ beforeEach(async () => {
     data: {
       name: 'Personal File',
       uuid: '00000000-0000-4000-8000-000000000001',
-      stripeCustomerId: 'cus_123',
       UserTeamRole: {
         create: [
           { userId: userOwner.id, role: 'OWNER' },
@@ -44,14 +44,7 @@ beforeEach(async () => {
   });
 });
 
-afterEach(async () => {
-  await dbClient.$transaction([
-    dbClient.teamInvite.deleteMany(),
-    dbClient.userTeamRole.deleteMany(),
-    dbClient.team.deleteMany(),
-    dbClient.user.deleteMany(),
-  ]);
-});
+afterEach(clearDb);
 
 // Mock auth0 client calls
 const auth0Users = [

@@ -149,6 +149,7 @@ impl PendingTransaction {
 
     pub fn is_user(&self) -> bool {
         matches!(self.transaction_type, TransactionType::User)
+            || matches!(self.transaction_type, TransactionType::Unsaved)
     }
 
     pub fn is_undo_redo(&self) -> bool {
@@ -205,5 +206,26 @@ mod tests {
         assert_eq!(reverse_transaction.id, transaction.id);
         assert_eq!(reverse_transaction.operations, reverse_operations);
         assert_eq!(reverse_transaction.sequence_num, None);
+    }
+
+    #[test]
+    fn is_user() {
+        let transaction = PendingTransaction {
+            transaction_type: TransactionType::User,
+            ..Default::default()
+        };
+        assert!(transaction.is_user());
+
+        let transaction = PendingTransaction {
+            transaction_type: TransactionType::Unsaved,
+            ..Default::default()
+        };
+        assert!(transaction.is_user());
+
+        let transaction = PendingTransaction {
+            transaction_type: TransactionType::Server,
+            ..Default::default()
+        };
+        assert!(!transaction.is_user());
     }
 }

@@ -2,6 +2,7 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { expectError } from '../../tests/helpers';
+import { clearDb } from '../../tests/testDataGenerator';
 
 beforeAll(async () => {
   // Create a test user
@@ -25,7 +26,6 @@ beforeAll(async () => {
     data: {
       name: 'test_team_1',
       uuid: '00000000-0000-4000-8000-000000000001',
-      stripeCustomerId: '1',
       UserTeamRole: {
         create: [
           {
@@ -42,17 +42,14 @@ beforeAll(async () => {
   });
 });
 
-afterAll(async () => {
-  await dbClient.$transaction([
-    dbClient.userTeamRole.deleteMany(),
-    dbClient.team.deleteMany(),
-    dbClient.fileCheckpoint.deleteMany(),
-    dbClient.file.deleteMany(),
-    dbClient.user.deleteMany(),
-  ]);
-});
+afterAll(clearDb);
 
-const validPayload = { name: 'new_file_with_name', contents: 'new_file_contents', version: '1.0.0' };
+const validPayload = {
+  name: 'new_file_with_name',
+  contents: 'new_file_contents',
+  version: '1.0.0',
+  teamUuid: '00000000-0000-4000-8000-000000000001',
+};
 const expectValidResponse = (res: any) => {
   expect(res.body.file).toHaveProperty('uuid');
   expect(res.body.file).toHaveProperty('name');
@@ -74,45 +71,24 @@ describe('POST /v0/files', () => {
       await createFile({ name, contents }).expect(400).expect(expectError);
       await createFile({ name, version }).expect(400).expect(expectError);
       await createFile({ contents, version }).expect(400).expect(expectError);
+      await createFile({ name, contents, version }).expect(400).expect(expectError);
     });
-  });
-
-  describe('create an individual file', () => {
-    it('responds with a 201 and creates a file in the user’s personal files', async () => {
-      const createResponse = await createFile(validPayload).expect(201).expect(expectValidResponse);
-      // check created file
-      await request(app)
-        .get(`/v0/files/${createResponse.body.file.uuid}`)
-        .set('Authorization', `Bearer ValidToken test_user_1`)
-        .expect(200)
-        .expect((res) => {
-          expect(res.body).toHaveProperty('file');
-          expect(res.body).toHaveProperty('userMakingRequest');
-          expect(res.body.userMakingRequest).toHaveProperty('filePermissions');
-          expect(res.body.file.name).toEqual('new_file_with_name');
-          expect(res.body.file.lastCheckpointVersion).toEqual('1.0.0');
-        });
-    });
-  });
-
-  describe('create a team file', () => {
-    it('rejects an invalid request', async () => {
+    it('rejects request with a team that doesn’t exist', async () => {
       await createFile({ ...validPayload, teamUuid: 'invalid_uuid' })
         .expect(404)
         .expect(expectError);
     });
-    it('rejects creating a file in a team where don’t have permission', async () => {
-      await createFile({ ...validPayload, teamUuid: '00000000-0000-4000-8000-000000000001' }, 'test_user_2')
-        .expect(403)
-        .expect(expectError);
+    it('rejects request when user doesn’t have access to the team', async () => {
+      await createFile(validPayload, 'test_user_3').expect(403).expect(expectError);
     });
-    it('rejects creating a file in a team you don’t have access to', async () => {
-      await createFile({ ...validPayload, teamUuid: '00000000-0000-4000-8000-000000000001' }, 'test_user_3')
-        .expect(403)
-        .expect(expectError);
+    it('rejects request when user has access to team but doesn’t have write permission', async () => {
+      await createFile(validPayload, 'test_user_2').expect(403).expect(expectError);
     });
-    it('responds with a 201 and creates a file in a team', async () => {
-      const createResponse = await createFile({ ...validPayload, teamUuid: '00000000-0000-4000-8000-000000000001' })
+  });
+
+  describe('create a team file', () => {
+    it('creates a public file', async () => {
+      const createResponse = await createFile(validPayload)
         .expect(201)
         .expect(expectValidResponse)
         .expect((res) => {
@@ -131,6 +107,35 @@ describe('POST /v0/files', () => {
           expect(res.body.team.uuid).toEqual('00000000-0000-4000-8000-000000000001');
           expect(res.body).toHaveProperty('userMakingRequest');
           expect(res.body.userMakingRequest).toHaveProperty('filePermissions');
+          expect(res.body.userMakingRequest.fileTeamPrivacy).toEqual('PUBLIC_TO_TEAM');
+        });
+    });
+
+    it('creates a private file', async () => {
+      const createResponse = await createFile({ ...validPayload, isPrivate: true })
+        .expect(201)
+        .expect(expectValidResponse);
+      // check created file
+      await request(app)
+        .get(`/v0/files/${createResponse.body.file.uuid}`)
+        .set('Authorization', `Bearer ValidToken test_user_1`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body).toHaveProperty('file');
+          expect(res.body).toHaveProperty('userMakingRequest');
+          expect(res.body.userMakingRequest).toHaveProperty('filePermissions');
+          expect(res.body.userMakingRequest.fileTeamPrivacy).toEqual('PRIVATE_TO_ME');
+          expect(res.body.file.name).toEqual('new_file_with_name');
+          expect(res.body.file.lastCheckpointVersion).toEqual('1.0.0');
+        });
+    });
+
+    it('creates a private file as a team VIEWER', async () => {
+      await createFile({ ...validPayload, isPrivate: true }, 'test_user_2')
+        .expect(201)
+        .expect(expectValidResponse)
+        .expect((res) => {
+          expect(res.body.team.uuid).toBe('00000000-0000-4000-8000-000000000001');
         });
     });
   });

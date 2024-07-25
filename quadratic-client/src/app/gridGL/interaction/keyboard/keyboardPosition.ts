@@ -83,6 +83,7 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
       cursor.changePosition({
         multiCursor,
         keyboardMovePosition: { x, y },
+        ensureVisible: { x: lastMultiCursor.right, y },
       });
     } else {
       setCursorPosition(x, y);
@@ -136,6 +137,7 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
       cursor.changePosition({
         multiCursor,
         keyboardMovePosition: { x, y },
+        ensureVisible: { x: lastMultiCursor.x, y },
       });
     } else {
       setCursorPosition(x, y);
@@ -186,6 +188,7 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
       cursor.changePosition({
         multiCursor,
         keyboardMovePosition: { x, y },
+        ensureVisible: { x, y: lastMultiCursor.bottom },
       });
     } else {
       setCursorPosition(x, y);
@@ -237,6 +240,7 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
       cursor.changePosition({
         multiCursor,
         keyboardMovePosition: { x, y },
+        ensureVisible: { x, y: lastMultiCursor.y },
       });
     } else {
       setCursorPosition(x, y);
@@ -266,6 +270,7 @@ function handleShiftKey(deltaX: number, deltaY: number) {
     columnRow: null,
     multiCursor,
     keyboardMovePosition: newMovePosition,
+    ensureVisible: { x: newMovePosition.x, y: newMovePosition.y },
   });
   if (!inlineEditorHandler.cursorIsMoving) {
     pixiAppSettings.changeInput(false);

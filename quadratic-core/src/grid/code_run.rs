@@ -8,7 +8,8 @@ use crate::{ArraySize, CellValue, Pos, Rect, RunError, SheetPos, SheetRect, Valu
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
-use strum_macros::{Display, EnumString};
+use strum_macros::Display;
+use wasm_bindgen::{convert::IntoWasmAbi, JsValue};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CodeRun {
@@ -116,13 +117,37 @@ impl CodeRun {
     }
 }
 
-#[derive(Serialize, Deserialize, Display, Debug, Copy, Clone, PartialEq, Eq, Hash, EnumString)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum CodeCellLanguage {
     Python,
     Formula,
+    Connection { kind: ConnectionKind, id: String },
     Javascript,
-    // Sql,
+}
+
+#[derive(Serialize, Deserialize, Display, Copy, Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[serde(rename_all = "UPPERCASE")]
+pub enum ConnectionKind {
+    Postgres,
+    Mysql,
+}
+
+impl wasm_bindgen::describe::WasmDescribe for ConnectionKind {
+    fn describe() {
+        JsValue::describe();
+    }
+}
+
+impl wasm_bindgen::convert::IntoWasmAbi for ConnectionKind {
+    type Abi = <JsValue as IntoWasmAbi>::Abi;
+
+    fn into_abi(self) -> Self::Abi {
+        serde_wasm_bindgen::to_value(&self)
+            .unwrap_or("Formula".into())
+            .into_abi()
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

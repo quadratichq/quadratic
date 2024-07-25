@@ -1,6 +1,7 @@
-use std::fmt;
+use std::fmt::{self, Display};
 
-use chrono::NaiveDateTime;
+use anyhow::{bail, Result};
+use chrono::{DateTime, MappedLocalTime, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 
 use crate::CellValue;
@@ -102,5 +103,14 @@ impl Ord for Duration {
             ret = f64::total_cmp(&self.seconds, &other.seconds);
         }
         ret
+    }
+}
+
+pub fn map_local_result<T: chrono::TimeZone + Display>(
+    value: MappedLocalTime<DateTime<T>>,
+) -> Result<DateTime<T>> {
+    match value {
+        chrono::LocalResult::Single(timestamp) => Ok(timestamp),
+        _ => bail!("Could not parse timestamp: {:?}", value),
     }
 }

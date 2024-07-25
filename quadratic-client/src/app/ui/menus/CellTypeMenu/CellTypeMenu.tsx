@@ -1,32 +1,34 @@
 import { cellTypeMenuOpenedCountAtom } from '@/app/atoms/cellTypeMenuOpenedCountAtom';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { focusGrid } from '@/app/helpers/focusGrid';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
-import { colors } from '@/app/theme/colors';
 import { LinkNewTab } from '@/app/ui/components/LinkNewTab';
-import { Formula, JavaScript, Python, Sql } from '@/app/ui/icons';
-import { Badge } from '@/shadcn/ui/badge';
+import { JavaScript } from '@/app/ui/icons';
 import {
   DOCUMENTATION_FORMULAS_URL,
   DOCUMENTATION_JAVASCRIPT_URL,
   DOCUMENTATION_PYTHON_URL,
+  DOCUMENTATION_URL,
 } from '@/shared/constants/urls';
-import focusInput from '@/shared/utils/focusInput';
-import {
-  Dialog,
-  Divider,
-  InputBase,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Paper,
-} from '@mui/material';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 import '../../styles/floating-dialog.css';
+
+import { colors } from '@/app/theme/colors';
+import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
+import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
+import { GetConnections } from '@/routes/api.connections';
+import { Badge } from '@/shared/shadcn/ui/badge';
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from '@/shared/shadcn/ui/command';
+import { useFetcher } from 'react-router-dom';
 
 export interface CellTypeOption {
   name: string;
@@ -38,11 +40,11 @@ export interface CellTypeOption {
   experimental?: boolean;
 }
 
-let CELL_TYPE_OPTIONS = [
+let CELL_TYPE_OPTIONS: CellTypeOption[] = [
   {
     name: 'Python',
     mode: 'Python',
-    icon: <Python sx={{ color: colors.languagePython }} />,
+    icon: <LanguageIcon language="Python" />,
     description: (
       <>
         Script with Pandas, NumPy, SciPy, Micropip,{' '}
@@ -54,7 +56,7 @@ let CELL_TYPE_OPTIONS = [
     name: 'Formula',
     searchStrings: ['fx', 'functions', 'formulas'],
     mode: 'Formula',
-    icon: <Formula sx={{ color: colors.languageFormula }} />,
+    icon: <LanguageIcon language="Formula" />,
     description: (
       <>
         Classic spreadsheet logic like <code>SUM</code>, <code>AVERAGE</code>,{' '}
@@ -75,27 +77,14 @@ let CELL_TYPE_OPTIONS = [
     ),
     experimental: true,
   },
-  {
-    name: 'SQL Query',
-    mode: '',
-    icon: <Sql color="disabled" />,
-    description: 'Import your data with queries.',
-    disabled: true,
-  },
-] as CellTypeOption[];
+];
 
 export default function CellTypeMenu() {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const [value, setValue] = React.useState<string>('');
-  const [selectedIndex, setSelectedIndex] = React.useState<number>(0);
   const setCellTypeMenuOpenedCount = useSetRecoilState(cellTypeMenuOpenedCountAtom);
-  const searchlabel = 'Choose a cell type…';
+  const fetcher = useFetcher<GetConnections>({ key: 'CONNECTIONS_FETCHER_KEY' });
 
-  const options = CELL_TYPE_OPTIONS.filter(
-    (option) =>
-      option.name.toLowerCase().includes(value.toLowerCase()) ||
-      option.searchStrings?.some((s) => s.includes(value.toLowerCase()))
-  );
+  const searchLabel = 'Choose a cell type…';
 
   useEffect(() => {
     mixpanel.track('[CellTypeMenu].opened');
@@ -108,7 +97,6 @@ export default function CellTypeMenu() {
       ...editorInteractionState,
       showCellTypeMenu: false,
     });
-    focusGrid();
   }, [editorInteractionState, setEditorInteractionState]);
 
   const openEditor = useCallback(
@@ -125,100 +113,92 @@ export default function CellTypeMenu() {
   );
 
   return (
-    <Dialog open={true} onClose={close} fullWidth maxWidth={'xs'} BackdropProps={{ invisible: true }}>
-      <Paper
-        id="CellTypeMenuID"
-        component="form"
-        elevation={12}
-        onKeyUp={(e: React.KeyboardEvent) => {
-          // Don't bother if there's nothing to key up/down through
-          if (options.length <= 1) {
-            return;
-          }
+    <CommandDialog dialogProps={{ open: true, onOpenChange: close }} commandProps={{}}>
+      <CommandInput placeholder={searchLabel} id="CellTypeMenuInputID" />
+      <CommandList id="CellTypeMenuID">
+        <CommandEmpty>No results found.</CommandEmpty>
+        <CommandGroup heading="Languages">
+          {CELL_TYPE_OPTIONS.map(({ name, disabled, experimental, icon, description, mode }, i) => (
+            <CommandItemWrapper
+              key={name}
+              disabled={disabled}
+              icon={icon}
+              name={name}
+              experimental={experimental}
+              description={description}
+              onSelect={() => openEditor(mode)}
+            />
+          ))}
+        </CommandGroup>
 
-          if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            e.stopPropagation();
-            let newIndex = selectedIndex;
-            while (newIndex === selectedIndex || options[newIndex]?.disabled) {
-              newIndex = newIndex < options.length - 1 ? newIndex + 1 : 0;
-            }
-            setSelectedIndex(newIndex);
-          } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            e.stopPropagation();
-            let newIndex = selectedIndex;
-            while (newIndex === selectedIndex || options[newIndex]?.disabled) {
-              newIndex = newIndex === 0 ? options.length - 1 : newIndex - 1;
-            }
-            setSelectedIndex(newIndex);
-          }
-        }}
-        onSubmit={(e: React.FormEvent) => {
-          e.preventDefault();
-          if (!options[selectedIndex]?.disabled) {
-            openEditor(options[selectedIndex].mode);
-          }
-        }}
-      >
-        <InputBase
-          id="CellTypeMenuInputID"
-          sx={{ width: '100%', padding: '8px 16px' }}
-          placeholder={searchlabel}
-          inputProps={{ 'aria-label': searchlabel }}
-          inputRef={focusInput}
-          autoComplete="off"
-          value={value}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            setSelectedIndex(0);
-            setValue(event.target.value);
-          }}
-        />
+        <CommandSeparator />
+        {fetcher.data?.connections && (
+          <CommandGroup heading="Connections">
+            {fetcher.data.connections.map(({ name, type, uuid }) => (
+              <CommandItemWrapper
+                key={uuid}
+                uuid={uuid}
+                name={name}
+                description={`${type === 'POSTGRES' ? 'PostgreSQL' : 'SQL'}`}
+                icon={<LanguageIcon language={type} />}
+                onSelect={() => openEditor({ Connection: { kind: type, id: uuid } })}
+              />
+            ))}
+            <CommandItemWrapper
+              name="Manage connections"
+              description={
+                <>
+                  Connect to Postgres, MySQL, <LinkNewTabWrapper href={DOCUMENTATION_URL}>and more</LinkNewTabWrapper>
+                </>
+              }
+              icon={<ConnectionsIcon className="text-muted-foreground opacity-80" />}
+              onSelect={() => {
+                setEditorInteractionState({
+                  ...editorInteractionState,
+                  showCellTypeMenu: false,
+                  showConnectionsMenu: true,
+                });
+              }}
+            />
+          </CommandGroup>
+        )}
+      </CommandList>
+    </CommandDialog>
+  );
+}
 
-        <Divider />
-
-        <List dense={true} disablePadding>
-          {options.length ? (
-            options.map(({ name, disabled, description, mode, icon, experimental }, i) => (
-              <ListItemButton
-                key={i}
-                disabled={disabled}
-                onClick={() => {
-                  openEditor(mode);
-                }}
-                selected={selectedIndex === i && !disabled}
-              >
-                <ListItemIcon>{icon}</ListItemIcon>
-                <ListItemText
-                  primary={
-                    <>
-                      {name}
-                      {disabled && (
-                        <Badge variant="secondary" className="ml-1">
-                          Coming soon
-                        </Badge>
-                      )}
-                      {experimental && (
-                        <Badge variant="warning" className="ml-1">
-                          Experimental
-                        </Badge>
-                      )}
-                    </>
-                  }
-                  secondary={description}
-                />
-              </ListItemButton>
-            ))
-          ) : (
-            <ListItem disablePadding>
-              <ListItemButton disabled>
-                <ListItemText primary="No matches" />
-              </ListItemButton>
-            </ListItem>
+function CommandItemWrapper({
+  disabled,
+  icon,
+  name,
+  experimental,
+  description,
+  onSelect,
+  uuid,
+}: {
+  disabled?: boolean;
+  icon: React.ReactNode;
+  name: string;
+  experimental?: boolean;
+  description: string | JSX.Element;
+  onSelect: () => void;
+  uuid?: string;
+}) {
+  return (
+    <CommandItem disabled={disabled} onSelect={onSelect} value={name + (uuid ? uuid : '')}>
+      <div className="mr-4">{icon}</div>
+      <div className="flex flex-col">
+        <span className="flex items-center">
+          {name}{' '}
+          {experimental && (
+            <Badge variant="outline" className="ml-2">
+              Experimental
+            </Badge>
           )}
-        </List>
-      </Paper>
-    </Dialog>
+        </span>
+        {/* <span className="text-xs text-muted-foreground">{description}</span> */}
+      </div>
+    </CommandItem>
   );
 }
 

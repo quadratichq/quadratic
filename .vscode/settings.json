@@ -59,6 +59,7 @@
     "./quadratic-rust-client/Cargo.toml"
   ],
   "rust-analyzer.checkOnSave": true,
+  "rust-analyzer.cargo.unsetTest": true,
   // "rust-analyzer.checkOnSave.command": "clippy",
   "files.associations": {
     "*.grid": "json"
@@ -73,5 +74,8 @@
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   }
 }

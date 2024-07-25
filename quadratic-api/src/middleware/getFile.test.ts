@@ -2,7 +2,7 @@ import request from 'supertest';
 import { app } from '../app';
 import dbClient from '../dbClient';
 import { expectError } from '../tests/helpers';
-import { createFile } from '../tests/testDataGenerator';
+import { clearDb, createFile } from '../tests/testDataGenerator';
 
 beforeEach(async () => {
   const userOwner = await dbClient.user.create({
@@ -15,13 +15,26 @@ beforeEach(async () => {
       auth0Id: 'userNoFileRole',
     },
   });
+  const team = await dbClient.team.create({
+    data: {
+      name: 'Test Team 1',
+      UserTeamRole: {
+        create: [
+          {
+            userId: userOwner.id,
+            role: 'OWNER',
+          },
+        ],
+      },
+    },
+  });
   await createFile({
     data: {
       creatorUserId: userOwner.id,
-      ownerUserId: userOwner.id,
+      ownerTeamId: team.id,
       contents: Buffer.from('contents_0'),
       version: '1.4',
-      name: 'Personal File',
+      name: 'Private team file',
       uuid: '00000000-0000-4000-8000-000000000001',
     },
   });
@@ -29,7 +42,8 @@ beforeEach(async () => {
     data: {
       creatorUserId: userOwner.id,
       ownerUserId: userOwner.id,
-      name: 'Personal File',
+      ownerTeamId: team.id,
+      name: 'Public team file',
       uuid: '00000000-0000-4000-8000-000000000002',
       deleted: true,
       deletedDate: new Date(),
@@ -37,15 +51,7 @@ beforeEach(async () => {
   });
 });
 
-afterEach(async () => {
-  await dbClient.$transaction([
-    dbClient.fileInvite.deleteMany(),
-    dbClient.userFileRole.deleteMany(),
-    dbClient.fileCheckpoint.deleteMany(),
-    dbClient.file.deleteMany(),
-    dbClient.user.deleteMany(),
-  ]);
-});
+afterEach(clearDb);
 
 describe('getFile() middleware', () => {
   describe('sending an invalid request', () => {

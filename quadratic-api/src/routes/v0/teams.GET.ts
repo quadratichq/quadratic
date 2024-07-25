@@ -23,7 +23,12 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams.GET.respo
           uuid: true,
           name: true,
           createdDate: true,
-          activated: true,
+          // Count the number of users in each team
+          _count: {
+            select: {
+              UserTeamRole: true,
+            },
+          },
         },
       },
       role: true,
@@ -37,12 +42,16 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams.GET.respo
     ],
   });
 
-  const teams = dbTeams.map(({ team, role }) => ({
-    team,
-    userMakingRequest: {
-      teamPermissions: getTeamPermissions(role),
-    },
-  }));
+  const teams = dbTeams.map(({ team, role }) => {
+    const { _count, ...teamData } = team;
+    return {
+      team: teamData,
+      users: _count.UserTeamRole,
+      userMakingRequest: {
+        teamPermissions: getTeamPermissions(role),
+      },
+    };
+  });
 
   return res.status(200).json({ teams, userMakingRequest: { id: user.id } });
 }

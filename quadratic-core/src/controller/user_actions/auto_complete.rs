@@ -96,7 +96,7 @@ mod tests {
                 if let Some(code_cell) = code_cells.get(count) {
                     grid_controller.set_code_cell(
                         sheet_pos,
-                        code_cell.language,
+                        code_cell.language.clone(),
                         code_cell.code.clone(),
                         None,
                     );

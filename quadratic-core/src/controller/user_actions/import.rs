@@ -77,7 +77,7 @@ mod tests {
     const EXCEL_FUNCTIONS_FILE: &str =
         "../quadratic-rust-shared/data/excel/all_excel_functions.xlsx";
     // const EXCEL_FILE: &str = "../quadratic-rust-shared/data/excel/financial_sample.xlsx";
-    const PARQUET_FILE: &str = "../quadratic-rust-shared/data/parquet/alltypes_plain.parquet";
+    const PARQUET_FILE: &str = "../quadratic-rust-shared/data/parquet/all_supported_types.parquet";
     // const MEDIUM_PARQUET_FILE: &str = "../quadratic-rust-shared/data/parquet/lineitem.parquet";
     // const LARGE_PARQUET_FILE: &str =
     // "../quadratic-rust-shared/data/parquet/flights_1m.parquet";
@@ -269,30 +269,36 @@ mod tests {
         let file: Vec<u8> = std::fs::read(PARQUET_FILE).expect("Failed to read file");
         let _ = grid_controller.import_parquet(sheet_id, file, "alltypes_plain.parquet", pos, None);
 
-        print_table(
-            &grid_controller,
-            sheet_id,
-            Rect::new_span(pos, Pos { x: 10, y: 10 }),
-        );
-
         assert_cell_value_row(
             &grid_controller,
             sheet_id,
             0,
-            10,
+            22,
             0,
             vec![
                 "id",
-                "bool_col",
-                "tinyint_col",
-                "smallint_col",
-                "int_col",
-                "bigint_col",
-                "float_col",
-                "double_col",
-                "date_string_col",
-                "string_col",
-                "timestamp_col",
+                "text",
+                "varchar",
+                "char",
+                "name",
+                "bool",
+                "bytea",
+                "int2",
+                "int4",
+                "int8",
+                "float4",
+                "float8",
+                "numeric",
+                "timestamp",
+                "timestamptz",
+                "date",
+                "time",
+                "timetz",
+                "interval",
+                "uuid",
+                "json",
+                "jsonb",
+                "xml",
             ],
         );
 
@@ -300,41 +306,32 @@ mod tests {
             &grid_controller,
             sheet_id,
             0,
-            10,
+            22,
             1,
             vec![
-                "4",
-                "TRUE",
-                "0",
-                "0",
-                "0",
-                "0",
-                "0",
-                "0",
-                "03/01/09",
-                "0",
-                "2009-03-01 00:00:00",
-            ],
-        );
-
-        assert_cell_value_row(
-            &grid_controller,
-            sheet_id,
-            0,
-            10,
-            8,
-            vec![
-                "1",
-                "FALSE",
-                "1",
-                "1",
-                "1",
-                "10",
-                "1.1",
-                "10.1",
-                "01/01/09",
-                "1",
-                "2009-01-01 00:01:00",
+                "1",                                    // id
+                "a",                                    // text
+                "b",                                    // varchar
+                "c",                                    // char
+                "d",                                    // name
+                "TRUE",                                 // bool
+                "",                                     // bytea
+                "1",                                    // int2
+                "2",                                    // int4
+                "3",                                    // int8
+                "1.1",                                  // float4
+                "2.2",                                  // float8
+                "3.3",                                  // numeric
+                "2024-05-08 19:49:07",                  // timestamp
+                "2024-05-08 19:49:07",                  // timestamptz
+                "2024-05-08",                           // date
+                "00:01:11",                             // time
+                "00:01:11",                             // timetz
+                "",                                     // interval
+                "4599689c-7048-47dc-abf7-f7e9ee636578", // uuid
+                "{\"a\":\"b\"}",                        // json
+                "{\"a\":\"b\"}",                        // jsonb
+                "",                                     // xml
             ],
         );
     }

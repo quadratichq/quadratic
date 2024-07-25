@@ -25,7 +25,7 @@ impl GridController {
                     sheet_id,
                     column,
                     new_size,
-                    client_resized: true,
+                    client_resized: false,
                 });
 
             let old_size = sheet.offsets.set_column_width(column, new_size);
@@ -77,7 +77,7 @@ impl GridController {
                 sheet_id,
                 row,
                 new_size,
-                client_resized: true,
+                client_resized: false,
             });
             let old_size = sheet.offsets.set_row_height(row, new_size);
 

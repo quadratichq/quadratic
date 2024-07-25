@@ -153,6 +153,7 @@ export class UI {
         this.statusItem("core");
         this.statusItem("multiplayer");
         this.statusItem("files");
+        this.statusItem("connector");
         this.statusItem("types");
         this.statusItem("rustClient");
         this.statusItem("python");

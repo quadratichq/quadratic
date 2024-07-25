@@ -25,6 +25,7 @@ import {
   SheetRect,
   SummarizeSelectionResult,
 } from '@/app/quadratic-core-types';
+import { authClient } from '@/auth';
 import { Rectangle } from 'pixi.js';
 import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
 import {
@@ -42,6 +43,7 @@ import {
   CoreClientGetCodeCell,
   CoreClientGetColumnsBounds,
   CoreClientGetEditCell,
+  CoreClientGetJwt,
   CoreClientGetRenderCell,
   CoreClientGetRowsBounds,
   CoreClientHasRenderCells,
@@ -64,10 +66,12 @@ class QuadraticCore {
       this.worker = new Worker(new URL('./worker/core.worker.ts', import.meta.url), { type: 'module' });
       this.worker.onmessage = this.handleMessage;
       this.worker.onerror = (e) => console.warn(`[core.worker] error: ${e.message}`, e);
+
+      this.sendInit();
     }
   }
 
-  private handleMessage = (e: MessageEvent<CoreClientMessage>) => {
+  private handleMessage = async (e: MessageEvent<CoreClientMessage>) => {
     if (debugWebWorkersMessages) console.log(`[quadraticCore] message: ${e.data.type}`);
 
     // quadratic-core initiated messages
@@ -134,11 +138,22 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientMultiplayerState') {
       events.emit('multiplayerState', e.data.state);
       return;
+    } else if (e.data.type === 'coreClientConnectionState') {
+      events.emit('connectionState', e.data.state, e.data.current, e.data.awaitingExecution);
+      return;
     } else if (e.data.type === 'coreClientOfflineTransactionStats') {
       events.emit('offlineTransactions', e.data.transactions, e.data.operations);
       return;
+    } else if (e.data.type === 'coreClientOfflineTransactionsApplied') {
+      events.emit('offlineTransactionsApplied', e.data.timestamps);
+      return;
     } else if (e.data.type === 'coreClientUndoRedo') {
       events.emit('undoRedo', e.data.undo, e.data.redo);
+      return;
+    } else if (e.data.type === 'coreClientGetJwt') {
+      const jwt = await authClient.getTokenOrRedirect();
+      const data = e.data as CoreClientGetJwt;
+      this.send({ type: 'clientCoreGetJwt', id: data.id, jwt });
       return;
     } else if (e.data.type === 'coreClientImage') {
       events.emit('updateImage', e.data);
@@ -157,7 +172,7 @@ class QuadraticCore {
         this.waitingForResponse[e.data.id](e.data);
         delete this.waitingForResponse[e.data.id];
       } else {
-        console.warn('No resolve for message in quadraticCore', e.data.id);
+        console.warn('No resolve for message in quadraticCore', e.data);
       }
     }
 
@@ -171,9 +186,8 @@ class QuadraticCore {
   };
 
   private send(message: ClientCoreMessage, extra?: MessagePort | Transferable) {
-    if (!this.worker) {
-      throw new Error('Expected worker to be initialized in quadraticCore.send');
-    }
+    // worker may not be defined during hmr
+    if (!this.worker) return;
 
     if (extra) {
       this.worker.postMessage(message, [extra]);
@@ -912,6 +926,10 @@ class QuadraticCore {
   //#endregion
 
   //#region Calculation
+
+  sendInit() {
+    this.send({ type: 'clientCoreInit', env: import.meta.env });
+  }
 
   sendPythonInit(port: MessagePort) {
     this.send({ type: 'clientCoreInitPython' }, port);

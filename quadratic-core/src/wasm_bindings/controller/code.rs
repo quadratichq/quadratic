@@ -1,3 +1,5 @@
+use js_sys::Uint8Array;
+
 use super::*;
 
 #[wasm_bindgen]
@@ -101,5 +103,21 @@ impl GridController {
                 self.rerun_code_cell(pos.to_sheet_pos(sheet_id), cursor);
             }
         }
+    }
+
+    #[wasm_bindgen(js_name = "connectionComplete")]
+    pub fn js_connection_complete(
+        &mut self,
+        transaction_id: String,
+        data: JsValue,
+        std_out: Option<String>,
+        std_err: Option<String>,
+        extra: Option<String>,
+    ) -> Result<(), JsValue> {
+        let data = Uint8Array::new(&data);
+        self.connection_complete(transaction_id, data.to_vec(), std_out, std_err, extra)
+            .map_err(|e| e.to_string())?;
+
+        Ok(())
     }
 }

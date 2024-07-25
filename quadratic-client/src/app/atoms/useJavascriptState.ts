@@ -7,10 +7,10 @@ export const useJavascriptState = (): LanguageState => {
   const [state, setState] = useState<LanguageState>(javascriptWebWorker.state);
 
   useEffect(() => {
-    const updatePythonState = (state: LanguageState) => setState(state);
-    events.on('javascriptState', updatePythonState);
+    const updateJavascriptState = (state: LanguageState) => setState(state);
+    events.on('javascriptState', updateJavascriptState);
     return () => {
-      events.off('javascriptState', updatePythonState);
+      events.off('javascriptState', updateJavascriptState);
     };
   }, []);
 

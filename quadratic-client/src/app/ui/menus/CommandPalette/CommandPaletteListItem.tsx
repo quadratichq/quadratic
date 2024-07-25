@@ -50,8 +50,8 @@ export const CommandPaletteListItem = (props: CommandPaletteListItemProps) => {
       value={value}
       onSelect={() => {
         mixpanel.track('[CommandPalette].run', { label });
-        action();
         closeCommandPalette();
+        action();
       }}
       disabled={disabled}
     >

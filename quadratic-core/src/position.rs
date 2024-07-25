@@ -105,6 +105,7 @@ pub struct Rect {
     pub max: Pos,
 }
 impl Rect {
+    /// Creates a rect from two x, y positions
     pub fn new(x0: i64, y0: i64, x1: i64, y1: i64) -> Rect {
         Rect {
             min: Pos { x: x0, y: y0 },
@@ -136,6 +137,7 @@ impl Rect {
         }
     }
 
+    /// Creates a rectangle from one x, y position and a width and height
     pub fn from_numbers(x: i64, y: i64, w: i64, h: i64) -> Rect {
         Rect {
             min: Pos { x, y },

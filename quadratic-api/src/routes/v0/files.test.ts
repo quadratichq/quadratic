@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
-import { createFile } from '../../tests/testDataGenerator';
+import { clearDb, createFile } from '../../tests/testDataGenerator';
 
 beforeAll(async () => {
   // Create a test user
@@ -16,12 +16,27 @@ beforeAll(async () => {
     },
   });
 
+  const team = await dbClient.team.create({
+    data: {
+      name: 'Test team',
+      UserTeamRole: {
+        create: [
+          {
+            userId: user_1.id,
+            role: 'OWNER',
+          },
+        ],
+      },
+    },
+  });
+
   // Create a test files
   await createFile({
     data: {
       creatorUserId: user_1.id,
+      ownerTeamId: team.id,
       ownerUserId: user_1.id,
-      name: 'test_file_2',
+      name: 'private_file',
       contents: Buffer.from('contents_1'),
       uuid: '00000000-0000-4000-8000-000000000001',
       publicLinkAccess: 'READONLY',
@@ -30,8 +45,8 @@ beforeAll(async () => {
   await createFile({
     data: {
       creatorUserId: user_1.id,
-      ownerUserId: user_1.id,
-      name: 'test_file_1',
+      ownerTeamId: team.id,
+      name: 'public_file',
       contents: Buffer.from('contents_0'),
       uuid: '00000000-0000-4000-8000-000000000000',
       publicLinkAccess: 'NOT_SHARED',
@@ -39,68 +54,7 @@ beforeAll(async () => {
   });
 });
 
-afterAll(async () => {
-  await dbClient.$transaction([
-    dbClient.fileInvite.deleteMany(),
-    dbClient.userFileRole.deleteMany(),
-    dbClient.team.deleteMany(),
-    dbClient.fileCheckpoint.deleteMany(),
-    dbClient.file.deleteMany(),
-    dbClient.user.deleteMany(),
-  ]);
-});
-
-describe('READ - GET /v0/files/ no auth', () => {
-  it('responds with json', async () => {
-    const res = await request(app)
-      .get('/v0/files/')
-      .set('Accept', 'application/json')
-      .expect('Content-Type', /json/)
-      .expect(401); // Unauthorized
-
-    expect(res.body).toMatchObject({ error: { message: 'No authorization token was found' } });
-  });
-});
-
-describe('READ - GET /v0/files/ with auth and files', () => {
-  it('responds with json', async () => {
-    const res = await request(app)
-      .get('/v0/files/')
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_1`)
-      .expect('Content-Type', /json/)
-      .expect(200); // OK
-
-    expect(res.body.length).toEqual(2);
-    expect(res.body[0]).toMatchObject({
-      uuid: '00000000-0000-4000-8000-000000000000',
-      name: 'test_file_1',
-      publicLinkAccess: 'NOT_SHARED',
-      thumbnail: null,
-    });
-    expect(res.body[0]).toHaveProperty('createdDate');
-    expect(res.body[0]).toHaveProperty('updatedDate');
-    expect(res.body[1]).toMatchObject({
-      uuid: '00000000-0000-4000-8000-000000000001',
-      name: 'test_file_2',
-      publicLinkAccess: 'READONLY',
-      thumbnail: null,
-    });
-  });
-});
-
-describe('READ - GET /v0/files/ with auth and no files', () => {
-  it('responds with json', async () => {
-    const res = await request(app)
-      .get('/v0/files/')
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_2`)
-      .expect('Content-Type', /json/)
-      .expect(200); // OK
-
-    expect(res.body.length).toEqual(0);
-  });
-});
+afterAll(clearDb);
 
 describe('READ - GET /v0/files/:uuid file not found, no auth', () => {
   it('responds with json', async () => {
@@ -135,7 +89,7 @@ describe('READ - GET /v0/files/:uuid file shared, no auth', () => {
       .expect(200)
       .expect((res) => {
         expect(res.body.file.uuid).toBe('00000000-0000-4000-8000-000000000001');
-        expect(res.body.file.name).toBe('test_file_2');
+        expect(res.body.file.name).toBe('private_file');
         expect(res.body).toHaveProperty('userMakingRequest');
         expect(res.body.userMakingRequest).toHaveProperty('filePermissions');
       });
@@ -169,10 +123,10 @@ describe('READ - GET /v0/files/:uuid with auth and owned file', () => {
         expect(res.body.userMakingRequest.filePermissions).toEqual([
           'FILE_VIEW',
           'FILE_EDIT',
-          'FILE_DELETE',
           'FILE_MOVE',
+          'FILE_DELETE',
         ]);
-        expect(res.body.userMakingRequest.isFileOwner).toBe(true);
+        expect(res.body.userMakingRequest.fileTeamPrivacy).toBe('PUBLIC_TO_TEAM');
       }); // OK
   });
 });
@@ -189,7 +143,7 @@ describe('READ - GET /v0/files/:uuid with auth and another users file shared rea
         expect(res.body).toHaveProperty('file');
         expect(res.body).toHaveProperty('userMakingRequest');
         expect(res.body.userMakingRequest.filePermissions).toEqual(['FILE_VIEW']);
-        expect(res.body.userMakingRequest.isFileOwner).toBe(false);
+        expect(res.body.userMakingRequest.fileTeamPrivacy).toBe(undefined);
       });
   });
 });

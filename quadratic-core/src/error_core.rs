@@ -43,3 +43,9 @@ impl From<uuid::Error> for CoreError {
         CoreError::Unknown(error.to_string())
     }
 }
+
+impl From<anyhow::Error> for CoreError {
+    fn from(error: anyhow::Error) -> Self {
+        CoreError::Unknown(error.to_string())
+    }
+}

@@ -78,9 +78,10 @@ impl GridController {
                 &self.apply_offline_unsaved_transaction(transaction_id, unsaved_transaction),
             )?)
         } else {
-            Err(JsValue::from_str(
-                "Invalid unsaved transaction received in applyOfflineUnsavedTransaction",
-            ))
+            Err(JsValue::from_str(&format!(
+                "Invalid unsaved transaction received in applyOfflineUnsavedTransaction {}",
+                unsaved_transaction
+            )))
         }
     }
 }

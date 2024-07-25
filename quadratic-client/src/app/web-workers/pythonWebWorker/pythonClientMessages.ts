@@ -1,14 +1,8 @@
-import { SheetPosTS } from '@/app/gridGL/types/size';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
 
 export interface PythonClientLoadError {
   type: 'pythonClientLoadError';
   error?: string;
-}
-
-export interface CodeRun {
-  transactionId: string;
-  sheetPos: SheetPosTS;
-  code: string;
 }
 
 export interface PythonClientState {
@@ -32,11 +26,27 @@ export interface ClientPythonCoreChannel {
   type: 'clientPythonCoreChannel';
 }
 
+export interface ClientPythonInit {
+  type: 'clientPythonInit';
+  env: ImportMetaEnv;
+}
+
 export interface PythonClientInit {
   type: 'pythonClientInit';
   version: string;
 }
 
-export type PythonClientMessage = PythonClientLoadError | PythonClientState | PythonClientInit;
+export interface ClientPythonGetJwt {
+  type: 'clientPythonGetJwt';
+  id: number;
+  jwt: string;
+}
 
-export type ClientPythonMessage = ClientPythonCoreChannel;
+export interface PythonClientGetJwt {
+  type: 'pythonClientGetJwt';
+  id: number;
+}
+
+export type PythonClientMessage = PythonClientLoadError | PythonClientState | PythonClientInit | PythonClientGetJwt;
+
+export type ClientPythonMessage = ClientPythonInit | ClientPythonCoreChannel | ClientPythonGetJwt;

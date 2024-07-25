@@ -2,9 +2,11 @@ import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
+import { getLanguage } from '@/app/helpers/codeCellLanguage';
 
 export const insertCellRef = (editorInteractionState: EditorInteractionState, relative?: boolean) => {
-  const { selectedCell, selectedCellSheet, mode: language } = editorInteractionState;
+  const { selectedCell, selectedCellSheet, mode } = editorInteractionState;
+  const language = getLanguage(mode);
   let ref = '';
   let sheet = '';
   const cursor = sheets.sheet.cursor;
@@ -66,7 +68,8 @@ export const insertCellRef = (editorInteractionState: EditorInteractionState, re
         }
       }
     }
-  } else if (language === 'Javascript') {
+  } else if ((language as any) === 'Javascript') {
+    // any needed until Javascript is properly defined in Javascript branch
     if (cursor.multiCursor) {
       if (cursor.multiCursor.length > 1) {
         console.warn(
@@ -77,25 +80,25 @@ export const insertCellRef = (editorInteractionState: EditorInteractionState, re
       const start = { x: multiCursor.left, y: multiCursor.top };
       const end = { x: multiCursor.right - 1, y: multiCursor.bottom - 1 };
       if (sheet) {
-        ref = `await getCells(${start.x}, ${start.y}, ${end.x}, ${end.y}, '${sheet}')`;
+        ref = `cells(${start.x}, ${start.y}, ${end.x}, ${end.y}, '${sheet}')`;
       } else {
         if (relative) {
-          ref = `await relCells(${start.x - selectedCell.x}, ${start.y - selectedCell.y}, ${end.x - selectedCell.x}, ${
+          ref = `relCells(${start.x - selectedCell.x}, ${start.y - selectedCell.y}, ${end.x - selectedCell.x}, ${
             end.y - selectedCell.y
           })`;
         } else {
-          ref = `await getCells(${start.x}, ${start.y}, ${end.x}, ${end.y})`;
+          ref = `cells(${start.x}, ${start.y}, ${end.x}, ${end.y})`;
         }
       }
     } else {
       const location = cursor.cursorPosition;
       if (sheet) {
-        ref = `await cell(${location.x}, ${location.y}, '${sheet}')`;
+        ref = `cell(${location.x}, ${location.y}, '${sheet}')`;
       } else {
         if (relative) {
-          ref = `await relCell(${location.x - selectedCell.x}, ${location.y - selectedCell.y})`;
+          ref = `relCell(${location.x - selectedCell.x}, ${location.y - selectedCell.y})`;
         } else {
-          ref = `await cell(${location.x}, ${location.y})`;
+          ref = `cell(${location.x}, ${location.y})`;
         }
       }
     }
