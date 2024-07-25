@@ -220,7 +220,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                 fill_color: Some(Some("red".to_string())),
                 ..Default::default()
             },
-            11 * 11,
+            small_selection.len() as usize,
         );
         sheet.set_formats_rects(&[small_selection], &formats, true);
 
