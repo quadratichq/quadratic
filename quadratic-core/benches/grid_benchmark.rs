@@ -222,7 +222,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             },
             small_selection.len() as usize,
         );
-        sheet.set_formats_rects(&[small_selection], &formats, true);
+        sheet.set_formats_rects(&[small_selection], &formats);
 
         let expand_to = Rect {
             min: Pos { x: 0, y: 0 },

@@ -1054,7 +1054,6 @@ mod tests {
                 },
                 1,
             ),
-            true,
         );
         let fills = sheet.get_sheet_fills();
         assert_eq!(fills.columns.len(), 1);
@@ -1069,7 +1068,6 @@ mod tests {
                 },
                 1,
             ),
-            true,
         );
 
         let fills = sheet.get_sheet_fills();

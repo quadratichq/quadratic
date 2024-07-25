@@ -23,7 +23,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let ops = self.clear_format_selection_operations(&selection);
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats, None);
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
 
@@ -41,7 +41,7 @@ impl GridController {
             selection.count(),
         );
         let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats, None);
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
 
@@ -59,7 +59,7 @@ impl GridController {
             selection.count(),
         );
         let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats, None);
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
 
@@ -77,7 +77,7 @@ impl GridController {
             selection.count(),
         );
         let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats, None);
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
 
@@ -95,7 +95,7 @@ impl GridController {
             selection.count(),
         );
         let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats, None);
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
 
@@ -119,7 +119,7 @@ impl GridController {
             selection.count(),
         );
         let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats, None);
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
 
@@ -138,7 +138,7 @@ impl GridController {
             selection.count(),
         );
         let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats, None);
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
 
@@ -156,7 +156,7 @@ impl GridController {
             selection.count(),
         );
         let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats, None);
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
 
@@ -174,7 +174,7 @@ impl GridController {
             selection.count(),
         );
         let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats, None);
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
 
@@ -192,7 +192,7 @@ impl GridController {
             selection.count(),
         );
         let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats, None);
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
 
@@ -209,7 +209,7 @@ impl GridController {
             selection.count(),
         );
         let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats, None);
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
 
@@ -237,7 +237,7 @@ impl GridController {
             selection.count(),
         );
         let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats, None);
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
 }

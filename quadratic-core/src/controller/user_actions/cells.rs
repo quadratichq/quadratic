@@ -8,7 +8,7 @@ impl GridController {
     /// Starts a transaction to set the value of a cell by converting a user's String input
     pub fn set_cell_value(&mut self, sheet_pos: SheetPos, value: String, cursor: Option<String>) {
         let ops = self.set_cell_value_operations(sheet_pos, value);
-        self.start_user_transaction(ops, cursor, TransactionName::SetCells, None);
+        self.start_user_transaction(ops, cursor, TransactionName::SetCells);
     }
 
     /// Starts a transaction to set cell values using a 2d array of user's &str input where [[1, 2, 3], [4, 5, 6]] creates a grid of width 3 and height 2.
@@ -36,25 +36,25 @@ impl GridController {
             x = sheet_pos.x;
             y += 1;
         }
-        self.start_user_transaction(ops, cursor, TransactionName::SetCells, None);
+        self.start_user_transaction(ops, cursor, TransactionName::SetCells);
     }
 
     /// Starts a transaction to deletes the cell values and code in a given rect and updates dependent cells.
     pub fn delete_cells(&mut self, selection: &Selection, cursor: Option<String>) {
         let ops = self.delete_cells_operations(selection);
-        self.start_user_transaction(ops, cursor, TransactionName::SetCells, None);
+        self.start_user_transaction(ops, cursor, TransactionName::SetCells);
     }
 
     /// Starts a transaction to clear formatting in a given rect.
     pub fn clear_formatting(&mut self, selection: &Selection, cursor: Option<String>) {
         let ops = self.clear_format_selection_operations(selection);
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats, None);
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
     }
 
     /// Starts a transaction to delete values and formatting in a given rect, and updates dependent cells.
     pub fn delete_values_and_formatting(&mut self, selection: &Selection, cursor: Option<String>) {
         let ops = self.delete_values_and_formatting_operations(selection);
-        self.start_user_transaction(ops, cursor, TransactionName::SetCells, None);
+        self.start_user_transaction(ops, cursor, TransactionName::SetCells);
     }
 }
 

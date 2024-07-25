@@ -15,7 +15,7 @@ use crate::{
     error_core::Result,
     grid::{CodeRun, CodeRunResult},
     parquet::parquet_to_vec,
-    Pos, SheetRect, Value,
+    Pos, Value,
 };
 
 impl GridController {
@@ -45,14 +45,6 @@ impl GridController {
 
     /// Finalizes the transaction and pushes it to the various stacks (if needed)
     pub(super) fn finalize_transaction(&mut self, transaction: &mut PendingTransaction) {
-        if let Some(sheet_rect) = transaction.batch_client_update_rect {
-            self.send_updated_bounds_rect(&sheet_rect, true);
-            self.send_render_cells(&sheet_rect);
-            self.send_fill_cells(&sheet_rect);
-            self.send_html_output_rect(&sheet_rect);
-            transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
-        }
-
         if transaction.complete {
             match transaction.transaction_type {
                 TransactionType::User => {
@@ -103,14 +95,12 @@ impl GridController {
         operations: Vec<Operation>,
         cursor: Option<String>,
         transaction_name: TransactionName,
-        client_update_rect: Option<SheetRect>,
     ) {
         let mut transaction = PendingTransaction {
             transaction_type: TransactionType::User,
             operations: operations.into(),
             cursor,
             transaction_name,
-            batch_client_update_rect: client_update_rect,
             ..Default::default()
         };
         self.start_transaction(&mut transaction);
@@ -294,12 +284,7 @@ mod tests {
         assert!(!gc.has_undo());
         assert!(!gc.has_redo());
 
-        gc.start_user_transaction(
-            vec![operation.clone()],
-            None,
-            TransactionName::Unknown,
-            None,
-        );
+        gc.start_user_transaction(vec![operation.clone()], None, TransactionName::Unknown);
         assert!(gc.has_undo());
         assert!(!gc.has_redo());
         assert_eq!(vec![operation_undo.clone()], gc.undo_stack[0].operations);

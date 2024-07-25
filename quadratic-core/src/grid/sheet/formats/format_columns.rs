@@ -40,7 +40,6 @@ impl Sheet {
         &mut self,
         columns: &[i64],
         formats: &Formats,
-        send_client: bool,
     ) -> Vec<Operation> {
         let mut old_formats = Formats::default();
         let mut formats_iter = formats.iter_values();
@@ -139,21 +138,19 @@ impl Sheet {
             });
         }
 
-        if send_client {
-            // force a rerender of all impacted cells
-            if !render_columns.is_empty() {
-                self.send_column_render_cells(render_columns.into_iter().collect());
-            }
+        // force a rerender of all impacted cells
+        if !render_columns.is_empty() {
+            self.send_column_render_cells(render_columns.into_iter().collect());
+        }
 
-            // force a rerender of all column, row, and sheet fills
-            if render_column_fills {
-                self.send_sheet_fills();
-            }
+        // force a rerender of all column, row, and sheet fills
+        if render_column_fills {
+            self.send_sheet_fills();
+        }
 
-            // send any update cell fills
-            if !render_fills.is_empty() {
-                self.send_fills(&render_fills);
-            }
+        // send any update cell fills
+        if !render_fills.is_empty() {
+            self.send_fills(&render_fills);
         }
 
         ops
@@ -224,7 +221,7 @@ mod tests {
             3,
         );
         let columns = vec![0, 1, 2];
-        let reverse = sheet.set_formats_columns(&columns, &formats, true);
+        let reverse = sheet.set_formats_columns(&columns, &formats);
         assert_eq!(
             sheet.format_column(0),
             Format {
@@ -276,7 +273,7 @@ mod tests {
             }
             _ => panic!("Expected SetCellFormatsSelection"),
         };
-        sheet.set_formats_columns(&columns, &reverse_formats, true);
+        sheet.set_formats_columns(&columns, &reverse_formats);
         assert_eq!(sheet.formats_columns.get(&0), None);
         assert_eq!(sheet.formats_columns.get(&1), None);
         assert_eq!(sheet.formats_columns.get(&2), None);
@@ -301,7 +298,7 @@ mod tests {
             3,
         );
         let columns = vec![0, 1, 2];
-        let reverse = sheet.set_formats_columns(&columns, &formats, true);
+        let reverse = sheet.set_formats_columns(&columns, &formats);
         assert_eq!(sheet.format_cell(0, 0, false), Format::default());
         assert_eq!(sheet.format_column(0).bold, Some(true));
         assert_eq!(reverse.len(), 2);
@@ -333,7 +330,7 @@ mod tests {
             }
             _ => panic!("Expected SetCellFormatsSelection"),
         };
-        sheet.set_formats_selection(&reverse_selection, &reverse_formats, true);
+        sheet.set_formats_selection(&reverse_selection, &reverse_formats);
         assert_eq!(
             sheet.format_cell(0, 0, false),
             Format {
@@ -370,7 +367,6 @@ mod tests {
                 },
                 1,
             ),
-            true,
         );
 
         // cell format is cleared because of the column format change
@@ -408,7 +404,7 @@ mod tests {
             3,
         );
         let columns = vec![0, 1, 2];
-        let reverse = sheet.set_formats_columns(&columns, &formats, true);
+        let reverse = sheet.set_formats_columns(&columns, &formats);
         assert_eq!(
             sheet.formats_columns.get(&0).unwrap().1,
             sheet.formats_columns.get(&1).unwrap().1
@@ -432,7 +428,6 @@ mod tests {
                 },
                 1,
             ),
-            true,
         );
         sheet.set_formats_columns(
             &[1],
@@ -443,7 +438,6 @@ mod tests {
                 },
                 1,
             ),
-            true,
         );
         sheet.set_formats_columns(
             &[2],
@@ -454,11 +448,10 @@ mod tests {
                 },
                 1,
             ),
-            true,
         );
         let formats = Formats::repeat(FormatUpdate::cleared(), 3);
         let columns = vec![0, 1, 2];
-        let reverse = sheet.set_formats_columns(&columns, &formats, true);
+        let reverse = sheet.set_formats_columns(&columns, &formats);
         assert_eq!(sheet.format_column(0), Format::default());
         assert_eq!(sheet.format_column(1), Format::default());
         assert_eq!(sheet.format_column(2), Format::default());

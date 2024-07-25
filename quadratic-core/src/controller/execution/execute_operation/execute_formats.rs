@@ -51,7 +51,7 @@ impl GridController {
                 return;
             }
 
-            if !transaction.is_server() && transaction.batch_client_update_rect.is_none() {
+            if !transaction.is_server() {
                 match &attr {
                     CellFmtArray::RenderSize(_) => {
                         // RenderSize is always sent as a 1,1 rect. TODO: we need to refactor formats to make it less generic.
@@ -78,9 +78,7 @@ impl GridController {
                 };
             }
 
-            if transaction.batch_client_update_rect.is_none() {
-                transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
-            }
+            transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
 
             transaction
                 .forward_operations
@@ -103,11 +101,7 @@ impl GridController {
     ) {
         if let Operation::SetCellFormatsSelection { selection, formats } = op {
             if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
-                let reverse_operations = sheet.set_formats_selection(
-                    &selection,
-                    &formats,
-                    transaction.batch_client_update_rect.is_none(),
-                );
+                let reverse_operations = sheet.set_formats_selection(&selection, &formats);
 
                 if reverse_operations.is_empty() {
                     return;
@@ -117,9 +111,7 @@ impl GridController {
                     self.send_updated_bounds_selection(&selection, true);
                 }
 
-                if transaction.batch_client_update_rect.is_none() {
-                    transaction.generate_thumbnail |= self.thumbnail_dirty_selection(&selection);
-                }
+                transaction.generate_thumbnail |= self.thumbnail_dirty_selection(&selection);
 
                 transaction
                     .forward_operations

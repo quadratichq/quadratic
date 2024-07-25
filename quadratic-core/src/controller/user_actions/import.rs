@@ -14,7 +14,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<()> {
         let ops = self.import_csv_operations(sheet_id, file, file_name, insert_at)?;
-        self.start_user_transaction(ops, cursor, TransactionName::Import, None);
+        self.start_user_transaction(ops, cursor, TransactionName::Import);
         Ok(())
     }
 
@@ -42,7 +42,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<()> {
         let ops = self.import_parquet_operations(sheet_id, file, file_name, insert_at)?;
-        self.start_user_transaction(ops, cursor, TransactionName::Import, None);
+        self.start_user_transaction(ops, cursor, TransactionName::Import);
         Ok(())
     }
 }

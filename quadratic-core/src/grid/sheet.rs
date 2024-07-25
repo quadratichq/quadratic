@@ -442,7 +442,6 @@ mod test {
                 },
                 1,
             ),
-            true,
         );
         assert_eq!(
             sheet.calculate_decimal_places(Pos { x: 3, y: 3 }, false),

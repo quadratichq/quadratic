@@ -33,7 +33,7 @@ impl GridController {
                 client_resized: true,
             });
         }
-        self.start_user_transaction(ops, cursor, transaction_name, None);
+        self.start_user_transaction(ops, cursor, transaction_name);
     }
 
     pub fn commit_single_resize(
@@ -75,7 +75,7 @@ impl GridController {
                     client_resized: false,
                 });
             }
-            self.start_user_transaction(ops, cursor, transaction_name, None);
+            self.start_user_transaction(ops, cursor, transaction_name);
         }
     }
 }
