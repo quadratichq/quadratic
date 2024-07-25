@@ -8,6 +8,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
+use super::formats::format::Format;
 use super::formatting::*;
 use super::{Block, BlockContent, SameValue};
 use crate::{CellValue, IsBlank};
@@ -63,6 +64,20 @@ impl Column {
         }
     }
 
+    /// Returns the range for format values within the column.
+    pub fn format_range(&self) -> Option<Range<i64>> {
+        crate::util::union_ranges([
+            self.align.range(),
+            self.wrap.range(),
+            self.numeric_format.range(),
+            self.numeric_decimals.range(),
+            self.bold.range(),
+            self.italic.range(),
+            self.text_color.range(),
+            self.fill_color.range(),
+        ])
+    }
+
     pub fn has_data_in_row(&self, y: i64) -> bool {
         self.values.get(&y).is_some_and(|v| !v.is_blank())
     }
@@ -76,6 +91,27 @@ impl Column {
             || self.italic.get(y).is_some()
             || self.text_color.get(y).is_some()
             || self.fill_color.get(y).is_some()
+    }
+
+    /// Gets the Format for a column (which will eventually replace the data structure)
+    pub fn format(&self, y: i64) -> Option<Format> {
+        let format = Format {
+            align: self.align.get(y),
+            wrap: self.wrap.get(y),
+            numeric_format: self.numeric_format.get(y),
+            numeric_decimals: self.numeric_decimals.get(y),
+            numeric_commas: self.numeric_commas.get(y),
+            bold: self.bold.get(y),
+            italic: self.italic.get(y),
+            text_color: self.text_color.get(y),
+            fill_color: self.fill_color.get(y),
+            render_size: self.render_size.get(y),
+        };
+        if format.is_default() {
+            None
+        } else {
+            Some(format)
+        }
     }
 }
 
@@ -326,31 +362,6 @@ impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq>
     }
 }
 
-impl ColumnData<SameValue<bool>> {
-    pub fn bool_summary(&self, y_range: Range<i64>) -> BoolSummary {
-        let mut last_block_end = y_range.start;
-        let mut ret = BoolSummary::default();
-
-        for block in self.blocks_covering_range(y_range) {
-            match block.content().value {
-                true => ret.is_any_true = true,
-                false => ret.is_any_false = true,
-            }
-
-            if block.start() > last_block_end {
-                ret.is_any_false = true;
-            }
-            last_block_end = block.end();
-
-            if ret.is_any_true && ret.is_any_false {
-                break;
-            }
-        }
-
-        ret
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
@@ -397,5 +408,101 @@ mod test {
             start: -10,
             end: -3
         }));
+    }
+
+    #[test]
+    fn format() {
+        let mut cd: Column = Column::new(0);
+
+        cd.align
+            .set_range(Range { start: 0, end: 10 }, CellAlign::Center);
+        cd.wrap
+            .set_range(Range { start: 0, end: 10 }, CellWrap::Wrap);
+        cd.numeric_format.set_range(
+            Range { start: 0, end: 10 },
+            NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None,
+            },
+        );
+        cd.numeric_decimals
+            .set_range(Range { start: 0, end: 10 }, 2);
+        cd.numeric_commas
+            .set_range(Range { start: 0, end: 10 }, true);
+        cd.bold.set_range(Range { start: 0, end: 10 }, true);
+        cd.italic.set_range(Range { start: 0, end: 10 }, true);
+        cd.text_color
+            .set_range(Range { start: 0, end: 10 }, "red".to_string());
+        cd.fill_color
+            .set_range(Range { start: 0, end: 10 }, "blue".to_string());
+        cd.render_size.set_range(
+            Range { start: 0, end: 10 },
+            RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string(),
+            },
+        );
+
+        let format = cd.format(0).unwrap();
+        assert_eq!(format.align, Some(CellAlign::Center));
+        assert_eq!(format.wrap, Some(CellWrap::Wrap));
+        assert_eq!(
+            format.numeric_format,
+            Some(NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None
+            })
+        );
+        assert_eq!(format.numeric_decimals, Some(2));
+        assert_eq!(format.numeric_commas, Some(true));
+        assert_eq!(format.bold, Some(true));
+        assert_eq!(format.italic, Some(true));
+        assert_eq!(format.text_color, Some("red".to_string()));
+        assert_eq!(format.fill_color, Some("blue".to_string()));
+        assert_eq!(
+            format.render_size,
+            Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string()
+            })
+        );
+    }
+
+    #[test]
+    fn format_range() {
+        let mut cd: Column = Column::new(0);
+
+        cd.align
+            .set_range(Range { start: 0, end: 10 }, CellAlign::Center);
+        cd.wrap
+            .set_range(Range { start: 0, end: 10 }, CellWrap::Wrap);
+        cd.numeric_format.set_range(
+            Range { start: 0, end: 10 },
+            NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None,
+            },
+        );
+        cd.numeric_decimals
+            .set_range(Range { start: 0, end: 10 }, 2);
+        cd.numeric_commas
+            .set_range(Range { start: 0, end: 10 }, true);
+        cd.bold.set_range(Range { start: 0, end: 10 }, true);
+        cd.italic.set_range(Range { start: 0, end: 10 }, true);
+        cd.text_color
+            .set_range(Range { start: 0, end: 10 }, "red".to_string());
+        cd.fill_color
+            .set_range(Range { start: 0, end: 10 }, "blue".to_string());
+        cd.render_size.set_range(
+            Range { start: 0, end: 10 },
+            RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string(),
+            },
+        );
+
+        let range = cd.format_range().unwrap();
+        assert_eq!(range.start, 0);
+        assert_eq!(range.end, 10);
     }
 }

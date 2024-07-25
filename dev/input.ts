@@ -55,6 +55,12 @@ export class Input {
         }
         this.control.restartFiles();
         break;
+      case "n": // toggle connector
+        if (this.control.status.connector === "killed") {
+          this.control.status.connector = false;
+        }
+        this.control.restartConnection();
+        break;
       case "y": // toggle Python
         this.control.restartPython();
         break;
@@ -87,6 +93,10 @@ export class Input {
           this.cli.options.files = true;
           this.control.restartFiles();
         }
+        if (this.cli.options.connector != true) {
+          this.cli.options.connector = true;
+          this.control.restartConnection();
+        }
         if (this.cli.options.python != true) {
           this.cli.options.python = true;
           this.control.restartPython();
@@ -103,6 +113,9 @@ export class Input {
         break;
       case "F": // toggle showing Files
         this.cli.options.hideFiles = !this.cli.options.hideFiles;
+        break;
+      case "N": // toggle showing Connection
+        this.cli.options.hideConnection = !this.cli.options.hideConnection;
         break;
       case "Y": // toggle showing Python
         this.cli.options.hidePython = !this.cli.options.hidePython;
@@ -125,8 +138,15 @@ export class Input {
       case "\u0006": // ctrl + f
         this.control.killFiles();
         break;
+      case "\u0014": // ctrl + n
+        this.control.killConnection();
+        break;
       case "\r": // ctrl + m
         this.control.killMultiplayer();
+        break;
+      case "L":
+        this.cli.options.servicesLocal = !this.cli.options.servicesLocal;
+        this.control.checkServices();
         break;
     }
   };

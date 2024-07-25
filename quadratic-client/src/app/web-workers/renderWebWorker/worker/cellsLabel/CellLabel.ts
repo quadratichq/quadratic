@@ -86,9 +86,10 @@ export class CellLabel {
         return RUN_ERROR_TEXT;
       case 'Chart':
         return CHART_TEXT;
-      default:
-        return cell?.value;
     }
+
+    // strip any line breaks
+    return cell.value.replace(/\n/g, ' ');
   }
 
   constructor(cellsLabels: CellsLabels, cell: JsRenderCell, screenRectangle: Rectangle) {

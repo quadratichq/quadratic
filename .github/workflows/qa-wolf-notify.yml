@@ -1,0 +1,26 @@
+name: QA Wolf Notify
+
+on:
+  push:
+    branches:
+      - qa
+
+jobs:
+  qa-wolf-notify:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: qa-wolf-notify
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Wait for 15 minutes
+        run: sleep 900
+
+      - name: Notify deploy_success
+        id: run_tests
+        run: |
+          curl -H "Authorization: ${{ secrets.QAW_API_KEY }}" \
+          -H 'Content-Type: application/json' \
+          -d '{"branch": "qa", "deployment_type": "new_qa", "commit_url": "https://github.com/quadratichq/quadratic/commit/${{ github.sha }}", "sha": "${{ github.sha }}"}' \
+          https://app.qawolf.com/api/webhooks/deploy_success

@@ -124,13 +124,15 @@ class InlineEditorFormula {
         sheet = `'${sheets.sheet.name}'!`;
       }
       if (cursor.multiCursor) {
-        const startLocation = cursor.multiCursor.originPosition;
-        const start = getA1Notation(startLocation.x, startLocation.y);
-        const endLocation = cursor.multiCursor.terminalPosition;
-        const end = getA1Notation(endLocation.x, endLocation.y);
-        this.insertInsertingCells(`${sheet}${start}:${end}`);
+        let coords = '';
+        cursor.multiCursor.forEach((c, i) => {
+          const start = getA1Notation(c.left, c.top);
+          const end = getA1Notation(c.right - 1, c.bottom - 1);
+          coords += `${start}:${end}${i !== cursor.multiCursor!.length - 1 ? ',' : ''}`;
+        });
+        this.insertInsertingCells(`${sheet}${coords}`);
       } else {
-        const location = cursor.originPosition;
+        const location = cursor.getCursor();
         const a1Notation = getA1Notation(location.x, location.y);
         this.insertInsertingCells(`${sheet}${a1Notation}`);
       }
@@ -147,9 +149,9 @@ class InlineEditorFormula {
   // returned as valid for the `handleCellPointerDown` call. I think Excel
   // actually knows that it's waiting for a cell reference. Our parser is not as
   // smart and we do not have this information.
-  private formulaIsReadyToClose(formula: string) {
-    const lastCharacter = formula.trim().slice(-1);
-    return lastCharacter !== ',';
+  private formulaIsReadyToClose() {
+    const lastCharacter = inlineEditorMonaco.getCharBeforeCursor();
+    return ![',', '+', '-', '*', '/', '%', '=', '<', '>', '&', '.', '(', '{'].includes(lastCharacter);
   }
 
   // Returns whether we are editing a formula only if it is valid (used for
@@ -162,8 +164,8 @@ class InlineEditorFormula {
 
     const location = inlineEditorHandler.location;
     if (!location) return false;
+    if (!this.formulaIsReadyToClose()) return false;
     const formula = (testFormula ?? inlineEditorMonaco.get()).slice(1);
-    if (!this.formulaIsReadyToClose(formula)) return false;
     if (!checkFormula(formula, location.x, location.y)) {
       if (skipCloseParenthesisCheck) {
         return false;

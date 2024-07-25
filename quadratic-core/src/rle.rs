@@ -8,12 +8,27 @@ impl<T: Eq + Clone> RunLengthEncoding<T> {
         RunLengthEncoding(vec![])
     }
     pub fn repeat(value: T, len: usize) -> Self {
+        if len == 0 {
+            return RunLengthEncoding::new();
+        }
         RunLengthEncoding(vec![(value, len)])
+    }
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
     pub fn push(&mut self, value: T) {
         match self.0.last_mut() {
             Some((old_value, len)) if *old_value == value => *len += 1,
             _ => self.0.push((value, 1)),
+        }
+    }
+    pub fn push_n(&mut self, value: T, len: usize) {
+        if len == 0 {
+            return;
+        }
+        match self.0.last_mut() {
+            Some((old_value, old_len)) if *old_value == value => *old_len += len,
+            _ => self.0.push((value, len)),
         }
     }
     pub fn iter_runs(&self) -> impl Iterator<Item = (&T, usize)> {
@@ -26,7 +41,12 @@ impl<T: Eq + Clone> RunLengthEncoding<T> {
     pub fn get_at(&self, i: usize) -> Option<&T> {
         self.iter_values().nth(i)
     }
+
+    pub fn size(&self) -> usize {
+        self.0.iter().map(|(_, len)| len).sum()
+    }
 }
+
 impl<T: Eq + Clone> FromIterator<T> for RunLengthEncoding<T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         let mut ret = RunLengthEncoding::new();
@@ -34,5 +54,56 @@ impl<T: Eq + Clone> FromIterator<T> for RunLengthEncoding<T> {
             ret.push(it);
         }
         ret
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn push_n() {
+        let mut rle = RunLengthEncoding::new();
+        rle.push_n(1, 0);
+        assert_eq!(rle.0, vec![]);
+        rle.push_n(1, 1);
+        assert_eq!(rle.0, vec![(1, 1)]);
+        rle.push_n(1, 2);
+        assert_eq!(rle.0, vec![(1, 3)]);
+        rle.push_n(2, 1);
+        assert_eq!(rle.0, vec![(1, 3), (2, 1)]);
+        rle.push_n(2, 2);
+        assert_eq!(rle.0, vec![(1, 3), (2, 3)]);
+    }
+
+    #[test]
+    fn size() {
+        let mut rle = RunLengthEncoding::new();
+        assert_eq!(rle.size(), 0);
+        rle.push_n(1, 0);
+        assert_eq!(rle.size(), 0);
+        rle.push_n(1, 1);
+        assert_eq!(rle.size(), 1);
+        rle.push_n(1, 2);
+        assert_eq!(rle.size(), 3);
+        rle.push_n(2, 1);
+        assert_eq!(rle.size(), 4);
+        rle.push_n(2, 2);
+        assert_eq!(rle.size(), 6);
+    }
+
+    #[test]
+    fn is_empty() {
+        let mut rle = RunLengthEncoding::new();
+        assert!(rle.is_empty());
+
+        rle.push_n(1, 0);
+        assert!(rle.is_empty());
+
+        let rel = RunLengthEncoding::repeat(0, 1);
+        assert!(!rel.is_empty());
+
+        let rel = RunLengthEncoding::repeat(0, 0);
+        assert!(rel.is_empty());
     }
 }

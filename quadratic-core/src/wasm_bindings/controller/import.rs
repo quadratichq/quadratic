@@ -15,11 +15,12 @@ impl GridController {
         sheet_id: &str,
         file: &[u8],
         file_name: &str,
-        insert_at: &Pos,
+        insert_at: &str,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
+        let insert_at = serde_json::from_str::<Pos>(insert_at).map_err(|e| e.to_string())?;
         let sheet_id = SheetId::from_str(sheet_id).map_err(|e| e.to_string())?;
-        self.import_csv(sheet_id, file, file_name, *insert_at, cursor)
+        self.import_csv(sheet_id, file, file_name, insert_at, cursor)
             .map_err(|e| e.to_string())?;
 
         Ok(())
@@ -48,11 +49,12 @@ impl GridController {
         sheet_id: &str,
         file: Vec<u8>,
         file_name: &str,
-        insert_at: &Pos,
+        insert_at: &str,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
+        let insert_at = serde_json::from_str::<Pos>(insert_at).map_err(|e| e.to_string())?;
         let sheet_id = SheetId::from_str(sheet_id).map_err(|e| e.to_string())?;
-        self.import_parquet(sheet_id, file, file_name, *insert_at, cursor)
+        self.import_parquet(sheet_id, file, file_name, insert_at, cursor)
             .map_err(|e| e.to_string())?;
 
         Ok(())

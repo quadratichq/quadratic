@@ -3,9 +3,9 @@ use crate::controller::{operations::operation::Operation, GridController};
 use crate::{
     grid::{
         formatting::CellFmtArray, Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic,
-        NumericCommas, NumericDecimals, NumericFormat, RenderSize, TextColor,
+        NumericDecimals, NumericFormat, RenderSize, TextColor,
     },
-    Pos, RunLengthEncoding, SheetPos, SheetRect,
+    RunLengthEncoding, SheetPos, SheetRect,
 };
 
 impl GridController {
@@ -33,25 +33,13 @@ impl GridController {
         cursor: Option<String>,
     ) {
         let ops = self.set_currency_operations(sheet_rect, symbol);
-        self.start_user_transaction(
-            ops,
-            cursor,
-            TransactionName::SetFormats,
-            Some(sheet_rect.sheet_id),
-            Some((*sheet_rect).into()),
-        );
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
     }
 
     /// Sets NumericFormat and NumericDecimals to None
     pub fn remove_number_formatting(&mut self, sheet_rect: &SheetRect, cursor: Option<String>) {
         let ops = self.remove_number_formatting_operations(sheet_rect);
-        self.start_user_transaction(
-            ops,
-            cursor,
-            TransactionName::SetFormats,
-            Some(sheet_rect.sheet_id),
-            Some((*sheet_rect).into()),
-        );
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
     }
 
     pub fn change_decimal_places(
@@ -62,13 +50,7 @@ impl GridController {
         cursor: Option<String>,
     ) {
         let ops = self.change_decimal_places_operations(source, sheet_rect, delta);
-        self.start_user_transaction(
-            ops,
-            cursor,
-            TransactionName::SetFormats,
-            Some(sheet_rect.sheet_id),
-            Some(sheet_rect.into()),
-        );
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
     }
 
     pub fn toggle_commas(
@@ -78,68 +60,14 @@ impl GridController {
         cursor: Option<String>,
     ) {
         let ops = self.toggle_commas_operations(source, sheet_rect);
-        self.start_user_transaction(
-            ops,
-            cursor,
-            TransactionName::SetFormats,
-            Some(sheet_rect.sheet_id),
-            Some(sheet_rect.into()),
-        );
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
     }
 
     pub fn get_all_cell_formats(&self, sheet_rect: SheetRect) -> Vec<CellFmtArray> {
         let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) else {
             return vec![];
         };
-        let mut cell_formats = vec![
-            CellFmtArray::Align(RunLengthEncoding::new()),
-            CellFmtArray::Wrap(RunLengthEncoding::new()),
-            CellFmtArray::NumericFormat(RunLengthEncoding::new()),
-            CellFmtArray::NumericDecimals(RunLengthEncoding::new()),
-            CellFmtArray::NumericCommas(RunLengthEncoding::new()),
-            CellFmtArray::Bold(RunLengthEncoding::new()),
-            CellFmtArray::Italic(RunLengthEncoding::new()),
-            CellFmtArray::TextColor(RunLengthEncoding::new()),
-            CellFmtArray::FillColor(RunLengthEncoding::new()),
-        ];
-        for y in sheet_rect.y_range() {
-            for x in sheet_rect.x_range() {
-                let pos = Pos { x, y };
-                cell_formats.iter_mut().for_each(|array| match array {
-                    CellFmtArray::Align(array) => {
-                        array.push(sheet.get_formatting_value::<CellAlign>(pos));
-                    }
-                    CellFmtArray::Wrap(array) => {
-                        array.push(sheet.get_formatting_value::<CellWrap>(pos));
-                    }
-                    CellFmtArray::NumericFormat(array) => {
-                        array.push(sheet.get_formatting_value::<NumericFormat>(pos));
-                    }
-                    CellFmtArray::NumericDecimals(array) => {
-                        array.push(sheet.get_formatting_value::<NumericDecimals>(pos));
-                    }
-                    CellFmtArray::NumericCommas(array) => {
-                        array.push(sheet.get_formatting_value::<NumericCommas>(pos));
-                    }
-                    CellFmtArray::Bold(array) => {
-                        array.push(sheet.get_formatting_value::<Bold>(pos));
-                    }
-                    CellFmtArray::Italic(array) => {
-                        array.push(sheet.get_formatting_value::<Italic>(pos));
-                    }
-                    CellFmtArray::TextColor(array) => {
-                        array.push(sheet.get_formatting_value::<TextColor>(pos));
-                    }
-                    CellFmtArray::FillColor(array) => {
-                        array.push(sheet.get_formatting_value::<FillColor>(pos));
-                    }
-                    CellFmtArray::RenderSize(array) => {
-                        array.push(sheet.get_formatting_value::<RenderSize>(pos));
-                    }
-                });
-            }
-        }
-        cell_formats
+        sheet.get_all_cell_formats(sheet_rect, None)
     }
 
     pub fn set_cell_render_size(
@@ -150,13 +78,7 @@ impl GridController {
     ) {
         let attr = CellFmtArray::RenderSize(RunLengthEncoding::repeat(value, sheet_rect.len()));
         let ops = vec![Operation::SetCellFormats { sheet_rect, attr }];
-        self.start_user_transaction(
-            ops,
-            cursor,
-            TransactionName::SetFormats,
-            Some(sheet_rect.sheet_id),
-            Some(sheet_rect.into()),
-        );
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         self.send_html_output_rect(&sheet_rect);
     }
 }
@@ -173,13 +95,7 @@ macro_rules! impl_set_cell_fmt_method {
                 let attr =
                     $cell_fmt_array_constructor(RunLengthEncoding::repeat(value, sheet_rect.len()));
                 let ops = vec![Operation::SetCellFormats { sheet_rect, attr }];
-                self.start_user_transaction(
-                    ops,
-                    cursor,
-                    TransactionName::SetFormats,
-                    Some(sheet_rect.sheet_id),
-                    Some(sheet_rect.into()),
-                );
+                self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
             }
         }
     };
@@ -254,78 +170,8 @@ mod test {
         assert_eq!(get(&gc, pos2), "red");
         assert_eq!(get(&gc, pos3), "red");
 
-        // delete and redo
-        gc.delete_cells_rect(rect1, None);
-        assert_eq!(get(&gc, pos1), "blue");
-        assert_eq!(get(&gc, pos2), "red");
-        assert_eq!(get(&gc, pos3), "red");
-
-        gc.clear_formatting(rect1, None);
-        assert_eq!(get(&gc, pos1), "");
-        assert_eq!(get(&gc, pos2), "");
-        assert_eq!(get(&gc, pos3), "red");
-
-        gc.undo(None);
-        assert_eq!(get(&gc, pos1), "blue");
-        assert_eq!(get(&gc, pos2), "red");
-        assert_eq!(get(&gc, pos3), "red");
-
-        gc.redo(None);
-        assert_eq!(get(&gc, pos1), "");
-        assert_eq!(get(&gc, pos2), "");
-        assert_eq!(get(&gc, pos3), "red");
-
         // ensure not found sheet_id fails silently
         gc.set_cell_text_color(
-            SheetRect {
-                min: Pos { x: 0, y: 0 },
-                max: Pos { x: 0, y: 0 },
-                sheet_id: SheetId::new(),
-            },
-            Some("red".to_string()),
-            None,
-        );
-    }
-
-    #[test]
-    fn test_render_fill() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_fill_color(
-            SheetRect {
-                min: crate::Pos { x: 1, y: 1 },
-                max: crate::Pos { x: 10, y: 10 },
-                sheet_id,
-            },
-            Some("blue".to_string()),
-            None,
-        );
-        gc.set_cell_fill_color(
-            SheetRect {
-                min: crate::Pos { x: 1, y: 15 },
-                max: crate::Pos { x: 10, y: 20 },
-                sheet_id,
-            },
-            Some("blue".to_string()),
-            None,
-        );
-        gc.set_cell_fill_color(
-            SheetRect {
-                min: crate::Pos { x: 1, y: 10 },
-                max: crate::Pos { x: 10, y: 15 },
-                sheet_id,
-            },
-            Some("blue".to_string()),
-            None,
-        );
-        let render_fills = gc.sheet(sheet_id).get_render_fills(Rect {
-            min: crate::Pos { x: -100, y: -100 },
-            max: crate::Pos { x: 100, y: 100 },
-        });
-        assert_eq!(10, render_fills.len());
-
-        // ensure not found sheet_id fails silently
-        gc.set_cell_fill_color(
             SheetRect {
                 min: Pos { x: 0, y: 0 },
                 max: Pos { x: 0, y: 0 },
@@ -544,42 +390,6 @@ mod test {
                 w: "1".to_string(),
                 h: "2".to_string(),
             }),
-            None,
-        );
-    }
-
-    #[test]
-    fn test_remove_formatting() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_value(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
-            String::from("1.12345678"),
-            None,
-        );
-        gc.set_currency(
-            &SheetRect::single_pos(Pos { x: 0, y: 0 }, sheet_id),
-            Some("$".to_string()),
-            None,
-        );
-        gc.clear_formatting(SheetRect::single_pos(Pos { x: 0, y: 0 }, sheet_id), None);
-        let cells = gc
-            .sheet(sheet_id)
-            .get_render_cells(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 }));
-        assert_eq!(cells.len(), 1);
-        assert_eq!(cells[0].value, "1.12345678");
-
-        // ensure not found sheet_id fails silently
-        gc.clear_formatting(
-            SheetRect {
-                min: Pos { x: 0, y: 0 },
-                max: Pos { x: 0, y: 0 },
-                sheet_id: SheetId::new(),
-            },
             None,
         );
     }

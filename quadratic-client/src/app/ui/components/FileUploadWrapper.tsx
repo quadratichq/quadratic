@@ -28,8 +28,7 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
       e.pageY - (clientBoundingRect?.top || 0)
     );
     const sheet = sheets.sheet;
-    const offsets = sheet.offsets;
-    const { column, row } = offsets.getColumnRowFromScreen(world.x, world.y);
+    const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
     sheet.cursor.changePosition({
       cursorPosition: { x: column, y: row },
       keyboardMovePosition: { x: column, y: row },
@@ -64,7 +63,7 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
           e.pageX - (clientBoundingRect?.left || 0),
           e.pageY - (clientBoundingRect?.top || 0)
         );
-        const { column, row } = sheets.sheet.offsets.getColumnRowFromScreen(world.x, world.y);
+        const { column, row } = sheets.sheet.getColumnRowFromScreen(world.x, world.y);
         const insertAtCellLocation = { x: column, y: row } as Coordinate;
 
         if (fileType === 'csv') {

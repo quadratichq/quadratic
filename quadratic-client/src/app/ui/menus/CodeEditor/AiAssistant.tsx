@@ -1,91 +1,103 @@
-import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { AI } from '@/app/ui/icons';
+import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { useConnectionSchemaFetcher } from '@/app/ui/menus/CodeEditor/useConnectionSchemaFetcher';
 import { authClient } from '@/auth';
-import { useRootRouteLoaderData } from '@/router';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Send, Stop } from '@mui/icons-material';
 import { Avatar, CircularProgress, IconButton } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
+import mixpanel from 'mixpanel-browser';
+import { useEffect, useRef } from 'react';
+import { useRecoilValue } from 'recoil';
 import { CodeBlockParser } from './AICodeBlockParser';
 import './AiAssistant.css';
 import { QuadraticDocs } from './QuadraticDocs';
 
-// todo: fix types
-
-interface Props {
-  editorMode: EditorInteractionState['mode'];
-  evalResult?: any; // TODO(ddimaria): fix type
-  editorContent: string | undefined;
-  isActive: boolean;
-}
-
-type Message = {
+export type AiMessage = {
   role: 'user' | 'system' | 'assistant';
   content: string;
 };
 
-export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }: Props) => {
-  const evalResultObj = evalResult;
-  const stdErr = evalResultObj?.std_err;
+export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const aiResponseRef = useRef<HTMLDivElement>(null);
+  const {
+    aiAssistant: {
+      prompt: [prompt, setPrompt],
+      loading: [loading, setLoading],
+      messages: [messages, setMessages],
+      controllerRef,
+    },
+    consoleOutput: [consoleOutput],
+    editorContent: [editorContent],
+  } = useCodeEditor();
+  const { loggedInUser: user } = useRootRouteLoaderData();
+  const { mode, selectedCell } = useRecoilValue(editorInteractionStateAtom);
+  const connection = getConnectionInfo(mode);
 
-  // TODO: Improve these messages. Pass current location and more docs.
-  // store in a separate location for different cells
+  const { schemaFetcher } = useConnectionSchemaFetcher({ uuid: connection?.id, type: connection?.kind });
+  let schemaJsonForAi = '';
+  if (schemaFetcher.data && schemaFetcher.data.ok && schemaFetcher.data.data) {
+    schemaJsonForAi = JSON.stringify(schemaFetcher.data.data);
+  }
+
+  // TODO: This is only sent with the first message, we should refresh the content with each message.
   const systemMessages = [
     {
       role: 'system',
-      content:
-        'You are a helpful assistant inside of a spreadsheet application called Quadratic. The cell type is: ' +
-        editorMode,
+      content: `
+You are a helpful assistant inside of a spreadsheet application called Quadratic. 
+Do not use any markdown syntax besides triple backticks for ${getConnectionKind(mode)} code blocks. 
+Do not reply with plain text code blocks.
+The cell type is ${getConnectionKind(mode)}.
+The cell is located at ${selectedCell.x}, ${selectedCell.y}.
+${schemaJsonForAi ? `The schema for the database is:\`\`\`json\n${schemaJsonForAi}\n\`\`\`` : ``}
+Currently, you are in a cell that is being edited. The code in the cell is:
+\`\`\`${getConnectionKind(mode)}
+${editorContent}\`\`\`
+If the code was recently run here is the result: 
+\`\`\`
+${JSON.stringify(consoleOutput)}\`\`\`
+This is the documentation for Quadratic: 
+${QuadraticDocs}`,
     },
-    {
-      role: 'system',
-      content: `here are the docs: ${QuadraticDocs}`,
-    },
-    {
-      role: 'system',
-      content: 'Currently, you are in a cell that is being edited. The code in the cell is:' + editorContent,
-    },
-    {
-      role: 'system',
-      content: 'If the code was recently run here is the std error:' + stdErr,
-    },
-  ] as Message[];
+  ] as AiMessage[];
 
-  const [prompt, setPrompt] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const controller = useRef<AbortController>();
-  const { loggedInUser: user } = useRootRouteLoaderData();
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Focus the input when the tab comes into focus
+  // Focus the input when relevant & the tab comes into focus
   useEffect(() => {
-    if (isActive) {
+    if (autoFocus) {
       window.requestAnimationFrame(() => {
-        const textarea = textareaRef.current;
-        if (textarea) {
-          textarea.focus();
-        }
+        textareaRef.current?.focus();
       });
     }
-  }, [isActive]);
+  }, [autoFocus]);
+
+  // Scroll to the bottom of the AI content when component mounts
+  useEffect(() => {
+    if (aiResponseRef.current) {
+      aiResponseRef.current.scrollTop = aiResponseRef.current.scrollHeight;
+    }
+  }, []);
 
   const abortPrompt = () => {
-    controller.current?.abort();
+    mixpanel.track('[AI].prompt.cancel', { language: getConnectionKind(mode) });
+    controllerRef.current?.abort();
     setLoading(false);
   };
 
   const submitPrompt = async () => {
     if (loading) return;
-    controller.current = new AbortController();
+    controllerRef.current = new AbortController();
     setLoading(true);
     const token = await authClient.getTokenOrRedirect();
-    const updatedMessages = [...messages, { role: 'user', content: prompt }] as Message[];
+    const updatedMessages = [...messages, { role: 'user', content: prompt }] as AiMessage[];
     const request_body = {
       model: 'gpt-4o',
       messages: [...systemMessages, ...updatedMessages],
@@ -95,7 +107,7 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
 
     await fetch(`${apiClient.getApiUrl()}/ai/chat/stream`, {
       method: 'POST',
-      signal: controller.current.signal,
+      signal: controllerRef.current.signal,
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -132,7 +144,7 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
         let responseMessage = {
           role: 'assistant',
           content: '',
-        } as Message;
+        } as AiMessage;
         setMessages((old) => [...old, responseMessage]);
 
         return reader?.read().then(function processResult(result): any {
@@ -176,12 +188,14 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
     setLoading(false);
   };
 
-  const display_message = messages.filter((message, index) => message.role !== 'system');
+  const displayMessages = messages.filter((message, index) => message.role !== 'system');
 
+  // Designed to live in a box that takes up the full height of its container
   return (
-    <>
+    <div className="grid h-full grid-rows-[1fr_auto]">
       <div
-        className="overflow-y-auto whitespace-pre-wrap pb-2 pl-3 pr-4 text-sm outline-none"
+        ref={aiResponseRef}
+        className="select-text overflow-y-auto whitespace-pre-wrap pl-3 pr-4 text-sm outline-none"
         spellCheck={false}
         onKeyDown={(e) => {
           if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
@@ -195,8 +209,8 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
         data-gramm_editor="false"
         data-enable-grammarly="false"
       >
-        <div id="ai-streaming-output">
-          {display_message.map((message, index) => (
+        <div id="ai-streaming-output" className="pb-2">
+          {displayMessages.map((message, index) => (
             <div
               key={index}
               style={{
@@ -240,7 +254,7 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
         </div>
       </div>
       <form
-        className="z-10 flex gap-2 px-3 pb-2 pt-2"
+        className="z-10 flex gap-2 px-3 pb-2"
         onSubmit={(e) => {
           e.preventDefault();
         }}
@@ -249,22 +263,23 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
           ref={textareaRef}
           id="prompt-input"
           value={prompt}
-          onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => {
+          onChange={(event) => {
             setPrompt(event.target.value);
           }}
-          onKeyDown={(event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+          onKeyDown={(event) => {
             if (event.key === 'Enter') {
               if (event.ctrlKey || event.shiftKey) {
                 return;
               }
 
+              event.preventDefault();
               if (prompt.trim().length === 0) {
-                event.preventDefault();
                 return;
               }
 
+              mixpanel.track('[AI].prompt.send', { language: getConnectionKind(mode) });
+
               submitPrompt();
-              event.preventDefault();
               event.currentTarget.focus();
             }
           }}
@@ -304,6 +319,6 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
           )}
         </div>
       </form>
-    </>
+    </div>
   );
 };

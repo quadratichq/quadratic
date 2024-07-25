@@ -13,6 +13,7 @@ on:
 jobs:
   test_rust:
     runs-on: ubuntu-latest-8-cores
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -98,8 +99,18 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+      - name: Test quadratic-connection
+        env:
+          LLVM_PROFILE_FILE: grcov-%p-%m.profraw
+          RUSTFLAGS: -Cinstrument-coverage
+          RUSTC_BOOTSTRAP: 1
+        run: |
+          cd quadratic-connection
+          npm run test:docker:ci
+
   test_unit:
     runs-on: ubuntu-latest-8-cores
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -107,7 +118,7 @@ jobs:
           node-version: 18
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11.3'
+          python-version: "3.11.3"
 
       - name: Set up Rust
         uses: moonrepo/setup-rust@v1
@@ -135,6 +146,7 @@ jobs:
 
   test_python:
     runs-on: ubuntu-latest-8-cores
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -152,6 +164,7 @@ jobs:
 
   test_api:
     runs-on: ubuntu-latest-8-cores
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -166,6 +179,7 @@ jobs:
 
   lint_rust:
     runs-on: ubuntu-latest-8-cores
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: Set up Rust
@@ -181,6 +195,7 @@ jobs:
 
   lint:
     runs-on: ubuntu-latest-8-cores
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

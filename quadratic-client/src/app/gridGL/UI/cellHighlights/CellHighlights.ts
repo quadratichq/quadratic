@@ -146,7 +146,7 @@ export class CellHighlights extends Container {
     return sheets.getSheetByName(cellSheet)?.id ?? sheetId;
   }
 
-  public evalCoord(cell: { type: 'Relative' | 'Absolute'; coord: number }, origin: number) {
+  evalCoord(cell: { type: 'Relative' | 'Absolute'; coord: number }, origin: number) {
     const isRelative = cell.type === 'Relative';
     const getOrigin = isRelative ? origin : 0;
 

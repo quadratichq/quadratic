@@ -17,13 +17,12 @@ import { events } from '@/app/events/events';
 import '@vitest/web-worker';
 import 'fake-indexeddb/auto';
 import { beforeAll, describe, expect, test, vi } from 'vitest';
-import { PythonStateType } from './pythonClientMessages';
 import { CorePythonRun } from './pythonCoreMessages';
 import { pythonWebWorker } from './pythonWebWorker';
 
 let pythonResults: { transactionId: string; pythonRun: any } | undefined;
 
-let pythonState: PythonStateType = 'loading';
+let pythonState: LanguageState = 'loading';
 
 let corePort: MessagePort | undefined;
 

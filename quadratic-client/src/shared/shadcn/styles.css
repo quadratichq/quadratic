@@ -20,6 +20,8 @@
     --accent-foreground: 222.2 47.4% 11.2%;
     --warning: 21 90% 48%; /* orange-600 */
     --warning-foreground: 33 100% 96%; /* orange-50 */
+    --success: 142.1 76.2% 36.3%;
+    --success-foreground: 355.7 100% 97.3%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
@@ -45,6 +47,8 @@
     --accent-foreground: 210 40% 98%;
     --warning: 27 96% 61%; /* orange-400 */
     --warning-foreground: 13 81% 15%; /* orange-950 */
+    --success: 142.1 70.6% 45.3%;
+    --success-foreground: 144.9 80.4% 10%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;

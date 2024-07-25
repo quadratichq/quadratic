@@ -50,11 +50,15 @@ impl GridController {
         &mut self,
         transactions: String,
     ) -> Result<JsValue, JsValue> {
-        let transactions: Vec<TransactionServer> = serde_json::from_str(&transactions)
-            .expect("Invalid transactions received in receiveMultiplayerTransactions");
-        Ok(serde_wasm_bindgen::to_value(
-            &self.received_transactions(&transactions[..]),
-        )?)
+        if let Ok(transactions) = serde_json::from_str::<Vec<TransactionServer>>(&transactions) {
+            Ok(serde_wasm_bindgen::to_value(
+                &self.received_transactions(&transactions[..]),
+            )?)
+        } else {
+            Err(JsValue::from_str(
+                "Invalid transactions received in receiveMultiplayerTransactions",
+            ))
+        }
     }
 
     #[wasm_bindgen(js_name = "applyOfflineUnsavedTransaction")]
@@ -67,11 +71,17 @@ impl GridController {
             Ok(transaction_id) => transaction_id,
             Err(e) => return Err(JsValue::from_str(&format!("Invalid transaction id: {}", e))),
         };
-        let unsaved_transaction: UnsavedTransaction = serde_json::from_str(&unsaved_transaction)
-            .expect("Invalid transactions received in receiveOfflineUnsavedTransaction");
-
-        Ok(serde_wasm_bindgen::to_value(
-            &self.apply_offline_unsaved_transaction(transaction_id, unsaved_transaction),
-        )?)
+        if let Ok(unsaved_transaction) =
+            serde_json::from_str::<UnsavedTransaction>(&unsaved_transaction)
+        {
+            Ok(serde_wasm_bindgen::to_value(
+                &self.apply_offline_unsaved_transaction(transaction_id, unsaved_transaction),
+            )?)
+        } else {
+            Err(JsValue::from_str(&format!(
+                "Invalid unsaved transaction received in applyOfflineUnsavedTransaction {}",
+                unsaved_transaction
+            )))
+        }
     }
 }

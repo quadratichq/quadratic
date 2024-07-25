@@ -1,4 +1,5 @@
 import { sheets } from '@/app/grid/controller/Sheets';
+import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { hasPermissionToEditFile } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
@@ -11,6 +12,7 @@ export function keyboardCode(
     return false;
   }
   if (event.code === 'Enter' && (event.ctrlKey || event.metaKey)) {
+    event.preventDefault();
     if (event.shiftKey) {
       if (event.altKey) {
         quadraticCore.rerunCodeCells(sheets.sheet.id, undefined, undefined, sheets.getCursorPosition());
@@ -25,8 +27,14 @@ export function keyboardCode(
         sheets.getCursorPosition()
       );
     }
-    event.preventDefault();
     return true;
+  }
+
+  if (editorInteractionState.showCodeEditor) {
+    if (event.code === 'KeyL' && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      insertCellRef(editorInteractionState);
+    }
   }
   return false;
 }

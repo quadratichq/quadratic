@@ -163,7 +163,9 @@ const data: CommandGroup = {
         return (
           <CommandPaletteListItem
             {...props}
-            action={() => setEditorInteractionState({ ...editorInteractionState, showGoToMenu: true })}
+            action={() =>
+              setEditorInteractionState({ ...editorInteractionState, showCommandPalette: false, showGoToMenu: true })
+            }
             // icon={<ThickArrowRightIcon />}
             shortcut={KeyboardSymbols.Command + 'G'}
           />

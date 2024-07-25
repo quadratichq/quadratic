@@ -30,6 +30,14 @@ extern "C" {
         code: String,
     ) -> JsValue;
 
+    pub fn jsRunJavascript(
+        transactionId: String,
+        x: i32,
+        y: i32,
+        sheet_id: String,
+        code: String,
+    ) -> JsValue;
+
     // cells: Vec<JsRenderCell>
     pub fn jsRenderCellSheets(
         sheet_id: String,
@@ -44,6 +52,8 @@ extern "C" {
     // todo: there should be a jsSheetFillUpdate instead of constantly passing back all sheet fills
     pub fn jsSheetFills(sheet_id: String, fills: String /* JsRenderFill */);
 
+    pub fn jsSheetMetaFills(sheet_id: String, fills: String /* JsSheetFill */);
+
     pub fn jsAddSheet(sheetInfo: String /*SheetInfo*/, user: bool);
     pub fn jsDeleteSheet(sheetId: String, user: bool);
     pub fn jsRequestTransactions(sequence_num: u64);
@@ -56,6 +66,7 @@ extern "C" {
     );
     pub fn jsOffsetsModified(sheet_id: String, column: Option<i64>, row: Option<i64>, size: f64);
     pub fn jsSetCursor(cursor: String);
+    pub fn jsSetCursorSelection(selection: String);
     pub fn jsUpdateHtml(html: String /*JsHtmlOutput*/);
     pub fn jsClearHtml(sheet_id: String, x: i64, y: i64);
     pub fn jsHtmlOutput(html: String /*Vec<JsHtmlOutput>*/);
@@ -73,21 +84,32 @@ extern "C" {
         w: u32,
         h: u32,
     );
-    pub fn jsTransactionStart(
-        transaction_id: String,
-        name: String,
-        sheet_id: Option<String>,
-        x: Option<i64>,
-        y: Option<i64>,
-        w: Option<u32>,
-        h: Option<u32>,
-    );
+    pub fn jsTransactionStart(transaction_id: String, name: String);
     pub fn addUnsentTransaction(transaction_id: String, transaction: String, operations: u32);
     pub fn jsSendTransaction(transaction_id: String, transaction: String);
 
     pub fn jsTransactionProgress(transaction_id: String, remaining_operations: i32);
 
     pub fn jsUndoRedo(undo: bool, redo: bool);
+
+    pub fn jsConnection(
+        transactionId: String,
+        x: i32,
+        y: i32,
+        sheet_id: String,
+        query: String,
+        connector_type: ConnectionKind,
+        connection_id: String,
+    );
+
+    pub fn jsSendImage(
+        sheet_id: String,
+        x: i32,
+        y: i32,
+        image: Option<String>,
+        w: Option<String>,
+        h: Option<String>,
+    );
 }
 
 #[cfg(test)]
@@ -262,6 +284,15 @@ pub fn jsSheetFills(sheet_id: String, fills: String /* JsRenderFill */) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
+pub fn jsSheetMetaFills(sheet_id: String, fills: String /* JsSheetFill */) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsSheetMetaFills",
+        format!("{},{}", sheet_id, fills),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
 pub fn jsAddSheet(sheetInfo: String /*SheetInfo*/, user: bool) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsAddSheet",
@@ -321,6 +352,15 @@ pub fn jsSetCursor(cursor: String) {
         .lock()
         .unwrap()
         .push(TestFunction::new("jsSetCursor", cursor));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSetCursorSelection(selection: String) {
+    TEST_ARRAY
+        .lock()
+        .unwrap()
+        .push(TestFunction::new("jsSetCursorSelection", selection));
 }
 
 #[cfg(test)]
@@ -400,27 +440,10 @@ pub fn jsImportProgress(file_name: &str, current: u32, total: u32, x: i64, y: i6
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsTransactionStart(
-    transaction_id: String,
-    name: String,
-    sheet_id: Option<String>,
-    x: Option<i64>,
-    y: Option<i64>,
-    w: Option<u32>,
-    h: Option<u32>,
-) {
+pub fn jsTransactionStart(transaction_id: String, name: String) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsTransactionStart",
-        format!(
-            "{},{},{},{},{},{},{}",
-            transaction_id,
-            name,
-            sheet_id.unwrap_or_default(),
-            x.unwrap_or_default(),
-            y.unwrap_or_default(),
-            w.unwrap_or_default(),
-            h.unwrap_or_default()
-        ),
+        format!("{},{}", transaction_id, name,),
     ));
 }
 
@@ -459,5 +482,50 @@ pub fn jsUndoRedo(undo: bool, redo: bool) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsUndoRedo",
         format!("{},{}", undo, redo),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsConnection(
+    transactionId: String,
+    x: i32,
+    y: i32,
+    sheet_id: String,
+    query: String,
+    connector_type: ConnectionKind,
+    connection_id: String,
+) -> JsValue {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsConnection",
+        format!(
+            "{},{},{},{},{},{},{}",
+            transactionId, x, y, sheet_id, query, connector_type, connection_id
+        ),
+    ));
+    JsValue::NULL
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSendImage(
+    sheet_id: String,
+    x: i32,
+    y: i32,
+    image: Option<String>,
+    w: Option<String>,
+    h: Option<String>,
+) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsSendImage",
+        format!(
+            "{},{},{},{:?},{:?},{:?}",
+            sheet_id,
+            x,
+            y,
+            image.is_some(),
+            w,
+            h
+        ),
     ));
 }

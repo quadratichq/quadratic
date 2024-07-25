@@ -1,6 +1,5 @@
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::GridController;
-use crate::Rect;
 use crate::{grid::SheetId, Pos};
 use anyhow::Result;
 
@@ -15,13 +14,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<()> {
         let ops = self.import_csv_operations(sheet_id, file, file_name, insert_at)?;
-        self.start_user_transaction(
-            ops,
-            cursor,
-            TransactionName::Import,
-            Some(sheet_id),
-            Some(Rect::single_pos(insert_at)),
-        );
+        self.start_user_transaction(ops, cursor, TransactionName::Import);
         Ok(())
     }
 
@@ -29,8 +22,13 @@ impl GridController {
     ///
     /// Returns a [`TransactionSummary`].
     pub fn import_excel(&mut self, file: Vec<u8>, file_name: &str) -> Result<()> {
-        let ops = self.import_excel_operations(file, file_name)?;
-        self.server_apply_transaction(ops);
+        let import_ops = self.import_excel_operations(file, file_name)?;
+        self.server_apply_transaction(import_ops);
+
+        // Rerun all code cells after importing Excel file
+        // This is required to run compute cells in order
+        let code_rerun_ops = self.rerun_all_code_cells_operations();
+        self.server_apply_transaction(code_rerun_ops);
         Ok(())
     }
 
@@ -44,27 +42,18 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<()> {
         let ops = self.import_parquet_operations(sheet_id, file, file_name, insert_at)?;
-        self.start_user_transaction(
-            ops,
-            cursor,
-            TransactionName::Import,
-            Some(sheet_id),
-            Some(Rect::single_pos(insert_at)),
-        );
+        self.start_user_transaction(ops, cursor, TransactionName::Import);
         Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
-
-    use std::fs::File;
-    use std::io::Read;
-
     use crate::{
+        grid::{CodeCellLanguage, CodeRunResult},
         test_util::{assert_cell_value_row, print_table},
         wasm_bindings::js::clear_js_calls,
-        Rect,
+        CellValue, Rect, RunErrorMsg,
     };
 
     use super::*;
@@ -76,8 +65,10 @@ mod tests {
 
     // const EXCEL_FILE: &str = "../quadratic-rust-shared/data/excel/temperature.xlsx";
     const EXCEL_FILE: &str = "../quadratic-rust-shared/data/excel/basic.xlsx";
+    const EXCEL_FUNCTIONS_FILE: &str =
+        "../quadratic-rust-shared/data/excel/all_excel_functions.xlsx";
     // const EXCEL_FILE: &str = "../quadratic-rust-shared/data/excel/financial_sample.xlsx";
-    const PARQUET_FILE: &str = "../quadratic-rust-shared/data/parquet/alltypes_plain.parquet";
+    const PARQUET_FILE: &str = "../quadratic-rust-shared/data/parquet/all_supported_types.parquet";
     // const MEDIUM_PARQUET_FILE: &str = "../quadratic-rust-shared/data/parquet/lineitem.parquet";
     // const LARGE_PARQUET_FILE: &str =
     // "../quadratic-rust-shared/data/parquet/flights_1m.parquet";
@@ -168,12 +159,8 @@ mod tests {
     fn imports_a_simple_excel_file() {
         let mut grid_controller = GridController::test_blank();
         let pos = Pos { x: 0, y: 0 };
-        let mut file = File::open(EXCEL_FILE).unwrap();
-        let metadata = std::fs::metadata(EXCEL_FILE).expect("unable to read metadata");
-        let mut buffer = vec![0; metadata.len() as usize];
-        file.read_exact(&mut buffer).expect("buffer overflow");
-
-        let _ = grid_controller.import_excel(buffer, "temperature.xlsx");
+        let file: Vec<u8> = std::fs::read(EXCEL_FILE).expect("Failed to read file");
+        let _ = grid_controller.import_excel(file, "basic.xlsx");
         let sheet_id = grid_controller.grid.sheets()[0].id;
 
         print_table(
@@ -187,7 +174,7 @@ mod tests {
             sheet_id,
             0,
             10,
-            0,
+            1,
             vec![
                 "Empty",
                 "String",
@@ -208,7 +195,7 @@ mod tests {
             sheet_id,
             0,
             10,
-            1,
+            2,
             vec![
                 "",
                 "Hello",
@@ -226,17 +213,12 @@ mod tests {
     }
 
     #[test]
-    fn imports_a_simple_parquet() {
-        let mut grid_controller = GridController::test();
-        let sheet_id = grid_controller.grid.sheets()[0].id;
+    fn import_all_excel_functions() {
+        let mut grid_controller = GridController::test_blank();
         let pos = Pos { x: 0, y: 0 };
-        let mut file = File::open(PARQUET_FILE).unwrap();
-        let metadata = std::fs::metadata(PARQUET_FILE).expect("unable to read metadata");
-        let mut buffer = vec![0; metadata.len() as usize];
-        file.read_exact(&mut buffer).expect("buffer overflow");
-
-        let _ =
-            grid_controller.import_parquet(sheet_id, buffer, "alltypes_plain.parquet", pos, None);
+        let file: Vec<u8> = std::fs::read(EXCEL_FUNCTIONS_FILE).expect("Failed to read file");
+        let _ = grid_controller.import_excel(file, "all_excel_functions.xlsx");
+        let sheet_id = grid_controller.grid.sheets()[0].id;
 
         print_table(
             &grid_controller,
@@ -244,24 +226,70 @@ mod tests {
             Rect::new_span(pos, Pos { x: 10, y: 10 }),
         );
 
+        let sheet = grid_controller.grid.try_sheet(sheet_id).unwrap();
+        let (y_start, y_end) = sheet.column_bounds(0, true).unwrap();
+        assert_eq!(y_start, 1);
+        assert_eq!(y_end, 512);
+        for y in y_start..=y_end {
+            let pos = Pos { x: 0, y };
+            // all cells should be formula code cells
+            let code_cell = sheet.cell_value(pos).unwrap();
+            match &code_cell {
+                CellValue::Code(code_cell_value) => {
+                    assert_eq!(code_cell_value.language, CodeCellLanguage::Formula);
+                }
+                _ => panic!("expected code cell"),
+            }
+
+            // all code cells should have valid function names,
+            // valid functions may not be implemented yet
+            let code_run = sheet.code_run(pos).unwrap();
+            if let CodeRunResult::Err(error) = &code_run.result {
+                if error.msg == RunErrorMsg::BadFunctionName {
+                    panic!("expected valid function name")
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn imports_a_simple_parquet() {
+        let mut grid_controller = GridController::test();
+        let sheet_id = grid_controller.grid.sheets()[0].id;
+        let pos = Pos { x: 0, y: 0 };
+        let file: Vec<u8> = std::fs::read(PARQUET_FILE).expect("Failed to read file");
+        let _ = grid_controller.import_parquet(sheet_id, file, "alltypes_plain.parquet", pos, None);
+
         assert_cell_value_row(
             &grid_controller,
             sheet_id,
             0,
-            10,
+            22,
             0,
             vec![
                 "id",
-                "bool_col",
-                "tinyint_col",
-                "smallint_col",
-                "int_col",
-                "bigint_col",
-                "float_col",
-                "double_col",
-                "date_string_col",
-                "string_col",
-                "timestamp_col",
+                "text",
+                "varchar",
+                "char",
+                "name",
+                "bool",
+                "bytea",
+                "int2",
+                "int4",
+                "int8",
+                "float4",
+                "float8",
+                "numeric",
+                "timestamp",
+                "timestamptz",
+                "date",
+                "time",
+                "timetz",
+                "interval",
+                "uuid",
+                "json",
+                "jsonb",
+                "xml",
             ],
         );
 
@@ -269,41 +297,32 @@ mod tests {
             &grid_controller,
             sheet_id,
             0,
-            10,
+            22,
             1,
             vec![
-                "4",
-                "TRUE",
-                "0",
-                "0",
-                "0",
-                "0",
-                "0",
-                "0",
-                "03/01/09",
-                "0",
-                "2009-03-01 00:00:00",
-            ],
-        );
-
-        assert_cell_value_row(
-            &grid_controller,
-            sheet_id,
-            0,
-            10,
-            8,
-            vec![
-                "1",
-                "FALSE",
-                "1",
-                "1",
-                "1",
-                "10",
-                "1.1",
-                "10.1",
-                "01/01/09",
-                "1",
-                "2009-01-01 00:01:00",
+                "1",                                    // id
+                "a",                                    // text
+                "b",                                    // varchar
+                "c",                                    // char
+                "d",                                    // name
+                "TRUE",                                 // bool
+                "",                                     // bytea
+                "1",                                    // int2
+                "2",                                    // int4
+                "3",                                    // int8
+                "1.1",                                  // float4
+                "2.2",                                  // float8
+                "3.3",                                  // numeric
+                "2024-05-08 19:49:07",                  // timestamp
+                "2024-05-08 19:49:07",                  // timestamptz
+                "2024-05-08",                           // date
+                "00:01:11",                             // time
+                "00:01:11",                             // timetz
+                "",                                     // interval
+                "4599689c-7048-47dc-abf7-f7e9ee636578", // uuid
+                "{\"a\":\"b\"}",                        // json
+                "{\"a\":\"b\"}",                        // jsonb
+                "",                                     // xml
             ],
         );
     }

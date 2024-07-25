@@ -21,10 +21,10 @@ export class HtmlPlaceholders extends Graphics {
     if (!sheet) {
       throw new Error('Expected sheet to be defined in HtmlPlaceholders.drawPlaceholder');
     }
-    const offsets = sheet.offsets.getCellOffsets(Number(htmlCell.x), Number(htmlCell.y));
+    const offsets = sheet.getCellOffsets(Number(htmlCell.x), Number(htmlCell.y));
     this.lineStyle(BORDER_WIDTH, colors.htmlPlaceholderThumbnailBorderColor, 1);
     this.beginFill(colors.htmlPlaceholderThumbnailColor);
-    this.drawRect(offsets.x, offsets.y + offsets.h, w, h);
+    this.drawRect(offsets.x, offsets.y + offsets.height, w, h);
     this.endFill();
   }
 

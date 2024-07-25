@@ -10,12 +10,14 @@ impl GridController {
     pub fn js_autocomplete(
         &mut self,
         sheet_id: String,
-        selection: &Rect,
-        range: &Rect,
+        selection: String,
+        range: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
+        let selection: Rect = serde_json::from_str(&selection).map_err(|e| e.to_string())?;
+        let range: Rect = serde_json::from_str(&range).map_err(|e| e.to_string())?;
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
-        self.autocomplete(sheet_id, *selection, *range, cursor)
+        self.autocomplete(sheet_id, selection, range, cursor)
             .map_err(|e| e.to_string())?;
         Ok(())
     }

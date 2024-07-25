@@ -4,6 +4,7 @@ import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { PanMode, pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { rectToSheetRect } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 
@@ -59,23 +60,6 @@ export class PointerCellMoving {
     return false;
   }
 
-  // Completes the move
-  private completeMove() {
-    if (this.state !== 'move' || !this.moving) {
-      throw new Error('Expected moving to be defined in completeMove');
-    }
-    quadraticCore.moveCells(
-      this.moving.column,
-      this.moving.row,
-      this.moving.width,
-      this.moving.height,
-      sheets.sheet.id,
-      this.moving.toColumn,
-      this.moving.toRow,
-      sheets.sheet.id
-    );
-  }
-
   private reset() {
     this.moving = undefined;
     if (this.state === 'move') {
@@ -90,13 +74,11 @@ export class PointerCellMoving {
     if (this.state !== 'move' || !this.moving) {
       throw new Error('Expected moving to be defined in pointerMoveMoving');
     }
-    const offsets = sheets.sheet.offsets;
-    const position = offsets.getColumnRowFromScreen(world.x + this.moving.offset.x, world.y + this.moving.offset.y);
-    if (this.moving.toColumn !== position.column || this.moving.toRow !== position.row) {
-      this.moving.toColumn = position.column;
-      this.moving.toRow = position.row;
-      pixiApp.cellMoving.dirty = true;
-    }
+    const sheet = sheets.sheet;
+    const position = sheet.getColumnRowFromScreen(world.x, world.y);
+    this.moving.toColumn = position.column + this.moving.offset.x;
+    this.moving.toRow = position.row + this.moving.offset.y;
+    pixiApp.cellMoving.dirty = true;
   }
 
   private moveOverlaps(world: Point): false | 'corner' | 'top' | 'bottom' | 'left' | 'right' {
@@ -163,23 +145,26 @@ export class PointerCellMoving {
 
   private pointerMoveHover(world: Point): boolean {
     const sheet = sheets.sheet;
-    const origin = sheet.cursor.originPosition;
+    const rectangles = sheet.cursor.getRectangles();
+
+    // we do not move if there are multiple rectangles (for now)
+    if (rectangles.length > 1) return false;
+    const rectangle = rectangles[0];
+
+    const origin = sheet.cursor.getCursor();
     const column = origin.x;
     const row = origin.y;
 
     const overlap = this.moveOverlaps(world);
     if (overlap) {
       this.state = 'hover';
-      const rectangle = sheet.cursor.getRectangle();
       const screenRectangle = pixiApp.cursor.cursorRectangle;
       if (!screenRectangle) return false;
-      let adjustX = 0,
-        adjustY = 0;
-      if (overlap === 'right') {
-        adjustX = sheets.sheet.offsets.getColumnWidth(rectangle.right);
-      } else if (overlap === 'bottom') {
-        adjustY = sheets.sheet.offsets.getRowHeight(rectangle.bottom);
-      }
+
+      // the offset is the clamped value of the rectangle based on where the user clicks
+      const offset = sheets.sheet.getColumnRowFromScreen(world.x, world.y);
+      offset.column = Math.min(Math.max(offset.column, rectangle.left), rectangle.right);
+      offset.row = Math.min(Math.max(offset.row, rectangle.top), rectangle.bottom);
       this.moving = {
         column,
         row,
@@ -188,8 +173,8 @@ export class PointerCellMoving {
         toColumn: column,
         toRow: row,
         offset: {
-          x: screenRectangle.x - world.x + adjustX,
-          y: screenRectangle.y - world.y + adjustY,
+          x: rectangle.left - offset.column,
+          y: rectangle.top - offset.row,
         },
       };
       return true;
@@ -211,7 +196,37 @@ export class PointerCellMoving {
 
   pointerUp(): boolean {
     if (this.state === 'move') {
-      this.completeMove();
+      if (this.moving) {
+        const rectangle = sheets.sheet.cursor.getLargestMultiCursorRectangle();
+        quadraticCore.moveCells(
+          rectToSheetRect(
+            new Rectangle(rectangle.x, rectangle.y, rectangle.width - 1, rectangle.height - 1),
+            sheets.sheet.id
+          ),
+          this.moving.toColumn,
+          this.moving.toRow,
+          sheets.sheet.id
+        );
+
+        // if we moved the code cell, we need to repopulate the code editor with
+        // unsaved content.
+        if (pixiAppSettings.unsavedEditorChanges) {
+          const state = pixiAppSettings.editorInteractionState;
+          if (
+            state.selectedCellSheet === sheets.sheet.id &&
+            intersects.rectanglePoint(rectangle, new Point(state.selectedCell.x, state.selectedCell.y))
+          ) {
+            pixiAppSettings.setEditorInteractionState?.({
+              ...pixiAppSettings.editorInteractionState,
+              initialCode: pixiAppSettings.unsavedEditorChanges,
+              selectedCell: {
+                x: state.selectedCell.x + this.moving.toColumn - this.moving.column,
+                y: state.selectedCell.y + this.moving.toRow - this.moving.row,
+              },
+            });
+          }
+        }
+      }
       this.reset();
       return true;
     }

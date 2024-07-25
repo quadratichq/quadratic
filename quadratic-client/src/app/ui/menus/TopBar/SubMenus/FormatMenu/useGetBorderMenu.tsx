@@ -25,7 +25,7 @@ import { QColorPicker } from '../../../../components/qColorPicker';
 import { ChangeBorder, useBorders } from '../useBorders';
 import './useGetBorderMenu.css';
 
-export function useGetBorderMenu(): JSX.Element {
+export function useGetBorderMenu(): JSX.Element | null {
   const [lineStyle, setLineStyle] = useState<CellBorderLine | undefined>();
   const [borderSelection, setBorderSelection] = useState<BorderSelection | undefined>();
   const defaultColor = convertTintToString(colors.defaultBorderColor);
@@ -33,7 +33,7 @@ export function useGetBorderMenu(): JSX.Element {
 
   const { changeBorders } = useBorders();
 
-  const [multiCursor, setMultiCursor] = useState(!!sheets.sheet.cursor.multiCursor);
+  const [multiCursor, setMultiCursor] = useState(!!sheets.sheet?.cursor.multiCursor);
   const clearSelection = useCallback(() => {
     setBorderSelection('clear');
     setMultiCursor(!!sheets.sheet.cursor.multiCursor);
@@ -101,6 +101,11 @@ export function useGetBorderMenu(): JSX.Element {
       </div>
     );
   };
+
+  const cursor = sheets.sheet.cursor;
+  if ((cursor.multiCursor && cursor.multiCursor.length > 1) || cursor.columnRow !== undefined) {
+    return null;
+  }
 
   return (
     <div className="borderMenu">

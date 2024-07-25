@@ -23,26 +23,33 @@ export function stripExtension(name: string): string {
   return name.replace(/\.[^/.]+$/, '');
 }
 
-export function has_extension(name: string, extension: string): boolean {
+export function getExtension(name: string): string {
+  return name.split('.').pop() || '';
+}
+
+export function hasExtension(name: string, extension: string): boolean {
   return new RegExp(`\\.${extension}$`, 'i').test(name);
 }
 
+export function hasExtensions(name: string, extensions: string[]): boolean {
+  return extensions.some((extension) => hasExtension(name, extension));
+}
+
 export function isCsv(file: File): boolean {
-  return file.type === 'text/csv' || file.type === 'text/tab-separated-values' || has_extension(file.name, 'csv');
+  return file.type === 'text/csv' || file.type === 'text/tab-separated-values' || hasExtension(file.name, 'csv');
 }
 
 export function isExcel(file: File): boolean {
   return (
-    file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-    has_extension(file.name, 'xlsx')
+    file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || hasExtension(file.name, 'xlsx')
   );
 }
 
 export function isGrid(file: File): boolean {
-  return file.type === 'application/json' || has_extension(file.name, 'grid');
+  return file.type === 'application/json' || hasExtension(file.name, 'grid');
 }
 
 // NOTE(ddimaria): this mime type was registered in March 2024, so isn't supported yet
 export function isParquet(file: File): boolean {
-  return file.type === 'application/vnd.apache.parquet' || has_extension(file.name, 'parquet');
+  return file.type === 'application/vnd.apache.parquet' || hasExtensions(file.name, ['parquet', 'parq', 'pqt']);
 }

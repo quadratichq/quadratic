@@ -1,5 +1,5 @@
+import { ColumnRowCursor, RectangleLike } from '@/app/grid/sheet/SheetCursor';
 import { Coordinate, SheetPosTS } from '@/app/gridGL/types/size';
-import { Rectangle } from 'pixi.js';
 
 export interface CellEdit {
   active: boolean;
@@ -36,7 +36,7 @@ export interface MultiplayerUser extends MultiplayerUserServer {
   index: number;
   colorString: string;
   parsedCodeRunning: SheetPosTS[];
-  parsedSelection?: { cursor: Coordinate; rectangle: Rectangle };
+  parsedSelection?: { cursorPosition: Coordinate; multiCursor?: RectangleLike[]; columnRow?: ColumnRowCursor };
 }
 
 export interface Version {

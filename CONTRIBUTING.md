@@ -16,63 +16,9 @@ Check out our open roles ⟶ [careers.quadratichq.com](https://careers.quadratic
 
 ## Setup
 
-1. Install NPM
-2. Install [rustup](https://www.rust-lang.org/tools/install)
-3. Install [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
-4. `rustup target add wasm32-unknown-unknown` to install the WASM toolchain
-5. Install cargo watch `cargo install cargo-watch`
+### Local development environment
 
-## Run Quadratic
-
-In order to run the front-end and/or the server locally, you must have all the environment variables configured in `.env.local` (and `quadratic-api/.env.local` if you’re running a local server). You can grab the values from [our team Notion page](https://www.notion.so/Env-Variables-78b1a1da19d0421993abe8c449e51496?pvs=4) or by asking a team member.
-
-1. Start everything in one terminal: `npm start`
-
-### Run front-end locally
-
-1. `cd quadratic-client`
-2. `npm i` to install dependencies
-3. Configure `.env.local` values: `touch .env.local`
-4. (a) `npm start` to run in browser or `npm run dev` to run with Electron; or (b) `npm run watch:front-end` to run in browser with automatic wasm rebuilding
-
-#### Note:
-To rebuild the rust types after `npm start`, you need to either manually call `npm run build:wasm:types`, or restart the `npm start" script.
-
-### Run server locally
-
-1. `cd quadratic-api`
-2. `npm i`
-3. Install and configure PostgreSQL:
-   1. macOS users: Install [postgress.app](https://postgresapp.com/) (follow instructions on website) or `brew install postgresql` ([instructions](https://wiki.postgresql.org/wiki/Homebrew))
-   2. Linux users:
-      1. Install [postgres](https://www.prisma.io/dataguide/postgresql/setting-up-a-local-postgresql-database#setting-up-postgresql-on-linux)
-      2. Configure your user permissions and create the database in the `psql` prompt:
-         - `# CREATE ROLE username WITH LOGIN PASSWORD 'some_password';`
-         - `# CREATE DATABASE "quadratic-api" WITH OWNER = username;`
-         - `# GRANT ALL PRIVILEGES ON DATABASE "quadratic-api" TO username;`
-         - `# ALTER ROLE username CREATEDB;`
-4. Create two environment files `.env.local` & `quadratic-api/.env.local`.
-
-   - Note: Linux users may need to call it `quadratic-api/.env` instead.
-
-   - For the `.env.local` react app ENV variables you will need to set the following variables:
-     `VITE_AUTH0_DOMAIN` `VITE_AUTH0_CLIENT_ID` `VITE_AUTH0_AUDIENCE` `VITE_AUTH0_ISSUER` `VITE_QUADRATIC_API_URL`
-     You will need to ask your team for the appropriate values.
-
-   - For `quadratic-api/.env.local` you will need to set the `DATABASE_ENV` to point at your local postgres db. You will also need to copy `AUTH0_JWKS_URI` and `AUTH0_ISSUER` from `quadratic-api/.env_example` into your local `quadratic-api/.env.local` api env variables.
-
-5. `npm run prisma:migrate`
-
-### Run tests (TypeScript)
-
-1. `npm run build:wasm:nodejs` to compile the Rust code
-2. `npm install` to install dependencies (run again when updating Rust)
-3. `npm run test:all` to run all tests or `npm run test:unit` to run just unit tests
-
-### Run tests (Rust)
-
-1. `cd quadratic-core`
-2. `cargo test --workspace`
+See [DEVELOPMENT.md](/DEVELOPMENT.md)
 
 ## Feature requests and bugs
 
@@ -118,6 +64,7 @@ Congratulations! :tada::tada: Quadratic is better because of you. :sparkles:
 Once your PR is merged, contributors will be publicly visible on the GitHub Page.
 
 ## How to test js.rs functions (Rust functions that call into TS)
+
 Use `#[serial]` from `use serial_test::serial;` for the test function (this
 ensures that the global static `TEST_ARRAY` is not changed by other functions).
 

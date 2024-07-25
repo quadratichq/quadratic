@@ -2,6 +2,7 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { expectError, getUserIdByAuth0Id } from '../../tests/helpers';
+import { clearDb } from '../../tests/testDataGenerator';
 
 beforeEach(async () => {
   // Create some users
@@ -41,7 +42,6 @@ beforeEach(async () => {
     data: {
       name: 'Test Team 1',
       uuid: '00000000-0000-4000-8000-000000000001',
-      stripeCustomerId: '1',
       UserTeamRole: {
         create: [
           {
@@ -60,7 +60,6 @@ beforeEach(async () => {
     data: {
       name: 'Test Team 2',
       uuid: '00000000-0000-4000-8000-000000000002',
-      stripeCustomerId: '2',
       UserTeamRole: {
         create: [
           {
@@ -74,13 +73,7 @@ beforeEach(async () => {
   });
 });
 
-afterEach(async () => {
-  await dbClient.$transaction([
-    dbClient.userTeamRole.deleteMany(),
-    dbClient.user.deleteMany(),
-    dbClient.team.deleteMany(),
-  ]);
-});
+afterEach(clearDb);
 
 const expectRole = (role: string) => (res: any) => {
   expect(res.body.role).toBe(role);

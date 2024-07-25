@@ -1,6 +1,6 @@
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Point } from 'pixi.js';
+import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiApp } from '../../pixiApp/PixiApp';
@@ -15,7 +15,7 @@ export class PointerDown {
 
   private positionRaw?: Point;
   private position?: Point;
-  private previousPosition?: { originPosition: Point; terminalPosition: Point };
+  private previousPosition?: Point;
   private pointerMoved = false;
   private doubleClickTimeout?: number;
 
@@ -25,22 +25,22 @@ export class PointerDown {
   async pointerDown(world: Point, event: PointerEvent) {
     if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || event.button === 1) return;
     const sheet = sheets.sheet;
-    const offsets = sheet.offsets;
     const cursor = sheet.cursor;
 
     this.positionRaw = world;
-    const { column, row } = offsets.getColumnRowFromScreen(world.x, world.y);
+    const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
 
     const rightClick = event.button === 2 || (event.button === 0 && event.ctrlKey);
 
     // If right click and we have a multi cell selection.
     // If the user has clicked inside the selection.
     if (rightClick && cursor.multiCursor) {
+      const lastMultiCursor = cursor.multiCursor[cursor.multiCursor.length - 1];
       if (
-        column >= cursor.multiCursor.originPosition.x &&
-        column <= cursor.multiCursor.terminalPosition.x &&
-        row >= cursor.multiCursor.originPosition.y &&
-        row <= cursor.multiCursor.terminalPosition.y
+        column >= lastMultiCursor.left &&
+        column <= lastMultiCursor.right &&
+        row >= lastMultiCursor.top &&
+        row <= lastMultiCursor.bottom
       )
         // Ignore this click. User is accessing the RightClickMenu.
         return;
@@ -49,15 +49,12 @@ export class PointerDown {
     if (this.doubleClickTimeout) {
       window.clearTimeout(this.doubleClickTimeout);
       this.doubleClickTimeout = undefined;
-      if (
-        this.previousPosition &&
-        column === this.previousPosition.originPosition.x &&
-        row === this.previousPosition.originPosition.y
-      ) {
+      if (this.previousPosition && column === this.previousPosition.x && row === this.previousPosition.y) {
         // ignore right click
         if (rightClick) {
           return;
         }
+        event.preventDefault();
         const code = await quadraticCore.getCodeCell(sheet.id, column, row);
         if (code) {
           doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
@@ -66,14 +63,14 @@ export class PointerDown {
           doubleClickCell({ column, row, cell });
         }
         this.active = false;
-        event.preventDefault();
         return;
       }
     }
 
-    // select cells between pressed and cursor position
+    // Select cells between pressed and cursor position. Uses last multiCursor
+    // or creates a multiCursor.
     if (event.shiftKey) {
-      const { column, row } = offsets.getColumnRowFromScreen(world.x, world.y);
+      const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
       const cursorPosition = cursor.cursorPosition;
       if (column !== cursorPosition.x || row !== cursorPosition.y) {
         // make origin top left, and terminal bottom right
@@ -81,28 +78,60 @@ export class PointerDown {
         const originY = cursorPosition.y < row ? cursorPosition.y : row;
         const termX = cursorPosition.x > column ? cursorPosition.x : column;
         const termY = cursorPosition.y > row ? cursorPosition.y : row;
+        const newRectangle = new Rectangle(originX, originY, termX - originX + 1, termY - originY + 1);
 
-        cursor.changePosition({
-          keyboardMovePosition: { x: column, y: row },
-          multiCursor: {
-            originPosition: new Point(originX, originY),
-            terminalPosition: new Point(termX, termY),
-          },
-        });
+        if (cursor.multiCursor?.length) {
+          const multiCursor = [...cursor.multiCursor];
+          multiCursor[multiCursor.length - 1] = newRectangle;
+          cursor.changePosition({
+            columnRow: event.metaKey || event.ctrlKey ? undefined : null,
+            keyboardMovePosition: { x: column, y: row },
+            multiCursor,
+            ensureVisible: false,
+          });
+        } else {
+          cursor.changePosition({
+            keyboardMovePosition: { x: column, y: row },
+            multiCursor: [newRectangle],
+            ensureVisible: false,
+          });
+        }
       }
+      this.active = true;
+      this.position = new Point(cursorPosition.x, cursorPosition.y);
+      this.previousPosition = new Point(column, row);
+      this.pointerMoved = false;
       return;
+    }
+
+    // select another multiCursor range
+    if (!this.active && (event.metaKey || event.ctrlKey)) {
+      const cursorPosition = cursor.cursorPosition;
+      if (cursor.multiCursor || column !== cursorPosition.x || row !== cursorPosition.y) {
+        event.stopPropagation();
+        const multiCursor = cursor.multiCursor ?? [new Rectangle(cursorPosition.x, cursorPosition.y, 1, 1)];
+        multiCursor.push(new Rectangle(column, row, 1, 1));
+        cursor.changePosition({
+          cursorPosition: { x: column, y: row },
+          multiCursor,
+          ensureVisible: false,
+        });
+        this.active = true;
+        this.position = new Point(column, row);
+
+        // Keep track of multiCursor previous position
+        this.previousPosition = new Point(column, row);
+
+        this.pointerMoved = false;
+        return;
+      }
     }
 
     this.active = true;
     this.position = new Point(column, row);
 
-    const previousPosition = {
-      originPosition: new Point(column, row),
-      terminalPosition: new Point(column, row),
-    };
-
     // Keep track of multiCursor previous position
-    this.previousPosition = previousPosition;
+    this.previousPosition = new Point(column, row);
 
     // Move cursor to mouse down position
     // For single click, hide multiCursor
@@ -110,18 +139,24 @@ export class PointerDown {
     cursor.changePosition({
       keyboardMovePosition: { x: column, y: row },
       cursorPosition: { x: column, y: row },
+      multiCursor:
+        (event.metaKey || event.ctrlKey) && cursor.multiCursor
+          ? cursor.multiCursor.slice(0, cursor.multiCursor.length - 1)
+          : null,
+      columnRow: event.metaKey || event.ctrlKey ? cursor.columnRow : null,
+      ensureVisible: false,
     });
     this.pointerMoved = false;
   }
 
-  pointerMove(world: Point): void {
+  pointerMove(world: Point, event: PointerEvent): void {
     if (pixiAppSettings.panMode !== PanMode.Disabled) return;
 
     if (!this.active) return;
 
     const { viewport } = pixiApp;
     const sheet = sheets.sheet;
-    const offsets = sheet.offsets;
+    const cursor = sheet.cursor;
 
     // for determining if double click
     if (!this.pointerMoved && this.doubleClickTimeout && this.positionRaw) {
@@ -140,21 +175,23 @@ export class PointerDown {
     }
 
     // calculate mouse move position
-    const { column, row } = offsets.getColumnRowFromScreen(world.x, world.y);
+    const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
+
+    const columnRow = event.metaKey || event.ctrlKey ? undefined : null;
 
     // cursor start and end in the same cell
     if (column === this.position.x && row === this.position.y) {
       // hide multi cursor when only selecting one cell
-      sheet.cursor.changePosition({
-        keyboardMovePosition: { x: this.position.x, y: this.position.y },
-        cursorPosition: { x: this.position.x, y: this.position.y },
-      });
-      // update previousPosition
-      this.previousPosition = {
-        originPosition: new Point(this.position.x, this.position.y),
-        terminalPosition: new Point(this.position.x, this.position.y),
-      };
-      if (!inlineEditorHandler.isEditingFormula()) {
+      if (cursor.multiCursor && cursor.multiCursor.length === 1) {
+        cursor.changePosition({
+          columnRow,
+          keyboardMovePosition: { x: this.position.x, y: this.position.y },
+          cursorPosition: { x: this.position.x, y: this.position.y },
+          ensureVisible: false,
+        });
+      }
+      this.previousPosition = new Point(this.position.x, this.position.y);
+      if (inlineEditorHandler.isOpen() && !inlineEditorHandler.isEditingFormula()) {
         pixiAppSettings.changeInput(false);
       }
     } else {
@@ -167,34 +204,27 @@ export class PointerDown {
       const termY = this.position.y > row ? this.position.y : row;
 
       // determine if the cursor has moved from the previous event
-      const hasMoved = !(
-        this.previousPosition.originPosition.x === originX &&
-        this.previousPosition.originPosition.y === originY &&
-        this.previousPosition.terminalPosition.x === termX &&
-        this.previousPosition.terminalPosition.y === termY
-      );
+      const hasMoved = !(this.previousPosition.x === column && this.previousPosition.y === row);
 
       // only set state if changed
       // this reduces the number of hooks fired
       if (hasMoved) {
         // update multiCursor
-        sheet.cursor.changePosition({
+        const multiCursor = cursor.multiCursor ? cursor.multiCursor.slice(0, cursor.multiCursor.length - 1) : [];
+        multiCursor.push(new Rectangle(originX, originY, termX - originX + 1, termY - originY + 1));
+        cursor.changePosition({
+          columnRow,
           keyboardMovePosition: { x: column, y: row },
           cursorPosition: { x: this.position.x, y: this.position.y },
-          multiCursor: {
-            originPosition: { x: originX, y: originY },
-            terminalPosition: { x: termX, y: termY },
-          },
+          multiCursor,
+          ensureVisible: false,
         });
-        if (!inlineEditorHandler.isEditingFormula()) {
+        if (inlineEditorHandler.isOpen() && !inlineEditorHandler.isEditingFormula()) {
           pixiAppSettings.changeInput(false);
         }
 
         // update previousPosition
-        this.previousPosition = {
-          originPosition: new Point(originX, originY),
-          terminalPosition: new Point(termX, termY),
-        };
+        this.previousPosition = new Point(column, row);
       }
     }
   }

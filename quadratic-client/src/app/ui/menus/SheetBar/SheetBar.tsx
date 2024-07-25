@@ -172,6 +172,7 @@ export const SheetBar = (): JSX.Element => {
       // If they don't have the permission, don't allow past here for drag to reorder
       if (!hasPermission) return;
 
+      event.preventDefault();
       const tab = event.currentTarget;
       if (tab) {
         const rect = tab.getBoundingClientRect();
@@ -193,7 +194,6 @@ export const SheetBar = (): JSX.Element => {
         tab.style.zIndex = '2';
       }
       focusGrid();
-      event.preventDefault();
     },
     [getOrderIndex, sheetTabs, hasPermission]
   );
@@ -422,7 +422,7 @@ export const SheetBar = (): JSX.Element => {
         zIndex: 1,
         backgroundColor: theme.palette.background.paper,
       }}
-      className="sheet-bar"
+      className="sheet-bar select-none"
     >
       {hasPermission && (
         <SheetBarButton

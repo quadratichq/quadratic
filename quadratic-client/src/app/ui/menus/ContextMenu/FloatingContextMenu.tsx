@@ -34,6 +34,7 @@ import {
 import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
 import { useGetBorderMenu } from '@/app/ui/menus/TopBar/SubMenus/FormatMenu/useGetBorderMenu';
 import {
+  clearFillColor,
   clearFormattingAndBorders,
   removeCellNumericFormat,
   setAlignment,
@@ -53,6 +54,8 @@ import { ControlledMenu, Menu, MenuDivider, MenuInstance, MenuItem, useMenuState
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
+
+// todo: this file needs to be broken up and rewritten
 
 interface Props {
   container?: HTMLDivElement;
@@ -79,9 +82,9 @@ export const FloatingContextMenu = (props: Props) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (moreMenuProps.state === 'open' && e.key === 'Escape') {
-        moreMenuToggle();
         e.stopPropagation();
         e.preventDefault();
+        moreMenuToggle();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -131,7 +134,7 @@ export const FloatingContextMenu = (props: Props) => {
     if (inlineEditorHandler.cursorIsMoving) visibility = 'vanish';
 
     // Hide if it's not 1) a multicursor or, 2) an active right click
-    if (!(cursor.multiCursor || showContextMenu)) visibility = 'vanish';
+    if (!(cursor.multiCursor || cursor.columnRow || showContextMenu)) visibility = 'vanish';
 
     // Hide if currently selecting
     if (pixiApp.pointer?.pointerDown?.active) visibility = 'vanish';
@@ -159,6 +162,10 @@ export const FloatingContextMenu = (props: Props) => {
       (visibility === false || visibility === 'vanish')
     ) {
       moreMenuToggle(false);
+    }
+
+    if (cursor.columnRow?.all) {
+      visibility = true;
     }
 
     // Apply visibility
@@ -212,6 +219,12 @@ export const FloatingContextMenu = (props: Props) => {
       if (y + menuDiv.current.offsetHeight >= container.offsetTop + container.offsetHeight) {
         y = container.offsetTop + HORIZONTAL_PADDING + rowHeader;
       }
+    }
+
+    if (cursor.columnRow?.all || cursor.multiCursor) {
+      const screen = viewport.toScreen(viewportBounds.x + viewportBounds.width / 2, viewportBounds.y);
+      x = screen.x - menuDiv.current.offsetWidth / 2;
+      y = screen.y + VERTICAL_PADDING + rowHeader;
     }
 
     // Generate transform CSS
@@ -278,8 +291,8 @@ export const FloatingContextMenu = (props: Props) => {
           'rgba(0, 0, 0, 0.2) 0px 3px 3px -2px, rgba(0, 0, 0, 0.14) 0px 3px 4px 0px, rgba(0, 0, 0, 0.12) 0px 1px 8px 0px',
       }}
       onClick={(e) => {
-        mixpanel.track('[FloatingContextMenu].click');
         e.stopPropagation();
+        mixpanel.track('[FloatingContextMenu].click');
       }}
     >
       <Toolbar
@@ -290,25 +303,13 @@ export const FloatingContextMenu = (props: Props) => {
         }}
       >
         <TooltipHint title="Bold" shortcut={KeyboardSymbols.Command + 'B'}>
-          <IconButton
-            size="small"
-            onClick={async () => {
-              const formatPrimaryCell = await sheets.sheet.getFormatPrimaryCell();
-              setBold(!formatPrimaryCell?.bold);
-            }}
-          >
+          <IconButton size="small" onClick={async () => setBold()}>
             <FontBoldIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Italic" shortcut={KeyboardSymbols.Command + 'I'}>
-          <IconButton
-            size="small"
-            onClick={async () => {
-              const formatPrimaryCell = await sheets.sheet.getFormatPrimaryCell();
-              setItalic(!formatPrimaryCell?.italic);
-            }}
-          >
+          <IconButton size="small" onClick={() => setItalic()}>
             <FontItalicIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
@@ -380,25 +381,36 @@ export const FloatingContextMenu = (props: Props) => {
             }}
             onClear={() => {
               fillColorRef.current?.closeMenu();
-              setFillColor(undefined);
+              clearFillColor();
               focusGrid();
             }}
           />
         </Menu>
-        <Menu
-          menuButton={
-            <div>
-              <TooltipHint title="Borders">
-                <IconButton size="small">
-                  <BorderAllIcon fontSize={iconSize} />
-                </IconButton>
-              </TooltipHint>
-            </div>
-          }
-        >
-          {borders}
-        </Menu>
-
+        {!borders ? (
+          <TooltipHint title="Borders">
+            <span>
+              <IconButton size="small" disabled={true}>
+                <BorderAllIcon fontSize={iconSize} />
+              </IconButton>
+            </span>
+          </TooltipHint>
+        ) : (
+          <Menu
+            menuButton={
+              <div>
+                <TooltipHint title="Borders">
+                  <span>
+                    <IconButton size="small">
+                      <BorderAllIcon fontSize={iconSize} />
+                    </IconButton>
+                  </span>
+                </TooltipHint>
+              </div>
+            }
+          >
+            {borders}
+          </Menu>
+        )}
         <MenuDividerVertical />
 
         <TooltipHint title="Format automatically">

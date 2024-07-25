@@ -11,7 +11,7 @@ impl GridController {
         sheet_pos: SheetPos,
         code: String,
     ) {
-        if cfg!(target_family = "wasm") && !transaction.is_server() {
+        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
             crate::wasm_bindings::js::jsRunPython(
                 transaction.id.to_string(),
                 sheet_pos.x as i32,
@@ -154,12 +154,8 @@ mod tests {
         let transaction_id = gc.async_transactions()[0].id;
 
         // mock the get_cells request from python
-        let cells = gc.calculation_get_cells(
-            transaction_id.to_string(),
-            Rect::from_numbers(0, 0, 1, 1),
-            None,
-            None,
-        );
+        let cells =
+            gc.calculation_get_cells(transaction_id.to_string(), 0, 0, 1, Some(1), None, None);
         assert!(cells.is_ok());
         assert_eq!(
             cells,
@@ -226,12 +222,7 @@ mod tests {
         let transaction_id = gc.async_transactions()[0].id;
 
         // mock the get_cells to populate dependencies
-        let _ = gc.calculation_get_cells(
-            transaction_id.to_string(),
-            Rect::from_numbers(0, 0, 1, 1),
-            None,
-            None,
-        );
+        let _ = gc.calculation_get_cells(transaction_id.to_string(), 0, 0, 1, Some(1), None, None);
         // mock the calculation_complete
         let _ = gc.calculation_complete(JsCodeResult::new(
             transaction_id.to_string(),
@@ -259,12 +250,8 @@ mod tests {
 
         let transaction_id = gc.async_transactions()[0].id;
 
-        let cells = gc.calculation_get_cells(
-            transaction_id.to_string(),
-            Rect::from_numbers(0, 0, 1, 1),
-            None,
-            None,
-        );
+        let cells =
+            gc.calculation_get_cells(transaction_id.to_string(), 0, 0, 1, Some(1), None, None);
         assert_eq!(
             cells,
             Ok(vec![JsGetCellResponse {
@@ -538,12 +525,7 @@ mod tests {
         let transaction_id = gc.last_transaction().unwrap().id;
 
         let result = gc
-            .calculation_get_cells(
-                transaction_id.to_string(),
-                Rect::from_numbers(0, 0, 1, 1),
-                None,
-                None,
-            )
+            .calculation_get_cells(transaction_id.to_string(), 0, 0, 1, Some(1), None, None)
             .ok()
             .unwrap();
         assert_eq!(result.len(), 1);
@@ -584,12 +566,7 @@ mod tests {
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let result = gc
-            .calculation_get_cells(
-                transaction_id.to_string(),
-                Rect::from_numbers(0, 1, 1, 1),
-                None,
-                None,
-            )
+            .calculation_get_cells(transaction_id.to_string(), 0, 1, 1, Some(1), None, None)
             .ok()
             .unwrap();
         assert_eq!(result.len(), 1);

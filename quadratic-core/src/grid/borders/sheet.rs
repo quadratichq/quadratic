@@ -8,6 +8,7 @@ use crate::grid::borders::cell::{CellBorders, CellSide};
 use crate::grid::borders::compute_indices;
 use crate::grid::borders::style::{BorderSelection, BorderStyle};
 use crate::grid::{ColumnData, Sheet};
+use crate::selection::Selection;
 use crate::{Pos, Rect};
 
 pub fn generate_borders(
@@ -83,14 +84,21 @@ pub fn get_rect_borders(sheet: &Sheet, rect: &Rect) -> SheetBorders {
     sheet.borders.get_rect(rect)
 }
 
-pub fn get_cell_borders_in_rect(sheet: &Sheet, rect: Rect) -> Vec<(i64, i64, Option<CellBorders>)> {
+pub fn get_cell_borders_in_rect(
+    sheet: &Sheet,
+    rect: Rect,
+    selection: Option<&Selection>,
+) -> Vec<(i64, i64, Option<CellBorders>)> {
     let mut borders = vec![];
     let mut id_space_borders = sheet.borders().per_cell.to_owned();
 
     for (i, x) in rect.x_range().enumerate() {
         for (j, y) in rect.y_range().enumerate() {
-            let border = id_space_borders.get_cell_border(Pos { x, y });
-            borders.push((i as i64, j as i64, border));
+            let pos = Pos { x, y };
+            if selection.is_none() || selection.is_some_and(|s| s.pos_in_selection(pos)) {
+                let border = id_space_borders.get_cell_border(pos);
+                borders.push((i as i64, j as i64, border));
+            }
         }
     }
 

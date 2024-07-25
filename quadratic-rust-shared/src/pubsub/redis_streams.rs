@@ -109,7 +109,7 @@ impl super::PubSub for RedisConnection {
         let client = client(config)?;
         let connection = RedisConnection {
             multiplex: client.get_multiplexed_async_connection().await?,
-            monitor: client.get_async_connection().await?.into_monitor(),
+            monitor: client.get_async_monitor().await?,
         };
         Ok(connection)
     }

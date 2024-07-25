@@ -2,7 +2,7 @@ import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { CommandPaletteIcon } from '@/app/ui/icons';
 import { SwitchApp } from '@/shared/shadcn/ui/switch';
 import { isElectron } from '@/shared/utils/isElectron';
-import { Box, Tooltip, useMediaQuery, useTheme } from '@mui/material';
+import { Tooltip, useMediaQuery, useTheme } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
@@ -25,32 +25,24 @@ export const TopBar = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { permissions } = editorInteractionState;
   const { showCellTypeOutlines, setShowCellTypeOutlines } = useGridSettings();
+
   return (
-    <Box
+    <div
       onContextMenu={(event) => {
         // Disable right-click
         event.preventDefault();
       }}
-      sx={{
-        backgroundColor: 'rgba(255, 255, 255)',
-        // px: theme.spacing(1),
-        width: '100%',
-        display: 'flex',
-        justifyContent: 'space-between',
-        gap: theme.spacing(1),
-        border: theme.palette.divider,
-        borderWidth: '0 0 1px 0',
-        borderStyle: 'solid',
-        height: theme.spacing(6),
-        position: 'relative',
-        ...(isElectron()
+      className="relative flex h-12 w-full select-none justify-between gap-2 border-b border-border bg-background"
+      style={
+        isElectron()
           ? {
               paddingLeft: '4.5rem',
               // this allows the window to be dragged in Electron
+              // @ts-expect-error
               WebkitAppRegion: 'drag',
             }
-          : {}),
-      }}
+          : {}
+      }
       onDoubleClick={(event) => {
         // if clicked (not child clicked), maximize window. For electron.
         if (event.target === event.currentTarget) electronMaximizeCurrentWindow();
@@ -109,6 +101,6 @@ export const TopBar = () => {
           <TopBarZoomMenu />
         </div>
       </div>
-    </Box>
+    </div>
   );
 };

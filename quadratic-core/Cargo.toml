@@ -83,6 +83,7 @@ arrow-buffer = "51.0.0"
 arrow-data = "51.0.0"
 half = "2.4.0"
 calamine =  { version = "0.24.0", features = ["dates"] }
+serde_with = "3.8.1"
 
 [dev-dependencies]
 criterion = { version = "0.4", default-features = false }

@@ -1,15 +1,16 @@
-import { useRootRouteLoaderData } from '@/router';
+import { useRootRouteLoaderData } from '@/routes/_root';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandList } from '@/shared/shadcn/ui/command';
 import fuzzysort from 'fuzzysort';
 import mixpanel from 'mixpanel-browser';
 import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { focusGrid } from '../../../helpers/focusGrid';
 import { Command } from './CommandPaletteListItem';
-import borderCommandGroup from './commands/Borders';
+import { BordersHook } from './commands/Borders';
 import codeCommandGroup from './commands/Code';
 import { columnRowCommandGroup } from './commands/ColumnRow';
+import connectionsCommandGroup from './commands/Connections';
 import editCommandGroup from './commands/Edit';
 import fileCommandGroup from './commands/File';
 import formatCommandGroup from './commands/Format';
@@ -22,6 +23,9 @@ import viewCommandGroup from './commands/View';
 
 export const CommandPalette = () => {
   const { isAuthenticated } = useRootRouteLoaderData();
+  const {
+    userMakingRequest: { fileTeamPrivacy, teamPermissions },
+  } = useFileRouteLoaderData();
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [activeSearchValue, setActiveSearchValue] = useState<string>('');
   const { permissions } = editorInteractionState;
@@ -33,20 +37,20 @@ export const CommandPalette = () => {
       showCellTypeMenu: false,
       showCommandPalette: false,
     }));
-    setTimeout(() => {
-      focusGrid();
-    }, 100);
   };
 
   useEffect(() => {
     mixpanel.track('[CommandPalette].open');
   }, []);
 
+  const borderCommandGroup = BordersHook();
+
   const commandGroups = [
     editCommandGroup,
     fileCommandGroup,
     viewCommandGroup,
     importCommandGroup,
+    connectionsCommandGroup,
     borderCommandGroup,
     textCommandGroup,
     formatCommandGroup,
@@ -74,7 +78,10 @@ export const CommandPalette = () => {
             const { label, keywords, isAvailable } = command;
 
             // Is the command even available?
-            if (isAvailable && isAvailable(permissions, isAuthenticated) !== true) {
+            if (
+              isAvailable &&
+              isAvailable({ filePermissions: permissions, isAuthenticated, teamPermissions, fileTeamPrivacy }) !== true
+            ) {
               return;
             }
 

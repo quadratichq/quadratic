@@ -1,4 +1,9 @@
+//! Holds the state of the cursor for a sheet. Allows for saving and loading of
+//! that state as you switch between sheets, a multiplayer user follows your
+//! cursor, or you save the cursor state in the URL at ?state=.
+
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { Rect, Selection } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { IViewportTransformState } from 'pixi-viewport';
 import { Rectangle } from 'pixi.js';
@@ -6,35 +11,47 @@ import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
 import { Sheet } from './Sheet';
 
-type MultiCursor =
-  | {
-      originPosition: Coordinate;
-      terminalPosition: Coordinate;
-    }
-  | undefined;
+// Select column and/or row for the entire sheet.
+export interface ColumnRowCursor {
+  columns?: number[];
+  rows?: number[];
+  all?: true;
+}
 
+export interface RectangleLike {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+// Save object for the cursor state.
 export interface SheetCursorSave {
   sheetId: string;
   keyboardMovePosition: Coordinate;
   cursorPosition: Coordinate;
-  multiCursor: MultiCursor;
+  multiCursor?: RectangleLike[];
+  columnRow?: ColumnRowCursor;
 }
 
 export class SheetCursor {
   private _viewport?: IViewportTransformState;
 
   sheetId: string;
+
+  // used to determine if the boxCells (ie, autocomplete) is active
   boxCells: boolean;
+
   keyboardMovePosition: Coordinate;
   cursorPosition: Coordinate;
-  multiCursor: MultiCursor;
+  multiCursor?: Rectangle[];
+  columnRow?: ColumnRowCursor;
 
   constructor(sheet: Sheet) {
     this.sheetId = sheet.id;
     this.boxCells = false;
     this.keyboardMovePosition = { x: 0, y: 0 };
     this.cursorPosition = { x: 0, y: 0 };
-    this.multiCursor = undefined;
   }
 
   set viewport(save: IViewportTransformState) {
@@ -53,49 +70,101 @@ export class SheetCursor {
       sheetId: this.sheetId,
       keyboardMovePosition: this.keyboardMovePosition,
       cursorPosition: this.cursorPosition,
-      multiCursor: this.multiCursor,
+      multiCursor: this.multiCursor?.map((rect) => ({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })),
+      columnRow: this.columnRow,
     };
   }
 
   load(value: SheetCursorSave): void {
     this.keyboardMovePosition = value.keyboardMovePosition;
     this.cursorPosition = value.cursorPosition;
-    this.multiCursor = value.multiCursor;
+    this.multiCursor = value.multiCursor?.map((rect) => new Rectangle(rect.x, rect.y, rect.width, rect.height));
+    this.columnRow = value.columnRow;
     multiplayer.sendSelection(this.getMultiplayerSelection());
     pixiApp.cursor.dirty = true;
   }
 
-  changePosition(options: {
-    multiCursor?: MultiCursor;
-    cursorPosition?: Coordinate;
-    keyboardMovePosition?: Coordinate;
-    ensureVisible?: boolean;
-  }): void {
-    this.multiCursor = options.multiCursor;
+  loadFromSelection(selection: Selection) {
+    this.cursorPosition = { x: Number(selection.x), y: Number(selection.y) };
+
+    if (
+      selection.rects?.length === 1 &&
+      selection.rects[0].min.x === selection.rects[0].max.x &&
+      selection.rects[0].min.y === selection.rects[0].max.y
+    ) {
+      // This is a single cell selection
+      this.multiCursor = undefined;
+    } else {
+      this.multiCursor = selection.rects?.map(
+        (rect) =>
+          new Rectangle(
+            Number(rect.min.x),
+            Number(rect.min.y),
+            Number(rect.max.x) - Number(rect.min.x) + 1,
+            Number(rect.max.y) - Number(rect.min.y) + 1
+          )
+      );
+    }
+
+    if (selection.columns === null && selection.rows === null && selection.all === false) {
+      this.columnRow = undefined;
+    } else {
+      this.columnRow = {
+        columns: selection.columns?.map((x) => Number(x)),
+        rows: selection.rows?.map((y) => Number(y)),
+        all: selection.all === true ? true : undefined,
+      };
+    }
+
+    multiplayer.sendSelection(this.getMultiplayerSelection());
+    pixiApp.cursor.dirty = true;
+  }
+
+  // Changes the cursor position. If multiCursor or columnRow is set to null,
+  // then it will be cleared.
+  changePosition(
+    options: {
+      multiCursor?: Rectangle[] | null;
+      columnRow?: ColumnRowCursor | null;
+      cursorPosition?: Coordinate;
+      keyboardMovePosition?: Coordinate;
+      ensureVisible?: boolean | Coordinate;
+    },
+    test?: boolean
+  ) {
+    if (options.columnRow) {
+      this.columnRow = options.columnRow;
+    } else if (options.columnRow === null) {
+      this.columnRow = undefined;
+    }
+
+    if (options.multiCursor) {
+      this.multiCursor = options.multiCursor;
+    } else if (options.multiCursor === null) {
+      this.multiCursor = undefined;
+    }
+
     if (options.cursorPosition) {
       this.cursorPosition = options.cursorPosition;
       this.keyboardMovePosition = options.keyboardMovePosition ?? this.cursorPosition;
     } else if (options.keyboardMovePosition) {
       this.keyboardMovePosition = options.keyboardMovePosition;
     }
-    pixiApp.updateCursorPosition({ ensureVisible: options.ensureVisible ?? true });
-    if (!inlineEditorHandler.cursorIsMoving) {
-      multiplayer.sendSelection(this.getMultiplayerSelection());
+    if (!test) {
+      pixiApp.updateCursorPosition(options.ensureVisible ?? true);
+      if (!inlineEditorHandler.cursorIsMoving) {
+        multiplayer.sendSelection(this.getMultiplayerSelection());
+      }
     }
   }
 
   // gets a stringified selection string for multiplayer
   getMultiplayerSelection(): string {
-    const cursor = this.cursorPosition;
-    const rectangle = this.multiCursor
-      ? new Rectangle(
-          this.multiCursor.originPosition.x,
-          this.multiCursor.originPosition.y,
-          this.multiCursor.terminalPosition.x - this.multiCursor.originPosition.x,
-          this.multiCursor.terminalPosition.y - this.multiCursor.originPosition.y
-        )
-      : undefined;
-    return JSON.stringify({ cursor, rectangle });
+    return JSON.stringify({
+      cursorPosition: this.cursorPosition,
+      multiCursor: this.multiCursor,
+      columnRow: this.columnRow,
+    });
   }
 
   changeBoxCells(boxCells: boolean) {
@@ -104,17 +173,64 @@ export class SheetCursor {
     }
   }
 
-  get originPosition(): Coordinate {
-    return this.multiCursor ? this.multiCursor.originPosition : this.cursorPosition;
+  getCursor(): Coordinate {
+    return this.cursorPosition;
   }
 
-  get terminalPosition(): Coordinate {
-    return this.multiCursor ? this.multiCursor.terminalPosition : this.cursorPosition;
+  // Gets all cursor Rectangles (either multiCursor or single cursor)
+  getRectangles(): Rectangle[] {
+    if (this.multiCursor) {
+      return this.multiCursor;
+    } else {
+      return [new Rectangle(this.cursorPosition.x, this.cursorPosition.y, 1, 1)];
+    }
   }
 
-  getRectangle(): Rectangle {
-    const origin = this.originPosition;
-    const terminal = this.terminalPosition;
-    return new Rectangle(origin.x, origin.y, terminal.x - origin.x, terminal.y - origin.y);
+  getRustSelection(): Selection {
+    const sheet_id = { id: this.sheetId };
+    const columns = this.columnRow?.columns ? this.columnRow.columns.map((x) => BigInt(x)) : null;
+    const rows = this.columnRow?.rows ? this.columnRow.rows.map((y) => BigInt(y)) : null;
+    const all = this.columnRow?.all ?? false;
+    let rects: Rect[] | null = null;
+    if (this.multiCursor) {
+      rects = this.multiCursor.map((rect) => ({
+        min: { x: BigInt(rect.x), y: BigInt(rect.y) },
+        max: { x: BigInt(rect.x + rect.width - 1), y: BigInt(rect.y + rect.height - 1) },
+      }));
+    } else if (!this.columnRow) {
+      rects = [
+        {
+          min: { x: BigInt(this.cursorPosition.x), y: BigInt(this.cursorPosition.y) },
+          max: { x: BigInt(this.cursorPosition.x), y: BigInt(this.cursorPosition.y) },
+        },
+      ];
+    }
+    return {
+      sheet_id,
+      x: BigInt(this.cursorPosition.x),
+      y: BigInt(this.cursorPosition.y),
+      rects,
+      columns,
+      rows,
+      all,
+    };
+  }
+
+  // Returns the largest rectangle that contains all the multiCursor rectangles
+  getLargestMultiCursorRectangle(): Rectangle {
+    if (!this.multiCursor) {
+      return new Rectangle(this.cursorPosition.x, this.cursorPosition.y, 1, 1);
+    }
+    let left = Infinity;
+    let top = Infinity;
+    let right = -Infinity;
+    let bottom = -Infinity;
+    this.multiCursor.forEach((rect) => {
+      left = Math.min(left, rect.x);
+      top = Math.min(top, rect.y);
+      right = Math.max(right, rect.x + rect.width);
+      bottom = Math.max(bottom, rect.y + rect.height);
+    });
+    return new Rectangle(left, top, right - left, bottom - top);
   }
 }

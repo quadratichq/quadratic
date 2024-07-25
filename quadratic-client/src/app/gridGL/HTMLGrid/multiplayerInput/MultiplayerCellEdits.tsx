@@ -24,8 +24,8 @@ export const MultiplayerCellEdits = () => {
           sheetId: player.sheet_id,
           cellEdit,
           location: {
-            x: player.parsedSelection.cursor.x,
-            y: player.parsedSelection.cursor.y,
+            x: player.parsedSelection.cursorPosition.x,
+            y: player.parsedSelection.cursorPosition.y,
             sheetId: player.sheet_id,
           },
           playerColor: player.colorString,

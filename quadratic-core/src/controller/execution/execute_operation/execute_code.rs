@@ -97,8 +97,9 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::ComputeCode { sheet_pos } = op {
-            if !transaction.is_user() {
-                unreachable!("Only a user transaction should have a ComputeCode");
+            if !transaction.is_user() && !transaction.is_server() {
+                dbgjs!("Only a user/server transaction should have a ComputeCode");
+                return;
             }
             let sheet_id = sheet_pos.sheet_id;
             let Some(sheet) = self.try_sheet(sheet_id) else {
@@ -122,6 +123,12 @@ impl GridController {
                 CodeCellLanguage::Formula => {
                     self.run_formula(transaction, sheet_pos, code);
                 }
+                CodeCellLanguage::Connection { kind, id } => {
+                    self.run_connection(transaction, sheet_pos, code, kind, id);
+                }
+                CodeCellLanguage::Javascript => {
+                    self.run_javascript(transaction, sheet_pos, code);
+                }
             }
         }
     }
@@ -129,7 +136,12 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use crate::{controller::GridController, grid::CodeCellLanguage, CellValue, Pos, SheetPos};
+    use serial_test::serial;
+
+    use crate::{
+        controller::GridController, grid::CodeCellLanguage,
+        wasm_bindings::js::expect_js_call_count, CellValue, Pos, SheetPos,
+    };
 
     #[test]
     fn test_spilled_output_over_normal_cell() {
@@ -190,5 +202,29 @@ mod tests {
 
         let code_cell = sheet.code_run(Pos { x: 1, y: 0 });
         assert!(code_cell.unwrap().spill_error);
+    }
+
+    #[test]
+    #[serial]
+    fn execute_code() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_code_cell(
+            (0, 0, sheet_id).into(),
+            CodeCellLanguage::Javascript,
+            "code".to_string(),
+            None,
+        );
+        expect_js_call_count("jsRunJavascript", 1, true);
+
+        gc.set_code_cell(
+            (0, 0, sheet_id).into(),
+            CodeCellLanguage::Python,
+            "code".to_string(),
+            None,
+        );
+        expect_js_call_count("jsRunPython", 1, true);
+
+        // formula is already tested since it works solely in Rust
     }
 }

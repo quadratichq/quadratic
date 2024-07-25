@@ -7,6 +7,8 @@ if [ "$VERCEL_ENV" == "preview" ]; then
   echo "On preview branch. Setting VITE_QUADRATIC_API_URL to quadratic-api-dev-pr-$VERCEL_GIT_PULL_REQUEST_ID.herokuapp.com"
   export VITE_QUADRATIC_MULTIPLAYER_URL="wss://multiplayer-pr-$VERCEL_GIT_PULL_REQUEST_ID.quadratic-preview.com/ws"
   echo "On preview branch. Setting VITE_QUADRATIC_MULTIPLAYER_URL to wss://multiplayer-pr-$VERCEL_GIT_PULL_REQUEST_ID.quadratic-preview.com/ws"
+  export VITE_QUADRATIC_CONNECTION_URL="https://connection-pr-$VERCEL_GIT_PULL_REQUEST_ID.quadratic-preview.com"
+  echo "On preview branch. Setting VITE_QUADRATIC_CONNECTION_URL to https://connector-pr-$VERCEL_GIT_PULL_REQUEST_ID.quadratic-preview.com"
 fi
 
 # These commands are used in production on AWS Amplify
@@ -28,6 +30,8 @@ wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-cor
 
 echo 'Exporting TS/Rust types...'
 cargo run --bin export_types
+
+cd ..
 
 echo 'Building quadratic-rust-client...'
 npm run build --workspace=quadratic-rust-client

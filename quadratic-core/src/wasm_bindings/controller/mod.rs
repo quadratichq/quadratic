@@ -30,56 +30,65 @@ impl GridController {
         last_sequence_num: u32,
         initialize: bool,
     ) -> Result<GridController, JsValue> {
-        if let Ok(file) = file::import(file).map_err(|e| e.to_string()) {
-            let grid = GridController::from_grid(file, last_sequence_num as u64);
+        match file::import(file) {
+            Ok(file) => {
+                let grid = GridController::from_grid(file, last_sequence_num as u64);
 
-            // populate data for client and text renderer
-            if initialize {
-                // first recalculate all bounds in sheets
-                let mut html = vec![];
-                let sheets_info = grid
-                    .sheet_ids()
-                    .iter()
-                    .filter_map(|sheet_id| {
-                        grid.try_sheet(*sheet_id).map(|sheet| {
-                            html.extend(sheet.get_html_output());
-                            SheetInfo::from(sheet)
+                // populate data for client and text renderer
+                if initialize {
+                    // first recalculate all bounds in sheets
+                    let mut html = vec![];
+                    let sheets_info = grid
+                        .sheet_ids()
+                        .iter()
+                        .filter_map(|sheet_id| {
+                            grid.try_sheet(*sheet_id).map(|sheet| {
+                                html.extend(sheet.get_html_output());
+                                SheetInfo::from(sheet)
+                            })
                         })
-                    })
-                    .collect::<Vec<SheetInfo>>();
-                if let Ok(sheets_info) = serde_json::to_string(&sheets_info) {
-                    crate::wasm_bindings::js::jsSheetInfo(sheets_info);
-                }
-                if !html.is_empty() {
-                    if let Ok(html) = serde_json::to_string(&html) {
-                        crate::wasm_bindings::js::jsHtmlOutput(html);
+                        .collect::<Vec<SheetInfo>>();
+                    if let Ok(sheets_info) = serde_json::to_string(&sheets_info) {
+                        crate::wasm_bindings::js::jsSheetInfo(sheets_info);
                     }
-                }
-                grid.sheet_ids().iter().for_each(|sheet_id| {
-                    let fills = grid.sheet_fills(*sheet_id);
-                    if let Ok(fills) = serde_json::to_string(&fills) {
-                        crate::wasm_bindings::js::jsSheetFills(sheet_id.to_string(), fills);
-                    }
-                    if let Some(sheet) = grid.try_sheet(*sheet_id) {
-                        let borders = sheet.render_borders();
-                        if let Ok(borders) = serde_json::to_string(&borders) {
-                            crate::wasm_bindings::js::jsSheetBorders(sheet_id.to_string(), borders);
+                    if !html.is_empty() {
+                        if let Ok(html) = serde_json::to_string(&html) {
+                            crate::wasm_bindings::js::jsHtmlOutput(html);
                         }
-                        let code = sheet.get_all_render_code_cells();
-                        if !code.is_empty() {
-                            if let Ok(code) = serde_json::to_string(&code) {
-                                crate::wasm_bindings::js::jsSheetCodeCell(
+                    }
+                    grid.sheet_ids().iter().for_each(|sheet_id| {
+                        let fills = grid.sheet_fills(*sheet_id);
+                        if let Ok(fills) = serde_json::to_string(&fills) {
+                            crate::wasm_bindings::js::jsSheetFills(sheet_id.to_string(), fills);
+                        }
+                        if let Some(sheet) = grid.try_sheet(*sheet_id) {
+                            let borders = sheet.render_borders();
+                            if let Ok(borders) = serde_json::to_string(&borders) {
+                                crate::wasm_bindings::js::jsSheetBorders(
                                     sheet_id.to_string(),
-                                    code,
+                                    borders,
                                 );
                             }
+                            let code = sheet.get_all_render_code_cells();
+                            if !code.is_empty() {
+                                if let Ok(code) = serde_json::to_string(&code) {
+                                    crate::wasm_bindings::js::jsSheetCodeCell(
+                                        sheet_id.to_string(),
+                                        code,
+                                    );
+                                }
+                            }
+                            // sends all sheet fills to the client
+                            sheet.send_sheet_fills();
+
+                            // sends all images to the client
+                            sheet.send_all_images();
                         }
-                    }
-                });
+                    });
+                }
+                Ok(grid)
             }
-            Ok(grid)
-        } else {
-            Err(JsValue::from_str("Failed to import grid"))
+            Err(e) => Err(JsValue::from_str(&e.to_string())),
         }
     }
 

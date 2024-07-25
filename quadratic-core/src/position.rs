@@ -1,19 +1,28 @@
-use std::fmt;
-use std::ops::Range;
-
+use crate::{
+    controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
+    grid::SheetId,
+    ArraySize,
+};
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "js")]
-use wasm_bindgen::prelude::*;
-
-use crate::{grid::SheetId, ArraySize, QUADRANT_SIZE};
+use std::ops::Range;
+use std::{fmt, str::FromStr};
 
 /// Cell position {x, y}.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[derive(
-    Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd,
+    Serialize,
+    Deserialize,
+    Debug,
+    Default,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    ts_rs::TS,
 )]
-#[cfg_attr(feature = "js", wasm_bindgen)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct Pos {
     /// Column
     #[cfg_attr(test, proptest(strategy = "-4..=4_i64"))]
@@ -40,8 +49,8 @@ impl Pos {
     /// Returns which quadrant the cell position is in.
     pub fn quadrant(self) -> (i64, i64) {
         (
-            self.x.div_euclid(QUADRANT_SIZE as _),
-            self.y.div_euclid(QUADRANT_SIZE as _),
+            self.x.div_euclid(CELL_SHEET_WIDTH as _),
+            self.y.div_euclid(CELL_SHEET_HEIGHT as _),
         )
     }
 
@@ -76,9 +85,19 @@ impl fmt::Display for Pos {
 
 /// Rectangular region of cells.
 #[derive(
-    Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd,
+    Serialize,
+    Deserialize,
+    Debug,
+    Default,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    ts_rs::TS,
 )]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), wasm_bindgen)]
 pub struct Rect {
     /// Upper-left corner.
     pub min: Pos,
@@ -86,6 +105,14 @@ pub struct Rect {
     pub max: Pos,
 }
 impl Rect {
+    /// Creates a rect from two x, y positions
+    pub fn new(x0: i64, y0: i64, x1: i64, y1: i64) -> Rect {
+        Rect {
+            min: Pos { x: x0, y: y0 },
+            max: Pos { x: x1, y: y1 },
+        }
+    }
+
     /// Constructs a rectangle spanning two positions
     pub fn new_span(pos1: Pos, pos2: Pos) -> Rect {
         use std::cmp::{max, min};
@@ -110,6 +137,7 @@ impl Rect {
         }
     }
 
+    /// Creates a rectangle from one x, y position and a width and height
     pub fn from_numbers(x: i64, y: i64, w: i64, h: i64) -> Rect {
         Rect {
             min: Pos { x, y },
@@ -221,6 +249,50 @@ impl Rect {
             max: Pos { x: max_x, y: max_y },
         }
     }
+
+    pub fn count(&self) -> usize {
+        self.width() as usize * self.height() as usize
+    }
+
+    /// Creates a bounding rect from a list of positions
+    pub fn from_positions(positions: Vec<Pos>) -> Option<Rect> {
+        if positions.is_empty() {
+            return None;
+        }
+
+        let mut min_x = i64::MAX;
+        let mut min_y = i64::MAX;
+        let mut max_x = i64::MIN;
+        let mut max_y = i64::MIN;
+
+        for pos in positions {
+            min_x = min_x.min(pos.x);
+            min_y = min_y.min(pos.y);
+            max_x = max_x.max(pos.x);
+            max_y = max_y.max(pos.y);
+        }
+
+        Some(Rect {
+            min: Pos { x: min_x, y: min_y },
+            max: Pos { x: max_x, y: max_y },
+        })
+    }
+
+    pub fn extend_x(&mut self, x: i64) {
+        self.min.x = self.min.x.min(x);
+        self.max.x = self.max.x.max(x);
+    }
+
+    pub fn extend_y(&mut self, y: i64) {
+        self.min.y = self.min.y.min(y);
+        self.max.y = self.max.y.max(y);
+    }
+}
+
+impl From<Pos> for Rect {
+    fn from(pos: Pos) -> Self {
+        Rect { min: pos, max: pos }
+    }
 }
 
 impl From<SheetRect> for Rect {
@@ -232,9 +304,7 @@ impl From<SheetRect> for Rect {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone)]
-#[cfg_attr(feature = "js", wasm_bindgen)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, ts_rs::TS)]
 pub struct ScreenRect {
     pub x: f64,
     pub y: f64,
@@ -263,9 +333,16 @@ impl From<(i64, i64, SheetId)> for SheetPos {
     }
 }
 
+impl FromStr for SheetPos {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        serde_json::from_str::<SheetPos>(s).map_err(|e| e.to_string())
+    }
+}
+
 /// Used for referencing a range during computation.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", wasm_bindgen)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct SheetRect {
     /// Upper-left corner.
@@ -455,6 +532,14 @@ impl From<(i64, i64, i64, i64, SheetId)> for SheetRect {
     }
 }
 
+impl FromStr for SheetRect {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        serde_json::from_str::<SheetRect>(s).map_err(|e| e.to_string())
+    }
+}
+
 impl SheetPos {
     pub fn new(sheet_id: SheetId, x: i64, y: i64) -> Self {
         Self { sheet_id, x, y }
@@ -463,7 +548,11 @@ impl SheetPos {
 
 #[cfg(test)]
 mod test {
-    use crate::{grid::SheetId, Pos, Rect, SheetPos, SheetRect, QUADRANT_SIZE};
+    use crate::{
+        controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
+        grid::SheetId,
+        Pos, Rect, SheetPos, SheetRect,
+    };
 
     #[test]
     fn test_to_sheet_pos() {
@@ -481,14 +570,24 @@ mod test {
 
     #[test]
     fn test_quadrant_size() {
-        let pos = Pos { x: 1, y: 2 };
-        assert_eq!(pos.quadrant(), (0, 0));
-        let quadrant_size = QUADRANT_SIZE as i64;
-        let pos = Pos {
-            x: quadrant_size + 1,
-            y: quadrant_size + 1,
-        };
-        assert_eq!(pos.quadrant(), (1, 1));
+        assert_eq!(Pos { x: 1, y: 2 }.quadrant(), (0, 0));
+        assert_eq!(Pos { x: -1, y: -2 }.quadrant(), (-1, -1));
+        assert_eq!(
+            Pos {
+                x: CELL_SHEET_WIDTH as _,
+                y: CELL_SHEET_HEIGHT as _
+            }
+            .quadrant(),
+            (1, 1)
+        );
+        assert_eq!(
+            Pos {
+                x: -2 * CELL_SHEET_WIDTH as i64,
+                y: -2 * CELL_SHEET_HEIGHT as i64
+            }
+            .quadrant(),
+            (-2, -2)
+        );
     }
 
     #[test]
@@ -770,5 +869,65 @@ mod test {
                 sheet_id
             }
         );
+    }
+
+    #[test]
+    fn count() {
+        let rect = Rect::from_numbers(1, 2, 3, 4);
+        assert_eq!(rect.count(), 12);
+    }
+
+    #[test]
+    fn rect_from_positions() {
+        let positions = vec![Pos { x: 1, y: 1 }, Pos { x: 2, y: 2 }];
+        let bounds = Rect::from_positions(positions).unwrap();
+        assert_eq!(bounds.min.x, 1);
+        assert_eq!(bounds.min.y, 1);
+        assert_eq!(bounds.max.x, 2);
+        assert_eq!(bounds.max.y, 2);
+    }
+
+    #[test]
+    fn sheet_pos_from_str() {
+        let sheet_id = SheetId::new();
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 2,
+            sheet_id,
+        };
+        let sheet_pos_str = serde_json::to_string(&sheet_pos).unwrap();
+        let parsed_sheet_pos: SheetPos = sheet_pos_str.parse().unwrap();
+        assert_eq!(parsed_sheet_pos, sheet_pos);
+    }
+
+    #[test]
+    fn rect_from_pos() {
+        let pos = Pos { x: 1, y: 2 };
+        let rect: Rect = pos.into();
+        assert_eq!(rect.min, pos);
+        assert_eq!(rect.max, pos);
+    }
+
+    #[test]
+    fn rect_new() {
+        let rect = Rect::new(0, 1, 2, 3);
+        assert_eq!(rect.min, Pos { x: 0, y: 1 });
+        assert_eq!(rect.max, Pos { x: 2, y: 3 });
+    }
+
+    #[test]
+    fn extend_x() {
+        let mut rect = Rect::from_numbers(1, 2, 3, 4);
+        rect.extend_x(5);
+        assert_eq!(rect.min, Pos { x: 1, y: 2 });
+        assert_eq!(rect.max, Pos { x: 5, y: 5 });
+    }
+
+    #[test]
+    fn extend_y() {
+        let mut rect = Rect::from_numbers(1, 2, 3, 4);
+        rect.extend_y(5);
+        assert_eq!(rect.min, Pos { x: 1, y: 2 });
+        assert_eq!(rect.max, Pos { x: 3, y: 5 });
     }
 }

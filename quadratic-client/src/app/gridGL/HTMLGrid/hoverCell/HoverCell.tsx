@@ -1,6 +1,7 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { pluralize } from '@/app/helpers/pluralize';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { useGridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
@@ -74,6 +75,7 @@ export const HoverCell = () => {
     const asyncFunction = async () => {
       const code = cell ? await quadraticCore.getCodeCell(sheets.sheet.id, Number(cell.x), Number(cell.y)) : undefined;
       const renderCodeCell = cell as JsRenderCodeCell | undefined;
+      const language = getLanguage(renderCodeCell?.language);
       const editingCell = cell as EditingCell | undefined;
       const spillError = renderCodeCell ? renderCodeCell.spill_error : undefined;
       if (spillError) {
@@ -86,12 +88,12 @@ export const HoverCell = () => {
               <div>
                 To fix this, remove content in {pluralize('cell', spillError.length)}{' '}
                 {spillError.map((pos, index) => (
-                  <>
-                    <code className="hover-cell-code" key={index}>
+                  <div key={`${pos.x},${pos.y}`}>
+                    <code className="hover-cell-code">
                       ({String(pos.x)}, {String(pos.y)})
                     </code>
                     {index !== spillError.length - 1 ? (index === spillError.length - 2 ? ', and ' : ', ') : '.'}
-                  </>
+                  </div>
                 ))}
               </div>
             </div>
@@ -107,7 +109,7 @@ export const HoverCell = () => {
                 <div>There was an error running the code in this cell.</div>
                 <div className="hover-cell-error-msg">{code.std_err}</div>
               </div>
-              <div className="hover-cell-header-space">{renderCodeCell.language} Code</div>
+              <div className="hover-cell-header-space">{language} Code</div>
               <div className="code-body">{code?.code_string}</div>
             </>
           );
@@ -116,7 +118,7 @@ export const HoverCell = () => {
         setOnlyCode(true);
         setText(
           <>
-            <div className="hover-cell-header">{renderCodeCell?.language} Code</div>
+            <div className="hover-cell-header">{language} Code</div>
             <div className="code-body">{code?.code_string}</div>
           </>
         );

@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "target": "es6",
+    "noImplicitAny": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "sourceMap": false,
+    "outDir": "dist"
+  },
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "scripts/**/*.ts"],
+  "exclude": ["src/**/*.test.ts", "scripts/templates/*.ts"]
+}

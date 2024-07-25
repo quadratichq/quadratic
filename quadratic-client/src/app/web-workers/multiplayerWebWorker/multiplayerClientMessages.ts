@@ -84,12 +84,23 @@ export interface MultiplayerClientReload {
   type: 'multiplayerClientReload';
 }
 
+export interface MultiplayerClientRefreshJwt {
+  type: 'multiplayerClientRefreshJwt';
+  id: number;
+}
+
+export interface ClientMultiplayerRefreshJwt {
+  type: 'clientMultiplayerRefreshJwt';
+  id: number;
+}
+
 export type MultiplayerClientMessage =
   | MultiplayerClientState
   | MultiplayerClientUserUpdate
   | MultiplayerClientUsersInRoom
   | MultiplayerClientUserUpdate
-  | MultiplayerClientReload;
+  | MultiplayerClientReload
+  | MultiplayerClientRefreshJwt;
 
 export type ClientMultiplayerMessage =
   | ClientMultiplayerInit
@@ -99,4 +110,5 @@ export type ClientMultiplayerMessage =
   | ClientMultiplayerCellEdit
   | clientMultiplayerViewport
   | clientMultiplayerCodeRunning
-  | ClientMultiplayerFollow;
+  | ClientMultiplayerFollow
+  | ClientMultiplayerRefreshJwt;

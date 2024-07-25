@@ -1,7 +1,8 @@
 import { useUndo } from '@/app/events/useUndo';
+import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
-import { useRootRouteLoaderData } from '@/router';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
@@ -12,7 +13,7 @@ import { pixiApp } from '../gridGL/pixiApp/PixiApp';
 import QuadraticUIContext from './QuadraticUIContext';
 import { QuadraticLoading } from './loading/QuadraticLoading';
 
-export default function QuadraticApp() {
+export function QuadraticApp() {
   const { loggedInUser } = useRootRouteLoaderData();
 
   const [loading, setLoading] = useState(true);
@@ -28,6 +29,7 @@ export default function QuadraticApp() {
     // Load python and populate web workers (if supported)
     if (!isMobile && hasPermissionToEditFile(permissions)) {
       pythonWebWorker.init();
+      javascriptWebWorker.init();
     }
   }, [permissions]);
 

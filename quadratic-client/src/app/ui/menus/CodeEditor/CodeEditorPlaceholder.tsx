@@ -1,5 +1,8 @@
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { useEffect, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 import { useCodeEditor } from './CodeEditorContext';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
@@ -10,9 +13,14 @@ export function CodeEditorPlaceholder({
   editorContent: string | undefined;
   setEditorContent: (str: string | undefined) => void;
 }) {
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const codeCell = getCodeCell(editorInteractionState.mode);
   const [showPlaceholder, setShowPlaceholder] = useLocalStorage<boolean>('showCodeEditorPlaceholder', true);
   const [shouldRunEffect, setShouldRunEffect] = useState<boolean>(false);
-  const { editorRef, setShowSnippetsPopover } = useCodeEditor();
+  const {
+    editorRef,
+    showSnippetsPopover: [, setShowSnippetsPopover],
+  } = useCodeEditor();
 
   // When the user chooses to autofill the editor with a predefined snippet,
   // focus the editor and set the initial cursor position
@@ -26,6 +34,10 @@ export function CodeEditorPlaceholder({
   }, [editorContent, shouldRunEffect]);
 
   if (editorContent) {
+    return null;
+  }
+
+  if (codeCell?.id === 'Formula') {
     return null;
   }
 
@@ -47,24 +59,42 @@ export function CodeEditorPlaceholder({
       }}
     >
       Start typing to dismiss,{' '}
-      <button
-        className="pointer-events-auto italic underline"
-        onClick={() => {
-          setShowSnippetsPopover(true);
-        }}
-      >
-        insert a code snippet
-      </button>
-      , or{' '}
-      <button
-        className={`pointer-events-auto italic underline`}
-        onClick={() => {
-          setShowPlaceholder(false);
-        }}
-      >
-        don’t show this again
-      </button>
-      .
+      {(codeCell?.id === 'Python' || codeCell?.id === 'Javascript') && (
+        <>
+          <button
+            className="pointer-events-auto italic underline"
+            onClick={() => {
+              setShowSnippetsPopover(true);
+            }}
+          >
+            insert a code snippet
+          </button>
+          , or{' '}
+          <button
+            className={`pointer-events-auto italic underline`}
+            onClick={() => {
+              setShowPlaceholder(false);
+            }}
+          >
+            don’t show this again
+          </button>
+          .
+        </>
+      )}
+      {codeCell?.type === 'connection' && (
+        <>
+          explore your connection schema below, or{' '}
+          <button
+            className={`pointer-events-auto italic underline`}
+            onClick={() => {
+              setShowPlaceholder(false);
+            }}
+          >
+            don’t show this again
+          </button>
+          .
+        </>
+      )}
     </div>
   );
 }

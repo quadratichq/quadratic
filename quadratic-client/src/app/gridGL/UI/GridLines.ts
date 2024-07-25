@@ -1,3 +1,6 @@
+//! Draws grid lines on the canvas. The grid lines fade as the user zooms out,
+//! and disappears at higher zoom levels.
+
 import { Graphics, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { colors } from '../../theme/colors';
