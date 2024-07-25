@@ -7,7 +7,6 @@ import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import QuadraticGrid from '../gridGL/QuadraticGrid';
 import { pixiApp } from '../gridGL/pixiApp/PixiApp';
-import { focusGrid } from '../helpers/focusGrid';
 import { isEmbed } from '../helpers/isEmbed';
 import { TopBar } from '../ui/menus/TopBar/TopBar';
 import { UpdateAlertVersion } from './UpdateAlertVersion';
@@ -94,9 +93,6 @@ export default function QuadraticUI() {
               ...prevState,
               showShareFileMenu: false,
             }));
-            setTimeout(() => {
-              focusGrid();
-            }, 200);
           }}
           name={name}
           uuid={uuid}

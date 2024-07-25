@@ -101,7 +101,10 @@ class CorePython {
   ) {
     const cells = core.getCells(transactionId, x, y, w, h, sheet, lineNumber);
     const int32View = new Int32Array(sharedBuffer, 0, 3);
-    const length = cells.length;
+
+    // need to get the bytes of the string (which covers unicode characters)
+    const length = new Blob([cells]).size;
+
     Atomics.store(int32View, 1, length);
     if (length !== 0) {
       const id = this.id++;

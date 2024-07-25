@@ -156,7 +156,7 @@ export const useEditorCellHighlights = (
     };
 
     onChangeModel();
-    editor.onDidChangeModelContent(() => decorations.current?.clear());
+    editor.onDidChangeModelContent(() => onChangeModel());
   }, [
     isValidRef,
     editorRef,

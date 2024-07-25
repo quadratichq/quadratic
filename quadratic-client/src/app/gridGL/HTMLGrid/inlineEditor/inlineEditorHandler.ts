@@ -290,12 +290,10 @@ class InlineEditorHandler {
     this.formula = formula;
     if (formula) {
       inlineEditorMonaco.setLanguage('Formula');
-      this.formulaExpandButton.style.display = 'block';
 
       // need to show the change to A1 notation
       pixiApp.headings.dirty = true;
     } else {
-      this.formulaExpandButton.style.display = 'none';
       inlineEditorMonaco.setLanguage('plaintext');
     }
 

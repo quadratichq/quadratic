@@ -2,6 +2,7 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { expectError } from '../../tests/helpers';
+import { clearDb } from '../../tests/testDataGenerator';
 
 beforeEach(async () => {
   const teamOwner = await dbClient.user.create({
@@ -44,14 +45,7 @@ beforeEach(async () => {
   });
 });
 
-afterEach(async () => {
-  await dbClient.$transaction([
-    dbClient.teamInvite.deleteMany(),
-    dbClient.userTeamRole.deleteMany(),
-    dbClient.user.deleteMany(),
-    dbClient.team.deleteMany(),
-  ]);
-});
+afterEach(clearDb);
 
 describe('GET /v0/teams', () => {
   describe('bad request', () => {

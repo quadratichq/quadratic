@@ -10,7 +10,6 @@ import { provideFeedbackAction } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { debugShowFPS } from '../../../debugFlags';
 import { sheets } from '../../../grid/controller/Sheets';
-import { focusGrid } from '../../../helpers/focusGrid';
 import { colors } from '../../../theme/colors';
 import BottomBarItem from './BottomBarItem';
 import { KernelMenu } from './KernelMenu';
@@ -57,9 +56,6 @@ export const BottomBar = () => {
       ...editorInteractionState,
       showGoToMenu: true,
     });
-
-    // Set focus back to Grid
-    focusGrid();
   };
 
   const showOnDesktop = useMediaQuery(theme.breakpoints.up('md'));
