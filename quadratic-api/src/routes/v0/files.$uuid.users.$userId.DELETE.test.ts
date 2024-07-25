@@ -1,8 +1,7 @@
 import request from 'supertest';
 import { app } from '../../app';
-import dbClient from '../../dbClient';
 import { expectError, getUserIdByAuth0Id } from '../../tests/helpers';
-import { createFile, createTeam, createUser } from '../../tests/testDataGenerator';
+import { clearDb, createFile, createTeam, createUser } from '../../tests/testDataGenerator';
 
 beforeEach(async () => {
   // Create some users
@@ -40,16 +39,7 @@ beforeEach(async () => {
   });
 });
 
-afterEach(async () => {
-  await dbClient.$transaction([
-    dbClient.userFileRole.deleteMany(),
-    dbClient.userTeamRole.deleteMany(),
-    dbClient.fileCheckpoint.deleteMany(),
-    dbClient.file.deleteMany(),
-    dbClient.team.deleteMany(),
-    dbClient.user.deleteMany(),
-  ]);
-});
+afterEach(clearDb);
 
 describe('DELETE /v0/files/:uuid/users/:userId', () => {
   describe('invalid request', () => {

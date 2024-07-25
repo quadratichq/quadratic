@@ -19,6 +19,7 @@ impl Sheet {
     /// 2. Columns
     /// 3. Rows
     /// 4. Rects
+    ///
     /// If the selection is empty or the count > max_count then it returns None.
     /// It ignores CellValue::Blank, and CellValue::Code (since it uses the CodeRun instead).
     ///

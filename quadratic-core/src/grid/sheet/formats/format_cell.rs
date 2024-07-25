@@ -57,6 +57,7 @@ impl Sheet {
     /// Sets a cell's format based on a FormatUpdate. Returns FormatUpdate, which is
     /// used to undo the change.
     /// * send_client - if true, send the changes to the client
+    ///
     /// TODO: this will be replaced by the new column.format.
     pub fn set_format_cell(
         &mut self,

@@ -26,7 +26,7 @@ export default defineConfig(() => {
           next();
         });
       },
-    }
+    },
   ];
   if (process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_AUTH_TOKEN !== 'none') {
     plugins.push(

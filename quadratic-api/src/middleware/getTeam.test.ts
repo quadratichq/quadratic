@@ -2,6 +2,7 @@ import request from 'supertest';
 import { app } from '../app';
 import dbClient from '../dbClient';
 import { expectError } from '../tests/helpers';
+import { clearDb } from '../tests/testDataGenerator';
 
 beforeAll(async () => {
   const userOwner = await dbClient.user.create({
@@ -31,13 +32,7 @@ beforeAll(async () => {
   });
 });
 
-afterAll(async () => {
-  await dbClient.$transaction([
-    dbClient.userTeamRole.deleteMany(),
-    dbClient.user.deleteMany(),
-    dbClient.team.deleteMany(),
-  ]);
-});
+afterAll(clearDb);
 
 jest.mock('auth0', () => {
   return {
