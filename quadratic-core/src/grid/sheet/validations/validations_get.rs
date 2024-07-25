@@ -76,6 +76,16 @@ impl Validations {
         self.cell_validations.get(&pos).copied()
     }
 
+    /// Gets the number of validations in the Sheet.
+    pub fn len(&self) -> usize {
+        self.validations.len()
+    }
+
+    /// Returns true if there are no validations in the Sheet.
+    pub fn is_empty(&self) -> bool {
+        self.validations.is_empty()
+    }
+
     // Validate a cell value against its validation rule.
     pub fn validate(&self, sheet: &Sheet, pos: Pos, cell_value: &CellValue) -> bool {
         if let Some(rule) = self.validation(Selection::pos(pos.x, pos.y, sheet.id)) {
@@ -170,5 +180,32 @@ mod tests {
         validations.cell_validations.insert((0, 0).into(), id);
 
         assert_eq!(validations.validation_id((0, 0).into()), Some(id));
+    }
+
+    #[test]
+    fn len() {
+        let mut validations = Validations::default();
+        validations.validations.insert(
+            Uuid::new_v4(),
+            Validation {
+                id: Uuid::new_v4(),
+                name: String::new(),
+                rule: ValidationRule::List(ValidationList {
+                    source: ValidationListSource::List(vec!["test".to_string()]),
+                    ignore_blank: true,
+                    drop_down: true,
+                }),
+                message: Default::default(),
+                error: Default::default(),
+            },
+        );
+
+        assert_eq!(validations.len(), 1);
+    }
+
+    #[test]
+    fn is_empty() {
+        let validations = Validations::default();
+        assert!(validations.is_empty());
     }
 }

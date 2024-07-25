@@ -103,11 +103,13 @@ impl Validations {
     /// Returns reverse operations.
     fn link_validation_all(&mut self, id: Uuid, sheet_id: SheetId) -> Vec<Operation> {
         let mut reverse = vec![];
-        reverse.push(Operation::SetValidationSelection {
-            selection: Selection::all(sheet_id),
-            validation_id: self.all,
-        });
-        self.all = Some(id);
+        if self.all != Some(id) {
+            reverse.push(Operation::SetValidationSelection {
+                selection: Selection::all(sheet_id),
+                validation_id: self.all,
+            });
+            self.all = Some(id);
+        }
 
         self.cell_validations.retain(|pos, id| {
             reverse.push(Operation::SetValidationSelection {
@@ -219,22 +221,15 @@ impl Validations {
         validation_id: Uuid,
         validation: Option<Validation>,
     ) -> Vec<Operation> {
-        // let name = create
-        //     .name
-        //     .unwrap_or(format!("Validation {}", self.validations.len() + 1));
-
-        // let id = Uuid::new_v4();
-        // let validation = Validation {
-        //     id,
-        //     name,
-        //     rule: create.rule,
-        //     message: create.message,
-        //     error: create.error,
-        // };
-
         let mut reverse = vec![];
+
         if let Some(validation) = validation {
+            // nothing to do if the validation hasn't changed
             // add the validation
+            if self.validations.get(&validation_id) == Some(&validation) {
+                return reverse;
+            }
+
             reverse.push(Operation::AddValidation {
                 sheet_id,
                 validation_id: validation.id,
