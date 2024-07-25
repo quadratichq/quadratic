@@ -103,13 +103,23 @@ impl GridController {
     ) {
         if let Operation::SetCellFormatsSelection { selection, formats } = op {
             if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
-                let reverse_operations = sheet.set_formats_selection(&selection, &formats);
+                let reverse_operations = sheet.set_formats_selection(
+                    &selection,
+                    &formats,
+                    transaction.batch_client_update_rect.is_none(),
+                );
+
+                if reverse_operations.is_empty() {
+                    return;
+                }
 
                 if !transaction.is_server() {
                     self.send_updated_bounds_selection(&selection, true);
                 }
 
-                transaction.generate_thumbnail |= self.thumbnail_dirty_selection(&selection);
+                if transaction.batch_client_update_rect.is_none() {
+                    transaction.generate_thumbnail |= self.thumbnail_dirty_selection(&selection);
+                }
 
                 transaction
                     .forward_operations

@@ -130,7 +130,7 @@ impl Sheet {
             let columns = self.find_overlapping_format_columns(format_update);
             if !columns.is_empty() {
                 let formats = Formats::repeat(format_clear.clone(), columns.len());
-                self.set_formats_columns(&columns, &formats);
+                self.set_formats_columns(&columns, &formats, true);
                 ops.push(Operation::SetCellFormatsSelection {
                     formats: Formats::repeat(format_clear.clone(), columns.len()),
                     selection: Selection {
@@ -145,7 +145,7 @@ impl Sheet {
             let rows = self.find_overlapping_format_rows(format_update);
             if !rows.is_empty() {
                 let formats = Formats::repeat(format_clear.clone(), rows.len());
-                self.set_formats_rows(&rows, &formats);
+                self.set_formats_rows(&rows, &formats, true);
                 ops.push(Operation::SetCellFormatsSelection {
                     formats: Formats::repeat(format_clear.clone(), rows.len()),
                     selection: Selection {
@@ -330,7 +330,7 @@ mod tests {
             all: true,
             ..Default::default()
         };
-        let reverse = sheet.set_formats_selection(&sel, &formats);
+        let reverse = sheet.set_formats_selection(&sel, &formats, true);
         assert_eq!(
             sheet.format_all,
             Some(Format {
@@ -358,7 +358,7 @@ mod tests {
             _ => panic!("Expected SetCellFormatsSelection"),
         };
         let formats = Formats::repeat(reverse_update, 1);
-        sheet.set_formats_selection(&sel, &formats);
+        sheet.set_formats_selection(&sel, &formats, true);
         assert_eq!(sheet.format_all, None);
     }
 
@@ -398,7 +398,7 @@ mod tests {
             all: true,
             ..Default::default()
         };
-        let reverse = sheet.set_formats_selection(&sel, &formats);
+        let reverse = sheet.set_formats_selection(&sel, &formats, true);
         assert_eq!(
             sheet.format_all,
             Some(Format {

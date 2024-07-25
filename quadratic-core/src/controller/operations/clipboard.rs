@@ -562,6 +562,7 @@ mod test {
                 },
                 2,
             ),
+            true,
         );
         sheet.set_formats_rows(
             &[3, 4],
@@ -572,6 +573,7 @@ mod test {
                 },
                 2,
             ),
+            true,
         );
 
         let sheet = gc.sheet(sheet_id);

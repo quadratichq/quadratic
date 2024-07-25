@@ -36,7 +36,12 @@ impl Sheet {
     /// need to update html cells.
     ///
     /// Returns the reverse operations.
-    pub fn set_formats_rows(&mut self, rows: &[i64], formats: &Formats) -> Vec<Operation> {
+    pub fn set_formats_rows(
+        &mut self,
+        rows: &[i64],
+        formats: &Formats,
+        send_client: bool,
+    ) -> Vec<Operation> {
         let mut old_formats = Formats::default();
         let mut formats_iter = formats.iter_values();
 
@@ -103,6 +108,10 @@ impl Sheet {
             }
         });
 
+        if old_formats == *formats {
+            return vec![];
+        }
+
         // adds operations to revert changes to the columns
         let mut ops = vec![];
         ops.push(Operation::SetCellFormatsSelection {
@@ -134,19 +143,21 @@ impl Sheet {
             });
         }
 
-        // force a rerender of all impacted cells
-        if !render_rows.is_empty() {
-            self.send_row_render_cells(render_rows.into_iter().collect());
-        }
+        if send_client {
+            // force a rerender of all impacted cells
+            if !render_rows.is_empty() {
+                self.send_row_render_cells(render_rows.into_iter().collect());
+            }
 
-        // force a rerender of all column, row, and sheet fills
-        if render_row_fills {
-            self.send_sheet_fills();
-        }
+            // force a rerender of all column, row, and sheet fills
+            if render_row_fills {
+                self.send_sheet_fills();
+            }
 
-        // send any update cell fills
-        if !render_fills.is_empty() {
-            self.send_fills(&render_fills);
+            // send any update cell fills
+            if !render_fills.is_empty() {
+                self.send_fills(&render_fills);
+            }
         }
 
         ops
@@ -194,7 +205,7 @@ mod tests {
             3,
         );
         let rows = vec![0, 1, 2];
-        let reverse = sheet.set_formats_rows(&rows, &formats);
+        let reverse = sheet.set_formats_rows(&rows, &formats, true);
         assert_eq!(
             sheet.format_row(0),
             Format {
@@ -246,7 +257,7 @@ mod tests {
             }
             _ => panic!("Expected SetCellFormatsSelection"),
         };
-        sheet.set_formats_rows(&rows, &reverse_formats);
+        sheet.set_formats_rows(&rows, &reverse_formats, true);
         assert_eq!(sheet.formats_rows.get(&0), None);
         assert_eq!(sheet.formats_rows.get(&1), None);
         assert_eq!(sheet.formats_rows.get(&2), None);
@@ -271,7 +282,7 @@ mod tests {
             3,
         );
         let rows = vec![0, 1, 2];
-        let reverse = sheet.set_formats_rows(&rows, &formats);
+        let reverse = sheet.set_formats_rows(&rows, &formats, true);
         assert_eq!(sheet.format_cell(0, 0, false), Format::default());
         assert_eq!(sheet.format_row(0).bold, Some(true));
         assert_eq!(reverse.len(), 2);
@@ -303,7 +314,7 @@ mod tests {
             }
             _ => panic!("Expected SetCellFormatsSelection"),
         };
-        sheet.set_formats_selection(&reverse_selection, &reverse_formats);
+        sheet.set_formats_selection(&reverse_selection, &reverse_formats, true);
         assert_eq!(
             sheet.format_cell(0, 0, false),
             Format {
@@ -340,6 +351,7 @@ mod tests {
                 },
                 1,
             ),
+            true,
         );
 
         // cell format is cleared because of the row format change
@@ -377,7 +389,7 @@ mod tests {
             3,
         );
         let rows = vec![0, 1, 2];
-        let reverse = sheet.set_formats_rows(&rows, &formats);
+        let reverse = sheet.set_formats_rows(&rows, &formats, true);
         assert_eq!(
             sheet.formats_rows.get(&0).unwrap().1,
             sheet.formats_rows.get(&1).unwrap().1

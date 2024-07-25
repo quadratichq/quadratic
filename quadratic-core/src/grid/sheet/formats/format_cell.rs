@@ -165,6 +165,7 @@ mod tests {
                 },
                 1,
             ),
+            true,
         );
         sheet.set_formats_rows(
             &[0],
@@ -175,6 +176,7 @@ mod tests {
                 },
                 1,
             ),
+            true,
         );
         assert_eq!(
             sheet.format_cell(0, 0, true),
@@ -253,6 +255,7 @@ mod tests {
                 },
                 1,
             ),
+            true,
         );
         assert_eq!(sheet.decimal_places(0, 0), Some(3));
 
@@ -265,6 +268,7 @@ mod tests {
                 },
                 1,
             ),
+            true,
         );
         assert_eq!(sheet.decimal_places(0, 0), Some(2));
 

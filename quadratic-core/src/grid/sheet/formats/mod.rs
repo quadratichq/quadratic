@@ -63,19 +63,20 @@ impl Sheet {
         &mut self,
         selection: &Selection,
         formats: &Formats,
+        send_client: bool,
     ) -> Vec<Operation> {
         if selection.all {
             self.set_format_all(formats)
         } else {
             let mut ops = vec![];
             if let Some(columns) = selection.columns.as_ref() {
-                ops.extend(self.set_formats_columns(columns, formats));
+                ops.extend(self.set_formats_columns(columns, formats, send_client));
             }
             if let Some(rows) = selection.rows.as_ref() {
-                ops.extend(self.set_formats_rows(rows, formats));
+                ops.extend(self.set_formats_rows(rows, formats, send_client));
             }
             if let Some(rects) = selection.rects.as_ref() {
-                ops.extend(self.set_formats_rects(rects, formats));
+                ops.extend(self.set_formats_rects(rects, formats, send_client));
             }
             ops
         }
@@ -145,6 +146,7 @@ mod tests {
                 },
                 2,
             ),
+            true,
         );
         sheet.set_formats_rows(
             &[1, 2],
@@ -155,6 +157,7 @@ mod tests {
                 },
                 2,
             ),
+            true,
         );
         let selection = Selection {
             columns: Some(vec![2]),
