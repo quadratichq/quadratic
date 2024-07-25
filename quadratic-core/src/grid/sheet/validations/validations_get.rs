@@ -3,7 +3,7 @@ use uuid::Uuid;
 use crate::{grid::Sheet, selection::Selection, CellValue, Pos};
 
 use super::{
-    validation::{Validation, ValidationCell, ValidationCreate},
+    validation::{Validation, ValidationCell},
     validation_rules::{validation_list::ValidationList, ValidationRule},
     Validations,
 };

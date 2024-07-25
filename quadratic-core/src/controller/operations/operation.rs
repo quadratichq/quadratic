@@ -120,6 +120,7 @@ pub enum Operation {
 
     // adds a validation to the list of possible validations
     AddValidation {
+        sheet_id: SheetId,
         validation_id: Uuid,
         validation: Option<Validation>,
     },
@@ -127,7 +128,7 @@ pub enum Operation {
     // applies a validation to a selection
     SetValidationSelection {
         selection: Selection,
-        validation: Option<Uuid>,
+        validation_id: Option<Uuid>,
     },
 }
 
@@ -222,18 +223,19 @@ impl fmt::Display for Operation {
                 write!(fmt, "AddSheetSchema {{ schema: {:?} }}", schema)
             }
             Operation::AddValidation {
+                sheet_id,
                 validation_id,
                 validation,
             } => {
                 write!(
                     fmt,
-                    "AddValidation {{ validation_id: {} validation: {:?} }}",
-                    validation_id, validation
+                    "AddValidation {{ sheet_id: {}, validation_id: {} validation: {:?} }}",
+                    sheet_id, validation_id, validation
                 )
             }
             Operation::SetValidationSelection {
                 selection,
-                validation,
+                validation_id: validation,
             } => {
                 write!(
                     fmt,

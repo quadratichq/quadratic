@@ -48,7 +48,10 @@ impl GridController {
                     self.execute_set_cursor_selection(transaction, op);
                 }
 
-                Operation::SetValidation { .. } => self.execute_set_validation(transaction, op),
+                Operation::SetValidationSelection { .. } => {
+                    self.execute_set_validation_selection(transaction, op)
+                }
+                Operation::AddValidation { .. } => self.execute_add_validation(transaction, op),
             }
 
             if cfg!(target_family = "wasm") && !transaction.is_server() {

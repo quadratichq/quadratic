@@ -11,18 +11,16 @@ impl GridController {
     ) {
         if let Operation::SetValidationSelection {
             selection,
-            validation,
+            validation_id: validation,
         } = op
         {
             if let Some(sheet) = self.grid.try_sheet_mut(selection.sheet_id) {
                 if let Some(validation) = validation {
-                    if let Some(reverse) = sheet.validations.add_validation(validation, selection) {
-                        transaction.reverse_operations.insert(0, reverse);
-                    }
+                    let reverse = sheet.validations.link_validation(selection, validation);
+                    transaction.reverse_operations.extend(reverse);
                 } else {
-                    if let Some(reverse) = sheet.validations.remove_validation(selection) {
-                        transaction.reverse_operations.insert(0, reverse);
-                    }
+                    let reverse = sheet.validations.unlink_validation(selection);
+                    transaction.reverse_operations.extend(reverse);
                 }
             }
         }
@@ -39,10 +37,11 @@ impl GridController {
             validation,
         } = op
         {
-            if let Some(sheet) = self.grid.try_sheet_mut(selection.sheet_id) {
-                if let Some(reverse) = sheet.validations.add_validation(validation, selection) {
-                    transaction.reverse_operations.insert(0, reverse);
-                }
+            if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
+                let reverse = sheet
+                    .validations
+                    .set_validation(sheet_id, validation_id, validation);
+                transaction.reverse_operations.extend(reverse);
             }
         }
     }
