@@ -1,8 +1,7 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { focusGrid } from '@/app/helpers/focusGrid';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Connections } from '@/shared/components/connections/Connections';
 import { ROUTES } from '@/shared/constants/routes';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { useEffect } from 'react';
 import { useFetcher } from 'react-router-dom';
@@ -31,7 +30,6 @@ export function ConnectionsMenu() {
       open={editorInteractionState.showConnectionsMenu}
       onOpenChange={() => {
         setEditorInteractionState((prev) => ({ ...prev, showConnectionsMenu: false }));
-        focusGrid();
       }}
     >
       <DialogContent
