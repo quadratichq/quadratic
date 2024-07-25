@@ -1,4 +1,4 @@
-import { Action as FilesAction } from '@/routes/files.$uuid';
+import { Action as FilesAction } from '@/routes/api.files.$uuid';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';

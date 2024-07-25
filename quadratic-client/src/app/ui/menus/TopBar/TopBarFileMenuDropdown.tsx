@@ -1,4 +1,5 @@
-import { useRootRouteLoaderData } from '@/router';
+import { useRootRouteLoaderData } from '@/routes/_root';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { KeyboardArrowDown } from '@mui/icons-material';
 import { IconButton, useTheme } from '@mui/material';
@@ -6,7 +7,7 @@ import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 import { Dispatch, SetStateAction } from 'react';
 import { useParams, useSubmit } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { deleteFile, downloadFileAction, duplicateFileWithUserAsOwnerAction, renameFileAction } from '../../../actions';
+import { deleteFile, downloadFileAction, duplicateFileAction, renameFileAction } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useFileContext } from '../../components/FileProvider';
 import { MenuLineItem } from './MenuLineItem';
@@ -19,11 +20,16 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
   const submit = useSubmit();
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const { isAuthenticated } = useRootRouteLoaderData();
+  const {
+    userMakingRequest: { fileTeamPrivacy, teamPermissions },
+  } = useFileRouteLoaderData();
   const { permissions } = editorInteractionState;
 
   if (!isAuthenticated) {
     return null;
   }
+
+  const isAvailableArgs = { filePermissions: permissions, fileTeamPrivacy, isAuthenticated, teamPermissions };
 
   return (
     <Menu
@@ -56,7 +62,7 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
         </IconButton>
       )}
     >
-      {renameFileAction.isAvailable(permissions) && (
+      {renameFileAction.isAvailable(isAvailableArgs) && (
         <MenuItem
           onClick={() => {
             setIsRenaming(true);
@@ -65,12 +71,12 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
           <MenuLineItem primary={renameFileAction.label} />
         </MenuItem>
       )}
-      {duplicateFileWithUserAsOwnerAction.isAvailable(permissions, isAuthenticated) && (
-        <MenuItem onClick={() => duplicateFileWithUserAsOwnerAction.run({ uuid, submit })}>
-          <MenuLineItem primary={duplicateFileWithUserAsOwnerAction.label} />
+      {duplicateFileAction.isAvailable(isAvailableArgs) && (
+        <MenuItem onClick={() => duplicateFileAction.run({ uuid, submit })}>
+          <MenuLineItem primary={duplicateFileAction.label} />
         </MenuItem>
       )}
-      {downloadFileAction.isAvailable(permissions, isAuthenticated) && (
+      {downloadFileAction.isAvailable(isAvailableArgs) && (
         <MenuItem
           onClick={() => {
             downloadFileAction.run({ name });
@@ -79,7 +85,7 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
           <MenuLineItem primary={downloadFileAction.label} />
         </MenuItem>
       )}
-      {deleteFile.isAvailable(permissions) && (
+      {deleteFile.isAvailable(isAvailableArgs) && (
         <>
           <MenuDivider />
           <MenuItem

@@ -186,7 +186,7 @@ impl State {
                     user.state.sheet_id = sheet_id;
                 }
                 if let Some(selection) = &user_state.selection {
-                    user.state.selection = selection.to_owned();
+                    selection.clone_into(&mut user.state.selection);
                 }
                 if let Some(x) = user_state.x {
                     user.state.x = x;

@@ -26,10 +26,10 @@ export class UICellMoving extends Container {
     this.visible = true;
     this.graphics.clear();
     this.graphics.lineStyle(1, colors.movingCells, MOVING_THICKNESS);
-    const offsets = sheets.sheet.offsets;
-    const start = offsets.getCellOffsets(moving.toColumn, moving.toRow);
-    const end = offsets.getCellOffsets(moving.toColumn + moving.width, moving.toRow + moving.height);
-    this.graphics.drawRect(start.x, start.y, end.x + end.w - start.x, end.y + end.h - start.y);
+    const sheet = sheets.sheet;
+    const start = sheet.getCellOffsets(moving.toColumn, moving.toRow);
+    const end = sheet.getCellOffsets(moving.toColumn + moving.width - 1, moving.toRow + moving.height - 1);
+    this.graphics.drawRect(start.x, start.y, end.x + end.width - start.x, end.y + end.height - start.y);
   }
 
   update() {

@@ -17,42 +17,29 @@ impl GridController {
         let mut ctx = Ctx::new(self.grid(), sheet_pos);
         transaction.current_sheet_pos = Some(sheet_pos);
         match parse_formula(&code, sheet_pos.into()) {
-            Ok(parsed) => {
-                match parsed.eval(&mut ctx, false) {
-                    Ok(value) => {
-                        transaction.cells_accessed = ctx.cells_accessed;
-                        let new_code_run = CodeRun {
-                            std_out: None,
-                            std_err: None,
-                            formatted_code_string: None,
-                            spill_error: false,
-                            last_modified: Utc::now(),
-                            cells_accessed: transaction.cells_accessed.clone(),
-                            result: CodeRunResult::Ok(value),
-                            return_type: None,
-                            line_number: None,
-                            output_type: None,
-                        };
-                        self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
-                    }
-                    Err(error) => {
-                        let msg = error.msg.to_string();
-                        let line_number = error.span.map(|span| span.start);
-
-                        // todo: propagate the result
-                        let _ = self.code_cell_sheet_error(
-                            transaction,
-                            &msg,
-                            // todo: span should be multiline
-                            line_number,
-                        );
-                    }
+            Ok(parsed) => match parsed.eval(&mut ctx) {
+                Ok(value) => {
+                    transaction.cells_accessed = ctx.cells_accessed;
+                    let new_code_run = CodeRun {
+                        std_out: None,
+                        std_err: None,
+                        formatted_code_string: None,
+                        spill_error: false,
+                        last_modified: Utc::now(),
+                        cells_accessed: transaction.cells_accessed.clone(),
+                        result: CodeRunResult::Ok(value),
+                        return_type: None,
+                        line_number: None,
+                        output_type: None,
+                    };
+                    self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
                 }
-            }
-            Err(e) => {
-                let msg = e.to_string();
-                // todo: propagate the result
-                let _ = self.code_cell_sheet_error(transaction, &msg, None);
+                Err(error) => {
+                    let _ = self.code_cell_sheet_error(transaction, &error);
+                }
+            },
+            Err(error) => {
+                let _ = self.code_cell_sheet_error(transaction, &error);
             }
         }
     }
@@ -106,8 +93,6 @@ mod test {
             ],
             None,
             TransactionName::Unknown,
-            None,
-            None,
         );
 
         let sheet = gc.sheet_mut(sheet_id);

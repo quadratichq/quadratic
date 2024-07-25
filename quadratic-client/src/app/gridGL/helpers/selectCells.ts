@@ -1,60 +1,93 @@
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import {
+  getVisibleLeftColumn,
+  getVisibleTopRow,
+  isColumnVisible,
+  isRowVisible,
+} from '@/app/gridGL/interaction/viewportHelper';
+import { Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 
 export function selectAllCells() {
   const sheet = sheets.sheet;
-  const bounds = sheet.getBounds(true);
+  const cursor = sheet.cursor;
 
-  if (bounds) {
-    sheet.cursor.changePosition({
-      multiCursor: {
-        originPosition: { x: bounds.left, y: bounds.top },
-        terminalPosition: { x: bounds.right, y: bounds.bottom },
-      },
-      cursorPosition: { x: bounds.left, y: bounds.top },
-    });
+  // if we've already selected all, then select the content within the sheet
+  if (cursor.columnRow?.all) {
+    const bounds = sheet.getBounds(true);
+    console.log(bounds);
+    if (bounds) {
+      cursor.changePosition({
+        columnRow: null,
+        multiCursor: [new Rectangle(bounds.left, bounds.top, bounds.width + 1, bounds.height + 1)],
+        cursorPosition: { x: bounds.left, y: bounds.top },
+      });
+    } else {
+      cursor.changePosition({
+        columnRow: null,
+        multiCursor: null,
+        cursorPosition: { x: 0, y: 0 },
+      });
+    }
   } else {
-    sheet.cursor.changePosition({
-      multiCursor: undefined,
-      cursorPosition: { x: 0, y: 0 },
-    });
+    cursor.changePosition({ columnRow: { all: true }, multiCursor: null });
   }
 }
 
-export async function selectColumns(start: number, end: number) {
+/**
+ * Selects columns. Cursor position is set to the last column selected or the
+ * passed column.
+ * @param column if column is set, then that column is used as the cursor
+ * position, otherwise it uses the last entry in columns
+ */
+export async function selectColumns(columns: number[], column = columns[columns.length - 1], keepExisting = false) {
+  // remove duplicates
+  columns = columns.filter((item, pos) => columns.indexOf(item) === pos);
+
   const sheet = sheets.sheet;
-  const bounds = await quadraticCore.getColumnsBounds(sheet.id, start, end, true);
-  if (bounds) {
-    sheet.cursor.changePosition({
-      cursorPosition: { x: start, y: bounds.min },
-      multiCursor: {
-        originPosition: { x: start, y: bounds.min },
-        terminalPosition: { x: end, y: bounds.max },
-      },
-    });
-  } else {
-    sheet.cursor.changePosition({
-      cursorPosition: { x: start, y: 0 },
-      multiCursor: undefined,
-    });
+  const cursor = sheet.cursor;
+
+  const multiCursor = keepExisting ? cursor?.multiCursor : null;
+  const rows = keepExisting ? cursor.columnRow?.rows : undefined;
+
+  if (columns.length === 0) {
+    cursor.changePosition({ columnRow: rows ? { rows } : null, multiCursor });
+    return;
   }
+
+  // Find a row to select based on viewport. 1. if 0 is visible, use that; 2. if
+  // not use, the first row from the top of the viewport.
+  let row: number;
+  if (isRowVisible(0)) {
+    row = 0;
+  } else {
+    row = getVisibleTopRow();
+  }
+  cursor.changePosition({ columnRow: { columns, rows }, cursorPosition: { x: column, y: row }, multiCursor });
 }
 
-export async function selectRows(start: number, end: number): Promise<void> {
+export async function selectRows(rows: number[], row = rows[rows.length - 1], keepExisting = false) {
+  // remove duplicates
+  rows = rows.filter((item, pos) => rows.indexOf(item) === pos);
+
   const sheet = sheets.sheet;
-  const bounds = await quadraticCore.getRowsBounds(sheet.id, start, end, true);
-  if (bounds) {
-    sheet.cursor.changePosition({
-      cursorPosition: { x: bounds.min, y: start },
-      multiCursor: {
-        originPosition: { x: bounds.min, y: start },
-        terminalPosition: { x: bounds.max, y: end },
-      },
-    });
-  } else {
-    sheet.cursor.changePosition({
-      cursorPosition: { x: 0, y: start },
-      multiCursor: undefined,
-    });
+  const cursor = sheet.cursor;
+
+  const multiCursor = keepExisting ? cursor.multiCursor : null;
+  const columns = keepExisting ? cursor.columnRow?.columns : undefined;
+
+  if (rows.length === 0) {
+    cursor.changePosition({ columnRow: columns ? { columns } : null, multiCursor });
+    return;
   }
+
+  // Find a column to select based on viewport. 1. if 0 is visible, use that; 2. if
+  // not use, the first column from the left of the viewport.
+  let column: number;
+  if (isColumnVisible(0)) {
+    column = 0;
+  } else {
+    column = getVisibleLeftColumn();
+  }
+
+  cursor.changePosition({ columnRow: { rows, columns }, cursorPosition: { x: column, y: row }, multiCursor });
 }

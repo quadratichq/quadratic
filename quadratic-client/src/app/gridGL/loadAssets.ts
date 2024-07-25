@@ -44,6 +44,7 @@ export function loadAssets(): Promise<void> {
     // CellsMarker
     Loader.shared.add('/images/formula-fx-icon.png');
     Loader.shared.add('/images/python-icon.png');
+    Loader.shared.add('/images/javascript-icon.png');
 
     // Wait until pixi fonts are loaded before resolving
     Loader.shared.load(() => ensureBitmapFontLoaded(resolve));

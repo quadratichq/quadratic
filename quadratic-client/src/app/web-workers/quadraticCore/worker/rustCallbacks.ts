@@ -1,11 +1,14 @@
 // this file cannot include any non-type imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
 
 import {
+  ConnectionKind,
   JsCodeCell,
   JsHtmlOutput,
   JsRenderBorders,
   JsRenderCodeCell,
   JsRenderFill,
+  JsSheetFill,
+  Selection,
   SheetBounds,
   SheetInfo,
   TransactionName,
@@ -30,12 +33,14 @@ declare var self: WorkerGlobalScope &
     sendSheetInfoClient: (sheets: SheetInfo[]) => void;
     sendSheetInfoRender: (sheets: SheetInfo[]) => void;
     sendSheetFills: (sheetId: string, fill: JsRenderFill[]) => void;
+    sendSheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
     sendSheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
     sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
     sendSheetInfoUpdateRender: (sheetInfo: SheetInfo) => void;
     sendAddSheetRender: (sheetInfo: SheetInfo) => void;
     sendDeleteSheetRender: (sheetId: string) => void;
     sendSetCursor: (cursor: string) => void;
+    sendSetCursorSelection: (selection: Selection) => void;
     requestTransactions: (sequenceNum: number) => void;
     sendSheetOffsetsClient: (
       sheetId: string,
@@ -55,17 +60,10 @@ declare var self: WorkerGlobalScope &
     sendSheetCodeCell: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
     sendSheetBoundsUpdateClient: (sheetBounds: SheetBounds) => void;
     sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
-    sendTransactionStart: (
-      transactionId: string,
-      transactionType: TransactionName,
-      sheetId?: string,
-      x?: number,
-      y?: number,
-      w?: number,
-      h?: number
-    ) => void;
+    sendTransactionStart: (transactionId: string, transactionType: TransactionName) => void;
     sendTransactionProgress: (transactionId: String, remainingOperations: number) => void;
     sendRunPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
+    sendRunJavascript: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
     sendUpdateCodeCell: (
       sheetId: string,
       x: number,
@@ -74,6 +72,16 @@ declare var self: WorkerGlobalScope &
       renderCodeCell?: JsRenderCodeCell
     ) => void;
     sendUndoRedo: (undo: string, redo: string) => void;
+    sendConnection: (
+      transactionId: string,
+      x: number,
+      y: number,
+      sheetId: string,
+      code: string,
+      connector_type: ConnectionKind,
+      connection_id: String
+    ) => void;
+    sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -154,6 +162,11 @@ export const jsSetCursor = (cursor: string) => {
   self.sendSetCursor(cursor);
 };
 
+export const jsSetCursorSelection = (selectionStringified: string) => {
+  const selection = JSON.parse(selectionStringified) as Selection;
+  self.sendSetCursorSelection(selection);
+};
+
 export const jsHtmlOutput = (htmlStringified: string) => {
   const html: JsHtmlOutput[] = JSON.parse(htmlStringified);
   self.sendSheetHtml(html);
@@ -179,17 +192,9 @@ export const jsSheetBoundsUpdate = (bounds: string) => {
   self.sendSheetBoundsUpdateRender(sheetBounds);
 };
 
-export const jsTransactionStart = (
-  transaction_id: string,
-  transaction_name: string,
-  sheet_id: string | undefined,
-  x?: bigint,
-  y?: bigint,
-  w?: number,
-  h?: number
-) => {
+export const jsTransactionStart = (transaction_id: string, transaction_name: string) => {
   const transactionType = JSON.parse(transaction_name);
-  self.sendTransactionStart(transaction_id, transactionType, sheet_id, Number(x), Number(y), w, h);
+  self.sendTransactionStart(transaction_id, transactionType);
 };
 
 export const jsTransactionProgress = (transactionId: String, remainingOperations: number) => {
@@ -198,6 +203,10 @@ export const jsTransactionProgress = (transactionId: String, remainingOperations
 
 export const jsRunPython = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
   self.sendRunPython(transactionId, x, y, sheetId, code);
+};
+
+export const jsRunJavascript = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
+  self.sendRunJavascript(transactionId, x, y, sheetId, code);
 };
 
 export const jsUpdateCodeCell = (
@@ -218,4 +227,25 @@ export const jsUpdateCodeCell = (
 
 export const jsUndoRedo = (undo: string, redo: string) => {
   self.sendUndoRedo(undo, redo);
+};
+
+export const jsConnection = (
+  transactionId: string,
+  x: number,
+  y: number,
+  sheetId: string,
+  code: string,
+  connector_type: ConnectionKind,
+  connection_id: String
+) => {
+  self.sendConnection(transactionId, x, y, sheetId, code, connector_type, connection_id);
+};
+
+export const jsSendImage = (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => {
+  self.sendImage(sheetId, x, y, image, w, h);
+};
+
+export const jsSheetMetaFills = (sheetId: string, sheetMetaFillsStringified: string) => {
+  const sheetMetaFills = JSON.parse(sheetMetaFillsStringified) as JsSheetFill;
+  self.sendSheetMetaFills(sheetId, sheetMetaFills);
 };

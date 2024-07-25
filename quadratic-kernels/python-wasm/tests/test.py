@@ -8,10 +8,9 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import numpy as np
 import pandas as pd
-from process_output_test import *
 from inspect_python_test import *
-from quadratic_py.utils import (attempt_fix_await, to_python_type,
-                                to_quadratic_type)
+from process_output_test import *
+from quadratic_py.utils import attempt_fix_await, to_python_type, to_quadratic_type
 
 
 #  Mock definitions
@@ -22,7 +21,10 @@ class Cell:
         self.value = value
         self.type_name = type_name
 
-async def mock_GetCellsDB(x1: int, y1: int, x2: int, y2: int, sheet: str=None, line: int=False):
+
+def mock_GetCellsDB(
+    x1: int, y1: int, x2: int, y2: int, sheet: str = None, line: int = False
+):
     out = []
 
     for x in range(x1, x2 + 1):
@@ -31,9 +33,11 @@ async def mock_GetCellsDB(x1: int, y1: int, x2: int, y2: int, sheet: str=None, l
 
     return out
 
+
 class mock_micropip:
     async def install(name):
         return __import__(name)
+
 
 async def mock_fetch_module(source: str):
     return __import__(source)
@@ -55,16 +59,18 @@ from quadratic_py.quadratic_api.quadratic import getCells
 
 run_python.fetch_module = mock_fetch_module
 
+
 class value_object:
     def __init__(self, x, y, value):
         self.x = x
         self.y = y
         self.value = value
 
+
 class TestTesting(IsolatedAsyncioTestCase):
     async def test_run_python(self):
 
-        result = await run_python.run_python("1 + 1", {"x": 0, "y": 0})
+        result = await run_python.run_python("1 + 1", (0, 0, "Sheet 1"))
 
         # NOTE: this approach bypasses the entire env of Pyodide.
         # We should make the run_python e2e tests run via playwright
@@ -73,38 +79,64 @@ class TestTesting(IsolatedAsyncioTestCase):
     def test_attempt_fix_await(self):
         self.assertEqual(attempt_fix_await("1 + 1"), "1 + 1")
 
-        # simple adding await
-        self.assertEqual(attempt_fix_await("a = cells(0, 0)"), "a = await cells(0, 0)")
-        self.assertEqual(attempt_fix_await("a = cell(0, 0)"), "a = await cell(0, 0)")
-        self.assertEqual(attempt_fix_await("a = c(0, 0)"), "a = await c(0, 0)")
-        self.assertEqual(attempt_fix_await("a = rel_cell(0, 0)"), "a = await rel_cell(0, 0)")
-        self.assertEqual(attempt_fix_await("a = rc(0, 0)"), "a = await rc(0, 0)")
-        self.assertEqual(
-            attempt_fix_await("a = getCells(0, 0)"), "a = await getCells(0, 0)"
-        )
+        # simple without await
+        self.assertEqual(attempt_fix_await("a = cells(0, 0)"), "a = cells(0, 0)")
+        self.assertEqual(attempt_fix_await("a = cell(0, 0)"), "a = cell(0, 0)")
+        self.assertEqual(attempt_fix_await("a = c(0, 0)"), "a = c(0, 0)")
+        self.assertEqual(attempt_fix_await("a = rel_cell(0, 0)"), "a = rel_cell(0, 0)")
+        self.assertEqual(attempt_fix_await("a = rc(0, 0)"), "a = rc(0, 0)")
+        self.assertEqual(attempt_fix_await("a = getCells(0, 0)"), "a = getCells(0, 0)")
 
         # simple already has await
+        self.assertEqual(attempt_fix_await("a = await cells(0, 0)"), "a = cells(0, 0)")
+        self.assertEqual(attempt_fix_await("a = await cell(0, 0)"), "a = cell(0, 0)")
+        self.assertEqual(attempt_fix_await("a = await c(0, 0)"), "a = c(0, 0)")
         self.assertEqual(
-            attempt_fix_await("a = await cells(0, 0)"), "a = await cells(0, 0)"
+            attempt_fix_await("a = await rel_cell(0, 0)"), "a = rel_cell(0, 0)"
         )
+        self.assertEqual(attempt_fix_await("a = await rc(0, 0)"), "a = rc(0, 0)")
         self.assertEqual(
-            attempt_fix_await("a = await cell(0, 0)"), "a = await cell(0, 0)"
-        )
-        self.assertEqual(attempt_fix_await("a = await c(0, 0)"), "a = await c(0, 0)")
-        self.assertEqual(
-            attempt_fix_await("a = await getCells(0, 0)"), "a = await getCells(0, 0)"
+            attempt_fix_await("a = await getCells(0, 0)"), "a = getCells(0, 0)"
         )
 
         # other
         self.assertEqual(attempt_fix_await("a = cac(0, 0)"), "a = cac(0, 0)")
-        self.assertEqual(attempt_fix_await("c(0, 0)"), "await c(0, 0)")
-        self.assertEqual(attempt_fix_await("int(c(0,0))"), "int(await c(0,0))")
+        self.assertEqual(attempt_fix_await("c(0, 0)"), "c(0, 0)")
+        self.assertEqual(attempt_fix_await("int(c(0,0))"), "int(c(0,0))")
+        self.assertEqual(attempt_fix_await("int(await c(0,0))"), "int(c(0,0))")
         self.assertEqual(
-            attempt_fix_await("float((await c(2, -4)).value)"),
-            "float((await c(2, -4)).value)",
+            attempt_fix_await("float(c(2, -4).value)"), "float(c(2, -4).value)"
         )
         self.assertEqual(
-            attempt_fix_await("c(0, 0)\nc(0, 0)"), "await c(0, 0)\nawait c(0, 0)"
+            attempt_fix_await("float((await c(2, -4)).value)"),
+            "float((c(2, -4)).value)",
+        )
+        self.assertEqual(
+            attempt_fix_await("cells((0,0), (0,10)).sum()"),
+            "cells((0,0), (0,10)).sum()",
+        )
+        self.assertEqual(attempt_fix_await("c(0, 0)\nc(0, 0)"), "c(0, 0)\nc(0, 0)")
+
+        # convert c((x,y), ...) cell((x,y), ...) to cells((x,y), ...)
+        self.assertEqual(
+            attempt_fix_await("await c((0,0), (0,10), (10,10), (10,0)).sum()"),
+            "cells((0,0), (0,10), (10,10), (10,0)).sum()",
+        )
+        self.assertEqual(
+            attempt_fix_await("await c((0,0), (0,10), (10,10), (10,0)).sum()"),
+            "cells((0,0), (0,10), (10,10), (10,0)).sum()",
+        )
+        self.assertEqual(
+            attempt_fix_await("await cell((0,0), (0,10), (10,10), (10,0)).sum()"),
+            "cells((0,0), (0,10), (10,10), (10,0)).sum()",
+        )
+        self.assertEqual(
+            attempt_fix_await("await cells((0,0), (0,10), (10,10), (10,0)).sum()"),
+            "cells((0,0), (0,10), (10,10), (10,0)).sum()",
+        )
+        self.assertEqual(
+            attempt_fix_await("await gc((0,0), (0,10), (10,10), (10,0)).sum()"),
+            "await gc((0,0), (0,10), (10,10), (10,0)).sum()",
         )
 
 
@@ -127,14 +159,26 @@ class TestErrorMessaging(TestCase):
             Mock(
                 filename="/lib/pythonSomeVersion/site-packages-plotly/io/_renderers.py",
                 lineno=123,
-                function="fake_plotly_func"
+                function="fake_plotly_func",
             ),
             user_frame_2,
             user_frame_1,
-            Mock(filename='/lib/pythonSomeVersionZip/_pyodide/_base.py', lineno=444, function='run_async'),
-            Mock(filename='/lib/pythonSomeVersionZip/_pyodide/_base.py', lineno=333, function='eval_code_async'),
-            Mock(filename='<exec>', lineno=222, function='run_python'),
-            Mock(filename='/lib/pythonSomeVersionZip/pyodide/webloop.py', lineno=111, function='run_handle'),
+            Mock(
+                filename="/lib/pythonSomeVersionZip/_pyodide/_base.py",
+                lineno=444,
+                function="run_async",
+            ),
+            Mock(
+                filename="/lib/pythonSomeVersionZip/_pyodide/_base.py",
+                lineno=333,
+                function="eval_code_async",
+            ),
+            Mock(filename="<exec>", lineno=222, function="run_python"),
+            Mock(
+                filename="/lib/pythonSomeVersionZip/pyodide/webloop.py",
+                lineno=111,
+                function="run_handle",
+            ),
         ]
 
         expected_user_frames = [user_frame_2, user_frame_1]
@@ -165,21 +209,33 @@ class TestErrorMessaging(TestCase):
             "success": False,
             "input_python_stack_trace": "RuntimeError on line 42: Test message",
             "line_number": 42,
-            "formatted_code": code
+            "formatted_code": code,
         }
 
-class TestQuadraticApi(IsolatedAsyncioTestCase):
-    async def test_getCells_2d_array(self):
-        cells = await getCells((0, 0), (1, 1), first_row_header=False)
-        assert cells.equals(pd.DataFrame([["hello 0", "hello 1"], ["hello 0", "hello 1"]], columns=[0, 1]))
 
-    async def test_getCells_1d_array(self):
-        cells = await getCells((0, 0), (0, 1), first_row_header=False)
+class TestQuadraticApi(IsolatedAsyncioTestCase):
+    def test_getCells_2d_array(self):
+        cells = getCells((0, 0), (1, 1), first_row_header=False)
+        assert cells.equals(
+            pd.DataFrame(
+                [["hello 0", "hello 1"], ["hello 0", "hello 1"]], columns=[0, 1]
+            )
+        )
+
+    def test_getCells_1d_array(self):
+        cells = getCells((0, 0), (0, 1), first_row_header=False)
         assert cells.equals(pd.DataFrame([["hello 0"], ["hello 0"]], columns=[0]))
 
-    async def test_getCells_1d_array_header(self):
-        cells = await getCells((0, 0), (0, 1), first_row_header=True)
+    def test_getCells_1d_array_header(self):
+        cells = getCells((0, 0), (0, 1), first_row_header=True)
         assert cells.equals(pd.DataFrame([["hello 0"]], columns=["hello 0"]))
+
+
+class TestPos(IsolatedAsyncioTestCase):
+    async def test_pos(self):
+        result = await run_python.run_python("pos()", (0, 0, "Sheet 1"))
+        self.assertEqual(result.get("success"), False)
+
 
 class TestUtils(TestCase):
     def test_to_quadratic_type(self):
@@ -206,12 +262,29 @@ class TestUtils(TestCase):
         assert to_quadratic_type("false") == ("false", "text")
 
         # instant
-        assert to_quadratic_type(pd.Timestamp("2012-11-10")) == ("1352505600", "instant")
-        assert to_quadratic_type(pd.Timestamp("2012-11-10T03:30")) == ("1352518200", "instant")
-        assert to_quadratic_type(np.datetime64("2012-11-10")) == ("1352505600", "instant")
-        assert to_quadratic_type(np.datetime64("2012-11-10T03:30")) == ("1352518200", "instant")
-        assert to_quadratic_type(datetime.strptime("2012-11-10", '%Y-%m-%d')) == ("1352505600", "instant")
-        assert to_quadratic_type(datetime.strptime("2012-11-10 03:30", '%Y-%m-%d %H:%M')) == ("1352518200", "instant")
+        assert to_quadratic_type(pd.Timestamp("2012-11-10")) == (
+            "1352505600",
+            "instant",
+        )
+        assert to_quadratic_type(pd.Timestamp("2012-11-10T03:30")) == (
+            "1352518200",
+            "instant",
+        )
+        assert to_quadratic_type(np.datetime64("2012-11-10")) == (
+            "1352505600",
+            "instant",
+        )
+        assert to_quadratic_type(np.datetime64("2012-11-10T03:30")) == (
+            "1352518200",
+            "instant",
+        )
+        assert to_quadratic_type(datetime.strptime("2012-11-10", "%Y-%m-%d")) == (
+            "1352505600",
+            "instant",
+        )
+        assert to_quadratic_type(
+            datetime.strptime("2012-11-10 03:30", "%Y-%m-%d %H:%M")
+        ) == ("1352518200", "instant")
         # assert to_quadratic_type("2012-11-10") == ("1352505600", "instant")
 
         # TODO(ddimaria): implement when we implement duration in Rust
@@ -239,9 +312,12 @@ class TestUtils(TestCase):
         assert to_python_type("abc123", "text") == "abc123"
 
         # instant
-        assert to_python_type("1352505600", "instant") == pd.Timestamp("2012-11-10 00:00:00+00:00")
-        assert to_python_type("1352518200", "instant") == pd.Timestamp("2012-11-10 03:30:00+00:00")
-
+        assert to_python_type("1352505600", "instant") == pd.Timestamp(
+            "2012-11-10 00:00:00+00:00"
+        )
+        assert to_python_type("1352518200", "instant") == pd.Timestamp(
+            "2012-11-10 03:30:00+00:00"
+        )
 
 
 if __name__ == "__main__":

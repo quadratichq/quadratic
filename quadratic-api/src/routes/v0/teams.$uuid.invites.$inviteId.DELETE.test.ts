@@ -2,6 +2,7 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { expectError } from '../../tests/helpers';
+import { clearDb } from '../../tests/testDataGenerator';
 
 const getInviteIdByEmail = async (email: string) => {
   const invite = await dbClient.teamInvite.findFirst({
@@ -40,7 +41,6 @@ beforeEach(async () => {
     data: {
       name: 'Team',
       uuid: '00000000-0000-4000-8000-000000000001',
-      stripeCustomerId: '1',
       UserTeamRole: {
         create: [
           { userId: userOwner.id, role: 'OWNER' },
@@ -60,14 +60,7 @@ beforeEach(async () => {
   });
 });
 
-afterEach(async () => {
-  await dbClient.$transaction([
-    dbClient.teamInvite.deleteMany(),
-    dbClient.userTeamRole.deleteMany(),
-    dbClient.team.deleteMany(),
-    dbClient.user.deleteMany(),
-  ]);
-});
+afterEach(clearDb);
 
 describe('DELETE /v0/teams/:uuid/invites/:inviteId', () => {
   describe('sending a bad request', () => {

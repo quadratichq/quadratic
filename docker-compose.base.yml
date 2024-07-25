@@ -50,17 +50,5 @@ services:
     networks:
       - host
 
-  aws-cli:
-    image: amazon/aws-cli
-    environment:
-      - AWS_ACCESS_KEY_ID=test
-      - AWS_SECRET_ACCESS_KEY=test
-      - AWS_DEFAULT_REGION=us-east-2
-    entrypoint: /bin/sh -c
-    command: >
-      "
-        aws --endpoint-url=http://host.docker.internal:4566 s3api create-bucket --bucket quadratic-api-docker --region us-east-1
-      "
-
 networks:
   host:

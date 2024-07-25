@@ -4,9 +4,10 @@ use crate::{
     grid::{
         borders::{get_render_horizontal_borders, get_render_vertical_borders},
         code_run,
+        formats::format::Format,
         js_types::{
             JsHtmlOutput, JsRenderBorders, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
-            JsRenderCodeCellState, JsRenderFill,
+            JsRenderCodeCellState, JsRenderFill, JsSheetFill,
         },
         CellAlign, CodeCellLanguage, CodeRun, Column, NumericFormatKind,
     },
@@ -66,6 +67,36 @@ impl Sheet {
                     JsRenderCellSpecial::RunError
                 }),
             };
+        } else if let CellValue::Logical(logical) = value {
+            return JsRenderCell {
+                x,
+                y,
+                value: "".to_string(),
+                language,
+                align: None,
+                wrap: None,
+                bold: None,
+                italic: None,
+                text_color: None,
+                special: Some(if logical {
+                    JsRenderCellSpecial::True
+                } else {
+                    JsRenderCellSpecial::False
+                }),
+            };
+        } else if let CellValue::Image(_) = value {
+            return JsRenderCell {
+                x,
+                y,
+                value: "".to_string(),
+                language,
+                align: None,
+                wrap: None,
+                bold: None,
+                italic: None,
+                text_color: None,
+                special: Some(JsRenderCellSpecial::Chart),
+            };
         }
 
         match column {
@@ -75,66 +106,53 @@ impl Sheet {
                 } else {
                     None
                 };
-                if matches!(value, CellValue::Logical(_)) {
-                    let special = match value {
-                        CellValue::Logical(true) => Some(JsRenderCellSpecial::True),
-                        CellValue::Logical(false) => Some(JsRenderCellSpecial::False),
-                        _ => None,
-                    };
-                    return JsRenderCell {
-                        x,
-                        y,
-                        value: "".to_string(),
-                        language,
-                        align,
-                        wrap: None,
-                        bold: None,
-                        italic: None,
-                        text_color: None,
-                        special,
-                    };
-                }
+                let format = Format::combine(
+                    None,
+                    self.try_format_column(x).as_ref(),
+                    self.try_format_row(y).as_ref(),
+                    self.format_all.as_ref(),
+                );
+                let align = format.align.or(align);
                 JsRenderCell {
                     x,
                     y,
                     value: value.to_display(None, None, None),
                     language,
                     align,
-                    wrap: None,
-                    bold: None,
-                    italic: None,
-                    text_color: None,
+                    wrap: format.wrap,
+                    bold: format.bold,
+                    italic: format.italic,
+                    text_color: format.text_color,
                     special: None,
                 }
             }
             Some(column) => {
-                let mut align: Option<CellAlign> = column.align.get(y);
-                let mut special = None;
-                let wrap = column.wrap.get(y);
-                let bold = column.bold.get(y);
-                let italic = column.italic.get(y);
-                let text_color = column.text_color.get(y);
+                let format = Format::combine(
+                    None,
+                    self.try_format_column(x).as_ref(),
+                    self.try_format_row(y).as_ref(),
+                    self.format_all.as_ref(),
+                );
+                let mut align: Option<CellAlign> = column.align.get(y).or(format.align);
+                let wrap = column.wrap.get(y).or(format.wrap);
+                let bold = column.bold.get(y).or(format.bold);
+                let italic = column.italic.get(y).or(format.italic);
+                let text_color = column.text_color.get(y).or(format.text_color);
                 let value = match &value {
                     CellValue::Number(_) => {
                         // get numeric_format and numeric_decimal to turn number into a string
-                        let numeric_format = column.numeric_format.get(y);
+                        let numeric_format = column.numeric_format.get(y).or(format.numeric_format);
                         let is_percentage = numeric_format.as_ref().is_some_and(|numeric_format| {
                             numeric_format.kind == NumericFormatKind::Percentage
                         });
-                        let numeric_decimals = self.decimal_places(Pos { x, y }, is_percentage);
-                        let numeric_commas = column.numeric_commas.get(y);
+                        let numeric_decimals =
+                            self.calculate_decimal_places(Pos { x, y }, is_percentage);
+                        let numeric_commas = column.numeric_commas.get(y).or(format.numeric_commas);
 
                         // if align is not set, set it to right only for numbers
-                        align = align.or(Some(CellAlign::Right));
+                        align = align.or(format.align).or(Some(CellAlign::Right));
 
                         value.to_display(numeric_format, numeric_decimals, numeric_commas)
-                    }
-                    CellValue::Logical(bool) => {
-                        special = match bool {
-                            true => Some(JsRenderCellSpecial::True),
-                            false => Some(JsRenderCellSpecial::False),
-                        };
-                        "".to_string()
                     }
                     _ => value.to_display(None, None, None),
                 };
@@ -148,7 +166,7 @@ impl Sheet {
                     bold,
                     italic,
                     text_color,
-                    special,
+                    special: None,
                 }
             }
         }
@@ -173,7 +191,7 @@ impl Sheet {
                         span: None,
                         msg: RunErrorMsg::Spill,
                     })),
-                    Some(code.language),
+                    Some(code.language.to_owned()),
                 ));
             } else if let Some(error) = run.get_error() {
                 cells.push(self.get_render_cell(
@@ -181,7 +199,7 @@ impl Sheet {
                     code_rect.min.y,
                     None,
                     CellValue::Error(Box::new(error)),
-                    Some(code.language),
+                    Some(code.language.to_owned()),
                 ));
             } else {
                 // find overlap of code_rect into rect
@@ -214,7 +232,7 @@ impl Sheet {
                         );
                         if let Some(value) = value {
                             let language = if x == code_rect.min.x && y == code_rect.min.y {
-                                Some(code.language)
+                                Some(code.language.to_owned())
                             } else {
                                 None
                             };
@@ -328,21 +346,32 @@ impl Sheet {
         }
         ret
     }
-    /// Returns data for rendering cell fill color.
-    pub fn get_render_fills(&self, region: Rect) -> Vec<JsRenderFill> {
-        let mut ret = vec![];
-        for (&x, column) in self.columns.range(region.x_range()) {
-            for block in column.fill_color.blocks_covering_range(region.y_range()) {
-                ret.push(JsRenderFill {
-                    x,
-                    y: block.y,
-                    w: 1,
-                    h: block.len() as u32,
-                    color: block.content().value.clone(),
-                });
-            }
-        }
-        ret
+
+    /// Returns all fills for the rows, columns, and sheet. This does not return
+    /// individual cell formats.
+    pub fn get_sheet_fills(&self) -> JsSheetFill {
+        let columns = self
+            .formats_columns
+            .iter()
+            .filter_map(|(x, (format, timestamp))| {
+                format
+                    .fill_color
+                    .as_ref()
+                    .map(|color| (*x, (color.clone(), *timestamp)))
+            })
+            .collect();
+        let rows = self
+            .formats_rows
+            .iter()
+            .filter_map(|(y, (format, timestamp))| {
+                format
+                    .fill_color
+                    .as_ref()
+                    .map(|color| (*y, (color.clone(), *timestamp)))
+            })
+            .collect();
+        let all = self.format_all().fill_color.clone();
+        JsSheetFill { columns, rows, all }
     }
 
     pub fn get_render_code_cell(&self, pos: Pos) -> Option<JsRenderCodeCell> {
@@ -418,7 +447,7 @@ impl Sheet {
                                 y: pos.y as i32,
                                 w,
                                 h,
-                                language: code.language,
+                                language: code.language.to_owned(),
                                 state,
                                 spill_error,
                             })
@@ -439,6 +468,34 @@ impl Sheet {
             vertical: get_render_vertical_borders(self),
         }
     }
+
+    /// Send images in this sheet to the client. Note: we only have images
+    /// inside CodeRuns. We may open this up in the future to allow images to be
+    /// placed directly on the grid without a CodeRun. In that case, we'll need
+    /// to search the columns for images as well.
+    pub fn send_all_images(&self) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+
+        self.code_runs.iter().for_each(|(pos, run)| {
+            if let Some(CellValue::Image(image)) = run.cell_value_at(0, 0) {
+                let (w, h) = if let Some(render_size) = self.render_size(*pos) {
+                    (Some(render_size.w), Some(render_size.h))
+                } else {
+                    (None, None)
+                };
+                crate::wasm_bindings::js::jsSendImage(
+                    self.id.to_string(),
+                    pos.x as i32,
+                    pos.y as i32,
+                    Some(image),
+                    w,
+                    h,
+                );
+            }
+        });
+    }
 }
 
 #[cfg(test)]
@@ -446,19 +503,24 @@ mod tests {
     use std::collections::HashSet;
 
     use chrono::Utc;
+    use serial_test::serial;
 
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
         grid::{
-            js_types::{JsHtmlOutput, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell},
+            formats::{format::Format, format_update::FormatUpdate, Formats},
+            js_types::{
+                JsHtmlOutput, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell, JsSheetFill,
+            },
             Bold, CellAlign, CodeCellLanguage, CodeRun, CodeRunResult, Italic, RenderSize, Sheet,
         },
-        wasm_bindings::js::{expect_js_call, hash_test},
+        selection::Selection,
+        wasm_bindings::js::{expect_js_call, expect_js_call_count, hash_test},
         CellValue, CodeCellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
     };
 
     #[test]
-    fn test_has_render_cells() {
+    fn has_render_cells() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
@@ -475,6 +537,13 @@ mod tests {
         sheet.delete_cell_values(Rect::single_pos(Pos { x: 1, y: 2 }));
         assert!(!sheet.has_render_cells(rect));
 
+        sheet.set_cell_value(
+            Pos { x: 2, y: 3 },
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: "1 + 1".to_string(),
+            }),
+        );
         sheet.set_code_run(
             Pos { x: 2, y: 3 },
             Some(CodeRun {
@@ -492,15 +561,8 @@ mod tests {
         );
         assert!(sheet.has_render_cells(rect));
 
-        gc.delete_cells_rect(
-            SheetPos {
-                x: 2,
-                y: 3,
-                sheet_id,
-            }
-            .into(),
-            None,
-        );
+        let selection = Selection::pos(2, 3, sheet_id);
+        gc.delete_cells(&selection, None);
         let sheet = gc.sheet(sheet_id);
         assert!(!sheet.has_render_cells(rect));
     }
@@ -866,7 +928,49 @@ mod tests {
         );
     }
 
+    #[serial]
     #[test]
+    fn render_images() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // ensure nothing is sent when no images are in the sheet
+        let sheet = gc.sheet(sheet_id);
+        sheet.send_all_images();
+        expect_js_call_count("jsSendImage", 0, false);
+
+        // add an image to a code run and then send it to the client
+        let sheet = gc.sheet_mut(sheet_id);
+        let pos = (0, 0).into();
+        let image = "image".to_string();
+        let code = CellValue::Image(image.clone());
+        let run = CodeRun {
+            std_out: None,
+            std_err: None,
+            formatted_code_string: None,
+            last_modified: Utc::now(),
+            cells_accessed: HashSet::new(),
+            result: CodeRunResult::Ok(Value::Single(CellValue::Image(image.clone()))),
+            return_type: Some("image".into()),
+            spill_error: false,
+            line_number: None,
+            output_type: None,
+        };
+        sheet.set_code_run(pos, Some(run));
+        sheet.set_cell_value(pos, code);
+        sheet.send_all_images();
+        expect_js_call(
+            "jsSendImage",
+            format!(
+                "{},{},{},{:?},{:?},{:?}",
+                sheet_id, pos.x as u32, pos.y as u32, true, None::<String>, None::<String>
+            ),
+            true,
+        );
+    }
+
+    #[test]
+    #[serial]
     fn render_bool_on_code_run() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -921,5 +1025,55 @@ mod tests {
             format!("{},{},{},{}", sheet_id, 0, 0, hash_test(&cells_string)),
             true,
         );
+    }
+
+    #[test]
+    fn get_sheet_fills() {
+        let mut sheet = Sheet::test();
+        assert_eq!(sheet.get_sheet_fills(), JsSheetFill::default());
+
+        sheet.format_all = Some(Format {
+            fill_color: Some("red".to_string()),
+            ..Default::default()
+        });
+        assert_eq!(
+            sheet.get_sheet_fills(),
+            JsSheetFill {
+                all: Some("red".to_string()),
+                ..Default::default()
+            }
+        );
+
+        let mut sheet = Sheet::test();
+        sheet.set_formats_columns(
+            &[1],
+            &Formats::repeat(
+                FormatUpdate {
+                    fill_color: Some(Some("blue".to_string())),
+                    ..Default::default()
+                },
+                1,
+            ),
+        );
+        let fills = sheet.get_sheet_fills();
+        assert_eq!(fills.columns.len(), 1);
+        assert_eq!(fills.columns[0].1 .0, "blue".to_string());
+
+        sheet.set_formats_rows(
+            &[-5],
+            &Formats::repeat(
+                FormatUpdate {
+                    fill_color: Some(Some("red".to_string())),
+                    ..Default::default()
+                },
+                1,
+            ),
+        );
+
+        let fills = sheet.get_sheet_fills();
+        assert_eq!(fills.columns.len(), 1);
+        assert_eq!(fills.columns[0].1 .0, "blue".to_string());
+        assert_eq!(fills.rows.len(), 1);
+        assert_eq!(fills.rows[0].1 .0, "red".to_string());
     }
 }

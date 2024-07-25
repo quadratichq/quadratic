@@ -1,6 +1,8 @@
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { ExternalLinkIcon } from '@/app/ui/icons';
 import {
+  DOCUMENTATION_JAVASCRIPT_URL,
   DOCUMENTATION_PYTHON_URL,
   WEBSITE_CHANGELOG,
   WEBSITE_CONNECTIONS,
@@ -19,12 +21,17 @@ import { IntegrationInstructionsOutlined } from '@mui/icons-material';
 import { IconButton, useTheme } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
 import { ReactNode, useEffect } from 'react';
+import { useRecoilValue } from 'recoil';
 import { useCodeEditor } from './CodeEditorContext';
-import snippets from './snippets';
+import snippetsPython from './snippets';
+import snippetsJavascript from './snippetsJavascript';
 
 export function SnippetsPopover() {
   const { editorRef } = useCodeEditor();
-  const { showSnippetsPopover, setShowSnippetsPopover } = useCodeEditor();
+  const {
+    showSnippetsPopover: [showSnippetsPopover, setShowSnippetsPopover],
+  } = useCodeEditor();
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const theme = useTheme();
 
   useEffect(() => {
@@ -33,6 +40,9 @@ export function SnippetsPopover() {
     }
   }, [showSnippetsPopover]);
 
+  const snippets = editorInteractionState.mode === 'Javascript' ? snippetsJavascript : snippetsPython;
+  const documentationLink =
+    editorInteractionState.mode === 'Javascript' ? DOCUMENTATION_JAVASCRIPT_URL : DOCUMENTATION_PYTHON_URL;
   return (
     <Popover open={showSnippetsPopover} onOpenChange={setShowSnippetsPopover}>
       <PopoverTrigger asChild>
@@ -133,7 +143,7 @@ export function SnippetsPopover() {
           </CommandList>
         </Command>
         <ExternalLink
-          href={DOCUMENTATION_PYTHON_URL}
+          href={documentationLink}
           onClick={() => {
             mixpanel.track('[Snippets].clickDocs');
           }}

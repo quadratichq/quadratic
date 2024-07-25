@@ -99,8 +99,14 @@ impl Spanned<AstNodeContents> {
 
 impl Formula {
     /// Evaluates a formula.
-    pub fn eval(&self, ctx: &mut Ctx<'_>, only_parse: bool) -> CodeResult<Value> {
-        self.ast.eval(ctx, only_parse)?.into_non_error_value()
+    pub fn eval(&self, ctx: &mut Ctx<'_>) -> CodeResult<Value> {
+        self.ast.eval(ctx, false)?.into_non_error_value()
+    }
+
+    /// Checks the syntax of a formula.
+    pub fn check_syntax(&self, ctx: &mut Ctx<'_>) -> CodeResult<()> {
+        self.ast.eval(ctx, true)?;
+        Ok(())
     }
 }
 
@@ -170,7 +176,14 @@ impl AstNode {
                         let args = FormulaFnArgs::new(arg_values, self.span, f.name);
                         (f.eval)(&mut *ctx, only_parse, args)?
                     }
-                    None => return Err(RunErrorMsg::BadFunctionName.with_span(func.span)),
+                    None => {
+                        if functions::excel::is_valid_excel_function(func_name) {
+                            return Err(RunErrorMsg::Unimplemented(func_name.clone().into())
+                                .with_span(func.span));
+                        } else {
+                            return Err(RunErrorMsg::BadFunctionName.with_span(func.span));
+                        }
+                    }
                 }
             }
 

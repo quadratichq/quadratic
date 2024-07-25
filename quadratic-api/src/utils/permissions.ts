@@ -49,12 +49,12 @@ export const getFilePermissions = ({
   userFileRelationship:
     // Not logged in
     | undefined
-    // Logged in + i'm the owner
-    | { owner: 'me' }
-    // Logged in + another user owns the file but it's shared with me
-    | { owner: 'another-user'; fileRole?: UserFileRole }
-    // Logged in + a team owns the file
-    | { owner: 'team'; teamRole?: UserTeamRole; fileRole?: UserFileRole };
+    // Logged in + file is on a team + it's private to me
+    | { context: 'private-to-me', teamRole: UserTeamRole | undefined }
+    // Logged in + file is on a team + it's private to another user + it was shared with me
+    | { context: 'private-to-someone-else'; fileRole: UserFileRole | undefined }
+    // Logged in + file is public to team
+    | { context: 'public-to-team'; teamRole: UserTeamRole | undefined; fileRole: UserFileRole | undefined };
 }) => {
   const permissions = new Set<FilePermission>();
   const isLoggedIn = userFileRelationship !== undefined;
@@ -82,14 +82,22 @@ export const getFilePermissions = ({
 
   // Otherwise, they are logged in, so:
 
-  // 2. Do they own the file? Give 'em full permissions
-  if (userFileRelationship.owner === 'me') {
-    permissions.add(FILE_VIEW).add(FILE_EDIT).add(FILE_DELETE).add(FILE_MOVE);
+  // 2. Is the file private to the current user?
+  if (userFileRelationship.context === 'private-to-me') {
+    // Access depends on their role in the team
+    if (
+      userFileRelationship.teamRole === UserTeamRoleSchema.enum.OWNER ||
+      userFileRelationship.teamRole === UserTeamRoleSchema.enum.EDITOR
+    ) {
+      permissions.add(FILE_VIEW).add(FILE_EDIT).add(FILE_DELETE).add(FILE_MOVE);
+    } else if (userFileRelationship.teamRole === UserTeamRoleSchema.enum.VIEWER) {
+      permissions.add(FILE_VIEW).add(FILE_EDIT).add(FILE_DELETE);
+    }
     return Array.from(permissions);
   }
 
-  // 3. Does another user own the file?
-  if (userFileRelationship.owner === 'another-user') {
+  // 3. Is the file private to someone else?
+  if (userFileRelationship.context === 'private-to-someone-else') {
     const { fileRole } = userFileRelationship;
     // Check for any explicitly-defined role in the file
     if (fileRole === UserFileRoleSchema.enum.EDITOR) {
@@ -100,8 +108,8 @@ export const getFilePermissions = ({
     return Array.from(permissions);
   }
 
-  // 4. Does a team own the file?
-  if (userFileRelationship.owner === 'team') {
+  // 4. Is the file public to the team?
+  if (userFileRelationship.context === 'public-to-team') {
     const { teamRole, fileRole } = userFileRelationship;
 
     // Look at the team role

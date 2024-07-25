@@ -59,8 +59,8 @@ model File {
     // a user, or a user to a team.
     ownerUser   User? @relation(name: "OwnerRelation", fields: [ownerUserId], references: [id])
     ownerUserId Int?
-    ownerTeam   Team? @relation(fields: [ownerTeamId], references: [id])
-    ownerTeamId Int?  @map("owner_team_id")
+    ownerTeam   Team  @relation(fields: [ownerTeamId], references: [id])
+    ownerTeamId Int   @map("owner_team_id")
 
     publicLinkAccess LinkPermission   @default(NOT_SHARED) @map("public_link_access")
     times_updated    Int              @default(1) // unused to delete
@@ -101,18 +101,18 @@ enum SubscriptionStatus {
 }
 
 model Team {
-    id                            Int                 @id @default(autoincrement())
-    uuid                          String              @unique @default(uuid())
-    name                          String
-    picture                       String? // S3FileKey
-    createdDate                   DateTime            @default(now()) @map("created_date")
-    UserTeamRole                  UserTeamRole[]
-    TeamInvite                    TeamInvite[]
-    File                          File[]
-    // Unactivated teams have never completed billing and have never been used
-    activated                     Boolean             @default(false)
+    id           Int            @id @default(autoincrement())
+    uuid         String         @unique @default(uuid())
+    name         String
+    picture      String? // S3FileKey
+    createdDate  DateTime       @default(now()) @map("created_date")
+    UserTeamRole UserTeamRole[]
+    TeamInvite   TeamInvite[]
+    File         File[]
+    Connection   Connection[]
+
     // Billing
-    stripeCustomerId              String              @unique @map("stripe_customer_id")
+    stripeCustomerId              String?             @unique @map("stripe_customer_id")
     stripeSubscriptionId          String?             @unique @map("stripe_subscription_id")
     stripeSubscriptionStatus      SubscriptionStatus? @map("stripe_subscription_status")
     stripeCurrentPeriodEnd        DateTime?           @map("stripe_current_period_end")
@@ -125,6 +125,28 @@ enum TeamRole {
     OWNER
     EDITOR
     VIEWER
+}
+
+enum ConnectionType {
+    POSTGRES
+    MYSQL
+}
+
+model Connection {
+    // Generic details
+    id          Int       @id @default(autoincrement())
+    uuid        String    @unique @default(uuid()) // used in URLs
+    createdDate DateTime  @default(now()) @map("created_date")
+    updatedDate DateTime  @default(now()) @map("updated_date")
+    archived    DateTime?
+    name        String
+    team        Team      @relation(fields: [teamId], references: [id])
+    teamId      Int       @map("team_id")
+    // secretArn       String // AWS Secret Manager ARN
+
+    // Type-specific details
+    type        ConnectionType
+    typeDetails Bytes // InitializationVector:Cyphertext(JSON)
 }
 
 model UserTeamRole {

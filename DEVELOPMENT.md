@@ -1,42 +1,22 @@
-<!-- omit in toc -->
 # Development
 
 Let's get everything setup to develop on Quadratic!
 
-- [Install Dependencies](#install-dependencies)
-- [Local Environment Setup](#local-environment-setup)
-  - [Docker](#docker)
-    - [Docker Compose](#docker-compose)
-    - [Building Images Manually](#building-images-manually)
-  - [Developing without Docker](#developing-without-docker)
-    - [Installing PostgreSQL](#installing-postgresql)
-      - [Mac](#mac)
-      - [Create Database](#create-database)
-    - [Installing Redis](#installing-redis)
-      - [Mac](#mac-1)
-- [Using node dev](#using-node-dev)
-  - [Commands while `node dev` is running](#commands-while-node-dev-is-running)
-  - [Running for React-only development](#running-for-react-only-development)
-- [Testing](#testing)
-  - [Testing Quadratic Client](#testing-quadratic-client)
-  - [Testing Quadratic API](#testing-quadratic-api)
-  - [Testing Rust Crates](#testing-rust-crates)
-    - [Rust Coverage](#rust-coverage)
-- [Linting](#linting)
-  - [Linting Rust Crates](#linting-rust-crates)
-- [Load Testing](#load-testing)
-
-
 ## Install Dependencies
 
-First, follow the instructions to install:
+First, install base dependencies:
 
 1. [NVM](https://github.com/nvm-sh/nvm)
 1. [rustup](https://www.rust-lang.org/tools/install)
 1. [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
 1. [Docker Desktop](https://docs.docker.com/desktop/)
+1. [Python3] (should be preinstalled on mac)
 
-Start Docker Desktop after installing required software.  Now install the depedencies:
+Start the Docker Desktop by opening Docker.
+
+`open -a Docker`
+
+Now install the tool chain:
 
 ```shell
 # install node version 18
@@ -51,19 +31,42 @@ cargo install cargo-watch
 
 ## Local Environment Setup
 
-First, copy over the example file:
+1. Create .env files using the template .env.example files
 
-```shell
-cp .env.example .env.local
-```
+   ```sh
+    cp .env.example .env && \
+    cp quadratic-api/.env.example quadratic-api/.env && \
+    cp quadratic-client/.env.example quadratic-client/.env && \
+    cp quadratic-files/.env.example quadratic-files/.env && \
+    cp quadratic-multiplayer/.env.example quadratic-multiplayer/.env && \
+    cp quadratic-connection/.env.example quadratic-connection/.env
+   ```
 
-Enter the missing Auth0 values and save.
+These are prefilled with `quadratic-community` Auth0 account credentials and values required to access services in docker.
 
-Now that dependencies are installed, all you need to do is run `node dev` to
+If you are on the Quadratic team you can get AUTH0 credentials from Notion.
+Auth0 creds need to be updated in: API, Client, Multiplayer, and Connections.
+
+## Start Docker
+
+Keep this running in a tab
+`docker compose --profile base up`  
+or
+`docker compose --profile base up -d` 
+to run as a daemon
+
+## Start Quadratic Dev
+
+In a new terminal tab
+`npm start`
+
+Now that dependencies are installed, all you need to do is run `npm start` which runs `node dev` to
 bring up the all services.  Invoke `node run --help` for information on how
 to use this script, as you can use it to watch individual (or groups of)
 services during development. See the [Using node dev](Using-node-dev) section
 for more more information.
+
+# Additional Information for Development
 
 ### Docker
 
@@ -83,8 +86,6 @@ npm run docker:up
 
 Along with the dependent services, scripts are executed that create S3 buckets and
 migrate the database.  Docker is run in the background in this script.
-
-
 
 #### Building Images Manually
 
@@ -280,14 +281,29 @@ JAVA_HOME="/opt/homebrew/opt/openjdk" bash /opt/homebrew/Cellar/jmeter/5.6.3/lib
 
 Output will be located in the terminal.
 
-# Prompting user after version change
+## Prompting user after version change
 
 The current version numbers are stored in `updateAlertVersion.json`. This JSON is ready by both the client and the multiplayer server. When the client has a lower version number then the multiplayer (the version is sent by the multiplayer server with the EnterFileRoom message), then the user is prompted to refresh with slightly different experience based on required vs. recommended changes.
 
-# Install Pyodide
+## Install Pyodide
 * Delete the quadratic-client/public/pyodide directory
 * npm i pyodide@latest
 * mkdir quadratic-client/public/pyodide
 * cp -rf node_modules/pyodide quadratic-client/public/
 * download the latest pyodide packages (the largest file available in https://github.com/pyodide/pyodide/releases)
 * unpack the file and copy its contents to quadratic-client/public/
+
+
+### Configure Auth0 account (Optional)
+
+This is only required if the `quadratic-community` Auth0 account does not work.
+
+1. Create an account on [Auth0](https://auth0.com/)
+
+2. Create a new Regular Web Application
+
+3. In the settings tab, configure the following:
+   - Allowed Callback URLs: `http://localhost:3000/login-result?redirectTo`
+   - Allowed Logout URLs: `http://localhost:3000`
+   - Allowed Web Origins: `http://localhost:3000`
+   - Allowed Origins (CORS): `http://localhost:3000`

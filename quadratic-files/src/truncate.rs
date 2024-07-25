@@ -216,6 +216,9 @@ mod tests {
                     .await
                     .unwrap();
 
+                // wait
+                tokio::time::sleep(tokio::time::Duration::from_millis(1)).await;
+
                 let message = processed_transaction_key(&file_id.to_string(), &j.to_string());
                 add_processed_transaction_in_days(&state, &channel, &message, AGE)
                     .await

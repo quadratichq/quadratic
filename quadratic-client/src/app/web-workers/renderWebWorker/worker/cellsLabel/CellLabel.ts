@@ -86,9 +86,10 @@ export class CellLabel {
         return RUN_ERROR_TEXT;
       case 'Chart':
         return CHART_TEXT;
-      default:
-        return cell?.value;
     }
+
+    // strip any line breaks
+    return cell.value.replace(/\n/g, ' ');
   }
 
   constructor(cellsLabels: CellsLabels, cell: JsRenderCell, screenRectangle: Rectangle) {
@@ -322,13 +323,20 @@ export class CellLabel {
   }
 
   /** Adds the glyphs to the CellsLabels */
-  updateLabelMesh(labelMeshes: LabelMeshes) {
+  updateLabelMesh(labelMeshes: LabelMeshes): { minX: number; minY: number; maxX: number; maxY: number } | undefined {
     if (!this.visible) return;
 
     const data = this.cellsLabels.bitmapFonts[this.fontName];
     if (!data) throw new Error('Expected BitmapFont to be defined in CellLabel.updateLabelMesh');
     const scale = this.fontSize / data.size;
     const color = this.tint ? convertTintToArray(this.tint) : undefined;
+
+    // keep track of the min/max x/y values for the viewRectangle
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
+
     for (let i = 0; i < this.chars.length; i++) {
       const char = this.chars[i];
       let offset =
@@ -372,6 +380,11 @@ export class CellLabel {
         buffers.vertices![index * 8 + 6] = xPos;
         buffers.vertices![index * 8 + 7] = bottom;
 
+        minX = Math.min(minX, xPos);
+        minY = Math.min(minY, yPos);
+        maxX = Math.max(maxX, right);
+        maxY = Math.max(maxY, bottom);
+
         buffers.uvs![index * 8 + 0] = textureUvs[0];
         buffers.uvs![index * 8 + 1] = textureUvs[1];
         buffers.uvs![index * 8 + 2] = textureUvs[2];
@@ -402,6 +415,7 @@ export class CellLabel {
         buffer.index++;
       }
     }
+    return { minX, minY, maxX, maxY };
   }
 
   // these are used to adjust column/row sizes without regenerating glyphs

@@ -1,11 +1,10 @@
-import { Tooltip } from '@mui/material';
+import { Tooltip, TooltipProps } from '@mui/material';
 
-interface TooltipHintProps {
-  title: string;
+interface TooltipHintProps extends TooltipProps {
+  title: string | JSX.Element;
   shortcut?: string;
   children: React.ReactElement<any, any>;
   // Anything else for <Tooltip> you want to pass
-  [x: string]: any;
 }
 
 export const TooltipHint = ({ title, shortcut, children, ...rest }: TooltipHintProps) => {

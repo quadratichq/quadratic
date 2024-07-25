@@ -33,7 +33,7 @@ const AIMessage = z.object({
 const AIAutoCompleteRequestBody = z.object({
   messages: z.array(AIMessage),
   // optional model
-  model: z.enum(['gpt-4', 'gpt-3-turbo', 'gpt-4-32k']).optional(),
+  model: z.enum(['gpt-4o']).optional(),
 });
 
 type AIAutoCompleteRequestBodyType = z.infer<typeof AIAutoCompleteRequestBody>;
@@ -50,7 +50,7 @@ ai_chat_router.post('/chat', validateAccessToken, ai_rate_limiter, async (reques
 
   try {
     const result = await openai.createChatCompletion({
-      model: r_json.model || 'gpt-4',
+      model: r_json.model || 'gpt-4o',
       messages: r_json.messages,
     });
 
@@ -79,7 +79,7 @@ ai_chat_router.post('/chat/stream', validateAccessToken, ai_rate_limiter, async 
     await openai
       .createChatCompletion(
         {
-          model: r_json.model || 'gpt-4',
+          model: r_json.model || 'gpt-4o',
           messages: r_json.messages,
           stream: true,
         },

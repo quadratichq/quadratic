@@ -1,4 +1,4 @@
-import { debugShowFileIO } from '@/app/debugFlags';
+import { debugOffline } from '@/app/debugFlags';
 import { core } from './core';
 import { coreClient } from './coreClient';
 
@@ -11,6 +11,20 @@ declare var self: WorkerGlobalScope &
     addUnsentTransaction: (transactionId: string, transaction: string, operations: number) => void;
   };
 
+interface OfflineEntry {
+  fileId: string;
+  transactionId: string;
+  transaction: string;
+  operations: number;
+  index: number;
+  timestamp: number;
+}
+
+interface OfflineStats {
+  transactions: number;
+  operations: number;
+}
+
 class Offline {
   private db: IDBDatabase | undefined;
   private index = 0;
@@ -19,7 +33,7 @@ class Offline {
   // The `stats.operations` are not particularly interesting right now because
   // we send the entire operations batched together; we'll need to send partial
   // messages with separate operations to get good progress information.
-  stats = { transactions: 0, operations: 0 };
+  stats: OfflineStats = { transactions: 0, operations: 0 };
 
   // Creates a connection to the indexedDb database
   init(fileId: string): Promise<undefined> {
@@ -63,7 +77,7 @@ class Offline {
   }
 
   // Loads the unsent transactions for this file from indexedDb
-  async load(): Promise<{ transactionId: string; transactions: string }[] | undefined> {
+  async load(): Promise<{ transactionId: string; transactions: string; timestamp?: number }[] | undefined> {
     if (!this.fileId) return undefined;
     return new Promise((resolve) => {
       const store = this.getFileIndex(true, 'fileId');
@@ -77,13 +91,18 @@ class Offline {
               transactionId: r.transactionId,
               transactions: r.transaction,
               operations: r.operations ?? 0,
+              timestamp: r.timestamp,
             };
           });
+        // set the index to the length of the results so that we can add new transactions to the end
+        this.index = results.length;
         this.stats = {
           transactions: results.length,
           operations: results.reduce((acc, r) => acc + r.operations, 0),
         };
         coreClient.sendOfflineTransactionStats();
+        const timestamps = results.flatMap((r) => (r.timestamp ? [r.timestamp] : [])).sort((a, b) => a - b);
+        coreClient.sendOfflineTransactionsApplied(timestamps);
         resolve(results);
       };
     });
@@ -93,11 +112,19 @@ class Offline {
   addUnsentTransaction(transactionId: string, transaction: string, operations: number) {
     const store = this.getObjectStore(false);
     if (!this.fileId) throw new Error("Expected fileId to be set in 'addUnsentTransaction' method.");
-    store.add({ fileId: this.fileId, transactionId, transaction, operations, index: this.index++ });
+    const offlineEntry: OfflineEntry = {
+      fileId: this.fileId,
+      transactionId,
+      transaction,
+      operations,
+      index: this.index++,
+      timestamp: Date.now(),
+    };
+    store.add(offlineEntry);
     this.stats.transactions++;
     this.stats.operations += operations;
     coreClient.sendOfflineTransactionStats();
-    if (debugShowFileIO) {
+    if (debugOffline) {
       console.log(`[Offline] Added transaction ${transactionId} to indexedDB.`);
     }
   }
@@ -112,11 +139,11 @@ class Offline {
         this.stats.operations -= cursor.value.operations;
         coreClient.sendOfflineTransactionStats();
         cursor.delete();
-        if (debugShowFileIO) {
+        if (debugOffline) {
           console.log(`[Offline] Removed transaction ${transactionId} from indexedDB.`);
         }
       } else {
-        if (debugShowFileIO) {
+        if (debugOffline) {
           console.log(`[Offline] Failed to remove transaction ${transactionId} from indexedDB (might not exist).`);
         }
       }
@@ -142,17 +169,23 @@ class Offline {
   // and a second time when the socket server connects.
   async loadTransactions() {
     const unsentTransactions = await this.load();
-    if (debugShowFileIO) {
+    if (debugOffline) {
       if (unsentTransactions?.length) {
-        console.log('[Offline] Loading unsent transactions from indexedDB.');
+        console.log(`[Offline] Loading ${unsentTransactions.length} unsent transactions from indexedDB.`);
       } else {
         console.log('[Offline] No unsent transactions in indexedDB.');
       }
     }
 
-    unsentTransactions?.forEach((tx) => {
-      core.applyOfflineUnsavedTransaction(tx.transactionId, tx.transactions);
-    });
+    if (unsentTransactions?.length) {
+      unsentTransactions.forEach((tx) => {
+        // we remove the transaction is there was a problem applying it (eg, if
+        // the schema has changed since it was saved offline)
+        if (!core.applyOfflineUnsavedTransaction(tx.transactionId, tx.transactions)) {
+          this.markTransactionSent(tx.transactionId);
+        }
+      });
+    }
   }
 
   // Used by tests to clear all entries from the indexedDb for this fileId

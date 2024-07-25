@@ -7,8 +7,9 @@ export const helpCLI = "\n\nOptions:" +
     "\n     -c, --core            Watch the quadratic-core directory" +
     "\n     -m, --multiplayer     Watch the quadratic-multiplayer directory" +
     "\n     -f, --files           Watch the quadratic-files directory" +
+    "\n     -n, --connection       Watch the quadratic-connection directory" +
     "\n     -y, --python          Watch the quadratic-kernel/python-wasm directory" +
-    "\n     -e, --rustClient     Watch the quadratic-rust-client directory" +
+    "\n     -e, --rustClient      Watch the quadratic-rust-client directory" +
     "\n     -s, --skipTypes       Skip WASM types compilation" +
     "\n     -l, --all             Watch all directories" +
     "\n     -p, --perf            Run quadratic-core in perf mode (slower linking but faster runtime)" +
@@ -17,9 +18,11 @@ export const helpCLI = "\n\nOptions:" +
     "\n     -C, --hideCore        Hide Core output" +
     "\n     -P, --hideMultiplayer Hide Multiplayer output" +
     "\n     -F, --hideFiles       Hide Files output" +
+    "\n     -N, --hideConnection   Hide Connection output" +
     "\n     -Y, --hidePython      Hide Python output" +
     "\n     -O, --hideRustClient  Hide RustClient output" +
     "\n     -T, --hideTypes       Hide Types output" +
+    "\n     -L, --servicesLocal   Set Redis & Postgres as running locally" +
     "\n     -d, --dark            Use dark theme" +
     "\n     -h, --help            Display help for command" +
     "\n     \n(press h to hide help. press q to quit)";
@@ -33,5 +36,6 @@ export const helpKeyboard = "\n\nPress:" +
     "\n            ctrl+m - Kill/Resurrect multiplayer" +
     "\n            ctrl+f - Kill/Resurrect files" +
     "\n                 d - Toggle dark theme" +
+    "\n                 L - Toggle Redis & Postgres as running locally" +
     "\n                 H - Show CLI options" +
     "\n       \n(press h to hide help. press q to quit)";

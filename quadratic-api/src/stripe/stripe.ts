@@ -158,7 +158,7 @@ const updateTeamStatus = async (
   await dbClient.team.update({
     where: { stripeCustomerId: customerId },
     data: {
-      activated: true, // activate the team
+      // activated: true, // activate the team
       stripeSubscriptionId,
       stripeSubscriptionStatus,
       stripeCurrentPeriodEnd: endDate,
@@ -188,6 +188,10 @@ export const updateBillingIfNecessary = async (team: Team) => {
     ) {
       return;
     }
+
+  if (!team.stripeCustomerId) {
+    return;
+  }
 
   // retrieve the customer
   const customer = await stripe.customers.retrieve(team.stripeCustomerId, {

@@ -1,10 +1,9 @@
-import { Action as FileShareAction } from '@/routes/files.$uuid.sharing';
-import { TeamAction } from '@/routes/teams.$uuid';
-import { apiClient } from '@/shared/api/apiClient';
+import { Action as FileShareAction } from '@/routes/api.files.$uuid.sharing';
+import { TeamAction } from '@/routes/teams.$teamUuid';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
 import {
   Select,
@@ -58,13 +57,7 @@ export function DialogBody({ children }: { children: ReactNode }) {
   return <div className={`flex flex-col gap-3`}>{children}</div>;
 }
 
-export function ShareTeamDialog({
-  data,
-  onClose,
-}: {
-  data: ApiTypes['/v0/teams/:uuid.GET.response'];
-  onClose: () => void;
-}) {
+export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.response'] }) {
   const {
     userMakingRequest,
     users,
@@ -95,118 +88,105 @@ export function ShareTeamDialog({
     ...pendingInvites.map((invite) => invite.email),
   ];
 
-  const noOfUsers = users.length;
+  // <Button
+  //   variant="link"
+  //   onClick={() => {
+  //     apiClient.teams.billing.getPortalSessionUrl(uuid).then((data) => {
+  //       window.location.href = data.url;
+  //     });
+  //   }}
+  //   className="h-auto p-0 font-normal leading-4"
+  // >
+  //   Edit billing
+  // </Button>
 
   return (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Team members</DialogTitle>
-          <DialogDescription>
-            {noOfUsers} paid ·{' '}
-            <Button
-              variant="link"
-              onClick={() => {
-                apiClient.teams.billing.getPortalSessionUrl(uuid).then((data) => {
-                  window.location.href = data.url;
-                });
-              }}
-              className="h-auto p-0 font-normal leading-4"
-            >
-              Edit billing
-            </Button>
-          </DialogDescription>
-        </DialogHeader>
-        <DialogBody>
-          {userMakingRequest.teamPermissions.includes('TEAM_EDIT') && (
-            <InviteForm
-              action={action}
-              intent="create-team-invite"
-              disallowedEmails={exisitingTeamEmails}
-              roles={[
-                ...(userMakingRequest.teamRole === UserTeamRoleSchema.enum.OWNER
-                  ? [UserTeamRoleSchema.enum.OWNER]
-                  : []),
-                UserTeamRoleSchema.enum.EDITOR,
-                UserTeamRoleSchema.enum.VIEWER,
-              ]}
-              roleDefaultValue={UserTeamRoleSchema.enum.EDITOR}
-            />
-          )}
+    <DialogBody>
+      {userMakingRequest.teamPermissions.includes('TEAM_EDIT') && (
+        <InviteForm
+          action={action}
+          intent="create-team-invite"
+          disallowedEmails={exisitingTeamEmails}
+          roles={[
+            ...(userMakingRequest.teamRole === UserTeamRoleSchema.enum.OWNER ? [UserTeamRoleSchema.enum.OWNER] : []),
+            UserTeamRoleSchema.enum.EDITOR,
+            UserTeamRoleSchema.enum.VIEWER,
+          ]}
+          roleDefaultValue={UserTeamRoleSchema.enum.EDITOR}
+        />
+      )}
 
-          {users.map((user) => {
-            const isLoggedInUser = userMakingRequest.id === user.id;
-            const canDelete = isLoggedInUser
-              ? canDeleteLoggedInUserInTeam({ role: user.role, numberOfOwners })
-              : canDeleteUserInTeam({
-                  permissions: userMakingRequest.teamPermissions,
-                  loggedInUserRole: userMakingRequest.teamRole,
-                  userRole: user.role,
-                });
-            const roles = isLoggedInUser
-              ? getAvailableRolesForLoggedInUserInTeam({ role: user.role, numberOfOwners })
-              : getAvailableRolesForUserInTeam({ loggedInUserRole: userMakingRequest.teamRole, userRole: user.role });
-            return (
-              <ManageUser
-                key={user.id}
-                isLoggedInUser={isLoggedInUser}
-                user={user}
-                onUpdate={(submit, userId, role) => {
-                  const data: TeamAction['request.update-team-user'] = {
-                    intent: 'update-team-user',
-                    userId,
-                    role,
-                  };
+      {users.map((user) => {
+        const isLoggedInUser = userMakingRequest.id === user.id;
+        const canDelete = isLoggedInUser
+          ? canDeleteLoggedInUserInTeam({ role: user.role, numberOfOwners })
+          : canDeleteUserInTeam({
+              permissions: userMakingRequest.teamPermissions,
+              loggedInUserRole: userMakingRequest.teamRole,
+              userRole: user.role,
+            });
+        const roles = isLoggedInUser
+          ? getAvailableRolesForLoggedInUserInTeam({ role: user.role, numberOfOwners })
+          : getAvailableRolesForUserInTeam({ loggedInUserRole: userMakingRequest.teamRole, userRole: user.role });
+        return (
+          <ManageUser
+            key={user.id}
+            isLoggedInUser={isLoggedInUser}
+            user={user}
+            onUpdate={(submit, userId, role) => {
+              const data: TeamAction['request.update-team-user'] = {
+                intent: 'update-team-user',
+                userId,
+                role,
+              };
+              submit(data, {
+                method: 'POST',
+                action,
+                encType: 'application/json',
+              });
+            }}
+            onDelete={
+              canDelete
+                ? (submit, userId) => {
+                    const data: TeamAction['request.delete-team-user'] = {
+                      intent: 'delete-team-user',
+                      userId,
+                    };
+
+                    submit(data, {
+                      method: 'POST',
+                      action,
+                      encType: 'application/json',
+                    });
+                  }
+                : undefined
+            }
+            roles={roles}
+          />
+        );
+      })}
+      {invites.map((invite) => (
+        <ManageInvite
+          key={invite.id}
+          invite={invite}
+          onDelete={
+            userMakingRequest.teamPermissions.includes('TEAM_EDIT')
+              ? (submit, inviteId) => {
+                  const data: TeamAction['request.delete-team-invite'] = { intent: 'delete-team-invite', inviteId };
                   submit(data, {
                     method: 'POST',
                     action,
                     encType: 'application/json',
                   });
-                }}
-                onDelete={
-                  canDelete
-                    ? (submit, userId) => {
-                        const data: TeamAction['request.delete-team-user'] = {
-                          intent: 'delete-team-user',
-                          userId,
-                        };
-
-                        submit(data, {
-                          method: 'POST',
-                          action,
-                          encType: 'application/json',
-                        });
-                      }
-                    : undefined
                 }
-                roles={roles}
-              />
-            );
-          })}
-          {invites.map((invite) => (
-            <ManageInvite
-              key={invite.id}
-              invite={invite}
-              onDelete={
-                userMakingRequest.teamPermissions.includes('TEAM_EDIT')
-                  ? (submit, inviteId) => {
-                      const data: TeamAction['request.delete-team-invite'] = { intent: 'delete-team-invite', inviteId };
-                      submit(data, {
-                        method: 'POST',
-                        action,
-                        encType: 'application/json',
-                      });
-                    }
-                  : undefined
-              }
-            />
-          ))}
-          {pendingInvites.map((invite, i) => (
-            <ManageInvite key={i} invite={invite} />
-          ))}
-        </DialogBody>
-      </DialogContent>
-    </Dialog>
+              : undefined
+          }
+        />
+      ))}
+      {pendingInvites.map((invite, i) => (
+        <ManageInvite key={i} invite={invite} />
+      ))}
+    </DialogBody>
   );
 }
 
@@ -219,7 +199,7 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
     owner,
   } = data;
   const fetchers = useFetchers();
-  const action = ROUTES.FILES_SHARE(uuid);
+  const action = ROUTES.API.FILE_SHARING(uuid);
   const canEditFile = filePermissions.includes('FILE_EDIT');
 
   sortLoggedInUserFirst(users, loggedInUserId);
@@ -419,7 +399,7 @@ export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: s
   // On the initial mount, load the data (if it's not there already)
   useEffect(() => {
     if (fetcher.state === 'idle' && !fetcher.data) {
-      fetcher.load(ROUTES.FILES_SHARE(uuid));
+      fetcher.load(ROUTES.API.FILE_SHARING(uuid));
     }
   }, [fetcher, uuid]);
 
@@ -465,7 +445,7 @@ export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: s
                 <button
                   className="underline"
                   onClick={() => {
-                    fetcher.load(ROUTES.FILES_SHARE(uuid));
+                    fetcher.load(ROUTES.API.FILE_SHARING(uuid));
                   }}
                 >
                   try again
@@ -686,7 +666,13 @@ function ManageUser({
               value={activeRole}
               onValueChange={(value: 'DELETE' | (typeof roles)[0]) => {
                 if (value === 'DELETE' && onDelete) {
-                  onDelete(fetcherDelete.submit, userId);
+                  const msg = isLoggedInUser
+                    ? 'Please confirm you want to leave this team. Your private files will be made public to the team.'
+                    : 'Please confirm you want to remove this person from the team. Their private files will be made public to the team.';
+                  const result = window.confirm(msg);
+                  if (result) {
+                    onDelete(fetcherDelete.submit, userId);
+                  }
                 } else if (onUpdate) {
                   const role = value as (typeof roles)[0];
                   onUpdate(fetcherUpdate.submit, userId, role);
@@ -852,7 +838,7 @@ function ListItemPublicLink({
   disabled: boolean;
 }) {
   const fetcher = useFetcher();
-  const fetcherUrl = ROUTES.FILES_SHARE(uuid);
+  const fetcherUrl = ROUTES.API.FILE_SHARING(uuid);
 
   // If we're updating, optimistically show the next value
   if (fetcher.state !== 'idle' && isJsonObject(fetcher.json)) {

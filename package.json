@@ -14,11 +14,16 @@
     "quadratic-client",
     "quadratic-files",
     "quadratic-multiplayer",
-    "quadratic-rust-client"
+    "quadratic-rust-client",
+    "quadratic-client",
+    "quadratic-kernels/python-wasm"
   ],
   "type": "module",
   "scripts": {
     "start": "node dev",
+    "start:services-local": "node dev -L",
+    "dev": "node dev -l",
+    "dev:services-local": "node dev -l -L",
     "api:start": "npm start --workspace=quadratic-api",
     "clean": "npm exec --workspaces -- npx rimraf node_modules && npx rimraf node_modules",
     "lint:client": "cd quadratic-client && npm run lint:ts && npm run lint:eslint && lint:prettier && lint:clippy",
@@ -50,9 +55,13 @@
     "prisma:migrate": "cd quadratic-api && npm run prisma:migrate",
     "docker:up": "docker compose up -d --wait && npm run prisma:migrate --workspace=quadratic-api",
     "docker:down": "docker compose down",
-    "docker:down:kill-volumes": "docker compose down -v"
+    "docker:down:kill-volumes": "docker compose down -v",
+    "copy:esbuild": "cp -f node_modules/esbuild-wasm/esbuild.wasm quadratic-client/public/",
+    "gen:pyright:initialization": "npm run gen:pyright:worker --workspace=quadratic-kernels/python-wasm",
+    "gen:pyright:worker": "npm run gen:pyright:worker --workspace=quadratic-kernels/python-wasm"
   },
   "dependencies": {
+    "tsc": "^2.0.4",
     "vitest": "^1.5.0",
     "zod": "^3.22.4"
   },

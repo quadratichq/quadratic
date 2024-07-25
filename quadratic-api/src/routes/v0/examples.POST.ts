@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
+import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
@@ -19,11 +20,21 @@ const schema = z.object({
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/examples.POST.response']>) {
   const { id: userId } = req.user;
   const {
-    body: { publicFileUrlInProduction },
+    body: { publicFileUrlInProduction, teamUuid, isPrivate },
   } = parseRequest(req, schema);
+  const {
+    team,
+    userMakingRequest: { permissions: teamPermissions },
+  } = await getTeam({ uuid: teamUuid, userId });
+
   // We validate that we get a UUID in the zod schema, so if we reach here
   // we know we can do this simple operation.
   const fileUuid = publicFileUrlInProduction.split('/').pop() as string;
+
+  // Make sure the user has the ability to create a file in the given team
+  if (!teamPermissions.includes('TEAM_EDIT')) {
+    throw new ApiError(403, 'You do not have permission to create a file in this team.');
+  }
 
   try {
     const apiUrl = `https://api.quadratichq.com/v0/files/${fileUuid}`;
@@ -36,8 +47,15 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/example
     // Fetch the contents of the file
     const fileContents = await fetch(lastCheckpointDataUrl).then((res) => res.text());
 
-    // Create the file in the user's account
-    const dbFile = await createFile({ name, userId, contents: fileContents, version: lastCheckpointVersion });
+    // Create a private file for the user in the requested team
+    const dbFile = await createFile({
+      name,
+      userId,
+      contents: fileContents,
+      version: lastCheckpointVersion,
+      teamId: team.id,
+      isPrivate,
+    });
     return res.status(201).json({ uuid: dbFile.uuid, name: dbFile.name });
   } catch (e) {
     console.error(e);

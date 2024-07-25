@@ -38,7 +38,9 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   }
 
   // Update Customer name in Stripe
-  await updateCustomer(stripeCustomerId, name);
+  if (stripeCustomerId) {
+    await updateCustomer(stripeCustomerId, name);
+  }
 
   // Update the team name
   const newTeam = await dbClient.team.update({

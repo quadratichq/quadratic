@@ -16,11 +16,12 @@ export const CodeHint = () => {
   const [offsets, setOffsets] = useState(sheets.sheet.getCellOffsets(initialX, initialY));
   const [hide, setHide] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const [multipleSelection, setMultipleSelection] = useState(false);
 
   useEffect(() => {
     const updateCursor = async () => {
       const { x, y } = sheets.sheet.cursor.cursorPosition;
-      const newCellHasValue = await quadraticCore.hasRenderCells(sheets.sheet.id, x, y, 0, 0);
+      const newCellHasValue = await quadraticCore.hasRenderCells(sheets.sheet.id, x, y, 1, 1);
       setHide(true);
       setCellHasValue(newCellHasValue);
 
@@ -32,6 +33,9 @@ export const CodeHint = () => {
         setHide(true);
       }
       setOffsets(sheets.sheet.getCellOffsets(x, y));
+      setMultipleSelection(
+        sheets.sheet.cursor.multiCursor !== undefined || sheets.sheet.cursor.columnRow !== undefined
+      );
     };
     updateCursor();
     events.on('setCursor', updateCursor);
@@ -58,7 +62,8 @@ export const CodeHint = () => {
     cellTypeMenuOpenedCount >= 2 ||
     showCodeEditor ||
     !permissions.includes('FILE_EDIT') ||
-    isMobile
+    isMobile ||
+    multipleSelection
   ) {
     return null;
   }

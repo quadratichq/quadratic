@@ -1,19 +1,14 @@
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::GridController;
 
-use crate::{Rect, SheetPos, SheetRect};
+use crate::selection::Selection;
+use crate::SheetPos;
 
 impl GridController {
     /// Starts a transaction to set the value of a cell by converting a user's String input
     pub fn set_cell_value(&mut self, sheet_pos: SheetPos, value: String, cursor: Option<String>) {
         let ops = self.set_cell_value_operations(sheet_pos, value);
-        self.start_user_transaction(
-            ops,
-            cursor,
-            TransactionName::SetCells,
-            Some(sheet_pos.sheet_id),
-            Some(Rect::single_pos(sheet_pos.into())),
-        );
+        self.start_user_transaction(ops, cursor, TransactionName::SetCells);
     }
 
     /// Starts a transaction to set cell values using a 2d array of user's &str input where [[1, 2, 3], [4, 5, 6]] creates a grid of width 3 and height 2.
@@ -41,49 +36,25 @@ impl GridController {
             x = sheet_pos.x;
             y += 1;
         }
-        self.start_user_transaction(
-            ops,
-            cursor,
-            TransactionName::SetCells,
-            Some(sheet_pos.sheet_id),
-            Some(Rect::single_pos(sheet_pos.into())),
-        );
+        self.start_user_transaction(ops, cursor, TransactionName::SetCells);
     }
 
     /// Starts a transaction to deletes the cell values and code in a given rect and updates dependent cells.
-    pub fn delete_cells_rect(&mut self, sheet_rect: SheetRect, cursor: Option<String>) {
-        let ops = self.delete_cells_rect_operations(sheet_rect);
-        self.start_user_transaction(
-            ops,
-            cursor,
-            TransactionName::SetCells,
-            Some(sheet_rect.sheet_id),
-            Some(sheet_rect.into()),
-        );
+    pub fn delete_cells(&mut self, selection: &Selection, cursor: Option<String>) {
+        let ops = self.delete_cells_operations(selection);
+        self.start_user_transaction(ops, cursor, TransactionName::SetCells);
     }
 
     /// Starts a transaction to clear formatting in a given rect.
-    pub fn clear_formatting(&mut self, sheet_rect: SheetRect, cursor: Option<String>) {
-        let ops = self.clear_formatting_operations(sheet_rect);
-        self.start_user_transaction(
-            ops,
-            cursor,
-            TransactionName::SetFormats,
-            Some(sheet_rect.sheet_id),
-            Some(sheet_rect.into()),
-        );
+    pub fn clear_formatting(&mut self, selection: &Selection, cursor: Option<String>) {
+        let ops = self.clear_format_selection_operations(selection);
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
     }
 
     /// Starts a transaction to delete values and formatting in a given rect, and updates dependent cells.
-    pub fn delete_values_and_formatting(&mut self, sheet_rect: SheetRect, cursor: Option<String>) {
-        let ops = self.delete_values_and_formatting_operations(sheet_rect);
-        self.start_user_transaction(
-            ops,
-            cursor,
-            TransactionName::SetCells,
-            Some(sheet_rect.sheet_id),
-            Some(sheet_rect.into()),
-        );
+    pub fn delete_values_and_formatting(&mut self, selection: Selection, cursor: Option<String>) {
+        let ops = self.delete_values_and_formatting_operations(&selection);
+        self.start_user_transaction(ops, cursor, TransactionName::SetCells);
     }
 }
 
@@ -92,7 +63,8 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{NumericDecimals, NumericFormat, SheetId},
-        CellValue, SheetPos,
+        selection::Selection,
+        CellValue, Pos, Rect, SheetPos,
     };
     use std::str::FromStr;
 
@@ -243,5 +215,31 @@ mod test {
         // array
         gc.set_cell_value(sheet_pos, "[1,2,3]".into(), None);
         assert_eq!(get_cell_value(&gc), CellValue::Text("[1,2,3]".into()));
+    }
+
+    #[test]
+    fn clear_formatting() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            String::from("1.12345678"),
+            None,
+        );
+        let selection = Selection::pos(0, 0, sheet_id);
+        let _ = gc.set_currency_selection(selection.clone(), "$".to_string(), None);
+        gc.clear_formatting(&selection, None);
+        let cells = gc
+            .sheet(sheet_id)
+            .get_render_cells(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 }));
+        assert_eq!(cells.len(), 1);
+        assert_eq!(cells[0].value, "1.12345678");
+
+        // ensure not found sheet_id fails silently
+        gc.clear_formatting(&selection, None);
     }
 }

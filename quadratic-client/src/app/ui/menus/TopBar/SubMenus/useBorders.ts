@@ -1,5 +1,8 @@
+import { events } from '@/app/events/events';
 import { BorderSelection, BorderStyle, CellBorderLine } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { Rectangle } from 'pixi.js';
+import { useEffect, useState } from 'react';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { convertColorStringToTint, convertTintToArray } from '../../../../helpers/convertColor';
 import { colors } from '../../../../theme/colors';
@@ -10,15 +13,23 @@ export interface ChangeBorder {
   type?: CellBorderLine;
 }
 
-interface IResults {
+export interface UseBordersResults {
   changeBorders: (options: ChangeBorder) => void;
   clearBorders: (args?: { create_transaction?: boolean }) => void;
+  disabled: boolean;
 }
 
-export const useBorders = (): IResults => {
+export const useBorders = (): UseBordersResults => {
   const changeBorders = (options: ChangeBorder): void => {
+    const cursor = sheets.sheet.cursor;
+    if (cursor.multiCursor && cursor.multiCursor.length > 1) {
+      console.log('TODO: implement multiCursor border support');
+      return;
+    }
+    const rectangle = cursor.multiCursor
+      ? cursor.multiCursor[0]
+      : new Rectangle(cursor.cursorPosition.x, cursor.cursorPosition.y, 1, 1);
     const sheet = sheets.sheet;
-    const rectangle = sheets.sheet.cursor.getRectangle();
     const colorTint = options.color === undefined ? colors.defaultBorderColor : convertColorStringToTint(options.color);
     const colorArray = convertTintToArray(colorTint);
     const selection = options.selection === undefined ? 'all' : options.selection;
@@ -35,13 +46,38 @@ export const useBorders = (): IResults => {
   };
 
   const clearBorders = (): void => {
-    const sheet = sheets.sheet;
-    const rectangle = sheets.sheet.cursor.getRectangle();
-    quadraticCore.setRegionBorders(sheet.id, rectangle, 'clear');
+    const cursor = sheets.sheet.cursor;
+    if (cursor.multiCursor && cursor.multiCursor.length > 1) {
+      console.log('TODO: implement multiCursor border support');
+      return;
+    }
+    const rectangle = cursor.multiCursor
+      ? cursor.multiCursor[0]
+      : new Rectangle(cursor.cursorPosition.x, cursor.cursorPosition.y, 1, 1);
+    quadraticCore.setRegionBorders(sheets.sheet.id, rectangle, 'clear');
   };
 
+  const [disabled, setDisabled] = useState(false);
+  useEffect(() => {
+    const cursorPosition = () => {
+      if (
+        (sheets.sheet.cursor.multiCursor && sheets.sheet.cursor.multiCursor.length > 1) ||
+        sheets.sheet.cursor.columnRow !== undefined
+      ) {
+        setDisabled(true);
+      } else {
+        setDisabled(false);
+      }
+    };
+    events.on('cursorPosition', cursorPosition);
+    return () => {
+      events.off('cursorPosition', cursorPosition);
+    };
+  }, []);
+
   return {
-    changeBorders: changeBorders,
-    clearBorders: clearBorders,
+    changeBorders,
+    clearBorders,
+    disabled,
   };
 };

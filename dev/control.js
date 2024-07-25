@@ -11,6 +11,7 @@ export class Control {
     client;
     multiplayer;
     files;
+    connector;
     python;
     rustClient;
     db;
@@ -23,6 +24,7 @@ export class Control {
         core: false,
         multiplayer: false,
         files: false,
+        connector: false,
         python: false,
         rustClient: false,
         types: false,
@@ -33,36 +35,6 @@ export class Control {
     };
     constructor(cli) {
         this.cli = cli;
-        this.isRedisRunning().then((running) => {
-            this.ui.print("redis", "checking whether redis is running...");
-            if (running === "not found") {
-                this.status.redis = "killed"; // use killed to indicate that redis-cli was not found
-                this.ui.print("redis", "redis-cli not found", "red");
-            }
-            else if (running === true) {
-                this.status.redis = true;
-                this.ui.print("redis", "is running", "green");
-            }
-            else {
-                this.status.redis = "error";
-                this.ui.print("redis", "is NOT running!", "red");
-            }
-        });
-        this.isPostgresRunning().then((running) => {
-            this.ui.print("redis", "checking whether postgres is running...");
-            if (running === "not found") {
-                this.status.postgres = "killed"; // use killed to indicate that redis-cli was not found
-                this.ui.print("postgres", "pg_isready not found", "red");
-            }
-            else if (running === true) {
-                this.status.postgres = true;
-                this.ui.print("postgres", "is running", "green");
-            }
-            else {
-                this.status.postgres = "error";
-                this.ui.print("postgres", "is NOT running!", "red");
-            }
-        });
     }
     async quit() {
         if (this.quitting)
@@ -76,6 +48,7 @@ export class Control {
             this.kill("client"),
             this.kill("multiplayer"),
             this.kill("files"),
+            this.kill("connector"),
             this.kill("python"),
             this.kill("rustClient"),
         ]);
@@ -101,6 +74,38 @@ export class Control {
             : response.includes(options.start)) {
             this.status[name] = false;
         }
+    }
+    checkServices() {
+        this.isRedisRunning().then((running) => {
+            this.ui.print("redis", "checking whether redis is running...");
+            if (running === "not found") {
+                this.status.redis = "killed"; // use killed to indicate that redis-cli was not found
+                this.ui.print("redis", "redis-cli not found", "red");
+            }
+            else if (running === true) {
+                this.status.redis = true;
+                this.ui.print("redis", "is running", "green");
+            }
+            else {
+                this.status.redis = "error";
+                this.ui.print("redis", "is NOT running!", "red");
+            }
+        });
+        this.isPostgresRunning().then((running) => {
+            this.ui.print("postgres", "checking whether postgres is running...");
+            if (running === "not found") {
+                this.status.postgres = "killed"; // use killed to indicate that redis-cli was not found
+                this.ui.print("postgres", "pg_isready not found", "red");
+            }
+            else if (running === true) {
+                this.status.postgres = true;
+                this.ui.print("postgres", "is running", "green");
+            }
+            else {
+                this.status.postgres = "error";
+                this.ui.print("postgres", "is NOT running!", "red");
+            }
+        });
     }
     async runApi() {
         if (this.quitting)
@@ -224,6 +229,7 @@ export class Control {
                     }
                     else {
                         this.runFiles();
+                        this.runConnection();
                     }
                 }
             }));
@@ -249,6 +255,7 @@ export class Control {
                     }
                     else {
                         this.runFiles();
+                        this.runConnection();
                     }
                 }
             });
@@ -317,6 +324,7 @@ export class Control {
         }, () => {
             if (!restart) {
                 this.runFiles();
+                this.runConnection();
             }
         }));
     }
@@ -366,6 +374,48 @@ export class Control {
                 this.ui.print("files", "killed", "red");
             }
             this.status.files = "killed";
+        }
+    }
+    async runConnection() {
+        if (this.quitting)
+            return;
+        if (this.status.connector === "killed")
+            return;
+        this.status.connector = false;
+        this.ui.print("connector");
+        await this.kill("connector");
+        this.signals.connector = new AbortController();
+        this.connector = spawn("cargo", this.cli.options.connector ? ["watch", "-x", "'run'"] : ["run"], {
+            signal: this.signals.connector.signal,
+            cwd: "quadratic-connection",
+            env: { ...process.env, RUST_LOG: "info" },
+        });
+        this.ui.printOutput("connector", (data) => {
+            this.handleResponse("connector", data, {
+                success: "listening on",
+                error: ["error[", "npm ERR!"],
+                start: "    Compiling",
+            });
+        });
+    }
+    async restartConnection() {
+        this.cli.options.connector = !this.cli.options.connector;
+        if (this.connector) {
+            this.runConnection();
+        }
+    }
+    async killConnection() {
+        if (this.status.connector === "killed") {
+            this.status.connector = false;
+            this.ui.print("connector", "restarting...");
+            this.runConnection();
+        }
+        else {
+            if (this.connector) {
+                await this.kill("connector");
+                this.ui.print("connector", "killed", "red");
+            }
+            this.status.connector = "killed";
         }
     }
     async runPython() {
@@ -470,7 +520,10 @@ export class Control {
         return new Promise((resolve) => {
             if (this.quitting)
                 resolve(false);
-            const redis = spawn("redis-cli", ["ping"]);
+            const servicesLocal = this.cli.options.servicesLocal;
+            const redis = servicesLocal
+                ? spawn("redis-cli", ["ping"])
+                : spawn("docker", ["exec", "quadratic-redis-1", "redis-cli", "ping"]);
             redis.on("error", (e) => {
                 if (e.code === "ENOENT") {
                     resolve("not found");
@@ -485,7 +538,10 @@ export class Control {
         return new Promise((resolve) => {
             if (this.quitting)
                 resolve(false);
-            const postgres = spawn("pg_isready");
+            const servicesLocal = this.cli.options.servicesLocal;
+            const postgres = servicesLocal
+                ? spawn("pg_isready")
+                : spawn("docker", ["exec", "postgres", "pg_isready"]);
             postgres.on("error", (e) => {
                 if (e.code === "ENOENT") {
                     resolve("not found");
@@ -497,8 +553,9 @@ export class Control {
         });
     }
     async start(ui) {
-        exec("rm -rf quadratic-client/src/quadratic-core");
+        exec("rm -rf quadratic-client/src/app/quadratic-core");
         this.ui = ui;
+        this.checkServices();
         this.runRust();
         this.runDb();
         this.runPython();

@@ -17,32 +17,36 @@ const schema = z.object({
 
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.POST.response']>) {
   const {
-    body: { name, contents, version, teamUuid },
+    body: { name, contents, version, teamUuid, isPrivate },
   } = parseRequest(req, schema);
   const {
     user: { id: userId },
   } = req;
 
-  // Trying to create a file in a team?
-  let teamId = undefined;
-  if (teamUuid) {
-    // Check that the team exists and the user can create in it
-    const {
-      team: { id },
-      userMakingRequest,
-    } = await getTeam({ uuid: teamUuid, userId });
-    teamId = id;
+  // Check that the team exists and the user can create in it
+  const {
+    team: { id: teamId },
+    userMakingRequest: { permissions: teamPermissions },
+  } = await getTeam({ uuid: teamUuid, userId });
+  const canView = teamPermissions.includes('TEAM_VIEW');
+  const canEdit = teamPermissions.includes('TEAM_EDIT');
 
-    // Can you even create a file in this team?
-    if (!userMakingRequest.permissions.includes('TEAM_EDIT')) {
-      throw new ApiError(403, 'User does not have permission to create a file in this team.');
-    }
+  // Can they view OR edit the team?
+  if (!(canView || canEdit)) {
+    throw new ApiError(403, 'User does not have permission to create a file in this team.');
   }
 
-  const dbFile = await createFile({ name, userId, teamId, contents, version });
+  // If they can only view the team, are they trying to create a public file?
+  if (!canEdit && !isPrivate) {
+    throw new ApiError(403, 'User does not have permission to create a public file in this team.');
+  }
 
+  // Ok, create it!
+  const dbFile = await createFile({ name, userId, teamId, contents, version, isPrivate });
   return res.status(201).json({
     file: { uuid: dbFile.uuid, name: dbFile.name },
-    team: dbFile.ownerTeam ? { uuid: dbFile.ownerTeam.uuid } : undefined,
+    team: {
+      uuid: (dbFile.ownerTeam as any).uuid,
+    },
   });
 }

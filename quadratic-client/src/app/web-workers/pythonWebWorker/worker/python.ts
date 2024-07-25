@@ -1,15 +1,18 @@
 import { debugWebWorkers } from '@/app/debugFlags';
 import { JsGetCellResponse } from '@/app/quadratic-core-types';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
+import { LanguageState } from '@/app/web-workers/languageTypes';
 import { PyodideInterface, loadPyodide } from 'pyodide';
-import type { CodeRun, PythonStateType } from '../pythonClientMessages';
 import type { CorePythonRun } from '../pythonCoreMessages';
 import type { InspectPython, PythonError, PythonSuccess, outputType } from '../pythonTypes';
 import { pythonClient } from './pythonClient';
 import { pythonCore } from './pythonCore';
 
 const TRY_AGAIN_TIMEOUT = 500;
-
 const IS_TEST = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
+
+// eslint-disable-next-line no-restricted-globals
+const SELF = self;
 
 function isEmpty(value: [string, outputType] | string | null | undefined) {
   return value == null || (typeof value === 'string' && value.trim().length === 0);
@@ -18,7 +21,7 @@ function isEmpty(value: [string, outputType] | string | null | undefined) {
 class Python {
   private pyodide: PyodideInterface | undefined;
   private awaitingExecution: CodeRun[];
-  state: PythonStateType;
+  state: LanguageState;
   private transactionId?: string;
 
   constructor() {
@@ -27,26 +30,18 @@ class Python {
     this.init();
   }
 
-  private getCells = async (
+  private getCells = (
     x0: number,
     y0: number,
     x1: number,
     y1: number,
     sheet?: string,
     lineNumber?: number
-  ): Promise<JsGetCellResponse[] | undefined> => {
+  ): JsGetCellResponse[] | undefined => {
     if (!this.transactionId) {
       throw new Error('No transactionId in getCells');
     }
-    const cells = await pythonCore.sendGetCells(
-      this.transactionId,
-      x0,
-      y0,
-      x1 - x0 + 1,
-      y1 - y0 + 1,
-      sheet,
-      lineNumber
-    );
+    const cells = pythonCore.getCells(this.transactionId, x0, y0, x1 - x0 + 1, y1 - y0 + 1, sheet, lineNumber);
     if (!cells) {
       // we reload pyodide if there is an error getting cells
       this.init();
@@ -57,6 +52,47 @@ class Python {
   };
 
   init = async () => {
+    const jwt = await pythonClient.getJwt();
+
+    // patch XMLHttpRequest to send requests to the proxy
+    SELF['XMLHttpRequest'] = new Proxy(XMLHttpRequest, {
+      construct: function (target, args) {
+        const xhr = new target();
+
+        xhr.open = new Proxy(xhr.open, {
+          apply: function (
+            target,
+            thisArg,
+            args: [
+              method: string,
+              url: string | URL,
+              async: boolean,
+              username?: string | null | undefined,
+              password?: string | null | undefined
+            ]
+          ) {
+            Object.defineProperty(xhr, '__url', { value: args[1].toString(), writable: true });
+            args[1] = `${pythonClient.env.VITE_QUADRATIC_CONNECTION_URL}/proxy`;
+            return target.apply(thisArg, args);
+          },
+        });
+
+        xhr.onreadystatechange = function () {
+          if (xhr.readyState === XMLHttpRequest.OPENED) {
+            xhr.setRequestHeader('Proxy', (xhr as any).__url);
+            xhr.setRequestHeader('Authorization', `Bearer ${jwt}`);
+          }
+          // After complition of XHR request
+          if (xhr.readyState === 4) {
+            if (xhr.status === 401) {
+            }
+          }
+        };
+
+        return xhr;
+      },
+    });
+
     this.pyodide = await loadPyodide({
       stdout: () => {},
       indexURL: IS_TEST ? 'public/pyodide' : '/pyodide',

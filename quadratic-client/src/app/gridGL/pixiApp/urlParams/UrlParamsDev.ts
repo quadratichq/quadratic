@@ -9,6 +9,7 @@ import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { IViewportTransformState } from 'pixi-viewport';
 
 const URL_STATE_PARAM = 'state';
+const WAIT_FOR_SET_EDITOR_INTERACTION_STATE_TIMEOUT_MS = 100;
 
 interface SheetState {
   cursor: SheetCursorSave;
@@ -32,13 +33,17 @@ export class UrlParamsDev {
   constructor(params: URLSearchParams) {
     const read = params.get(URL_STATE_PARAM);
     if (read) {
-      try {
-        this.state = JSON.parse(atob(read));
-        this.loadSheets();
-        this.loadCode();
-      } catch (e) {
-        console.warn('Unable to parse URL param ?state=', e);
-      }
+      // We need this timeout to ensure the setEditorInteraction is set in
+      // pixiAppSettings before we try to load the code.
+      setTimeout(() => {
+        try {
+          this.state = JSON.parse(atob(read));
+          this.loadSheets();
+          this.loadCode();
+        } catch (e) {
+          console.warn('Unable to parse URL param ?state=', e);
+        }
+      }, WAIT_FOR_SET_EDITOR_INTERACTION_STATE_TIMEOUT_MS);
     }
     this.setupListeners();
   }

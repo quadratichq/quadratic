@@ -1,6 +1,7 @@
 import { events } from '@/app/events/events';
 import { FeedbackIcon } from '@/app/ui/icons';
-import { useRootRouteLoaderData } from '@/router';
+import { useRootRouteLoaderData } from '@/routes/_root';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Commit } from '@mui/icons-material';
 import { Stack, useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';
@@ -9,10 +10,9 @@ import { provideFeedbackAction } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { debugShowFPS } from '../../../debugFlags';
 import { sheets } from '../../../grid/controller/Sheets';
-import { focusGrid } from '../../../helpers/focusGrid';
 import { colors } from '../../../theme/colors';
 import BottomBarItem from './BottomBarItem';
-import PythonStateItem from './PythonStateItem';
+import { KernelMenu } from './KernelMenu';
 import { SelectionSummary } from './SelectionSummary';
 import SyncState from './SyncState';
 
@@ -23,14 +23,20 @@ export const BottomBar = () => {
   const { isAuthenticated } = useRootRouteLoaderData();
   const [cursorPositionString, setCursorPositionString] = useState('');
   const [multiCursorPositionString, setMultiCursorPositionString] = useState('');
+  const {
+    userMakingRequest: { fileTeamPrivacy, teamPermissions },
+  } = useFileRouteLoaderData();
+
+  const isAvailableArgs = { filePermissions: permissions, fileTeamPrivacy, isAuthenticated, teamPermissions };
 
   useEffect(() => {
     const updateCursor = () => {
       const cursor = sheets.sheet.cursor;
       setCursorPositionString(`(${cursor.cursorPosition.x}, ${cursor.cursorPosition.y})`);
-      if (cursor.multiCursor) {
+      if (cursor.multiCursor && cursor.multiCursor.length === 1) {
+        const multiCursor = cursor.multiCursor[0];
         setMultiCursorPositionString(
-          `(${cursor.multiCursor.originPosition.x}, ${cursor.multiCursor.originPosition.y}), (${cursor.multiCursor.terminalPosition.x}, ${cursor.multiCursor.terminalPosition.y})`
+          `(${multiCursor.left}, ${multiCursor.top}), (${multiCursor.right - 1}, ${multiCursor.bottom - 1})`
         );
       } else {
         setMultiCursorPositionString('');
@@ -50,9 +56,6 @@ export const BottomBar = () => {
       ...editorInteractionState,
       showGoToMenu: true,
     });
-
-    // Set focus back to Grid
-    focusGrid();
   };
 
   const showOnDesktop = useMediaQuery(theme.breakpoints.up('md'));
@@ -73,6 +76,7 @@ export const BottomBar = () => {
         display: 'flex',
         justifyContent: 'space-between',
         userSelect: 'none',
+        zIndex: 1,
       }}
     >
       <Stack direction="row">
@@ -107,8 +111,9 @@ export const BottomBar = () => {
       <Stack direction="row">
         <SelectionSummary />
         <SyncState />
-        {showOnDesktop && <PythonStateItem />}
-        {provideFeedbackAction.isAvailable(permissions, isAuthenticated) && (
+        <KernelMenu />
+        {/* {showOnDesktop && <PythonStateItem />} */}
+        {provideFeedbackAction.isAvailable(isAvailableArgs) && (
           <BottomBarItem
             icon={<FeedbackIcon fontSize="inherit" />}
             onClick={() => {

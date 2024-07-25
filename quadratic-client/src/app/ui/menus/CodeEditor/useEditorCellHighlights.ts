@@ -1,5 +1,5 @@
 import { Coordinate } from '@/app/gridGL/types/size';
-import { parsePython } from '@/app/helpers/parseEditorPythonCell';
+import { parsePython as parseCellsAccessed } from '@/app/helpers/parseEditorPythonCell';
 import { CodeCellLanguage, SheetRect } from '@/app/quadratic-core-types';
 import { parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import monaco, { editor } from 'monaco-editor';
@@ -92,8 +92,8 @@ export const useEditorCellHighlights = (
       const modelValue = editor.getValue();
       let parsed;
 
-      if (language === 'Python') {
-        parsed = parsePython(cellsAccessed);
+      if (language === 'Python' || language === 'Javascript') {
+        parsed = parseCellsAccessed(cellsAccessed) as ParseFormulaReturnType;
       }
 
       if (language === 'Formula') {
@@ -156,7 +156,7 @@ export const useEditorCellHighlights = (
     };
 
     onChangeModel();
-    editor.onDidChangeModelContent(() => decorations.current?.clear());
+    editor.onDidChangeModelContent(() => onChangeModel());
   }, [
     isValidRef,
     editorRef,

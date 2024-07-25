@@ -1,12 +1,11 @@
 //! CellValues is a 2D array of CellValue used for Operation::SetCellValues.
-
-//! The height must be known, but the width can grow as needed.
+//! The width and height may grow as needed.
 
 use crate::CellValue;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CellValues {
     pub columns: Vec<BTreeMap<u64, CellValue>>,
     pub w: u32,
@@ -22,6 +21,20 @@ impl CellValues {
         }
     }
 
+    pub fn get_except_blank(&self, x: u32, y: u32) -> Option<&CellValue> {
+        assert!(x < self.w && y < self.h, "CellValues::get out of bounds");
+        self.columns
+            .get(x as usize)
+            .and_then(|col| col.get(&(y as u64)))
+            .and_then(|value| {
+                if value == &CellValue::Blank {
+                    None
+                } else {
+                    Some(value)
+                }
+            })
+    }
+
     pub fn get(&self, x: u32, y: u32) -> Option<&CellValue> {
         assert!(x < self.w && y < self.h, "CellValues::get out of bounds");
         self.columns
@@ -30,7 +43,9 @@ impl CellValues {
     }
 
     pub fn set(&mut self, x: u32, y: u32, value: CellValue) {
-        assert!(y < self.h, "CellValues::set y is out of bounds");
+        if y >= self.h {
+            self.h = y + 1;
+        }
 
         // w can grow if too small
         if x >= self.w {
@@ -39,11 +54,6 @@ impl CellValues {
                 self.w += 1;
             }
         }
-        assert_eq!(
-            self.columns.len() as u32,
-            self.w,
-            "CellValues::set w mismatch"
-        );
         self.columns[x as usize].insert(y as u64, value);
     }
 
@@ -76,6 +86,36 @@ impl CellValues {
             col.iter()
                 .map(move |(y, value)| (x as u32, *y as u32, value))
         })
+    }
+
+    pub fn into_owned_iter(self) -> impl Iterator<Item = (u32, u32, CellValue)> {
+        self.columns.into_iter().enumerate().flat_map(|(x, col)| {
+            col.into_iter()
+                .map(move |(y, value)| (x as u32, y as u32, value))
+        })
+    }
+
+    #[cfg(test)]
+    /// Creates a CellValues from a CellValue, including CellValue::Blank (which is ignored in into)
+    pub fn from_cell_value(value: CellValue) -> Self {
+        let mut c = Self::new(1, 1);
+        c.set(0, 0, value);
+        c
+    }
+
+    #[cfg(test)]
+    /// Creates a CellValues from a 2D array of CellValue, including
+    /// CellValue::Blank (which is ignored in into)
+    pub fn from_cell_value_vec(values: Vec<Vec<CellValue>>) -> Self {
+        let w = values.iter().map(|col| col.len() as u32).max().unwrap_or(0);
+        let h = values.len() as u32;
+        let mut columns = vec![BTreeMap::new(); w as usize];
+        for (y, col) in values.into_iter().enumerate() {
+            for (x, value) in col.into_iter().enumerate() {
+                columns[x].insert(y as u64, value);
+            }
+        }
+        Self { columns, w, h }
     }
 }
 
@@ -158,6 +198,18 @@ mod test {
         assert_eq!(cell_values.get(1, 0), None);
         cell_values.remove(0, 0);
         assert_eq!(cell_values.get(0, 0), None);
+    }
+
+    #[test]
+    fn get_except_blank() {
+        let mut cell_values = CellValues::new(2, 3);
+        cell_values.set(0, 0, CellValue::from("a"));
+        cell_values.set(1, 2, CellValue::Blank);
+        assert_eq!(
+            cell_values.get_except_blank(0, 0),
+            Some(&CellValue::from("a"))
+        );
+        assert_eq!(cell_values.get_except_blank(1, 2), None);
     }
 
     #[test]

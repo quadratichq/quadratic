@@ -1,13 +1,14 @@
 import { beforeAll, describe, expect, test, vi } from 'vitest';
-import { PythonStateType } from '../pythonClientMessages';
+import { LanguageState } from '../../languageTypes';
 import { python } from './python';
 
-let pythonState: PythonStateType;
+let pythonState: LanguageState;
 vi.mock('./pythonClient.ts', () => {
   return {
     pythonClient: {
       sendInit: () => (pythonState = 'ready'),
-      sendPythonState: (state: PythonStateType) => (pythonState = state),
+      getJwt: () => {},
+      sendPythonState: (state: LanguageState) => (pythonState = state),
     },
   };
 });

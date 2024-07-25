@@ -1,7 +1,8 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
+import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
-import { CodeRun, PythonStateType } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
 import { CircularProgress } from '@mui/material';
 import { useEffect, useState } from 'react';
 import './CodeRunning.css';
@@ -23,7 +24,7 @@ export const CodeRunning = () => {
 
   // update player's code runs
   useEffect(() => {
-    const updatePythonState = (_state: PythonStateType, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
+    const updateRunningState = (_state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
       const code: Code[] = [];
       if (current) {
         const rectangle = sheets.sheet.getCellOffsets(current.sheetPos.x, current.sheetPos.y);
@@ -47,7 +48,9 @@ export const CodeRunning = () => {
       });
       setPlayerCode(code);
     };
-    events.on('pythonState', updatePythonState);
+    events.on('pythonState', updateRunningState);
+    events.on('javascriptState', updateRunningState);
+    events.on('connectionState', updateRunningState);
   }, []);
 
   // update multiplayer's code runs

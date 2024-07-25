@@ -11,7 +11,7 @@ impl Sheet {
         for x in 0..cell_values.w {
             let col = self.get_or_create_column((x as i64) + pos.x);
             for y in 0..cell_values.h {
-                let old_value = if let Some(value) = cell_values.get(x, y) {
+                let old_value = if let Some(value) = cell_values.get_except_blank(x, y) {
                     col.values.insert(pos.y + y as i64, value.clone())
                 } else {
                     col.values.remove(&(pos.y + y as i64))

@@ -10,7 +10,6 @@ import { CORS, NODE_ENV, SENTRY_DSN } from './env-vars';
 import ai_chat_router from './routes/ai_chat';
 import internal_router from './routes/internal';
 import { ApiError } from './utils/ApiError';
-
 export const app = express();
 
 // Configure Sentry
@@ -98,19 +97,22 @@ registerRoutes().then(() => {
 
   // Error-handling middleware
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    // Check if headers have already been sent
+    if (res.headersSent) {
+      return next(err);
+    }
+
     // Application-specific error handling
     if (err instanceof ApiError) {
       res.status(err.status).json({ error: { message: err.message, ...(err.meta ? { meta: err.meta } : {}) } });
+    } else {
+      // Generic error handling
+      res.status(err.status || 500).json({
+        error: {
+          message: err.message,
+        },
+      });
     }
-
-    // Generic error handling
-    res.status(err.status || 500);
-    res.json({
-      error: {
-        message: err.message,
-      },
-    });
-    next(err);
   });
 });
 

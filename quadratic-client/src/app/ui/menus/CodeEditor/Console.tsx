@@ -1,150 +1,20 @@
-import { Coordinate } from '@/app/gridGL/types/size';
-import { CodeEditorPanelData, PanelPosition } from '@/app/ui/menus/CodeEditor/useCodeEditorPanelData';
-import type { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
-import { useRootRouteLoaderData } from '@/router';
-import { Type } from '@/shared/components/Type';
-import { ROUTES } from '@/shared/constants/routes';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
-import { cn } from '@/shared/shadcn/utils';
-import { ViewStreamOutlined } from '@mui/icons-material';
-import { useState } from 'react';
-import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
+import { getCodeCell } from '@/app/helpers/codeCellLanguage';
+import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { useRecoilValue } from 'recoil';
+import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { colors } from '../../../theme/colors';
-import { AiAssistant } from './AiAssistant';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
-interface ConsoleProps {
-  consoleOutput?: { stdOut?: string; stdErr?: string };
-  editorMode: EditorInteractionState['mode'];
-  editorContent: string | undefined;
-  evaluationResult?: EvaluationResult;
-  spillError?: Coordinate[];
-  codeEditorPanelData: CodeEditorPanelData;
-}
-
-type Tab = 'console' | 'ai-assistant';
-
-export function Console(props: ConsoleProps) {
-  const { consoleOutput, editorMode, editorContent, evaluationResult, spillError, codeEditorPanelData } = props;
-  const { isAuthenticated } = useRootRouteLoaderData();
+export function Console() {
+  const {
+    consoleOutput: [consoleOutput],
+    spillError: [spillError],
+  } = useCodeEditor();
+  const { mode } = useRecoilValue(editorInteractionStateAtom);
+  const codeCell = getCodeCell(mode);
   const hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
-  const [tab, setTab] = useState<Tab>('console');
 
-  const consoleBadgeSharedClasses = `font-medium`;
-
-  return (
-    <>
-      <Tabs
-        value={tab}
-        onValueChange={(value) => {
-          setTab(value as Tab);
-        }}
-        className={cn('h-full', codeEditorPanelData.panelPosition === 'bottom' && 'grid grid-rows-[auto_1fr]')}
-      >
-        {/* Only visible when panel is on the bottom */}
-        <div className={cn(codeEditorPanelData.panelPosition !== 'bottom' && 'hidden', 'px-3 pb-2 pt-2')}>
-          <TabsList>
-            <TabsTrigger
-              value="console"
-              className={cn(
-                `relative after:absolute after:right-1 after:top-1`,
-                consoleBadgeSharedClasses,
-                tab !== 'console' && hasOutput && `after:h-[5px] after:w-[5px] after:rounded-full after:content-['']`,
-                tab !== 'console' && consoleOutput?.stdErr ? 'after:bg-destructive' : 'after:bg-muted-foreground'
-              )}
-            >
-              Console
-            </TabsTrigger>
-            <TabsTrigger value="ai-assistant">AI assistant</TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent
-          forceMount={true}
-          value="console"
-          className={cn(
-            'm-0 grid grid-rows-[auto_1fr] overflow-hidden',
-            codeEditorPanelData.panelPosition === 'bottom' && tab !== 'console' && 'hidden'
-          )}
-          style={
-            codeEditorPanelData.panelPosition === 'left'
-              ? { height: `${codeEditorPanelData.panelHeightPercentage}%` }
-              : {}
-          }
-        >
-          {/* Only visible when panel is on the left */}
-          {codeEditorPanelData.panelPosition === 'left' && (
-            <Type className={cn('flex items-center gap-2 px-3 py-3', consoleBadgeSharedClasses)}>Console</Type>
-          )}
-          <ConsoleOutput {...props} />
-        </TabsContent>
-        <TabsContent
-          forceMount={true}
-          value="ai-assistant"
-          className={cn(
-            'm-0 grid overflow-hidden',
-            codeEditorPanelData.panelPosition === 'bottom' && 'grid-rows-[1fr_auto]',
-            codeEditorPanelData.panelPosition === 'left' && 'grid grid-rows-[auto_1fr_auto]',
-            codeEditorPanelData.panelPosition === 'bottom' && tab !== 'ai-assistant' && 'hidden'
-          )}
-          style={
-            codeEditorPanelData.panelPosition === 'left'
-              ? { height: `${100 - codeEditorPanelData.panelHeightPercentage}%` }
-              : {}
-          }
-        >
-          {codeEditorPanelData.panelPosition === 'left' && (
-            <Type className={cn(`gap-2 px-3 py-3`, consoleBadgeSharedClasses)}>AI assistant</Type>
-          )}
-
-          {isAuthenticated ? (
-            <AiAssistant
-              // todo: fix this
-              evalResult={evaluationResult}
-              editorMode={editorMode}
-              editorContent={editorContent}
-              isActive={tab === 'ai-assistant'}
-            />
-          ) : (
-            <Type className="px-3">
-              You need to{' '}
-              <a href={ROUTES.LOGIN} className="underline hover:text-primary">
-                log in to Quadratic
-              </a>{' '}
-              to use the AI assistant.
-            </Type>
-          )}
-        </TabsContent>
-      </Tabs>
-
-      <Tabs
-        className={cn('absolute', codeEditorPanelData.panelPosition === 'bottom' ? 'right-2 top-2' : 'right-2 top-2')}
-        value={codeEditorPanelData.panelPosition}
-        onValueChange={(e) => {
-          codeEditorPanelData.setPanelPosition((prev: PanelPosition) => (prev === 'left' ? 'bottom' : 'left'));
-        }}
-      >
-        <TabsList className={codeEditorPanelData.panelPosition === 'left' ? 'h-8 py-0.5' : ''}>
-          <TabsTrigger value="bottom" className={codeEditorPanelData.panelPosition === 'left' ? 'py-0.5' : ''}>
-            <ViewStreamOutlined fontSize="small" />
-          </TabsTrigger>
-          <TabsTrigger value="left" className={codeEditorPanelData.panelPosition === 'left' ? 'py-0.5' : ''}>
-            <ViewStreamOutlined fontSize="small" className="rotate-90" />
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-    </>
-  );
-}
-
-export function ConsoleOutput({
-  consoleOutput,
-  editorMode,
-  editorContent,
-  evaluationResult,
-  spillError,
-}: ConsoleProps) {
-  let hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
+  // Designed to live in a box that takes up the full height of its container
   return (
     <div
       contentEditable={hasOutput}
@@ -157,7 +27,7 @@ export function ConsoleOutput({
           e.preventDefault();
         }
       }}
-      className="overflow-y-auto whitespace-pre-wrap pl-3 pr-4 outline-none"
+      className="h-full overflow-y-auto whitespace-pre-wrap pl-3 pr-4 outline-none"
       style={codeEditorBaseStyles}
       // Disable Grammarly
       data-gramm="false"
@@ -187,10 +57,10 @@ export function ConsoleOutput({
           {consoleOutput?.stdOut}
         </>
       ) : (
-        <div className="mt-1" style={{ ...codeEditorCommentStyles }}>
-          {editorMode === 'Python'
-            ? 'Print statements, standard out, and errors will show here.'
-            : 'Errors will show here.'}
+        <div className="mt-1 select-none" style={{ ...codeEditorCommentStyles }}>
+          {codeCell?.id === 'Python' && <>Print statements, standard out, and errors will show here.</>}
+          {codeCell?.id === 'Javascript' && <>Console output and errors will show here.</>}
+          {codeCell?.type === 'connection' && <>Errors will show here.</>}
         </div>
       )}
     </div>

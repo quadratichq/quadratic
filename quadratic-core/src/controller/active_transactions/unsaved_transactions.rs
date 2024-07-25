@@ -152,4 +152,13 @@ mod test {
             Some((0, &transaction))
         );
     }
+
+    #[test]
+    fn from_str() {
+        // this is a real example of a transaction that was failing to parse; it
+        // can be deleted if it ever causes problems
+        let json = r#"{"forward":{"id":"8ac83231-0af5-461a-82bb-f07119efad97","sequence_num":null,"operations":[{"ResizeColumn":{"sheet_id":{"id":"3d3235c9-c725-4568-9b84-ea0b74820776"},"column":1,"new_size":174.71484375,"client_resized":true}}],"cursor":null},"reverse":{"id":"8ac83231-0af5-461a-82bb-f07119efad97","sequence_num":null,"operations":[{"ResizeColumn":{"sheet_id":{"id":"3d3235c9-c725-4568-9b84-ea0b74820776"},"column":1,"new_size":100.0}}],"cursor":"{\"sheetId\":\"3d3235c9-c725-4568-9b84-ea0b74820776\",\"keyboardMovePosition\":{\"x\":0,\"y\":0},\"cursorPosition\":{\"x\":0,\"y\":0}}"},"sent_to_server":false}"#;
+        let unsaved_transaction: UnsavedTransaction = serde_json::from_str(json).unwrap();
+        assert!(!unsaved_transaction.sent_to_server);
+    }
 }

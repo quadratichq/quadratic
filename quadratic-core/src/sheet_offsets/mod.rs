@@ -178,8 +178,23 @@ impl SheetOffsets {
         (y1, y2)
     }
 
+    pub fn rect_cell_offsets(&self, rect: Rect) -> Rect {
+        let (x_start, x_end) = self.column_range(rect.min.x, rect.max.x);
+        let (y_start, y_end) = self.row_range(rect.min.y, rect.max.y);
+        Rect {
+            min: Pos {
+                x: x_start as i64,
+                y: y_start as i64,
+            },
+            max: Pos {
+                x: x_end as i64,
+                y: y_end as i64,
+            },
+        }
+    }
+
     // Returns the screen position for a rectangular range of cells.
-    pub fn rect_cell_offsets(&self, rect: Rect) -> ScreenRect {
+    pub fn screen_rect_cell_offsets(&self, rect: Rect) -> ScreenRect {
         let (x_start, x_end) = self.column_range(rect.min.x, rect.max.x);
         let (y_start, y_end) = self.row_range(rect.min.y, rect.max.y);
         ScreenRect {
@@ -229,20 +244,38 @@ impl SheetOffsets {
 #[cfg(test)]
 mod test {
     #[test]
-    fn rect_cell_offsets() {
+    fn screen_rect_cell_offsets() {
         let sheet = super::SheetOffsets::default();
         let rect = super::Rect::from_numbers(0, 0, 1, 1);
-        let screen_rect = sheet.rect_cell_offsets(rect);
+        let screen_rect = sheet.screen_rect_cell_offsets(rect);
         assert_eq!(screen_rect.x, 0.0);
         assert_eq!(screen_rect.y, 0.0);
         assert_eq!(screen_rect.w, 100.0);
         assert_eq!(screen_rect.h, 20.0);
 
         let rect = super::Rect::from_numbers(0, 0, 2, 2);
-        let screen_rect = sheet.rect_cell_offsets(rect);
+        let screen_rect = sheet.screen_rect_cell_offsets(rect);
         assert_eq!(screen_rect.x, 0.0);
         assert_eq!(screen_rect.y, 0.0);
         assert_eq!(screen_rect.w, 100.0 * 2.0);
         assert_eq!(screen_rect.h, 20.0 * 2.0);
+    }
+
+    #[test]
+    fn rect_cell_offsets() {
+        let sheet = super::SheetOffsets::default();
+        let rect = super::Rect::from_numbers(0, 0, 1, 1);
+        let rect = sheet.rect_cell_offsets(rect);
+        assert_eq!(rect.min.x, 0);
+        assert_eq!(rect.min.y, 0);
+        assert_eq!(rect.max.x, 100);
+        assert_eq!(rect.max.y, 20);
+
+        let rect = super::Rect::from_numbers(0, 0, 2, 2);
+        let rect = sheet.rect_cell_offsets(rect);
+        assert_eq!(rect.min.x, 0);
+        assert_eq!(rect.min.y, 0);
+        assert_eq!(rect.max.x, 200);
+        assert_eq!(rect.max.y, 40);
     }
 }

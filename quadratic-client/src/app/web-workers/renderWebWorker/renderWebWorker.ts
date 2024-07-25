@@ -11,20 +11,23 @@ import {
 } from './renderClientMessages';
 
 class RenderWebWorker {
-  private worker: Worker;
+  private worker?: Worker;
   private id = 0;
   private waitingForResponse: Record<number, Function> = {};
 
   // render may start working before pixiApp is initialized (b/c React is SLOW)
   private preloadQueue: MessageEvent<RenderClientMessage>[] = [];
 
-  constructor() {
+  initWorker() {
     this.worker = new Worker(new URL('./worker/render.worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = this.handleMessage;
     this.worker.onerror = (e) => console.warn(`[render.worker] error: ${e.message}`, e);
   }
 
   async init(coreMessagePort: MessagePort) {
+    if (!this.worker) {
+      throw new Error('Expected worker to be initialized in renderWebWorker.init');
+    }
     const message: ClientRenderInit = {
       type: 'clientRenderInit',
       bitmapFonts: prepareBitmapFontInformation(),
@@ -77,6 +80,10 @@ class RenderWebWorker {
   };
 
   private send(message: ClientRenderMessage) {
+    if (!this.worker) {
+      throw new Error('Expected worker to be initialized in renderWebWorker.send');
+    }
+
     this.worker.postMessage(message);
   }
 
