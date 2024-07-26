@@ -8,13 +8,6 @@ import { Rectangle } from 'pixi.js';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 
-function setCursorPosition(x: number, y: number) {
-  const newPos = { x, y };
-  sheets.sheet.cursor.changePosition({
-    cursorPosition: newPos,
-  });
-}
-
 // todo: The QuadraticCore checks should be a single call within Rust instead of
 // having TS handle the logic (this will reduce the number of calls into
 // quadraticCore)
@@ -68,25 +61,35 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
     }
     // otherwise find the next cell with content
     else {
-      x = await quadraticCore.findNextColumn({
+      const nextX = await quadraticCore.findNextColumn({
         sheetId,
         columnStart: x + 1,
         row: yCheck,
         reverse: false,
         withContent: true,
       });
-      if (x === keyboardX) x++;
+      if (nextX === keyboardX || !(await quadraticCore.cellHasContent(sheetId, nextX, y))) {
+        x = keyboardX + 1;
+      } else {
+        x = nextX;
+      }
     }
     if (event.shiftKey) {
-      lastMultiCursor.x = cursor.cursorPosition.x;
-      lastMultiCursor.width = x - cursor.cursorPosition.x + 1;
+      lastMultiCursor.x = Math.min(cursor.cursorPosition.x, x);
+      lastMultiCursor.width = Math.abs(cursor.cursorPosition.x - x) + 1;
       cursor.changePosition({
         multiCursor,
         keyboardMovePosition: { x, y },
         ensureVisible: { x: lastMultiCursor.right, y },
       });
     } else {
-      setCursorPosition(x, y);
+      cursor.changePosition({
+        multiCursor: null,
+        columnRow: null,
+        cursorPosition: { x, y },
+        keyboardMovePosition: { x, y },
+        ensureVisible: { x, y },
+      });
     }
   } else if (deltaX === -1) {
     let x = keyboardX;
@@ -123,24 +126,35 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
 
     // otherwise find the next cell with content
     else {
-      x = await quadraticCore.findNextColumn({
+      const nextX = await quadraticCore.findNextColumn({
         sheetId,
         columnStart: x - 1,
         row: yCheck,
         reverse: true,
         withContent: true,
       });
+      if (nextX === keyboardX || !(await quadraticCore.cellHasContent(sheetId, nextX, y))) {
+        x = keyboardX - 1;
+      } else {
+        x = nextX;
+      }
     }
     if (event.shiftKey) {
-      lastMultiCursor.x = x;
-      lastMultiCursor.width = cursor.cursorPosition.x - x + 1;
+      lastMultiCursor.x = Math.min(cursor.cursorPosition.x, x);
+      lastMultiCursor.width = Math.abs(cursor.cursorPosition.x - x) + 1;
       cursor.changePosition({
         multiCursor,
         keyboardMovePosition: { x, y },
         ensureVisible: { x: lastMultiCursor.x, y },
       });
     } else {
-      setCursorPosition(x, y);
+      cursor.changePosition({
+        multiCursor: null,
+        columnRow: null,
+        cursorPosition: { x, y },
+        keyboardMovePosition: { x, y },
+        ensureVisible: { x, y },
+      });
     }
   } else if (deltaY === 1) {
     let y = keyboardY;
@@ -173,25 +187,35 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
     }
     // otherwise find the next cell with content
     else {
-      y = await quadraticCore.findNextRow({
+      const nextY = await quadraticCore.findNextRow({
         sheetId,
         column: xCheck,
         rowStart: y + 1,
         reverse: false,
         withContent: true,
       });
-      if (y === keyboardY) y++;
+      if (nextY === keyboardY || !(await quadraticCore.cellHasContent(sheetId, x, nextY))) {
+        y = keyboardY + 1;
+      } else {
+        y = nextY;
+      }
     }
     if (event.shiftKey) {
-      lastMultiCursor.y = cursor.cursorPosition.y;
-      lastMultiCursor.height = y - cursor.cursorPosition.y + 1;
+      lastMultiCursor.y = Math.min(cursor.cursorPosition.y, y);
+      lastMultiCursor.height = Math.abs(cursor.cursorPosition.y - y) + 1;
       cursor.changePosition({
         multiCursor,
         keyboardMovePosition: { x, y },
         ensureVisible: { x, y: lastMultiCursor.bottom },
       });
     } else {
-      setCursorPosition(x, y);
+      cursor.changePosition({
+        multiCursor: null,
+        columnRow: null,
+        cursorPosition: { x, y },
+        keyboardMovePosition: { x, y },
+        ensureVisible: { x, y },
+      });
     }
   } else if (deltaY === -1) {
     let y = keyboardY;
@@ -226,24 +250,35 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
     }
     // otherwise find the next cell with content
     else {
-      y = await quadraticCore.findNextRow({
+      const nextY = await quadraticCore.findNextRow({
         sheetId,
         column: xCheck,
         rowStart: y - 1,
         reverse: true,
         withContent: true,
       });
+      if (nextY === keyboardY || !(await quadraticCore.cellHasContent(sheetId, x, nextY))) {
+        y = keyboardY - 1;
+      } else {
+        y = nextY;
+      }
     }
     if (event.shiftKey) {
-      lastMultiCursor.y = y;
-      lastMultiCursor.height = cursor.cursorPosition.y - y + 1;
+      lastMultiCursor.y = Math.min(cursor.cursorPosition.y, y);
+      lastMultiCursor.height = Math.abs(cursor.cursorPosition.y - y) + 1;
       cursor.changePosition({
         multiCursor,
         keyboardMovePosition: { x, y },
         ensureVisible: { x, y: lastMultiCursor.y },
       });
     } else {
-      setCursorPosition(x, y);
+      cursor.changePosition({
+        multiCursor: null,
+        columnRow: null,
+        cursorPosition: { x, y },
+        keyboardMovePosition: { x, y },
+        ensureVisible: { x, y },
+      });
     }
   }
 }
@@ -280,7 +315,13 @@ function handleShiftKey(deltaX: number, deltaY: number) {
 const handleHomeKey = async (event: KeyboardEvent) => {
   const sheet = sheets.sheet;
   if (event.metaKey || event.ctrlKey) {
-    setCursorPosition(0, 0);
+    sheet.cursor.changePosition({
+      multiCursor: null,
+      columnRow: null,
+      cursorPosition: { x: 0, y: 0 },
+      keyboardMovePosition: { x: 0, y: 0 },
+      ensureVisible: { x: 0, y: 0 },
+    });
     moveViewport({ topLeft: { x: 0, y: 0 }, force: true });
   } else {
     const bounds = sheet.getBounds(true);
@@ -297,7 +338,13 @@ const handleHomeKey = async (event: KeyboardEvent) => {
 
     const hasContent = await quadraticCore.cellHasContent(sheet.id, x, y);
     if (hasContent) {
-      setCursorPosition(x, y);
+      sheet.cursor.changePosition({
+        multiCursor: null,
+        columnRow: null,
+        cursorPosition: { x, y },
+        keyboardMovePosition: { x, y },
+        ensureVisible: { x, y },
+      });
     }
   }
 };
@@ -316,7 +363,13 @@ const handleEndKey = async (event: KeyboardEvent) => {
       reverse: true,
       withContent: true,
     });
-    setCursorPosition(x, y);
+    sheet.cursor.changePosition({
+      multiCursor: null,
+      columnRow: null,
+      cursorPosition: { x, y },
+      keyboardMovePosition: { x, y },
+      ensureVisible: { x, y },
+    });
   } else {
     const y = sheet.cursor.cursorPosition.y;
     const x = await quadraticCore.findNextColumn({
@@ -329,7 +382,13 @@ const handleEndKey = async (event: KeyboardEvent) => {
 
     const hasContent = await quadraticCore.cellHasContent(sheet.id, x, y);
     if (hasContent) {
-      setCursorPosition(x, y);
+      sheet.cursor.changePosition({
+        multiCursor: null,
+        columnRow: null,
+        cursorPosition: { x, y },
+        keyboardMovePosition: { x, y },
+        ensureVisible: { x, y },
+      });
     }
   }
 };
