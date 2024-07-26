@@ -18,6 +18,6 @@
     }
   ],
   "env": {
-    "ENABLE_ROOT_PATH_BUILD_CACHE": 1
+    "ENABLE_ROOT_PATH_BUILD_CACHE": "1"
   }
 }
