@@ -18,6 +18,7 @@ export function keyboardViewport(options: {
   if (event.altKey) return false;
 
   if ((event.metaKey || event.ctrlKey) && (event.key === 'p' || event.key === 'k' || event.key === '/')) {
+    console.log('Command+P or Command+K or Command+/');
     setEditorInteractionState({
       ...editorInteractionState,
       showFeedbackMenu: false,
