@@ -246,7 +246,7 @@ impl Sheet {
     /// if reverse is true it searches to the left of the start
     /// if with_content is true it searches for a column with content; otherwise it searches for a column without content
     ///
-    /// Returns the found column or column_start or bounds_rect_min/bounds_rect_max
+    /// Returns the found column or column_start
     pub fn find_next_column(
         &self,
         column_start: i64,
@@ -255,7 +255,7 @@ impl Sheet {
         with_content: bool,
     ) -> i64 {
         let Some(bounds) = self.row_bounds(row, true) else {
-            return column_start + if reverse { -1 } else { 1 };
+            return column_start;
         };
         let mut x = column_start;
         while (reverse && x >= bounds.0) || (!reverse && x <= bounds.1) {
@@ -269,14 +269,20 @@ impl Sheet {
             }
             x += if reverse { -1 } else { 1 };
         }
-        x
+        if with_content && self.display_value(Pos { x, y: row }).is_some() {
+            x
+        } else if !with_content && self.display_value(Pos { x, y: row }).is_none() {
+            x
+        } else {
+            column_start
+        }
     }
 
     /// finds the next column with or without content
     /// if reverse is true it searches to the left of the start
     /// if with_content is true it searches for a column with content; otherwise it searches for a column without content
     ///
-    /// Returns the found column or row_start or bounds_rect_min/bounds_rect_max
+    /// Returns the found row or row_start
     pub fn find_next_row(
         &self,
         row_start: i64,
@@ -285,7 +291,7 @@ impl Sheet {
         with_content: bool,
     ) -> i64 {
         let Some(bounds) = self.column_bounds(column, true) else {
-            return row_start + if reverse { -1 } else { 1 };
+            return row_start;
         };
         let mut y = row_start;
         while (reverse && y >= bounds.0) || (!reverse && y <= bounds.1) {
@@ -299,7 +305,13 @@ impl Sheet {
             }
             y += if reverse { -1 } else { 1 };
         }
-        y
+        if with_content && self.display_value(Pos { x: column, y }).is_some() {
+            y
+        } else if !with_content && self.display_value(Pos { x: column, y }).is_none() {
+            y
+        } else {
+            row_start
+        }
     }
 
     /// Finds the height of a rectangle that contains data given an (x, y, w).

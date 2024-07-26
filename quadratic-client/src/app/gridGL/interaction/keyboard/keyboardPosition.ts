@@ -61,18 +61,14 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
     }
     // otherwise find the next cell with content
     else {
-      const nextX = await quadraticCore.findNextColumn({
+      x = await quadraticCore.findNextColumn({
         sheetId,
         columnStart: x + 1,
         row: yCheck,
         reverse: false,
         withContent: true,
       });
-      if (nextX === keyboardX || !(await quadraticCore.cellHasContent(sheetId, nextX, y))) {
-        x = keyboardX + 1;
-      } else {
-        x = nextX;
-      }
+      if (x === keyboardX) x++;
     }
     if (event.shiftKey) {
       lastMultiCursor.x = Math.min(cursor.cursorPosition.x, x);
@@ -126,18 +122,14 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
 
     // otherwise find the next cell with content
     else {
-      const nextX = await quadraticCore.findNextColumn({
+      x = await quadraticCore.findNextColumn({
         sheetId,
         columnStart: x - 1,
         row: yCheck,
         reverse: true,
         withContent: true,
       });
-      if (nextX === keyboardX || !(await quadraticCore.cellHasContent(sheetId, nextX, y))) {
-        x = keyboardX - 1;
-      } else {
-        x = nextX;
-      }
+      if (x === keyboardX) x--;
     }
     if (event.shiftKey) {
       lastMultiCursor.x = Math.min(cursor.cursorPosition.x, x);
@@ -187,18 +179,14 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
     }
     // otherwise find the next cell with content
     else {
-      const nextY = await quadraticCore.findNextRow({
+      y = await quadraticCore.findNextRow({
         sheetId,
         column: xCheck,
         rowStart: y + 1,
         reverse: false,
         withContent: true,
       });
-      if (nextY === keyboardY || !(await quadraticCore.cellHasContent(sheetId, x, nextY))) {
-        y = keyboardY + 1;
-      } else {
-        y = nextY;
-      }
+      if (y === keyboardY) y++;
     }
     if (event.shiftKey) {
       lastMultiCursor.y = Math.min(cursor.cursorPosition.y, y);
@@ -250,18 +238,14 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
     }
     // otherwise find the next cell with content
     else {
-      const nextY = await quadraticCore.findNextRow({
+      y = await quadraticCore.findNextRow({
         sheetId,
         column: xCheck,
         rowStart: y - 1,
         reverse: true,
         withContent: true,
       });
-      if (nextY === keyboardY || !(await quadraticCore.cellHasContent(sheetId, x, nextY))) {
-        y = keyboardY - 1;
-      } else {
-        y = nextY;
-      }
+      if (y === keyboardY) y--;
     }
     if (event.shiftKey) {
       lastMultiCursor.y = Math.min(cursor.cursorPosition.y, y);
