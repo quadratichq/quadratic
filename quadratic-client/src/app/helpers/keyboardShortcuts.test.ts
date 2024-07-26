@@ -1,9 +1,15 @@
-import { defaultShortcuts } from '@/app/theme/shortcuts';
+import { defaultShortcuts, ShortcutsSchema } from '@/app/keyboard';
 import * as isMacModule from '@/shared/utils/isMac';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { matchShortcut, parseCombination } from './keyboardShortcuts';
 
 describe('shortcut utility functions', () => {
+  describe('validate shortcuts', () => {
+    it('parse zod schema', () => {
+      ShortcutsSchema.parse(defaultShortcuts);
+    });
+  });
+
   describe('parseCombination', () => {
     beforeEach(() => {
       vi.resetModules();
@@ -11,39 +17,33 @@ describe('shortcut utility functions', () => {
 
     it('should parse a simple combination', () => {
       const result = parseCombination('Ctrl+A');
-      expect(result).toEqual({ meta: false, ctrl: true, alt: false, shift: false, key: 'a' });
+      expect(result).toEqual({ metaKey: false, ctrlKey: true, altKey: false, shiftKey: false, key: 'a' });
     });
 
     it('should parse a combination with multiple modifier keys', () => {
       const result = parseCombination('Ctrl+Shift+Alt+X');
-      expect(result).toEqual({ meta: false, ctrl: true, alt: true, shift: true, key: 'x' });
+      expect(result).toEqual({ metaKey: false, ctrlKey: true, altKey: true, shiftKey: true, key: 'x' });
     });
 
     it('should handle the Cmd key on Mac', () => {
       vi.spyOn(isMacModule, 'isMac', 'get').mockReturnValue(true);
       const result = parseCombination('Cmd+B');
-      expect(result).toEqual({ meta: true, ctrl: false, alt: false, shift: false, key: 'b' });
-    });
-
-    it('should handle the Cmd key on non-Mac', () => {
-      vi.spyOn(isMacModule, 'isMac', 'get').mockReturnValue(false);
-      const result = parseCombination('Cmd+B');
-      expect(result).toEqual({ meta: false, ctrl: true, alt: false, shift: false, key: 'b' });
+      expect(result).toEqual({ metaKey: true, ctrlKey: false, altKey: false, shiftKey: false, key: 'b' });
     });
 
     it('should handle the Space key', () => {
       const result = parseCombination('Space');
-      expect(result).toEqual({ meta: false, ctrl: false, alt: false, shift: false, key: ' ' });
+      expect(result).toEqual({ metaKey: false, ctrlKey: false, altKey: false, shiftKey: false, key: ' ' });
     });
 
     it('should be case-insensitive', () => {
       const result = parseCombination('CTRL+shift+ALT+x');
-      expect(result).toEqual({ meta: false, ctrl: true, alt: true, shift: true, key: 'x' });
+      expect(result).toEqual({ metaKey: false, ctrlKey: true, altKey: true, shiftKey: true, key: 'x' });
     });
 
     it('should handle combinations with spaces', () => {
       const result = parseCombination('Ctrl + Shift + X');
-      expect(result).toEqual({ meta: false, ctrl: true, alt: false, shift: true, key: 'x' });
+      expect(result).toEqual({ metaKey: false, ctrlKey: true, altKey: false, shiftKey: true, key: 'x' });
     });
   });
 
@@ -86,18 +86,36 @@ describe('shortcut utility functions', () => {
   });
 
   describe('integration tests', () => {
-    it('should correctly match all default shortcuts', () => {
-      Object.entries(defaultShortcuts).forEach(([action, combinations]) => {
-        combinations.forEach((combination) => {
-          const parsed = parseCombination(combination);
+    it('should correctly match all default mac shortcuts', () => {
+      defaultShortcuts.forEach(({ action, shortcuts }) => {
+        vi.spyOn(isMacModule, 'isMac', 'get').mockReturnValue(true);
+        shortcuts.mac.forEach((combination) => {
+          const { metaKey, ctrlKey, altKey, shiftKey, key } = parseCombination(combination);
           const event = new KeyboardEvent('keydown', {
-            key: parsed.key,
-            metaKey: parsed.meta,
-            ctrlKey: parsed.ctrl,
-            altKey: parsed.alt,
-            shiftKey: parsed.shift,
+            metaKey,
+            ctrlKey,
+            altKey,
+            shiftKey,
+            key,
           });
-          expect(matchShortcut(action as keyof typeof defaultShortcuts, event)).toBe(true);
+          expect(matchShortcut(action, event)).toBe(true);
+        });
+      });
+    });
+
+    it('should correctly match all default windows shortcuts', () => {
+      defaultShortcuts.forEach(({ action, shortcuts }) => {
+        vi.spyOn(isMacModule, 'isMac', 'get').mockReturnValue(false);
+        shortcuts.windows.forEach((combination) => {
+          const { metaKey, ctrlKey, altKey, shiftKey, key } = parseCombination(combination);
+          const event = new KeyboardEvent('keydown', {
+            metaKey,
+            ctrlKey,
+            altKey,
+            shiftKey,
+            key,
+          });
+          expect(matchShortcut(action, event)).toBe(true);
         });
       });
     });

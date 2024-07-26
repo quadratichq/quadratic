@@ -1,5 +1,5 @@
-import { defaultShortcuts } from '@/app/theme/shortcuts.js';
-import { isMac } from '@/shared/utils/isMac.js';
+import { Action, defaultShortcuts } from '@/app/keyboard';
+import { isMac } from '@/shared/utils/isMac';
 
 /**
  * Checks if a keyboard event should trigger a specific action.
@@ -7,19 +7,20 @@ import { isMac } from '@/shared/utils/isMac.js';
  * @param {KeyboardEvent | React.KeyboardEvent<Element>} event - The keyboard event
  * @returns {boolean} - Whether the keyboard event should trigger the action
  */
-export const matchShortcut = (
-  action: keyof typeof defaultShortcuts,
-  event: KeyboardEvent | React.KeyboardEvent<Element>
-): boolean => {
-  const combinations = defaultShortcuts[action];
-  return combinations.some((combination) => {
-    const parsedCombination = parseCombination(combination);
+export const matchShortcut = (action: Action, event: KeyboardEvent | React.KeyboardEvent<Element>): boolean => {
+  const shortcuts = defaultShortcuts.find((shortcut) => shortcut.action === action)?.shortcuts;
+  if (!shortcuts) {
+    return false;
+  }
+  const platformShortcuts = isMac ? shortcuts.mac : shortcuts.windows;
+  return platformShortcuts.some((shortcut) => {
+    const parsedShortcut = parseCombination(shortcut);
     return (
-      parsedCombination.meta === event.metaKey &&
-      parsedCombination.ctrl === event.ctrlKey &&
-      parsedCombination.alt === event.altKey &&
-      parsedCombination.shift === event.shiftKey &&
-      parsedCombination.key === event.key.toLowerCase()
+      parsedShortcut.metaKey === event.metaKey &&
+      parsedShortcut.ctrlKey === event.ctrlKey &&
+      parsedShortcut.altKey === event.altKey &&
+      parsedShortcut.shiftKey === event.shiftKey &&
+      parsedShortcut.key === event.key.toLowerCase()
     );
   });
 };
@@ -27,7 +28,7 @@ export const matchShortcut = (
 /**
  * Object representing a keyboard shortcut.
  */
-type ParsedShortcut = { meta: boolean; ctrl: boolean; alt: boolean; shift: boolean; key?: string };
+type ParsedShortcut = { metaKey: boolean; ctrlKey: boolean; altKey: boolean; shiftKey: boolean; key?: string };
 
 /**
  * Parses a key combination string into an object representation.
@@ -40,26 +41,26 @@ export const parseCombination = (combination: string): ParsedShortcut => {
     .split('+')
     .map((key) => key.trim());
   const result: ParsedShortcut = {
-    meta: false,
-    ctrl: false,
-    alt: false,
-    shift: false,
+    metaKey: false,
+    ctrlKey: false,
+    altKey: false,
+    shiftKey: false,
     key: undefined,
   };
   keys.forEach((key) => {
     switch (key) {
       case 'cmd':
-        result.meta = isMac;
-        result.ctrl = !isMac;
+      case 'win':
+        result.metaKey = true;
         break;
       case 'ctrl':
-        result.ctrl = true;
+        result.ctrlKey = true;
         break;
       case 'alt':
-        result.alt = true;
+        result.altKey = true;
         break;
       case 'shift':
-        result.shift = true;
+        result.shiftKey = true;
         break;
       case 'space':
         result.key = ' ';
