@@ -43,8 +43,8 @@ impl Transaction {
         serialize_and_compress::<T>(&SERIALIZATION_FORMAT, &COMPRESSION_FORMAT, opearations)
     }
 
-    pub fn decompress_and_deserialize<T: DeserializeOwned>(opearations: &Vec<u8>) -> Result<T> {
-        decompress_and_deserialize::<T>(&SERIALIZATION_FORMAT, &COMPRESSION_FORMAT, &opearations)
+    pub fn decompress_and_deserialize<T: DeserializeOwned>(opearations: &[u8]) -> Result<T> {
+        decompress_and_deserialize::<T>(&SERIALIZATION_FORMAT, &COMPRESSION_FORMAT, opearations)
     }
 }
 

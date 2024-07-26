@@ -15,11 +15,11 @@ pub(crate) fn processed_transaction_key(file_id: &str, sequence_num: &str) -> St
 
 pub(crate) fn parse_processed_transaction_key(key: &[u8]) -> Result<(String, String)> {
     let key = from_utf8(key)
-        .map_err(|_| FilesError::Unknown(format!("Could not parse key as UTF-8 string")))?;
+        .map_err(|_| FilesError::Unknown("Could not parse key as UTF-8 string".into()))?;
     let split = key.split('.').collect::<Vec<&str>>();
 
     if split.len() < 2 {
-        return Err(FilesError::Unknown(format!("Could not parse key {key}")));
+        return Err(FilesError::Unknown("Could not parse key {key}".into()));
     }
 
     Ok((split[0].to_string(), split[1].to_string()))
@@ -212,7 +212,7 @@ mod tests {
                     .publish(
                         &file_id.to_string(),
                         &j.to_string(),
-                        &format!("message {i}-{j}").as_bytes(),
+                        format!("message {i}-{j}").as_bytes(),
                         Some("active_channels"),
                     )
                     .await

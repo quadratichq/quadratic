@@ -18,9 +18,8 @@ impl GridController {
         let transaction_id = Uuid::parse_str(&transaction_id)
             .map_err(|e| JsValue::from_str(&format!("Invalid transaction id: {}", e)))?;
 
-        let operations =
-            Transaction::decompress_and_deserialize::<Vec<Operation>>(&operations.to_vec())
-                .map_err(|e| JsValue::from_str(&format!("Invalid operations: {}", e)))?;
+        let operations = Transaction::decompress_and_deserialize::<Vec<Operation>>(operations)
+            .map_err(|e| JsValue::from_str(&format!("Invalid operations: {}", e)))?;
 
         Ok(serde_wasm_bindgen::to_value(&self.received_transaction(
             transaction_id,
@@ -51,7 +50,7 @@ impl GridController {
         &mut self,
         transactions: &[u8],
     ) -> Result<JsValue, JsValue> {
-        if let Ok(transactions) = serde_json::from_slice::<Vec<TransactionServer>>(&transactions) {
+        if let Ok(transactions) = serde_json::from_slice::<Vec<TransactionServer>>(transactions) {
             Ok(serde_wasm_bindgen::to_value(
                 &self.received_transactions(&transactions[..]),
             )?)

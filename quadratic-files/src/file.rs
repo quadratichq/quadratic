@@ -262,8 +262,8 @@ pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result
 }
 
 fn decompress_and_deserialize<T: DeserializeOwned>(data: Vec<u8>) -> Result<T> {
-    Ok(Transaction::decompress_and_deserialize::<T>(&data)
-        .map_err(|e| FilesError::Serialization(e.to_string()))?)
+    Transaction::decompress_and_deserialize::<T>(&data)
+        .map_err(|e| FilesError::Serialization(e.to_string()))
 }
 
 #[cfg(test)]

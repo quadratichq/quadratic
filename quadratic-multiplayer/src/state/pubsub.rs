@@ -147,10 +147,8 @@ impl State {
     }
 
     fn decompress_and_deserialize(transaction: Vec<u8>) -> Result<TransactionServer> {
-        Ok(
-            Transaction::decompress_and_deserialize::<TransactionServer>(&transaction)
-                .map_err(|e| MpError::Serialization(e.to_string()))?,
-        )
+        Transaction::decompress_and_deserialize::<TransactionServer>(&transaction)
+            .map_err(|e| MpError::Serialization(e.to_string()))
     }
 }
 
