@@ -4,7 +4,14 @@ use controller::operations::clipboard::PasteSpecial;
 use grid::{
     formats::format::Format,
     js_types::JsSheetFill,
-    sheet::validations::validation::{Validation, ValidationCell},
+    sheet::validations::{
+        validation::{Validation, ValidationCell, ValidationError, ValidationMessage},
+        validation_rules::{
+            validation_checkbox::ValidationCheckbox,
+            validation_list::{ValidationList, ValidationListSource},
+            ValidationRule,
+        },
+    },
 };
 use quadratic_core::{
     color::Rgba,
@@ -105,6 +112,13 @@ fn main() {
         ColumnRow,
         ValidationCell,
         Validation,
+        ValidationRule,
+        ValidationCell,
+        ValidationError,
+        ValidationMessage,
+        ValidationList,
+        ValidationCheckbox,
+        ValidationListSource,
     );
 
     if create_dir_all("../quadratic-client/src/app/quadratic-core-types").is_ok() {

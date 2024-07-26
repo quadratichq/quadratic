@@ -13,8 +13,10 @@ use super::super::Sheet;
 pub mod validation_checkbox;
 pub mod validation_list;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum ValidationRule {
+    #[default]
+    None,
     List(ValidationList),
     Checkbox(ValidationCheckbox),
 }
@@ -25,6 +27,7 @@ impl ValidationRule {
         match &self {
             ValidationRule::List(list) => ValidationList::validate(sheet, list, value),
             ValidationRule::Checkbox(_) => ValidationCheckbox::validate(value),
+            ValidationRule::None => true,
         }
     }
 }
@@ -66,5 +69,11 @@ mod tests {
 
         assert!(rule.validate(&sheet, &CellValue::Text("test".to_string())));
         assert!(!rule.validate(&sheet, &CellValue::Text("test2".to_string())));
+    }
+
+    #[test]
+    fn validate_none() {
+        let sheet = Sheet::test();
+        assert!(ValidationRule::None.validate(&sheet, &CellValue::Text("test".to_string())));
     }
 }

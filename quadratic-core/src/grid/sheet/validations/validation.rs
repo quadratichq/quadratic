@@ -38,14 +38,6 @@ pub struct Validation {
     pub error: ValidationError,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
-pub struct ValidationCreate {
-    pub name: Option<String>,
-    pub rule: ValidationRule,
-    pub message: ValidationMessage,
-    pub error: ValidationError,
-}
-
 impl Validation {
     /// Validate a cell value against its validation rule.
     pub fn validate(&self, sheet: &Sheet, value: &CellValue) -> bool {

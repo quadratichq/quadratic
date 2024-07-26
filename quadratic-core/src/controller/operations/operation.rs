@@ -118,7 +118,7 @@ pub enum Operation {
         dest: SheetPos,
     },
 
-    // adds a validation to the list of possible validations
+    // adds or updates a validation in the sheet
     AddValidation {
         sheet_id: SheetId,
         validation_id: Uuid,

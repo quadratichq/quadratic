@@ -18,6 +18,8 @@ export const SheetRange = (props: Props) => {
     setRange(getSelectionRange(sheets.sheet.cursor));
   }, []);
 
+  // todo: validate range
+
   return (
     <div>
       {props.label && <Label htmlFor={props.label}>{props.label}</Label>}

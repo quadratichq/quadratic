@@ -1,35 +1,34 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-import { Validation as ValidationRust } from '@/app/quadratic-core-types';
 import { ValidationHeader } from './ValidationHeader';
-import { useEffect, useState } from 'react';
-import { events } from '@/app/events/events';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetRange } from './SheetRange';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
-import { getSelectionRange } from '@/app/grid/sheet/selection';
+import { useValidationData } from './useValidationData';
+import { ValidationCriteria } from './ValidationCriteria';
+import { useMemo } from 'react';
+import { ValidationList } from './ValidationList';
 
 export const Validation = () => {
-  const [range, setRange] = useState(getSelectionRange(sheets.sheet.cursor));
-  const [validation, setValidation] = useState<ValidationRust | undefined>();
-  const [validations, setValidations] = useState<ValidationRust[]>([]);
+  const validationData = useValidationData();
+  const { validation, rule } = validationData;
 
-  useEffect(() => {
-    const getValidations = async () => {
-      const v = await quadraticCore.getValidations(sheets.sheet.id);
-    };
+  const changeName = (name: string) => {
+    validationData.setValidation((old) => {
+      if (old) {
+        return { ...old, name };
+      }
+    });
+  };
 
-    const getValidation = async () => {
-      const v = await quadraticCore.getValidation(sheets.getRustSelection());
-      setValidation(v);
-    };
-    getValidation();
-  }, []);
-
-  const [name, setName] = useState('');
+  const validationParameters: JSX.Element | null = useMemo(() => {
+    switch (rule) {
+      case 'list':
+        return <ValidationList validationData={validationData} />;
+    }
+    return null;
+  }, [rule, validationData]);
 
   return (
     <div
@@ -40,10 +39,16 @@ export const Validation = () => {
         <ValidationHeader />
         <div>
           <Label htmlFor="validation-name">Name</Label>
-          <Input id="validation-name" />
+          <Input
+            id="validation-name"
+            value={validationData.validation?.name || ''}
+            onChange={(e) => changeName(e.currentTarget.value)}
+          />
         </div>
 
-        <SheetRange label="Apply to Range" initial={range} />
+        <SheetRange label="Apply to Range" initial={validationData.range} />
+        <ValidationCriteria validationData={validationData} />
+        {validationParameters}
       </div>
 
       <div className="mx-auto my-1 flex gap-3">

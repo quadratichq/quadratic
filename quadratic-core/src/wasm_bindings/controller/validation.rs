@@ -25,19 +25,7 @@ impl GridController {
         serde_json::to_string(&sheet.validations.validations_all()).unwrap_or_default()
     }
 
-    /// Creates a new validation
-    #[wasm_bindgen(js_name = "createValidation")]
-    pub fn js_create_validation(
-        &mut self,
-        sheet_id: String,
-        validation_create: String, // ValidationCreate
-        selection: String,         // Selection
-        cursor: Option<String>,
-    ) {
-        self.create_validation(sheet_id, selection, validation_create, cursor);
-    }
-
-    // updates an existing validation
+    // creates or updates a validation and applies it to a selection
     #[wasm_bindgen(js_name = "updateValidation")]
     pub fn js_update_validation(
         &mut self,
