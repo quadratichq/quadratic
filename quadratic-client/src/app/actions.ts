@@ -197,3 +197,8 @@ export const resizeColumnAction = {
   label: 'Resize column to fit data',
   isAvailable: isAvailableBecauseCanEditFile,
 };
+
+export const validationAction = {
+  label: 'Data Validation',
+  isAvailable: isAvailableBecauseCanEditFile,
+};

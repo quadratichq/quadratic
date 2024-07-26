@@ -1,9 +1,15 @@
 import { ValidationData } from './useValidationData';
-import { ValidationCheckbox, ValidationDropdown, ValidationInput } from './ValidationUI';
+import { ValidationCheckbox, ValidationDropdown, ValidationInput, ValidationTextArea } from './ValidationUI';
 
 interface Props {
   validationData: ValidationData;
 }
+
+const STYLE_OPTIONS = [
+  { label: 'Stop', value: 'stop' },
+  { label: 'Warning', value: 'warning' },
+  { label: 'Information', value: 'information' },
+];
 
 export const ValidationMessage = (props: Props) => {
   const { rule, validation, setValidation } = props.validationData;
@@ -20,6 +26,14 @@ export const ValidationMessage = (props: Props) => {
     setValidation((old) => {
       if (old) {
         return { ...old, message: { ...old.message, message } };
+      }
+    });
+  };
+
+  const changeErrorStyle = (style: string) => {
+    setValidation((old) => {
+      if (old) {
+        return { ...old, error: { ...old.error, style } };
       }
     });
   };
@@ -72,7 +86,7 @@ export const ValidationMessage = (props: Props) => {
           value={validation?.message.title || ''}
           onChange={(title) => changeMessageTitle(title)}
         />
-        <ValidationInput
+        <ValidationTextArea
           label="Message"
           value={validation?.message.message || ''}
           onChange={(message) => changeMessageMessage(message)}
@@ -85,13 +99,18 @@ export const ValidationMessage = (props: Props) => {
         showDropdown={!!validation?.error.show}
         changeDropDown={showError}
       />
-      <ValidationDropdown label="Style" value={validation?.error.style || 'stop'} onChange={() => 0} options={[]} />
+      <ValidationDropdown
+        label="Style"
+        value={validation?.error.style || 'stop'}
+        onChange={(style) => changeErrorStyle(style)}
+        options={STYLE_OPTIONS}
+      />
       <ValidationInput
         label="Title"
         value={validation?.error.title || ''}
         onChange={(title) => changeErrorTitle(title)}
       />
-      <ValidationInput
+      <ValidationTextArea
         label="Message"
         value={validation?.error.message || ''}
         onChange={(message) => changeErrorMessage(message)}

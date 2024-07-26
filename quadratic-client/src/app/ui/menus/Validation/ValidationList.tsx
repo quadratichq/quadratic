@@ -10,9 +10,10 @@ interface Props {
 export const ValidationListInput = (props: Props) => {
   const { setValidation, validation } = props.validationData;
   const changeList = (list: string) => {
+    const trimmedList = list.split(',').map((value) => value.trim());
     setValidation((old) => {
       if (old) {
-        return { ...old, rule: { List: { source: { List: list.split(',') }, ignore_blank: true, drop_down: true } } };
+        return { ...old, rule: { List: { source: { List: trimmedList }, ignore_blank: true, drop_down: true } } };
       }
     });
   };
@@ -24,7 +25,9 @@ export const ValidationListInput = (props: Props) => {
       if ('List' in rule) {
         if ('source' in rule.List) {
           if ('List' in rule.List.source) {
-            return rule.List.source.List.join(', ');
+            const split = rule.List.source.List;
+            if (split.length === 0) return '';
+            return split.map((value) => value.trim()).join(', ');
           }
         }
       }
