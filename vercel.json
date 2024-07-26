@@ -1,6 +1,6 @@
 {
   "buildCommand": "./infra/client/build-client-ci.sh",
-  "installCommand": "npm install",
+  "installCommand": "",
   "outputDirectory": "build",
   "headers": [
     {
@@ -17,8 +17,5 @@
       ]
     }
   ],
-  "env": {
-    "ENABLE_ROOT_PATH_BUILD_CACHE": "1"
-  },
   "public": true
 }
