@@ -29,7 +29,7 @@ if [[ "${use_poetry}" == "true" ]]; then
     echo "Building package with Poetry"
     poetry build
 else
-    python3 -m pip install build
+    python3 -m pip install build --break-system-packages
 
     echo "Building package with 'build'"
     python3 -m build

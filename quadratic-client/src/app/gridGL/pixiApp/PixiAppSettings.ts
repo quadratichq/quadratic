@@ -86,8 +86,14 @@ class PixiAppSettings {
   ): void {
     this.editorInteractionState = editorInteractionState;
     this.setEditorInteractionState = setEditorInteractionState;
-    pixiApp.headings.dirty = true;
-    pixiApp.cursor.dirty = true;
+
+    // these ifs are needed to because pixiApp may be in a bad state during hmr
+    if (pixiApp.headings) {
+      pixiApp.headings.dirty = true;
+    }
+    if (pixiApp.cursor) {
+      pixiApp.cursor.dirty = true;
+    }
   }
 
   get showGridLines(): boolean {
