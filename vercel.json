@@ -16,5 +16,8 @@
         }
       ]
     }
-  ]
+  ],
+  "env": {
+    "ENABLE_ROOT_PATH_BUILD_CACHE": 1
+  }
 }
