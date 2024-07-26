@@ -36,7 +36,7 @@ class CoreMultiplayer {
         break;
 
       case 'multiplayerCoreReceiveTransactions':
-        core.receiveTransactions(e.data.transactions);
+        core.receiveTransactions(e.data);
         break;
 
       default:

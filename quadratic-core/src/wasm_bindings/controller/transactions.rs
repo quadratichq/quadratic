@@ -1,6 +1,8 @@
 use super::*;
 use crate::controller::{
-    active_transactions::unsaved_transactions::UnsavedTransaction, transaction::TransactionServer,
+    active_transactions::unsaved_transactions::UnsavedTransaction,
+    operations::operation::Operation,
+    transaction::{Transaction, TransactionServer},
 };
 use uuid::Uuid;
 
@@ -11,16 +13,15 @@ impl GridController {
         &mut self,
         transaction_id: String,
         sequence_num: u32,
-        operations: String,
+        operations: &[u8],
     ) -> Result<JsValue, JsValue> {
-        let transaction_id = match Uuid::parse_str(&transaction_id) {
-            Ok(transaction_id) => transaction_id,
-            Err(e) => return Err(JsValue::from_str(&format!("Invalid transaction id: {}", e))),
-        };
-        let operations = match serde_json::from_str(&operations) {
-            Ok(operations) => operations,
-            Err(e) => return Err(JsValue::from_str(&format!("Invalid operations: {}", e))),
-        };
+        let transaction_id = Uuid::parse_str(&transaction_id)
+            .map_err(|e| JsValue::from_str(&format!("Invalid transaction id: {}", e)))?;
+
+        let operations =
+            Transaction::decompress_and_deserialize::<Vec<Operation>>(&operations.to_vec())
+                .map_err(|e| JsValue::from_str(&format!("Invalid operations: {}", e)))?;
+
         Ok(serde_wasm_bindgen::to_value(&self.received_transaction(
             transaction_id,
             sequence_num as u64,
@@ -48,9 +49,9 @@ impl GridController {
     #[wasm_bindgen(js_name = "receiveMultiplayerTransactions")]
     pub fn js_receive_multiplayer_transactions(
         &mut self,
-        transactions: String,
+        transactions: &[u8],
     ) -> Result<JsValue, JsValue> {
-        if let Ok(transactions) = serde_json::from_str::<Vec<TransactionServer>>(&transactions) {
+        if let Ok(transactions) = serde_json::from_slice::<Vec<TransactionServer>>(&transactions) {
             Ok(serde_wasm_bindgen::to_value(
                 &self.received_transactions(&transactions[..]),
             )?)

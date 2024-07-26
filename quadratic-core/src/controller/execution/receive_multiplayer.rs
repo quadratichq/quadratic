@@ -1,18 +1,13 @@
 use std::collections::VecDeque;
 
 use super::TransactionType;
-use crate::{
-    compression::{
-        decompress_and_deserialize, serialize_and_compress, CompressionFormat, SerializationFormat,
+use crate::controller::{
+    active_transactions::{
+        pending_transaction::PendingTransaction, unsaved_transactions::UnsavedTransaction,
     },
-    controller::{
-        active_transactions::{
-            pending_transaction::PendingTransaction, unsaved_transactions::UnsavedTransaction,
-        },
-        operations::operation::Operation,
-        transaction::{Transaction, TransactionServer},
-        GridController,
-    },
+    operations::operation::Operation,
+    transaction::{Transaction, TransactionServer},
+    GridController,
 };
 use chrono::{Duration, TimeDelta, Utc};
 use uuid::Uuid;
@@ -228,7 +223,8 @@ impl GridController {
 
         // combine all transaction into one transaction
         transactions.iter().for_each(|t| {
-            let operations = Transaction::decompress_and_deserialize(&t.operations).unwrap();
+            let operations =
+                Transaction::decompress_and_deserialize::<Vec<Operation>>(&t.operations).unwrap();
 
             let mut transaction = PendingTransaction {
                 id: t.id,

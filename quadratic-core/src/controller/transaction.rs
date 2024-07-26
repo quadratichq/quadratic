@@ -1,5 +1,5 @@
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::compression::{
@@ -39,20 +39,12 @@ impl Transaction {
         }
     }
 
-    pub fn serialize_and_compress(opearations: &Vec<Operation>) -> Result<Vec<u8>> {
-        serialize_and_compress::<Vec<Operation>>(
-            &SERIALIZATION_FORMAT,
-            &COMPRESSION_FORMAT,
-            opearations,
-        )
+    pub fn serialize_and_compress<T: Serialize>(opearations: &T) -> Result<Vec<u8>> {
+        serialize_and_compress::<T>(&SERIALIZATION_FORMAT, &COMPRESSION_FORMAT, opearations)
     }
 
-    pub fn decompress_and_deserialize(opearations: &Vec<u8>) -> Result<Vec<Operation>> {
-        decompress_and_deserialize::<Vec<Operation>>(
-            &SERIALIZATION_FORMAT,
-            &COMPRESSION_FORMAT,
-            &opearations,
-        )
+    pub fn decompress_and_deserialize<T: DeserializeOwned>(opearations: &Vec<u8>) -> Result<T> {
+        decompress_and_deserialize::<T>(&SERIALIZATION_FORMAT, &COMPRESSION_FORMAT, &opearations)
     }
 }
 

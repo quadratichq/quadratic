@@ -338,6 +338,7 @@ pub(crate) mod tests {
         body::Body,
         http::{self, Request},
     };
+    use base64::{engine::general_purpose::STANDARD, Engine};
     use quadratic_core::controller::operations::operation::Operation;
     use quadratic_core::controller::transaction::Transaction;
     use quadratic_core::grid::SheetId;
@@ -535,7 +536,7 @@ pub(crate) mod tests {
         }];
         let id = Uuid::new_v4();
         let compressed_ops = Transaction::serialize_and_compress(&operations).unwrap();
-
+        let encoded_ops = STANDARD.encode(&compressed_ops);
         let request = MessageRequest::Transaction {
             id,
             session_id,
@@ -545,7 +546,7 @@ pub(crate) mod tests {
         let expected = MessageResponse::Transaction {
             id,
             file_id,
-            operations: compressed_ops,
+            operations: encoded_ops,
             sequence_num: 1,
         };
 

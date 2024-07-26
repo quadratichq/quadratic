@@ -21,8 +21,12 @@ import {
   SummarizeSelectionResult,
 } from '@/app/quadratic-core-types';
 import initCore, { GridController } from '@/app/quadratic-core/quadratic_core';
-import { MultiplayerCoreReceiveTransaction } from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
+import {
+  MultiplayerCoreReceiveTransaction,
+  MultiplayerCoreReceiveTransactions,
+} from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
 import * as Sentry from '@sentry/react';
+import { Buffer } from 'buffer';
 import {
   ClientCoreFindNextColumn,
   ClientCoreFindNextRow,
@@ -284,6 +288,11 @@ class Core {
       this.clientQueue.push(async () => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
         const data = message.transaction;
+
+        if (typeof data.operations === 'string') {
+          data.operations = Buffer.from(data.operations, 'base64');
+        }
+
         this.gridController.multiplayerTransaction(data.id, data.sequence_num, data.operations);
         offline.markTransactionSent(data.id);
         if (await offline.unsentTransactionsCount()) {
@@ -296,11 +305,19 @@ class Core {
     });
   }
 
-  receiveTransactions(transactions: string) {
+  receiveTransactions(receive_transactions: MultiplayerCoreReceiveTransactions) {
     return new Promise((resolve) => {
       this.clientQueue.push(async () => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.receiveMultiplayerTransactions(transactions);
+
+        // convert the base64 encoded string of operations into buffers
+        for (let data of receive_transactions.transactions) {
+          if (typeof data.operations === 'string') {
+            data.operations = Buffer.from(data.operations, 'base64');
+          }
+        }
+        const transactionsBuffer = Buffer.from(JSON.stringify(receive_transactions.transactions));
+        this.gridController.receiveMultiplayerTransactions(transactionsBuffer);
         if (await offline.unsentTransactionsCount()) {
           coreClient.sendMultiplayerState('syncing');
         } else {

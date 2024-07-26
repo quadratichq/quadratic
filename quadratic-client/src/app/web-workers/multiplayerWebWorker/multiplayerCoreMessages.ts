@@ -13,7 +13,7 @@ export interface CoreMultiplayerTransaction {
 
 export interface MultiplayerCoreReceiveTransactions {
   type: 'multiplayerCoreReceiveTransactions';
-  transactions: string;
+  transactions: ReceiveTransaction[];
 }
 
 export interface MultiplayerCoreReceiveTransaction {
