@@ -1,11 +1,10 @@
-import { Input } from '@/shared/shadcn/ui/input';
-import { Label } from '@/shared/shadcn/ui/label';
 import { TooltipHint } from '../../components/TooltipHint';
 import HighlightAltIcon from '@mui/icons-material/HighlightAlt';
 import { Button } from '@/shared/shadcn/ui/button';
-import { ChangeEvent, useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { getSelectionRange, parseSelectionRange } from '@/app/grid/sheet/selection';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { ValidationInput } from './ValidationUI';
 
 interface Props {
   label?: string;
@@ -21,9 +20,8 @@ export const SheetRange = (props: Props) => {
     setRange(getSelectionRange(sheets.sheet.cursor));
   }, []);
 
-  const onInputChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const value = e.currentTarget.value;
+  const onChange = useCallback(
+    (value: string) => {
       setRange(value);
       const validate = parseSelectionRange(value);
       if (Array.isArray(validate)) {
@@ -36,9 +34,8 @@ export const SheetRange = (props: Props) => {
 
   return (
     <div>
-      {props.label && <Label htmlFor={label}>{label}</Label>}
       <div className="flex w-full items-center space-x-2">
-        <Input id={props.label} value={range} onChange={onInputChange} />
+        <ValidationInput label={label} value={range || ''} onChange={onChange} width="100%" />
         <TooltipHint title={'Insert current selection'} placement="bottom">
           <Button size="sm" onClick={onInsert}>
             <HighlightAltIcon fontSize="small" />
