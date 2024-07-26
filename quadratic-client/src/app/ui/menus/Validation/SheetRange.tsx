@@ -3,28 +3,42 @@ import { Label } from '@/shared/shadcn/ui/label';
 import { TooltipHint } from '../../components/TooltipHint';
 import HighlightAltIcon from '@mui/icons-material/HighlightAlt';
 import { Button } from '@/shared/shadcn/ui/button';
-import { useCallback, useState } from 'react';
-import { getSelectionRange } from '@/app/grid/sheet/selection';
+import { ChangeEvent, useCallback, useState } from 'react';
+import { getSelectionRange, parseSelectionRange } from '@/app/grid/sheet/selection';
 import { sheets } from '@/app/grid/controller/Sheets';
 
 interface Props {
   label?: string;
   initial?: string;
+  onChangeRange: (range: string) => void;
 }
 
 export const SheetRange = (props: Props) => {
-  const [range, setRange] = useState(props.initial);
+  const { onChangeRange, label, initial } = props;
+
+  const [range, setRange] = useState(initial);
   const onInsert = useCallback(() => {
     setRange(getSelectionRange(sheets.sheet.cursor));
   }, []);
 
-  // todo: validate range
+  const onInputChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const value = e.currentTarget.value;
+      setRange(value);
+      const validate = parseSelectionRange(value);
+      if (Array.isArray(validate)) {
+      } else {
+        onChangeRange(value);
+      }
+    },
+    [onChangeRange]
+  );
 
   return (
     <div>
-      {props.label && <Label htmlFor={props.label}>{props.label}</Label>}
+      {props.label && <Label htmlFor={label}>{label}</Label>}
       <div className="flex w-full items-center space-x-2">
-        <Input id={props.label} value={range} onChange={(change) => setRange(change.currentTarget.value)} />
+        <Input id={props.label} value={range} onChange={onInputChange} />
         <TooltipHint title={'Insert current selection'} placement="bottom">
           <Button size="sm" onClick={onInsert}>
             <HighlightAltIcon fontSize="small" />

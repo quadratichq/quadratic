@@ -1,14 +1,56 @@
 import { SheetRange } from './SheetRange';
 import { ValidationData } from './useValidationData';
+import { useMemo } from 'react';
+import { ValidationCheckbox, ValidationMoreOptions, ValidationInput } from './ValidationUI';
 
 interface Props {
   validationData: ValidationData;
 }
 
+export const ValidationListInput = (props: Props) => {
+  const { setValidation, validation } = props.validationData;
+  const changeList = (list: string) => {
+    setValidation((old) => {
+      if (old) {
+        return { ...old, rule: { List: { source: { List: list.split(',') }, ignore_blank: true, drop_down: true } } };
+      }
+    });
+  };
+
+  const list = useMemo(() => {
+    const rule = validation?.rule;
+    if (rule) {
+      if (rule === 'None') return '';
+      if ('List' in rule) {
+        if ('source' in rule.List) {
+          if ('List' in rule.List.source) {
+            return rule.List.source.List.join(', ');
+          }
+        }
+      }
+    }
+    return '';
+  }, [validation?.rule]);
+
+  return <ValidationInput label="List" value={list} onChange={changeList} footer="Enter values separated by commas" />;
+};
+
 export const ValidationList = (props: Props) => {
+  const { rule, ignoreBlank, changeIgnoreBlank, showDropdown, changeDropDown, moreOptions } = props.validationData;
+
   return (
-    <div>
-      <SheetRange label="Source" />
+    <div className="flex flex-col gap-5">
+      {rule === 'list-range' && <SheetRange label="Range" onChangeRange={() => 0} />}
+      {rule === 'list' && <ValidationListInput validationData={props.validationData} />}
+
+      <ValidationMoreOptions validationData={props.validationData} />
+
+      {moreOptions && (
+        <ValidationCheckbox label="Ignore blank values" showDropdown={ignoreBlank} changeDropDown={changeIgnoreBlank} />
+      )}
+      {moreOptions && (
+        <ValidationCheckbox label="Show dropdown in cell" showDropdown={showDropdown} changeDropDown={changeDropDown} />
+      )}
     </div>
   );
 };

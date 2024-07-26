@@ -3,6 +3,7 @@ import { SheetCursor } from './SheetCursor';
 
 const RANGE_SEPARATOR = '; ';
 
+// Gets a Selection based on a SheetCursor
 export const getSelectionRange = (cursor: SheetCursor): string => {
   let range = '';
   if (cursor.columnRow) {
@@ -88,6 +89,8 @@ export const parseNumberList = (s: string): bigint[] | undefined => {
   return result;
 };
 
+// Parses a string to find a Selection
+// @returns Selection | [error message, index of error]
 export const parseSelectionRange = (range: string): Selection | [string, number] => {
   const selection: Selection = {
     sheet_id: { id: '' },
@@ -142,6 +145,7 @@ export const parseSelectionRange = (range: string): Selection | [string, number]
   return selection;
 };
 
+// Returns a Selection given a single x,y value
 export const getSingleSelection = (sheetId: string, x: number, y: number): Selection => {
   return {
     sheet_id: { id: sheetId },
