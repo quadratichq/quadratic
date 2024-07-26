@@ -6,7 +6,7 @@ import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { PanelBox, calculatePanelBoxMinimizedSize } from '@/app/ui/menus/CodeEditor/panels/PanelBox';
 import { useCodeEditorContainer } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorContainer';
 import { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
-import { useFileRouteLoaderData } from '@/routes/file.$uuid';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';

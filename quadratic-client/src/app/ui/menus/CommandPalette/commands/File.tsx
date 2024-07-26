@@ -7,7 +7,7 @@ import {
   // FileDeleteIcon, FileDownloadIcon, FileDuplicateIcon,
   FileIcon,
 } from '@/app/ui/icons';
-import { useFileRouteLoaderData } from '@/routes/file.$uuid';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { useNavigate, useParams, useSubmit } from 'react-router-dom';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
