@@ -145,13 +145,13 @@ class InlineEditorFormula {
     }
   };
 
-  // This is a bit of a hack to ensure that a formula like `SUM(A1,` is not
-  // returned as valid for the `handleCellPointerDown` call. I think Excel
-  // actually knows that it's waiting for a cell reference. Our parser is not as
-  // smart and we do not have this information.
-  private formulaIsReadyToClose() {
+  // Returns whether a cell references is likely to be a valid token at the
+  // cursor position. This is useful for determining whether the user intends to
+  // insert a cell reference when they select a different cell (either by click
+  // or by keyboard input) or whether they want to switch to a different cell.
+  wantsCellRef() {
     const lastCharacter = inlineEditorMonaco.getNonWhitespaceCharBeforeCursor();
-    return ![',', '+', '-', '*', '/', '%', '=', '<', '>', '&', '.', '(', '{'].includes(lastCharacter);
+    return ['', ',', '+', '-', '*', '/', '%', '=', '<', '>', '&', '.', '(', '{'].includes(lastCharacter);
   }
 
   // Returns whether we are editing a formula only if it is valid (used for
@@ -164,7 +164,6 @@ class InlineEditorFormula {
 
     const location = inlineEditorHandler.location;
     if (!location) return false;
-    if (!this.formulaIsReadyToClose()) return false;
     const formula = (testFormula ?? inlineEditorMonaco.get()).slice(1);
     if (!checkFormula(formula, location.x, location.y)) {
       if (skipCloseParenthesisCheck) {

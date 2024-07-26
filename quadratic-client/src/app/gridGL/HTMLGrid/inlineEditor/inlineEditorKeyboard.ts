@@ -61,14 +61,14 @@ class InlineEditorKeyboard {
           if (column === target) {
             // if we're not moving and the formula is valid, close the editor
             e.stopPropagation();
-            if (inlineEditorFormula.isFormulaValid()) {
-              inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
-            } else {
+            if (inlineEditorFormula.wantsCellRef()) {
               if (isRight) {
                 inlineEditorHandler.cursorIsMoving = true;
                 inlineEditorFormula.addInsertingCells(column);
                 await keyboardPosition(e);
               }
+            } else {
+              inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
             }
           }
         }
@@ -106,8 +106,12 @@ class InlineEditorKeyboard {
         if (inlineEditorHandler.cursorIsMoving) {
           await keyboardPosition(e);
         } else {
-          // if we're not moving and the formula is valid, close the editor
-          if (inlineEditorFormula.isFormulaValid()) {
+          // If we're not moving and the formula doesn't want a cell reference,
+          // close the editor. We can't just use "is the formula syntactically
+          // valid" because many formulas are syntactically valid even though
+          // it's obvious the user wants to insert a cell reference. For
+          // example, `SUM(,)` with the cursor to the left of the comma.
+          if (!inlineEditorFormula.wantsCellRef()) {
             inlineEditorHandler.close(0, e.code === 'ArrowDown' ? 1 : -1, false);
             return;
           }

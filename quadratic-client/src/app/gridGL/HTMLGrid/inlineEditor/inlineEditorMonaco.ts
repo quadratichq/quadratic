@@ -307,6 +307,7 @@ class InlineEditorMonaco {
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.updateMonacoCursorPosition);
     this.editor.onKeyDown((e) => inlineEditorKeyboard.keyDown(e.browserEvent));
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.keepCursorVisible);
+    this.editor.onMouseDown(() => inlineEditorKeyboard.resetKeyboardPosition());
   }
 
   // Sends a keyboard event to the editor (used when returning
