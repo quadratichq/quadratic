@@ -269,9 +269,8 @@ impl Sheet {
             }
             x += if reverse { -1 } else { 1 };
         }
-        if with_content && self.display_value(Pos { x, y: row }).is_some() {
-            x
-        } else if !with_content && self.display_value(Pos { x, y: row }).is_none() {
+        let has_content = self.display_value(Pos { x, y: row });
+        if with_content == has_content.is_some() {
             x
         } else {
             column_start
@@ -305,9 +304,8 @@ impl Sheet {
             }
             y += if reverse { -1 } else { 1 };
         }
-        if with_content && self.display_value(Pos { x: column, y }).is_some() {
-            y
-        } else if !with_content && self.display_value(Pos { x: column, y }).is_none() {
+        let has_content = self.display_value(Pos { x: column, y });
+        if with_content == has_content.is_some() {
             y
         } else {
             row_start
