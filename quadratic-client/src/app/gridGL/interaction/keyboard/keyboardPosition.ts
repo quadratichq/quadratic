@@ -8,6 +8,17 @@ import { Rectangle } from 'pixi.js';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 
+function setCursorPosition(x: number, y: number) {
+  const newPos = { x, y };
+  sheets.sheet.cursor.changePosition({
+    multiCursor: null,
+    columnRow: null,
+    cursorPosition: newPos,
+    keyboardMovePosition: newPos,
+    ensureVisible: newPos,
+  });
+}
+
 // todo: The QuadraticCore checks should be a single call within Rust instead of
 // having TS handle the logic (this will reduce the number of calls into
 // quadraticCore)
@@ -79,13 +90,7 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
         ensureVisible: { x: lastMultiCursor.right, y },
       });
     } else {
-      cursor.changePosition({
-        multiCursor: null,
-        columnRow: null,
-        cursorPosition: { x, y },
-        keyboardMovePosition: { x, y },
-        ensureVisible: { x, y },
-      });
+      setCursorPosition(x, y);
     }
   } else if (deltaX === -1) {
     let x = keyboardX;
@@ -140,13 +145,7 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
         ensureVisible: { x: lastMultiCursor.x, y },
       });
     } else {
-      cursor.changePosition({
-        multiCursor: null,
-        columnRow: null,
-        cursorPosition: { x, y },
-        keyboardMovePosition: { x, y },
-        ensureVisible: { x, y },
-      });
+      setCursorPosition(x, y);
     }
   } else if (deltaY === 1) {
     let y = keyboardY;
@@ -197,13 +196,7 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
         ensureVisible: { x, y: lastMultiCursor.bottom },
       });
     } else {
-      cursor.changePosition({
-        multiCursor: null,
-        columnRow: null,
-        cursorPosition: { x, y },
-        keyboardMovePosition: { x, y },
-        ensureVisible: { x, y },
-      });
+      setCursorPosition(x, y);
     }
   } else if (deltaY === -1) {
     let y = keyboardY;
@@ -256,13 +249,7 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
         ensureVisible: { x, y: lastMultiCursor.y },
       });
     } else {
-      cursor.changePosition({
-        multiCursor: null,
-        columnRow: null,
-        cursorPosition: { x, y },
-        keyboardMovePosition: { x, y },
-        ensureVisible: { x, y },
-      });
+      setCursorPosition(x, y);
     }
   }
 }
@@ -299,13 +286,7 @@ function handleShiftKey(deltaX: number, deltaY: number) {
 const handleHomeKey = async (event: KeyboardEvent) => {
   const sheet = sheets.sheet;
   if (event.metaKey || event.ctrlKey) {
-    sheet.cursor.changePosition({
-      multiCursor: null,
-      columnRow: null,
-      cursorPosition: { x: 0, y: 0 },
-      keyboardMovePosition: { x: 0, y: 0 },
-      ensureVisible: { x: 0, y: 0 },
-    });
+    setCursorPosition(0, 0);
     moveViewport({ topLeft: { x: 0, y: 0 }, force: true });
   } else {
     const bounds = sheet.getBounds(true);
@@ -322,13 +303,7 @@ const handleHomeKey = async (event: KeyboardEvent) => {
 
     const hasContent = await quadraticCore.cellHasContent(sheet.id, x, y);
     if (hasContent) {
-      sheet.cursor.changePosition({
-        multiCursor: null,
-        columnRow: null,
-        cursorPosition: { x, y },
-        keyboardMovePosition: { x, y },
-        ensureVisible: { x, y },
-      });
+      setCursorPosition(x, y);
     }
   }
 };
@@ -347,13 +322,7 @@ const handleEndKey = async (event: KeyboardEvent) => {
       reverse: true,
       withContent: true,
     });
-    sheet.cursor.changePosition({
-      multiCursor: null,
-      columnRow: null,
-      cursorPosition: { x, y },
-      keyboardMovePosition: { x, y },
-      ensureVisible: { x, y },
-    });
+    setCursorPosition(x, y);
   } else {
     const y = sheet.cursor.cursorPosition.y;
     const x = await quadraticCore.findNextColumn({
@@ -366,13 +335,7 @@ const handleEndKey = async (event: KeyboardEvent) => {
 
     const hasContent = await quadraticCore.cellHasContent(sheet.id, x, y);
     if (hasContent) {
-      sheet.cursor.changePosition({
-        multiCursor: null,
-        columnRow: null,
-        cursorPosition: { x, y },
-        keyboardMovePosition: { x, y },
-        ensureVisible: { x, y },
-      });
+      setCursorPosition(x, y);
     }
   }
 };
