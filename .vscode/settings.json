@@ -49,7 +49,7 @@
     "Westborough"
   ],
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": true
+    "source.fixAll.eslint": "explicit"
   },
   "eslint.alwaysShowStatus": true,
   "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
@@ -67,7 +67,7 @@
   },
   "jest.rootPath": "quadratic-client",
   "typescript.preferences.importModuleSpecifier": "non-relative",
-  "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+  "editor.defaultFormatter": null,
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
