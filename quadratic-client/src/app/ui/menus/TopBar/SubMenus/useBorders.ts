@@ -1,16 +1,17 @@
+import { borderMenuAtom } from '@/app/atoms/borderMenuAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
 import { BorderSelection, BorderStyle, CellBorderLine } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { useEffect, useState } from 'react';
-import { sheets } from '../../../../grid/controller/Sheets';
-import { convertColorStringToTint, convertTintToArray } from '../../../../helpers/convertColor';
-import { colors } from '../../../../theme/colors';
+import { useSetRecoilState } from 'recoil';
 
 export interface ChangeBorder {
   selection?: BorderSelection;
   color?: string;
-  type?: CellBorderLine;
+  line?: CellBorderLine;
 }
 
 export interface UseBordersResults {
@@ -20,29 +21,36 @@ export interface UseBordersResults {
 }
 
 export const useBorders = (): UseBordersResults => {
+  const setBorderMenuState = useSetRecoilState(borderMenuAtom);
+
   const changeBorders = (options: ChangeBorder): void => {
-    const cursor = sheets.sheet.cursor;
-    if (cursor.multiCursor && cursor.multiCursor.length > 1) {
-      console.log('TODO: implement multiCursor border support');
-      return;
-    }
-    const rectangle = cursor.multiCursor
-      ? cursor.multiCursor[0]
-      : new Rectangle(cursor.cursorPosition.x, cursor.cursorPosition.y, 1, 1);
-    const sheet = sheets.sheet;
-    const colorTint = options.color === undefined ? colors.defaultBorderColor : convertColorStringToTint(options.color);
-    const colorArray = convertTintToArray(colorTint);
-    const selection = options.selection === undefined ? 'all' : options.selection;
-    const style: BorderStyle = {
-      color: {
-        red: Math.floor(colorArray[0] * 255),
-        green: Math.floor(colorArray[1] * 255),
-        blue: Math.floor(colorArray[2] * 255),
-        alpha: 0xff,
-      },
-      line: options.type ?? 'line1',
-    };
-    quadraticCore.setRegionBorders(sheet.id, rectangle, selection, style);
+    setBorderMenuState((prev) => {
+      const selection = options.selection ?? prev.selection;
+      const color = options.color ?? prev.color;
+      const line = options.line ?? prev.line;
+      const cursor = sheets.sheet.cursor;
+      if (cursor.multiCursor && cursor.multiCursor.length > 1) {
+        console.log('TODO: implement multiCursor border support');
+      } else if (selection !== undefined) {
+        const rectangle = cursor.multiCursor
+          ? cursor.multiCursor[0]
+          : new Rectangle(cursor.cursorPosition.x, cursor.cursorPosition.y, 1, 1);
+        const sheet = sheets.sheet;
+        const colorTint = convertColorStringToTint(color);
+        const colorArray = convertTintToArray(colorTint);
+        const style: BorderStyle = {
+          color: {
+            red: Math.floor(colorArray[0] * 255),
+            green: Math.floor(colorArray[1] * 255),
+            blue: Math.floor(colorArray[2] * 255),
+            alpha: 0xff,
+          },
+          line,
+        };
+        quadraticCore.setRegionBorders(sheet.id, rectangle, selection, style);
+      }
+      return { selection, color, line };
+    });
   };
 
   const clearBorders = (): void => {

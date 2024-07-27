@@ -651,14 +651,14 @@ class Core {
     y: number,
     width: number,
     height: number,
-    border: string,
+    selection: string,
     style: string | undefined,
     cursor: string
   ) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setRegionBorders(sheetId, numbersToRect(x, y, width, height), border, style, cursor);
+        this.gridController.setRegionBorders(sheetId, numbersToRect(x, y, width, height), selection, style, cursor);
         resolve(undefined);
       });
     });
