@@ -25,7 +25,7 @@ import { useRecoilValue } from 'recoil';
 import './useGetBorderMenu.css';
 
 export function useGetBorderMenu(): JSX.Element | null {
-  const borderMenuState = useRecoilValue(borderMenuAtom);
+  const { color } = useRecoilValue(borderMenuAtom);
   const { disabled, changeBorders } = useBorders();
 
   const handleChangeBorderSelection = useCallback(
@@ -127,7 +127,7 @@ export function useGetBorderMenu(): JSX.Element | null {
         <SubMenu
           className="borderSubmenu color-picker-submenu"
           id="FillBorderColorMenuID"
-          label={<BorderColorIcon className="mr-1 h-5 w-5" style={{ color: borderMenuState.color }}></BorderColorIcon>}
+          label={<BorderColorIcon className="mr-1 h-5 w-5" style={{ color }}></BorderColorIcon>}
         >
           <QColorPicker onChangeComplete={handleChangeBorderColor} />
         </SubMenu>
