@@ -2,13 +2,16 @@ import { SheetRange } from './SheetRange';
 import { ValidationData } from './useValidationData';
 import { useMemo } from 'react';
 import { ValidationCheckbox, ValidationMoreOptions, ValidationInput } from './ValidationUI';
+import { parseSelectionRange } from '@/app/grid/sheet/selection';
+import { ValidationRule } from '@/app/quadratic-core-types';
 
 interface Props {
   validationData: ValidationData;
 }
 
 export const ValidationListInput = (props: Props) => {
-  const { setValidation, validation } = props.validationData;
+  const { setValidation, validation, triggerError } = props.validationData;
+
   const changeList = (list: string) => {
     const trimmedList = list.split(',').map((value) => value.trim());
     setValidation((old) => {
@@ -35,15 +38,49 @@ export const ValidationListInput = (props: Props) => {
     return '';
   }, [validation?.rule]);
 
-  return <ValidationInput label="List" value={list} onChange={changeList} footer="Enter values separated by commas" />;
+  return (
+    <ValidationInput
+      label="List"
+      value={list}
+      onChange={changeList}
+      footer="Enter values separated by commas"
+      error={triggerError && list.trim() === '' ? 'Need at least one value in list' : undefined}
+    />
+  );
 };
 
 export const ValidationList = (props: Props) => {
-  const { rule, ignoreBlank, changeIgnoreBlank, showDropdown, changeDropDown, moreOptions } = props.validationData;
+  const {
+    setValidation,
+    rule,
+    ignoreBlank,
+    changeIgnoreBlank,
+    showDropdown,
+    changeDropDown,
+    moreOptions,
+    triggerError,
+  } = props.validationData;
+
+  const changeRange = (range: string) => {
+    const parsed = parseSelectionRange(range);
+    if (!Array.isArray(parsed)) {
+      const rule: ValidationRule = {
+        List: { source: { Selection: parsed }, ignore_blank: ignoreBlank, drop_down: showDropdown },
+      };
+      setValidation((old) => {
+        if (old) {
+          return {
+            ...old,
+            rule,
+          };
+        }
+      });
+    }
+  };
 
   return (
     <div className="flex flex-col gap-5">
-      {rule === 'list-range' && <SheetRange label="Range" onChangeRange={() => 0} />}
+      {rule === 'list-range' && <SheetRange label="Range" onChangeRange={changeRange} triggerError={triggerError} />}
       {rule === 'list' && <ValidationListInput validationData={props.validationData} />}
 
       <ValidationMoreOptions validationData={props.validationData} />

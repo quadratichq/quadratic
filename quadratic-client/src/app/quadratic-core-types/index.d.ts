@@ -62,5 +62,6 @@ export interface ValidationCell { title: string | null, message: string | null, 
 export interface ValidationError { show: boolean, style: ValidationStyle, title: string | null, message: string | null, }
 export interface ValidationMessage { show: boolean, title: string | null, message: string | null, }
 export interface ValidationList { source: ValidationListSource, ignore_blank: boolean, drop_down: boolean, }
-export interface ValidationCheckbox { checkbox: boolean, }
+export type ValidationCheckbox = Record<string, never>;
 export type ValidationListSource = { "Selection": Selection } | { "List": Array<string> };
+export type ValidationStyle = "Warning" | "Stop" | "Information";

@@ -911,7 +911,11 @@ class Core {
 
   updateValidation(selection: Selection, validation: Validation, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.updateValidation(JSON.stringify(selection, bigIntReplacer), JSON.stringify(validation), cursor);
+    this.gridController.updateValidation(
+      JSON.stringify(selection, bigIntReplacer),
+      JSON.stringify(validation, bigIntReplacer),
+      cursor
+    );
   }
 }
 

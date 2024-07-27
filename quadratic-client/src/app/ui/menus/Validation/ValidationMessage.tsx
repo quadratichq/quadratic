@@ -1,3 +1,4 @@
+import { ValidationStyle } from '@/app/quadratic-core-types';
 import { ValidationData } from './useValidationData';
 import { ValidationCheckbox, ValidationDropdown, ValidationInput, ValidationTextArea } from './ValidationUI';
 
@@ -5,10 +6,10 @@ interface Props {
   validationData: ValidationData;
 }
 
-const STYLE_OPTIONS = [
-  { label: 'Stop', value: 'stop' },
-  { label: 'Warning', value: 'warning' },
-  { label: 'Information', value: 'information' },
+const STYLE_OPTIONS: { label: string; value: ValidationStyle }[] = [
+  { label: 'Stop', value: 'Stop' },
+  { label: 'Warning', value: 'Warning' },
+  { label: 'Information', value: 'Information' },
 ];
 
 export const ValidationMessage = (props: Props) => {
@@ -30,7 +31,7 @@ export const ValidationMessage = (props: Props) => {
     });
   };
 
-  const changeErrorStyle = (style: string) => {
+  const changeErrorStyle = (style: ValidationStyle) => {
     setValidation((old) => {
       if (old) {
         return { ...old, error: { ...old.error, style } };
@@ -101,8 +102,8 @@ export const ValidationMessage = (props: Props) => {
       />
       <ValidationDropdown
         label="Style"
-        value={validation?.error.style || 'stop'}
-        onChange={(style) => changeErrorStyle(style)}
+        value={validation?.error.style || 'Stop'}
+        onChange={(style) => changeErrorStyle(style as ValidationStyle)}
         options={STYLE_OPTIONS}
       />
       <ValidationInput

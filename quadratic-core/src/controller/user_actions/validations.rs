@@ -26,8 +26,8 @@ impl GridController {
 
     pub fn update_validation(
         &mut self,
-        validation: Validation,
         selection: Selection,
+        validation: Validation,
         cursor: Option<String>,
     ) {
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
@@ -51,7 +51,6 @@ impl GridController {
                 ]
             };
             self.start_user_transaction(ops, cursor, TransactionName::Validation);
-            dbgjs!("starting user transaction");
         }
     }
 
@@ -98,7 +97,7 @@ mod tests {
             ..Default::default()
         };
         let selection = Selection::pos(0, 0, sheet_id);
-        gc.update_validation(validation.clone(), selection.clone(), None);
+        gc.update_validation(selection.clone(), validation.clone(), None);
 
         assert_eq!(gc.validation(selection), Some(&validation));
         assert_eq!(gc.validations(sheet_id), vec![&validation]);
@@ -116,7 +115,7 @@ mod tests {
             ..Default::default()
         };
         let selection = Selection::columns(&[1], sheet_id);
-        gc.update_validation(validation.clone(), selection.clone(), None);
+        gc.update_validation(selection.clone(), validation.clone(), None);
 
         assert_eq!(gc.validation(selection.clone()), Some(&validation));
         assert_eq!(gc.validations(sheet_id), vec![&validation]);
@@ -127,7 +126,7 @@ mod tests {
             rule: ValidationRule::None,
             ..Default::default()
         };
-        gc.update_validation(validation, selection.clone(), None);
+        gc.update_validation(selection.clone(), validation, None);
         assert_eq!(gc.validation(selection), None);
         assert!(gc.validations(sheet_id).is_empty());
     }

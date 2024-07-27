@@ -5,7 +5,9 @@ use grid::{
     formats::format::Format,
     js_types::JsSheetFill,
     sheet::validations::{
-        validation::{Validation, ValidationCell, ValidationError, ValidationMessage},
+        validation::{
+            Validation, ValidationCell, ValidationError, ValidationMessage, ValidationStyle,
+        },
         validation_rules::{
             validation_checkbox::ValidationCheckbox,
             validation_list::{ValidationList, ValidationListSource},
@@ -119,6 +121,7 @@ fn main() {
         ValidationList,
         ValidationCheckbox,
         ValidationListSource,
+        ValidationStyle,
     );
 
     if create_dir_all("../quadratic-client/src/app/quadratic-core-types").is_ok() {

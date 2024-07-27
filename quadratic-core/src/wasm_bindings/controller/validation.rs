@@ -33,11 +33,18 @@ impl GridController {
         validation: String, // Validation
         cursor: Option<String>,
     ) {
-        if let (Ok(selection), Ok(validation)) = (
-            serde_json::from_str::<Validation>(&validation),
-            Selection::from_str(&selection),
-        ) {
-            self.update_validation(selection, validation, cursor);
-        }
+        let validation = match serde_json::from_str::<Validation>(&validation) {
+            Ok(validation) => validation,
+            Err(e) => {
+                dbgjs!(format!("Error parsing validation: {}", e.to_string()));
+                return;
+            }
+        };
+        match Selection::from_str(&selection) {
+            Ok(selection) => self.update_validation(selection, validation, cursor),
+            Err(e) => {
+                dbgjs!(format!("Error parsing selection: {}", e));
+            }
+        };
     }
 }

@@ -8,7 +8,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
 
 const defaultValidation = (all: Validation[]): Validation => {
-  return {
+  const validation: Validation = {
     id: uuid(),
     name: `Validation ${all.length + 1}`,
     rule: 'None',
@@ -19,11 +19,12 @@ const defaultValidation = (all: Validation[]): Validation => {
     },
     error: {
       show: true,
-      style: 'stop',
+      style: 'Stop',
       title: '',
       message: '',
     },
   };
+  return validation;
 };
 
 export type SetState<T> = Dispatch<SetStateAction<T>>;
@@ -43,6 +44,8 @@ export interface ValidationData {
   changeIgnoreBlank: (checked: boolean) => void;
   moreOptions: boolean;
   toggleMoreOptions: () => void;
+  validate: () => boolean;
+  triggerError: boolean;
 }
 
 export const useValidationData = (): ValidationData => {
@@ -50,6 +53,7 @@ export const useValidationData = (): ValidationData => {
   const [originalValidation, setOriginalValidation] = useState<Validation | undefined>();
   const [validations, setValidations] = useState<Validation[]>([]);
   const [moreOptions, setMoreOptions] = useState(false);
+  const [triggerError, setTriggerError] = useState(false);
 
   const toggleMoreOptions = useCallback(() => {
     setMoreOptions((old) => !old);
@@ -107,8 +111,47 @@ export const useValidationData = (): ValidationData => {
     return 'none';
   }, [validation]);
 
+  const validate = useCallback((): boolean => {
+    if (!validation) {
+      setTriggerError(true);
+      return false;
+    }
+
+    // name needs to be defined unless we're using the 'none' rule (which means
+    // we're deleting the validation)
+    if (validation.rule !== 'None' && !validation.name.trim()) {
+      setTriggerError(true);
+      return false;
+    }
+
+    // ensure Selection list is not empty
+    if (validation.rule !== 'None' && 'List' in validation.rule) {
+      if ('List' in validation.rule.List.source) {
+        if (validation.rule.List.source.List.length === 0) {
+          setTriggerError(true);
+          return false;
+        }
+      }
+    }
+
+    // ensure Selection is not empty
+    if (validation.rule !== 'None' && 'List' in validation.rule) {
+      if ('source' in validation.rule.List) {
+        if ('Selection' in validation.rule.List.source) {
+          const selection = validation.rule.List.source.Selection;
+          if (!selection.columns?.length && !selection.rows?.length && !selection.rects?.length && !selection.all) {
+            setTriggerError(true);
+            return false;
+          }
+        }
+      }
+    }
+
+    return true;
+  }, [validation]);
+
   // change the rule using the simple rule type; creates a default value for that rule
-  const changeRule = (type: ValidationRuleSimple) => {
+  const changeRule = useCallback((type: ValidationRuleSimple) => {
     let rule: ValidationRule = 'None';
     switch (type) {
       case 'none':
@@ -140,7 +183,7 @@ export const useValidationData = (): ValidationData => {
         break;
 
       case 'checkbox':
-        rule = { Checkbox: { checkbox: true } };
+        rule = { Checkbox: {} };
         break;
 
       default:
@@ -151,7 +194,7 @@ export const useValidationData = (): ValidationData => {
         return { ...old, rule };
       }
     });
-  };
+  }, []);
 
   const showDropdown = useMemo(() => {
     const rule = validation?.rule;
@@ -202,6 +245,7 @@ export const useValidationData = (): ValidationData => {
   };
 
   return {
+    validate,
     unsaved,
     validation,
     rule,
@@ -214,5 +258,6 @@ export const useValidationData = (): ValidationData => {
     changeRule,
     moreOptions,
     toggleMoreOptions,
+    triggerError,
   };
 };

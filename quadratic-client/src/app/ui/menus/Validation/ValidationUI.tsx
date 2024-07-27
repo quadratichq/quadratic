@@ -6,6 +6,7 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/shadcn/ui/select';
 import { FocusEvent, useCallback, useEffect, useRef } from 'react';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
+import { cn } from '@/shared/shadcn/utils';
 
 interface CheckboxProps {
   label: string;
@@ -29,6 +30,7 @@ export const ValidationCheckbox = (props: CheckboxProps) => {
 interface InputProps {
   label?: string;
   value: string;
+  error?: string;
 
   // used to update whenever the input loses focus
   onChange?: (value: string) => void;
@@ -42,7 +44,7 @@ interface InputProps {
 }
 
 export const ValidationInput = (props: InputProps) => {
-  const { label, value, onChange, onInput, footer, height, placeholder } = props;
+  const { label, value, onChange, onInput, footer, height, placeholder, error } = props;
   const ref = useRef<HTMLInputElement>(null);
 
   const onBlur = useCallback(
@@ -64,7 +66,7 @@ export const ValidationInput = (props: InputProps) => {
     <div>
       {label && <div>{label}</div>}
       <div>
-        <div className="flex w-full items-center space-x-2">
+        <div className={cn('flex w-full items-center space-x-2', error ? 'border border-red-500' : '')}>
           <Input
             ref={ref}
             onBlur={onBlur}
@@ -74,6 +76,7 @@ export const ValidationInput = (props: InputProps) => {
           />
         </div>
         {footer && <div className="text-xs">{footer}</div>}
+        {error && <div className="text-xs text-red-500">{error}</div>}
       </div>
     </div>
   );

@@ -24,7 +24,7 @@ export const Validation = () => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
 
   const validationData = useValidationData();
-  const { rule, changeRule, moreOptions, validation, validations, unsaved } = validationData;
+  const { rule, changeRule, moreOptions, validation, validations, unsaved, triggerError, validate } = validationData;
 
   const [range, setRange] = useState(getSelectionRange(sheets.sheet.cursor));
 
@@ -39,7 +39,6 @@ export const Validation = () => {
   const validationParameters: JSX.Element | null = useMemo(() => {
     switch (rule) {
       case 'list-range':
-        return <ValidationList validationData={validationData} />;
       case 'list':
         return <ValidationList validationData={validationData} />;
     }
@@ -47,6 +46,8 @@ export const Validation = () => {
   }, [rule, validationData]);
 
   const applyValidation = () => {
+    if (!validate()) return;
+
     if (!range || !validation) return;
     const selection = parseSelectionRange(range);
     if (!Array.isArray(selection)) {
@@ -58,8 +59,6 @@ export const Validation = () => {
     }));
   };
 
-  console.log(validations);
-
   return (
     <div
       className="border-gray relative flex h-full flex-col border-l bg-background px-3 py-1 text-sm"
@@ -68,16 +67,21 @@ export const Validation = () => {
       <ValidationHeader validationData={validationData} />
 
       <div className="flex flex-grow flex-col gap-5 overflow-y-auto p-1">
-        <SheetRange label="Apply to Range" initial={range} onChangeRange={setRange} />
+        <SheetRange label="Apply to Range" initial={range} onChangeRange={setRange} triggerError={triggerError} />
         {validations.length !== 0 && (
           <ValidationDropdown
-            label="Use an existing validation"
+            label="Replace with an existing validation"
             value=""
             options={validations.map((value) => ({ label: value.name, value: value.id }))}
             onChange={() => {}}
           />
         )}
-        <ValidationInput label="Name" value={validationData.validation?.name || ''} onChange={changeName} />
+        <ValidationInput
+          label="Name"
+          value={validationData.validation?.name || ''}
+          onChange={changeName}
+          error={triggerError && validationData.validation?.name.trim() === '' ? 'Name needs to be defined' : undefined}
+        />
         <ValidationDropdown
           label="Criteria"
           value={rule}
