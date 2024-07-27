@@ -31,7 +31,9 @@ export const useBorders = (): UseBordersResults => {
       const cursor = sheets.sheet.cursor;
       if (cursor.multiCursor && cursor.multiCursor.length > 1) {
         console.log('TODO: implement multiCursor border support');
-      } else if (selection !== undefined && (options.color !== prev.color || options.line !== prev.line)) {
+      }
+      // apply border only on selection change, else only update border menu state
+      else if (options.selection !== undefined) {
         const rectangle = cursor.multiCursor
           ? cursor.multiCursor[0]
           : new Rectangle(cursor.cursorPosition.x, cursor.cursorPosition.y, 1, 1);
@@ -47,7 +49,7 @@ export const useBorders = (): UseBordersResults => {
           },
           line,
         };
-        quadraticCore.setRegionBorders(sheet.id, rectangle, selection, style);
+        quadraticCore.setRegionBorders(sheet.id, rectangle, options.selection, style);
       }
       return { selection, color, line };
     });
