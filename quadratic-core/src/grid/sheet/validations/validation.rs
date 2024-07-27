@@ -29,7 +29,7 @@ pub struct ValidationError {
     pub message: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct Validation {
     pub id: Uuid,
     pub name: String,
@@ -42,6 +42,10 @@ impl Validation {
     /// Validate a cell value against its validation rule.
     pub fn validate(&self, sheet: &Sheet, value: &CellValue) -> bool {
         self.rule.validate(sheet, value)
+    }
+
+    pub fn no_rule(&self) -> bool {
+        self.rule == ValidationRule::None
     }
 }
 

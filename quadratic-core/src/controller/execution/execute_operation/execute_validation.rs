@@ -22,6 +22,7 @@ impl GridController {
                     let reverse = sheet.validations.unlink_validation(selection);
                     transaction.reverse_operations.extend(reverse);
                 }
+                dbgjs!("execute set validation");
             }
         }
     }
@@ -42,6 +43,7 @@ impl GridController {
                     .validations
                     .set_validation(sheet_id, validation_id, validation);
                 transaction.reverse_operations.extend(reverse);
+                dbgjs!("execute add validation");
             }
         }
     }

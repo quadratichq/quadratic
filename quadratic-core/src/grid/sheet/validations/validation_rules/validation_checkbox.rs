@@ -4,9 +4,7 @@ use ts_rs::TS;
 use crate::CellValue;
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
-pub struct ValidationCheckbox {
-    pub checkbox: bool,
-}
+pub struct ValidationCheckbox {}
 
 impl ValidationCheckbox {
     // Validate a CellValue against the validation rule.

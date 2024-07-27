@@ -509,6 +509,18 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreUpdateValidation':
+        core.updateValidation(e.data.selection, e.data.validation, e.data.cursor);
+        return;
+
+      case 'clientCoreGetValidations':
+        this.send({
+          type: 'coreClientGetValidations',
+          id: e.data.id,
+          validations: core.getValidations(e.data.sheetId),
+        });
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core

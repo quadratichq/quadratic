@@ -908,6 +908,11 @@ class Core {
     const validations = this.gridController.getValidations(sheetId);
     return JSON.parse(validations);
   }
+
+  updateValidation(selection: Selection, validation: Validation, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.updateValidation(JSON.stringify(selection, bigIntReplacer), JSON.stringify(validation), cursor);
+  }
 }
 
 export const core = new Core();

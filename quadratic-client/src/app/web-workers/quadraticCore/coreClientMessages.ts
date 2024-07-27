@@ -868,6 +868,13 @@ export interface CoreClientGetValidations {
   validations: Validation[];
 }
 
+export interface ClientCoreUpdateValidation {
+  type: 'clientCoreUpdateValidation';
+  selection: Selection;
+  validation: Validation;
+  cursor: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -933,7 +940,8 @@ export type ClientCoreMessage =
   | ClientCoreGetFormatRow
   | ClientCoreGetFormatCell
   | ClientCoreGetValidation
-  | ClientCoreGetValidations;
+  | ClientCoreGetValidations
+  | ClientCoreUpdateValidation;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

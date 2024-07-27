@@ -997,6 +997,15 @@ class QuadraticCore {
     });
   }
 
+  updateValidation(selection: Selection, validation: Validation, cursor: string) {
+    this.send({
+      type: 'clientCoreUpdateValidation',
+      selection,
+      validation,
+      cursor,
+    });
+  }
+
   //#endregion
 }
 

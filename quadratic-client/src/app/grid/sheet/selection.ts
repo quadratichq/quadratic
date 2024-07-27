@@ -1,5 +1,6 @@
 import { Pos, Rect, Selection } from '@/app/quadratic-core-types';
 import { SheetCursor } from './SheetCursor';
+import { sheets } from '../controller/Sheets';
 
 const RANGE_SEPARATOR = '; ';
 
@@ -93,7 +94,7 @@ export const parseNumberList = (s: string): bigint[] | undefined => {
 // @returns Selection | [error message, index of error]
 export const parseSelectionRange = (range: string): Selection | [string, number] => {
   const selection: Selection = {
-    sheet_id: { id: '' },
+    sheet_id: { id: sheets.sheet.id },
     x: BigInt(0),
     y: BigInt(0),
     columns: null,

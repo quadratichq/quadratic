@@ -39,12 +39,10 @@ interface InputProps {
   footer?: string | JSX.Element;
   height?: string;
   placeholder?: string;
-
-  inputClassName?: string;
 }
 
 export const ValidationInput = (props: InputProps) => {
-  const { label, value, onChange, onInput, footer, height, placeholder, inputClassName } = props;
+  const { label, value, onChange, onInput, footer, height, placeholder } = props;
   const ref = useRef<HTMLInputElement>(null);
 
   const onBlur = useCallback(
@@ -66,14 +64,15 @@ export const ValidationInput = (props: InputProps) => {
     <div>
       {label && <div>{label}</div>}
       <div>
-        <Input
-          className={inputClassName}
-          ref={ref}
-          onBlur={onBlur}
-          onInput={onInput ? (e) => onInput(e.currentTarget.value) : undefined}
-          style={{ height }}
-          placeholder={placeholder}
-        />
+        <div className="flex w-full items-center space-x-2">
+          <Input
+            ref={ref}
+            onBlur={onBlur}
+            onInput={onInput ? (e) => onInput(e.currentTarget.value) : undefined}
+            style={{ height }}
+            placeholder={placeholder}
+          />
+        </div>
         {footer && <div className="text-xs">{footer}</div>}
       </div>
     </div>

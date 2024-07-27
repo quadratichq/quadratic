@@ -1,10 +1,11 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+//! Holds current Validation data and provides functions that create or change validations.
+//! This is a passed-version of context for the Validation component.
+
 import { v4 as uuid } from 'uuid';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Validation, ValidationRule } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
-import { getSelectionRange } from '@/app/grid/sheet/selection';
 
 const defaultValidation = (all: Validation[]): Validation => {
   return {
@@ -31,7 +32,6 @@ export type ValidationRuleSimple = 'none' | 'list' | 'list-range' | 'checkbox';
 
 export interface ValidationData {
   unsaved: boolean;
-  range: string | undefined;
   validation: Validation | undefined;
   rule: ValidationRuleSimple;
   validations: Validation[];
@@ -49,34 +49,35 @@ export const useValidationData = (): ValidationData => {
   const [validation, setValidation] = useState<Validation | undefined>();
   const [originalValidation, setOriginalValidation] = useState<Validation | undefined>();
   const [validations, setValidations] = useState<Validation[]>([]);
-  const [range, setRange] = useState(getSelectionRange(sheets.sheet.cursor));
   const [moreOptions, setMoreOptions] = useState(false);
 
   const toggleMoreOptions = useCallback(() => {
     setMoreOptions((old) => !old);
   }, []);
 
+  // gets all validations for this sheet from core
   useEffect(() => {
-    // gets all validations for this sheet from core
     const getValidations = async () => {
       const v = await quadraticCore.getValidations(sheets.current);
       setValidations(v);
-      getValidation(v);
     };
+    getValidations();
+  }, []);
 
-    // gets the validation for the current selection or creates a new one
-    const getValidation = async (all = validations) => {
+  // gets the validation for the current selection or creates a new one
+  useEffect(() => {
+    if (!validations) return;
+    const getValidation = async () => {
       let v = await quadraticCore.getValidation(sheets.getRustSelection());
       if (v) {
         setOriginalValidation(v);
       } else {
         // this is the default Validation rule
-        v = defaultValidation(all);
+        v = defaultValidation(validations);
         setOriginalValidation(undefined);
       }
       setValidation(v);
     };
-
     getValidation();
   }, [validations]);
 
@@ -200,15 +201,12 @@ export const useValidationData = (): ValidationData => {
     });
   };
 
-  console.log(validation);
-
   return {
     unsaved,
     validation,
     rule,
     validations,
     setValidation,
-    range,
     showDropdown,
     changeDropDown,
     ignoreBlank,
