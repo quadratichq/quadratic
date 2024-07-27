@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useGridSettings } from '../menus/TopBar/SubMenus/useGridSettings';
-import { QuadraticSnackBar } from './QuadraticSnackBar';
+
+import { QuadraticSnackBar } from '@/app/ui/components/QuadraticSnackBar';
+import { useGridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
 
 export default function PresentationModeHint() {
   const { presentationMode } = useGridSettings();

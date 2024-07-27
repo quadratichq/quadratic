@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
-import { debugShowCountRenderedObjects, debugShowFPS, debugShowTime } from '../../debugFlags';
+
+import { debugShowCountRenderedObjects, debugShowFPS, debugShowTime } from '@/app/debugFlags';
 
 const MINIMUM_MS_TO_DISPLAY = 10;
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { getA1Notation, getColumnA1Notation, getRowA1Notation } from '../getA1Notation';
+
+import { getA1Notation, getColumnA1Notation, getRowA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
 
 describe('A1 notation translation', () => {
   it('gets column (based on tests in quadratic-core)', () => {

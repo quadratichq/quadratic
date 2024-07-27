@@ -1,7 +1,11 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import { JsCodeResult, JsGetCellResponse } from '@/app/quadratic-core-types';
-import type { CoreJavascriptGetCells, CoreJavascriptMessage, JavascriptCoreMessage } from '../javascriptCoreMessages';
-import { javascript } from './javascript/javascript';
+import type { JsCodeResult, JsGetCellResponse } from '@/app/quadratic-core-types';
+import type {
+  CoreJavascriptGetCells,
+  CoreJavascriptMessage,
+  JavascriptCoreMessage,
+} from '@/app/web-workers/javascriptWebWorker/javascriptCoreMessages';
+import { javascript } from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascript';
 
 class JavascriptCore {
   private coreMessagePort?: MessagePort;

@@ -1,12 +1,14 @@
 //! Draws grid lines on the canvas. The grid lines fade as the user zooms out,
 //! and disappears at higher zoom levels.
 
-import { Graphics, Rectangle } from 'pixi.js';
-import { sheets } from '../../grid/controller/Sheets';
-import { colors } from '../../theme/colors';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
-import { calculateAlphaForGridLines } from './gridUtils';
+import { Graphics } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
+
+import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { calculateAlphaForGridLines } from '@/app/gridGL/UI/gridUtils';
+import { colors } from '@/app/theme/colors';
 
 export class GridLines extends Graphics {
   dirty = true;

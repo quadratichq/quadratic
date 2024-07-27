@@ -1,7 +1,10 @@
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
-import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
-import monaco, { Range, editor } from 'monaco-editor';
+import { Range } from 'monaco-editor';
+import type { editor } from 'monaco-editor';
+import type monaco from 'monaco-editor';
 import { useEffect, useRef } from 'react';
+
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
+import type { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 
 // highlight the return line and add a return icon next to the line number
 export const useEditorReturn = (

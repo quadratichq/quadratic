@@ -7,10 +7,12 @@
  * are rendered.
  */
 
-import { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
-import { BLEND_MODES, BitmapFont, Loader, Mesh, MeshGeometry, MeshMaterial, Program, Texture } from 'pixi.js';
-import * as shaderNoTint from './cellLabelShader';
-import * as shaderTint from './cellLabelShaderTint';
+import { BLEND_MODES, BitmapFont, Loader, Mesh, MeshGeometry, MeshMaterial, Program } from 'pixi.js';
+import type { Texture } from 'pixi.js';
+
+import * as shaderNoTint from '@/app/gridGL/cells/cellsLabel/cellLabelShader';
+import * as shaderTint from '@/app/gridGL/cells/cellsLabel/cellLabelShaderTint';
+import type { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 
 export class LabelMeshEntry extends Mesh {
   private fontName: string;

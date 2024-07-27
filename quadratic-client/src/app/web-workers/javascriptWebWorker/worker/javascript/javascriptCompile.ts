@@ -10,8 +10,9 @@
 // numbers.
 
 import * as esbuild from 'esbuild-wasm';
-import { LINE_NUMBER_VAR } from './javascript';
-import { javascriptLibrary } from './runner/generateJavascriptForRunner';
+
+import { LINE_NUMBER_VAR } from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascript';
+import { javascriptLibrary } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generateJavascriptForRunner';
 
 export interface JavascriptTransformedCode {
   imports: string;

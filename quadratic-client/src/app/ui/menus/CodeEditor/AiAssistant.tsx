@@ -1,3 +1,10 @@
+import { Send, Stop } from '@mui/icons-material';
+import { Avatar, CircularProgress, IconButton } from '@mui/material';
+import mixpanel from 'mixpanel-browser';
+import 'quadratic-client/src/app/ui/menus/CodeEditor/AiAssistant.css';
+import { useEffect, useRef } from 'react';
+import { useRecoilValue } from 'recoil';
+
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
@@ -5,20 +12,15 @@ import { colors } from '@/app/theme/colors';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { AI } from '@/app/ui/icons';
+import '@/app/ui/menus/CodeEditor/AiAssistant.css';
+import { CodeBlockParser } from '@/app/ui/menus/CodeEditor/AICodeBlockParser';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { QuadraticDocs } from '@/app/ui/menus/CodeEditor/QuadraticDocs';
 import { useConnectionSchemaFetcher } from '@/app/ui/menus/CodeEditor/useConnectionSchemaFetcher';
 import { authClient } from '@/auth';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
-import { Send, Stop } from '@mui/icons-material';
-import { Avatar, CircularProgress, IconButton } from '@mui/material';
-import mixpanel from 'mixpanel-browser';
-import { useEffect, useRef } from 'react';
-import { useRecoilValue } from 'recoil';
-import { CodeBlockParser } from './AICodeBlockParser';
-import './AiAssistant.css';
-import { QuadraticDocs } from './QuadraticDocs';
 
 export type AiMessage = {
   role: 'user' | 'system' | 'assistant';
@@ -165,7 +167,7 @@ ${QuadraticDocs}`,
                   return [...old];
                 });
               }
-            } catch (err) {
+            } catch (_err) {
               // Not JSON, nothing to do.
             }
           }
@@ -183,12 +185,11 @@ ${QuadraticDocs}`,
           return;
         }
       });
-    // eslint-disable-next-line no-unreachable
 
     setLoading(false);
   };
 
-  const displayMessages = messages.filter((message, index) => message.role !== 'system');
+  const displayMessages = messages.filter((message) => message.role !== 'system');
 
   // Designed to live in a box that takes up the full height of its container
   return (

@@ -2,7 +2,7 @@
  * Messages between Core web worker and Render web worker.
  */
 
-import { JsRenderCell, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import type { JsRenderCell, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 
 export interface RenderCoreRequestRenderCells {
   type: 'renderCoreRequestRenderCells';

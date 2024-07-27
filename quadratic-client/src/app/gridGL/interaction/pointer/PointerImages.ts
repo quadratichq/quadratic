@@ -1,10 +1,11 @@
+import type { Point } from 'pixi.js';
+
 import { hasPermissionToEditFile } from '@/app/actions';
-import { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
+import type { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Point } from 'pixi.js';
 
 const MIN_SIZE = 100;
 

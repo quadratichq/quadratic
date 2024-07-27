@@ -1,6 +1,16 @@
+import { IntegrationInstructionsOutlined } from '@mui/icons-material';
+import { IconButton, useTheme } from '@mui/material';
+import mixpanel from 'mixpanel-browser';
+import { useEffect } from 'react';
+import type { ReactNode } from 'react';
+import { useRecoilValue } from 'recoil';
+
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { ExternalLinkIcon } from '@/app/ui/icons';
+import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import snippetsPython from '@/app/ui/menus/CodeEditor/snippets';
+import snippetsJavascript from '@/app/ui/menus/CodeEditor/snippetsJavascript';
 import {
   DOCUMENTATION_JAVASCRIPT_URL,
   DOCUMENTATION_PYTHON_URL,
@@ -17,14 +27,6 @@ import {
   CommandList,
 } from '@/shared/shadcn/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
-import { IntegrationInstructionsOutlined } from '@mui/icons-material';
-import { IconButton, useTheme } from '@mui/material';
-import mixpanel from 'mixpanel-browser';
-import { ReactNode, useEffect } from 'react';
-import { useRecoilValue } from 'recoil';
-import { useCodeEditor } from './CodeEditorContext';
-import snippetsPython from './snippets';
-import snippetsJavascript from './snippetsJavascript';
 
 export function SnippetsPopover() {
   const { editorRef } = useCodeEditor();

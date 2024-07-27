@@ -1,7 +1,8 @@
-import { colors } from '@/app/theme/colors';
 import { Graphics } from 'pixi.js';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
+
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { colors } from '@/app/theme/colors';
 
 export class AxesLines extends Graphics {
   dirty = true;

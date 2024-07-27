@@ -1,8 +1,8 @@
 import { Box, LinearProgress } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { TopBarLoading } from '../components/TopBarLoading';
 
-import './styles.css';
+import { TopBarLoading } from '@/app/ui/components/TopBarLoading';
+import '@/app/ui/loading/styles.css';
 
 export function QuadraticLoading() {
   const [progress, setProgress] = useState<number>(0);

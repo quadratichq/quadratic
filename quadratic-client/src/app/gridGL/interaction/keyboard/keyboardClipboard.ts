@@ -1,6 +1,6 @@
 import { downloadSelectionAsCsvAction } from '@/app/actions';
 import { copySelectionToPNG, fullClipboardSupport } from '@/app/grid/actions/clipboard/clipboard';
-import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import type { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 
 export function keyboardClipboard(props: {
   event: React.KeyboardEvent<HTMLElement>;

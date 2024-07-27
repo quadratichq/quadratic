@@ -1,4 +1,4 @@
-import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 
 export function keyboardSearch(
   event: KeyboardEvent,

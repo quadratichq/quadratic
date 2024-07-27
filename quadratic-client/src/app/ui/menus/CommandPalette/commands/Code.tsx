@@ -1,8 +1,9 @@
+import { rerunAction, rerunCellAction, rerunSheetAction } from '@/app/actions';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { rerunAction, rerunCellAction, rerunSheetAction } from '../../../../actions';
-import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
 const commands: CommandGroup = {
   heading: 'Code',

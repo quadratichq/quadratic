@@ -1,12 +1,13 @@
 //! Dev-focused parameters enabled by `debugFlags.saveURLState = true;`
 
+import type { IViewportTransformState } from 'pixi-viewport';
+
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { SheetCursorSave } from '@/app/grid/sheet/SheetCursor';
+import type { SheetCursorSave } from '@/app/grid/sheet/SheetCursor';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
-import { IViewportTransformState } from 'pixi-viewport';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 
 const URL_STATE_PARAM = 'state';
 const WAIT_FOR_SET_EDITOR_INTERACTION_STATE_TIMEOUT_MS = 100;

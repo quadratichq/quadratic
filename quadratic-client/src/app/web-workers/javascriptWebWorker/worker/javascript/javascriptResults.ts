@@ -1,9 +1,12 @@
 // Converts
 
-import { JsCodeResult } from '@/app/quadratic-core-types';
-import { javascriptClient } from '../javascriptClient';
-import { javascriptCore } from '../javascriptCore';
-import { javascriptConvertOutputArray, javascriptConvertOutputType } from './javascriptOutput';
+import type { JsCodeResult } from '@/app/quadratic-core-types';
+import {
+  javascriptConvertOutputArray,
+  javascriptConvertOutputType,
+} from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascriptOutput';
+import { javascriptClient } from '@/app/web-workers/javascriptWebWorker/worker/javascriptClient';
+import { javascriptCore } from '@/app/web-workers/javascriptWebWorker/worker/javascriptCore';
 
 export function javascriptErrorResult(transactionId: string, message: string, lineNumber?: number) {
   const codeResult: JsCodeResult = {

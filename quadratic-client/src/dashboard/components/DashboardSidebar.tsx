@@ -1,3 +1,10 @@
+import { SchoolOutlined } from '@mui/icons-material';
+import { AvatarImage } from '@radix-ui/react-avatar';
+import { ExternalLinkIcon, FileIcon, GearIcon, MixIcon, PersonIcon, PlusIcon } from '@radix-ui/react-icons';
+import { useState } from 'react';
+import type { ReactNode } from 'react';
+import { Link, NavLink, useLocation, useNavigation, useSearchParams, useSubmit } from 'react-router-dom';
+
 import { ConnectionsIcon, SharedWithMeIcon } from '@/dashboard/components/CustomRadixIcons';
 import { TeamSwitcher } from '@/dashboard/components/TeamSwitcher';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
@@ -12,11 +19,6 @@ import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { SchoolOutlined } from '@mui/icons-material';
-import { AvatarImage } from '@radix-ui/react-avatar';
-import { ExternalLinkIcon, FileIcon, GearIcon, MixIcon, PersonIcon, PlusIcon } from '@radix-ui/react-icons';
-import { ReactNode, useState } from 'react';
-import { Link, NavLink, useLocation, useNavigation, useSearchParams, useSubmit } from 'react-router-dom';
 
 /**
  * Dashboard Navbar
@@ -204,7 +206,7 @@ function SidebarNavLink({
   const isDroppable = dropTarget !== undefined && to !== location.pathname;
   const dropProps = isDroppable
     ? {
-        onDragLeave: (event: React.DragEvent<HTMLAnchorElement>) => {
+        onDragLeave: (_event: React.DragEvent<HTMLAnchorElement>) => {
           setIsDraggingOver(false);
         },
         onDragOver: (event: React.DragEvent<HTMLAnchorElement>) => {

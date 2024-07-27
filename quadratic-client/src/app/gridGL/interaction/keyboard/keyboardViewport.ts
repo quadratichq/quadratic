@@ -1,9 +1,9 @@
-import { hasPermissionToEditFile } from '../../../actions';
-import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { clearFormattingAndBorders, setBold, setItalic } from '../../../ui/menus/TopBar/SubMenus/formatCells';
-import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/pythonWebWorker';
-import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../helpers/zoom';
-import { pixiApp } from '../../pixiApp/PixiApp';
+import { hasPermissionToEditFile } from '@/app/actions';
+import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { clearFormattingAndBorders, setBold, setItalic } from '@/app/ui/menus/TopBar/SubMenus/formatCells';
+import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 
 export function keyboardViewport(options: {
   event: KeyboardEvent;

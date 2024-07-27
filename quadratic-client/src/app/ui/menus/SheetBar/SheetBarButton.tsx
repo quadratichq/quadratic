@@ -1,4 +1,5 @@
-import { ButtonBase, ButtonBaseProps, Tooltip, useTheme } from '@mui/material';
+import { ButtonBase, Tooltip, useTheme } from '@mui/material';
+import type { ButtonBaseProps } from '@mui/material';
 
 interface Props extends ButtonBaseProps {
   buttonRef?: any;

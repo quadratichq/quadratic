@@ -1,13 +1,13 @@
+import { hasPermissionToEditFile } from '@/app/actions';
+import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
-import { SheetCursor } from '@/app/grid/sheet/SheetCursor';
+import { sheets } from '@/app/grid/controller/Sheets';
+import type { SheetCursor } from '@/app/grid/sheet/SheetCursor';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { isAllowedFirstChar } from '@/app/gridGL/interaction/keyboard/keyboardCellChars';
+import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { hasPermissionToEditFile } from '../../../actions';
-import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { sheets } from '../../../grid/controller/Sheets';
-import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
-import { doubleClickCell } from '../pointer/doubleClickCell';
-import { isAllowedFirstChar } from './keyboardCellChars';
 
 function inCodeEditor(editorInteractionState: EditorInteractionState, cursor: SheetCursor): boolean {
   if (!editorInteractionState.showCodeEditor) return false;

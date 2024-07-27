@@ -1,10 +1,11 @@
+import type { Connection, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import type { ReactNode } from 'react';
+import type { UseFormReturn } from 'react-hook-form';
+
 import * as Mysql from '@/shared/components/connections/ConnectionFormMysql';
 import * as Postgres from '@/shared/components/connections/ConnectionFormPostgres';
-import { Connection, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { ReactNode } from 'react';
-import { UseFormReturn } from 'react-hook-form';
-import MysqlLogo from './logo-mysql.svg?react';
-import PostgresLogo from './logo-postgres.svg?react';
+import MysqlLogo from '@/shared/components/connections/logo-mysql.svg?react';
+import PostgresLogo from '@/shared/components/connections/logo-postgres.svg?react';
 
 export type ConnectionFormValues = {
   name: string;

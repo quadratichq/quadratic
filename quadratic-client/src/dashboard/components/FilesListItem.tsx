@@ -1,11 +1,18 @@
+import { DotsVerticalIcon, FileIcon } from '@radix-ui/react-icons';
+import mixpanel from 'mixpanel-browser';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useFetcher, useMatch, useSubmit } from 'react-router-dom';
+import type { SubmitOptions } from 'react-router-dom';
+
 import { deleteFile, downloadFileAction, duplicateFileAction, renameFileAction } from '@/app/actions';
+import { DialogRenameItem } from '@/dashboard/components/DialogRenameItem';
+import type { FilesListExampleFile, FilesListUserFile } from '@/dashboard/components/FilesList';
+import { FilesListItemCore } from '@/dashboard/components/FilesListItemCore';
+import type { ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
+import { Layout, Sort } from '@/dashboard/components/FilesListViewControlsDropdown';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import {
-  Action as FileAction,
-  getActionFileDelete,
-  getActionFileDuplicate,
-  getActionFileMove,
-} from '@/routes/api.files.$uuid';
+import type { Action as FileAction } from '@/routes/api.files.$uuid';
+import { getActionFileDelete, getActionFileDuplicate, getActionFileMove } from '@/routes/api.files.$uuid';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button as Btn } from '@/shared/shadcn/ui/button';
@@ -18,14 +25,6 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Separator } from '@/shared/shadcn/ui/separator';
 import { cn } from '@/shared/shadcn/utils';
-import { DotsVerticalIcon, FileIcon } from '@radix-ui/react-icons';
-import mixpanel from 'mixpanel-browser';
-import { useEffect, useRef, useState } from 'react';
-import { Link, SubmitOptions, useFetcher, useMatch, useSubmit } from 'react-router-dom';
-import { DialogRenameItem } from './DialogRenameItem';
-import { FilesListExampleFile, FilesListUserFile } from './FilesList';
-import { FilesListItemCore } from './FilesListItemCore';
-import { Layout, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
 
 export function FilesListItems({
   children,
@@ -48,7 +47,6 @@ export function FilesListItems({
 export function FilesListItemUserFile({
   file,
   filterValue,
-  activeShareMenuFileId,
   setActiveShareMenuFileId,
   lazyLoad,
   viewPreferences,
@@ -164,7 +162,7 @@ export function FilesListItemUserFile({
           event.dataTransfer.dropEffect = 'move';
           event.dataTransfer.setData('application/quadratic-file-uuid', uuid);
         },
-        onDragEnd: (event: React.DragEvent<HTMLAnchorElement>) => {
+        onDragEnd: (_event: React.DragEvent<HTMLAnchorElement>) => {
           if (fileDragRef.current) {
             fileDragRef.current.style.opacity = '0';
           }

@@ -1,35 +1,37 @@
-import { usePythonState } from '@/app/atoms/usePythonState';
-import { events } from '@/app/events/events';
-import { sheets } from '@/app/grid/controller/Sheets';
-import { Coordinate, SheetPosTS } from '@/app/gridGL/types/size';
-import { CodeCellLanguage, JsCodeCell, JsRenderCodeCell, Pos, SheetRect } from '@/app/quadratic-core-types';
-import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
+
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { Diagnostic } from 'vscode-languageserver-types';
+
+import { hasPermissionToEditFile } from '@/app/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useConnectionState } from '@/app/atoms/useConnectionState';
 import { useJavascriptState } from '@/app/atoms/useJavascriptState';
+import { usePythonState } from '@/app/atoms/usePythonState';
+import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import type { Coordinate, SheetPosTS } from '@/app/gridGL/types/size';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
+import type { CodeCellLanguage, JsCodeCell, JsRenderCodeCell, Pos, SheetRect } from '@/app/quadratic-core-types';
+import '@/app/ui/menus/CodeEditor/CodeEditor.css';
+import { CodeEditorBody } from '@/app/ui/menus/CodeEditor/CodeEditorBody';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { CodeEditorHeader } from '@/app/ui/menus/CodeEditor/CodeEditorHeader';
 import { CodeEditorPanel } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanel';
 import { CodeEditorPanels } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelsResize';
 import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import { ReturnTypeInspector } from '@/app/ui/menus/CodeEditor/ReturnTypeInspector';
+import { SaveChangesAlert } from '@/app/ui/menus/CodeEditor/SaveChangesAlert';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
+import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
+import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { cn } from '@/shared/shadcn/utils';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
-import { hasPermissionToEditFile } from '../../../actions';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
-import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/pythonWebWorker';
-import './CodeEditor.css';
-import { CodeEditorBody } from './CodeEditorBody';
-import { CodeEditorHeader } from './CodeEditorHeader';
-import { ReturnTypeInspector } from './ReturnTypeInspector';
-import { SaveChangesAlert } from './SaveChangesAlert';
 
 export const dispatchEditorAction = (name: string) => {
   window.dispatchEvent(new CustomEvent('run-editor-action', { detail: name }));

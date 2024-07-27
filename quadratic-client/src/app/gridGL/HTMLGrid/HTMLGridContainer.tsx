@@ -1,13 +1,15 @@
+import { useCallback, useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
+
 import { events } from '@/app/events/events';
+import { CodeHint } from '@/app/gridGL/HTMLGrid/CodeHint';
+import { CodeRunning } from '@/app/gridGL/HTMLGrid/codeRunning/CodeRunning';
+import { HoverCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
+import { HtmlCells } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCells';
 import { InlineEditor } from '@/app/gridGL/HTMLGrid/inlineEditor/InlineEditor';
 import { MultiplayerCursors } from '@/app/gridGL/HTMLGrid/multiplayerCursor/MulitplayerCursors';
-import { ReactNode, useCallback, useEffect, useState } from 'react';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { CodeHint } from './CodeHint';
-import { CodeRunning } from './codeRunning/CodeRunning';
-import { HoverCell } from './hoverCell/HoverCell';
-import { HtmlCells } from './htmlCells/HtmlCells';
-import { MultiplayerCellEdits } from './multiplayerInput/MultiplayerCellEdits';
+import { MultiplayerCellEdits } from '@/app/gridGL/HTMLGrid/multiplayerInput/MultiplayerCellEdits';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 
 interface Props {
   parent?: HTMLDivElement;

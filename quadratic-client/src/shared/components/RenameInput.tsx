@@ -1,5 +1,5 @@
 import { InputBase, useTheme } from '@mui/material';
-import { SxProps } from '@mui/system';
+import type { SxProps } from '@mui/system';
 import { useEffect, useRef, useState } from 'react';
 
 /**
@@ -81,7 +81,7 @@ export function RenameInput({
           onClose();
         }
       }}
-      onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+      onBlur={(_e: React.FocusEvent<HTMLInputElement>) => {
         const newValue = localValue.trim();
 
         // Don't allow empty file names

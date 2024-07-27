@@ -1,16 +1,5 @@
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
-
 import '@szhsin/react-menu/dist/index.css';
-import { MenuLineItem } from '../MenuLineItem';
-import {
-  removeCellNumericFormat,
-  setCellCommas,
-  textFormatDecreaseDecimalPlaces,
-  textFormatIncreaseDecimalPlaces,
-  textFormatSetCurrency,
-  textFormatSetExponential,
-  textFormatSetPercentage,
-} from './formatCells';
 
 import {
   DecimalDecreaseIcon,
@@ -22,8 +11,17 @@ import {
   PercentIcon,
   QuoteIcon,
 } from '@/app/ui/icons';
-import '@szhsin/react-menu/dist/index.css';
-import { TopBarMenuItem } from '../TopBarMenuItem';
+import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
+import {
+  removeCellNumericFormat,
+  setCellCommas,
+  textFormatDecreaseDecimalPlaces,
+  textFormatIncreaseDecimalPlaces,
+  textFormatSetCurrency,
+  textFormatSetExponential,
+  textFormatSetPercentage,
+} from '@/app/ui/menus/TopBar/SubMenus/formatCells';
+import { TopBarMenuItem } from '@/app/ui/menus/TopBar/TopBarMenuItem';
 
 export const NumberFormatMenu = () => {
   return (

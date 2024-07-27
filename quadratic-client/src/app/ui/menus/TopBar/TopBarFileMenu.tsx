@@ -1,15 +1,17 @@
-import { useRootRouteLoaderData } from '@/routes/_root';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { Type } from '@/shared/components/Type';
-import { ROUTES } from '@/shared/constants/routes';
-import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { Link } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { hasPermissionToEditFile } from '../../../actions';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { focusGrid } from '../../../helpers/focusGrid';
-import { useFileContext } from '../../components/FileProvider';
-import { TopBarFileMenuDropdown } from './TopBarFileMenuDropdown';
+
+import { hasPermissionToEditFile } from '@/app/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { focusGrid } from '@/app/helpers/focusGrid';
+import { useFileContext } from '@/app/ui/components/FileProvider';
+import { TopBarFileMenuDropdown } from '@/app/ui/menus/TopBar/TopBarFileMenuDropdown';
+import { useRootRouteLoaderData } from '@/routes/_root';
+import { Type } from '@/shared/components/Type';
+import { ROUTES } from '@/shared/constants/routes';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 
 export const TopBarFileMenu = () => {
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
@@ -138,7 +140,7 @@ function FileNameInput({ setIsRenaming }: { setIsRenaming: Dispatch<SetStateActi
           focusGrid();
         }
       }}
-      onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+      onBlur={(_e: React.FocusEvent<HTMLInputElement>) => {
         setIsRenaming(false);
         const newName = inputRef.current?.value;
 

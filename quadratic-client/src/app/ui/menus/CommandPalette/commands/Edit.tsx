@@ -1,3 +1,5 @@
+import { useRecoilState } from 'recoil';
+
 import {
   copyAction,
   cutAction,
@@ -19,11 +21,11 @@ import {
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { ClipboardIcon, CopyIcon, RedoIcon, ScissorsIcon, UndoIcon } from '@/app/ui/icons';
+import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { isMac } from '@/shared/utils/isMac';
-import { useRecoilState } from 'recoil';
-import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
 const data: CommandGroup = {
   heading: 'Edit',

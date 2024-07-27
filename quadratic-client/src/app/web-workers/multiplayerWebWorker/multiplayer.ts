@@ -1,3 +1,7 @@
+import type { User } from '@auth0/auth0-spa-js';
+import * as Sentry from '@sentry/react';
+import { v4 as uuid } from 'uuid';
+
 import { hasPermissionToEditFile } from '@/app/actions';
 import { debugShowMultiplayer, debugWebWorkersMessages } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
@@ -5,23 +9,22 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '@/app/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { SheetPosTS } from '@/app/gridGL/types/size';
+import type { SheetPosTS } from '@/app/gridGL/types/size';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
-import { LanguageState } from '@/app/web-workers/languageTypes';
-import { authClient, parseDomain } from '@/auth';
-import { displayName } from '@/shared/utils/userUtil';
-import { User } from '@auth0/auth0-spa-js';
-import * as Sentry from '@sentry/react';
-import { v4 as uuid } from 'uuid';
-import updateAlertVersion from '../../../../../updateAlertVersion.json';
-import { quadraticCore } from '../quadraticCore/quadraticCore';
-import {
+import type { LanguageState } from '@/app/web-workers/languageTypes';
+import type {
   ClientMultiplayerMessage,
   MultiplayerClientMessage,
   MultiplayerClientUserUpdate,
   MultiplayerState,
-} from './multiplayerClientMessages';
-import { MultiplayerUser, ReceiveRoom } from './multiplayerTypes';
+} from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import type { MultiplayerUser, ReceiveRoom } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { authClient, parseDomain } from '@/auth';
+import { displayName } from '@/shared/utils/userUtil';
+
+// eslint-disable-next-line no-relative-import-paths/no-relative-import-paths
+import updateAlertVersion from '../../../../../updateAlertVersion.json';
 
 export class Multiplayer {
   private worker?: Worker;

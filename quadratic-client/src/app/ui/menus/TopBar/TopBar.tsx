@@ -1,23 +1,24 @@
-import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
-import { CommandPaletteIcon } from '@/app/ui/icons';
-import { SwitchApp } from '@/shared/shadcn/ui/switch';
-import { isElectron } from '@/shared/utils/isElectron';
 import { Tooltip, useMediaQuery, useTheme } from '@mui/material';
 import { useRecoilState } from 'recoil';
-import { hasPermissionToEditFile } from '../../../actions';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
-import { isEmbed } from '../../../helpers/isEmbed';
-import { DataMenu } from './SubMenus/DataMenu';
-import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
-import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
-import { QuadraticMenu } from './SubMenus/QuadraticMenu';
-import { useGridSettings } from './SubMenus/useGridSettings';
-import { TopBarFileMenu } from './TopBarFileMenu';
-import { TopBarMenuItem } from './TopBarMenuItem';
-import { TopBarShareButton } from './TopBarShareButton';
-import { TopBarUsers } from './TopBarUsers';
-import { TopBarZoomMenu } from './TopBarZoomMenu';
+
+import { hasPermissionToEditFile } from '@/app/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { electronMaximizeCurrentWindow } from '@/app/helpers/electronMaximizeCurrentWindow';
+import { isEmbed } from '@/app/helpers/isEmbed';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { CommandPaletteIcon } from '@/app/ui/icons';
+import { DataMenu } from '@/app/ui/menus/TopBar/SubMenus/DataMenu';
+import { FormatMenu } from '@/app/ui/menus/TopBar/SubMenus/FormatMenu/FormatMenu';
+import { NumberFormatMenu } from '@/app/ui/menus/TopBar/SubMenus/NumberFormatMenu';
+import { QuadraticMenu } from '@/app/ui/menus/TopBar/SubMenus/QuadraticMenu';
+import { useGridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
+import { TopBarFileMenu } from '@/app/ui/menus/TopBar/TopBarFileMenu';
+import { TopBarMenuItem } from '@/app/ui/menus/TopBar/TopBarMenuItem';
+import { TopBarShareButton } from '@/app/ui/menus/TopBar/TopBarShareButton';
+import { TopBarUsers } from '@/app/ui/menus/TopBar/TopBarUsers';
+import { TopBarZoomMenu } from '@/app/ui/menus/TopBar/TopBarZoomMenu';
+import { SwitchApp } from '@/shared/shadcn/ui/switch';
+import { isElectron } from '@/shared/utils/isElectron';
 
 export const TopBar = () => {
   const theme = useTheme();

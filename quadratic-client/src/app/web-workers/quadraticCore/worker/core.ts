@@ -5,9 +5,12 @@
  * directly accessed by its siblings.
  */
 
+import * as Sentry from '@sentry/react';
+
 import { debugWebWorkers } from '@/app/debugFlags';
 import { readFileAsArrayBuffer } from '@/app/helpers/files';
-import {
+import initCore, { GridController } from '@/app/quadratic-core/quadratic_core';
+import type {
   CellAlign,
   CellFormatSummary,
   CodeCellLanguage,
@@ -21,21 +24,24 @@ import {
   SheetPos,
   SummarizeSelectionResult,
 } from '@/app/quadratic-core-types';
-import initCore, { GridController } from '@/app/quadratic-core/quadratic_core';
-import { MultiplayerCoreReceiveTransaction } from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
-import * as Sentry from '@sentry/react';
-import {
+import type { MultiplayerCoreReceiveTransaction } from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
+import type {
   ClientCoreFindNextColumn,
   ClientCoreFindNextRow,
   ClientCoreImportExcel,
   ClientCoreLoad,
   ClientCoreMoveCells,
   ClientCoreSummarizeSelection,
-} from '../coreClientMessages';
-import { coreClient } from './coreClient';
-import { coreRender } from './coreRender';
-import { offline } from './offline';
-import { numbersToRect, pointsToRect, posToPos, posToRect } from './rustConversions';
+} from '@/app/web-workers/quadraticCore/coreClientMessages';
+import { coreClient } from '@/app/web-workers/quadraticCore/worker/coreClient';
+import { coreRender } from '@/app/web-workers/quadraticCore/worker/coreRender';
+import { offline } from '@/app/web-workers/quadraticCore/worker/offline';
+import {
+  numbersToRect,
+  pointsToRect,
+  posToPos,
+  posToRect,
+} from '@/app/web-workers/quadraticCore/worker/rustConversions';
 
 // Used to coerce bigints to numbers for JSON.stringify; see
 // https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-2064279949.

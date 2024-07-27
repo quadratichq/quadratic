@@ -9,7 +9,8 @@
  */
 
 import { v4 as uuid } from 'uuid';
-import { LabelMeshEntry } from './LabelMeshEntry';
+
+import { LabelMeshEntry } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/LabelMeshEntry';
 
 // experimental value (recommended to be maximum of 100,000, with x6 for each label)
 const MAX_VERTICES = 15000;

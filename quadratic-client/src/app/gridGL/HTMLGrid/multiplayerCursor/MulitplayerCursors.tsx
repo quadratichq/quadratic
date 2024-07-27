@@ -1,10 +1,11 @@
+import { useEffect, useState } from 'react';
+
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { MultiplayerCursor } from '@/app/gridGL/HTMLGrid/multiplayerCursor/MultiplayerCursor';
+import '@/app/gridGL/HTMLGrid/multiplayerCursor/MultiplayerCursors.css';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { useEffect, useState } from 'react';
-import { multiplayer } from '../../../web-workers/multiplayerWebWorker/multiplayer';
-import { MultiplayerCursor } from './MultiplayerCursor';
-import './MultiplayerCursors.css';
+import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 
 const OFFSCREEN_SIZE = 10;
 
@@ -15,7 +16,6 @@ interface Props {
 
 export const MultiplayerCursors = (props: Props) => {
   // triggers a render
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_, setPlayersTrigger] = useState(0);
   useEffect(() => {
     const updatePlayersTrigger = () => setPlayersTrigger((x) => x + 1);

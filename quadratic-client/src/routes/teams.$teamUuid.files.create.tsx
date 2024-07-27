@@ -1,11 +1,13 @@
+import * as Sentry from '@sentry/react';
+import mixpanel from 'mixpanel-browser';
+import { redirect, redirectDocument } from 'react-router-dom';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router-dom';
+
 import { authClient } from '@/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { snackbarMsgQueryParam, snackbarSeverityQueryParam } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { initMixpanelAnalytics } from '@/shared/utils/analytics';
-import * as Sentry from '@sentry/react';
-import mixpanel from 'mixpanel-browser';
-import { ActionFunctionArgs, LoaderFunctionArgs, redirect, redirectDocument } from 'react-router-dom';
 
 const getFailUrl = (path: string = '/') => {
   let params = new URLSearchParams();
@@ -45,7 +47,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       });
       mixpanel.track('[Files].newExampleFile', { fileName: name });
       return redirectDocument(ROUTES.FILE(uuid));
-    } catch (error) {
+    } catch (_error) {
       Sentry.captureEvent({
         message: 'Client failed to load the selected example file.',
         level: 'warning',
@@ -67,7 +69,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       file: { uuid },
     } = await apiClient.files.create({ teamUuid, isPrivate });
     return redirectDocument(ROUTES.FILE(uuid));
-  } catch (error) {
+  } catch (_error) {
     return redirect(getFailUrl(ROUTES.TEAM(teamUuid)));
   }
 };
@@ -95,7 +97,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
       file: { uuid },
     } = await apiClient.files.create({ file: { name, contents, version }, teamUuid, isPrivate });
     return redirectDocument(ROUTES.FILE(uuid));
-  } catch (error) {
+  } catch (_error) {
     return redirect(getFailUrl());
   }
 };

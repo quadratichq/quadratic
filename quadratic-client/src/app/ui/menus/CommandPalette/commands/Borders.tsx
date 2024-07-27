@@ -1,3 +1,4 @@
+import { isAvailableBecauseCanEditFile } from '@/app/actions';
 import {
   BorderAllIcon,
   BorderBottomIcon,
@@ -10,9 +11,10 @@ import {
   BorderTopIcon,
   BorderVerticalIcon,
 } from '@/app/ui/icons';
-import { isAvailableBecauseCanEditFile } from '../../../../actions';
-import { ChangeBorder, UseBordersResults, useBorders } from '../../TopBar/SubMenus/useBorders';
-import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
+import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import { useBorders } from '@/app/ui/menus/TopBar/SubMenus/useBorders';
+import type { ChangeBorder, UseBordersResults } from '@/app/ui/menus/TopBar/SubMenus/useBorders';
 
 export const BordersHook = (): CommandGroup => {
   const borders = useBorders();

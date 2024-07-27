@@ -1,7 +1,8 @@
-import { events } from '@/app/events/events';
-import { LanguageState } from '@/app/web-workers/languageTypes';
-import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { useEffect, useState } from 'react';
+
+import { events } from '@/app/events/events';
+import type { LanguageState } from '@/app/web-workers/languageTypes';
+import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 
 export const usePythonState = (): { pythonState: LanguageState; version?: string } => {
   const [pythonState, setPythonState] = useState<LanguageState>(pythonWebWorker.state);

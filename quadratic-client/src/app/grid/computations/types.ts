@@ -1,5 +1,6 @@
 import z from 'zod';
-import { ArrayOutputSchema } from '../../schemas';
+
+import { ArrayOutputSchema } from '@/app/schemas';
 
 export const CellEvaluationResultSchema = z.object({
   success: z.boolean(),

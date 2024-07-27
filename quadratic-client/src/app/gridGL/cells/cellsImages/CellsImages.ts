@@ -1,10 +1,12 @@
+import { Container } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
+
 import { events } from '@/app/events/events';
-import { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
-import { Container, Rectangle } from 'pixi.js';
-import { intersects } from '../../helpers/intersects';
-import { pixiApp } from '../../pixiApp/PixiApp';
-import { CellsSheet } from '../CellsSheet';
-import { CellsImage } from './CellsImage';
+import { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
+import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 
 export class CellsImages extends Container<CellsImage> {
   private cellsSheet: CellsSheet;

@@ -1,8 +1,10 @@
-import { sheets } from '@/app/grid/controller/Sheets';
 import { Drag, Viewport as PixiViewport } from 'pixi-viewport';
-import { Point, Rectangle } from 'pixi.js';
+import { Point } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
-import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
+
+import { sheets } from '@/app/grid/controller/Sheets';
+import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '@/app/gridGL/pixiOverride/Wheel';
 
 const MULTIPLAYER_VIEWPORT_EASE_TIME = 100;
 const MINIMUM_VIEWPORT_SCALE = 0.01;

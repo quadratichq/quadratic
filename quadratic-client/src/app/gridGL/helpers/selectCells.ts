@@ -1,11 +1,12 @@
+import { Rectangle } from 'pixi.js';
+
+import { sheets } from '@/app/grid/controller/Sheets';
 import {
   getVisibleLeftColumn,
   getVisibleTopRow,
   isColumnVisible,
   isRowVisible,
 } from '@/app/gridGL/interaction/viewportHelper';
-import { Rectangle } from 'pixi.js';
-import { sheets } from '../../grid/controller/Sheets';
 
 export function selectAllCells() {
   const sheet = sheets.sheet;

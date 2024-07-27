@@ -1,6 +1,7 @@
 import { Alert } from '@mui/material';
 import { useState } from 'react';
-import { QuadraticSnackBar } from './QuadraticSnackBar';
+
+import { QuadraticSnackBar } from '@/app/ui/components/QuadraticSnackBar';
 
 export default function InitialPageLoadError() {
   const [open, setOpen] = useState<boolean>(true);

@@ -1,20 +1,21 @@
-import { events } from '@/app/events/events';
-import { FeedbackIcon } from '@/app/ui/icons';
-import { useRootRouteLoaderData } from '@/routes/_root';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Commit } from '@mui/icons-material';
 import { Stack, useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { provideFeedbackAction } from '../../../actions';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { debugShowFPS } from '../../../debugFlags';
-import { sheets } from '../../../grid/controller/Sheets';
-import { colors } from '../../../theme/colors';
-import BottomBarItem from './BottomBarItem';
-import { KernelMenu } from './KernelMenu';
-import { SelectionSummary } from './SelectionSummary';
-import SyncState from './SyncState';
+
+import { provideFeedbackAction } from '@/app/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { debugShowFPS } from '@/app/debugFlags';
+import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { colors } from '@/app/theme/colors';
+import { FeedbackIcon } from '@/app/ui/icons';
+import BottomBarItem from '@/app/ui/menus/BottomBar/BottomBarItem';
+import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
+import { SelectionSummary } from '@/app/ui/menus/BottomBar/SelectionSummary';
+import SyncState from '@/app/ui/menus/BottomBar/SyncState';
+import { useRootRouteLoaderData } from '@/routes/_root';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 
 export const BottomBar = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);

@@ -1,11 +1,12 @@
-import { CreateConnectionAction, DeleteConnectionAction, UpdateConnectionAction } from '@/routes/api.connections';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import { useState } from 'react';
+import { useFetchers } from 'react-router-dom';
+
+import type { CreateConnectionAction, DeleteConnectionAction, UpdateConnectionAction } from '@/routes/api.connections';
 import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
 import { ConnectionsList } from '@/shared/components/connections/ConnectionsList';
 import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
-import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { useState } from 'react';
-import { useFetchers } from 'react-router-dom';
 
 export type ConnectionsListConnection = {
   uuid: string;

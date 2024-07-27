@@ -1,3 +1,5 @@
+import { isAvailableBecauseCanEditFile } from '@/app/actions';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import {
   DecimalDecreaseIcon,
   DecimalIncreaseIcon,
@@ -8,8 +10,8 @@ import {
   QuoteIcon,
   TextNoneIcon,
 } from '@/app/ui/icons';
-import { isAvailableBecauseCanEditFile } from '../../../../actions';
-import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
+import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import {
   clearFormattingAndBorders,
   removeCellNumericFormat,
@@ -19,8 +21,7 @@ import {
   textFormatSetCurrency,
   textFormatSetExponential,
   textFormatSetPercentage,
-} from '../../TopBar/SubMenus/formatCells';
-import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
+} from '@/app/ui/menus/TopBar/SubMenus/formatCells';
 
 const commands: CommandGroup = {
   heading: 'Format',

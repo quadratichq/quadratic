@@ -1,20 +1,22 @@
-import { Coordinate } from '@/app/gridGL/types/size';
-import { parsePython as parseCellsAccessed } from '@/app/helpers/parseEditorPythonCell';
-import { CodeCellLanguage, SheetRect } from '@/app/quadratic-core-types';
-import { parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import monaco, { editor } from 'monaco-editor';
+import type { editor } from 'monaco-editor';
+import type monaco from 'monaco-editor';
 import { useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
-import { ParseFormulaReturnType, Span } from '../../../helpers/formulaNotation';
-import { StringId, getKey } from '../../../helpers/getKey';
-import { colors } from '../../../theme/colors';
+
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import type { Coordinate } from '@/app/gridGL/types/size';
+import type { ParseFormulaReturnType, Span } from '@/app/helpers/formulaNotation';
+import type { StringId } from '@/app/helpers/getKey';
+import { getKey } from '@/app/helpers/getKey';
+import { parsePython as parseCellsAccessed } from '@/app/helpers/parseEditorPythonCell';
+import type { CodeCellLanguage, SheetRect } from '@/app/quadratic-core-types';
+import { parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { colors } from '@/app/theme/colors';
 
 export function extractCellsFromParseFormula(
   parsedFormula: ParseFormulaReturnType,
-  cell: Coordinate,
-  sheet: string
+  cell: Coordinate
 ): { cellId: CellRefId; span: Span; index: number }[] {
   return parsedFormula.cell_refs.map(({ cell_ref, span }, index) => {
     if (cell_ref.type === 'CellRange') {
@@ -113,11 +115,7 @@ export const useEditorCellHighlights = (
 
         if (language !== 'Formula') return;
 
-        const extractedCells = extractCellsFromParseFormula(
-          parsed,
-          editorInteractionState.selectedCell,
-          editorInteractionState.selectedCellSheet
-        );
+        const extractedCells = extractCellsFromParseFormula(parsed, editorInteractionState.selectedCell);
 
         extractedCells.forEach((value, index) => {
           const { cellId, span } = value;

@@ -1,16 +1,17 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { getConnectionInfo } from '@/app/helpers/codeCellLanguage';
-import { TooltipHint } from '@/app/ui/components/TooltipHint';
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
-import { useConnectionSchemaFetcher } from '@/app/ui/menus/CodeEditor/useConnectionSchemaFetcher';
-import { connectionClient } from '@/shared/api/connectionClient';
-import { Type } from '@/shared/components/Type';
-import { cn } from '@/shared/shadcn/utils';
 import { ContentPasteGoOutlined, KeyboardArrowRight, Refresh } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
 import { useState } from 'react';
 import { useRecoilValue } from 'recoil';
+
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { getConnectionInfo } from '@/app/helpers/codeCellLanguage';
+import { TooltipHint } from '@/app/ui/components/TooltipHint';
+import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { useConnectionSchemaFetcher } from '@/app/ui/menus/CodeEditor/useConnectionSchemaFetcher';
+import type { connectionClient } from '@/shared/api/connectionClient';
+import { Type } from '@/shared/components/Type';
+import { cn } from '@/shared/shadcn/utils';
 
 type Table = {
   name: string;
@@ -80,7 +81,7 @@ export const SchemaViewer = (props: Props) => {
 };
 
 function TableListItem({
-  data: { name, columns, schema },
+  data: { name, columns },
   expandAll,
   setExpandAll,
   query,

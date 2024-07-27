@@ -1,15 +1,18 @@
-import { Action as FilesAction } from '@/routes/api.files.$uuid';
-import { ShareFileDialog } from '@/shared/components/ShareDialog';
-import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
-import { FilePermission, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
-import { ReactNode, useState } from 'react';
+import type { FilePermission, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
+import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useFetchers, useLocation } from 'react-router-dom';
-import { Empty } from './Empty';
-import { FilesListItemExampleFile, FilesListItemUserFile, FilesListItems } from './FilesListItem';
-import { FilesListViewControls } from './FilesListViewControls';
-import { Layout, Order, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
+
+import { Empty } from '@/dashboard/components/Empty';
+import { FilesListItemExampleFile, FilesListItems, FilesListItemUserFile } from '@/dashboard/components/FilesListItem';
+import { FilesListViewControls } from '@/dashboard/components/FilesListViewControls';
+import type { ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
+import { Layout, Order, Sort } from '@/dashboard/components/FilesListViewControlsDropdown';
+import type { Action as FilesAction } from '@/routes/api.files.$uuid';
+import { ShareFileDialog } from '@/shared/components/ShareDialog';
+import useLocalStorage from '@/shared/hooks/useLocalStorage';
 
 export type FilesListUserFile = {
   createdDate: string;
@@ -131,7 +134,7 @@ export type FilesListExampleFile = {
   thumbnail: string;
 };
 
-export function ExampleFilesList({ files, emptyState }: { files: FilesListExampleFile[]; emptyState?: ReactNode }) {
+export function ExampleFilesList({ files }: { files: FilesListExampleFile[]; emptyState?: ReactNode }) {
   const { pathname } = useLocation();
   const [filterValue, setFilterValue] = useState<string>('');
   const [viewPreferences, setViewPreferences] = useLocalStorage<ViewPreferences>(

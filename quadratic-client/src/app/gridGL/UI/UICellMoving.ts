@@ -1,7 +1,8 @@
+import { BitmapText, Container, Graphics } from 'pixi.js';
+
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { colors } from '@/app/theme/colors';
-import { BitmapText, Container, Graphics } from 'pixi.js';
 
 const MOVING_THICKNESS = 3;
 

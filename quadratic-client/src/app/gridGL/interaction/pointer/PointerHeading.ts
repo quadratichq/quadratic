@@ -1,17 +1,18 @@
+import type { InteractivePointerEvent, Point } from 'pixi.js';
+
+import { hasPermissionToEditFile } from '@/app/actions';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { selectAllCells, selectColumns, selectRows } from '@/app/gridGL/helpers/selectCells';
+import { zoomToFit } from '@/app/gridGL/helpers/zoom';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { DOUBLE_CLICK_TIME } from '@/app/gridGL/interaction/pointer/pointerUtils';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { PanMode, pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { CELL_TEXT_MARGIN_LEFT, CELL_WIDTH } from '@/shared/constants/gridConstants';
-import { InteractivePointerEvent, Point } from 'pixi.js';
-import { hasPermissionToEditFile } from '../../../actions';
-import { sheets } from '../../../grid/controller/Sheets';
-import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCells';
-import { zoomToFit } from '../../helpers/zoom';
-import { pixiApp } from '../../pixiApp/PixiApp';
-import { PanMode, pixiAppSettings } from '../../pixiApp/PixiAppSettings';
-import { DOUBLE_CLICK_TIME } from './pointerUtils';
 
 const MINIMUM_COLUMN_SIZE = 20;
 
@@ -346,7 +347,7 @@ export class PointerHeading {
     }
   }
 
-  private onDoubleClickRow(row: number): void {
+  private onDoubleClickRow(_row: number): void {
     // todo when rows have wrapping...
   }
 }

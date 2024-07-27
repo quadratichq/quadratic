@@ -1,25 +1,26 @@
-import { useRootRouteLoaderData } from '@/routes/_root';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandList } from '@/shared/shadcn/ui/command';
 import fuzzysort from 'fuzzysort';
 import mixpanel from 'mixpanel-browser';
 import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { Command } from './CommandPaletteListItem';
-import { BordersHook } from './commands/Borders';
-import codeCommandGroup from './commands/Code';
-import { columnRowCommandGroup } from './commands/ColumnRow';
-import connectionsCommandGroup from './commands/Connections';
-import editCommandGroup from './commands/Edit';
-import fileCommandGroup from './commands/File';
-import formatCommandGroup from './commands/Format';
-import helpCommandGroup from './commands/Help';
-import importCommandGroup from './commands/Import';
-import searchCommandGroup from './commands/Search';
-import getSheetCommandGroup from './commands/Sheets';
-import textCommandGroup from './commands/Text';
-import viewCommandGroup from './commands/View';
+
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import type { Command } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import { BordersHook } from '@/app/ui/menus/CommandPalette/commands/Borders';
+import codeCommandGroup from '@/app/ui/menus/CommandPalette/commands/Code';
+import { columnRowCommandGroup } from '@/app/ui/menus/CommandPalette/commands/ColumnRow';
+import connectionsCommandGroup from '@/app/ui/menus/CommandPalette/commands/Connections';
+import editCommandGroup from '@/app/ui/menus/CommandPalette/commands/Edit';
+import fileCommandGroup from '@/app/ui/menus/CommandPalette/commands/File';
+import formatCommandGroup from '@/app/ui/menus/CommandPalette/commands/Format';
+import helpCommandGroup from '@/app/ui/menus/CommandPalette/commands/Help';
+import importCommandGroup from '@/app/ui/menus/CommandPalette/commands/Import';
+import searchCommandGroup from '@/app/ui/menus/CommandPalette/commands/Search';
+import getSheetCommandGroup from '@/app/ui/menus/CommandPalette/commands/Sheets';
+import textCommandGroup from '@/app/ui/menus/CommandPalette/commands/Text';
+import viewCommandGroup from '@/app/ui/menus/CommandPalette/commands/View';
+import { useRootRouteLoaderData } from '@/routes/_root';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandList } from '@/shared/shadcn/ui/command';
 
 export const CommandPalette = () => {
   const { isAuthenticated } = useRootRouteLoaderData();
@@ -74,7 +75,7 @@ export const CommandPalette = () => {
       <CommandList>
         {commandGroups.map(({ heading, commands }) => {
           let filteredCommands: Array<Command & { fuzzysortResult: any }> = [];
-          commands.forEach((command, i) => {
+          commands.forEach((command) => {
             const { label, keywords, isAvailable } = command;
 
             // Is the command even available?

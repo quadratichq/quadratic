@@ -1,11 +1,14 @@
-import { events } from '@/app/events/events';
-import { ColumnRow, GridBounds, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
-import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
-import { Coordinate } from '../../gridGL/types/size';
-import { sheets } from '../controller/Sheets';
-import { RectangleLike, SheetCursor } from './SheetCursor';
+
+import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { SheetCursor } from '@/app/grid/sheet/SheetCursor';
+import type { RectangleLike } from '@/app/grid/sheet/SheetCursor';
+import type { Coordinate } from '@/app/gridGL/types/size';
+import type { ColumnRow, GridBounds, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import type { SheetOffsets } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 export class Sheet {
   id: string;

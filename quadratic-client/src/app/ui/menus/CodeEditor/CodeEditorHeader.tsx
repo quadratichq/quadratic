@@ -1,25 +1,26 @@
-import { events } from '@/app/events/events';
-import { sheets } from '@/app/grid/controller/Sheets';
-import { SheetPosTS } from '@/app/gridGL/types/size';
-import { codeCellIsAConnection, getCodeCell, getConnectionUuid, getLanguage } from '@/app/helpers/codeCellLanguage';
-import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
-import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
-import type { CodeRun } from '@/app/web-workers/CodeRun';
-import { LanguageState } from '@/app/web-workers/languageTypes';
-import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
-import { GetConnections } from '@/routes/api.connections';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { cn } from '@/shared/shadcn/utils';
 import { Close, PlayArrow, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useFetcher } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { hasPermissionToEditFile } from '../../../actions';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
-import { TooltipHint } from '../../components/TooltipHint';
-import { SnippetsPopover } from './SnippetsPopover';
+
+import { hasPermissionToEditFile } from '@/app/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import type { SheetPosTS } from '@/app/gridGL/types/size';
+import { codeCellIsAConnection, getCodeCell, getConnectionUuid, getLanguage } from '@/app/helpers/codeCellLanguage';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
+import { TooltipHint } from '@/app/ui/components/TooltipHint';
+import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
+import { SnippetsPopover } from '@/app/ui/menus/CodeEditor/SnippetsPopover';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
+import type { LanguageState } from '@/app/web-workers/languageTypes';
+import type { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import type { GetConnections } from '@/routes/api.connections';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { cn } from '@/shared/shadcn/utils';
 
 interface Props {
   cellLocation: SheetPosTS | undefined;

@@ -1,9 +1,10 @@
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { ZoomInIcon, ZoomOutIcon } from '@/app/ui/icons';
+import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import { useGridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
 import { Checkbox } from '@/shared/shadcn/ui/checkbox';
-import { useGridSettings } from '../../TopBar/SubMenus/useGridSettings';
-import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
 const commands: CommandGroup = {
   heading: 'View',

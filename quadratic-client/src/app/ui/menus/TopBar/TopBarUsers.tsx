@@ -1,15 +1,16 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { MULTIPLAYER_COLORS } from '@/app/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { TooltipHint } from '@/app/ui/components/TooltipHint';
-import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { useRootRouteLoaderData } from '@/routes/_root';
-import { displayInitials, displayName } from '@/shared/utils/userUtil';
 import { Avatar, AvatarGroup, IconButton } from '@mui/material';
 import { EyeOpenIcon } from '@radix-ui/react-icons';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { colors } from '../../../theme/colors';
-import { useMultiplayerUsers } from './useMultiplayerUsers';
+
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { MULTIPLAYER_COLORS } from '@/app/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { colors } from '@/app/theme/colors';
+import { TooltipHint } from '@/app/ui/components/TooltipHint';
+import { useMultiplayerUsers } from '@/app/ui/menus/TopBar/useMultiplayerUsers';
+import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
+import { useRootRouteLoaderData } from '@/routes/_root';
+import { displayInitials, displayName } from '@/shared/utils/userUtil';
 
 const sharedAvatarSxProps = { width: 24, height: 24, fontSize: '.8125rem' };
 

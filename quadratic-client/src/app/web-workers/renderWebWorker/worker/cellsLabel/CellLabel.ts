@@ -7,17 +7,22 @@
  * populates the buffers for the relevant LabelMeshes based on this data.
  */
 
-import { Coordinate } from '@/app/gridGL/types/size';
-import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
-import { CellAlign, JsRenderCell } from '@/app/quadratic-core-types';
-import { CellAlignment } from '@/app/schemas';
-import { colors } from '@/app/theme/colors';
 import { removeItems } from '@pixi/utils';
-import { Point, Rectangle } from 'pixi.js';
-import { RenderBitmapChar } from '../../renderBitmapFonts';
-import { CellsLabels } from './CellsLabels';
-import { LabelMeshes } from './LabelMeshes';
-import { extractCharCode, splitTextToCharacters } from './bitmapTextUtils';
+import { Point } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
+
+import type { Coordinate } from '@/app/gridGL/types/size';
+import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
+import type { CellAlign, JsRenderCell } from '@/app/quadratic-core-types';
+import type { CellAlignment } from '@/app/schemas';
+import { colors } from '@/app/theme/colors';
+import type { RenderBitmapChar } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
+import {
+  extractCharCode,
+  splitTextToCharacters,
+} from '@/app/web-workers/renderWebWorker/worker/cellsLabel/bitmapTextUtils';
+import type { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsLabels';
+import type { LabelMeshes } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/LabelMeshes';
 
 interface CharRenderData {
   charData: RenderBitmapChar;

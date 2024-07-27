@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, test, vi } from 'vitest';
-import { LanguageState } from '../../languageTypes';
-import { python } from './python';
+
+import type { LanguageState } from '@/app/web-workers/languageTypes';
+import { python } from '@/app/web-workers/pythonWebWorker/worker/python';
 
 let pythonState: LanguageState;
 vi.mock('./pythonClient.ts', () => {

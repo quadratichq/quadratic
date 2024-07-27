@@ -1,7 +1,14 @@
+import HighlightAltIcon from '@mui/icons-material/HighlightAlt';
+import { IconButton } from '@mui/material';
+import { CaretDownIcon } from '@radix-ui/react-icons';
+import { useEffect, useState } from 'react';
+import { useRecoilValue } from 'recoil';
+
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
+import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import {
   DropdownMenu,
@@ -9,12 +16,6 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
-import HighlightAltIcon from '@mui/icons-material/HighlightAlt';
-import { IconButton } from '@mui/material';
-import { CaretDownIcon } from '@radix-ui/react-icons';
-import { useEffect, useState } from 'react';
-import { useRecoilValue } from 'recoil';
-import { insertCellRef } from './insertCellRef';
 
 export const CodeEditorRefButton = () => {
   const [relative, setRelative] = useLocalStorage('insertCellRefRelative', false);

@@ -1,5 +1,10 @@
+import { Check, ErrorOutline, Refresh, Stop } from '@mui/icons-material';
+import { CircularProgress, useTheme } from '@mui/material';
+import { useState } from 'react';
+
 import { usePythonState } from '@/app/atoms/usePythonState';
-import { LanguageState } from '@/app/web-workers/languageTypes';
+import BottomBarItem from '@/app/ui/menus/BottomBar/BottomBarItem';
+import type { LanguageState } from '@/app/web-workers/languageTypes';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import {
   DropdownMenu,
@@ -9,10 +14,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
-import { Check, ErrorOutline, Refresh, Stop } from '@mui/icons-material';
-import { CircularProgress, useTheme } from '@mui/material';
-import { useState } from 'react';
-import BottomBarItem from './BottomBarItem';
 
 const uiLabelByPythonState: Record<LanguageState, string> = {
   error: 'error loading',

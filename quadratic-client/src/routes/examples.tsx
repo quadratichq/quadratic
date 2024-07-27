@@ -1,9 +1,11 @@
-import { ExampleFilesList, FilesListExampleFile } from '@/dashboard/components/FilesList';
-import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { ROUTES } from '@/shared/constants/routes';
 import { sanityClient } from 'quadratic-shared/sanityClient';
 import { useLoaderData } from 'react-router-dom';
-import { DashboardHeader, DashboardHeaderTitle } from '../dashboard/components/DashboardHeader';
+
+import { DashboardHeader, DashboardHeaderTitle } from '@/dashboard/components/DashboardHeader';
+import type { FilesListExampleFile } from '@/dashboard/components/FilesList';
+import { ExampleFilesList } from '@/dashboard/components/FilesList';
+import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { ROUTES } from '@/shared/constants/routes';
 
 export const loader = async () => {
   const examples = await sanityClient.examples.list();
@@ -18,7 +20,7 @@ export const Component = () => {
     },
   } = useDashboardRouteLoaderData();
 
-  const files: FilesListExampleFile[] = examples.map(({ name, description, thumbnail, url }, i) => ({
+  const files: FilesListExampleFile[] = examples.map(({ name, description, thumbnail, url }) => ({
     description,
     href: ROUTES.CREATE_FILE_EXAMPLE(activeTeamUuid, url, true),
     name,

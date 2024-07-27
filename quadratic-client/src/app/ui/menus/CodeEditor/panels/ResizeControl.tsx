@@ -1,5 +1,5 @@
-import { colors } from '../../../../theme/colors';
-import './ResizeControl.css';
+import { colors } from '@/app/theme/colors';
+import '@/app/ui/menus/CodeEditor/panels/ResizeControl.css';
 
 interface ResizeControlProps {
   disabled?: boolean;

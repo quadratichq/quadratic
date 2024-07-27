@@ -1,5 +1,3 @@
-import SvgIcon, { SvgIconProps } from '@mui/material/SvgIcon';
-
 import {
   BorderAll as BorderAllIcon,
   BorderBottom as BorderBottomIcon,
@@ -42,6 +40,8 @@ import {
   ZoomInOutlined as ZoomInIcon,
   ZoomOutOutlined as ZoomOutIcon,
 } from '@mui/icons-material';
+import SvgIcon from '@mui/material/SvgIcon';
+import type { SvgIconProps } from '@mui/material/SvgIcon';
 
 export {
   BorderAllIcon,

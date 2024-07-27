@@ -1,5 +1,15 @@
+import { Tooltip } from '@mui/material';
+import type { ClickEvent } from '@szhsin/react-menu';
+import { MenuItem, SubMenu } from '@szhsin/react-menu';
+import { useCallback, useEffect, useState } from 'react';
+import type { ColorResult } from 'react-color';
+
 import { events } from '@/app/events/events';
-import { BorderSelection, CellBorderLine } from '@/app/quadratic-core-types';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { convertReactColorToString, convertTintToString } from '@/app/helpers/convertColor';
+import type { BorderSelection, CellBorderLine } from '@/app/quadratic-core-types';
+import { colors } from '@/app/theme/colors';
+import { QColorPicker } from '@/app/ui/components/qColorPicker';
 import {
   BorderAllIcon,
   BorderBottomIcon,
@@ -14,16 +24,9 @@ import {
   BorderTopIcon,
   BorderVerticalIcon,
 } from '@/app/ui/icons';
-import { Tooltip } from '@mui/material';
-import { ClickEvent, MenuItem, SubMenu } from '@szhsin/react-menu';
-import { useCallback, useEffect, useState } from 'react';
-import { ColorResult } from 'react-color';
-import { sheets } from '../../../../../grid/controller/Sheets';
-import { convertReactColorToString, convertTintToString } from '../../../../../helpers/convertColor';
-import { colors } from '../../../../../theme/colors';
-import { QColorPicker } from '../../../../components/qColorPicker';
-import { ChangeBorder, useBorders } from '../useBorders';
-import './useGetBorderMenu.css';
+import '@/app/ui/menus/TopBar/SubMenus/FormatMenu/useGetBorderMenu.css';
+import { useBorders } from '@/app/ui/menus/TopBar/SubMenus/useBorders';
+import type { ChangeBorder } from '@/app/ui/menus/TopBar/SubMenus/useBorders';
 
 export function useGetBorderMenu(): JSX.Element | null {
   const [lineStyle, setLineStyle] = useState<CellBorderLine | undefined>();

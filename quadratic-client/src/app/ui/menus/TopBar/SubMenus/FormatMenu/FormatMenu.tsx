@@ -1,3 +1,10 @@
+import { Menu, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
+import type { MenuChangeEvent } from '@szhsin/react-menu';
+import { useCallback } from 'react';
+
+import { focusGrid } from '@/app/helpers/focusGrid';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { QColorPicker } from '@/app/ui/components/qColorPicker';
 import {
   BorderNoneIcon,
   FontBoldIcon,
@@ -10,13 +17,7 @@ import {
   TextColorIcon,
   TextNoneIcon,
 } from '@/app/ui/icons';
-import { Menu, MenuChangeEvent, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
-import { useCallback } from 'react';
-import { focusGrid } from '../../../../../helpers/focusGrid';
-import { KeyboardSymbols } from '../../../../../helpers/keyboardSymbols';
-import { QColorPicker } from '../../../../components/qColorPicker';
-import { MenuLineItem } from '../../MenuLineItem';
-import { TopBarMenuItem } from '../../TopBarMenuItem';
+import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
 import {
   clearFillColor,
   clearFormattingAndBorders,
@@ -25,9 +26,10 @@ import {
   setFillColor,
   setItalic,
   setTextColor,
-} from '../formatCells';
-import './formatMenuStyles.scss';
-import { useGetBorderMenu } from './useGetBorderMenu';
+} from '@/app/ui/menus/TopBar/SubMenus/formatCells';
+import '@/app/ui/menus/TopBar/SubMenus/FormatMenu/formatMenuStyles.scss';
+import { useGetBorderMenu } from '@/app/ui/menus/TopBar/SubMenus/FormatMenu/useGetBorderMenu';
+import { TopBarMenuItem } from '@/app/ui/menus/TopBar/TopBarMenuItem';
 
 export const FormatMenu = () => {
   // focus canvas after the format menu closes

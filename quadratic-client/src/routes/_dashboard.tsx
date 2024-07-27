@@ -1,3 +1,23 @@
+import { LiveChatWidget } from '@livechat/widget-react';
+import { ExclamationTriangleIcon, HamburgerMenuIcon, InfoCircledIcon } from '@radix-ui/react-icons';
+import * as Sentry from '@sentry/react';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import {
+  Link,
+  Outlet,
+  isRouteErrorResponse,
+  redirect,
+  redirectDocument,
+  useLocation,
+  useNavigation,
+  useRevalidator,
+  useRouteError,
+  useRouteLoaderData,
+  useSearchParams,
+} from 'react-router-dom';
+import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router-dom';
+
 import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
 import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
@@ -10,26 +30,6 @@ import { useTheme } from '@/shared/hooks/useTheme';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
 import { cn } from '@/shared/shadcn/utils';
-import { LiveChatWidget } from '@livechat/widget-react';
-import { ExclamationTriangleIcon, HamburgerMenuIcon, InfoCircledIcon } from '@radix-ui/react-icons';
-import * as Sentry from '@sentry/react';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
-import {
-  Link,
-  LoaderFunctionArgs,
-  Outlet,
-  ShouldRevalidateFunctionArgs,
-  isRouteErrorResponse,
-  redirect,
-  redirectDocument,
-  useLocation,
-  useNavigation,
-  useRevalidator,
-  useRouteError,
-  useRouteLoaderData,
-  useSearchParams,
-} from 'react-router-dom';
 
 const DRAWER_WIDTH = 264;
 export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
@@ -45,7 +45,7 @@ export const useDashboardContext = () => useContext(DashboardContext);
 /**
  * Revalidation
  */
-export const shouldRevalidate = ({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) => {
+export const shouldRevalidate = ({ nextUrl }: ShouldRevalidateFunctionArgs) => {
   // Re-validate if we're going to a teams route, otherwise skip
   return nextUrl.pathname.startsWith('/teams/');
 };

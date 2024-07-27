@@ -1,11 +1,12 @@
-import { hasPermissionToEditFile } from '@/app/actions';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
 import { useSetRecoilState } from 'recoil';
+
+import { hasPermissionToEditFile } from '@/app/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { apiClient } from '@/shared/api/apiClient';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 
 type Sync = {
   id: number;

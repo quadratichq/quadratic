@@ -6,15 +6,17 @@
  * geometries sent to the GPU.
  */
 
+import { Rectangle } from 'pixi.js';
+
 import { debugShowLoadingHashes } from '@/app/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
-import { JsRenderCell, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
-import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { Rectangle } from 'pixi.js';
-import { RenderBitmapFonts } from '../../renderBitmapFonts';
-import { renderText } from '../renderText';
-import { CellsTextHash } from './CellsTextHash';
+import type { JsRenderCell, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import type { SheetOffsets } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type { RenderBitmapFonts } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
+import { CellsTextHash } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHash';
+import { renderText } from '@/app/web-workers/renderWebWorker/worker/renderText';
 
 // 500 MB maximum memory per sheet before we start unloading hashes (right now
 // this is on a per-sheet basis--we will want to change this to a global limit)

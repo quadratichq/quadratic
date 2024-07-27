@@ -1,8 +1,9 @@
+import { useRef, useState } from 'react';
+import AvatarEditor from 'react-avatar-editor';
+
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { Slider } from '@/shared/shadcn/ui/slider';
-import { useRef, useState } from 'react';
-import AvatarEditor from 'react-avatar-editor';
 
 /**
  * URLs return from the logo editor will be file object URLs.

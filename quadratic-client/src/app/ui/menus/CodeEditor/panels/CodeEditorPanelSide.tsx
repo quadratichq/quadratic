@@ -1,16 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRecoilValue } from 'recoil';
+
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
 import { SchemaViewer } from '@/app/ui/components/SchemaViewer';
 import { AiAssistant } from '@/app/ui/menus/CodeEditor/AiAssistant';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { PanelBox, calculatePanelBoxMinimizedSize } from '@/app/ui/menus/CodeEditor/panels/PanelBox';
+import { ResizeControl } from '@/app/ui/menus/CodeEditor/panels/ResizeControl';
 import { useCodeEditorContainer } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorContainer';
-import { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import type { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRecoilValue } from 'recoil';
-import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-import { ResizeControl } from './ResizeControl';
 
 interface Props {
   codeEditorPanelData: CodeEditorPanelData;

@@ -1,15 +1,16 @@
+import type { Viewport } from 'pixi-viewport';
+import type { InteractionEvent } from 'pixi.js';
+
+import { PointerAutoComplete } from '@/app/gridGL/interaction/pointer/PointerAutoComplete';
 import { PointerCellMoving } from '@/app/gridGL/interaction/pointer/PointerCellMoving';
+import { PointerCursor } from '@/app/gridGL/interaction/pointer/pointerCursor';
+import { PointerDown } from '@/app/gridGL/interaction/pointer/PointerDown';
+import { PointerHeading } from '@/app/gridGL/interaction/pointer/PointerHeading';
+import { PointerHtmlCells } from '@/app/gridGL/interaction/pointer/PointerHtmlCells';
+import { PointerImages } from '@/app/gridGL/interaction/pointer/PointerImages';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { Viewport } from 'pixi-viewport';
-import { InteractionEvent } from 'pixi.js';
-import { pixiApp } from '../../pixiApp/PixiApp';
-import { PointerAutoComplete } from './PointerAutoComplete';
-import { PointerCursor } from './pointerCursor';
-import { PointerDown } from './PointerDown';
-import { PointerHeading } from './PointerHeading';
-import { PointerHtmlCells } from './PointerHtmlCells';
-import { PointerImages } from './PointerImages';
 
 export class Pointer {
   pointerHeading: PointerHeading;
@@ -73,7 +74,7 @@ export class Pointer {
   }
 
   // todo: this should be removed when the code editor's layout is changed
-  private isOverCodeEditor(e: InteractionEvent): boolean {
+  private isOverCodeEditor(_e: InteractionEvent): boolean {
     const codeEditor = document.getElementById('QuadraticCodeEditorID');
     const overCodeEditor = !!codeEditor?.matches(':hover');
     if (!overCodeEditor) {

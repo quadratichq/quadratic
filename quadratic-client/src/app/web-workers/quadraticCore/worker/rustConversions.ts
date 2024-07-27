@@ -2,9 +2,10 @@
  * Conversion between Rust types and TS types.
  */
 
-import { RectangleLike } from '@/app/grid/sheet/SheetCursor';
-import { Pos, Rect, SheetRect } from '@/app/quadratic-core-types';
 import { Point, Rectangle } from 'pixi.js';
+
+import type { RectangleLike } from '@/app/grid/sheet/SheetCursor';
+import type { Pos, Rect, SheetRect } from '@/app/quadratic-core-types';
 
 // Used to coerce bigints to numbers for JSON.stringify; see
 // https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-2064279949.

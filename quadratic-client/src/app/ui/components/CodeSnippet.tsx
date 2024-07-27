@@ -1,11 +1,12 @@
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import Editor from '@monaco-editor/react';
 import { ContentCopy, ContentPasteGoOutlined } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
 import { useRef, useState } from 'react';
-import { codeEditorBaseStyles } from '../menus/CodeEditor/styles';
-import { TooltipHint } from './TooltipHint';
+
+import { TooltipHint } from '@/app/ui/components/TooltipHint';
+import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
 
 interface Props {
   code: string;
@@ -16,7 +17,7 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
   const [tooltipMsg, setTooltipMsg] = useState<string>('Copy');
   const editorRef = useRef(null);
 
-  const handleClick = (e: any) => {
+  const handleClick = (_e: any) => {
     mixpanel.track('[AI].code.copy', { language });
     if (editorRef.current) {
       navigator.clipboard.writeText(code);

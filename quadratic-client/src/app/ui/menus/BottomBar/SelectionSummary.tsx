@@ -1,11 +1,11 @@
 import { useMediaQuery } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { sheets } from '../../../grid/controller/Sheets';
-// import { getColumnA1Notation, getRowA1Notation } from '../../../gridGL/UI/gridHeadings/getA1Notation';
+
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
+import BottomBarItem from '@/app/ui/menus/BottomBar/BottomBarItem';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import BottomBarItem from './BottomBarItem';
 
 export const SelectionSummary = () => {
   const decimal_places = 9;

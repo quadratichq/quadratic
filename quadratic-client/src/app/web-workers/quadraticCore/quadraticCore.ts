@@ -4,11 +4,13 @@
  * Also open communication channel between core web worker and render web worker.
  */
 
+import type { Rectangle } from 'pixi.js';
+
 import { debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Coordinate } from '@/app/gridGL/types/size';
-import {
+import type { Coordinate } from '@/app/gridGL/types/size';
+import type {
   BorderSelection,
   BorderStyle,
   CellAlign,
@@ -25,10 +27,7 @@ import {
   SheetRect,
   SummarizeSelectionResult,
 } from '@/app/quadratic-core-types';
-import { authClient } from '@/auth';
-import { Rectangle } from 'pixi.js';
-import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
-import {
+import type {
   ClientCoreCellHasContent,
   ClientCoreGetCellFormatSummary,
   ClientCoreGetCodeCell,
@@ -54,7 +53,9 @@ import {
   CoreClientSearch,
   CoreClientSummarizeSelection,
   CoreClientUpgradeFile,
-} from './coreClientMessages';
+} from '@/app/web-workers/quadraticCore/coreClientMessages';
+import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
+import { authClient } from '@/auth';
 
 class QuadraticCore {
   private worker?: Worker;

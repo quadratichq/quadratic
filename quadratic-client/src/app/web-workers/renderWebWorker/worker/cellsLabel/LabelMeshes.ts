@@ -4,7 +4,7 @@
  * It contains LabelMesh children. LabelMeshes are rendered meshes for each font and style.
  */
 
-import { LabelMesh } from './LabelMesh';
+import { LabelMesh } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/LabelMesh';
 
 export class LabelMeshes {
   private labelMeshes: LabelMesh[] = [];

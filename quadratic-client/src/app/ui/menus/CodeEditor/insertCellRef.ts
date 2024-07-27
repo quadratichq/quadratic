@@ -1,4 +1,4 @@
-import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';

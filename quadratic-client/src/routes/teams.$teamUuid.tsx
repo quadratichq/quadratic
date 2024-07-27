@@ -1,10 +1,12 @@
+import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { Link, Outlet, redirectDocument } from 'react-router-dom';
+import type { ActionFunctionArgs } from 'react-router-dom';
+
 import { Empty } from '@/dashboard/components/Empty';
 import { ACTIVE_TEAM_UUID_KEY } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
 import { Button } from '@/shared/shadcn/ui/button';
-import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { ActionFunctionArgs, Link, Outlet, redirectDocument } from 'react-router-dom';
 
 export type TeamAction = {
   'request.update-team': ReturnType<typeof getActionUpdateTeam>;
@@ -51,7 +53,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
       const { name } = data;
       await apiClient.teams.update(teamUuid, { name });
       return { ok: true };
-    } catch (e) {
+    } catch (_e) {
       return { ok: false };
     }
   }
@@ -61,7 +63,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
       const { email, role } = data;
       await apiClient.teams.invites.create(teamUuid, { email, role });
       return { ok: true };
-    } catch (e) {
+    } catch (_e) {
       return { ok: false };
     }
   }
@@ -71,7 +73,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
       const { inviteId } = data;
       await apiClient.teams.invites.delete(teamUuid, inviteId);
       return { ok: true };
-    } catch (e) {
+    } catch (_e) {
       return { ok: false };
     }
   }
@@ -81,7 +83,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
       const { userId, role } = data;
       await apiClient.teams.users.update(teamUuid, userId, { role });
       return { ok: true };
-    } catch (e) {
+    } catch (_e) {
       return { ok: false };
     }
   }
@@ -97,7 +99,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
         return redirectDocument('/');
       }
       return { ok: true };
-    } catch (e) {
+    } catch (_e) {
       return { ok: false };
     }
   }

@@ -1,9 +1,11 @@
 //! Used to draw autocomplete box.
 
-import { Graphics, Rectangle } from 'pixi.js';
-import { sheets } from '../../grid/controller/Sheets';
-import { colors } from '../../theme/colors';
-import { pixiApp } from '../pixiApp/PixiApp';
+import { Graphics } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
+
+import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { colors } from '@/app/theme/colors';
 
 const thickness = 3;
 

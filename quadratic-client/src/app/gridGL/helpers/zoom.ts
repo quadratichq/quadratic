@@ -1,8 +1,10 @@
+import { Point } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
+
+import { sheets } from '@/app/grid/controller/Sheets';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { ZOOM_ANIMATION_TIME_MS, ZOOM_BUFFER } from '@/shared/constants/gridConstants';
-import { Point, Rectangle } from 'pixi.js';
-import { sheets } from '../../grid/controller/Sheets';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { intersects } from './intersects';
 
 export async function zoomToFit() {
   const viewport = pixiApp.viewport;

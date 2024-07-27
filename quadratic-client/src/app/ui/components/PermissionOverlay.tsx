@@ -1,8 +1,3 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { useRootRouteLoaderData } from '@/routes/_root';
-import { Type } from '@/shared/components/Type';
-import { ROUTES } from '@/shared/constants/routes';
-import { Button } from '@/shared/shadcn/ui/button';
 import { Stack, useTheme } from '@mui/material';
 import { Cross2Icon } from '@radix-ui/react-icons';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
@@ -10,6 +5,13 @@ import React, { useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { Link } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
+
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { useRootRouteLoaderData } from '@/routes/_root';
+import { Type } from '@/shared/components/Type';
+import { ROUTES } from '@/shared/constants/routes';
+import { Button } from '@/shared/shadcn/ui/button';
+
 const { FILE_EDIT } = FilePermissionSchema.enum;
 
 export function PermissionOverlay() {

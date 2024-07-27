@@ -1,3 +1,5 @@
+import { isAvailableBecauseCanEditFile } from '@/app/actions';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import {
   FontBoldIcon,
   FontItalicIcon,
@@ -5,10 +7,9 @@ import {
   TextAlignLeftIcon,
   TextAlignRightIcon,
 } from '@/app/ui/icons';
-import { isAvailableBecauseCanEditFile } from '../../../../actions';
-import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { setAlignment, setBold, setItalic } from '../../TopBar/SubMenus/formatCells';
-import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
+import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import { setAlignment, setBold, setItalic } from '@/app/ui/menus/TopBar/SubMenus/formatCells';
 
 const commands: CommandGroup = {
   heading: 'Text',

@@ -1,10 +1,12 @@
-import { downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
-import { generateKeyBetween } from '@/shared/utils/fractionalIndexing';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
-import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { v4 as uuid } from 'uuid';
-import { fetchFromApi } from './fetchFromApi';
+
+import { downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
+import { fetchFromApi } from '@/shared/api/fetchFromApi';
+import { generateKeyBetween } from '@/shared/utils/fractionalIndexing';
 
 const DEFAULT_FILE: any = {
   sheets: [
@@ -175,7 +177,7 @@ export const apiClient = {
           const res = await fetch(thumbnail);
           const blob = await res.blob();
           await apiClient.files.thumbnail.update(newFileUuid, blob);
-        } catch (err) {
+        } catch (_err) {
           // Not a huge deal if it failed, just tell Sentry and move on
           Sentry.captureEvent({
             message: 'Failed to duplicate the thumbnail image when duplicating a file',

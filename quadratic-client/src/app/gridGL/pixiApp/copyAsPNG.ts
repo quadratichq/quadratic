@@ -1,7 +1,8 @@
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Matrix, Renderer } from 'pixi.js';
-import { sheets } from '../../grid/controller/Sheets';
-import { pixiApp } from './PixiApp';
+
+import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 const resolution = 4;
 const borderSize = 1;

@@ -1,9 +1,10 @@
-import { GridFile, GridFiles } from '.';
-import { GridFileSchemaV1_0 } from './GridFileV1_0';
-import { GridFileSchemaV1_1, upgradeV1_0toV1_1 } from './GridFileV1_1';
-import { GridFileSchemaV1_2, upgradeV1_1toV1_2 } from './GridFileV1_2';
-import { GridFileSchemaV1_3, upgradeV1_2toV1_3 } from './GridFileV1_3';
-import { versionGTE as versionGreaterOrEqualTo } from './versioning';
+import { GridFileSchemaV1_0 } from '@/app/schemas/GridFileV1_0';
+import { GridFileSchemaV1_1, upgradeV1_0toV1_1 } from '@/app/schemas/GridFileV1_1';
+import { GridFileSchemaV1_2, upgradeV1_1toV1_2 } from '@/app/schemas/GridFileV1_2';
+import { GridFileSchemaV1_3, upgradeV1_2toV1_3 } from '@/app/schemas/GridFileV1_3';
+import { versionGTE as versionGreaterOrEqualTo } from '@/app/schemas/versioning';
+
+import type { GridFile, GridFiles } from '.';
 
 // Ordered by newest first
 const FILES = [

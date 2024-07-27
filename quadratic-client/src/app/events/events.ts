@@ -1,7 +1,9 @@
-import { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
-import { PanMode } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { SheetPosTS } from '@/app/gridGL/types/size';
-import {
+import EventEmitter from 'eventemitter3';
+
+import type { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
+import type { PanMode } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import type { SheetPosTS } from '@/app/gridGL/types/size';
+import type {
   JsCodeCell,
   JsHtmlOutput,
   JsRenderBorders,
@@ -13,16 +15,15 @@ import {
   SheetInfo,
 } from '@/app/quadratic-core-types';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
-import { LanguageState } from '@/app/web-workers/languageTypes';
-import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
-import { CellEdit, MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
-import {
+import type { LanguageState } from '@/app/web-workers/languageTypes';
+import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import type { CellEdit, MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import type {
   CoreClientImage,
   CoreClientImportProgress,
   CoreClientTransactionProgress,
   CoreClientTransactionStart,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
-import EventEmitter from 'eventemitter3';
 
 interface EventTypes {
   needRefresh: (state: 'required' | 'recommended' | 'force') => void;

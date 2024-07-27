@@ -1,12 +1,19 @@
+import { loadPyodide } from 'pyodide';
+import type { PyodideInterface } from 'pyodide';
+
 import { debugWebWorkers } from '@/app/debugFlags';
-import { JsGetCellResponse } from '@/app/quadratic-core-types';
+import type { JsGetCellResponse } from '@/app/quadratic-core-types';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
-import { LanguageState } from '@/app/web-workers/languageTypes';
-import { PyodideInterface, loadPyodide } from 'pyodide';
-import type { CorePythonRun } from '../pythonCoreMessages';
-import type { InspectPython, PythonError, PythonSuccess, outputType } from '../pythonTypes';
-import { pythonClient } from './pythonClient';
-import { pythonCore } from './pythonCore';
+import type { LanguageState } from '@/app/web-workers/languageTypes';
+import type { CorePythonRun } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
+import type {
+  InspectPython,
+  PythonError,
+  PythonSuccess,
+  outputType,
+} from '@/app/web-workers/pythonWebWorker/pythonTypes';
+import { pythonClient } from '@/app/web-workers/pythonWebWorker/worker/pythonClient';
+import { pythonCore } from '@/app/web-workers/pythonWebWorker/worker/pythonCore';
 
 const TRY_AGAIN_TIMEOUT = 500;
 const IS_TEST = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
@@ -56,7 +63,7 @@ class Python {
 
     // patch XMLHttpRequest to send requests to the proxy
     SELF['XMLHttpRequest'] = new Proxy(XMLHttpRequest, {
-      construct: function (target, args) {
+      construct: function (target, _args) {
         const xhr = new target();
 
         xhr.open = new Proxy(xhr.open, {

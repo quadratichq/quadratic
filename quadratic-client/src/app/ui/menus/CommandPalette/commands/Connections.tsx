@@ -1,7 +1,12 @@
+import { useSetRecoilState } from 'recoil';
+
 import { isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { useSetRecoilState } from 'recoil';
-import { CommandGroup, CommandPaletteListItem, CommandPaletteListItemDynamicProps } from '../CommandPaletteListItem';
+import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import type {
+  CommandGroup,
+  CommandPaletteListItemDynamicProps,
+} from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 
 const commands: CommandGroup = {
   heading: 'Connections',

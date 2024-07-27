@@ -1,18 +1,20 @@
-import { events } from '@/app/events/events';
-import { sheets } from '@/app/grid/controller/Sheets';
-import { Sheet } from '@/app/grid/sheet/Sheet';
-import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { Coordinate } from '@/app/gridGL/types/size';
-import { JsCodeCell, JsRenderCodeCell, RunError } from '@/app/quadratic-core-types';
 import mixpanel from 'mixpanel-browser';
 import { Container, Graphics, ParticleContainer, Point, Rectangle, Sprite, Texture } from 'pixi.js';
-import { colors } from '../../theme/colors';
-import { dashedTextures } from '../dashedTextures';
-import { intersects } from '../helpers/intersects';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
-import { CellsSheet } from './CellsSheet';
-import { BorderCull, borderLineWidth, drawBorder, drawLine } from './drawBorders';
+
+import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import type { Sheet } from '@/app/grid/sheet/Sheet';
+import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
+import type { BorderCull } from '@/app/gridGL/cells/drawBorders';
+import { borderLineWidth, drawBorder, drawLine } from '@/app/gridGL/cells/drawBorders';
+import { dashedTextures } from '@/app/gridGL/dashedTextures';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import type { Coordinate } from '@/app/gridGL/types/size';
+import type { JsCodeCell, JsRenderCodeCell, RunError } from '@/app/quadratic-core-types';
+import { colors } from '@/app/theme/colors';
 
 const SPILL_HIGHLIGHT_THICKNESS = 1;
 const SPILL_HIGHLIGHT_COLOR = colors.cellColorError;

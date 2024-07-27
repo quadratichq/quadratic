@@ -1,9 +1,10 @@
+import type { InteractionEvent } from 'pixi.js';
+
 import { hasPermissionToEditFile } from '@/app/actions';
-import { HtmlCell } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
+import type { HtmlCell } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { InteractionEvent } from 'pixi.js';
 
 export class PointerHtmlCells {
   private resizing: HtmlCell | undefined;

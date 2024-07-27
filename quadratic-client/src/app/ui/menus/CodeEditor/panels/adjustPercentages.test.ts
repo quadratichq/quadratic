@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
-import { adjustPercentages } from './adjustPercentages';
+
+import { adjustPercentages } from '@/app/ui/menus/CodeEditor/panels/adjustPercentages';
 
 test('adjustPercentages', () => {
   // 2 heights

@@ -49,8 +49,10 @@
     "Westborough"
   ],
   "editor.codeActionsOnSave": {
-    "source.organizeImports": "explicit"
+    "source.fixAll.eslint": true
   },
+  "eslint.alwaysShowStatus": true,
+  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
   "rust-analyzer.linkedProjects": [
     "./Cargo.toml",
     "./quadratic-files/Cargo.toml",
@@ -59,14 +61,22 @@
     "./quadratic-rust-client/Cargo.toml"
   ],
   "rust-analyzer.checkOnSave": true,
-  "rust-analyzer.cargo.unsetTest": true,
-  // "rust-analyzer.checkOnSave.command": "clippy",
+  "rust-analyzer.checkOnSave.command": "clippy",
   "files.associations": {
     "*.grid": "json"
   },
   "jest.rootPath": "quadratic-client",
   "typescript.preferences.importModuleSpecifier": "non-relative",
-  "editor.defaultFormatter": null,
+  "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  },
   "[rust]": {
     "editor.defaultFormatter": "rust-lang.rust-analyzer",
     "editor.formatOnSave": true
@@ -77,5 +87,10 @@
   },
   "[typescriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
+  },
+  "[scss]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "spellright.language": ["en-GB-10-1."],
+  "spellright.documentTypes": ["markdown", "latex", "plaintext", "python", "rust", "typescript"]
 }

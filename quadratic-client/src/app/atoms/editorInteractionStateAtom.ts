@@ -1,8 +1,9 @@
-import { Coordinate } from '@/app/gridGL/types/size';
-import { focusGrid } from '@/app/helpers/focusGrid.js';
-import { CodeCellLanguage, SearchOptions } from '@/app/quadratic-core-types';
-import { FilePermission } from 'quadratic-shared/typesAndSchemas';
+import type { FilePermission } from 'quadratic-shared/typesAndSchemas';
 import { atom, DefaultValue } from 'recoil';
+
+import type { Coordinate } from '@/app/gridGL/types/size';
+import { focusGrid } from '@/app/helpers/focusGrid.js';
+import type { CodeCellLanguage, SearchOptions } from '@/app/quadratic-core-types';
 
 export interface EditorInteractionState {
   showCellTypeMenu: boolean;

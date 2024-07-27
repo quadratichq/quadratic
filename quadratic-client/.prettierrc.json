@@ -4,5 +4,8 @@
   "tabWidth": 2,
   "semi": true,
   "printWidth": 120,
-  "plugins": ["prettier-plugin-tailwindcss"]
+  "plugins": ["prettier-plugin-tailwindcss"],
+  "importOrder": ["^(react|react-dom|react-router-dom)$", "<THIRD_PARTY_MODULES>", "^@/(.*)$", "^[./]", "^.+\\.css$"],
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true
 }

@@ -1,8 +1,11 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import { LanguageState } from '@/app/web-workers/languageTypes';
-import { CodeRun } from '../../CodeRun';
-import type { ClientJavascriptMessage, JavascriptClientMessage } from '../javascriptClientMessages';
-import { javascriptCore } from './javascriptCore';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
+import type {
+  ClientJavascriptMessage,
+  JavascriptClientMessage,
+} from '@/app/web-workers/javascriptWebWorker/javascriptClientMessages';
+import { javascriptCore } from '@/app/web-workers/javascriptWebWorker/worker/javascriptCore';
+import type { LanguageState } from '@/app/web-workers/languageTypes';
 
 declare var self: WorkerGlobalScope & typeof globalThis;
 

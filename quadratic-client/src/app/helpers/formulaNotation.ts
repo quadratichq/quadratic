@@ -1,8 +1,8 @@
-import { sheets } from '../grid/controller/Sheets';
-import { Coordinate } from '../gridGL/types/size';
-import { CursorCell } from '../gridGL/UI/Cursor';
-import { CellRefId } from '../ui/menus/CodeEditor/useEditorCellHighlights';
-import { StringId } from './getKey';
+import { sheets } from '@/app/grid/controller/Sheets';
+import type { Coordinate } from '@/app/gridGL/types/size';
+import type { CursorCell } from '@/app/gridGL/UI/Cursor';
+import type { StringId } from '@/app/helpers/getKey';
+import type { CellRefId } from '@/app/ui/menus/CodeEditor/useEditorCellHighlights';
 
 export function getCoordinatesFromStringId(stringId: StringId): [number, number] {
   // required for type inference

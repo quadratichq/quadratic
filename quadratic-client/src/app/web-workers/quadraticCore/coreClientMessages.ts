@@ -1,4 +1,4 @@
-import {
+import type {
   CellAlign,
   CellFormatSummary,
   CodeCellLanguage,
@@ -20,8 +20,8 @@ import {
   SummarizeSelectionResult,
   TransactionName,
 } from '@/app/quadratic-core-types';
-import { CodeRun } from '../CodeRun';
-import { MultiplayerState } from '../multiplayerWebWorker/multiplayerClientMessages';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
+import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 
 //#region Initialize
 

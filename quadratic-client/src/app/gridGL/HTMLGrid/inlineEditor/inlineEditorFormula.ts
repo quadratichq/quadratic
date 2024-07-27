@@ -1,20 +1,21 @@
 //! This handles the cell highlighting and inserting of cells when editing a
 //! formula in the inline editor.
 
+import * as monaco from 'monaco-editor';
+import type { editor } from 'monaco-editor';
+
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { SheetPosTS } from '@/app/gridGL/types/size';
+import type { SheetPosTS } from '@/app/gridGL/types/size';
 import { getA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
-import { ParseFormulaReturnType } from '@/app/helpers/formulaNotation';
+import type { ParseFormulaReturnType } from '@/app/helpers/formulaNotation';
 import { checkFormula, parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { colors } from '@/app/theme/colors';
 import { extractCellsFromParseFormula } from '@/app/ui/menus/CodeEditor/useEditorCellHighlights';
-import * as monaco from 'monaco-editor';
-import { editor } from 'monaco-editor';
 
 class InlineEditorFormula {
   private insertingCells?: { value: string; position: number };
@@ -29,7 +30,7 @@ class InlineEditorFormula {
     if (parsed) {
       pixiApp.cellHighlights.fromFormula(parsed, { x: location.x, y: location.y }, location.sheetId);
 
-      const extractedCells = extractCellsFromParseFormula(parsed, { x: location.x, y: location.y }, location.sheetId);
+      const extractedCells = extractCellsFromParseFormula(parsed, { x: location.x, y: location.y });
       const newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
       const cellColorReferences = new Map<string, number>();
 

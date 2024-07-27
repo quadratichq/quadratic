@@ -1,23 +1,24 @@
+import mixpanel from 'mixpanel-browser';
+import React, { useCallback, useEffect } from 'react';
+import { useFetcher } from 'react-router-dom';
+import { useRecoilState, useSetRecoilState } from 'recoil';
+
 import { cellTypeMenuOpenedCountAtom } from '@/app/atoms/cellTypeMenuOpenedCountAtom';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
+import { colors } from '@/app/theme/colors';
+import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { LinkNewTab } from '@/app/ui/components/LinkNewTab';
 import { JavaScript } from '@/app/ui/icons';
+import '@/app/ui/styles/floating-dialog.css';
+import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
+import type { GetConnections } from '@/routes/api.connections';
 import {
   DOCUMENTATION_FORMULAS_URL,
   DOCUMENTATION_JAVASCRIPT_URL,
   DOCUMENTATION_PYTHON_URL,
   DOCUMENTATION_URL,
 } from '@/shared/constants/urls';
-import mixpanel from 'mixpanel-browser';
-import React, { useCallback, useEffect } from 'react';
-import { useRecoilState, useSetRecoilState } from 'recoil';
-import '../../styles/floating-dialog.css';
-
-import { colors } from '@/app/theme/colors';
-import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
-import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
-import { GetConnections } from '@/routes/api.connections';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import {
   CommandDialog,
@@ -28,7 +29,6 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/shared/shadcn/ui/command';
-import { useFetcher } from 'react-router-dom';
 
 export interface CellTypeOption {
   name: string;
@@ -118,7 +118,7 @@ export default function CellTypeMenu() {
       <CommandList id="CellTypeMenuID">
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading="Languages">
-          {CELL_TYPE_OPTIONS.map(({ name, disabled, experimental, icon, description, mode }, i) => (
+          {CELL_TYPE_OPTIONS.map(({ name, disabled, experimental, icon, description, mode }) => (
             <CommandItemWrapper
               key={name}
               disabled={disabled}
@@ -172,7 +172,6 @@ function CommandItemWrapper({
   icon,
   name,
   experimental,
-  description,
   onSelect,
   uuid,
 }: {

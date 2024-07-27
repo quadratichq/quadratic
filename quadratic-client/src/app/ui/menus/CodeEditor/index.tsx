@@ -1,2 +1,3 @@
-import { CodeEditor } from './CodeEditor';
+import { CodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditor';
+
 export default CodeEditor;

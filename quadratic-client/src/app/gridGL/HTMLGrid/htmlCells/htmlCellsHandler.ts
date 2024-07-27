@@ -1,7 +1,7 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { JsHtmlOutput } from '@/app/quadratic-core-types';
-import { HtmlCell } from './HtmlCell';
+import { HtmlCell } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
+import type { JsHtmlOutput } from '@/app/quadratic-core-types';
 
 class HTMLCellsHandler {
   private cells: Set<HtmlCell> = new Set();

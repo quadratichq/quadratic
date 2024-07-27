@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   Dialog,
@@ -9,7 +11,6 @@ import {
   DialogTitle,
 } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
-import { useState } from 'react';
 
 export function DialogRenameItem({
   itemLabel,

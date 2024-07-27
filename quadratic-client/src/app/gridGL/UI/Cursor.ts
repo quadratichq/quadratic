@@ -1,13 +1,14 @@
 //! Draws the cursor, code cursor, and selection to the screen.
 
-import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { Graphics, Rectangle } from 'pixi.js';
-import { hasPermissionToEditFile } from '../../actions';
-import { sheets } from '../../grid/controller/Sheets';
-import { colors } from '../../theme/colors';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
-import { drawColumnRowCursor, drawMultiCursor } from './drawCursor';
+
+import { hasPermissionToEditFile } from '@/app/actions';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { drawColumnRowCursor, drawMultiCursor } from '@/app/gridGL/UI/drawCursor';
+import { colors } from '@/app/theme/colors';
 
 export const CURSOR_THICKNESS = 2;
 export const FILL_ALPHA = 0.1;

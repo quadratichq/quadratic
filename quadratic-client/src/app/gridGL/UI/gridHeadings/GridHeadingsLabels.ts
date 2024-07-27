@@ -1,7 +1,8 @@
 import { BitmapText, Container } from 'pixi.js';
-import { colors } from '../../../theme/colors';
-import { pixiApp } from '../../pixiApp/PixiApp';
-import { GRID_HEADER_FONT_SIZE } from './GridHeadings';
+
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { GRID_HEADER_FONT_SIZE } from '@/app/gridGL/UI/gridHeadings/GridHeadings';
+import { colors } from '@/app/theme/colors';
 
 interface LabelData {
   text: string;

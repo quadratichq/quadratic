@@ -1,18 +1,19 @@
+import { Point } from 'pixi.js';
+
+import { debugShowFPS, debugShowWhyRendering } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { Point } from 'pixi.js';
-import { debugShowFPS, debugShowWhyRendering } from '../../debugFlags';
-import { FPS } from '../helpers/Fps';
 import {
   debugRendererLight,
   debugShowCachedCounts,
   debugShowChildren,
   debugTimeCheck,
   debugTimeReset,
-} from '../helpers/debugPerformance';
-import { pixiApp } from './PixiApp';
-import { thumbnail } from './thumbnail';
+} from '@/app/gridGL/helpers/debugPerformance';
+import { FPS } from '@/app/gridGL/helpers/Fps';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
+import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 
 export class Update {
   private raf?: number;

@@ -1,6 +1,7 @@
+import { ChevronRightIcon } from '@radix-ui/react-icons';
+
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
-import { ChevronRightIcon } from '@radix-ui/react-icons';
 
 interface Props {
   id: string;

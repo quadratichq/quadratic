@@ -1,12 +1,13 @@
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Box } from '@mui/material';
 import { ControlledMenu, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
 import mixpanel from 'mixpanel-browser';
-import { ColorResult } from 'react-color';
-import { sheets } from '../../../grid/controller/Sheets';
-import { convertReactColorToString } from '../../../helpers/convertColor';
-import { focusGrid } from '../../../helpers/focusGrid';
-import { QColorPicker } from '../../components/qColorPicker';
+import type { ColorResult } from 'react-color';
+
+import { sheets } from '@/app/grid/controller/Sheets';
+import { convertReactColorToString } from '@/app/helpers/convertColor';
+import { focusGrid } from '@/app/helpers/focusGrid';
+import { QColorPicker } from '@/app/ui/components/qColorPicker';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 interface Props {
   contextMenu?: { x: number; y: number; id: string; name: string };

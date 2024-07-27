@@ -1,12 +1,17 @@
 import { randomUUID } from 'crypto';
 import { describe, expect, test } from 'vitest';
+
+import type { GridFileV1_0 } from '@/app/schemas/GridFileV1_0';
+import { upgradeV1_0toV1_1 } from '@/app/schemas/GridFileV1_1';
+import type { GridFileV1_1 } from '@/app/schemas/GridFileV1_1';
+import { upgradeV1_1toV1_2 } from '@/app/schemas/GridFileV1_2';
+import type { GridFileV1_2 } from '@/app/schemas/GridFileV1_2';
+import { upgradeV1_2toV1_3 } from '@/app/schemas/GridFileV1_3';
+import type { GridFileV1_3 } from '@/app/schemas/GridFileV1_3';
+import type { GridFileV1_4 } from '@/app/schemas/GridFileV1_4';
+import { validateAndUpgradeLegacyGridFile } from '@/app/schemas/validateAndUpgradeLegacyGridFile';
+
 import { GridFileSchema } from '.';
-import { GridFileV1_0 } from './GridFileV1_0';
-import { GridFileV1_1, upgradeV1_0toV1_1 } from './GridFileV1_1';
-import { GridFileV1_2, upgradeV1_1toV1_2 } from './GridFileV1_2';
-import { GridFileV1_3, upgradeV1_2toV1_3 } from './GridFileV1_3';
-import { GridFileV1_4 } from './GridFileV1_4';
-import { validateAndUpgradeLegacyGridFile } from './validateAndUpgradeLegacyGridFile';
 
 const v = (input: any) => validateAndUpgradeLegacyGridFile(input, false);
 const LATEST_VERSION = GridFileSchema.shape.version.value;

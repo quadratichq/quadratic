@@ -1,9 +1,10 @@
-import { getCodeCell } from '@/app/helpers/codeCellLanguage';
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { useRecoilValue } from 'recoil';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { colors } from '../../../theme/colors';
-import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
+
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { getCodeCell } from '@/app/helpers/codeCellLanguage';
+import { colors } from '@/app/theme/colors';
+import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { codeEditorBaseStyles, codeEditorCommentStyles } from '@/app/ui/menus/CodeEditor/styles';
 
 export function Console() {
   const {

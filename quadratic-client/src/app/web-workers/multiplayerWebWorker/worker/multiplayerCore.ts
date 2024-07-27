@@ -3,9 +3,12 @@
  */
 
 import { debugWebWorkersMessages } from '@/app/debugFlags';
-import { CoreMultiplayerMessage, MultiplayerCoreMessage } from '../multiplayerCoreMessages';
-import { ReceiveTransaction } from '../multiplayerTypes';
-import { multiplayerServer } from './multiplayerServer';
+import type {
+  CoreMultiplayerMessage,
+  MultiplayerCoreMessage,
+} from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
+import type { ReceiveTransaction } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import { multiplayerServer } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerServer';
 
 class MultiplayerCore {
   private coreMessagePort?: MessagePort;

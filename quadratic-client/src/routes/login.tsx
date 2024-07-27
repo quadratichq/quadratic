@@ -1,5 +1,7 @@
+import { redirect } from 'react-router-dom';
+import type { LoaderFunctionArgs } from 'react-router-dom';
+
 import { authClient } from '@/auth';
-import { LoaderFunctionArgs, redirect } from 'react-router-dom';
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const isAuthenticated = await authClient.isAuthenticated();

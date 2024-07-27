@@ -1,13 +1,15 @@
-import { events } from '@/app/events/events';
 import { Typography } from '@mui/material';
-import { Menu, MenuChangeEvent, MenuDivider, MenuItem } from '@szhsin/react-menu';
+import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
+import type { MenuChangeEvent } from '@szhsin/react-menu';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useState } from 'react';
-import { zoomInOut, zoomToFit, zoomToSelection } from '../../../gridGL/helpers/zoom';
-import { focusGrid } from '../../../helpers/focusGrid';
-import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
-import { MenuLineItem } from './MenuLineItem';
-import { TopBarMenuItem } from './TopBarMenuItem';
+
+import { events } from '@/app/events/events';
+import { zoomInOut, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
+import { focusGrid } from '@/app/helpers/focusGrid';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
+import { TopBarMenuItem } from '@/app/ui/menus/TopBar/TopBarMenuItem';
 
 export const TopBarZoomMenu = () => {
   const [zoom, setZoom] = useState(1);

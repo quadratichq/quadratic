@@ -1,7 +1,8 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { events } from '@/app/events/events';
 import { useEffect } from 'react';
 import { useSetRecoilState } from 'recoil';
+
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { events } from '@/app/events/events';
 
 export const useUndo = () => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);

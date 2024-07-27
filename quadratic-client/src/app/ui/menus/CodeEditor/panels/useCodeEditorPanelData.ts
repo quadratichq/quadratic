@@ -1,9 +1,12 @@
+import { useCallback, useEffect, useMemo } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
+import { useRecoilValue } from 'recoil';
+
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { adjustPercentages } from '@/app/ui/menus/CodeEditor/panels/adjustPercentages';
-import useLocalStorage, { SetValue } from '@/shared/hooks/useLocalStorage';
-import { Dispatch, SetStateAction, useCallback, useEffect, useMemo } from 'react';
-import { useRecoilValue } from 'recoil';
+import type { SetValue } from '@/shared/hooks/useLocalStorage';
+import useLocalStorage from '@/shared/hooks/useLocalStorage';
 
 export type PanelPosition = 'bottom' | 'left';
 

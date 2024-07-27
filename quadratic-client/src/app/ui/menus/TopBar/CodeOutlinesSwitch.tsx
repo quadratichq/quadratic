@@ -1,6 +1,7 @@
 import { Switch } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { colors } from '../../../theme/colors';
+
+import { colors } from '@/app/theme/colors';
 
 const CodeOutlinesSwitch = styled(Switch)(({ theme }) => {
   return {

@@ -1,16 +1,18 @@
-import { events } from '@/app/events/events';
-import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { ArrowDropDown } from '@mui/icons-material';
 import { Box, Fade, IconButton, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
-import { MouseEvent, PointerEvent, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { MouseEvent, PointerEvent } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
-import { hasPermissionToEditFile } from '../../../actions';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { sheets } from '../../../grid/controller/Sheets';
-import { Sheet } from '../../../grid/sheet/Sheet';
-import { focusGrid } from '../../../helpers/focusGrid';
+
+import { hasPermissionToEditFile } from '@/app/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import type { Sheet } from '@/app/grid/sheet/Sheet';
+import { focusGrid } from '@/app/helpers/focusGrid';
+import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 const SHEET_NAME_MAX_LENGTH = 50;
 

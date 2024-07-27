@@ -1,8 +1,9 @@
-import { debugShow } from '@/app/debugFlags';
 import * as amplitude from '@amplitude/analytics-browser';
-import { User as Auth0User } from '@auth0/auth0-spa-js';
+import type { User as Auth0User } from '@auth0/auth0-spa-js';
 import { setUser } from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
+
+import { debugShow } from '@/app/debugFlags';
 
 // Quadratic only shares analytics on the QuadraticHQ.com hosted version where the environment variables are set.
 

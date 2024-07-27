@@ -1,4 +1,4 @@
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 
 const codeCellsById = {
   Formula: { id: 'Formula', label: 'Formula', type: undefined },

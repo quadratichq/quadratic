@@ -1,10 +1,12 @@
+import { useRef, useState } from 'react';
+import type { DragEvent, PropsWithChildren } from 'react';
+
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Coordinate } from '@/app/gridGL/types/size';
+import type { Coordinate } from '@/app/gridGL/types/size';
 import { isCsv, isParquet } from '@/app/helpers/files';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { DragEvent, PropsWithChildren, useRef, useState } from 'react';
 
 export type DragAndDropFileType = 'csv' | 'parquet';
 

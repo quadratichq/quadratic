@@ -6,19 +6,20 @@
  * geometries sent to the GPU.
  */
 
+import { Container, Graphics, Rectangle } from 'pixi.js';
+
 import { debugShowCellsHashBoxes, debugShowCellsSheetCulling } from '@/app/debugFlags';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { CellsTextHash } from '@/app/gridGL/cells/cellsLabel/CellsTextHash';
+import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
+import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import {
+import type {
   RenderClientCellsTextHashClear,
   RenderClientLabelMeshEntry,
 } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { Container, Graphics, Rectangle } from 'pixi.js';
-import { CellsSheet } from '../CellsSheet';
-import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
-import { CellsTextHash } from './CellsTextHash';
 
 export class CellsLabels extends Container {
   private cellsSheet: CellsSheet;

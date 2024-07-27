@@ -1,6 +1,7 @@
 import { Rectangle } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
-import { Bounds } from '../Bounds';
+
+import { Bounds } from '@/app/grid/sheet/Bounds';
 
 describe('bounds', () => {
   it('creates an empty bounds', () => {

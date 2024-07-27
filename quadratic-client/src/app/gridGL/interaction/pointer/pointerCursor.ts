@@ -1,10 +1,11 @@
+import type { Point } from 'pixi.js';
+
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
-import { JsRenderCodeCell } from '@/app/quadratic-core-types';
+import type { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import type { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { Point } from 'pixi.js';
-import { pixiApp } from '../../pixiApp/PixiApp';
 
 export class PointerCursor {
   private lastCodeInfo?: JsRenderCodeCell | EditingCell;

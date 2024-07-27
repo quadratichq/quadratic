@@ -1,5 +1,5 @@
+import { validateAndUpgradeLegacyGridFile } from '@/app/schemas/validateAndUpgradeLegacyGridFile';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { validateAndUpgradeLegacyGridFile } from './validateAndUpgradeLegacyGridFile';
 
 /**
  * Given arbitrary JSON, validate whether it's a valid file format and return

@@ -1,11 +1,14 @@
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+
+import { editorInteractionStateDefault } from '@/app/atoms/editorInteractionStateAtom';
+import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { defaultGridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
+import type { GridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
-import { sheets } from '../../grid/controller/Sheets';
-import { GridSettings, defaultGridSettings } from '../../ui/menus/TopBar/SubMenus/useGridSettings';
-import { pixiApp } from './PixiApp';
 
 export enum PanMode {
   Disabled = 'DISABLED',

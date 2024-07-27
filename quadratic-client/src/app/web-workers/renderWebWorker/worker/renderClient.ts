@@ -5,16 +5,17 @@
  * directly accessed by its siblings.
  */
 
-import { debugWebWorkersMessages } from '@/app/debugFlags';
 import { Rectangle } from 'pixi.js';
-import {
+
+import { debugWebWorkersMessages } from '@/app/debugFlags';
+import type {
   ClientRenderMessage,
   RenderClientCellsTextHashClear,
   RenderClientLabelMeshEntry,
   RenderClientMessage,
-} from '../renderClientMessages';
-import { renderCore } from './renderCore';
-import { renderText } from './renderText';
+} from '@/app/web-workers/renderWebWorker/renderClientMessages';
+import { renderCore } from '@/app/web-workers/renderWebWorker/worker/renderCore';
+import { renderText } from '@/app/web-workers/renderWebWorker/worker/renderText';
 
 declare var self: WorkerGlobalScope & typeof globalThis;
 

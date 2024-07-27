@@ -1,12 +1,13 @@
-import { events } from '@/app/events/events';
-import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { Selection, SheetInfo } from '@/app/quadratic-core-types';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
-import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
-import { pixiAppSettings } from '../../gridGL/pixiApp/PixiAppSettings';
-import { Sheet } from '../sheet/Sheet';
-import { SheetCursorSave } from '../sheet/SheetCursor';
+
+import { events } from '@/app/events/events';
+import { Sheet } from '@/app/grid/sheet/Sheet';
+import type { SheetCursorSave } from '@/app/grid/sheet/SheetCursor';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import type { Selection, SheetInfo } from '@/app/quadratic-core-types';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 class Sheets {
   sheets: Sheet[];

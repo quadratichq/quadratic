@@ -1,7 +1,8 @@
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router-dom';
+
 import { apiClient } from '@/shared/api/apiClient';
 import { connectionClient } from '@/shared/api/connectionClient';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router-dom';
 
 /**
  *
@@ -54,7 +55,7 @@ async function getConnection(connectionUuid: string) {
 
 type Action = CreateConnectionAction | UpdateConnectionAction | DeleteConnectionAction;
 
-export const action = async ({ request, params }: ActionFunctionArgs) => {
+export const action = async ({ request }: ActionFunctionArgs) => {
   const data: Action = await request.json();
 
   if (data.action === 'create-connection') {

@@ -1,10 +1,11 @@
-import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
-import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
-import { DOCUMENTATION_JAVASCRIPT_RETURN_DATA, DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { useTheme } from '@mui/material';
 import { Link } from 'react-router-dom';
-import { codeEditorBaseStyles } from './styles';
+
+import { getLanguage } from '@/app/helpers/codeCellLanguage';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
+import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
+import type { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
+import { DOCUMENTATION_JAVASCRIPT_RETURN_DATA, DOCUMENTATION_URL } from '@/shared/constants/urls';
 
 interface ReturnTypeInspectorProps {
   evaluationResult?: EvaluationResult;

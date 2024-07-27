@@ -1,21 +1,22 @@
+import { Cross2Icon, PlusIcon } from '@radix-ui/react-icons';
+import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import { useState } from 'react';
+
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { Empty } from '@/dashboard/components/Empty';
-import { Type } from '@/shared/components/Type';
-import {
+import type {
   ConnectionsListConnection,
   NavigateToCreateView,
   NavigateToEditView,
 } from '@/shared/components/connections/Connections';
 import { connectionsByType } from '@/shared/components/connections/connectionsByType';
+import { Type } from '@/shared/components/Type';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { cn } from '@/shared/shadcn/utils';
 import { timeAgo } from '@/shared/utils/timeAgo';
-import { Cross2Icon, PlusIcon } from '@radix-ui/react-icons';
-import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { useState } from 'react';
 
 type Props = {
   connections: ConnectionsListConnection[];
@@ -36,7 +37,7 @@ export const ConnectionsList = ({
     <>
       <div className="grid gap-4">
         <div className="grid grid-cols-2 gap-4">
-          {Object.entries(connectionsByType).map(([type, { Logo }], i) => (
+          {Object.entries(connectionsByType).map(([type, { Logo }]) => (
             <Button
               key={type}
               variant="outline"
@@ -114,12 +115,12 @@ function ListItems({
   items: ConnectionsListConnection[];
 }) {
   const filteredItems = filterQuery
-    ? items.filter(({ name, type }) => name.toLowerCase().includes(filterQuery.toLowerCase()))
+    ? items.filter(({ name }) => name.toLowerCase().includes(filterQuery.toLowerCase()))
     : items;
 
   return filteredItems.length > 0 ? (
     <div className="-mt-3">
-      {filteredItems.map(({ uuid, name, type, createdDate, disabled }, i) => (
+      {filteredItems.map(({ uuid, name, type, createdDate, disabled }) => (
         <button
           onClick={() => {
             handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });

@@ -1,6 +1,8 @@
-import { authClient } from '@/auth';
-import { ConnectionType, ConnectionTypeDetails } from 'quadratic-shared/typesAndSchemasConnections';
+import type { ConnectionType, ConnectionTypeDetails } from 'quadratic-shared/typesAndSchemasConnections';
 import z from 'zod';
+
+import { authClient } from '@/auth';
+
 const API_URL = import.meta.env.VITE_QUADRATIC_CONNECTION_URL;
 
 const jwtHeader = async (): Promise<HeadersInit> => {

@@ -1,7 +1,8 @@
-import { DEFAULT_FILE_NAME } from '@/shared/constants/appConstants';
 import { v4 as uuid } from 'uuid';
 import z from 'zod';
-import { GridFileV1_0 } from './GridFileV1_0';
+
+import type { GridFileV1_0 } from '@/app/schemas/GridFileV1_0';
+import { DEFAULT_FILE_NAME } from '@/shared/constants/appConstants';
 
 // Shared schemas
 const ArrayOutputSchema = z.array(z.any());

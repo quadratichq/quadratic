@@ -1,8 +1,9 @@
-// import CloseIcon from '@mui/icons-material/Close';
-import { Alert, AlertColor, Snackbar } from '@mui/material';
+import { Alert, Snackbar } from '@mui/material';
+import type { AlertColor } from '@mui/material';
 import { useEffect, createContext, useContext, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Button } from '../shadcn/ui/button';
+
+import { Button } from '@/shared/shadcn/ui/button';
 
 const DURATION = 6000;
 export const snackbarMsgQueryParam = 'snackbar-msg';

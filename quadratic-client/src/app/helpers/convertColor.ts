@@ -1,7 +1,8 @@
 import * as Sentry from '@sentry/react';
 import Color from 'color';
-import { ColorResult } from 'react-color';
-import { colors } from '../theme/colors';
+import type { ColorResult } from 'react-color';
+
+import { colors } from '@/app/theme/colors';
 
 export function convertReactColorToString(color: ColorResult): string {
   const rgb = color.rgb;

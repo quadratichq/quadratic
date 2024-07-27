@@ -1,5 +1,7 @@
-import { RectangleLike } from '@/app/grid/sheet/SheetCursor';
-import { Circle, Point, Rectangle } from 'pixi.js';
+import { Rectangle } from 'pixi.js';
+import type { Circle, Point } from 'pixi.js';
+
+import type { RectangleLike } from '@/app/grid/sheet/SheetCursor';
 
 function left(rectangle: RectangleLike): number {
   return Math.min(rectangle.x, rectangle.x + rectangle.width);

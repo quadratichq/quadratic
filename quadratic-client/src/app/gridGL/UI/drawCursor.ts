@@ -1,9 +1,10 @@
+import type { Graphics } from 'pixi.js';
+
 import { sheets } from '@/app/grid/controller/Sheets';
-import { ColumnRowCursor, RectangleLike } from '@/app/grid/sheet/SheetCursor';
+import type { ColumnRowCursor, RectangleLike } from '@/app/grid/sheet/SheetCursor';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import type { Coordinate } from '@/app/gridGL/types/size';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
-import { Graphics } from 'pixi.js';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { Coordinate } from '../types/size';
 
 const drawCursorOutline = (g: Graphics, color: number) => {
   const sheet = sheets.sheet;

@@ -1,4 +1,5 @@
-import { Fade, Snackbar, SnackbarProps } from '@mui/material';
+import { Fade, Snackbar } from '@mui/material';
+import type { SnackbarProps } from '@mui/material';
 
 export const QuadraticSnackBar = (props: SnackbarProps) => {
   return (

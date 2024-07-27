@@ -1,6 +1,7 @@
+import { PersonIcon } from '@radix-ui/react-icons';
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/shadcn/ui/avatar';
 import { cn } from '@/shared/shadcn/utils';
-import { PersonIcon } from '@radix-ui/react-icons';
 
 export function AvatarTeam({ className, src }: { className?: string; src?: string }) {
   return (

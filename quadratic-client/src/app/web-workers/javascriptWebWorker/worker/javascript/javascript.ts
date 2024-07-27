@@ -1,16 +1,24 @@
 // This file is the main entry point for the javascript worker. It handles
 // managing the Javascript runners, which is where the code is executed.
 
-import type { CodeRun } from '@/app/web-workers/CodeRun';
-import type { LanguageState } from '@/app/web-workers/languageTypes';
 import * as esbuild from 'esbuild-wasm';
-import { CoreJavascriptRun } from '../../javascriptCoreMessages';
-import { javascriptClient } from '../javascriptClient';
-import { JavascriptAPI } from './javascriptAPI';
-import { javascriptFindSyntaxError, prepareJavascriptCode, transformCode } from './javascriptCompile';
-import { javascriptErrorResult, javascriptResults } from './javascriptResults';
-import { RunnerJavascriptMessage } from './javascriptRunnerMessages';
-import { javascriptLibraryLines } from './runner/generateJavascriptForRunner';
+
+import type { CodeRun } from '@/app/web-workers/CodeRun';
+import type { CoreJavascriptRun } from '@/app/web-workers/javascriptWebWorker/javascriptCoreMessages';
+import { JavascriptAPI } from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascriptAPI';
+import {
+  javascriptFindSyntaxError,
+  prepareJavascriptCode,
+  transformCode,
+} from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascriptCompile';
+import {
+  javascriptErrorResult,
+  javascriptResults,
+} from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascriptResults';
+import type { RunnerJavascriptMessage } from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascriptRunnerMessages';
+import { javascriptLibraryLines } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generateJavascriptForRunner';
+import { javascriptClient } from '@/app/web-workers/javascriptWebWorker/worker/javascriptClient';
+import type { LanguageState } from '@/app/web-workers/languageTypes';
 
 export const LINE_NUMBER_VAR = '___line_number___';
 

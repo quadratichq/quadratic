@@ -1,4 +1,4 @@
-import monaco from 'monaco-editor';
+import type monaco from 'monaco-editor';
 
 // Generated using the VSCode GitHub theme locally, "Developer: Generate color theme from current settings" command
 // Then converted using https://github.com/Nishkalkashyap/monaco-vscode-textmate-theme-converter

@@ -1,7 +1,8 @@
-import { GenericAction } from '@/app/actions';
-import { CommandItem, CommandShortcut } from '@/shared/shadcn/ui/command';
 import fuzzysort from 'fuzzysort';
 import mixpanel from 'mixpanel-browser';
+
+import type { GenericAction } from '@/app/actions';
+import { CommandItem, CommandShortcut } from '@/shared/shadcn/ui/command';
 
 export type CommandGroup = {
   heading: string;

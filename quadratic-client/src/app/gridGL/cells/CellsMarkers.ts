@@ -1,7 +1,9 @@
-import { JsRenderCodeCell } from '@/app/quadratic-core-types';
-import { Container, Point, Rectangle, Sprite, Texture } from 'pixi.js';
-import { colors } from '../../theme/colors';
-import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
+import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
+import type { Point } from 'pixi.js';
+
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import type { JsRenderCodeCell } from '@/app/quadratic-core-types';
+import { colors } from '@/app/theme/colors';
 
 const TRIANGLE_SIZE = 100;
 const INDICATOR_SIZE = 4;

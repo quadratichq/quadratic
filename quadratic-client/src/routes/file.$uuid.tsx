@@ -1,3 +1,11 @@
+import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
+import * as Sentry from '@sentry/react';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { Link, Outlet, isRouteErrorResponse, redirect, useLoaderData, useRouteError } from 'react-router-dom';
+import type { LoaderFunctionArgs } from 'react-router-dom';
+import { RecoilRoot } from 'recoil';
+import type { MutableSnapshot } from 'recoil';
+
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { debugShowFileIO, debugShowMultiplayer } from '@/app/debugFlags';
 import { loadAssets } from '@/app/gridGL/loadAssets';
@@ -9,28 +17,15 @@ import { QuadraticApp } from '@/app/ui/QuadraticApp';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { initWorkers } from '@/app/web-workers/workers';
 import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
+import { Empty } from '@/dashboard/components/Empty';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
-import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
-import * as Sentry from '@sentry/react';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import {
-  Link,
-  LoaderFunctionArgs,
-  Outlet,
-  isRouteErrorResponse,
-  redirect,
-  useLoaderData,
-  useRouteError,
-} from 'react-router-dom';
-import { MutableSnapshot, RecoilRoot } from 'recoil';
-import { Empty } from '../dashboard/components/Empty';
 
 type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
 
-export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
+export const loader = async ({ params }: LoaderFunctionArgs): Promise<FileData | Response> => {
   const { uuid } = params as { uuid: string };
 
   // Fetch the file. If it fails because of permissions, redirect to login. Otherwise throw.

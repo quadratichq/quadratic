@@ -1,4 +1,4 @@
-import { Selection } from '@/app/quadratic-core-types';
+import type { Selection } from '@/app/quadratic-core-types';
 
 export const getSingleSelection = (sheetId: string, x: number, y: number): Selection => {
   return {

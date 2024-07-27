@@ -1,9 +1,10 @@
+import { Graphics } from 'pixi.js';
+
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import type { SheetPosTS } from '@/app/gridGL/types/size';
 import { colors } from '@/app/theme/colors';
-import { Graphics } from 'pixi.js';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { SheetPosTS } from '../types/size';
 
 export class CellsSearch extends Graphics {
   private sheetId: string;

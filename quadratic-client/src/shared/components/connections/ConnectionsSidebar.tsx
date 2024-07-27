@@ -1,3 +1,6 @@
+import { CopyIcon, ExternalLinkIcon } from '@radix-ui/react-icons';
+import { useState } from 'react';
+
 import {
   DOCUMENTATION_CONNECTIONS_IP_LIST_URL,
   DOCUMENTATION_CONNECTIONS_URL,
@@ -5,8 +8,6 @@ import {
 } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
-import { CopyIcon, ExternalLinkIcon } from '@radix-ui/react-icons';
-import { useState } from 'react';
 
 export const ConnectionsSidebar = ({ staticIps }: { staticIps: string[] | null }) => {
   const staticIpsContent = staticIps ? staticIps.join('\n') : '';

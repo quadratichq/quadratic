@@ -1,4 +1,4 @@
-import { Coordinate } from '../../../gridGL/types/size';
+import type { Coordinate } from '@/app/gridGL/types/size';
 
 /**
  * Takes user input and returns an array of coordinate(s) (the second set of

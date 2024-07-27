@@ -1,6 +1,7 @@
+import { forwardRef, useState } from 'react';
+
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
-import { forwardRef, useState } from 'react';
 
 type InputProps = React.ComponentProps<typeof Input>;
 

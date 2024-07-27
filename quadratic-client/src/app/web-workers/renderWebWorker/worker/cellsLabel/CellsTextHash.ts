@@ -9,15 +9,16 @@
  * webGL buffers do not exceed the maximum size.
  */
 
+import { Rectangle } from 'pixi.js';
+
 import { debugShowHashUpdates, debugShowLoadingHashes } from '@/app/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
-import { JsRenderCell } from '@/app/quadratic-core-types';
-import { Rectangle } from 'pixi.js';
-import { renderClient } from '../renderClient';
-import { renderCore } from '../renderCore';
-import { CellLabel } from './CellLabel';
-import { CellsLabels } from './CellsLabels';
-import { LabelMeshes } from './LabelMeshes';
+import type { JsRenderCell } from '@/app/quadratic-core-types';
+import { CellLabel } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
+import type { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsLabels';
+import { LabelMeshes } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/LabelMeshes';
+import { renderClient } from '@/app/web-workers/renderWebWorker/worker/renderClient';
+import { renderCore } from '@/app/web-workers/renderWebWorker/worker/renderCore';
 
 interface TrackClip {
   column: number;

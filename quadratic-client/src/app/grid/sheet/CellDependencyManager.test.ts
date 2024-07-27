@@ -1,5 +1,6 @@
 import { test } from 'vitest';
-import { CellDependencyManager } from './CellDependencyManager';
+
+import { CellDependencyManager } from '@/app/grid/sheet/CellDependencyManager';
 
 test('QuadraticDependencyGraph', () => {
   let dg = new CellDependencyManager();

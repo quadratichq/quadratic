@@ -1,8 +1,3 @@
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { useRootRouteLoaderData } from '@/routes/_root';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { isMac } from '@/shared/utils/isMac';
 import { Check } from '@mui/icons-material';
 import { Menu, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
@@ -11,7 +6,7 @@ import { isMobile } from 'react-device-detect';
 import { useParams } from 'react-router';
 import { useNavigate, useSubmit } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
-import { authClient } from '../../../../../auth';
+
 import {
   copyAction,
   createNewFileAction,
@@ -26,15 +21,21 @@ import {
   redoAction,
   undoAction,
   viewDocsAction,
-} from '../../../../actions';
-import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
-import { pixiApp } from '../../../../gridGL/pixiApp/PixiApp';
-import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { useFileContext } from '../../../components/FileProvider';
-import { MenuLineItem } from '../MenuLineItem';
-import { TopBarMenuItem } from '../TopBarMenuItem';
-import { useGridSettings } from './useGridSettings';
+} from '@/app/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '@/app/grid/actions/clipboard/clipboard';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { useFileContext } from '@/app/ui/components/FileProvider';
+import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
+import { useGridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
+import { TopBarMenuItem } from '@/app/ui/menus/TopBar/TopBarMenuItem';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { authClient } from '@/auth';
+import { useRootRouteLoaderData } from '@/routes/_root';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { isMac } from '@/shared/utils/isMac';
 
 export const QuadraticMenu = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
@@ -59,7 +60,7 @@ export const QuadraticMenu = () => {
       settings.setShowHeadings(false);
       pixiApp.viewportChanged();
     }
-    // eslint-disable-next-line
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

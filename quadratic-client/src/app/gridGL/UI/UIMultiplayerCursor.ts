@@ -1,9 +1,10 @@
-import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { Graphics } from 'pixi.js';
-import { sheets } from '../../grid/controller/Sheets';
-import { Coordinate } from '../types/size';
-import { CELL_INPUT_PADDING } from './Cursor';
-import { drawColumnRowCursor, drawMultiCursor } from './drawCursor';
+
+import { sheets } from '@/app/grid/controller/Sheets';
+import type { Coordinate } from '@/app/gridGL/types/size';
+import { CELL_INPUT_PADDING } from '@/app/gridGL/UI/Cursor';
+import { drawColumnRowCursor, drawMultiCursor } from '@/app/gridGL/UI/drawCursor';
+import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 
 export const CURSOR_THICKNESS = 1;
 const ALPHA = 0.5;

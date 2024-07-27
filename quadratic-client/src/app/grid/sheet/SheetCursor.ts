@@ -2,14 +2,15 @@
 //! that state as you switch between sheets, a multiplayer user follows your
 //! cursor, or you save the cursor state in the URL at ?state=.
 
-import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { Rect, Selection } from '@/app/quadratic-core-types';
-import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { IViewportTransformState } from 'pixi-viewport';
+import type { IViewportTransformState } from 'pixi-viewport';
 import { Rectangle } from 'pixi.js';
-import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
-import { Coordinate } from '../../gridGL/types/size';
-import { Sheet } from './Sheet';
+
+import type { Sheet } from '@/app/grid/sheet/Sheet';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import type { Coordinate } from '@/app/gridGL/types/size';
+import type { Rect, Selection } from '@/app/quadratic-core-types';
+import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 
 // Select column and/or row for the entire sheet.
 export interface ColumnRowCursor {

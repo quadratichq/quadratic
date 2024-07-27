@@ -11,10 +11,12 @@
  * The data calculations occur in renderWebWorker::CellsTextHash.ts.
  */
 
-import { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
-import { BitmapText, Container, Graphics, Rectangle, Renderer } from 'pixi.js';
-import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
-import { LabelMeshEntry } from './LabelMeshEntry';
+import { BitmapText, Container, Rectangle } from 'pixi.js';
+import type { Graphics, Renderer } from 'pixi.js';
+
+import { LabelMeshEntry } from '@/app/gridGL/cells/cellsLabel/LabelMeshEntry';
+import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
+import type { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 
 // Draw hashed regions of cell glyphs (the text + text formatting)
 export class CellsTextHash extends Container<LabelMeshEntry> {

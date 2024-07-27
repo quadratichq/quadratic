@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { javascriptConvertOutputArray, javascriptConvertOutputType } from './javascriptOutput';
+
+import {
+  javascriptConvertOutputArray,
+  javascriptConvertOutputType,
+} from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascriptOutput';
 
 describe('javascriptConvertOutputType', () => {
   it('should convert numbers', () => {

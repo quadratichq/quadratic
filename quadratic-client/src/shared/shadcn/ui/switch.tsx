@@ -1,8 +1,8 @@
+import { CaretLeftIcon, CaretRightIcon, CodeIcon } from '@radix-ui/react-icons';
 import * as SwitchPrimitives from '@radix-ui/react-switch';
 import * as React from 'react';
 
 import { cn } from '@/shared/shadcn/utils';
-import { CaretLeftIcon, CaretRightIcon, CodeIcon } from '@radix-ui/react-icons';
 
 const Switch = React.forwardRef<
   React.ElementRef<typeof SwitchPrimitives.Root>,

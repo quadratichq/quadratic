@@ -1,7 +1,8 @@
+import * as React from 'react';
+
 import { TYPE } from '@/shared/constants/appConstants';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
-import * as React from 'react';
 
 /**
  * This is a component for use everywhere in the app where you need a dialog

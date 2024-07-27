@@ -47,7 +47,6 @@ describe('POST /v0/teams/:uuid/connections', () => {
         .expect(400);
     });
     it('returns a 400 without all required fields', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { name, ...rest } = validPayload;
       await request(app)
         .post('/v0/teams/00000000-0000-0000-0000-000000000000/connections')

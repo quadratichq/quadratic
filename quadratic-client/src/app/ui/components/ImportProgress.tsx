@@ -1,11 +1,12 @@
+import { useEffect, useState } from 'react';
+
 import { events } from '@/app/events/events';
-import {
+import type {
   CoreClientImportProgress,
   CoreClientTransactionProgress,
   CoreClientTransactionStart,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { Progress } from '@/shared/shadcn/ui/progress';
-import { useEffect, useState } from 'react';
 
 // The last message.total + 1 is used to track the execute operation progress.
 

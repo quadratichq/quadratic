@@ -1,8 +1,9 @@
+import type { InteractionEvent } from 'pixi.js';
+
 import { sheets } from '@/app/grid/controller/Sheets';
+import type { HtmlCell } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { InteractionEvent } from 'pixi.js';
-import { pixiApp } from '../../pixiApp/PixiApp';
-import { HtmlCell } from './HtmlCell';
 
 // tolerance of snapping to the grid
 // const snapping = 10;

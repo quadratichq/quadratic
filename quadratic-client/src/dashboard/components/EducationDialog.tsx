@@ -1,3 +1,6 @@
+import { SchoolOutlined } from '@mui/icons-material';
+import { Link, useSearchParams } from 'react-router-dom';
+
 import { authClient } from '@/auth';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
@@ -13,8 +16,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/shadcn/ui/dialog';
-import { SchoolOutlined } from '@mui/icons-material';
-import { Link, useSearchParams } from 'react-router-dom';
 
 export function EducationDialog() {
   const { loggedInUser } = useRootRouteLoaderData();

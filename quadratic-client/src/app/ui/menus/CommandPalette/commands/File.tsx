@@ -1,3 +1,5 @@
+import { useNavigate, useParams, useSubmit } from 'react-router-dom';
+
 import { createNewFileAction, deleteFile, downloadFileAction, duplicateFileAction } from '@/app/actions';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import {
@@ -7,10 +9,10 @@ import {
   // FileDeleteIcon, FileDownloadIcon, FileDuplicateIcon,
   FileIcon,
 } from '@/app/ui/icons';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { useNavigate, useParams, useSubmit } from 'react-router-dom';
-import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 
 const commands: CommandGroup = {
   heading: 'File',

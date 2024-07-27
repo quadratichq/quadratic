@@ -1,5 +1,6 @@
-import { Rectangle } from 'pixi.js';
-import { RenderBitmapFonts } from './renderBitmapFonts';
+import type { Rectangle } from 'pixi.js';
+
+import type { RenderBitmapFonts } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
 
 export interface ClientRenderInit {
   type: 'clientRenderInit';

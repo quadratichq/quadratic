@@ -1,14 +1,15 @@
+import { Container, Graphics } from 'pixi.js';
+
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { DASHED } from '@/app/gridGL/dashedTextures';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Coordinate } from '@/app/gridGL/types/size';
+import type { Coordinate } from '@/app/gridGL/types/size';
+import { drawDashedRectangle, drawDashedRectangleMarching } from '@/app/gridGL/UI/cellHighlights/cellHighlightsDraw';
+import { convertColorStringToTint } from '@/app/helpers/convertColor';
+import type { CellPosition, ParseFormulaReturnType, Span } from '@/app/helpers/formulaNotation';
 import { colors } from '@/app/theme/colors';
-import { Container, Graphics } from 'pixi.js';
-import { convertColorStringToTint } from '../../../helpers/convertColor';
-import { CellPosition, ParseFormulaReturnType, Span } from '../../../helpers/formulaNotation';
-import { DASHED } from '../../dashedTextures';
-import { drawDashedRectangle, drawDashedRectangleMarching } from './cellHighlightsDraw';
 
 // TODO: these files need to be cleaned up and properly typed. Lots of untyped
 // data passed around within the data.

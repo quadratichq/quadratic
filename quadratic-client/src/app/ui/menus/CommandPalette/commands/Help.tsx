@@ -1,8 +1,10 @@
-import { ExternalLinkIcon, FeedbackIcon } from '@/app/ui/icons';
 import { useSetRecoilState } from 'recoil';
-import { provideFeedbackAction, viewDocsAction } from '../../../../actions';
-import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
+
+import { provideFeedbackAction, viewDocsAction } from '@/app/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { ExternalLinkIcon, FeedbackIcon } from '@/app/ui/icons';
+import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 
 const commands: CommandGroup = {
   heading: 'Help',

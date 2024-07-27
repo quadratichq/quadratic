@@ -1,10 +1,11 @@
-import { PaletteMode, ThemeProvider, createTheme, useMediaQuery } from '@mui/material';
+import { ThemeProvider, createTheme, useMediaQuery } from '@mui/material';
+import type { PaletteMode } from '@mui/material';
 import { createContext, useContext, useMemo, useState } from 'react';
 
 type ColorModePreference = PaletteMode | 'system';
 export const ColorModeContext = createContext({
   colorModePreference: 'light',
-  toggleColorMode: (preference: ColorModePreference) => {},
+  toggleColorMode: (_preference: ColorModePreference) => {},
 });
 
 export const useColorMode = () => useContext(ColorModeContext);

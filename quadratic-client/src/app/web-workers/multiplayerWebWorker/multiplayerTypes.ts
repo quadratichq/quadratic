@@ -1,5 +1,5 @@
-import { ColumnRowCursor, RectangleLike } from '@/app/grid/sheet/SheetCursor';
-import { Coordinate, SheetPosTS } from '@/app/gridGL/types/size';
+import type { ColumnRowCursor, RectangleLike } from '@/app/grid/sheet/SheetCursor';
+import type { Coordinate, SheetPosTS } from '@/app/gridGL/types/size';
 
 export interface CellEdit {
   active: boolean;

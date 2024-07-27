@@ -1,4 +1,4 @@
-import { Coordinate } from '../../../gridGL/types/size';
+import type { Coordinate } from '@/app/gridGL/types/size';
 
 // TODO: Delete this file
 
@@ -11,7 +11,7 @@ export interface runFormulaReturnType {
   array_output: string[][] | null;
 }
 
-export async function runFormula(formula_code: string, pos: Coordinate): Promise<runFormulaReturnType> {
+export async function runFormula(_formula_code: string, _pos: Coordinate): Promise<runFormulaReturnType> {
   // const output = await eval_formula(formula_code, pos.x, pos.y, GetCellsDB);
   return {} as runFormulaReturnType;
 }

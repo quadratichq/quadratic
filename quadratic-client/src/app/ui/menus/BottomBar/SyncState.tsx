@@ -1,8 +1,15 @@
+import { Check, ErrorOutline } from '@mui/icons-material';
+import { CircularProgress, Tooltip, useTheme } from '@mui/material';
+import { useEffect, useRef, useState } from 'react';
+
 import { events } from '@/app/events/events';
 import { pluralize } from '@/app/helpers/pluralize';
+import BottomBarItem from '@/app/ui/menus/BottomBar/BottomBarItem';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { DOCUMENTATION_OFFLINE } from '@/shared/constants/urls';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,12 +19,6 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { timeAgo } from '@/shared/utils/timeAgo';
-import { Check, ErrorOutline } from '@mui/icons-material';
-import { CircularProgress, Tooltip, useTheme } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
-import BottomBarItem from './BottomBarItem';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { DOCUMENTATION_OFFLINE } from '@/shared/constants/urls';
 
 const TIMEOUT_TO_SHOW_DISCONNECT_MESSAGE = 1000;
 

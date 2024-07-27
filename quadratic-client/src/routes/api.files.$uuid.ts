@@ -1,6 +1,8 @@
+import { redirectDocument } from 'react-router-dom';
+import type { ActionFunctionArgs } from 'react-router-dom';
+
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
-import { ActionFunctionArgs, redirectDocument } from 'react-router-dom';
 
 export const loader = async () => null;
 
@@ -33,7 +35,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
     try {
       await apiClient.files.delete(uuid);
       return { ok: true };
-    } catch (error) {
+    } catch (_error) {
       return { ok: false };
     }
   }
@@ -42,7 +44,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
     try {
       await apiClient.files.download(uuid);
       return { ok: true };
-    } catch (error) {
+    } catch (_error) {
       return { ok: false };
     }
   }
@@ -52,7 +54,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
       const { redirect, isPrivate } = json as Action['request.duplicate'];
       const { uuid: newFileUuid } = await apiClient.files.duplicate(uuid, isPrivate);
       return redirect ? redirectDocument(ROUTES.FILE(newFileUuid)) : { ok: true };
-    } catch (error) {
+    } catch (_error) {
       return { ok: false };
     }
   }
@@ -62,7 +64,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
       const { name } = json as Action['request.rename'];
       await apiClient.files.update(uuid, { name });
       return { ok: true };
-    } catch (error) {
+    } catch (_error) {
       return { ok: false };
     }
   }
@@ -72,7 +74,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
       const { ownerUserId } = json as Action['request.move'];
       await apiClient.files.update(uuid, { ownerUserId });
       return { ok: true };
-    } catch (error) {
+    } catch (_error) {
       return { ok: false };
     }
   }

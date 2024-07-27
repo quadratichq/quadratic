@@ -1,11 +1,12 @@
-import { events } from '@/app/events/events';
-import { BorderSelection, BorderStyle, CellBorderLine } from '@/app/quadratic-core-types';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { useEffect, useState } from 'react';
-import { sheets } from '../../../../grid/controller/Sheets';
-import { convertColorStringToTint, convertTintToArray } from '../../../../helpers/convertColor';
-import { colors } from '../../../../theme/colors';
+
+import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
+import type { BorderSelection, BorderStyle, CellBorderLine } from '@/app/quadratic-core-types';
+import { colors } from '@/app/theme/colors';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 export interface ChangeBorder {
   selection?: BorderSelection;

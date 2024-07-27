@@ -1,16 +1,18 @@
+import { Container } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
+
 import { debugShowCellsHashBoxes } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
-import { SheetInfo } from '@/app/quadratic-core-types';
-import {
+import { sheets } from '@/app/grid/controller/Sheets';
+import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import type { SheetInfo } from '@/app/quadratic-core-types';
+import type {
   RenderClientCellsTextHashClear,
   RenderClientFinalizeCellsTextHash,
   RenderClientLabelMeshEntry,
 } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { Container, Rectangle } from 'pixi.js';
-import { sheets } from '../../grid/controller/Sheets';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { CellsSheet } from './CellsSheet';
 
 export class CellsSheets extends Container<CellsSheet> {
   current?: CellsSheet;

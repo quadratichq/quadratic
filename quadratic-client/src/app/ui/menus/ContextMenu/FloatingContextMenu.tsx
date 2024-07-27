@@ -1,18 +1,25 @@
+import { Divider, IconButton, Toolbar } from '@mui/material';
+import { ControlledMenu, Menu, MenuDivider, MenuItem, useMenuState } from '@szhsin/react-menu';
+import type { MenuInstance } from '@szhsin/react-menu';
+import mixpanel from 'mixpanel-browser';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRecoilValue } from 'recoil';
+
 import { downloadSelectionAsCsvAction, hasPermissionToEditFile } from '@/app/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { copySelectionToPNG, fullClipboardSupport, pasteFromClipboard } from '@/app/grid/actions/clipboard/clipboard';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
 import { useFileContext } from '@/app/ui/components/FileProvider';
-import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { QColorPicker } from '@/app/ui/components/qColorPicker';
+import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import {
   BorderAllIcon,
   DecimalDecreaseIcon,
@@ -32,7 +39,6 @@ import {
   TextNoneIcon,
 } from '@/app/ui/icons';
 import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
-import { useGetBorderMenu } from '@/app/ui/menus/TopBar/SubMenus/FormatMenu/useGetBorderMenu';
 import {
   clearFillColor,
   clearFormattingAndBorders,
@@ -48,12 +54,8 @@ import {
   textFormatSetExponential,
   textFormatSetPercentage,
 } from '@/app/ui/menus/TopBar/SubMenus/formatCells';
+import { useGetBorderMenu } from '@/app/ui/menus/TopBar/SubMenus/FormatMenu/useGetBorderMenu';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { Divider, IconButton, Toolbar } from '@mui/material';
-import { ControlledMenu, Menu, MenuDivider, MenuInstance, MenuItem, useMenuState } from '@szhsin/react-menu';
-import mixpanel from 'mixpanel-browser';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
 
 // todo: this file needs to be broken up and rewritten
 
@@ -243,7 +245,6 @@ export const FloatingContextMenu = (props: Props) => {
   }, [container, showContextMenu, editorInteractionState.permissions, moreMenuProps.state, moreMenuToggle]);
 
   // trigger is used to hide the menu when cellMoving
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_, setTrigger] = useState(0);
   useEffect(() => {
     const { viewport } = pixiApp;

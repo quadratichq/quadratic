@@ -1,16 +1,19 @@
-import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
+import type { ApiTypes, FilePermission, TeamPermission } from 'quadratic-shared/typesAndSchemas';
+import type { NavigateFunction, SubmitFunction } from 'react-router-dom';
+import type { SetterOrUpdater } from 'recoil';
+
+import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { downloadFile, downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
-import { FileContextType } from '@/app/ui/components/FileProvider';
+import type { FileContextType } from '@/app/ui/components/FileProvider';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { getActionFileDuplicate } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
-import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import type { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { DOCUMENTATION_URL } from '@/shared/constants/urls';
-import { ApiTypes, FilePermission, FilePermissionSchema, TeamPermission } from 'quadratic-shared/typesAndSchemas';
-import { NavigateFunction, SubmitFunction } from 'react-router-dom';
-import { SetterOrUpdater } from 'recoil';
+
 const { FILE_EDIT, FILE_DELETE } = FilePermissionSchema.enum;
 
 type IsAvailableArgs = {
@@ -108,7 +111,7 @@ export const deleteFile = {
       try {
         await apiClient.files.delete(uuid);
         window.location.href = '/';
-      } catch (e) {
+      } catch (_e) {
         addGlobalSnackbar('Failed to delete file. Try again.', { severity: 'error' });
       }
     }

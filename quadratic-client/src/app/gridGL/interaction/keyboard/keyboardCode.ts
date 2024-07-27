@@ -1,8 +1,8 @@
+import { hasPermissionToEditFile } from '@/app/actions';
+import type { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { hasPermissionToEditFile } from '../../../actions';
-import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 
 export function keyboardCode(
   event: React.KeyboardEvent<HTMLElement>,

@@ -1,6 +1,6 @@
 // this file cannot include any non-type imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
 
-import {
+import type {
   ConnectionKind,
   JsCodeCell,
   JsHtmlOutput,

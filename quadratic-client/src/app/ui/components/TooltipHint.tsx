@@ -1,4 +1,5 @@
-import { Tooltip, TooltipProps } from '@mui/material';
+import { Tooltip } from '@mui/material';
+import type { TooltipProps } from '@mui/material';
 
 interface TooltipHintProps extends TooltipProps {
   title: string | JSX.Element;

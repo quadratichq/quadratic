@@ -1,3 +1,7 @@
+import { ExternalLinkIcon, FileIcon } from '@radix-ui/react-icons';
+import mixpanel from 'mixpanel-browser';
+import { Link } from 'react-router-dom';
+
 import { Empty } from '@/dashboard/components/Empty';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { Type } from '@/shared/components/Type';
@@ -5,9 +9,6 @@ import { ROUTES } from '@/shared/constants/routes';
 import { DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
-import { ExternalLinkIcon, FileIcon } from '@radix-ui/react-icons';
-import mixpanel from 'mixpanel-browser';
-import { Link } from 'react-router-dom';
 
 export const FilesListEmptyState = ({ isPrivate }: { isPrivate?: boolean }) => {
   const {

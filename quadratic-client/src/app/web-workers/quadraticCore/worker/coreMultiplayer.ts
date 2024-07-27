@@ -1,6 +1,9 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import { CoreMultiplayerMessage, MultiplayerCoreMessage } from '../../multiplayerWebWorker/multiplayerCoreMessages';
-import { core } from './core';
+import type {
+  CoreMultiplayerMessage,
+  MultiplayerCoreMessage,
+} from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
+import { core } from '@/app/web-workers/quadraticCore/worker/core';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {

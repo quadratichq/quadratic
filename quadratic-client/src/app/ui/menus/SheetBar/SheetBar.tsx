@@ -1,18 +1,20 @@
-import { events } from '@/app/events/events';
 import { Add, ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { Stack, useTheme } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
-import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { MouseEvent } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
-import { hasPermissionToEditFile } from '../../../actions';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { sheets } from '../../../grid/controller/Sheets';
-import { Sheet } from '../../../grid/sheet/Sheet';
-import { focusGrid } from '../../../helpers/focusGrid';
-import { SheetBarButton } from './SheetBarButton';
-import { SheetBarTab } from './SheetBarTab';
-import { SheetBarTabContextMenu } from './SheetBarTabContextMenu';
+
+import { hasPermissionToEditFile } from '@/app/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import type { Sheet } from '@/app/grid/sheet/Sheet';
+import { focusGrid } from '@/app/helpers/focusGrid';
+import { SheetBarButton } from '@/app/ui/menus/SheetBar/SheetBarButton';
+import { SheetBarTab } from '@/app/ui/menus/SheetBar/SheetBarTab';
+import { SheetBarTabContextMenu } from '@/app/ui/menus/SheetBar/SheetBarTabContextMenu';
 
 const ARROW_SCROLL_AMOUNT = 10;
 const HOVER_SCROLL_AMOUNT = 5;
@@ -21,7 +23,6 @@ const ARROW_REPEAT_INTERVAL = 17;
 
 export const SheetBar = (): JSX.Element => {
   // used to trigger state change (eg, when sheets change)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_, setTrigger] = useState(0);
 
   const theme = useTheme();

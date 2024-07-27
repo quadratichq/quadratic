@@ -1,10 +1,11 @@
-import { useRootRouteLoaderData } from '@/routes/_root';
-import { ROUTES } from '@/shared/constants/routes';
-import { Button } from '@/shared/shadcn/ui/button';
 import mixpanel from 'mixpanel-browser';
 import { Link } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { useRootRouteLoaderData } from '@/routes/_root';
+import { ROUTES } from '@/shared/constants/routes';
+import { Button } from '@/shared/shadcn/ui/button';
 
 export const TopBarShareButton = () => {
   const { isAuthenticated } = useRootRouteLoaderData();

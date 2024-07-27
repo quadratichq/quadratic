@@ -1,6 +1,7 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import { useEffect, useRef } from 'react';
-import { focusGrid } from '../../../helpers/focusGrid';
+
+import { focusGrid } from '@/app/helpers/focusGrid';
 
 interface Props {
   onCancel: (e: React.SyntheticEvent) => void;

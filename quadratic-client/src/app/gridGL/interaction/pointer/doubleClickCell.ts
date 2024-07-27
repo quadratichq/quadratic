@@ -1,9 +1,9 @@
+import { hasPermissionToEditFile } from '@/app/actions';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { hasPermissionToEditFile } from '../../../actions';
-import { sheets } from '../../../grid/controller/Sheets';
-import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 
 export function doubleClickCell(options: {
   column: number;

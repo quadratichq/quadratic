@@ -1,3 +1,6 @@
+import { Point, Rectangle } from 'pixi.js';
+import { isMobile } from 'react-device-detect';
+
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
@@ -5,8 +8,6 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { PanMode, pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { rectToSheetRect } from '@/app/web-workers/quadraticCore/worker/rustConversions';
-import { Point, Rectangle } from 'pixi.js';
-import { isMobile } from 'react-device-detect';
 
 // Distance from top left corner to trigger a cell move.
 const TOP_LEFT_CORNER_THRESHOLD_SQUARED = 50;

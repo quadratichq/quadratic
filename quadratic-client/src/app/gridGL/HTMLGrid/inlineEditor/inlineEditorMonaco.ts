@@ -1,14 +1,15 @@
 //! This is an abstraction of the Monaco Editor for use with the inline editor.
 
+import * as monaco from 'monaco-editor';
+import { editor } from 'monaco-editor';
+import DefaultEditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
+import TsEditorWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
+
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
-import * as monaco from 'monaco-editor';
-import { editor } from 'monaco-editor';
-import DefaultEditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
-import TsEditorWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 
 const theme: editor.IStandaloneThemeData = {
   base: 'vs',

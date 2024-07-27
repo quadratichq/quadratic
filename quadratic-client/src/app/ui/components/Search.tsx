@@ -1,8 +1,12 @@
+import { ChevronLeftIcon, ChevronRightIcon, Cross2Icon, DotsHorizontalIcon } from '@radix-ui/react-icons';
+import { useEffect, useRef, useState } from 'react';
+import { useRecoilState } from 'recoil';
+
 import { findInSheet, findInSheets } from '@/app/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { SearchOptions, SheetPos } from '@/app/quadratic-core-types';
+import type { SearchOptions, SheetPos } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
@@ -13,9 +17,6 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Popover, PopoverAnchor, PopoverContent } from '@/shared/shadcn/ui/popover';
-import { ChevronLeftIcon, ChevronRightIcon, Cross2Icon, DotsHorizontalIcon } from '@radix-ui/react-icons';
-import { useEffect, useRef, useState } from 'react';
-import { useRecoilState } from 'recoil';
 
 export function Search() {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);

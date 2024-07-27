@@ -1,14 +1,14 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { getCodeCell } from '@/app/helpers/codeCellLanguage';
-import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { useCodeEditor } from './CodeEditorContext';
-import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
+
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { getCodeCell } from '@/app/helpers/codeCellLanguage';
+import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { codeEditorBaseStyles, codeEditorCommentStyles } from '@/app/ui/menus/CodeEditor/styles';
+import useLocalStorage from '@/shared/hooks/useLocalStorage';
 
 export function CodeEditorPlaceholder({
   editorContent,
-  setEditorContent,
 }: {
   editorContent: string | undefined;
   setEditorContent: (str: string | undefined) => void;

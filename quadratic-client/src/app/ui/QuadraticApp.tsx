@@ -1,17 +1,18 @@
-import { useUndo } from '@/app/events/useUndo';
-import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
-import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
-import { useRootRouteLoaderData } from '@/routes/_root';
 import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
 import { v4 } from 'uuid';
-import { hasPermissionToEditFile } from '../actions';
-import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
-import { pixiApp } from '../gridGL/pixiApp/PixiApp';
-import QuadraticUIContext from './QuadraticUIContext';
-import { QuadraticLoading } from './loading/QuadraticLoading';
+
+import { hasPermissionToEditFile } from '@/app/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { useUndo } from '@/app/events/useUndo';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { QuadraticLoading } from '@/app/ui/loading/QuadraticLoading';
+import QuadraticUIContext from '@/app/ui/QuadraticUIContext';
+import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
+import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
+import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
+import { useRootRouteLoaderData } from '@/routes/_root';
 
 export function QuadraticApp() {
   const { loggedInUser } = useRootRouteLoaderData();

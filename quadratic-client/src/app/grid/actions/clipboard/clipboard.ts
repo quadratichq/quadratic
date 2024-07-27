@@ -1,15 +1,16 @@
-import { hasPermissionToEditFile } from '@/app/actions';
-import { sheets } from '@/app/grid/controller/Sheets';
-import { debugTimeCheck, debugTimeReset } from '@/app/gridGL/helpers/debugPerformance';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { copyAsPNG } from '@/app/gridGL/pixiApp/copyAsPNG';
-import { PasteSpecial } from '@/app/quadratic-core-types';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import * as Sentry from '@sentry/react';
 import localforage from 'localforage';
 import mixpanel from 'mixpanel-browser';
+
+import { hasPermissionToEditFile } from '@/app/actions';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { debugTimeCheck, debugTimeReset } from '@/app/gridGL/helpers/debugPerformance';
+import { copyAsPNG } from '@/app/gridGL/pixiApp/copyAsPNG';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import type { PasteSpecial } from '@/app/quadratic-core-types';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import type { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 
 const clipboardLocalStorageKey = 'quadratic-clipboard';
 

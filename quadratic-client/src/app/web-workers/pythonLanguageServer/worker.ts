@@ -1,8 +1,9 @@
-import { debugWebWorkers } from '@/app/debugFlags';
 import { createMessageConnection } from 'vscode-jsonrpc';
 import { BrowserMessageReader, BrowserMessageWriter } from 'vscode-jsonrpc/browser';
 import { LogMessageNotification, RegistrationRequest } from 'vscode-languageserver-protocol';
-import { LanguageServerClient } from './client';
+
+import { debugWebWorkers } from '@/app/debugFlags';
+import { LanguageServerClient } from '@/app/web-workers/pythonLanguageServer/client';
 
 // avoid worker caching
 const workerScriptName = '/pyright.worker.js?url' + Math.random().toString(36).substring(2, 20);
@@ -48,7 +49,7 @@ const pyright = (uri: string, enableLogging: boolean = false): LanguageServerCli
         [port]
       );
 
-      background.addEventListener('message', (e: MessageEvent) => {
+      background.addEventListener('message', (_e: MessageEvent) => {
         // console.log('received background message', e.data);
       });
     }

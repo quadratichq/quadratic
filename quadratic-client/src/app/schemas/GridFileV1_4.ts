@@ -1,7 +1,8 @@
-import { generateKeyBetween } from '@/shared/utils/fractionalIndexing';
 import { v4 as uuid } from 'uuid';
 import z from 'zod';
-import { GridFileV1_3 } from './GridFileV1_3';
+
+import type { GridFileV1_3 } from '@/app/schemas/GridFileV1_3';
+import { generateKeyBetween } from '@/shared/utils/fractionalIndexing';
 
 // Shared schemas
 const ArrayOutputSchema = z.array(z.union([z.string(), z.number(), z.boolean()]));

@@ -1,7 +1,9 @@
-import { events } from '@/app/events/events';
 import mixpanel from 'mixpanel-browser';
-import { AtomEffect, atom, useRecoilState } from 'recoil';
-import { debugGridSettings } from '../../../../debugFlags';
+import { atom, useRecoilState } from 'recoil';
+import type { AtomEffect } from 'recoil';
+
+import { debugGridSettings } from '@/app/debugFlags';
+import { events } from '@/app/events/events';
 
 const SETTINGS_KEY = 'viewSettings';
 export interface GridSettings {

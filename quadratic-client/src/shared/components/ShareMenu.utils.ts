@@ -1,5 +1,7 @@
+import { UserTeamRoleSchema } from 'quadratic-shared/typesAndSchemas';
+import type { UserTeamRole } from 'quadratic-shared/typesAndSchemas';
+
 import { RoleSchema, hasAccess } from '@/permissions';
-import { UserTeamRole, UserTeamRoleSchema } from 'quadratic-shared/typesAndSchemas';
 
 const DELETE = 'DELETE';
 

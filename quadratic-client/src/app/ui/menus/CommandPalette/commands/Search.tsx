@@ -1,8 +1,10 @@
+import { useSetRecoilState } from 'recoil';
+
 import { findInSheet, findInSheets } from '@/app/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { useSetRecoilState } from 'recoil';
-import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 
 const commands: CommandGroup = {
   heading: 'Search',

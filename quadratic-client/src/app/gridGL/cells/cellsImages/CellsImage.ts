@@ -1,10 +1,11 @@
-import { sheets } from '@/app/grid/controller/Sheets';
-import { Sheet } from '@/app/grid/sheet/Sheet';
-import { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
-import { IMAGE_BORDER_OFFSET, IMAGE_BORDER_WIDTH } from '../../UI/UICellImages';
-import { pixiApp } from '../../pixiApp/PixiApp';
-import { CellsSheet } from '../CellsSheet';
+
+import { sheets } from '@/app/grid/controller/Sheets';
+import type { Sheet } from '@/app/grid/sheet/Sheet';
+import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { IMAGE_BORDER_OFFSET, IMAGE_BORDER_WIDTH } from '@/app/gridGL/UI/UICellImages';
+import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 
 export class CellsImage extends Container {
   private cellsSheet: CellsSheet;

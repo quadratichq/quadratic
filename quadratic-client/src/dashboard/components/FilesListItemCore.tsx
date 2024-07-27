@@ -1,8 +1,10 @@
+import { GlobeIcon } from '@radix-ui/react-icons';
+import type { ReactNode } from 'react';
+
+import type { ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
+import { Layout } from '@/dashboard/components/FilesListViewControlsDropdown';
 import { TYPE } from '@/shared/constants/appConstants';
 import { cn } from '@/shared/shadcn/utils';
-import { GlobeIcon } from '@radix-ui/react-icons';
-import { ReactNode } from 'react';
-import { Layout, ViewPreferences } from './FilesListViewControlsDropdown';
 
 export function FilesListItemCore({
   name,

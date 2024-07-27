@@ -1,14 +1,15 @@
+import type { Rectangle } from 'pixi.js';
+
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Rectangle } from 'pixi.js';
-import { prepareBitmapFontInformation } from './renderBitmapFonts';
-import {
+import { prepareBitmapFontInformation } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
+import type {
   ClientRenderInit,
   ClientRenderMessage,
   ClientRenderViewport,
   RenderClientColumnMaxWidth,
   RenderClientMessage,
-} from './renderClientMessages';
+} from '@/app/web-workers/renderWebWorker/renderClientMessages';
 
 class RenderWebWorker {
   private worker?: Worker;

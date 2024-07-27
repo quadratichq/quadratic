@@ -1,15 +1,17 @@
+import { BitmapText, Container, Graphics, Rectangle } from 'pixi.js';
+import type { Point } from 'pixi.js';
+
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import type { Size } from '@/app/gridGL/types/size';
+import { getColumnA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
+import { GridHeadingsLabels } from '@/app/gridGL/UI/gridHeadings/GridHeadingsLabels';
+import { calculateAlphaForGridLines } from '@/app/gridGL/UI/gridUtils';
+import { colors } from '@/app/theme/colors';
 import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
-import { BitmapText, Container, Graphics, Point, Rectangle } from 'pixi.js';
-import { sheets } from '../../../grid/controller/Sheets';
-import { colors } from '../../../theme/colors';
-import { intersects } from '../../helpers/intersects';
-import { pixiApp } from '../../pixiApp/PixiApp';
-import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
-import { Size } from '../../types/size';
-import { calculateAlphaForGridLines } from '../gridUtils';
-import { GridHeadingsLabels } from './GridHeadingsLabels';
-import { getColumnA1Notation } from './getA1Notation';
 
 type Selected = 'all' | number[] | undefined;
 

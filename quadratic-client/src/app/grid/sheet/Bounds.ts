@@ -1,5 +1,6 @@
 import { Rectangle } from 'pixi.js';
-import { Coordinate } from '../../gridGL/types/size';
+
+import type { Coordinate } from '@/app/gridGL/types/size';
 
 export class Bounds {
   empty = true;

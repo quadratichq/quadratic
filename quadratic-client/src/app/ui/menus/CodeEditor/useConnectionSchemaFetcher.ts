@@ -1,7 +1,8 @@
-import { connectionClient } from '@/shared/api/connectionClient';
 import mixpanel from 'mixpanel-browser';
 import { useEffect } from 'react';
 import { useFetcher } from 'react-router-dom';
+
+import type { connectionClient } from '@/shared/api/connectionClient';
 
 export type SchemaData = Awaited<ReturnType<typeof connectionClient.schemas.get>>;
 

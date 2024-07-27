@@ -1,6 +1,9 @@
+import { Point } from '@pixi/math';
+import type { IPointData } from '@pixi/math';
+import { Plugin } from 'pixi-viewport';
+import type { Viewport } from 'pixi-viewport';
+
 import { isMac } from '@/shared/utils/isMac';
-import { IPointData, Point } from '@pixi/math';
-import { Plugin, Viewport } from 'pixi-viewport';
 
 /** Options for {@link Wheel}. */
 export interface IWheelOptions {
@@ -130,9 +133,9 @@ export class Wheel extends Plugin {
   /**
    * Handles keypress events and set the keyIsPressed boolean accordingly
    *
-   * @param {array} codes - key codes that can be used to trigger zoom event
+   * @param {array} _codes - key codes that can be used to trigger zoom event
    */
-  protected handleKeyPresses(codes: string[]): void {
+  protected handleKeyPresses(_codes: string[]): void {
     window.addEventListener('keydown', (e) => {
       if (this.isZoomKey(e.code)) {
         this.zoomKeyIsPressed = true;

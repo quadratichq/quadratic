@@ -1,5 +1,7 @@
-import { Dispatch, SetStateAction, useEffect } from 'react';
-import useLocalStorage from './useLocalStorage';
+import { useEffect } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
+
+import useLocalStorage from '@/shared/hooks/useLocalStorage';
 
 type Theme = 'light' | 'dark' | 'system';
 type ThemePreference = null | Theme;

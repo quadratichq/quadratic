@@ -1,5 +1,6 @@
-import { User } from '@auth0/auth0-spa-js';
-import { CellEdit, ReceiveRoom, UserUpdate } from './multiplayerTypes';
+import type { User } from '@auth0/auth0-spa-js';
+
+import type { CellEdit, ReceiveRoom, UserUpdate } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 
 export type MultiplayerState =
   | 'startup'

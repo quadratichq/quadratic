@@ -1,6 +1,10 @@
+import { CaretSortIcon, CheckCircledIcon, ExitIcon, PlusIcon, ReloadIcon } from '@radix-ui/react-icons';
+import type { ReactNode } from 'react';
+import { Link, useFetcher, useNavigate, useSubmit } from 'react-router-dom';
+
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { TeamAction } from '@/routes/teams.$teamUuid';
+import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -13,9 +17,6 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
-import { CaretSortIcon, CheckCircledIcon, ExitIcon, PlusIcon, ReloadIcon } from '@radix-ui/react-icons';
-import { ReactNode } from 'react';
-import { Link, useFetcher, useNavigate, useSubmit } from 'react-router-dom';
 
 type Props = {
   appIsLoading: boolean;

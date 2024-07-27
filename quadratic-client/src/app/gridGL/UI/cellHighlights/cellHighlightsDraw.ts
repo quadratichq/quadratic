@@ -1,6 +1,8 @@
+import type { Graphics } from 'pixi.js';
+
 import { DASHED, DASHED_THICKNESS, dashedTextures } from '@/app/gridGL/dashedTextures';
-import { CURSOR_THICKNESS, CursorCell, FILL_ALPHA } from '@/app/gridGL/UI/Cursor';
-import { Graphics } from 'pixi.js';
+import type { CursorCell } from '@/app/gridGL/UI/Cursor';
+import { CURSOR_THICKNESS, FILL_ALPHA } from '@/app/gridGL/UI/Cursor';
 
 export function drawDashedRectangle(options: {
   g: Graphics;

@@ -1,12 +1,13 @@
+import { useEffect, useRef, useState } from 'react';
+import { isMobile } from 'react-device-detect';
+import { useRecoilValue } from 'recoil';
+
 import { cellTypeMenuOpenedCountAtom } from '@/app/atoms/cellTypeMenuOpenedCountAtom';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { useEffect, useRef, useState } from 'react';
-import { isMobile } from 'react-device-detect';
-import { useRecoilValue } from 'recoil';
-import { CURSOR_THICKNESS } from '../UI/Cursor';
 
 export const CodeHint = () => {
   const [cellHasValue, setCellHasValue] = useState(false);

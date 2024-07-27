@@ -1,12 +1,13 @@
-import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
-import { sheets } from '../../../grid/controller/Sheets';
-import { pixiApp } from '../../pixiApp/PixiApp';
-import { PanMode, pixiAppSettings } from '../../pixiApp/PixiAppSettings';
-import { doubleClickCell } from './doubleClickCell';
-import { DOUBLE_CLICK_TIME } from './pointerUtils';
+
+import { sheets } from '@/app/grid/controller/Sheets';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
+import { DOUBLE_CLICK_TIME } from '@/app/gridGL/interaction/pointer/pointerUtils';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { PanMode, pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 const MINIMUM_MOVE_POSITION = 5;
 

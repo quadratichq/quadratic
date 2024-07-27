@@ -1,15 +1,17 @@
+import { useCallback, useEffect, useState } from 'react';
+import type { MouseEvent } from 'react';
+import { useRecoilState } from 'recoil';
+
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
+import { HTMLGridContainer } from '@/app/gridGL/HTMLGrid/HTMLGridContainer';
+import { useKeyboard } from '@/app/gridGL/interaction/keyboard/useKeyboard';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { PanMode, pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { ImportProgress } from '@/app/ui/components/ImportProgress';
 import { Search } from '@/app/ui/components/Search';
+import { FloatingContextMenu } from '@/app/ui/menus/ContextMenu/FloatingContextMenu';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { MouseEvent, useCallback, useEffect, useState } from 'react';
-import { useRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
-import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
-import { HTMLGridContainer } from './HTMLGrid/HTMLGridContainer';
-import { useKeyboard } from './interaction/keyboard/useKeyboard';
-import { pixiApp } from './pixiApp/PixiApp';
-import { PanMode, pixiAppSettings } from './pixiApp/PixiAppSettings';
 
 // Keep track of state of mouse/space for panning mode
 let mouseIsDown = false;

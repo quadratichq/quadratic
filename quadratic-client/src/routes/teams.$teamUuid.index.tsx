@@ -1,3 +1,8 @@
+import { Add } from '@mui/icons-material';
+import { Avatar, AvatarGroup } from '@mui/material';
+import { FileIcon } from '@radix-ui/react-icons';
+import { Link } from 'react-router-dom';
+
 import CreateFileButton from '@/dashboard/components/CreateFileButton';
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { Empty } from '@/dashboard/components/Empty';
@@ -5,10 +10,6 @@ import { FilesList } from '@/dashboard/components/FilesList';
 import { FilesListEmptyState } from '@/dashboard/components/FilesListEmptyState';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { ROUTES } from '@/shared/constants/routes';
-import { Add } from '@mui/icons-material';
-import { Avatar, AvatarGroup } from '@mui/material';
-import { FileIcon } from '@radix-ui/react-icons';
-import { Link } from 'react-router-dom';
 
 export const Component = () => {
   const {

@@ -1,7 +1,8 @@
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
-import monaco from 'monaco-editor';
+import type monaco from 'monaco-editor';
 import { useEffect } from 'react';
-import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
+
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 
 export const useEditorOnSelectionChange = (
   isValidRef: boolean,

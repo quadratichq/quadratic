@@ -1,6 +1,7 @@
+import { redirect } from 'react-router-dom';
+
 import { authClient } from '@/auth';
 import { apiClient } from '@/shared/api/apiClient';
-import { redirect } from 'react-router-dom';
 
 export const loader = async () => {
   // try/catch here handles case where this _could_ error out and we

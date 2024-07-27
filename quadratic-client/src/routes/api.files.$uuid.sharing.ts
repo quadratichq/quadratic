@@ -1,6 +1,8 @@
+import type { ApiTypes, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
+import { redirectDocument } from 'react-router-dom';
+import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router-dom';
+
 import { apiClient } from '@/shared/api/apiClient';
-import { ApiTypes, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
-import { ActionFunctionArgs, LoaderFunctionArgs, redirectDocument } from 'react-router-dom';
 
 type Loader = {
   ok: boolean;
@@ -13,7 +15,7 @@ export const loader = async ({ params }: LoaderFunctionArgs): Promise<Loader> =>
   try {
     const data = await apiClient.files.sharing.get(uuid);
     return { ok: true, data };
-  } catch (e) {
+  } catch (_e) {
     return { ok: false };
   }
 };
@@ -59,7 +61,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
       const { publicLinkAccess } = json as Action['request.update-public-link-access'];
       await apiClient.files.sharing.update(uuid, { publicLinkAccess });
       return { ok: true };
-    } catch (e) {
+    } catch (_e) {
       return { ok: false };
     }
   }
@@ -69,7 +71,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
       const { email, role } = json as Action['request.create-file-invite'];
       await apiClient.files.invites.create(uuid, { email, role });
       return { ok: true };
-    } catch (e) {
+    } catch (_e) {
       return { ok: false };
     }
   }
@@ -79,7 +81,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
       const { inviteId } = json as Action['request.delete-file-invite'];
       await apiClient.files.invites.delete(uuid, inviteId);
       return { ok: true };
-    } catch (e) {
+    } catch (_e) {
       return { ok: false };
     }
   }
@@ -89,7 +91,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
       const { role, userId } = json as Action['request.update-file-user'];
       await apiClient.files.users.update(uuid, userId, { role });
       return { ok: true };
-    } catch (e) {
+    } catch (_e) {
       return { ok: false };
     }
   }
@@ -102,7 +104,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
         return redirectDocument('/');
       }
       return { ok: true };
-    } catch (e) {
+    } catch (_e) {
       return { ok: false };
     }
   }

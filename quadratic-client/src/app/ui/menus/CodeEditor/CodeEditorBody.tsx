@@ -1,37 +1,40 @@
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
-import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import Editor, { Monaco } from '@monaco-editor/react';
+import Editor from '@monaco-editor/react';
+import type { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { hasPermissionToEditFile } from '../../../actions';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { pyrightWorker, uri } from '../../../web-workers/pythonLanguageServer/worker';
-import { useCodeEditor } from './CodeEditorContext';
-import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';
-import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
-import {
-  provideCompletionItems as provideCompletionItemsPython,
-  provideHover as provideHoverPython,
-  provideSignatureHelp as provideSignatureHelpPython,
-} from './PythonLanguageModel';
-import { QuadraticEditorTheme } from './quadraticEditorTheme';
-import { useEditorCellHighlights } from './useEditorCellHighlights';
+
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { useEditorDiagnostics } from './useEditorDiagnostics';
 // import { Diagnostic } from 'vscode-languageserver-types';
 // import { typescriptLibrary } from '@/web-workers/javascriptWebWorker/worker/javascript/typescriptLibrary';
+
+import { hasPermissionToEditFile } from '@/app/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
-import { SheetPosTS } from '@/app/gridGL/types/size';
+import type { SheetPosTS } from '@/app/gridGL/types/size';
 import { codeCellIsAConnection, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
-import { SheetRect } from '@/app/quadratic-core-types';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
+import type { SheetRect } from '@/app/quadratic-core-types';
+import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlaceholder';
+import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
+import {
+  provideCompletionItems as provideCompletionItemsPython,
+  provideHover as provideHoverPython,
+  provideSignatureHelp as provideSignatureHelpPython,
+} from '@/app/ui/menus/CodeEditor/PythonLanguageModel';
+import { QuadraticEditorTheme } from '@/app/ui/menus/CodeEditor/quadraticEditorTheme';
+import { useEditorCellHighlights } from '@/app/ui/menus/CodeEditor/useEditorCellHighlights';
+import { useEditorOnSelectionChange } from '@/app/ui/menus/CodeEditor/useEditorOnSelectionChange';
+import { useEditorReturn } from '@/app/ui/menus/CodeEditor/useEditorReturn';
 import { javascriptLibraryForEditor } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generatedJavascriptForEditor';
-import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { pyrightWorker, uri } from '@/app/web-workers/pythonLanguageServer/worker';
+import type { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import useEventListener from '@/shared/hooks/useEventListener';
-import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
-import { useEditorReturn } from './useEditorReturn';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 
 interface Props {
   editorContent: string | undefined;

@@ -1,14 +1,16 @@
+import { Container } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
+
+import { CellsArray } from '@/app/gridGL/cells/CellsArray';
+import { CellsBorders } from '@/app/gridGL/cells/CellsBorders';
+import { CellsFills } from '@/app/gridGL/cells/CellsFills';
+import type { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
+import { CellsImages } from '@/app/gridGL/cells/cellsImages/CellsImages';
+import { CellsLabels } from '@/app/gridGL/cells/cellsLabel/CellsLabels';
+import { CellsMarkers } from '@/app/gridGL/cells/CellsMarkers';
+import { CellsSearch } from '@/app/gridGL/cells/CellsSearch';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { Container, Rectangle } from 'pixi.js';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { CellsArray } from './CellsArray';
-import { CellsBorders } from './CellsBorders';
-import { CellsFills } from './CellsFills';
-import { CellsImage } from './cellsImages/CellsImage';
-import { CellsImages } from './cellsImages/CellsImages';
-import { CellsLabels } from './cellsLabel/CellsLabels';
-import { CellsMarkers } from './CellsMarkers';
-import { CellsSearch } from './CellsSearch';
 
 export class CellsSheet extends Container {
   private cellsFills: CellsFills;

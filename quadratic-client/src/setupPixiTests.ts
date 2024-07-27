@@ -1,4 +1,5 @@
-import { ImageResource, settings } from 'pixi.js';
+import { settings } from 'pixi.js';
+import type { ImageResource } from 'pixi.js';
 
 const getContext = () => {
   return {
@@ -43,7 +44,7 @@ const getContext = () => {
 export const setupPixiTests = (): void => {
   settings.ADAPTER = {
     /** Returns a canvas object that can be used to create a webgl context. */
-    createCanvas: (width?: number, height?: number) => {
+    createCanvas: (_width?: number, _height?: number) => {
       return {
         getContext,
         test: () => {
@@ -63,7 +64,7 @@ export const setupPixiTests = (): void => {
     getBaseUrl: () => {
       return '';
     },
-    fetch: (url: RequestInfo, options?: RequestInit) => {
+    fetch: (_url: RequestInfo, _options?: RequestInit) => {
       return {} as Promise<Response>;
     },
   };

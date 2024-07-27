@@ -1,7 +1,9 @@
-import { CellBorderLine, Rgba } from '@/app/quadratic-core-types';
-import { Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
-import { colors } from '../../theme/colors';
-import { dashedTextures } from '../dashedTextures';
+import { Rectangle, Texture } from 'pixi.js';
+import type { Sprite, TilingSprite } from 'pixi.js';
+
+import { dashedTextures } from '@/app/gridGL/dashedTextures';
+import type { CellBorderLine, Rgba } from '@/app/quadratic-core-types';
+import { colors } from '@/app/theme/colors';
 
 export interface BorderCull {
   sprite: Sprite | TilingSprite;

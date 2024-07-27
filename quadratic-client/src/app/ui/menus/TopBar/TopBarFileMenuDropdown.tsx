@@ -1,16 +1,17 @@
-import { useRootRouteLoaderData } from '@/routes/_root';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { KeyboardArrowDown } from '@mui/icons-material';
 import { IconButton, useTheme } from '@mui/material';
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
-import { Dispatch, SetStateAction } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { useParams, useSubmit } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { deleteFile, downloadFileAction, duplicateFileAction, renameFileAction } from '../../../actions';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { useFileContext } from '../../components/FileProvider';
-import { MenuLineItem } from './MenuLineItem';
+
+import { deleteFile, downloadFileAction, duplicateFileAction, renameFileAction } from '@/app/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { useFileContext } from '@/app/ui/components/FileProvider';
+import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
+import { useRootRouteLoaderData } from '@/routes/_root';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 
 export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispatch<SetStateAction<boolean>> }) {
   const theme = useTheme();

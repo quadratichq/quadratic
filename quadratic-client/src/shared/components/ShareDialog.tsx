@@ -1,5 +1,31 @@
-import { Action as FileShareAction } from '@/routes/api.files.$uuid.sharing';
-import { TeamAction } from '@/routes/teams.$teamUuid';
+import { Avatar } from '@mui/material';
+import {
+  Cross2Icon,
+  EnvelopeClosedIcon,
+  ExclamationTriangleIcon,
+  GlobeIcon,
+  LockClosedIcon,
+  PersonIcon,
+} from '@radix-ui/react-icons';
+import mixpanel from 'mixpanel-browser';
+import { UserFileRoleSchema, UserTeamRoleSchema, emailSchema } from 'quadratic-shared/typesAndSchemas';
+import type {
+  ApiTypes,
+  PublicLinkAccess,
+  TeamPermission,
+  UserFileRole,
+  UserTeamRole,
+} from 'quadratic-shared/typesAndSchemas';
+import React, { Children, useEffect, useRef, useState } from 'react';
+import type { FormEvent, ReactNode } from 'react';
+import { useFetcher, useFetchers, useSubmit } from 'react-router-dom';
+import type { FetcherSubmitFunction } from 'react-router-dom';
+
+import type { Action as FileShareAction } from '@/routes/api.files.$uuid.sharing';
+import type { TeamAction } from '@/routes/teams.$teamUuid';
+import { AvatarWithLetters } from '@/shared/components/AvatarWithLetters';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -17,31 +43,6 @@ import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
-import { Avatar } from '@mui/material';
-import {
-  Cross2Icon,
-  EnvelopeClosedIcon,
-  ExclamationTriangleIcon,
-  GlobeIcon,
-  LockClosedIcon,
-  PersonIcon,
-} from '@radix-ui/react-icons';
-import mixpanel from 'mixpanel-browser';
-import {
-  ApiTypes,
-  PublicLinkAccess,
-  TeamPermission,
-  UserFileRole,
-  UserFileRoleSchema,
-  UserTeamRole,
-  UserTeamRoleSchema,
-  emailSchema,
-} from 'quadratic-shared/typesAndSchemas';
-import React, { Children, FormEvent, ReactNode, useEffect, useRef, useState } from 'react';
-import { FetcherSubmitFunction, useFetcher, useFetchers, useSubmit } from 'react-router-dom';
-import { AvatarWithLetters } from './AvatarWithLetters';
-import { useGlobalSnackbar } from './GlobalSnackbarProvider';
-import { Type } from './Type';
 
 function getRoleLabel(role: UserTeamRole | UserFileRole) {
   // prettier-ignore
@@ -391,7 +392,7 @@ function CopyLinkButton({
   );
 }
 
-export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: string; onClose: () => void }) {
+export function ShareFileDialog({ uuid, onClose }: { uuid: string; name: string; onClose: () => void }) {
   const fetcher = useFetcher();
 
   const loadState = !fetcher.data ? 'LOADING' : !fetcher.data.ok ? 'FAILED' : 'LOADED';
@@ -507,7 +508,7 @@ export function InviteForm({
     let email;
     try {
       email = emailSchema.parse(emailFromUser);
-    } catch (e) {
+    } catch (_e) {
       setError('Invalid email.');
       return;
     }
@@ -554,7 +555,7 @@ export function InviteForm({
           name="email_search"
           autoFocus
           ref={inputRef}
-          onChange={(e) => {
+          onChange={(_e) => {
             setError('');
           }}
         />
@@ -571,7 +572,7 @@ export function InviteForm({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {roles.map((role, i) => (
+            {roles.map((role) => (
               <SelectItem key={role} value={role}>
                 {getRoleLabel(role)}
               </SelectItem>

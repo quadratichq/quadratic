@@ -9,8 +9,8 @@
  */
 
 import { debugWebWorkers } from '@/app/debugFlags';
-import { coreClient } from './coreClient';
-import { coreConnection } from './coreConnection';
+import { coreClient } from '@/app/web-workers/quadraticCore/worker/coreClient';
+import { coreConnection } from '@/app/web-workers/quadraticCore/worker/coreConnection';
 
 coreClient.start();
 coreConnection.start();

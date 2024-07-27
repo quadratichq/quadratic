@@ -1,3 +1,7 @@
+import { useRef, useState } from 'react';
+import { useSetRecoilState } from 'recoil';
+
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -12,9 +16,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/shadcn/ui/dialog';
-import { useRef, useState } from 'react';
-import { useSetRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 
 export const FeedbackMenu = () => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
@@ -55,7 +56,7 @@ export const FeedbackMenu = () => {
       await apiClient.postFeedback({ feedback, userEmail });
       setValue('');
       addGlobalSnackbar('Feedback submitted! Thank you.');
-    } catch (error) {
+    } catch (_error) {
       addGlobalSnackbar('Failed to submit feedback. Please try again.', { severity: 'error' });
     }
   };

@@ -1,4 +1,4 @@
-import { electronMaximizeCurrentWindow } from '../../helpers/electronMaximizeCurrentWindow';
+import { electronMaximizeCurrentWindow } from '@/app/helpers/electronMaximizeCurrentWindow';
 
 export const TopBarLoading = () => {
   // TopBarLoading allows window to be moved while loading in electron

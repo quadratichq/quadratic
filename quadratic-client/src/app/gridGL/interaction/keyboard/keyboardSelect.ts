@@ -1,4 +1,4 @@
-import { selectAllCells } from '../../helpers/selectCells';
+import { selectAllCells } from '@/app/gridGL/helpers/selectCells';
 
 export function keyboardSelect(event: React.KeyboardEvent<HTMLElement>): boolean {
   // Command + A

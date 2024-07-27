@@ -1,9 +1,10 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
-import { displayName } from '@/shared/utils/userUtil';
 import { StopCircleOutlined } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import { useSetRecoilState } from 'recoil';
+
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import type { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import { displayName } from '@/shared/utils/userUtil';
 
 interface Props {
   follow?: MultiplayerUser;

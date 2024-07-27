@@ -1,12 +1,13 @@
+import type { InteractionEvent } from 'pixi.js';
+
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Sheet } from '@/app/grid/sheet/Sheet';
-import { JsHtmlOutput } from '@/app/quadratic-core-types';
+import type { Sheet } from '@/app/grid/sheet/Sheet';
+import { HtmlCellResizing } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCellResizing';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import type { Wheel } from '@/app/gridGL/pixiOverride/Wheel';
+import type { JsHtmlOutput } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
-import { InteractionEvent } from 'pixi.js';
-import { pixiApp } from '../../pixiApp/PixiApp';
-import { Wheel } from '../../pixiOverride/Wheel';
-import { HtmlCellResizing } from './HtmlCellResizing';
 
 // number of screen pixels to trigger the resize cursor
 const tolerance = 5;

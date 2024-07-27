@@ -1,7 +1,8 @@
+import type { StopwatchIcon } from '@radix-ui/react-icons';
+import type { ReactNode } from 'react';
+
 import { TYPE } from '@/shared/constants/appConstants';
 import { cn } from '@/shared/shadcn/utils';
-import { StopwatchIcon } from '@radix-ui/react-icons';
-import { ReactNode } from 'react';
 
 export function Empty({
   title,

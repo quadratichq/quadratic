@@ -1,12 +1,13 @@
+import { ChevronRightIcon } from '@radix-ui/react-icons';
+
 import { SchemaViewer } from '@/app/ui/components/SchemaViewer';
 import { AiAssistant } from '@/app/ui/menus/CodeEditor/AiAssistant';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
+import type { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { cn } from '@/shared/shadcn/utils';
-import { ChevronRightIcon } from '@radix-ui/react-icons';
-import { CodeEditorPanelData } from './useCodeEditorPanelData';
 
 export type PanelTab = 'console' | 'ai-assistant' | 'data-browser';
 

@@ -1,5 +1,6 @@
 import z from 'zod';
-import { GridFileV1_2 } from './GridFileV1_2';
+
+import type { GridFileV1_2 } from '@/app/schemas/GridFileV1_2';
 
 // Shared schemas
 const ArrayOutputBaseSchema = z.array(z.any());

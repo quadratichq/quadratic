@@ -1,13 +1,19 @@
+import MemoryIcon from '@mui/icons-material/Memory';
+import StopIcon from '@mui/icons-material/Stop';
+import { TooltipTrigger } from '@radix-ui/react-tooltip';
+import { useEffect, useState } from 'react';
+
 import { usePythonState } from '@/app/atoms/usePythonState';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
+import BottomBarItem from '@/app/ui/menus/BottomBar/BottomBarItem';
 import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
-import { LanguageState } from '@/app/web-workers/languageTypes';
+import type { LanguageState } from '@/app/web-workers/languageTypes';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
@@ -19,11 +25,6 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider } from '@/shared/shadcn/ui/tooltip';
-import MemoryIcon from '@mui/icons-material/Memory';
-import StopIcon from '@mui/icons-material/Stop';
-import { TooltipTrigger } from '@radix-ui/react-tooltip';
-import { useEffect, useState } from 'react';
-import BottomBarItem from './BottomBarItem';
 
 export const KernelMenu = () => {
   const [disableRunCodeCell, setDisableRunCodeCell] = useState(true);
@@ -51,7 +52,7 @@ export const KernelMenu = () => {
 
   const [javascriptCodeRunning, setJavascriptCodeRunning] = useState<CodeRun | undefined>();
   useEffect(() => {
-    const javascriptState = (_state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
+    const javascriptState = (_state: LanguageState, current?: CodeRun, _awaitingExecution?: CodeRun[]) => {
       setJavascriptCodeRunning(current);
     };
     events.on('javascriptState', javascriptState);
@@ -62,7 +63,7 @@ export const KernelMenu = () => {
 
   const [connectionCodeRunning, setConnectionCodeRunning] = useState<CodeRun | undefined>();
   useEffect(() => {
-    const connectionState = (_state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
+    const connectionState = (_state: LanguageState, current?: CodeRun, _awaitingExecution?: CodeRun[]) => {
       setConnectionCodeRunning(current);
     };
     events.on('connectionState', connectionState);

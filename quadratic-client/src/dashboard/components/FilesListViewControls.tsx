@@ -1,8 +1,10 @@
-import { Button } from '@/shared/shadcn/ui/button';
-import { Input } from '@/shared/shadcn/ui/input';
 import { Cross2Icon } from '@radix-ui/react-icons';
 import React from 'react';
-import { FileListViewControlsDropdown, ViewPreferences } from './FilesListViewControlsDropdown';
+
+import type { ViewPreferences } from '@/dashboard/components/FilesListViewControlsDropdown';
+import { FileListViewControlsDropdown } from '@/dashboard/components/FilesListViewControlsDropdown';
+import { Button } from '@/shared/shadcn/ui/button';
+import { Input } from '@/shared/shadcn/ui/input';
 
 export function FilesListViewControls({
   filterValue,

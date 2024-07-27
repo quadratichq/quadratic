@@ -1,18 +1,19 @@
-import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
-import { downloadSelectionAsCsvAction, isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
-import { useFileContext } from '@/app/ui/components/FileProvider';
-import { DataIcon } from '@/app/ui/icons';
-import { useRootRouteLoaderData } from '@/routes/_root';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { CSV_IMPORT_MESSAGE, PARQUET_IMPORT_MESSAGE } from '@/shared/constants/appConstants';
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { useSetRecoilState } from 'recoil';
-import { MenuLineItem } from '../MenuLineItem';
-import { TopBarMenuItem } from '../TopBarMenuItem';
+
+import { downloadSelectionAsCsvAction, isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { useFileContext } from '@/app/ui/components/FileProvider';
+import { DataIcon } from '@/app/ui/icons';
+import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
+import { TopBarMenuItem } from '@/app/ui/menus/TopBar/TopBarMenuItem';
+import { useRootRouteLoaderData } from '@/routes/_root';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { CSV_IMPORT_MESSAGE, PARQUET_IMPORT_MESSAGE } from '@/shared/constants/appConstants';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 
 export const DataMenu = () => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);

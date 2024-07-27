@@ -1,7 +1,9 @@
-import { useCodeEditorContainer } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorContainer';
 import { memo, useEffect, useState } from 'react';
-import { ResizeControl } from './ResizeControl';
-import { CodeEditorPanelData, MIN_WIDTH_PANEL, MIN_WIDTH_VISIBLE_GRID } from './useCodeEditorPanelData';
+
+import { ResizeControl } from '@/app/ui/menus/CodeEditor/panels/ResizeControl';
+import { useCodeEditorContainer } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorContainer';
+import { MIN_WIDTH_PANEL, MIN_WIDTH_VISIBLE_GRID } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import type { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 
 interface Props {
   codeEditorPanelData: CodeEditorPanelData;

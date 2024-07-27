@@ -1,8 +1,9 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import { JsGetCellResponse } from '@/app/quadratic-core-types';
-import type { CorePythonMessage, PythonCoreMessage } from '../pythonCoreMessages';
-import type { PythonRun } from '../pythonTypes';
-import { python } from './python';
+import type { JsGetCellResponse } from '@/app/quadratic-core-types';
+import type { CorePythonMessage, PythonCoreMessage } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
+import type { PythonRun } from '@/app/web-workers/pythonWebWorker/pythonTypes';
+import { python } from '@/app/web-workers/pythonWebWorker/worker/python';
+
 export class PythonCore {
   private coreMessagePort?: MessagePort;
 

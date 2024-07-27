@@ -1,11 +1,12 @@
+import { useEffect } from 'react';
+import { useFetcher } from 'react-router-dom';
+import { useRecoilState } from 'recoil';
+
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { Connections } from '@/shared/components/connections/Connections';
 import { ROUTES } from '@/shared/constants/routes';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
-import { useEffect } from 'react';
-import { useFetcher } from 'react-router-dom';
-import { useRecoilState } from 'recoil';
 
 export function ConnectionsMenu() {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);

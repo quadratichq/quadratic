@@ -1,7 +1,8 @@
-import { Dispatch, SetStateAction, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 
 // See: https://usehooks-ts.com/react-hook/use-event-listener
-import useEventListener from './useEventListener';
+import useEventListener from '@/shared/hooks/useEventListener';
 
 declare global {
   interface WindowEventMap {
@@ -25,7 +26,7 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
     try {
       const item = window.localStorage.getItem(key);
       return item ? (parseJSON(item) as T) : initialValue;
-    } catch (error) {
+    } catch (_error) {
       throw new Error(`Error reading localStorage key “${key}”`);
     }
   }, [initialValue, key]);
@@ -55,7 +56,7 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
 
         // We dispatch a custom event so every useLocalStorage hook are notified
         window.dispatchEvent(new Event('local-storage'));
-      } catch (error) {
+      } catch (_error) {
         throw new Error(`Error setting localStorage key “${key}”`);
       }
     },
@@ -87,7 +88,7 @@ export default useLocalStorage;
 function parseJSON<T>(value: string | null): T | undefined {
   try {
     return value === 'undefined' ? undefined : JSON.parse(value ?? '');
-  } catch (error) {
+  } catch (_error) {
     console.log('parsing error on', { value });
     return undefined;
   }

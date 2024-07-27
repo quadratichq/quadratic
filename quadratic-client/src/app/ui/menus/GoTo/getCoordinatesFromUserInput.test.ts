@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { getCoordinatesFromUserInput } from './getCoordinatesFromUserInput';
+
+import { getCoordinatesFromUserInput } from '@/app/ui/menus/GoTo/getCoordinatesFromUserInput';
 
 const fn = getCoordinatesFromUserInput;
 

@@ -1,16 +1,18 @@
+import { IconButton } from '@mui/material';
+import { memo, useCallback } from 'react';
+import type { MouseEvent } from 'react';
+import { useRecoilValue } from 'recoil';
+
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { PanelPositionBottomIcon, PanelPositionLeftIcon } from '@/app/ui/icons';
-import { CodeEditorPanelData, PanelPosition } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import { CodeEditorPanelBottom } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
+import { CodeEditorPanelSide } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelSide';
+import type { CodeEditorPanelData, PanelPosition } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { cn } from '@/shared/shadcn/utils';
-import { IconButton } from '@mui/material';
-import { MouseEvent, memo, useCallback } from 'react';
-import { useRecoilValue } from 'recoil';
-import { CodeEditorPanelBottom } from './CodeEditorPanelBottom';
-import { CodeEditorPanelSide } from './CodeEditorPanelSide';
 
 interface Props {
   codeEditorPanelData: CodeEditorPanelData;

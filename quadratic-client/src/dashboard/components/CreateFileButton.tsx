@@ -1,3 +1,9 @@
+import { CaretDownIcon } from '@radix-ui/react-icons';
+import mixpanel from 'mixpanel-browser';
+import { useState } from 'react';
+import type { ChangeEvent } from 'react';
+import { Link, useParams, useSubmit } from 'react-router-dom';
+
 import { getExtension, isCsv, isExcel, isGrid, isParquet, stripExtension } from '@/app/helpers/files';
 import { validateAndUpgradeGridFile } from '@/app/schemas/validateAndUpgradeGridFile';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -10,10 +16,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
-import { CaretDownIcon } from '@radix-ui/react-icons';
-import mixpanel from 'mixpanel-browser';
-import { ChangeEvent, useState } from 'react';
-import { Link, useParams, useSubmit } from 'react-router-dom';
 
 export type UploadFileType = 'grid' | 'excel' | 'csv' | 'parquet';
 
@@ -48,7 +50,7 @@ export default function CreateFileButton({ isPrivate }: { isPrivate?: boolean })
       switch (getFileType(file)) {
         case 'grid':
           mixpanel.track('[Files].importGrid', { fileName: file.name });
-          const contents = await file.text().catch((e) => null);
+          const contents = await file.text().catch((_e) => null);
 
           // Ensure it's a valid Quadratic grid file
           const validFile = await validateAndUpgradeGridFile(contents);

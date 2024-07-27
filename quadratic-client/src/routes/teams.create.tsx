@@ -1,3 +1,12 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { ReloadIcon } from '@radix-ui/react-icons';
+import { TeamSchema } from 'quadratic-shared/typesAndSchemas';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { redirect, useFetcher, useLocation, useNavigate, useParams } from 'react-router-dom';
+import type { ActionFunctionArgs } from 'react-router-dom';
+import z from 'zod';
+
 import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
@@ -13,13 +22,7 @@ import {
   FormMessage,
 } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { ReloadIcon } from '@radix-ui/react-icons';
-import { TeamSchema } from 'quadratic-shared/typesAndSchemas';
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { ActionFunctionArgs, redirect, useFetcher, useLocation, useNavigate, useParams } from 'react-router-dom';
-import z from 'zod';
+
 type ActionData = {
   name: string;
   picture?: string;

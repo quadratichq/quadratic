@@ -2,12 +2,13 @@
 //! button that opens the full-sized code editor. All functionality is defined
 //! in inlineEditorHandler.ts.
 
-import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { colors } from '@/app/theme/colors';
-import { Button } from '@/shared/shadcn/ui/button';
 import { SubtitlesOutlined } from '@mui/icons-material';
 import { Tooltip } from '@mui/material';
 import { useCallback } from 'react';
+
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { colors } from '@/app/theme/colors';
+import { Button } from '@/shared/shadcn/ui/button';
 
 export const InlineEditor = () => {
   const ref = useCallback((div: HTMLDivElement) => {

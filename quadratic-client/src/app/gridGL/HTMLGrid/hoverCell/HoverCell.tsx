@@ -1,14 +1,15 @@
+import { useEffect, useRef, useState } from 'react';
+
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import '@/app/gridGL/HTMLGrid/hoverCell/HoverCell.css';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { pluralize } from '@/app/helpers/pluralize';
-import { JsRenderCodeCell } from '@/app/quadratic-core-types';
+import type { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { useGridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { cn } from '@/shared/shadcn/utils';
-import { useEffect, useRef, useState } from 'react';
-import './HoverCell.css';
 
 export interface EditingCell {
   x: number;

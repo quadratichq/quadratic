@@ -1,12 +1,13 @@
 //! keyboardPosition() handles the movement of the cursor using the arrow keys,
 //! including shift, meta, and ctrl keys.
 
+import { Rectangle } from 'pixi.js';
+
+import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { moveViewport } from '@/app/gridGL/interaction/viewportHelper';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Rectangle } from 'pixi.js';
-import { sheets } from '../../../grid/controller/Sheets';
-import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 
 function setCursorPosition(x: number, y: number) {
   const newPos = { x, y };
