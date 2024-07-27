@@ -31,7 +31,7 @@ export const useBorders = (): UseBordersResults => {
       const cursor = sheets.sheet.cursor;
       if (cursor.multiCursor && cursor.multiCursor.length > 1) {
         console.log('TODO: implement multiCursor border support');
-      } else if (selection !== undefined) {
+      } else if (selection !== undefined && (options.color !== prev.color || options.line !== prev.line)) {
         const rectangle = cursor.multiCursor
           ? cursor.multiCursor[0]
           : new Rectangle(cursor.cursorPosition.x, cursor.cursorPosition.y, 1, 1);
