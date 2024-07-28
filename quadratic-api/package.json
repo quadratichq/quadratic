@@ -9,7 +9,7 @@
     "start:prod": "dotenv -e .env -- node dist/src/server.js --max-old-space-size=8192",
     "postinstall": "prisma generate",
     "prebuild": "rm -rf dist",
-    "build": "tsc  --project tsconfig.production.json && tsc ../quadratic-shared/*.ts",
+    "build": "tsc --project tsconfig.production.json && tsc ../quadratic-shared/*.ts",
     "build:prod": "npm run prebuild && NODE_ENV=production npm run build",
     "update-university-domains": "node scripts/updateUniversityDomains.js",
     "lint": "npm run lint:eslint && npm run lint:prettier",
@@ -25,8 +25,6 @@
     "docker:dev": "npm run docker:up && dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- ts-node-dev --watch src --project ./tsconfig.json -- ./src/server.ts && npm run docker:down",
     "docker:test:dev": "npm run docker:up && dotenv -e .env.test -- prisma migrate deploy && dotenv -e .env.test -- jest --watch --detectOpenHandles && npm run docker:down",
     "docker:test:ci": "npm run docker:up && dotenv -e .env.test -- prisma migrate reset --force && dotenv -e .env.test -- jest --runInBand && npm run docker:down",
-    "script:migrate-1": "ts-node-dev --project ./tsconfig.json -- ./scripts/migrate-1.ts",
-    "script:migrate-2": "ts-node-dev --project ./tsconfig.json -- ./scripts/migrate-2.ts",
     "key:generate": "openssl rand -hex 32"
   },
   "author": "David Kircos",
