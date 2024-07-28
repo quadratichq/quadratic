@@ -1,13 +1,22 @@
 use crate::color::Rgba;
 use crate::grid::formats::format::Format;
+use crate::grid::sheet::validations::validation::{Validation, ValidationStyle};
+use crate::grid::sheet::validations::validation_rules::validation_checkbox::ValidationCheckbox;
+use crate::grid::sheet::validations::validation_rules::validation_list::{
+    ValidationList, ValidationListSource,
+};
+use crate::grid::sheet::validations::validation_rules::ValidationRule;
+use crate::grid::sheet::validations::Validations;
 use crate::grid::{
     block::SameValue,
     file::v1_5::schema::{self as current},
+    file::v1_5::schema_validation::{self as current_validations},
     formatting::RenderSize,
     generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
     CellWrap, CodeCellLanguage, CodeRun, CodeRunResult, Column, ColumnData, ConnectionKind, Grid,
     GridBounds, NumericFormat, NumericFormatKind, Sheet, SheetBorders, SheetId,
 };
+use crate::selection::Selection;
 use crate::sheet_offsets::SheetOffsets;
 use crate::{CellValue, CodeCellValue, Pos, Rect, Value};
 
@@ -355,6 +364,86 @@ fn import_formats(format: &[(i64, (current::Format, i64))]) -> BTreeMap<i64, (Fo
         .collect()
 }
 
+fn import_validations(validations: &current_validations::Validations) -> Validations {
+    Validations {
+        validations: validations
+            .validations
+            .iter()
+            .map(|(uuid, validation)| {
+                (
+                    uuid.to_owned(),
+                    Validation {
+                        id: uuid.to_owned(),
+                        name: validation.name.to_owned(),
+                        rule: match &validation.rule {
+                            current_validations::ValidationRule::None => {
+                                ValidationRule::None
+                            }
+                            current_validations::ValidationRule::List(list) => {
+                                ValidationRule::List(ValidationList {
+                                    source: match &list.source {
+                                        current_validations::ValidationListSource::Selection(selection) => {
+                                            ValidationListSource::Selection(Selection {
+                                                sheet_id: selection.sheet_id.to_owned(),
+                                                x: selection.x,
+                                                y: selection.y,
+                                                rects: selection.rects.as_ref().map(|rects| rects.iter().map(|r| r.into()).collect()),
+                                                rows: selection.rows.clone(),
+                                                columns: selection.columns.clone(),
+                                                all: selection.all,
+                                            })
+                                        }
+                                        current_validations::ValidationListSource::List(list) => {
+                                            ValidationListSource::List(list.iter().map(|s| s.to_owned()).collect())
+                                        }
+                                    },
+                                    ignore_blank: list.ignore_blank,
+                                    drop_down: list.drop_down,
+                                })
+                            }
+                            current_validations::ValidationRule::Checkbox(_) => {
+                                ValidationRule::Checkbox(ValidationCheckbox {})
+                            }
+                        },
+                        message: crate::grid::sheet::validations::validation::ValidationMessage {
+                            show: validation.message.show,
+                            title: validation.message.title.to_owned(),
+                            message: validation.message.message.to_owned(),
+                        },
+                        error: crate::grid::sheet::validations::validation::ValidationError {
+                            show: validation.error.show,
+                            style: match validation.error.style {
+                                current_validations::ValidationStyle::Warning => crate::grid::sheet::validations::validation::ValidationStyle::Warning,
+                                current_validations::ValidationStyle::Stop => crate::grid::sheet::validations::validation::ValidationStyle::Stop,
+                                current_validations::ValidationStyle::Information => crate::grid::sheet::validations::validation::ValidationStyle::Information
+                            },
+                            title: validation.error.title.to_owned(),
+                            message: validation.error.message.to_owned(),
+                        },
+                    },
+                )
+            })
+            .collect(),
+        cell_validations: validations
+            .cell_validations
+            .iter()
+            .map(|(pos, uuid)| (crate::Pos { x: pos.x, y: pos.y }, uuid.clone()))
+            .collect(),
+        column_validations: validations
+            .column_validations
+            .iter()
+            .map(|(column, uuid)| (*column, uuid.clone()))
+            .collect(),
+        row_validations: validations
+            .row_validations
+            .iter()
+            .map(|(row, uuid)| (*row, uuid.clone()))
+            .collect(),
+        all: validations
+            .all.to_owned(),
+    }
+}
+
 pub fn import_sheet(sheet: &current::Sheet) -> Result<Sheet> {
     let mut new_sheet = Sheet {
         id: SheetId::from_str(&sheet.id.id)?,
@@ -376,8 +465,7 @@ pub fn import_sheet(sheet: &current::Sheet) -> Result<Sheet> {
         formats_columns: import_formats(&sheet.formats_columns),
         formats_rows: import_formats(&sheet.formats_rows),
 
-        // todo...
-        validations: Default::default(),
+        validations: import_validations(&sheet.validations),
     };
     new_sheet.recalculate_bounds();
     import_borders_builder(&mut new_sheet, sheet);
@@ -708,6 +796,98 @@ fn export_formats(formats: &BTreeMap<i64, (Format, i64)>) -> Vec<(i64, (current:
         .collect()
 }
 
+fn export_validations(validations: &Validations) -> current::Validations {
+    current::Validations {
+        validations:
+            validations
+                .validations
+                .iter()
+                .map(|(uuid, validation)| {
+                    (
+                    uuid.clone(),
+                    current_validations::Validation {
+                        id: uuid.to_owned(),
+                        name: validation.name.to_owned(),
+                        rule: match &validation.rule {
+                            ValidationRule::None => current_validations::ValidationRule::None,
+                            ValidationRule::List(list) => current_validations::ValidationRule::List(
+                                current_validations::ValidationList {
+                                    source: match &list.source {
+                                        ValidationListSource::Selection(
+                                            selection,
+                                        ) => current_validations::ValidationListSource::Selection(
+                                            current_validations::Selection {
+                                                sheet_id: selection.sheet_id,
+                                                x: selection.x,
+                                                y: selection.y,
+                                                rects: selection
+                                                    .rects.as_ref()
+                                                    .map(|rects| rects.iter().map(|r| r.into()).collect()),
+                                                rows: selection.rows.clone(),
+                                                columns: selection.columns.clone(),
+                                                all: selection.all,
+                                            }
+                                        ),
+                                        ValidationListSource::List(list) => {
+                                            current_validations::ValidationListSource::List(
+                                                list.iter().map(|s| s.to_owned()).collect(),
+                                            )
+                                        }
+                                    },
+                                    ignore_blank: list.ignore_blank,
+                                    drop_down: list.drop_down,
+                                },
+                            ),
+                            ValidationRule::Checkbox(_) => {
+                                current_validations::ValidationRule::Checkbox(
+                                    current_validations::ValidationCheckbox {},
+                                )
+                            }
+                        },
+                        message: current_validations::ValidationMessage {
+                            show: validation.message.show,
+                            title: validation.message.title.to_owned(),
+                            message: validation.message.message.to_owned(),
+                        },
+                        error: current_validations::ValidationError {
+                            show: validation.error.show,
+                            style: match validation.error.style {
+                                ValidationStyle::Warning => {
+                                    current_validations::ValidationStyle::Warning
+                                }
+                                ValidationStyle::Stop => {
+                                    current_validations::ValidationStyle::Stop
+                                }
+                                ValidationStyle::Information => {
+                                    current_validations::ValidationStyle::Information
+                                }
+                            },
+                            title: validation.error.title.to_owned(),
+                            message: validation.error.message.to_owned(),
+                        },
+                    },
+                )
+                })
+                .collect(),
+        cell_validations: validations
+            .cell_validations
+            .iter()
+            .map(|(pos, uuid)| (current::Pos { x: pos.x, y: pos.y }, uuid.clone()))
+            .collect(),
+        column_validations: validations
+            .column_validations
+            .iter()
+            .map(|(column, uuid)| (*column, uuid.clone()))
+            .collect(),
+        row_validations: validations
+            .row_validations
+            .iter()
+            .map(|(row, uuid)| (*row, uuid.clone()))
+            .collect(),
+        all: validations.all.as_ref().map(|uuid| uuid.clone()),
+    }
+}
+
 pub(crate) fn export_sheet(sheet: &Sheet) -> current::Sheet {
     current::Sheet {
         id: current::Id {
@@ -722,6 +902,7 @@ pub(crate) fn export_sheet(sheet: &Sheet) -> current::Sheet {
         formats_all: sheet.format_all.as_ref().and_then(export_format),
         formats_columns: export_formats(&sheet.formats_columns),
         formats_rows: export_formats(&sheet.formats_rows),
+        validations: export_validations(&sheet.validations),
         code_runs: sheet
             .code_runs
             .iter()

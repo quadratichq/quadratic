@@ -3,7 +3,7 @@ import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionS
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 import { useSetRecoilState } from 'recoil';
 
-const commands: CommandGroup = {
+export const validationCommandGroup: CommandGroup = {
   heading: 'Data Validation',
   commands: [
     {
@@ -22,5 +22,3 @@ const commands: CommandGroup = {
     },
   ],
 };
-
-export default commands;

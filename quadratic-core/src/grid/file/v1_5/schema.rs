@@ -6,6 +6,7 @@ use std::str::FromStr;
 
 pub use super::run_error::RunError;
 pub use super::run_error::RunErrorMsg;
+pub use super::schema_validation::Validations;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -48,6 +49,42 @@ impl From<crate::SheetPos> for SheetPos {
             x: pos.x,
             y: pos.y,
             sheet_id: pos.sheet_id.into(),
+        }
+    }
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Rect {
+    pub min: Pos,
+    pub max: Pos,
+}
+
+impl From<&crate::Rect> for Rect {
+    fn from(rect: &crate::Rect) -> Self {
+        Self {
+            min: Pos {
+                x: rect.min.x,
+                y: rect.min.y,
+            },
+            max: Pos {
+                x: rect.max.x,
+                y: rect.max.y,
+            },
+        }
+    }
+}
+
+impl From<&Rect> for crate::Rect {
+    fn from(rect: &Rect) -> Self {
+        Self {
+            min: crate::Pos {
+                x: rect.min.x,
+                y: rect.min.y,
+            },
+            max: crate::Pos {
+                x: rect.max.x,
+                y: rect.max.y,
+            },
         }
     }
 }
@@ -129,6 +166,9 @@ pub struct Sheet {
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub formats_rows: Vec<(i64, (Format, i64))>,
+
+    #[serde(default)]
+    pub validations: Validations,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
