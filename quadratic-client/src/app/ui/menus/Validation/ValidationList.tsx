@@ -1,7 +1,7 @@
 import { SheetRange } from './SheetRange';
 import { ValidationData } from './useValidationData';
 import { useMemo } from 'react';
-import { ValidationCheckbox, ValidationMoreOptions, ValidationInput } from './ValidationUI';
+import { ValidationUICheckbox, ValidationMoreOptions, ValidationInput } from './ValidationUI';
 import { parseSelectionRange } from '@/app/grid/sheet/selection';
 import { ValidationRule } from '@/app/quadratic-core-types';
 
@@ -86,10 +86,18 @@ export const ValidationList = (props: Props) => {
       <ValidationMoreOptions validationData={props.validationData} />
 
       {moreOptions && (
-        <ValidationCheckbox label="Ignore blank values" showDropdown={ignoreBlank} changeDropDown={changeIgnoreBlank} />
+        <ValidationUICheckbox
+          label="Ignore blank values"
+          showDropdown={ignoreBlank}
+          changeDropDown={changeIgnoreBlank}
+        />
       )}
       {moreOptions && (
-        <ValidationCheckbox label="Show dropdown in cell" showDropdown={showDropdown} changeDropDown={changeDropDown} />
+        <ValidationUICheckbox
+          label="Show dropdown in cell"
+          showDropdown={showDropdown}
+          changeDropDown={changeDropDown}
+        />
       )}
     </div>
   );

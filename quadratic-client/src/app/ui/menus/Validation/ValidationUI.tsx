@@ -14,7 +14,7 @@ interface CheckboxProps {
   changeDropDown: (checked: boolean) => void;
 }
 
-export const ValidationCheckbox = (props: CheckboxProps) => {
+export const ValidationUICheckbox = (props: CheckboxProps) => {
   const { label, showDropdown, changeDropDown } = props;
 
   return (

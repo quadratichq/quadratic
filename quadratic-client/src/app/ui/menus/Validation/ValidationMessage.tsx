@@ -1,6 +1,6 @@
 import { ValidationStyle } from '@/app/quadratic-core-types';
 import { ValidationData } from './useValidationData';
-import { ValidationCheckbox, ValidationDropdown, ValidationInput, ValidationTextArea } from './ValidationUI';
+import { ValidationUICheckbox, ValidationDropdown, ValidationInput, ValidationTextArea } from './ValidationUI';
 
 interface Props {
   validationData: ValidationData;
@@ -77,7 +77,7 @@ export const ValidationMessage = (props: Props) => {
     <>
       <div className="border-t border-t-gray-100 pt-4 font-medium">Input Message</div>
       <div className="flex flex-col gap-5">
-        <ValidationCheckbox
+        <ValidationUICheckbox
           label="Show input message when cell is selected"
           showDropdown={!!validation?.message.show}
           changeDropDown={showMessage}
@@ -95,7 +95,7 @@ export const ValidationMessage = (props: Props) => {
         />
       </div>
       <div className="border-t border-t-gray-100 pt-4 font-medium">Error Message</div>
-      <ValidationCheckbox
+      <ValidationUICheckbox
         label="Show error alert after invalid data"
         showDropdown={!!validation?.error.show}
         changeDropDown={showError}

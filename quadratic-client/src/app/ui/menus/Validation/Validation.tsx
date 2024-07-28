@@ -12,6 +12,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { getSelectionRange, parseSelectionRange } from '@/app/grid/sheet/selection';
 import { useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { ValidationCheckbox } from './ValidationCheckbox';
 
 const CRITERIA_OPTIONS = [
   { value: 'none', label: 'None' },
@@ -41,6 +42,8 @@ export const Validation = () => {
       case 'list-range':
       case 'list':
         return <ValidationList validationData={validationData} />;
+      case 'checkbox':
+        return <ValidationCheckbox validationData={validationData} />;
     }
     return null;
   }, [rule, validationData]);
