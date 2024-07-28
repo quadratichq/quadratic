@@ -18,21 +18,21 @@ pub mod validations_get;
 pub struct Validations {
     // Holds all validations within a sheet mapped to a Uuid.
     #[serde(default)]
-    validations: HashMap<Uuid, Validation>,
+    pub validations: HashMap<Uuid, Validation>,
 
     // Map of validation to a Pos.
     #[serde(default)]
-    cell_validations: HashMap<Pos, Uuid>,
+    pub cell_validations: HashMap<Pos, Uuid>,
 
     // Map of validation to a Column.
     #[serde(default)]
-    column_validations: HashMap<i64, Uuid>,
+    pub column_validations: HashMap<i64, Uuid>,
 
     // Map of validation to a Row.
     #[serde(default)]
-    row_validations: HashMap<i64, Uuid>,
+    pub row_validations: HashMap<i64, Uuid>,
 
     // validation for the entire sheet.
     #[serde(default)]
-    all: Option<Uuid>,
+    pub all: Option<Uuid>,
 }
