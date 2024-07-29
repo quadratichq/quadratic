@@ -68,8 +68,10 @@ fn test_convert_to_array() {
     g.sheets_mut()[0].set_cell_value(pos![A3], 1);
     g.sheets_mut()[0].set_cell_value(pos![A4], -5);
     g.sheets_mut()[0].set_cell_value(pos![A5], "hello");
+    // This string format is used for testing and potentially display; not as an
+    // unambiguous representation, so it's fine that the string is unquoted.
     assert_eq!(
-        "{; 0; 1; -5; \"hello\"; ; ; ; ; }",
+        "{; 0; 1; -5; hello; ; ; ; ; }",
         eval_to_string(&mut g, "_TEST_ARRAY(A1:A10)"),
     );
     assert_eq!(
