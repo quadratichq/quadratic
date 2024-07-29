@@ -43,7 +43,7 @@ impl Sheet {
 
                     let pos = Pos { x, y };
 
-                    if !selection.pos_in_selection(pos) {
+                    if !selection.contains_pos(pos) {
                         continue;
                     }
 
@@ -213,7 +213,7 @@ impl Sheet {
                                     x: x - bounds.min.x,
                                     y: y - bounds.min.y,
                                 };
-                                if selection.pos_in_selection(Pos { x, y }) {
+                                if selection.contains_pos(Pos { x, y }) {
                                     if include_in_cells {
                                         cells.set(pos.x as u32, pos.y as u32, value.clone());
                                     }

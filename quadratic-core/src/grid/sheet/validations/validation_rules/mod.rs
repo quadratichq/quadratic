@@ -13,10 +13,8 @@ use super::super::Sheet;
 pub mod validation_checkbox;
 pub mod validation_list;
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum ValidationRule {
-    #[default]
-    None,
     List(ValidationList),
     Checkbox(ValidationCheckbox),
 }
@@ -27,8 +25,15 @@ impl ValidationRule {
         match &self {
             ValidationRule::List(list) => ValidationList::validate(sheet, list, value),
             ValidationRule::Checkbox(_) => ValidationCheckbox::validate(value),
-            ValidationRule::None => true,
         }
+    }
+
+    pub fn is_list(&self) -> bool {
+        matches!(self, ValidationRule::List(_))
+    }
+
+    pub fn is_checkbox(&self) -> bool {
+        matches!(self, ValidationRule::Checkbox(_))
     }
 }
 
@@ -72,8 +77,32 @@ mod tests {
     }
 
     #[test]
-    fn validate_none() {
-        let sheet = Sheet::test();
-        assert!(ValidationRule::None.validate(&sheet, &CellValue::Text("test".to_string())));
+    fn is_list() {
+        let list = ValidationList {
+            source: ValidationListSource::List(vec!["test".to_string()]),
+            ignore_blank: true,
+            drop_down: false,
+        };
+        let rule = ValidationRule::List(list);
+        assert!(rule.is_list());
+
+        let checkbox = ValidationCheckbox {};
+        let rule = ValidationRule::Checkbox(checkbox);
+        assert!(!rule.is_list());
+    }
+
+    #[test]
+    fn is_checkbox() {
+        let checkbox = ValidationCheckbox {};
+        let rule = ValidationRule::Checkbox(checkbox);
+        assert!(rule.is_checkbox());
+
+        let list = ValidationList {
+            source: ValidationListSource::List(vec!["test".to_string()]),
+            ignore_blank: true,
+            drop_down: false,
+        };
+        let rule = ValidationRule::List(list);
+        assert!(!rule.is_checkbox());
     }
 }

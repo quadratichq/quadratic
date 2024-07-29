@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use super::formatting::{CellAlign, CellWrap};
 use super::CodeCellLanguage;
@@ -200,4 +201,14 @@ pub enum JsRenderCodeCellState {
 pub struct JsClipboard {
     pub plain_text: String,
     pub html: String,
+}
+
+// Used to serialize the checkboxes contained within a sheet.
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
+pub struct JsValidationSheet {
+    // checkboxes that need to be rendered
+    checkboxes: Vec<(Pos, bool)>,
+
+    // validation errors that will be displayed
+    errors: Vec<(Pos, String)>,
 }

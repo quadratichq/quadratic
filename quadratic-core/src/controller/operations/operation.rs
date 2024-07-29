@@ -118,17 +118,13 @@ pub enum Operation {
         dest: SheetPos,
     },
 
-    // adds or updates a validation in the sheet
-    AddValidation {
-        sheet_id: SheetId,
-        validation_id: Uuid,
-        validation: Option<Validation>,
+    SetValidation {
+        validation: Validation,
     },
 
-    // applies a validation to a selection
-    SetValidationSelection {
-        selection: Selection,
-        validation_id: Option<Uuid>,
+    RemoveValidation {
+        sheet_id: SheetId,
+        validation_id: Uuid,
     },
 }
 
@@ -222,25 +218,17 @@ impl fmt::Display for Operation {
             Operation::AddSheetSchema { schema } => {
                 write!(fmt, "AddSheetSchema {{ schema: {:?} }}", schema)
             }
-            Operation::AddValidation {
+            Operation::SetValidation { validation } => {
+                write!(fmt, "SetValidation {{ validation: {:?} }}", validation)
+            }
+            Operation::RemoveValidation {
                 sheet_id,
                 validation_id,
-                validation,
             } => {
                 write!(
                     fmt,
-                    "AddValidation {{ sheet_id: {}, validation_id: {} validation: {:?} }}",
-                    sheet_id, validation_id, validation
-                )
-            }
-            Operation::SetValidationSelection {
-                selection,
-                validation_id: validation,
-            } => {
-                write!(
-                    fmt,
-                    "SetValidation {{ selection: {:?} validation: {:?} }}",
-                    selection, validation
+                    "RemoveValidation {{ sheet_id: {}, validation_id: {} }}",
+                    sheet_id, validation_id
                 )
             }
         }

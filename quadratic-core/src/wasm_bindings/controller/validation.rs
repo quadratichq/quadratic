@@ -5,6 +5,7 @@ use super::*;
 
 #[wasm_bindgen]
 impl GridController {
+    /// Returns a stringified version of Validation for a given selection
     #[wasm_bindgen(js_name = "getValidation")]
     pub fn js_validation(&self, selection: String) -> String {
         let Ok(selection) = Selection::from_str(&selection) else {

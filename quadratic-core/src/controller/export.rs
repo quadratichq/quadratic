@@ -21,7 +21,7 @@ impl GridController {
             let mut line = vec![];
             for x in bounds.min.x..=bounds.max.x {
                 // we need to ignore unselected columns or rows
-                if selection.rects.is_some() || selection.pos_in_selection(Pos { x, y }) {
+                if selection.rects.is_some() || selection.contains_pos(Pos { x, y }) {
                     if let Some((_, value)) = iter.peeking_next(|(pos, _)| pos.x == x && pos.y == y)
                     {
                         line.push(value.to_string());

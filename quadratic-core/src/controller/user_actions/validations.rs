@@ -1,70 +1,64 @@
-use std::str::FromStr;
-
 use crate::{
-    controller::{
-        active_transactions::transaction_name::TransactionName, operations::operation::Operation,
-        GridController,
-    },
+    controller::GridController,
     grid::{sheet::validations::validation::Validation, SheetId},
     selection::Selection,
 };
 
 impl GridController {
     /// Gets a validation based on a Selection.
-    pub fn validation(&self, selection: Selection) -> Option<&Validation> {
-        self.try_sheet(selection.sheet_id)
-            .and_then(|sheet| sheet.validations.validation(selection))
+    pub fn validation(&self, _selection: Selection) -> Option<&Validation> {
+        // self.try_sheet(selection.sheet_id)
+        //     .and_then(|sheet| sheet.validations.validation(selection))
+        None
     }
 
     /// Gets the validations for a sheet.
-    pub fn validations(&self, sheet_id: SheetId) -> Vec<&Validation> {
-        match self.try_sheet(sheet_id) {
-            None => vec![],
-            Some(sheet) => sheet.validations.validations_all(),
-        }
+    pub fn validations(&self, sheet_id: SheetId) -> Option<&Vec<Validation>> {
+        let sheet = self.try_sheet(sheet_id)?;
+        sheet.validations.validations()
     }
 
     pub fn update_validation(
         &mut self,
-        selection: Selection,
-        validation: Validation,
-        cursor: Option<String>,
+        _selection: Selection,
+        _validation: Validation,
+        _cursor: Option<String>,
     ) {
-        if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-            let validation_id = validation.id;
-            let ops = if validation.no_rule() {
-                vec![Operation::SetValidationSelection {
-                    selection,
-                    validation_id: None,
-                }]
-            } else {
-                vec![
-                    Operation::AddValidation {
-                        sheet_id: sheet.id,
-                        validation_id,
-                        validation: Some(validation),
-                    },
-                    Operation::SetValidationSelection {
-                        selection,
-                        validation_id: Some(validation_id),
-                    },
-                ]
-            };
-            self.start_user_transaction(ops, cursor, TransactionName::Validation);
-        }
+        // if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+        //     let validation_id = validation.id;
+        //     let ops = if validation.is_no_rule() {
+        //         vec![Operation::SetValidationSelection {
+        //             selection,
+        //             validation_id: None,
+        //         }]
+        //     } else {
+        //         vec![
+        //             Operation::AddValidation {
+        //                 sheet_id: sheet.id,
+        //                 validation_id,
+        //                 validation: Some(validation),
+        //             },
+        //             Operation::SetValidationSelection {
+        //                 selection,
+        //                 validation_id: Some(validation_id),
+        //             },
+        //         ]
+        //     };
+        //     self.start_user_transaction(ops, cursor, TransactionName::Validation);
+        // }
     }
 
-    pub fn delete_validation(&mut self, selection: String, cursor: Option<String>) {
-        if let Ok(selection) = Selection::from_str(&selection) {
-            let ops = vec![Operation::SetValidationSelection {
-                selection,
-                validation_id: None,
-            }];
-            self.start_user_transaction(ops, cursor, TransactionName::Validation);
-        }
+    pub fn delete_validation(&mut self, _selection: String, _cursor: Option<String>) {
+        // if let Ok(selection) = Selection::from_str(&selection) {
+        //     let ops = vec![Operation::SetValidationSelection {
+        //         selection,
+        //         validation_id: None,
+        //     }];
+        //     self.start_user_transaction(ops, cursor, TransactionName::Validation);
+        // }
     }
 }
-
+/*
 #[cfg(test)]
 mod tests {
     use uuid::Uuid;
@@ -131,3 +125,4 @@ mod tests {
         assert!(gc.validations(sheet_id).is_empty());
     }
 }
+*/

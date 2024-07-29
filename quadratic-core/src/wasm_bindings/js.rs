@@ -110,6 +110,8 @@ extern "C" {
         w: Option<String>,
         h: Option<String>,
     );
+
+    pub fn jsSheetValidations(sheet_id: String, validations: String /* JsValidationSheet */);
 }
 
 #[cfg(test)]
@@ -527,5 +529,14 @@ pub fn jsSendImage(
             w,
             h
         ),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSheetValidations(sheet_id: String, validations: String /* JsValidation */) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsSheetValidations",
+        format!("{},{}", sheet_id, validations),
     ));
 }

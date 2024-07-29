@@ -155,8 +155,10 @@ impl Selection {
         }
     }
 
-    /// Returns whether a position is located inside a selection.
-    pub fn pos_in_selection(&self, pos: Pos) -> bool {
+    /// Returns whether a position is located inside a selection. If only_rects
+    /// is true, then it will only check Selection.rects and ignore all,
+    /// columns, and rows.
+    pub fn contains_pos(&self, pos: Pos) -> bool {
         if self.all {
             return true;
         }
@@ -177,6 +179,22 @@ impl Selection {
             if rects.iter().any(|rect| rect.contains(pos)) {
                 return true;
             }
+        }
+        false
+    }
+
+    /// Returns whether a column is located inside a selection.
+    pub fn contains_column(&self, x: i64) -> bool {
+        if let Some(columns) = self.columns.as_ref() {
+            return columns.contains(&x);
+        }
+        false
+    }
+
+    /// Returns whether a row is located inside a selection.
+    pub fn contains_row(&self, y: i64) -> bool {
+        if let Some(rows) = self.rows.as_ref() {
+            return rows.contains(&y);
         }
         false
     }
@@ -402,15 +420,15 @@ mod test {
             all: true,
             ..Default::default()
         };
-        assert!(selection.pos_in_selection(Pos { x: 0, y: 0 }));
+        assert!(selection.contains_pos(Pos { x: 0, y: 0 }));
 
         let selection = Selection {
             sheet_id,
             rows: Some(vec![1, 2, 3]),
             ..Default::default()
         };
-        assert!(selection.pos_in_selection(Pos { x: 0, y: 1 }));
-        assert!(!selection.pos_in_selection(Pos { x: 0, y: 4 }));
+        assert!(selection.contains_pos(Pos { x: 0, y: 1 }));
+        assert!(!selection.contains_pos(Pos { x: 0, y: 4 }));
 
         let selection = Selection {
             sheet_id,
@@ -418,9 +436,9 @@ mod test {
             rows: Some(vec![10]),
             ..Default::default()
         };
-        assert!(selection.pos_in_selection(Pos { x: 2, y: 0 }));
-        assert!(selection.pos_in_selection(Pos { x: -5, y: 10 }));
-        assert!(!selection.pos_in_selection(Pos { x: 4, y: 0 }));
+        assert!(selection.contains_pos(Pos { x: 2, y: 0 }));
+        assert!(selection.contains_pos(Pos { x: -5, y: 10 }));
+        assert!(!selection.contains_pos(Pos { x: 4, y: 0 }));
 
         let selection = Selection {
             sheet_id,
@@ -428,9 +446,9 @@ mod test {
             rects: Some(vec![Rect::from_numbers(1, 2, 3, 4)]),
             ..Default::default()
         };
-        assert!(selection.pos_in_selection(Pos { x: 1, y: 2 }));
-        assert!(!selection.pos_in_selection(Pos { x: 4, y: 4 }));
-        assert!(selection.pos_in_selection(Pos { x: 5, y: 5 }));
+        assert!(selection.contains_pos(Pos { x: 1, y: 2 }));
+        assert!(!selection.contains_pos(Pos { x: 4, y: 4 }));
+        assert!(selection.contains_pos(Pos { x: 5, y: 5 }));
     }
 
     #[test]
@@ -543,5 +561,21 @@ mod test {
                 all: false
             }
         );
+    }
+
+    #[test]
+    fn contains_column() {
+        let sheet_id = SheetId::test();
+        let selection = Selection::columns(&[1, 2, 3], sheet_id);
+        assert!(selection.contains_column(1));
+        assert!(!selection.contains_column(4));
+    }
+
+    #[test]
+    fn contains_row() {
+        let sheet_id = SheetId::test();
+        let selection = Selection::rows(&[1, 2, 3], sheet_id);
+        assert!(selection.contains_row(1));
+        assert!(!selection.contains_row(4));
     }
 }
