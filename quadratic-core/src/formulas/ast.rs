@@ -37,7 +37,7 @@ impl AstNodeContents {
             AstNodeContents::FunctionCall { func, .. } => match func.inner.as_str() {
                 "=" | "==" | "<>" | "!=" | "<" | ">" | "<=" | ">=" => "comparison",
                 s if s.chars().all(|c| c.is_alphanumeric() || c == '_') => "function call",
-                _ => "expression",
+                _ => "expression", // could be improved to say what kind of expression
             },
             AstNodeContents::Paren(contents) => match contents.len() {
                 0 => "empty tuple", // shouldn't ever happen

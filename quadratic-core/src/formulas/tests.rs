@@ -375,6 +375,70 @@ fn test_sheet_references() {
     );
 }
 
+#[test]
+fn test_cell_range_op_errors() {
+    let g = Grid::new();
+
+    eval_to_string(&g, "A1:B5"); // assert ok
+
+    assert_eq!(
+        RunErrorMsg::Expected {
+            expected: "cell reference".into(),
+            got: Some("comparison".into()),
+        },
+        eval_to_err(&g, "A1:(1==2)").msg,
+    );
+    assert_eq!(
+        RunErrorMsg::Expected {
+            expected: "cell reference".into(),
+            got: Some("expression".into()), // could be improved
+        },
+        eval_to_err(&g, "A1:(1+5)").msg,
+    );
+    assert_eq!(
+        RunErrorMsg::Expected {
+            expected: "cell reference".into(),
+            got: Some("function call".into()),
+        },
+        eval_to_err(&g, "A1:SUM(1, 2, 3)").msg,
+    );
+    assert_eq!(
+        RunErrorMsg::Expected {
+            expected: "cell reference".into(),
+            got: Some("array literal".into()),
+        },
+        eval_to_err(&g, "A1:{1, 2, 3}").msg,
+    );
+    assert_eq!(
+        RunErrorMsg::Expected {
+            expected: "cell reference".into(),
+            got: Some("array literal".into()),
+        },
+        eval_to_err(&g, "A1:{1, 2, 3}").msg,
+    );
+    assert_eq!(
+        RunErrorMsg::Expected {
+            expected: "cell reference".into(),
+            got: Some("string literal".into()),
+        },
+        eval_to_err(&g, "A1:\"hello\"").msg,
+    );
+    assert_eq!(
+        RunErrorMsg::Expected {
+            expected: "cell reference".into(),
+            got: Some("numeric literal".into()),
+        },
+        eval_to_err(&g, "A1:12").msg,
+    );
+    assert_eq!(
+        RunErrorMsg::Expected {
+            expected: "cell reference".into(),
+            got: Some("boolean literal".into()),
+        },
+        eval_to_err(&g, "A1:TRUE").msg,
+    );
+}
+
 /// Regression test for quadratic#410
 #[test]
 #[parallel]
