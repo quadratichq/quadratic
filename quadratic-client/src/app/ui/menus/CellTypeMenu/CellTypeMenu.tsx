@@ -1,6 +1,5 @@
 import { cellTypeMenuOpenedCountAtom } from '@/app/atoms/cellTypeMenuOpenedCountAtom';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { focusGrid } from '@/app/helpers/focusGrid';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { LinkNewTab } from '@/app/ui/components/LinkNewTab';
 import { JavaScript } from '@/app/ui/icons';
@@ -98,7 +97,6 @@ export default function CellTypeMenu() {
       ...editorInteractionState,
       showCellTypeMenu: false,
     });
-    focusGrid();
   }, [editorInteractionState, setEditorInteractionState]);
 
   const openEditor = useCallback(

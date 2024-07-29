@@ -2,6 +2,7 @@ import { User } from 'auth0';
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
+import { clearDb } from '../../tests/testDataGenerator';
 
 beforeEach(async () => {
   // Create some users & team
@@ -43,14 +44,7 @@ beforeEach(async () => {
   });
 });
 
-afterEach(async () => {
-  const deleteTeamInvites = dbClient.teamInvite.deleteMany();
-  const deleteTeamUsers = dbClient.userTeamRole.deleteMany();
-  const deleteUsers = dbClient.user.deleteMany();
-  const deleteTeams = dbClient.team.deleteMany();
-
-  await dbClient.$transaction([deleteTeamInvites, deleteTeamUsers, deleteUsers, deleteTeams]);
-});
+afterEach(clearDb);
 
 jest.mock('auth0', () => {
   return {

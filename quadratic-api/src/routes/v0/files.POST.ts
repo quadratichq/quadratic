@@ -46,9 +46,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.P
   return res.status(201).json({
     file: { uuid: dbFile.uuid, name: dbFile.name },
     team: {
-      // TODO: (team-schema) we can change this to dbFile.ownerTeam.uuid once we
-      // update the team schema so ownerTeam is required
-      uuid: teamUuid, // dbFile.ownerTeam.uuid
+      uuid: (dbFile.ownerTeam as any).uuid,
     },
   });
 }
