@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::grid::SheetId;
 
-use super::schema::{Pos, Rect};
+use super::schema::Rect;
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Selection {
@@ -69,8 +69,8 @@ pub enum ValidationRule {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Validation {
+    pub selection: Selection,
     pub id: Uuid,
-    pub name: String,
     pub rule: ValidationRule,
     pub message: ValidationMessage,
     pub error: ValidationError,
@@ -78,21 +78,6 @@ pub struct Validation {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Validations {
-    pub validations: Vec<(Uuid, Validation)>,
-
-    // Map of validation to a Pos.
     #[serde(default)]
-    pub cell_validations: Vec<(Pos, Uuid)>,
-
-    // Map of validation to a Column.
-    #[serde(default)]
-    pub column_validations: Vec<(i64, Uuid)>,
-
-    // Map of validation to a Row.
-    #[serde(default)]
-    pub row_validations: Vec<(i64, Uuid)>,
-
-    // validation for the entire sheet.
-    #[serde(default)]
-    pub all: Option<Uuid>,
+    pub validations: Vec<Validation>,
 }
