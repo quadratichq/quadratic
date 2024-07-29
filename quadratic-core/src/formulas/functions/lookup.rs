@@ -1298,7 +1298,7 @@ mod tests {
         g.sheets_mut()[0].set_cell_value(pos![A42], "funny number");
         assert_eq!("funny number", eval_to_string(&g, s));
 
-        let s = "INDEX(A6:Q6, 12)";
+        let s = "INDEX((A6:Q6), 12)"; // parens are fine!
         g.sheets_mut()[0].set_cell_value(pos![L6], "twelfth");
         assert_eq!("twelfth", eval_to_string(&g, s));
 
