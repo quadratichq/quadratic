@@ -1,6 +1,7 @@
 import { Button } from '@/shared/shadcn/ui/button';
 import { useValidationsData } from './useValidationsData';
 import { ValidationsHeader } from './ValidationsHeader';
+import { ValidationEntry } from './ValidationEntry';
 
 export const Validations = () => {
   const validationsData = useValidationsData();
@@ -11,12 +12,16 @@ export const Validations = () => {
       className="border-gray relative flex h-full flex-col border-l bg-background px-3 py-1 text-sm"
       style={{ width: '30rem' }}
     >
-      <ValidationsHeader validationsData={validationsData} />
+      <ValidationsHeader />
 
       <div className="grow">
-        {validations?.map((validation) => (
-          <div key={validation.id}></div>
-        ))}
+        {validations &&
+          validations.map((validation, index) => (
+            <ValidationEntry
+              className={index < validations.length - 1 ? 'border-b border-t-gray-100' : undefined}
+              validation={validation}
+            />
+          ))}
       </div>
 
       <div className="mt-3 flex w-full border-t border-t-gray-100 pt-2">

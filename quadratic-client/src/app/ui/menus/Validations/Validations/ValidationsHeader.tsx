@@ -5,13 +5,8 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 import { Close } from '@mui/icons-material';
 import { useCallback, useState } from 'react';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { ValidationsData } from './useValidationsData';
 
-interface Props {
-  validationsData: ValidationsData;
-}
-
-export const ValidationsHeader = (props: Props) => {
+export const ValidationsHeader = () => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
 
   const close = useCallback(() => {
