@@ -79,12 +79,6 @@ fn value_bytes(value: Value) -> Vec<u8> {
         Value::Data(bytes) => bytes,
         _ => vec![],
     }
-
-    // if let Value::Data(bytes) = value {
-    //     String::from_utf8(bytes.to_owned()).unwrap_or_default()
-    // } else {
-    //     "".into()
-    // }
 }
 
 fn parse_message(id: &StreamId, preserve_sequence: bool) -> Message {

@@ -59,16 +59,18 @@ pub struct TransactionServer {
 
 // From doesn't work since we don't have file_id
 #[allow(clippy::from_over_into)]
-impl Into<Transaction> for TransactionServer {
-    fn into(self) -> Transaction {
-        let operations = Transaction::decompress_and_deserialize(&self.operations).unwrap();
+impl TryInto<Transaction> for TransactionServer {
+    type Error = anyhow::Error;
 
-        Transaction {
+    fn try_into(self) -> Result<Transaction> {
+        let operations = Transaction::decompress_and_deserialize(&self.operations)?;
+
+        Ok(Transaction {
             id: self.id,
             sequence_num: Some(self.sequence_num),
             operations,
             cursor: None,
-        }
+        })
     }
 }
 

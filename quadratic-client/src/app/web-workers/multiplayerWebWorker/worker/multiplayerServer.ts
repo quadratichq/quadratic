@@ -294,11 +294,6 @@ export class MultiplayerServer {
     this.websocket.send(JSON.stringify(message));
   }
 
-  private sendBinary(message: Uint8Array) {
-    if (!this.websocket) throw new Error('Expected websocket to be defined in sendTransaction');
-    this.websocket.send(message);
-  }
-
   sendTransaction(transactionMessage: CoreMultiplayerTransaction) {
     if (this.state === 'connecting' || this.state === 'waiting to reconnect') {
       this.waitingForConnection.push(this.sendTransaction.bind(this, transactionMessage));

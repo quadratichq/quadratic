@@ -204,7 +204,7 @@ impl GridController {
                 .transactions
                 .out_of_order_transactions
                 .iter()
-                .position(|t| t.sequence_num.unwrap() < sequence_num)
+                .position(|t| t.sequence_num.unwrap_or(0) < sequence_num)
                 .unwrap_or(self.transactions.out_of_order_transactions.len());
             self.transactions
                 .out_of_order_transactions
@@ -224,17 +224,23 @@ impl GridController {
         // combine all transaction into one transaction
         transactions.iter().for_each(|t| {
             let operations =
-                Transaction::decompress_and_deserialize::<Vec<Operation>>(&t.operations).unwrap();
+                Transaction::decompress_and_deserialize::<Vec<Operation>>(&t.operations);
 
-            let mut transaction = PendingTransaction {
-                id: t.id,
-                transaction_type: TransactionType::Multiplayer,
-                operations: operations.into(),
-                cursor: None,
-                ..Default::default()
-            };
+            if let Ok(operations) = operations {
+                let mut transaction = PendingTransaction {
+                    id: t.id,
+                    transaction_type: TransactionType::Multiplayer,
+                    operations: operations.into(),
+                    cursor: None,
+                    ..Default::default()
+                };
 
-            self.client_apply_transaction(&mut transaction, t.sequence_num);
+                self.client_apply_transaction(&mut transaction, t.sequence_num);
+            } else {
+                dbgjs!(
+                    "Unable to decompress and deserialize operations in received_transactions()"
+                );
+            }
         });
         self.reapply_unsaved_transactions();
         self.finalize_transaction(&mut results);
@@ -251,12 +257,16 @@ impl GridController {
             // send it to the server if we've not successfully sent it to the server
             if cfg!(target_family = "wasm") && !transaction.sent_to_server {
                 let compressed_ops =
-                    Transaction::serialize_and_compress(&unsaved_transaction.forward.operations)
-                        .unwrap();
-                crate::wasm_bindings::js::jsSendTransaction(
-                    transaction_id.to_string(),
-                    &compressed_ops,
-                );
+                    Transaction::serialize_and_compress(&unsaved_transaction.forward.operations);
+
+                if let Ok(compressed_ops) = compressed_ops {
+                    crate::wasm_bindings::js::jsSendTransaction(
+                        transaction_id.to_string(),
+                        &compressed_ops,
+                    );
+                } else {
+                    dbgjs!("Unable to serialize and compress operations in apply_offline_unsaved_transaction()");
+                }
             }
         } else {
             let transaction = &mut PendingTransaction {

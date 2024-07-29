@@ -186,17 +186,18 @@ pub(crate) async fn handle_message(
 
             // get and increment the room's sequence_num
             let room_sequence_num = get_mut_room!(state, file_id)?.increment_sequence_num();
+            let encoded_operations = STANDARD.encode(&operations);
 
             // add the transaction to the transaction queue
             let sequence_num = state
-                .push_pubsub(id, file_id, operations.clone(), room_sequence_num)
+                .push_pubsub(id, file_id, operations, room_sequence_num)
                 .await?;
 
             // broadcast the transaction to all users in the room
             let response = MessageResponse::Transaction {
                 id,
                 file_id,
-                operations: STANDARD.encode(&operations),
+                operations: encoded_operations,
                 sequence_num,
             };
 
