@@ -56,7 +56,7 @@ export interface Format { align: CellAlign | null, wrap: CellWrap | null, numeri
 export interface JsSheetFill { columns: Array<[bigint, [string, bigint]]>, rows: Array<[bigint, [string, bigint]]>, all: string | null, }
 export interface ColumnRow { column: number, row: number, }
 export interface Validation { id: string, selection: Selection, rule: ValidationRule, message: ValidationMessage, error: ValidationError, }
-export type ValidationRule = { "List": ValidationList } | { "Checkbox": ValidationCheckbox };
+export type ValidationRule = "None" | { "List": ValidationList } | { "Checkbox": ValidationCheckbox };
 export interface ValidationError { show: boolean, style: ValidationStyle, title: string | null, message: string | null, }
 export interface ValidationMessage { show: boolean, title: string | null, message: string | null, }
 export type ValidationCheckbox = Record<string, never>;

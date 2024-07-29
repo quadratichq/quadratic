@@ -8,6 +8,8 @@ use validation::{Validation, ValidationDisplay, ValidationDisplaySheet};
 
 use crate::{controller::operations::operation::Operation, selection::Selection, Pos};
 
+use super::Sheet;
+
 pub mod validation;
 pub mod validation_rules;
 
@@ -139,6 +141,20 @@ impl Validations {
             }
         });
         reverse
+    }
+
+    /// Validates a pos in the sheet.
+    pub fn validate(&self, sheet: &Sheet, pos: Pos) -> bool {
+        for v in self.validations.iter().rev() {
+            if v.selection.contains_pos(pos) {
+                if let Some(value) = sheet.cell_value_ref(pos) {
+                    return v.rule.validate(sheet, value);
+                } else {
+                    return v.rule.allow_blank();
+                }
+            }
+        }
+        true
     }
 }
 
