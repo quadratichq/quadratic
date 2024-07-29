@@ -3,29 +3,10 @@
 
 import { v4 as uuid } from 'uuid';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Validation, ValidationRule } from '@/app/quadratic-core-types';
+import { Selection, Validation, ValidationRule } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
-
-const defaultValidation = (all: Validation[]): Validation => {
-  const validation: Validation = {
-    id: uuid(),
-    name: `Validation ${all.length + 1}`,
-    rule: 'None',
-    message: {
-      show: true,
-      title: '',
-      message: '',
-    },
-    error: {
-      show: true,
-      style: 'Stop',
-      title: '',
-      message: '',
-    },
-  };
-  return validation;
-};
+import { getSelectionString } from '@/app/grid/sheet/selection';
 
 export type SetState<T> = Dispatch<SetStateAction<T>>;
 
@@ -35,8 +16,8 @@ export interface ValidationData {
   unsaved: boolean;
   validation: Validation | undefined;
   rule: ValidationRuleSimple;
-  validations: Validation[];
   setValidation: SetState<Validation | undefined>;
+  setSelection: (selection: Selection | undefined) => void;
   changeRule: (rule: ValidationRuleSimple) => void;
   showDropdown: boolean;
   changeDropDown: (checked: boolean) => void;
@@ -51,7 +32,6 @@ export interface ValidationData {
 export const useValidationData = (): ValidationData => {
   const [validation, setValidation] = useState<Validation | undefined>();
   const [originalValidation, setOriginalValidation] = useState<Validation | undefined>();
-  const [validations, setValidations] = useState<Validation[]>([]);
   const [moreOptions, setMoreOptions] = useState(false);
   const [triggerError, setTriggerError] = useState(false);
 
@@ -59,31 +39,37 @@ export const useValidationData = (): ValidationData => {
     setMoreOptions((old) => !old);
   }, []);
 
-  // gets all validations for this sheet from core
-  useEffect(() => {
-    const getValidations = async () => {
-      const v = await quadraticCore.getValidations(sheets.current);
-      setValidations(v);
-    };
-    getValidations();
-  }, []);
-
   // gets the validation for the current selection or creates a new one
   useEffect(() => {
-    if (!validations) return;
     const getValidation = async () => {
-      let v = await quadraticCore.getValidation(sheets.getRustSelection());
+      const selection = sheets.getRustSelection();
+      let v = await quadraticCore.getValidation(selection);
       if (v) {
         setOriginalValidation(v);
       } else {
-        // this is the default Validation rule
-        v = defaultValidation(validations);
+        v = {
+          id: uuid(),
+          selection,
+          rule: 'None',
+          message: {
+            show: true,
+            title: '',
+            message: '',
+          },
+          error: {
+            show: true,
+            style: 'Stop',
+            title: '',
+            message: '',
+          },
+        };
+
         setOriginalValidation(undefined);
       }
       setValidation(v);
     };
     getValidation();
-  }, [validations]);
+  }, []);
 
   const unsaved = useMemo(() => {
     if (originalValidation && validation) {
@@ -117,15 +103,14 @@ export const useValidationData = (): ValidationData => {
       return false;
     }
 
-    // name needs to be defined unless we're using the 'none' rule (which means
-    // we're deleting the validation)
-    if (validation.rule !== 'None' && !validation.name.trim()) {
+    // if selection is empty, then show error
+    if (getSelectionString(validation.selection) === '') {
       setTriggerError(true);
       return false;
     }
 
-    // ensure Selection list is not empty
     if (validation.rule !== 'None' && 'List' in validation.rule) {
+      // ensure Selection list is not empty
       if ('List' in validation.rule.List.source) {
         if (validation.rule.List.source.List.length === 0) {
           setTriggerError(true);
@@ -244,13 +229,42 @@ export const useValidationData = (): ValidationData => {
     });
   };
 
+  // Set the selection for the validation. Note: we use Selection: { x, y,
+  // sheet_id, ..default } to indicate that the Selection is blank.
+  const setSelection = (selection: Selection | undefined) => {
+    if (!selection) {
+      setValidation((old) => {
+        if (old) {
+          return {
+            ...old,
+            selection: {
+              sheet_id: { id: sheets.sheet.id },
+              x: BigInt(0),
+              y: BigInt(0),
+              all: false,
+              columns: null,
+              rows: null,
+              rects: null,
+            },
+          };
+        }
+      });
+    } else {
+      setValidation((old) => {
+        if (old) {
+          return { ...old, selection };
+        }
+      });
+    }
+  };
+
   return {
     validate,
     unsaved,
     validation,
     rule,
-    validations,
     setValidation,
+    setSelection,
     showDropdown,
     changeDropDown,
     ignoreBlank,

@@ -997,11 +997,19 @@ class QuadraticCore {
     });
   }
 
-  updateValidation(selection: Selection, validation: Validation, cursor: string) {
+  updateValidation(validation: Validation, cursor: string) {
     this.send({
       type: 'clientCoreUpdateValidation',
-      selection,
       validation,
+      cursor,
+    });
+  }
+
+  removeValidation(sheetId: string, validationId: string, cursor: string) {
+    this.send({
+      type: 'clientCoreRemoveValidation',
+      sheetId,
+      validationId,
       cursor,
     });
   }

@@ -1,47 +1,43 @@
 import { Pos, Rect, Selection } from '@/app/quadratic-core-types';
-import { SheetCursor } from './SheetCursor';
 import { sheets } from '../controller/Sheets';
 
 const RANGE_SEPARATOR = '; ';
 
 // Gets a Selection based on a SheetCursor
-export const getSelectionRange = (cursor: SheetCursor): string => {
-  let range = '';
-  if (cursor.columnRow) {
-    if (cursor.columnRow.all) {
-      return 'all';
-    }
-    if (cursor.columnRow.columns) {
-      if (range) {
-        range += RANGE_SEPARATOR;
-      }
-      range += `(col=${cursor.columnRow.columns.join(', ')})`;
-    }
-    if (cursor.columnRow.rows) {
-      if (range) {
-        range += RANGE_SEPARATOR;
-      }
-      range += `(row=${cursor.columnRow.rows.join(', ')})`;
-    }
+export const getSelectionString = (selection: Selection): string => {
+  if (selection.all) {
+    return 'all';
   }
 
-  if (cursor.multiCursor) {
+  let range = '';
+  if (selection.columns) {
     if (range) {
       range += RANGE_SEPARATOR;
     }
-    range += cursor.multiCursor
+    range += `(col=${selection.columns.join(', ')})`;
+  }
+
+  if (selection.rows) {
+    if (range) {
+      range += RANGE_SEPARATOR;
+    }
+    range += `(row=${selection.rows.join(', ')})`;
+  }
+
+  if (selection.rects) {
+    if (range) {
+      range += RANGE_SEPARATOR;
+    }
+    range += selection.rects
       .map((rect) => {
-        if (rect.width === 1 && rect.height === 1) {
-          return `(${rect.x},${rect.y})`;
+        if (Number(rect.max.x - rect.min.x) === 1 && Number(rect.max.y - rect.min.y) === 1) {
+          return `(${rect.min.x},${rect.min.y})`;
         }
-        return `(${rect.x},${rect.y})-(${rect.x + rect.width - 1},${rect.y + rect.height - 1})`;
+        return `(${rect.min.x},${rect.min.y})-(${rect.max.x},${rect.max.y})`;
       })
       .join(RANGE_SEPARATOR);
   }
 
-  if (!range) {
-    range += `(${cursor.cursorPosition.x},${cursor.cursorPosition.y})`;
-  }
   return range;
 };
 
@@ -92,7 +88,9 @@ export const parseNumberList = (s: string): bigint[] | undefined => {
 
 // Parses a string to find a Selection
 // @returns Selection | [error message, index of error]
-export const parseSelectionRange = (range: string): Selection | [string, number] => {
+export const parseSelectionString = (
+  range: string
+): { selection?: Selection; error?: { error: string; column: number } } => {
   const selection: Selection = {
     sheet_id: { id: sheets.sheet.id },
     x: BigInt(0),
@@ -105,7 +103,7 @@ export const parseSelectionRange = (range: string): Selection | [string, number]
 
   if (range === 'all') {
     selection.all = true;
-    return selection;
+    return { selection };
   }
 
   // this can be replaced by a regex--but this is more readable
@@ -115,21 +113,27 @@ export const parseSelectionRange = (range: string): Selection | [string, number]
     const trimmedPart = part.replace(/ /g, '');
 
     if (trimmedPart.length === 0) {
-      return ['Empty range', 0];
+      return {
+        error: { error: 'Empty range', column: 0 },
+      };
     }
     if (trimmedPart.startsWith('(col=') && trimmedPart.endsWith(')')) {
       const columns = parseNumberList(trimmedPart.substring(5, trimmedPart.length - 1));
       if (columns) {
         selection.columns = columns;
       } else {
-        return ['Unknown column reference', range.indexOf(part)];
+        return {
+          error: { error: 'Unknown column reference', column: range.indexOf(part) },
+        };
       }
     } else if (trimmedPart.startsWith('(row=') && trimmedPart.endsWith(')')) {
       const rows = parseNumberList(trimmedPart.substring(5, trimmedPart.length - 1));
       if (rows) {
         selection.rows = rows;
       } else {
-        return ['Unknown row reference', range.indexOf(part)];
+        return {
+          error: { error: 'Unknown row reference', column: range.indexOf(part) },
+        };
       }
     } else {
       const rect = parseRange(trimmedPart);
@@ -139,11 +143,13 @@ export const parseSelectionRange = (range: string): Selection | [string, number]
         }
         selection.rects.push(rect);
       } else {
-        return ['Unknown range reference', range.indexOf(part)];
+        return {
+          error: { error: 'Unknown range reference', column: range.indexOf(part) },
+        };
       }
     }
   }
-  return selection;
+  return { selection };
 };
 
 // Returns a Selection given a single x,y value
@@ -158,3 +164,13 @@ export const getSingleSelection = (sheetId: string, x: number, y: number): Selec
     all: false,
   };
 };
+
+export const defaultSelection = (): Selection => ({
+  x: 0n,
+  y: 0n,
+  sheet_id: { id: sheets.sheet.id },
+  all: false,
+  columns: null,
+  rows: null,
+  rects: null,
+});

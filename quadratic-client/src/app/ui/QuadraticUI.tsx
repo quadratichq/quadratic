@@ -23,7 +23,7 @@ import GoTo from './menus/GoTo';
 import SheetBar from './menus/SheetBar';
 import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 import { useMultiplayerUsers } from './menus/TopBar/useMultiplayerUsers';
-import { Validation } from './menus/Validation/Validation';
+import { ValidationPanel } from './menus/Validations/ValidationPanel';
 
 export default function QuadraticUI() {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
@@ -72,7 +72,7 @@ export default function QuadraticUI() {
           {!presentationMode && <SheetBar />}
         </FileUploadWrapper>
         {editorInteractionState.showCodeEditor && <CodeEditorProvider />}
-        {editorInteractionState.showValidation && <Validation />}
+        {editorInteractionState.showValidation && <ValidationPanel />}
         <Following follow={follow} />
         <div
           style={{

@@ -510,7 +510,7 @@ class CoreClient {
         return;
 
       case 'clientCoreUpdateValidation':
-        core.updateValidation(e.data.selection, e.data.validation, e.data.cursor);
+        core.updateValidation(e.data.validation, e.data.cursor);
         return;
 
       case 'clientCoreGetValidations':
@@ -519,6 +519,10 @@ class CoreClient {
           id: e.data.id,
           validations: core.getValidations(e.data.sheetId),
         });
+        return;
+
+      case 'clientCoreRemoveValidation':
+        core.removeValidation(e.data.sheetId, e.data.validationId, e.data.cursor);
         return;
 
       default:

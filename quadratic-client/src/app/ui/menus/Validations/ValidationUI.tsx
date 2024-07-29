@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Checkbox } from '@/shared/shadcn/ui/checkbox';
-import { ValidationData } from './useValidationData';
+import { ValidationData } from './Validation/useValidationData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/shadcn/ui/select';

@@ -1,31 +1,32 @@
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
-import { TooltipHint } from '../../components/TooltipHint';
+import { TooltipHint } from './TooltipHint';
 import HighlightAltIcon from '@mui/icons-material/HighlightAlt';
 import { Button } from '@/shared/shadcn/ui/button';
 import { FocusEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { getSelectionRange, parseSelectionRange } from '@/app/grid/sheet/selection';
+import { getSelectionString, parseSelectionString } from '@/app/grid/sheet/selection';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { cn } from '@/shared/shadcn/utils';
+import { Selection } from '@/app/quadratic-core-types';
 
 interface Props {
   label?: string;
-  initial?: string;
-  onChangeRange: (range: string) => void;
-  multipleSheets?: boolean;
+  initial?: Selection;
+  onChangeSelection: (selection: Selection | undefined) => void;
   triggerError?: boolean;
 }
 
 export const SheetRange = (props: Props) => {
-  const { onChangeRange, label, initial, triggerError } = props;
+  const { onChangeSelection: onChangeRange, label, initial, triggerError } = props;
   const [rangeError, setRangeError] = useState<string | undefined>();
   const ref = useRef<HTMLInputElement>(null);
 
   // insert the range of the current selection
   const onInsert = useCallback(() => {
     if (ref.current) {
-      ref.current.value = getSelectionRange(sheets.sheet.cursor);
-      onChangeRange(ref.current.value);
+      const selection = sheets.getRustSelection();
+      ref.current.value = getSelectionString(selection);
+      onChangeRange(selection);
       setRangeError(undefined);
     }
   }, [onChangeRange]);
@@ -33,13 +34,15 @@ export const SheetRange = (props: Props) => {
   const onBlur = useCallback(
     (e: FocusEvent<HTMLInputElement>) => {
       const value = e.currentTarget.value;
-      const validate = parseSelectionRange(value);
-      if (Array.isArray(validate)) {
-        onChangeRange('');
-        setRangeError(validate[0]);
-      } else {
-        onChangeRange(value);
+      const selection = parseSelectionString(value);
+      if (selection.selection) {
+        onChangeRange(selection.selection);
         setRangeError(undefined);
+      } else if (selection.error) {
+        onChangeRange(undefined);
+        setRangeError(selection.error.error);
+      } else {
+        throw new Error('Invalid selection from parseSelectionRange');
       }
     },
     [onChangeRange]
@@ -47,15 +50,15 @@ export const SheetRange = (props: Props) => {
 
   useEffect(() => {
     if (ref.current) {
-      ref.current.value = initial || '';
+      ref.current.value = initial ? getSelectionString(initial) : '';
     }
   }, [initial]);
 
   const onFocus = () => {
     if (!ref.current) return;
-    const selection = parseSelectionRange(ref.current.value);
-    if (!Array.isArray(selection)) {
-      sheets.sheet.cursor.loadFromSelection(selection);
+    const selection = parseSelectionString(ref.current.value);
+    if (selection.selection) {
+      sheets.sheet.cursor.loadFromSelection(selection.selection);
     }
   };
 

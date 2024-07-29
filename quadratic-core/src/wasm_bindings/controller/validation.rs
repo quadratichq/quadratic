@@ -45,6 +45,7 @@ impl GridController {
     }
 
     // removes a validation
+    #[wasm_bindgen(js_name = "removeValidation")]
     pub fn js_remove_validation(
         &mut self,
         sheet_id: String,
