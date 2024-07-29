@@ -1,5 +1,3 @@
-use std::fmt;
-
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use smallvec::smallvec;
@@ -14,11 +12,6 @@ use crate::{
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Formula {
     pub ast: AstNode,
-}
-impl fmt::Display for Formula {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(&self.ast, f)
-    }
 }
 
 pub type AstNode = Spanned<AstNodeContents>;
@@ -36,35 +29,6 @@ pub enum AstNodeContents {
     String(String),
     Number(f64),
     Bool(bool),
-}
-impl fmt::Display for AstNodeContents {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            AstNodeContents::Empty => write!(f, ""),
-            AstNodeContents::FunctionCall { func, args } => {
-                write!(f, "{func}(")?;
-                if let Some(first) = args.first() {
-                    write!(f, "{first}")?;
-                    for arg in args.iter().skip(1) {
-                        write!(f, ", {arg}")?;
-                    }
-                }
-                write!(f, ")")?;
-                Ok(())
-            }
-            AstNodeContents::Paren(contents) => write!(f, "({})", contents.iter().join(", ")),
-            AstNodeContents::Array(a) => write!(
-                f,
-                "{{{}}}",
-                a.iter().map(|row| row.iter().join(", ")).join("; "),
-            ),
-            AstNodeContents::CellRef(cellref) => write!(f, "{cellref}"),
-            AstNodeContents::String(s) => write!(f, "{s:?}"),
-            AstNodeContents::Number(n) => write!(f, "{n:?}"),
-            AstNodeContents::Bool(false) => write!(f, "FALSE"),
-            AstNodeContents::Bool(true) => write!(f, "TRUE"),
-        }
-    }
 }
 impl AstNodeContents {
     fn type_string(&self) -> &'static str {
