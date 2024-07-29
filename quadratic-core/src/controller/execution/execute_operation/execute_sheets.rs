@@ -3,7 +3,7 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    grid::{file::sheet_schema::export_sheet, Sheet, SheetId},
+    grid::{file::sheet_schema::export_sheet, GridBounds, Sheet, SheetId},
 };
 use lexicon_fractional_index::key_between;
 
@@ -46,9 +46,16 @@ impl GridController {
                     return;
                 }
                 let sheet_id = sheet.id;
+                let sheet_bounds = sheet.bounds(false);
                 self.grid.add_sheet(Some(sheet));
 
                 self.send_add_sheet(sheet_id, transaction);
+
+                self.send_render_borders(sheet_id);
+
+                if let GridBounds::NonEmpty(bounds) = sheet_bounds {
+                    self.send_fill_cells(&bounds.to_sheet_rect(sheet_id));
+                }
 
                 transaction
                     .forward_operations
@@ -66,10 +73,27 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::DeleteSheet { sheet_id } = op {
+            // get code run operations for the sheet
+            let code_run_ops = self.rerun_sheet_code_cells_operations(sheet_id);
+
             let Some(deleted_sheet) = self.grid.remove_sheet(sheet_id) else {
                 // sheet was already deleted
                 return;
             };
+
+            transaction
+                .forward_operations
+                .push(Operation::DeleteSheet { sheet_id });
+
+            for op in code_run_ops {
+                transaction.reverse_operations.insert(0, op);
+            }
+            transaction.reverse_operations.insert(
+                0,
+                Operation::AddSheetSchema {
+                    schema: export_sheet(&deleted_sheet),
+                },
+            );
 
             // create a sheet if we deleted the last one (only for user actions)
             if transaction.is_user() && self.sheet_ids().is_empty() {
@@ -78,18 +102,10 @@ impl GridController {
                 let order = self.grid.end_order();
                 let new_first_sheet = Sheet::new(new_first_sheet_id, name, order);
                 self.grid.add_sheet(Some(new_first_sheet.clone()));
-                transaction
-                    .forward_operations
-                    .push(Operation::DeleteSheet { sheet_id });
+
                 transaction.forward_operations.push(Operation::AddSheet {
                     sheet: new_first_sheet,
                 });
-                transaction.reverse_operations.insert(
-                    0,
-                    Operation::AddSheetSchema {
-                        schema: export_sheet(&deleted_sheet),
-                    },
-                );
                 transaction.reverse_operations.insert(
                     0,
                     Operation::DeleteSheet {
@@ -99,19 +115,8 @@ impl GridController {
 
                 // if that's the last sheet, then we created a new one and we have to let the workers know
                 self.send_add_sheet(new_first_sheet_id, transaction);
-            } else {
-                transaction
-                    .forward_operations
-                    .push(Operation::DeleteSheet { sheet_id });
-                transaction.reverse_operations.insert(
-                    0,
-                    Operation::AddSheetSchema {
-                        schema: export_sheet(&deleted_sheet),
-                    },
-                );
-
-                // otherwise we need to send the deleted sheet information to the workers
             }
+            // send the delete sheet information to the workers
             self.send_delete_sheet(sheet_id, transaction);
         }
     }

@@ -78,11 +78,33 @@ impl GridController {
     }
 
     pub fn duplicate_sheet_operations(&mut self, sheet_id: SheetId) -> Vec<Operation> {
-        let new_sheet_id = SheetId::new();
-        vec![Operation::DuplicateSheet {
-            sheet_id,
-            new_sheet_id,
-        }]
+        let Some(sheet) = self.try_sheet(sheet_id) else {
+            // sheet may have been deleted
+            return vec![];
+        };
+
+        // clone the sheet and update id
+        let mut new_sheet = sheet.clone();
+        new_sheet.id = SheetId::new();
+        let mut ops = vec![Operation::AddSheetSchema {
+            schema: (export_sheet(&new_sheet)),
+        }];
+
+        // move the new sheet to the right of the old sheet
+        let right_sheet_id = self.grid.next_sheet(sheet_id).map(|s| s.id);
+        ops.extend(self.move_sheet_operations(new_sheet.id, right_sheet_id));
+
+        // get code run operations for the old sheet, as new sheet is not yet in the grid
+        let mut code_run_ops = self.rerun_sheet_code_cells_operations(sheet_id);
+        // update sheet_id in code_run_ops to new sheet id
+        code_run_ops.iter_mut().for_each(|op| {
+            if let Operation::ComputeCode { sheet_pos } = op {
+                sheet_pos.sheet_id = new_sheet.id;
+            }
+        });
+
+        ops.extend(code_run_ops);
+        ops
     }
 }
 

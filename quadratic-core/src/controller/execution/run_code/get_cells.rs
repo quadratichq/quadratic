@@ -1,10 +1,6 @@
 use uuid::Uuid;
 
-use crate::{
-    controller::{execution::TransactionType, GridController},
-    error_core::CoreError,
-    Rect, RunError, RunErrorMsg,
-};
+use crate::{controller::GridController, error_core::CoreError, Rect, RunError, RunErrorMsg};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -80,11 +76,10 @@ impl GridController {
         let h = h.unwrap_or(sheet.find_last_data_row(x, y, w));
         let rect = Rect::from_numbers(x, y, w, h);
 
-        let transaction_type = transaction.transaction_type.clone();
-        if transaction_type != TransactionType::User {
+        if !transaction.is_user_undo_redo() {
             // this should only be called for a user transaction
             return Err(CoreError::TransactionNotFound(
-                "getCells can only be called for non-user transaction".to_string(),
+                "getCells can only be called for user / undo-redo transaction".to_string(),
             ));
         }
 
