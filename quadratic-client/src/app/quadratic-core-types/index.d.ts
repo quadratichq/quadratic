@@ -55,13 +55,13 @@ export interface SummarizeSelectionResult { count: bigint, sum: number | null, a
 export interface Format { align: CellAlign | null, wrap: CellWrap | null, numeric_format: NumericFormat | null, numeric_decimals: number | null, numeric_commas: boolean | null, bold: boolean | null, italic: boolean | null, text_color: string | null, fill_color: string | null, render_size: RenderSize | null, }
 export interface JsSheetFill { columns: Array<[bigint, [string, bigint]]>, rows: Array<[bigint, [string, bigint]]>, all: string | null, }
 export interface ColumnRow { column: number, row: number, }
-export interface ValidationCell { title: string | null, message: string | null, drop_down: Array<string> | null, }
-export interface Validation { id: string, name: string, rule: ValidationRule, message: ValidationMessage, error: ValidationError, }
-export type ValidationRule = "None" | { "List": ValidationList } | { "Checkbox": ValidationCheckbox };
-export interface ValidationCell { title: string | null, message: string | null, drop_down: Array<string> | null, }
+export interface Validation { id: string, selection: Selection, rule: ValidationRule, message: ValidationMessage, error: ValidationError, }
+export type ValidationRule = { "List": ValidationList } | { "Checkbox": ValidationCheckbox };
 export interface ValidationError { show: boolean, style: ValidationStyle, title: string | null, message: string | null, }
 export interface ValidationMessage { show: boolean, title: string | null, message: string | null, }
-export interface ValidationList { source: ValidationListSource, ignore_blank: boolean, drop_down: boolean, }
 export type ValidationCheckbox = Record<string, never>;
+export interface ValidationList { source: ValidationListSource, ignore_blank: boolean, drop_down: boolean, }
 export type ValidationListSource = { "Selection": Selection } | { "List": Array<string> };
 export type ValidationStyle = "Warning" | "Stop" | "Information";
+export interface ValidationDisplay { checkbox: boolean, list: boolean, }
+export interface ValidationDisplaySheet { columns: Array<[bigint, ValidationDisplay]> | null, rows: Array<[bigint, ValidationDisplay]> | null, all: ValidationDisplay | null, }

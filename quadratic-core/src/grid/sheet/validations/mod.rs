@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validation::{Validation, ValidationDisplay, ValidationDisplaySheet};
 
-use crate::{controller::operations::operation::Operation, Pos};
+use crate::{controller::operations::operation::Operation, selection::Selection, Pos};
 
 pub mod validation;
 pub mod validation_rules;
@@ -36,6 +36,11 @@ impl Validations {
         }];
         self.validations.push(validation);
         reverse
+    }
+
+    /// Gets a validation based on a Selection.
+    pub fn validation(&self, selection: Selection) -> Option<&Validation> {
+        self.validations.iter().find(|v| v.selection == selection)
     }
 
     /// Gets all validations in the Sheet.
@@ -329,5 +334,18 @@ mod tests {
         assert_eq!(validations.validations().as_ref().unwrap().len(), 1);
         assert_eq!(reverse.len(), 1);
         assert_eq!(reverse[0], Operation::SetValidation { validation: v });
+    }
+
+    #[test]
+    fn validation() {
+        let mut validations = Validations::default();
+        let v = create_validation_rect(0, 0, 1, 1);
+        validations.set(v.clone());
+
+        assert_eq!(validations.validation(v.selection.clone()), Some(&v));
+        assert_eq!(
+            validations.validation(Selection::all(SheetId::test())),
+            None
+        );
     }
 }

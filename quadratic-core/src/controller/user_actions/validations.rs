@@ -1,15 +1,19 @@
+use uuid::Uuid;
+
 use crate::{
-    controller::GridController,
+    controller::{
+        active_transactions::transaction_name::TransactionName, operations::operation::Operation,
+        GridController,
+    },
     grid::{sheet::validations::validation::Validation, SheetId},
     selection::Selection,
 };
 
 impl GridController {
     /// Gets a validation based on a Selection.
-    pub fn validation(&self, _selection: Selection) -> Option<&Validation> {
-        // self.try_sheet(selection.sheet_id)
-        //     .and_then(|sheet| sheet.validations.validation(selection))
-        None
+    pub fn validation(&self, selection: Selection) -> Option<&Validation> {
+        self.try_sheet(selection.sheet_id)
+            .and_then(|sheet| sheet.validations.validation(selection))
     }
 
     /// Gets the validations for a sheet.
@@ -18,65 +22,41 @@ impl GridController {
         sheet.validations.validations()
     }
 
-    pub fn update_validation(
-        &mut self,
-        _selection: Selection,
-        _validation: Validation,
-        _cursor: Option<String>,
-    ) {
-        // if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-        //     let validation_id = validation.id;
-        //     let ops = if validation.is_no_rule() {
-        //         vec![Operation::SetValidationSelection {
-        //             selection,
-        //             validation_id: None,
-        //         }]
-        //     } else {
-        //         vec![
-        //             Operation::AddValidation {
-        //                 sheet_id: sheet.id,
-        //                 validation_id,
-        //                 validation: Some(validation),
-        //             },
-        //             Operation::SetValidationSelection {
-        //                 selection,
-        //                 validation_id: Some(validation_id),
-        //             },
-        //         ]
-        //     };
-        //     self.start_user_transaction(ops, cursor, TransactionName::Validation);
-        // }
+    pub fn update_validation(&mut self, validation: Validation, cursor: Option<String>) {
+        let ops = vec![Operation::SetValidation { validation }];
+        self.start_user_transaction(ops, cursor, TransactionName::Validation);
     }
 
-    pub fn delete_validation(&mut self, _selection: String, _cursor: Option<String>) {
-        // if let Ok(selection) = Selection::from_str(&selection) {
-        //     let ops = vec![Operation::SetValidationSelection {
-        //         selection,
-        //         validation_id: None,
-        //     }];
-        //     self.start_user_transaction(ops, cursor, TransactionName::Validation);
-        // }
+    pub fn remove_validation(
+        &mut self,
+        sheet_id: SheetId,
+        validation_id: Uuid,
+        cursor: Option<String>,
+    ) {
+        let ops = vec![Operation::RemoveValidation {
+            sheet_id,
+            validation_id,
+        }];
+        self.start_user_transaction(ops, cursor, TransactionName::Validation);
     }
 }
-/*
+
 #[cfg(test)]
 mod tests {
-    use uuid::Uuid;
+    use crate::grid::sheet::validations::validation_rules::{
+        validation_checkbox::ValidationCheckbox, ValidationRule,
+    };
 
     use super::*;
-    use crate::grid::sheet::validations::validation::Validation;
-    use crate::grid::sheet::validations::validation_rules::validation_checkbox::ValidationCheckbox;
-    use crate::grid::sheet::validations::validation_rules::ValidationRule;
-    use crate::selection::Selection;
 
     #[test]
     fn validations() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        assert!(gc.validations(sheet_id).is_empty());
+        assert!(gc.validations(sheet_id).is_none());
 
-        // missing sheet_id should just return []
-        assert!(gc.validations(SheetId::new()).is_empty());
+        // missing sheet_id should also return None
+        assert!(gc.validations(SheetId::new()).is_none());
     }
 
     #[test]
@@ -84,45 +64,45 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
+        let selection = Selection::all(sheet_id);
         let validation = Validation {
             id: Uuid::new_v4(),
-            name: "test".to_string(),
+            selection: selection.clone(),
             rule: ValidationRule::Checkbox(ValidationCheckbox {}),
-            ..Default::default()
+            message: Default::default(),
+            error: Default::default(),
         };
-        let selection = Selection::pos(0, 0, sheet_id);
-        gc.update_validation(selection.clone(), validation.clone(), None);
+        gc.update_validation(validation.clone(), None);
 
+        assert_eq!(gc.validations(sheet_id).unwrap().len(), 1);
         assert_eq!(gc.validation(selection), Some(&validation));
-        assert_eq!(gc.validations(sheet_id), vec![&validation]);
     }
 
-    #[test]
-    fn delete_validation_using_rule_none() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
+    // #[test]
+    // fn delete_validation_using_rule_none() {
+    //     let mut gc = GridController::test();
+    //     let sheet_id = gc.sheet_ids()[0];
 
-        let validation = Validation {
-            id: Uuid::new_v4(),
-            name: "test".to_string(),
-            rule: ValidationRule::Checkbox(ValidationCheckbox {}),
-            ..Default::default()
-        };
-        let selection = Selection::columns(&[1], sheet_id);
-        gc.update_validation(selection.clone(), validation.clone(), None);
+    //     let validation = Validation {
+    //         id: Uuid::new_v4(),
+    //         name: "test".to_string(),
+    //         rule: ValidationRule::Checkbox(ValidationCheckbox {}),
+    //         ..Default::default()
+    //     };
+    //     let selection = Selection::columns(&[1], sheet_id);
+    //     gc.update_validation(selection.clone(), validation.clone(), None);
 
-        assert_eq!(gc.validation(selection.clone()), Some(&validation));
-        assert_eq!(gc.validations(sheet_id), vec![&validation]);
+    //     assert_eq!(gc.validation(selection.clone()), Some(&validation));
+    //     assert_eq!(gc.validations(sheet_id), vec![&validation]);
 
-        let validation = Validation {
-            id: Uuid::new_v4(),
-            name: "test".to_string(),
-            rule: ValidationRule::None,
-            ..Default::default()
-        };
-        gc.update_validation(selection.clone(), validation, None);
-        assert_eq!(gc.validation(selection), None);
-        assert!(gc.validations(sheet_id).is_empty());
-    }
+    //     let validation = Validation {
+    //         id: Uuid::new_v4(),
+    //         name: "test".to_string(),
+    //         rule: ValidationRule::None,
+    //         ..Default::default()
+    //     };
+    //     gc.update_validation(selection.clone(), validation, None);
+    //     assert_eq!(gc.validation(selection), None);
+    //     assert!(gc.validations(sheet_id).is_empty());
+    // }
 }
-*/
