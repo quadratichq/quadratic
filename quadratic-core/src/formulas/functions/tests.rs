@@ -64,8 +64,12 @@ fn test_convert_to_array() {
     assert_eq!("{}", eval_to_string(&mut g, "_TEST_ARRAY(A1)"));
     assert_eq!("{3}", eval_to_string(&mut g, "_TEST_ARRAY({3})"));
     assert_eq!("{}", eval_to_string(&mut g, "_TEST_ARRAY(A1:A1)"));
+    g.sheets_mut()[0].set_cell_value(pos![A2], 0);
+    g.sheets_mut()[0].set_cell_value(pos![A3], 1);
+    g.sheets_mut()[0].set_cell_value(pos![A4], -5);
+    g.sheets_mut()[0].set_cell_value(pos![A5], "hello");
     assert_eq!(
-        "{; ; ; ; ; ; ; ; ; }",
+        "{; 0; 1; -5; \"hello\"; ; ; ; ; }",
         eval_to_string(&mut g, "_TEST_ARRAY(A1:A10)"),
     );
     assert_eq!(
