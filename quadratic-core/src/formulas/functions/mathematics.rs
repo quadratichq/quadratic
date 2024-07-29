@@ -268,6 +268,10 @@ mod tests {
         assert_eq!("27", eval_to_string(&g, "SUM(0..5, {\"\"}, {\"abc\"}, 12)"));
         assert_eq!("0", eval_to_string(&g, "SUM({\"\", \"abc\"})"));
         assert_eq!("12", eval_to_string(&g, "SUM({\"\", \"abc\", 12})"));
+        assert_eq!(
+            "55",
+            eval_to_string(&g, "SUM(({1,2;3,4}, {5}, {6}), {7; 8}, {9, 10})"),
+        );
 
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];

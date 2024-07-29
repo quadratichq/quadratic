@@ -1292,17 +1292,30 @@ mod tests {
         let mut g = Grid::new();
 
         let s = "INDEX({1, 2, 3; 4, 5, 6}, 1, 3)";
+        assert_check_syntax_succeeds(&g, s);
         assert_eq!("3", eval_to_string(&g, s));
 
-        let s = "INDEX(A1:A100, 42)";
         g.sheets_mut()[0].set_cell_value(pos![A42], "funny number");
+        let s = "INDEX(A1:A100, 42)";
+        assert_check_syntax_succeeds(&g, s);
         assert_eq!("funny number", eval_to_string(&g, s));
 
-        let s = "INDEX((A6:Q6), 12)"; // parens are fine!
         g.sheets_mut()[0].set_cell_value(pos![L6], "twelfth");
+        let s = "INDEX((A6:Q6), 12)"; // parens are ok
+        assert_check_syntax_succeeds(&g, s);
         assert_eq!("twelfth", eval_to_string(&g, s));
+        let s = "INDEX(L6, 1)"; // single cells are ok
+        assert_check_syntax_succeeds(&g, s);
+        assert_eq!("twelfth", eval_to_string(&g, s));
+        let s = "INDEX(6, 1)"; // single values are ok
+        assert_check_syntax_succeeds(&g, s);
+        assert_eq!("6", eval_to_string(&g, s));
+        let s = "INDEX(3+3, 1)"; // expressions are ok
+        assert_check_syntax_succeeds(&g, s);
+        assert_eq!("6", eval_to_string(&g, s));
 
         let s = "INDEX((A1:B6, C1:D6, D1:D100), 5, 1, C6)";
+        assert_check_syntax_succeeds(&g, s);
         g.sheets_mut()[0].set_cell_value(pos![A5], "aaa");
         g.sheets_mut()[0].set_cell_value(pos![C5], "ccc");
         g.sheets_mut()[0].set_cell_value(pos![D5], "ddd");
@@ -1322,6 +1335,7 @@ mod tests {
         assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
 
         let s = "INDEX(A3:Q3, A2):INDEX(A6:Q6, A2)";
+        assert_check_syntax_succeeds(&g, s);
         g.sheets_mut()[0].set_cell_value(pos![A2], 12);
         g.sheets_mut()[0].set_cell_value(pos![L3], "l3");
         g.sheets_mut()[0].set_cell_value(pos![L4], "l4");
@@ -1330,17 +1344,37 @@ mod tests {
         assert_eq!("{l3; l4; l5; l6}", eval_to_string(&g, s));
 
         let s = "E1:INDEX((A1:B6, C1:D6, D1:D100), 1, 5, C6)";
+        assert_check_syntax_succeeds(&g, s);
         g.sheets_mut()[0].set_cell_value(pos![C6], "2");
         assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
 
         let s = "E1:INDEX((A1:B6, C1:D6, D1:D100), 5, 1, C6)";
+        assert_check_syntax_succeeds(&g, s);
         let array_size = eval(&g, s).into_array().unwrap().size();
         assert_eq!(array_size.w.get(), 3);
         assert_eq!(array_size.h.get(), 5);
 
         let s = "INDEX((A1:B6, C1:D6, D1:D100), 5, 1, C6):E1";
+        assert_check_syntax_succeeds(&g, s);
         let array_size = eval(&g, s).into_array().unwrap().size();
         assert_eq!(array_size.w.get(), 3);
         assert_eq!(array_size.h.get(), 5);
+
+        // values are not ok when we expect a cell reference
+        let s = "INDEX(6, 1):E1";
+        assert_eq!(
+            RunErrorMsg::Expected {
+                expected: "cell range reference".into(),
+                got: Some("numeric literal".into()),
+            },
+            eval_to_err(&g, s).msg,
+        );
+        assert_eq!(
+            RunErrorMsg::Expected {
+                expected: "cell range reference".into(),
+                got: Some("numeric literal".into()),
+            },
+            check_syntax_to_err(&g, s).msg,
+        );
     }
 }

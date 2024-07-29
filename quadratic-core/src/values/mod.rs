@@ -231,17 +231,6 @@ impl Spanned<Value> {
         )
     }
     /// Returns an iterator over cell values.
-    pub fn iter_cell_values(&self) -> CodeResult<impl Iterator<Item = Spanned<&CellValue>>> {
-        Ok(self
-            .inner
-            .cell_values_slice()?
-            .iter()
-            .map(move |v| Spanned {
-                span: self.span,
-                inner: v,
-            }))
-    }
-    /// Returns an iterator over cell values.
     pub fn into_iter_cell_values(self) -> impl Iterator<Item = CodeResult<Spanned<CellValue>>> {
         let span = self.span;
 
