@@ -13,6 +13,7 @@ mod mathematics;
 mod operators;
 mod statistics;
 mod string;
+mod tests;
 mod trigonometry;
 mod util;
 
@@ -40,6 +41,8 @@ pub const CATEGORIES: &[FormulaFunctionCategory] = &[
     logic::CATEGORY,
     string::CATEGORY,
     lookup::CATEGORY,
+    #[cfg(test)]
+    tests::CATEGORY,
 ];
 
 lazy_static! {
