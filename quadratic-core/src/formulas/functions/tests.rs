@@ -29,6 +29,14 @@ fn get_functions() -> Vec<FormulaFunction> {
                 array
             }
         ),
+        formula_fn!(
+            /// Returns an error if the argument cannot be coerced to an tuple.
+            #[include_args_in_completion(false)]
+            #[examples("_TEST_TUPLE(1)")]
+            fn _TEST_TUPLE(tuple: (Vec<Array>)) {
+                tuple.len() as f64
+            }
+        ),
     ]
 }
 
@@ -81,4 +89,22 @@ fn test_convert_to_array() {
         },
         eval_to_err(&mut g, "_TEST_ARRAY((A1:A10, C1:C10))").msg,
     );
+}
+
+#[test]
+fn test_convert_to_tuple() {
+    let mut g = Grid::new();
+
+    assert_eq!("1", eval_to_string(&mut g, "_TEST_TUPLE(3)"));
+    assert_eq!("1", eval_to_string(&mut g, "_TEST_TUPLE(A1)"));
+    assert_eq!("1", eval_to_string(&mut g, "_TEST_TUPLE({3})"));
+    assert_eq!("1", eval_to_string(&mut g, "_TEST_TUPLE(A1:A1)"));
+    g.sheets_mut()[0].set_cell_value(pos![A2], 0);
+    g.sheets_mut()[0].set_cell_value(pos![A3], 1);
+    g.sheets_mut()[0].set_cell_value(pos![A4], -5);
+    g.sheets_mut()[0].set_cell_value(pos![A5], "hello");
+    // This string format is used for testing and potentially display; not as an
+    // unambiguous representation, so it's fine that the string is unquoted.
+    assert_eq!("1", eval_to_string(&mut g, "_TEST_TUPLE(A1:A10)"),);
+    assert_eq!("2", eval_to_string(&mut g, "_TEST_TUPLE((A1:A10, C1:C10))"),);
 }
