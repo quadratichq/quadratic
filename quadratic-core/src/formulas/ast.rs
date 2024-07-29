@@ -56,27 +56,17 @@ impl AstNodeContents {
 impl Formula {
     /// Evaluates a formula.
     pub fn eval(&self, ctx: &mut Ctx<'_>) -> CodeResult<Value> {
-        self.ast.eval(ctx, false)?.into_non_error_value()
-    }
-
-    /// Checks the syntax of a formula.
-    pub fn check_syntax(&self, ctx: &mut Ctx<'_>) -> CodeResult<()> {
-        self.ast.eval(ctx, true)?;
-        Ok(())
+        self.ast.eval(ctx)?.into_non_error_value()
     }
 }
 
 impl AstNode {
-    fn eval<'expr, 'ctx: 'expr>(
-        &'expr self,
-        ctx: &'expr mut Ctx<'ctx>,
-        only_parse: bool,
-    ) -> CodeResult {
+    fn eval<'expr, 'ctx: 'expr>(&'expr self, ctx: &'expr mut Ctx<'ctx>) -> CodeResult {
         let value: Value = match &self.inner {
             AstNodeContents::Empty => Value::Single(CellValue::Blank),
 
             AstNodeContents::FunctionCall { func, .. } if func.inner == ":" => {
-                let range = self.to_range_ref(ctx, only_parse)?;
+                let range = self.to_range_ref(ctx)?;
                 let rect = ctx.resolve_range_ref(&range.inner, self.span)?;
                 Value::Array(ctx.get_cell_array(rect.inner, self.span)?.inner)
             }
@@ -86,12 +76,10 @@ impl AstNode {
                 let func_name = &func.inner;
                 match functions::lookup_function(func_name) {
                     Some(f) => {
-                        let arg_values: Vec<Spanned<Value>> = args
-                            .iter()
-                            .map(|arg| arg.eval(&mut *ctx, only_parse))
-                            .try_collect()?;
+                        let arg_values: Vec<Spanned<Value>> =
+                            args.iter().map(|arg| arg.eval(&mut *ctx)).try_collect()?;
                         let args = FormulaFnArgs::new(arg_values, self.span, f.name);
-                        (f.eval)(&mut *ctx, only_parse, args)?
+                        (f.eval)(&mut *ctx, args)?
                     }
                     None => {
                         if functions::excel::is_valid_excel_function(func_name) {
@@ -107,7 +95,7 @@ impl AstNode {
             AstNodeContents::Paren(contents) => {
                 let mut expressions: Vec<Array> = contents
                     .iter()
-                    .map(|expr| CodeResult::Ok(expr.eval(ctx, only_parse)?.inner.into_arrays()))
+                    .map(|expr| CodeResult::Ok(expr.eval(ctx)?.inner.into_arrays()))
                     .flatten_ok()
                     .try_collect()?;
                 if expressions.len() == 1 {
@@ -134,7 +122,7 @@ impl AstNode {
                         return Err(RunErrorMsg::NonRectangularArray.with_span(self.span));
                     }
                     for elem_expr in row {
-                        flat_array.push(elem_expr.eval(ctx, only_parse)?.into_cell_value()?.inner);
+                        flat_array.push(elem_expr.eval(ctx)?.into_cell_value()?.inner);
                     }
                 }
 
@@ -164,15 +152,14 @@ impl AstNode {
     fn to_range_ref_tuple<'expr, 'ctx: 'expr>(
         &'expr self,
         ctx: &'expr mut Ctx<'ctx>,
-        only_parse: bool,
     ) -> CodeResult<Vec<Spanned<RangeRef>>> {
         match &self.inner {
             AstNodeContents::Paren(contents) => contents
                 .iter()
-                .map(|expr| expr.to_range_ref_tuple(ctx, only_parse))
+                .map(|expr| expr.to_range_ref_tuple(ctx))
                 .flatten_ok()
                 .try_collect(),
-            _ => Ok(vec![self.to_range_ref(ctx, only_parse)?]),
+            _ => Ok(vec![self.to_range_ref(ctx)?]),
         }
     }
 
@@ -181,14 +168,13 @@ impl AstNode {
     fn to_range_ref<'expr, 'ctx: 'expr>(
         &'expr self,
         ctx: &'expr mut Ctx<'ctx>,
-        only_parse: bool,
     ) -> CodeResult<Spanned<RangeRef>> {
         match &self.inner {
             AstNodeContents::FunctionCall { func, args } if func.inner == ":" => {
-                eval_cell_range_op(ctx, args, self.span, only_parse)
+                eval_cell_range_op(ctx, args, self.span)
             }
             AstNodeContents::Paren(contents) if contents.len() == 1 => {
-                contents[0].to_range_ref(ctx, only_parse)
+                contents[0].to_range_ref(ctx)
             }
             AstNodeContents::CellRef(cell_ref) => Ok(RangeRef::Cell {
                 pos: cell_ref.clone(),
@@ -206,13 +192,10 @@ impl AstNode {
     fn to_cell_ref<'expr, 'ctx: 'expr>(
         &'expr self,
         ctx: &'expr mut Ctx<'ctx>,
-        only_parse: bool,
     ) -> CodeResult<CellRef> {
         match &self.inner {
             AstNodeContents::CellRef(cellref) => Ok(cellref.clone()),
-            AstNodeContents::Paren(contents) if contents.len() == 1 => {
-                contents[0].to_cell_ref(ctx, only_parse)
-            }
+            AstNodeContents::Paren(contents) if contents.len() == 1 => contents[0].to_cell_ref(ctx),
             AstNodeContents::FunctionCall { func, args }
                 if func.inner.eq_ignore_ascii_case("INDEX") =>
             {
@@ -226,7 +209,7 @@ impl AstNode {
                         }
                         .with_span(func.span),
                     )?
-                    .to_range_ref_tuple(ctx, only_parse)?
+                    .to_range_ref_tuple(ctx)?
                     .into_iter()
                     .map(|range_ref| ctx.resolve_range_ref(&range_ref.inner, self.span))
                     .try_collect()?;
@@ -235,7 +218,7 @@ impl AstNode {
                 let arg_values: Vec<Spanned<Value>> = args
                     .iter()
                     .skip(1)
-                    .map(|arg| arg.eval(&mut *ctx, only_parse))
+                    .map(|arg| arg.eval(&mut *ctx))
                     .try_collect()?;
                 let mut args = FormulaFnArgs::new(arg_values, self.span, "INDEX");
                 let row = args
@@ -252,7 +235,7 @@ impl AstNode {
                     .transpose()?;
                 args.error_if_more_args()?;
 
-                if only_parse {
+                if ctx.skip_computation {
                     // Don't evaluate; just return a dummy value to let the
                     // caller know that this expression is valid.
                     return Ok(CellRef {
@@ -298,14 +281,13 @@ fn eval_cell_range_op(
     ctx: &mut Ctx<'_>,
     args: &[AstNode],
     span: Span,
-    only_parse: bool,
 ) -> CodeResult<Spanned<RangeRef>> {
     if args.len() != 2 {
         internal_error!("invalid arguments to cell range operator");
     }
 
-    let ref1 = args[0].to_cell_ref(ctx, only_parse)?;
-    let ref2 = args[1].to_cell_ref(ctx, only_parse)?;
+    let ref1 = args[0].to_cell_ref(ctx)?;
+    let ref2 = args[1].to_cell_ref(ctx)?;
     Ok(RangeRef::CellRange {
         start: ref1,
         end: ref2,

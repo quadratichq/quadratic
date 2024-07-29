@@ -4,7 +4,7 @@ use smallvec::{smallvec, SmallVec};
 
 use super::*;
 use crate::{
-    grid::Grid, Array, CellValue, CodeResult, CodeResultExt, RunErrorMsg, SheetPos, SheetRect,
+    grid::Grid, Array, CellValue, CodeResult, CodeResultExt, Pos, RunErrorMsg, SheetPos, SheetRect,
     Span, Spanned, Value,
 };
 
@@ -16,6 +16,9 @@ pub struct Ctx<'ctx> {
     pub sheet_pos: SheetPos,
     /// Cells that have been accessed in evaluating the formula.
     pub cells_accessed: HashSet<SheetRect>,
+
+    /// Whether to only parse, skipping expensive computations.
+    pub skip_computation: bool,
 }
 impl<'ctx> Ctx<'ctx> {
     /// Constructs a context for evaluating a formula at `pos` in `grid`.
@@ -24,6 +27,19 @@ impl<'ctx> Ctx<'ctx> {
             grid,
             sheet_pos,
             cells_accessed: HashSet::new(),
+            skip_computation: false,
+        }
+    }
+
+    /// Constructs a context for checking the syntax and some basic types of a
+    /// formula in `grid`. Expensive computations are skipped, so the value
+    /// returned by "evaluating" the formula will be nonsense (probably blank).
+    pub fn new_for_syntax_check(grid: &'ctx Grid) -> Self {
+        Ctx {
+            grid,
+            sheet_pos: Pos::ORIGIN.to_sheet_pos(grid.sheets()[0].id),
+            cells_accessed: HashSet::new(),
+            skip_computation: true,
         }
     }
 
@@ -76,6 +92,10 @@ impl<'ctx> Ctx<'ctx> {
     /// `self.sheet_pos`, or returns an error in the case of a circular
     /// reference.
     pub fn get_cell(&mut self, sheet_pos: SheetPos, span: Span) -> CodeResult<Spanned<CellValue>> {
+        if self.skip_computation {
+            return Ok(CellValue::Blank).with_span(span);
+        }
+
         if sheet_pos == self.sheet_pos {
             return Err(RunErrorMsg::CircularReference.with_span(span));
         }
@@ -97,6 +117,10 @@ impl<'ctx> Ctx<'ctx> {
         sheet_rect: SheetRect,
         span: Span,
     ) -> CodeResult<Spanned<Array>> {
+        if self.skip_computation {
+            return Ok(CellValue::Blank.into()).with_span(span);
+        }
+
         let sheet_id = sheet_rect.sheet_id;
         let array_size = sheet_rect.size();
         if std::cmp::max(array_size.w, array_size.h).get() > crate::limits::CELL_RANGE_LIMIT {
@@ -135,6 +159,10 @@ impl<'ctx> Ctx<'ctx> {
     where
         I::IntoIter: ExactSizeIterator,
     {
+        if self.skip_computation {
+            return Ok(CellValue::Blank.into());
+        }
+
         let size = Value::common_array_size(arrays)?;
 
         let mut args_buffer = Vec::with_capacity(arrays.into_iter().len());

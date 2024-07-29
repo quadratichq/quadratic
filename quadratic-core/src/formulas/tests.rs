@@ -27,9 +27,9 @@ pub(crate) fn try_eval(grid: &Grid, s: &str) -> CodeResult<Value> {
 }
 #[track_caller]
 pub(crate) fn try_check_syntax(grid: &Grid, s: &str) -> CodeResult<()> {
-    println!("Parse-evaluated formula {s:?}");
-    let mut ctx = Ctx::new(grid, Pos::ORIGIN.to_sheet_pos(grid.sheets()[0].id));
-    parse_formula(s, Pos::ORIGIN)?.check_syntax(&mut ctx)
+    println!("Checking syntax of formula {s:?}");
+    let mut ctx = Ctx::new_for_syntax_check(grid);
+    parse_formula(s, Pos::ORIGIN)?.eval(&mut ctx).map(|_| ())
 }
 #[track_caller]
 pub(crate) fn eval(grid: &Grid, s: &str) -> Value {

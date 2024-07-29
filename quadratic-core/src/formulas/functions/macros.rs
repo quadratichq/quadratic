@@ -63,7 +63,15 @@ macro_rules! see_docs_for_more_about_wildcards {
 /// what to put for `eval`, start with this:
 ///
 /// ```ignore
-/// Box::new(move |ctx, args| ...)
+/// Box::new(move |ctx, args| {
+///     todo!("check args");
+///
+///     if ctx.skip_computation {
+///         return Ok(Value::Single(CellValue::Blank))
+///     }
+///
+///     todo!("evaluate formula")
+/// })
 /// ```
 ///
 /// Remember to write a check that all required arguments are present and that
@@ -167,8 +175,8 @@ macro_rules! formula_fn {
 macro_rules! formula_fn_eval {
     ($($tok:tt)*) => {{
         #[allow(unused_mut)]
-        let ret: FormulaFn = |_ctx: &mut Ctx<'_>, _only_parse: bool, mut _args: FormulaFnArgs| -> CodeResult<Value> {
-            formula_fn_eval_inner!(_ctx, _only_parse, _args, $($tok)*)
+        let ret: FormulaFn = |_ctx: &mut Ctx<'_>, mut _args: FormulaFnArgs| -> CodeResult<Value> {
+            formula_fn_eval_inner!(_ctx, _args, $($tok)*)
         };
         ret
     }};
@@ -177,7 +185,7 @@ macro_rules! formula_fn_eval {
 /// Constructs the body of the `eval` function for a `FormulaFunction`.
 macro_rules! formula_fn_eval_inner {
     (
-        $ctx:ident, $only_parse:expr, $args:ident, $body:expr;
+        $ctx:ident, $args:ident, $body:expr;
         #[zip_map]
         $($params:tt)*
     ) => {{
@@ -187,67 +195,41 @@ macro_rules! formula_fn_eval_inner {
         // Check number of arguments and assign arguments to variables.
         formula_fn_args!(@zip($ctx, $args, args_to_zip_map); $($params)*);
         $args.error_if_more_args()?;
+
+        let skip_computation = $ctx.skip_computation;
 
         $ctx.zip_map(
             &args_to_zip_map,
             move |_ctx, zipped_args| -> CodeResult<CellValue> {
                 formula_fn_args!(@unzip(_ctx, zipped_args); $($params)*);
 
-                if $only_parse {
+                if skip_computation {
                     // If we only care about parsing, then we return a blank
                     // cell to avoid processing anything
                     Ok(CellValue::Blank)
                 } else {
                     // Evaluate the body of the function.
-                    CodeResult::Ok(CellValue::from($body))
+                    Ok(CellValue::from($body))
                 }
             },
         )
     }};
 
     (
-        $ctx:ident, $only_parse: expr, $args:ident, $body:expr;
-        #[zip_map]
-        $($params:tt)*
-    ) => {{
-        // Arguments that should be zip-mapped. (See `Ctx::zip_map()`.)
-        let mut args_to_zip_map = vec![];
-
-        // Check number of arguments and assign arguments to variables.
-        formula_fn_args!(@zip($ctx, $args, args_to_zip_map); $($params)*);
-        $args.error_if_more_args()?;
-
-        $ctx.zip_map(
-            &args_to_zip_map,
-            |ctx, zipped_args| {
-                formula_fn_args!(@unzip(ctx, zipped_args); $($params)*);
-
-                if $only_parse {
-                    // If we only care about parsing, then we return a blank
-                    // cell to avoid processing anything
-                    Ok(CellValue::Blank)
-                } else {
-                    // Evaluate the body of the function.
-                    CodeResult::Ok(CellValue::from($body))
-                }
-            },
-        )
-    }};
-
-    (
-        $ctx:ident, $only_parse: expr, $args:ident, $body:expr;
+        $ctx:ident, $args:ident, $body:expr;
         $($params:tt)*
     ) => {{
         // Check number of arguments and assign arguments to variables.
         formula_fn_args!(@assign($ctx, $args); $($params)*);
         $args.error_if_more_args()?;
 
-        // if only_parse {
-        //     Ok(())
-        // } else {
+        if $ctx.skip_computation {
+            // Return a dummy value.
+            Ok(Value::Single(CellValue::Blank))
+        } else {
             // Evaluate the body of the function.
             Ok(Value::from($body))
-        // }
+        }
     }};
 }
 

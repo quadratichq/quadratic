@@ -143,7 +143,7 @@ impl FormulaFnArgs {
 }
 
 /// Function pointer that represents the body of a formula function.
-pub type FormulaFn = for<'a> fn(&'a mut Ctx<'_>, bool, FormulaFnArgs) -> CodeResult<Value>;
+pub type FormulaFn = for<'a> fn(&'a mut Ctx<'_>, FormulaFnArgs) -> CodeResult<Value>;
 
 /// Formula function with associated metadata.
 pub struct FormulaFunction {
