@@ -12,6 +12,7 @@ pub(crate) fn try_eval_at(grid: &Grid, pos: SheetPos, s: &str) -> CodeResult<Val
     let mut ctx = Ctx::new(grid, pos);
     parse_formula(s, Pos::ORIGIN)?.eval(&mut ctx)
 }
+
 #[track_caller]
 pub(crate) fn eval_at(grid: &Grid, sheet_pos: SheetPos, s: &str) -> Value {
     try_eval_at(grid, sheet_pos, s).expect("error evaluating formula")
@@ -23,6 +24,12 @@ pub(crate) fn eval_to_string_at(grid: &Grid, sheet_pos: SheetPos, s: &str) -> St
 
 pub(crate) fn try_eval(grid: &Grid, s: &str) -> CodeResult<Value> {
     try_eval_at(grid, Pos::ORIGIN.to_sheet_pos(grid.sheets()[0].id), s)
+}
+#[track_caller]
+pub(crate) fn try_check_syntax(grid: &Grid, s: &str) -> CodeResult<()> {
+    println!("Parse-evaluated formula {s:?}");
+    let mut ctx = Ctx::new(grid, Pos::ORIGIN.to_sheet_pos(grid.sheets()[0].id));
+    parse_formula(s, Pos::ORIGIN)?.check_syntax(&mut ctx)
 }
 #[track_caller]
 pub(crate) fn eval(grid: &Grid, s: &str) -> Value {
@@ -44,6 +51,15 @@ pub(crate) fn expect_val(value: impl Into<Value>, ctx: &Grid, s: &str) {
 #[track_caller]
 pub(crate) fn expect_err(error_msg: &RunErrorMsg, ctx: &Grid, s: &str) {
     assert_eq!(*error_msg, eval_to_err(ctx, s).msg);
+}
+
+#[track_caller]
+pub(crate) fn assert_check_syntax_succeeds(grid: &Grid, s: &str) {
+    try_check_syntax(grid, s).expect("error with formula syntax");
+}
+#[track_caller]
+pub(crate) fn check_syntax_to_err(grid: &Grid, s: &str) -> RunError {
+    try_check_syntax(grid, s).expect_err("expected error")
 }
 
 #[test]
@@ -380,63 +396,25 @@ fn test_cell_range_op_errors() {
     let g = Grid::new();
 
     eval_to_string(&g, "A1:B5"); // assert ok
+    assert_check_syntax_succeeds(&g, "A1:B5"); // assert ok
 
-    assert_eq!(
-        RunErrorMsg::Expected {
+    for (expected, formula_str) in [
+        ("comparison", "A1:(1==2)"),
+        ("expression", "A1:(1+5)"), // error message could be improved
+        ("function call", "A1:SUM(1, 2, 3)"),
+        ("array literal", "A1:{1, 2, 3}"),
+        ("array literal", "A1:{1, 2, 3}"),
+        ("string literal", "A1:\"hello\""),
+        ("numeric literal", "A1:12"),
+        ("boolean literal", "A1:TRUE"),
+    ] {
+        let expected_err = RunErrorMsg::Expected {
             expected: "cell reference".into(),
-            got: Some("comparison".into()),
-        },
-        eval_to_err(&g, "A1:(1==2)").msg,
-    );
-    assert_eq!(
-        RunErrorMsg::Expected {
-            expected: "cell reference".into(),
-            got: Some("expression".into()), // could be improved
-        },
-        eval_to_err(&g, "A1:(1+5)").msg,
-    );
-    assert_eq!(
-        RunErrorMsg::Expected {
-            expected: "cell reference".into(),
-            got: Some("function call".into()),
-        },
-        eval_to_err(&g, "A1:SUM(1, 2, 3)").msg,
-    );
-    assert_eq!(
-        RunErrorMsg::Expected {
-            expected: "cell reference".into(),
-            got: Some("array literal".into()),
-        },
-        eval_to_err(&g, "A1:{1, 2, 3}").msg,
-    );
-    assert_eq!(
-        RunErrorMsg::Expected {
-            expected: "cell reference".into(),
-            got: Some("array literal".into()),
-        },
-        eval_to_err(&g, "A1:{1, 2, 3}").msg,
-    );
-    assert_eq!(
-        RunErrorMsg::Expected {
-            expected: "cell reference".into(),
-            got: Some("string literal".into()),
-        },
-        eval_to_err(&g, "A1:\"hello\"").msg,
-    );
-    assert_eq!(
-        RunErrorMsg::Expected {
-            expected: "cell reference".into(),
-            got: Some("numeric literal".into()),
-        },
-        eval_to_err(&g, "A1:12").msg,
-    );
-    assert_eq!(
-        RunErrorMsg::Expected {
-            expected: "cell reference".into(),
-            got: Some("boolean literal".into()),
-        },
-        eval_to_err(&g, "A1:TRUE").msg,
-    );
+            got: Some(expected.into()),
+        };
+        assert_eq!(expected_err, eval_to_err(&g, formula_str).msg);
+        assert_eq!(expected_err, check_syntax_to_err(&g, formula_str).msg);
+    }
 }
 
 /// Regression test for quadratic#410
