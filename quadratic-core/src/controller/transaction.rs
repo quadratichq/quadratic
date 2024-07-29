@@ -3,7 +3,8 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::compression::{
-    decompress_and_deserialize, serialize_and_compress, CompressionFormat, SerializationFormat,
+    add_header, decompress_and_deserialize, deserialize, remove_header, serialize,
+    serialize_and_compress, CompressionFormat, SerializationFormat,
 };
 
 use super::{
@@ -13,6 +14,13 @@ use super::{
 
 pub static SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Json;
 pub static COMPRESSION_FORMAT: CompressionFormat = CompressionFormat::Zlib;
+pub static HEADER_SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Bincode;
+pub static CURRENT_VERSION: &str = "1.0";
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct TransactionVersion {
+    pub version: String,
+}
 
 // Transaction created by client
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
@@ -39,12 +47,32 @@ impl Transaction {
         }
     }
 
+    /// Serializes and compresses the transaction's operations, adding a header with the version
     pub fn serialize_and_compress<T: Serialize>(opearations: &T) -> Result<Vec<u8>> {
-        serialize_and_compress::<T>(&SERIALIZATION_FORMAT, &COMPRESSION_FORMAT, opearations)
+        let version = TransactionVersion {
+            version: CURRENT_VERSION.into(),
+        };
+        let header = serialize(&HEADER_SERIALIZATION_FORMAT, &version)?;
+        let compressed =
+            serialize_and_compress::<T>(&SERIALIZATION_FORMAT, &COMPRESSION_FORMAT, opearations)?;
+
+        add_header(header, compressed)
     }
 
+    /// Decompress and deserialize the transaction's operations, removing the
+    /// version header.
+    ///
+    /// When we start to add different transaction versions, we will need to
+    /// match the version and handle the versions separately.
     pub fn decompress_and_deserialize<T: DeserializeOwned>(opearations: &[u8]) -> Result<T> {
-        decompress_and_deserialize::<T>(&SERIALIZATION_FORMAT, &COMPRESSION_FORMAT, opearations)
+        let (header, data) = remove_header(opearations)?;
+
+        // We're currently not doing anything with the transaction version, but will in
+        // the future as we use different serialization and compression methods and/or
+        // different operation types.
+        let _version = deserialize::<TransactionVersion>(&HEADER_SERIALIZATION_FORMAT, header)?;
+
+        decompress_and_deserialize::<T>(&SERIALIZATION_FORMAT, &COMPRESSION_FORMAT, data)
     }
 }
 
