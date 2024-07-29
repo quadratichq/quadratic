@@ -261,3 +261,16 @@ impl Spanned<Value> {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::formulas::tests::*;
+
+    #[test]
+    fn test_value_repr() {
+        let g = Grid::new();
+        for s in ["1", "3.25", "\"hello\"", "\"hello \\\"world\\\"!\""] {
+            assert_eq!(s, eval(&g, s).repr());
+        }
+    }
+}
