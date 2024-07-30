@@ -68,21 +68,21 @@ impl Sheet {
                 }),
             };
         } else if let CellValue::Logical(logical) = value {
+            let special = self
+                .validations
+                .render_special_pos(Pos { x, y })
+                .unwrap_or(JsRenderCellSpecial::Logical);
             return JsRenderCell {
                 x,
                 y,
-                value: "".to_string(),
+                value: logical.to_string(),
                 language,
                 align: None,
                 wrap: None,
                 bold: None,
                 italic: None,
                 text_color: None,
-                special: Some(if logical {
-                    JsRenderCellSpecial::True
-                } else {
-                    JsRenderCellSpecial::False
-                }),
+                special: Some(special),
             };
         } else if let CellValue::Image(_) = value {
             return JsRenderCell {
@@ -98,6 +98,8 @@ impl Sheet {
                 special: Some(JsRenderCellSpecial::Chart),
             };
         }
+
+        let special = self.validations.render_special_pos(Pos { x, y });
 
         match column {
             None => {
@@ -123,7 +125,7 @@ impl Sheet {
                     bold: format.bold,
                     italic: format.italic,
                     text_color: format.text_color,
-                    special: None,
+                    special,
                 }
             }
             Some(column) => {
@@ -166,7 +168,7 @@ impl Sheet {
                     bold,
                     italic,
                     text_color,
-                    special: None,
+                    special,
                 }
             }
         }
@@ -279,6 +281,33 @@ impl Sheet {
                     y: code_rect.min.y,
                 }) {
                     render_cells.extend(self.get_code_cells(&code, code_run, &rect, &code_rect));
+                }
+            });
+
+        // Populate validations for cells that are not yet in the render_cells
+        self.validations
+            .in_rect(rect)
+            .iter()
+            .rev() // we need to reverse to ensure that later rules overwrite earlier ones
+            .for_each(|validation| {
+                if let Some(special) = validation.render_special() {
+                    if let Some(rects) = validation.selection.rects.as_ref() {
+                        rects.iter().for_each(|r| {
+                            r.iter().filter(|pos| rect.contains(*pos)).for_each(|pos| {
+                                if !render_cells
+                                    .iter()
+                                    .any(|cell| cell.x == pos.x && cell.y == pos.y)
+                                {
+                                    render_cells.push(JsRenderCell {
+                                        x: pos.x,
+                                        y: pos.y,
+                                        special: Some(special.clone()),
+                                        ..Default::default()
+                                    });
+                                }
+                            });
+                        });
+                    }
                 }
             });
         render_cells
@@ -504,6 +533,7 @@ mod tests {
 
     use chrono::Utc;
     use serial_test::serial;
+    use uuid::Uuid;
 
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
@@ -511,6 +541,10 @@ mod tests {
             formats::{format::Format, format_update::FormatUpdate, Formats},
             js_types::{
                 JsHtmlOutput, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell, JsSheetFill,
+            },
+            sheet::validations::{
+                validation::Validation,
+                validation_rules::{validation_logical::ValidationLogical, ValidationRule},
             },
             Bold, CellAlign, CodeCellLanguage, CodeRun, CodeRunResult, Italic, RenderSize, Sheet,
         },
@@ -658,14 +692,14 @@ mod tests {
             JsRenderCell {
                 x: 2,
                 y: 5,
-                value: "".to_string(),
+                value: "true".to_string(),
                 language: None,
                 align: None,
                 wrap: None,
                 bold: None,
                 italic: None,
                 text_color: None,
-                special: Some(JsRenderCellSpecial::True),
+                special: Some(JsRenderCellSpecial::Logical),
             },
         );
         assert_eq!(
@@ -880,12 +914,12 @@ mod tests {
             max: (5, 5).into(),
         });
         for (i, rendering) in rendering.iter().enumerate().take(5 + 1) {
-            assert_eq!(rendering.value, "".to_string());
             if i % 2 == 0 {
-                assert_eq!(rendering.special, Some(JsRenderCellSpecial::True));
+                assert_eq!(rendering.value, "true".to_string());
             } else {
-                assert_eq!(rendering.special, Some(JsRenderCellSpecial::False));
+                assert_eq!(rendering.value, "false".to_string());
             }
+            assert_eq!(rendering.special, Some(JsRenderCellSpecial::Logical));
         }
     }
 
@@ -985,38 +1019,38 @@ mod tests {
             JsRenderCell {
                 x: 0,
                 y: 0,
-                value: "".to_string(),
+                value: "true".to_string(),
                 language: Some(CodeCellLanguage::Formula),
                 align: None,
                 wrap: None,
                 bold: None,
                 italic: None,
                 text_color: None,
-                special: Some(JsRenderCellSpecial::True),
+                special: Some(JsRenderCellSpecial::Logical),
             },
             JsRenderCell {
                 x: 1,
                 y: 0,
-                value: "".to_string(),
+                value: "false".to_string(),
                 language: None,
                 align: None,
                 wrap: None,
                 bold: None,
                 italic: None,
                 text_color: None,
-                special: Some(JsRenderCellSpecial::False),
+                special: Some(JsRenderCellSpecial::Logical),
             },
             JsRenderCell {
                 x: 2,
                 y: 0,
-                value: "".to_string(),
+                value: "true".to_string(),
                 language: None,
                 align: None,
                 wrap: None,
                 bold: None,
                 italic: None,
                 text_color: None,
-                special: Some(JsRenderCellSpecial::True),
+                special: Some(JsRenderCellSpecial::Logical),
             },
         ];
         let cells_string = serde_json::to_string(&cells).unwrap();
@@ -1075,5 +1109,22 @@ mod tests {
         assert_eq!(fills.columns[0].1 .0, "blue".to_string());
         assert_eq!(fills.rows.len(), 1);
         assert_eq!(fills.rows[0].1 .0, "red".to_string());
+    }
+
+    #[test]
+    fn validation_list() {
+        let mut sheet = Sheet::test();
+        sheet.validations.set(Validation {
+            id: Uuid::new_v4(),
+            selection: Selection::rect(Rect::new(0, 0, 1, 1), sheet.id),
+            rule: ValidationRule::Logical(ValidationLogical {
+                show_checkbox: true,
+                ignore_blank: true,
+            }),
+            message: Default::default(),
+            error: Default::default(),
+        });
+        let render = sheet.get_render_cells(Rect::single_pos((0, 0).into()));
+        assert_eq!(render.len(), 1);
     }
 }

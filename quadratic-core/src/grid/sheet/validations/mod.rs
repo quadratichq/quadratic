@@ -6,7 +6,10 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validation::{Validation, ValidationDisplay, ValidationDisplaySheet};
 
-use crate::{controller::operations::operation::Operation, selection::Selection, Pos};
+use crate::{
+    controller::operations::operation::Operation, grid::js_types::JsRenderCellSpecial,
+    selection::Selection, Pos, Rect,
+};
 
 use super::Sheet;
 
@@ -64,13 +67,13 @@ impl Validations {
         serde_json::to_string(&self.validations)
     }
 
-    /// Gets the ValidationDisplay for a cell.
-    pub fn display_cell(&self, pos: Pos) -> Option<ValidationDisplay> {
+    /// Gets the JsRenderCellSpecial for a cell based on Validation.
+    pub fn render_special_pos(&self, pos: Pos) -> Option<JsRenderCellSpecial> {
         let mut checkbox = false;
         let mut list = false;
         for v in &self.validations {
             if v.selection.contains_pos(pos) {
-                if v.rule.is_checkbox() {
+                if v.rule.is_logical() {
                     checkbox = true;
                     list = false;
                 } else if v.rule.is_list() {
@@ -79,8 +82,10 @@ impl Validations {
                 }
             }
         }
-        if checkbox || list {
-            Some(ValidationDisplay { checkbox, list })
+        if checkbox {
+            Some(JsRenderCellSpecial::Checkbox)
+        } else if list {
+            Some(JsRenderCellSpecial::List)
         } else {
             None
         }
@@ -92,11 +97,11 @@ impl Validations {
         let mut display_rows = HashMap::new();
         let mut display_all = ValidationDisplay::default();
         for v in &self.validations {
-            if !v.rule.is_list() && !v.rule.is_checkbox() {
+            if !v.rule.is_list() && !v.rule.is_logical() {
                 continue;
             }
             let display = ValidationDisplay {
-                checkbox: v.rule.is_checkbox(),
+                checkbox: v.rule.is_logical(),
                 list: v.rule.is_list(),
             };
             if let Some(columns) = v.selection.columns.as_ref() {
@@ -166,6 +171,15 @@ impl Validations {
         }
         true
     }
+
+    /// Returns validations that intersect with a rect. Note: this only checks
+    /// Selection.rects; it ignore Selection.all, rows, and columns.
+    pub fn in_rect(&self, rect: Rect) -> Vec<&Validation> {
+        self.validations
+            .iter()
+            .filter(|v| v.selection.in_rects(rect))
+            .collect()
+    }
 }
 
 #[cfg(test)]
@@ -206,11 +220,8 @@ mod tests {
             }
         );
         assert_eq!(
-            validations.display_cell((0, 0).into()),
-            Some(ValidationDisplay {
-                checkbox: true,
-                list: false,
-            })
+            validations.render_special_pos((0, 0).into()),
+            Some(JsRenderCellSpecial::Checkbox)
         );
 
         let mut replace = create_validation_rect(1, 1, 5, 5);
@@ -225,7 +236,7 @@ mod tests {
                 validation: validation.clone()
             }
         );
-        assert_eq!(validations.display_cell((0, 0).into()), None);
+        assert_eq!(validations.render_special_pos((0, 0).into()), None);
     }
 
     #[test]
@@ -264,11 +275,8 @@ mod tests {
             })
         );
         assert_eq!(
-            validations.display_cell((0, 0).into()),
-            Some(ValidationDisplay {
-                checkbox: true,
-                list: false
-            })
+            validations.render_special_pos((0, 0).into()),
+            Some(JsRenderCellSpecial::Checkbox)
         );
     }
 
@@ -308,11 +316,8 @@ mod tests {
             }
         );
         assert_eq!(
-            validations.display_cell((0, 0).into()),
-            Some(ValidationDisplay {
-                checkbox: true,
-                list: false
-            })
+            validations.render_special_pos((0, 0).into()),
+            Some(JsRenderCellSpecial::Checkbox)
         );
     }
 
@@ -352,11 +357,8 @@ mod tests {
             }
         );
         assert_eq!(
-            validations.display_cell((0, 0).into()),
-            Some(ValidationDisplay {
-                checkbox: true,
-                list: false
-            })
+            validations.render_special_pos((0, 0).into()),
+            Some(JsRenderCellSpecial::Checkbox)
         );
     }
 
@@ -391,5 +393,21 @@ mod tests {
             validations.validation_selection(Selection::all(SheetId::test())),
             None
         );
+    }
+
+    #[test]
+    fn render_special_pos() {
+        let mut validations = Validations::default();
+        let v = create_validation_rect(0, 0, 1, 1);
+        validations.set(v.clone());
+        assert_eq!(
+            validations.render_special_pos((0, 0).into()),
+            Some(JsRenderCellSpecial::Checkbox)
+        );
+        assert_eq!(
+            validations.render_special_pos((0, 0).into()),
+            Some(JsRenderCellSpecial::Checkbox)
+        );
+        assert_eq!(validations.render_special_pos((2, 2).into()), None);
     }
 }

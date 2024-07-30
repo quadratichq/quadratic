@@ -7,7 +7,7 @@ export interface JsHtmlOutput { sheet_id: string, x: bigint, y: bigint, html: st
 export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: Array<SheetRect> | null, }
 export interface JsRenderCodeCell { x: number, y: number, w: number, h: number, language: CodeCellLanguage, state: JsRenderCodeCellState, spill_error: Array<Pos> | null, }
 export type JsRenderCodeCellState = "NotYetRun" | "RunError" | "SpillError" | "Success";
-export type JsRenderCellSpecial = "Chart" | "SpillError" | "RunError" | "True" | "False";
+export type JsRenderCellSpecial = "Chart" | "SpillError" | "RunError" | "True" | "False" | "Checkbox" | "List";
 export interface JsRenderCell { x: bigint, y: bigint, value: string, language?: CodeCellLanguage, align?: CellAlign, wrap?: CellWrap, bold?: boolean, italic?: boolean, textColor?: string, special: JsRenderCellSpecial | null, }
 export type RangeRef = { "type": "RowRange", start: CellRefCoord, end: CellRefCoord, sheet: string | null, } | { "type": "ColRange", start: CellRefCoord, end: CellRefCoord, sheet: string | null, } | { "type": "CellRange", start: CellRef, end: CellRef, } | { "type": "Cell", pos: CellRef, };
 export interface CellRef { sheet: string | null, x: CellRefCoord, y: CellRefCoord, }

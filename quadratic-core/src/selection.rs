@@ -199,6 +199,15 @@ impl Selection {
         false
     }
 
+    /// Returns whether a rect is located inside the Selection.rects. Note: this
+    /// ignores the Selection.all, columns, and rows.
+    pub fn in_rects(&self, rect: Rect) -> bool {
+        if let Some(rects) = self.rects.as_ref() {
+            return rects.iter().any(|r| r.intersects(rect));
+        }
+        false
+    }
+
     /// Gets the origin.
     pub fn origin(&self) -> SheetPos {
         SheetPos {
@@ -577,5 +586,21 @@ mod test {
         let selection = Selection::rows(&[1, 2, 3], sheet_id);
         assert!(selection.contains_row(1));
         assert!(!selection.contains_row(4));
+    }
+
+    #[test]
+    fn in_rect() {
+        let sheet_id = SheetId::test();
+        let selection = Selection {
+            sheet_id,
+            x: 0,
+            y: 0,
+            rects: Some(vec![Rect::from_numbers(1, 2, 3, 4)]),
+            rows: None,
+            columns: None,
+            all: false,
+        };
+        assert!(selection.in_rects(Rect::from_numbers(1, 2, 3, 4)));
+        assert!(!selection.in_rects(Rect::from_numbers(4, 5, 6, 7)));
     }
 }

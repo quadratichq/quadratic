@@ -2,7 +2,11 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use uuid::Uuid;
 
-use crate::{grid::Sheet, selection::Selection, CellValue};
+use crate::{
+    grid::{js_types::JsRenderCellSpecial, Sheet},
+    selection::Selection,
+    CellValue,
+};
 
 use super::validation_rules::ValidationRule;
 
@@ -43,6 +47,26 @@ impl Validation {
     pub fn validate(&self, sheet: &Sheet, value: &CellValue) -> bool {
         self.rule.validate(sheet, value)
     }
+
+    /// Gets the JsRenderCellSpecial for a cell based on Validation.
+    pub fn render_special(&self) -> Option<JsRenderCellSpecial> {
+        match &self.rule {
+            ValidationRule::List(list) => {
+                if list.drop_down {
+                    Some(JsRenderCellSpecial::List)
+                } else {
+                    None
+                }
+            }
+            ValidationRule::Logical(logical) => {
+                if logical.show_checkbox {
+                    Some(JsRenderCellSpecial::Checkbox)
+                } else {
+                    None
+                }
+            }
+        }
+    }
 }
 
 /// Used to render a validation on the sheet.
@@ -76,6 +100,11 @@ impl ValidationDisplaySheet {
 
 #[cfg(test)]
 mod tests {
+    use crate::grid::sheet::validations::validation_rules::{
+        validation_list::{ValidationList, ValidationListSource},
+        validation_logical::ValidationLogical,
+    };
+
     use super::*;
 
     #[test]
@@ -106,5 +135,33 @@ mod tests {
             list: false,
         };
         assert!(!v.is_default());
+    }
+
+    #[test]
+    fn validation_render_special() {
+        let v = Validation {
+            id: Uuid::new_v4(),
+            selection: Selection::default(),
+            rule: ValidationRule::Logical(ValidationLogical {
+                show_checkbox: true,
+                ignore_blank: true,
+            }),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        assert_eq!(v.render_special(), Some(JsRenderCellSpecial::Checkbox));
+
+        let v = Validation {
+            id: Uuid::new_v4(),
+            selection: Selection::default(),
+            rule: ValidationRule::List(ValidationList {
+                source: ValidationListSource::List(vec!["test".to_string()]),
+                ignore_blank: true,
+                drop_down: true,
+            }),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        assert_eq!(v.render_special(), Some(JsRenderCellSpecial::List));
     }
 }

@@ -49,7 +49,7 @@ export const ValidationEntry = (props: Props) => {
           <div className="opacity-40">{selection}</div>
         </div>
         <Button
-          className="invisible px-1 group-hover:visible"
+          className="invisible px-1 hover:bg-white group-hover:visible"
           asChild
           variant="outline"
           onClick={(e) => {

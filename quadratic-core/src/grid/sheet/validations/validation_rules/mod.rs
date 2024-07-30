@@ -28,11 +28,13 @@ impl ValidationRule {
         }
     }
 
+    // Is this a list validation rule
     pub fn is_list(&self) -> bool {
         matches!(self, ValidationRule::List(_))
     }
 
-    pub fn is_checkbox(&self) -> bool {
+    // Is this a logical validation rule
+    pub fn is_logical(&self) -> bool {
         matches!(self, ValidationRule::Logical(_))
     }
 
@@ -108,7 +110,7 @@ mod tests {
             ignore_blank: true,
         };
         let rule = ValidationRule::Logical(checkbox);
-        assert!(rule.is_checkbox());
+        assert!(rule.is_logical());
 
         let list = ValidationList {
             source: ValidationListSource::List(vec!["test".to_string()]),
@@ -116,6 +118,6 @@ mod tests {
             drop_down: false,
         };
         let rule = ValidationRule::List(list);
-        assert!(!rule.is_checkbox());
+        assert!(!rule.is_logical());
     }
 }
