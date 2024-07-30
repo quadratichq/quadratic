@@ -52,6 +52,10 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
   }, [editorInteractionState, presentationMode, setEditorInteractionState, setPresentationMode]);
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    if ((event.metaKey || event.ctrlKey) && event.key === 'r') {
+      window.location.reload();
+      return;
+    }
     if (pixiAppSettings.input.show && inlineEditorHandler.isOpen()) return;
     if (
       keyboardClipboard({
