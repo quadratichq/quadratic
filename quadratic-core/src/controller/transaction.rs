@@ -48,13 +48,13 @@ impl Transaction {
     }
 
     /// Serializes and compresses the transaction's operations, adding a header with the version
-    pub fn serialize_and_compress<T: Serialize>(opearations: &T) -> Result<Vec<u8>> {
+    pub fn serialize_and_compress<T: Serialize>(operations: &T) -> Result<Vec<u8>> {
         let version = TransactionVersion {
             version: CURRENT_VERSION.into(),
         };
         let header = serialize(&HEADER_SERIALIZATION_FORMAT, &version)?;
         let compressed =
-            serialize_and_compress::<T>(&SERIALIZATION_FORMAT, &COMPRESSION_FORMAT, opearations)?;
+            serialize_and_compress::<T>(&SERIALIZATION_FORMAT, &COMPRESSION_FORMAT, operations)?;
 
         add_header(header, compressed)
     }
@@ -64,8 +64,8 @@ impl Transaction {
     ///
     /// When we start to add different transaction versions, we will need to
     /// match the version and handle the versions separately.
-    pub fn decompress_and_deserialize<T: DeserializeOwned>(opearations: &[u8]) -> Result<T> {
-        let (header, data) = remove_header(opearations)?;
+    pub fn decompress_and_deserialize<T: DeserializeOwned>(operations: &[u8]) -> Result<T> {
+        let (header, data) = remove_header(operations)?;
 
         // We're currently not doing anything with the transaction version, but will in
         // the future as we use different serialization and compression methods and/or
