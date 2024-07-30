@@ -35,20 +35,21 @@ pub(crate) struct Config {
     pub(crate) pubsub_active_channels: String,
     pub(crate) pubsub_processed_transactions_channel: String,
 
+    pub(crate) auth0_jwks_uri: String,
     pub(crate) quadratic_api_uri: String,
     pub(crate) m2m_auth_token: String,
 
-    // Storage Type: s3 or filesystem
+    // Storage Type: s3 or file-system
     pub(crate) storage_type: StorageType,
 
-    // StorageConfig::S3
+    // StorageType::S3
     pub(crate) aws_s3_region: Option<String>,
     pub(crate) aws_s3_bucket_name: Option<String>,
     pub(crate) aws_s3_access_key_id: Option<String>,
     pub(crate) aws_s3_secret_access_key: Option<String>,
 
-    // StorageConfig::FileSystem
-    pub(crate) path: Option<String>,
+    // StorageType::FileSystem
+    pub(crate) storage_dir: Option<String>,
 }
 
 /// Load the global configuration from the environment into Config.

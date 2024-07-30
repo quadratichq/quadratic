@@ -5,14 +5,18 @@
 //! Convert third party crate errors to application errors.
 //! Convert errors to responses.
 
-use quadratic_rust_shared::{Aws, SharedError};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
+use quadratic_rust_shared::{clean_errors, Auth, Aws, SharedError};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 pub(crate) type Result<T> = std::result::Result<T, FilesError>;
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub(crate) enum FilesError {
+pub enum FilesError {
     #[error("Authentication error: {0}")]
     Authentication(String),
 
@@ -59,9 +63,30 @@ pub(crate) enum FilesError {
     Unknown(String),
 }
 
+// Convert FilesErrors into readable responses with appropriate status codes.
+// These are the errors that are returned to the client.
+impl IntoResponse for FilesError {
+    fn into_response(self) -> Response {
+        let (status, error) = match &self {
+            FilesError::Authentication(error) => (StatusCode::UNAUTHORIZED, clean_errors(error)),
+            FilesError::InternalServer(error) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, clean_errors(error))
+            }
+            _ => (StatusCode::INTERNAL_SERVER_ERROR, "Unknown".into()),
+        };
+
+        tracing::warn!("{} {}: {:?}", status, error, self);
+
+        (status, error).into_response()
+    }
+}
+
 impl From<SharedError> for FilesError {
     fn from(error: SharedError) -> Self {
         match error {
+            SharedError::Auth(auth) => match auth {
+                Auth::Jwt(error) => FilesError::Authentication(error),
+            },
             SharedError::Aws(aws) => match aws {
                 Aws::S3(error) => FilesError::S3(error),
             },

@@ -3,17 +3,23 @@
 //! Handle bootstrapping and starting the HTTP server.  Adds global state
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
+use axum::extract::Request;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{routing::get, Extension, Router};
+use quadratic_rust_shared::auth::jwt::get_jwks;
+use quadratic_rust_shared::storage::Storage;
 use std::time::Duration;
 use std::{net::SocketAddr, sync::Arc};
 use tokio::time;
+use tower::ServiceExt;
+use tower_http::services::ServeDir;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::truncate::truncate_processed_transactions;
 use crate::{
+    auth::get_middleware,
     config::config,
     error::{FilesError, Result},
     file::process,
@@ -25,11 +31,39 @@ const HEALTHCHECK_INTERVAL_S: u64 = 5;
 /// Construct the application router.  This is separated out so that it can be
 /// integration tested.
 pub(crate) fn app(state: Arc<State>) -> Router {
+    // get the auth middleware
+    let jwks = state
+        .settings
+        .jwks
+        .as_ref()
+        .expect("JWKS not found in state")
+        .to_owned();
+    let auth = get_middleware(jwks);
+    let path = state.settings.storage.path().to_owned();
+
+    tracing::info!("Serving files from {path}");
+
     Router::new()
-        // routes
+        // protected routes
+        //
+        //
+        .nest_service(
+            "/storage",
+            get(|request: Request| async {
+                let service = ServeDir::new("storage");
+                service.oneshot(request).await
+            }),
+        )
+        //
+        // auth middleware
+        .route_layer(auth)
+        //
+        // unprotected routes
         .route("/health", get(healthcheck))
+        //
         // state
         .layer(Extension(state))
+        //
         // logger
         .layer(
             TraceLayer::new_for_http()
@@ -49,7 +83,8 @@ pub(crate) async fn serve() -> Result<()> {
         .init();
 
     let config = config()?;
-    let state = Arc::new(State::new(&config).await?);
+    let jwks = get_jwks(&config.auth0_jwks_uri).await?;
+    let state = Arc::new(State::new(&config, Some(jwks)).await?);
     let app = app(Arc::clone(&state));
 
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", config.host, config.port))

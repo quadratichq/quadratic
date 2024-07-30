@@ -1,3 +1,4 @@
+use jsonwebtoken::jwk::JwkSet;
 use quadratic_rust_shared::aws::client;
 use quadratic_rust_shared::environment::Environment;
 use quadratic_rust_shared::storage::file_system::{FileSystem, FileSystemConfig};
@@ -8,6 +9,7 @@ use crate::config::{Config, StorageType};
 
 #[derive(Debug)]
 pub(crate) struct Settings {
+    pub(crate) jwks: Option<JwkSet>,
     pub(crate) quadratic_api_uri: String,
     pub(crate) m2m_auth_token: String,
     pub(crate) storage: StorageContainer,
@@ -17,7 +19,7 @@ pub(crate) struct Settings {
 impl Settings {
     // Create a new Settings struct from the provided Config.
     // Panics are OK here since this is set at startup and we want to fail fast.
-    pub(crate) async fn new(config: &Config) -> Self {
+    pub(crate) async fn new(config: &Config, jwks: Option<JwkSet>) -> Self {
         let is_local =
             config.environment == Environment::Docker || config.environment == Environment::Local;
         let expected = |val: &Option<String>, var: &str| {
@@ -39,12 +41,13 @@ impl Settings {
             })),
             StorageType::FileSystem => {
                 StorageContainer::FileSystem(FileSystem::new(FileSystemConfig {
-                    path: expected(&config.path, "FILE_DIR"),
+                    path: expected(&config.storage_dir, "STORAGE_DIR"),
                 }))
             }
         };
 
         Settings {
+            jwks,
             quadratic_api_uri: config.quadratic_api_uri.to_owned(),
             m2m_auth_token: config.m2m_auth_token.to_owned(),
             storage,
