@@ -870,8 +870,14 @@ export interface CoreClientGetValidations {
 
 export interface ClientCoreUpdateValidation {
   type: 'clientCoreUpdateValidation';
-  selection: Selection;
   validation: Validation;
+  cursor: string;
+}
+
+export interface ClientCoreRemoveValidation {
+  type: 'clientCoreRemoveValidation';
+  sheetId: string;
+  validationId: string;
   cursor: string;
 }
 
@@ -941,7 +947,8 @@ export type ClientCoreMessage =
   | ClientCoreGetFormatCell
   | ClientCoreGetValidation
   | ClientCoreGetValidations
-  | ClientCoreUpdateValidation;
+  | ClientCoreUpdateValidation
+  | ClientCoreRemoveValidation;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

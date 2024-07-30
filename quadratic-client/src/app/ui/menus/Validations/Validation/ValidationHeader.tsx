@@ -1,5 +1,5 @@
 import { IconButton } from '@mui/material';
-import { TooltipHint } from '../../components/TooltipHint';
+import { TooltipHint } from '../../../components/TooltipHint';
 import { useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { Close } from '@mui/icons-material';

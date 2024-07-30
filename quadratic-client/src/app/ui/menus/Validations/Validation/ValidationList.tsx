@@ -1,9 +1,10 @@
-import { SheetRange } from './SheetRange';
 import { ValidationData } from './useValidationData';
 import { useMemo } from 'react';
 import { ValidationUICheckbox, ValidationMoreOptions, ValidationInput } from './ValidationUI';
-import { parseSelectionRange } from '@/app/grid/sheet/selection';
-import { ValidationRule } from '@/app/quadratic-core-types';
+import { defaultSelection } from '@/app/grid/sheet/selection';
+import { Selection, ValidationRule } from '@/app/quadratic-core-types';
+import { SheetRange } from '@/app/ui/components/SheetRange';
+import { sheets } from '@/app/grid/controller/Sheets';
 
 interface Props {
   validationData: ValidationData;
@@ -61,26 +62,29 @@ export const ValidationList = (props: Props) => {
     triggerError,
   } = props.validationData;
 
-  const changeRange = (range: string) => {
-    const parsed = parseSelectionRange(range);
-    if (!Array.isArray(parsed)) {
-      const rule: ValidationRule = {
-        List: { source: { Selection: parsed }, ignore_blank: ignoreBlank, drop_down: showDropdown },
-      };
-      setValidation((old) => {
-        if (old) {
-          return {
-            ...old,
-            rule,
-          };
-        }
-      });
-    }
+  const changeSelection = (selection: Selection | undefined) => {
+    const rule: ValidationRule = {
+      List: {
+        source: { Selection: selection ?? defaultSelection(sheets.sheet.id) },
+        ignore_blank: ignoreBlank,
+        drop_down: showDropdown,
+      },
+    };
+    setValidation((old) => {
+      if (old) {
+        return {
+          ...old,
+          rule,
+        };
+      }
+    });
   };
 
   return (
     <div className="flex flex-col gap-5">
-      {rule === 'list-range' && <SheetRange label="Range" onChangeRange={changeRange} triggerError={triggerError} />}
+      {rule === 'list-range' && (
+        <SheetRange label="Range" onChangeSelection={changeSelection} triggerError={triggerError} />
+      )}
       {rule === 'list' && <ValidationListInput validationData={props.validationData} />}
 
       <ValidationMoreOptions validationData={props.validationData} />

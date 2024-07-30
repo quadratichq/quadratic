@@ -1,67 +1,76 @@
 import { describe, expect, it } from 'vitest';
-import type { ColumnRowCursor, RectangleLike, SheetCursor } from './SheetCursor';
-import { getSelectionRange, parseCoordinate, parseNumberList, parseRange, parseSelectionRange } from './selection';
+import type { RectangleLike } from './SheetCursor';
+import {
+  defaultSelection,
+  getSelectionString,
+  parseCoordinate,
+  parseNumberList,
+  parseRange,
+  parseSelectionString,
+} from './selection';
+import { Selection } from '@/app/quadratic-core-types';
 
-const mockCursor = (options?: {
-  multiCursor?: RectangleLike[];
-  columnRow?: ColumnRowCursor;
+const mockSelection = (options: {
+  rects?: RectangleLike[];
+  columns?: number[];
+  rows?: number[];
   all?: boolean;
-}): SheetCursor => {
-  let columnRow = undefined;
-  let multiCursor = options?.multiCursor;
-  if (options?.all) {
-    columnRow = { all: true };
-  } else {
-    columnRow = options?.columnRow;
-  }
-
+}): Selection => {
   return {
-    cursorPosition: { x: 1, y: 2 },
-    multiCursor,
-    columnRow,
-  } as any as SheetCursor;
+    sheet_id: { id: '' },
+    x: BigInt(0),
+    y: BigInt(0),
+    rects:
+      options.rects?.map((rect) => ({
+        min: { x: BigInt(rect.x), y: BigInt(rect.y) },
+        max: { x: BigInt(rect.x + rect.width - 1), y: BigInt(rect.y + rect.height - 1) },
+      })) ?? null,
+    columns: options.columns?.map((x) => BigInt(x)) ?? null,
+    rows: options.rows?.map((y) => BigInt(y)) ?? null,
+    all: options.all || false,
+  };
 };
 
-describe('getSelectionRange', () => {
+describe('getSelectionString', () => {
   it('all', () => {
-    const cursor = mockCursor({ all: true });
-    expect(getSelectionRange(cursor)).toBe('all');
+    const selection = mockSelection({ all: true });
+    expect(getSelectionString(selection)).toBe('all');
   });
 
   it('columns', () => {
-    const cursor = mockCursor({ columnRow: { columns: [1, 2] } });
-    expect(getSelectionRange(cursor)).toBe('(col=1, 2)');
+    const selection = mockSelection({ columns: [1, 2] });
+    expect(getSelectionString(selection)).toBe('(col=1, 2)');
   });
 
   it('rows', () => {
-    const cursor = mockCursor({ columnRow: { rows: [1, 2] } });
-    expect(getSelectionRange(cursor)).toBe('(row=1, 2)');
+    const selection = mockSelection({ rows: [1, 2] });
+    expect(getSelectionString(selection)).toBe('(row=1, 2)');
   });
 
   it('columns and rows', () => {
-    const cursor = mockCursor({ columnRow: { columns: [1, 2], rows: [3, 4] } });
-    expect(getSelectionRange(cursor)).toBe('(col=1, 2); (row=3, 4)');
+    const selection = mockSelection({ columns: [1, 2], rows: [3, 4] });
+    expect(getSelectionString(selection)).toBe('(col=1, 2); (row=3, 4)');
   });
 
   it('single cursor', () => {
-    const cursor = mockCursor();
-    expect(getSelectionRange(cursor)).toBe('(1,2)');
+    const selection = mockSelection({ rects: [{ x: 1, y: 2, width: 1, height: 1 }] });
+    expect(getSelectionString(selection)).toBe('(1,2)');
   });
 
   it('multi cursor', () => {
-    const cursorSingle = mockCursor({ multiCursor: [{ x: 1, y: 2, width: 1, height: 1 }] });
-    expect(getSelectionRange(cursorSingle)).toBe('(1,2)');
+    const cursorSingle = mockSelection({ rects: [{ x: 1, y: 2, width: 1, height: 1 }] });
+    expect(getSelectionString(cursorSingle)).toBe('(1,2)');
 
-    const cursorRect = mockCursor({ multiCursor: [{ x: 1, y: 2, width: 2, height: 2 }] });
-    expect(getSelectionRange(cursorRect)).toBe('(1,2)-(2,3)');
+    const cursorRect = mockSelection({ rects: [{ x: 1, y: 2, width: 2, height: 2 }] });
+    expect(getSelectionString(cursorRect)).toBe('(1,2)-(2,3)');
 
-    const cursorMulti = mockCursor({
-      multiCursor: [
+    const cursorMulti = mockSelection({
+      rects: [
         { x: 1, y: 2, width: 1, height: 1 },
         { x: 3, y: 4, width: 2, height: 3 },
       ],
     });
-    expect(getSelectionRange(cursorMulti)).toBe('(1,2); (3,4)-(4,6)');
+    expect(getSelectionString(cursorMulti)).toBe('(1,2); (3,4)-(4,6)');
   });
 });
 
@@ -86,40 +95,42 @@ it('parseNumberList', () => {
   expect(parseNumberList('test')).toEqual(undefined);
 });
 
-it('parseSelectionRange', () => {
-  const defaultSelection = () => ({
-    x: 0n,
-    y: 0n,
-    sheet_id: { id: '' },
-    all: false,
-    columns: null,
-    rows: null,
-    rects: null,
+it('parseSelectionString', () => {
+  const sheetId = 'sheetId';
+  expect(parseSelectionString('all', sheetId).selection).toEqual({ ...defaultSelection(sheetId), all: true });
+  expect(parseSelectionString('(col=1, 2)', sheetId).selection).toEqual({
+    ...defaultSelection(sheetId),
+    columns: [1n, 2n],
   });
-  expect(parseSelectionRange('all')).toEqual({ ...defaultSelection(), all: true });
-  expect(parseSelectionRange('(col=1, 2)')).toEqual({ ...defaultSelection(), columns: [1n, 2n] });
-  expect(parseSelectionRange('(row = 1,2)')).toEqual({ ...defaultSelection(), rows: [1n, 2n] });
-  expect(parseSelectionRange('(col=1, 2); (row=3, 4)')).toEqual({
-    ...defaultSelection(),
+  expect(parseSelectionString('(row = 1,2)', sheetId).selection).toEqual({
+    ...defaultSelection(sheetId),
+    rows: [1n, 2n],
+  });
+  expect(parseSelectionString('(col=1, 2); (row=3, 4)', sheetId).selection).toEqual({
+    ...defaultSelection(sheetId),
     columns: [1n, 2n],
     rows: [3n, 4n],
   });
-  expect(parseSelectionRange('(1,2)')).toEqual({
-    ...defaultSelection(),
+  expect(parseSelectionString('(1,2)', sheetId).selection).toEqual({
+    ...defaultSelection(sheetId),
     rects: [{ min: { x: 1n, y: 2n }, max: { x: 1n, y: 2n } }],
   });
-  expect(parseSelectionRange('(1,2)-(2,3)')).toEqual({
-    ...defaultSelection(),
+  expect(parseSelectionString('(1,2)-(2,3)', sheetId).selection).toEqual({
+    ...defaultSelection(sheetId),
     rects: [{ min: { x: 1n, y: 2n }, max: { x: 2n, y: 3n } }],
   });
-  expect(parseSelectionRange('(1,2); (3,4)-(4,6)')).toEqual({
-    ...defaultSelection(),
+  expect(parseSelectionString('(1,2); (3,4)-(4,6)', sheetId).selection).toEqual({
+    ...defaultSelection(sheetId),
     rects: [
       { min: { x: 1n, y: 2n }, max: { x: 1n, y: 2n } },
       { min: { x: 3n, y: 4n }, max: { x: 4n, y: 6n } },
     ],
   });
-  expect(parseSelectionRange(' test')).toEqual(['Unknown range reference', 0]);
-  expect(parseSelectionRange('(col=1, 2); (row=3, 4) test')).toEqual(['Unknown range reference', 12]);
-  expect(parseSelectionRange('')).toEqual(['Empty range', 0]);
+  console.log(parseSelectionString(' test', sheetId));
+  expect(parseSelectionString(' test', sheetId).error).toEqual({ error: 'Unknown range reference', column: 0 });
+  expect(parseSelectionString('(col=1, 2); (row=3, 4) test', sheetId).error).toEqual({
+    error: 'Unknown range reference',
+    column: 12,
+  });
+  expect(parseSelectionString('', sheetId).error).toEqual({ error: 'Empty range', column: 0 });
 });

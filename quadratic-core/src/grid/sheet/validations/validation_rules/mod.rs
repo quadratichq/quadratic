@@ -25,9 +25,25 @@ impl ValidationRule {
     /// Validate a CellValue against the validation rule.
     pub fn validate(&self, sheet: &Sheet, value: &CellValue) -> bool {
         match &self {
+            ValidationRule::None => true,
             ValidationRule::List(list) => ValidationList::validate(sheet, list, value),
             ValidationRule::Checkbox(_) => ValidationCheckbox::validate(value),
+        }
+    }
+
+    pub fn is_list(&self) -> bool {
+        matches!(self, ValidationRule::List(_))
+    }
+
+    pub fn is_checkbox(&self) -> bool {
+        matches!(self, ValidationRule::Checkbox(_))
+    }
+
+    pub fn allow_blank(&self) -> bool {
+        match self {
             ValidationRule::None => true,
+            ValidationRule::List(list) => list.ignore_blank,
+            ValidationRule::Checkbox(_) => true,
         }
     }
 }
@@ -72,8 +88,39 @@ mod tests {
     }
 
     #[test]
-    fn validate_none() {
+    fn validation_none() {
         let sheet = Sheet::test();
-        assert!(ValidationRule::None.validate(&sheet, &CellValue::Text("test".to_string())));
+        let rule = ValidationRule::None;
+        assert!(rule.validate(&sheet, &CellValue::Text("test".to_string())));
+    }
+
+    #[test]
+    fn is_list() {
+        let list = ValidationList {
+            source: ValidationListSource::List(vec!["test".to_string()]),
+            ignore_blank: true,
+            drop_down: false,
+        };
+        let rule = ValidationRule::List(list);
+        assert!(rule.is_list());
+
+        let checkbox = ValidationCheckbox {};
+        let rule = ValidationRule::Checkbox(checkbox);
+        assert!(!rule.is_list());
+    }
+
+    #[test]
+    fn is_checkbox() {
+        let checkbox = ValidationCheckbox {};
+        let rule = ValidationRule::Checkbox(checkbox);
+        assert!(rule.is_checkbox());
+
+        let list = ValidationList {
+            source: ValidationListSource::List(vec!["test".to_string()]),
+            ignore_blank: true,
+            drop_down: false,
+        };
+        let rule = ValidationRule::List(list);
+        assert!(!rule.is_checkbox());
     }
 }

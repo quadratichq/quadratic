@@ -909,13 +909,14 @@ class Core {
     return JSON.parse(validations);
   }
 
-  updateValidation(selection: Selection, validation: Validation, cursor: string) {
+  updateValidation(validation: Validation, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.updateValidation(
-      JSON.stringify(selection, bigIntReplacer),
-      JSON.stringify(validation, bigIntReplacer),
-      cursor
-    );
+    this.gridController.updateValidation(JSON.stringify(validation, bigIntReplacer), cursor);
+  }
+
+  removeValidation(sheetId: string, validationId: string, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.removeValidation(sheetId, validationId, cursor);
   }
 }
 

@@ -1,10 +1,12 @@
 use selection::Selection;
 use sheet::validations::validation::Validation;
+use uuid::Uuid;
 
 use super::*;
 
 #[wasm_bindgen]
 impl GridController {
+    /// Returns a stringified version of Validation for a given selection
     #[wasm_bindgen(js_name = "getValidation")]
     pub fn js_validation(&self, selection: String) -> String {
         let Ok(selection) = Selection::from_str(&selection) else {
@@ -29,7 +31,6 @@ impl GridController {
     #[wasm_bindgen(js_name = "updateValidation")]
     pub fn js_update_validation(
         &mut self,
-        selection: String,  // Selection
         validation: String, // Validation
         cursor: Option<String>,
     ) {
@@ -40,11 +41,21 @@ impl GridController {
                 return;
             }
         };
-        match Selection::from_str(&selection) {
-            Ok(selection) => self.update_validation(selection, validation, cursor),
-            Err(e) => {
-                dbgjs!(format!("Error parsing selection: {}", e));
-            }
-        };
+        self.update_validation(validation, cursor);
+    }
+
+    // removes a validation
+    #[wasm_bindgen(js_name = "removeValidation")]
+    pub fn js_remove_validation(
+        &mut self,
+        sheet_id: String,
+        validation_id: String,
+        cursor: Option<String>,
+    ) {
+        if let (Ok(sheet_id), Ok(validation_id)) =
+            (SheetId::from_str(&sheet_id), Uuid::from_str(&validation_id))
+        {
+            self.remove_validation(sheet_id, validation_id, cursor);
+        }
     }
 }

@@ -6,7 +6,8 @@ use grid::{
     js_types::JsSheetFill,
     sheet::validations::{
         validation::{
-            Validation, ValidationCell, ValidationError, ValidationMessage, ValidationStyle,
+            Validation, ValidationDisplay, ValidationDisplaySheet, ValidationError,
+            ValidationMessage, ValidationStyle,
         },
         validation_rules::{
             validation_checkbox::ValidationCheckbox,
@@ -112,16 +113,16 @@ fn main() {
         Format,
         JsSheetFill,
         ColumnRow,
-        ValidationCell,
         Validation,
         ValidationRule,
-        ValidationCell,
         ValidationError,
         ValidationMessage,
-        ValidationList,
         ValidationCheckbox,
+        ValidationList,
         ValidationListSource,
         ValidationStyle,
+        ValidationDisplay,
+        ValidationDisplaySheet,
     );
 
     if create_dir_all("../quadratic-client/src/app/quadratic-core-types").is_ok() {

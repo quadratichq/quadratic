@@ -13,7 +13,7 @@ export interface EditorInteractionState {
   showFeedbackMenu: boolean;
   showShareFileMenu: boolean;
   showSearch: boolean | SearchOptions;
-  showValidation: boolean;
+  showValidation: boolean | string;
   showContextMenu: boolean;
   permissions: FilePermission[];
   uuid: string;
