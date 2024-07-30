@@ -14,7 +14,6 @@ import { keyboardSearch } from './keyboardSearch';
 import { keyboardSelect } from './keyboardSelect';
 import { keyboardUndoRedo } from './keyboardUndoRedo';
 import { keyboardViewport } from './keyboardViewport';
-import { debug } from '@/app/debugFlags';
 
 export interface IProps {
   editorInteractionState: EditorInteractionState;
@@ -53,10 +52,6 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
   }, [editorInteractionState, presentationMode, setEditorInteractionState, setPresentationMode]);
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (debug && (event.metaKey || event.ctrlKey) && event.key === 'r') {
-      window.location.reload();
-      return;
-    }
     if (pixiAppSettings.input.show && inlineEditorHandler.isOpen()) return;
     if (
       keyboardClipboard({
