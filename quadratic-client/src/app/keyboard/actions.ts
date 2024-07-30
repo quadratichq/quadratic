@@ -61,6 +61,7 @@ export const ActionEnum = z.enum([
   'show_cell_type_menu',
   'close_inline_editor',
   'save_inline_editor',
+  'save_inline_editor_move_up',
   'save_inline_editor_move_right',
   'save_inline_editor_move_left',
   'remove_inserted_cells',
