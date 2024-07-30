@@ -301,8 +301,12 @@ class InlineEditorMonaco {
       language: inlineEditorHandler.formula ? 'formula' : undefined,
     });
 
-    const suggestionWidget = (this.editor.getContribution('editor.contrib.suggestController') as any | undefined)
-      ?.widget;
+    interface SuggestController {
+      widget: { value: { onDidShow: (fn: () => void) => void; onDidHide: (fn: () => void) => void } };
+    }
+    const suggestionWidget = (
+      this.editor.getContribution('editor.contrib.suggestController') as SuggestController | null
+    )?.widget;
     if (suggestionWidget) {
       suggestionWidget.value.onDidShow(() => {
         this.suggestionWidgetShowing = true;
