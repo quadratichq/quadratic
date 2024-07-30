@@ -1,4 +1,5 @@
 import { sheets } from '@/app/grid/controller/Sheets';
+import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { hasPermissionToEditFile } from '../../../actions';
@@ -11,30 +12,34 @@ export function keyboardCode(
   if (!hasPermissionToEditFile(editorInteractionState.permissions)) {
     return false;
   }
-  if (event.code === 'Enter' && (event.ctrlKey || event.metaKey)) {
-    event.preventDefault();
-    if (event.shiftKey) {
-      if (event.altKey) {
-        quadraticCore.rerunCodeCells(sheets.sheet.id, undefined, undefined, sheets.getCursorPosition());
-      } else {
-        quadraticCore.rerunCodeCells(undefined, undefined, undefined, sheets.getCursorPosition());
-      }
-    } else {
-      quadraticCore.rerunCodeCells(
-        sheets.sheet.id,
-        editorInteractionState.selectedCell.x,
-        editorInteractionState.selectedCell.y,
-        sheets.getCursorPosition()
-      );
-    }
+  // Execute code cell
+  if (matchShortcut('execute_code', event)) {
+    quadraticCore.rerunCodeCells(
+      sheets.sheet.id,
+      editorInteractionState.selectedCell.x,
+      editorInteractionState.selectedCell.y,
+      sheets.getCursorPosition()
+    );
     return true;
   }
 
-  if (editorInteractionState.showCodeEditor) {
-    if (event.code === 'KeyL' && (event.ctrlKey || event.metaKey)) {
-      event.preventDefault();
-      insertCellRef(editorInteractionState);
-    }
+  // Rerun sheet code
+  if (matchShortcut('rerun_sheet_code', event)) {
+    quadraticCore.rerunCodeCells(sheets.sheet.id, undefined, undefined, sheets.getCursorPosition());
+    return true;
   }
+
+  // Rerun all code
+  if (matchShortcut('rerun_all_code', event)) {
+    quadraticCore.rerunCodeCells(undefined, undefined, undefined, sheets.getCursorPosition());
+    return true;
+  }
+
+  // Insert cell reference
+  if (editorInteractionState.showCodeEditor && matchShortcut('insert_cell_reference', event)) {
+    insertCellRef(editorInteractionState);
+    return true;
+  }
+
   return false;
 }
