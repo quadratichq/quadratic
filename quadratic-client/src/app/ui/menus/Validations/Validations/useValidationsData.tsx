@@ -17,7 +17,7 @@ export const useValidationsData = () => {
   useEffect(() => {
     const getValidations = async () => {
       const v = await quadraticCore.getValidations(sheets.current);
-      setValidations(v);
+      setValidations(v || []);
     };
     getValidations();
   }, []);

@@ -12,7 +12,7 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 
 export type SetState<T> = Dispatch<SetStateAction<T>>;
 
-export type ValidationRuleSimple = 'none' | 'list' | 'list-range' | 'checkbox';
+export type ValidationRuleSimple = 'none' | 'list' | 'list-range' | 'logical';
 
 export interface ValidationData {
   unsaved: boolean;
@@ -94,8 +94,8 @@ export const useValidationData = (validationId?: string): ValidationData => {
           if ('Selection' in rule.List.source) return 'list-range';
         }
         return 'list';
-      } else if ('Checkbox' in rule) {
-        return 'checkbox';
+      } else if ('Logical' in rule) {
+        return 'logical';
       } else {
         throw new Error('Invalid rule in useValidationData.rule');
       }
@@ -173,8 +173,8 @@ export const useValidationData = (validationId?: string): ValidationData => {
         };
         break;
 
-      case 'checkbox':
-        rule = { Checkbox: {} };
+      case 'logical':
+        rule = { Logical: { show_checkbox: true } };
         break;
 
       default:

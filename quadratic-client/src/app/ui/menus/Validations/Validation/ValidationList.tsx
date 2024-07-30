@@ -51,16 +51,8 @@ export const ValidationListInput = (props: Props) => {
 };
 
 export const ValidationList = (props: Props) => {
-  const {
-    setValidation,
-    rule,
-    ignoreBlank,
-    changeIgnoreBlank,
-    showDropdown,
-    changeDropDown,
-    moreOptions,
-    triggerError,
-  } = props.validationData;
+  const { setValidation, rule, ignoreBlank, changeIgnoreBlank, showDropdown, changeDropDown, triggerError } =
+    props.validationData;
 
   const changeSelection = (selection: Selection | undefined) => {
     const rule: ValidationRule = {
@@ -87,22 +79,10 @@ export const ValidationList = (props: Props) => {
       )}
       {rule === 'list' && <ValidationListInput validationData={props.validationData} />}
 
-      <ValidationMoreOptions validationData={props.validationData} />
+      <ValidationUICheckbox label="Ignore blank values" showDropdown={ignoreBlank} changeDropDown={changeIgnoreBlank} />
+      <ValidationUICheckbox label="Show dropdown in cell" showDropdown={showDropdown} changeDropDown={changeDropDown} />
 
-      {moreOptions && (
-        <ValidationUICheckbox
-          label="Ignore blank values"
-          showDropdown={ignoreBlank}
-          changeDropDown={changeIgnoreBlank}
-        />
-      )}
-      {moreOptions && (
-        <ValidationUICheckbox
-          label="Show dropdown in cell"
-          showDropdown={showDropdown}
-          changeDropDown={changeDropDown}
-        />
-      )}
+      <ValidationMoreOptions validationData={props.validationData} />
     </div>
   );
 };

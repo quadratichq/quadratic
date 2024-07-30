@@ -56,10 +56,10 @@ export interface Format { align: CellAlign | null, wrap: CellWrap | null, numeri
 export interface JsSheetFill { columns: Array<[bigint, [string, bigint]]>, rows: Array<[bigint, [string, bigint]]>, all: string | null, }
 export interface ColumnRow { column: number, row: number, }
 export interface Validation { id: string, selection: Selection, rule: ValidationRule, message: ValidationMessage, error: ValidationError, }
-export type ValidationRule = "None" | { "List": ValidationList } | { "Checkbox": ValidationCheckbox };
+export type ValidationRule = "None" | { "List": ValidationList } | { "Logical": ValidationLogical };
 export interface ValidationError { show: boolean, style: ValidationStyle, title: string | null, message: string | null, }
 export interface ValidationMessage { show: boolean, title: string | null, message: string | null, }
-export type ValidationCheckbox = Record<string, never>;
+export interface ValidationLogical { show_checkbox: boolean, }
 export interface ValidationList { source: ValidationListSource, ignore_blank: boolean, drop_down: boolean, }
 export type ValidationListSource = { "Selection": Selection } | { "List": Array<string> };
 export type ValidationStyle = "Warning" | "Stop" | "Information";

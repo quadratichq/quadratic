@@ -44,7 +44,7 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::grid::sheet::validations::validation_rules::{
-        validation_checkbox::ValidationCheckbox, ValidationRule,
+        validation_logical::ValidationLogical, ValidationRule,
     };
 
     use super::*;
@@ -68,7 +68,9 @@ mod tests {
         let validation = Validation {
             id: Uuid::new_v4(),
             selection: selection.clone(),
-            rule: ValidationRule::Checkbox(ValidationCheckbox {}),
+            rule: ValidationRule::Logical(ValidationLogical {
+                show_checkbox: true,
+            }),
             message: Default::default(),
             error: Default::default(),
         };
@@ -77,32 +79,4 @@ mod tests {
         assert_eq!(gc.validations(sheet_id).unwrap().len(), 1);
         assert_eq!(gc.validation(selection), Some(&validation));
     }
-
-    // #[test]
-    // fn delete_validation_using_rule_none() {
-    //     let mut gc = GridController::test();
-    //     let sheet_id = gc.sheet_ids()[0];
-
-    //     let validation = Validation {
-    //         id: Uuid::new_v4(),
-    //         name: "test".to_string(),
-    //         rule: ValidationRule::Checkbox(ValidationCheckbox {}),
-    //         ..Default::default()
-    //     };
-    //     let selection = Selection::columns(&[1], sheet_id);
-    //     gc.update_validation(selection.clone(), validation.clone(), None);
-
-    //     assert_eq!(gc.validation(selection.clone()), Some(&validation));
-    //     assert_eq!(gc.validations(sheet_id), vec![&validation]);
-
-    //     let validation = Validation {
-    //         id: Uuid::new_v4(),
-    //         name: "test".to_string(),
-    //         rule: ValidationRule::None,
-    //         ..Default::default()
-    //     };
-    //     gc.update_validation(selection.clone(), validation, None);
-    //     assert_eq!(gc.validation(selection), None);
-    //     assert!(gc.validations(sheet_id).is_empty());
-    // }
 }

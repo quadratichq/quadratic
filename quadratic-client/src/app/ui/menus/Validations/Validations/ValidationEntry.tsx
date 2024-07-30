@@ -21,13 +21,14 @@ export const ValidationEntry = (props: Props) => {
   const title = useMemo(() => {
     if (validation.rule === 'None') return 'None';
     if ('List' in validation.rule) {
-      if ('source' in validation.rule.List) {
-        return 'List from user-defined values';
-      } else if ('range' in validation.rule.List) {
-        return 'List from selection';
+      const type = validation.rule.List.drop_down ? 'Dropdown' : 'Value';
+      if ('List' in validation.rule.List.source) {
+        return `${type} from user-defined list`;
+      } else if ('Selection' in validation.rule.List.source) {
+        return `${type} from selection`;
       }
     } else if ('Checkbox' in validation.rule) {
-      return 'Checkbox';
+      return 'Logical';
     }
     return 'Unknown';
   }, [validation]);
@@ -42,20 +43,20 @@ export const ValidationEntry = (props: Props) => {
   }, [setEditorInteractionState, validation.id]);
 
   return (
-    <Button variant="outline" className="h-fit w-full" style={{ marginTop: -1 }} onClick={selectValidation}>
+    <Button variant="ghost" className="h-fit w-full border-b border-gray-100" onClick={selectValidation}>
       <div className="group flex w-full items-center justify-between py-3">
-        <div className="flex flex-col items-start">
+        <div className="flex shrink flex-col items-start text-left">
           <div className="mb-2">{title}</div>
           <div className="opacity-40">{selection}</div>
         </div>
         <Button
           className="invisible px-1 group-hover:visible"
           asChild
-          variant="outline-destructive"
+          variant="outline"
           onClick={() => deleteValidation(validation.id)}
         >
           <span>
-            <DeleteIcon />
+            <DeleteIcon className="text-gray-400" />
           </span>
         </Button>
       </div>

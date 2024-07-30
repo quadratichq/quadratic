@@ -35,7 +35,7 @@ export const Validation = (props: Props) => {
       case 'list-range':
       case 'list':
         return <ValidationList validationData={validationData} />;
-      case 'checkbox':
+      case 'logical':
         return <ValidationCheckbox validationData={validationData} />;
     }
     return null;

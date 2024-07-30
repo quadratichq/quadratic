@@ -5,20 +5,20 @@ use crate::CellValue;
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
-use validation_checkbox::ValidationCheckbox;
 use validation_list::ValidationList;
+use validation_logical::ValidationLogical;
 
 use super::super::Sheet;
 
-pub mod validation_checkbox;
 pub mod validation_list;
+pub mod validation_logical;
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum ValidationRule {
     #[default]
     None,
     List(ValidationList),
-    Checkbox(ValidationCheckbox),
+    Logical(ValidationLogical),
 }
 
 impl ValidationRule {
@@ -27,7 +27,7 @@ impl ValidationRule {
         match &self {
             ValidationRule::None => true,
             ValidationRule::List(list) => ValidationList::validate(sheet, list, value),
-            ValidationRule::Checkbox(_) => ValidationCheckbox::validate(value),
+            ValidationRule::Logical(_) => ValidationLogical::validate(value),
         }
     }
 
@@ -36,14 +36,14 @@ impl ValidationRule {
     }
 
     pub fn is_checkbox(&self) -> bool {
-        matches!(self, ValidationRule::Checkbox(_))
+        matches!(self, ValidationRule::Logical(_))
     }
 
     pub fn allow_blank(&self) -> bool {
         match self {
             ValidationRule::None => true,
             ValidationRule::List(list) => list.ignore_blank,
-            ValidationRule::Checkbox(_) => true,
+            ValidationRule::Logical(_) => true,
         }
     }
 }
@@ -104,15 +104,19 @@ mod tests {
         let rule = ValidationRule::List(list);
         assert!(rule.is_list());
 
-        let checkbox = ValidationCheckbox {};
-        let rule = ValidationRule::Checkbox(checkbox);
+        let checkbox = ValidationLogical {
+            show_checkbox: true,
+        };
+        let rule = ValidationRule::Logical(checkbox);
         assert!(!rule.is_list());
     }
 
     #[test]
     fn is_checkbox() {
-        let checkbox = ValidationCheckbox {};
-        let rule = ValidationRule::Checkbox(checkbox);
+        let checkbox = ValidationLogical {
+            show_checkbox: true,
+        };
+        let rule = ValidationRule::Logical(checkbox);
         assert!(rule.is_checkbox());
 
         let list = ValidationList {

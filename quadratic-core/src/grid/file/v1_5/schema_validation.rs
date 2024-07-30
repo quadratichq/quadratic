@@ -44,7 +44,9 @@ pub struct ValidationError {
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct ValidationCheckbox {}
+pub struct ValidationLogical {
+    pub show_checkbox: bool,
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum ValidationListSource {
@@ -64,7 +66,7 @@ pub enum ValidationRule {
     #[default]
     None,
     List(ValidationList),
-    Checkbox(ValidationCheckbox),
+    Logical(ValidationLogical),
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -160,7 +160,7 @@ impl Validations {
 
 #[cfg(test)]
 mod tests {
-    use validation_rules::{validation_checkbox::ValidationCheckbox, ValidationRule};
+    use validation_rules::{validation_logical::ValidationLogical, ValidationRule};
 
     use crate::{grid::SheetId, selection::Selection, Rect};
 
@@ -170,7 +170,9 @@ mod tests {
         Validation {
             id: Uuid::new_v4(),
             selection: Selection::rect(Rect::new(x0, y0, x1, y1), SheetId::test()),
-            rule: ValidationRule::Checkbox(ValidationCheckbox {}),
+            rule: ValidationRule::Logical(ValidationLogical {
+                show_checkbox: true,
+            }),
             message: Default::default(),
             error: Default::default(),
         }
@@ -220,7 +222,9 @@ mod tests {
         let validation = Validation {
             id: Default::default(),
             selection: Selection::all(SheetId::test()),
-            rule: ValidationRule::Checkbox(ValidationCheckbox {}),
+            rule: ValidationRule::Logical(ValidationLogical {
+                show_checkbox: true,
+            }),
             message: Default::default(),
             error: Default::default(),
         };
@@ -261,7 +265,9 @@ mod tests {
         let validation = Validation {
             id: Default::default(),
             selection: Selection::columns(&[0, 1, 2], SheetId::test()),
-            rule: ValidationRule::Checkbox(ValidationCheckbox {}),
+            rule: ValidationRule::Logical(ValidationLogical {
+                show_checkbox: true,
+            }),
             message: Default::default(),
             error: Default::default(),
         };
@@ -302,7 +308,9 @@ mod tests {
         let validation = Validation {
             id: Default::default(),
             selection: Selection::rows(&[0, 1, 2], SheetId::test()),
-            rule: ValidationRule::Checkbox(ValidationCheckbox {}),
+            rule: ValidationRule::Logical(ValidationLogical {
+                show_checkbox: true,
+            }),
             message: Default::default(),
             error: Default::default(),
         };

@@ -1,10 +1,10 @@
 use crate::color::Rgba;
 use crate::grid::formats::format::Format;
 use crate::grid::sheet::validations::validation::{Validation, ValidationStyle};
-use crate::grid::sheet::validations::validation_rules::validation_checkbox::ValidationCheckbox;
 use crate::grid::sheet::validations::validation_rules::validation_list::{
     ValidationList, ValidationListSource,
 };
+use crate::grid::sheet::validations::validation_rules::validation_logical::ValidationLogical;
 use crate::grid::sheet::validations::validation_rules::ValidationRule;
 // use crate::grid::sheet::validations::validation::{Validation, ValidationStyle};
 // use crate::grid::sheet::validations::validation_rules::validation_checkbox::ValidationCheckbox;
@@ -401,8 +401,10 @@ fn import_validation_rule(rule: &current_validations::ValidationRule) -> Validat
             ignore_blank: list.ignore_blank,
             drop_down: list.drop_down,
         }),
-        current_validations::ValidationRule::Checkbox(_) => {
-            ValidationRule::Checkbox(ValidationCheckbox {})
+        current_validations::ValidationRule::Logical(logical) => {
+            ValidationRule::Logical(ValidationLogical {
+                show_checkbox: logical.show_checkbox,
+            })
         }
     }
 }
@@ -832,9 +834,11 @@ fn export_validation_rule(rule: &ValidationRule) -> current_validations::Validat
                 drop_down: list.drop_down,
             })
         }
-        ValidationRule::Checkbox(_) => current_validations::ValidationRule::Checkbox(
-            current_validations::ValidationCheckbox {},
-        ),
+        ValidationRule::Logical(logical) => {
+            current_validations::ValidationRule::Logical(current_validations::ValidationLogical {
+                show_checkbox: logical.show_checkbox,
+            })
+        }
     }
 }
 

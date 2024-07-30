@@ -10,8 +10,8 @@ use grid::{
             ValidationMessage, ValidationStyle,
         },
         validation_rules::{
-            validation_checkbox::ValidationCheckbox,
             validation_list::{ValidationList, ValidationListSource},
+            validation_logical::ValidationLogical,
             ValidationRule,
         },
     },
@@ -117,7 +117,7 @@ fn main() {
         ValidationRule,
         ValidationError,
         ValidationMessage,
-        ValidationCheckbox,
+        ValidationLogical,
         ValidationList,
         ValidationListSource,
         ValidationStyle,
