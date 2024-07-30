@@ -98,7 +98,7 @@ impl GridController {
     ) {
         if let Operation::ComputeCode { sheet_pos } = op {
             if !transaction.is_user_undo_redo() && !transaction.is_server() {
-                dbgjs!("Only a user / undo / redo /server transaction should have a ComputeCode");
+                dbgjs!("Only user / undo / redo / server transaction should have a ComputeCode");
                 return;
             }
             let sheet_id = sheet_pos.sheet_id;

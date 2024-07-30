@@ -83,9 +83,10 @@ impl GridController {
             return vec![];
         };
 
-        // clone the sheet and update id
+        // clone the sheet and update id and name
         let mut new_sheet = sheet.clone();
         new_sheet.id = SheetId::new();
+        new_sheet.name = format!("{} Copy", sheet.name);
         let mut ops = vec![Operation::AddSheetSchema {
             schema: (export_sheet(&new_sheet)),
         }];
