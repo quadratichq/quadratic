@@ -1,6 +1,8 @@
+import { events } from '@/app/events/events';
 import { useUndo } from '@/app/events/useUndo';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
+import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { useEffect, useRef, useState } from 'react';
@@ -14,11 +16,13 @@ import QuadraticUIContext from './QuadraticUIContext';
 import { QuadraticLoading } from './loading/QuadraticLoading';
 
 export function QuadraticApp() {
+  const didMount = useRef<boolean>(false);
+  const { permissions, uuid } = useRecoilValue(editorInteractionStateAtom);
   const { loggedInUser } = useRootRouteLoaderData();
 
-  const [loading, setLoading] = useState(true);
-  const { permissions, uuid } = useRecoilValue(editorInteractionStateAtom);
-  const didMount = useRef<boolean>(false);
+  // Loading states
+  const [offlineLoading, setOfflineLoading] = useState(true);
+  const [multiplayerLoading, setMultiplayerLoading] = useState(true);
 
   // Initialize loading of critical assets
   useEffect(() => {
@@ -42,14 +46,36 @@ export function QuadraticApp() {
         } else {
           multiplayer.init(uuid, loggedInUser, false);
         }
-        setLoading(false);
       });
     }
   }, [uuid, loggedInUser]);
 
+  // wait for offline to finish loading
+  useEffect(() => {
+    if (offlineLoading) {
+      const updateOfflineLoading = (transactions: number) => setOfflineLoading(transactions > 0);
+      events.on('offlineTransactions', updateOfflineLoading);
+      return () => {
+        events.off('offlineTransactions', updateOfflineLoading);
+      };
+    }
+  }, [offlineLoading]);
+
+  // wait for multiplayer to finish loading
+  useEffect(() => {
+    if (multiplayerLoading) {
+      const updateMultiplayerLoading = (state: MultiplayerState) => setMultiplayerLoading(state !== 'connected');
+      events.on('multiplayerState', updateMultiplayerLoading);
+      return () => {
+        events.off('multiplayerState', updateMultiplayerLoading);
+      };
+    }
+  }, [multiplayerLoading]);
+
   useUndo();
 
-  if (loading) {
+  // Show loading screen until everything is loaded
+  if (offlineLoading || multiplayerLoading) {
     return <QuadraticLoading />;
   }
   return <QuadraticUIContext />;
