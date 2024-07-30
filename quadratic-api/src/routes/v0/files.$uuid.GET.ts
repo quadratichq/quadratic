@@ -1,12 +1,12 @@
 import { Response } from 'express';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
-import { generatePresignedUrl } from '../../aws/s3';
 import dbClient from '../../dbClient';
 import { getFile } from '../../middleware/getFile';
 import { userOptionalMiddleware } from '../../middleware/user';
 import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
+import { generatePresignedUrl } from '../../storage/s3';
 import { RequestWithOptionalUser } from '../../types/Request';
 import { ResponseError } from '../../types/Response';
 

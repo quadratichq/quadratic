@@ -1,9 +1,9 @@
 import { Response } from 'express';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { generatePresignedUrl } from '../../aws/s3';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
+import { generatePresignedUrl } from '../../storage/s3';
 import { RequestWithUser } from '../../types/Request';
 import { ResponseError } from '../../types/Response';
 

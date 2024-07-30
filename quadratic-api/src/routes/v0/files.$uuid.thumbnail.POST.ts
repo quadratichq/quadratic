@@ -3,13 +3,13 @@ import multer, { StorageEngine } from 'multer';
 import multerS3 from 'multer-s3';
 import { ApiTypes, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
-import { s3Client } from '../../aws/s3';
 import dbClient from '../../dbClient';
 import { AWS_S3_BUCKET_NAME } from '../../env-vars';
 import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
+import { s3Client } from '../../storage/s3';
 import { RequestWithFile, RequestWithUser } from '../../types/Request';
 const { FILE_EDIT } = FilePermissionSchema.enum;
 

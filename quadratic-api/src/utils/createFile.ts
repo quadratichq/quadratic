@@ -1,5 +1,5 @@
-import { uploadStringAsFileS3 } from '../aws/s3';
 import dbClient from '../dbClient';
+import { uploadStringAsFileS3 } from '../storage/s3';
 
 export async function createFile({
   contents,
