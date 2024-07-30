@@ -45,4 +45,49 @@ pub async fn upload_object(
 }
 
 #[cfg(test)]
-mod tests {}
+pub mod tests {
+    // use aws_config::{imds::Client as ImdsClient, provider_config::ProviderConfig};
+    // use aws_sdk_s3::primitives::SdkBody;
+    // use aws_smithy_async::test_util::InstantSleep;
+    // use aws_smithy_runtime::client::http::test_util::{ReplayEvent, StaticReplayClient};
+    // use aws_smithy_runtime_api::client::orchestrator::{HttpRequest, HttpResponse};
+    // use http::Uri;
+
+    // pub fn imds_request(path: &'static str, token: &str) -> HttpRequest {
+    //     http::Request::builder()
+    //         .uri(Uri::from_static(path))
+    //         .method("GET")
+    //         .header("x-aws-ec2-metadata-token", token)
+    //         .body(SdkBody::empty())
+    //         .unwrap()
+    //         .try_into()
+    //         .unwrap()
+    // }
+
+    // pub fn imds_response(body: &'static str) -> HttpResponse {
+    //     HttpResponse::try_from(
+    //         http::Response::builder()
+    //             .status(200)
+    //             .body(SdkBody::from(body))
+    //             .unwrap(),
+    //     )
+    //     .unwrap()
+    // }
+
+    // pub fn make_imds_client(http_client: &StaticReplayClient) -> ImdsClient {
+    //     tokio::time::pause();
+    //     ImdsClient::builder()
+    //         .configure(
+    //             &ProviderConfig::empty()
+    //                 .with_sleep_impl(InstantSleep::unlogged())
+    //                 .with_http_client(http_client.clone()),
+    //         )
+    //         .build()
+    // }
+
+    // pub fn mock_imds_client(events: Vec<ReplayEvent>) -> (ImdsClient, StaticReplayClient) {
+    //     let http_client = StaticReplayClient::new(events);
+    //     let client = make_imds_client(&http_client);
+    //     (client, http_client)
+    // }
+}
