@@ -1046,21 +1046,21 @@ mod tests {
         assert_eq!(
             "{1, two, c; \
               a, fifty, ale}",
-            eval_to_string(&g, formula,),
+            eval_to_string(&g, formula),
         );
 
         let formula = "XLOOKUP({1; 4}, A1:A4, A1:C4, {'a', 'b', 'c'})";
         assert_eq!(
             "{1, one, wan; \
               a, b, c}",
-            eval_to_string(&g, formula,),
+            eval_to_string(&g, formula),
         );
 
         let formula = "XLOOKUP({1; 4}, A1:A4, A1:C4, 'a')";
         assert_eq!(
             "{1, one, wan; \
               a, a, a}",
-            eval_to_string(&g, formula,),
+            eval_to_string(&g, formula),
         );
     }
 

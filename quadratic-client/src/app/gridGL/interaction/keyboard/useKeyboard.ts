@@ -29,7 +29,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
   const { name: fileName } = useFileContext();
 
   useEffect(() => {
-    const keyDownWindow = async (event: KeyboardEvent) => {
+    const keyDownWindow = (event: KeyboardEvent) => {
       if (pixiAppSettings.input.show || inlineEditorHandler.isOpen()) return;
 
       if (
@@ -51,7 +51,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
     return () => window.removeEventListener('keydown', keyDownWindow);
   }, [editorInteractionState, presentationMode, setEditorInteractionState, setPresentationMode]);
 
-  const onKeyDown = async (event: React.KeyboardEvent<HTMLElement>) => {
+  const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if (pixiAppSettings.input.show && inlineEditorHandler.isOpen()) return;
     if (
       keyboardClipboard({
@@ -61,22 +61,30 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       }) ||
       keyboardUndoRedo(event) ||
       keyboardSelect(event) ||
-      keyboardCode(event, editorInteractionState)
-    )
+      keyboardCode(event, editorInteractionState) ||
+      keyboardPosition(event.nativeEvent)
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
       return;
-
-    if (await keyboardPosition(event.nativeEvent)) return;
+    }
 
     // Prevent these commands if "command" key is being pressed
     if (event.metaKey || event.ctrlKey) {
       return;
     }
 
-    keyboardCell({
-      event,
-      editorInteractionState,
-      setEditorInteractionState,
-    });
+    if (
+      keyboardCell({
+        event,
+        editorInteractionState,
+        setEditorInteractionState,
+      })
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
   };
 
   return {
