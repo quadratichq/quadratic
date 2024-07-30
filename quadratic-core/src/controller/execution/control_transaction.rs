@@ -37,6 +37,7 @@ impl GridController {
 
             self.execute_operation(transaction);
             if transaction.has_async > 0 {
+                self.transactions.update_async_transaction(transaction);
                 break;
             }
         }
@@ -45,6 +46,7 @@ impl GridController {
     /// Finalizes the transaction and pushes it to the various stacks (if needed)
     pub(super) fn finalize_transaction(&mut self, transaction: &mut PendingTransaction) {
         if transaction.has_async > 0 {
+            self.transactions.update_async_transaction(transaction);
             return;
         }
 

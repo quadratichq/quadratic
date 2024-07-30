@@ -85,6 +85,18 @@ impl ActiveTransactions {
         }
     }
 
+    pub fn update_async_transaction(&mut self, pending: &mut PendingTransaction) {
+        // Unsaved_operations hold async operations that are not complete. In that case, we need to replace the
+        // unsaved operation with the new version.
+        self.unsaved_transactions.insert_or_replace(pending, false);
+        let transaction = pending.clone();
+        if let Ok(index) = self.get_async_transaction_index(pending.id) {
+            self.async_transactions[index] = transaction;
+        } else {
+            dbgjs!("[active_transactions] update_async_transaction: Async transaction not found");
+        }
+    }
+
     pub fn mark_transaction_sent(&mut self, transaction_id: Uuid) {
         self.unsaved_transactions
             .mark_transaction_sent(&transaction_id);
