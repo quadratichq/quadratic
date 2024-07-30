@@ -14,7 +14,6 @@ export function selectAllCells() {
   // if we've already selected all, then select the content within the sheet
   if (cursor.columnRow?.all) {
     const bounds = sheet.getBounds(true);
-
     if (bounds) {
       cursor.changePosition({
         columnRow: null,
