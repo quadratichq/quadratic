@@ -98,7 +98,7 @@ export function keyboardViewport(options: {
   // Save
   if (matchShortcut('save', event)) {
     // don't do anything on Command+S
-    // return true;
+    return true;
   }
 
   // Switch to next sheet

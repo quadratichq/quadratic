@@ -47,8 +47,8 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       }
     };
 
-    window.addEventListener('keydown', keyDownWindow, true);
-    return () => window.removeEventListener('keydown', keyDownWindow, true);
+    window.addEventListener('keydown', keyDownWindow);
+    return () => window.removeEventListener('keydown', keyDownWindow);
   }, [editorInteractionState, presentationMode, setEditorInteractionState, setPresentationMode]);
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
