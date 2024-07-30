@@ -246,7 +246,7 @@ impl Sheet {
     /// if reverse is true it searches to the left of the start
     /// if with_content is true it searches for a column with content; otherwise it searches for a column without content
     ///
-    /// Returns the found column or column_start
+    /// Returns the found column matching the criteria of with_content
     pub fn find_next_column(
         &self,
         column_start: i64,
@@ -285,7 +285,7 @@ impl Sheet {
     /// if reverse is true it searches to the left of the start
     /// if with_content is true it searches for a column with content; otherwise it searches for a column without content
     ///
-    /// Returns the found row or row_start
+    /// Returns the found row matching the criteria of with_content
     pub fn find_next_row(
         &self,
         row_start: i64,
