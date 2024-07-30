@@ -23,10 +23,8 @@ export interface ValidationData {
   setValidation: SetState<ValidationUndefined | undefined>;
   setSelection: (selection: Selection | undefined) => void;
   changeRule: (rule: ValidationRuleSimple) => void;
-  showDropdown: boolean;
-  changeDropDown: (checked: boolean) => void;
-  showCheckbox: boolean;
-  changeShowCheckbox: (checked: boolean) => void;
+  showUI: boolean;
+  changeShowUI: (checked: boolean) => void;
   ignoreBlank: boolean;
   changeIgnoreBlank: (checked: boolean) => void;
   moreOptions: boolean;
@@ -36,7 +34,7 @@ export interface ValidationData {
   sheetId: string;
 }
 
-export const useValidationData = (validationId?: string): ValidationData => {
+export const useValidationData = (): ValidationData => {
   const { showValidation } = useRecoilValue(editorInteractionStateAtom);
   const [validation, setValidation] = useState<ValidationUndefined>();
   const [originalValidation, setOriginalValidation] = useState<ValidationUndefined>();
@@ -51,17 +49,16 @@ export const useValidationData = (validationId?: string): ValidationData => {
   // gets the validation for the current selection or creates a new one
   useEffect(() => {
     const getValidation = async () => {
-      const selection = sheets.getRustSelection();
       let v: Validation | Omit<Validation, 'rule'> | undefined;
-      if (showValidation !== 'new') {
-        v = await quadraticCore.getValidation(selection);
+      if (showValidation && showValidation !== true && showValidation !== 'new') {
+        v = await quadraticCore.getValidation(sheetId, showValidation);
       }
       if (v) {
         setOriginalValidation(v);
       } else {
         v = {
           id: uuid(),
-          selection,
+          selection: sheets.getRustSelection(),
           rule: undefined,
           message: {
             show: true,
@@ -81,7 +78,7 @@ export const useValidationData = (validationId?: string): ValidationData => {
       setValidation(v);
     };
     getValidation();
-  }, [showValidation]);
+  }, [sheetId, showValidation]);
 
   // Used to coerce bigints to numbers for JSON.stringify; see
   // https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-2064279949.
@@ -194,23 +191,36 @@ export const useValidationData = (validationId?: string): ValidationData => {
     [sheetId]
   );
 
-  const showDropdown = useMemo(() => {
+  // Whether the UI shows (eg, checkbox for logical validation; dropdown for
+  // list validation)
+  const showUI = useMemo(() => {
     if (!validation || !('rule' in validation) || !validation.rule) return false;
     const rule = validation.rule;
     if ('List' in rule) {
       if ('drop_down' in rule.List) {
         return rule.List.drop_down;
       }
+    } else if ('Logical' in rule) {
+      if ('show_checkbox' in rule.Logical) {
+        return rule.Logical.show_checkbox;
+      }
     }
     return false;
   }, [validation]);
 
-  const changeDropDown = (checked: boolean) => {
+  // Used to change whether the UI shows (eg, checkbox for logical validation;
+  // dropdown for list validation)
+  const changeShowUI = (checked: boolean) => {
     setValidation((old) => {
       if (old && 'rule' in old) {
         if ('List' in old.rule) {
-          return { ...old, rule: { List: { ...old.rule.List, drop_down: checked } } };
+          const rule: Validation = { ...old, rule: { List: { ...old.rule.List, drop_down: checked } } };
+          return rule;
+        } else if ('Logical' in old.rule) {
+          const rule: Validation = { ...old, rule: { Logical: { ...old.rule.Logical, show_checkbox: checked } } };
+          return rule;
         }
+        return old;
       }
     });
   };
@@ -271,25 +281,6 @@ export const useValidationData = (validationId?: string): ValidationData => {
     }
   };
 
-  const showCheckbox = useMemo(() => {
-    if (!validation || !('rule' in validation) || !validation.rule) return false;
-    const rule = validation.rule;
-    if ('Logical' in rule) {
-      return rule.Logical.show_checkbox;
-    }
-    return false;
-  }, [validation]);
-
-  const changeShowCheckbox = (checked: boolean) => {
-    setValidation((old) => {
-      if (old && 'rule' in old) {
-        if ('Logical' in old.rule) {
-          return { ...old, rule: { Logical: { show_checkbox: checked } } };
-        }
-      }
-    });
-  };
-
   return {
     validate,
     unsaved,
@@ -297,10 +288,8 @@ export const useValidationData = (validationId?: string): ValidationData => {
     rule,
     setValidation,
     setSelection,
-    showDropdown,
-    changeDropDown,
-    showCheckbox,
-    changeShowCheckbox,
+    showUI,
+    changeShowUI,
     ignoreBlank,
     changeIgnoreBlank,
     changeRule,

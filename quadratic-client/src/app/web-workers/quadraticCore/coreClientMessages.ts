@@ -511,6 +511,19 @@ export interface ClientCoreAutocomplete {
   cursor: string;
 }
 
+export interface ClientCoreUpdateValidation {
+  type: 'clientCoreUpdateValidation';
+  validation: Validation;
+  cursor: string;
+}
+
+export interface ClientCoreRemoveValidation {
+  type: 'clientCoreRemoveValidation';
+  sheetId: string;
+  validationId: string;
+  cursor: string;
+}
+
 //#endregion
 
 //#region Sheets
@@ -847,7 +860,8 @@ export interface CoreClientImage {
 export interface ClientCoreGetValidation {
   type: 'clientCoreGetValidation';
   id: number;
-  selection: Selection;
+  sheetId: string;
+  validationId: string;
 }
 
 export interface CoreClientGetValidation {
@@ -868,17 +882,10 @@ export interface CoreClientGetValidations {
   validations: Validation[];
 }
 
-export interface ClientCoreUpdateValidation {
-  type: 'clientCoreUpdateValidation';
-  validation: Validation;
-  cursor: string;
-}
-
-export interface ClientCoreRemoveValidation {
-  type: 'clientCoreRemoveValidation';
+export interface CoreClientSheetValidations {
+  type: 'coreClientSheetValidations';
   sheetId: string;
-  validationId: string;
-  cursor: string;
+  validations: Validation[];
 }
 
 export type ClientCoreMessage =
@@ -1004,4 +1011,5 @@ export type CoreClientMessage =
   | CoreClientSetCursorSelection
   | CoreClientGetValidation
   | CoreClientOfflineTransactionsApplied
-  | CoreClientGetValidations;
+  | CoreClientGetValidations
+  | CoreClientSheetValidations;

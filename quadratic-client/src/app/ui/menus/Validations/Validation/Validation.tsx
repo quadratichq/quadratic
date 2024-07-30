@@ -18,16 +18,12 @@ const CRITERIA_OPTIONS: { value: ValidationRuleSimple; label: string }[] = [
   { value: 'logical', label: 'Logical (checkbox)' },
 ];
 
-interface Props {
-  validationId: string;
-}
-
-export const Validation = (props: Props) => {
-  const { validationId } = props;
+export const Validation = () => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
 
-  const validationData = useValidationData(validationId);
-  const { rule, changeRule, moreOptions, validation, triggerError, validate, setSelection, sheetId } = validationData;
+  const validationData = useValidationData();
+  const { rule, changeRule, moreOptions, validation, triggerError, validate, setSelection, sheetId, unsaved } =
+    validationData;
 
   const validationParameters: JSX.Element | null = useMemo(() => {
     switch (rule) {
@@ -43,7 +39,9 @@ export const Validation = (props: Props) => {
   const applyValidation = () => {
     if (validation && 'rule' in validation && validation.rule) {
       if (!validate()) return;
-      quadraticCore.updateValidation(validation, sheets.getCursorPosition());
+      if (unsaved) {
+        quadraticCore.updateValidation(validation, sheets.getCursorPosition());
+      }
     }
     setEditorInteractionState((old) => ({
       ...old,
@@ -74,6 +72,7 @@ export const Validation = (props: Props) => {
           initial={validation?.selection}
           onChangeSelection={setSelection}
           triggerError={triggerError}
+          changeCursor={true}
         />
         <ValidationDropdown
           label="Criteria"

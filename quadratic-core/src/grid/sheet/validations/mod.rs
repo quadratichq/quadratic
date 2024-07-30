@@ -40,8 +40,13 @@ impl Validations {
         reverse
     }
 
+    /// Gets a validation based on a validation_id
+    pub fn validation(&self, validation_id: Uuid) -> Option<&Validation> {
+        self.validations.iter().find(|v| v.id == validation_id)
+    }
+
     /// Gets a validation based on a Selection.
-    pub fn validation(&self, selection: Selection) -> Option<&Validation> {
+    pub fn validation_selection(&self, selection: Selection) -> Option<&Validation> {
         self.validations.iter().find(|v| v.selection == selection)
     }
 
@@ -52,6 +57,11 @@ impl Validations {
         } else {
             Some(&self.validations)
         }
+    }
+
+    /// Stringifies the validations to send to the client.
+    pub fn to_string(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string(&self.validations)
     }
 
     /// Gets the ValidationDisplay for a cell.
@@ -370,9 +380,15 @@ mod tests {
         let v = create_validation_rect(0, 0, 1, 1);
         validations.set(v.clone());
 
-        assert_eq!(validations.validation(v.selection.clone()), Some(&v));
+        assert_eq!(validations.validation(v.id), Some(&v));
+        assert_eq!(validations.validation(Uuid::new_v4()), None);
+
         assert_eq!(
-            validations.validation(Selection::all(SheetId::test())),
+            validations.validation_selection(v.selection.clone()),
+            Some(&v)
+        );
+        assert_eq!(
+            validations.validation_selection(Selection::all(SheetId::test())),
             None
         );
     }

@@ -84,7 +84,7 @@ export class SheetCursor {
     pixiApp.cursor.dirty = true;
   }
 
-  loadFromSelection(selection: Selection) {
+  loadFromSelection(selection: Selection, skipMultiplayer = false) {
     this.cursorPosition = { x: Number(selection.x), y: Number(selection.y) };
 
     if (
@@ -116,7 +116,9 @@ export class SheetCursor {
       };
     }
 
-    multiplayer.sendSelection(this.getMultiplayerSelection());
+    if (!skipMultiplayer) {
+      multiplayer.sendSelection(this.getMultiplayerSelection());
+    }
     pixiApp.cursor.dirty = true;
   }
 

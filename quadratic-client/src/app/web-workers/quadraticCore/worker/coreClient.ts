@@ -18,6 +18,7 @@ import {
   SheetBounds,
   SheetInfo,
   TransactionName,
+  Validation,
 } from '@/app/quadratic-core-types';
 import { coreConnection } from '@/app/web-workers/quadraticCore/worker/coreConnection';
 import { MultiplayerState } from '../../multiplayerWebWorker/multiplayerClientMessages';
@@ -79,6 +80,7 @@ declare var self: WorkerGlobalScope &
     ) => void;
     sendUndoRedo: (undo: boolean, redo: boolean) => void;
     sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
+    sendSheetValidations: (sheetId: string, validations: Validation[]) => void;
   };
 
 class CoreClient {
@@ -109,6 +111,7 @@ class CoreClient {
     self.sendUpdateCodeCell = coreClient.sendUpdateCodeCell;
     self.sendUndoRedo = coreClient.sendUndoRedo;
     self.sendImage = coreClient.sendImage;
+    self.sendSheetValidations = coreClient.sendSheetValidations;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -505,7 +508,7 @@ class CoreClient {
         this.send({
           type: 'coreClientGetValidation',
           id: e.data.id,
-          validation: core.getValidation(e.data.selection),
+          validation: core.getValidation(e.data.sheetId, e.data.validationId),
         });
         return;
 
@@ -678,6 +681,10 @@ class CoreClient {
   }
   sendImage = (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => {
     this.send({ type: 'coreClientImage', sheetId, x, y, image, w, h });
+  };
+
+  sendSheetValidations = (sheetId: string, validations: Validation[]) => {
+    this.send({ type: 'coreClientSheetValidations', sheetId, validations });
   };
 }
 

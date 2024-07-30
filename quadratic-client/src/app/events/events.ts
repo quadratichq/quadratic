@@ -11,6 +11,7 @@ import {
   Selection,
   SheetBounds,
   SheetInfo,
+  Validation,
 } from '@/app/quadratic-core-types';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
@@ -96,6 +97,8 @@ interface EventTypes {
   cellMoving: (move: boolean) => void;
 
   insertCodeEditorText: (text: string) => void;
+
+  sheetValidations: (sheetId: string, validations: Validation[]) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

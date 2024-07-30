@@ -6,12 +6,12 @@ interface Props {
 }
 
 export const ValidationLogical = (props: Props) => {
-  const { ignoreBlank, changeIgnoreBlank, showCheckbox, changeShowCheckbox } = props.validationData;
+  const { ignoreBlank, changeIgnoreBlank, showUI, changeShowUI } = props.validationData;
 
   return (
     <div className="flex flex-col gap-5">
       {' '}
-      <ValidationUICheckbox label="Show checkbox" value={showCheckbox} changeValue={changeShowCheckbox} />
+      <ValidationUICheckbox label="Show checkbox" value={showUI} changeValue={changeShowUI} />
       <ValidationUICheckbox label="Ignore blank values" value={ignoreBlank} changeValue={changeIgnoreBlank} />
       <ValidationMoreOptions validationData={props.validationData} />
     </div>

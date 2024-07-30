@@ -165,6 +165,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientSetCursorSelection') {
       events.emit('setCursor', undefined, e.data.selection);
       return;
+    } else if (e.data.type === 'coreClientSheetValidations') {
+      events.emit('sheetValidations', e.data.sheetId, e.data.validations);
+      return;
     }
 
     if (e.data.id !== undefined) {
@@ -969,7 +972,7 @@ class QuadraticCore {
 
   //#region Data Validation
 
-  getValidation(selection: Selection): Promise<Validation | undefined> {
+  getValidation(sheetId: string, validationId: string): Promise<Validation | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: { validation: Validation | undefined }) => {
@@ -978,7 +981,8 @@ class QuadraticCore {
       this.send({
         type: 'clientCoreGetValidation',
         id,
-        selection,
+        sheetId,
+        validationId,
       });
     });
   }

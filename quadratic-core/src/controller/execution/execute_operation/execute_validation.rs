@@ -19,6 +19,8 @@ impl GridController {
                 transaction
                     .reverse_operations
                     .extend(sheet.validations.set(validation));
+
+                transaction.send_validations.insert(sheet.id);
             }
         }
     }
@@ -43,6 +45,8 @@ impl GridController {
                 transaction
                     .reverse_operations
                     .extend(sheet.validations.remove(validation_id));
+
+                transaction.send_validations.insert(sheet.id);
             }
         }
     }

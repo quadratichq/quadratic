@@ -26,8 +26,8 @@ export const ValidationEntry = (props: Props) => {
       } else if ('Selection' in validation.rule.List.source) {
         return `${type} from selection`;
       }
-    } else if ('Checkbox' in validation.rule) {
-      return 'Logical';
+    } else if ('Logical' in validation.rule) {
+      return `Logical${validation.rule.Logical.show_checkbox ? ' (Checkbox)' : ''}`;
     }
     return 'Unknown';
   }, [validation]);

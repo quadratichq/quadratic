@@ -13,11 +13,17 @@ interface Props {
   label?: string;
   initial?: Selection;
   onChangeSelection: (selection: Selection | undefined) => void;
+
+  // used to trigger an error if the range is empty
   triggerError?: boolean;
+
+  // used to update the sheet's cursor to the range. If string, then it uses the
+  // string as the sheetId; otherwise it uses sheets.sheet.id as the sheetId
+  changeCursor?: string | true;
 }
 
 export const SheetRange = (props: Props) => {
-  const { onChangeSelection: onChangeRange, label, initial, triggerError } = props;
+  const { onChangeSelection: onChangeRange, label, initial, triggerError, changeCursor } = props;
   const [rangeError, setRangeError] = useState<string | undefined>();
   const ref = useRef<HTMLInputElement>(null);
 
@@ -55,10 +61,16 @@ export const SheetRange = (props: Props) => {
   }, [initial]);
 
   const onFocus = () => {
-    if (!ref.current) return;
-    const selection = parseSelectionString(ref.current.value, sheets.sheet.id);
+    if (!ref.current || !changeCursor) return;
+    const selection = parseSelectionString(ref.current.value, changeCursor === true ? sheets.sheet.id : changeCursor);
     if (selection.selection) {
-      sheets.sheet.cursor.loadFromSelection(selection.selection);
+      // we need to hack the cursorPosition :(
+      const rects = selection.selection.rects;
+      if (rects?.length) {
+        selection.selection.x = rects[0].min.x;
+        selection.selection.y = rects[0].min.y;
+      }
+      sheets.sheet.cursor.loadFromSelection(selection.selection, true);
     }
   };
 

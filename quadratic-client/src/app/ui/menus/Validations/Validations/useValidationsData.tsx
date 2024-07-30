@@ -1,3 +1,4 @@
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Validation } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -21,6 +22,18 @@ export const useValidationsData = () => {
     };
     getValidations();
   }, []);
+
+  useEffect(() => {
+    const updateValidations = (incomingSheetId: string, validations: Validation[]) => {
+      if (incomingSheetId === sheetId) {
+        setValidations(validations);
+      }
+    };
+    events.on('sheetValidations', updateValidations);
+    return () => {
+      events.off('sheetValidations', updateValidations);
+    };
+  }, [sheetId]);
 
   const deleteValidation = useCallback(
     (validationId: string) => {

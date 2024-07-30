@@ -49,8 +49,16 @@ export const ValidationListInput = (props: Props) => {
 };
 
 export const ValidationList = (props: Props) => {
-  const { setValidation, rule, ignoreBlank, changeIgnoreBlank, showDropdown, changeDropDown, triggerError } =
-    props.validationData;
+  const {
+    setValidation,
+    rule,
+    ignoreBlank,
+    changeIgnoreBlank,
+    showUI: showDropdown,
+    changeShowUI: changeDropDown,
+    triggerError,
+    sheetId,
+  } = props.validationData;
 
   const changeSelection = (selection: Selection | undefined) => {
     const rule: ValidationRule = {
@@ -73,7 +81,12 @@ export const ValidationList = (props: Props) => {
   return (
     <div className="flex flex-col gap-5">
       {rule === 'list-range' && (
-        <SheetRange label="Range" onChangeSelection={changeSelection} triggerError={triggerError} />
+        <SheetRange
+          label="Range"
+          onChangeSelection={changeSelection}
+          triggerError={triggerError}
+          changeCursor={sheetId}
+        />
       )}
       {rule === 'list' && <ValidationListInput validationData={props.validationData} />}
 

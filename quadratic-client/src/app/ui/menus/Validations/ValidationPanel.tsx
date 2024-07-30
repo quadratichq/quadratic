@@ -14,5 +14,5 @@ export const ValidationPanel = () => {
     return <Validations />;
   }
 
-  return <Validation validationId={showValidation} />;
+  return <Validation />;
 };

@@ -12,6 +12,7 @@ import {
   SheetBounds,
   SheetInfo,
   TransactionName,
+  Validation,
 } from '@/app/quadratic-core-types';
 
 declare var self: WorkerGlobalScope &
@@ -82,6 +83,7 @@ declare var self: WorkerGlobalScope &
       connection_id: String
     ) => void;
     sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
+    sendSheetValidations: (sheetId: string, validations: Validation[]) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -248,4 +250,9 @@ export const jsSendImage = (sheetId: string, x: number, y: number, image?: strin
 export const jsSheetMetaFills = (sheetId: string, sheetMetaFillsStringified: string) => {
   const sheetMetaFills = JSON.parse(sheetMetaFillsStringified) as JsSheetFill;
   self.sendSheetMetaFills(sheetId, sheetMetaFills);
+};
+
+export const jsSheetValidations = (sheetId: string, validations: string) => {
+  const validationsParsed = JSON.parse(validations) as Validation[];
+  self.sendSheetValidations(sheetId, validationsParsed);
 };

@@ -10,10 +10,16 @@ use crate::{
 };
 
 impl GridController {
+    /// Gets a validation based on a validationId
+    pub fn validation(&self, sheet_id: SheetId, validation_id: Uuid) -> Option<&Validation> {
+        self.try_sheet(sheet_id)
+            .and_then(|sheet| sheet.validations.validation(validation_id))
+    }
+
     /// Gets a validation based on a Selection.
-    pub fn validation(&self, selection: Selection) -> Option<&Validation> {
+    pub fn validation_selection(&self, selection: Selection) -> Option<&Validation> {
         self.try_sheet(selection.sheet_id)
-            .and_then(|sheet| sheet.validations.validation(selection))
+            .and_then(|sheet| sheet.validations.validation_selection(selection))
     }
 
     /// Gets the validations for a sheet.
@@ -43,8 +49,13 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use crate::grid::sheet::validations::validation_rules::{
-        validation_logical::ValidationLogical, ValidationRule,
+    use serial_test::serial;
+
+    use crate::{
+        grid::sheet::validations::validation_rules::{
+            validation_logical::ValidationLogical, ValidationRule,
+        },
+        wasm_bindings::js::expect_js_call,
     };
 
     use super::*;
@@ -60,6 +71,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn update_validation() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -78,6 +90,14 @@ mod tests {
         gc.update_validation(validation.clone(), None);
 
         assert_eq!(gc.validations(sheet_id).unwrap().len(), 1);
-        assert_eq!(gc.validation(selection), Some(&validation));
+        assert_eq!(gc.validation_selection(selection), Some(&validation));
+
+        let sheet = gc.sheet(sheet_id);
+        let validations = sheet.validations.to_string().unwrap();
+        expect_js_call(
+            "jsSheetValidations",
+            format!("{},{}", sheet_id.to_string(), validations),
+            true,
+        );
     }
 }

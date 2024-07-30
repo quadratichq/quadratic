@@ -87,6 +87,19 @@ impl GridController {
                 !self.redo_stack.is_empty(),
             );
         }
+
+        if !transaction.is_server() {
+            transaction.send_validations.iter().for_each(|sheet_id| {
+                if let Some(sheet) = self.try_sheet(*sheet_id) {
+                    if let Ok(validations) = sheet.validations.to_string() {
+                        crate::wasm_bindings::js::jsSheetValidations(
+                            sheet_id.to_string(),
+                            validations,
+                        );
+                    }
+                }
+            });
+        }
     }
 
     pub fn start_user_transaction(

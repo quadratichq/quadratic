@@ -12,7 +12,7 @@ use crate::{
     controller::{
         execution::TransactionType, operations::operation::Operation, transaction::Transaction,
     },
-    grid::CodeCellLanguage,
+    grid::{CodeCellLanguage, SheetId},
     SheetPos, SheetRect,
 };
 
@@ -59,6 +59,9 @@ pub struct PendingTransaction {
 
     // cursor saved for an Undo or Redo
     pub cursor_undo_redo: Option<String>,
+
+    // whether to resend the validations after the transaction completes
+    pub send_validations: HashSet<SheetId>,
 }
 
 impl Default for PendingTransaction {
@@ -80,6 +83,7 @@ impl Default for PendingTransaction {
             complete: false,
             generate_thumbnail: false,
             cursor_undo_redo: None,
+            send_validations: HashSet::new(),
         }
     }
 }

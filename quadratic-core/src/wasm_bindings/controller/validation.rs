@@ -1,4 +1,3 @@
-use selection::Selection;
 use sheet::validations::validation::Validation;
 use uuid::Uuid;
 
@@ -8,13 +7,16 @@ use super::*;
 impl GridController {
     /// Returns a stringified version of Validation for a given selection
     #[wasm_bindgen(js_name = "getValidation")]
-    pub fn js_validation(&self, selection: String) -> String {
-        let Ok(selection) = Selection::from_str(&selection) else {
+    pub fn js_validation(&self, sheet_id: String, validation_id: String) -> String {
+        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
+            dbgjs!("Error parsing sheet_id in getValidation");
             return String::new();
         };
-        self.validation(selection)
-            .map(|validation| serde_json::to_string(validation).unwrap_or_default())
-            .unwrap_or_default()
+        let Ok(validation_id) = Uuid::from_str(&validation_id) else {
+            dbgjs!("Error parsing validation_id in getValidation");
+            return String::new();
+        };
+        serde_json::to_string(&self.validation(sheet_id, validation_id)).unwrap_or_default()
     }
 
     /// Returns a stringified version of Vec<Validation>
