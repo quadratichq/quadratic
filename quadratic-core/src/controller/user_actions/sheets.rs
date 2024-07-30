@@ -278,6 +278,32 @@ mod test {
                 duplicated_sheet_id,
                 serde_json::to_string(&borders).unwrap()
             ),
+            false,
+        );
+        // code cells should rerun and send updated code cell
+        let sheet_pos = SheetPos {
+            sheet_id,
+            x: 0,
+            y: 0,
+        };
+        let code_cell = gc
+            .sheet(duplicated_sheet_id)
+            .edit_code_value(sheet_pos.into())
+            .unwrap();
+        let render_code_cell = gc
+            .sheet(duplicated_sheet_id)
+            .get_render_code_cell(sheet_pos.into())
+            .unwrap();
+        expect_js_call(
+            "jsUpdateCodeCell",
+            format!(
+                "{},{},{},{:?},{:?}",
+                sheet_id,
+                sheet_pos.x,
+                sheet_pos.y,
+                Some(serde_json::to_string(&code_cell).unwrap()),
+                Some(serde_json::to_string(&render_code_cell).unwrap())
+            ),
             true,
         );
 
