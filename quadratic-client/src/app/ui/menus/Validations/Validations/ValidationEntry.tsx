@@ -19,7 +19,6 @@ export const ValidationEntry = (props: Props) => {
   const { deleteValidation } = validationsData;
 
   const title = useMemo(() => {
-    if (validation.rule === 'None') return 'None';
     if ('List' in validation.rule) {
       const type = validation.rule.List.drop_down ? 'Dropdown' : 'Value';
       if ('List' in validation.rule.List.source) {
@@ -53,7 +52,10 @@ export const ValidationEntry = (props: Props) => {
           className="invisible px-1 group-hover:visible"
           asChild
           variant="outline"
-          onClick={() => deleteValidation(validation.id)}
+          onClick={(e) => {
+            deleteValidation(validation.id);
+            e.stopPropagation();
+          }}
         >
           <span>
             <DeleteIcon className="text-gray-400" />

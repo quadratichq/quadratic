@@ -13,10 +13,8 @@ use super::super::Sheet;
 pub mod validation_list;
 pub mod validation_logical;
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum ValidationRule {
-    #[default]
-    None,
     List(ValidationList),
     Logical(ValidationLogical),
 }
@@ -25,7 +23,6 @@ impl ValidationRule {
     /// Validate a CellValue against the validation rule.
     pub fn validate(&self, sheet: &Sheet, value: &CellValue) -> bool {
         match &self {
-            ValidationRule::None => true,
             ValidationRule::List(list) => ValidationList::validate(sheet, list, value),
             ValidationRule::Logical(_) => ValidationLogical::validate(value),
         }
@@ -41,7 +38,6 @@ impl ValidationRule {
 
     pub fn allow_blank(&self) -> bool {
         match self {
-            ValidationRule::None => true,
             ValidationRule::List(list) => list.ignore_blank,
             ValidationRule::Logical(_) => true,
         }
@@ -88,13 +84,6 @@ mod tests {
     }
 
     #[test]
-    fn validation_none() {
-        let sheet = Sheet::test();
-        let rule = ValidationRule::None;
-        assert!(rule.validate(&sheet, &CellValue::Text("test".to_string())));
-    }
-
-    #[test]
     fn is_list() {
         let list = ValidationList {
             source: ValidationListSource::List(vec!["test".to_string()]),
@@ -106,6 +95,7 @@ mod tests {
 
         let checkbox = ValidationLogical {
             show_checkbox: true,
+            ignore_blank: true,
         };
         let rule = ValidationRule::Logical(checkbox);
         assert!(!rule.is_list());
@@ -115,6 +105,7 @@ mod tests {
     fn is_checkbox() {
         let checkbox = ValidationLogical {
             show_checkbox: true,
+            ignore_blank: true,
         };
         let rule = ValidationRule::Logical(checkbox);
         assert!(rule.is_checkbox());

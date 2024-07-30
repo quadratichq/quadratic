@@ -3,6 +3,7 @@
     "bigdecimal",
     "dbgjs",
     "htmlescape",
+    "indexmap",
     "Rects",
     "undoable"
   ],

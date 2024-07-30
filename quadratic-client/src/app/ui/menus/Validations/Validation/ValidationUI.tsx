@@ -10,12 +10,12 @@ import { cn } from '@/shared/shadcn/utils';
 
 interface CheckboxProps {
   label: string;
-  showDropdown: boolean;
-  changeDropDown: (checked: boolean) => void;
+  value: boolean;
+  changeValue: (checked: boolean) => void;
 }
 
 export const ValidationUICheckbox = (props: CheckboxProps) => {
-  const { label, showDropdown, changeDropDown } = props;
+  const { label, value: showDropdown, changeValue: changeDropDown } = props;
 
   return (
     <div className="flex items-center space-x-2">

@@ -9,14 +9,13 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { ValidationCheckbox } from './ValidationCheckbox';
 import { SheetRange } from '@/app/ui/components/SheetRange';
+import { ValidationLogical } from './ValidationLogical';
 
-const CRITERIA_OPTIONS = [
-  { value: 'none', label: 'None' },
-  { value: 'list', label: 'Dropdown from List' },
-  { value: 'list-range', label: 'Dropdown from Range' },
-  { value: 'checkbox', label: 'Checkbox' },
+const CRITERIA_OPTIONS: { value: ValidationRuleSimple; label: string }[] = [
+  { value: 'list', label: 'Values from user list (dropdown)' },
+  { value: 'list-range', label: 'Values from sheet (dropdown)' },
+  { value: 'logical', label: 'Logical (checkbox)' },
 ];
 
 interface Props {
@@ -28,7 +27,7 @@ export const Validation = (props: Props) => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
 
   const validationData = useValidationData(validationId);
-  const { rule, changeRule, moreOptions, validation, unsaved, triggerError, validate, setSelection } = validationData;
+  const { rule, changeRule, moreOptions, validation, triggerError, validate, setSelection, sheetId } = validationData;
 
   const validationParameters: JSX.Element | null = useMemo(() => {
     switch (rule) {
@@ -36,16 +35,26 @@ export const Validation = (props: Props) => {
       case 'list':
         return <ValidationList validationData={validationData} />;
       case 'logical':
-        return <ValidationCheckbox validationData={validationData} />;
+        return <ValidationLogical validationData={validationData} />;
     }
     return null;
   }, [rule, validationData]);
 
   const applyValidation = () => {
-    if (!validate()) return;
+    if (validation && 'rule' in validation && validation.rule) {
+      if (!validate()) return;
+      quadraticCore.updateValidation(validation, sheets.getCursorPosition());
+    }
+    setEditorInteractionState((old) => ({
+      ...old,
+      showValidation: true,
+    }));
+  };
 
-    if (!validation) return;
-    quadraticCore.updateValidation(validation, sheets.getCursorPosition());
+  const removeValidation = () => {
+    if (validation) {
+      quadraticCore.removeValidation(sheetId, validation.id, sheets.getCursorPosition());
+    }
     setEditorInteractionState((old) => ({
       ...old,
       showValidation: true,
@@ -78,10 +87,10 @@ export const Validation = (props: Props) => {
 
       <div className="mt-3 flex w-full border-t border-t-gray-100 pt-2">
         <div className="mx-auto my-1 flex gap-3">
-          <Button variant="secondary">Remove Rule</Button>
-          <Button disabled={!unsaved} onClick={applyValidation}>
-            Done
+          <Button variant="secondary" onClick={removeValidation}>
+            Remove Rule
           </Button>
+          <Button onClick={applyValidation}>Done</Button>
         </div>
       </div>
     </div>

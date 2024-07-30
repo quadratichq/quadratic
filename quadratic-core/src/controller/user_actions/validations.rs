@@ -70,6 +70,7 @@ mod tests {
             selection: selection.clone(),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
+                ignore_blank: true,
             }),
             message: Default::default(),
             error: Default::default(),

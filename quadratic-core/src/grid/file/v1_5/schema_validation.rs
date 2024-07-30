@@ -46,6 +46,7 @@ pub struct ValidationError {
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ValidationLogical {
     pub show_checkbox: bool,
+    pub ignore_blank: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -61,15 +62,13 @@ pub struct ValidationList {
     pub drop_down: bool,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum ValidationRule {
-    #[default]
-    None,
     List(ValidationList),
     Logical(ValidationLogical),
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Validation {
     pub selection: Selection,
     pub id: Uuid,

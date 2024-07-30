@@ -172,6 +172,7 @@ mod tests {
             selection: Selection::rect(Rect::new(x0, y0, x1, y1), SheetId::test()),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
+                ignore_blank: true,
             }),
             message: Default::default(),
             error: Default::default(),
@@ -224,6 +225,7 @@ mod tests {
             selection: Selection::all(SheetId::test()),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
+                ignore_blank: true,
             }),
             message: Default::default(),
             error: Default::default(),
@@ -267,6 +269,7 @@ mod tests {
             selection: Selection::columns(&[0, 1, 2], SheetId::test()),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
+                ignore_blank: true,
             }),
             message: Default::default(),
             error: Default::default(),
@@ -310,6 +313,7 @@ mod tests {
             selection: Selection::rows(&[0, 1, 2], SheetId::test()),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
+                ignore_blank: true,
             }),
             message: Default::default(),
             error: Default::default(),

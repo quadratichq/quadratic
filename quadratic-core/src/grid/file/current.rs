@@ -6,12 +6,6 @@ use crate::grid::sheet::validations::validation_rules::validation_list::{
 };
 use crate::grid::sheet::validations::validation_rules::validation_logical::ValidationLogical;
 use crate::grid::sheet::validations::validation_rules::ValidationRule;
-// use crate::grid::sheet::validations::validation::{Validation, ValidationStyle};
-// use crate::grid::sheet::validations::validation_rules::validation_checkbox::ValidationCheckbox;
-// use crate::grid::sheet::validations::validation_rules::validation_list::{
-//     ValidationList, ValidationListSource,
-// };
-// use crate::grid::sheet::validations::validation_rules::ValidationRule;
 use crate::grid::sheet::validations::Validations;
 use crate::grid::{
     block::SameValue,
@@ -388,7 +382,6 @@ fn import_selection(selection: &current_validations::Selection) -> Selection {
 
 fn import_validation_rule(rule: &current_validations::ValidationRule) -> ValidationRule {
     match rule {
-        current_validations::ValidationRule::None => ValidationRule::None,
         current_validations::ValidationRule::List(list) => ValidationRule::List(ValidationList {
             source: match &list.source {
                 current_validations::ValidationListSource::Selection(selection) => {
@@ -404,6 +397,7 @@ fn import_validation_rule(rule: &current_validations::ValidationRule) -> Validat
         current_validations::ValidationRule::Logical(logical) => {
             ValidationRule::Logical(ValidationLogical {
                 show_checkbox: logical.show_checkbox,
+                ignore_blank: logical.ignore_blank,
             })
         }
     }
@@ -815,7 +809,6 @@ fn export_selection(selection: &Selection) -> current_validations::Selection {
 
 fn export_validation_rule(rule: &ValidationRule) -> current_validations::ValidationRule {
     match rule {
-        ValidationRule::None => current_validations::ValidationRule::None,
         ValidationRule::List(list) => {
             current_validations::ValidationRule::List(current_validations::ValidationList {
                 source: match &list.source {
@@ -837,6 +830,7 @@ fn export_validation_rule(rule: &ValidationRule) -> current_validations::Validat
         ValidationRule::Logical(logical) => {
             current_validations::ValidationRule::Logical(current_validations::ValidationLogical {
                 show_checkbox: logical.show_checkbox,
+                ignore_blank: logical.ignore_blank,
             })
         }
     }

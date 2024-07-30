@@ -23,21 +23,19 @@ export const ValidationListInput = (props: Props) => {
   };
 
   const list = useMemo(() => {
-    const rule = validation?.rule;
-    if (rule) {
-      if (rule === 'None') return '';
-      if ('List' in rule) {
-        if ('source' in rule.List) {
-          if ('List' in rule.List.source) {
-            const split = rule.List.source.List;
-            if (split.length === 0) return '';
-            return split.map((value) => value.trim()).join(', ');
-          }
+    if (!validation || !('rule' in validation)) return '';
+    const rule = validation.rule;
+    if ('List' in rule) {
+      if ('source' in rule.List) {
+        if ('List' in rule.List.source) {
+          const split = rule.List.source.List;
+          if (split.length === 0) return '';
+          return split.map((value) => value.trim()).join(', ');
         }
       }
     }
     return '';
-  }, [validation?.rule]);
+  }, [validation]);
 
   return (
     <ValidationInput
@@ -79,8 +77,8 @@ export const ValidationList = (props: Props) => {
       )}
       {rule === 'list' && <ValidationListInput validationData={props.validationData} />}
 
-      <ValidationUICheckbox label="Ignore blank values" showDropdown={ignoreBlank} changeDropDown={changeIgnoreBlank} />
-      <ValidationUICheckbox label="Show dropdown in cell" showDropdown={showDropdown} changeDropDown={changeDropDown} />
+      <ValidationUICheckbox label="Ignore blank values" value={ignoreBlank} changeValue={changeIgnoreBlank} />
+      <ValidationUICheckbox label="Show dropdown in cell" value={showDropdown} changeValue={changeDropDown} />
 
       <ValidationMoreOptions validationData={props.validationData} />
     </div>
