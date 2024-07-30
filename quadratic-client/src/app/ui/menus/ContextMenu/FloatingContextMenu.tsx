@@ -294,6 +294,7 @@ export const FloatingContextMenu = (props: Props) => {
     events.on('cellMoving', trigger);
     events.on('cursorPosition', updateContextMenuState);
     events.on('renderCells', updateContextMenuState);
+    events.on('sheetFills', updateContextMenuState);
 
     return () => {
       viewport.removeListener('moved', updateContextMenuCSSTransform);
@@ -304,6 +305,7 @@ export const FloatingContextMenu = (props: Props) => {
       events.off('cellMoving', trigger);
       events.off('cursorPosition', updateContextMenuState);
       events.off('renderCells', updateContextMenuState);
+      events.off('sheetFills', updateContextMenuState);
     };
   }, [updateContextMenuCSSTransform, updateContextMenuState]);
 
@@ -348,8 +350,7 @@ export const FloatingContextMenu = (props: Props) => {
             size="small"
             onClick={async () => {
               setCursorBold((prev) => !prev);
-              await setBold();
-              updateContextMenuState();
+              setBold();
             }}
             sx={iconBtnSx}
           >
@@ -362,8 +363,7 @@ export const FloatingContextMenu = (props: Props) => {
             size="small"
             onClick={async () => {
               setCursorItalic((prev) => !prev);
-              await setItalic();
-              updateContextMenuState();
+              setItalic();
             }}
             sx={iconBtnSx}
           >
@@ -388,13 +388,11 @@ export const FloatingContextMenu = (props: Props) => {
               textColorRef.current?.closeMenu();
               setTextColor(color);
               focusGrid();
-              updateContextMenuState();
             }}
             onClear={() => {
               textColorRef.current?.closeMenu();
               setTextColor(undefined);
               focusGrid();
-              updateContextMenuState();
             }}
           />
         </Menu>
@@ -583,13 +581,11 @@ export const FloatingContextMenu = (props: Props) => {
               fillColorRef.current?.closeMenu();
               setFillColor(color);
               focusGrid();
-              updateContextMenuState();
             }}
             onClear={() => {
               fillColorRef.current?.closeMenu();
               clearFillColor();
               focusGrid();
-              updateContextMenuState();
             }}
           />
         </Menu>
