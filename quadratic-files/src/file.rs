@@ -12,12 +12,9 @@ use quadratic_core::{
     },
 };
 use quadratic_rust_shared::{
-    aws::{
-        s3::{download_object, upload_object},
-        Client,
-    },
     pubsub::PubSub as PubSubTrait,
     quadratic_api::{get_file_checkpoint, set_file_checkpoint},
+    storage::{Storage, StorageContainer},
 };
 
 use crate::{
@@ -45,20 +42,18 @@ pub(crate) fn apply_transaction(grid: &mut GridController, operations: Vec<Opera
 
 /// Exports a .grid file
 pub(crate) async fn get_and_load_object(
-    client: &Client,
-    bucket: &str,
+    storage: &StorageContainer,
     key: &str,
     sequence_num: u64,
 ) -> Result<GridController> {
-    let file = download_object(client, bucket, key).await?;
-    let body = file
-        .body
-        .collect()
+    let body = storage
+        .read(key)
         .await
-        .map_err(|e| FilesError::LoadFile(key.into(), bucket.to_string(), e.to_string()))?
-        .into_bytes();
-    let body = std::str::from_utf8(&body)
-        .map_err(|e| FilesError::LoadFile(key.into(), bucket.to_string(), e.to_string()))?;
+        .map_err(|e| FilesError::LoadFile(key.into(), e.to_string()))?;
+
+    // TODO(ddimaria): remove this line when the binary file format PR is merged
+    let body =
+        std::str::from_utf8(&body).map_err(|e| FilesError::LoadFile(key.into(), e.to_string()))?;
     let grid = load_file(key, body)?;
 
     Ok(GridController::from_grid(grid, sequence_num))
@@ -70,16 +65,14 @@ pub(crate) fn key(file_id: Uuid, sequence: u64) -> String {
 
 /// Load a file from S3, add it to memory, process transactions and upload it back to S3
 pub(crate) async fn process_transactions(
-    client: &Client,
-    bucket: &str,
+    storage: &StorageContainer,
     file_id: Uuid,
     checkpoint_sequence_num: u64,
     final_sequence_num: u64,
     operations: Vec<Operation>,
 ) -> Result<u64> {
     let mut grid = get_and_load_object(
-        client,
-        bucket,
+        storage,
         &key(file_id, checkpoint_sequence_num),
         checkpoint_sequence_num,
     )
@@ -90,7 +83,7 @@ pub(crate) async fn process_transactions(
     apply_transaction(&mut grid, operations);
     let body = export_file(&key, grid.grid_mut())?;
 
-    upload_object(client, bucket, &key, &body).await?;
+    storage.write(&key, &body.into()).await?;
 
     Ok(final_sequence_num)
 }
@@ -105,8 +98,7 @@ pub(crate) async fn process_queue_for_room(
     let channel = &file_id.to_string();
 
     let Settings {
-        aws_client,
-        aws_s3_bucket_name,
+        storage,
         quadratic_api_uri,
         m2m_auth_token,
         ..
@@ -173,8 +165,7 @@ pub(crate) async fn process_queue_for_room(
 
     // process the transactions and save the file to S3
     let last_sequence_num = process_transactions(
-        aws_client,
-        aws_s3_bucket_name,
+        storage,
         *file_id,
         checkpoint_sequence_num,
         last_sequence_num,
@@ -199,6 +190,7 @@ pub(crate) async fn process_queue_for_room(
 
     // update the checkpoint in quadratic-api
     let key = &key(*file_id, last_sequence_num);
+
     set_file_checkpoint(
         quadratic_api_uri,
         m2m_auth_token,
@@ -206,7 +198,7 @@ pub(crate) async fn process_queue_for_room(
         last_sequence_num,
         CURRENT_VERSION.into(),
         key.to_owned(),
-        aws_s3_bucket_name.to_owned(),
+        storage.path().to_owned(),
     )
     .await?;
 

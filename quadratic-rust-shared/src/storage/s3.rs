@@ -9,19 +9,18 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct S3Config<'a> {
+pub struct S3Config {
     pub client: Client,
-    pub bucket: &'a str,
+    pub bucket: String,
 }
 
-pub struct S3<'a> {
-    pub config: S3Config<'a>,
+#[derive(Debug)]
+pub struct S3 {
+    pub config: S3Config,
 }
 
 #[async_trait]
-impl<'a> Storage<'a> for S3<'a> {
-    type Config = S3Config<'a>;
-
+impl Storage for S3 {
     async fn read(&self, key: &str) -> Result<Bytes> {
         let S3Config { client, bucket } = &self.config;
 
@@ -39,7 +38,7 @@ impl<'a> Storage<'a> for S3<'a> {
         Ok(bytes)
     }
 
-    async fn write(&self, key: &'a str, data: &'a Bytes) -> Result<()> {
+    async fn write<'a>(&self, key: &'a str, data: &'a Bytes) -> Result<()> {
         let S3Config { client, bucket } = &self.config;
 
         upload_object(client, bucket, key, data)
@@ -47,6 +46,16 @@ impl<'a> Storage<'a> for S3<'a> {
             .map_err(|e| Self::write_error(key, &e))?;
 
         Ok(())
+    }
+
+    fn path(&self) -> &str {
+        &self.config.bucket
+    }
+}
+
+impl S3 {
+    pub fn new(config: S3Config) -> Self {
+        Self { config }
     }
 }
 

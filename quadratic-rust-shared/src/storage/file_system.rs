@@ -14,14 +14,13 @@ pub struct FileSystemConfig {
     pub path: String,
 }
 
+#[derive(Debug)]
 pub struct FileSystem {
     pub config: FileSystemConfig,
 }
 
 #[async_trait]
-impl<'a> Storage<'a> for FileSystem {
-    type Config = FileSystemConfig;
-
+impl Storage for FileSystem {
     async fn read(&self, key: &str) -> Result<Bytes> {
         let file_path = self.full_path(key, false).await?.0;
         let mut bytes = vec![];
@@ -36,7 +35,7 @@ impl<'a> Storage<'a> for FileSystem {
         Ok(bytes.into())
     }
 
-    async fn write(&self, key: &'a str, data: &'a Bytes) -> Result<()> {
+    async fn write<'a>(&self, key: &'a str, data: &'a Bytes) -> Result<()> {
         let file_path = self.full_path(key, true).await?.0;
         let mut file = File::create(file_path)
             .await
@@ -47,9 +46,17 @@ impl<'a> Storage<'a> for FileSystem {
 
         Ok(())
     }
+
+    fn path(&self) -> &str {
+        &self.config.path
+    }
 }
 
 impl FileSystem {
+    pub fn new(config: FileSystemConfig) -> Self {
+        Self { config }
+    }
+
     pub async fn full_path(&self, key: &str, create_dir: bool) -> Result<(PathBuf, PathBuf)> {
         let FileSystemConfig { path } = &self.config;
         let parts = key.split('-').collect::<Vec<&str>>();

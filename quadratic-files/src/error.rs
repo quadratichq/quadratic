@@ -34,8 +34,8 @@ pub(crate) enum FilesError {
     #[error("Internal server error: {0}")]
     InternalServer(String),
 
-    #[error("Unable to load file {0} from bucket {1}: {2}")]
-    LoadFile(String, String, String),
+    #[error("Unable to load file {0}: {1}")]
+    LoadFile(String, String),
 
     #[error("PubSub error: {0}")]
     PubSub(String),
