@@ -418,7 +418,7 @@ export const defaultShortcuts: Shortcuts = [
     },
   },
   {
-    action: 'show_code_editor',
+    action: 'show_cell_type_menu',
     shortcuts: {
       mac: ['/'],
       windows: ['/'],

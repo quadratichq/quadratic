@@ -58,7 +58,7 @@ export const ActionEnum = z.enum([
   'move_cursor_left_with_selection',
   'edit_cell',
   'delete_cell',
-  'show_code_editor',
+  'show_cell_type_menu',
   'close_inline_editor',
   'save_inline_editor',
   'save_inline_editor_move_right',

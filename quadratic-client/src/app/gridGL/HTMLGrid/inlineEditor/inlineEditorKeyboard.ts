@@ -182,7 +182,7 @@ class InlineEditorKeyboard {
     }
 
     // trigger cell type menu
-    else if (matchShortcut('show_code_editor', e) && inlineEditorMonaco.get().length === 0) {
+    else if (matchShortcut('show_cell_type_menu', e) && inlineEditorMonaco.get().length === 0) {
       e.preventDefault();
       e.stopPropagation();
       pixiAppSettings.changeInput(false);

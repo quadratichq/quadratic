@@ -115,7 +115,7 @@ export function keyboardCell(options: {
   }
 
   // Show code editor
-  if (matchShortcut('show_code_editor', event)) {
+  if (matchShortcut('show_cell_type_menu', event)) {
     openCodeEditor();
     return true;
   }
