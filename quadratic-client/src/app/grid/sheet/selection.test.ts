@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { RectangleLike } from './SheetCursor';
-import { getSelectionString, parseCoordinate, parseNumberList, parseRange, parseSelectionString } from './selection';
+import {
+  defaultSelection,
+  getSelectionString,
+  parseCoordinate,
+  parseNumberList,
+  parseRange,
+  parseSelectionString,
+} from './selection';
 import { Selection } from '@/app/quadratic-core-types';
 
 const mockSelection = (options: {
@@ -88,40 +95,42 @@ it('parseNumberList', () => {
   expect(parseNumberList('test')).toEqual(undefined);
 });
 
-it('parseSelectionRange', () => {
-  const defaultSelection = () => ({
-    x: 0n,
-    y: 0n,
-    sheet_id: { id: '' },
-    all: false,
-    columns: null,
-    rows: null,
-    rects: null,
+it('parseSelectionString', () => {
+  const sheetId = 'sheetId';
+  expect(parseSelectionString('all', sheetId).selection).toEqual({ ...defaultSelection(sheetId), all: true });
+  expect(parseSelectionString('(col=1, 2)', sheetId).selection).toEqual({
+    ...defaultSelection(sheetId),
+    columns: [1n, 2n],
   });
-  expect(parseSelectionString('all')).toEqual({ ...defaultSelection(), all: true });
-  expect(parseSelectionString('(col=1, 2)')).toEqual({ ...defaultSelection(), columns: [1n, 2n] });
-  expect(parseSelectionString('(row = 1,2)')).toEqual({ ...defaultSelection(), rows: [1n, 2n] });
-  expect(parseSelectionString('(col=1, 2); (row=3, 4)')).toEqual({
-    ...defaultSelection(),
+  expect(parseSelectionString('(row = 1,2)', sheetId).selection).toEqual({
+    ...defaultSelection(sheetId),
+    rows: [1n, 2n],
+  });
+  expect(parseSelectionString('(col=1, 2); (row=3, 4)', sheetId).selection).toEqual({
+    ...defaultSelection(sheetId),
     columns: [1n, 2n],
     rows: [3n, 4n],
   });
-  expect(parseSelectionString('(1,2)')).toEqual({
-    ...defaultSelection(),
+  expect(parseSelectionString('(1,2)', sheetId).selection).toEqual({
+    ...defaultSelection(sheetId),
     rects: [{ min: { x: 1n, y: 2n }, max: { x: 1n, y: 2n } }],
   });
-  expect(parseSelectionString('(1,2)-(2,3)')).toEqual({
-    ...defaultSelection(),
+  expect(parseSelectionString('(1,2)-(2,3)', sheetId).selection).toEqual({
+    ...defaultSelection(sheetId),
     rects: [{ min: { x: 1n, y: 2n }, max: { x: 2n, y: 3n } }],
   });
-  expect(parseSelectionString('(1,2); (3,4)-(4,6)')).toEqual({
-    ...defaultSelection(),
+  expect(parseSelectionString('(1,2); (3,4)-(4,6)', sheetId).selection).toEqual({
+    ...defaultSelection(sheetId),
     rects: [
       { min: { x: 1n, y: 2n }, max: { x: 1n, y: 2n } },
       { min: { x: 3n, y: 4n }, max: { x: 4n, y: 6n } },
     ],
   });
-  expect(parseSelectionString(' test')).toEqual(['Unknown range reference', 0]);
-  expect(parseSelectionString('(col=1, 2); (row=3, 4) test')).toEqual(['Unknown range reference', 12]);
-  expect(parseSelectionString('')).toEqual(['Empty range', 0]);
+  console.log(parseSelectionString(' test', sheetId));
+  expect(parseSelectionString(' test', sheetId).error).toEqual({ error: 'Unknown range reference', column: 0 });
+  expect(parseSelectionString('(col=1, 2); (row=3, 4) test', sheetId).error).toEqual({
+    error: 'Unknown range reference',
+    column: 12,
+  });
+  expect(parseSelectionString('', sheetId).error).toEqual({ error: 'Empty range', column: 0 });
 });

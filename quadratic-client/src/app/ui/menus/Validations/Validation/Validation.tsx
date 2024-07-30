@@ -4,7 +4,7 @@ import { useValidationData, ValidationRuleSimple } from './useValidationData';
 import { useMemo } from 'react';
 import { ValidationList } from './ValidationList';
 import { ValidationMessage } from './ValidationMessage';
-import { ValidationDropdown } from '../ValidationUI';
+import { ValidationDropdown } from './ValidationUI';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { useSetRecoilState } from 'recoil';
@@ -24,9 +24,10 @@ interface Props {
 }
 
 export const Validation = (props: Props) => {
+  const { validationId } = props;
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
 
-  const validationData = useValidationData();
+  const validationData = useValidationData(validationId);
   const { rule, changeRule, moreOptions, validation, unsaved, triggerError, validate, setSelection } = validationData;
 
   const validationParameters: JSX.Element | null = useMemo(() => {
@@ -47,7 +48,7 @@ export const Validation = (props: Props) => {
     quadraticCore.updateValidation(validation, sheets.getCursorPosition());
     setEditorInteractionState((old) => ({
       ...old,
-      showValidation: false,
+      showValidation: true,
     }));
   };
 
@@ -77,9 +78,9 @@ export const Validation = (props: Props) => {
 
       <div className="mt-3 flex w-full border-t border-t-gray-100 pt-2">
         <div className="mx-auto my-1 flex gap-3">
-          <Button variant="secondary">Cancel</Button>
+          <Button variant="secondary">Remove Rule</Button>
           <Button disabled={!unsaved} onClick={applyValidation}>
-            Apply
+            Done
           </Button>
         </div>
       </div>

@@ -1,5 +1,4 @@
 import { Pos, Rect, Selection } from '@/app/quadratic-core-types';
-import { sheets } from '../controller/Sheets';
 
 const RANGE_SEPARATOR = '; ';
 
@@ -30,7 +29,7 @@ export const getSelectionString = (selection: Selection): string => {
     }
     range += selection.rects
       .map((rect) => {
-        if (Number(rect.max.x - rect.min.x) === 1 && Number(rect.max.y - rect.min.y) === 1) {
+        if (Number(rect.max.x - rect.min.x) === 0 && Number(rect.max.y - rect.min.y) === 0) {
           return `(${rect.min.x},${rect.min.y})`;
         }
         return `(${rect.min.x},${rect.min.y})-(${rect.max.x},${rect.max.y})`;
@@ -89,10 +88,12 @@ export const parseNumberList = (s: string): bigint[] | undefined => {
 // Parses a string to find a Selection
 // @returns Selection | [error message, index of error]
 export const parseSelectionString = (
-  range: string
+  range: string,
+  sheetId: string
 ): { selection?: Selection; error?: { error: string; column: number } } => {
+  range = range.trim();
   const selection: Selection = {
-    sheet_id: { id: sheets.sheet.id },
+    sheet_id: { id: sheetId },
     x: BigInt(0),
     y: BigInt(0),
     columns: null,
@@ -104,6 +105,10 @@ export const parseSelectionString = (
   if (range === 'all') {
     selection.all = true;
     return { selection };
+  }
+
+  if (range === '') {
+    return { error: { error: 'Empty range', column: 0 } };
   }
 
   // this can be replaced by a regex--but this is more readable
@@ -165,10 +170,10 @@ export const getSingleSelection = (sheetId: string, x: number, y: number): Selec
   };
 };
 
-export const defaultSelection = (): Selection => ({
+export const defaultSelection = (sheetId: string): Selection => ({
   x: 0n,
   y: 0n,
-  sheet_id: { id: sheets.sheet.id },
+  sheet_id: { id: sheetId },
   all: false,
   columns: null,
   rows: null,

@@ -7,6 +7,8 @@ import { Selection, Validation, ValidationRule } from '@/app/quadratic-core-type
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
 import { getSelectionString } from '@/app/grid/sheet/selection';
+import { useRecoilValue } from 'recoil';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 
 export type SetState<T> = Dispatch<SetStateAction<T>>;
 
@@ -29,7 +31,8 @@ export interface ValidationData {
   triggerError: boolean;
 }
 
-export const useValidationData = (): ValidationData => {
+export const useValidationData = (validationId?: string): ValidationData => {
+  const { showValidation } = useRecoilValue(editorInteractionStateAtom);
   const [validation, setValidation] = useState<Validation | undefined>();
   const [originalValidation, setOriginalValidation] = useState<Validation | undefined>();
   const [moreOptions, setMoreOptions] = useState(false);
@@ -43,7 +46,10 @@ export const useValidationData = (): ValidationData => {
   useEffect(() => {
     const getValidation = async () => {
       const selection = sheets.getRustSelection();
-      let v = await quadraticCore.getValidation(selection);
+      let v: Validation | undefined;
+      if (showValidation !== 'new') {
+        v = await quadraticCore.getValidation(selection);
+      }
       if (v) {
         setOriginalValidation(v);
       } else {
@@ -69,7 +75,7 @@ export const useValidationData = (): ValidationData => {
       setValidation(v);
     };
     getValidation();
-  }, []);
+  }, [showValidation]);
 
   const unsaved = useMemo(() => {
     if (originalValidation && validation) {

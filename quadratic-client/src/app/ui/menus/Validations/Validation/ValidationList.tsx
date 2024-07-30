@@ -1,9 +1,10 @@
 import { ValidationData } from './useValidationData';
 import { useMemo } from 'react';
-import { ValidationUICheckbox, ValidationMoreOptions, ValidationInput } from '../ValidationUI';
+import { ValidationUICheckbox, ValidationMoreOptions, ValidationInput } from './ValidationUI';
 import { defaultSelection } from '@/app/grid/sheet/selection';
 import { Selection, ValidationRule } from '@/app/quadratic-core-types';
 import { SheetRange } from '@/app/ui/components/SheetRange';
+import { sheets } from '@/app/grid/controller/Sheets';
 
 interface Props {
   validationData: ValidationData;
@@ -64,7 +65,7 @@ export const ValidationList = (props: Props) => {
   const changeSelection = (selection: Selection | undefined) => {
     const rule: ValidationRule = {
       List: {
-        source: { Selection: selection ?? defaultSelection() },
+        source: { Selection: selection ?? defaultSelection(sheets.sheet.id) },
         ignore_blank: ignoreBlank,
         drop_down: showDropdown,
       },

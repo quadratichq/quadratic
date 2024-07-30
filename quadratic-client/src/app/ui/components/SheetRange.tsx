@@ -34,7 +34,7 @@ export const SheetRange = (props: Props) => {
   const onBlur = useCallback(
     (e: FocusEvent<HTMLInputElement>) => {
       const value = e.currentTarget.value;
-      const selection = parseSelectionString(value);
+      const selection = parseSelectionString(value, sheets.sheet.id);
       if (selection.selection) {
         onChangeRange(selection.selection);
         setRangeError(undefined);
@@ -56,7 +56,7 @@ export const SheetRange = (props: Props) => {
 
   const onFocus = () => {
     if (!ref.current) return;
-    const selection = parseSelectionString(ref.current.value);
+    const selection = parseSelectionString(ref.current.value, sheets.sheet.id);
     if (selection.selection) {
       sheets.sheet.cursor.loadFromSelection(selection.selection);
     }
