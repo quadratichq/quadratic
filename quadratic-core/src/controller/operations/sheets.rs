@@ -83,17 +83,21 @@ impl GridController {
             return vec![];
         };
 
-        // clone the sheet and update id and name
+        // clone the sheet and update id, name and order
         let mut new_sheet = sheet.clone();
         new_sheet.id = SheetId::new();
         new_sheet.name = format!("{} Copy", sheet.name);
+        let right_order = self
+            .grid
+            .next_sheet(sheet_id)
+            .map(|right| right.order.clone());
+        if let Ok(order) = key_between(&Some(sheet.order.clone()), &right_order) {
+            new_sheet.order = order;
+        };
+
         let mut ops = vec![Operation::AddSheetSchema {
             schema: (export_sheet(&new_sheet)),
         }];
-
-        // move the new sheet to the right of the old sheet
-        let right_sheet_id = self.grid.next_sheet(sheet_id).map(|s| s.id);
-        ops.extend(self.move_sheet_operations(new_sheet.id, right_sheet_id));
 
         // get code run operations for the old sheet, as new sheet is not yet in the grid
         let mut code_run_ops = self.rerun_sheet_code_cells_operations(sheet_id);

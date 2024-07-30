@@ -261,11 +261,15 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
-        controller::GridController,
-        grid::CodeCellLanguage,
+        controller::{
+            active_transactions::transaction_name::TransactionName,
+            operations::operation::Operation, GridController,
+        },
+        grid::{CodeCellLanguage, SheetId},
         wasm_bindings::{controller::sheet_info::SheetInfo, js::expect_js_call},
-        SheetPos,
+        CellValue, SheetPos,
     };
+    use bigdecimal::BigDecimal;
     use serial_test::serial;
 
     #[test]
@@ -310,6 +314,76 @@ mod tests {
             false,
         );
         expect_js_call("jsDeleteSheet", format!("{},{}", new_sheet_id, true), true);
+    }
+
+    #[test]
+    #[serial]
+    fn test_undo_delete_sheet_code_rerun() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            SheetPos {
+                sheet_id,
+                x: 0,
+                y: 0,
+            },
+            "1".to_string(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                sheet_id,
+                x: 0,
+                y: 1,
+            },
+            "1".to_string(),
+            None,
+        );
+        let sheet_pos = SheetPos {
+            sheet_id,
+            x: 1,
+            y: 0,
+        };
+        gc.set_code_cell(
+            sheet_pos,
+            CodeCellLanguage::Formula,
+            "A0 + A1".to_string(),
+            None,
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).get_code_cell_value((1, 0).into()),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+        gc.delete_sheet(sheet_id, None);
+        assert_eq!(gc.grid.sheets().len(), 1);
+        expect_js_call("jsDeleteSheet", format!("{},{}", sheet_id, true), true);
+
+        gc.undo(None);
+        assert_eq!(gc.grid.sheets().len(), 1);
+        assert_eq!(gc.grid.sheets()[0].id, sheet_id);
+        let sheet = gc.sheet(sheet_id);
+        let sheet_info = SheetInfo::from(sheet);
+        expect_js_call(
+            "jsAddSheet",
+            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            false,
+        );
+
+        // code cells should rerun and send updated code cell
+        let code_cell = sheet.edit_code_value(sheet_pos.into()).unwrap();
+        let render_code_cell = sheet.get_render_code_cell(sheet_pos.into()).unwrap();
+        expect_js_call(
+            "jsUpdateCodeCell",
+            format!(
+                "{},{},{},{:?},{:?}",
+                sheet_id,
+                sheet_pos.x,
+                sheet_pos.y,
+                Some(serde_json::to_string(&code_cell).unwrap()),
+                Some(serde_json::to_string(&render_code_cell).unwrap())
+            ),
+            true,
+        );
     }
 
     #[test]
@@ -437,7 +511,11 @@ mod tests {
             None,
         );
 
-        gc.duplicate_sheet(sheet_id, None);
+        let op = vec![Operation::DuplicateSheet {
+            sheet_id,
+            new_sheet_id: SheetId::new(),
+        }];
+        gc.start_user_transaction(op, None, TransactionName::DuplicateSheet);
         assert_eq!(gc.grid.sheets().len(), 2);
         assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy");
         let duplicated_sheet_id = gc.grid.sheets()[1].id;
@@ -456,7 +534,11 @@ mod tests {
             true,
         );
 
-        gc.duplicate_sheet(sheet_id, None);
+        let op = vec![Operation::DuplicateSheet {
+            sheet_id,
+            new_sheet_id: SheetId::new(),
+        }];
+        gc.start_user_transaction(op, None, TransactionName::DuplicateSheet);
         assert_eq!(gc.grid.sheets().len(), 2);
         let duplicated_sheet_id2 = gc.grid.sheets()[1].id;
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id2));
@@ -466,7 +548,11 @@ mod tests {
             true,
         );
 
-        gc.duplicate_sheet(sheet_id, None);
+        let op = vec![Operation::DuplicateSheet {
+            sheet_id,
+            new_sheet_id: SheetId::new(),
+        }];
+        gc.start_user_transaction(op, None, TransactionName::DuplicateSheet);
         assert_eq!(gc.grid.sheets().len(), 3);
         assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy 1");
         assert_eq!(gc.grid.sheets()[2].name, "Sheet 1 Copy");

@@ -50,7 +50,18 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use crate::{controller::GridController, grid::SheetId};
+    use crate::{
+        color::Rgba,
+        controller::GridController,
+        grid::{BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage, SheetId},
+        wasm_bindings::{
+            controller::sheet_info::SheetInfo,
+            js::{clear_js_calls, expect_js_call},
+        },
+        CellValue, SheetPos, SheetRect,
+    };
+    use bigdecimal::BigDecimal;
+    use serial_test::serial;
 
     #[test]
     fn test_set_sheet_name() {
@@ -190,25 +201,6 @@ mod test {
     }
 
     #[test]
-    fn test_duplicate_sheet() {
-        let mut g = GridController::test();
-        let old_sheet_ids = g.sheet_ids();
-        let s1 = old_sheet_ids[0];
-
-        g.set_sheet_name(s1, String::from("Nice Name"), None);
-        g.duplicate_sheet(s1, None);
-        let sheet_ids = g.sheet_ids();
-        let s2 = sheet_ids[1];
-
-        let sheet1 = g.sheet(s1);
-        let sheet2 = g.sheet(s2);
-
-        assert_eq!(sheet2.name, format!("{} Copy", sheet1.name));
-
-        g.duplicate_sheet(SheetId::new(), None);
-    }
-
-    #[test]
     fn test_delete_last_sheet() {
         let mut g = GridController::test();
         let sheet_ids = g.sheet_ids();
@@ -226,5 +218,211 @@ mod test {
         g.redo(None);
         let new_sheet_ids_3 = g.sheet_ids();
         assert_eq!(new_sheet_ids[0], new_sheet_ids_3[0]);
+    }
+
+    #[test]
+    #[serial]
+    fn test_duplicate_sheet() {
+        clear_js_calls();
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_sheet_name(sheet_id, "Nice Name".into(), None);
+        gc.set_code_cell(
+            SheetPos {
+                sheet_id,
+                x: 0,
+                y: 0,
+            },
+            CodeCellLanguage::Formula,
+            "10 + 10".to_string(),
+            None,
+        );
+        gc.set_cell_fill_color((1, 1, 1, 1, sheet_id).into(), Some("red".to_string()), None);
+        gc.set_borders(
+            SheetRect::single_pos((2, 2).into(), sheet_id),
+            vec![BorderSelection::Top, BorderSelection::Left],
+            Some(BorderStyle {
+                color: Rgba::default(),
+                line: CellBorderLine::Line1,
+            }),
+            None,
+        );
+
+        gc.duplicate_sheet(sheet_id, None);
+        assert_eq!(gc.grid.sheets().len(), 2);
+        assert_eq!(gc.grid.sheets()[1].name, "Nice Name Copy");
+        let duplicated_sheet_id = gc.grid.sheets()[1].id;
+        let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id));
+        expect_js_call(
+            "jsAddSheet",
+            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            false,
+        );
+        // should send sheet fills for the duplicated sheet
+        expect_js_call(
+            "jsSheetFills",
+            format!(
+                "{},{}",
+                duplicated_sheet_id, r#"[{"x":1,"y":1,"w":1,"h":1,"color":"red"}]"#
+            ),
+            false,
+        );
+        // should send borders for the duplicated sheet
+        let borders = gc.sheet(duplicated_sheet_id).render_borders();
+        expect_js_call(
+            "jsSheetBorders",
+            format!(
+                "{},{}",
+                duplicated_sheet_id,
+                serde_json::to_string(&borders).unwrap()
+            ),
+            true,
+        );
+
+        gc.undo(None);
+        assert_eq!(gc.grid.sheets().len(), 1);
+        expect_js_call(
+            "jsDeleteSheet",
+            format!("{},{}", duplicated_sheet_id, true),
+            true,
+        );
+
+        gc.duplicate_sheet(sheet_id, None);
+        assert_eq!(gc.grid.sheets().len(), 2);
+        let duplicated_sheet_id2 = gc.grid.sheets()[1].id;
+        let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id2));
+        expect_js_call(
+            "jsAddSheet",
+            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            true,
+        );
+
+        gc.duplicate_sheet(sheet_id, None);
+        assert_eq!(gc.grid.sheets().len(), 3);
+        assert_eq!(gc.grid.sheets()[1].name, "Nice Name Copy (1)");
+        assert_eq!(gc.grid.sheets()[2].name, "Nice Name Copy");
+        let duplicated_sheet_id3 = gc.grid.sheets()[1].id;
+        let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id3));
+        expect_js_call(
+            "jsAddSheet",
+            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            true,
+        );
+
+        gc.undo(None);
+        assert_eq!(gc.grid.sheets().len(), 2);
+        assert_eq!(gc.grid.sheets()[1].name, "Nice Name Copy");
+        expect_js_call(
+            "jsDeleteSheet",
+            format!("{},{}", duplicated_sheet_id3, true),
+            true,
+        );
+
+        gc.redo(None);
+        assert_eq!(gc.grid.sheets().len(), 3);
+        assert_eq!(gc.grid.sheets()[1].name, "Nice Name Copy (1)");
+        let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id3));
+        expect_js_call(
+            "jsAddSheet",
+            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            true,
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_duplicate_sheet_code_rerun() {
+        clear_js_calls();
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_cell_value(
+            SheetPos {
+                sheet_id,
+                x: 0,
+                y: 0,
+            },
+            "1".to_string(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                sheet_id,
+                x: 0,
+                y: 1,
+            },
+            "1".to_string(),
+            None,
+        );
+        gc.set_code_cell(
+            SheetPos {
+                sheet_id,
+                x: 1,
+                y: 0,
+            },
+            CodeCellLanguage::Formula,
+            "A0 + A1".to_string(),
+            None,
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).get_code_cell_value((1, 0).into()),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+
+        gc.duplicate_sheet(sheet_id, None);
+        assert_eq!(gc.grid.sheets().len(), 2);
+        assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy");
+        let duplicated_sheet_id = gc.grid.sheets()[1].id;
+        let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id));
+        expect_js_call(
+            "jsAddSheet",
+            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            true,
+        );
+
+        // update dependent cell value in original sheet
+        // only the original sheet's code result should update
+        gc.set_cell_value(
+            SheetPos {
+                sheet_id,
+                x: 0,
+                y: 0,
+            },
+            "2".to_string(),
+            None,
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).get_code_cell_value((1, 0).into()),
+            Some(CellValue::Number(BigDecimal::from(3)))
+        );
+        assert_eq!(
+            gc.sheet(duplicated_sheet_id)
+                .get_code_cell_value((1, 0).into()),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+
+        // update dependent cell value in duplicate sheet
+        // only the duplicate sheet's code result should update
+        gc.set_cell_value(
+            SheetPos {
+                sheet_id: duplicated_sheet_id,
+                x: 0,
+                y: 0,
+            },
+            "3".to_string(),
+            None,
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).get_code_cell_value((1, 0).into()),
+            Some(CellValue::Number(BigDecimal::from(3)))
+        );
+        assert_eq!(
+            gc.sheet(duplicated_sheet_id)
+                .get_code_cell_value((1, 0).into()),
+            Some(CellValue::Number(BigDecimal::from(4)))
+        );
     }
 }
