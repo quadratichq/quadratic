@@ -11,7 +11,11 @@ import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 function setCursorPosition(x: number, y: number) {
   const newPos = { x, y };
   sheets.sheet.cursor.changePosition({
+    multiCursor: null,
+    columnRow: null,
     cursorPosition: newPos,
+    keyboardMovePosition: newPos,
+    ensureVisible: newPos,
   });
 }
 
@@ -78,8 +82,8 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
       if (x === keyboardX) x++;
     }
     if (event.shiftKey) {
-      lastMultiCursor.x = cursor.cursorPosition.x;
-      lastMultiCursor.width = x - cursor.cursorPosition.x + 1;
+      lastMultiCursor.x = Math.min(cursor.cursorPosition.x, x);
+      lastMultiCursor.width = Math.abs(cursor.cursorPosition.x - x) + 1;
       cursor.changePosition({
         multiCursor,
         keyboardMovePosition: { x, y },
@@ -130,10 +134,11 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
         reverse: true,
         withContent: true,
       });
+      if (x === keyboardX) x--;
     }
     if (event.shiftKey) {
-      lastMultiCursor.x = x;
-      lastMultiCursor.width = cursor.cursorPosition.x - x + 1;
+      lastMultiCursor.x = Math.min(cursor.cursorPosition.x, x);
+      lastMultiCursor.width = Math.abs(cursor.cursorPosition.x - x) + 1;
       cursor.changePosition({
         multiCursor,
         keyboardMovePosition: { x, y },
@@ -183,8 +188,8 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
       if (y === keyboardY) y++;
     }
     if (event.shiftKey) {
-      lastMultiCursor.y = cursor.cursorPosition.y;
-      lastMultiCursor.height = y - cursor.cursorPosition.y + 1;
+      lastMultiCursor.y = Math.min(cursor.cursorPosition.y, y);
+      lastMultiCursor.height = Math.abs(cursor.cursorPosition.y - y) + 1;
       cursor.changePosition({
         multiCursor,
         keyboardMovePosition: { x, y },
@@ -233,10 +238,11 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
         reverse: true,
         withContent: true,
       });
+      if (y === keyboardY) y--;
     }
     if (event.shiftKey) {
-      lastMultiCursor.y = y;
-      lastMultiCursor.height = cursor.cursorPosition.y - y + 1;
+      lastMultiCursor.y = Math.min(cursor.cursorPosition.y, y);
+      lastMultiCursor.height = Math.abs(cursor.cursorPosition.y - y) + 1;
       cursor.changePosition({
         multiCursor,
         keyboardMovePosition: { x, y },
