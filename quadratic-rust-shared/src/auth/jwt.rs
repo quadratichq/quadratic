@@ -1,9 +1,19 @@
-use jsonwebtoken::jwk::AlgorithmParameters;
+use jsonwebtoken::jwk::{AlgorithmParameters, JwkSet};
 use jsonwebtoken::{decode, decode_header, jwk, Algorithm, DecodingKey, TokenData, Validation};
 use serde::de::DeserializeOwned;
 use std::str::FromStr;
+use tokio::sync::OnceCell;
 
 use crate::error::{Auth, Result, SharedError};
+
+pub static JWKS: OnceCell<JwkSet> = OnceCell::const_new();
+
+/// Get the constant JWKS for use throughout the application
+/// The panics are intentional and will happen at startup
+pub async fn get_const_jwks(jwks_uri: &str) -> &'static JwkSet {
+    JWKS.get_or_init(|| async { get_jwks(jwks_uri).await.expect("Unable to get JWKS") })
+        .await
+}
 
 /// Get the JWK set from a given URL.
 pub async fn get_jwks(url: &str) -> Result<jwk::JwkSet> {

@@ -91,6 +91,17 @@ pub enum SharedError {
     Uuid(String),
 }
 
+pub fn clean_errors(error: impl ToString) -> String {
+    let mut cleaned = error.to_string();
+    let remove = vec!["error returned from database: "];
+
+    for r in remove {
+        cleaned = format!("{:?}", cleaned).replace(r, "");
+    }
+
+    cleaned
+}
+
 impl From<redis::RedisError> for SharedError {
     fn from(error: redis::RedisError) -> Self {
         SharedError::PubSub(error.to_string())
