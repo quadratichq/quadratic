@@ -48,12 +48,13 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
     // always use the original cursor position to search
     const yCheck = cursor.cursorPosition.y;
     // handle case of cell with content
+    let nextCol: number | undefined = undefined;
     if (await quadraticCore.cellHasContent(sheetId, x, yCheck)) {
       // if next cell is empty, find the next cell with content
       if (!(await quadraticCore.cellHasContent(sheetId, x + 1, yCheck))) {
-        x = await quadraticCore.findNextColumn({
+        nextCol = await quadraticCore.findNextColumn({
           sheetId,
-          columnStart: x + 1,
+          columnStart: x + 2,
           row: yCheck,
           reverse: false,
           withContent: true,
@@ -61,27 +62,30 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
       }
       // if next cell is not empty, find the next empty cell
       else {
-        x =
-          (await quadraticCore.findNextColumn({
+        nextCol =
+          ((await quadraticCore.findNextColumn({
             sheetId,
-            columnStart: x + 1,
+            columnStart: x + 2,
             row: yCheck,
             reverse: false,
             withContent: false,
-          })) - 1;
+          })) ?? x + 2) - 1;
       }
     }
     // otherwise find the next cell with content
     else {
-      x = await quadraticCore.findNextColumn({
+      nextCol = await quadraticCore.findNextColumn({
         sheetId,
         columnStart: x + 1,
         row: yCheck,
         reverse: false,
         withContent: true,
       });
-      if (x === keyboardX) x++;
     }
+    if (nextCol === undefined) {
+      nextCol = x < 0 ? 0 : x + 1;
+    }
+    x = nextCol;
     if (select) {
       lastMultiCursor.x = Math.min(cursor.cursorPosition.x, x);
       lastMultiCursor.width = Math.abs(cursor.cursorPosition.x - x) + 1;
@@ -96,47 +100,47 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
   } else if (deltaX === -1) {
     let x = keyboardX;
     const y = cursor.keyboardMovePosition.y;
-
     // always use the original cursor position to search
     const yCheck = cursor.cursorPosition.y;
-
     // handle case of cell with content
+    let nextCol: number | undefined = undefined;
     if (await quadraticCore.cellHasContent(sheetId, x, yCheck)) {
       // if next cell is empty, find the next cell with content
       if (!(await quadraticCore.cellHasContent(sheetId, x - 1, yCheck))) {
-        x = await quadraticCore.findNextColumn({
+        nextCol = await quadraticCore.findNextColumn({
           sheetId,
-          columnStart: x - 1,
+          columnStart: x - 2,
           row: yCheck,
           reverse: true,
           withContent: true,
         });
       }
-
       // if next cell is not empty, find the next empty cell
       else {
-        x =
-          (await quadraticCore.findNextColumn({
+        nextCol =
+          ((await quadraticCore.findNextColumn({
             sheetId,
-            columnStart: x - 1,
+            columnStart: x - 2,
             row: yCheck,
             reverse: true,
             withContent: false,
-          })) + 1;
+          })) ?? x - 2) + 1;
       }
     }
-
     // otherwise find the next cell with content
     else {
-      x = await quadraticCore.findNextColumn({
+      nextCol = await quadraticCore.findNextColumn({
         sheetId,
         columnStart: x - 1,
         row: yCheck,
         reverse: true,
         withContent: true,
       });
-      if (x === keyboardX) x--;
     }
+    if (nextCol === undefined) {
+      nextCol = x > 0 ? 0 : x - 1;
+    }
+    x = nextCol;
     if (select) {
       lastMultiCursor.x = Math.min(cursor.cursorPosition.x, x);
       lastMultiCursor.width = Math.abs(cursor.cursorPosition.x - x) + 1;
@@ -154,40 +158,44 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
     // always use the original cursor position to search
     const xCheck = cursor.cursorPosition.x;
     // handle case of cell with content
+    let nextRow: number | undefined = undefined;
     if (await quadraticCore.cellHasContent(sheetId, xCheck, y)) {
       // if next cell is empty, find the next cell with content
       if (!(await quadraticCore.cellHasContent(sheetId, xCheck, y + 1))) {
-        y = await quadraticCore.findNextRow({
+        nextRow = await quadraticCore.findNextRow({
           sheetId,
           column: xCheck,
-          rowStart: y + 1,
+          rowStart: y + 2,
           reverse: false,
           withContent: true,
         });
       }
       // if next cell is not empty, find the next empty cell
       else {
-        y =
-          (await quadraticCore.findNextRow({
+        nextRow =
+          ((await quadraticCore.findNextRow({
             sheetId,
             column: xCheck,
-            rowStart: y + 1,
+            rowStart: y + 2,
             reverse: false,
             withContent: false,
-          })) - 1;
+          })) ?? y + 2) - 1;
       }
     }
     // otherwise find the next cell with content
     else {
-      y = await quadraticCore.findNextRow({
+      nextRow = await quadraticCore.findNextRow({
         sheetId,
         column: xCheck,
         rowStart: y + 1,
         reverse: false,
         withContent: true,
       });
-      if (y === keyboardY) y++;
     }
+    if (nextRow === undefined) {
+      nextRow = y < 0 ? 0 : y + 1;
+    }
+    y = nextRow;
     if (select) {
       lastMultiCursor.y = Math.min(cursor.cursorPosition.y, y);
       lastMultiCursor.height = Math.abs(cursor.cursorPosition.y - y) + 1;
@@ -202,45 +210,47 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
   } else if (deltaY === -1) {
     let y = keyboardY;
     const x = cursor.keyboardMovePosition.x;
-
     // always use the original cursor position to search
     const xCheck = cursor.cursorPosition.x;
-
     // handle case of cell with content
+    let nextRow: number | undefined = undefined;
     if (await quadraticCore.cellHasContent(sheetId, xCheck, y)) {
       // if next cell is empty, find the next cell with content
       if (!(await quadraticCore.cellHasContent(sheetId, xCheck, y - 1))) {
-        y = await quadraticCore.findNextRow({
+        nextRow = await quadraticCore.findNextRow({
           sheetId,
           column: xCheck,
-          rowStart: y - 1,
+          rowStart: y - 2,
           reverse: true,
           withContent: true,
         });
       }
       // if next cell is not empty, find the next empty cell
       else {
-        y =
-          (await quadraticCore.findNextRow({
+        nextRow =
+          ((await quadraticCore.findNextRow({
             sheetId,
             column: xCheck,
-            rowStart: y - 1,
+            rowStart: y - 2,
             reverse: true,
             withContent: false,
-          })) + 1;
+          })) ?? y - 2) + 1;
       }
     }
     // otherwise find the next cell with content
     else {
-      y = await quadraticCore.findNextRow({
+      nextRow = await quadraticCore.findNextRow({
         sheetId,
         column: xCheck,
         rowStart: y - 1,
         reverse: true,
         withContent: true,
       });
-      if (y === keyboardY) y--;
     }
+    if (nextRow === undefined) {
+      nextRow = y > 0 ? 0 : y - 1;
+    }
+    y = nextRow;
     if (select) {
       lastMultiCursor.y = Math.min(cursor.cursorPosition.y, y);
       lastMultiCursor.height = Math.abs(cursor.cursorPosition.y - y) + 1;
@@ -414,6 +424,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
           withContent: true,
         })
         .then((x) => {
+          x = x ?? bounds.right;
           setCursorPosition(x, y);
         });
     }
@@ -435,6 +446,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
           withContent: true,
         })
         .then((x) => {
+          x = x ?? bounds.left;
           quadraticCore.cellHasContent(sheet.id, x, y).then((hasContent) => {
             if (hasContent) {
               setCursorPosition(x, y);
@@ -460,6 +472,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
           withContent: true,
         })
         .then((x) => {
+          x = x ?? bounds.right;
           quadraticCore.cellHasContent(sheet.id, x, y).then((hasContent) => {
             if (hasContent) {
               setCursorPosition(x, y);

@@ -742,7 +742,7 @@ class Core {
     });
   }
 
-  findNextColumn(data: ClientCoreFindNextColumn): Promise<number> {
+  findNextColumn(data: ClientCoreFindNextColumn): Promise<number | undefined> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -753,7 +753,7 @@ class Core {
     });
   }
 
-  findNextRow(data: ClientCoreFindNextRow): Promise<number> {
+  findNextRow(data: ClientCoreFindNextRow): Promise<number | undefined> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');

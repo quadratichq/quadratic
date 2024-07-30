@@ -710,7 +710,7 @@ export interface ClientCoreFindNextColumn {
 export interface CoreClientFindNextColumn {
   type: 'coreClientFindNextColumn';
   id: number;
-  column: number;
+  column?: number;
 }
 
 export interface ClientCoreFindNextRow {
@@ -726,7 +726,7 @@ export interface ClientCoreFindNextRow {
 export interface CoreClientFindNextRow {
   type: 'coreClientFindNextRow';
   id: number;
-  row: number;
+  row?: number;
 }
 
 export interface ClientCoreCommitTransientResize {

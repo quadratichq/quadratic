@@ -859,11 +859,11 @@ class QuadraticCore {
     row: number;
     reverse: boolean;
     withContent: boolean;
-  }): Promise<number> {
+  }): Promise<number | undefined> {
     const { sheetId, columnStart, row, reverse, withContent } = options;
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { column: number }) => {
+      this.waitingForResponse[id] = (message: { column: number | number }) => {
         resolve(message.column);
       };
       this.send({
@@ -884,11 +884,11 @@ class QuadraticCore {
     rowStart: number;
     reverse: boolean;
     withContent: boolean;
-  }): Promise<number> {
+  }): Promise<number | undefined> {
     const { sheetId, column, rowStart, reverse, withContent } = options;
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { row: number }) => {
+      this.waitingForResponse[id] = (message: { row: number | undefined }) => {
         resolve(message.row);
       };
       this.send({
