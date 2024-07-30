@@ -237,7 +237,7 @@ class Sheets {
     return sheets[index - 1];
   }
 
-  private getNext(order?: string): Sheet | undefined {
+  getNext(order?: string): Sheet | undefined {
     if (!order) {
       return this.getLast();
     }

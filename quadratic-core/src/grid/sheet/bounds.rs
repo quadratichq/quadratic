@@ -246,7 +246,7 @@ impl Sheet {
     /// if reverse is true it searches to the left of the start
     /// if with_content is true it searches for a column with content; otherwise it searches for a column without content
     ///
-    /// Returns the found column or column_start or bounds_rect_min/bounds_rect_max
+    /// Returns the found column or column_start
     pub fn find_next_column(
         &self,
         column_start: i64,
@@ -255,7 +255,7 @@ impl Sheet {
         with_content: bool,
     ) -> i64 {
         let Some(bounds) = self.row_bounds(row, true) else {
-            return column_start + if reverse { -1 } else { 1 };
+            return column_start;
         };
         let mut x = column_start;
         while (reverse && x >= bounds.0) || (!reverse && x <= bounds.1) {
@@ -269,14 +269,19 @@ impl Sheet {
             }
             x += if reverse { -1 } else { 1 };
         }
-        x
+        let has_content = self.display_value(Pos { x, y: row });
+        if with_content == has_content.is_some() {
+            x
+        } else {
+            column_start
+        }
     }
 
     /// finds the next column with or without content
     /// if reverse is true it searches to the left of the start
     /// if with_content is true it searches for a column with content; otherwise it searches for a column without content
     ///
-    /// Returns the found column or row_start or bounds_rect_min/bounds_rect_max
+    /// Returns the found row or row_start
     pub fn find_next_row(
         &self,
         row_start: i64,
@@ -285,7 +290,7 @@ impl Sheet {
         with_content: bool,
     ) -> i64 {
         let Some(bounds) = self.column_bounds(column, true) else {
-            return row_start + if reverse { -1 } else { 1 };
+            return row_start;
         };
         let mut y = row_start;
         while (reverse && y >= bounds.0) || (!reverse && y <= bounds.1) {
@@ -299,7 +304,12 @@ impl Sheet {
             }
             y += if reverse { -1 } else { 1 };
         }
-        y
+        let has_content = self.display_value(Pos { x: column, y });
+        if with_content == has_content.is_some() {
+            y
+        } else {
+            row_start
+        }
     }
 
     /// Finds the height of a rectangle that contains data given an (x, y, w).
@@ -523,6 +533,10 @@ mod test {
         sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text(String::from("test")));
         sheet.set_cell_value(Pos { x: 10, y: 10 }, CellValue::Text(String::from("test")));
 
+        assert_eq!(sheet.find_next_column(0, 0, false, false), 0);
+        assert_eq!(sheet.find_next_column(0, 0, false, true), 0);
+        assert_eq!(sheet.find_next_column(0, 0, true, false), 0);
+        assert_eq!(sheet.find_next_column(0, 0, true, true), 0);
         assert_eq!(sheet.find_next_column(-1, 2, false, true), 1);
         assert_eq!(sheet.find_next_column(-1, 2, true, true), -1);
         assert_eq!(sheet.find_next_column(3, 2, false, true), 3);
@@ -562,6 +576,10 @@ mod test {
         let _ = sheet.set_cell_value(Pos { x: 2, y: 1 }, CellValue::Text(String::from("test")));
         sheet.set_cell_value(Pos { x: 10, y: 10 }, CellValue::Text(String::from("test")));
 
+        assert_eq!(sheet.find_next_row(0, 0, false, false), 0);
+        assert_eq!(sheet.find_next_row(0, 0, false, true), 0);
+        assert_eq!(sheet.find_next_row(0, 0, true, false), 0);
+        assert_eq!(sheet.find_next_row(0, 0, true, true), 0);
         assert_eq!(sheet.find_next_row(-1, 2, false, true), 1);
         assert_eq!(sheet.find_next_row(-1, 2, true, true), -1);
         assert_eq!(sheet.find_next_row(3, 2, false, true), 3);
