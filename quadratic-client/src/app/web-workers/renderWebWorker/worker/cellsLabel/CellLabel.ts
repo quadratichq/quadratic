@@ -110,8 +110,8 @@ export class CellLabel {
     } else {
       this.tint = 0;
     }
-    if (cell.special === 'True' || cell.special === 'False') {
-      this.text = cell.special === 'True' ? 'TRUE' : 'FALSE';
+    if (cell.special === 'Logical') {
+      this.text = cell.value === 'true' ? 'TRUE' : 'FALSE';
       cell.align = cell.align ?? 'center';
     }
 
