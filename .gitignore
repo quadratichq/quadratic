@@ -40,6 +40,7 @@ quadratic-connection/target/
 quadratic-core/target/
 quadratic-core/tmp.txt
 quadratic-files/target/
+quadratic-files/storage
 quadratic-multiplayer/target/
 quadratic-multiplayer/updateAlertVersion.json
 
