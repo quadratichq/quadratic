@@ -528,6 +528,10 @@ class CoreClient {
         core.removeValidation(e.data.sheetId, e.data.validationId, e.data.cursor);
         return;
 
+      case 'clientCoreRemoveValidations':
+        core.removeValidations(e.data.sheetId, e.data.cursor);
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core

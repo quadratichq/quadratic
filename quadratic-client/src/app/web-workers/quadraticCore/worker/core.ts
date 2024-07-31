@@ -918,6 +918,11 @@ class Core {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.removeValidation(sheetId, validationId, cursor);
   }
+
+  removeValidations(sheetId: string, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.removeValidations(sheetId, cursor);
+  }
 }
 
 export const core = new Core();

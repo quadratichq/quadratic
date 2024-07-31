@@ -524,6 +524,12 @@ export interface ClientCoreRemoveValidation {
   cursor: string;
 }
 
+export interface ClientCoreRemoveValidations {
+  type: 'clientCoreRemoveValidations';
+  sheetId: string;
+  cursor: string;
+}
+
 //#endregion
 
 //#region Sheets
@@ -955,7 +961,8 @@ export type ClientCoreMessage =
   | ClientCoreGetValidation
   | ClientCoreGetValidations
   | ClientCoreUpdateValidation
-  | ClientCoreRemoveValidation;
+  | ClientCoreRemoveValidation
+  | ClientCoreRemoveValidations;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

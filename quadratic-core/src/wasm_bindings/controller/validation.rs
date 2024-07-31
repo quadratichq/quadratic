@@ -1,3 +1,5 @@
+//! WASM functions for Validations
+
 use sheet::validations::validation::Validation;
 use uuid::Uuid;
 
@@ -29,7 +31,7 @@ impl GridController {
         }
     }
 
-    // creates or updates a validation and applies it to a selection
+    /// Creates or updates a validation and applies it to a selection
     #[wasm_bindgen(js_name = "updateValidation")]
     pub fn js_update_validation(
         &mut self,
@@ -46,7 +48,7 @@ impl GridController {
         self.update_validation(validation, cursor);
     }
 
-    // removes a validation
+    /// Removes a validation
     #[wasm_bindgen(js_name = "removeValidation")]
     pub fn js_remove_validation(
         &mut self,
@@ -58,6 +60,14 @@ impl GridController {
             (SheetId::from_str(&sheet_id), Uuid::from_str(&validation_id))
         {
             self.remove_validation(sheet_id, validation_id, cursor);
+        }
+    }
+
+    /// Removes all validations in a sheet
+    #[wasm_bindgen(js_name = "removeValidations")]
+    pub fn js_remove_validations(&mut self, sheet_id: String, cursor: Option<String>) {
+        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
+            self.remove_validations(sheet_id, cursor);
         }
     }
 }

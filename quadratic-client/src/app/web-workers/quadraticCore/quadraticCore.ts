@@ -1018,6 +1018,14 @@ class QuadraticCore {
     });
   }
 
+  removeValidations(sheetId: string) {
+    this.send({
+      type: 'clientCoreRemoveValidations',
+      sheetId,
+      cursor: sheets.getCursorPosition(),
+    });
+  }
+
   //#endregion
 }
 

@@ -5,11 +5,12 @@ import { ValidationEntry } from './ValidationEntry';
 import { useCallback } from 'react';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useSetRecoilState } from 'recoil';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 export const Validations = () => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const validationsData = useValidationsData();
-  const { validations } = validationsData;
+  const { validations, sheetId } = validationsData;
 
   const addValidation = useCallback(() => {
     setEditorInteractionState((old) => ({
@@ -17,6 +18,10 @@ export const Validations = () => {
       showValidation: 'new',
     }));
   }, [setEditorInteractionState]);
+
+  const removeValidations = () => {
+    quadraticCore.removeValidations(sheetId);
+  };
 
   return (
     <div
@@ -33,7 +38,9 @@ export const Validations = () => {
 
       <div className="mt-3 flex w-full border-t border-t-gray-100 pt-2">
         <div className="mx-auto my-1 flex gap-3">
-          <Button variant="secondary">Remove All</Button>
+          <Button variant="secondary" onClick={removeValidations}>
+            Remove All
+          </Button>
           <Button onClick={addValidation}>Add Validation</Button>
         </div>
       </div>
