@@ -86,6 +86,31 @@ fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
+            /// Evaluates multiple values on they're respective criteria, and
+            /// then counts how many sets of values met all their criteria.
+            #[doc = see_docs_for_more_about_criteria!()]
+            #[examples("TODO")]
+            fn COUNTIFS(
+                ctx: Ctx,
+                eval_range1: (Spanned<Array>),
+                criteria1: (Spanned<Value>),
+                more_eval_ranges_and_criteria: FormulaFnArgs,
+            ) {
+                ctx.zip_map_eval_ranges_and_criteria_from_args(
+                    eval_range1,
+                    criteria1,
+                    more_eval_ranges_and_criteria,
+                    |_ctx, eval_ranges_and_criteria| {
+                        // Same as `COUNTIF`
+                        let count =
+                            Criterion::iter_matching_multi(&eval_ranges_and_criteria, None)?
+                                .count();
+                        Ok((count as f64).into())
+                    },
+                )?
+            }
+        ),
+        formula_fn!(
             /// Counts how many values in the range are empty.
             ///
             /// - Cells with formula or code output of an empty string are
@@ -122,6 +147,8 @@ fn get_functions() -> Vec<FormulaFunction> {
 
 #[cfg(test)]
 mod tests {
+    use itertools::Itertools;
+
     use crate::{formulas::tests::*, Pos};
     use serial_test::parallel;
 
@@ -290,6 +317,66 @@ mod tests {
             let _ = sheet.set_cell_value(Pos { x: 1, y }, y);
         }
         assert_eq!("6", eval_to_string(&g, "COUNTIF(Bn5:B10, \"<=5\")"));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_countifs() {
+        let g = Grid::new();
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "COUNTIFS".into(),
+                arg_name: "eval_range1".into(),
+            },
+            eval_to_err(&g, "COUNTIFS()").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "COUNTIFS".into(),
+                arg_name: "criteria1".into(),
+            },
+            eval_to_err(&g, "COUNTIFS(0..10)").msg,
+        );
+
+        let make_countifs =
+            |conditions: &[&str]| format!("COUNTIFS({})", conditions.iter().join(", "));
+
+        // vertical; first 6 elements match
+        let cond1 = "0..10, \"<=5\"";
+        assert_eq!("6", eval_to_string(&g, &make_countifs(&[cond1])));
+
+        // vertical; alternating elements match
+        let cond2 = "MOD(5..15, 2), 1";
+        assert_eq!("6", eval_to_string(&g, &make_countifs(&[cond2])));
+        assert_eq!("3", eval_to_string(&g, &make_countifs(&[cond1, cond2])));
+
+        // horizontal; last 3 elements match
+        let cond3 = "{1,2,3,4,5,6,7,8,9,10,11}, \">8\"";
+        assert_eq!("3", eval_to_string(&g, &make_countifs(&[cond3])));
+        assert_eq!(
+            RunErrorMsg::ExactArraySizeMismatch {
+                expected: ArraySize::new(11, 1).unwrap(),
+                got: ArraySize::new(1, 11).unwrap(),
+            },
+            eval_to_err(&g, &make_countifs(&[cond1, cond3])).msg,
+        );
+        assert_eq!(
+            RunErrorMsg::ExactArraySizeMismatch {
+                expected: ArraySize::new(11, 1).unwrap(),
+                got: ArraySize::new(1, 11).unwrap(),
+            },
+            eval_to_err(&g, &make_countifs(&[cond1, cond2, cond3])).msg,
+        );
+
+        // vertical; last 3 elements match
+        let cond4 = "1..11, \">8\"";
+        assert_eq!("3", eval_to_string(&g, &make_countifs(&[cond4])));
+        assert_eq!("0", eval_to_string(&g, &make_countifs(&[cond1, cond4])));
+        assert_eq!("2", eval_to_string(&g, &make_countifs(&[cond2, cond4])));
+        assert_eq!(
+            "0",
+            eval_to_string(&g, &make_countifs(&[cond1, cond2, cond4])),
+        );
     }
 
     #[test]

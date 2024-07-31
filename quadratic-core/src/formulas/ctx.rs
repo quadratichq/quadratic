@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use itertools::Itertools;
 use smallvec::SmallVec;
 
 use super::*;
@@ -97,5 +98,43 @@ impl<'ctx> Ctx<'ctx> {
 
         let result = Array::new_row_major(size, values)?;
         Ok(Value::Array(result))
+    }
+
+    /// Parses a sequence of `eval_range` and `criteria` arguments from `args`,
+    /// then runs [`Ctx::zip_map()`] over the criteria arrays.
+    ///
+    /// This is useful for implementing functions that take multiple criteria,
+    /// like `SUMIFS`, `COUNTIFS`, etc.
+    pub fn zip_map_eval_ranges_and_criteria_from_args(
+        &mut self,
+        eval_range1: Spanned<Array>,
+        criteria1: Spanned<Value>,
+        mut remaining_args: FormulaFnArgs,
+        f: impl for<'b> Fn(
+            &'b mut Ctx<'_>,
+            Vec<(&'b Spanned<Array>, Criterion)>,
+        ) -> CodeResult<CellValue>,
+    ) -> CodeResult<Value> {
+        // Handle arguments.
+        let mut i = 1;
+        let mut eval_ranges = vec![eval_range1];
+        let mut criteria = vec![criteria1];
+        while let Some(eval_range) = remaining_args.take_next_optional() {
+            i += 1;
+            eval_ranges.push(eval_range.map(|v| v.into())); // convert to array
+            criteria.push(remaining_args.take_next_required(format!("criteria{i}"))?);
+        }
+
+        // Evaluate.
+        self.zip_map(&criteria, |ctx, criteria| {
+            let eval_ranges_and_criteria: Vec<(&Spanned<Array>, Criterion)> = eval_ranges
+                .iter()
+                .zip(criteria)
+                .map(|(eval_range, &criterion_value)| {
+                    CodeResult::Ok((eval_range, Criterion::try_from(criterion_value)?))
+                })
+                .try_collect()?;
+            f(ctx, eval_ranges_and_criteria)
+        })
     }
 }
