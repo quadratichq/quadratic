@@ -33,6 +33,7 @@ impl Sheet {
     pub fn format_cell(&self, x: i64, y: i64, include_sheet: bool) -> Format {
         let format = self.get_column(x).map(|column| Format {
             align: column.align.get(y),
+            vertical_align: column.vertical_align.get(y),
             wrap: column.wrap.get(y),
             numeric_format: column.numeric_format.get(y),
             numeric_decimals: column.numeric_decimals.get(y),
@@ -70,6 +71,10 @@ impl Sheet {
         if let Some(align) = update.align {
             old_format.align = Some(column.align.get(y));
             column.align.set(y, align);
+        }
+        if let Some(vertical_align) = update.vertical_align {
+            old_format.vertical_align = Some(column.vertical_align.get(y));
+            column.vertical_align.set(y, vertical_align);
         }
         if let Some(wrap) = update.wrap {
             old_format.wrap = Some(column.wrap.get(y));
@@ -128,16 +133,21 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::serial;
+    use serial_test::{parallel, serial};
 
     use crate::{
-        grid::{formats::Formats, js_types::JsRenderCell, CellAlign},
+        grid::{
+            formats::Formats,
+            js_types::{JsNumber, JsRenderCell},
+            CellAlign,
+        },
         wasm_bindings::js::{expect_js_call, hash_test},
     };
 
     use super::*;
 
     #[test]
+    #[parallel]
     fn format_cell() {
         let mut sheet = Sheet::test();
         assert_eq!(sheet.format_cell(0, 0, false), Format::default());
@@ -188,8 +198,8 @@ mod tests {
         );
     }
 
-    #[serial]
     #[test]
+    #[serial]
     fn set_format_cell() {
         let mut sheet = Sheet::test();
         let update = FormatUpdate {
@@ -220,6 +230,7 @@ mod tests {
             value: "5".to_string(),
             align: Some(CellAlign::Right),
             bold: Some(true),
+            number: Some(JsNumber::default()),
             ..Default::default()
         }])
         .unwrap();
@@ -233,6 +244,7 @@ mod tests {
             y: pos.y,
             value: "5".to_string(),
             align: Some(CellAlign::Right),
+            number: Some(JsNumber::default()),
             ..Default::default()
         }])
         .unwrap();
@@ -241,6 +253,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn decimal_places() {
         let mut sheet = Sheet::test();
         assert_eq!(sheet.decimal_places(0, 0), None);

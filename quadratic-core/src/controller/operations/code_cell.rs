@@ -140,8 +140,10 @@ mod test {
 
     use super::*;
     use crate::Pos;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_set_code_cell_operations() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -174,6 +176,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn rerun_all_code_cells_operations() {
         let mut gc = GridController::default();
         gc.add_sheet(None);
@@ -358,6 +361,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn rerun_all_code_cells_one() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];

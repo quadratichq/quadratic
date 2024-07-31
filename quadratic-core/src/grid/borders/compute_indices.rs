@@ -54,8 +54,10 @@ mod tests {
     use crate::Pos;
 
     use super::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn horizontal_indices() {
         let rect = Rect::new_span(Pos { x: 10, y: 20 }, Pos { x: 13, y: 23 });
 
@@ -90,6 +92,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn vertical_indices() {
         let rect = Rect::new_span(Pos { x: 10, y: 20 }, Pos { x: 13, y: 23 });
 
