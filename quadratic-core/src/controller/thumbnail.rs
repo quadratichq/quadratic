@@ -52,8 +52,10 @@ mod test {
         controller::GridController, grid::SheetId, selection::Selection, Pos, Rect, SheetPos,
         SheetRect, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH,
     };
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_thumbnail_dirty_pos() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -80,6 +82,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_thumbnail_dirty_rect() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -121,6 +124,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn thumbnail_dirty_selection_all() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -145,6 +149,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn thumbnail_dirty_selection_columns() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -189,6 +194,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn thumbnail_dirty_selection_rows() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -233,6 +239,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn thumbnail_dirty_selection_rects() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

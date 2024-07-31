@@ -6,8 +6,6 @@ use crate::sheet_offsets::resize_transient::TransientResize;
 impl GridController {
     /// Commits a transient resize from a local version of SheetOffsets.
     /// see js_get_resize_to_apply
-    ///
-    /// Returns a [`TransactionSummary`].
     pub fn commit_offsets_resize(
         &mut self,
         sheet_id: SheetId,
@@ -83,8 +81,10 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_commit_offsets_resize() {
         let mut gc = GridController::test();
         let sheet = &mut gc.grid_mut().sheets_mut()[0];
@@ -116,6 +116,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_commit_single_resize() {
         let mut gc = GridController::test();
         let sheet_id = gc.grid().sheets()[0].id;
