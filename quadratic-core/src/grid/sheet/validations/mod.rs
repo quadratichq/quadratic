@@ -73,12 +73,25 @@ impl Validations {
         let mut list = false;
         for v in &self.validations {
             if v.selection.contains_pos(pos) {
-                if v.rule.is_logical() {
-                    checkbox = true;
-                    list = false;
-                } else if v.rule.is_list() {
-                    list = true;
-                    checkbox = false;
+                match v.rule {
+                    validation_rules::ValidationRule::List(ref validation_list) => {
+                        if validation_list.drop_down {
+                            list = true;
+                            checkbox = false;
+                        } else {
+                            list = false;
+                            checkbox = false;
+                        }
+                    }
+                    validation_rules::ValidationRule::Logical(ref logical) => {
+                        if logical.show_checkbox {
+                            checkbox = true;
+                            list = false;
+                        } else {
+                            list = false;
+                            checkbox = false;
+                        }
+                    }
                 }
             }
         }
