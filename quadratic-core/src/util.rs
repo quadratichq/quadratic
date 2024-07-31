@@ -272,8 +272,10 @@ pub(crate) fn assert_f64_approx_eq(expected: f64, actual: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_column_names() {
         // Test near 0
         assert_eq!("A", column_name(0));
@@ -331,6 +333,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_from_column_names() {
         // Test near 0
         assert_eq!(Some(0), column_from_name("A"));
@@ -399,6 +402,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_a1_notation_macros() {
         assert_eq!(col![A], 0);
         assert_eq!(col![C], 2);
@@ -414,11 +418,13 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_date_string() {
         assert_eq!(date_string().len(), 19);
     }
 
     #[test]
+    #[parallel]
     fn test_round() {
         assert_eq!(round(1.23456789, 0), 1.0);
         assert_eq!(round(1.23456789, 1), 1.2);
@@ -428,6 +434,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_unused_name() {
         let used = ["Sheet 1", "Sheet 2"];
         assert_eq!(unused_name("Sheet", &used), "Sheet 3");

@@ -283,10 +283,11 @@ mod tests {
         CellValue, CodeCellValue, Pos, SheetPos,
     };
     use bigdecimal::BigDecimal;
-    use serial_test::serial;
+    use serial_test::{parallel, serial};
     use uuid::Uuid;
 
     #[test]
+    #[parallel]
     fn test_multiplayer_hello_world() {
         let mut gc1 = GridController::test();
         let sheet_id = gc1.sheet_ids()[0];
@@ -330,6 +331,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_apply_multiplayer_before_unsaved_transaction() {
         let mut gc1 = GridController::test();
         let sheet_id = gc1.sheet_ids()[0];
@@ -381,6 +383,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_server_apply_transaction() {
         let mut client = GridController::test();
         let sheet_id = client.sheet_ids()[0];
@@ -413,6 +416,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_handle_receipt_of_earlier_transactions() {
         // client is where the multiplayer transactions are applied from other
         let mut client = GridController::test();
@@ -467,6 +471,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_handle_receipt_of_out_of_order_transactions() {
         // client is where the multiplayer transactions are applied from other
         let mut client = GridController::test();
@@ -528,6 +533,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_handle_receipt_of_earlier_transactions_and_out_of_order_transactions() {
         let mut client = GridController::test();
         let sheet_id = client.sheet_ids()[0];
@@ -692,6 +698,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_receive_multiplayer_while_waiting_for_async() {
         let mut client = GridController::test();
         let sheet_id = client.sheet_ids()[0];
@@ -777,6 +784,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_receive_overlapping_multiplayer_while_waiting_for_async() {
         // Unlike previous test, we receive a multiplayer transaction that will be underneath the async code_cell.
         // We expect the async code_cell to overwrite it when it completes.
@@ -963,6 +971,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn python_multiple_calculations_receive_back_afterwards() {
         let mut gc = GridController::test();
         let (transaction_id_0, operations_0) = create_multiple_calculations_0(&mut gc);
@@ -999,6 +1008,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_python_multiple_calculations_receive_back_between() {
         let mut gc = GridController::test();
         let (transaction_id_0, operations_0) = create_multiple_calculations_0(&mut gc);
@@ -1026,6 +1036,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_receive_offline_unsaved_transaction() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -1059,6 +1070,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn ensure_code_run_ordering_is_maintained_for_undo() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -1136,6 +1148,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn receive_our_transactions_out_of_order() {
         let mut gc = GridController::test();
         let (transaction_id_0, operations_0) = create_multiple_calculations_0(&mut gc);
