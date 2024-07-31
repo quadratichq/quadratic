@@ -18,6 +18,7 @@ import { RenderBitmapChar } from '../../renderBitmapFonts';
 import { CellsLabels } from './CellsLabels';
 import { LabelMeshes } from './LabelMeshes';
 import { extractCharCode, splitTextToCharacters } from './bitmapTextUtils';
+import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 
 interface CharRenderData {
   charData: RenderBitmapChar;
@@ -42,6 +43,10 @@ const fontSize = 14;
 export class CellLabel {
   private cellsLabels: CellsLabels;
   position = new Point();
+
+  // track whether the cell is a dropdown list; if so, we have to clip the text
+  // to fit the dropdown image
+  private dropdown: boolean;
 
   visible = true;
 
@@ -95,6 +100,7 @@ export class CellLabel {
   constructor(cellsLabels: CellsLabels, cell: JsRenderCell, screenRectangle: Rectangle) {
     this.cellsLabels = cellsLabels;
     this.text = this.getText(cell);
+    this.dropdown = cell.special === 'List';
     this.fontSize = fontSize;
     this.roundPixels = true;
     this.maxWidth = 0;
@@ -170,6 +176,10 @@ export class CellLabel {
   }
 
   checkRightClip(nextLeft: number): boolean | 'same' {
+    if (this.dropdown) {
+      this.clipRight = this.AABB.right - DROPDOWN_SIZE[0] - DROPDOWN_PADDING[0];
+      return false;
+    }
     if (this.overflowRight && this.AABB.right + this.overflowRight > nextLeft) {
       if (this.clipRight !== nextLeft) {
         this.clipRight = nextLeft;
