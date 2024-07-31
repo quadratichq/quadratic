@@ -23,7 +23,7 @@ impl GridController {
         // stop the computation cycle until async returns
         transaction.current_sheet_pos = Some(sheet_pos);
         transaction.waiting_for_async = Some(CodeCellLanguage::Python);
-        transaction.has_async = true;
+        self.transactions.add_async_transaction(transaction);
     }
 }
 
@@ -38,8 +38,10 @@ mod tests {
         ArraySize, CellValue, Pos, Rect,
     };
     use bigdecimal::BigDecimal;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_run_python() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -53,6 +55,7 @@ mod tests {
         gc.set_code_cell(sheet_pos, CodeCellLanguage::Python, code.clone(), None);
 
         let transaction = gc.async_transactions().first().unwrap();
+        let transaction_id = transaction.id;
         gc.calculation_complete(JsCodeResult::new(
             transaction.id.to_string(),
             true,
@@ -83,9 +86,14 @@ mod tests {
             Some(CellValue::Text("test".to_string()))
         );
         assert!(!code_run.spill_error);
+
+        // transaction should be completed
+        let async_transaction = gc.transactions.get_async_transaction(transaction_id);
+        assert!(async_transaction.is_err());
     }
 
     #[test]
+    #[parallel]
     fn test_python_hello_world() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -120,9 +128,14 @@ mod tests {
             sheet.get_code_cell_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Text("hello world".into()))
         );
+
+        // transaction should be completed
+        let async_transaction = gc.transactions.get_async_transaction(transaction_id);
+        assert!(async_transaction.is_err());
     }
 
     #[test]
+    #[parallel]
     fn test_python_addition_with_cell_reference() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -188,9 +201,14 @@ mod tests {
             sheet.display_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(10)))
         );
+
+        // transaction should be completed
+        let async_transaction = gc.transactions.get_async_transaction(transaction_id);
+        assert!(async_transaction.is_err());
     }
 
     #[test]
+    #[parallel]
     fn test_python_cell_reference_change() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -281,6 +299,10 @@ mod tests {
             sheet.display_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(11)))
         );
+
+        // transaction should be completed
+        let async_transaction = gc.transactions.get_async_transaction(transaction_id);
+        assert!(async_transaction.is_err());
     }
 
     fn python_array(input: Vec<isize>) -> Vec<Vec<Vec<String>>> {
@@ -291,6 +313,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_python_array_output_variable_length() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -334,9 +357,14 @@ mod tests {
         );
         assert_eq!(cells[1], JsRenderCell::new_number(0, 1, 2, None));
         assert_eq!(cells[2], JsRenderCell::new_number(0, 2, 3, None));
+
+        // transaction should be completed
+        let async_transaction = gc.transactions.get_async_transaction(transaction_id);
+        assert!(async_transaction.is_err());
     }
 
     #[test]
+    #[parallel]
     fn test_python_cancellation() {
         // creates a dummy python program
         let mut gc = GridController::test();
@@ -371,9 +399,14 @@ mod tests {
             .display_value(Pos { x: 0, y: 0 })
             .unwrap()
             .is_blank_or_empty_string());
+
+        // transaction should be completed
+        let async_transaction = gc.transactions.get_async_transaction(transaction_id);
+        assert!(async_transaction.is_err());
     }
 
     #[test]
+    #[parallel]
     fn test_python_does_not_replace_output_until_complete() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -496,9 +529,14 @@ mod tests {
             sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("new output second time".into()))
         );
+
+        // transaction should be completed
+        let async_transaction = gc.transactions.get_async_transaction(transaction_id);
+        assert!(async_transaction.is_err());
     }
 
     #[test]
+    #[parallel]
     fn test_python_multiple_calculations() {
         // Tests in column 0, and y: 0 = "1", y: 1 = "c(0,0) + 1", y: 2 = "c(0, 1) + 1"
         let mut gc = GridController::test();
@@ -608,5 +646,9 @@ mod tests {
             sheet.display_value(Pos { x: 0, y: 2 }),
             Some(CellValue::Number(BigDecimal::from(3)))
         );
+
+        // transaction should be completed
+        let async_transaction = gc.transactions.get_async_transaction(transaction_id);
+        assert!(async_transaction.is_err());
     }
 }

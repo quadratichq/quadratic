@@ -8,6 +8,7 @@ import {
   ClientRenderViewport,
   RenderClientColumnMaxWidth,
   RenderClientMessage,
+  RenderClientRowMaxHeight,
 } from './renderClientMessages';
 
 class RenderWebWorker {
@@ -108,6 +109,16 @@ class RenderWebWorker {
     });
   }
 
+  updateSheetOffsetsFinal(sheetId: string, column: number | undefined, row: number | undefined, delta: number) {
+    this.send({
+      type: 'clientRenderSheetOffsetsFinal',
+      sheetId,
+      column,
+      row,
+      delta,
+    });
+  }
+
   showLabel(sheetId: string, x: number, y: number, show: boolean) {
     this.send({
       type: 'clientRenderShowLabel',
@@ -127,6 +138,19 @@ class RenderWebWorker {
         id,
         sheetId,
         column,
+      });
+    });
+  }
+
+  getCellsRowMaxHeight(sheetId: string, row: number): Promise<number> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: RenderClientRowMaxHeight) => resolve(message.maxHeight);
+      this.send({
+        type: 'clientRenderRowMaxHeight',
+        id,
+        sheetId,
+        row,
       });
     });
   }
