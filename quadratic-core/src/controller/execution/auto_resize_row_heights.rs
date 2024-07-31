@@ -558,7 +558,7 @@ mod tests {
                 row: None,
                 column: Some(0),
                 old_size: gc.sheet(sheet_id).offsets.column_width(0),
-                new_size: 100.0,
+                new_size: 120.0,
             },
             None,
         );

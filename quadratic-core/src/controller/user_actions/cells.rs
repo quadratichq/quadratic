@@ -71,8 +71,6 @@ mod test {
     use bigdecimal::BigDecimal;
     use serial_test::parallel;
 
-    use serial_test::parallel;
-
     #[test]
     #[parallel]
     fn test_set_cell_value_undo_redo() {
