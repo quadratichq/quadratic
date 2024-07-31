@@ -15,11 +15,12 @@ import {
   RenderClientLabelMeshEntry,
 } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { Container, Graphics, Rectangle } from 'pixi.js';
+import { Container, Graphics, Point, Rectangle } from 'pixi.js';
 import { CellsSheet } from '../CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 import { CellsTextHash } from './CellsTextHash';
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
+import { events } from '@/app/events/events';
 
 export class CellsLabels extends Container {
   private cellsSheet: CellsSheet;
@@ -41,6 +42,8 @@ export class CellsLabels extends Container {
     this.cellsTextHashes = this.addChild(new Container<CellsTextHash>());
     this.cellsTextDebug = this.addChild(new Graphics());
     this.cellsTextHashDebug = this.addChild(new Container());
+
+    events.on('pointerDown', this.pointerDown);
   }
 
   get sheetId(): string {
@@ -146,6 +149,11 @@ export class CellsLabels extends Container {
     return await renderWebWorker.getCellsColumnMaxWidth(this.sheetId, column);
   }
 
+  private getHash(x: number, y: number): CellsTextHash | undefined {
+    const hash = CellsLabels.getHash(x, y);
+    return this.cellsTextHash.get(`${hash.x},${hash.y}`);
+  }
+
   unload(hashX: number, hashY: number) {
     const key = `${hashX},${hashY}`;
     const cellsTextHash = this.cellsTextHash.get(key);
@@ -153,4 +161,12 @@ export class CellsLabels extends Container {
       cellsTextHash.clear();
     }
   }
+
+  private pointerDown = (column: number, row: number, world: Point) => {
+    if (sheets.sheet.id !== this.sheetId) return;
+    const hash = this.getHash(column, row);
+    if (hash) {
+      hash.special.pointerDown(column, row, world);
+    }
+  };
 }

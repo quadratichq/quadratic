@@ -7,6 +7,7 @@ import { pixiApp } from '../../pixiApp/PixiApp';
 import { PanMode, pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
+import { events } from '@/app/events/events';
 
 const MINIMUM_MOVE_POSITION = 5;
 
@@ -146,6 +147,7 @@ export class PointerDown {
       columnRow: event.metaKey || event.ctrlKey ? cursor.columnRow : null,
       ensureVisible: false,
     });
+    events.emit('pointerDown', column, row, world);
     this.pointerMoved = false;
   }
 

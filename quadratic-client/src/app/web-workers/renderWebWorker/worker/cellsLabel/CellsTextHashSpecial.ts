@@ -7,6 +7,9 @@ export interface RenderSpecial {
 }
 
 export interface RenderCheckbox {
+  column: number;
+  row: number;
+
   // this is the center of the cell that the checkbox will be rendered in
   x: number;
   y: number;
@@ -14,6 +17,9 @@ export interface RenderCheckbox {
 }
 
 export interface RenderDropdown {
+  column: number;
+  row: number;
+
   // this is the top-right corner of the cell where the list indicator will render
   x: number;
   y: number;
@@ -31,12 +37,12 @@ export class CellsTextHashSpecial {
     this.special = { checkboxes: [], dropdowns: [] };
   }
 
-  addCheckbox(x: number, y: number, value: boolean) {
-    this.special.checkboxes.push({ x, y, value });
+  addCheckbox(column: number, row: number, x: number, y: number, value: boolean) {
+    this.special.checkboxes.push({ column, row, x, y, value });
   }
 
-  addDropdown(x: number, y: number) {
-    this.special.dropdowns.push({ x, y });
+  addDropdown(column: number, row: number, x: number, y: number) {
+    this.special.dropdowns.push({ column, row, x, y });
   }
 
   isEmpty() {

@@ -91,16 +91,20 @@ export class CellsTextHash {
 
   private createLabel(cell: JsRenderCell) {
     const rectangle = this.cellsLabels.getCellOffsets(Number(cell.x), Number(cell.y));
-    const cellLabel = new CellLabel(this.cellsLabels, cell, rectangle);
-    this.labels.set(this.getKey(cell), cellLabel);
+    if (cell.special !== 'Checkbox') {
+      const cellLabel = new CellLabel(this.cellsLabels, cell, rectangle);
+      this.labels.set(this.getKey(cell), cellLabel);
+    }
     if (cell.special === 'Checkbox') {
       this.special.addCheckbox(
+        Number(cell.x),
+        Number(cell.y),
         rectangle.left + rectangle.width / 2,
         rectangle.top + rectangle.height / 2,
         cell.value === 'true'
       );
     } else if (cell.special === 'List') {
-      this.special.addDropdown(rectangle.right, rectangle.top);
+      this.special.addDropdown(Number(cell.x), Number(cell.y), rectangle.right, rectangle.top);
     }
   }
 
@@ -145,8 +149,8 @@ export class CellsTextHash {
         cells = false;
       } else {
         cells = dirty as JsRenderCell[];
+        this.special.clear();
       }
-      this.special.clear();
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating ${this.hashX}, ${this.hashY}`);
       if (cells) {
         await this.createLabels(cells);

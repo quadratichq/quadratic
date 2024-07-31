@@ -24,6 +24,7 @@ import {
   CoreClientTransactionStart,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import EventEmitter from 'eventemitter3';
+import { Point } from 'pixi.js';
 
 interface EventTypes {
   needRefresh: (state: 'required' | 'recommended' | 'force') => void;
@@ -99,6 +100,9 @@ interface EventTypes {
   insertCodeEditorText: (text: string) => void;
 
   sheetValidations: (sheetId: string, validations: Validation[]) => void;
+
+  // pointer down on the grid
+  pointerDown: (column: number, row: number, world: Point) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

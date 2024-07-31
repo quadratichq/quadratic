@@ -27,7 +27,7 @@ export class CellsTextHash extends Container {
   private entries: Container<LabelMeshEntry>;
 
   // draws special text (ie, checkboxes and dropdown list indicator)
-  private special: CellsTextHashSpecial;
+  special: CellsTextHashSpecial;
 
   hashX: number;
   hashY: number;
