@@ -92,6 +92,13 @@ export class CellsSheets extends Container<CellsSheet> {
     if (debugShowCellsHashBoxes && sheets.sheet.id === message.sheetId) {
       pixiApp.setViewportDirty();
     }
+
+    const sheet = sheets.getById(message.sheetId);
+    if (!sheet) {
+      throw new Error('Expected to find sheet in cellsTextHashClear');
+    }
+    const key = `${message.hashX},${message.hashY}`;
+    sheet.gridOverflowLines.updateHash(key, message.overflowGridLines);
   }
 
   labelMeshEntry(message: RenderClientLabelMeshEntry) {
