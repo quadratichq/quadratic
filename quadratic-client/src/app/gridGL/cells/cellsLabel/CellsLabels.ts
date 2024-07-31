@@ -19,6 +19,7 @@ import { Container, Graphics, Rectangle } from 'pixi.js';
 import { CellsSheet } from '../CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 import { CellsTextHash } from './CellsTextHash';
+import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
 
 export class CellsLabels extends Container {
   private cellsSheet: CellsSheet;
@@ -77,11 +78,11 @@ export class CellsLabels extends Container {
     cellsTextHash.addLabelMeshEntry(message);
   }
 
-  finalizeCellsTextHash(hashX: number, hashY: number) {
+  finalizeCellsTextHash(hashX: number, hashY: number, special?: RenderSpecial) {
     const key = `${hashX},${hashY}`;
     const cellsTextHash = this.cellsTextHash.get(key);
     if (cellsTextHash) {
-      cellsTextHash.finalizeLabelMeshEntries();
+      cellsTextHash.finalizeLabelMeshEntries(special);
 
       // refresh viewport if necessary
       if (sheets.sheet.id === this.cellsSheet.sheetId) {

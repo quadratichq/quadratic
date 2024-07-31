@@ -1,5 +1,6 @@
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from './renderBitmapFonts';
+import type { RenderSpecial } from './worker/cellsLabel/CellsTextHashSpecial';
 
 export interface ClientRenderInit {
   type: 'clientRenderInit';
@@ -60,6 +61,7 @@ export interface RenderClientFinalizeCellsTextHash {
   sheetId: string;
   hashX: number;
   hashY: number;
+  special?: RenderSpecial;
 }
 
 export interface ClientRenderShowLabel {

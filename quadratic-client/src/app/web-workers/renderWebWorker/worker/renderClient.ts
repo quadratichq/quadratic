@@ -15,6 +15,7 @@ import {
 } from '../renderClientMessages';
 import { renderCore } from './renderCore';
 import { renderText } from './renderText';
+import { RenderSpecial } from './cellsLabel/CellsTextHashSpecial';
 
 declare var self: WorkerGlobalScope & typeof globalThis;
 
@@ -97,8 +98,8 @@ class RenderClient {
     this.send({ type: 'renderClientUnload', sheetId, hashX, hashY });
   }
 
-  finalizeCellsTextHash(sheetId: string, hashX: number, hashY: number) {
-    this.send({ type: 'renderClientFinalizeCellsTextHash', sheetId, hashX, hashY });
+  finalizeCellsTextHash(sheetId: string, hashX: number, hashY: number, special?: RenderSpecial) {
+    this.send({ type: 'renderClientFinalizeCellsTextHash', sheetId, hashX, hashY, special });
   }
 
   sendColumnMaxWidth(id: number, maxWidth: number) {

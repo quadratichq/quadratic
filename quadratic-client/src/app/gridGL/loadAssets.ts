@@ -46,7 +46,13 @@ export function loadAssets(): Promise<void> {
     Loader.shared.add('/images/python-icon.png');
     Loader.shared.add('/images/javascript-icon.png');
 
+    Loader.shared.add('/images/checkbox.png');
+    Loader.shared.add('/images/checkbox-checked.png');
+    Loader.shared.add('/images/dropdown.png');
+
     // Wait until pixi fonts are loaded before resolving
-    Loader.shared.load(() => ensureBitmapFontLoaded(resolve));
+    Loader.shared.load(() => {
+      ensureBitmapFontLoaded(resolve);
+    });
   });
 }

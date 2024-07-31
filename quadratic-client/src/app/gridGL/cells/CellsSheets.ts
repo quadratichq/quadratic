@@ -158,7 +158,7 @@ export class CellsSheets extends Container<CellsSheet> {
   finalizeCellsTextHash(message: RenderClientFinalizeCellsTextHash) {
     const cellsSheet = this.getById(message.sheetId);
     if (cellsSheet) {
-      cellsSheet.cellsLabels.finalizeCellsTextHash(message.hashX, message.hashY);
+      cellsSheet.cellsLabels.finalizeCellsTextHash(message.hashX, message.hashY, message.special);
     }
   }
 

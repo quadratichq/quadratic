@@ -15,11 +15,19 @@ import { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/re
 import { BitmapText, Container, Graphics, Rectangle, Renderer } from 'pixi.js';
 import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 import { LabelMeshEntry } from './LabelMeshEntry';
+import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
+import { CellsTextHashSpecial } from './CellsTextHashSpecial';
 
 // Draw hashed regions of cell glyphs (the text + text formatting)
-export class CellsTextHash extends Container<LabelMeshEntry> {
+export class CellsTextHash extends Container {
   // holds replacement LabelMeshEntry objects that will replace the current children once we receive them all
   private newChildren: LabelMeshEntry[] = [];
+
+  // draws the text
+  private entries: Container<LabelMeshEntry>;
+
+  // draws special text (ie, checkboxes and dropdown list indicator)
+  private special: CellsTextHashSpecial;
 
   hashX: number;
   hashY: number;
@@ -39,20 +47,25 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
     this.viewRectangle = viewRectangle;
     this.hashX = hashX;
     this.hashY = hashY;
+
+    this.entries = this.addChild(new Container<LabelMeshEntry>());
+    this.special = this.addChild(new CellsTextHashSpecial());
   }
 
   clear() {
-    this.removeChildren();
+    this.entries.removeChildren();
+    this.special.clear();
   }
 
   addLabelMeshEntry(message: RenderClientLabelMeshEntry) {
     this.newChildren.push(new LabelMeshEntry(message));
   }
 
-  finalizeLabelMeshEntries() {
-    this.removeChildren();
-    this.newChildren.forEach((child) => this.addChild(child));
+  finalizeLabelMeshEntries(special?: RenderSpecial) {
+    this.entries.removeChildren();
+    this.newChildren.forEach((child) => this.entries.addChild(child));
     this.newChildren = [];
+    this.special.update(special);
   }
 
   clearMeshEntries(viewRectangle: Rectangle) {
@@ -76,7 +89,7 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
       const worldScale = (Math.abs(dx) + Math.abs(dy)) / 2;
       const resolution = renderer.resolution;
       const scale = worldScale * resolution;
-      this.children.forEach((child) => child.setUniforms(scale));
+      this.entries.children.forEach((child) => child.setUniforms(scale));
       super.render(renderer);
     }
   }

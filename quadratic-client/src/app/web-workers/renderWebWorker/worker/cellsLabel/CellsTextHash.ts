@@ -18,6 +18,7 @@ import { renderCore } from '../renderCore';
 import { CellLabel } from './CellLabel';
 import { CellsLabels } from './CellsLabels';
 import { LabelMeshes } from './LabelMeshes';
+import { CellsTextHashSpecial } from './CellsTextHashSpecial';
 
 interface TrackClip {
   column: number;
@@ -55,6 +56,8 @@ export class CellsTextHash {
   // screen coordinates
   viewRectangle: Rectangle;
 
+  special: CellsTextHashSpecial;
+
   // keep track of what neighbors we've clipped
   leftClip: TrackClip[] = [];
   rightClip: TrackClip[] = [];
@@ -74,6 +77,7 @@ export class CellsTextHash {
     this.viewRectangle = new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
     this.hashX = hashX;
     this.hashY = hashY;
+    this.special = new CellsTextHashSpecial();
   }
 
   // key used to find individual cell labels
@@ -89,6 +93,15 @@ export class CellsTextHash {
     const rectangle = this.cellsLabels.getCellOffsets(Number(cell.x), Number(cell.y));
     const cellLabel = new CellLabel(this.cellsLabels, cell, rectangle);
     this.labels.set(this.getKey(cell), cellLabel);
+    if (cell.special === 'Checkbox') {
+      this.special.addCheckbox(
+        rectangle.left + rectangle.width / 2,
+        rectangle.top + rectangle.height / 2,
+        cell.value === 'true'
+      );
+    } else if (cell.special === 'List') {
+      this.special.addDropdown(rectangle.right, rectangle.top);
+    }
   }
 
   async createLabels(cells: JsRenderCell[]) {
@@ -279,7 +292,12 @@ export class CellsTextHash {
     this.labelMeshes.finalize();
 
     // signals that all updates have been sent to the client
-    renderClient.finalizeCellsTextHash(this.cellsLabels.sheetId, this.hashX, this.hashY);
+    renderClient.finalizeCellsTextHash(
+      this.cellsLabels.sheetId,
+      this.hashX,
+      this.hashY,
+      this.special.isEmpty() ? undefined : this.special.special
+    );
 
     this.loaded = true;
     this.dirtyBuffers = false;

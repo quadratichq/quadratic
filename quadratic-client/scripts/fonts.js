@@ -8,8 +8,6 @@ const fontDirectory = path.join('public', 'fonts');
 const fontFamilies = ['opensans'];
 const fontFiles = ['OpenSans', 'OpenSans-Bold', 'OpenSans-Italic', 'OpenSans-BoldItalic'];
 
-const charSet = [''];
-
 async function cleanOldFiles() {
   console.log('Removing old files...');
   for (const family of fontFamilies) {
