@@ -62,6 +62,11 @@ impl GridController {
                     if !transaction.is_server() {
                         self.send_updated_bounds(sheet_rect.sheet_id);
                         self.send_render_cells(&sheet_rect);
+                        self.start_auto_resize_row_heights(
+                            transaction,
+                            sheet_pos.sheet_id,
+                            sheet_rect.y_range().collect(),
+                        );
                     }
                 }
             }
@@ -75,7 +80,10 @@ mod tests {
 
     use crate::{controller::GridController, grid::SheetId, CellValue, Pos, SheetPos};
 
+    use serial_test::parallel;
+
     #[test]
+    #[parallel]
     fn test_set_cell_value() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -113,6 +121,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_set_cell_values_no_sheet() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -149,8 +158,10 @@ mod test {
     use super::*;
     use crate::{grid::CodeCellLanguage, CellValue, SheetPos};
     use bigdecimal::BigDecimal;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_set_cell_values_code_cell_remove() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -175,6 +186,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_set_cell_values_undo() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -193,6 +205,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn dependencies_properly_trigger_on_set_cell_values() {
         let mut gc = GridController::test();
         gc.set_cell_value(

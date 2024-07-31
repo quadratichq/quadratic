@@ -36,6 +36,7 @@ mod tests {
         },
         CodeCellValue, Pos, SheetPos, SheetRect,
     };
+    use serial_test::parallel;
 
     fn test_setup_rect(selection: &Rect) -> (GridController, SheetId) {
         let vals = vec!["a", "h", "x", "g", "f", "z", "r", "b"];
@@ -110,6 +111,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_cell_values_in_rect() {
         let selected: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 2, y: 1 });
         let (grid_controller, sheet_id) = test_setup_rect(&selected);
@@ -124,6 +126,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_expand_code_cell() {
         let selected: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 1 });
         let range: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 10, y: 10 });
@@ -148,6 +151,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_expand_left_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: -3, y: 1 }, Pos { x: 5, y: 2 });
@@ -172,6 +176,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_expand_right_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 10, y: 2 });
@@ -195,6 +200,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_expand_up_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: -7 }, Pos { x: 5, y: 2 });
@@ -223,6 +229,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_expand_down_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 10 });
@@ -251,6 +258,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_expand_down_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(selected.min, Pos { x: 14, y: 10 });
@@ -269,6 +277,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_expand_formatting_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let vals = vec!["", "", "", "", "", "", "", ""];
@@ -334,6 +343,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_expand_up_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: -7 }, Pos { x: 10, y: 3 });
@@ -356,6 +366,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_expand_down_and_left() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: -7, y: 20 }, Pos { x: 5, y: 10 });
@@ -382,6 +393,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_expand_up_and_left() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: -7, y: -7 }, selected.max);
@@ -404,6 +416,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_expand_horizontal_series_down_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 9, y: 10 });
@@ -429,6 +442,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_expand_horizontal_series_up_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 6, y: 15 }, Pos { x: 9, y: 19 });
         let range: Rect = Rect::new_span(Pos { x: 6, y: 12 }, Pos { x: 15, y: 19 });
@@ -457,6 +471,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_expand_horizontal_series_up_and_left() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
         let range: Rect = Rect::new_span(Pos { x: -4, y: -8 }, Pos { x: 5, y: 6 });
@@ -491,6 +506,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_expand_vertical_series_down_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 2, y: 4 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 9, y: 10 });
@@ -505,6 +521,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_shrink_width() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 7 });
@@ -539,6 +556,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_shrink_height() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 7 });
@@ -570,6 +588,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_shrink_width_and_height() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 7 });
@@ -601,6 +620,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_autocomplete_sheet_id_not_found() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 7 });

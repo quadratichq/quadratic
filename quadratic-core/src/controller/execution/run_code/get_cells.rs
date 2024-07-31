@@ -94,7 +94,7 @@ impl GridController {
             .cells_accessed
             .insert(rect.to_sheet_rect(sheet.id));
 
-        self.transactions.add_async_transaction(&transaction);
+        self.transactions.add_async_transaction(&mut transaction);
 
         Ok(response)
     }
@@ -104,8 +104,10 @@ impl GridController {
 mod test {
     use super::*;
     use crate::{grid::CodeCellLanguage, Pos, Rect, SheetPos};
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_calculation_get_cells_bad_transaction_id() {
         let mut gc = GridController::test();
 
@@ -122,6 +124,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_calculation_get_cells_no_transaction() {
         let mut gc = GridController::test();
 
@@ -131,6 +134,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_calculation_get_cells_transaction_but_no_current_sheet_pos() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -153,6 +157,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_calculation_get_cells_sheet_name_not_found() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -191,6 +196,7 @@ mod test {
     // This was previously disallowed. It is now allowed to unlock appending results.
     // Leaving in some commented out code in case we want to revert this behavior.
     #[test]
+    #[parallel]
     fn test_calculation_get_cells_self_reference() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -236,6 +242,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_calculation_get_cells() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -276,6 +283,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn calculation_get_cells_with_no_y1() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

@@ -1,4 +1,5 @@
 import { events } from '@/app/events/events';
+import { GridOverflowLines } from '@/app/grid/sheet/GridOverflowLines';
 import { ColumnRow, GridBounds, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -19,6 +20,9 @@ export class Sheet {
   bounds: GridBounds;
   boundsWithoutFormatting: GridBounds;
 
+  // tracks which Grid lines should not be drawn b/c of overflow
+  gridOverflowLines: GridOverflowLines;
+
   constructor(info: SheetInfo, testSkipOffsetsLoad = false) {
     this.id = info.sheet_id;
     this.name = info.name;
@@ -28,6 +32,7 @@ export class Sheet {
     this.cursor = new SheetCursor(this);
     this.bounds = info.bounds;
     this.boundsWithoutFormatting = info.bounds_without_formatting;
+    this.gridOverflowLines = new GridOverflowLines();
     events.on('sheetBounds', this.updateBounds);
   }
 

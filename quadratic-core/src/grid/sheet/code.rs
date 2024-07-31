@@ -206,9 +206,11 @@ mod test {
     };
     use bigdecimal::BigDecimal;
     use chrono::Utc;
+    use serial_test::parallel;
     use std::{collections::HashSet, vec};
 
     #[test]
+    #[parallel]
     fn test_render_size() {
         use crate::Pos;
 
@@ -240,6 +242,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_set_code_run() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -264,6 +267,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_get_code_run() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -290,6 +294,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_edit_code_value() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -348,6 +353,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn edit_code_value_spill() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -382,6 +388,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn code_columns_bounds() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -416,6 +423,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn code_row_bounds() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

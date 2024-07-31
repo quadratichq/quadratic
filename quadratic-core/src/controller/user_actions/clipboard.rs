@@ -61,6 +61,7 @@ mod test {
         CellValue, CodeCellValue, Pos, Rect, SheetPos, SheetRect,
     };
     use bigdecimal::BigDecimal;
+    use serial_test::parallel;
 
     fn set_borders(sheet: &mut Sheet) {
         let selection = vec![BorderSelection::All];
@@ -99,6 +100,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_copy_to_clipboard() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -184,6 +186,9 @@ mod test {
                 text_color: None,
                 fill_color: None,
                 commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None
             }
         );
         assert_eq!(
@@ -198,11 +203,15 @@ mod test {
                 text_color: None,
                 fill_color: None,
                 commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None
             }
         );
     }
 
     #[test]
+    #[parallel]
     fn test_copy_code_to_clipboard() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -294,6 +303,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_copy_code_to_clipboard_with_array_output() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -356,6 +366,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_copy_borders_to_clipboard() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -393,6 +404,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_copy_borders_inside() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -486,6 +498,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_paste_from_quadratic_clipboard() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -549,6 +562,7 @@ mod test {
     // paste the code cell (0,1) => A0 from the clipboard to (1,1),
     // expect value to change to 2
     #[test]
+    #[parallel]
     fn test_paste_relative_code_from_quadratic_clipboard() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -602,6 +616,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn paste_special_values() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -653,6 +668,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn paste_special_formats() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -711,6 +727,9 @@ mod test {
                 text_color: None,
                 fill_color: None,
                 commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None
             }
         );
         assert_eq!(
@@ -721,11 +740,15 @@ mod test {
                 text_color: None,
                 fill_color: None,
                 commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None
             }
         );
     }
 
     #[test]
+    #[parallel]
     fn copy_part_of_code_run() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -772,6 +795,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn move_cells() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -813,6 +837,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn copy_cell_formats() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -860,6 +885,9 @@ mod test {
                 text_color: None,
                 fill_color: None,
                 commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None
             }
         );
         assert_eq!(
@@ -870,6 +898,9 @@ mod test {
                 text_color: None,
                 fill_color: Some("red".to_string()),
                 commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None
             }
         );
     }
