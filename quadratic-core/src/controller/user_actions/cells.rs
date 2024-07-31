@@ -71,7 +71,10 @@ mod test {
     use bigdecimal::BigDecimal;
     use serial_test::parallel;
 
+    use serial_test::parallel;
+
     #[test]
+    #[parallel]
     fn test_set_cell_value_undo_redo() {
         let mut g = GridController::test();
         let sheet_id = g.grid.sheets()[0].id;
@@ -131,6 +134,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_unpack_currency() {
         let value = String::from("$123.123");
         assert_eq!(
@@ -149,6 +153,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_set_cell_value() {
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
@@ -224,6 +229,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn clear_formatting() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

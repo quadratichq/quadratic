@@ -56,8 +56,10 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn override_cell_formats() {
         let sheet = Sheet::test();
         let rect = Rect::from_numbers(0, 0, 2, 2);
@@ -66,6 +68,7 @@ mod tests {
         assert_eq!(formats.size(), 4);
         let format = formats.get_at(0).unwrap();
         assert_eq!(format.align, Some(None));
+        assert_eq!(format.vertical_align, Some(None));
         assert_eq!(format.wrap, Some(None));
         assert_eq!(format.numeric_format, Some(None));
         assert_eq!(format.numeric_decimals, Some(None));

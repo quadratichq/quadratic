@@ -176,6 +176,11 @@ impl GridController {
             }
             self.send_updated_bounds_rect(&sheet_rect, false);
             self.send_render_cells(&sheet_rect);
+            self.start_auto_resize_row_heights(
+                transaction,
+                sheet_id,
+                sheet_rect.y_range().collect(),
+            );
         }
     }
 
@@ -198,35 +203,20 @@ impl GridController {
                 return Err(CoreError::TransactionNotFound("Expected transaction to be waiting_for_async to be defined in transaction::complete".into()));
             }
             Some(waiting_for_async) => match waiting_for_async {
-                CodeCellLanguage::Python => {
+                CodeCellLanguage::Python | CodeCellLanguage::Javascript => {
                     let new_code_run = self.js_code_result_to_code_cell_value(
                         transaction,
                         result,
                         current_sheet_pos,
                     );
 
+                    transaction.waiting_for_async = None;
                     self.finalize_code_run(
                         transaction,
                         current_sheet_pos,
                         Some(new_code_run),
                         None,
                     );
-                    transaction.waiting_for_async = None;
-                }
-                CodeCellLanguage::Javascript => {
-                    let new_code_run = self.js_code_result_to_code_cell_value(
-                        transaction,
-                        result,
-                        current_sheet_pos,
-                    );
-
-                    self.finalize_code_run(
-                        transaction,
-                        current_sheet_pos,
-                        Some(new_code_run),
-                        None,
-                    );
-                    transaction.waiting_for_async = None;
                 }
                 _ => {
                     return Err(CoreError::UnhandledLanguage(
@@ -305,8 +295,9 @@ impl GridController {
                 cells_accessed: transaction.cells_accessed.clone(),
             },
         };
-        self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
         transaction.waiting_for_async = None;
+        self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
+
         Ok(())
     }
 
@@ -400,13 +391,14 @@ impl GridController {
 mod test {
     use std::collections::HashSet;
 
-    use serial_test::serial;
+    use serial_test::{parallel, serial};
 
     use crate::{wasm_bindings::js::expect_js_call_count, CodeCellValue};
 
     use super::*;
 
     #[test]
+    #[parallel]
     fn test_finalize_code_cell() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];

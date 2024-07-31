@@ -19,6 +19,12 @@ impl GridController {
                 CellFmtArray::Align(align) => CellFmtArray::Align(
                     self.set_cell_formats_for_type::<CellAlign>(&sheet_rect, align),
                 ),
+                CellFmtArray::VerticalAlign(vertical_align) => CellFmtArray::VerticalAlign(
+                    self.set_cell_formats_for_type::<CellVerticalAlign>(
+                        &sheet_rect,
+                        vertical_align,
+                    ),
+                ),
                 CellFmtArray::Wrap(wrap) => CellFmtArray::Wrap(
                     self.set_cell_formats_for_type::<CellWrap>(&sheet_rect, wrap),
                 ),
@@ -74,6 +80,21 @@ impl GridController {
                     _ => {
                         self.send_updated_bounds_rect(&sheet_rect, true);
                         self.send_render_cells(&sheet_rect);
+                        if matches!(
+                            attr,
+                            CellFmtArray::Wrap(_)
+                                | CellFmtArray::NumericFormat(_)
+                                | CellFmtArray::NumericDecimals(_)
+                                | CellFmtArray::NumericCommas(_)
+                                | CellFmtArray::Bold(_)
+                                | CellFmtArray::Italic(_)
+                        ) {
+                            self.start_auto_resize_row_heights(
+                                transaction,
+                                sheet_rect.sheet_id,
+                                sheet_rect.y_range().collect(),
+                            );
+                        }
                     }
                 };
             }
@@ -102,13 +123,29 @@ impl GridController {
         if let Operation::SetCellFormatsSelection { selection, formats } = op {
             if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
                 let reverse_operations = sheet.set_formats_selection(&selection, &formats);
-
                 if reverse_operations.is_empty() {
                     return;
                 }
 
                 if !transaction.is_server() {
                     self.send_updated_bounds_selection(&selection, true);
+                    if formats.formats.iter_values().any(|f| {
+                        f.wrap.is_some()
+                            || f.numeric_format.is_some()
+                            || f.numeric_decimals.is_some()
+                            || f.numeric_commas.is_some()
+                            || f.bold.is_some()
+                            || f.italic.is_some()
+                    }) {
+                        if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+                            let rows = sheet.get_rows_in_selection(&selection);
+                            self.start_auto_resize_row_heights(
+                                transaction,
+                                selection.sheet_id,
+                                rows,
+                            );
+                        }
+                    }
                 }
 
                 transaction.generate_thumbnail |= self.thumbnail_dirty_selection(&selection);

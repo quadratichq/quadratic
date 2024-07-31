@@ -204,8 +204,10 @@ impl Sheet {
 mod tests {
     use super::*;
     use crate::Pos;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn format_all() {
         let mut sheet = Sheet::test();
         assert_eq!(sheet.format_all(), Format::default());
@@ -223,6 +225,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn find_overlapping_format_columns() {
         let mut sheet = Sheet::test();
         sheet.formats_columns.insert(
@@ -255,6 +258,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn find_overlapping_format_rows() {
         let mut sheet = Sheet::test();
         sheet.formats_rows.insert(
@@ -287,6 +291,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn find_overlapping_format_cells() {
         let mut sheet = Sheet::test();
         sheet.set_format_cell(
@@ -316,6 +321,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn set_format_all() {
         let mut sheet = Sheet::test();
         let formats = Formats::repeat(
@@ -363,6 +369,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn set_format_all_remove_columns_rows() {
         let mut sheet = Sheet::test();
         sheet.formats_columns.insert(
@@ -464,6 +471,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn set_format_all_remove_cell() {
         let mut sheet = Sheet::test();
         sheet.set_format_cell(

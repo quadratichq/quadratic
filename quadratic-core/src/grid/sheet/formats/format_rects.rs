@@ -67,7 +67,7 @@ impl Sheet {
 
 #[cfg(test)]
 mod test {
-    use serial_test::serial;
+    use serial_test::{parallel, serial};
 
     use super::*;
     use crate::{
@@ -118,8 +118,8 @@ mod test {
         expect_js_call("jsRenderCellSheets", args, true);
     }
 
-    #[serial]
     #[test]
+    #[serial]
     fn set_formats_selection_rect_html() {
         let mut sheet = Sheet::test();
         let pos = Pos { x: 1, y: 1 };
@@ -144,6 +144,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn set_format_rects_none() {
         let mut sheet = Sheet::test();
         let formats = Formats::repeat(

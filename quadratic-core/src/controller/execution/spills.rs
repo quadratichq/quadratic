@@ -90,24 +90,20 @@ mod tests {
             active_transactions::pending_transaction::PendingTransaction, GridController,
         },
         grid::{
-            js_types::{JsRenderCell, JsRenderCellSpecial},
+            js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial},
             CellAlign, CodeCellLanguage, CodeRun, CodeRunResult,
         },
         Array, CellValue, Pos, Rect, SheetPos, Value,
     };
+    use serial_test::parallel;
 
     fn output_spill_error(x: i64, y: i64) -> Vec<JsRenderCell> {
         vec![JsRenderCell {
             x,
             y,
             language: Some(CodeCellLanguage::Formula),
-            value: "".into(),
-            align: None,
-            wrap: None,
-            bold: None,
-            italic: None,
-            text_color: None,
             special: Some(JsRenderCellSpecial::SpillError),
+            ..Default::default()
         }]
     }
 
@@ -123,15 +119,13 @@ mod tests {
             language,
             value: n.into(),
             align: Some(CellAlign::Right),
-            wrap: None,
-            bold: None,
-            italic: None,
-            text_color: None,
-            special: None,
+            number: Some(JsNumber::default()),
+            ..Default::default()
         }]
     }
 
     #[test]
+    #[parallel]
     fn test_check_spills() {
         let mut gc = GridController::test();
         let mut transaction = PendingTransaction::default();
@@ -166,6 +160,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_check_all_spills() {
         let mut gc = GridController::test();
         let mut transaction = PendingTransaction::default();
@@ -210,6 +205,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_check_spills_by_code_run() {
         let mut gc = GridController::default();
         let sheet_id = gc.grid.sheet_ids()[0];
@@ -277,6 +273,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_check_spills_over_code() {
         let mut gc = GridController::default();
         let sheet_id = gc.grid.sheet_ids()[0];
@@ -331,6 +328,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_check_spills_over_code_array() {
         let mut gc = GridController::default();
         let sheet_id = gc.grid.sheet_ids()[0];
@@ -398,6 +396,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_check_deleted_code_runs() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];

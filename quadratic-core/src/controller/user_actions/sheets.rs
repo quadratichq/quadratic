@@ -51,8 +51,10 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{controller::GridController, grid::SheetId};
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_set_sheet_name() {
         let mut g = GridController::test();
         let old_sheet_ids = g.sheet_ids();
@@ -76,6 +78,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_set_sheet_color() {
         let mut g = GridController::test();
         let old_sheet_ids = g.sheet_ids();
@@ -111,6 +114,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_delete_sheet() {
         let mut g = GridController::test();
         let old_sheet_ids = g.sheet_ids();
@@ -133,6 +137,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_move_sheet_sheet_does_not_exist() {
         let mut g = GridController::test();
         g.add_sheet(None);
@@ -140,6 +145,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_add_delete_reorder_sheets() {
         let mut g = GridController::test();
         g.add_sheet(None);
@@ -190,6 +196,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_duplicate_sheet() {
         let mut g = GridController::test();
         let old_sheet_ids = g.sheet_ids();
@@ -209,6 +216,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_delete_last_sheet() {
         let mut g = GridController::test();
         let sheet_ids = g.sheet_ids();

@@ -354,6 +354,7 @@ pub fn get_series_next_key(last_key: &str, all_keys: &&[&str], negative: bool) -
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::parallel;
 
     fn cell_value_number(values: Vec<i32>) -> Vec<CellValue> {
         values
@@ -370,6 +371,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn copies_a_series() {
         let options = SeriesOptions {
             series: cell_value_number(vec![1, 2, 3]),
@@ -384,6 +386,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn copies_a_non_series() {
         let options = SeriesOptions {
             series: cell_value_text(vec!["a", "s", "d", "f"]),
@@ -398,6 +401,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn copies_a_non_series_negative() {
         let options = SeriesOptions {
             series: cell_value_text(vec!["a", "s", "d", "f"]),
@@ -412,6 +416,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn find_a_number_series_positive_addition_by_one() {
         let options = SeriesOptions {
             series: cell_value_number(vec![1, 2, 3]),
@@ -423,6 +428,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn find_a_number_series_positive_addition_by_two() {
         let options = SeriesOptions {
             series: cell_value_number(vec![2, 4, 6]),
@@ -434,6 +440,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn find_a_number_series_positive_addition_by_minus_one() {
         let options = SeriesOptions {
             series: cell_value_number(vec![6, 5, 4]),
@@ -445,6 +452,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn find_a_number_series_positive_addition_by_minus_two() {
         let options = SeriesOptions {
             series: cell_value_number(vec![6, 4, 2]),
@@ -456,6 +464,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn find_a_number_series_positive_addition_by_add_one_negative() {
         let options = SeriesOptions {
             series: cell_value_number(vec![1, 2, 3]),
@@ -467,6 +476,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn find_a_number_series_positive_addition_by_add_two_negative() {
         let options = SeriesOptions {
             series: cell_value_number(vec![2, 4, 6]),
@@ -478,6 +488,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn find_a_number_series_positive_addition_by_minus_one_negative() {
         let options = SeriesOptions {
             series: cell_value_number(vec![6, 5, 4]),
@@ -489,6 +500,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn find_a_number_series_positive_addition_by_minus_two_negative() {
         let options = SeriesOptions {
             series: cell_value_number(vec![6, 4, 2]),
@@ -500,6 +512,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn find_a_number_series_positive_positive_multiplication() {
         let options = SeriesOptions {
             series: cell_value_number(vec![2, 4, 8]),
@@ -511,6 +524,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn find_a_number_series_positive_descending_multiplication() {
         let options = SeriesOptions {
             series: cell_value_number(vec![128, 64, 32]),
@@ -522,6 +536,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn find_a_number_series_positive_positive_multiplication_negative() {
         let options = SeriesOptions {
             series: cell_value_number(vec![16, 32, 64, 128]),
@@ -533,6 +548,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn find_a_number_series_positive_descending_multiplication_negative() {
         let options = SeriesOptions {
             series: cell_value_number(vec![128, 64, 32]),
@@ -544,6 +560,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn find_a_text_series_lowercase_letters() {
         let options = SeriesOptions {
             series: cell_value_text(vec!["a", "b", "c"]),
@@ -555,6 +572,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn find_a_text_series_uppercase_letters() {
         let options = SeriesOptions {
             series: cell_value_text(vec!["A", "B", "C"]),
@@ -566,6 +584,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn find_a_text_series_uppercase_letters_with_wrap() {
         let options = SeriesOptions {
             series: cell_value_text(vec!["X", "Y", "Z"]),
@@ -577,6 +596,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn find_a_text_series_uppercase_letters_with_wrap_negative() {
         let options = SeriesOptions {
             series: cell_value_text(vec!["A", "B", "C"]),
@@ -588,6 +608,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn find_a_text_series_short_month() {
         let options = SeriesOptions {
             series: cell_value_text(vec!["Jan", "Feb", "Mar"]),
@@ -599,6 +620,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn find_a_text_series_uppercase_short_month_negative() {
         let options = SeriesOptions {
             series: cell_value_text(vec!["JAN", "FEB", "MAR"]),
@@ -610,6 +632,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn find_a_text_series_full_month() {
         let options = SeriesOptions {
             series: cell_value_text(vec!["January", "February"]),
@@ -621,6 +644,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn find_a_text_series_uppercase_full_month_negative_wrap() {
         let options = SeriesOptions {
             series: cell_value_text(vec!["FEBRUARY", "MARCH"]),
