@@ -53,7 +53,10 @@ export function QuadraticApp() {
   // wait for offline to finish loading
   useEffect(() => {
     if (offlineLoading) {
-      const updateOfflineLoading = (transactions: number) => setOfflineLoading(transactions > 0);
+      const updateOfflineLoading = (transactions: number) => {
+        console.log('offlineTransactions', transactions);
+        setOfflineLoading(transactions > 0);
+      };
       events.on('offlineTransactions', updateOfflineLoading);
       return () => {
         events.off('offlineTransactions', updateOfflineLoading);
@@ -64,7 +67,10 @@ export function QuadraticApp() {
   // wait for multiplayer to finish loading
   useEffect(() => {
     if (multiplayerLoading) {
-      const updateMultiplayerLoading = (state: MultiplayerState) => setMultiplayerLoading(state !== 'connected');
+      const updateMultiplayerLoading = (state: MultiplayerState) => {
+        console.log('multiplayerState', state);
+        setMultiplayerLoading(state !== 'connected');
+      };
       events.on('multiplayerState', updateMultiplayerLoading);
       return () => {
         events.off('multiplayerState', updateMultiplayerLoading);
