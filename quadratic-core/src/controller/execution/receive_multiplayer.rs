@@ -687,6 +687,7 @@ mod tests {
         );
 
         client.receive_sequence_num(2);
+
         expect_js_call("jsMultiplayerSynced", "".into(), true);
     }
 
