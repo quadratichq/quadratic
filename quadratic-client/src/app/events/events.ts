@@ -83,6 +83,7 @@ interface EventTypes {
   multiplayerCellEdit: (cellEdit: CellEdit, player: MultiplayerUser) => void;
   multiplayerFollow: () => void;
   multiplayerCodeRunning: (multiplayerUser: MultiplayerUser) => void;
+  multiplayerSynced: () => void;
 
   resizeHeadingColumn: (sheetId: string, column: number) => void;
 

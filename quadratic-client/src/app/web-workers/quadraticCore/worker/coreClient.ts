@@ -79,6 +79,7 @@ declare var self: WorkerGlobalScope &
     ) => void;
     sendUndoRedo: (undo: boolean, redo: boolean) => void;
     sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
+    sendMultiplayerSynced: () => void;
   };
 
 class CoreClient {
@@ -109,6 +110,7 @@ class CoreClient {
     self.sendUpdateCodeCell = coreClient.sendUpdateCodeCell;
     self.sendUndoRedo = coreClient.sendUndoRedo;
     self.sendImage = coreClient.sendImage;
+    self.sendMultiplayerSynced = coreClient.sendMultiplayerSynced;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -654,6 +656,10 @@ class CoreClient {
   }
   sendImage = (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => {
     this.send({ type: 'coreClientImage', sheetId, x, y, image, w, h });
+  };
+
+  sendMultiplayerSynced = () => {
+    this.send({ type: 'coreClientMultiplayerSynced' });
   };
 }
 

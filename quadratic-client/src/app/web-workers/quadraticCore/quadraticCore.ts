@@ -164,6 +164,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientSetCursorSelection') {
       events.emit('setCursor', undefined, e.data.selection);
       return;
+    } else if (e.data.type === 'coreClientMultiplayerSynced') {
+      events.emit('multiplayerSynced');
+      return;
     }
 
     if (e.data.id !== undefined) {

@@ -50,10 +50,14 @@ export function QuadraticApp() {
     }
   }, [uuid, loggedInUser]);
 
-  // wait for offline to finish loading
+  // wait for offline sync
   useEffect(() => {
     if (offlineLoading) {
-      const updateOfflineLoading = (transactions: number) => setOfflineLoading(transactions > 0);
+      const updateOfflineLoading = (transactions: number) => {
+        if (transactions === 0) {
+          setOfflineLoading(false);
+        }
+      };
       events.on('offlineTransactions', updateOfflineLoading);
       return () => {
         events.off('offlineTransactions', updateOfflineLoading);
@@ -61,10 +65,27 @@ export function QuadraticApp() {
     }
   }, [offlineLoading]);
 
-  // wait for multiplayer to finish loading
+  // wait for multiplayer sync
   useEffect(() => {
     if (multiplayerLoading) {
-      const updateMultiplayerLoading = (state: MultiplayerState) => setMultiplayerLoading(state !== 'connected');
+      const updateMultiplayerLoading = () => {
+        setMultiplayerLoading(false);
+      };
+      events.on('multiplayerSynced', updateMultiplayerLoading);
+      return () => {
+        events.off('multiplayerSynced', updateMultiplayerLoading);
+      };
+    }
+  }, [multiplayerLoading]);
+
+  // don't wait for multiplayer sync if unable to connect
+  useEffect(() => {
+    if (multiplayerLoading) {
+      const updateMultiplayerLoading = (state: MultiplayerState) => {
+        if (state === 'not connected' || state === 'no internet') {
+          setMultiplayerLoading(false);
+        }
+      };
       events.on('multiplayerState', updateMultiplayerLoading);
       return () => {
         events.off('multiplayerState', updateMultiplayerLoading);

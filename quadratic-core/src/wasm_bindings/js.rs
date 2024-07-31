@@ -110,6 +110,8 @@ extern "C" {
         w: Option<String>,
         h: Option<String>,
     );
+
+    pub fn jsMultiplayerSynced();
 }
 
 #[cfg(test)]
@@ -528,4 +530,13 @@ pub fn jsSendImage(
             h
         ),
     ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsMultiplayerSynced() {
+    TEST_ARRAY
+        .lock()
+        .unwrap()
+        .push(TestFunction::new("jsMultiplayerSynced", "".into()));
 }

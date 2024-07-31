@@ -82,6 +82,7 @@ declare var self: WorkerGlobalScope &
       connection_id: String
     ) => void;
     sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
+    sendMultiplayerSynced: () => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -248,4 +249,8 @@ export const jsSendImage = (sheetId: string, x: number, y: number, image?: strin
 export const jsSheetMetaFills = (sheetId: string, sheetMetaFillsStringified: string) => {
   const sheetMetaFills = JSON.parse(sheetMetaFillsStringified) as JsSheetFill;
   self.sendSheetMetaFills(sheetId, sheetMetaFills);
+};
+
+export const jsMultiplayerSynced = () => {
+  self.sendMultiplayerSynced();
 };
