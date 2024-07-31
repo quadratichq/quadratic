@@ -148,6 +148,10 @@ export class CellsLabels extends Container {
     return await renderWebWorker.getCellsColumnMaxWidth(this.sheetId, column);
   }
 
+  async getCellsContentMaxHeight(row: number): Promise<number> {
+    return await renderWebWorker.getCellsRowMaxHeight(this.sheetId, row);
+  }
+
   unload(hashX: number, hashY: number) {
     const key = `${hashX},${hashY}`;
     const cellsTextHash = this.cellsTextHash.get(key);

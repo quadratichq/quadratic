@@ -51,6 +51,9 @@ export class CellsTextHash {
 
   // todo: not sure if this is still used as I ran into issues with only rendering buffers:
 
+  // update text to re-wrap
+  dirtyWrapText = false;
+
   // rebuild only buffers
   dirtyBuffers = false;
 
@@ -95,7 +98,7 @@ export class CellsTextHash {
     this.labels.set(this.getKey(cell), cellLabel);
   }
 
-  async createLabels(cells: JsRenderCell[]) {
+  createLabels(cells: JsRenderCell[]) {
     this.labels = new Map();
     cells.forEach((cell) => this.createLabel(cell));
     this.updateText();
@@ -118,7 +121,7 @@ export class CellsTextHash {
     );
   }
 
-  async update(): Promise<boolean> {
+  update = async (): Promise<boolean> => {
     if (this.dirty) {
       // If dirty is true, then we need to get the cells from the server; but we
       // need to keep open the case where we receive new cells after dirty is
@@ -141,30 +144,41 @@ export class CellsTextHash {
         // refetching the cell contents.
         cells = false;
       } else {
-        cells = dirty as JsRenderCell[];
+        cells = dirty;
       }
 
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating ${this.hashX}, ${this.hashY}`);
       if (cells) {
-        await this.createLabels(cells);
+        this.createLabels(cells);
       }
       this.overflowClip();
       this.updateBuffers();
       return true;
-    } else if (this.dirtyBuffers) {
-      if (debugShowHashUpdates) console.log(`[CellsTextHash] updating only buffers ${this.hashX}, ${this.hashY}`);
-      this.updateBuffers();
+    } else if (this.dirtyWrapText || this.dirtyBuffers) {
+      if (this.dirtyWrapText) {
+        if (debugShowHashUpdates) console.log(`[CellsTextHash] updating text ${this.hashX}, ${this.hashY}`);
+        this.updateText();
+      }
+      if (this.dirtyBuffers) {
+        if (debugShowHashUpdates) console.log(`[CellsTextHash] updating buffers ${this.hashX}, ${this.hashY}`);
+        this.updateBuffers();
+      }
+
       return true;
     }
     return false;
-  }
+  };
 
-  private updateText() {
+  private updateText = () => {
     this.labelMeshes.clear();
     this.labels.forEach((child) => child.updateText(this.labelMeshes));
-  }
+    if (this.dirtyWrapText) {
+      this.dirtyWrapText = false;
+      this.dirtyBuffers = true;
+    }
+  };
 
-  overflowClip(): Set<CellsTextHash> {
+  overflowClip = (): Set<CellsTextHash> => {
     const bounds = this.cellsLabels.bounds;
     if (!bounds) return new Set();
     const clipLeft: TrackClip[] = [];
@@ -233,13 +247,13 @@ export class CellsTextHash {
     });
 
     return updatedHashes;
-  }
+  };
 
   private checkClip(label: CellLabel, leftClip: TrackClip[], rightClip: TrackClip[]) {
     const bounds = this.cellsLabels.bounds;
     if (!bounds) return;
     let column = label.location.x - 1;
-    const row = label.location.y;
+    let row = label.location.y;
     let currentHash: CellsTextHash | undefined = this;
     while (column >= bounds.x) {
       if (column < currentHash.AABB.x) {
@@ -252,9 +266,7 @@ export class CellsTextHash {
         const clipRightResult = neighborLabel.checkRightClip(label.AABB.left);
         if (clipRightResult && currentHash !== this) {
           leftClip.push({ row, column, hashX: currentHash.hashX, hashY: currentHash.hashY });
-          if (clipRightResult !== 'same') {
-            currentHash.dirty = true;
-          }
+          currentHash.dirtyBuffers = true;
         }
         label.checkLeftClip(neighborLabel.AABB.right);
         break;
@@ -275,9 +287,7 @@ export class CellsTextHash {
         const clipLeftResult = neighborLabel.checkLeftClip(label.AABB.right);
         if (clipLeftResult && currentHash !== this) {
           rightClip.push({ row, column, hashX: currentHash.hashX, hashY: currentHash.hashY });
-          if (clipLeftResult !== 'same') {
-            currentHash.dirty = true;
-          }
+          currentHash.dirtyBuffers = true;
         }
         label.checkRightClip(neighborLabel.AABB.left);
         return;
@@ -286,7 +296,7 @@ export class CellsTextHash {
     }
   }
 
-  updateBuffers(): void {
+  updateBuffers = (): void => {
     // creates labelMeshes webGL buffers based on size
     this.labelMeshes.prepare();
 
@@ -328,9 +338,9 @@ export class CellsTextHash {
 
     this.loaded = true;
     this.dirtyBuffers = false;
-  }
+  };
 
-  adjustHeadings(options: { delta: number; column?: number; row?: number }): boolean {
+  adjustHeadings = (options: { delta: number; column?: number; row?: number }): boolean => {
     const { delta, column, row } = options;
     let changed = false;
     if (column !== undefined) {
@@ -392,13 +402,25 @@ export class CellsTextHash {
       );
 
     return changed;
-  }
+  };
 
-  getCellsContentMaxWidth(column: number): number {
+  async getCellsContentMaxWidth(column: number): Promise<number> {
+    await this.update();
     let max = 0;
     this.labels.forEach((label) => {
       if (label.location.x === column) {
-        max = Math.max(max, label.textWidth);
+        max = Math.max(max, label.unwrappedTextWidth);
+      }
+    });
+    return max;
+  }
+
+  async getCellsContentMaxHeight(row: number): Promise<number> {
+    await this.update();
+    let max = 0;
+    this.labels.forEach((label) => {
+      if (label.location.y === row) {
+        max = Math.max(max, label.textHeight);
       }
     });
     return max;

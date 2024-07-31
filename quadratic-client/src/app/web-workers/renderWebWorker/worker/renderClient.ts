@@ -51,12 +51,20 @@ class RenderClient {
         renderText.sheetOffsetsDelta(e.data.sheetId, e.data.column, e.data.row, e.data.delta);
         return;
 
+      case 'clientRenderSheetOffsetsFinal':
+        renderText.sheetOffsetsFinal(e.data.sheetId, e.data.column, e.data.row, e.data.delta);
+        return;
+
       case 'clientRenderShowLabel':
         renderText.showLabel(e.data.sheetId, e.data.x, e.data.y, e.data.show);
         return;
 
       case 'clientRenderColumnMaxWidth':
-        this.sendColumnMaxWidth(e.data.id, renderText.columnMaxWidth(e.data.sheetId, e.data.column));
+        this.sendColumnMaxWidth(e.data.id, e.data.sheetId, e.data.column);
+        return;
+
+      case 'clientRenderRowMaxHeight':
+        this.sendRowMaxHeight(e.data.id, e.data.sheetId, e.data.row);
         return;
 
       default:
@@ -104,8 +112,14 @@ class RenderClient {
     this.send({ type: 'renderClientFinalizeCellsTextHash', sheetId, hashX, hashY });
   }
 
-  sendColumnMaxWidth(id: number, maxWidth: number) {
+  async sendColumnMaxWidth(id: number, sheetId: string, column: number) {
+    const maxWidth = await renderText.columnMaxWidth(sheetId, column);
     this.send({ type: 'renderClientColumnMaxWidth', maxWidth, id });
+  }
+
+  async sendRowMaxHeight(id: number, sheetId: string, row: number) {
+    const maxHeight = await renderText.rowMaxHeight(sheetId, row);
+    this.send({ type: 'renderClientRowMaxHeight', maxHeight, id });
   }
 }
 

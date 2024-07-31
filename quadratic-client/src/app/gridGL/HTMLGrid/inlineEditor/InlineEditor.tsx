@@ -8,6 +8,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { SubtitlesOutlined } from '@mui/icons-material';
 import { Tooltip } from '@mui/material';
 import { useCallback } from 'react';
+import './inlineEditorStyles.scss';
 
 export const InlineEditor = () => {
   const ref = useCallback((div: HTMLDivElement) => {
@@ -28,13 +29,14 @@ export const InlineEditor = () => {
           variant="ghost"
           style={{
             position: 'absolute',
+            display: 'flex',
             alignItems: 'center',
             borderRadius: '0',
             padding: '0',
             marginTop: '-0.23px',
             width: '23px',
             height: '23.23px',
-            right: '-23px',
+            right: '-24px',
             backgroundColor: colors.languageFormula,
           }}
         >

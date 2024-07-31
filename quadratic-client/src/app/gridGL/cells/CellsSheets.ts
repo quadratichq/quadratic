@@ -134,9 +134,14 @@ export class CellsSheets extends Container<CellsSheet> {
     }
   }
 
-  async getCellsContentMaxWidth(column: number): Promise<number> {
+  getCellsContentMaxWidth(column: number): Promise<number> {
     if (!this.current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxWidth');
     return this.current.cellsLabels.getCellsContentMaxWidth(column);
+  }
+
+  getCellsContentMaxHeight(row: number): Promise<number> {
+    if (!this.current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxHeight');
+    return this.current.cellsLabels.getCellsContentMaxHeight(row);
   }
 
   updateCellsArray(): void {

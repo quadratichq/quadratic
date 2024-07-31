@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     cell_values::CellValues,
     grid::{
-        file::sheet_schema::SheetSchema, formats::Formats, formatting::CellFmtArray, CodeRun,
-        Sheet, SheetBorders, SheetId,
+        file::sheet_schema::SheetSchema, formats::Formats, formatting::CellFmtArray,
+        js_types::JsRowHeight, CodeRun, Sheet, SheetBorders, SheetId,
     },
     selection::Selection,
     SheetPos, SheetRect,
@@ -84,7 +84,7 @@ pub enum Operation {
         column: i64,
         new_size: f64,
 
-        // `client_resized`` is used to indicate whether the client needs to be
+        // `client_resized` is used to indicate whether the client needs to be
         // notified of the resize. For manual resizing, the original client is
         // updated as the user drags the column/row so they don't need to be
         // notified again.
@@ -99,6 +99,11 @@ pub enum Operation {
         // See note in ResizeColumn.
         #[serde(default)]
         client_resized: bool,
+    },
+
+    ResizeRows {
+        sheet_id: SheetId,
+        row_heights: Vec<JsRowHeight>,
     },
 
     // Deprecated in favor of SetCursorSelection. This operation remains to
@@ -184,6 +189,14 @@ impl fmt::Display for Operation {
                 fmt,
                 "ResizeRow {{ sheet_id: {}, row: {}, new_size: {}, client_resized: {} }}",
                 sheet_id, row, new_size, client_resized
+            ),
+            Operation::ResizeRows {
+                sheet_id,
+                row_heights,
+            } => write!(
+                fmt,
+                "ResizeRow {{ sheet_id: {}, row_heights: {:?} }}",
+                sheet_id, row_heights
             ),
             Operation::SetBorders { .. } => write!(fmt, "SetBorders {{ todo }}"),
             Operation::SetCursor { sheet_rect } => {
