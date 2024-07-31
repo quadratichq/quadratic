@@ -7,15 +7,17 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { ValidationsData } from './useValidationsData';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useSetRecoilState } from 'recoil';
+import { cn } from '@/shared/shadcn/utils';
 
 interface Props {
   validation: Validation;
   validationsData: ValidationsData;
+  highlight: boolean;
 }
 
 export const ValidationEntry = (props: Props) => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
-  const { validation, validationsData } = props;
+  const { validation, validationsData, highlight } = props;
   const { deleteValidation } = validationsData;
 
   const title = useMemo(() => {
@@ -40,9 +42,12 @@ export const ValidationEntry = (props: Props) => {
       showValidation: validation.id,
     }));
   }, [setEditorInteractionState, validation.id]);
-
   return (
-    <Button variant="ghost" className="h-fit w-full border-b border-gray-100" onClick={selectValidation}>
+    <Button
+      variant="ghost"
+      className={cn('h-fit w-full border-b border-gray-100', highlight ? 'bg-gray-300' : '')}
+      onClick={selectValidation}
+    >
       <div className="group flex w-full items-center justify-between py-3">
         <div className="flex shrink flex-col items-start text-left">
           <div className="mb-2">{title}</div>

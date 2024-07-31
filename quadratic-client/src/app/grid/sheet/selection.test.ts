@@ -126,7 +126,6 @@ it('parseSelectionString', () => {
       { min: { x: 3n, y: 4n }, max: { x: 4n, y: 6n } },
     ],
   });
-  console.log(parseSelectionString(' test', sheetId));
   expect(parseSelectionString(' test', sheetId).error).toEqual({ error: 'Unknown range reference', column: 0 });
   expect(parseSelectionString('(col=1, 2); (row=3, 4) test', sheetId).error).toEqual({
     error: 'Unknown range reference',

@@ -36,7 +36,7 @@ import {
 import { coreClient } from './coreClient';
 import { coreRender } from './coreRender';
 import { offline } from './offline';
-import { numbersToRect, pointsToRect, posToPos, posToRect } from './rustConversions';
+import { numbersToRectStringified, pointsToRect, posToPos, posToRect } from './rustConversions';
 
 // Used to coerce bigints to numbers for JSON.stringify; see
 // https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-2064279949.
@@ -152,7 +152,7 @@ class Core {
         if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getGridBounds');
         const cells = this.gridController.getRenderCells(
           data.sheetId,
-          numbersToRect(data.x, data.y, data.width, data.height)
+          numbersToRectStringified(data.x, data.y, data.width, data.height)
         );
         resolve(JSON.parse(cells));
       });
@@ -588,7 +588,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        resolve(this.gridController.hasRenderCells(sheetId, numbersToRect(x, y, width, height)));
+        resolve(this.gridController.hasRenderCells(sheetId, numbersToRectStringified(x, y, width, height)));
       });
     });
   }
@@ -659,7 +659,13 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setRegionBorders(sheetId, numbersToRect(x, y, width, height), border, style, cursor);
+        this.gridController.setRegionBorders(
+          sheetId,
+          numbersToRectStringified(x, y, width, height),
+          border,
+          style,
+          cursor
+        );
         resolve(undefined);
       });
     });
@@ -671,7 +677,7 @@ class Core {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
         this.gridController.setCellRenderSize(
           sheetId,
-          numbersToRect(x, y, 1, 1),
+          numbersToRectStringified(x, y, 1, 1),
           width.toString(),
           height.toString(),
           cursor

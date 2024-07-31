@@ -2,16 +2,38 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { useValidationsData } from './useValidationsData';
 import { ValidationsHeader } from './ValidationsHeader';
 import { ValidationEntry } from './ValidationEntry';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useSetRecoilState } from 'recoil';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 
 export const Validations = () => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const validationsData = useValidationsData();
   const { validations, sheetId } = validationsData;
 
+  // track which validations are overlapped by the cursor
+  const [highlighted, setHighlighted] = useState<string[]>([]);
+  useEffect(() => {
+    const checkValidations = () => {
+      if (sheets.sheet.id !== sheetId) {
+        setHighlighted([]);
+        return;
+      }
+      const cursor = sheets.sheet.cursor;
+      const newHighlighted = validations
+        .filter((validation) => cursor.overlapsSelection(validation.selection))
+        .map((validation) => validation.id);
+
+      setHighlighted(newHighlighted);
+    };
+
+    events.on('cursorPosition', checkValidations);
+    checkValidations();
+  }, [sheetId, validations]);
+  console.log(highlighted);
   const addValidation = useCallback(() => {
     setEditorInteractionState((old) => ({
       ...old,
@@ -32,7 +54,12 @@ export const Validations = () => {
 
       <div className="grow">
         {validations.map((validation) => (
-          <ValidationEntry key={validation.id} validation={validation} validationsData={validationsData} />
+          <ValidationEntry
+            key={validation.id}
+            validation={validation}
+            validationsData={validationsData}
+            highlight={highlighted.includes(validation.id)}
+          />
         ))}
       </div>
 

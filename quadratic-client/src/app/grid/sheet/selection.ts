@@ -1,4 +1,6 @@
 import { Pos, Rect, Selection } from '@/app/quadratic-core-types';
+import { rectangleToRect } from '@/app/web-workers/quadraticCore/worker/rustConversions';
+import { Rectangle } from 'pixi.js';
 
 const RANGE_SEPARATOR = '; ';
 
@@ -179,3 +181,21 @@ export const defaultSelection = (sheetId: string): Selection => ({
   rows: null,
   rects: null,
 });
+
+export const createSelection = (options: {
+  rects?: Rectangle[];
+  columns?: number[];
+  rows?: number[];
+  all?: boolean;
+  sheetId?: string;
+}): Selection => {
+  return {
+    sheet_id: { id: options.sheetId ?? '' },
+    x: 0n,
+    y: 0n,
+    all: options.all ?? false,
+    columns: options.columns?.map((x) => BigInt(x)) || null,
+    rows: options.rows?.map((y) => BigInt(y)) || null,
+    rects: options.rects?.map((rect) => rectangleToRect(rect)) || null,
+  };
+};
