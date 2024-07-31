@@ -224,7 +224,12 @@ class InlineEditorMonaco {
 
   getNonWhitespaceCharBeforeCursor(): string {
     const formula = inlineEditorMonaco.get();
-    const position = inlineEditorMonaco.getPosition();
+
+    // If there is a selection then use the start of the selection; otherwise
+    // use the cursor position.
+    const selection = inlineEditorMonaco.editor?.getSelection()?.getStartPosition();
+    const position = selection ?? inlineEditorMonaco.getPosition();
+
     const line = formula.split('\n')[position.lineNumber - 1];
     const lastCharacter =
       line
