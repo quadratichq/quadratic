@@ -160,7 +160,7 @@ impl Criterion {
         output_values_range: Option<&'a Spanned<Array>>,
     ) -> CodeResult<impl 'a + Iterator<Item = Spanned<&'a CellValue>>> {
         let Some(output_values_range) =
-            output_values_range.or_else(|| Some(eval_ranges_and_criteria.get(0)?.0))
+            output_values_range.or_else(|| Some(eval_ranges_and_criteria.first()?.0))
         else {
             internal_error!("no eval range for `iter_matching_multi()`");
         };
@@ -184,10 +184,11 @@ impl Criterion {
                 eval_ranges_and_criteria
                     .iter()
                     .all(|(eval_range, criteria)| {
-                        let Some(cell_value) = eval_range.inner.cell_values_slice().get(i) else {
-                            return false;
-                        };
-                        criteria.matches(&cell_value)
+                        eval_range
+                            .inner
+                            .cell_values_slice()
+                            .get(i)
+                            .is_some_and(|cell_value| criteria.matches(cell_value))
                     })
             })
             .map(|(_i, output_value)| output_value)
