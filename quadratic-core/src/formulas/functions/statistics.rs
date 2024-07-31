@@ -89,7 +89,10 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// Evaluates multiple values on they're respective criteria, and
             /// then counts how many sets of values met all their criteria.
             #[doc = see_docs_for_more_about_criteria!()]
-            #[examples("TODO")]
+            #[examples(
+                "COUNTIFS(\"<>INVALID\", B1:B10)",
+                "COUNTIFS(\"<>INVALID\", B1:B10, \"<=0\", C1:C10)"
+            )]
             fn COUNTIFS(
                 ctx: Ctx,
                 eval_range1: (Spanned<Array>),
