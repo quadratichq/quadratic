@@ -9,14 +9,76 @@ import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEdi
 import { keyboardPosition } from '@/app/gridGL/interaction/keyboard/keyboardPosition';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+
+const handleArrowHorizontal = (isRight: boolean, e: KeyboardEvent) => {
+  const target = isRight ? inlineEditorMonaco.getLastColumn() : 1;
+  if (inlineEditorHandler.isEditingFormula()) {
+    if (inlineEditorHandler.cursorIsMoving) {
+      e.stopPropagation();
+      keyboardPosition(e);
+    } else {
+      const column = inlineEditorMonaco.getCursorColumn();
+      if (column === target) {
+        // if we're not moving and the formula is valid, close the editor
+        e.stopPropagation();
+        if (inlineEditorFormula.wantsCellRef()) {
+          if (isRight) {
+            inlineEditorHandler.cursorIsMoving = true;
+            inlineEditorFormula.addInsertingCells(column);
+            keyboardPosition(e);
+          }
+        } else {
+          inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
+        }
+      }
+    }
+  } else {
+    const column = inlineEditorMonaco.getCursorColumn();
+    if (column === target) {
+      e.stopPropagation();
+      inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
+    }
+  }
+};
+
+const handleArrowVertical = (isDown: boolean, e: KeyboardEvent) => {
+  if (inlineEditorHandler.isEditingFormula()) {
+    e.stopPropagation();
+    if (inlineEditorHandler.cursorIsMoving) {
+      keyboardPosition(e);
+    } else {
+      // If we're not moving and the formula doesn't want a cell reference,
+      // close the editor. We can't just use "is the formula syntactically
+      // valid" because many formulas are syntactically valid even though
+      // it's obvious the user wants to insert a cell reference. For
+      // example, `SUM(,)` with the cursor to the left of the comma.
+      if (!inlineEditorFormula.wantsCellRef()) {
+        inlineEditorHandler.close(0, isDown ? 1 : -1, false);
+        return;
+      }
+      const location = inlineEditorHandler.location;
+      if (!location) {
+        throw new Error('Expected inlineEditorHandler.location to be defined in keyDown');
+      }
+      const column = inlineEditorMonaco.getCursorColumn();
+      inlineEditorFormula.addInsertingCells(column);
+      inlineEditorHandler.cursorIsMoving = true;
+      keyboardPosition(e);
+    }
+  } else {
+    e.stopPropagation();
+    inlineEditorHandler.close(0, isDown ? 1 : -1, false);
+  }
+};
 
 class InlineEditorKeyboard {
   escapeBackspacePressed = false;
 
   // Keyboard event for inline editor (via either Monaco's keyDown event or,
   // when on a different sheet, via window's keyDown listener).
-  keyDown = async (e: KeyboardEvent) => {
+  keyDown = (e: KeyboardEvent) => {
     if (inlineEditorHandler.cursorIsMoving) {
       this.escapeBackspacePressed = ['Escape', 'Backspace'].includes(e.code);
     } else {
@@ -24,7 +86,7 @@ class InlineEditorKeyboard {
     }
 
     // Escape key
-    if (e.code === 'Escape') {
+    if (matchShortcut('close_inline_editor', e)) {
       e.stopPropagation();
       if (inlineEditorHandler.cursorIsMoving) {
         inlineEditorHandler.cursorIsMoving = false;
@@ -36,49 +98,49 @@ class InlineEditorKeyboard {
     }
 
     // Enter key
-    else if (e.code === 'Enter') {
+    else if (matchShortcut('save_inline_editor', e)) {
       e.stopPropagation();
       inlineEditorHandler.close(0, 1, false);
     }
 
-    // Tab key
-    else if (e.code === 'Tab') {
+    // Shift+Enter key
+    else if (matchShortcut('save_inline_editor_move_up', e)) {
       e.stopPropagation();
-      e.preventDefault();
-      inlineEditorHandler.close(e.shiftKey ? -1 : 1, 0, false);
+      inlineEditorHandler.close(0, -1, false);
     }
 
-    // Horizontal arrow keys
-    else if (e.code === 'ArrowRight' || e.code === 'ArrowLeft') {
-      const isRight = e.code === 'ArrowRight';
-      const target = isRight ? inlineEditorMonaco.getLastColumn() : 1;
-      if (inlineEditorHandler.isEditingFormula()) {
-        if (inlineEditorHandler.cursorIsMoving) {
-          e.stopPropagation();
-          await keyboardPosition(e);
-        } else {
-          const column = inlineEditorMonaco.getCursorColumn();
-          if (column === target) {
-            // if we're not moving and the formula is valid, close the editor
-            e.stopPropagation();
-            if (inlineEditorFormula.wantsCellRef()) {
-              if (isRight) {
-                inlineEditorHandler.cursorIsMoving = true;
-                inlineEditorFormula.addInsertingCells(column);
-                await keyboardPosition(e);
-              }
-            } else {
-              inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
-            }
-          }
-        }
-      } else {
-        const column = inlineEditorMonaco.getCursorColumn();
-        if (column === target) {
-          e.stopPropagation();
-          inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
-        }
-      }
+    // Tab key
+    else if (matchShortcut('save_inline_editor_move_right', e)) {
+      e.stopPropagation();
+      e.preventDefault();
+      inlineEditorHandler.close(1, 0, false);
+    }
+
+    // Shift+Tab key
+    else if (matchShortcut('save_inline_editor_move_left', e)) {
+      e.stopPropagation();
+      e.preventDefault();
+      inlineEditorHandler.close(-1, 0, false);
+    }
+
+    // Arrow up
+    else if (matchShortcut('move_cursor_up', e)) {
+      handleArrowVertical(false, e);
+    }
+
+    // Arrow down
+    else if (matchShortcut('move_cursor_down', e)) {
+      handleArrowVertical(true, e);
+    }
+
+    // Arrow left
+    else if (matchShortcut('move_cursor_left', e)) {
+      handleArrowHorizontal(false, e);
+    }
+
+    // Arrow right
+    else if (matchShortcut('move_cursor_right', e)) {
+      handleArrowHorizontal(true, e);
     }
 
     // handle ShiftKey when cursorIsMoving (do nothing or it adds additional references)
@@ -89,7 +151,7 @@ class InlineEditorKeyboard {
     }
 
     // Backspace key cancels cursorIsMoving and removes any inserted cells.
-    else if (e.code === 'Backspace') {
+    else if (matchShortcut('remove_inserted_cells', e)) {
       if (inlineEditorHandler.cursorIsMoving) {
         e.stopPropagation();
         e.preventDefault();
@@ -99,39 +161,8 @@ class InlineEditorKeyboard {
       }
     }
 
-    // Vertical arrow keys
-    else if (e.code === 'ArrowDown' || e.code === 'ArrowUp') {
-      if (inlineEditorHandler.isEditingFormula()) {
-        e.stopPropagation();
-        if (inlineEditorHandler.cursorIsMoving) {
-          await keyboardPosition(e);
-        } else {
-          // If we're not moving and the formula doesn't want a cell reference,
-          // close the editor. We can't just use "is the formula syntactically
-          // valid" because many formulas are syntactically valid even though
-          // it's obvious the user wants to insert a cell reference. For
-          // example, `SUM(,)` with the cursor to the left of the comma.
-          if (!inlineEditorFormula.wantsCellRef()) {
-            inlineEditorHandler.close(0, e.code === 'ArrowDown' ? 1 : -1, false);
-            return;
-          }
-          const location = inlineEditorHandler.location;
-          if (!location) {
-            throw new Error('Expected inlineEditorHandler.location to be defined in keyDown');
-          }
-          const column = inlineEditorMonaco.getCursorColumn();
-          inlineEditorFormula.addInsertingCells(column);
-          inlineEditorHandler.cursorIsMoving = true;
-          await keyboardPosition(e);
-        }
-      } else {
-        e.stopPropagation();
-        inlineEditorHandler.close(0, e.code === 'ArrowDown' ? 1 : -1, false);
-      }
-    }
-
     // toggle italics
-    else if (e.code === 'KeyI' && (e.ctrlKey || e.metaKey)) {
+    else if (matchShortcut('toggle_italic', e)) {
       e.preventDefault();
       e.stopPropagation();
       inlineEditorHandler.toggleItalics();
@@ -146,7 +177,7 @@ class InlineEditorKeyboard {
     }
 
     // toggle bold
-    else if (e.code === 'KeyB' && (e.ctrlKey || e.metaKey)) {
+    else if (matchShortcut('toggle_bold', e)) {
       e.preventDefault();
       e.stopPropagation();
       if (inlineEditorHandler.location) {
@@ -161,7 +192,7 @@ class InlineEditorKeyboard {
     }
 
     // trigger cell type menu
-    else if (e.code === 'Slash' && inlineEditorMonaco.get().length === 0) {
+    else if (matchShortcut('show_cell_type_menu', e) && inlineEditorMonaco.get().length === 0) {
       e.preventDefault();
       e.stopPropagation();
       pixiAppSettings.changeInput(false);
