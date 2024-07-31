@@ -84,14 +84,17 @@ impl Rgba {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_size() {
         // This is an important guarantee due to the number of instances
         assert_eq!(std::mem::size_of::<Rgba>(), 4);
     }
 
     #[test]
+    #[parallel]
     fn test_from_str() {
         let maybe_color = Rgba::color_from_str("#224466FF");
         assert!(maybe_color.is_ok());
@@ -104,6 +107,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_from_css_str() {
         let css = "rgb(1, 2, 3)";
         println!("{}", Rgba::from_css_str(css).unwrap().as_string());

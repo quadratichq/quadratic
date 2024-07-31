@@ -30,8 +30,10 @@ mod test {
     use crate::CellValue;
 
     use super::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn merge_cell_values() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: -1, y: -2 }, "old-a");

@@ -406,8 +406,8 @@ export const defaultShortcuts: Shortcuts = [
   {
     action: 'edit_cell',
     shortcuts: {
-      mac: ['Enter', 'F2'],
-      windows: ['Enter', 'F2'],
+      mac: ['Enter', 'Shift + Enter', 'F2'],
+      windows: ['Enter', 'Shift + Enter', 'F2'],
     },
   },
   {
@@ -438,6 +438,13 @@ export const defaultShortcuts: Shortcuts = [
     shortcuts: {
       mac: ['Enter'],
       windows: ['Enter'],
+    },
+  },
+  {
+    action: 'save_inline_editor_move_up',
+    shortcuts: {
+      mac: ['Shift + Enter'],
+      windows: ['Shift + Enter'],
     },
   },
   {

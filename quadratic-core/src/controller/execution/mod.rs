@@ -1,3 +1,4 @@
+pub mod auto_resize_row_heights;
 pub mod control_transaction;
 pub mod execute_operation;
 pub mod receive_multiplayer;

@@ -123,8 +123,10 @@ fn get_functions() -> Vec<FormulaFunction> {
 #[cfg(test)]
 mod tests {
     use crate::{formulas::tests::*, Pos};
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_formula_average() {
         let form = parse_formula("AVERAGE(3, B1:D3)", pos![nAn1]).unwrap();
 
@@ -138,7 +140,7 @@ mod tests {
         let sheet_id = sheet.id;
 
         let mut ctx = Ctx::new(&g, pos![nAn1].to_sheet_pos(sheet_id));
-        assert_eq!("7.5".to_string(), form.eval(&mut ctx).unwrap().to_string(),);
+        assert_eq!("7.5".to_string(), form.eval(&mut ctx).unwrap().to_string());
 
         assert_eq!(
             "17",
@@ -169,6 +171,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_averageif() {
         let g = Grid::new();
 
@@ -217,6 +220,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_count() {
         let g = Grid::new();
         let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
@@ -244,6 +248,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_counta() {
         let g = Grid::new();
         let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
@@ -272,6 +277,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_countif() {
         let g = Grid::new();
         assert_eq!("6", eval_to_string(&g, "COUNTIF(0..10, \"<=5\")"));
@@ -287,6 +293,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_countblank() {
         let g = Grid::new();
         assert_eq!("1", eval_to_string(&g, "COUNTBLANK(\"\")"));
@@ -300,12 +307,14 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_min() {
         let g = Grid::new();
         assert_eq!("1", eval_to_string(&g, "MIN(1, 3, 2)"));
     }
 
     #[test]
+    #[parallel]
     fn test_max() {
         let g = Grid::new();
         assert_eq!("3", eval_to_string(&g, "MAX(1, 3, 2)"));

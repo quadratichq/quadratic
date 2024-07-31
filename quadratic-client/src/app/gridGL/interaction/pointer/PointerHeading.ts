@@ -1,9 +1,10 @@
 import { events } from '@/app/events/events';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { TransientResize } from '@/app/quadratic-core-types/index.js';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { CELL_TEXT_MARGIN_LEFT, CELL_WIDTH } from '@/shared/constants/gridConstants';
+import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { InteractivePointerEvent, Point } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../../actions';
 import { sheets } from '../../../grid/controller/Sheets';
@@ -88,7 +89,7 @@ export class PointerHeading {
         return true;
       } else if (this.clicked && headingResize.row !== undefined) {
         event.preventDefault();
-        this.onDoubleClickRow(headingResize.row);
+        this.autoResizeRow(headingResize.row);
         return true;
       }
       this.viewportChanges = {
@@ -259,7 +260,6 @@ export class PointerHeading {
             gridLines.dirty = true;
             cursor.dirty = true;
             headings.dirty = true;
-
             pixiApp.adjustHeadings({
               sheetId: sheets.sheet.id,
               column: this.resizing.column,
@@ -267,7 +267,6 @@ export class PointerHeading {
             });
           }
           this.resizing.lastSize = size;
-
           events.emit('resizeHeadingColumn', sheets.sheet.id, this.resizing.column);
         }
       } else if (this.resizing.row !== undefined) {
@@ -279,7 +278,7 @@ export class PointerHeading {
 
           // move viewport by the amount of the resize for negative columns
           const change = size - this.viewportChanges.originalSize;
-          pixiApp.viewport.y = this.viewportChanges.viewportStart + change * pixiApp.viewport.scale.x;
+          pixiApp.viewport.y = this.viewportChanges.viewportStart + change * pixiApp.viewport.scale.y;
           this.viewportChanges.change = change;
         }
 
@@ -289,17 +288,17 @@ export class PointerHeading {
           const delta = this.resizing.height ? this.resizing.lastSize - this.resizing.height : undefined;
           if (delta) {
             renderWebWorker.updateSheetOffsetsTransient(sheets.sheet.id, undefined, this.resizing.row, delta);
+            gridLines.dirty = true;
+            cursor.dirty = true;
+            headings.dirty = true;
+            pixiApp.adjustHeadings({
+              sheetId: sheets.sheet.id,
+              row: this.resizing.row,
+              delta: size - this.resizing.lastSize,
+            });
           }
-          gridLines.dirty = true;
-          cursor.dirty = true;
-          headings.dirty = true;
-
-          pixiApp.adjustHeadings({
-            sheetId: sheets.sheet.id,
-            row: this.resizing.row,
-            delta: size - this.resizing.lastSize,
-          });
           this.resizing.lastSize = size;
+          events.emit('resizeHeadingRow', sheets.sheet.id, this.resizing.row);
         }
       }
     }
@@ -314,10 +313,26 @@ export class PointerHeading {
     }, DOUBLE_CLICK_TIME);
     if (this.active) {
       this.active = false;
-      const { resizing: headingResizing } = this;
-      if (headingResizing) {
+      if (this.resizing) {
         const transientResize = sheets.sheet.offsets.getResizeToApply();
         if (transientResize) {
+          // update remaining hashes hashes in render web worker, which were only updated in pixiApp
+          try {
+            const { column, row, old_size, new_size } = JSON.parse(transientResize) as TransientResize;
+            const c = column !== null ? Number(column) : undefined;
+            const r = row !== null ? Number(row) : undefined;
+            const delta = old_size - new_size;
+            renderWebWorker.updateSheetOffsetsFinal(sheets.sheet.id, c, r, delta);
+            pixiApp.adjustHeadings({
+              sheetId: sheets.sheet.id,
+              column: c,
+              row: r,
+              delta,
+            });
+          } catch (error) {
+            console.error('[PointerHeading] pointerUp: error parsing TransientResize: ', error);
+          }
+
           quadraticCore.commitTransientResize(sheets.sheet.id, transientResize);
         }
         this.resizing = undefined;
@@ -346,7 +361,13 @@ export class PointerHeading {
     }
   }
 
-  private onDoubleClickRow(row: number): void {
-    // todo when rows have wrapping...
+  async autoResizeRow(row: number) {
+    const maxHeight = await pixiApp.cellsSheets.getCellsContentMaxHeight(row);
+    const size = Math.max(maxHeight, CELL_HEIGHT);
+    const sheetId = sheets.sheet.id;
+    const originalSize = sheets.sheet.getCellOffsets(0, row);
+    if (originalSize.height !== size) {
+      quadraticCore.commitSingleResize(sheetId, undefined, row, size);
+    }
   }
 }

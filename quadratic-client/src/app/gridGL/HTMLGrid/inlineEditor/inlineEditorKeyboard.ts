@@ -99,6 +99,12 @@ class InlineEditorKeyboard {
       inlineEditorHandler.close(0, 1, false);
     }
 
+    // Shift+Enter key
+    else if (matchShortcut('save_inline_editor_move_up', e)) {
+      e.stopPropagation();
+      inlineEditorHandler.close(0, -1, false);
+    }
+
     // Tab key
     else if (matchShortcut('save_inline_editor_move_right', e)) {
       e.stopPropagation();
