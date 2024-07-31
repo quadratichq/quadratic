@@ -112,10 +112,8 @@ impl GridController {
                     );
                 }
             }
-        } else {
-            if cfg!(target_family = "wasm") || cfg!(test) {
-                crate::wasm_bindings::js::jsMultiplayerSynced();
-            }
+        } else if cfg!(target_family = "wasm") || cfg!(test) {
+            crate::wasm_bindings::js::jsMultiplayerSynced();
         }
     }
 
