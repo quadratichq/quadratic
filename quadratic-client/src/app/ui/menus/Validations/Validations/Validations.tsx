@@ -33,7 +33,7 @@ export const Validations = () => {
     events.on('cursorPosition', checkValidations);
     checkValidations();
   }, [sheetId, validations]);
-  console.log(highlighted);
+
   const addValidation = useCallback(() => {
     setEditorInteractionState((old) => ({
       ...old,

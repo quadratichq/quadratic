@@ -45,7 +45,7 @@ export const ValidationEntry = (props: Props) => {
   return (
     <Button
       variant="ghost"
-      className={cn('h-fit w-full border-b border-gray-100', highlight ? 'bg-gray-300' : '')}
+      className={cn('h-fit w-full border-b border-gray-100', highlight ? 'bg-gray-50' : '')}
       onClick={selectValidation}
     >
       <div className="group flex w-full items-center justify-between py-3">
