@@ -289,6 +289,8 @@ export class CellsTextHash {
       this.viewRectangle.height = maxY - minY;
     }
 
+    this.special.extendViewRectangle(this.viewRectangle);
+
     // prepares the client's CellsTextHash for new content
     renderClient.sendCellsTextHashClear(this.cellsLabels.sheetId, this.hashX, this.hashY, this.viewRectangle);
 

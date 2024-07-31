@@ -6,9 +6,9 @@ import type {
 } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
 import { Rectangle, Sprite, Texture } from 'pixi.js';
 
-const CHECKBOX_SIZE = 15;
-const DROPDOWN_SIZE = [8, 6];
-const DROPDOWN_PADDING = [5, 8];
+export const CHECKBOX_SIZE = 15;
+export const DROPDOWN_SIZE = [8, 6];
+export const DROPDOWN_PADDING = [5, 8];
 
 export interface SpecialSprite extends Sprite {
   column: number;
@@ -21,6 +21,10 @@ export interface SpecialSprite extends Sprite {
   rectangle: Rectangle;
 }
 
+export const checkboxRectangle = (x: number, y: number): Rectangle => {
+  return new Rectangle(x - CHECKBOX_SIZE / 2, y - CHECKBOX_SIZE / 2, CHECKBOX_SIZE, CHECKBOX_SIZE);
+};
+
 export const drawCheckbox = (options: RenderCheckbox) => {
   const sprite = new Sprite(Texture.from(`/images/checkbox${options.value ? '-checked' : ''}.png`)) as SpecialSprite;
   sprite.checkbox = options.value;
@@ -28,15 +32,14 @@ export const drawCheckbox = (options: RenderCheckbox) => {
   sprite.row = options.row;
   sprite.type = 'checkbox';
   sprite.width = sprite.height = CHECKBOX_SIZE;
-  sprite.rectangle = new Rectangle(
-    options.x - CHECKBOX_SIZE / 2,
-    options.y - CHECKBOX_SIZE / 2,
-    CHECKBOX_SIZE,
-    CHECKBOX_SIZE
-  );
+  sprite.rectangle = checkboxRectangle(options.x, options.y);
   sprite.anchor.set(0.5);
   sprite.position.set(options.x, options.y);
   return sprite;
+};
+
+export const dropdownRectangle = (x: number, y: number): Rectangle => {
+  return new Rectangle(x - DROPDOWN_SIZE[0], y, DROPDOWN_SIZE[0], DROPDOWN_SIZE[1]);
 };
 
 export const drawDropdown = (options: RenderDropdown) => {
@@ -46,7 +49,7 @@ export const drawDropdown = (options: RenderDropdown) => {
   sprite.type = 'dropdown';
   sprite.width = DROPDOWN_SIZE[0];
   sprite.height = DROPDOWN_SIZE[1];
-  sprite.rectangle = new Rectangle(options.x - DROPDOWN_PADDING[0], options.y, DROPDOWN_SIZE[0], DROPDOWN_SIZE[1]);
+  sprite.rectangle = dropdownRectangle(options.x, options.y);
   sprite.alpha = 0.5;
   sprite.anchor.set(1, 0);
   sprite.position.set(options.x - DROPDOWN_PADDING[0], options.y + DROPDOWN_PADDING[1]);

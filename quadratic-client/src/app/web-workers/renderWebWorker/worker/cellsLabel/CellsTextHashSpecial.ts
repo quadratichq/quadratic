@@ -1,6 +1,10 @@
 //! This tracks any special cells that will be rendered by the client. This
 //! includes checkboxes and dropdown indicators.
 
+import { checkboxRectangle, dropdownRectangle } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
+import { Rectangle } from 'pixi.js';
+import { Bounds } from '@/app/grid/sheet/Bounds';
+
 export interface RenderSpecial {
   checkboxes: RenderCheckbox[];
   dropdowns: RenderDropdown[];
@@ -47,5 +51,22 @@ export class CellsTextHashSpecial {
 
   isEmpty() {
     return this.special.checkboxes.length === 0 && this.special.dropdowns.length === 0;
+  }
+
+  // Extends the view rectangle (bounds) to include any special cells
+  extendViewRectangle(rectangle: Rectangle) {
+    const bounds = new Bounds();
+    bounds.addRectangle(rectangle);
+    this.special.checkboxes.forEach((entry) => {
+      const r = checkboxRectangle(entry.x, entry.y);
+      bounds.addRectangle(r);
+    });
+
+    this.special.dropdowns.forEach((dropdown) => {
+      const r = dropdownRectangle(dropdown.x, dropdown.y);
+      const bounds = new Bounds();
+      bounds.addRectangle(r);
+    });
+    bounds.updateRectangle(rectangle);
   }
 }
