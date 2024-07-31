@@ -27,6 +27,10 @@ export class CellsTextHashSpecial {
     this.special = { checkboxes: [], dropdowns: [] };
   }
 
+  clear() {
+    this.special = { checkboxes: [], dropdowns: [] };
+  }
+
   addCheckbox(x: number, y: number, value: boolean) {
     this.special.checkboxes.push({ x, y, value });
   }

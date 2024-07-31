@@ -146,7 +146,7 @@ export class CellsTextHash {
       } else {
         cells = dirty as JsRenderCell[];
       }
-
+      this.special.clear();
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating ${this.hashX}, ${this.hashY}`);
       if (cells) {
         await this.createLabels(cells);

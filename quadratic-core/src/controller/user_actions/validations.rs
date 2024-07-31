@@ -70,7 +70,8 @@ mod tests {
         grid::sheet::validations::validation_rules::{
             validation_logical::ValidationLogical, ValidationRule,
         },
-        wasm_bindings::js::expect_js_call,
+        wasm_bindings::js::{expect_js_call, hash_test},
+        Rect,
     };
 
     use super::*;
@@ -157,6 +158,14 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!("{},{}", sheet_id.to_string(), validations),
+            false,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let send = serde_json::to_string(&sheet.get_render_cells(Rect::new(0, 0, 0, 0))).unwrap();
+        expect_js_call(
+            "jsRenderCellSheets",
+            format!("{},{},{},{}", sheet_id, 0, 0, hash_test(&send)),
             true,
         );
     }

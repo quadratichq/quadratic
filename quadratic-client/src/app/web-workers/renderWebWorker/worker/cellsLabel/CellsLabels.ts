@@ -1,10 +1,9 @@
-/**
- * CellsLabels renders all text within a CellsSheet.
- *
- * It is responsible for creating and managing CellsTextHash objects, which is
- * an efficient way of batching cells together to reduce the number of
- * geometries sent to the GPU.
- */
+//! CellsLabels renders all text within a CellsSheet.
+//!
+//! It is responsible for creating and managing CellsTextHash objects, which is
+//! an efficient way of batching cells together to reduce the number of
+//! geometries sent to the GPU.
+//!
 
 import { debugShowLoadingHashes } from '@/app/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';

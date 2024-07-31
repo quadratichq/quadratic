@@ -18,9 +18,14 @@ impl GridController {
                     });
                 transaction
                     .reverse_operations
-                    .extend(sheet.validations.set(validation));
+                    .extend(sheet.validations.set(validation.clone()));
 
                 transaction.send_validations.insert(sheet.id);
+
+                if !transaction.is_server() {
+                    self.send_updated_bounds(validation.selection.sheet_id);
+                    self.send_render_cells_selection(validation.selection, true);
+                }
             }
         }
     }
@@ -42,12 +47,25 @@ impl GridController {
                         sheet_id,
                         validation_id,
                     });
+
+                let selection = sheet
+                    .validations
+                    .validation(validation_id)
+                    .and_then(|v| Some(v.selection.clone()));
+
                 transaction
                     .reverse_operations
                     .extend(sheet.validations.remove(validation_id));
 
                 transaction.send_validations.insert(sheet.id);
-            }
+
+                if !transaction.is_server() {
+                    if let Some(selection) = selection {
+                        self.send_updated_bounds(selection.sheet_id);
+                        self.send_render_cells_selection(selection, true);
+                    }
+                }
+            };
         }
     }
 }
