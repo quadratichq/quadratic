@@ -87,6 +87,9 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
     }
     x = nextCol;
     if (x === keyboardX) x++;
+    if (keyboardX < -1) {
+      x = Math.min(x, -1);
+    }
     if (select) {
       lastMultiCursor.x = Math.min(cursor.cursorPosition.x, x);
       lastMultiCursor.width = Math.abs(cursor.cursorPosition.x - x) + 1;
@@ -143,6 +146,9 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
     }
     x = nextCol;
     if (x === keyboardX) x--;
+    if (keyboardX > 0) {
+      x = Math.max(x, 0);
+    }
     if (select) {
       lastMultiCursor.x = Math.min(cursor.cursorPosition.x, x);
       lastMultiCursor.width = Math.abs(cursor.cursorPosition.x - x) + 1;
@@ -199,6 +205,9 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
     }
     y = nextRow;
     if (y === keyboardY) y++;
+    if (keyboardY < -1) {
+      y = Math.min(y, -1);
+    }
     if (select) {
       lastMultiCursor.y = Math.min(cursor.cursorPosition.y, y);
       lastMultiCursor.height = Math.abs(cursor.cursorPosition.y - y) + 1;
@@ -255,6 +264,9 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
     }
     y = nextRow;
     if (y === keyboardY) y--;
+    if (keyboardY > 0) {
+      y = Math.max(y, 0);
+    }
     if (select) {
       lastMultiCursor.y = Math.min(cursor.cursorPosition.y, y);
       lastMultiCursor.height = Math.abs(cursor.cursorPosition.y - y) + 1;
