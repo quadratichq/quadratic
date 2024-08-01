@@ -40,7 +40,7 @@ impl Sheet {
         &mut self,
         columns: &[i64],
         formats: &Formats,
-    ) -> Vec<Operation> {
+    ) -> (Vec<Operation>, Vec<i64>) {
         let mut old_formats = Formats::default();
         let mut formats_iter = formats.iter_values();
 
@@ -52,6 +52,9 @@ impl Sheet {
 
         // tracks whether we need to update fills for the cells
         let mut render_fills = HashSet::new();
+
+        // tracks which rows need to be resized, due to wrap text changes
+        let mut resize_rows = HashSet::new();
 
         // individual cells that need to be cleared to accommodate the new column format
         let mut clear_format_cells: HashMap<Pos, FormatUpdate> = HashMap::new();
@@ -103,6 +106,15 @@ impl Sheet {
                             }
                         }
                     });
+
+                    if format_update.wrap_changed() {
+                        if let Some((start, end)) = self.column_bounds(*x, true) {
+                            resize_rows.extend(start..=end);
+                        }
+                    } else {
+                        let rows = self.get_rows_with_wrap_in_column(*x);
+                        resize_rows.extend(rows);
+                    }
                 }
             }
         });
@@ -153,7 +165,7 @@ impl Sheet {
             self.send_fills(&render_fills);
         }
 
-        ops
+        (ops, resize_rows.into_iter().collect())
     }
 }
 
@@ -224,7 +236,7 @@ mod tests {
             3,
         );
         let columns = vec![0, 1, 2];
-        let reverse = sheet.set_formats_columns(&columns, &formats);
+        let reverse = sheet.set_formats_columns(&columns, &formats).0;
         assert_eq!(
             sheet.format_column(0),
             Format {
@@ -302,7 +314,7 @@ mod tests {
             3,
         );
         let columns = vec![0, 1, 2];
-        let reverse = sheet.set_formats_columns(&columns, &formats);
+        let reverse = sheet.set_formats_columns(&columns, &formats).0;
         assert_eq!(sheet.format_cell(0, 0, false), Format::default());
         assert_eq!(sheet.format_column(0).bold, Some(true));
         assert_eq!(reverse.len(), 2);
@@ -362,16 +374,18 @@ mod tests {
             Some("red".to_string())
         );
 
-        let reverse = sheet.set_formats_columns(
-            &[0],
-            &Formats::repeat(
-                FormatUpdate {
-                    fill_color: Some(Some("blue".to_string())),
-                    ..FormatUpdate::default()
-                },
-                1,
-            ),
-        );
+        let reverse = sheet
+            .set_formats_columns(
+                &[0],
+                &Formats::repeat(
+                    FormatUpdate {
+                        fill_color: Some(Some("blue".to_string())),
+                        ..FormatUpdate::default()
+                    },
+                    1,
+                ),
+            )
+            .0;
 
         // cell format is cleared because of the column format change
         assert_eq!(sheet.format_cell(0, 0, false).fill_color, None);
@@ -409,7 +423,7 @@ mod tests {
             3,
         );
         let columns = vec![0, 1, 2];
-        let reverse = sheet.set_formats_columns(&columns, &formats);
+        let reverse = sheet.set_formats_columns(&columns, &formats).0;
         assert_eq!(
             sheet.formats_columns.get(&0).unwrap().1,
             sheet.formats_columns.get(&1).unwrap().1
@@ -457,7 +471,7 @@ mod tests {
         );
         let formats = Formats::repeat(FormatUpdate::cleared(), 3);
         let columns = vec![0, 1, 2];
-        let reverse = sheet.set_formats_columns(&columns, &formats);
+        let reverse = sheet.set_formats_columns(&columns, &formats).0;
         assert_eq!(sheet.format_column(0), Format::default());
         assert_eq!(sheet.format_column(1), Format::default());
         assert_eq!(sheet.format_column(2), Format::default());

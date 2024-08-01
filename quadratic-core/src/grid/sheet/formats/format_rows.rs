@@ -36,7 +36,11 @@ impl Sheet {
     /// need to update html cells.
     ///
     /// Returns the reverse operations.
-    pub fn set_formats_rows(&mut self, rows: &[i64], formats: &Formats) -> Vec<Operation> {
+    pub fn set_formats_rows(
+        &mut self,
+        rows: &[i64],
+        formats: &Formats,
+    ) -> (Vec<Operation>, Vec<i64>) {
         let mut old_formats = Formats::default();
         let mut formats_iter = formats.iter_values();
 
@@ -49,16 +53,19 @@ impl Sheet {
         // tracks whether we need to update fills for the cells
         let mut render_fills = HashSet::new();
 
+        // tracks which rows need to be resized, due to wrap text changes
+        let mut resize_rows = HashSet::new();
+
         // individual cells that need to be cleared to accommodate the new column format
         let mut clear_format_cells: HashMap<Pos, FormatUpdate> = HashMap::new();
 
-        rows.iter().for_each(|x| {
+        rows.iter().for_each(|y| {
             // gets the format change for this column
             if let Some(format_update) = formats_iter.next() {
                 // don't need to do anything if there are no changes
                 if !format_update.is_default() {
                     if format_update.render_cells_changed() {
-                        render_rows.insert(*x);
+                        render_rows.insert(*y);
                     }
 
                     if format_update.fill_changed() {
@@ -66,22 +73,22 @@ impl Sheet {
                     }
 
                     // update the column format and save the old format
-                    let mut row_format = self.format_row(*x);
+                    let mut row_format = self.format_row(*y);
                     old_formats.push(row_format.merge_update_into(format_update));
 
                     // remove the column format if it's no longer needed
                     if row_format.is_default() {
-                        self.formats_rows.remove(x);
+                        self.formats_rows.remove(y);
                     } else {
                         self.formats_rows
-                            .insert(*x, (row_format, Utc::now().timestamp()));
+                            .insert(*y, (row_format, Utc::now().timestamp()));
                     }
 
                     // track all cells within the columns that need to have
                     // their format updated to remove the conflicting format
                     self.format_selection(&Selection {
                         sheet_id: self.id,
-                        rows: Some(vec![*x]),
+                        rows: Some(vec![*y]),
                         ..Default::default()
                     })
                     .iter()
@@ -99,6 +106,10 @@ impl Sheet {
                             }
                         }
                     });
+
+                    if format_update.wrap_changed() || self.check_if_wrap_in_row(*y) {
+                        resize_rows.insert(*y);
+                    }
                 }
             }
         });
@@ -149,7 +160,7 @@ impl Sheet {
             self.send_fills(&render_fills);
         }
 
-        ops
+        (ops, resize_rows.into_iter().collect())
     }
 }
 
@@ -196,7 +207,7 @@ mod tests {
             3,
         );
         let rows = vec![0, 1, 2];
-        let reverse = sheet.set_formats_rows(&rows, &formats);
+        let reverse = sheet.set_formats_rows(&rows, &formats).0;
         assert_eq!(
             sheet.format_row(0),
             Format {
@@ -274,7 +285,7 @@ mod tests {
             3,
         );
         let rows = vec![0, 1, 2];
-        let reverse = sheet.set_formats_rows(&rows, &formats);
+        let reverse = sheet.set_formats_rows(&rows, &formats).0;
         assert_eq!(sheet.format_cell(0, 0, false), Format::default());
         assert_eq!(sheet.format_row(0).bold, Some(true));
         assert_eq!(reverse.len(), 2);
@@ -334,16 +345,18 @@ mod tests {
             Some("red".to_string())
         );
 
-        let reverse = sheet.set_formats_rows(
-            &[0],
-            &Formats::repeat(
-                FormatUpdate {
-                    fill_color: Some(Some("blue".to_string())),
-                    ..FormatUpdate::default()
-                },
-                1,
-            ),
-        );
+        let reverse = sheet
+            .set_formats_rows(
+                &[0],
+                &Formats::repeat(
+                    FormatUpdate {
+                        fill_color: Some(Some("blue".to_string())),
+                        ..FormatUpdate::default()
+                    },
+                    1,
+                ),
+            )
+            .0;
 
         // cell format is cleared because of the row format change
         assert_eq!(sheet.format_cell(0, 0, false).fill_color, None);
@@ -381,7 +394,7 @@ mod tests {
             3,
         );
         let rows = vec![0, 1, 2];
-        let reverse = sheet.set_formats_rows(&rows, &formats);
+        let reverse = sheet.set_formats_rows(&rows, &formats).0;
         assert_eq!(
             sheet.formats_rows.get(&0).unwrap().1,
             sheet.formats_rows.get(&1).unwrap().1

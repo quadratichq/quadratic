@@ -130,6 +130,11 @@ impl FormatUpdate {
         self.fill_color.is_some()
     }
 
+    /// Whether we need to resize row because of a wrap change.
+    pub fn wrap_changed(&self) -> bool {
+        self.wrap.is_some()
+    }
+
     pub fn combine(&self, other: &FormatUpdate) -> FormatUpdate {
         FormatUpdate {
             align: self.align.or(other.align),

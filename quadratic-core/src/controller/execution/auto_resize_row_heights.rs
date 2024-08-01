@@ -17,7 +17,10 @@ impl GridController {
         sheet_id: SheetId,
         rows: Vec<i64>,
     ) {
-        if (!cfg!(target_family = "wasm") && !cfg!(test)) || !transaction.is_user() {
+        if (!cfg!(target_family = "wasm") && !cfg!(test))
+            || !transaction.is_user()
+            || rows.is_empty()
+        {
             return;
         }
 
@@ -81,7 +84,7 @@ mod tests {
         selection::Selection,
         sheet_offsets::resize_transient::TransientResize,
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
-        CellValue, Pos, SheetPos,
+        CellValue, Pos, SheetPos, SheetRect,
     };
 
     use bigdecimal::BigDecimal;
@@ -119,6 +122,7 @@ mod tests {
             y: 0,
             sheet_id,
         };
+        gc.set_cell_wrap(sheet_pos.into(), Some(CellWrap::Wrap), None);
         let ops = gc.set_cell_value_operations(
             sheet_pos,
             "test_auto_resize_row_heights_on_set_cell_value".to_string(),
@@ -182,6 +186,34 @@ mod tests {
         clear_js_calls();
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_cell_wrap(
+            SheetRect {
+                min: Pos { x: 0, y: 0 },
+                max: Pos { x: 0, y: 10 },
+                sheet_id,
+            },
+            Some(CellWrap::Wrap),
+            None,
+        );
+        gc.set_cell_values(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            vec![
+                vec!["0"],
+                vec!["1"],
+                vec!["2"],
+                vec!["3"],
+                vec!["4"],
+                vec!["5"],
+                vec!["6"],
+                vec!["7"],
+            ],
+            None,
+        );
 
         // should trigger auto resize row heights for wrap
         let ops = vec![Operation::SetCellFormatsSelection {
@@ -368,7 +400,7 @@ mod tests {
 
         // should not trigger auto resize row heights for other formats
         let ops = vec![Operation::SetCellFormatsSelection {
-            selection: Selection::pos(0, 0, sheet_id),
+            selection: Selection::pos(1, 0, sheet_id),
             formats: Formats::repeat(
                 FormatUpdate {
                     align: Some(Some(CellAlign::Center)),
@@ -403,6 +435,7 @@ mod tests {
             y: 0,
             sheet_id,
         };
+        gc.set_cell_wrap(sheet_pos.into(), Some(CellWrap::Wrap), None);
         gc.set_code_cell(
             sheet_pos,
             CodeCellLanguage::Formula,
@@ -451,6 +484,8 @@ mod tests {
             y: 1,
             sheet_id,
         };
+
+        gc.set_cell_wrap(sheet_pos.into(), Some(CellWrap::Wrap), None);
 
         // python code cell
         gc.set_cell_value(
@@ -547,6 +582,15 @@ mod tests {
             y: 0,
             sheet_id,
         };
+        gc.set_cell_wrap(
+            SheetRect {
+                min: Pos { x: 0, y: 0 },
+                max: Pos { x: 0, y: 10 },
+                sheet_id,
+            },
+            Some(CellWrap::Wrap),
+            None,
+        );
         gc.set_cell_values(
             sheet_pos,
             vec![vec!["zero"], vec!["one"], vec!["two"], vec!["three"]],
@@ -621,6 +665,7 @@ mod tests {
             y: 0,
             sheet_id,
         };
+        gc.set_cell_wrap(sheet_pos.into(), Some(CellWrap::Wrap), None);
         let ops = gc.set_cell_value_operations(
             sheet_pos,
             "test_auto_resize_row_heights_on_user_transaction_only".to_string(),

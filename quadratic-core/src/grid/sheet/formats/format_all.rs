@@ -4,7 +4,7 @@ use crate::{
     controller::operations::operation::Operation,
     grid::{
         formats::{format::Format, format_update::FormatUpdate, Formats},
-        Sheet,
+        GridBounds, Sheet,
     },
     selection::Selection,
     Pos, Rect,
@@ -77,7 +77,7 @@ impl Sheet {
     /// to watch for changes to html cells.
     ///
     /// Returns a Vec<Operation> to undo this operation.
-    pub(crate) fn set_format_all(&mut self, update: &Formats) -> Vec<Operation> {
+    pub(crate) fn set_format_all(&mut self, update: &Formats) -> (Vec<Operation>, Vec<i64>) {
         let mut old = Formats::default();
         let mut format_all = self.format_all();
 
@@ -88,11 +88,27 @@ impl Sheet {
         let mut change_sheet_fills = false;
         let mut change_cell_fills = HashSet::new();
 
+        // tracks which rows need to be resized, due to wrap text changes
+        let mut resize_rows = HashSet::new();
+
         if let Some(format_update) = update.iter_values().next() {
             // if there are no changes to the format_all, then we don't need to
             // do anything
             if format_update.is_default() {
-                return vec![];
+                return (vec![], vec![]);
+            }
+
+            if format_update.wrap_changed() {
+                let bounds = self.bounds(true);
+                if let GridBounds::NonEmpty(rect) = bounds {
+                    resize_rows.extend(rect.y_range());
+                }
+            } else {
+                let bounds = self.bounds(true);
+                if let GridBounds::NonEmpty(rect) = bounds {
+                    let rows = self.get_rows_with_wrap_in_rect(&rect);
+                    resize_rows.extend(rows);
+                }
             }
 
             // watch for changes that need to be sent to the client
@@ -192,10 +208,10 @@ impl Sheet {
                 self.send_all_render_cells();
             }
 
-            ops
+            (ops, resize_rows.into_iter().collect())
         } else {
             // there are no updates, so nothing more to do
-            vec![]
+            (vec![], vec![])
         }
     }
 }
@@ -336,7 +352,7 @@ mod tests {
             all: true,
             ..Default::default()
         };
-        let reverse = sheet.set_formats_selection(&sel, &formats);
+        let reverse = sheet.set_formats_selection(&sel, &formats).0;
         assert_eq!(
             sheet.format_all,
             Some(Format {
@@ -405,7 +421,7 @@ mod tests {
             all: true,
             ..Default::default()
         };
-        let reverse = sheet.set_formats_selection(&sel, &formats);
+        let reverse = sheet.set_formats_selection(&sel, &formats).0;
         assert_eq!(
             sheet.format_all,
             Some(Format {

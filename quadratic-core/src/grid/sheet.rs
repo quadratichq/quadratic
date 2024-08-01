@@ -370,34 +370,76 @@ impl Sheet {
         }
     }
 
-    pub fn get_rows_in_selection(&self, selection: &Selection) -> Vec<i64> {
-        let mut rows = HashSet::<i64>::new();
-        if (selection.all) || selection.columns.is_some() {
-            if let GridBounds::NonEmpty(rect) = self.data_bounds {
-                for y in rect.y_range() {
-                    rows.insert(y);
-                }
-            }
-            if let GridBounds::NonEmpty(rect) = self.format_bounds {
-                for y in rect.y_range() {
-                    rows.insert(y);
-                }
-            }
-        } else {
-            if let Some(selection_rows) = &selection.rows {
-                for &row in selection_rows {
-                    rows.insert(row);
-                }
-            }
-            if let Some(selection_rects) = &selection.rects {
-                for rect in selection_rects {
-                    for y in rect.y_range() {
-                        rows.insert(y);
-                    }
+    pub fn check_if_wrap_in_row(&self, y: i64) -> bool {
+        let bounds = self.bounds(true);
+        if let GridBounds::NonEmpty(rect) = bounds {
+            for x in rect.x_range() {
+                let format = self.format_cell(x, y, true);
+                if format.wrap.is_some() {
+                    return true;
                 }
             }
         }
-        rows.into_iter().collect()
+        false
+    }
+
+    pub fn get_rows_with_wrap_in_column(&self, x: i64) -> Vec<i64> {
+        let mut rows = vec![];
+        if let Some((start, end)) = self.column_bounds(x, true) {
+            for y in start..=end {
+                let format = self.format_cell(x, y, true);
+                if format.wrap.is_some() {
+                    rows.push(y);
+                }
+            }
+        }
+        rows
+    }
+
+    pub fn get_rows_with_wrap_in_rect(&self, rect: &Rect) -> Vec<i64> {
+        let mut rows = vec![];
+        for x in rect.x_range() {
+            for y in rect.y_range() {
+                let format = self.format_cell(x, y, true);
+                if format.wrap.is_some() {
+                    rows.push(y);
+                    break;
+                }
+            }
+        }
+        rows
+    }
+
+    pub fn get_rows_with_wrap_in_selection(&self, selection: &Selection) -> Vec<i64> {
+        let mut rows_set = HashSet::<i64>::new();
+        if selection.all {
+            let bounds = self.bounds(true);
+            if let GridBounds::NonEmpty(rect) = bounds {
+                let rows = self.get_rows_with_wrap_in_rect(&rect);
+                rows_set.extend(rows);
+            }
+        } else {
+            if let Some(columns) = &selection.columns {
+                for x in columns {
+                    let rows = self.get_rows_with_wrap_in_column(*x);
+                    rows_set.extend(rows);
+                }
+            }
+            if let Some(selection_rows) = &selection.rows {
+                for row in selection_rows {
+                    if self.check_if_wrap_in_row(*row) {
+                        rows_set.insert(*row);
+                    }
+                }
+            }
+            if let Some(selection_rects) = &selection.rects {
+                selection_rects.iter().for_each(|rect| {
+                    let rows = self.get_rows_with_wrap_in_rect(rect);
+                    rows_set.extend(rows);
+                });
+            }
+        }
+        rows_set.into_iter().collect()
     }
 }
 

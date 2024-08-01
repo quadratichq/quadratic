@@ -63,21 +63,28 @@ impl Sheet {
         &mut self,
         selection: &Selection,
         formats: &Formats,
-    ) -> Vec<Operation> {
+    ) -> (Vec<Operation>, Vec<i64>) {
         if selection.all {
             self.set_format_all(formats)
         } else {
             let mut ops = vec![];
+            let mut resize = vec![];
             if let Some(columns) = selection.columns.as_ref() {
-                ops.extend(self.set_formats_columns(columns, formats));
+                let (operations, resize_rows) = self.set_formats_columns(columns, formats);
+                ops.extend(operations);
+                resize.extend(resize_rows);
             }
             if let Some(rows) = selection.rows.as_ref() {
-                ops.extend(self.set_formats_rows(rows, formats));
+                let (operations, resize_rows) = self.set_formats_rows(rows, formats);
+                ops.extend(operations);
+                resize.extend(resize_rows);
             }
             if let Some(rects) = selection.rects.as_ref() {
-                ops.extend(self.set_formats_rects(rects, formats));
+                let (operations, resize_rows) = self.set_formats_rects(rects, formats);
+                ops.extend(operations);
+                resize.extend(resize_rows);
             }
-            ops
+            (ops, resize)
         }
     }
 

@@ -176,11 +176,10 @@ impl GridController {
             }
             self.send_updated_bounds_rect(&sheet_rect, false);
             self.send_render_cells(&sheet_rect);
-            self.start_auto_resize_row_heights(
-                transaction,
-                sheet_id,
-                sheet_rect.y_range().collect(),
-            );
+            if let Some(sheet) = self.try_sheet(sheet_id) {
+                let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into());
+                self.start_auto_resize_row_heights(transaction, sheet_id, rows);
+            }
         }
     }
 
