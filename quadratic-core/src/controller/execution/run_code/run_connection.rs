@@ -29,6 +29,6 @@ impl GridController {
         // stop the computation cycle until async returns
         transaction.current_sheet_pos = Some(sheet_pos);
         transaction.waiting_for_async = Some(CodeCellLanguage::Connection { kind, id });
-        transaction.has_async = true;
+        self.transactions.add_async_transaction(transaction);
     }
 }

@@ -287,8 +287,10 @@ impl<'a> Parser<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_replace_internal_cell_references() {
         let src = "SUM(R[0]C[-1])
         + SUM(R[-1]C[0])";
@@ -300,6 +302,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_replace_a1_notation() {
         let src = "SUM(nA0)
         + SUM(An1)";
@@ -311,6 +314,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn check_formula() {
         assert!(parse_and_check_formula("SUM(10)", 0, 0));
         assert!(!parse_and_check_formula("SUM()", 0, 0));

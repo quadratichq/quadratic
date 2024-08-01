@@ -132,8 +132,10 @@ mod tests {
         },
         selection::Selection,
     };
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn sheet_formats() {
         let mut sheet = sheet::Sheet::test();
         sheet.set_formats_columns(

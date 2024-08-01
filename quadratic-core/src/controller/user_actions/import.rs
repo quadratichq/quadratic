@@ -56,6 +56,8 @@ mod tests {
         CellValue, Rect, RunErrorMsg,
     };
 
+    use serial_test::{parallel, serial};
+
     use super::*;
 
     fn read_test_csv_file(file_name: &str) -> Vec<u8> {
@@ -74,6 +76,7 @@ mod tests {
     // "../quadratic-rust-shared/data/parquet/flights_1m.parquet";
 
     #[test]
+    #[parallel]
     fn imports_a_simple_csv() {
         let scv_file = read_test_csv_file("simple.csv");
         let mut grid_controller = GridController::test();
@@ -109,6 +112,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn errors_on_an_empty_csv() {
         let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
@@ -119,6 +123,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn import_large_csv() {
         let mut gc = GridController::test();
         let mut csv = String::new();
@@ -140,6 +145,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn import_problematic_line() {
         let mut gc = GridController::test();
         let csv = "980E92207901934";
@@ -156,6 +162,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn imports_a_simple_excel_file() {
         let mut grid_controller = GridController::test_blank();
         let pos = Pos { x: 0, y: 0 };
@@ -213,6 +220,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn import_all_excel_functions() {
         let mut grid_controller = GridController::test_blank();
         let pos = Pos { x: 0, y: 0 };
@@ -253,6 +261,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn imports_a_simple_parquet() {
         let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
@@ -329,7 +338,7 @@ mod tests {
 
     // The following tests run too slowly to be included in the test suite:
 
-    // #[test]
+    // #[test]#[parallel]
     // fn imports_a_medium_parquet() {
     //     let mut grid_controller = GridController::test();
     //     let sheet_id = grid_controller.grid.sheets()[0].id;
@@ -351,6 +360,7 @@ mod tests {
     // }
 
     #[test]
+    #[parallel]
     fn should_import_with_title_header() {
         let scv_file = read_test_csv_file("title_row.csv");
         let mut gc = GridController::test();
@@ -368,6 +378,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn should_import_with_title_header_and_empty_first_row() {
         let scv_file = read_test_csv_file("title_row_empty_first.csv");
         let mut gc = GridController::test();
@@ -385,6 +396,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn should_import_utf16_with_invalid_characters() {
         let scv_file = read_test_csv_file("encoding_issue.csv");
 
@@ -402,7 +414,7 @@ mod tests {
         assert_cell_value_row(&gc, sheet_id, 0, 2, 2, vec!["0", " 2", " Valid"]);
     }
 
-    // #[test]
+    // #[test]#[parallel]
     // fn imports_a_large_parquet() {
     //     let mut grid_controller = GridController::test();
     //     let sheet_id = grid_controller.grid.sheets()[0].id;

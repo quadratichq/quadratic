@@ -29,8 +29,10 @@ mod tests {
     };
 
     use super::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_set_borders() {
         let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
@@ -150,6 +152,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_set_borders_sheet_id_not_found() {
         let mut grid_controller = GridController::test();
         let sheet_rect = SheetRect::single_pos(Pos { x: 0, y: 0 }, SheetId::new());

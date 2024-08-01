@@ -11,7 +11,7 @@ use crate::{
     },
     grid::{
         formats::{format_update::FormatUpdate, Formats},
-        CellAlign, CellWrap, NumericFormat, NumericFormatKind,
+        CellAlign, CellVerticalAlign, CellWrap, NumericFormat, NumericFormatKind,
     },
     selection::Selection,
 };
@@ -36,6 +36,24 @@ impl GridController {
         let formats = Formats::repeat(
             FormatUpdate {
                 align: Some(Some(align)),
+                ..Default::default()
+            },
+            selection.count(),
+        );
+        let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        Ok(())
+    }
+
+    pub(crate) fn set_vertical_align_selection(
+        &mut self,
+        selection: Selection,
+        vertical_align: CellVerticalAlign,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let formats = Formats::repeat(
+            FormatUpdate {
+                vertical_align: Some(Some(vertical_align)),
                 ..Default::default()
             },
             selection.count(),
@@ -245,8 +263,10 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{controller::GridController, grid::CellWrap, selection::Selection, Rect};
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn set_align_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -273,6 +293,34 @@ mod test {
     }
 
     #[test]
+    #[parallel]
+    fn set_vertical_align_selection() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_vertical_align_selection(
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+                rows: None,
+                columns: None,
+                all: false,
+            },
+            crate::grid::CellVerticalAlign::Middle,
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.columns.get(&0).unwrap().vertical_align.get(0),
+            Some(crate::grid::CellVerticalAlign::Middle)
+        );
+    }
+
+    #[test]
+    #[parallel]
     fn set_bold_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -296,6 +344,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn set_cell_wrap_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -322,6 +371,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn set_numeric_format_currency() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -351,6 +401,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn set_numeric_format_exponential() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -381,6 +432,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn set_numeric_format_percentage() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -411,6 +463,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn toggle_commas_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -456,6 +509,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn set_italic_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -479,6 +533,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn set_text_color_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -505,6 +560,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn set_fill_color_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -531,6 +587,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn change_decimal_places_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -559,6 +616,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn clear_format() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -602,6 +660,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn clear_format_column() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -643,6 +702,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn set_format_column_row() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
