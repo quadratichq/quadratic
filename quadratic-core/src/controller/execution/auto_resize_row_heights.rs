@@ -129,7 +129,7 @@ mod tests {
             height: 40f64,
         }];
         let row_heights_string = serde_json::to_string(&row_heights).unwrap();
-        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights);
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops.clone(), row_heights.clone());
 
         assert_eq!(
             gc.sheet(sheet_id).display_value(sheet_pos.into()),
@@ -154,6 +154,22 @@ mod tests {
             format!("{},{}", sheet_id, row_heights_string),
             true,
         );
+
+        // transaction should be completed
+        let async_transaction = gc.transactions.get_async_transaction(transaction_id);
+        assert!(async_transaction.is_err());
+
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights);
+        // should trigger auto resize row heights and request row heights from renderer
+        let transaction_id = gc.last_transaction().unwrap().id;
+        expect_js_call(
+            "jsRequestRowHeights",
+            format!("{},{},{}", transaction_id, sheet_id, "[0]"),
+            false,
+        );
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(0), 40f64);
+        // new row height same as previous, should not trigger jsResizeRowHeights
+        expect_js_call_count("jsResizeRowHeights", 0, true);
 
         // transaction should be completed
         let async_transaction = gc.transactions.get_async_transaction(transaction_id);
