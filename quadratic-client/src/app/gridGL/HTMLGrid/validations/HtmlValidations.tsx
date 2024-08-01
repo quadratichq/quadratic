@@ -57,9 +57,8 @@ export const HtmlValidations = () => {
       //     events.off('resizeHeadingColumn', updateCursor);
     };
   }, []);
-  console.log(message);
+
   if (hide || !offsets || !message) return null;
-  console.log(2);
   const top = offsets.bottom;
   const left = offsets.left + offsets.width / 2;
 

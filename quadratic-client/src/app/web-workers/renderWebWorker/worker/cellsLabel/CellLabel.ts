@@ -209,7 +209,7 @@ export class CellLabel {
 
   checkRightClip(nextRight: number): boolean {
     if (this.dropdown) {
-      this.clipRight = this.AABB.right - DROPDOWN_SIZE[0] - DROPDOWN_PADDING[0];
+      this.cellClipRight = this.AABB.right - DROPDOWN_SIZE[0] - DROPDOWN_PADDING[0];
       return false;
     }
     if (this.overflowRight && this.AABB.right + this.overflowRight > nextRight) {

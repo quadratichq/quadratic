@@ -1063,5 +1063,4 @@ export type CoreClientMessage =
   | CoreClientGetValidations
   | CoreClientSheetValidations
   | CoreClientGetValidationFromPos
-  | CoreClientOfflineTransactionsApplied
   | CoreClientResizeRowHeights;

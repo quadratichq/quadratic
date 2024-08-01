@@ -169,6 +169,7 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientSheetValidations') {
       events.emit('sheetValidations', e.data.sheetId, e.data.validations);
+      return;
     } else if (e.data.type === 'coreClientResizeRowHeights') {
       events.emit('resizeRowHeights', e.data.sheetId, e.data.rowHeights);
       return;
