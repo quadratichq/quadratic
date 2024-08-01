@@ -10,6 +10,8 @@ import { readFileAsArrayBuffer } from '@/app/helpers/files';
 import {
   CellAlign,
   CellFormatSummary,
+  CellVerticalAlign,
+  CellWrap,
   CodeCellLanguage,
   Format,
   JsCodeCell,
@@ -603,6 +605,26 @@ class Core {
     });
   }
 
+  setCellVerticalAlign(selection: Selection, verticalAlign: CellVerticalAlign, cursor?: string) {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        this.gridController.setCellVerticalAlign(JSON.stringify(selection, bigIntReplacer), verticalAlign, cursor);
+        resolve(undefined);
+      });
+    });
+  }
+
+  setCellWrap(selection: Selection, wrap: CellWrap, cursor?: string) {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        this.gridController.setCellWrap(JSON.stringify(selection, bigIntReplacer), wrap, cursor);
+        resolve(undefined);
+      });
+    });
+  }
+
   //#region Clipboard
   copyToClipboard(selection: Selection): Promise<{ plainText: string; html: string }> {
     return new Promise((resolve) => {
@@ -749,7 +771,7 @@ class Core {
     });
   }
 
-  findNextColumn(data: ClientCoreFindNextColumn): Promise<number> {
+  findNextColumn(data: ClientCoreFindNextColumn): Promise<number | undefined> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -760,7 +782,7 @@ class Core {
     });
   }
 
-  findNextRow(data: ClientCoreFindNextRow): Promise<number> {
+  findNextRow(data: ClientCoreFindNextRow): Promise<number | undefined> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -936,6 +958,11 @@ class Core {
     if (validation) {
       return JSON.parse(validation);
     }
+  }
+
+  receiveRowHeights(transactionId: string, sheetId: string, rowHeights: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.receiveRowHeights(transactionId, sheetId, rowHeights);
   }
 }
 

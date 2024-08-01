@@ -19,6 +19,7 @@ import {
   DataObject as DataIcon,
   AttachMoney as DollarIcon,
   MoreHorizRounded as DotsHorizontalIcon,
+  ExpandMore as ExpandMoreIcon,
   OpenInNew as ExternalLinkIcon,
   ChatBubbleOutline as FeedbackIcon,
   InsertDriveFileOutlined as FileIcon,
@@ -38,7 +39,11 @@ import {
   FormatAlignRight as TextAlignRightIcon,
   FormatColorText as TextColorIcon,
   FormatClear as TextNoneIcon,
+  VerticalAlignBottom as TextVerticalAlignBottomIcon,
+  VerticalAlignCenter as TextVerticalAlignMiddleIcon,
+  VerticalAlignTop as TextVerticalAlignTopIcon,
   UndoOutlined as UndoIcon,
+  WrapText as WrapTextIcon,
   ZoomInOutlined as ZoomInIcon,
   ZoomOutOutlined as ZoomOutIcon,
 } from '@mui/icons-material';
@@ -62,6 +67,7 @@ export {
   DataIcon,
   DollarIcon,
   DotsHorizontalIcon,
+  ExpandMoreIcon,
   ExternalLinkIcon,
   FeedbackIcon,
   FileIcon,
@@ -81,7 +87,11 @@ export {
   TextAlignRightIcon,
   TextColorIcon,
   TextNoneIcon,
+  TextVerticalAlignBottomIcon,
+  TextVerticalAlignMiddleIcon,
+  TextVerticalAlignTopIcon,
   UndoIcon,
+  WrapTextIcon,
   ZoomInIcon,
   ZoomOutIcon,
 };
@@ -329,5 +339,35 @@ export const PanelPositionBottomIcon = (props: SvgIconProps) => (
 export const PanelPositionLeftIcon = (props: SvgIconProps) => (
   <SvgIcon {...props}>
     <path d="M19 17V7H9V17H19ZM5 19C4.45 19 3.97917 18.8042 3.5875 18.4125C3.19583 18.0208 3 17.55 3 17V7C3 6.45 3.19583 5.97917 3.5875 5.5875C3.97917 5.19583 4.45 5 5 5H19C19.55 5 20.0208 5.19583 20.4125 5.5875C20.8042 5.97917 21 6.45 21 7V17C21 17.55 20.8042 18.0208 20.4125 18.4125C20.0208 18.8042 19.55 19 19 19H5Z" />
+  </SvgIcon>
+);
+
+export const TextOverflowIcon = (props: SvgIconProps) => (
+  <SvgIcon {...props}>
+    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="48" height="48" fill="white" fillOpacity="0.01" />
+      <path d="M8 10V38" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+      <path d="M24 4V16" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+      <path d="M16 24H42" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+      <path
+        d="M37.0561 19.0113L42.0929 24.0255L37.0561 29.123"
+        stroke="currentColor"
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M24 32V44" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+    </svg>
+  </SvgIcon>
+);
+
+export const TextClipIcon = (props: SvgIconProps) => (
+  <SvgIcon {...props}>
+    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="48" height="48" fill="white" fillOpacity="0.01" />
+      <path d="M8 8V40" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+      <path d="M40 8V40" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+      <path d="M20.0522 24.0083H40.0002" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+    </svg>
   </SvgIcon>
 );

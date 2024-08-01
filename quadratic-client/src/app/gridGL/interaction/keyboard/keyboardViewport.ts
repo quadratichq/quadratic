@@ -1,3 +1,4 @@
+import { debug } from '@/app/debugFlags';
 import { sheets } from '@/app/grid/controller/Sheets.js';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker.js';
@@ -150,7 +151,8 @@ export function keyboardViewport(options: {
   }
 
   // Fill right
-  if (matchShortcut('fill_right', event)) {
+  // Disabled in debug mode, to allow page reload
+  if (!debug && matchShortcut('fill_right', event)) {
     const cursor = sheets.sheet.cursor;
     if (cursor.columnRow?.all || cursor.columnRow?.rows) return true;
     if (cursor.columnRow?.columns && cursor.multiCursor) return true;

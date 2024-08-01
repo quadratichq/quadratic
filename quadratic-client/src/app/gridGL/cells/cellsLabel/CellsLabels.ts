@@ -92,6 +92,9 @@ export class CellsLabels extends Container {
         const bounds = pixiApp.viewport.getVisibleBounds();
         if (intersects.rectangleRectangle(cellsTextHash.viewRectangle, bounds)) {
           cellsTextHash.show();
+          if (pixiApp.gridLines) {
+            pixiApp.gridLines.dirty = true;
+          }
           pixiApp.setViewportDirty();
         } else {
           cellsTextHash.hide();
@@ -152,6 +155,10 @@ export class CellsLabels extends Container {
   private getHash(x: number, y: number): CellsTextHash | undefined {
     const hash = CellsLabels.getHash(x, y);
     return this.cellsTextHash.get(`${hash.x},${hash.y}`);
+  }
+
+  async getCellsContentMaxHeight(row: number): Promise<number> {
+    return await renderWebWorker.getCellsRowMaxHeight(this.sheetId, row);
   }
 
   unload(hashX: number, hashY: number) {

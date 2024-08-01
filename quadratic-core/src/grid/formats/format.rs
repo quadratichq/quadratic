@@ -3,12 +3,13 @@
 use std::fmt::Display;
 
 use super::format_update::FormatUpdate;
-use crate::grid::{CellAlign, CellWrap, NumericFormat, RenderSize};
+use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat, RenderSize};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq, ts_rs::TS)]
 pub struct Format {
     pub align: Option<CellAlign>,
+    pub vertical_align: Option<CellVerticalAlign>,
     pub wrap: Option<CellWrap>,
     pub numeric_format: Option<NumericFormat>,
     pub numeric_decimals: Option<i16>,
@@ -23,6 +24,7 @@ pub struct Format {
 impl Format {
     pub fn is_default(&self) -> bool {
         self.align.is_none()
+            && self.vertical_align.is_none()
             && self.wrap.is_none()
             && self.numeric_format.is_none()
             && self.numeric_decimals.is_none()
@@ -37,6 +39,7 @@ impl Format {
     /// Clears all formatting.
     pub fn clear(&mut self) {
         self.align = None;
+        self.vertical_align = None;
         self.wrap = None;
         self.numeric_format = None;
         self.numeric_decimals = None;
@@ -54,6 +57,10 @@ impl Format {
         if let Some(align) = update.align {
             old.align = Some(self.align);
             self.align = align;
+        }
+        if let Some(vertical_align) = update.vertical_align {
+            old.vertical_align = Some(self.vertical_align);
+            self.vertical_align = vertical_align;
         }
         if let Some(wrap) = update.wrap {
             old.wrap = Some(self.wrap);
@@ -108,6 +115,9 @@ impl Format {
         let mut old = FormatUpdate::default();
         if self.align.is_some() && update.align.is_some() {
             old.align = Some(None);
+        }
+        if self.vertical_align.is_some() && update.vertical_align.is_some() {
+            old.vertical_align = Some(None);
         }
         if self.wrap.is_some() && update.wrap.is_some() {
             old.wrap = Some(None);
@@ -171,6 +181,7 @@ impl Format {
     pub fn to_replace(&self) -> FormatUpdate {
         FormatUpdate {
             align: self.align.map_or(Some(None), |a| Some(Some(a))),
+            vertical_align: self.vertical_align.map_or(Some(None), |v| Some(Some(v))),
             wrap: self.wrap.map_or(Some(None), |w| Some(Some(w))),
             numeric_format: self
                 .numeric_format
@@ -238,6 +249,7 @@ impl From<&Format> for FormatUpdate {
     fn from(format: &Format) -> Self {
         Self {
             align: format.align.map(Some),
+            vertical_align: format.vertical_align.map(Some),
             wrap: format.wrap.map(Some),
             numeric_format: format.numeric_format.clone().map(Some),
             numeric_decimals: format.numeric_decimals.map(Some),
@@ -256,6 +268,7 @@ impl From<Format> for FormatUpdate {
     fn from(format: Format) -> Self {
         Self {
             align: format.align.map(Some),
+            vertical_align: format.vertical_align.map(Some),
             wrap: format.wrap.map(Some),
             numeric_format: format.numeric_format.clone().map(Some),
             numeric_decimals: format.numeric_decimals.map(Some),
@@ -273,17 +286,21 @@ impl From<Format> for FormatUpdate {
 mod test {
     use super::*;
     use crate::grid::{CellAlign, CellWrap, NumericFormat, NumericFormatKind, RenderSize};
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn is_default() {
         let format = Format::default();
         assert!(format.is_default());
     }
 
     #[test]
+    #[parallel]
     fn clear() {
         let mut format = Format {
             align: Some(CellAlign::Center),
+            vertical_align: Some(CellVerticalAlign::Middle),
             wrap: Some(CellWrap::Wrap),
             numeric_format: Some(NumericFormat {
                 kind: NumericFormatKind::Currency,
@@ -304,6 +321,7 @@ mod test {
         format.clear();
 
         assert_eq!(format.align, None);
+        assert_eq!(format.vertical_align, None);
         assert_eq!(format.wrap, None);
         assert_eq!(format.numeric_format, None);
         assert_eq!(format.numeric_decimals, None);
@@ -316,9 +334,11 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn needs_to_clear_cell_format_for_parent() {
         let format = Format {
             align: Some(CellAlign::Center),
+            vertical_align: Some(CellVerticalAlign::Middle),
             wrap: Some(CellWrap::Wrap),
             numeric_format: Some(NumericFormat {
                 kind: NumericFormatKind::Currency,
@@ -338,6 +358,7 @@ mod test {
 
         let update = FormatUpdate {
             align: Some(Some(CellAlign::Left)),
+            vertical_align: Some(Some(CellVerticalAlign::Top)),
             wrap: Some(Some(CellWrap::Overflow)),
             numeric_format: Some(Some(NumericFormat {
                 kind: NumericFormatKind::Percentage,
@@ -362,6 +383,7 @@ mod test {
             clear_update,
             FormatUpdate {
                 align: Some(None),
+                vertical_align: Some(None),
                 wrap: Some(None),
                 numeric_format: Some(None),
                 numeric_decimals: Some(None),
@@ -376,10 +398,12 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn merge_update_into() {
         let mut format = Format::default();
         let update = super::FormatUpdate {
             align: Some(Some(CellAlign::Center)),
+            vertical_align: Some(Some(CellVerticalAlign::Middle)),
             wrap: Some(Some(CellWrap::Wrap)),
             numeric_format: Some(Some(NumericFormat {
                 kind: NumericFormatKind::Currency,
@@ -400,6 +424,7 @@ mod test {
         let old = format.merge_update_into(&update);
 
         assert_eq!(format.align, Some(CellAlign::Center));
+        assert_eq!(format.vertical_align, Some(CellVerticalAlign::Middle));
         assert_eq!(format.wrap, Some(CellWrap::Wrap));
         assert_eq!(
             format.numeric_format,
@@ -428,6 +453,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn combine() {
         let cell = Format {
             bold: Some(false),
@@ -480,9 +506,11 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn format_to_format_update_ref() {
         let format = Format {
             align: Some(CellAlign::Center),
+            vertical_align: Some(CellVerticalAlign::Middle),
             wrap: Some(CellWrap::Wrap),
             numeric_format: Some(NumericFormat {
                 kind: NumericFormatKind::Currency,
@@ -503,6 +531,7 @@ mod test {
         let update: FormatUpdate = (&format).into();
 
         assert_eq!(update.align, Some(Some(CellAlign::Center)));
+        assert_eq!(update.vertical_align, Some(Some(CellVerticalAlign::Middle)));
         assert_eq!(update.wrap, Some(Some(CellWrap::Wrap)));
         assert_eq!(
             update.numeric_format,
@@ -527,9 +556,11 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn format_to_format_update() {
         let format = Format {
             align: Some(CellAlign::Center),
+            vertical_align: Some(CellVerticalAlign::Middle),
             wrap: Some(CellWrap::Wrap),
             numeric_format: Some(NumericFormat {
                 kind: NumericFormatKind::Currency,
@@ -550,6 +581,7 @@ mod test {
         let update: FormatUpdate = format.into();
 
         assert_eq!(update.align, Some(Some(CellAlign::Center)));
+        assert_eq!(update.vertical_align, Some(Some(CellVerticalAlign::Middle)));
         assert_eq!(update.wrap, Some(Some(CellWrap::Wrap)));
         assert_eq!(
             update.numeric_format,
@@ -574,12 +606,14 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn to_replace() {
         let format_update: FormatUpdate = Format::default().to_replace();
         assert_eq!(
             format_update,
             FormatUpdate {
                 align: Some(None),
+                vertical_align: Some(None),
                 wrap: Some(None),
                 numeric_format: Some(None),
                 numeric_decimals: Some(None),

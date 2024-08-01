@@ -8,6 +8,7 @@ use strum_macros::{Display, EnumString};
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum CellFmtArray {
     Align(RunLengthEncoding<Option<CellAlign>>),
+    VerticalAlign(RunLengthEncoding<Option<CellVerticalAlign>>),
     Wrap(RunLengthEncoding<Option<CellWrap>>),
     NumericFormat(RunLengthEncoding<Option<NumericFormat>>),
     NumericDecimals(RunLengthEncoding<Option<i16>>),
@@ -33,6 +34,15 @@ impl CellFmtAttr for CellAlign {
     }
     fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
         &mut column.align
+    }
+}
+impl CellFmtAttr for CellVerticalAlign {
+    type Value = Self;
+    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
+        &column.vertical_align
+    }
+    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
+        &mut column.vertical_align
     }
 }
 impl CellFmtAttr for CellWrap {
@@ -133,6 +143,35 @@ pub enum CellAlign {
     Center,
     Left,
     Right,
+}
+
+impl CellAlign {
+    pub fn as_css_string(&self) -> &'static str {
+        match self {
+            CellAlign::Center => "text-align: center;",
+            CellAlign::Left => "text-align: left;",
+            CellAlign::Right => "text-align: right;",
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, Display, EnumString)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub enum CellVerticalAlign {
+    Top,
+    Middle,
+    Bottom,
+}
+
+impl CellVerticalAlign {
+    pub fn as_css_string(&self) -> &'static str {
+        match self {
+            CellVerticalAlign::Top => "vertical-align: top;",
+            CellVerticalAlign::Middle => "vertical-align: middle;",
+            CellVerticalAlign::Bottom => "vertical-align: bottom;",
+        }
+    }
 }
 
 #[derive(

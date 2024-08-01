@@ -112,6 +112,10 @@ extern "C" {
     );
 
     pub fn jsSheetValidations(sheet_id: String, validations: String /* JsValidationSheet */);
+    // rows: Vec<i64>
+    pub fn jsRequestRowHeights(transaction_id: String, sheet_id: String, rows: String);
+    // row_heights: Vec<JsRowHeight>
+    pub fn jsResizeRowHeights(sheet_id: String, row_heights: String /*Vec<JsRowHeight>*/);
 }
 
 #[cfg(test)]
@@ -538,5 +542,27 @@ pub fn jsSheetValidations(sheet_id: String, validations: String /* JsValidation 
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsSheetValidations",
         format!("{},{}", sheet_id, validations),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsRequestRowHeights(
+    transaction_id: String,
+    sheet_id: String,
+    rows: String, /*Vec<i64>*/
+) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsRequestRowHeights",
+        format!("{},{},{}", transaction_id, sheet_id, rows),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsResizeRowHeights(sheet_id: String, row_heights: String /*Vec<JsRowHeight>*/) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsResizeRowHeights",
+        format!("{},{}", sheet_id, row_heights),
     ));
 }

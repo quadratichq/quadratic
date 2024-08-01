@@ -2,8 +2,8 @@ use crate::{
     grid::{
         formats::{format_update::FormatUpdate, Formats},
         formatting::CellFmtArray,
-        Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericCommas, NumericDecimals,
-        NumericFormat, RenderSize, TextColor,
+        Bold, CellAlign, CellFmtAttr, CellVerticalAlign, CellWrap, FillColor, Italic,
+        NumericCommas, NumericDecimals, NumericFormat, RenderSize, TextColor,
     },
     selection::Selection,
     Pos, Rect, RunLengthEncoding, SheetRect,
@@ -43,6 +43,7 @@ impl Sheet {
     ) -> Vec<CellFmtArray> {
         let mut cell_formats = vec![
             CellFmtArray::Align(RunLengthEncoding::new()),
+            CellFmtArray::VerticalAlign(RunLengthEncoding::new()),
             CellFmtArray::Wrap(RunLengthEncoding::new()),
             CellFmtArray::NumericFormat(RunLengthEncoding::new()),
             CellFmtArray::NumericDecimals(RunLengthEncoding::new()),
@@ -51,6 +52,7 @@ impl Sheet {
             CellFmtArray::Italic(RunLengthEncoding::new()),
             CellFmtArray::TextColor(RunLengthEncoding::new()),
             CellFmtArray::FillColor(RunLengthEncoding::new()),
+            CellFmtArray::RenderSize(RunLengthEncoding::new()),
         ];
         for y in sheet_rect.y_range() {
             for x in sheet_rect.x_range() {
@@ -59,6 +61,9 @@ impl Sheet {
                     cell_formats.iter_mut().for_each(|array| match array {
                         CellFmtArray::Align(array) => {
                             array.push(self.get_formatting_value::<CellAlign>(pos));
+                        }
+                        CellFmtArray::VerticalAlign(array) => {
+                            array.push(self.get_formatting_value::<CellVerticalAlign>(pos));
                         }
                         CellFmtArray::Wrap(array) => {
                             array.push(self.get_formatting_value::<CellWrap>(pos));
@@ -91,6 +96,9 @@ impl Sheet {
                 } else {
                     cell_formats.iter_mut().for_each(|array| match array {
                         CellFmtArray::Align(array) => {
+                            array.push(None);
+                        }
+                        CellFmtArray::VerticalAlign(array) => {
                             array.push(None);
                         }
                         CellFmtArray::Wrap(array) => {
@@ -151,8 +159,10 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn override_cell_formats() {
         let sheet = Sheet::test();
         let rect = Rect::from_numbers(0, 0, 2, 2);
@@ -161,6 +171,7 @@ mod tests {
         assert_eq!(formats.size(), 4);
         let format = formats.get_at(0).unwrap();
         assert_eq!(format.align, Some(None));
+        assert_eq!(format.vertical_align, Some(None));
         assert_eq!(format.wrap, Some(None));
         assert_eq!(format.numeric_format, Some(None));
         assert_eq!(format.numeric_decimals, Some(None));

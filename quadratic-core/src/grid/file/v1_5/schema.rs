@@ -134,6 +134,7 @@ pub type Borders = HashMap<String, Vec<(i64, Vec<Option<CellBorder>>)>>;
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Format {
     pub align: Option<CellAlign>,
+    pub vertical_align: Option<CellVerticalAlign>,
     pub wrap: Option<CellWrap>,
     pub numeric_format: Option<NumericFormat>,
     pub numeric_decimals: Option<i16>,
@@ -169,6 +170,16 @@ pub struct Sheet {
 
     #[serde(default)]
     pub validations: Validations,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub rows_resize: Vec<(i64, Resize)>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum Resize {
+    #[default]
+    Auto,
+    Manual,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -206,6 +217,12 @@ pub type RenderSize = v1_4::RenderSize;
 pub struct Column {
     pub values: HashMap<String, CellValue>,
     pub align: HashMap<String, ColumnRepeat<CellAlign>>,
+
+    // This skip is necessary since we're adding it mid-version.
+    // Next version we should remove them.
+    #[serde(skip_serializing_if = "HashMap::is_empty", default)]
+    pub vertical_align: HashMap<String, ColumnRepeat<CellVerticalAlign>>,
+
     pub wrap: HashMap<String, ColumnRepeat<CellWrap>>,
     pub numeric_format: HashMap<String, ColumnRepeat<NumericFormat>>,
     pub numeric_decimals: HashMap<String, ColumnRepeat<i16>>,
@@ -280,6 +297,13 @@ pub enum CellAlign {
     Left,
     Center,
     Right,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum CellVerticalAlign {
+    Top,
+    Middle,
+    Bottom,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

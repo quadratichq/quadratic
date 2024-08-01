@@ -89,8 +89,10 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use super::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_move_sheet_operation() {
         let mut gc = GridController::test();
         gc.add_sheet(None);
@@ -137,6 +139,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn get_sheet_next_name() {
         // Sheet 1
         let mut gc = GridController::test();
@@ -156,6 +159,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn sheet_names() {
         let mut gc = GridController::test();
         gc.add_sheet(None);

@@ -92,6 +92,13 @@ export class CellsSheets extends Container<CellsSheet> {
     if (debugShowCellsHashBoxes && sheets.sheet.id === message.sheetId) {
       pixiApp.setViewportDirty();
     }
+
+    const sheet = sheets.getById(message.sheetId);
+    if (!sheet) {
+      throw new Error('Expected to find sheet in cellsTextHashClear');
+    }
+    const key = `${message.hashX},${message.hashY}`;
+    sheet.gridOverflowLines.updateHash(key, message.overflowGridLines);
   }
 
   labelMeshEntry(message: RenderClientLabelMeshEntry) {
@@ -127,9 +134,14 @@ export class CellsSheets extends Container<CellsSheet> {
     }
   }
 
-  async getCellsContentMaxWidth(column: number): Promise<number> {
+  getCellsContentMaxWidth(column: number): Promise<number> {
     if (!this.current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxWidth');
     return this.current.cellsLabels.getCellsContentMaxWidth(column);
+  }
+
+  getCellsContentMaxHeight(row: number): Promise<number> {
+    if (!this.current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxHeight');
+    return this.current.cellsLabels.getCellsContentMaxHeight(row);
   }
 
   updateCellsArray(): void {

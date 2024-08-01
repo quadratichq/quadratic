@@ -4,7 +4,8 @@ use crate::{
     controller::operations::clipboard::{Clipboard, ClipboardOrigin},
     formulas::replace_a1_notation,
     grid::{
-        formats::Formats, get_cell_borders_in_rect, CellAlign, CellWrap, CodeCellLanguage, Sheet,
+        formats::Formats, get_cell_borders_in_rect, CellAlign, CellVerticalAlign, CellWrap,
+        CodeCellLanguage, Sheet,
     },
     selection::Selection,
     CellValue, Pos, Rect,
@@ -92,6 +93,7 @@ impl Sheet {
 
                     let cell_border = self.borders().per_cell.to_owned().get_cell_border(pos);
                     let cell_align = self.get_formatting_value::<CellAlign>(pos);
+                    let cell_vertical_align = self.get_formatting_value::<CellVerticalAlign>(pos);
                     let cell_wrap = self.get_formatting_value::<CellWrap>(pos);
 
                     if bold
@@ -100,6 +102,7 @@ impl Sheet {
                         || fill_color.is_some()
                         || cell_border.is_some()
                         || cell_align.is_some()
+                        || cell_vertical_align.is_some()
                         || cell_wrap.is_some()
                     {
                         style.push_str("style=\"");
@@ -148,11 +151,10 @@ impl Sheet {
                             }
                         }
                         if let Some(cell_align) = cell_align {
-                            style.push_str(
-                                format!("text-align:{};", cell_align)
-                                    .to_lowercase()
-                                    .as_str(),
-                            );
+                            style.push_str(cell_align.as_css_string());
+                        }
+                        if let Some(cell_vertical_align) = cell_vertical_align {
+                            style.push_str(cell_vertical_align.as_css_string());
                         }
                         if let Some(cell_wrap) = cell_wrap {
                             style.push_str(cell_wrap.as_css_string());
@@ -278,8 +280,10 @@ mod tests {
         controller::{operations::clipboard::PasteSpecial, GridController},
         Rect,
     };
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn copy_to_clipboard_exclude() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

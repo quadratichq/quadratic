@@ -55,7 +55,6 @@ impl GridController {
                 });
             }
         }
-        dbg!(&modified);
         self.send_render_cells_from_hash(sheet_rect.sheet_id, modified);
     }
 
@@ -278,16 +277,8 @@ mod test {
 
         gc.set_cell_value((0, 0, sheet_id).into(), "test 1".to_string(), None);
         let result = vec![JsRenderCell {
-            x: 0,
-            y: 0,
-            language: None,
             value: "test 1".to_string(),
-            special: None,
-            align: None,
-            wrap: None,
-            bold: None,
-            italic: None,
-            text_color: None,
+            ..Default::default()
         }];
         let result = serde_json::to_string(&result).unwrap();
         expect_js_call(
@@ -300,14 +291,8 @@ mod test {
         let result = vec![JsRenderCell {
             x: 100,
             y: 100,
-            language: None,
             value: "test 2".to_string(),
-            special: None,
-            align: None,
-            wrap: None,
-            bold: None,
-            italic: None,
-            text_color: None,
+            ..Default::default()
         }];
         let result = serde_json::to_string(&result).unwrap();
         expect_js_call(
@@ -452,16 +437,8 @@ mod test {
         gc.set_cell_value((100, 100, sheet_id).into(), "test 2".to_string(), None);
 
         let result = vec![JsRenderCell {
-            x: 0,
-            y: 0,
-            language: None,
             value: "test 1".to_string(),
-            special: None,
-            align: None,
-            wrap: None,
-            bold: None,
-            italic: None,
-            text_color: None,
+            ..Default::default()
         }];
         let result = serde_json::to_string(&result).unwrap();
         expect_js_call(
@@ -473,14 +450,8 @@ mod test {
         let result = vec![JsRenderCell {
             x: 100,
             y: 100,
-            language: None,
             value: "test 2".to_string(),
-            special: None,
-            align: None,
-            wrap: None,
-            bold: None,
-            italic: None,
-            text_color: None,
+            ..Default::default()
         }];
         let result = serde_json::to_string(&result).unwrap();
         expect_js_call(

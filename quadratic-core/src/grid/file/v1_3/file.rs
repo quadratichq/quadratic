@@ -374,6 +374,7 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<v1_4::Sheet> {
 mod tests {
     use super::*;
     use anyhow::anyhow;
+    use serial_test::parallel;
 
     const V1_3_FILE: &str =
         include_str!("../../../../../quadratic-rust-shared/data/grid/v1_3.grid");
@@ -388,6 +389,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn import_export_and_upgrade_a_v1_3_file() {
         let imported = import(V1_3_FILE).unwrap();
 
