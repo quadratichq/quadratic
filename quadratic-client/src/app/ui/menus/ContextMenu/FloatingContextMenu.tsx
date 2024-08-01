@@ -293,7 +293,6 @@ export const FloatingContextMenu = (props: Props) => {
     window.addEventListener('keyup', updateContextMenuCSSTransform);
     events.on('cellMoving', trigger);
     events.on('cursorPosition', updateContextMenuState);
-    events.on('renderCells', updateContextMenuState);
     events.on('sheetFills', updateContextMenuState);
 
     return () => {
@@ -304,7 +303,6 @@ export const FloatingContextMenu = (props: Props) => {
       window.removeEventListener('keyup', updateContextMenuCSSTransform);
       events.off('cellMoving', trigger);
       events.off('cursorPosition', updateContextMenuState);
-      events.off('renderCells', updateContextMenuState);
       events.off('sheetFills', updateContextMenuState);
     };
   }, [updateContextMenuCSSTransform, updateContextMenuState]);
@@ -349,8 +347,8 @@ export const FloatingContextMenu = (props: Props) => {
           <IconButton
             size="small"
             onClick={async () => {
-              setCursorBold((prev) => !prev);
-              setBold();
+              await setBold();
+              updateContextMenuState();
             }}
             sx={iconBtnSx}
           >
@@ -362,8 +360,8 @@ export const FloatingContextMenu = (props: Props) => {
           <IconButton
             size="small"
             onClick={async () => {
-              setCursorItalic((prev) => !prev);
-              setItalic();
+              await setItalic();
+              updateContextMenuState();
             }}
             sx={iconBtnSx}
           >
@@ -388,11 +386,13 @@ export const FloatingContextMenu = (props: Props) => {
               textColorRef.current?.closeMenu();
               setTextColor(color);
               focusGrid();
+              updateContextMenuState();
             }}
             onClear={() => {
               textColorRef.current?.closeMenu();
               setTextColor(undefined);
               focusGrid();
+              updateContextMenuState();
             }}
           />
         </Menu>
@@ -418,7 +418,7 @@ export const FloatingContextMenu = (props: Props) => {
                 size="small"
                 onClick={() => {
                   setAlign('left');
-                  setCursorAlign('left');
+                  updateContextMenuState();
                 }}
                 sx={iconBtnSx}
               >
@@ -430,7 +430,7 @@ export const FloatingContextMenu = (props: Props) => {
                 size="small"
                 onClick={() => {
                   setAlign('center');
-                  setCursorAlign('center');
+                  updateContextMenuState();
                 }}
                 sx={iconBtnSx}
               >
@@ -442,7 +442,7 @@ export const FloatingContextMenu = (props: Props) => {
                 size="small"
                 onClick={() => {
                   setAlign('right');
-                  setCursorAlign('right');
+                  updateContextMenuState();
                 }}
                 sx={iconBtnSx}
               >
@@ -471,7 +471,7 @@ export const FloatingContextMenu = (props: Props) => {
                 size="small"
                 onClick={() => {
                   setVerticalAlign('top');
-                  setCursorVerticalAlign('top');
+                  updateContextMenuState();
                 }}
                 sx={iconBtnSx}
               >
@@ -483,7 +483,7 @@ export const FloatingContextMenu = (props: Props) => {
                 size="small"
                 onClick={() => {
                   setVerticalAlign('middle');
-                  setCursorVerticalAlign('middle');
+                  updateContextMenuState();
                 }}
                 sx={iconBtnSx}
               >
@@ -495,7 +495,7 @@ export const FloatingContextMenu = (props: Props) => {
                 size="small"
                 onClick={() => {
                   setVerticalAlign('bottom');
-                  setCursorVerticalAlign('bottom');
+                  updateContextMenuState();
                 }}
                 sx={iconBtnSx}
               >
@@ -524,7 +524,7 @@ export const FloatingContextMenu = (props: Props) => {
                 size="small"
                 onClick={() => {
                   setWrap('overflow');
-                  setCursorWrap('overflow');
+                  updateContextMenuState();
                 }}
                 sx={iconBtnSx}
               >
@@ -536,7 +536,7 @@ export const FloatingContextMenu = (props: Props) => {
                 size="small"
                 onClick={() => {
                   setWrap('wrap');
-                  setCursorWrap('wrap');
+                  updateContextMenuState();
                 }}
                 sx={iconBtnSx}
               >
@@ -548,7 +548,7 @@ export const FloatingContextMenu = (props: Props) => {
                 size="small"
                 onClick={() => {
                   setWrap('clip');
-                  setCursorWrap('clip');
+                  updateContextMenuState();
                 }}
                 sx={iconBtnSx}
               >

@@ -151,18 +151,18 @@ export class CellsTextHash {
       if (cells) {
         this.createLabels(cells);
       }
-      this.overflowClip();
-      this.updateBuffers();
-      return true;
-    } else if (this.dirtyWrapText || this.dirtyBuffers) {
-      if (this.dirtyWrapText) {
-        if (debugShowHashUpdates) console.log(`[CellsTextHash] updating text ${this.hashX}, ${this.hashY}`);
-        this.updateText();
-      } else if (this.dirtyBuffers) {
-        if (debugShowHashUpdates) console.log(`[CellsTextHash] updating buffers ${this.hashX}, ${this.hashY}`);
+      queueMicrotask(() => {
+        this.overflowClip();
         this.updateBuffers();
-      }
-
+      });
+      return true;
+    } else if (this.dirtyWrapText) {
+      if (debugShowHashUpdates) console.log(`[CellsTextHash] updating text ${this.hashX}, ${this.hashY}`);
+      this.updateText();
+      return true;
+    } else if (this.dirtyBuffers) {
+      if (debugShowHashUpdates) console.log(`[CellsTextHash] updating buffers ${this.hashX}, ${this.hashY}`);
+      queueMicrotask(() => this.updateBuffers());
       return true;
     }
     return false;
