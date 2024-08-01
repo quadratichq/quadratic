@@ -8,6 +8,7 @@ import { drawCheckbox, drawDropdown, SpecialSprite } from './drawSpecial';
 import { intersects } from '../../helpers/intersects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { events } from '@/app/events/events';
 
 export class CellsTextHashSpecial extends Container<SpecialSprite> {
   clear() {
@@ -47,6 +48,8 @@ export class CellsTextHashSpecial extends Container<SpecialSprite> {
             special.checkbox ? 'false' : 'true',
             sheets.getCursorPosition()
           );
+        } else if (special.type === 'dropdown' && intersects.rectanglePoint(special.rectangle, world)) {
+          events.emit('dropdown', special.column, special.row);
         }
       }
     });

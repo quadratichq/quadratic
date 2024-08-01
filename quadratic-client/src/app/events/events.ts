@@ -108,6 +108,9 @@ interface EventTypes {
 
   // pointer down on the grid
   pointerDown: (column: number, row: number, world: Point) => void;
+
+  // dropdown button is pressed for dropdown Validation
+  dropdown: (column: number, row: number) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

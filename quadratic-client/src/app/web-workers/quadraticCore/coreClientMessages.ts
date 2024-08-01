@@ -551,8 +551,6 @@ export interface ClientCoreGetValidationFromPos {
 
 //#endregion
 
-// *********************************************************************************************************************
-
 //#region Sheets
 
 export interface CoreClientSheetInfo {
@@ -933,6 +931,20 @@ export interface CoreClientGetValidationFromPos {
   validation: Validation | undefined;
 }
 
+export interface ClientCoreGetValidationList {
+  type: 'clientCoreGetValidationList';
+  id: number;
+  sheetId: string;
+  x: number;
+  y: number;
+}
+
+export interface CoreClientGetValidationList {
+  type: 'coreClientGetValidationList';
+  id: number;
+  validations: string[];
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1004,7 +1016,8 @@ export type ClientCoreMessage =
   | ClientCoreUpdateValidation
   | ClientCoreRemoveValidation
   | ClientCoreRemoveValidations
-  | ClientCoreGetValidationFromPos;
+  | ClientCoreGetValidationFromPos
+  | ClientCoreGetValidationList;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1063,4 +1076,5 @@ export type CoreClientMessage =
   | CoreClientGetValidations
   | CoreClientSheetValidations
   | CoreClientGetValidationFromPos
-  | CoreClientResizeRowHeights;
+  | CoreClientResizeRowHeights
+  | CoreClientGetValidationList;

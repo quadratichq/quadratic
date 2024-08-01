@@ -1065,6 +1065,22 @@ class QuadraticCore {
     });
   }
 
+  getValidationList(sheetId: string, x: number, y: number): Promise<string[] | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { validationList: string[] | undefined }) => {
+        resolve(message.validationList);
+      };
+      this.send({
+        type: 'clientCoreGetValidationList',
+        id,
+        sheetId,
+        x,
+        y,
+      });
+    });
+  }
+
   //#endregion
 }
 

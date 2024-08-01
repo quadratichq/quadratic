@@ -21,6 +21,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import mixpanel from 'mixpanel-browser';
 import { Rectangle } from 'pixi.js';
+import { inlineEditorEvents } from './inlineEditorEvents';
 
 // Minimum amount to scroll viewport when cursor is near the edge.
 const MINIMUM_MOVE_VIEWPORT = 50;
@@ -68,6 +69,7 @@ class InlineEditorHandler {
   // Resets state after editing is complete.
   private reset() {
     this.open = false;
+    inlineEditorEvents.emit('status', false);
     this.cursorIsMoving = false;
     this.x = this.y = this.width = this.height = 0;
     this.location = undefined;
@@ -200,6 +202,7 @@ class InlineEditorHandler {
       this.updateMonacoCursorPosition();
       this.keepCursorVisible();
       inlineEditorMonaco.focus();
+      inlineEditorEvents.emit('status', true, value);
     } else {
       this.close(0, 0, false);
     }
