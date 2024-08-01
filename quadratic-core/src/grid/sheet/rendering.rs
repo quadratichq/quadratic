@@ -92,7 +92,13 @@ impl Sheet {
                     self.format_all.as_ref(),
                 );
                 let align = format.align.or(align);
-                let number: JsNumber = (&format).into();
+                let number: Option<JsNumber> = {
+                    if matches!(value, CellValue::Number(_)) {
+                        Some((&format).into())
+                    } else {
+                        None
+                    }
+                };
                 JsRenderCell {
                     x,
                     y,
@@ -105,7 +111,7 @@ impl Sheet {
                     italic: format.italic,
                     text_color: format.text_color,
                     special,
-                    number: Some(number),
+                    number,
                     ..Default::default()
                 }
             }
@@ -986,6 +992,13 @@ mod tests {
                 ..Default::default()
             },
         ];
+        let sheet = gc.sheet(sheet_id);
+        let expected = sheet.get_render_cells(Rect::new(0, 0, 2, 0));
+        dbg!(&expected);
+        dbg!(&cells);
+        assert_eq!(expected.len(), cells.len());
+        assert_eq!(expected.iter().all(|cell| cells.contains(cell)), true);
+
         let cells_string = serde_json::to_string(&cells).unwrap();
         expect_js_call(
             "jsRenderCellSheets",

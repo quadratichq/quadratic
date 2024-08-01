@@ -112,8 +112,6 @@ impl Sheet {
 
             format_bounds: GridBounds::Empty,
 
-            offsets: SheetOffsets::default(),
-
             validations: Validations::default(),
             rows_resize: ResizeMap::default(),
         }
