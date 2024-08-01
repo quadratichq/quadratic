@@ -4,7 +4,6 @@ import { BigNumber } from 'bignumber.js';
 // Converts a number to a string with the given cell formatting
 export const convertNumber = (n: string, format: JsNumber, currentFractionDigits?: number): string => {
   let number = new BigNumber(n);
-
   let suffix = '';
   if (format.format?.type === 'PERCENTAGE') {
     number = number.times(100);
@@ -13,9 +12,13 @@ export const convertNumber = (n: string, format: JsNumber, currentFractionDigits
 
   let options: BigNumber.Format = { decimalSeparator: '.', groupSeparator: ',' };
   const isCurrency = format.format?.type === 'CURRENCY';
-  if (format.commas || (format.commas === null && isCurrency)) {
+  const isScientific = format.format?.type === 'EXPONENTIAL';
+
+  // set commas
+  if (!isScientific && (format.commas || (format.commas === null && isCurrency))) {
     options.groupSize = 3;
   }
+
   if (currentFractionDigits) {
     options.fractionGroupSize = currentFractionDigits;
   } else if (format.decimals !== null) {
@@ -25,11 +28,22 @@ export const convertNumber = (n: string, format: JsNumber, currentFractionDigits
   } else {
     options.fractionGroupSize = undefined;
   }
+
   if (format.format?.type === 'CURRENCY') {
     if (format.format.symbol) {
       options.prefix = format.format.symbol;
     } else {
       throw new Error('Expected format.symbol to be defined in convertNumber.ts');
+    }
+  }
+
+  if (isScientific) {
+    if (currentFractionDigits !== undefined) {
+      return number.toExponential(currentFractionDigits);
+    } else if (format.decimals !== null) {
+      return number.toExponential(format.decimals);
+    } else {
+      return number.toExponential();
     }
   }
 
