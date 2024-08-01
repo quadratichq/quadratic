@@ -152,6 +152,10 @@ impl GridController {
                 })
                 .collect();
 
+            if old_row_heights == row_heights {
+                return;
+            }
+
             transaction.reverse_operations.insert(
                 0,
                 Operation::ResizeRows {

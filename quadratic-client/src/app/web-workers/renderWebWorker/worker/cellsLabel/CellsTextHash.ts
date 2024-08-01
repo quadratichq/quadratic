@@ -158,8 +158,7 @@ export class CellsTextHash {
       if (this.dirtyWrapText) {
         if (debugShowHashUpdates) console.log(`[CellsTextHash] updating text ${this.hashX}, ${this.hashY}`);
         this.updateText();
-      }
-      if (this.dirtyBuffers) {
+      } else if (this.dirtyBuffers) {
         if (debugShowHashUpdates) console.log(`[CellsTextHash] updating buffers ${this.hashX}, ${this.hashY}`);
         this.updateBuffers();
       }

@@ -167,40 +167,58 @@ export class CellsLabels {
     const viewport = renderText.viewport;
     if (!viewport) return false;
 
-    dirtyColumnHeadings.forEach(({ current, neighbor }, column) => {
-      const columnHash = Math.floor(column / sheetHashWidth);
-      this.cellsTextHash.forEach((hash) => {
-        if (hash.hashX >= columnHash) {
-          const delta = hash.hashX === columnHash ? current : neighbor;
-          if (!delta) return;
-          if (hash.adjustHeadings({ column, delta })) {
-            if (!hashesToUpdate.has(hash)) {
-              hashesToUpdateViewRectangle.delete(hash);
-              hashesToUpdate.set(hash, this.hashDistanceSquared(hash, viewport));
-            }
-          } else if (!hashesToUpdate.has(hash)) {
-            hashesToUpdateViewRectangle.add(hash);
-          }
+    const applyColumnDelta = (hash: CellsTextHash, column: number, delta: number) => {
+      if (!delta) return;
+      if (hash.adjustHeadings({ column, delta })) {
+        if (!hashesToUpdate.has(hash)) {
+          hashesToUpdateViewRectangle.delete(hash);
+          hashesToUpdate.set(hash, this.hashDistanceSquared(hash, viewport));
+        }
+      } else if (!hashesToUpdate.has(hash)) {
+        hashesToUpdateViewRectangle.add(hash);
+      }
+    };
+
+    this.cellsTextHash.forEach((hash) => {
+      let delta = 0;
+      dirtyColumnHeadings.forEach(({ current, neighbor }, column) => {
+        const columnHash = Math.floor(column / sheetHashWidth);
+        if (hash.hashX === columnHash) {
+          applyColumnDelta(hash, column, current);
+        } else if (hash.hashX > columnHash) {
+          delta += neighbor;
         }
       });
+      // column is one less than hash column as it has to applied to all labels in the hash
+      const column = hash.hashX * sheetHashWidth - 1;
+      applyColumnDelta(hash, column, delta);
     });
 
-    dirtyRowHeadings.forEach(({ current, neighbor }, row) => {
-      const rowHash = Math.floor(row / sheetHashHeight);
-      this.cellsTextHash.forEach((hash) => {
-        if (hash.hashY >= rowHash) {
-          const delta = hash.hashY === rowHash ? current : neighbor;
-          if (!delta) return;
-          if (hash.adjustHeadings({ row, delta })) {
-            if (!hashesToUpdate.has(hash)) {
-              hashesToUpdateViewRectangle.delete(hash);
-              hashesToUpdate.set(hash, this.hashDistanceSquared(hash, viewport));
-            }
-          } else if (!hashesToUpdate.has(hash)) {
-            hashesToUpdateViewRectangle.add(hash);
-          }
+    const applyRowDelta = (hash: CellsTextHash, row: number, delta: number) => {
+      if (!delta) return;
+      if (hash.adjustHeadings({ row, delta })) {
+        if (!hashesToUpdate.has(hash)) {
+          hashesToUpdateViewRectangle.delete(hash);
+          hashesToUpdate.set(hash, this.hashDistanceSquared(hash, viewport));
+        }
+      } else if (!hashesToUpdate.has(hash)) {
+        hashesToUpdateViewRectangle.add(hash);
+      }
+    };
+
+    this.cellsTextHash.forEach((hash) => {
+      let delta = 0;
+      dirtyRowHeadings.forEach(({ current, neighbor }, row) => {
+        const rowHash = Math.floor(row / sheetHashHeight);
+        if (hash.hashY === rowHash) {
+          applyRowDelta(hash, row, current);
+        } else if (hash.hashY > rowHash) {
+          delta += neighbor;
         }
       });
+      // row is one less than hash row as it has to applied to all labels in the hash
+      const row = hash.hashY * sheetHashHeight - 1;
+      applyRowDelta(hash, row, delta);
     });
 
     const hashesToUpdateSorted = Array.from(hashesToUpdate).sort((a, b) => a[1] - b[1]);
