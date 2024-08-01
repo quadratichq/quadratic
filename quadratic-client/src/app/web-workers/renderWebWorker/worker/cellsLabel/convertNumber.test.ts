@@ -35,7 +35,7 @@ describe('convertNumber', () => {
       currentFractionDigits: 2,
     });
     expect(
-      reduceDecimals('$1234.5678', '1234.5678', {
+      reduceDecimals('1234.5678', '1234.5678', {
         commas: null,
         decimals: null,
         format: { type: 'CURRENCY', symbol: '$' },
@@ -43,7 +43,7 @@ describe('convertNumber', () => {
     ).toEqual({ number: '$1,234.568', currentFractionDigits: 3 });
     expect(
       reduceDecimals(
-        '$1234.5678',
+        '1234.5678',
         '1234.5678',
         {
           commas: null,

@@ -13,9 +13,10 @@ export const convertNumber = (n: string, format: JsNumber, currentFractionDigits
   let options: BigNumber.Format = { decimalSeparator: '.', groupSeparator: ',' };
   const isCurrency = format.format?.type === 'CURRENCY';
   const isScientific = format.format?.type === 'EXPONENTIAL';
+  const isPercent = format.format?.type === 'PERCENTAGE';
 
   // set commas
-  if (!isScientific && (format.commas || (format.commas === null && isCurrency))) {
+  if (!isScientific && !isPercent && (format.commas || (format.commas === null && isCurrency))) {
     options.groupSize = 3;
   }
 
@@ -57,18 +58,18 @@ export const convertNumber = (n: string, format: JsNumber, currentFractionDigits
 
 // Reduces the number of decimals (used by rendering to show a fractional number in a smaller-width cell)
 export const reduceDecimals = (
+  number: string,
   current: string,
-  original: string,
   format: JsNumber,
   currentFractionDigits?: number
 ): { number: string; currentFractionDigits: number } | undefined => {
   // this only works if there is a fractional part
-  if (original.includes('.')) {
+  if (number.includes('.')) {
     if (currentFractionDigits === undefined) {
-      const split = original.split('.');
+      const split = number.split('.');
       currentFractionDigits = split[1].length - 1;
     }
-    const updated = convertNumber(original, format, currentFractionDigits);
+    const updated = convertNumber(number, format, currentFractionDigits);
     if (updated !== current) {
       return { number: updated, currentFractionDigits };
     }
