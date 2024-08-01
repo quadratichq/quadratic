@@ -222,14 +222,17 @@ export class CellsLabels {
     });
 
     const hashesToUpdateSorted = Array.from(hashesToUpdate).sort((a, b) => a[1] - b[1]);
-    hashesToUpdateSorted.forEach((hash) => {
-      const otherHashes = hash[0].overflowClip();
+    hashesToUpdateSorted.forEach(([hash]) => {
+      const otherHashes = hash.overflowClip();
       otherHashes.forEach((otherHash) => {
         if (!hashesToUpdate.has(otherHash)) {
           hashesToUpdate.set(otherHash, this.hashDistanceSquared(otherHash, viewport));
         }
       });
     });
+    Array.from(hashesToUpdate)
+      .sort((a, b) => a[1] - b[1])
+      .forEach(([hash]) => queueMicrotask(() => hash.updateBuffers()));
     hashesToUpdate.forEach((_, hash) => queueMicrotask(() => hash.updateBuffers()));
     hashesToUpdateViewRectangle.forEach((hash) => queueMicrotask(() => hash.sendViewRectangle()));
     return true;

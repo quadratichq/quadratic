@@ -11,8 +11,10 @@
 
 import { debugShowHashUpdates, debugShowLoadingHashes } from '@/app/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
+import { intersects } from '@/app/gridGL/helpers/intersects';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { JsRenderCell } from '@/app/quadratic-core-types';
+import { renderText } from '@/app/web-workers/renderWebWorker/worker/renderText';
 import { Rectangle } from 'pixi.js';
 import { renderClient } from '../renderClient';
 import { renderCore } from '../renderCore';
@@ -122,6 +124,8 @@ export class CellsTextHash {
   }
 
   update = async (): Promise<boolean> => {
+    const bounds = renderText.viewport;
+    const inView = bounds === undefined || intersects.rectangleRectangle(this.viewRectangle, bounds);
     if (this.dirty) {
       // If dirty is true, then we need to get the cells from the server; but we
       // need to keep open the case where we receive new cells after dirty is
@@ -151,16 +155,23 @@ export class CellsTextHash {
       if (cells) {
         this.createLabels(cells);
       }
-      queueMicrotask(() => {
-        this.overflowClip();
-        this.updateBuffers();
-      });
+      if (inView) {
+        queueMicrotask(() => {
+          this.overflowClip();
+          this.updateBuffers();
+        });
+      } else {
+        queueMicrotask(() => {
+          this.overflowClip();
+        });
+        this.dirtyBuffers = true;
+      }
       return true;
     } else if (this.dirtyWrapText) {
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating text ${this.hashX}, ${this.hashY}`);
       this.updateText();
       return true;
-    } else if (this.dirtyBuffers) {
+    } else if (inView && this.dirtyBuffers) {
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating buffers ${this.hashX}, ${this.hashY}`);
       queueMicrotask(() => this.updateBuffers());
       return true;
