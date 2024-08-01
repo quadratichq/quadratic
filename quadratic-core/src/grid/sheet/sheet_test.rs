@@ -199,8 +199,10 @@ mod tests {
     use bigdecimal::BigDecimal;
 
     use crate::{grid::Sheet, CellValue, Pos};
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_set_value() {
         let mut sheet = Sheet::test();
         sheet.test_set_value_number(0, 0, "1");
@@ -216,6 +218,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_set_values() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(0, 0, 2, 2, vec!["1", "2", "3", "4"]);
@@ -270,6 +273,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_set_code_run_array_horizontal() {
         let mut sheet = Sheet::test();
         sheet.test_set_code_run_array(-1, -1, vec!["1", "2", "3"], false);
@@ -288,6 +292,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_set_code_run_array_vertical() {
         let mut sheet = Sheet::test();
         sheet.test_set_code_run_array(-1, -1, vec!["1", "2", "3"], true);
@@ -306,6 +311,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_set_code_run_empty() {
         let mut sheet = Sheet::test();
         sheet.test_set_code_run_number(0, 0, "11");
@@ -316,6 +322,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_set_cell_number_empty() {
         let mut sheet = Sheet::test();
         sheet.test_set_value_number(0, 0, "");
@@ -323,6 +330,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_set_code_run_array_2d() {
         let mut sheet = Sheet::test();
         sheet.test_set_code_run_array_2d(-1, -1, 2, 2, vec!["1", "2", "3", "4"]);

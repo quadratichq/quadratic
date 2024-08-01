@@ -45,6 +45,7 @@
     "@szhsin/react-menu": "^4.0.2",
     "@types/react-avatar-editor": "^13.0.2",
     "@types/ua-parser-js": "^0.7.39",
+    "bignumber.js": "^9.1.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "cmdk": "^1.0.0",

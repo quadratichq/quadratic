@@ -1,4 +1,5 @@
 import { events } from '@/app/events/events';
+import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { ImportProgress } from '@/app/ui/components/ImportProgress';
 import { Search } from '@/app/ui/components/Search';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -68,7 +69,7 @@ export default function QuadraticGrid() {
     window.addEventListener('mouseup', onMouseUp);
   };
   const onKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
-    if (e.key === ' ') {
+    if (matchShortcut('grid_pan_mode', e)) {
       spaceIsDown = true;
       if (panMode === PanMode.Disabled) {
         pixiAppSettings.changePanMode(PanMode.Enabled);
@@ -76,7 +77,7 @@ export default function QuadraticGrid() {
     }
   };
   const onKeyUp = (e: React.KeyboardEvent<HTMLElement>) => {
-    if (e.key === ' ') {
+    if (matchShortcut('grid_pan_mode', e)) {
       spaceIsDown = false;
       if (panMode !== PanMode.Disabled && !mouseIsDown) {
         pixiAppSettings.changePanMode(PanMode.Disabled);
