@@ -12,13 +12,16 @@ export const convertNumber = (n: string, format: JsNumber, currentFractionDigits
   }
 
   let options: BigNumber.Format = { decimalSeparator: '.', groupSeparator: ',' };
-  if (format.commas) {
+  const isCurrency = format.format?.type === 'CURRENCY';
+  if (format.commas || (format.commas === null && isCurrency)) {
     options.groupSize = 3;
   }
   if (currentFractionDigits) {
     options.fractionGroupSize = currentFractionDigits;
   } else if (format.decimals !== null) {
     options.fractionGroupSize = format.decimals;
+  } else if (isCurrency) {
+    options.fractionGroupSize = 2;
   } else {
     options.fractionGroupSize = undefined;
   }

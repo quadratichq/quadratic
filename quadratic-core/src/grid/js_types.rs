@@ -30,7 +30,6 @@ impl JsNumber {
     #[cfg(test)]
     pub fn dollars() -> Self {
         JsNumber {
-            decimals: Some(2),
             format: Some(NumericFormat {
                 kind: crate::grid::NumericFormatKind::Currency,
                 symbol: Some("$".to_string()),
