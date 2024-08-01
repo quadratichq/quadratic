@@ -9,7 +9,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use quadratic_rust_shared::{clean_errors, Auth, Aws, SharedError};
+use quadratic_rust_shared::{clean_errors, SharedError};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -44,6 +44,9 @@ pub enum FilesError {
     #[error("PubSub error: {0}")]
     PubSub(String),
 
+    #[error("QuadraticApi error: {0}")]
+    QuadraticApi(String),
+
     #[error("Error requesting data: {0}")]
     Request(String),
 
@@ -52,6 +55,9 @@ pub enum FilesError {
 
     #[error("Error serializing or deserializing: {0}")]
     Serialization(String),
+
+    #[error("File storage error: {0}")]
+    Storage(String),
 
     #[error("Transaction queue error: {0}")]
     TransactionQueue(String),
@@ -84,14 +90,12 @@ impl IntoResponse for FilesError {
 impl From<SharedError> for FilesError {
     fn from(error: SharedError) -> Self {
         match error {
-            SharedError::Auth(auth) => match auth {
-                Auth::Jwt(error) => FilesError::Authentication(error),
-            },
-            SharedError::Aws(aws) => match aws {
-                Aws::S3(error) => FilesError::S3(error),
-            },
+            SharedError::Auth(error) => FilesError::Authentication(error.to_string()),
+            SharedError::Aws(error) => FilesError::S3(error.to_string()),
             SharedError::PubSub(error) => FilesError::PubSub(error),
-            _ => FilesError::Unknown(format!("Unknown Quadratic API error: {error}")),
+            SharedError::QuadraticApi(error) => FilesError::QuadraticApi(error),
+            SharedError::Storage(error) => FilesError::Storage(error.to_string()),
+            _ => FilesError::Unknown(format!("Unknown SharedError: {error}")),
         }
     }
 }

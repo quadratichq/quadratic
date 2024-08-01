@@ -66,6 +66,7 @@ docker/redis/data
 docker/postgres/data
 docker/postgres-connection/data
 docker/mysql-connection/data
+docker/file-storage
 
 # JMeter
 jmeter.log

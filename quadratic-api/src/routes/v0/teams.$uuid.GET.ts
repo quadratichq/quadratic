@@ -7,7 +7,7 @@ import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
-import { generatePresignedUrl } from '../../storage/s3';
+import { getPresignedFileUrl } from '../../storage/storage';
 import { RequestWithUser } from '../../types/Request';
 import { getFilePermissions } from '../../utils/permissions';
 
@@ -92,7 +92,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
   await Promise.all(
     dbFiles.map(async (file) => {
       if (file.thumbnail) {
-        file.thumbnail = await generatePresignedUrl(file.thumbnail);
+        file.thumbnail = await getPresignedFileUrl(file.thumbnail);
       }
     })
   );

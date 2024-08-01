@@ -51,7 +51,12 @@ class Core {
   private renderQueue: Function[] = [];
 
   private async loadGridFile(file: string): Promise<string> {
-    const res = await fetch(file);
+    const jwt = await coreClient.getJwt();
+    const res = await fetch(file, {
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+      },
+    });
     return await res.text();
   }
 

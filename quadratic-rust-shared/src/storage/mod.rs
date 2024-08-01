@@ -20,6 +20,21 @@ pub enum StorageContainer {
     FileSystem(file_system::FileSystem),
 }
 
+#[async_trait]
+pub trait Storage {
+    async fn read(&self, key: &str) -> Result<Bytes>;
+    async fn write<'a>(&self, key: &'a str, data: &'a Bytes) -> Result<()>;
+    fn path(&self) -> &str;
+
+    fn read_error(key: &str, e: impl ToString) -> SharedError {
+        SharedError::Storage(StorageError::Read(key.into(), e.to_string()))
+    }
+
+    fn write_error(key: &str, e: impl ToString) -> SharedError {
+        SharedError::Storage(StorageError::Write(key.into(), e.to_string()))
+    }
+}
+
 // TODO(ddimaria): this is a temp hack to get around some trait issues, do something better
 #[async_trait]
 impl Storage for StorageContainer {
@@ -42,20 +57,5 @@ impl Storage for StorageContainer {
             Self::S3(s3) => s3.path(),
             Self::FileSystem(fs) => fs.path(),
         }
-    }
-}
-
-#[async_trait]
-pub trait Storage {
-    async fn read(&self, key: &str) -> Result<Bytes>;
-    async fn write<'a>(&self, key: &'a str, data: &'a Bytes) -> Result<()>;
-    fn path(&self) -> &str;
-
-    fn read_error(key: &str, e: impl ToString) -> SharedError {
-        SharedError::Storage(StorageError::Read(key.into(), e.to_string()))
-    }
-
-    fn write_error(key: &str, e: impl ToString) -> SharedError {
-        SharedError::Storage(StorageError::Write(key.into(), e.to_string()))
     }
 }

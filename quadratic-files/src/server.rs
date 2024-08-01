@@ -3,8 +3,7 @@
 //! Handle bootstrapping and starting the HTTP server.  Adds global state
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
-use axum::extract::Request;
-use axum::http::StatusCode;
+use axum::http::{Method, StatusCode};
 use axum::response::IntoResponse;
 use axum::{routing::get, Extension, Router};
 use quadratic_rust_shared::auth::jwt::get_jwks;
@@ -12,11 +11,11 @@ use quadratic_rust_shared::storage::Storage;
 use std::time::Duration;
 use std::{net::SocketAddr, sync::Arc};
 use tokio::time;
-use tower::ServiceExt;
-use tower_http::services::ServeDir;
+use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+use crate::storage::get_storage;
 use crate::truncate::truncate_processed_transactions;
 use crate::{
     auth::get_middleware,
@@ -24,9 +23,10 @@ use crate::{
     error::{FilesError, Result},
     file::process,
     state::State,
+    storage::upload_storage,
 };
 
-const HEALTHCHECK_INTERVAL_S: u64 = 5;
+const HEALTHCHECK_INTERVAL_S: u64 = 30;
 
 /// Construct the application router.  This is separated out so that it can be
 /// integration tested.
@@ -41,28 +41,52 @@ pub(crate) fn app(state: Arc<State>) -> Router {
     let auth = get_middleware(jwks);
     let path = state.settings.storage.path().to_owned();
 
+    let cors = CorsLayer::new()
+        .allow_methods([Method::GET, Method::POST])
+        //
+        // allow requests from any origin
+        .allow_origin(Any)
+        //
+        // TODO(ddimaria): uncomment when we move proxy to a separate service
+        //
+        // .allow_headers([
+        //     CONTENT_TYPE,
+        //     AUTHORIZATION,
+        //     ACCEPT,
+        //     ORIGIN,
+        //     HeaderName::from_static("proxy"),
+        // ])
+        //
+        // required for the proxy
+        .allow_headers(Any)
+        .expose_headers(Any);
+
     tracing::info!("Serving files from {path}");
 
     Router::new()
         // protected routes
         //
-        //
-        .nest_service(
-            "/storage",
-            get(|request: Request| async {
-                let service = ServeDir::new("storage");
-                service.oneshot(request).await
-            }),
+        // get a file from storage
+        .route(
+            "/storage/:key",
+            get(get_storage)
+                //
+                // upload a file
+                .post(upload_storage),
         )
         //
         // auth middleware
         .route_layer(auth)
         //
         // unprotected routes
+        //
         .route("/health", get(healthcheck))
         //
         // state
         .layer(Extension(state))
+        //
+        // cors
+        .layer(cors)
         //
         // logger
         .layer(

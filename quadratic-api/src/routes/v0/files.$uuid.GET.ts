@@ -6,7 +6,7 @@ import { getFile } from '../../middleware/getFile';
 import { userOptionalMiddleware } from '../../middleware/user';
 import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
-import { generatePresignedUrl } from '../../storage/s3';
+import { getFileUrl } from '../../storage/storage';
 import { RequestWithOptionalUser } from '../../types/Request';
 import { ResponseError } from '../../types/Response';
 
@@ -33,7 +33,7 @@ async function handler(
     userMakingRequest: { filePermissions, fileRole, teamRole, teamPermissions },
   } = await getFile({ uuid: req.params.uuid, userId });
 
-  const thumbnailSignedUrl = thumbnail ? await generatePresignedUrl(thumbnail) : null;
+  const thumbnailSignedUrl = thumbnail ? await getFileUrl(thumbnail) : null;
 
   // Get the most recent checkpoint for the file
   const checkpoint = await dbClient.fileCheckpoint.findFirst({
@@ -47,7 +47,7 @@ async function handler(
   if (!checkpoint) {
     return res.status(500).json({ error: { message: 'No Checkpoints exist for this file' } });
   }
-  const lastCheckpointDataUrl = await generatePresignedUrl(checkpoint.s3Key);
+  const lastCheckpointDataUrl = await getFileUrl(checkpoint.s3Key);
 
   // Privacy of the file as it relates to the user making the request.
   // `undefined` means it was shared _somehow_, e.g. direct invite or public link,

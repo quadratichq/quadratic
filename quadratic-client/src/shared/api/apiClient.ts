@@ -75,7 +75,6 @@ export const apiClient = {
         );
       },
       async delete(uuid: string, inviteId: string) {
-        console.log(`DELETE to /v0/teams/${uuid}/invites/${inviteId}`);
         return fetchFromApi(
           `/v0/teams/${uuid}/invites/${inviteId}`,
           {

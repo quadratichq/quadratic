@@ -27,6 +27,12 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/example
     userMakingRequest: { permissions: teamPermissions },
   } = await getTeam({ uuid: teamUuid, userId });
 
+  const jwt = req.header('Authorization');
+
+  if (!jwt) {
+    throw new ApiError(403, 'User does not have a valid JWT.');
+  }
+
   // We validate that we get a UUID in the zod schema, so if we reach here
   // we know we can do this simple operation.
   const fileUuid = publicFileUrlInProduction.split('/').pop() as string;
@@ -55,6 +61,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/example
       version: lastCheckpointVersion,
       teamId: team.id,
       isPrivate,
+      jwt,
     });
     return res.status(201).json({ uuid: dbFile.uuid, name: dbFile.name });
   } catch (e) {
