@@ -7,6 +7,7 @@ use crate::{
     },
     grid::{sheet::validations::validation::Validation, SheetId},
     selection::Selection,
+    Pos,
 };
 
 impl GridController {
@@ -59,6 +60,11 @@ impl GridController {
                 self.start_user_transaction(ops, cursor, TransactionName::Validation);
             }
         }
+    }
+
+    pub fn get_validation_from_pos(&self, sheet_id: SheetId, pos: Pos) -> Option<&Validation> {
+        self.try_sheet(sheet_id)
+            .and_then(|sheet| sheet.validations.get_validation_from_pos(pos))
     }
 }
 
@@ -168,5 +174,34 @@ mod tests {
             format!("{},{},{},{}", sheet_id, 0, 0, hash_test(&send)),
             true,
         );
+    }
+
+    #[test]
+    fn get_validation_from_pos() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let selection = Selection::pos(0, 0, sheet_id);
+        let validation = Validation {
+            id: Uuid::new_v4(),
+            selection: selection.clone(),
+            rule: ValidationRule::Logical(ValidationLogical {
+                show_checkbox: true,
+                ignore_blank: true,
+            }),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        gc.update_validation(validation.clone(), None);
+
+        assert_eq!(
+            gc.get_validation_from_pos(sheet_id, (0, 0).into()),
+            Some(&validation)
+        );
+
+        // missing sheet_id should return None
+        assert!(gc
+            .get_validation_from_pos(SheetId::new(), (0, 0).into())
+            .is_none());
     }
 }

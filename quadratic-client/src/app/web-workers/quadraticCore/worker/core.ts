@@ -929,6 +929,14 @@ class Core {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.removeValidations(sheetId, cursor);
   }
+
+  getValidationFromPos(sheetId: string, x: number, y: number) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const validation = this.gridController.getValidationFromPos(sheetId, posToPos(x, y));
+    if (validation) {
+      return JSON.parse(validation);
+    }
+  }
 }
 
 export const core = new Core();

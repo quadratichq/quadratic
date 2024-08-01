@@ -193,6 +193,13 @@ impl Validations {
             .filter(|v| v.selection.in_rects(rect))
             .collect()
     }
+
+    /// Gets a validation from a position
+    pub fn get_validation_from_pos(&self, pos: Pos) -> Option<&Validation> {
+        self.validations
+            .iter()
+            .find(|v| v.selection.contains_pos(pos))
+    }
 }
 
 #[cfg(test)]
@@ -422,5 +429,14 @@ mod tests {
             Some(JsRenderCellSpecial::Checkbox)
         );
         assert_eq!(validations.render_special_pos((2, 2).into()), None);
+    }
+
+    #[test]
+    fn get_validation_from_pos() {
+        let mut validations = Validations::default();
+        let v = create_validation_rect(0, 0, 1, 1);
+        validations.set(v.clone());
+        assert_eq!(validations.get_validation_from_pos((0, 0).into()), Some(&v));
+        assert_eq!(validations.get_validation_from_pos((2, 2).into()), None);
     }
 }

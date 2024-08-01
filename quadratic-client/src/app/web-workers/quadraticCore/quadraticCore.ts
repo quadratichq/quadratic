@@ -987,6 +987,22 @@ class QuadraticCore {
     });
   }
 
+  getValidationFromPos(sheetId: string, x: number, y: number): Promise<Validation | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { validation: Validation | undefined }) => {
+        resolve(message.validation);
+      };
+      this.send({
+        type: 'clientCoreGetValidationFromPos',
+        id,
+        sheetId,
+        x,
+        y,
+      });
+    });
+  }
+
   getValidations(sheetId: string): Promise<Validation[]> {
     return new Promise((resolve) => {
       const id = this.id++;

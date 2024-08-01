@@ -70,4 +70,18 @@ impl GridController {
             self.remove_validations(sheet_id, cursor);
         }
     }
+
+    /// Gets a Validation from a Position
+    #[wasm_bindgen(js_name = "getValidationFromPos")]
+    pub fn js_get_validation_from_pos(&self, sheet_id: String, pos: String) -> Option<String> {
+        if let (Ok(sheet_id), Ok(pos)) = (
+            SheetId::from_str(&sheet_id),
+            serde_json::from_str::<Pos>(&pos),
+        ) {
+            self.get_validation_from_pos(sheet_id, pos)
+                .map(|validation| serde_json::to_string(&validation).unwrap_or_default())
+        } else {
+            None
+        }
+    }
 }

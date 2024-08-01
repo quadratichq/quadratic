@@ -532,6 +532,14 @@ class CoreClient {
         core.removeValidations(e.data.sheetId, e.data.cursor);
         return;
 
+      case 'clientCoreGetValidationFromPos':
+        this.send({
+          type: 'coreClientGetValidationFromPos',
+          id: e.data.id,
+          validation: core.getValidationFromPos(e.data.sheetId, e.data.x, e.data.y),
+        });
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core
