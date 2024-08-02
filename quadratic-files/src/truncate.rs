@@ -19,7 +19,7 @@ pub(crate) fn parse_processed_transaction_key(key: &[u8]) -> Result<(String, Str
     let split = key.split('.').collect::<Vec<&str>>();
 
     if split.len() < 2 {
-        return Err(FilesError::Unknown("Could not parse key {key}".into()));
+        return Err(FilesError::Unknown(format!("Could not parse key {key}")));
     }
 
     Ok((split[0].to_string(), split[1].to_string()))

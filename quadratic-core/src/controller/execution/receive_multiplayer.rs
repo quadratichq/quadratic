@@ -200,12 +200,15 @@ impl GridController {
             // We could apply these transactions as they come in, but only if multiplayer also sent all undo
             // operations w/each Transaction. I don't think this would be worth the cost.
             // We ignore any transactions that we already applied (ie, sequence_num <= self.last_sequence_num).
+            let default_sequence_number = self.transactions.out_of_order_transactions.len();
             let index = self
                 .transactions
                 .out_of_order_transactions
                 .iter()
-                .position(|t| t.sequence_num.unwrap_or(0) < sequence_num)
-                .unwrap_or(self.transactions.out_of_order_transactions.len());
+                .position(|t| {
+                    t.sequence_num.unwrap_or(default_sequence_number as u64) < sequence_num
+                })
+                .unwrap_or(default_sequence_number);
             self.transactions
                 .out_of_order_transactions
                 .insert(index, transaction.to_transaction(Some(sequence_num)));

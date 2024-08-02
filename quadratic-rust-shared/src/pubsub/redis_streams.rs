@@ -36,6 +36,7 @@ impl Debug for RedisConnection {
     }
 }
 
+// A message consists of a key (String) and a value (Bytes).
 type Message = (String, Vec<u8>);
 
 fn client(config: Config) -> Result<Client> {
