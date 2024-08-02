@@ -18,6 +18,7 @@ pub struct Column {
     pub x: i64,
     pub values: BTreeMap<i64, CellValue>,
     pub align: ColumnData<SameValue<CellAlign>>,
+    pub vertical_align: ColumnData<SameValue<CellVerticalAlign>>,
     pub wrap: ColumnData<SameValue<CellWrap>>,
     pub numeric_format: ColumnData<SameValue<NumericFormat>>,
     pub numeric_decimals: ColumnData<SameValue<i16>>,
@@ -53,6 +54,7 @@ impl Column {
             crate::util::union_ranges([
                 self.values_range(),
                 self.align.range(),
+                self.vertical_align.range(),
                 self.wrap.range(),
                 self.numeric_format.range(),
                 self.numeric_decimals.range(),
@@ -68,6 +70,7 @@ impl Column {
     pub fn format_range(&self) -> Option<Range<i64>> {
         crate::util::union_ranges([
             self.align.range(),
+            self.vertical_align.range(),
             self.wrap.range(),
             self.numeric_format.range(),
             self.numeric_decimals.range(),
@@ -84,6 +87,7 @@ impl Column {
     pub fn has_anything_in_row(&self, y: i64) -> bool {
         self.has_data_in_row(y)
             || self.align.get(y).is_some()
+            || self.vertical_align.get(y).is_some()
             || self.wrap.get(y).is_some()
             || self.numeric_format.get(y).is_some()
             || self.numeric_decimals.get(y).is_some()
@@ -97,6 +101,7 @@ impl Column {
     pub fn format(&self, y: i64) -> Option<Format> {
         let format = Format {
             align: self.align.get(y),
+            vertical_align: self.vertical_align.get(y),
             wrap: self.wrap.get(y),
             numeric_format: self.numeric_format.get(y),
             numeric_decimals: self.numeric_decimals.get(y),
@@ -365,8 +370,10 @@ impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq>
 #[cfg(test)]
 mod test {
     use super::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn column_data_set_range() {
         let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
 
@@ -393,6 +400,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn has_blocks_in_range() {
         let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
 
@@ -411,11 +419,14 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn format() {
         let mut cd: Column = Column::new(0);
 
         cd.align
             .set_range(Range { start: 0, end: 10 }, CellAlign::Center);
+        cd.vertical_align
+            .set_range(Range { start: 0, end: 10 }, CellVerticalAlign::Middle);
         cd.wrap
             .set_range(Range { start: 0, end: 10 }, CellWrap::Wrap);
         cd.numeric_format.set_range(
@@ -445,6 +456,7 @@ mod test {
 
         let format = cd.format(0).unwrap();
         assert_eq!(format.align, Some(CellAlign::Center));
+        assert_eq!(format.vertical_align, Some(CellVerticalAlign::Middle));
         assert_eq!(format.wrap, Some(CellWrap::Wrap));
         assert_eq!(
             format.numeric_format,
@@ -469,11 +481,14 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn format_range() {
         let mut cd: Column = Column::new(0);
 
         cd.align
             .set_range(Range { start: 0, end: 10 }, CellAlign::Center);
+        cd.vertical_align
+            .set_range(Range { start: 0, end: 10 }, CellVerticalAlign::Middle);
         cd.wrap
             .set_range(Range { start: 0, end: 10 }, CellWrap::Wrap);
         cd.numeric_format.set_range(

@@ -83,7 +83,6 @@ impl GridController {
             .calculate_decimal_places(source.into(), is_percentage)
             .unwrap_or(0);
         let new_precision = i16::max(0, source_decimals + (delta as i16));
-
         vec![Operation::SetCellFormats {
             sheet_rect,
             attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
@@ -122,6 +121,10 @@ impl GridController {
             Operation::SetCellFormats {
                 sheet_rect,
                 attr: CellFmtArray::Align(RunLengthEncoding::repeat(None, len)),
+            },
+            Operation::SetCellFormats {
+                sheet_rect,
+                attr: CellFmtArray::VerticalAlign(RunLengthEncoding::repeat(None, len)),
             },
             Operation::SetCellFormats {
                 sheet_rect,

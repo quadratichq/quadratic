@@ -14,6 +14,13 @@ export interface RenderCoreRequestRenderCells {
   height: number;
 }
 
+export interface RenderCoreResponseRowHeights {
+  type: 'renderCoreResponseRowHeights';
+  transactionId: string;
+  sheetId: string;
+  rowHeights: string;
+}
+
 export interface CoreRenderCells {
   type: 'coreRenderRenderCells';
   id: number;
@@ -35,7 +42,7 @@ export interface CoreRenderCompleteRenderCells {
   sheetId: string;
   hashX: number;
   hashY: number;
-  cells: string;
+  renderCells: JsRenderCell[];
 }
 
 export interface CoreRenderAddSheet {
@@ -66,6 +73,19 @@ export interface CoreRenderSheetBoundsUpdate {
   sheetBounds: SheetBounds;
 }
 
+export interface CoreRenderRequestRowHeights {
+  type: 'coreRenderRequestRowHeights';
+  transactionId: string;
+  sheetId: string;
+  rows: string;
+}
+
+export interface CoreRenderResizeRowHeights {
+  type: 'coreRenderResizeRowHeights';
+  sheetId: string;
+  rowHeights: string;
+}
+
 export type CoreRenderMessage =
   | CoreRenderCells
   | CoreRenderSheetInfo
@@ -74,6 +94,8 @@ export type CoreRenderMessage =
   | CoreRenderDeleteSheet
   | CoreRenderSheetOffsets
   | CoreRenderSheetInfoUpdate
-  | CoreRenderSheetBoundsUpdate;
+  | CoreRenderSheetBoundsUpdate
+  | CoreRenderRequestRowHeights
+  | CoreRenderResizeRowHeights;
 
-export type RenderCoreMessage = RenderCoreRequestRenderCells;
+export type RenderCoreMessage = RenderCoreRequestRenderCells | RenderCoreResponseRowHeights;
