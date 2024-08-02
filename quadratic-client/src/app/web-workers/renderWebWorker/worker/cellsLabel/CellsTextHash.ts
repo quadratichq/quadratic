@@ -91,6 +91,17 @@ export class CellsTextHash {
     this.hashY = hashY;
   }
 
+  updateViewRectangle = () => {
+    const screenRectStringified = this.cellsLabels.sheetOffsets.getRectCellOffsets(
+      this.AABB.left,
+      this.AABB.top,
+      sheetHashWidth,
+      sheetHashHeight
+    );
+    const screenRect = JSON.parse(screenRectStringified);
+    this.viewRectangle = new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
+  };
+
   // key used to find individual cell labels
   private getKey(cell: { x: bigint | number; y: bigint | number }): string {
     return `${cell.x},${cell.y}`;
@@ -137,7 +148,7 @@ export class CellsTextHash {
 
   update = async (): Promise<boolean> => {
     const bounds = renderText.viewport;
-    const visible = !bounds || intersects.rectangleRectangle(this.viewRectangle, bounds);
+    const visibleOrNeighbor = !bounds || intersects.rectangleNeighborRectangle(this.viewRectangle, bounds, 3);
     if (!this.loaded || this.dirty) {
       // If dirty is true, then we need to get the cells from the server; but we
       // need to keep open the case where we receive new cells after dirty is
@@ -146,7 +157,7 @@ export class CellsTextHash {
       const dirty = this.dirty;
       this.dirty = false;
       let cells: JsRenderCell[] | false;
-      if (!this.loaded || dirty === true) {
+      if (!Array.isArray(dirty) && (!this.loaded || dirty === true)) {
         cells = await renderCore.getRenderCells(
           this.cellsLabels.sheetId,
           this.AABB.x,
@@ -168,7 +179,7 @@ export class CellsTextHash {
         this.createLabels(cells);
       }
       this.updateText();
-      if (visible) {
+      if (visibleOrNeighbor) {
         queueMicrotask(() => {
           this.overflowClip();
           this.updateBuffers();
@@ -183,7 +194,7 @@ export class CellsTextHash {
       return true;
     } else if (this.dirtyBuffers) {
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating buffers ${this.hashX}, ${this.hashY}`);
-      if (visible) {
+      if (visibleOrNeighbor) {
         queueMicrotask(() => {
           this.overflowClip();
           this.updateBuffers();
@@ -192,7 +203,7 @@ export class CellsTextHash {
         this.unload();
       }
       return true;
-    } else if (!visible) {
+    } else if (!visibleOrNeighbor) {
       this.unload();
     }
     return false;

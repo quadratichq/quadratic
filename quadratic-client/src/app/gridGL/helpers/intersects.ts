@@ -39,6 +39,15 @@ function rectangleRectangle(rectangle1: RectangleLike, rectangle2: RectangleLike
   );
 }
 
+function rectangleNeighborRectangle(rectangle1: RectangleLike, rectangle2: RectangleLike, neighbor: number): boolean {
+  return (
+    left(rectangle1) < (1 + neighbor) * right(rectangle2) &&
+    (1 + neighbor) * right(rectangle1) > left(rectangle2) &&
+    top(rectangle1) < (1 + neighbor) * bottom(rectangle2) &&
+    (1 + neighbor) * bottom(rectangle1) > top(rectangle2)
+  );
+}
+
 function lineLineOneDimension(iStart: number, iEnd: number, jStart: number, jEnd: number): boolean {
   return iStart < jEnd && iEnd > jStart;
 }
@@ -90,6 +99,7 @@ export const intersects = {
   rectanglePoint,
   circlePoint,
   rectangleRectangle,
+  rectangleNeighborRectangle,
   lineLineOneDimension,
   rectangleUnion,
   rectangleClip,
