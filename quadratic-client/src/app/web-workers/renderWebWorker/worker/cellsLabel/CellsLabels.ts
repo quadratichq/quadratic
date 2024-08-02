@@ -230,11 +230,27 @@ export class CellsLabels {
         }
       });
     });
-    Array.from(hashesToUpdate)
-      .sort((a, b) => a[1] - b[1])
-      .forEach(([hash]) => queueMicrotask(() => hash.updateBuffers()));
-    hashesToUpdate.forEach((_, hash) => queueMicrotask(() => hash.updateBuffers()));
-    hashesToUpdateViewRectangle.forEach((hash) => queueMicrotask(() => hash.sendViewRectangle()));
+
+    const bounds = renderText.viewport;
+    if (!!bounds) {
+      hashesToUpdate.forEach((_, hash) => {
+        const visible = intersects.rectangleRectangle(hash.viewRectangle, bounds);
+        if (visible) {
+          queueMicrotask(() => hash.updateBuffers());
+        } else {
+          hash.dirtyBuffers = true;
+        }
+      });
+      hashesToUpdateViewRectangle.forEach((hash) => {
+        const visible = intersects.rectangleRectangle(hash.viewRectangle, bounds);
+        if (visible) {
+          queueMicrotask(() => hash.sendViewRectangle());
+        } else {
+          hash.dirtyBuffers = true;
+        }
+      });
+    }
+
     return true;
   }
 

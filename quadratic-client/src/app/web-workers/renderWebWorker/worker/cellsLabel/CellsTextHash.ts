@@ -106,14 +106,16 @@ export class CellsTextHash {
     this.updateText();
   }
 
-  unload() {
+  unload = () => {
     if (debugShowLoadingHashes) console.log(`[CellsTextHash] Unloading ${this.hashX}, ${this.hashY}`);
-    this.loaded = false;
     this.dirty = true;
-    renderClient.unload(this.cellsLabels.sheetId, this.hashX, this.hashY);
-  }
+    if (this.loaded) {
+      this.loaded = false;
+      renderClient.unload(this.cellsLabels.sheetId, this.hashX, this.hashY);
+    }
+  };
 
-  sendViewRectangle() {
+  sendViewRectangle = () => {
     renderClient.sendCellsTextHashClear(
       this.cellsLabels.sheetId,
       this.hashX,
@@ -121,11 +123,12 @@ export class CellsTextHash {
       this.viewRectangle,
       this.overflowGridLines
     );
-  }
+  };
 
   update = async (): Promise<boolean> => {
     const bounds = renderText.viewport;
-    const inView = bounds === undefined || intersects.rectangleRectangle(this.viewRectangle, bounds);
+    if (!bounds) return false;
+    const visible = intersects.rectangleRectangle(this.viewRectangle, bounds);
     if (this.dirty) {
       // If dirty is true, then we need to get the cells from the server; but we
       // need to keep open the case where we receive new cells after dirty is
@@ -155,15 +158,12 @@ export class CellsTextHash {
       if (cells) {
         this.createLabels(cells);
       }
-      if (inView) {
+      if (visible) {
         queueMicrotask(() => {
           this.overflowClip();
           this.updateBuffers();
         });
       } else {
-        queueMicrotask(() => {
-          this.overflowClip();
-        });
         this.dirtyBuffers = true;
       }
       return true;
@@ -171,9 +171,12 @@ export class CellsTextHash {
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating text ${this.hashX}, ${this.hashY}`);
       this.updateText();
       return true;
-    } else if (inView && this.dirtyBuffers) {
+    } else if (visible && this.dirtyBuffers) {
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating buffers ${this.hashX}, ${this.hashY}`);
-      queueMicrotask(() => this.updateBuffers());
+      queueMicrotask(() => {
+        this.overflowClip();
+        this.updateBuffers();
+      });
       return true;
     }
     return false;
@@ -414,7 +417,7 @@ export class CellsTextHash {
     return changed;
   };
 
-  async getCellsContentMaxWidth(column: number): Promise<number> {
+  getCellsContentMaxWidth = async (column: number): Promise<number> => {
     await this.update();
     let max = 0;
     this.labels.forEach((label) => {
@@ -422,10 +425,15 @@ export class CellsTextHash {
         max = Math.max(max, label.unwrappedTextWidth);
       }
     });
+    const bounds = renderText.viewport;
+    const visible = !!bounds && intersects.rectangleRectangle(this.viewRectangle, bounds);
+    if (!visible) {
+      this.unload();
+    }
     return max;
-  }
+  };
 
-  async getCellsContentMaxHeight(row: number): Promise<number> {
+  getCellsContentMaxHeight = async (row: number): Promise<number> => {
     await this.update();
     let max = 0;
     this.labels.forEach((label) => {
@@ -433,8 +441,13 @@ export class CellsTextHash {
         max = Math.max(max, label.textHeight);
       }
     });
+    const bounds = renderText.viewport;
+    const visible = !!bounds && intersects.rectangleRectangle(this.viewRectangle, bounds);
+    if (!visible) {
+      this.unload();
+    }
     return max;
-  }
+  };
 
   totalMemory(): number {
     if (this.loaded) {
