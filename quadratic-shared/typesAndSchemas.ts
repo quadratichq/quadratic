@@ -123,7 +123,7 @@ export const ApiSchemas = {
   ),
   '/v0/files.POST.request': z.object({
     name: FileSchema.shape.name,
-    contents: z.string(),
+    contents: z.string().optional(),
     version: z.string(),
     teamUuid: TeamSchema.shape.uuid,
     isPrivate: z.boolean().optional(),
