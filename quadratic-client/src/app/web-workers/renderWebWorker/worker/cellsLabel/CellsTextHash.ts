@@ -109,6 +109,7 @@ export class CellsTextHash {
   unload = () => {
     if (debugShowLoadingHashes) console.log(`[CellsTextHash] Unloading ${this.hashX}, ${this.hashY}`);
     this.dirty = true;
+    this.labels.clear();
     if (this.loaded) {
       this.loaded = false;
       renderClient.unload(this.cellsLabels.sheetId, this.hashX, this.hashY);
