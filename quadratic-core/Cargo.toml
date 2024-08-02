@@ -20,6 +20,10 @@ path = "src/bin/docgen.rs"
 name = "export_types"
 path = "src/bin/export_types.rs"
 
+[[bin]]
+name = "generate_blank_current_file"
+path = "src/bin/generate_blank_current_file.rs"
+
 [features]
 default = ["console_error_panic_hook", "js"]
 # "js" feature is disabled for testing (particularly WASI benchmarks)
@@ -83,6 +87,8 @@ arrow-buffer = "51.0.0"
 arrow-data = "51.0.0"
 half = "2.4.0"
 calamine =  { version = "0.24.0", features = ["dates"] }
+bincode = "1.3.3"
+flate2 = "1.0.30"
 serde_with = "3.8.1"
 
 [dev-dependencies]
