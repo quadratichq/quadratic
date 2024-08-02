@@ -35,7 +35,7 @@ export const HtmlValidations = () => {
   useEffect(() => {
     const updateShowDropdown = async (column: number, row: number) => {
       const validation = await quadraticCore.getValidationList(sheets.sheet.id, column, row);
-
+      console.log(validation);
       if (validation) {
         setDropdownChoices(validation);
       } else {

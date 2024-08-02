@@ -5,7 +5,13 @@ use crate::{
         active_transactions::transaction_name::TransactionName, operations::operation::Operation,
         GridController,
     },
-    grid::{sheet::validations::validation::Validation, SheetId},
+    grid::{
+        sheet::validations::{
+            validation::Validation,
+            validation_rules::{validation_list::ValidationListSource, ValidationRule},
+        },
+        SheetId,
+    },
     selection::Selection,
     Pos,
 };
@@ -66,6 +72,21 @@ impl GridController {
         self.try_sheet(sheet_id)
             .and_then(|sheet| sheet.validations.get_validation_from_pos(pos))
     }
+
+    pub fn validation_list(&self, sheet_id: SheetId, validation_id: Uuid) -> Option<Vec<String>> {
+        let sheet = self.try_sheet(sheet_id)?;
+        let validation = sheet.validations.validation(validation_id)?;
+        match validation.rule {
+            ValidationRule::List(ref list) => match list.source {
+                ValidationListSource::Selection(ref selection) => {
+                    let cells = sheet.selection(selection, None, false)?;
+                    Some(cells.values().map(|value| value.to_display()).collect())
+                }
+                ValidationListSource::List(ref list) => Some(list.clone()),
+            },
+            _ => None,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -74,7 +95,7 @@ mod tests {
 
     use crate::{
         grid::sheet::validations::validation_rules::{
-            validation_logical::ValidationLogical, ValidationRule,
+            validation_list::ValidationList, validation_logical::ValidationLogical, ValidationRule,
         },
         wasm_bindings::js::{expect_js_call, hash_test},
         Rect,
@@ -203,5 +224,70 @@ mod tests {
         assert!(gc
             .get_validation_from_pos(SheetId::new(), (0, 0).into())
             .is_none());
+    }
+
+    #[test]
+    fn validation_list_strings() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+
+        let list = ValidationList {
+            source: ValidationListSource::List(vec!["a".to_string(), "b".to_string()]),
+            ignore_blank: true,
+            drop_down: true,
+        };
+        let validation = Validation {
+            id: Uuid::new_v4(),
+            selection: Selection::pos(0, 0, sheet_id),
+            rule: ValidationRule::List(list),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        sheet.validations.set(validation.clone());
+
+        assert_eq!(
+            gc.validation_list(sheet_id, validation.id),
+            Some(vec!["a".to_string(), "b".to_string()])
+        );
+    }
+
+    #[test]
+    fn validation_list_cells() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+
+        sheet.set_cell_value((0, 0).into(), "First");
+        sheet.set_cell_value((0, 1).into(), "Second");
+        sheet.set_cell_value((0, 2).into(), "false");
+        sheet.set_cell_value((0, 3).into(), "123");
+
+        let list = ValidationList {
+            source: ValidationListSource::Selection(Selection::rect(
+                Rect::new(0, 0, 0, 4),
+                sheet_id,
+            )),
+            ignore_blank: true,
+            drop_down: true,
+        };
+        let validation = Validation {
+            id: Uuid::new_v4(),
+            selection: Selection::pos(1, 0, sheet_id),
+            rule: ValidationRule::List(list),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        sheet.validations.set(validation.clone());
+
+        assert_eq!(
+            gc.validation_list(sheet_id, validation.id),
+            Some(vec![
+                "First".to_string(),
+                "Second".to_string(),
+                "false".to_string(),
+                "123".to_string()
+            ])
+        );
     }
 }

@@ -39,7 +39,12 @@ export const drawCheckbox = (options: RenderCheckbox) => {
 };
 
 export const dropdownRectangle = (x: number, y: number): Rectangle => {
-  return new Rectangle(x - DROPDOWN_SIZE[0], y, DROPDOWN_SIZE[0], DROPDOWN_SIZE[1]);
+  return new Rectangle(
+    x - DROPDOWN_SIZE[0] - DROPDOWN_PADDING[0],
+    y,
+    DROPDOWN_SIZE[0] + DROPDOWN_PADDING[0] * 2,
+    DROPDOWN_SIZE[1] + DROPDOWN_PADDING[1]
+  );
 };
 
 export const drawDropdown = (options: RenderDropdown) => {

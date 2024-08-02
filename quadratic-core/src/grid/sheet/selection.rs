@@ -4,6 +4,8 @@
 
 use std::collections::HashMap;
 
+use indexmap::IndexMap;
+
 use crate::{
     grid::{formats::format::Format, CodeRunResult, GridBounds},
     selection::Selection,
@@ -29,9 +31,11 @@ impl Sheet {
         selection: &Selection,
         max_count: Option<i64>,
         skip_code_runs: bool,
-    ) -> Option<HashMap<Pos, &CellValue>> {
+    ) -> Option<IndexMap<Pos, &CellValue>> {
         let mut count = 0;
-        let mut cells = HashMap::new();
+
+        // we use a IndexMap to maintain the order of the cells
+        let mut cells = IndexMap::new();
 
         // This checks whether we should skip a CellValue::Code. We skip the
         // code cell if `skip_code_runs`` is true. For example, when running
@@ -414,7 +418,7 @@ mod tests {
     use std::str::FromStr;
 
     /// Used to test whether the results of a selection has a position and value.
-    fn assert_results_has_value(results: &HashMap<Pos, &CellValue>, pos: Pos, value: CellValue) {
+    fn assert_results_has_value(results: &IndexMap<Pos, &CellValue>, pos: Pos, value: CellValue) {
         assert!(results.iter().any(|(p, v)| *p == pos && **v == value));
     }
 
