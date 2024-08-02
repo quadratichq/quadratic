@@ -2,7 +2,7 @@ use super::operation::Operation;
 use crate::{
     cell_values::CellValues,
     controller::GridController,
-    grid::{formatting::CellFmtArray, NumericDecimals, NumericFormat, NumericFormatKind},
+    grid::{formatting::CellFmtArray, NumericFormat, NumericFormatKind},
     selection::Selection,
     CellValue, RunLengthEncoding, SheetPos, SheetRect,
 };
@@ -43,18 +43,11 @@ impl GridController {
                     attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(Some(true), 1)),
                 });
             }
-            // only change decimal places if decimals have not been set
-            if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
-                if sheet
-                    .get_formatting_value::<NumericDecimals>(sheet_pos.into())
-                    .is_none()
-                {
-                    ops.push(Operation::SetCellFormats {
-                        sheet_rect,
-                        attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
-                    });
-                }
-            }
+
+            // We no longer automatically set numeric decimals for
+            // currency; instead, we handle changes in currency decimal
+            // length by using 2 if currency is set by default.
+
             CellValue::Number(number)
         } else if let Some(bool) = CellValue::unpack_boolean(value) {
             bool
