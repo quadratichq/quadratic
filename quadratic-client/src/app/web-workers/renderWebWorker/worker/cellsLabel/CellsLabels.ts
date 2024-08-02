@@ -264,7 +264,7 @@ export class CellsLabels {
           visibleDirtyHashes.push(hash);
         }
       } else {
-        if (hash.dirty) {
+        if (hash.dirty || hash.dirtyWrapText || hash.dirtyBuffers) {
           notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         }
         if (findHashToDelete && hash.loaded) {

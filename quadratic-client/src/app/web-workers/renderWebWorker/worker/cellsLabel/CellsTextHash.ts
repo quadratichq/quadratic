@@ -11,8 +11,10 @@
 
 import { debugShowHashUpdates, debugShowLoadingHashes } from '@/app/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
+import { intersects } from '@/app/gridGL/helpers/intersects';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { JsRenderCell } from '@/app/quadratic-core-types';
+import { renderText } from '@/app/web-workers/renderWebWorker/worker/renderText';
 import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { Rectangle } from 'pixi.js';
 import { renderClient } from '../renderClient';
@@ -48,7 +50,7 @@ export class CellsTextHash {
   AABB: Rectangle;
 
   // rebuild CellsTextHash
-  dirty: boolean | JsRenderCell[] | 'show' = false;
+  dirty: boolean | JsRenderCell[] | 'show' = true;
 
   // todo: not sure if this is still used as I ran into issues with only rendering buffers:
 
@@ -105,11 +107,14 @@ export class CellsTextHash {
   private createLabels(cells: JsRenderCell[]) {
     this.labels = new Map();
     cells.forEach((cell) => this.createLabel(cell));
+    this.loaded = true;
   }
 
   unload = () => {
     if (debugShowLoadingHashes) console.log(`[CellsTextHash] Unloading ${this.hashX}, ${this.hashY}`);
     this.loaded = false;
+    this.dirty = false;
+    this.overflowGridLines = [];
     this.labels.clear();
     this.labelMeshes.clear();
     renderClient.unload(this.cellsLabels.sheetId, this.hashX, this.hashY);
@@ -126,6 +131,8 @@ export class CellsTextHash {
   };
 
   update = async (): Promise<boolean> => {
+    const bounds = renderText.viewport;
+    const visible = !bounds || intersects.rectangleRectangle(this.viewRectangle, bounds);
     if (!this.loaded || this.dirty) {
       // If dirty is true, then we need to get the cells from the server; but we
       // need to keep open the case where we receive new cells after dirty is
@@ -156,10 +163,14 @@ export class CellsTextHash {
         this.createLabels(cells);
       }
       this.updateText();
-      queueMicrotask(() => {
-        this.overflowClip();
-        this.updateBuffers();
-      });
+      if (visible) {
+        queueMicrotask(() => {
+          this.overflowClip();
+          this.updateBuffers();
+        });
+      } else {
+        this.unload();
+      }
       return true;
     } else if (this.dirtyWrapText) {
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating text ${this.hashX}, ${this.hashY}`);
@@ -167,10 +178,14 @@ export class CellsTextHash {
       return true;
     } else if (this.dirtyBuffers) {
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating buffers ${this.hashX}, ${this.hashY}`);
-      queueMicrotask(() => {
-        this.overflowClip();
-        this.updateBuffers();
-      });
+      if (visible) {
+        queueMicrotask(() => {
+          this.overflowClip();
+          this.updateBuffers();
+        });
+      } else {
+        this.unload();
+      }
       return true;
     }
     return false;
@@ -178,11 +193,13 @@ export class CellsTextHash {
 
   private updateText = () => {
     this.dirtyWrapText = false;
+    if (!this.loaded) {
+      this.dirty = true;
+      return;
+    }
 
     this.labelMeshes.clear();
     this.labels.forEach((child) => child.updateText(this.labelMeshes));
-
-    this.dirtyBuffers = true;
 
     // update columns max width cache
     const columnsMax = new Map<number, number>();
@@ -325,6 +342,10 @@ export class CellsTextHash {
 
   updateBuffers = (): void => {
     this.dirtyBuffers = false;
+    if (!this.loaded) {
+      this.dirty = true;
+      return;
+    }
 
     // creates labelMeshes webGL buffers based on size
     this.labelMeshes.prepare();
@@ -364,8 +385,6 @@ export class CellsTextHash {
 
     // signals that all updates have been sent to the client
     renderClient.finalizeCellsTextHash(this.cellsLabels.sheetId, this.hashX, this.hashY);
-
-    this.loaded = true;
   };
 
   adjustHeadings = (options: { delta: number; column?: number; row?: number }): boolean => {
@@ -456,14 +475,11 @@ export class CellsTextHash {
   };
 
   getRowContentMaxHeights = async (): Promise<Map<number, number>> => {
-    if (!Array.isArray(this.dirty) && !this.dirtyWrapText && this.rowsMaxCache !== undefined) {
+    if (!this.dirty && !this.dirtyWrapText && this.rowsMaxCache !== undefined) {
       return this.rowsMaxCache;
     }
-    if (Array.isArray(this.dirty)) {
+    if (this.dirty || this.dirtyWrapText) {
       await this.update();
-    }
-    if (this.dirtyWrapText) {
-      this.updateText();
     }
     return this.rowsMaxCache ?? new Map();
   };
