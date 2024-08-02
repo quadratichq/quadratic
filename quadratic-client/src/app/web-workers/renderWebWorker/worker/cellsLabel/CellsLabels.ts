@@ -15,7 +15,7 @@ import { CELL_HEIGHT } from '@/shared/constants/gridConstants';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
 import { renderText } from '../renderText';
-import { CellsTextHash } from './CellsTextHash';
+import { CellsTextHash, NEIGHBORS } from './CellsTextHash';
 
 // 500 MB maximum memory per sheet before we start unloading hashes (right now
 // this is on a per-sheet basis--we will want to change this to a global limit)
@@ -260,6 +260,12 @@ export class CellsLabels {
 
     const bounds = renderText.viewport;
     if (!bounds) return;
+    const neighborRect = new Rectangle(
+      bounds.x - NEIGHBORS * bounds.width,
+      bounds.y - NEIGHBORS * bounds.height,
+      bounds.width * (1 + 2 * NEIGHBORS),
+      bounds.height * (1 + 2 * NEIGHBORS)
+    );
 
     // This divides the hashes into (1) visible in need of rendering, (2) not
     // visible and in need of rendering, and (3) not visible and loaded.
@@ -271,7 +277,7 @@ export class CellsLabels {
       } else {
         if (hash.dirty) {
           notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
-        } else if (hash.clientLoaded && !intersects.rectangleNeighborRectangle(hash.viewRectangle, bounds, 3)) {
+        } else if (hash.clientLoaded && !intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
           hash.unload();
         }
         if (findHashToDelete && hash.loaded) {

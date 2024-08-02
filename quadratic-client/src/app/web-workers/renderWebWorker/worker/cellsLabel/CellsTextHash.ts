@@ -30,6 +30,8 @@ interface TrackClip {
   hashY: number;
 }
 
+export const NEIGHBORS = 2;
+
 // Draw hashed regions of cell glyphs (the text + text formatting)
 export class CellsTextHash {
   private cellsLabels: CellsLabels;
@@ -147,8 +149,14 @@ export class CellsTextHash {
   };
 
   update = async (): Promise<boolean> => {
-    const bounds = renderText.viewport;
-    const visibleOrNeighbor = !bounds || intersects.rectangleNeighborRectangle(this.viewRectangle, bounds, 3);
+    const bounds = renderText.viewport ?? this.viewRectangle;
+    const neighborRect = new Rectangle(
+      bounds.x - NEIGHBORS * bounds.width,
+      bounds.y - NEIGHBORS * bounds.height,
+      bounds.width * (1 + 2 * NEIGHBORS),
+      bounds.height * (1 + 2 * NEIGHBORS)
+    );
+    const visibleOrNeighbor = intersects.rectangleRectangle(this.viewRectangle, neighborRect);
     if (!this.loaded || this.dirty) {
       // If dirty is true, then we need to get the cells from the server; but we
       // need to keep open the case where we receive new cells after dirty is
