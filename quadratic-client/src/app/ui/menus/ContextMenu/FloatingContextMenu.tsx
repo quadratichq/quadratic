@@ -265,6 +265,7 @@ export const FloatingContextMenu = (props: Props) => {
 
   // fetch render cell from core and update formatting state at cursor position
   const updateContextMenuState = useCallback(async () => {
+    if (!showContextMenu) return;
     const sheetId = sheets.current;
     const location = sheets.sheet.cursor.cursorPosition;
     const formatSummary = await quadraticCore.getCellFormatSummary(sheetId, location.x, location.y, true);
@@ -276,7 +277,7 @@ export const FloatingContextMenu = (props: Props) => {
     setCursorWrap(formatSummary.wrap ?? 'overflow');
     const fillColor = formatSummary.fillColor ?? '';
     setCursorFillColor(fillColor === 'blank' ? '' : fillColor);
-  }, []);
+  }, [showContextMenu]);
 
   // trigger is used to hide the menu when cellMoving
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
