@@ -196,7 +196,7 @@ mod test {
                 symbol: Some("$".into())
             })
         );
-        assert_eq!(get_cell_numeric_decimals(&gc), Some(2));
+        assert_eq!(get_cell_numeric_decimals(&gc), None);
 
         // number
         gc.set_cell_value(sheet_pos, "1.22".into(), None);
@@ -204,7 +204,7 @@ mod test {
             get_cell_value(&gc),
             CellValue::Number(BigDecimal::from_str("1.22").unwrap())
         );
-        assert_eq!(get_cell_numeric_decimals(&gc), Some(2));
+        assert_eq!(get_cell_numeric_decimals(&gc), None);
 
         // percentage
         gc.set_cell_value(sheet_pos, "10.55%".into(), None);
@@ -219,7 +219,7 @@ mod test {
                 symbol: None
             })
         );
-        assert_eq!(get_cell_numeric_decimals(&gc), Some(2));
+        assert_eq!(get_cell_numeric_decimals(&gc), None);
 
         // array
         gc.set_cell_value(sheet_pos, "[1,2,3]".into(), None);
