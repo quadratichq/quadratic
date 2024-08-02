@@ -231,10 +231,12 @@ export class CellsLabels {
       });
     });
 
-    hashesToUpdate.forEach((_, hash) => hash.updateBuffers());
+    hashesToUpdate.forEach((_, hash) => queueMicrotask(() => hash.updateBuffers()));
     hashesToUpdateViewRectangle.forEach((hash) => {
-      hash.updateViewRectangle();
-      hash.sendViewRectangle();
+      queueMicrotask(() => {
+        hash.updateViewRectangle();
+        hash.sendViewRectangle();
+      });
     });
     return true;
   }
