@@ -16,11 +16,11 @@ import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT } from '@/shared/constants/gridConst
 import { removeItems } from '@pixi/utils';
 import { Point, Rectangle } from 'pixi.js';
 import { RenderBitmapChar } from '../../renderBitmapFonts';
-import { extractCharCode, splitTextToCharacters } from './bitmapTextUtils';
 import { CellsLabels } from './CellsLabels';
-import { convertNumber, reduceDecimals } from './convertNumber';
 import { LabelMeshEntry } from './LabelMeshEntry';
 import { LabelMeshes } from './LabelMeshes';
+import { extractCharCode, splitTextToCharacters } from './bitmapTextUtils';
+import { convertNumber, reduceDecimals } from './convertNumber';
 
 interface CharRenderData {
   charData: RenderBitmapChar;
@@ -93,6 +93,8 @@ export class CellLabel {
 
   overflowRight?: number;
   overflowLeft?: number;
+
+  alignment?: CellAlign;
 
   dirty = true;
 
