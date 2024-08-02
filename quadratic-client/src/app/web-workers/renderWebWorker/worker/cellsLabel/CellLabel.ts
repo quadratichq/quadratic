@@ -538,11 +538,16 @@ export class CellLabel {
           return this.showPoundLabels(labelMeshes);
         }
         digits = result.currentFractionDigits - 1;
+
         text = result.number;
         this.updateText(labelMeshes, text);
       } while (this.textWidth > this.AABB.width && digits >= 0 && infinityProtection++ < 1000);
-    }
 
+      // we were not able to reduce the number to fit the cell, so we show pound characters
+      if (digits < 0) {
+        return this.showPoundLabels(labelMeshes);
+      }
+    }
     const bounds = new Bounds();
 
     for (let i = 0; i < this.chars.length; i++) {

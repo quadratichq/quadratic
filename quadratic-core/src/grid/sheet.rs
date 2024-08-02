@@ -355,6 +355,10 @@ impl Sheet {
         if let Some(value) = self.display_value(pos) {
             match value {
                 CellValue::Number(n) => {
+                    if kind == NumericFormatKind::Exponential {
+                        return Some(n.to_string().len() as i16 - 1);
+                    }
+
                     let exponent = n.as_bigint_and_exponent().1;
                     let max_decimals = 9;
                     let mut decimals = n
@@ -515,6 +519,15 @@ mod test {
             NumericFormatKind::Currency,
             Some(2),
         );
+
+        assert_decimal_places_for_number(
+            &mut sheet,
+            3,
+            2,
+            "91234567891",
+            NumericFormatKind::Exponential,
+            Some(10),
+        )
     }
 
     #[test]

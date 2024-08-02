@@ -64,14 +64,24 @@ export const reduceDecimals = (
   currentFractionDigits?: number
 ): { number: string; currentFractionDigits: number } | undefined => {
   // this only works if there is a fractional part
-  if (number.includes('.')) {
+  if (format.format?.type === 'EXPONENTIAL') {
     if (currentFractionDigits === undefined) {
-      const split = number.split('.');
-      currentFractionDigits = split[1].length - 1;
+      currentFractionDigits = number.length - (number[0] === '-' ? 3 : 2);
     }
     const updated = convertNumber(number, format, currentFractionDigits);
     if (updated !== current) {
       return { number: updated, currentFractionDigits };
+    }
+  } else {
+    if (number.includes('.')) {
+      if (currentFractionDigits === undefined) {
+        const split = number.split('.');
+        currentFractionDigits = split[1].length - 1;
+      }
+      const updated = convertNumber(number, format, currentFractionDigits);
+      if (updated !== current) {
+        return { number: updated, currentFractionDigits };
+      }
     }
   }
 };
