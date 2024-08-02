@@ -62,6 +62,8 @@ export class CellsTextHash {
 
   loaded = false;
 
+  clientLoaded = false;
+
   // screen coordinates
   viewRectangle: Rectangle;
 
@@ -117,7 +119,10 @@ export class CellsTextHash {
     this.overflowGridLines = [];
     this.labels.clear();
     this.labelMeshes.clear();
-    renderClient.unload(this.cellsLabels.sheetId, this.hashX, this.hashY);
+    if (this.clientLoaded) {
+      this.clientLoaded = false;
+      renderClient.unload(this.cellsLabels.sheetId, this.hashX, this.hashY);
+    }
   };
 
   sendViewRectangle = () => {
@@ -187,6 +192,8 @@ export class CellsTextHash {
         this.unload();
       }
       return true;
+    } else if (!visible) {
+      this.unload();
     }
     return false;
   };
@@ -385,6 +392,8 @@ export class CellsTextHash {
 
     // signals that all updates have been sent to the client
     renderClient.finalizeCellsTextHash(this.cellsLabels.sheetId, this.hashX, this.hashY);
+
+    this.clientLoaded = true;
   };
 
   adjustHeadings = (options: { delta: number; column?: number; row?: number }): boolean => {

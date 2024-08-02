@@ -231,8 +231,8 @@ export class CellsLabels {
       });
     });
 
-    hashesToUpdate.forEach((_, hash) => queueMicrotask(() => hash.updateBuffers()));
-    hashesToUpdateViewRectangle.forEach((hash) => queueMicrotask(() => hash.sendViewRectangle()));
+    hashesToUpdate.forEach((_, hash) => hash.updateBuffers());
+    hashesToUpdateViewRectangle.forEach((hash) => hash.sendViewRectangle());
     return true;
   }
 
@@ -264,7 +264,7 @@ export class CellsLabels {
           visibleDirtyHashes.push(hash);
         }
       } else {
-        if (hash.dirty || hash.dirtyWrapText || hash.dirtyBuffers) {
+        if (hash.clientLoaded || hash.dirty || hash.dirtyWrapText || hash.dirtyBuffers) {
           notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         }
         if (findHashToDelete && hash.loaded) {
@@ -355,9 +355,20 @@ export class CellsLabels {
 
     const next = this.nextDirtyHash();
     if (next) {
-      await next.hash.update();
-      if (debugShowLoadingHashes) console.log(`[CellsTextHash] memory usage: ${Math.round(this.totalMemory())} bytes`);
-      return next.visible ? 'visible' : true;
+      if (next.visible) {
+        await next.hash.update();
+        if (debugShowLoadingHashes)
+          console.log(`[CellsTextHash] memory usage: ${Math.round(this.totalMemory())} bytes`);
+        return 'visible';
+      } else {
+        queueMicrotask(() => {
+          next.hash.update().then(() => {
+            if (debugShowLoadingHashes)
+              console.log(`[CellsTextHash] memory usage: ${Math.round(this.totalMemory())} bytes`);
+          });
+        });
+        return true;
+      }
     }
     return false;
   };
