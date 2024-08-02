@@ -20,14 +20,12 @@ export const convertNumber = (n: string, format: JsNumber, currentFractionDigits
     options.groupSize = 3;
   }
 
-  if (currentFractionDigits) {
-    options.fractionGroupSize = currentFractionDigits;
-  } else if (format.decimals !== null) {
-    options.fractionGroupSize = format.decimals;
-  } else if (isCurrency) {
-    options.fractionGroupSize = 2;
-  } else {
-    options.fractionGroupSize = undefined;
+  if (currentFractionDigits === undefined) {
+    if (format.decimals !== null) {
+      currentFractionDigits = format.decimals;
+    } else if (isCurrency) {
+      currentFractionDigits = 2;
+    }
   }
 
   if (format.format?.type === 'CURRENCY') {
@@ -50,8 +48,6 @@ export const convertNumber = (n: string, format: JsNumber, currentFractionDigits
 
   if (currentFractionDigits !== undefined) {
     return number.toFormat(currentFractionDigits, options) + suffix;
-  } else if (format.decimals !== null) {
-    return number.toFormat(format.decimals, options) + suffix;
   }
   return number.toFormat(options) + suffix;
 };
