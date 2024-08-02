@@ -237,6 +237,7 @@ pub(crate) mod tests {
         body::Body,
         http::{self, Request},
     };
+    use http::StatusCode;
     use tower::ServiceExt;
 
     use super::*;
