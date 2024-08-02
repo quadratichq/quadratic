@@ -54,6 +54,7 @@ pub enum CellValue {
     Code(CodeCellValue),
     #[cfg_attr(test, proptest(skip))]
     Image(String),
+    // Annotated((CellValue, Annotation)),
 }
 impl fmt::Display for CellValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
