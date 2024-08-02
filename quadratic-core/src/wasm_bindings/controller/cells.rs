@@ -77,15 +77,14 @@ impl GridController {
 
     /// gets the display value for a cell
     #[wasm_bindgen(js_name = "getDisplayValue")]
-    pub fn js_get_cell_display(&self, sheet_id: String, pos: String) -> Result<String, JsValue> {
-        let pos = serde_json::from_str(&pos).map_err(|_| JsValue::UNDEFINED)?;
-        let sheet = self
-            .try_sheet_from_string_id(sheet_id)
-            .ok_or(JsValue::UNDEFINED)?;
-        sheet
-            .rendered_value(pos)
-            .ok_or(JsValue::UNDEFINED)
-            .map_err(|_| JsValue::UNDEFINED)
+    pub fn js_get_cell_display(&self, sheet_id: String, pos: String) -> String {
+        let Ok(pos) = serde_json::from_str(&pos) else {
+            return String::default();
+        };
+        let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
+            return String::default();
+        };
+        sheet.rendered_value(pos).unwrap_or(String::default())
     }
 
     /// Deletes a region of cells.

@@ -26,7 +26,7 @@ export const HtmlValidations = () => {
   }, []);
 
   const [showDropdown, setShowDropdown] = useState(false);
-  const [dropdownChoices, setDropdownChoices] = useState<string[] | undefined>(['a', 'b', 'c']);
+  const [dropdownChoices, setDropdownChoices] = useState<string[] | undefined>();
   const [currentValue, setCurrentValue] = useState<string | undefined>();
 
   const clearDropdown = useCallback(() => {
@@ -37,14 +37,15 @@ export const HtmlValidations = () => {
   useEffect(() => {
     const updateShowDropdown = async (column: number, row: number) => {
       if (showDropdown) return;
-      const validation = await quadraticCore.getValidationList(sheets.sheet.id, column, row);
+      const list = await quadraticCore.getValidationList(sheets.sheet.id, column, row);
       setCurrentValue(await quadraticCore.getDisplayCell(sheets.sheet.id, column, row));
-      if (validation) {
-        setDropdownChoices(validation);
+      if (list) {
+        setDropdownChoices(list);
         setShowDropdown(true);
       } else {
         clearDropdown();
       }
+      setHide(false);
     };
     events.on('dropdown', updateShowDropdown);
 
@@ -80,7 +81,6 @@ export const HtmlValidations = () => {
         clearDropdown();
       }
 
-      // console.log(validation);
       // todo: handle error case
 
       // only a List can show a dropdown
@@ -90,10 +90,8 @@ export const HtmlValidations = () => {
 
       if (validation.message?.show && validation.message?.message) {
         setMessage(validation.message);
-        setHide(false);
       } else {
-        setHide(true);
-        return;
+        setMessage(undefined);
       }
 
       const offsets = sheets.sheet.getCellOffsets(x, y);
@@ -133,7 +131,7 @@ export const HtmlValidations = () => {
     [clearDropdown]
   );
 
-  if (hide || !offsets || !message) return null;
+  if (hide || !offsets) return null;
   if (showDropdown && dropdownChoices) {
     return (
       <div
@@ -158,7 +156,7 @@ export const HtmlValidations = () => {
         </div>
       </div>
     );
-  } else if (message.message) {
+  } else if (message?.message) {
     return (
       <div
         ref={ref}

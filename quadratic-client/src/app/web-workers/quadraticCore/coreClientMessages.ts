@@ -955,7 +955,7 @@ export interface ClientCoreGetDisplayCell {
 
 export interface CoreClientGetDisplayCell {
   type: 'coreClientGetDisplayCell';
-  cell: string | undefined;
+  cell?: string;
   id: number;
 }
 

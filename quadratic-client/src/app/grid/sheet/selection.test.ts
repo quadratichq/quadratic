@@ -131,5 +131,5 @@ it('parseSelectionString', () => {
     error: 'Unknown range reference',
     column: 12,
   });
-  expect(parseSelectionString('', sheetId).error).toEqual({ error: 'Empty range', column: 0 });
+  expect(parseSelectionString('', sheetId).error).toEqual(undefined);
 });

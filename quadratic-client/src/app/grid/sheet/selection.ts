@@ -110,7 +110,7 @@ export const parseSelectionString = (
   }
 
   if (range === '') {
-    return { error: { error: 'Empty range', column: 0 } };
+    return { selection };
   }
 
   // this can be replaced by a regex--but this is more readable
