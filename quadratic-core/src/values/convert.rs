@@ -236,6 +236,11 @@ where
     for<'a> &'a Self: Into<Span>,
     Self::Unspanned: IsBlank,
 {
+    /// Returns an error if the value contains **any** errors; otherwise,
+    /// returns the value unchanged.
+    ///
+    /// Errors should be preserved whenever possible, so do not call this for
+    /// intermediate results.
     fn into_non_error_value(self) -> CodeResult<Self::Unspanned>;
 
     /// Coerces a value, returning an error if the value has the wrong type.
@@ -285,17 +290,21 @@ impl CoerceInto for Spanned<CellValue> {
 
 impl<'a> CoerceInto for Spanned<&'a Value> {
     fn into_non_error_value(self) -> CodeResult<&'a Value> {
-        match &self.inner {
-            Value::Single(CellValue::Error(e)) => Err((**e).clone()),
-            other => Ok(other),
+        let error = match &self.inner {
+            Value::Single(v) => v.error(),
+            Value::Array(a) => a.first_error(),
+        };
+        match error {
+            Some(e) => Err(e.clone()),
+            None => Ok(self.inner),
         }
     }
 }
 impl CoerceInto for Spanned<Value> {
     fn into_non_error_value(self) -> CodeResult<Value> {
         match self.inner {
-            Value::Single(CellValue::Error(e)) => Err(*e),
-            other => Ok(other),
+            Value::Single(v) => v.into_non_error_value().map(Value::Single),
+            Value::Array(a) => a.into_non_error_array().map(Value::Array),
         }
     }
 }

@@ -5,9 +5,7 @@ use serde::{Deserialize, Serialize};
 use smallvec::smallvec;
 
 use super::*;
-use crate::{
-    Array, ArraySize, CellValue, CodeResult, CoerceInto, Pos, RunErrorMsg, Spanned, Value,
-};
+use crate::{Array, ArraySize, CellValue, CodeResult, Pos, RunErrorMsg, Spanned, Value};
 
 /// Abstract syntax tree of a formula expression.
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -99,8 +97,11 @@ impl Spanned<AstNodeContents> {
 
 impl Formula {
     /// Evaluates a formula.
-    pub fn eval(&self, ctx: &mut Ctx<'_>) -> CodeResult<Value> {
-        self.ast.eval(ctx, false)?.into_non_error_value()
+    pub fn eval(&self, ctx: &mut Ctx<'_>) -> Spanned<Value> {
+        self.ast.eval(ctx, false).unwrap_or_else(|e| Spanned {
+            span: self.ast.span,
+            inner: Value::Single(CellValue::Error(Box::new(e))),
+        })
     }
 
     /// Checks the syntax of a formula.
@@ -155,7 +156,7 @@ impl AstNode {
                     cell_ref.y = CellRefCoord::Absolute(y);
                     for x in x1..=x2 {
                         cell_ref.x = CellRefCoord::Absolute(x);
-                        flat_array.push(ctx.get_cell(&cell_ref, self.span)?.inner);
+                        flat_array.push(ctx.get_cell(&cell_ref, self.span).inner);
                     }
                 }
 
@@ -167,7 +168,11 @@ impl AstNode {
             AstNodeContents::FunctionCall { func, args } => {
                 let mut arg_values = vec![];
                 for arg in args {
-                    arg_values.push(arg.eval(&mut *ctx, only_parse)?);
+                    // Convert errors into `CellValue::Error`s.
+                    arg_values.push(arg.eval(&mut *ctx, only_parse).unwrap_or_else(|e| Spanned {
+                        span: arg.span,
+                        inner: Value::Single(CellValue::Error(Box::new(e))),
+                    }));
                 }
 
                 let func_name = &func.inner;
@@ -213,7 +218,7 @@ impl AstNode {
 
             // Single cell references return 1x1 arrays for Excel compatibility.
             AstNodeContents::CellRef(cell_ref) => {
-                Array::from(ctx.get_cell(cell_ref, self.span)?.inner).into()
+                Array::from(ctx.get_cell(cell_ref, self.span).inner).into()
             }
 
             AstNodeContents::String(s) => Value::from(s.to_string()),

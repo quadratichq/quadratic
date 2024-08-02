@@ -10,7 +10,7 @@ use serial_test::parallel;
 pub(crate) fn try_eval_at(grid: &Grid, pos: SheetPos, s: &str) -> CodeResult<Value> {
     println!("Evaluating formula {s:?} at {pos:?}");
     let mut ctx = Ctx::new(grid, pos);
-    parse_formula(s, Pos::ORIGIN)?.eval(&mut ctx)
+    Ok(parse_formula(s, Pos::ORIGIN)?.eval(&mut ctx).inner)
 }
 #[track_caller]
 pub(crate) fn eval_at(grid: &Grid, sheet_pos: SheetPos, s: &str) -> Value {
@@ -22,7 +22,7 @@ pub(crate) fn eval_to_string_at(grid: &Grid, sheet_pos: SheetPos, s: &str) -> St
 }
 
 pub(crate) fn try_eval(grid: &Grid, s: &str) -> CodeResult<Value> {
-    try_eval_at(grid, Pos::ORIGIN.to_sheet_pos(grid.sheets()[0].id), s)
+    try_eval_at(grid, Pos::ORIGIN.to_sheet_pos(grid.sheets()[0].id), s)?.into_non_error_value()
 }
 #[track_caller]
 pub(crate) fn eval(grid: &Grid, s: &str) -> Value {
@@ -69,10 +69,7 @@ fn test_formula_cell_ref() {
 
     // Evaluate at B2
     let mut ctx = Ctx::new(&g, pos![B2].to_sheet_pos(sheet_id));
-    assert_eq!(
-        "11111".to_string(),
-        form.eval(&mut ctx).unwrap().to_string(),
-    );
+    assert_eq!("11111".to_string(), form.eval(&mut ctx).to_string(),);
 }
 
 #[test]
@@ -82,10 +79,12 @@ fn test_formula_circular_array_ref() {
 
     let g = Grid::new();
     let mut ctx = Ctx::new(&g, pos![B2].to_sheet_pos(g.sheets()[0].id));
-
     assert_eq!(
         RunErrorMsg::CircularReference,
-        form.eval(&mut ctx).unwrap_err().msg,
+        form.eval(&mut ctx).inner.cell_values_slice()[4]
+            .clone()
+            .unwrap_err()
+            .msg,
     );
 }
 

@@ -29,27 +29,29 @@ impl<'ctx> Ctx<'ctx> {
 
     /// Fetches the contents of the cell at `ref_pos` evaluated at `base_pos`,
     /// or returns an error in the case of a circular reference.
-    pub fn get_cell(&mut self, ref_pos: &CellRef, span: Span) -> CodeResult<Spanned<CellValue>> {
-        let sheet = match &ref_pos.sheet {
-            Some(sheet_name) => self
-                .grid
-                .try_sheet_from_name(sheet_name.clone())
-                .ok_or(RunErrorMsg::BadCellReference.with_span(span))?,
-            None => self
-                .grid
-                .try_sheet(self.sheet_pos.sheet_id)
-                .ok_or(RunErrorMsg::BadCellReference.with_span(span))?,
+    pub fn get_cell(&mut self, ref_pos: &CellRef, span: Span) -> Spanned<CellValue> {
+        let error_value = |e: RunErrorMsg| {
+            let value = CellValue::Error(Box::new(e.with_span(span)));
+            Spanned { inner: value, span }
+        };
+
+        let maybe_sheet = match &ref_pos.sheet {
+            Some(sheet_name) => self.grid.try_sheet_from_name(sheet_name.clone()),
+            None => self.grid.try_sheet(self.sheet_pos.sheet_id),
+        };
+        let Some(sheet) = maybe_sheet else {
+            return error_value(RunErrorMsg::BadCellReference);
         };
         let ref_pos = ref_pos.resolve_from(self.sheet_pos.into());
         let ref_pos_with_sheet = ref_pos.to_sheet_pos(sheet.id);
         if ref_pos_with_sheet == self.sheet_pos {
-            return Err(RunErrorMsg::CircularReference.with_span(span));
+            return error_value(RunErrorMsg::CircularReference);
         }
 
         self.cells_accessed.insert(ref_pos_with_sheet.into());
 
-        let value = sheet.display_value(ref_pos).unwrap_or(CellValue::Blank);
-        Ok(Spanned { inner: value, span })
+        let value = sheet.get_cell_for_formula(ref_pos);
+        Spanned { inner: value, span }
     }
 
     /// Evaluates a function once for each corresponding set of values from

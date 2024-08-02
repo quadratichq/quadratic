@@ -329,6 +329,13 @@ impl CellValue {
             _ => None,
         }
     }
+    /// Converts an error value into an actual error.
+    pub fn into_non_error_value(self) -> CodeResult<Self> {
+        match self {
+            CellValue::Error(e) => Err(*e),
+            other => Ok(other),
+        }
+    }
 
     /// Coerces the value to a specific type; returns `None` if the conversion
     /// fails or the original value is `None`.
@@ -550,6 +557,16 @@ impl CellValue {
 
     pub fn is_image(&self) -> bool {
         matches!(self, CellValue::Image(_))
+    }
+
+    /// Returns the contained error, or panics the value is not an error.
+    #[cfg(test)]
+    #[track_caller]
+    pub fn unwrap_err(self) -> RunError {
+        match self {
+            CellValue::Error(e) => *e,
+            other => panic!("expected error value; got {other:?}"),
+        }
     }
 }
 

@@ -22,7 +22,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             fn INDIRECT(ctx: Ctx, [cellref_string]: (Spanned<String>)) {
                 let pos = CellRef::parse_a1(&cellref_string.inner, ctx.sheet_pos.into())
                     .ok_or(RunErrorMsg::BadCellReference.with_span(cellref_string.span))?;
-                ctx.get_cell(&pos, cellref_string.span)?.inner
+                ctx.get_cell(&pos, cellref_string.span).inner
             }
         ),
         formula_fn!(

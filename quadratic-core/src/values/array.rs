@@ -9,7 +9,8 @@ use smallvec::{smallvec, SmallVec};
 
 use super::{ArraySize, Axis, CellValue, Spanned, Value};
 use crate::{
-    controller::operations::operation::Operation, grid::Sheet, CodeResult, Pos, RunErrorMsg,
+    controller::operations::operation::Operation, grid::Sheet, CodeResult, Pos, RunError,
+    RunErrorMsg,
 };
 
 #[macro_export]
@@ -275,6 +276,19 @@ impl Array {
         }
 
         Ok(NonZeroU32::new(common_len).expect("bad array size"))
+    }
+
+    /// Returns the first error in the array if there is one.
+    pub fn first_error(&self) -> Option<&RunError> {
+        self.values.iter().find_map(|v| v.error())
+    }
+    /// Returns the first error in the array if there is one; otherwise returns
+    /// the original array.
+    pub fn into_non_error_array(self) -> CodeResult<Self> {
+        match self.first_error() {
+            Some(e) => Err(e.clone()),
+            None => Ok(self),
+        }
     }
 
     pub fn from_string_list(

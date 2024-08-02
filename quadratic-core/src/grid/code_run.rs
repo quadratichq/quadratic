@@ -60,6 +60,22 @@ impl CodeRun {
         }
     }
 
+    /// Returns the cell value at a relative location (0-indexed) into the code
+    /// run output, for use when a formula references a cell.
+    pub fn get_cell_for_formula(&self, x: u32, y: u32) -> CellValue {
+        if self.spill_error {
+            CellValue::Blank
+        } else {
+            match &self.result {
+                CodeRunResult::Ok(value) => match value {
+                    Value::Single(v) => v.clone(),
+                    Value::Array(a) => a.get(x, y).cloned().unwrap_or(CellValue::Blank),
+                },
+                CodeRunResult::Err(e) => CellValue::Error(Box::new(e.clone())),
+            }
+        }
+    }
+
     /// Returns the size of the output array, or defaults to `_1X1` (since output always includes the code_cell).
     /// Note: this does not take spill_error into account.
     pub fn output_size(&self) -> ArraySize {

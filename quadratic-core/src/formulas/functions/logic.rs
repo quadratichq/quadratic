@@ -92,17 +92,24 @@ mod tests {
     #[test]
     #[parallel]
     fn test_formula_if() {
-        let form = parse_formula("IF(A1='q', 'yep', 'nope')", pos![A0]).unwrap();
-
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
-        let _ = sheet.set_cell_value(Pos { x: 0, y: 1 }, "q");
-        let _ = sheet.set_cell_value(Pos { x: 1, y: 1 }, "w");
+        sheet.set_cell_value(Pos { x: 0, y: 1 }, "q");
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, "w");
         let sheet_id = sheet.id;
 
-        let mut ctx = Ctx::new(&g, pos![A0].to_sheet_pos(sheet_id));
-        assert_eq!("yep".to_string(), form.eval(&mut ctx).unwrap().to_string());
-        let mut ctx = Ctx::new(&g, pos![B0].to_sheet_pos(sheet_id));
-        assert_eq!("nope".to_string(), form.eval(&mut ctx).unwrap().to_string());
+        let s = "IF(A1='q', 'yep', 'nope')";
+        let pos = pos![A0].to_sheet_pos(sheet_id);
+        assert_eq!("yep", eval_to_string_at(&g, pos, s));
+        let pos = pos![B0].to_sheet_pos(sheet_id);
+        assert_eq!("nope", eval_to_string_at(&g, pos, s));
+
+        // Test short-circuiting
+        assert_eq!("ok", eval_to_string(&g, "IF(TRUE,\"ok\",1/0)"));
+        // Test error passthrough
+        assert_eq!(
+            RunErrorMsg::DivideByZero,
+            eval_to_err(&g, "IF(FALSE,\"ok\",1/0)").msg,
+        );
     }
 }

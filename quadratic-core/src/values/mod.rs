@@ -103,6 +103,16 @@ impl Value {
             h: Array::common_len(Axis::Y, values.into_iter().filter_map(|v| v.as_array()))?,
         })
     }
+
+    /// Converts a single error cell value into a `CodeResult::Err`; all other
+    /// values are unchanged.
+    #[cfg(test)]
+    pub fn into_non_error_value(self) -> CodeResult<Self> {
+        match self {
+            Value::Single(CellValue::Error(e)) => Err(*e),
+            other => Ok(other),
+        }
+    }
 }
 impl Spanned<Value> {
     pub fn cell_value(&self) -> CodeResult<Spanned<&CellValue>> {
@@ -185,5 +195,22 @@ impl Spanned<Value> {
             v.into_non_error_value()
                 .map(|inner| Spanned { span, inner })
         })
+    }
+
+    /// Converts a single error cell value into a `CodeResult::Err`; all other
+    /// values are unchanged.
+    #[cfg(test)]
+    pub fn into_non_error_value(self) -> CodeResult<Self> {
+        self.try_map(Value::into_non_error_value)
+    }
+    /// Returns the contained error, or panics the value is not just a
+    /// single error.
+    #[cfg(test)]
+    #[track_caller]
+    pub fn unwrap_err(self) -> crate::RunError {
+        match self.inner {
+            Value::Single(v) => v.unwrap_err(),
+            other => panic!("expected error value; got {other:?}"),
+        }
     }
 }

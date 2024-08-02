@@ -17,27 +17,23 @@ impl GridController {
         let mut ctx = Ctx::new(self.grid(), sheet_pos);
         transaction.current_sheet_pos = Some(sheet_pos);
         match parse_formula(&code, sheet_pos.into()) {
-            Ok(parsed) => match parsed.eval(&mut ctx) {
-                Ok(value) => {
-                    transaction.cells_accessed = ctx.cells_accessed;
-                    let new_code_run = CodeRun {
-                        std_out: None,
-                        std_err: None,
-                        formatted_code_string: None,
-                        spill_error: false,
-                        last_modified: Utc::now(),
-                        cells_accessed: transaction.cells_accessed.clone(),
-                        result: CodeRunResult::Ok(value),
-                        return_type: None,
-                        line_number: None,
-                        output_type: None,
-                    };
-                    self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
-                }
-                Err(error) => {
-                    let _ = self.code_cell_sheet_error(transaction, &error);
-                }
-            },
+            Ok(parsed) => {
+                let output = parsed.eval(&mut ctx);
+                transaction.cells_accessed = ctx.cells_accessed;
+                let new_code_run = CodeRun {
+                    std_out: None,
+                    std_err: None,
+                    formatted_code_string: None,
+                    spill_error: false,
+                    last_modified: Utc::now(),
+                    cells_accessed: transaction.cells_accessed.clone(),
+                    result: CodeRunResult::Ok(output.inner),
+                    return_type: None,
+                    line_number: None,
+                    output_type: None,
+                };
+                self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
+            }
             Err(error) => {
                 let _ = self.code_cell_sheet_error(transaction, &error);
             }
