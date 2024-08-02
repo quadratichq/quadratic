@@ -23,8 +23,6 @@ async function handler(req: RequestWithUser & RequestWithFile, res: Response) {
     return res.status(403).json({ error: { message: 'Permission denied' } });
   }
 
-  console.log('req.file', req.file);
-
   // update the file object with the thumbnail URL
   await dbClient.file.update({
     where: {

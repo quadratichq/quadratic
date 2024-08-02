@@ -26,6 +26,7 @@ export const s3Client = new S3Client({
   forcePathStyle: true,
 });
 
+// Upload a string as a file to S3
 export const uploadStringAsFileS3 = async (fileKey: string, contents: string): Promise<UploadFileResponse> => {
   const command = new PutObjectCommand({
     Bucket: AWS_S3_BUCKET_NAME,
@@ -47,6 +48,7 @@ export const uploadStringAsFileS3 = async (fileKey: string, contents: string): P
   }
 };
 
+// Multer storage engine for S3
 export const multerS3Storage: multer.Multer = multer({
   storage: multerS3({
     s3: s3Client,
@@ -61,7 +63,7 @@ export const multerS3Storage: multer.Multer = multer({
   }) as StorageEngine,
 });
 
-// Get file URL from S3
+// Get the presigned file URL from S3
 export const generatePresignedUrl = async (key: string): Promise<string> => {
   const command = new GetObjectCommand({
     Bucket: AWS_S3_BUCKET_NAME,

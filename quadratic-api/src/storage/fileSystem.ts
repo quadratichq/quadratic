@@ -9,15 +9,18 @@ import { UploadFileResponse } from './storage';
 const generateUrl = (key: string): string => `${QUADRATIC_FILE_URI}/storage/${key}`;
 const generatePresignedUrl = (key: string): string => generateUrl(`presigned/${key}`);
 
+// Get the URL for a given file (key) for the file service.
 export const getStorageUrl = (key: string): string => {
   return generateUrl(key);
 };
 
+// Get a presigned URL for a given file (key) for the file service.
 export const getPresignedStorageUrl = (key: string): string => {
   const encrypted = encryptFromEnv(key);
   return generatePresignedUrl(encrypted);
 };
 
+// Upload a file to the file service.
 export const upload = async (key: string, contents: string | Uint8Array, jwt: string): Promise<UploadFileResponse> => {
   const url = generateUrl(key);
 
@@ -38,6 +41,7 @@ export const upload = async (key: string, contents: string | Uint8Array, jwt: st
   }
 };
 
+// Collect a full stream and place in a byte array.
 function streamToByteArray(stream: Readable): Promise<Uint8Array> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
@@ -57,6 +61,10 @@ function streamToByteArray(stream: Readable): Promise<Uint8Array> {
   });
 }
 
+// Multer storage engine for file-system storage.
+//
+// This middleware is used to handled client upload files and send them to
+// the file service.
 export const multerFileSystemStorage: multer.Multer = multer({
   storage: {
     _handleFile(
@@ -75,9 +83,11 @@ export const multerFileSystemStorage: multer.Multer = multer({
         return;
       }
 
+      // Create a pass-through stream to pipe the file stream to
       const passThrough = new stream.PassThrough();
       file.stream.pipe(passThrough);
 
+      // Collect the stream and upload to the file service
       streamToByteArray(passThrough)
         .then((data) => {
           upload(key, data, jwt)
@@ -87,6 +97,7 @@ export const multerFileSystemStorage: multer.Multer = multer({
         .catch((error) => cb(error));
     },
 
+    // only implement if needed (not currently used)
     _removeFile(_req: Request, _file: Express.Multer.File, cb: (error: Error | null) => void): void {
       cb(null);
     },

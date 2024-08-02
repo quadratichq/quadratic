@@ -43,21 +43,7 @@ pub(crate) fn app(state: Arc<State>) -> Router {
 
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST])
-        //
-        // allow requests from any origin
         .allow_origin(Any)
-        //
-        // TODO(ddimaria): uncomment when we move proxy to a separate service
-        //
-        // .allow_headers([
-        //     CONTENT_TYPE,
-        //     AUTHORIZATION,
-        //     ACCEPT,
-        //     ORIGIN,
-        //     HeaderName::from_static("proxy"),
-        // ])
-        //
-        // required for the proxy
         .allow_headers(Any)
         .expose_headers(Any);
 

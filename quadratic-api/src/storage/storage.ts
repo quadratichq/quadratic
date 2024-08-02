@@ -8,6 +8,7 @@ export type UploadFileResponse = {
   key: string;
 };
 
+// Get the URL for a given file (key).
 export const getFileUrl = async (key: string) => {
   switch (STORAGE_TYPE) {
     case 's3':
@@ -19,6 +20,7 @@ export const getFileUrl = async (key: string) => {
   }
 };
 
+// Get a presigned URL for a given file (key).
 export const getPresignedFileUrl = async (key: string) => {
   switch (STORAGE_TYPE) {
     case 's3':
@@ -26,10 +28,11 @@ export const getPresignedFileUrl = async (key: string) => {
     case 'file-system':
       return getPresignedStorageUrl(key);
     default:
-      throw new Error(`Unsupported storage type in getFileUrl(): ${STORAGE_TYPE}`);
+      throw new Error(`Unsupported storage type in getPresignedFileUrl(): ${STORAGE_TYPE}`);
   }
 };
 
+// Upload a file (key).
 export const uploadFile = async (key: string, contents: string, jwt: string): Promise<UploadFileResponse> => {
   switch (STORAGE_TYPE) {
     case 's3':
@@ -41,6 +44,7 @@ export const uploadFile = async (key: string, contents: string, jwt: string): Pr
   }
 };
 
+// Multer middleware for file uploads.
 export const uploadMiddleware = (): multer.Multer => {
   switch (STORAGE_TYPE) {
     case 's3':
