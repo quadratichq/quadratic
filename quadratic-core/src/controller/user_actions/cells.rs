@@ -70,7 +70,10 @@ mod test {
 
     use bigdecimal::BigDecimal;
 
+    use serial_test::parallel;
+
     #[test]
+    #[parallel]
     fn test_set_cell_value_undo_redo() {
         let mut g = GridController::test();
         let sheet_id = g.grid.sheets()[0].id;
@@ -130,6 +133,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_unpack_currency() {
         let value = String::from("$123.123");
         assert_eq!(
@@ -148,6 +152,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_set_cell_value() {
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
@@ -187,7 +192,7 @@ mod test {
                 symbol: Some("$".into())
             })
         );
-        assert_eq!(get_cell_numeric_decimals(&gc), Some(2));
+        assert_eq!(get_cell_numeric_decimals(&gc), None);
 
         // number
         gc.set_cell_value(sheet_pos, "1.22".into(), None);
@@ -195,7 +200,7 @@ mod test {
             get_cell_value(&gc),
             CellValue::Number(BigDecimal::from_str("1.22").unwrap())
         );
-        assert_eq!(get_cell_numeric_decimals(&gc), Some(2));
+        assert_eq!(get_cell_numeric_decimals(&gc), None);
 
         // percentage
         gc.set_cell_value(sheet_pos, "10.55%".into(), None);
@@ -210,7 +215,7 @@ mod test {
                 symbol: None
             })
         );
-        assert_eq!(get_cell_numeric_decimals(&gc), Some(2));
+        assert_eq!(get_cell_numeric_decimals(&gc), None);
 
         // array
         gc.set_cell_value(sheet_pos, "[1,2,3]".into(), None);
@@ -218,6 +223,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn clear_formatting() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

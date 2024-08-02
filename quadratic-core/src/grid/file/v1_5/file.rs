@@ -61,6 +61,23 @@ fn upgrade_column(x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
                     )
                 })
                 .collect(),
+            vertical_align: column
+                .vertical_align
+                .iter()
+                .map(|(k, v)| {
+                    (
+                        k.clone(),
+                        v1_6::ColumnRepeat {
+                            value: match v.value {
+                                v1_5::CellVerticalAlign::Top => v1_6::CellVerticalAlign::Top,
+                                v1_5::CellVerticalAlign::Middle => v1_6::CellVerticalAlign::Middle,
+                                v1_5::CellVerticalAlign::Bottom => v1_6::CellVerticalAlign::Bottom,
+                            },
+                            len: v.len,
+                        },
+                    )
+                })
+                .collect(),
             align: column
                 .align
                 .iter()
@@ -338,6 +355,7 @@ fn upgrade_sheet(sheet: &v1_5::Sheet) -> v1_6::Sheet {
         formats_all: None,
         formats_columns: vec![],
         formats_rows: vec![],
+        rows_resize: vec![],
     }
 }
 
@@ -353,6 +371,7 @@ pub(crate) fn upgrade(schema: v1_5::GridSchema) -> Result<v1_6::GridSchema> {
 mod tests {
     use crate::grid::file::v1_5::schema::GridSchema;
     use anyhow::{anyhow, Result};
+    use serial_test::parallel;
 
     const V1_5_FILE: &str =
         include_str!("../../../../../quadratic-rust-shared/data/grid/v1_5_simple.grid");
@@ -367,6 +386,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn import_and_export_a_v1_5_file() {
         let imported = import(V1_5_FILE).unwrap();
         let _ = export(&imported).unwrap();

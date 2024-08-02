@@ -78,12 +78,12 @@ impl GridController {
         row: i32,
         reverse: bool,
         with_content: bool,
-    ) -> i32 {
+    ) -> Option<i32> {
         // todo: this should have Result return type and handle no sheet found (which should not happen)
-        let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
-            return 0;
-        };
-        sheet.find_next_column(column_start as i64, row as i64, reverse, with_content) as i32
+        let sheet = self.try_sheet_from_string_id(sheet_id)?;
+        sheet
+            .find_next_column(column_start as i64, row as i64, reverse, with_content)
+            .map(|x| x as i32)
     }
 
     /// finds nearest row with or without content
@@ -95,11 +95,11 @@ impl GridController {
         column: i32,
         reverse: bool,
         with_content: bool,
-    ) -> i32 {
+    ) -> Option<i32> {
         // todo: this should have Result return type and handle no sheet found (which should not happen)
-        let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
-            return 0;
-        };
-        sheet.find_next_row(row_start as i64, column as i64, reverse, with_content) as i32
+        let sheet = self.try_sheet_from_string_id(sheet_id)?;
+        sheet
+            .find_next_row(row_start as i64, column as i64, reverse, with_content)
+            .map(|y| y as i32)
     }
 }

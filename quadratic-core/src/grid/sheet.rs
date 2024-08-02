@@ -1,4 +1,4 @@
-use std::collections::{btree_map, BTreeMap};
+use std::collections::{btree_map, BTreeMap, HashSet};
 use std::str::FromStr;
 
 use bigdecimal::{BigDecimal, RoundingMode};
@@ -12,8 +12,10 @@ use super::formats::format::Format;
 use super::formatting::CellFmtAttr;
 use super::ids::SheetId;
 use super::js_types::CellFormatSummary;
+use super::resize::ResizeMap;
 use super::{CodeRun, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
+use crate::selection::Selection;
 use crate::sheet_offsets::SheetOffsets;
 use crate::{Array, CellValue, Pos, Rect};
 
@@ -25,6 +27,7 @@ pub mod code;
 pub mod formats;
 pub mod formatting;
 pub mod rendering;
+pub mod row_resize;
 pub mod search;
 pub mod selection;
 pub mod send_render;
@@ -77,6 +80,8 @@ pub struct Sheet {
 
     // bounds for the gird with only formatting
     pub(super) format_bounds: GridBounds,
+
+    pub(super) rows_resize: ResizeMap,
 }
 impl Sheet {
     /// Constructs a new empty sheet.
@@ -87,8 +92,11 @@ impl Sheet {
             color: None,
             order,
 
+            offsets: SheetOffsets::default(),
+
             columns: BTreeMap::new(),
             borders: SheetBorders::new(),
+
             code_runs: IndexMap::new(),
 
             formats_columns: BTreeMap::new(),
@@ -96,9 +104,10 @@ impl Sheet {
             format_all: None,
 
             data_bounds: GridBounds::Empty,
+
             format_bounds: GridBounds::Empty,
 
-            offsets: SheetOffsets::default(),
+            rows_resize: ResizeMap::default(),
         }
     }
 
@@ -235,13 +244,14 @@ impl Sheet {
         A::column_data_ref(column).get(pos.y)
     }
 
-    pub fn cell_numeric_format_kind(&self, pos: Pos) -> Option<NumericFormatKind> {
-        let column = self.get_column(pos.x)?;
-        if let Some(format) = column.numeric_format.get(pos.x) {
-            Some(format.kind)
-        } else {
-            None
+    /// Returns the type of number (defaulting to NumericFormatKind::Number) for a cell.
+    pub fn cell_numeric_format_kind(&self, pos: Pos) -> NumericFormatKind {
+        if let Some(column) = self.get_column(pos.x) {
+            if let Some(format) = column.numeric_format.get(pos.y) {
+                return format.kind;
+            }
         }
+        NumericFormatKind::Number
     }
 
     /// Returns a summary of formatting in a region.
@@ -252,6 +262,9 @@ impl Sheet {
             text_color: column.text_color.get(pos.y),
             fill_color: column.fill_color.get(pos.y),
             numeric_commas: column.numeric_commas.get(pos.y),
+            align: column.align.get(pos.y),
+            vertical_align: column.vertical_align.get(pos.y),
+            wrap: column.wrap.get(pos.y),
             ..Default::default()
         });
         let format = if include_sheet_info {
@@ -270,6 +283,9 @@ impl Sheet {
             text_color: format.text_color,
             fill_color: format.fill_color,
             commas: format.numeric_commas,
+            align: format.align,
+            vertical_align: format.vertical_align,
+            wrap: format.wrap,
         }
     }
 
@@ -324,16 +340,25 @@ impl Sheet {
     }
 
     /// get or calculate decimal places for a cell
-    pub fn calculate_decimal_places(&self, pos: Pos, is_percentage: bool) -> Option<i16> {
+    pub fn calculate_decimal_places(&self, pos: Pos, kind: NumericFormatKind) -> Option<i16> {
         // first check if numeric_decimals already exists for this cell
         if let Some(decimals) = self.format_cell(pos.x, pos.y, true).numeric_decimals {
             return Some(decimals);
+        }
+
+        // if currency, then use the default 2 decimal places
+        if kind == NumericFormatKind::Currency {
+            return Some(2);
         }
 
         // otherwise check value to see if it has a decimal and use that length
         if let Some(value) = self.display_value(pos) {
             match value {
                 CellValue::Number(n) => {
+                    if kind == NumericFormatKind::Exponential {
+                        return Some(n.to_string().len() as i16 - 1);
+                    }
+
                     let exponent = n.as_bigint_and_exponent().1;
                     let max_decimals = 9;
                     let mut decimals = n
@@ -342,7 +367,7 @@ impl Sheet {
                         .as_bigint_and_exponent()
                         .1 as i16;
 
-                    if is_percentage {
+                    if kind == NumericFormatKind::Percentage {
                         decimals -= 2;
                     }
 
@@ -353,6 +378,36 @@ impl Sheet {
         } else {
             None
         }
+    }
+
+    pub fn get_rows_in_selection(&self, selection: &Selection) -> Vec<i64> {
+        let mut rows = HashSet::<i64>::new();
+        if (selection.all) || selection.columns.is_some() {
+            if let GridBounds::NonEmpty(rect) = self.data_bounds {
+                for y in rect.y_range() {
+                    rows.insert(y);
+                }
+            }
+            if let GridBounds::NonEmpty(rect) = self.format_bounds {
+                for y in rect.y_range() {
+                    rows.insert(y);
+                }
+            }
+        } else {
+            if let Some(selection_rows) = &selection.rows {
+                for &row in selection_rows {
+                    rows.insert(row);
+                }
+            }
+            if let Some(selection_rects) = &selection.rects {
+                for rect in selection_rects {
+                    for y in rect.y_range() {
+                        rows.insert(y);
+                    }
+                }
+            }
+        }
+        rows.into_iter().collect()
     }
 }
 
@@ -370,6 +425,7 @@ mod test {
         CodeCellValue, SheetPos,
     };
     use bigdecimal::BigDecimal;
+    use serial_test::parallel;
     use std::str::FromStr;
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
@@ -402,32 +458,80 @@ mod test {
         x: i64,
         y: i64,
         value: &str,
-        is_percentage: bool,
+        kind: NumericFormatKind,
         expected: Option<i16>,
     ) {
         let pos = Pos { x, y };
         let _ = sheet.set_cell_value(pos, CellValue::Number(BigDecimal::from_str(value).unwrap()));
-        assert_eq!(sheet.calculate_decimal_places(pos, is_percentage), expected);
+        assert_eq!(sheet.calculate_decimal_places(pos, kind), expected);
     }
 
     #[test]
+    #[parallel]
     fn test_current_decimal_places_value() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
         // validate simple decimal places
-        assert_decimal_places_for_number(&mut sheet, 1, 2, "12.23", false, Some(2));
+        assert_decimal_places_for_number(
+            &mut sheet,
+            1,
+            2,
+            "12.23",
+            NumericFormatKind::Number,
+            Some(2),
+        );
 
         // validate percentage
-        assert_decimal_places_for_number(&mut sheet, 2, 2, "0.23", true, Some(0));
+        assert_decimal_places_for_number(
+            &mut sheet,
+            2,
+            2,
+            "0.23",
+            NumericFormatKind::Percentage,
+            Some(0),
+        );
 
         // validate rounding
-        assert_decimal_places_for_number(&mut sheet, 3, 2, "9.1234567891", false, Some(9));
+        assert_decimal_places_for_number(
+            &mut sheet,
+            3,
+            2,
+            "9.1234567891",
+            NumericFormatKind::Number,
+            Some(9),
+        );
 
         // validate percentage rounding
-        assert_decimal_places_for_number(&mut sheet, 3, 2, "9.1234567891", true, Some(7));
+        assert_decimal_places_for_number(
+            &mut sheet,
+            3,
+            2,
+            "9.1234567891",
+            NumericFormatKind::Percentage,
+            Some(7),
+        );
+
+        assert_decimal_places_for_number(
+            &mut sheet,
+            3,
+            2,
+            "9.1234567891",
+            NumericFormatKind::Currency,
+            Some(2),
+        );
+
+        assert_decimal_places_for_number(
+            &mut sheet,
+            3,
+            2,
+            "91234567891",
+            NumericFormatKind::Exponential,
+            Some(10),
+        )
     }
 
     #[test]
+    #[parallel]
     fn decimal_places() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -444,7 +548,7 @@ mod test {
             ),
         );
         assert_eq!(
-            sheet.calculate_decimal_places(Pos { x: 3, y: 3 }, false),
+            sheet.calculate_decimal_places(Pos { x: 3, y: 3 }, NumericFormatKind::Number),
             Some(2)
         );
 
@@ -457,12 +561,21 @@ mod test {
             false,
         );
         assert_eq!(
-            sheet.calculate_decimal_places(Pos { x: 3, y: 3 }, false),
+            sheet.calculate_decimal_places(Pos { x: 3, y: 3 }, NumericFormatKind::Number),
+            Some(3)
+        );
+        assert_eq!(
+            sheet.calculate_decimal_places(Pos { x: 3, y: 3 }, NumericFormatKind::Percentage),
+            Some(3)
+        );
+        assert_eq!(
+            sheet.calculate_decimal_places(Pos { x: 3, y: 3 }, NumericFormatKind::Currency),
             Some(3)
         );
     }
 
     #[test]
+    #[parallel]
     fn test_current_decimal_places_text() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
@@ -472,12 +585,13 @@ mod test {
         );
 
         assert_eq!(
-            sheet.calculate_decimal_places(Pos { x: 1, y: 2 }, false),
+            sheet.calculate_decimal_places(Pos { x: 1, y: 2 }, NumericFormatKind::Number),
             None
         );
     }
 
     #[test]
+    #[parallel]
     fn test_current_decimal_places_float() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
@@ -488,12 +602,13 @@ mod test {
 
         // expect a single decimal place
         assert_eq!(
-            sheet.calculate_decimal_places(Pos { x: 1, y: 2 }, false),
+            sheet.calculate_decimal_places(Pos { x: 1, y: 2 }, NumericFormatKind::Number),
             Some(1)
         );
     }
 
     #[test]
+    #[parallel]
     fn test_cell_numeric_format_kind() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
         let column = sheet.get_or_create_column(0);
@@ -507,11 +622,12 @@ mod test {
 
         assert_eq!(
             sheet.cell_numeric_format_kind(Pos { x: 0, y: 0 }),
-            Some(NumericFormatKind::Percentage)
+            NumericFormatKind::Percentage
         );
     }
 
     #[test]
+    #[parallel]
     fn test_set_cell_values() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 4, y: 1 });
         let vals = vec!["a", "1", "$1.11"];
@@ -534,6 +650,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn delete_cell_values() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -552,6 +669,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn delete_cell_values_code() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -593,6 +711,7 @@ mod test {
     // }
 
     #[test]
+    #[parallel]
     fn test_get_cell_value() {
         let (grid, sheet_id, _) = test_setup_basic();
         let sheet = grid.sheet(sheet_id);
@@ -602,6 +721,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_get_set_formatting_value() {
         let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.sheet(sheet_id).clone();
@@ -611,27 +731,8 @@ mod test {
         assert_eq!(value, Some(true));
     }
 
-    // TODO(ddimaria): use the code below numeric format kinds are in place
-    #[ignore]
     #[test]
-    fn test_cell_numeric_format_kinds() {
-        let (grid, sheet_id, _) = test_setup_basic();
-        let sheet = grid.sheet(sheet_id).clone();
-
-        let format_kind = sheet.cell_numeric_format_kind((2, 1).into());
-        assert_eq!(format_kind, Some(NumericFormatKind::Currency));
-
-        let format_kind = sheet.cell_numeric_format_kind((3, 1).into());
-        assert_eq!(format_kind, Some(NumericFormatKind::Percentage));
-
-        let format_kind = sheet.cell_numeric_format_kind((4, 1).into());
-        assert_eq!(format_kind, Some(NumericFormatKind::Exponential));
-
-        let format_kind = sheet.cell_numeric_format_kind((5, 1).into());
-        assert_eq!(format_kind, Some(NumericFormatKind::Number));
-    }
-
-    #[test]
+    #[parallel]
     fn test_cell_format_summary() {
         let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.sheet(sheet_id).clone();
@@ -648,6 +749,9 @@ mod test {
             text_color: None,
             fill_color: None,
             commas: None,
+            align: None,
+            vertical_align: None,
+            wrap: None,
         };
         assert_eq!(value, cell_format_summary);
 
@@ -665,6 +769,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_columns() {
         let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.sheet(sheet_id).clone();
@@ -694,6 +799,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn display_value_blanks() {
         let mut sheet = Sheet::test();
         let pos = Pos { x: 0, y: 0 };

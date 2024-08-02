@@ -88,6 +88,9 @@ export class CellsLabels extends Container {
         const bounds = pixiApp.viewport.getVisibleBounds();
         if (intersects.rectangleRectangle(cellsTextHash.viewRectangle, bounds)) {
           cellsTextHash.show();
+          if (pixiApp.gridLines) {
+            pixiApp.gridLines.dirty = true;
+          }
           pixiApp.setViewportDirty();
         } else {
           cellsTextHash.hide();
@@ -143,6 +146,10 @@ export class CellsLabels extends Container {
 
   async getCellsContentMaxWidth(column: number): Promise<number> {
     return await renderWebWorker.getCellsColumnMaxWidth(this.sheetId, column);
+  }
+
+  async getCellsContentMaxHeight(row: number): Promise<number> {
+    return await renderWebWorker.getCellsRowMaxHeight(this.sheetId, row);
   }
 
   unload(hashX: number, hashY: number) {

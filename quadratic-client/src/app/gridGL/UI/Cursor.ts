@@ -19,9 +19,6 @@ const HIDE_INDICATORS_BELOW_SCALE = 0.1;
 export type CursorCell = { x: number; y: number; width: number; height: number };
 const CURSOR_CELL_DEFAULT_VALUE: CursorCell = { x: 0, y: 0, width: 0, height: 0 };
 
-// adds a bit of padding when editing a cell w/CellInput
-export const CELL_INPUT_PADDING = CURSOR_THICKNESS * 2;
-
 // outside border when editing the cell
 const CURSOR_INPUT_ALPHA = 0.333;
 
@@ -68,11 +65,13 @@ export class Cursor extends Graphics {
     const indicatorPadding = Math.max(INDICATOR_PADDING / viewport.scale.x, 1);
     let indicatorOffset = 0;
 
-    // showInput changes after cellEdit is removed from DOM
-    const cellEdit = document.querySelector('#cell-edit') as HTMLDivElement;
+    const inlineShowing = inlineEditorHandler.getShowing();
     if (showInput) {
-      if (cellEdit && cellEdit.offsetWidth + CELL_INPUT_PADDING > width) {
-        width = Math.max(cellEdit.offsetWidth + CELL_INPUT_PADDING, width);
+      if (inlineShowing) {
+        x = inlineEditorHandler.x - CURSOR_THICKNESS;
+        y = inlineEditorHandler.y - CURSOR_THICKNESS;
+        width = inlineEditorHandler.width + CURSOR_THICKNESS * 2;
+        height = inlineEditorHandler.height + CURSOR_THICKNESS * 2;
       } else {
         // we have to wait until react renders #cell-edit to properly calculate the width
         setTimeout(() => (this.dirty = true), 0);
@@ -106,7 +105,7 @@ export class Cursor extends Graphics {
     this.lineTo(x, y + height);
     this.lineTo(x, y);
 
-    if (showInput && cellEdit) {
+    if (showInput && inlineShowing) {
       this.lineStyle({
         width: CURSOR_THICKNESS * 1.5,
         color,
@@ -185,7 +184,10 @@ export class Cursor extends Graphics {
     if (inlineEditorHandler.formula && inlineShowing && sheets.sheet.id === inlineShowing.sheetId) {
       color = colors.cellColorUserFormula;
       offsets = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y);
-      offsets.width = inlineEditorHandler.width + CURSOR_THICKNESS * 2;
+      offsets.x = inlineEditorHandler.x - CURSOR_THICKNESS * 0.5;
+      offsets.y = inlineEditorHandler.y - CURSOR_THICKNESS * 0.5;
+      offsets.width = inlineEditorHandler.width + CURSOR_THICKNESS;
+      offsets.height = inlineEditorHandler.height + CURSOR_THICKNESS;
     } else {
       const { editorInteractionState } = pixiAppSettings;
       const cell = editorInteractionState.selectedCell;
