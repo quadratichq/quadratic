@@ -4,7 +4,6 @@ import { BigNumber } from 'bignumber.js';
 // Converts a number to a string with the given cell formatting
 export const convertNumber = (n: string, format: JsNumber, currentFractionDigits?: number): string => {
   let number = new BigNumber(n);
-
   let suffix = '';
   if (format.format?.type === 'PERCENTAGE') {
     number = number.times(100);
@@ -12,16 +11,23 @@ export const convertNumber = (n: string, format: JsNumber, currentFractionDigits
   }
 
   let options: BigNumber.Format = { decimalSeparator: '.', groupSeparator: ',' };
-  if (format.commas) {
+  const isCurrency = format.format?.type === 'CURRENCY';
+  const isScientific = format.format?.type === 'EXPONENTIAL';
+  const isPercent = format.format?.type === 'PERCENTAGE';
+
+  // set commas
+  if (!isScientific && !isPercent && (format.commas || (format.commas === null && isCurrency))) {
     options.groupSize = 3;
   }
-  if (currentFractionDigits) {
-    options.fractionGroupSize = currentFractionDigits;
-  } else if (format.decimals !== null) {
-    options.fractionGroupSize = format.decimals;
-  } else {
-    options.fractionGroupSize = undefined;
+
+  if (currentFractionDigits === undefined) {
+    if (format.decimals !== null) {
+      currentFractionDigits = format.decimals;
+    } else if (isCurrency) {
+      currentFractionDigits = 2;
+    }
   }
+
   if (format.format?.type === 'CURRENCY') {
     if (format.format.symbol) {
       options.prefix = format.format.symbol;
@@ -30,30 +36,48 @@ export const convertNumber = (n: string, format: JsNumber, currentFractionDigits
     }
   }
 
+  if (isScientific) {
+    if (currentFractionDigits !== undefined) {
+      return number.toExponential(currentFractionDigits);
+    } else if (format.decimals !== null) {
+      return number.toExponential(format.decimals);
+    } else {
+      return number.toExponential();
+    }
+  }
+
   if (currentFractionDigits !== undefined) {
     return number.toFormat(currentFractionDigits, options) + suffix;
-  } else if (format.decimals !== null) {
-    return number.toFormat(format.decimals, options) + suffix;
   }
   return number.toFormat(options) + suffix;
 };
 
 // Reduces the number of decimals (used by rendering to show a fractional number in a smaller-width cell)
 export const reduceDecimals = (
+  number: string,
   current: string,
-  original: string,
   format: JsNumber,
   currentFractionDigits?: number
 ): { number: string; currentFractionDigits: number } | undefined => {
   // this only works if there is a fractional part
-  if (original.includes('.')) {
+  if (format.format?.type === 'EXPONENTIAL') {
     if (currentFractionDigits === undefined) {
-      const split = original.split('.');
-      currentFractionDigits = split[1].length - 1;
+      currentFractionDigits = number.length - (number[0] === '-' ? 3 : 2);
     }
-    const updated = convertNumber(original, format, currentFractionDigits);
+    const updated = convertNumber(number, format, currentFractionDigits);
     if (updated !== current) {
       return { number: updated, currentFractionDigits };
+    }
+  } else {
+    if (number.includes('.')) {
+      if (currentFractionDigits === undefined) {
+        const split = number.split('.');
+        currentFractionDigits = split[1].length - 1;
+      }
+      const updated = convertNumber(number, format, currentFractionDigits);
+      if (updated !== current) {
+        return { number: updated, currentFractionDigits };
+      }
     }
   }
 };

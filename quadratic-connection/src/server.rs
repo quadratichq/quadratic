@@ -4,8 +4,7 @@
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
 use axum::{
-    http::{header::AUTHORIZATION, Method, StatusCode},
-    response::IntoResponse,
+    http::{header::AUTHORIZATION, Method},
     routing::{any, get, post},
     Extension, Json, Router,
 };
@@ -238,6 +237,7 @@ pub(crate) mod tests {
         body::Body,
         http::{self, Request},
     };
+    use http::StatusCode;
     use tower::ServiceExt;
 
     use super::*;
