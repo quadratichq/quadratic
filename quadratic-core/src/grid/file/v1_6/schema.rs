@@ -79,6 +79,8 @@ pub struct Sheet {
     pub formats_all: Option<Format>,
     pub formats_columns: Vec<(i64, (Format, i64))>,
     pub formats_rows: Vec<(i64, (Format, i64))>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub rows_resize: Vec<(i64, Resize)>,
 }
 
