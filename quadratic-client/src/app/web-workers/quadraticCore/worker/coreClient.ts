@@ -554,6 +554,22 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreGetValidationList':
+        this.send({
+          type: 'coreClientGetValidationList',
+          id: e.data.id,
+          validations: core.getValidationList(e.data.sheetId, e.data.x, e.data.y),
+        });
+        return;
+
+      case 'clientCoreGetDisplayCell':
+        this.send({
+          type: 'coreClientGetDisplayCell',
+          id: e.data.id,
+          cell: core.getDisplayCell(e.data.sheetId, e.data.x, e.data.y),
+        });
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core

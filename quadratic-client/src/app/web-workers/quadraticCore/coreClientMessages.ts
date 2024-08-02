@@ -945,6 +945,20 @@ export interface CoreClientGetValidationList {
   validations: string[];
 }
 
+export interface ClientCoreGetDisplayCell {
+  type: 'clientCoreGetDisplayCell';
+  sheetId: string;
+  x: number;
+  y: number;
+  id: number;
+}
+
+export interface CoreClientGetDisplayCell {
+  type: 'coreClientGetDisplayCell';
+  cell: string | undefined;
+  id: number;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1017,7 +1031,8 @@ export type ClientCoreMessage =
   | ClientCoreRemoveValidation
   | ClientCoreRemoveValidations
   | ClientCoreGetValidationFromPos
-  | ClientCoreGetValidationList;
+  | ClientCoreGetValidationList
+  | ClientCoreGetDisplayCell;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1077,4 +1092,5 @@ export type CoreClientMessage =
   | CoreClientSheetValidations
   | CoreClientGetValidationFromPos
   | CoreClientResizeRowHeights
-  | CoreClientGetValidationList;
+  | CoreClientGetValidationList
+  | CoreClientGetDisplayCell;

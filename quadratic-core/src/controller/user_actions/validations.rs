@@ -73,9 +73,9 @@ impl GridController {
             .and_then(|sheet| sheet.validations.get_validation_from_pos(pos))
     }
 
-    pub fn validation_list(&self, sheet_id: SheetId, validation_id: Uuid) -> Option<Vec<String>> {
+    pub fn validation_list(&self, sheet_id: SheetId, x: i64, y: i64) -> Option<Vec<String>> {
         let sheet = self.try_sheet(sheet_id)?;
-        let validation = sheet.validations.validation(validation_id)?;
+        let validation = sheet.validations.get_validation_from_pos(Pos { x, y })?;
         match validation.rule {
             ValidationRule::List(ref list) => match list.source {
                 ValidationListSource::Selection(ref selection) => {
@@ -247,7 +247,7 @@ mod tests {
         sheet.validations.set(validation.clone());
 
         assert_eq!(
-            gc.validation_list(sheet_id, validation.id),
+            gc.validation_list(sheet_id, 0, 0),
             Some(vec!["a".to_string(), "b".to_string()])
         );
     }
@@ -281,7 +281,7 @@ mod tests {
         sheet.validations.set(validation.clone());
 
         assert_eq!(
-            gc.validation_list(sheet_id, validation.id),
+            gc.validation_list(sheet_id, 1, 0),
             Some(vec![
                 "First".to_string(),
                 "Second".to_string(),

@@ -1,7 +1,4 @@
-use crate::{
-    grid::{CodeRunResult, Column},
-    CellValue, Pos, SheetPos, Value,
-};
+use crate::{grid::CodeRunResult, CellValue, Pos, SheetPos, Value};
 
 use super::Sheet;
 use serde::{Deserialize, Serialize};
@@ -29,7 +26,6 @@ impl Sheet {
         &self,
         cell_value: &CellValue,
         query: &String,
-        column: Option<&Column>,
         pos: Pos,
         case_sensitive: bool,
         whole_cell: bool,
@@ -51,19 +47,14 @@ impl Sheet {
             CellValue::Number(n) => {
                 if n.to_string() == *query || (!whole_cell && n.to_string().contains(query)) {
                     true
-                } else if let Some(column) = column.map_or(self.get_column(pos.x), Some) {
-                    // compare the number using its display value (eg, $ or % or commas)
-                    let numeric_format = column.numeric_format.get(pos.y);
-                    let numeric_decimals = column.numeric_decimals.get(pos.y);
-                    let numeric_commas = column.numeric_commas.get(pos.y);
+                } else {
+                    let format = self.format_cell(pos.x, pos.y, true);
                     let display = cell_value.to_number_display(
-                        numeric_format,
-                        numeric_decimals,
-                        numeric_commas,
+                        format.numeric_format,
+                        format.numeric_decimals,
+                        format.numeric_commas,
                     );
                     display == *query || (!whole_cell && display.contains(query))
-                } else {
-                    false
                 }
             }
             CellValue::Logical(b) => {
@@ -98,7 +89,6 @@ impl Sheet {
                     if self.compare_cell_value(
                         cell_value,
                         query,
-                        Some(column),
                         Pos { x: *x, y: *y },
                         case_sensitive,
                         whole_cell,
@@ -132,7 +122,6 @@ impl Sheet {
                         if self.compare_cell_value(
                             v,
                             query,
-                            None,
                             *pos,
                             case_sensitive,
                             whole_cell,
@@ -148,7 +137,6 @@ impl Sheet {
                                 if self.compare_cell_value(
                                     cell_value,
                                     query,
-                                    None,
                                     Pos {
                                         x: pos.x + x as i64,
                                         y: pos.y + y as i64,

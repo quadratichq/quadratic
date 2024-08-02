@@ -35,6 +35,7 @@ import {
   ClientCoreCellHasContent,
   ClientCoreGetCellFormatSummary,
   ClientCoreGetCodeCell,
+  ClientCoreGetDisplayCell,
   ClientCoreGetEditCell,
   ClientCoreGetRenderCell,
   ClientCoreHasRenderCells,
@@ -45,10 +46,12 @@ import {
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
   CoreClientGetColumnsBounds,
+  CoreClientGetDisplayCell,
   CoreClientGetEditCell,
   CoreClientGetJwt,
   CoreClientGetRenderCell,
   CoreClientGetRowsBounds,
+  CoreClientGetValidationList,
   CoreClientHasRenderCells,
   CoreClientImportCsv,
   CoreClientImportParquet,
@@ -327,6 +330,23 @@ class QuadraticCore {
         id,
       };
       this.waitingForResponse[id] = (message: CoreClientGetEditCell) => {
+        resolve(message.cell);
+      };
+      this.send(message);
+    });
+  }
+
+  getDisplayCell(sheetId: string, x: number, y: number): Promise<string | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      const message: ClientCoreGetDisplayCell = {
+        type: 'clientCoreGetDisplayCell',
+        sheetId,
+        x,
+        y,
+        id,
+      };
+      this.waitingForResponse[id] = (message: CoreClientGetDisplayCell) => {
         resolve(message.cell);
       };
       this.send(message);
@@ -1068,8 +1088,8 @@ class QuadraticCore {
   getValidationList(sheetId: string, x: number, y: number): Promise<string[] | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { validationList: string[] | undefined }) => {
-        resolve(message.validationList);
+      this.waitingForResponse[id] = (message: CoreClientGetValidationList) => {
+        resolve(message.validations);
       };
       this.send({
         type: 'clientCoreGetValidationList',

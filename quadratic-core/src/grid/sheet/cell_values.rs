@@ -1,4 +1,4 @@
-use crate::{cell_values::CellValues, Pos};
+use crate::{cell_values::CellValues, CellValue, Pos};
 
 use super::Sheet;
 
@@ -23,13 +23,38 @@ impl Sheet {
         }
         old
     }
+
+    /// Returns the rendered value of the cell at the given position. This is
+    /// different from calling CellValue.to_display() since it properly formats
+    /// numbers. (We no longer format numbers in Rust because the client needs to
+    /// be able to change the precision of the number when rendering.)
+    pub fn rendered_value(&self, pos: Pos) -> Option<String> {
+        let value = self.display_value(pos)?;
+        match value {
+            CellValue::Number(_) => {
+                let format = self.format_cell(pos.x, pos.y, true);
+                Some(value.to_number_display(
+                    format.numeric_format,
+                    format.numeric_decimals,
+                    format.numeric_commas,
+                ))
+            }
+            _ => Some(value.to_display()),
+        }
+    }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::CellValue;
+    use std::str::FromStr;
+
+    use crate::{
+        grid::{formats::format_update::FormatUpdate, NumericFormat},
+        CellValue,
+    };
 
     use super::*;
+    use bigdecimal::BigDecimal;
     use serial_test::parallel;
 
     #[test]
@@ -67,5 +92,36 @@ mod test {
             old,
             CellValues::from(vec![vec!["old-a", "old-b"], vec!["old-c", "old-d"]])
         );
+    }
+
+    #[test]
+    fn rendered_value() {
+        let mut sheet = Sheet::test();
+        let pos = Pos { x: 0, y: 0 };
+        sheet.set_cell_value(
+            pos,
+            CellValue::Number(BigDecimal::from_str("123.456").unwrap()),
+        );
+
+        sheet.set_format_cell(
+            pos,
+            &FormatUpdate {
+                numeric_format: Some(Some(NumericFormat {
+                    kind: crate::grid::NumericFormatKind::Currency,
+                    symbol: Some("$".to_string()),
+                })),
+                ..Default::default()
+            },
+            false,
+        );
+
+        // no format for to_display
+        assert_eq!(
+            sheet.display_value(pos).unwrap().to_display(),
+            "123.456".to_string()
+        );
+
+        // format for to_rendered
+        assert_eq!(sheet.rendered_value(pos).unwrap(), "$123.46".to_string());
     }
 }

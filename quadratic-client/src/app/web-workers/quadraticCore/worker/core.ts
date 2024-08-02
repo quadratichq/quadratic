@@ -964,6 +964,17 @@ class Core {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.receiveRowHeights(transactionId, sheetId, rowHeights);
   }
+
+  getValidationList(sheetId: string, x: number, y: number) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const list = this.gridController.getValidationList(sheetId, BigInt(x), BigInt(y));
+    return JSON.parse(list);
+  }
+
+  getDisplayCell(sheetId: string, x: number, y: number) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    return this.gridController.getDisplayValue(sheetId, posToPos(x, y));
+  }
 }
 
 export const core = new Core();

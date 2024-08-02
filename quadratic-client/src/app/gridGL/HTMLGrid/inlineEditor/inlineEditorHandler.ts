@@ -349,6 +349,7 @@ class InlineEditorHandler {
   // Close editor. It saves the value if cancel = false. It also moves the
   // cursor by (deltaX, deltaY).
   close = (deltaX = 0, deltaY = 0, cancel: boolean) => {
+    if (!this.open) return;
     if (!this.location) {
       throw new Error('Expected location to be defined in InlineEditorHandler');
     }

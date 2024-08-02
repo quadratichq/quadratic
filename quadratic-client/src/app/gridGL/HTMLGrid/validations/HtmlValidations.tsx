@@ -8,6 +8,7 @@ import { Rectangle } from 'pixi.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { inlineEditorEvents } from '../inlineEditor/inlineEditorEvents';
 import { cn } from '@/shared/shadcn/utils';
+import { inlineEditorHandler } from '../inlineEditor/inlineEditorHandler';
 
 export const HtmlValidations = () => {
   const ref = useRef<HTMLDivElement>(null);
@@ -26,6 +27,7 @@ export const HtmlValidations = () => {
 
   const [showDropdown, setShowDropdown] = useState(false);
   const [dropdownChoices, setDropdownChoices] = useState<string[] | undefined>(['a', 'b', 'c']);
+  const [currentValue, setCurrentValue] = useState<string | undefined>();
 
   const clearDropdown = useCallback(() => {
     setShowDropdown(false);
@@ -34,20 +36,30 @@ export const HtmlValidations = () => {
 
   useEffect(() => {
     const updateShowDropdown = async (column: number, row: number) => {
+      if (showDropdown) return;
       const validation = await quadraticCore.getValidationList(sheets.sheet.id, column, row);
-      console.log(validation);
+      setCurrentValue(await quadraticCore.getDisplayCell(sheets.sheet.id, column, row));
       if (validation) {
         setDropdownChoices(validation);
+        setShowDropdown(true);
       } else {
         clearDropdown();
       }
     };
     events.on('dropdown', updateShowDropdown);
 
+    const changeStatus = (opened: boolean) => {
+      if (opened) {
+        updateShowDropdown(sheets.sheet.cursor.cursorPosition.x, sheets.sheet.cursor.cursorPosition.y);
+      }
+    };
+    inlineEditorEvents.on('status', changeStatus);
+
     return () => {
       events.off('dropdown', updateShowDropdown);
+      inlineEditorEvents.off('status', changeStatus);
     };
-  }, [clearDropdown]);
+  }, [clearDropdown, showDropdown]);
 
   useEffect(() => {
     const updateCursor = async () => {
@@ -62,6 +74,10 @@ export const HtmlValidations = () => {
         setHide(true);
         clearDropdown();
         return;
+      } else {
+        setHide(false);
+        setShowDropdown(false);
+        clearDropdown();
       }
 
       // console.log(validation);
@@ -104,8 +120,15 @@ export const HtmlValidations = () => {
 
   const changeValue = useCallback(
     (value: string) => {
-      console.log('changing to value', value);
+      quadraticCore.setCellValue(
+        sheets.sheet.id,
+        sheets.sheet.cursor.cursorPosition.x,
+        sheets.sheet.cursor.cursorPosition.y,
+        value,
+        sheets.getCursorPosition()
+      );
       clearDropdown();
+      inlineEditorHandler.close(0, 0, true);
     },
     [clearDropdown]
   );
@@ -124,7 +147,11 @@ export const HtmlValidations = () => {
       >
         <div className="block w-full px-1">
           {dropdownChoices.map((item) => (
-            <div className="block w-full px-1 hover:bg-gray-100" key={item} onClick={() => changeValue(item)}>
+            <div
+              className={cn('block w-full px-1 hover:bg-gray-100', currentValue === item ? 'bg-gray-50' : '')}
+              key={item}
+              onClick={() => changeValue(item)}
+            >
               {item}
             </div>
           ))}

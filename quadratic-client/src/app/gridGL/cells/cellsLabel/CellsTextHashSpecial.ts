@@ -40,7 +40,6 @@ export class CellsTextHashSpecial extends Container<SpecialSprite> {
     this.children.forEach((child) => {
       const special = child as SpecialSprite;
       if (special.column === column && special.row === row) {
-        console.log(special.type, special.rectangle, world);
         if (special.type === 'checkbox' && intersects.rectanglePoint(special.rectangle, world)) {
           quadraticCore.setCellValue(
             sheets.sheet.id,
