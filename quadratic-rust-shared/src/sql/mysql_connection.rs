@@ -13,11 +13,11 @@ use sqlx::{
 };
 use uuid::Uuid;
 
-use crate::error::{Result, SharedError, Sql};
+use crate::error::{Result, SharedError};
 use crate::sql::{ArrowType, Connection};
 use crate::{
     convert_mysql_type,
-    sql::{DatabaseSchema, SchemaColumn, SchemaTable},
+    sql::{error::Sql as SqlError, DatabaseSchema, SchemaColumn, SchemaTable},
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -67,7 +67,9 @@ impl Connection for MySqlConnection {
 
         if let Some(ref port) = self.port {
             options = options.port(port.parse::<u16>().map_err(|_| {
-                SharedError::Sql(Sql::Connect("Could not parse port into a number".into()))
+                SharedError::Sql(SqlError::Connect(
+                    "Could not parse port into a number".into(),
+                ))
             })?);
         }
 
@@ -75,10 +77,9 @@ impl Connection for MySqlConnection {
             options = options.database(database);
         }
 
-        let pool = options
-            .connect()
-            .await
-            .map_err(|e| SharedError::Sql(Sql::Connect(format!("{:?}: {e}", self.database))))?;
+        let pool = options.connect().await.map_err(|e| {
+            SharedError::Sql(SqlError::Connect(format!("{:?}: {e}", self.database)))
+        })?;
 
         Ok(pool)
     }
@@ -97,7 +98,7 @@ impl Connection for MySqlConnection {
             let mut stream = sqlx::query(sql).fetch(&mut pool);
 
             while let Some(row) = stream.next().await {
-                let row = row.map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
+                let row = row.map_err(|e| SharedError::Sql(SqlError::Query(e.to_string())))?;
                 bytes += row.len() as u64;
 
                 if bytes > max_bytes {
@@ -111,7 +112,7 @@ impl Connection for MySqlConnection {
             rows = sqlx::query(sql)
                 .fetch_all(&mut pool)
                 .await
-                .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
+                .map_err(|e| SharedError::Sql(SqlError::Query(e.to_string())))?;
         }
 
         Ok((rows, over_the_limit))
@@ -119,7 +120,9 @@ impl Connection for MySqlConnection {
 
     async fn schema(&self, pool: Self::Conn) -> Result<DatabaseSchema> {
         let database = self.database.as_ref().ok_or_else(|| {
-            SharedError::Sql(Sql::Schema("Database name is required for MySQL".into()))
+            SharedError::Sql(SqlError::Schema(
+                "Database name is required for MySQL".into(),
+            ))
         })?;
 
         let sql = format!("

@@ -4,7 +4,8 @@ use aws_sdk_s3::{
     Client,
 };
 
-use crate::error::{Aws, Result, SharedError};
+use crate::aws::error::Aws as AwsError;
+use crate::error::{Result, SharedError};
 
 pub async fn download_object(client: &Client, bucket: &str, key: &str) -> Result<GetObjectOutput> {
     client
@@ -14,7 +15,7 @@ pub async fn download_object(client: &Client, bucket: &str, key: &str) -> Result
         .send()
         .await
         .map_err(|error| {
-            SharedError::Aws(Aws::S3(format!(
+            SharedError::Aws(AwsError::S3(format!(
                 "Error retrieving file {} from bucket {}: {:?}.",
                 key, bucket, error
             )))
@@ -37,7 +38,7 @@ pub async fn upload_object(
         .send()
         .await
         .map_err(|error| {
-            SharedError::Aws(Aws::S3(format!(
+            SharedError::Aws(AwsError::S3(format!(
                 "Error uploading file {key} to bucket {bucket}: {:?}.",
                 error
             )))

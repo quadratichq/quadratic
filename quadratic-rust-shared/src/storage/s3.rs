@@ -8,19 +8,22 @@ use crate::{
     error::Result,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct S3Config {
     pub client: Client,
     pub bucket: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct S3 {
     pub config: S3Config,
 }
 
 #[async_trait]
 impl Storage for S3 {
+    type Config = S3Config;
+
+    /// Read the file from the S3 bucket and return the bytes.
     async fn read(&self, key: &str) -> Result<Bytes> {
         let S3Config { client, bucket } = &self.config;
 
@@ -38,6 +41,7 @@ impl Storage for S3 {
         Ok(bytes)
     }
 
+    /// Write the bytes to the S3 bucket.
     async fn write<'a>(&self, key: &'a str, data: &'a Bytes) -> Result<()> {
         let S3Config { client, bucket } = &self.config;
 
@@ -48,8 +52,14 @@ impl Storage for S3 {
         Ok(())
     }
 
+    /// Return the S3 bucket.
     fn path(&self) -> &str {
         &self.config.bucket
+    }
+
+    /// Return the configuration
+    fn config(&self) -> Self::Config {
+        self.config.clone()
     }
 }
 
@@ -60,4 +70,6 @@ impl S3 {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    // TODO(ddimaria): add tests once we have S3 mocks in place
+}

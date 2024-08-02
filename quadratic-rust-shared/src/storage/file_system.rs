@@ -6,21 +6,25 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use super::Storage;
 use crate::error::Result;
+use crate::storage::error::Storage as StorageError;
 use crate::SharedError;
-use crate::Storage as StorageError;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FileSystemConfig {
     pub path: String,
+    pub encryption_keys: Vec<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FileSystem {
     pub config: FileSystemConfig,
 }
 
 #[async_trait]
 impl Storage for FileSystem {
+    type Config = FileSystemConfig;
+
+    /// Read the file from the file system and return the bytes.
     async fn read(&self, key: &str) -> Result<Bytes> {
         let file_path = self.full_path(key, false).await?.0;
         let mut bytes = vec![];
@@ -35,6 +39,7 @@ impl Storage for FileSystem {
         Ok(bytes.into())
     }
 
+    /// Write the bytes to the file system.
     async fn write<'a>(&self, key: &'a str, data: &'a Bytes) -> Result<()> {
         let file_path = self.full_path(key, true).await?.0;
         let mut file = File::create(file_path)
@@ -47,8 +52,14 @@ impl Storage for FileSystem {
         Ok(())
     }
 
+    /// Return the path to the file system.
     fn path(&self) -> &str {
         &self.config.path
+    }
+
+    /// Return the configuration
+    fn config(&self) -> Self::Config {
+        self.config.clone()
     }
 }
 
@@ -57,8 +68,9 @@ impl FileSystem {
         Self { config }
     }
 
+    /// Return the full path to the file and the directory.
     pub async fn full_path(&self, key: &str, create_dir: bool) -> Result<(PathBuf, PathBuf)> {
-        let FileSystemConfig { path } = &self.config;
+        let FileSystemConfig { path, .. } = &self.config;
         let parts = key.split('-').collect::<Vec<&str>>();
         let invalid_key = || SharedError::Storage(StorageError::InvalidKey(key.to_owned()));
 
@@ -69,7 +81,7 @@ impl FileSystem {
         }
 
         let uuid = &parts[0..parts.len() - 1].join("-");
-        let file_name = parts.last().ok_or_else(|| invalid_key())?;
+        let file_name = parts.last().ok_or_else(invalid_key)?;
         let dir = Path::new(path).join(uuid);
         let full_path = dir.join(file_name);
 
@@ -97,6 +109,7 @@ mod tests {
     fn config() -> FileSystemConfig {
         FileSystemConfig {
             path: env::temp_dir().to_str().unwrap().to_string(),
+            encryption_keys: vec![],
         }
     }
 

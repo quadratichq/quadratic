@@ -8,55 +8,14 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use crate::arrow::error::Arrow;
+use crate::auth::error::Auth;
+use crate::aws::error::Aws;
+use crate::crypto::error::Crypto;
+use crate::sql::error::Sql;
+use crate::storage::error::Storage;
+
 pub type Result<T> = std::result::Result<T, SharedError>;
-
-#[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub enum Arrow {
-    #[error("Arrow error: {0}")]
-    External(String),
-}
-
-#[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub enum Auth {
-    #[error("JWT error: {0}")]
-    Jwt(String),
-}
-
-#[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub enum Aws {
-    #[error("Error communicating with AWS: {0}")]
-    S3(String),
-}
-
-#[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub enum Sql {
-    #[error("Error connecting to database: {0}")]
-    Connect(String),
-
-    #[error("Error converting results to Parquet: {0}")]
-    ParquetConversion(String),
-
-    #[error("Error executing query: {0}")]
-    Query(String),
-
-    #[error("Error creating schema: {0}")]
-    Schema(String),
-}
-
-#[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub enum Storage {
-    #[error("Error creating directory {0}: {1}")]
-    CreateDirectory(String, String),
-
-    #[error("Invalid key: {0}")]
-    InvalidKey(String),
-
-    #[error("Error reading key {0}: {1}")]
-    Read(String, String),
-
-    #[error("Error writing key {0}: {1}")]
-    Write(String, String),
-}
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum SharedError {
@@ -68,6 +27,9 @@ pub enum SharedError {
 
     #[error("Error communicating with AWS: {0}")]
     Aws(Aws),
+
+    #[error("Error with Crypto: {0}")]
+    Crypto(Crypto),
 
     #[error("Error communicating with the Quadratic API: {0}")]
     QuadraticApi(String),

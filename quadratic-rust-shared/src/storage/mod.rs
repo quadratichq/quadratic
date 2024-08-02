@@ -3,13 +3,14 @@ use bytes::Bytes;
 use file_system::FileSystemConfig;
 use s3::S3Config;
 
-use crate::{error::Result, SharedError, Storage as StorageError};
+use crate::{error::Result, storage::error::Storage as StorageError, SharedError};
 
+pub mod error;
 pub mod file_system;
 pub mod s3;
 
 #[derive(Debug)]
-pub enum Config {
+pub enum StorageConfig {
     S3(S3Config),
     FileSystem(FileSystemConfig),
 }
@@ -22,9 +23,12 @@ pub enum StorageContainer {
 
 #[async_trait]
 pub trait Storage {
+    type Config;
+
     async fn read(&self, key: &str) -> Result<Bytes>;
     async fn write<'a>(&self, key: &'a str, data: &'a Bytes) -> Result<()>;
     fn path(&self) -> &str;
+    fn config(&self) -> Self::Config;
 
     fn read_error(key: &str, e: impl ToString) -> SharedError {
         SharedError::Storage(StorageError::Read(key.into(), e.to_string()))
@@ -38,6 +42,8 @@ pub trait Storage {
 // TODO(ddimaria): this is a temp hack to get around some trait issues, do something better
 #[async_trait]
 impl Storage for StorageContainer {
+    type Config = StorageConfig;
+
     async fn read(&self, key: &str) -> Result<Bytes> {
         match self {
             Self::S3(s3) => s3.read(key).await,
@@ -56,6 +62,13 @@ impl Storage for StorageContainer {
         match self {
             Self::S3(s3) => s3.path(),
             Self::FileSystem(fs) => fs.path(),
+        }
+    }
+
+    fn config(&self) -> StorageConfig {
+        match self {
+            Self::S3(s3) => StorageConfig::S3(s3.config()),
+            Self::FileSystem(fs) => StorageConfig::FileSystem(fs.config()),
         }
     }
 }

@@ -4,7 +4,8 @@ use serde::de::DeserializeOwned;
 use std::str::FromStr;
 use tokio::sync::OnceCell;
 
-use crate::error::{Auth, Result, SharedError};
+use crate::auth::error::Auth;
+use crate::error::{Result, SharedError};
 
 pub static JWKS: OnceCell<JwkSet> = OnceCell::const_new();
 

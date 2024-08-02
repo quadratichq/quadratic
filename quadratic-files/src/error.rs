@@ -9,7 +9,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use quadratic_rust_shared::{clean_errors, SharedError};
+use quadratic_rust_shared::{clean_errors, storage::error::Storage as StorageError, SharedError};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -40,6 +40,9 @@ pub enum FilesError {
 
     #[error("Unable to load file {0}: {1}")]
     LoadFile(String, String),
+
+    #[error("Not Found: {0}")]
+    NotFound(String),
 
     #[error("PubSub error: {0}")]
     PubSub(String),
@@ -78,10 +81,11 @@ impl IntoResponse for FilesError {
             FilesError::InternalServer(error) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, clean_errors(error))
             }
+            FilesError::NotFound(error) => (StatusCode::NOT_FOUND, clean_errors(error)),
             _ => (StatusCode::INTERNAL_SERVER_ERROR, "Unknown".into()),
         };
 
-        tracing::warn!("{} {}: {:?}", status, error, self);
+        tracing::warn!("{:?}", self);
 
         (status, error).into_response()
     }
@@ -94,7 +98,10 @@ impl From<SharedError> for FilesError {
             SharedError::Aws(error) => FilesError::S3(error.to_string()),
             SharedError::PubSub(error) => FilesError::PubSub(error),
             SharedError::QuadraticApi(error) => FilesError::QuadraticApi(error),
-            SharedError::Storage(error) => FilesError::Storage(error.to_string()),
+            SharedError::Storage(error) => match error {
+                StorageError::Read(key, _) => FilesError::NotFound(format!("File {key} not found")),
+                _ => FilesError::Storage(error.to_string()),
+            },
             _ => FilesError::Unknown(format!("Unknown SharedError: {error}")),
         }
     }

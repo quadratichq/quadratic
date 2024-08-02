@@ -6,14 +6,17 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+aes = "0.8.4"
 arrow = "51.0.0"
 async-trait = "0.1.80"
 aws-config = { version= "1.1.1", features = ["behavior-version-latest"] }
 aws-sdk-s3 = {version = "1.12.0", features = ["behavior-version-latest", "rt-tokio"] }
 bigdecimal = "0.3.0" # need this fixed to the sqlx dependency
 bytes = "1.6.0"
+cbc = { version = "0.1.2", features = ["alloc"] }
 chrono = "0.4.31"
 futures-util = "0.3.30"
+hex = "0.4.3"
 jsonwebtoken = "9.2.0"
 parquet = { version = "51.0.0", default-features = false, features = ["arrow", "arrow-array", "flate2", "snap"] }
 redis = { version = "0.25.3", features = ["tokio-comp"] }

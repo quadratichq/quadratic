@@ -2,6 +2,7 @@ import { Request } from 'express';
 import multer from 'multer';
 import stream, { Readable } from 'node:stream';
 import { QUADRATIC_FILE_URI } from '../env-vars';
+import { UploadFile } from '../types/Request';
 import { encryptFromEnv } from '../utils/crypto';
 import { UploadFileResponse } from './storage';
 
@@ -19,8 +20,6 @@ export const getPresignedStorageUrl = (key: string): string => {
 
 export const upload = async (key: string, contents: string | Uint8Array, jwt: string): Promise<UploadFileResponse> => {
   const url = generateUrl(key);
-
-  console.warn('Uploading to', url);
 
   try {
     const response = await fetch(url, {
@@ -62,12 +61,14 @@ export const multerFileSystemStorage: multer.Multer = multer({
   storage: {
     _handleFile(
       req: Request,
-      file: Express.Multer.File,
+      file: Express.Multer.File & UploadFile,
       cb: (error?: any, info?: Partial<Express.Multer.File>) => void
     ): void {
       const fileUuid = req.params.uuid;
       const key = `${fileUuid}-${file.originalname}`;
       const jwt = req.header('Authorization');
+
+      file.key = key;
 
       if (!jwt) {
         cb('No authorization header');

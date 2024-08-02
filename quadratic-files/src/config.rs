@@ -50,6 +50,7 @@ pub(crate) struct Config {
 
     // StorageType::FileSystem
     pub(crate) storage_dir: Option<String>,
+    pub(crate) storage_encryption_keys: Option<Vec<String>>,
 }
 
 /// Load the global configuration from the environment into Config.

@@ -24,6 +24,7 @@ use crate::{
     vec_time_arrow_type_to_array_ref,
 };
 
+pub mod error;
 pub mod mysql_connection;
 pub mod postgres_connection;
 

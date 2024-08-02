@@ -15,7 +15,7 @@ use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::storage::get_storage;
+use crate::storage::{get_presigned_storage, get_storage};
 use crate::truncate::truncate_processed_transactions;
 use crate::{
     auth::get_middleware,
@@ -64,7 +64,7 @@ pub(crate) fn app(state: Arc<State>) -> Router {
     tracing::info!("Serving files from {path}");
 
     Router::new()
-        // protected routes
+        // PROTECTED ROUTES (via JWT)
         //
         // get a file from storage
         .route(
@@ -78,9 +78,12 @@ pub(crate) fn app(state: Arc<State>) -> Router {
         // auth middleware
         .route_layer(auth)
         //
-        // unprotected routes
+        // UNPROTECTED ROUTES
         //
         .route("/health", get(healthcheck))
+        //
+        // presigned urls
+        .route("/storage/presigned/:key", get(get_presigned_storage))
         //
         // state
         .layer(Extension(state))

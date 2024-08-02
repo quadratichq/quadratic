@@ -24,7 +24,7 @@ impl Settings {
             config.environment == Environment::Docker || config.environment == Environment::Local;
         let expected = |val: &Option<String>, var: &str| {
             val.to_owned()
-                .expect(&format!("Expected {} to have a value", var))
+                .unwrap_or_else(|| panic!("Expected {} to have a value", var))
         };
 
         let storage = match config.storage_type {
@@ -42,6 +42,10 @@ impl Settings {
             StorageType::FileSystem => {
                 StorageContainer::FileSystem(FileSystem::new(FileSystemConfig {
                     path: expected(&config.storage_dir, "STORAGE_DIR"),
+                    encryption_keys: config
+                        .storage_encryption_keys
+                        .to_owned()
+                        .expect("Expected STORAGE_ENCRYPTION_KEYS to have a value"),
                 }))
             }
         };

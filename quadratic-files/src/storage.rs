@@ -1,11 +1,13 @@
 use axum::{
     body::to_bytes,
-    debug_handler,
     extract::{Path, Request},
     response::IntoResponse,
     Extension, Json,
 };
-use quadratic_rust_shared::storage::Storage;
+use quadratic_rust_shared::{
+    crypto::aes_cbc::decrypt_from_api,
+    storage::{Storage, StorageConfig},
+};
 use serde::Serialize;
 use std::sync::Arc;
 
@@ -18,24 +20,50 @@ pub(crate) struct UploadStorageResponse {
     key: String,
 }
 
-#[debug_handler]
+/// Get a file from storage
 pub(crate) async fn get_storage(
     Path(file_name): Path<String>,
     state: Extension<Arc<State>>,
 ) -> Result<impl IntoResponse> {
-    tracing::info!("Get file {}", file_name,);
+    tracing::trace!("Get file {}", file_name);
 
     let file = state.settings.storage.read(&file_name).await?;
     Ok(file.into_response())
 }
 
-#[debug_handler]
+/// Get a file from storage from a presigned URL (encrypted)
+pub(crate) async fn get_presigned_storage(
+    Path(encrypted_file_name): Path<String>,
+    state: Extension<Arc<State>>,
+) -> Result<impl IntoResponse> {
+    tracing::trace!("Get presigned file {}", encrypted_file_name);
+
+    match state.settings.storage.config() {
+        StorageConfig::FileSystem(config) => {
+            // For now, we only support one encryption key.
+            // In the future, implement key traversal on decryption failures.
+            let key = config
+                .encryption_keys
+                .first()
+                .ok_or(FilesError::Storage("No encryption keys found".to_string()))?;
+            let file_name = decrypt_from_api(key, &encrypted_file_name)?;
+            let file = state.settings.storage.read(&file_name).await?;
+
+            Ok(file.into_response())
+        }
+        _ => Err(FilesError::Storage(
+            "Presigned URLs supported in FileSystem storage options".to_string(),
+        )),
+    }
+}
+
+/// Upload a file to storage
 pub(crate) async fn upload_storage(
     Path(file_name): Path<String>,
     state: Extension<Arc<State>>,
     request: Request,
 ) -> Result<Json<UploadStorageResponse>> {
-    tracing::info!(
+    tracing::trace!(
         "Uploading file {} to {}",
         file_name,
         state.settings.storage.path()
