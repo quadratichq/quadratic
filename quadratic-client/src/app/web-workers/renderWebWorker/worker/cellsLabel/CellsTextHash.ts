@@ -11,10 +11,8 @@
 
 import { debugShowHashUpdates, debugShowLoadingHashes } from '@/app/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
-import { intersects } from '@/app/gridGL/helpers/intersects';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { JsRenderCell } from '@/app/quadratic-core-types';
-import { renderText } from '@/app/web-workers/renderWebWorker/worker/renderText';
 import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { Rectangle } from 'pixi.js';
 import { renderClient } from '../renderClient';
@@ -50,7 +48,7 @@ export class CellsTextHash {
   AABB: Rectangle;
 
   // rebuild CellsTextHash
-  dirty: boolean | JsRenderCell[] | 'show' = true;
+  dirty: boolean | JsRenderCell[] | 'show' = false;
 
   // todo: not sure if this is still used as I ran into issues with only rendering buffers:
 
@@ -107,19 +105,14 @@ export class CellsTextHash {
   private createLabels(cells: JsRenderCell[]) {
     this.labels = new Map();
     cells.forEach((cell) => this.createLabel(cell));
-    this.updateText();
   }
 
   unload = () => {
     if (debugShowLoadingHashes) console.log(`[CellsTextHash] Unloading ${this.hashX}, ${this.hashY}`);
-    this.dirty = true;
-    this.dirtyWrapText = false;
-    this.dirtyBuffers = false;
+    this.loaded = false;
     this.labels.clear();
-    if (this.loaded) {
-      this.loaded = false;
-      renderClient.unload(this.cellsLabels.sheetId, this.hashX, this.hashY);
-    }
+    this.labelMeshes.clear();
+    renderClient.unload(this.cellsLabels.sheetId, this.hashX, this.hashY);
   };
 
   sendViewRectangle = () => {
@@ -133,10 +126,7 @@ export class CellsTextHash {
   };
 
   update = async (): Promise<boolean> => {
-    const bounds = renderText.viewport;
-    if (!bounds) return false;
-    const visible = intersects.rectangleRectangle(this.viewRectangle, bounds);
-    if (this.dirty) {
+    if (!this.loaded || this.dirty) {
       // If dirty is true, then we need to get the cells from the server; but we
       // need to keep open the case where we receive new cells after dirty is
       // set to false. Therefore, we keep a local copy of dirty flag and allow
@@ -144,7 +134,7 @@ export class CellsTextHash {
       const dirty = this.dirty;
       this.dirty = false;
       let cells: JsRenderCell[] | false;
-      if (dirty === true) {
+      if (!this.loaded || dirty === true) {
         cells = await renderCore.getRenderCells(
           this.cellsLabels.sheetId,
           this.AABB.x,
@@ -165,20 +155,17 @@ export class CellsTextHash {
       if (cells) {
         this.createLabels(cells);
       }
-      if (visible) {
-        queueMicrotask(() => {
-          this.overflowClip();
-          this.updateBuffers();
-        });
-      } else {
-        this.dirtyBuffers = true;
-      }
+      this.updateText();
+      queueMicrotask(() => {
+        this.overflowClip();
+        this.updateBuffers();
+      });
       return true;
     } else if (this.dirtyWrapText) {
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating text ${this.hashX}, ${this.hashY}`);
       this.updateText();
       return true;
-    } else if (visible && this.dirtyBuffers) {
+    } else if (this.dirtyBuffers) {
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating buffers ${this.hashX}, ${this.hashY}`);
       queueMicrotask(() => {
         this.overflowClip();
@@ -190,8 +177,12 @@ export class CellsTextHash {
   };
 
   private updateText = () => {
+    this.dirtyWrapText = false;
+
     this.labelMeshes.clear();
     this.labels.forEach((child) => child.updateText(this.labelMeshes));
+
+    this.dirtyBuffers = true;
 
     // update columns max width cache
     const columnsMax = new Map<number, number>();
@@ -212,9 +203,6 @@ export class CellsTextHash {
       rowsMax.set(row, maxHeight);
     });
     this.rowsMaxCache = rowsMax;
-
-    this.dirtyWrapText = false;
-    this.dirtyBuffers = true;
   };
 
   overflowClip = (): Set<CellsTextHash> => {
@@ -336,6 +324,8 @@ export class CellsTextHash {
   }
 
   updateBuffers = (): void => {
+    this.dirtyBuffers = false;
+
     // creates labelMeshes webGL buffers based on size
     this.labelMeshes.prepare();
 
@@ -376,7 +366,6 @@ export class CellsTextHash {
     renderClient.finalizeCellsTextHash(this.cellsLabels.sheetId, this.hashX, this.hashY);
 
     this.loaded = true;
-    this.dirtyBuffers = false;
   };
 
   adjustHeadings = (options: { delta: number; column?: number; row?: number }): boolean => {

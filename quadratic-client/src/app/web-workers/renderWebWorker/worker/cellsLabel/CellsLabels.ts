@@ -260,11 +260,11 @@ export class CellsLabels {
     // visible and in need of rendering, and (3) not visible and loaded.
     this.cellsTextHash.forEach((hash) => {
       if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) {
-        if (hash.dirty || hash.dirtyWrapText || hash.dirtyBuffers || !hash.loaded) {
+        if (!hash.loaded || hash.dirty || hash.dirtyWrapText || hash.dirtyBuffers) {
           visibleDirtyHashes.push(hash);
         }
       } else {
-        if (hash.dirty || hash.dirtyWrapText) {
+        if (hash.dirty) {
           notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         }
         if (findHashToDelete && hash.loaded) {
@@ -278,7 +278,7 @@ export class CellsLabels {
     }
 
     // sort hashes to delete so the last one is the farthest from viewport.topLeft
-    hashesToDelete.sort((a, b) => a.distance - b.distance);
+    hashesToDelete.sort((a, b) => b.distance - a.distance);
 
     if (visibleDirtyHashes.length) {
       // if hashes are visible then sort smallest to largest by y and return the first one
@@ -302,7 +302,7 @@ export class CellsLabels {
       return { hash: visibleDirtyHashes[0], visible: true };
     }
     // otherwise sort notVisible by distance from viewport.topLeft (by smallest to largest so we can use pop)
-    notVisibleDirtyHashes.sort((a, b) => (a.distance < b.distance ? -1 : a.distance > b.distance ? 1 : 0));
+    notVisibleDirtyHashes.sort((a, b) => a.distance - b.distance);
 
     // This is the next possible not visible hash to render; we'll use it to
     // compare the the next hash to unload.
