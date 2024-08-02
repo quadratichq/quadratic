@@ -54,7 +54,7 @@ impl GridController {
             match transaction.transaction_type {
                 TransactionType::User => {
                     let undo = transaction.to_undo_transaction();
-                    self.undo_stack.push(undo.clone());
+                    self.undo_stack.push(undo);
                     self.redo_stack.clear();
                     self.transactions
                         .unsaved_transactions
@@ -62,19 +62,19 @@ impl GridController {
                 }
                 TransactionType::Unsaved => {
                     let undo = transaction.to_undo_transaction();
-                    self.undo_stack.push(undo.clone());
+                    self.undo_stack.push(undo);
                     self.redo_stack.clear();
                 }
                 TransactionType::Undo => {
                     let undo = transaction.to_undo_transaction();
-                    self.redo_stack.push(undo.clone());
+                    self.redo_stack.push(undo);
                     self.transactions
                         .unsaved_transactions
                         .insert_or_replace(transaction, true);
                 }
                 TransactionType::Redo => {
                     let undo = transaction.to_undo_transaction();
-                    self.undo_stack.push(undo.clone());
+                    self.undo_stack.push(undo);
                     self.transactions
                         .unsaved_transactions
                         .insert_or_replace(transaction, true);
