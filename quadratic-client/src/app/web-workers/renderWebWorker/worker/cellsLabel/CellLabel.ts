@@ -49,6 +49,8 @@ export class CellLabel {
   visible = true;
 
   text: string;
+  private originalText: string;
+
   private displayedText?: string;
   number?: JsNumber;
 
@@ -114,6 +116,7 @@ export class CellLabel {
 
   constructor(cellsLabels: CellsLabels, cell: JsRenderCell, screenRectangle: Rectangle) {
     this.cellsLabels = cellsLabels;
+    this.originalText = cell.value;
     this.text = this.getText(cell);
     this.fontSize = fontSize;
     this.roundPixels = true;
@@ -528,18 +531,23 @@ export class CellLabel {
       let text = this.text;
       let infinityProtection = 0;
       do {
-        const result = reduceDecimals(this.displayedText, text, this.number, digits);
+        const result = reduceDecimals(this.originalText, this.text, this.number, digits);
 
         // we cannot reduce decimals anymore, so we show pound characters
         if (!result) {
           return this.showPoundLabels(labelMeshes);
         }
         digits = result.currentFractionDigits - 1;
+
         text = result.number;
         this.updateText(labelMeshes, text);
       } while (this.textWidth > this.AABB.width && digits >= 0 && infinityProtection++ < 1000);
-    }
 
+      // we were not able to reduce the number to fit the cell, so we show pound characters
+      if (digits < 0) {
+        return this.showPoundLabels(labelMeshes);
+      }
+    }
     const bounds = new Bounds();
 
     for (let i = 0; i < this.chars.length; i++) {

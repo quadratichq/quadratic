@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { convertNumber, reduceDecimals } from './convertNumber';
 
 describe('convertNumber', () => {
-  it('shows a normal number with no formatting', () => {
+  it('using various number formatting', () => {
     expect(convertNumber('1234', { commas: null, decimals: null, format: null })).toBe('1234');
     expect(convertNumber('1234', { commas: true, decimals: null, format: null })).toBe('1,234');
     expect(convertNumber('1234', { commas: true, decimals: 2, format: null })).toBe('1,234.00');
@@ -14,6 +14,21 @@ describe('convertNumber', () => {
     expect(
       convertNumber('0.01234', { commas: null, decimals: null, format: { type: 'PERCENTAGE', symbol: null } })
     ).toBe('1.234%');
+    expect(
+      convertNumber('123123222', { format: { type: 'EXPONENTIAL', symbol: null }, commas: null, decimals: null })
+    ).toBe('1.23123222e+8');
+    expect(
+      convertNumber('123123222', { format: { type: 'EXPONENTIAL', symbol: null }, commas: null, decimals: 2 })
+    ).toBe('1.23e+8');
+    expect(
+      convertNumber('0.0000001', { commas: null, decimals: null, format: { type: 'EXPONENTIAL', symbol: null } })
+    ).toBe('1e-7');
+    expect(
+      convertNumber('123456789', { commas: null, decimals: null, format: { type: 'EXPONENTIAL', symbol: null } })
+    ).toBe('1.23456789e+8');
+    expect(
+      convertNumber('100200100.1234', { commas: null, decimals: null, format: { type: 'CURRENCY', symbol: '$' } })
+    ).toBe('$100,200,100.12');
   });
 
   it('reduceDecimals', () => {
@@ -26,15 +41,15 @@ describe('convertNumber', () => {
       currentFractionDigits: 2,
     });
     expect(
-      reduceDecimals('$1234.5678', '1234.5678', {
+      reduceDecimals('1234.5678', '1234.5678', {
         commas: null,
         decimals: null,
         format: { type: 'CURRENCY', symbol: '$' },
       })
-    ).toEqual({ number: '$1234.568', currentFractionDigits: 3 });
+    ).toEqual({ number: '$1,234.568', currentFractionDigits: 3 });
     expect(
       reduceDecimals(
-        '$1234.5678',
+        '1234.5678',
         '1234.5678',
         {
           commas: null,
@@ -43,6 +58,26 @@ describe('convertNumber', () => {
         },
         2
       )
-    ).toEqual({ number: '$1234.57', currentFractionDigits: 2 });
+    ).toEqual({ number: '$1,234.57', currentFractionDigits: 2 });
   });
+  expect(
+    reduceDecimals(
+      '123456789',
+      '1.23456789e+8',
+      {
+        commas: null,
+        decimals: null,
+        format: { type: 'EXPONENTIAL', symbol: null },
+      },
+      undefined
+    )
+  ).toEqual({ number: '1.2345679e+8', currentFractionDigits: 7 });
+  expect(
+    reduceDecimals(
+      '123456789',
+      '1e+8',
+      { commas: null, decimals: null, format: { type: 'EXPONENTIAL', symbol: null } },
+      0
+    )
+  ).toEqual(undefined);
 });
