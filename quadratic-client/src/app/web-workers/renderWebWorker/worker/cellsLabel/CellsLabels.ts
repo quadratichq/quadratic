@@ -11,7 +11,7 @@ import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { CELL_HEIGHT } from '@/shared/constants/gridConstants.js';
+import { CELL_HEIGHT } from '@/shared/constants/gridConstants';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
 import { renderText } from '../renderText';
@@ -231,26 +231,8 @@ export class CellsLabels {
       });
     });
 
-    const bounds = renderText.viewport;
-    if (!!bounds) {
-      hashesToUpdate.forEach((_, hash) => {
-        const visible = intersects.rectangleRectangle(hash.viewRectangle, bounds);
-        if (visible) {
-          queueMicrotask(() => hash.updateBuffers());
-        } else {
-          hash.dirtyBuffers = true;
-        }
-      });
-      hashesToUpdateViewRectangle.forEach((hash) => {
-        const visible = intersects.rectangleRectangle(hash.viewRectangle, bounds);
-        if (visible) {
-          queueMicrotask(() => hash.sendViewRectangle());
-        } else {
-          hash.dirtyBuffers = true;
-        }
-      });
-    }
-
+    hashesToUpdate.forEach((_, hash) => queueMicrotask(() => hash.updateBuffers()));
+    hashesToUpdateViewRectangle.forEach((hash) => queueMicrotask(() => hash.sendViewRectangle()));
     return true;
   }
 
@@ -282,7 +264,7 @@ export class CellsLabels {
           visibleDirtyHashes.push(hash);
         }
       } else {
-        if (hash.dirty || hash.dirtyWrapText || hash.dirtyBuffers || !hash.loaded) {
+        if (hash.dirty || hash.dirtyWrapText) {
           notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         }
         if (findHashToDelete && hash.loaded) {
@@ -296,11 +278,11 @@ export class CellsLabels {
     }
 
     // sort hashes to delete so the last one is the farthest from viewport.topLeft
-    hashesToDelete.sort((a, b) => (a.distance < b.distance ? -1 : a.distance > b.distance ? 1 : 0));
+    hashesToDelete.sort((a, b) => a.distance - b.distance);
 
     if (visibleDirtyHashes.length) {
       // if hashes are visible then sort smallest to largest by y and return the first one
-      visibleDirtyHashes.sort((a, b) => (a.hashY < b.hashY ? -1 : a.hashY > b.hashY ? 1 : 0));
+      visibleDirtyHashes.sort((a, b) => a.hashY - b.hashY);
 
       while (memory > MAX_RENDERING_MEMORY && hashesToDelete.length) {
         const deleted = hashesToDelete.pop();
@@ -509,17 +491,47 @@ export class CellsLabels {
     return max;
   }
 
+  async rowMaxHeightsInHash(hashY: number): Promise<Map<number, number>> {
+    const rowsMax = new Map<number, number>();
+    const promises: Promise<void>[] = [];
+    this.cellsTextHash.forEach((hash) => {
+      if (hash.hashY === hashY) {
+        const promise = new Promise<void>(async (resolve) => {
+          const hashMax = await hash.getRowContentMaxHeights();
+          hashMax.forEach((height, row) => {
+            const current = rowsMax.get(row) ?? 0;
+            rowsMax.set(row, Math.max(current, height));
+          });
+          resolve();
+        });
+        promises.push(promise);
+      }
+    });
+    await Promise.all(promises);
+    return rowsMax;
+  }
+
   async getRowHeights(rows: bigint[]): Promise<JsRowHeight[]> {
     await this.update();
-    const rowHeightsPromises: Promise<JsRowHeight>[] = rows.map(async (row) => {
-      const maxHeight = await this.rowMaxHeight(Number(row));
-      return {
-        row,
-        height: Math.max(maxHeight, CELL_HEIGHT),
-      };
+    const rowHeights = new Map<number, number>();
+    const promises: Promise<void>[] = [];
+    const hashYs = new Set<number>(rows.map((row) => Math.floor(Number(row) / sheetHashHeight)));
+    hashYs.forEach((hashY) => {
+      const promise = new Promise<void>(async (resolve) => {
+        const rowsMax = await this.rowMaxHeightsInHash(hashY);
+        rowsMax.forEach((height, row) => {
+          rowHeights.set(row, height);
+        });
+        resolve();
+      });
+      promises.push(promise);
     });
-    const rowHeights: JsRowHeight[] = await Promise.all(rowHeightsPromises);
-    const changesRowHeights: JsRowHeight[] = rowHeights.filter(
+    await Promise.all(promises);
+    const jsRowHeights: JsRowHeight[] = rows.map((row) => {
+      const height = rowHeights.get(Number(row)) ?? CELL_HEIGHT;
+      return { row, height };
+    });
+    const changesRowHeights: JsRowHeight[] = jsRowHeights.filter(
       ({ row, height }) => Math.abs(height - this.sheetOffsets.getRowHeight(Number(row))) > 0.001
     );
     return changesRowHeights;

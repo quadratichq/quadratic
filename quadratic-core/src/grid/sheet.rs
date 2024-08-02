@@ -13,7 +13,7 @@ use super::formatting::CellFmtAttr;
 use super::ids::SheetId;
 use super::js_types::CellFormatSummary;
 use super::resize::ResizeMap;
-use super::{CodeRun, NumericFormatKind};
+use super::{CellWrap, CodeRun, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
 use crate::selection::Selection;
 use crate::sheet_offsets::SheetOffsets;
@@ -375,7 +375,7 @@ impl Sheet {
         if let GridBounds::NonEmpty(rect) = bounds {
             for x in rect.x_range() {
                 let format = self.format_cell(x, y, true);
-                if format.wrap.is_some() {
+                if Some(CellWrap::Wrap) == format.wrap {
                     return true;
                 }
             }
@@ -388,7 +388,7 @@ impl Sheet {
         if let Some((start, end)) = self.column_bounds(x, true) {
             for y in start..=end {
                 let format = self.format_cell(x, y, true);
-                if format.wrap.is_some() {
+                if Some(CellWrap::Wrap) == format.wrap {
                     rows.push(y);
                 }
             }
@@ -401,7 +401,7 @@ impl Sheet {
         for x in rect.x_range() {
             for y in rect.y_range() {
                 let format = self.format_cell(x, y, true);
-                if format.wrap.is_some() {
+                if Some(CellWrap::Wrap) == format.wrap {
                     rows.push(y);
                     break;
                 }

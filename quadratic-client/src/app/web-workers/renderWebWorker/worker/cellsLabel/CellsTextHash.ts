@@ -15,6 +15,7 @@ import { intersects } from '@/app/gridGL/helpers/intersects';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { JsRenderCell } from '@/app/quadratic-core-types';
 import { renderText } from '@/app/web-workers/renderWebWorker/worker/renderText';
+import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { Rectangle } from 'pixi.js';
 import { renderClient } from '../renderClient';
 import { renderCore } from '../renderCore';
@@ -68,6 +69,9 @@ export class CellsTextHash {
   leftClip: TrackClip[] = [];
   rightClip: TrackClip[] = [];
 
+  columnsMaxCache?: Map<number, number>;
+  rowsMaxCache?: Map<number, number>;
+
   constructor(cellsLabels: CellsLabels, hashX: number, hashY: number) {
     this.cellsLabels = cellsLabels;
     this.labels = new Map();
@@ -100,7 +104,7 @@ export class CellsTextHash {
     this.labels.set(this.getKey(cell), cellLabel);
   }
 
-  createLabels(cells: JsRenderCell[]) {
+  private createLabels(cells: JsRenderCell[]) {
     this.labels = new Map();
     cells.forEach((cell) => this.createLabel(cell));
     this.updateText();
@@ -109,6 +113,8 @@ export class CellsTextHash {
   unload = () => {
     if (debugShowLoadingHashes) console.log(`[CellsTextHash] Unloading ${this.hashX}, ${this.hashY}`);
     this.dirty = true;
+    this.dirtyWrapText = false;
+    this.dirtyBuffers = false;
     this.labels.clear();
     if (this.loaded) {
       this.loaded = false;
@@ -186,10 +192,29 @@ export class CellsTextHash {
   private updateText = () => {
     this.labelMeshes.clear();
     this.labels.forEach((child) => child.updateText(this.labelMeshes));
-    if (this.dirtyWrapText) {
-      this.dirtyWrapText = false;
-      this.dirtyBuffers = true;
-    }
+
+    // update columns max width cache
+    const columnsMax = new Map<number, number>();
+    this.labels.forEach((label) => {
+      let column = label.location.x;
+      let width = label.unwrappedTextWidth;
+      let maxWidth = Math.max(columnsMax.get(column) ?? 0, width);
+      columnsMax.set(column, maxWidth);
+    });
+    this.columnsMaxCache = columnsMax;
+
+    // update rows max height cache
+    const rowsMax = new Map<number, number>();
+    this.labels.forEach((label) => {
+      let row = label.location.y;
+      let height = label.textHeight;
+      let maxHeight = Math.max(rowsMax.get(row) ?? 0, height);
+      rowsMax.set(row, maxHeight);
+    });
+    this.rowsMaxCache = rowsMax;
+
+    this.dirtyWrapText = false;
+    this.dirtyBuffers = true;
   };
 
   overflowClip = (): Set<CellsTextHash> => {
@@ -419,35 +444,39 @@ export class CellsTextHash {
   };
 
   getCellsContentMaxWidth = async (column: number): Promise<number> => {
-    await this.update();
-    let max = 0;
-    this.labels.forEach((label) => {
-      if (label.location.x === column) {
-        max = Math.max(max, label.unwrappedTextWidth);
-      }
-    });
-    const bounds = renderText.viewport;
-    const visible = !!bounds && intersects.rectangleRectangle(this.viewRectangle, bounds);
-    if (!visible) {
-      this.unload();
+    const columnsMax = await this.getColumnContentMaxWidths();
+    return columnsMax.get(column) ?? CELL_WIDTH;
+  };
+
+  getColumnContentMaxWidths = async (): Promise<Map<number, number>> => {
+    if (!Array.isArray(this.dirty) && !this.dirtyWrapText && this.columnsMaxCache !== undefined) {
+      return this.columnsMaxCache;
     }
-    return max;
+    if (Array.isArray(this.dirty)) {
+      await this.update();
+    }
+    if (this.dirtyWrapText) {
+      this.updateText();
+    }
+    return this.columnsMaxCache ?? new Map();
   };
 
   getCellsContentMaxHeight = async (row: number): Promise<number> => {
-    await this.update();
-    let max = 0;
-    this.labels.forEach((label) => {
-      if (label.location.y === row) {
-        max = Math.max(max, label.textHeight);
-      }
-    });
-    const bounds = renderText.viewport;
-    const visible = !!bounds && intersects.rectangleRectangle(this.viewRectangle, bounds);
-    if (!visible) {
-      this.unload();
+    const rowsMax = await this.getRowContentMaxHeights();
+    return rowsMax.get(row) ?? CELL_HEIGHT;
+  };
+
+  getRowContentMaxHeights = async (): Promise<Map<number, number>> => {
+    if (!Array.isArray(this.dirty) && !this.dirtyWrapText && this.rowsMaxCache !== undefined) {
+      return this.rowsMaxCache;
     }
-    return max;
+    if (Array.isArray(this.dirty)) {
+      await this.update();
+    }
+    if (this.dirtyWrapText) {
+      this.updateText();
+    }
+    return this.rowsMaxCache ?? new Map();
   };
 
   totalMemory(): number {
