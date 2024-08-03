@@ -794,8 +794,8 @@ fn export_validation_rule(rule: &ValidationRule) -> current_validations::Validat
     }
 }
 
-fn export_validations(validations: &Validations) -> current::Validations {
-    current::Validations {
+fn export_validations(validations: &Validations) -> current_validations::Validations {
+    current_validations::Validations {
         validations: validations
             .validations
             .iter()
