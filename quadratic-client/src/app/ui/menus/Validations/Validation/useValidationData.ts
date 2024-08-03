@@ -9,12 +9,9 @@ import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } f
 import { getSelectionString } from '@/app/grid/sheet/selection';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { validationRuleSimple, ValidationRuleSimple, ValidationUndefined } from './validationType';
 
 export type SetState<T> = Dispatch<SetStateAction<T>>;
-
-export type ValidationRuleSimple = 'list' | 'list-range' | 'logical' | '';
-
-type ValidationUndefined = Validation | Omit<Validation, 'rule'> | undefined;
 
 export interface ValidationData {
   unsaved: boolean;
@@ -93,20 +90,7 @@ export const useValidationData = (): ValidationData => {
     return true;
   }, [validation, originalValidation]);
 
-  const rule: ValidationRuleSimple = useMemo(() => {
-    if (!validation || !('rule' in validation) || !validation.rule) return '';
-    const rule = validation.rule;
-    if ('List' in rule) {
-      if ('source' in rule.List) {
-        if ('List' in rule.List.source) return 'list';
-        if ('Selection' in rule.List.source) return 'list-range';
-      }
-      return 'list';
-    } else if ('Logical' in rule) {
-      return 'logical';
-    }
-    throw new Error('Invalid rule in useValidationData');
-  }, [validation]);
+  const rule: ValidationRuleSimple = useMemo(() => validationRuleSimple(validation), [validation]);
 
   const validate = useCallback((): boolean => {
     if (!validation || !('rule' in validation) || !validation.rule) {

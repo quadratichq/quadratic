@@ -65,6 +65,7 @@ impl Validation {
                     None
                 }
             }
+            ValidationRule::None => None,
         }
     }
 }
@@ -163,5 +164,14 @@ mod tests {
             error: Default::default(),
         };
         assert_eq!(v.render_special(), Some(JsRenderCellSpecial::List));
+
+        let v = Validation {
+            id: Uuid::new_v4(),
+            selection: Selection::default(),
+            rule: ValidationRule::None,
+            message: Default::default(),
+            error: Default::default(),
+        };
+        assert_eq!(v.render_special(), None);
     }
 }

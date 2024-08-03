@@ -107,7 +107,7 @@ interface EventTypes {
   sheetValidations: (sheetId: string, validations: Validation[]) => void;
 
   // pointer down on the grid
-  pointerDown: (column: number, row: number, world: Point) => void;
+  pointerDown: (column: number, row: number, world: Point | true) => void;
 
   // dropdown button is pressed for dropdown Validation
   dropdown: (column: number, row: number) => void;

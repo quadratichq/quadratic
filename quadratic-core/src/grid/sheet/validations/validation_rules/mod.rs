@@ -15,6 +15,7 @@ pub mod validation_logical;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum ValidationRule {
+    None,
     List(ValidationList),
     Logical(ValidationLogical),
 }
@@ -25,6 +26,7 @@ impl ValidationRule {
         match &self {
             ValidationRule::List(list) => ValidationList::validate(sheet, list, value),
             ValidationRule::Logical(_) => ValidationLogical::validate(value),
+            ValidationRule::None => true,
         }
     }
 
@@ -42,6 +44,7 @@ impl ValidationRule {
         match self {
             ValidationRule::List(list) => list.ignore_blank,
             ValidationRule::Logical(_) => true,
+            ValidationRule::None => true,
         }
     }
 }
@@ -86,6 +89,13 @@ mod tests {
     }
 
     #[test]
+    fn validate_none() {
+        let sheet = Sheet::test();
+        let rule = ValidationRule::None;
+        assert!(rule.validate(&sheet, &CellValue::Text("test".to_string())));
+    }
+
+    #[test]
     fn is_list() {
         let list = ValidationList {
             source: ValidationListSource::List(vec!["test".to_string()]),
@@ -100,6 +110,9 @@ mod tests {
             ignore_blank: true,
         };
         let rule = ValidationRule::Logical(checkbox);
+        assert!(!rule.is_list());
+
+        let rule = ValidationRule::None;
         assert!(!rule.is_list());
     }
 
@@ -118,6 +131,9 @@ mod tests {
             drop_down: false,
         };
         let rule = ValidationRule::List(list);
+        assert!(!rule.is_logical());
+
+        let rule = ValidationRule::None;
         assert!(!rule.is_logical());
     }
 }

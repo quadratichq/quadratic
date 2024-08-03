@@ -350,6 +350,7 @@ fn import_selection(selection: &current_validations::Selection) -> Selection {
 
 fn import_validation_rule(rule: &current_validations::ValidationRule) -> ValidationRule {
     match rule {
+        current_validations::ValidationRule::None => ValidationRule::None,
         current_validations::ValidationRule::List(list) => ValidationRule::List(ValidationList {
             source: match &list.source {
                 current_validations::ValidationListSource::Selection(selection) => {
@@ -767,6 +768,7 @@ fn export_selection(selection: &Selection) -> current_validations::Selection {
 
 fn export_validation_rule(rule: &ValidationRule) -> current_validations::ValidationRule {
     match rule {
+        ValidationRule::None => current_validations::ValidationRule::None,
         ValidationRule::List(list) => {
             current_validations::ValidationRule::List(current_validations::ValidationList {
                 source: match &list.source {

@@ -64,6 +64,7 @@ pub struct ValidationList {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum ValidationRule {
+    None,
     List(ValidationList),
     Logical(ValidationLogical),
 }

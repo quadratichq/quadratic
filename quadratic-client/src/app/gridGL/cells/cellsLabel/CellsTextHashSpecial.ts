@@ -36,11 +36,12 @@ export class CellsTextHashSpecial extends Container<SpecialSprite> {
   }
 
   // handle clicking on UI elements
-  pointerDown(column: number, row: number, world: Point) {
+  // if world is true, it skips the check and automatically triggers (reuse by pressing Space on cell)
+  pointerDown(column: number, row: number, world: Point | true) {
     this.children.forEach((child) => {
       const special = child as SpecialSprite;
       if (special.column === column && special.row === row) {
-        if (special.type === 'checkbox' && intersects.rectanglePoint(special.rectangle, world)) {
+        if (special.type === 'checkbox' && (world === true || intersects.rectanglePoint(special.rectangle, world))) {
           quadraticCore.setCellValue(
             sheets.sheet.id,
             column,
@@ -48,7 +49,10 @@ export class CellsTextHashSpecial extends Container<SpecialSprite> {
             special.checkbox ? 'false' : 'true',
             sheets.getCursorPosition()
           );
-        } else if (special.type === 'dropdown' && intersects.rectanglePoint(special.rectangle, world)) {
+        } else if (
+          special.type === 'dropdown' &&
+          (world === true || intersects.rectanglePoint(special.rectangle, world))
+        ) {
           events.emit('dropdown', special.column, special.row);
         }
       }

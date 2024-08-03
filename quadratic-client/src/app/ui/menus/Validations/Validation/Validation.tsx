@@ -1,6 +1,6 @@
 import { ValidationHeader } from './ValidationHeader';
 import { Button } from '@/shared/shadcn/ui/button';
-import { useValidationData, ValidationRuleSimple } from './useValidationData';
+import { useValidationData } from './useValidationData';
 import { useMemo } from 'react';
 import { ValidationList } from './ValidationList';
 import { ValidationMessage } from './ValidationMessage';
@@ -11,6 +11,7 @@ import { useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { SheetRange } from '@/app/ui/components/SheetRange';
 import { ValidationLogical } from './ValidationLogical';
+import { ValidationRuleSimple } from './validationType';
 
 const CRITERIA_OPTIONS: { value: ValidationRuleSimple; label: string }[] = [
   { value: 'list', label: 'Values from user list (dropdown)' },
