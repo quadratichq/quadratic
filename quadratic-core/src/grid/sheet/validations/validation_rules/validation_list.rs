@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -37,22 +38,32 @@ impl ValidationList {
     }
 
     /// Gets the drop down list.
-    pub fn to_drop_down(sheet: &Sheet, list: &ValidationList) -> Option<Vec<String>> {
-        if !list.drop_down {
+    pub fn to_drop_down(&self, sheet: &Sheet) -> Option<Vec<String>> {
+        if !self.drop_down {
             return None;
         }
-        match &list.source {
+        match &self.source {
             ValidationListSource::Selection(selection) => {
                 let values = sheet.selection(selection, None, false)?;
-                Some(values.values().map(|value| value.to_string()).collect())
+                Some(
+                    values
+                        .values()
+                        .map(|value| value.to_display())
+                        .unique()
+                        .collect(),
+                )
             }
-            ValidationListSource::List(list) => Some(list.clone()),
+            ValidationListSource::List(ref list) => {
+                Some(list.iter().map(|s| s.clone()).unique().collect())
+            }
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::Rect;
+
     use super::*;
 
     #[test]
@@ -99,21 +110,38 @@ mod tests {
     fn to_drop_down_strings() {
         let sheet = Sheet::test();
         let list = ValidationList {
-            source: ValidationListSource::List(vec!["test".to_string()]),
+            source: ValidationListSource::List(vec!["test".to_string(), "test".to_string()]),
             ignore_blank: true,
             drop_down: true,
         };
 
-        assert_eq!(
-            ValidationList::to_drop_down(&sheet, &list),
-            Some(vec!["test".to_string()])
-        );
+        assert_eq!(list.to_drop_down(&sheet), Some(vec!["test".to_string()]));
 
         let list = ValidationList {
             source: ValidationListSource::List(vec!["test".to_string(), "test2".to_string()]),
             ignore_blank: true,
             drop_down: false,
         };
-        assert_eq!(ValidationList::to_drop_down(&sheet, &list), None);
+        assert_eq!(list.to_drop_down(&sheet), None);
+    }
+
+    #[test]
+    fn to_drop_down_values() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value((0, 0).into(), "test");
+        sheet.set_cell_value((0, 1).into(), "test");
+        sheet.set_cell_value((0, 2).into(), "test2");
+        let selection = Selection::rect(Rect::new(0, 0, 0, 2), sheet.id);
+
+        let list = ValidationList {
+            source: ValidationListSource::Selection(selection),
+            ignore_blank: true,
+            drop_down: true,
+        };
+
+        assert_eq!(
+            list.to_drop_down(&sheet),
+            Some(vec!["test".to_string(), "test2".to_string()])
+        );
     }
 }

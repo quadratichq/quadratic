@@ -19,7 +19,7 @@ export const HtmlValidationMessage = (props: Props) => {
 
   const hasMessage = message && (!!message.title || !!message.message);
 
-  if (hide || !uiShowing || !offsets || !hasMessage) return null;
+  if (hide || uiShowing || !offsets || !hasMessage) return null;
 
   return (
     <div

@@ -13,7 +13,7 @@ interface Props {
 }
 
 export const HtmlValidationList = (props: Props) => {
-  const { offsets, setUiShowing, uiShowing } = props.htmlValidationsData;
+  const { validation, offsets, setUiShowing, uiShowing } = props.htmlValidationsData;
 
   const [showDropdown, setShowDropdown] = useState(false);
   const [dropdownChoices, setDropdownChoices] = useState<string[] | undefined>();
@@ -26,6 +26,10 @@ export const HtmlValidationList = (props: Props) => {
     setDropdownChoices(undefined);
     setUiShowing(false);
   }, [setUiShowing]);
+
+  useEffect(() => {
+    clearDropdown();
+  }, [clearDropdown, validation]);
 
   useEffect(() => {
     const updateShowDropdown = async (column: number, row: number) => {

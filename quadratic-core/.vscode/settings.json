@@ -4,6 +4,7 @@
     "dbgjs",
     "htmlescape",
     "indexmap",
+    "Itertools",
     "Rects",
     "undoable"
   ],

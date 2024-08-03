@@ -6,10 +6,7 @@ use crate::{
         GridController,
     },
     grid::{
-        sheet::validations::{
-            validation::Validation,
-            validation_rules::{validation_list::ValidationListSource, ValidationRule},
-        },
+        sheet::validations::{validation::Validation, validation_rules::ValidationRule},
         SheetId,
     },
     selection::Selection,
@@ -77,13 +74,7 @@ impl GridController {
         let sheet = self.try_sheet(sheet_id)?;
         let validation = sheet.validations.get_validation_from_pos(Pos { x, y })?;
         match validation.rule {
-            ValidationRule::List(ref list) => match list.source {
-                ValidationListSource::Selection(ref selection) => {
-                    let cells = sheet.selection(selection, None, false)?;
-                    Some(cells.values().map(|value| value.to_display()).collect())
-                }
-                ValidationListSource::List(ref list) => Some(list.clone()),
-            },
+            ValidationRule::List(ref list) => list.to_drop_down(sheet),
             _ => None,
         }
     }
@@ -95,7 +86,9 @@ mod tests {
 
     use crate::{
         grid::sheet::validations::validation_rules::{
-            validation_list::ValidationList, validation_logical::ValidationLogical, ValidationRule,
+            validation_list::{ValidationList, ValidationListSource},
+            validation_logical::ValidationLogical,
+            ValidationRule,
         },
         wasm_bindings::js::{expect_js_call, hash_test},
         Rect,
