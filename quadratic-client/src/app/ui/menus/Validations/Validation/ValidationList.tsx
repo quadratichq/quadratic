@@ -60,8 +60,6 @@ export const ValidationList = (props: Props) => {
     sheetId,
   } = props.validationData;
 
-  console.log(triggerError);
-
   const changeSelection = (selection: Selection | undefined) => {
     console.log(selection);
     const rule: ValidationRule = {

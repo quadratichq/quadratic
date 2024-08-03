@@ -22,11 +22,11 @@ export const ValidationEntry = (props: Props) => {
 
   const title = useMemo(() => {
     if ('List' in validation.rule) {
-      const type = validation.rule.List.drop_down ? 'Dropdown' : 'Value';
+      const dropdown = validation.rule.List.drop_down ? ' (Dropdown)' : '';
       if ('List' in validation.rule.List.source) {
-        return `${type} from user-defined list`;
+        return `List from values${dropdown}`;
       } else if ('Selection' in validation.rule.List.source) {
-        return `${type} from selection`;
+        return `List from selection${dropdown}`;
       }
     } else if ('Logical' in validation.rule) {
       return `Logical${validation.rule.Logical.show_checkbox ? ' (Checkbox)' : ''}`;
