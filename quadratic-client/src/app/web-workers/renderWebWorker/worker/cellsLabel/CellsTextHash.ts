@@ -30,7 +30,7 @@ interface TrackClip {
   hashY: number;
 }
 
-export const NEIGHBORS = 2;
+export const NEIGHBORS = 5;
 
 // Draw hashed regions of cell glyphs (the text + text formatting)
 export class CellsTextHash {
@@ -56,14 +56,14 @@ export class CellsTextHash {
 
   // todo: not sure if this is still used as I ran into issues with only rendering buffers:
 
-  // update text to re-wrap
-  dirtyWrapText = false;
+  // update text
+  dirtyText = false;
 
   // rebuild only buffers
   dirtyBuffers = false;
 
   loaded = false;
-
+  meshLoaded = false;
   clientLoaded = false;
 
   // screen coordinates
@@ -128,10 +128,10 @@ export class CellsTextHash {
   unload = () => {
     if (debugShowLoadingHashes) console.log(`[CellsTextHash] Unloading ${this.hashX}, ${this.hashY}`);
     this.loaded = false;
-    this.dirty = false;
-    this.overflowGridLines = [];
     this.labels.clear();
+    this.meshLoaded = false;
     this.labelMeshes.clear();
+    this.overflowGridLines = [];
     if (this.clientLoaded) {
       this.clientLoaded = false;
       renderClient.unload(this.cellsLabels.sheetId, this.hashX, this.hashY);
@@ -181,35 +181,21 @@ export class CellsTextHash {
       } else {
         cells = dirty;
       }
-
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating ${this.hashX}, ${this.hashY}`);
-      if (cells) {
-        this.createLabels(cells);
-      }
-      this.updateText();
+      if (cells) this.createLabels(cells);
       if (visibleOrNeighbor) {
-        queueMicrotask(() => {
-          this.overflowClip();
-          this.updateBuffers();
-        });
+        queueMicrotask(() => this.updateBuffers());
       } else {
-        this.unload();
+        this.updateText();
       }
       return true;
-    } else if (this.dirtyWrapText) {
+    } else if (this.dirtyText) {
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating text ${this.hashX}, ${this.hashY}`);
       this.updateText();
       return true;
     } else if (this.dirtyBuffers) {
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating buffers ${this.hashX}, ${this.hashY}`);
-      if (visibleOrNeighbor) {
-        queueMicrotask(() => {
-          this.overflowClip();
-          this.updateBuffers();
-        });
-      } else {
-        this.unload();
-      }
+      queueMicrotask(() => this.updateBuffers());
       return true;
     } else if (!visibleOrNeighbor) {
       this.unload();
@@ -218,14 +204,14 @@ export class CellsTextHash {
   };
 
   private updateText = () => {
-    this.dirtyWrapText = false;
-    if (!this.loaded) {
-      this.dirty = true;
-      return;
-    }
+    if (!this.loaded) return;
+    this.dirtyText = false;
 
     this.labelMeshes.clear();
     this.labels.forEach((child) => child.updateText(this.labelMeshes));
+    this.meshLoaded = true;
+
+    this.dirtyBuffers = true;
 
     // update columns max width cache
     const columnsMax = new Map<number, number>();
@@ -366,12 +352,11 @@ export class CellsTextHash {
     }
   }
 
-  updateBuffers = (): void => {
+  private updateBuffers = (): void => {
+    if (!this.loaded) return;
+    if (!this.meshLoaded) this.updateText();
+    this.overflowClip();
     this.dirtyBuffers = false;
-    if (!this.loaded) {
-      this.dirty = true;
-      return;
-    }
 
     // creates labelMeshes webGL buffers based on size
     this.labelMeshes.prepare();
@@ -485,14 +470,11 @@ export class CellsTextHash {
   };
 
   getColumnContentMaxWidths = async (): Promise<Map<number, number>> => {
-    if (!Array.isArray(this.dirty) && !this.dirtyWrapText && this.columnsMaxCache !== undefined) {
+    if (!this.dirty && !this.dirtyText && this.columnsMaxCache !== undefined) {
       return this.columnsMaxCache;
     }
-    if (Array.isArray(this.dirty)) {
+    if (this.dirty || this.dirtyText) {
       await this.update();
-    }
-    if (this.dirtyWrapText) {
-      this.updateText();
     }
     return this.columnsMaxCache ?? new Map();
   };
@@ -503,10 +485,10 @@ export class CellsTextHash {
   };
 
   getRowContentMaxHeights = async (): Promise<Map<number, number>> => {
-    if (!this.dirty && !this.dirtyWrapText && this.rowsMaxCache !== undefined) {
+    if (!this.dirty && !this.dirtyText && this.rowsMaxCache !== undefined) {
       return this.rowsMaxCache;
     }
-    if (this.dirty || this.dirtyWrapText) {
+    if (this.dirty || this.dirtyText) {
       await this.update();
     }
     return this.rowsMaxCache ?? new Map();

@@ -94,9 +94,7 @@ export class CellLabel {
   overflowRight?: number;
   overflowLeft?: number;
 
-  alignment?: CellAlign;
-
-  dirty = true;
+  dirtyText = true;
 
   private getText(cell: JsRenderCell) {
     switch (cell?.special) {
@@ -151,6 +149,12 @@ export class CellLabel {
     this.updateCellLimits();
   }
 
+  clear = () => {
+    this.dirtyText = true;
+    this.chars = [];
+    this.horizontalAlignOffsets = [];
+  };
+
   updateFontName() {
     const bold = this.bold ? 'Bold' : '';
     const italic = this.italic ? 'Italic' : '';
@@ -168,28 +172,30 @@ export class CellLabel {
   changeBold(bold?: boolean) {
     this.bold = !!bold;
     this.updateFontName();
-    this.dirty = true;
+    this.dirtyText = true;
   }
 
   changeItalic(italic?: boolean) {
     this.italic = !!italic;
     this.updateFontName();
-    this.dirty = true;
+    this.dirtyText = true;
   }
 
   changeAlign(align?: CellAlign) {
     this.align = align ?? 'left';
     this.calculatePosition();
+    this.dirtyText = true;
   }
 
   changeVerticalAlign(verticalAlign?: CellVerticalAlign) {
     this.verticalAlign = verticalAlign ?? 'top';
     this.calculatePosition();
+    this.dirtyText = true;
   }
 
   changeTextColor(color?: string) {
     this.tint = color ? convertColorStringToTint(color) : undefined;
-    this.dirty = true;
+    this.dirtyText = true;
   }
 
   checkLeftClip(nextLeft: number): boolean {
@@ -396,12 +402,15 @@ export class CellLabel {
     }
     this.displayedText = text;
     this.calculatePosition();
+    this.dirtyText = false;
   }
 
   // replaces numbers with pound signs when the number overflows
   private showPoundLabels(labelMeshes: LabelMeshes): Bounds {
     const data = this.cellsLabels.bitmapFonts[this.fontName];
     if (!data) throw new Error(`Expected BitmapFont ${this.fontName} to be defined in CellLabel.updateText`);
+
+    if (this.dirtyText) this.updateText(labelMeshes);
 
     const scale = this.fontSize / data.size;
     const color = this.tint ? convertTintToArray(this.tint) : undefined;
@@ -523,6 +532,9 @@ export class CellLabel {
 
     const data = this.cellsLabels.bitmapFonts[this.fontName];
     if (!data) throw new Error('Expected BitmapFont to be defined in CellLabel.updateLabelMesh');
+
+    if (this.dirtyText) this.updateText(labelMeshes);
+
     const scale = this.fontSize / data.size;
     const color = this.tint ? convertTintToArray(this.tint) : undefined;
 
@@ -581,6 +593,7 @@ export class CellLabel {
         this.insertBuffers({ buffer, bounds, xPos, yPos, textureFrame, textureUvs, scale, color });
       }
     }
+    this.clear();
     return bounds;
   }
 

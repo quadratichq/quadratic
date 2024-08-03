@@ -231,13 +231,11 @@ export class CellsLabels {
       });
     });
 
-    hashesToUpdate.forEach((_, hash) => queueMicrotask(() => hash.updateBuffers()));
-    hashesToUpdateViewRectangle.forEach((hash) => {
-      queueMicrotask(() => {
-        hash.updateViewRectangle();
-        hash.sendViewRectangle();
-      });
+    hashesToUpdate.forEach((_, hash) => {
+      hash.dirtyBuffers = true;
+      queueMicrotask(() => hash.sendViewRectangle());
     });
+    hashesToUpdateViewRectangle.forEach((hash) => queueMicrotask(() => hash.sendViewRectangle()));
     return true;
   }
 
@@ -271,13 +269,17 @@ export class CellsLabels {
     // visible and in need of rendering, and (3) not visible and loaded.
     this.cellsTextHash.forEach((hash) => {
       if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) {
-        if (!hash.loaded || hash.dirty || hash.dirtyWrapText || hash.dirtyBuffers) {
+        if (!hash.loaded || hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
           visibleDirtyHashes.push(hash);
+        }
+      } else if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
+        if (!hash.loaded || hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
+          notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         }
       } else {
         if (hash.dirty) {
           notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
-        } else if (hash.clientLoaded && !intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
+        } else if (hash.loaded) {
           hash.unload();
         }
         if (findHashToDelete && hash.loaded) {
@@ -431,7 +433,7 @@ export class CellsLabels {
   setOffsetsFinal(column: number | undefined, row: number | undefined, delta: number) {
     // apply delta to only neighbor hashes
     this.adjustHeadings(0, delta, column, row);
-    this.updateHashDirtyWrapText(column, row);
+    this.updateHashDirtyText(column, row);
   }
 
   // updates all hashes
@@ -447,16 +449,16 @@ export class CellsLabels {
     if (delta) {
       // apply delta to all hashes
       this.adjustHeadings(delta, delta, column, row);
-      this.updateHashDirtyWrapText(column, row);
+      this.updateHashDirtyText(column, row);
     }
   }
 
-  private updateHashDirtyWrapText = (column: number | undefined, row: number | undefined) => {
+  private updateHashDirtyText = (column: number | undefined, row: number | undefined) => {
     this.cellsTextHash.forEach((hash) => {
       const hashX = column !== undefined ? Math.floor(column / sheetHashWidth) : undefined;
       const hashY = row !== undefined ? Math.floor(row / sheetHashHeight) : undefined;
       if (hashX === hash.hashX || hashY === hash.hashY) {
-        hash.dirtyWrapText = true;
+        hash.dirtyText = true;
       }
     });
   };
