@@ -4,7 +4,7 @@ use crate::{
     controller::operations::operation::Operation,
     grid::{
         formats::{format::Format, format_update::FormatUpdate, Formats},
-        Sheet,
+        CellWrap, Sheet,
     },
     selection::Selection,
     Pos, Rect,
@@ -74,6 +74,7 @@ impl Sheet {
 
                     // update the column format and save the old format
                     let mut column_format = self.format_column(*x);
+                    let old_wrap = column_format.wrap;
                     old_formats.push(column_format.merge_update_into(format_update));
 
                     // remove the column format if it's no longer needed
@@ -107,7 +108,9 @@ impl Sheet {
                         }
                     });
 
-                    if format_update.wrap_changed() {
+                    if matches!(old_wrap, Some(CellWrap::Wrap))
+                        || matches!(format_update.wrap, Some(Some(CellWrap::Wrap)))
+                    {
                         if let Some((start, end)) = self.column_bounds(*x, true) {
                             resize_rows.extend(start..=end);
                         }

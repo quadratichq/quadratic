@@ -4,7 +4,7 @@ use crate::{
     controller::operations::operation::Operation,
     grid::{
         formats::{format_update::FormatUpdate, Formats},
-        Sheet,
+        CellWrap, Sheet,
     },
     selection::Selection,
     Pos, Rect,
@@ -33,6 +33,7 @@ impl Sheet {
                     let pos = Pos { x, y };
                     if let Some(format_update) = formats_iter.next() {
                         let old = self.set_format_cell(pos, format_update, false);
+                        let old_wrap = old.wrap;
                         old_formats.push(old);
 
                         if format_update.render_cells_changed() {
@@ -44,8 +45,12 @@ impl Sheet {
                         if format_update.fill_changed() {
                             fills.insert(pos);
                         }
-                        if format_update.wrap_changed()
-                            || self.format_cell(x, y, true).wrap.is_some()
+                        dbgjs!(format!(
+                            "old_wrap: {:?}, new_wrap: {:?}",
+                            old_wrap, format_update.wrap
+                        ));
+                        if matches!(old_wrap, Some(Some(CellWrap::Wrap)))
+                            || matches!(format_update.wrap, Some(Some(CellWrap::Wrap)))
                         {
                             resize_rows.insert(pos.y);
                         }

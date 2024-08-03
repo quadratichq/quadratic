@@ -4,7 +4,7 @@ use crate::{
     controller::operations::operation::Operation,
     grid::{
         formats::{format::Format, format_update::FormatUpdate, Formats},
-        GridBounds, Sheet,
+        CellWrap, GridBounds, Sheet,
     },
     selection::Selection,
     Pos, Rect,
@@ -80,6 +80,7 @@ impl Sheet {
     pub(crate) fn set_format_all(&mut self, update: &Formats) -> (Vec<Operation>, Vec<i64>) {
         let mut old = Formats::default();
         let mut format_all = self.format_all();
+        let old_wrap = format_all.wrap;
 
         // tracks whether we need to rerender all cells
         let mut render_cells = false;
@@ -98,7 +99,9 @@ impl Sheet {
                 return (vec![], vec![]);
             }
 
-            if format_update.wrap_changed() {
+            if matches!(old_wrap, Some(CellWrap::Wrap))
+                || matches!(format_update.wrap, Some(Some(CellWrap::Wrap)))
+            {
                 let bounds = self.bounds(true);
                 if let GridBounds::NonEmpty(rect) = bounds {
                     resize_rows.extend(rect.y_range());

@@ -63,7 +63,6 @@ export class CellsTextHash {
   dirtyBuffers = false;
 
   loaded = false;
-  meshLoaded = false;
   clientLoaded = false;
 
   // screen coordinates
@@ -129,7 +128,6 @@ export class CellsTextHash {
     if (debugShowLoadingHashes) console.log(`[CellsTextHash] Unloading ${this.hashX}, ${this.hashY}`);
     this.loaded = false;
     this.labels.clear();
-    this.meshLoaded = false;
     this.labelMeshes.clear();
     this.overflowGridLines = [];
     if (this.clientLoaded) {
@@ -209,7 +207,6 @@ export class CellsTextHash {
 
     this.labelMeshes.clear();
     this.labels.forEach((child) => child.updateText(this.labelMeshes));
-    this.meshLoaded = true;
 
     this.dirtyBuffers = true;
 
@@ -354,7 +351,7 @@ export class CellsTextHash {
 
   private updateBuffers = (): void => {
     if (!this.loaded) return;
-    if (!this.meshLoaded) this.updateText();
+    this.updateText();
     this.overflowClip();
     this.dirtyBuffers = false;
 
