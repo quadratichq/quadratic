@@ -8,10 +8,7 @@ use serde::{Deserialize, Serialize};
 use super::{Duration, Instant, IsBlank};
 use crate::{
     controller::operations::operation::Operation,
-    grid::{
-        formatting::CellFmtArray, CodeCellLanguage, NumericDecimals, NumericFormat,
-        NumericFormatKind, Sheet,
-    },
+    grid::{formatting::CellFmtArray, CodeCellLanguage, NumericFormat, NumericFormatKind, Sheet},
     CodeResult, Pos, RunError, RunLengthEncoding, SheetRect,
 };
 
@@ -511,17 +508,9 @@ impl CellValue {
                         )),
                     });
 
-                    // only change decimals if it hasn't already been set
-                    if sheet.get_formatting_value::<NumericDecimals>(pos).is_none() {
-                        sheet.set_formatting_value::<NumericDecimals>(pos, Some(2));
-                        ops.push(Operation::SetCellFormats {
-                            sheet_rect,
-                            attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
-                                Some(2),
-                                1,
-                            )),
-                        });
-                    }
+                    // We no longer automatically set numeric decimals for
+                    // currency; instead, we handle changes in currency decimal
+                    // length by using 2 if currency is set by default.
 
                     CellValue::Number(number)
                 } else if let Ok(number) = BigDecimal::from_str(value) {

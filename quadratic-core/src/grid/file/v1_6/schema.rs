@@ -1,135 +1,55 @@
-use crate::grid::{file::v1_4::schema as v1_4, SheetId};
-use chrono::{serde::ts_seconds_option, DateTime, Utc};
+use crate::grid::file::v1_5::schema as v1_5;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::str::FromStr;
-
-pub use super::run_error::RunError;
-pub use super::run_error::RunErrorMsg;
-pub use super::schema_validation::Validations;
+use std::{
+    collections::HashMap,
+    fmt::{self, Display},
+};
+use uuid::Uuid;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct GridSchema {
     pub sheets: Vec<Sheet>,
     pub version: Option<String>,
 }
 
-pub type Id = v1_4::Id;
-
-impl From<SheetId> for Id {
-    fn from(id: SheetId) -> Self {
-        Self { id: id.to_string() }
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Id {
+    pub id: String,
+}
+impl Id {
+    pub fn new() -> Self {
+        Self {
+            id: Uuid::new_v4().to_string(),
+        }
+    }
+}
+impl From<String> for Id {
+    fn from(id: String) -> Self {
+        Self { id }
+    }
+}
+impl Display for Id {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.id)
     }
 }
 
-impl From<Id> for SheetId {
-    fn from(id: Id) -> Self {
-        SheetId::from_str(&id.id).unwrap()
-    }
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Pos {
+    pub x: i64,
+    pub y: i64,
 }
-
-pub type Pos = v1_4::Pos;
 
 impl From<crate::Pos> for Pos {
     fn from(pos: crate::Pos) -> Self {
         Self { x: pos.x, y: pos.y }
     }
 }
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SheetPos {
-    pub x: i64,
-    pub y: i64,
-    pub sheet_id: Id,
-}
-impl From<crate::SheetPos> for SheetPos {
-    fn from(pos: crate::SheetPos) -> Self {
-        Self {
-            x: pos.x,
-            y: pos.y,
-            sheet_id: pos.sheet_id.into(),
-        }
-    }
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Rect {
-    pub min: Pos,
-    pub max: Pos,
-}
-
-impl From<&crate::Rect> for Rect {
-    fn from(rect: &crate::Rect) -> Self {
-        Self {
-            min: Pos {
-                x: rect.min.x,
-                y: rect.min.y,
-            },
-            max: Pos {
-                x: rect.max.x,
-                y: rect.max.y,
-            },
-        }
-    }
-}
-
-impl From<&Rect> for crate::Rect {
-    fn from(rect: &Rect) -> Self {
-        Self {
-            min: crate::Pos {
-                x: rect.min.x,
-                y: rect.min.y,
-            },
-            max: crate::Pos {
-                x: rect.max.x,
-                y: rect.max.y,
-            },
-        }
-    }
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SheetRect {
-    pub min: Pos,
-    pub max: Pos,
-    pub sheet_id: Id,
-}
-impl From<crate::SheetRect> for SheetRect {
-    fn from(sheet_rect: crate::SheetRect) -> Self {
-        Self {
-            min: Pos {
-                x: sheet_rect.min.x,
-                y: sheet_rect.min.y,
-            },
-            max: Pos {
-                x: sheet_rect.max.x,
-                y: sheet_rect.max.y,
-            },
-            sheet_id: sheet_rect.sheet_id.into(),
-        }
-    }
-}
-
-impl From<SheetRect> for crate::SheetRect {
-    fn from(sheet_rect: SheetRect) -> Self {
-        Self {
-            min: crate::Pos {
-                x: sheet_rect.min.x,
-                y: sheet_rect.min.y,
-            },
-            max: crate::Pos {
-                x: sheet_rect.max.x,
-                y: sheet_rect.max.y,
-            },
-            sheet_id: sheet_rect.sheet_id.into(),
-        }
-    }
-}
-
-pub type Offsets = v1_4::Offsets;
-
-pub type Borders = HashMap<String, Vec<(i64, Vec<Option<CellBorder>>)>>;
+pub type SheetRect = v1_5::SheetRect;
+pub type Offsets = v1_5::Offsets;
+pub type Borders = v1_5::Borders;
+pub type RunError = v1_5::RunError;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Format {
@@ -156,20 +76,9 @@ pub struct Sheet {
     pub columns: Vec<(i64, Column)>,
     pub borders: Borders,
     pub code_runs: Vec<(Pos, CodeRun)>,
-
-    // The following skips are necessary since we're adding it mid-version. Next
-    // version we should remove them.
-    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub formats_all: Option<Format>,
-
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub formats_columns: Vec<(i64, (Format, i64))>,
-
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub formats_rows: Vec<(i64, (Format, i64))>,
-
-    #[serde(default)]
-    pub validations: Validations,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub rows_resize: Vec<(i64, Resize)>,
@@ -193,23 +102,40 @@ pub struct CodeRun {
     pub line_number: Option<u32>,
     pub output_type: Option<String>,
     pub spill_error: bool,
-
-    // the Option is necessary to use serde
-    #[serde(with = "ts_seconds_option")]
     pub last_modified: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(untagged)]
 pub enum CodeRunResult {
     Ok(OutputValue),
     Err(RunError),
 }
 
-pub type OutputValue = v1_4::OutputValue;
-pub type OutputSize = v1_4::OutputSize;
-pub type Span = v1_4::Span;
-pub type RenderSize = v1_4::RenderSize;
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum OutputValue {
+    Single(CellValue),
+    Array(OutputArray),
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct OutputArray {
+    pub size: OutputSize,
+    pub values: Vec<CellValue>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct OutputSize {
+    pub w: i64,
+    pub h: i64,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct OutputValueValue {
+    pub type_field: String,
+    pub value: String,
+}
+
+pub type RenderSize = v1_5::RenderSize;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Column {
@@ -246,13 +172,6 @@ pub enum CellValue {
     Image(String),
 }
 
-pub fn string_bool(s: &str) -> bool {
-    match s.to_ascii_lowercase().as_str() {
-        "true" => true,
-        _ => false,
-    }
-}
-
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ColumnRepeat<T> {
     pub value: T,
@@ -270,12 +189,11 @@ pub enum NumericFormatKind {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct NumericFormat {
-    #[serde(rename = "type")]
     pub kind: NumericFormatKind,
     pub symbol: Option<String>,
 }
 
-pub type CellBorder = v1_4::CellBorder;
+pub type CellBorder = v1_5::CellBorder;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum CodeCellLanguage {

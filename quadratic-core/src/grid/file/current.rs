@@ -1,3 +1,5 @@
+use super::v1_6::file::{export_cell_value, import_cell_value};
+use super::CURRENT_VERSION;
 use crate::color::Rgba;
 use crate::grid::formats::format::Format;
 use crate::grid::resize::{Resize, ResizeMap};
@@ -10,29 +12,24 @@ use crate::grid::sheet::validations::validation_rules::ValidationRule;
 use crate::grid::sheet::validations::Validations;
 use crate::grid::{
     block::SameValue,
-    file::v1_5::schema::{self as current},
-    file::v1_5::schema_validation::{self as current_validations},
+    file::v1_6::schema::{self as current},
+    file::v1_6::schema_validation::{self as current_validations},
     formatting::RenderSize,
     generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
-    CellVerticalAlign, CellWrap, CodeCellLanguage, CodeRun, CodeRunResult, Column, ColumnData,
-    ConnectionKind, Grid, GridBounds, NumericFormat, NumericFormatKind, Sheet, SheetBorders,
-    SheetId,
+    CellVerticalAlign, CellWrap, CodeRun, CodeRunResult, Column, ColumnData, Grid, GridBounds,
+    NumericFormat, NumericFormatKind, Sheet, SheetBorders, SheetId,
 };
 use crate::selection::Selection;
 // use crate::selection::Selection;
 use crate::sheet_offsets::SheetOffsets;
-use crate::{CellValue, CodeCellValue, Pos, Rect, Value};
-
+use crate::{CellValue, Pos, Rect, Value};
 use anyhow::Result;
-use bigdecimal::BigDecimal;
 use chrono::Utc;
 use indexmap::IndexMap;
 use std::{
     collections::{BTreeMap, HashMap},
     str::FromStr,
 };
-
-use super::CURRENT_VERSION;
 
 fn set_column_format_align(
     column_data: &mut ColumnData<SameValue<CellAlign>>,
@@ -193,45 +190,9 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
             set_column_format_string(&mut col.fill_color, &column.fill_color);
             set_column_format_render_size(&mut col.render_size, &column.render_size);
 
+            // todo: there's probably a better way of doing this
             for (y, value) in column.values.iter() {
-                let cell_value = match value {
-                    current::CellValue::Blank => CellValue::Blank,
-                    current::CellValue::Text(text) => CellValue::Text(text.to_owned()),
-                    current::CellValue::Number(number) => {
-                        CellValue::Number(BigDecimal::from_str(number)?)
-                    }
-                    current::CellValue::Html(html) => CellValue::Html(html.to_owned()),
-                    current::CellValue::Code(code_cell) => CellValue::Code(CodeCellValue {
-                        code: code_cell.code.to_owned(),
-                        language: match code_cell.language {
-                            current::CodeCellLanguage::Python => CodeCellLanguage::Python,
-                            current::CodeCellLanguage::Formula => CodeCellLanguage::Formula,
-                            current::CodeCellLanguage::Connection { ref kind, ref id } => {
-                                CodeCellLanguage::Connection {
-                                    kind: match kind {
-                                        current::ConnectionKind::Postgres => {
-                                            ConnectionKind::Postgres
-                                        }
-                                        current::ConnectionKind::Mysql => ConnectionKind::Mysql,
-                                    },
-                                    id: id.clone(),
-                                }
-                            }
-                            current::CodeCellLanguage::Javascript => CodeCellLanguage::Javascript,
-                        },
-                    }),
-                    current::CellValue::Logical(logical) => CellValue::Logical(*logical),
-                    current::CellValue::Instant(instant) => {
-                        CellValue::Instant(serde_json::from_str(instant)?)
-                    }
-                    current::CellValue::Duration(duration) => {
-                        CellValue::Duration(serde_json::from_str(duration)?)
-                    }
-                    current::CellValue::Error(error) => {
-                        CellValue::Error(Box::new((*error).clone().into()))
-                    }
-                    current::CellValue::Image(image) => CellValue::Image(image.to_owned()),
-                };
+                let cell_value = import_cell_value(value);
                 if let Ok(y) = y.parse::<i64>() {
                     col.values.insert(y, cell_value);
                 }
@@ -277,23 +238,7 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &current::Sheet) {
     });
 }
 
-fn import_code_cell_output(type_field: &str, value: &str) -> CellValue {
-    match type_field.to_lowercase().as_str() {
-        "text" => CellValue::Text(value.to_owned()),
-        "number" => CellValue::Number(BigDecimal::from_str(value).unwrap_or_default()),
-        "html" => CellValue::Html(value.to_owned()),
-        "image" => CellValue::Image(value.to_owned()),
-        "logical" => match value.to_ascii_uppercase().as_str() {
-            "TRUE" => CellValue::Logical(true),
-            "FALSE" => CellValue::Logical(false),
-            _ => CellValue::Logical(false),
-        },
-        _ => CellValue::Blank,
-    }
-}
-
 fn import_code_cell_builder(sheet: &current::Sheet) -> Result<IndexMap<Pos, CodeRun>> {
-    // davidfig: probably the more idiomatic way is to return the code_runs below. It's above my skill level, though.
     let mut code_runs = IndexMap::new();
 
     sheet.code_runs.iter().for_each(|(pos, code_run)| {
@@ -305,20 +250,12 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<IndexMap<Pos, Code
 
         let result = match &code_run.result {
             current::CodeRunResult::Ok(output) => CodeRunResult::Ok(match output {
-                current::OutputValue::Single(current::OutputValueValue { type_field, value }) => {
-                    Value::Single(import_code_cell_output(type_field, value))
-                }
+                current::OutputValue::Single(value) => Value::Single(import_cell_value(value)),
                 current::OutputValue::Array(current::OutputArray { size, values }) => {
                     Value::Array(crate::Array::from(
                         values
                             .chunks(size.w as usize)
-                            .map(|row| {
-                                row.iter()
-                                    .map(|cell| {
-                                        import_code_cell_output(&cell.type_field, &cell.value)
-                                    })
-                                    .collect::<Vec<_>>()
-                            })
+                            .map(|row| row.iter().map(import_cell_value).collect::<Vec<_>>())
                             .collect::<Vec<Vec<_>>>(),
                     ))
                 }
@@ -686,6 +623,13 @@ fn export_column_data_wrap(
         .collect()
 }
 
+fn export_values(values: &BTreeMap<i64, CellValue>) -> HashMap<String, current::CellValue> {
+    values
+        .iter()
+        .map(|(y, value)| (y.to_string(), export_cell_value(value)))
+        .collect()
+}
+
 fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
     sheet
         .columns
@@ -705,69 +649,7 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                     text_color: export_column_data_string(&column.text_color),
                     fill_color: export_column_data_string(&column.fill_color),
                     render_size: export_column_data_render_size(&column.render_size),
-                    values: column
-                        .values
-                        .iter()
-                        .map(|(y, value)| {
-                            (
-                                y.to_string(),
-                                match value {
-                                    CellValue::Text(text) => {
-                                        current::CellValue::Text(text.to_owned())
-                                    }
-                                    CellValue::Number(number) => {
-                                        current::CellValue::Number(number.to_string())
-                                    }
-                                    CellValue::Html(html) => current::CellValue::Html(html.clone()),
-                                    CellValue::Code(cell_code) => {
-                                        current::CellValue::Code(current::CodeCell {
-                                            code: cell_code.code.to_owned(),
-                                            language: match cell_code.language {
-                                                CodeCellLanguage::Python => {
-                                                    current::CodeCellLanguage::Python
-                                                }
-                                                CodeCellLanguage::Formula => {
-                                                    current::CodeCellLanguage::Formula
-                                                }
-                                                CodeCellLanguage::Connection { kind, ref id } => {
-                                                    current::CodeCellLanguage::Connection {
-                                                        kind: match kind {
-                                                            ConnectionKind::Postgres => {
-                                                                current::ConnectionKind::Postgres
-                                                            }
-                                                            ConnectionKind::Mysql => {
-                                                                current::ConnectionKind::Mysql
-                                                            }
-                                                        },
-                                                        id: id.clone(),
-                                                    }
-                                                }
-                                                CodeCellLanguage::Javascript => {
-                                                    current::CodeCellLanguage::Javascript
-                                                }
-                                            },
-                                        })
-                                    }
-                                    CellValue::Logical(logical) => {
-                                        current::CellValue::Logical(*logical)
-                                    }
-                                    CellValue::Instant(instant) => {
-                                        current::CellValue::Instant(instant.to_string())
-                                    }
-                                    CellValue::Duration(duration) => {
-                                        current::CellValue::Duration(duration.to_string())
-                                    }
-                                    CellValue::Error(error) => current::CellValue::Error(
-                                        current::RunError::from_grid_run_error(error),
-                                    ),
-                                    CellValue::Blank => current::CellValue::Blank,
-                                    CellValue::Image(image) => {
-                                        current::CellValue::Image(image.clone())
-                                    }
-                                },
-                            )
-                        })
-                        .collect(),
+                    values: export_values(&column.values),
                 },
             )
         })
@@ -981,10 +863,7 @@ pub(crate) fn export_sheet(sheet: &Sheet) -> current::Sheet {
                 let result = match &code_run.result {
                     CodeRunResult::Ok(output) => current::CodeRunResult::Ok(match output {
                         Value::Single(cell_value) => {
-                            current::OutputValue::Single(current::OutputValueValue {
-                                type_field: cell_value.type_name().into(),
-                                value: cell_value.to_string(),
-                            })
+                            current::OutputValue::Single(export_cell_value(cell_value))
                         }
                         Value::Array(array) => current::OutputValue::Array(current::OutputArray {
                             size: current::OutputSize {
@@ -993,12 +872,7 @@ pub(crate) fn export_sheet(sheet: &Sheet) -> current::Sheet {
                             },
                             values: array
                                 .rows()
-                                .flat_map(|row| {
-                                    row.iter().map(|cell| current::OutputValueValue {
-                                        type_field: cell.type_name().into(),
-                                        value: cell.to_string(),
-                                    })
-                                })
+                                .flat_map(|row| row.iter().map(export_cell_value))
                                 .collect(),
                         }),
                     }),
@@ -1031,7 +905,7 @@ pub(crate) fn export_sheet(sheet: &Sheet) -> current::Sheet {
     }
 }
 
-pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
+pub fn export(grid: &Grid) -> Result<current::GridSchema> {
     Ok(current::GridSchema {
         version: Some(CURRENT_VERSION.into()),
         sheets: grid.sheets().iter().map(export_sheet).collect(),

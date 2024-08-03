@@ -16,12 +16,12 @@ import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT } from '@/shared/constants/gridConst
 import { removeItems } from '@pixi/utils';
 import { Point, Rectangle } from 'pixi.js';
 import { RenderBitmapChar } from '../../renderBitmapFonts';
-import { extractCharCode, splitTextToCharacters } from './bitmapTextUtils';
 import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { CellsLabels } from './CellsLabels';
-import { convertNumber, reduceDecimals } from './convertNumber';
 import { LabelMeshEntry } from './LabelMeshEntry';
 import { LabelMeshes } from './LabelMeshes';
+import { extractCharCode, splitTextToCharacters } from './bitmapTextUtils';
+import { convertNumber, reduceDecimals } from './convertNumber';
 
 interface CharRenderData {
   charData: RenderBitmapChar;
@@ -54,6 +54,8 @@ export class CellLabel {
   visible = true;
 
   text: string;
+  private originalText: string;
+
   private displayedText?: string;
   number?: JsNumber;
 
@@ -97,6 +99,8 @@ export class CellLabel {
   overflowRight?: number;
   overflowLeft?: number;
 
+  alignment?: CellAlign;
+
   dirty = true;
 
   private getText(cell: JsRenderCell) {
@@ -119,6 +123,7 @@ export class CellLabel {
 
   constructor(cellsLabels: CellsLabels, cell: JsRenderCell, screenRectangle: Rectangle) {
     this.cellsLabels = cellsLabels;
+    this.originalText = cell.value;
     this.text = this.getText(cell);
     this.dropdown = cell.special === 'List';
     this.fontSize = fontSize;
@@ -538,18 +543,23 @@ export class CellLabel {
       let text = this.text;
       let infinityProtection = 0;
       do {
-        const result = reduceDecimals(this.displayedText, text, this.number, digits);
+        const result = reduceDecimals(this.originalText, this.text, this.number, digits);
 
         // we cannot reduce decimals anymore, so we show pound characters
         if (!result) {
           return this.showPoundLabels(labelMeshes);
         }
         digits = result.currentFractionDigits - 1;
+
         text = result.number;
         this.updateText(labelMeshes, text);
       } while (this.textWidth > this.AABB.width && digits >= 0 && infinityProtection++ < 1000);
-    }
 
+      // we were not able to reduce the number to fit the cell, so we show pound characters
+      if (digits < 0) {
+        return this.showPoundLabels(labelMeshes);
+      }
+    }
     const bounds = new Bounds();
 
     for (let i = 0; i < this.chars.length; i++) {
