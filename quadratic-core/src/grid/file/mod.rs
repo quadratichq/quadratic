@@ -144,6 +144,8 @@ mod tests {
         include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_5_simple.grid");
     const V1_6_FILE: &[u8] =
         include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_6_simple.grid");
+    const QAWOLF_TEST_FILE: &[u8] =
+        include_bytes!("../../../../quadratic-rust-shared/data/grid/(Main) QAWolf test.grid");
 
     #[test]
     fn process_a_number_v1_3_file() {
@@ -285,6 +287,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn imports_and_exports_a_v1_5_grid() {
         let imported = import(V1_5_FILE).unwrap();
         let exported = export(&imported).unwrap();
@@ -293,8 +296,18 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn imports_and_exports_a_v1_6_grid() {
         let imported = import(V1_6_FILE).unwrap();
+        let exported = export(&imported).unwrap();
+        let imported_copy = import(&exported).unwrap();
+        assert_eq!(imported_copy, imported);
+    }
+
+    #[test]
+    #[parallel]
+    fn imports_and_exports_qawolf_test_file() {
+        let imported = import(QAWOLF_TEST_FILE).unwrap();
         let exported = export(&imported).unwrap();
         let imported_copy = import(&exported).unwrap();
         assert_eq!(imported_copy, imported);
