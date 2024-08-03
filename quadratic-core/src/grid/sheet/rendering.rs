@@ -93,7 +93,11 @@ impl Sheet {
                     self.format_all.as_ref(),
                 );
                 let align = format.align.or(align);
-                let number: JsNumber = (&format).into();
+                let number: Option<JsNumber> = if matches!(value, CellValue::Number(_)) {
+                    Some((&format).into())
+                } else {
+                    None
+                };
                 JsRenderCell {
                     x,
                     y,
@@ -105,7 +109,7 @@ impl Sheet {
                     bold: format.bold,
                     italic: format.italic,
                     text_color: format.text_color,
-                    number: Some(number),
+                    number,
                     ..Default::default()
                 }
             }
@@ -752,6 +756,7 @@ mod tests {
         assert_eq!(code_cells.len(), 6);
         assert_eq!(code_cells[0].value, "1".to_string());
         assert_eq!(code_cells[0].language, Some(CodeCellLanguage::Python));
+        assert_eq!(code_cells[1].number, None);
         assert_eq!(code_cells[5].value, "6".to_string());
         assert_eq!(code_cells[5].language, None);
 
