@@ -45,12 +45,9 @@ impl Sheet {
                         if format_update.fill_changed() {
                             fills.insert(pos);
                         }
-                        dbgjs!(format!(
-                            "old_wrap: {:?}, new_wrap: {:?}",
-                            old_wrap, format_update.wrap
-                        ));
                         if matches!(old_wrap, Some(Some(CellWrap::Wrap)))
                             || matches!(format_update.wrap, Some(Some(CellWrap::Wrap)))
+                            || (format_update.need_to_rewrap() && self.check_if_wrap_in_cell(x, y))
                         {
                             resize_rows.insert(pos.y);
                         }

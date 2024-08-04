@@ -15,11 +15,12 @@ import { CELL_HEIGHT } from '@/shared/constants/gridConstants';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
 import { renderText } from '../renderText';
-import { CellsTextHash, NEIGHBORS } from './CellsTextHash';
+import { CellsTextHash } from './CellsTextHash';
 
 // 500 MB maximum memory per sheet before we start unloading hashes (right now
 // this is on a per-sheet basis--we will want to change this to a global limit)
 const MAX_RENDERING_MEMORY = 1024 * 1024 * 500;
+const NEIGHBORS = 25;
 
 export class CellsLabels {
   sheetId: string;
@@ -231,12 +232,30 @@ export class CellsLabels {
       });
     });
 
-    hashesToUpdate.forEach((_, hash) => {
-      hash.dirtyBuffers = true;
-      queueMicrotask(() => hash.sendViewRectangle());
-    });
+    const neighborRect = this.getViewportNeighborBounds();
+    if (neighborRect) {
+      hashesToUpdate.forEach((_, hash) => {
+        if (!intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
+          hashesToUpdate.delete(hash);
+          hashesToUpdateViewRectangle.add(hash);
+        }
+      });
+    }
+
+    hashesToUpdate.forEach((_, hash) => queueMicrotask(() => hash.updateBuffers()));
     hashesToUpdateViewRectangle.forEach((hash) => queueMicrotask(() => hash.sendViewRectangle()));
     return true;
+  }
+
+  getViewportNeighborBounds(): Rectangle | undefined {
+    const bounds = renderText.viewport;
+    if (!bounds) return undefined;
+    return new Rectangle(
+      bounds.x - NEIGHBORS * bounds.width,
+      bounds.y - 4 * NEIGHBORS * bounds.height,
+      bounds.width * (1 + 2 * NEIGHBORS),
+      bounds.height * (1 + 8 * NEIGHBORS)
+    );
   }
 
   // distance from viewport center to hash center
@@ -257,13 +276,8 @@ export class CellsLabels {
     const hashesToDelete: { hash: CellsTextHash; distance: number }[] = [];
 
     const bounds = renderText.viewport;
-    if (!bounds) return;
-    const neighborRect = new Rectangle(
-      bounds.x - NEIGHBORS * bounds.width,
-      bounds.y - NEIGHBORS * bounds.height,
-      bounds.width * (1 + 2 * NEIGHBORS),
-      bounds.height * (1 + 2 * NEIGHBORS)
-    );
+    const neighborRect = this.getViewportNeighborBounds();
+    if (!bounds || !neighborRect) return;
 
     // This divides the hashes into (1) visible in need of rendering, (2) not
     // visible and in need of rendering, and (3) not visible and loaded.

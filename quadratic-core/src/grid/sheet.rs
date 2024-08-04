@@ -380,6 +380,11 @@ impl Sheet {
         }
     }
 
+    pub fn check_if_wrap_in_cell(&self, x: i64, y: i64) -> bool {
+        let format = self.format_cell(x, y, true);
+        Some(CellWrap::Wrap) == format.wrap
+    }
+
     pub fn check_if_wrap_in_row(&self, y: i64) -> bool {
         let bounds = self.bounds(true);
         if let GridBounds::NonEmpty(rect) = bounds {

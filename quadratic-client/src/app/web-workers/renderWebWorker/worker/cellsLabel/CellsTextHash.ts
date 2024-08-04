@@ -14,8 +14,6 @@ import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { JsRenderCell } from '@/app/quadratic-core-types';
-import { renderText } from '@/app/web-workers/renderWebWorker/worker/renderText';
-import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { Rectangle } from 'pixi.js';
 import { renderClient } from '../renderClient';
 import { renderCore } from '../renderCore';
@@ -29,8 +27,6 @@ interface TrackClip {
   hashX: number;
   hashY: number;
 }
-
-export const NEIGHBORS = 5;
 
 // Draw hashed regions of cell glyphs (the text + text formatting)
 export class CellsTextHash {
@@ -147,13 +143,7 @@ export class CellsTextHash {
   };
 
   update = async (): Promise<boolean> => {
-    const bounds = renderText.viewport ?? this.viewRectangle;
-    const neighborRect = new Rectangle(
-      bounds.x - NEIGHBORS * bounds.width,
-      bounds.y - NEIGHBORS * bounds.height,
-      bounds.width * (1 + 2 * NEIGHBORS),
-      bounds.height * (1 + 2 * NEIGHBORS)
-    );
+    const neighborRect = this.cellsLabels.getViewportNeighborBounds() ?? this.viewRectangle;
     const visibleOrNeighbor = intersects.rectangleRectangle(this.viewRectangle, neighborRect);
     if (!this.loaded || this.dirty) {
       // If dirty is true, then we need to get the cells from the server; but we
@@ -185,11 +175,13 @@ export class CellsTextHash {
         queueMicrotask(() => this.updateBuffers());
       } else {
         this.updateText();
+        this.unload();
       }
       return true;
     } else if (this.dirtyText) {
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating text ${this.hashX}, ${this.hashY}`);
       this.updateText();
+      this.unload();
       return true;
     } else if (this.dirtyBuffers) {
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating buffers ${this.hashX}, ${this.hashY}`);
@@ -210,25 +202,24 @@ export class CellsTextHash {
 
     this.dirtyBuffers = true;
 
-    // update columns max width cache
-    const columnsMax = new Map<number, number>();
-    this.labels.forEach((label) => {
-      let column = label.location.x;
-      let width = label.unwrappedTextWidth;
-      let maxWidth = Math.max(columnsMax.get(column) ?? 0, width);
-      columnsMax.set(column, maxWidth);
-    });
-    this.columnsMaxCache = columnsMax;
+    queueMicrotask(() => {
+      const columnsMax = new Map<number, number>();
+      const rowsMax = new Map<number, number>();
+      this.labels.forEach((label) => {
+        let column = label.location.x;
+        let row = label.location.y;
 
-    // update rows max height cache
-    const rowsMax = new Map<number, number>();
-    this.labels.forEach((label) => {
-      let row = label.location.y;
-      let height = label.textHeight;
-      let maxHeight = Math.max(rowsMax.get(row) ?? 0, height);
-      rowsMax.set(row, maxHeight);
+        let width = label.unwrappedTextWidth;
+        let maxWidth = Math.max(columnsMax.get(column) ?? 0, width);
+        columnsMax.set(column, maxWidth);
+
+        let height = label.textHeight;
+        let maxHeight = Math.max(rowsMax.get(row) ?? 0, height);
+        rowsMax.set(row, maxHeight);
+      });
+      this.columnsMaxCache = columnsMax;
+      this.rowsMaxCache = rowsMax;
     });
-    this.rowsMaxCache = rowsMax;
   };
 
   overflowClip = (): Set<CellsTextHash> => {
@@ -349,7 +340,7 @@ export class CellsTextHash {
     }
   }
 
-  private updateBuffers = (): void => {
+  updateBuffers = (): void => {
     if (!this.loaded) return;
     this.updateText();
     this.overflowClip();
@@ -463,7 +454,7 @@ export class CellsTextHash {
 
   getCellsContentMaxWidth = async (column: number): Promise<number> => {
     const columnsMax = await this.getColumnContentMaxWidths();
-    return columnsMax.get(column) ?? CELL_WIDTH;
+    return columnsMax.get(column) ?? this.cellsLabels.getCellOffsets(column, 0).width;
   };
 
   getColumnContentMaxWidths = async (): Promise<Map<number, number>> => {
@@ -478,7 +469,7 @@ export class CellsTextHash {
 
   getCellsContentMaxHeight = async (row: number): Promise<number> => {
     const rowsMax = await this.getRowContentMaxHeights();
-    return rowsMax.get(row) ?? CELL_HEIGHT;
+    return rowsMax.get(row) ?? this.cellsLabels.getCellOffsets(0, row).height;
   };
 
   getRowContentMaxHeights = async (): Promise<Map<number, number>> => {

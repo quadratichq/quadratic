@@ -97,12 +97,6 @@ export class PointerHeading {
         originalSize: headingResize.width ?? headingResize.height ?? 0,
         viewportStart: headingResize.row === undefined ? viewport.x : viewport.y,
       };
-      const offsets = sheets.sheet.offsets;
-      if (headingResize.column !== undefined) {
-        offsets.resizeColumnTransiently(headingResize.column, headingResize.width);
-      } else if (headingResize.row !== undefined) {
-        offsets.resizeRowTransiently(headingResize.row, headingResize.height);
-      }
       this.resizing = {
         lastSize: this.viewportChanges.originalSize,
         start: headingResize.start,
@@ -322,18 +316,19 @@ export class PointerHeading {
             const c = column !== null ? Number(column) : undefined;
             const r = row !== null ? Number(row) : undefined;
             const delta = old_size - new_size;
-            renderWebWorker.updateSheetOffsetsFinal(sheets.sheet.id, c, r, delta);
-            pixiApp.adjustHeadings({
-              sheetId: sheets.sheet.id,
-              column: c,
-              row: r,
-              delta,
-            });
+            if (delta !== 0) {
+              renderWebWorker.updateSheetOffsetsFinal(sheets.sheet.id, c, r, delta);
+              pixiApp.adjustHeadings({
+                sheetId: sheets.sheet.id,
+                column: c,
+                row: r,
+                delta,
+              });
+              quadraticCore.commitTransientResize(sheets.sheet.id, transientResize);
+            }
           } catch (error) {
             console.error('[PointerHeading] pointerUp: error parsing TransientResize: ', error);
           }
-
-          quadraticCore.commitTransientResize(sheets.sheet.id, transientResize);
         }
         this.resizing = undefined;
 
