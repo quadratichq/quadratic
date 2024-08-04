@@ -243,7 +243,6 @@ export class CellsLabels {
 
     const visibleDirtyHashes: CellsTextHash[] = [];
     const notVisibleDirtyHashes: { hash: CellsTextHash; distance: number }[] = [];
-    const hashesToDelete: { hash: CellsTextHash; distance: number }[] = [];
 
     const bounds = renderText.viewport;
     const neighborRect = this.getViewportNeighborBounds();
@@ -257,7 +256,7 @@ export class CellsLabels {
           visibleDirtyHashes.push(hash);
         }
       } else if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect) && !findHashToDelete) {
-        if (!hash.loaded || hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
+        if (!hash.loaded || hash.dirty || hash.dirtyText) {
           notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         }
       } else {
@@ -266,9 +265,6 @@ export class CellsLabels {
         } else if (hash.loaded) {
           hash.unload();
         }
-        if (findHashToDelete && hash.loaded) {
-          hashesToDelete.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
-        }
       }
     });
 
@@ -276,70 +272,25 @@ export class CellsLabels {
       return;
     }
 
-    // sort hashes to delete so the last one is the farthest from viewport.topLeft
-    hashesToDelete.sort((a, b) => b.distance - a.distance);
-
     if (visibleDirtyHashes.length) {
       // if hashes are visible then sort smallest to largest by y and return the first one
       visibleDirtyHashes.sort((a, b) => a.hashY - b.hashY);
-
-      while (memory > MAX_RENDERING_MEMORY && hashesToDelete.length) {
-        const deleted = hashesToDelete.pop();
-        if (deleted) {
-          deleted.hash.unload();
-        } else {
-          // should not happen
-          break;
-        }
-        memory = this.totalMemory();
-      }
 
       if (debugShowLoadingHashes)
         console.log(
           `[CellsTextHash] rendering visible: ${visibleDirtyHashes[0].hashX}, ${visibleDirtyHashes[0].hashY}`
         );
       return { hash: visibleDirtyHashes[0], visible: true };
-    }
-    // otherwise sort notVisible by distance from viewport.topLeft (by smallest to largest so we can use pop)
-    notVisibleDirtyHashes.sort((a, b) => a.distance - b.distance);
-
-    // This is the next possible not visible hash to render; we'll use it to
-    // compare the the next hash to unload.
-    const nextNotVisibleHash = notVisibleDirtyHashes[0];
-
-    // Free up memory so we can render closer hashes.
-    if (hashesToDelete.length) {
-      while (
-        memory > MAX_RENDERING_MEMORY &&
-        hashesToDelete.length &&
-        // We ensure that we don't delete a hash that is closer than the the
-        // next not visible hash we plan to render.
-        nextNotVisibleHash.distance < hashesToDelete[hashesToDelete.length - 1].distance
-      ) {
-        hashesToDelete.pop()!.hash.unload();
-        memory = this.totalMemory();
-      }
-
-      // if the distance of the dirtyHash is greater than the distance of the
-      // first hash to delete, then we do nothing. This ensures we're not constantly
-      // deleting and rendering the same hash at the edges of memory.
-      if (hashesToDelete.length && nextNotVisibleHash.distance >= hashesToDelete[hashesToDelete.length - 1].distance) {
-        return;
-      }
+    } else if (notVisibleDirtyHashes.length) {
+      // otherwise sort notVisible by distance from viewport.topLeft (by smallest to largest so we can use pop)
+      notVisibleDirtyHashes.sort((a, b) => a.distance - b.distance);
 
       if (debugShowLoadingHashes) {
         console.log(
-          `[CellsTextHash] rendering offscreen: ${nextNotVisibleHash.hash.hashX}, ${nextNotVisibleHash.hash.hashY}`
+          `[CellsTextHash] rendering offscreen: ${notVisibleDirtyHashes[0].hash.hashX}, ${notVisibleDirtyHashes[0].hash.hashY}`
         );
       }
-      return { hash: nextNotVisibleHash.hash, visible: false };
-    } else {
-      if (debugShowLoadingHashes) {
-        console.log(
-          `[CellsTextHash] rendering offscreen: ${nextNotVisibleHash.hash.hashX}, ${nextNotVisibleHash.hash.hashY}`
-        );
-      }
-      return { hash: nextNotVisibleHash.hash, visible: false };
+      return { hash: notVisibleDirtyHashes[0].hash, visible: false };
     }
   }
 
