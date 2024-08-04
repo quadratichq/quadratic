@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use chrono::Utc;
 
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
@@ -181,10 +179,7 @@ impl GridController {
             if let Some(sheet) = self.try_sheet(sheet_id) {
                 let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into());
                 if !rows.is_empty() {
-                    let resize_rows = transaction
-                        .resize_rows
-                        .entry(sheet_id)
-                        .or_insert_with(HashSet::new);
+                    let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
                     resize_rows.extend(rows);
                 }
             }

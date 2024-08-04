@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use crate::{
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
@@ -93,7 +91,7 @@ impl GridController {
                                     let resize_rows = transaction
                                         .resize_rows
                                         .entry(sheet_rect.sheet_id)
-                                        .or_insert_with(HashSet::new);
+                                        .or_default();
                                     resize_rows.extend(rows);
                                 }
                             }
@@ -133,7 +131,7 @@ impl GridController {
                         let resize_rows = transaction
                             .resize_rows
                             .entry(selection.sheet_id)
-                            .or_insert_with(HashSet::new);
+                            .or_default();
                         resize_rows.extend(rows);
                     }
                 }
