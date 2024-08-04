@@ -251,9 +251,9 @@ export class CellsLabels {
     if (!bounds) return undefined;
     return new Rectangle(
       bounds.x - NEIGHBORS * bounds.width,
-      bounds.y - 4 * NEIGHBORS * bounds.height,
+      bounds.y - 2 * NEIGHBORS * bounds.height,
       bounds.width * (1 + 2 * NEIGHBORS),
-      bounds.height * (1 + 8 * NEIGHBORS)
+      bounds.height * (1 + 4 * NEIGHBORS)
     );
   }
 
@@ -285,7 +285,7 @@ export class CellsLabels {
         if (!hash.loaded || hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
           visibleDirtyHashes.push(hash);
         }
-      } else if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
+      } else if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect) && !findHashToDelete) {
         if (!hash.loaded || hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
           notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         }
