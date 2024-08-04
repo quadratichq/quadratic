@@ -111,6 +111,7 @@ interface EventTypes {
 
   // dropdown button is pressed for dropdown Validation
   toggleDropdown: (column: number, row: number, forceOpen: boolean) => void;
+  dropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape') => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

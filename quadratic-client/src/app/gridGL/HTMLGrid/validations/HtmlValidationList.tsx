@@ -18,7 +18,11 @@ interface Props {
 export const HtmlValidationList = (props: Props) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { validation, offsets, location } = props.htmlValidationsData;
-  const [value, setValue] = useState<string | undefined>();
+
+  // used to track the index of the selected value (as changed via keyboard or
+  // when matching when first opening the dropdown)
+  const [index, setIndex] = useState<number>(-1);
+
   const [list, setList] = useState<string[] | undefined>();
 
   const listCoordinate = useRef<Coordinate | undefined>();
@@ -49,8 +53,10 @@ export const HtmlValidationList = (props: Props) => {
       }
       listCoordinate.current = { x: column, y: row };
       setEditorInteractionState((prev) => ({ ...prev, annotationState: 'dropdown' }));
-      setList(await quadraticCore.getValidationList(sheets.sheet.id, column, row));
-      setValue(await quadraticCore.getDisplayCell(sheets.sheet.id, column, row));
+      const list = await quadraticCore.getValidationList(sheets.sheet.id, column, row);
+      const value = await quadraticCore.getDisplayCell(sheets.sheet.id, column, row);
+      setList(list);
+      setIndex(list?.indexOf(value || '') ?? -1);
     };
     events.on('toggleDropdown', updateShowDropdown);
 
@@ -90,6 +96,29 @@ export const HtmlValidationList = (props: Props) => {
     [setEditorInteractionState]
   );
 
+  // handle keyboard events when list is open
+  useEffect(() => {
+    const dropdownKeyboard = (key: 'ArrowDown' | 'ArrowUp' | 'ArrowLeft' | 'ArrowRight' | 'Enter' | 'Escape') => {
+      if (!list) return;
+
+      if (key === 'ArrowDown') {
+        setIndex((index) => (index + 1) % list.length);
+      } else if (key === 'ArrowUp') {
+        setIndex((index) => (index - 1 + list.length) % list.length);
+      } else if (key === 'Enter') {
+        if (index >= 0) {
+          changeValue(list[index]);
+        }
+      } else if (key === 'Escape') {
+        setEditorInteractionState((prev) => ({ ...prev, annotationState: undefined }));
+      }
+    };
+    events.on('dropdownKeyboard', dropdownKeyboard);
+    return () => {
+      events.off('dropdownKeyboard', dropdownKeyboard);
+    };
+  }, [changeValue, index, list, setEditorInteractionState]);
+
   if (editorInteractionState.annotationState !== 'dropdown' || !offsets || !list) return;
 
   return (
@@ -99,12 +128,11 @@ export const HtmlValidationList = (props: Props) => {
         inlineEditorStatus ? 'mt-1' : 'mt-0'
       )}
       style={{ top: offsets.bottom, left: offsets.left, minWidth: offsets.width }}
-      tabIndex={0}
     >
       <div className="block w-full px-1">
-        {list.map((item) => (
+        {list.map((item, i) => (
           <div
-            className={cn('block w-full px-1 hover:bg-gray-100', value === item ? 'bg-gray-50' : '')}
+            className={cn('block w-full whitespace-nowrap px-1 hover:bg-gray-100', index === i ? 'bg-gray-100' : '')}
             key={item}
             onClick={() => changeValue(item)}
           >
