@@ -25,10 +25,11 @@ impl GridController {
         }
 
         if let Some(sheet) = self.try_sheet(sheet_id) {
-            let auto_resize_rows = sheet.get_auto_resize_rows(rows);
+            let mut auto_resize_rows = sheet.get_auto_resize_rows(rows);
             if auto_resize_rows.is_empty() {
                 return;
             }
+            auto_resize_rows.sort();
             if let Ok(rows_string) = serde_json::to_string(&auto_resize_rows) {
                 crate::wasm_bindings::js::jsRequestRowHeights(
                     transaction.id.to_string(),
@@ -582,6 +583,11 @@ mod tests {
             y: 0,
             sheet_id,
         };
+        gc.set_cell_values(
+            sheet_pos,
+            vec![vec!["zero"], vec!["one"], vec!["two"], vec!["three"]],
+            None,
+        );
         gc.set_cell_wrap(
             SheetRect {
                 min: Pos { x: 0, y: 0 },
@@ -589,11 +595,6 @@ mod tests {
                 sheet_id,
             },
             Some(CellWrap::Wrap),
-            None,
-        );
-        gc.set_cell_values(
-            sheet_pos,
-            vec![vec!["zero"], vec!["one"], vec!["two"], vec!["three"]],
             None,
         );
 
@@ -612,16 +613,18 @@ mod tests {
         clear_js_calls();
 
         // resize column 0 should trigger auto resize row heights for rows 0, 2, 3
-        gc.commit_offsets_resize(
+        let ops = vec![Operation::ResizeColumn {
             sheet_id,
-            TransientResize {
-                row: None,
-                column: Some(0),
-                old_size: gc.sheet(sheet_id).offsets.column_width(0),
-                new_size: 100.0,
-            },
-            None,
-        );
+            column: 0,
+            new_size: 100.0,
+            client_resized: (true),
+        }];
+        let row_heights = vec![JsRowHeight {
+            row: 0,
+            height: 40f64,
+        }];
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops.clone(), row_heights.clone());
+
         let transaction_id = gc.last_transaction().unwrap().id;
         expect_js_call(
             "jsRequestRowHeights",
@@ -631,17 +634,9 @@ mod tests {
 
         // set row 1 to Auto resized
         gc.commit_single_resize(sheet_id, None, Some(1), 25f64, None);
+
         // resize column 0 should trigger auto resize row heights for rows 0, 1, 2, 3
-        gc.commit_offsets_resize(
-            sheet_id,
-            TransientResize {
-                row: None,
-                column: Some(0),
-                old_size: gc.sheet(sheet_id).offsets.column_width(0),
-                new_size: 100.0,
-            },
-            None,
-        );
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights);
         let transaction_id = gc.last_transaction().unwrap().id;
         expect_js_call(
             "jsRequestRowHeights",

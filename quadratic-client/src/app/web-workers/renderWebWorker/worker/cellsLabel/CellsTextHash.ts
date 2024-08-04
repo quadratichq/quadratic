@@ -53,10 +53,10 @@ export class CellsTextHash {
   // todo: not sure if this is still used as I ran into issues with only rendering buffers:
 
   // update text
-  dirtyText = false;
+  dirtyText = true;
 
   // rebuild only buffers
-  dirtyBuffers = false;
+  dirtyBuffers = true;
 
   loaded = false;
   clientLoaded = false;
@@ -200,26 +200,22 @@ export class CellsTextHash {
     this.labelMeshes.clear();
     this.labels.forEach((child) => child.updateText(this.labelMeshes));
 
-    this.dirtyBuffers = true;
+    const columnsMax = new Map<number, number>();
+    const rowsMax = new Map<number, number>();
+    this.labels.forEach((label) => {
+      let column = label.location.x;
+      let row = label.location.y;
 
-    queueMicrotask(() => {
-      const columnsMax = new Map<number, number>();
-      const rowsMax = new Map<number, number>();
-      this.labels.forEach((label) => {
-        let column = label.location.x;
-        let row = label.location.y;
+      let width = label.unwrappedTextWidth;
+      let maxWidth = Math.max(columnsMax.get(column) ?? 0, width);
+      columnsMax.set(column, maxWidth);
 
-        let width = label.unwrappedTextWidth;
-        let maxWidth = Math.max(columnsMax.get(column) ?? 0, width);
-        columnsMax.set(column, maxWidth);
-
-        let height = label.textHeight;
-        let maxHeight = Math.max(rowsMax.get(row) ?? 0, height);
-        rowsMax.set(row, maxHeight);
-      });
-      this.columnsMaxCache = columnsMax;
-      this.rowsMaxCache = rowsMax;
+      let height = label.textHeight;
+      let maxHeight = Math.max(rowsMax.get(row) ?? 0, height);
+      rowsMax.set(row, maxHeight);
     });
+    this.columnsMaxCache = columnsMax;
+    this.rowsMaxCache = rowsMax;
   };
 
   overflowClip = (): Set<CellsTextHash> => {

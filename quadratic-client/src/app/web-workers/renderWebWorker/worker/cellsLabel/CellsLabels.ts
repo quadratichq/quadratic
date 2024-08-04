@@ -11,7 +11,6 @@ import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { CELL_HEIGHT } from '@/shared/constants/gridConstants';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
 import { renderText } from '../renderText';
@@ -557,7 +556,7 @@ export class CellsLabels {
     });
     await Promise.all(promises);
     const jsRowHeights: JsRowHeight[] = rows.map((row) => {
-      const height = rowHeights.get(Number(row)) ?? CELL_HEIGHT;
+      const height = rowHeights.get(Number(row)) ?? this.sheetOffsets.getRowHeight(Number(row));
       return { row, height };
     });
     const changesRowHeights: JsRowHeight[] = jsRowHeights.filter(

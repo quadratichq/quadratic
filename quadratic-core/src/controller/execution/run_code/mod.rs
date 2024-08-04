@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use chrono::Utc;
 
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
@@ -178,7 +180,13 @@ impl GridController {
             self.send_render_cells(&sheet_rect);
             if let Some(sheet) = self.try_sheet(sheet_id) {
                 let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into());
-                self.start_auto_resize_row_heights(transaction, sheet_id, rows);
+                if !rows.is_empty() {
+                    let resize_rows = transaction
+                        .resize_rows
+                        .entry(sheet_id)
+                        .or_insert_with(HashSet::new);
+                    resize_rows.extend(rows);
+                }
             }
         }
     }

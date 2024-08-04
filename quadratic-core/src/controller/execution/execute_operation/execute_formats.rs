@@ -1,10 +1,11 @@
+use std::collections::HashSet;
+
 use crate::{
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    grid::formatting::CellFmtArray,
-    grid::*,
+    grid::{formatting::CellFmtArray, *},
 };
 
 impl GridController {
@@ -74,21 +75,13 @@ impl GridController {
                         }
                     }
                     CellFmtArray::FillColor(_) => self.send_fill_cells(&sheet_rect),
-                    CellFmtArray::Wrap(_) => {
-                        self.send_updated_bounds_rect(&sheet_rect, true);
-                        self.send_render_cells(&sheet_rect);
-                        self.start_auto_resize_row_heights(
-                            transaction,
-                            sheet_rect.sheet_id,
-                            sheet_rect.y_range().collect(),
-                        );
-                    }
                     _ => {
                         self.send_updated_bounds_rect(&sheet_rect, true);
                         self.send_render_cells(&sheet_rect);
                         if matches!(
                             attr,
-                            CellFmtArray::NumericFormat(_)
+                            CellFmtArray::Wrap(_)
+                                | CellFmtArray::NumericFormat(_)
                                 | CellFmtArray::NumericDecimals(_)
                                 | CellFmtArray::NumericCommas(_)
                                 | CellFmtArray::Bold(_)
@@ -96,11 +89,13 @@ impl GridController {
                         ) {
                             if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
                                 let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into());
-                                self.start_auto_resize_row_heights(
-                                    transaction,
-                                    sheet_rect.sheet_id,
-                                    rows,
-                                );
+                                if !rows.is_empty() {
+                                    let resize_rows = transaction
+                                        .resize_rows
+                                        .entry(sheet_rect.sheet_id)
+                                        .or_insert_with(HashSet::new);
+                                    resize_rows.extend(rows);
+                                }
                             }
                         }
                     }
@@ -134,7 +129,13 @@ impl GridController {
                 let (reverse_operations, rows) = sheet.set_formats_selection(&selection, &formats);
                 if !transaction.is_server() {
                     self.send_updated_bounds_selection(&selection, true);
-                    self.start_auto_resize_row_heights(transaction, selection.sheet_id, rows);
+                    if !rows.is_empty() {
+                        let resize_rows = transaction
+                            .resize_rows
+                            .entry(selection.sheet_id)
+                            .or_insert_with(HashSet::new);
+                        resize_rows.extend(rows);
+                    }
                 }
 
                 transaction.generate_thumbnail |= self.thumbnail_dirty_selection(&selection);
