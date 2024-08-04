@@ -25,7 +25,6 @@ export const useHtmlValidations = (): HtmlValidationsData => {
   // Change in cursor position triggers update of validation
   useEffect(() => {
     const updateCursor = async () => {
-      console.log('update cursor');
       if (sheets.sheet.cursor.multiCursor) {
         setValidation(undefined);
         setValidationType('');
