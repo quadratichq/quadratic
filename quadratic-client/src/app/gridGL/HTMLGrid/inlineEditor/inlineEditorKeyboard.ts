@@ -11,6 +11,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { keyboardDropdown } from '../../interaction/keyboard/keyboardDropdown';
 
 const handleArrowHorizontal = (isRight: boolean, e: KeyboardEvent) => {
   const target = isRight ? inlineEditorMonaco.getLastColumn() : 1;
@@ -44,6 +45,13 @@ const handleArrowHorizontal = (isRight: boolean, e: KeyboardEvent) => {
 };
 
 const handleArrowVertical = (isDown: boolean, e: KeyboardEvent) => {
+  // if dropdown is showing, then we let dropdown handle the vertical arrow keys
+  if (pixiAppSettings.editorInteractionState.annotationState === 'dropdown') {
+    keyboardDropdown(e, pixiAppSettings.editorInteractionState);
+    e.stopPropagation();
+    return;
+  }
+
   if (inlineEditorHandler.isEditingFormula()) {
     e.stopPropagation();
     if (inlineEditorHandler.cursorIsMoving) {

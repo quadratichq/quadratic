@@ -53,7 +53,7 @@ export class CellsTextHashSpecial extends Container<SpecialSprite> {
           special.type === 'dropdown' &&
           (world === true || intersects.rectanglePoint(special.rectangle, world))
         ) {
-          events.emit('toggleDropdown', special.column, special.row, false);
+          events.emit('triggerCell', special.column, special.row, false);
         }
       }
     });

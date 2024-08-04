@@ -62,12 +62,19 @@ class InlineEditorMonaco {
   }
 
   // Sets the value of the inline editor and moves the cursor to the end.
-  set(s: string) {
+  set(s: string, selectAll?: boolean) {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in setValue');
     }
     this.editor.setValue(s);
     this.setColumn(s.length + 1);
+    if (selectAll) {
+      const model = this.getModel();
+      const lineCount = model.getLineCount();
+      const maxColumns = model.getLineMaxColumn(lineCount);
+      const range = new monaco.Range(1, 1, lineCount, maxColumns);
+      this.editor.setSelection(range);
+    }
   }
 
   deleteText(position: number, length: number) {

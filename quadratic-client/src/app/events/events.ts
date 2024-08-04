@@ -110,7 +110,7 @@ interface EventTypes {
   clickedToCell: (column: number, row: number, world: Point | true) => void;
 
   // dropdown button is pressed for dropdown Validation
-  toggleDropdown: (column: number, row: number, forceOpen: boolean) => void;
+  triggerCell: (column: number, row: number, forceOpen: boolean) => void;
   dropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape') => void;
 }
 

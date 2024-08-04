@@ -52,33 +52,31 @@ export const HtmlValidationList = (props: Props) => {
         return;
       }
       listCoordinate.current = { x: column, y: row };
-      setEditorInteractionState((prev) => ({ ...prev, annotationState: 'dropdown' }));
       const list = await quadraticCore.getValidationList(sheets.sheet.id, column, row);
+      if (!list) return;
+      setEditorInteractionState((prev) => ({ ...prev, annotationState: 'dropdown' }));
       const value = await quadraticCore.getDisplayCell(sheets.sheet.id, column, row);
       setList(list);
       setIndex(list?.indexOf(value || '') ?? -1);
     };
-    events.on('toggleDropdown', updateShowDropdown);
+    events.on('triggerCell', updateShowDropdown);
 
-    return () => {
-      events.off('toggleDropdown', updateShowDropdown);
-    };
-  }, [editorInteractionState.annotationState, list, setEditorInteractionState]);
-
-  // trigger the dropdown when opening the inline editor
-  useEffect(() => {
     const changeStatus = (opened: boolean) => {
       if (opened) {
-        setEditorInteractionState((prev) => ({ ...prev, annotationState: 'dropdown' }));
-      } else {
-        setEditorInteractionState((prev) => ({ ...prev, annotationState: undefined }));
+        updateShowDropdown(sheets.sheet.cursor.cursorPosition.x, sheets.sheet.cursor.cursorPosition.y, true);
       }
     };
     inlineEditorEvents.on('status', changeStatus);
 
     return () => {
+      events.off('triggerCell', updateShowDropdown);
       inlineEditorEvents.off('status', changeStatus);
     };
+  }, [editorInteractionState.annotationState, list, setEditorInteractionState]);
+
+  // trigger the dropdown when opening the inline editor
+  useEffect(() => {
+    return () => {};
   }, [setEditorInteractionState]);
 
   const changeValue = useCallback(
@@ -101,10 +99,14 @@ export const HtmlValidationList = (props: Props) => {
     const dropdownKeyboard = (key: 'ArrowDown' | 'ArrowUp' | 'ArrowLeft' | 'ArrowRight' | 'Enter' | 'Escape') => {
       if (!list) return;
 
-      if (key === 'ArrowDown') {
-        setIndex((index) => (index + 1) % list.length);
-      } else if (key === 'ArrowUp') {
-        setIndex((index) => (index - 1 + list.length) % list.length);
+      if (key === 'ArrowDown' || key === 'ArrowUp') {
+        setIndex((index) => {
+          const i = key === 'ArrowDown' ? (index + 1) % list.length : (index - 1 + list.length) % list.length;
+          if (inlineEditorHandler.isOpen()) {
+            inlineEditorEvents.emit('replaceText', list[i], true);
+          }
+          return i;
+        });
       } else if (key === 'Enter') {
         if (index >= 0) {
           changeValue(list[index]);

@@ -55,6 +55,7 @@ class InlineEditorHandler {
     events.on('resizeHeadingColumn', this.sheetOffsets);
     events.on('resizeHeadingRow', this.sheetOffsets);
     events.on('resizeRowHeights', this.sheetOffsets);
+    inlineEditorEvents.on('replaceText', this.replaceText);
     createFormulaStyleHighlights();
   }
 
@@ -67,7 +68,7 @@ class InlineEditorHandler {
   };
 
   // Resets state after editing is complete.
-  private reset() {
+  reset() {
     this.open = false;
     inlineEditorEvents.emit('status', false);
     this.cursorIsMoving = false;
@@ -510,6 +511,11 @@ class InlineEditorHandler {
       }
     }
   }
+
+  private replaceText = (text: string, highlight: boolean) => {
+    if (!this.open) return;
+    inlineEditorMonaco.set(text, highlight);
+  };
 }
 
 export const inlineEditorHandler = new InlineEditorHandler();
