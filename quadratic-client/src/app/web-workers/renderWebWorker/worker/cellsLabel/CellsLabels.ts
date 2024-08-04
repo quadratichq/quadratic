@@ -161,21 +161,16 @@ export class CellsLabels {
     this.dirtyColumnHeadings.clear();
     this.dirtyRowHeadings.clear();
 
-    // hashes that need to update their clipping and buffers
-    const hashesToUpdate: Map<CellsTextHash, number> = new Map();
-    const hashesToUpdateViewRectangle: Set<CellsTextHash> = new Set();
-    const viewport = renderText.viewport;
-    if (!viewport) return false;
+    const neighborRect = this.getViewportNeighborBounds();
+    if (!neighborRect) return false;
 
     const applyColumnDelta = (hash: CellsTextHash, column: number, delta: number) => {
       if (!delta) return;
       if (hash.adjustHeadings({ column, delta })) {
-        if (!hashesToUpdate.has(hash)) {
-          hashesToUpdateViewRectangle.delete(hash);
-          hashesToUpdate.set(hash, this.hashDistanceSquared(hash, viewport));
+        hash.dirtyText = true;
+        if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
+          hash.dirtyBuffers = true;
         }
-      } else if (!hashesToUpdate.has(hash)) {
-        hashesToUpdateViewRectangle.add(hash);
       }
     };
 
@@ -197,12 +192,10 @@ export class CellsLabels {
     const applyRowDelta = (hash: CellsTextHash, row: number, delta: number) => {
       if (!delta) return;
       if (hash.adjustHeadings({ row, delta })) {
-        if (!hashesToUpdate.has(hash)) {
-          hashesToUpdateViewRectangle.delete(hash);
-          hashesToUpdate.set(hash, this.hashDistanceSquared(hash, viewport));
+        hash.dirtyText = true;
+        if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
+          hash.dirtyBuffers = true;
         }
-      } else if (!hashesToUpdate.has(hash)) {
-        hashesToUpdateViewRectangle.add(hash);
       }
     };
 
@@ -221,28 +214,6 @@ export class CellsLabels {
       applyRowDelta(hash, row, delta);
     });
 
-    const hashesToUpdateSorted = Array.from(hashesToUpdate).sort((a, b) => a[1] - b[1]);
-    hashesToUpdateSorted.forEach(([hash]) => {
-      const otherHashes = hash.overflowClip();
-      otherHashes.forEach((otherHash) => {
-        if (!hashesToUpdate.has(otherHash)) {
-          hashesToUpdate.set(otherHash, this.hashDistanceSquared(otherHash, viewport));
-        }
-      });
-    });
-
-    const neighborRect = this.getViewportNeighborBounds();
-    if (neighborRect) {
-      hashesToUpdate.forEach((_, hash) => {
-        if (!intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
-          hashesToUpdate.delete(hash);
-          hashesToUpdateViewRectangle.add(hash);
-        }
-      });
-    }
-
-    hashesToUpdate.forEach((_, hash) => queueMicrotask(() => hash.updateBuffers()));
-    hashesToUpdateViewRectangle.forEach((hash) => queueMicrotask(() => hash.sendViewRectangle()));
     return true;
   }
 
@@ -290,7 +261,7 @@ export class CellsLabels {
           notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         }
       } else {
-        if (hash.dirty) {
+        if (hash.dirty || hash.dirtyText) {
           notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         } else if (hash.loaded) {
           hash.unload();
@@ -446,7 +417,6 @@ export class CellsLabels {
   setOffsetsFinal(column: number | undefined, row: number | undefined, delta: number) {
     // apply delta to only neighbor hashes
     this.adjustHeadings(0, delta, column, row);
-    this.updateHashDirtyText(column, row);
   }
 
   // updates all hashes
@@ -462,19 +432,8 @@ export class CellsLabels {
     if (delta) {
       // apply delta to all hashes
       this.adjustHeadings(delta, delta, column, row);
-      this.updateHashDirtyText(column, row);
     }
   }
-
-  private updateHashDirtyText = (column: number | undefined, row: number | undefined) => {
-    this.cellsTextHash.forEach((hash) => {
-      const hashX = column !== undefined ? Math.floor(column / sheetHashWidth) : undefined;
-      const hashY = row !== undefined ? Math.floor(row / sheetHashHeight) : undefined;
-      if (hashX === hash.hashX || hashY === hash.hashY) {
-        hash.dirtyText = true;
-      }
-    });
-  };
 
   showLabel(x: number, y: number, show: boolean) {
     const hash = this.getCellsHash(x, y);
