@@ -109,6 +109,14 @@ export const HtmlValidationList = (props: Props) => {
         if (index >= 0) {
           changeValue(list[index]);
         }
+      } else if (key === 'ArrowLeft' || key === 'ArrowRight') {
+        changeValue(list[index]);
+        sheets.sheet.cursor.changePosition({
+          cursorPosition: {
+            x: sheets.sheet.cursor.cursorPosition.x + (key === 'ArrowLeft' ? -1 : 1),
+            y: sheets.sheet.cursor.cursorPosition.y,
+          },
+        });
       } else if (key === 'Escape') {
         setEditorInteractionState((prev) => ({ ...prev, annotationState: undefined }));
       }
