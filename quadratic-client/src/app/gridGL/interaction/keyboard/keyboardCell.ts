@@ -124,7 +124,7 @@ export function keyboardCell(options: {
   // Triggers Validation UI
   if (matchShortcut('trigger_cell', event)) {
     const p = sheets.sheet.cursor.cursorPosition;
-    events.emit('pointerDown', p.x, p.y, true);
+    events.emit('toggleDropdown', p.x, p.y, true);
   }
 
   if (isAllowedFirstChar(event.key)) {

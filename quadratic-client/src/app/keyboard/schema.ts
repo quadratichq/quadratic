@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ActionEnum } from './actions';
 import { KeysEnum, MacModifiersEnum, WindowsModifiersEnum } from './keys';
+import { KeyboardStateEnum } from './keyboardState';
 
 function validateShortcut(
   shortcut: string,
@@ -49,6 +50,7 @@ const ShortcutSchema = z.object({
       })
     ),
   }),
+  state: z.optional(KeyboardStateEnum),
 });
 
 export const ShortcutsSchema = z.array(ShortcutSchema).refine(

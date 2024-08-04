@@ -7,24 +7,25 @@ import { Rectangle } from 'pixi.js';
 import { useEffect, useState } from 'react';
 import { validationRuleSimple, ValidationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
 import { Validation } from '@/app/quadratic-core-types';
+import { Coordinate } from '../../types/size';
 
 export interface HtmlValidationsData {
   offsets?: Rectangle;
   validation?: Validation;
   validationRuleSimple: ValidationRuleSimple;
-  uiShowing: boolean;
-  setUiShowing: (showing: boolean) => void;
+  location?: Coordinate;
 }
 
 export const useHtmlValidations = (): HtmlValidationsData => {
-  const [uiShowing, setUiShowing] = useState(false);
   const [offsets, setOffsets] = useState<Rectangle | undefined>();
   const [validation, setValidation] = useState<Validation | undefined>();
   const [validationType, setValidationType] = useState<ValidationRuleSimple>('');
+  const [location, setLocation] = useState<Coordinate | undefined>();
 
   // Change in cursor position triggers update of validation
   useEffect(() => {
     const updateCursor = async () => {
+      console.log('update cursor');
       if (sheets.sheet.cursor.multiCursor) {
         setValidation(undefined);
         setValidationType('');
@@ -36,8 +37,10 @@ export const useHtmlValidations = (): HtmlValidationsData => {
       if (!validation) {
         setValidation(undefined);
         setValidationType('');
+        setLocation(undefined);
         return;
       } else {
+        setLocation({ x, y });
         setValidation(validation);
         setValidationType(validationRuleSimple(validation));
       }
@@ -73,7 +76,6 @@ export const useHtmlValidations = (): HtmlValidationsData => {
     offsets,
     validation,
     validationRuleSimple: validationType,
-    uiShowing,
-    setUiShowing,
+    location,
   };
 };

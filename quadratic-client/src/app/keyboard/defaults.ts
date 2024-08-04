@@ -475,4 +475,12 @@ export const defaultShortcuts: Shortcuts = [
       windows: ['Space'],
     },
   },
+  {
+    action: 'dropdown_down',
+    shortcuts: {
+      mac: ['ArrowDown'],
+      windows: ['ArrowDown'],
+    },
+    state: 'dropdown',
+  },
 ];

@@ -37,7 +37,7 @@ export class CellsTextHashSpecial extends Container<SpecialSprite> {
 
   // handle clicking on UI elements
   // if world is true, it skips the check and automatically triggers (reuse by pressing Space on cell)
-  pointerDown(column: number, row: number, world: Point | true) {
+  clickedToCell(column: number, row: number, world: Point | true) {
     this.children.forEach((child) => {
       const special = child as SpecialSprite;
       if (special.column === column && special.row === row) {
@@ -53,7 +53,7 @@ export class CellsTextHashSpecial extends Container<SpecialSprite> {
           special.type === 'dropdown' &&
           (world === true || intersects.rectanglePoint(special.rectangle, world))
         ) {
-          events.emit('dropdown', special.column, special.row);
+          events.emit('toggleDropdown', special.column, special.row, false);
         }
       }
     });

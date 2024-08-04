@@ -147,7 +147,7 @@ export class PointerDown {
       columnRow: event.metaKey || event.ctrlKey ? cursor.columnRow : null,
       ensureVisible: false,
     });
-    events.emit('pointerDown', column, row, world);
+    events.emit('clickedToCell', column, row, world);
     this.pointerMoved = false;
   }
 

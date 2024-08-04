@@ -1,66 +1,79 @@
 import { cn } from '@/shared/shadcn/utils';
 import { HtmlValidationsData } from './useHtmlValidations';
 import { useInlineEditorStatus } from '../inlineEditor/useInlineEditorStatus';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '../inlineEditor/inlineEditorHandler';
 import { events } from '@/app/events/events';
 import { inlineEditorEvents } from '../inlineEditor/inlineEditorEvents';
+import { useRecoilState } from 'recoil';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { Coordinate } from '../../types/size';
 
 interface Props {
   htmlValidationsData: HtmlValidationsData;
 }
 
 export const HtmlValidationList = (props: Props) => {
-  const { validation, offsets, setUiShowing, uiShowing } = props.htmlValidationsData;
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const { validation, offsets, location } = props.htmlValidationsData;
+  const [value, setValue] = useState<string | undefined>();
+  const [list, setList] = useState<string[] | undefined>();
 
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [dropdownChoices, setDropdownChoices] = useState<string[] | undefined>();
-  const [currentValue, setCurrentValue] = useState<string | undefined>();
+  const listCoordinate = useRef<Coordinate | undefined>();
 
   const inlineEditorStatus = useInlineEditorStatus();
 
-  const clearDropdown = useCallback(() => {
-    setShowDropdown(false);
-    setDropdownChoices(undefined);
-    setUiShowing(false);
-  }, [setUiShowing]);
+  useEffect(() => {
+    // this closes the dropdown when the cursor moves except when the user
+    // clicked on the dropdown in a different cells (this handles the race
+    // condition between changing the cell and opening the annotation)
+    if (location?.x !== listCoordinate.current?.x && location?.y !== listCoordinate.current?.y) {
+      setEditorInteractionState((prev) => ({ ...prev, annotationState: undefined }));
+    }
+  }, [location?.x, location?.y, setEditorInteractionState, validation]);
 
   useEffect(() => {
-    clearDropdown();
-  }, [clearDropdown, validation]);
-
-  useEffect(() => {
-    const updateShowDropdown = async (column: number, row: number) => {
-      if (showDropdown) {
-        clearDropdown();
+    const updateShowDropdown = async (column: number, row: number, forceOpen: boolean) => {
+      // if the dropdown is already open and the user clicked on the dropdown in
+      // the same cell, then close it
+      if (
+        !forceOpen &&
+        editorInteractionState.annotationState === 'dropdown' &&
+        listCoordinate.current?.x === column &&
+        listCoordinate.current?.y === row
+      ) {
+        setEditorInteractionState((prev) => ({ ...prev, annotationState: undefined }));
         return;
       }
-      const list = await quadraticCore.getValidationList(sheets.sheet.id, column, row);
-      setCurrentValue(await quadraticCore.getDisplayCell(sheets.sheet.id, column, row));
-      if (list) {
-        setDropdownChoices(list);
-        setShowDropdown(true);
-        setUiShowing(true);
-      } else {
-        clearDropdown();
-      }
+      listCoordinate.current = { x: column, y: row };
+      setEditorInteractionState((prev) => ({ ...prev, annotationState: 'dropdown' }));
+      setList(await quadraticCore.getValidationList(sheets.sheet.id, column, row));
+      setValue(await quadraticCore.getDisplayCell(sheets.sheet.id, column, row));
     };
-    events.on('dropdown', updateShowDropdown);
+    events.on('toggleDropdown', updateShowDropdown);
 
+    return () => {
+      events.off('toggleDropdown', updateShowDropdown);
+    };
+  }, [editorInteractionState.annotationState, list, setEditorInteractionState]);
+
+  // trigger the dropdown when opening the inline editor
+  useEffect(() => {
     const changeStatus = (opened: boolean) => {
       if (opened) {
-        updateShowDropdown(sheets.sheet.cursor.cursorPosition.x, sheets.sheet.cursor.cursorPosition.y);
+        setEditorInteractionState((prev) => ({ ...prev, annotationState: 'dropdown' }));
+      } else {
+        setEditorInteractionState((prev) => ({ ...prev, annotationState: undefined }));
       }
     };
     inlineEditorEvents.on('status', changeStatus);
 
     return () => {
-      events.off('dropdown', updateShowDropdown);
       inlineEditorEvents.off('status', changeStatus);
     };
-  }, [clearDropdown, setUiShowing, showDropdown]);
+  }, [setEditorInteractionState]);
 
   const changeValue = useCallback(
     (value: string) => {
@@ -71,13 +84,13 @@ export const HtmlValidationList = (props: Props) => {
         value,
         sheets.getCursorPosition()
       );
-      clearDropdown();
+      setEditorInteractionState((prev) => ({ ...prev, annotationState: undefined }));
       inlineEditorHandler.close(0, 0, true);
     },
-    [clearDropdown]
+    [setEditorInteractionState]
   );
 
-  if (!uiShowing || !offsets || !dropdownChoices) return;
+  if (editorInteractionState.annotationState !== 'dropdown' || !offsets || !list) return;
 
   return (
     <div
@@ -89,9 +102,9 @@ export const HtmlValidationList = (props: Props) => {
       tabIndex={0}
     >
       <div className="block w-full px-1">
-        {dropdownChoices.map((item) => (
+        {list.map((item) => (
           <div
-            className={cn('block w-full px-1 hover:bg-gray-100', currentValue === item ? 'bg-gray-50' : '')}
+            className={cn('block w-full px-1 hover:bg-gray-100', value === item ? 'bg-gray-50' : '')}
             key={item}
             onClick={() => changeValue(item)}
           >

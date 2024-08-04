@@ -14,6 +14,7 @@ export interface EditorInteractionState {
   showShareFileMenu: boolean;
   showSearch: boolean | SearchOptions;
   showValidation: boolean | string;
+  annotationState?: 'dropdown';
   showContextMenu: boolean;
   permissions: FilePermission[];
   uuid: string;

@@ -2,13 +2,16 @@ import { Divider, IconButton } from '@mui/material';
 import { HtmlValidationsData } from './useHtmlValidations';
 import { useEffect, useState } from 'react';
 import { Close } from '@mui/icons-material';
+import { useRecoilValue } from 'recoil';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 
 interface Props {
   htmlValidationsData: HtmlValidationsData;
 }
 
 export const HtmlValidationMessage = (props: Props) => {
-  const { offsets, validation, uiShowing } = props.htmlValidationsData;
+  const { annotationState } = useRecoilValue(editorInteractionStateAtom);
+  const { offsets, validation } = props.htmlValidationsData;
   const [hide, setHide] = useState(true);
 
   const message = validation?.message;
@@ -19,7 +22,7 @@ export const HtmlValidationMessage = (props: Props) => {
 
   const hasMessage = message && (!!message.title || !!message.message);
 
-  if (hide || uiShowing || !offsets || !hasMessage) return null;
+  if (hide || annotationState === 'dropdown' || !offsets || !hasMessage) return null;
 
   return (
     <div

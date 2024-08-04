@@ -43,7 +43,7 @@ export class CellsLabels extends Container {
     this.cellsTextDebug = this.addChild(new Graphics());
     this.cellsTextHashDebug = this.addChild(new Container());
 
-    events.on('pointerDown', this.pointerDown);
+    events.on('clickedToCell', this.clickedToCell);
   }
 
   get sheetId(): string {
@@ -169,11 +169,11 @@ export class CellsLabels extends Container {
     }
   }
 
-  private pointerDown = (column: number, row: number, world: Point | true) => {
+  private clickedToCell = (column: number, row: number, world: Point | true) => {
     if (sheets.sheet.id !== this.sheetId) return;
     const hash = this.getHash(column, row);
     if (hash) {
-      hash.special.pointerDown(column, row, world);
+      hash.special.clickedToCell(column, row, world);
     }
   };
 }
