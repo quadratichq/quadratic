@@ -272,3 +272,7 @@ export const jsResizeRowHeights = (sheetId: string, rowHeights: string) => {
   self.sendResizeRowHeightsClient(sheetId, rowHeights);
   self.sendResizeRowHeightsRender(sheetId, rowHeights);
 };
+
+export const jsValidationWarning = (sheetId: string, warnings: string) => {
+  console.log('TODO', sheetId, warnings);
+};

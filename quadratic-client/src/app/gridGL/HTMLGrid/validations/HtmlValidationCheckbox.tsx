@@ -14,7 +14,7 @@ export const HtmlValidationCheckbox = (props: Props) => {
   useEffect(() => {
     const triggerCell = async (column: number, row: number, forceOpen: boolean) => {
       if (!validation) return;
-      if ('Logical' in validation.rule) {
+      if (validation.rule !== 'None' && 'Logical' in validation.rule) {
         const value = await quadraticCore.getDisplayCell(sheets.sheet.id, column, row);
         quadraticCore.setCellValue(
           sheets.sheet.id,

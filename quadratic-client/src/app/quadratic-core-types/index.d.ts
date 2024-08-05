@@ -8,7 +8,7 @@ export interface JsCodeCell { x: bigint, y: bigint, code_string: string, languag
 export interface JsRenderCodeCell { x: number, y: number, w: number, h: number, language: CodeCellLanguage, state: JsRenderCodeCellState, spill_error: Array<Pos> | null, }
 export type JsRenderCodeCellState = "NotYetRun" | "RunError" | "SpillError" | "Success";
 export type JsRenderCellSpecial = "Chart" | "SpillError" | "RunError" | "Logical" | "Checkbox" | "List";
-export interface JsRenderCell { x: bigint, y: bigint, value: string, language?: CodeCellLanguage, align?: CellAlign, verticalAlign?: CellVerticalAlign, wrap?: CellWrap, bold?: boolean, italic?: boolean, textColor?: string, special: JsRenderCellSpecial | null, number?: JsNumber, }
+export interface JsRenderCell { x: bigint, y: bigint, value: string, language?: CodeCellLanguage, align?: CellAlign, verticalAlign?: CellVerticalAlign, wrap?: CellWrap, bold?: boolean, italic?: boolean, textColor?: string, special: JsRenderCellSpecial | null, number?: JsNumber, validation: string | null, }
 export interface JsNumber { decimals: number | null, commas: boolean | null, format: NumericFormat | null, }
 export type RangeRef = { "type": "RowRange", start: CellRefCoord, end: CellRefCoord, sheet: string | null, } | { "type": "ColRange", start: CellRefCoord, end: CellRefCoord, sheet: string | null, } | { "type": "CellRange", start: CellRef, end: CellRef, } | { "type": "Cell", pos: CellRef, };
 export interface CellRef { sheet: string | null, x: CellRefCoord, y: CellRefCoord, }
@@ -20,7 +20,7 @@ export type CellWrap = "overflow" | "wrap" | "clip";
 export interface NumericFormat { type: NumericFormatKind, symbol: string | null, }
 export type NumericFormatKind = "NUMBER" | "CURRENCY" | "PERCENTAGE" | "EXPONENTIAL";
 export interface SheetId { id: string, }
-export interface JsRenderCell { x: bigint, y: bigint, value: string, language?: CodeCellLanguage, align?: CellAlign, verticalAlign?: CellVerticalAlign, wrap?: CellWrap, bold?: boolean, italic?: boolean, textColor?: string, special: JsRenderCellSpecial | null, number?: JsNumber, }
+export interface JsRenderCell { x: bigint, y: bigint, value: string, language?: CodeCellLanguage, align?: CellAlign, verticalAlign?: CellVerticalAlign, wrap?: CellWrap, bold?: boolean, italic?: boolean, textColor?: string, special: JsRenderCellSpecial | null, number?: JsNumber, validation: string | null, }
 export interface JsRenderFill { x: bigint, y: bigint, w: number, h: number, color: string, }
 export interface CellFormatSummary { bold: boolean | null, italic: boolean | null, commas: boolean | null, textColor: string | null, fillColor: string | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, }
 export interface JsClipboard { plainText: string, html: string, }
@@ -59,7 +59,7 @@ export interface Format { align: CellAlign | null, vertical_align: CellVerticalA
 export interface JsSheetFill { columns: Array<[bigint, [string, bigint]]>, rows: Array<[bigint, [string, bigint]]>, all: string | null, }
 export interface ColumnRow { column: number, row: number, }
 export interface Validation { id: string, selection: Selection, rule: ValidationRule, message: ValidationMessage, error: ValidationError, }
-export type ValidationRule = { "List": ValidationList } | { "Logical": ValidationLogical };
+export type ValidationRule = "None" | { "List": ValidationList } | { "Logical": ValidationLogical };
 export interface ValidationError { show: boolean, style: ValidationStyle, title: string | null, message: string | null, }
 export interface ValidationMessage { show: boolean, title: string | null, message: string | null, }
 export interface ValidationLogical { show_checkbox: boolean, ignore_blank: boolean, }

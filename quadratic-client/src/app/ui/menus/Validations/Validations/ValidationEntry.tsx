@@ -21,6 +21,9 @@ export const ValidationEntry = (props: Props) => {
   const { deleteValidation } = validationsData;
 
   const title = useMemo(() => {
+    if (validation.rule === 'None') {
+      return 'None';
+    }
     if ('List' in validation.rule) {
       const dropdown = validation.rule.List.drop_down ? ' (Dropdown)' : '';
       if ('List' in validation.rule.List.source) {

@@ -92,6 +92,7 @@ export const useValidationData = (): ValidationData => {
 
   const rule: ValidationRuleSimple = useMemo(() => validationRuleSimple(validation), [validation]);
 
+  // Validates the input against the current validation
   const validate = useCallback((): boolean => {
     if (!validation || !('rule' in validation) || !validation.rule) {
       setTriggerError(true);
@@ -102,6 +103,10 @@ export const useValidationData = (): ValidationData => {
     if (getSelectionString(validation.selection) === '') {
       setTriggerError(true);
       return false;
+    }
+
+    if (validation.rule === 'None') {
+      return true;
     }
 
     if ('List' in validation.rule) {
@@ -135,6 +140,10 @@ export const useValidationData = (): ValidationData => {
     (type: ValidationRuleSimple) => {
       let rule: ValidationRule;
       switch (type) {
+        case 'none':
+          rule = 'None';
+          break;
+
         case 'list':
           rule = { List: { source: { List: [] }, ignore_blank: true, drop_down: true } };
           break;
@@ -180,6 +189,7 @@ export const useValidationData = (): ValidationData => {
   const showUI = useMemo(() => {
     if (!validation || !('rule' in validation) || !validation.rule) return false;
     const rule = validation.rule;
+    if (rule === 'None') return false;
     if ('List' in rule) {
       if ('drop_down' in rule.List) {
         return rule.List.drop_down;
@@ -197,6 +207,7 @@ export const useValidationData = (): ValidationData => {
   const changeShowUI = (checked: boolean) => {
     setValidation((old) => {
       if (old && 'rule' in old) {
+        if (old.rule === 'None') return old;
         if ('List' in old.rule) {
           const rule: Validation = { ...old, rule: { List: { ...old.rule.List, drop_down: checked } } };
           return rule;
@@ -212,6 +223,7 @@ export const useValidationData = (): ValidationData => {
   const ignoreBlank = useMemo(() => {
     if (!validation || !('rule' in validation) || !validation.rule) return false;
     const rule = validation?.rule;
+    if (rule === 'None') return false;
     if ('List' in rule) {
       if ('ignore_blank' in rule.List) {
         return rule.List.ignore_blank;
@@ -227,6 +239,7 @@ export const useValidationData = (): ValidationData => {
   const changeIgnoreBlank = (checked: boolean) => {
     setValidation((old) => {
       if (old && 'rule' in old) {
+        if (old.rule === 'None') return old;
         if ('List' in old.rule) {
           return { ...old, rule: { List: { ...old.rule.List, ignore_blank: checked } } };
         } else if ('Logical' in old.rule) {

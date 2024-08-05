@@ -4,6 +4,7 @@ import { ValidationUICheckbox, ValidationDropdown, ValidationInput, ValidationTe
 
 interface Props {
   validationData: ValidationData;
+  onlyMessage?: boolean;
 }
 
 const STYLE_OPTIONS: { label: string; value: ValidationStyle }[] = [
@@ -13,6 +14,7 @@ const STYLE_OPTIONS: { label: string; value: ValidationStyle }[] = [
 ];
 
 export const ValidationMessage = (props: Props) => {
+  const { onlyMessage } = props;
   const { validation, setValidation } = props.validationData;
 
   const changeMessageTitle = (title: string) => {
@@ -71,27 +73,8 @@ export const ValidationMessage = (props: Props) => {
     });
   };
 
-  return (
+  let error = (
     <>
-      <div className="border-t border-t-gray-100 pt-4 font-medium">Input Message</div>
-      <div className="flex flex-col gap-5">
-        <ValidationUICheckbox
-          label="Show input message when cell is selected"
-          value={!!validation?.message.show}
-          changeValue={showMessage}
-        />
-        <ValidationInput
-          label="Title"
-          value={validation?.message.title || ''}
-          onChange={(title) => changeMessageTitle(title)}
-        />
-        <ValidationTextArea
-          label="Message"
-          value={validation?.message.message || ''}
-          onChange={(message) => changeMessageMessage(message)}
-          height="10rem"
-        />
-      </div>
       <div className="border-t border-t-gray-100 pt-4 font-medium">Error Message</div>
       <ValidationUICheckbox
         label="Show error alert after invalid data"
@@ -115,6 +98,33 @@ export const ValidationMessage = (props: Props) => {
         onChange={(message) => changeErrorMessage(message)}
         height="10rem"
       />
+    </>
+  );
+
+  return (
+    <>
+      <div className="border-t border-t-gray-100 pt-4 font-medium">Input Message</div>
+      <div className="flex flex-col gap-5">
+        {!onlyMessage && (
+          <ValidationUICheckbox
+            label="Show input message when cell is selected"
+            value={!!validation?.message.show}
+            changeValue={showMessage}
+          />
+        )}
+        <ValidationInput
+          label="Title"
+          value={validation?.message.title || ''}
+          onChange={(title) => changeMessageTitle(title)}
+        />
+        <ValidationTextArea
+          label="Message"
+          value={validation?.message.message || ''}
+          onChange={(message) => changeMessageMessage(message)}
+          height="10rem"
+        />
+      </div>
+      {!onlyMessage && error}
     </>
   );
 };

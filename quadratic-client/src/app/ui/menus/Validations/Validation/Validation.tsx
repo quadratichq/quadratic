@@ -12,8 +12,10 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 import { SheetRange } from '@/app/ui/components/SheetRange';
 import { ValidationLogical } from './ValidationLogical';
 import { ValidationRuleSimple } from './validationType';
+import { ValidationNone } from './ValidationNone';
 
 const CRITERIA_OPTIONS: { value: ValidationRuleSimple; label: string }[] = [
+  { value: 'none', label: 'None (message only)' },
   { value: 'list', label: 'Values from user list (dropdown)' },
   { value: 'list-range', label: 'Values from sheet (dropdown)' },
   { value: 'logical', label: 'Logical (checkbox)' },
@@ -28,6 +30,8 @@ export const Validation = () => {
 
   const validationParameters: JSX.Element | null = useMemo(() => {
     switch (rule) {
+      case 'none':
+        return <ValidationNone validationData={validationData} />;
       case 'list-range':
       case 'list':
         return <ValidationList validationData={validationData} />;
@@ -82,7 +86,7 @@ export const Validation = () => {
           options={CRITERIA_OPTIONS}
         />
         {validationParameters}
-        {moreOptions && <ValidationMessage validationData={validationData} />}
+        {moreOptions && validationData.rule !== 'none' && <ValidationMessage validationData={validationData} />}
       </div>
 
       <div className="mt-3 flex w-full border-t border-t-gray-100 pt-2">

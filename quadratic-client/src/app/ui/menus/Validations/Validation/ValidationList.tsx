@@ -23,7 +23,7 @@ export const ValidationListInput = (props: Props) => {
   };
 
   const list = useMemo(() => {
-    if (!validation || !('rule' in validation)) return '';
+    if (!validation || !('rule' in validation) || validation.rule === 'None') return '';
     const rule = validation.rule;
     if ('List' in rule) {
       if ('source' in rule.List) {
