@@ -1,3 +1,5 @@
+const { multerS3Storage } = require('./src/storage/s3');
+
 // For auth we expect the following Authorization header format:
 // Bearer ValidToken {user.sub}
 jest.mock('./src/middleware/validateAccessToken', () => {
@@ -19,10 +21,12 @@ jest.mock('./src/middleware/validateAccessToken', () => {
 jest.mock('./src/storage/storage', () => {
   return {
     s3Client: {},
-    generatePresignedUrl: jest.fn().mockImplementation(async (str) => str),
-    uploadStringAsFileS3: jest.fn().mockImplementation(async () => {
+    getFileUrl: jest.fn().mockImplementation(async (str) => str),
+    getPresignedFileUrl: jest.fn().mockImplementation(async (str) => str),
+    uploadFile: jest.fn().mockImplementation(async () => {
       return { bucket: 'test-bucket', key: 'test-key' };
     }),
+    uploadMiddleware: () => multerS3Storage,
   };
 });
 
