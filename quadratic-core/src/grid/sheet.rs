@@ -863,14 +863,10 @@ mod test {
     fn test_check_if_wrap_in_cell() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
-        assert!(sheet.check_if_wrap_in_cell(0, 0));
-        let selection = &Selection {
-            sheet_id: sheet.id,
-            rects: Some(vec![Rect::single_pos(Pos { x: 0, y: 0 })]),
-            ..Default::default()
-        };
+        assert!(!sheet.check_if_wrap_in_cell(0, 0));
+        let selection = Selection::pos(0, 0, sheet.id);
         sheet.set_formats_selection(
-            selection,
+            &selection,
             &Formats::repeat(
                 FormatUpdate {
                     wrap: Some(Some(CellWrap::Wrap)),
@@ -881,7 +877,7 @@ mod test {
         );
         assert!(sheet.check_if_wrap_in_cell(0, 0));
         sheet.set_formats_selection(
-            selection,
+            &selection,
             &Formats::repeat(
                 FormatUpdate {
                     wrap: Some(Some(CellWrap::Overflow)),
@@ -890,9 +886,9 @@ mod test {
                 1,
             ),
         );
-        assert!(sheet.check_if_wrap_in_cell(0, 0));
+        assert!(!sheet.check_if_wrap_in_cell(0, 0));
         sheet.set_formats_selection(
-            selection,
+            &selection,
             &Formats::repeat(
                 FormatUpdate {
                     wrap: Some(Some(CellWrap::Wrap)),
@@ -903,7 +899,7 @@ mod test {
         );
         assert!(sheet.check_if_wrap_in_cell(0, 0));
         sheet.set_formats_selection(
-            selection,
+            &selection,
             &Formats::repeat(
                 FormatUpdate {
                     wrap: Some(Some(CellWrap::Clip)),
@@ -912,7 +908,7 @@ mod test {
                 1,
             ),
         );
-        assert!(sheet.check_if_wrap_in_cell(0, 0));
+        assert!(!sheet.check_if_wrap_in_cell(0, 0));
     }
 
     #[test]
@@ -920,12 +916,8 @@ mod test {
     fn test_check_if_wrap_in_row() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
-        assert!(sheet.check_if_wrap_in_row(0));
-        let selection = Selection {
-            sheet_id: sheet.id,
-            rects: Some(vec![Rect::single_pos(Pos { x: 0, y: 0 })]),
-            ..Default::default()
-        };
+        assert!(!sheet.check_if_wrap_in_row(0));
+        let selection = Selection::pos(0, 0, sheet.id);
         sheet.set_formats_selection(
             &selection,
             &Formats::repeat(
@@ -947,7 +939,7 @@ mod test {
                 1,
             ),
         );
-        assert!(sheet.check_if_wrap_in_row(0));
+        assert!(!sheet.check_if_wrap_in_row(0));
         sheet.set_formats_selection(
             &selection,
             &Formats::repeat(
@@ -958,7 +950,7 @@ mod test {
                 1,
             ),
         );
-        assert!(sheet.check_if_wrap_in_row(0));
+        assert!(!sheet.check_if_wrap_in_row(0));
     }
 
     #[test]

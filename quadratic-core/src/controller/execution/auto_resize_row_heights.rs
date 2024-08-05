@@ -188,15 +188,6 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_cell_wrap(
-            SheetRect {
-                min: Pos { x: 0, y: 0 },
-                max: Pos { x: 0, y: 10 },
-                sheet_id,
-            },
-            Some(CellWrap::Wrap),
-            None,
-        );
         gc.set_cell_values(
             SheetPos {
                 x: 0,
@@ -213,6 +204,15 @@ mod tests {
                 vec!["6"],
                 vec!["7"],
             ],
+            None,
+        );
+        gc.set_cell_wrap(
+            SheetRect {
+                min: Pos { x: 0, y: 0 },
+                max: Pos { x: 0, y: 10 },
+                sheet_id,
+            },
+            Some(CellWrap::Wrap),
             None,
         );
 
