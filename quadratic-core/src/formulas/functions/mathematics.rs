@@ -65,6 +65,153 @@ fn get_functions() -> Vec<FormulaFunction> {
                 number.sqrt()
             }
         ),
+        formula_fn!(
+            /// Rounds a number up to the next multiple of `increment`. If
+            /// `number` and `increment` are both negative, rounds the number
+            /// down away from zero. Returns an error if `number` is positive
+            /// but `significance` is negative. Returns `0` if `increment` is
+            /// `0`.
+            #[examples("CEILING(6.5, 2)")]
+            #[zip_map]
+            fn CEILING([number]: f64, [increment]: (Spanned<f64>)) {
+                let Spanned {
+                    span: increment_span,
+                    inner: increment,
+                } = increment;
+
+                if number > 0.0 && increment < 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(increment_span));
+                }
+
+                // Yes, I know this condition is inconsistent with `FLOOR`. It's
+                // necessary for Excel compatibility.
+                if increment == 0.0 {
+                    0.0
+                } else {
+                    util::checked_div(increment_span, number, increment)?.ceil() * increment
+                }
+            }
+        ),
+        formula_fn!(
+            /// Rounds a number down to the next multiple of `increment`. If
+            /// `number` and `increment` are both negative, rounds the number up
+            /// toward zero. Returns an error if `number` is positive but
+            /// `significance` is negative, or if `increment` is `0` but
+            /// `number` is nonzero. Returns `0` if `increment` is `0` _and_
+            /// `number` is `0`.
+            #[examples("FLOOR(6.5, 2)")]
+            #[zip_map]
+            fn FLOOR([number]: f64, [increment]: (Spanned<f64>)) {
+                let Spanned {
+                    span: increment_span,
+                    inner: increment,
+                } = increment;
+
+                if number > 0.0 && increment < 0.0 {
+                    return Err(RunErrorMsg::InvalidArgument.with_span(increment_span));
+                }
+
+                // Yes, I know this condition is inconsistent with `CEILING`. It's
+                // necessary for Excel compatibility.
+                if increment == 0.0 && number == 0.0 {
+                    0.0
+                } else {
+                    util::checked_div(increment_span, number, increment)?.floor() * increment
+                }
+            }
+        ),
+        formula_fn!(
+            /// Rounds a number up or away from zero to the next multiple of
+            /// `increment`. If `increment` is omitted, it is assumed to be `1`.
+            /// The sign of `increment` is ignored.
+            ///
+            /// If `negative_mode` is positive or zero, then `number` is rounded
+            /// up, toward positive infinity. If `negative_mode` is negative,
+            /// then `number` is rounded away from zero. These are equivalent
+            /// when `number` is positive, so in this case `negative_mode` has
+            /// no effect.
+            ///
+            /// If `increment` is zero, returns zero.
+            #[name = "CEILING.MATH"]
+            #[examples(
+                "CEILING.MATH(6.5)",
+                "CEILING.MATH(6.5, 2)",
+                "CEILING.MATH(-12, 5)",
+                "CEILING.MATH(-12, 5, -1)"
+            )]
+            #[zip_map]
+            fn CEILING_MATH(
+                [number]: f64,
+                [increment]: (Option<f64>),
+                [negative_mode]: (Option<f64>),
+            ) {
+                let increment = increment.unwrap_or(1.0).abs();
+
+                if increment == 0.0 {
+                    0.0
+                } else if negative_mode.unwrap_or(1.0) < 0.0 && number < 0.0 {
+                    (number / increment).floor() * increment
+                } else {
+                    (number / increment).ceil() * increment
+                }
+            }
+        ),
+        formula_fn!(
+            /// Rounds a number down or toward zero to the next multiple of
+            /// `increment`. If `increment` is omitted, it is assumed to be `1`.
+            /// The sign of `increment` is ignored.
+            ///
+            /// If `negative_mode` is positive or zero, then `number` is rounded
+            /// down, toward negative infinity. If `negative_mode` is negative,
+            /// then `number` is rounded toward zero. These are equivalent when
+            /// `number` is positive, so in this case `negative_mode` has no
+            /// effect.
+            ///
+            /// If `increment` is zero, returns zero.
+            #[name = "FLOOR.MATH"]
+            #[examples(
+                "FLOOR.MATH(6.5)",
+                "FLOOR.MATH(6.5, 2)",
+                "FLOOR.MATH(-12, 5)",
+                "FLOOR.MATH(-12, 5, -1)"
+            )]
+            #[zip_map]
+            fn FLOOR_MATH(
+                [number]: f64,
+                [increment]: (Option<f64>),
+                [negative_mode]: (Option<f64>),
+            ) {
+                let increment = increment.unwrap_or(1.0).abs();
+                if increment == 0.0 {
+                    0.0
+                } else if negative_mode.unwrap_or(1.0) < 0.0 && number < 0.0 {
+                    (number / increment).ceil() * increment
+                } else {
+                    (number / increment).floor() * increment
+                }
+            }
+        ),
+        formula_fn!(
+            /// Rounds a number down to the next integer. Always rounds toward
+            /// negative infinity.
+            #[examples("INT(3.9)", "INT(-2.1)")]
+            #[zip_map]
+            fn INT([number]: f64) {
+                number.floor()
+            }
+        ),
+        formula_fn!(
+            /// Returns the remainder after dividing `number` by `divisor`. The
+            /// result always has the same sign as `divisor`.
+            ///
+            /// Note that `INT(n / d) * d + MOD(n, d)` always equals `n` (up to
+            /// floating-point precision).
+            #[examples("MOD(3.9, 3)", "MOD(-2.1, 3)")]
+            #[zip_map]
+            fn MOD(span: Span, [number]: f64, [divisor]: f64) {
+                number - util::checked_div(span, number, divisor)?.floor() * divisor
+            }
+        ),
         // Constants
         formula_fn!(
             /// Returns π, the circle constant.
@@ -85,9 +232,13 @@ fn get_functions() -> Vec<FormulaFunction> {
 
 #[cfg(test)]
 mod tests {
+    use proptest::proptest;
+
     use crate::{formulas::tests::*, Pos};
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_sum() {
         let g = Grid::new();
         let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
@@ -137,6 +288,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_sumif() {
         let g = Grid::new();
         assert_eq!("15", eval_to_string(&g, "SUMIF(0..10, \"<=5\")"));
@@ -149,6 +301,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_product() {
         let g = Grid::new();
         let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
@@ -186,6 +339,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_abs() {
         let g = Grid::new();
         assert_eq!("10", eval_to_string(&g, "ABS(-10)"));
@@ -217,6 +371,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_sqrt() {
         let g = Grid::new();
         crate::util::assert_f64_approx_eq(3.0_f64.sqrt(), &eval_to_string(&g, "SQRT(3)"));
@@ -248,6 +403,141 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
+    fn test_ceiling() {
+        let g = Grid::new();
+        let test_cases = [
+            ("3.5", "2", Ok("4")),
+            ("2.5", "2", Ok("4")),
+            ("0.0", "2", Ok("0")),
+            ("-2.5", "2", Ok("-2")),
+            ("-3.5", "2", Ok("-2")),
+            ("3.5", "0", Ok("0")),
+            ("2.5", "0", Ok("0")),
+            ("0.0", "0", Ok("0")),
+            ("-2.5", "0", Ok("0")),
+            ("-3.5", "0", Ok("0")),
+            ("3.5", "-2", Err(RunErrorMsg::InvalidArgument)),
+            ("2.5", "-2", Err(RunErrorMsg::InvalidArgument)),
+            ("0.0", "-2", Ok("0")),
+            ("-2.5", "-2", Ok("-4")),
+            ("-3.5", "-2", Ok("-4")),
+        ];
+        for (n, increment, expected) in test_cases {
+            let formula = format!("CEILING({n}, {increment})");
+            match expected {
+                Ok(ok) => assert_eq!(ok, eval_to_string(&g, &formula)),
+                Err(err) => assert_eq!(err, eval_to_err(&g, &formula).msg),
+            }
+        }
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "CEILING".into(),
+                arg_name: "increment".into(),
+            },
+            eval_to_err(&g, "CEILING(3.5)").msg,
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_floor() {
+        let g = Grid::new();
+        let test_cases = [
+            ("3.5", "2", Ok("2")),
+            ("2.5", "2", Ok("2")),
+            ("0.0", "2", Ok("0")),
+            ("-2.5", "2", Ok("-4")),
+            ("-3.5", "2", Ok("-4")),
+            ("3.5", "0", Err(RunErrorMsg::DivideByZero)),
+            ("2.5", "0", Err(RunErrorMsg::DivideByZero)),
+            ("0.0", "0", Ok("0")),
+            ("-2.5", "0", Err(RunErrorMsg::DivideByZero)),
+            ("-3.5", "0", Err(RunErrorMsg::DivideByZero)),
+            ("3.5", "-2", Err(RunErrorMsg::InvalidArgument)),
+            ("2.5", "-2", Err(RunErrorMsg::InvalidArgument)),
+            ("0.0", "-2", Ok("0")),
+            ("-2.5", "-2", Ok("-2")),
+            ("-3.5", "-2", Ok("-2")),
+        ];
+        for (n, increment, expected) in test_cases {
+            let formula = format!("FLOOR({n}, {increment})");
+            match expected {
+                Ok(ok) => assert_eq!(ok, eval_to_string(&g, &formula)),
+                Err(err) => assert_eq!(err, eval_to_err(&g, &formula).msg),
+            }
+        }
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "FLOOR".into(),
+                arg_name: "increment".into(),
+            },
+            eval_to_err(&g, "FLOOR(3.5)").msg,
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_floor_math_and_ceiling_math() {
+        let g = Grid::new();
+        let test_inputs = &[3.5, 2.5, 0.0, -2.5, -3.5];
+        #[allow(clippy::type_complexity)]
+        let test_cases: &[([i64; 5], fn(f64) -> String)] = &[
+            ([4, 3, 0, -2, -3], |n| format!("CEILING.MATH({n})")),
+            ([4, 3, 0, -3, -4], |n| format!("CEILING.MATH({n},, -1)")),
+            ([4, 4, 0, -2, -2], |n| format!("CEILING.MATH({n}, 2)")),
+            ([4, 4, 0, -2, -2], |n| format!("CEILING.MATH({n}, -2)")),
+            ([4, 4, 0, -4, -4], |n| format!("CEILING.MATH({n}, 2, -1)")),
+            ([4, 4, 0, -4, -4], |n| format!("CEILING.MATH({n}, -2, -1)")),
+            ([0, 0, 0, 0, 0], |n| format!("CEILING.MATH({n}, 0)")),
+            ([3, 2, 0, -3, -4], |n| format!("FLOOR.MATH({n})")),
+            ([3, 2, 0, -2, -3], |n| format!("FLOOR.MATH({n},, -1)")),
+            ([2, 2, 0, -4, -4], |n| format!("FLOOR.MATH({n}, 2)")),
+            ([2, 2, 0, -4, -4], |n| format!("FLOOR.MATH({n}, -2)")),
+            ([2, 2, 0, -2, -2], |n| format!("FLOOR.MATH({n}, 2, -1)")),
+            ([2, 2, 0, -2, -2], |n| format!("FLOOR.MATH({n}, -2, -1)")),
+            ([0, 0, 0, 0, 0], |n| format!("FLOOR.MATH({n}, 0)")),
+        ];
+        for (expected_results, formula_gen_fn) in test_cases {
+            assert_eq!(
+                expected_results.map(|n| n.to_string()),
+                test_inputs.map(|n| eval_to_string(&g, &formula_gen_fn(n)))
+            );
+        }
+    }
+
+    #[test]
+    #[parallel]
+    fn test_int() {
+        let g = Grid::new();
+        assert_eq!(
+            "{-3, -2, -1, 0, 0, 1, 2}",
+            eval_to_string(&g, "INT({-2.9, -1.1, -0.1, 0, 0.1, 1.1, 2.9})")
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_mod() {
+        let g = Grid::new();
+        assert_eq!("-0.5", eval_to_string(&g, "MOD(1.5, -1)"));
+        assert_eq!("{0; 1; 0; 1; 0; 1}", eval_to_string(&g, "MOD(0..5, 2)"));
+        // Test division by zero
+        assert_eq!(RunErrorMsg::DivideByZero, eval_to_err(&g, "MOD(1, 0)").msg);
+    }
+
+    proptest! {
+        #[test]
+        #[parallel]
+        fn proptest_int_mod_invariant(n in -100.0..100.0_f64, d in -100.0..100.0_f64) {
+            let g = Grid::new();
+            let should_equal_n = eval(&g, &format!("INT({n} / {d}) * {d} + MOD({n}, {d})")).coerce_nonblank::<f64>().unwrap();
+            assert!((should_equal_n - n).abs() < 0.01);
+        }
+    }
+
+    #[test]
+    #[parallel]
     fn test_pi() {
         let g = Grid::new();
         assert!(eval_to_string(&g, "PI()").starts_with("3.14159"));
@@ -266,6 +556,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_tau() {
         let g = Grid::new();
         assert!(eval_to_string(&g, "TAU()").starts_with("6.283"));

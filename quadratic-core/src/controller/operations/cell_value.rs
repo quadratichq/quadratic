@@ -2,7 +2,7 @@ use super::operation::Operation;
 use crate::{
     cell_values::CellValues,
     controller::GridController,
-    grid::{formatting::CellFmtArray, NumericDecimals, NumericFormat, NumericFormatKind},
+    grid::{formatting::CellFmtArray, NumericFormat, NumericFormatKind},
     selection::Selection,
     CellValue, RunLengthEncoding, SheetPos, SheetRect,
 };
@@ -43,18 +43,11 @@ impl GridController {
                     attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(Some(true), 1)),
                 });
             }
-            // only change decimal places if decimals have not been set
-            if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
-                if sheet
-                    .get_formatting_value::<NumericDecimals>(sheet_pos.into())
-                    .is_none()
-                {
-                    ops.push(Operation::SetCellFormats {
-                        sheet_rect,
-                        attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
-                    });
-                }
-            }
+
+            // We no longer automatically set numeric decimals for
+            // currency; instead, we handle changes in currency decimal
+            // length by using 2 if currency is set by default.
+
             CellValue::Number(number)
         } else if let Some(bool) = CellValue::unpack_boolean(value) {
             bool
@@ -152,8 +145,10 @@ mod test {
         selection::Selection,
         CellValue, Rect, SheetPos,
     };
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test() {
         let mut client = GridController::test();
         let sheet_id = SheetId::test();
@@ -184,6 +179,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn boolean_to_cell_value() {
         let mut gc = GridController::test();
         let sheet_pos = SheetPos {
@@ -217,6 +213,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn number_to_cell_value() {
         let mut gc = GridController::test();
         let sheet_pos = SheetPos {
@@ -251,6 +248,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn problematic_number() {
         let mut gc = GridController::test();
         let value = "980E92207901934";
@@ -266,6 +264,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn delete_cells_operations() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -304,6 +303,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn delete_columns() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

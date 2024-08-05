@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import dbClient from '../dbClient';
 import { uploadFile } from '../storage/storage';
 
@@ -10,7 +12,7 @@ export async function createFile({
   isPrivate,
   jwt,
 }: {
-  contents: string;
+  contents?: string;
   name: string;
   userId: number;
   version: string;
@@ -35,6 +37,12 @@ export async function createFile({
         ownerTeam: true,
       },
     });
+
+    if (!contents) {
+      const fileName = './../data/current_blank.grid';
+      const realFileName = path.resolve(__dirname, fileName);
+      contents = fs.readFileSync(realFileName, 'base64');
+    }
 
     // Upload file contents to S3 and create a checkpoint
     const { uuid, id: fileId } = dbFile;

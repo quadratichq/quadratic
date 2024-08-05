@@ -13,6 +13,8 @@ import {
   BorderStyle,
   CellAlign,
   CellFormatSummary,
+  CellVerticalAlign,
+  CellWrap,
   CodeCellLanguage,
   Format,
   JsCodeCell,
@@ -105,8 +107,8 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientGenerateThumbnail') {
       events.emit('generateThumbnail');
       return;
-    } else if (e.data.type === 'coreClientRenderCodeCells') {
-      events.emit('renderCodeCells', e.data.sheetId, e.data.codeCells);
+    } else if (e.data.type === 'coreClientSheetRenderCells') {
+      events.emit('renderCells', e.data.sheetId, e.data.renderCells);
       return;
     } else if (e.data.type === 'coreClientSheetBorders') {
       events.emit('sheetBorders', e.data.sheetId, e.data.borders);
@@ -163,6 +165,9 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientSetCursorSelection') {
       events.emit('setCursor', undefined, e.data.selection);
+      return;
+    } else if (e.data.type === 'coreClientResizeRowHeights') {
+      events.emit('resizeRowHeights', e.data.sheetId, e.data.rowHeights);
       return;
     }
 
@@ -229,7 +234,7 @@ class QuadraticCore {
     });
   }
 
-  async upgradeGridFile(grid: string, sequenceNumber: number): Promise<{ grid: string; version: string }> {
+  async upgradeGridFile(grid: Uint8Array, sequenceNumber: number): Promise<{ grid: Uint8Array; version: string }> {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientUpgradeFile) => {
@@ -245,10 +250,10 @@ class QuadraticCore {
     });
   }
 
-  async export(): Promise<string> {
+  async export(): Promise<Uint8Array> {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { grid: string }) => {
+      this.waitingForResponse[id] = (message: { grid: Uint8Array }) => {
         resolve(message.grid);
       };
       this.send({ type: 'clientCoreExport', id });
@@ -549,6 +554,24 @@ class QuadraticCore {
       type: 'clientCoreSetCellAlign',
       selection,
       align,
+      cursor,
+    });
+  }
+
+  setCellVerticalAlign(selection: Selection, verticalAlign: CellVerticalAlign, cursor?: string) {
+    this.send({
+      type: 'clientCoreSetCellVerticalAlign',
+      selection,
+      verticalAlign,
+      cursor,
+    });
+  }
+
+  setCellWrap(selection: Selection, wrap: CellWrap, cursor?: string) {
+    this.send({
+      type: 'clientCoreSetCellWrap',
+      selection,
+      wrap,
       cursor,
     });
   }
@@ -859,11 +882,11 @@ class QuadraticCore {
     row: number;
     reverse: boolean;
     withContent: boolean;
-  }): Promise<number> {
+  }): Promise<number | undefined> {
     const { sheetId, columnStart, row, reverse, withContent } = options;
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { column: number }) => {
+      this.waitingForResponse[id] = (message: { column: number | number }) => {
         resolve(message.column);
       };
       this.send({
@@ -884,11 +907,11 @@ class QuadraticCore {
     rowStart: number;
     reverse: boolean;
     withContent: boolean;
-  }): Promise<number> {
+  }): Promise<number | undefined> {
     const { sheetId, column, rowStart, reverse, withContent } = options;
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { row: number }) => {
+      this.waitingForResponse[id] = (message: { row: number | undefined }) => {
         resolve(message.row);
       };
       this.send({
@@ -945,20 +968,23 @@ class QuadraticCore {
 
   // create a new grid file and import an xlsx file
   importExcel = async (
-    file: File
+    file: Uint8Array,
+    fileName: string
   ): Promise<{
-    contents?: string;
+    contents?: Uint8Array;
+    fileName: string;
     version?: string;
     error?: string;
   }> => {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { contents: string; version: string }) => {
+      this.waitingForResponse[id] = (message: { contents: Uint8Array; fileName: string; version: string }) => {
         resolve(message);
       };
       this.send({
         type: 'clientCoreImportExcel',
         file,
+        fileName,
         id,
       });
     });

@@ -331,17 +331,20 @@ mod test {
     use super::read_utf16;
     use super::*;
     use crate::CellValue;
+    use serial_test::parallel;
 
     const INVALID_ENCODING_FILE: &[u8] =
         include_bytes!("../../../../quadratic-rust-shared/data/csv/encoding_issue.csv");
 
     #[test]
+    #[parallel]
     fn transmute_u8_to_u16() {
         let result = read_utf16(INVALID_ENCODING_FILE).unwrap();
         assert_eq!("issue, test, value\r\n0, 1, Invalid\r\n0, 2, Valid", result);
     }
 
     #[test]
+    #[parallel]
     fn imports_a_simple_csv() {
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
@@ -371,6 +374,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn imports_a_long_csv() {
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
@@ -383,6 +387,7 @@ mod test {
 
         let ops = gc.import_csv_operations(sheet_id, csv.as_bytes(), "long.csv", pos);
         assert_eq!(ops.as_ref().unwrap().len(), 3);
+
         let first_pos = match ops.as_ref().unwrap()[0] {
             Operation::SetCellValues { sheet_pos, .. } => sheet_pos,
             _ => panic!("Expected SetCellValues operation"),
@@ -413,6 +418,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn import_excel() {
         let mut gc = GridController::test_blank();
         let file = include_bytes!("../../../test-files/simple.xlsx");
@@ -441,6 +447,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn import_excel_invalid() {
         let mut gc = GridController::test_blank();
         let file = include_bytes!("../../../test-files/invalid.xlsx");

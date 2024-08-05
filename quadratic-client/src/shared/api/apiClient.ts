@@ -115,17 +115,18 @@ export const apiClient = {
       teamUuid,
       isPrivate,
     }: {
-      file?: Pick<ApiTypes['/v0/files.POST.request'], 'name' | 'contents' | 'version'>;
+      // TODO(ddimaria): remove Partial and "contents" once we duplicate directly on S3
+      file?: Partial<Pick<ApiTypes['/v0/files.POST.request'], 'name' | 'contents' | 'version'>>;
       teamUuid: ApiTypes['/v0/files.POST.request']['teamUuid'];
       isPrivate: ApiTypes['/v0/files.POST.request']['isPrivate'];
     }) {
       if (file === undefined) {
         file = {
           name: 'Untitled',
-          contents: JSON.stringify(DEFAULT_FILE),
           version: DEFAULT_FILE.version,
         };
       }
+
       return fetchFromApi(
         `/v0/files`,
         { method: 'POST', body: JSON.stringify({ ...file, teamUuid, isPrivate }) },
@@ -140,8 +141,8 @@ export const apiClient = {
       mixpanel.track('[Files].downloadFile', { id: uuid });
       const { file } = await this.get(uuid);
       const checkpointUrl = file.lastCheckpointDataUrl;
-      const checkpointData = await fetch(checkpointUrl).then((res) => res.text());
-      downloadQuadraticFile(file.name, checkpointData);
+      const checkpointData = await fetch(checkpointUrl).then((res) => res.arrayBuffer());
+      downloadQuadraticFile(file.name, new Uint8Array(checkpointData));
     },
     async duplicate(uuid: string, isPrivate?: boolean) {
       mixpanel.track('[Files].duplicateFile', { id: uuid });

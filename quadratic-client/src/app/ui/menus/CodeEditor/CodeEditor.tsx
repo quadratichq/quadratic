@@ -14,6 +14,7 @@ import { useConnectionState } from '@/app/atoms/useConnectionState';
 import { useJavascriptState } from '@/app/atoms/useJavascriptState';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
+import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { CodeEditorPanel } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanel';
 import { CodeEditorPanels } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelsResize';
@@ -291,41 +292,41 @@ export const CodeEditor = () => {
     }
 
     // Command + S
-    if ((event.metaKey || event.ctrlKey) && event.key === 's') {
+    if (matchShortcut('save', event)) {
       event.preventDefault();
       saveAndRunCell();
     }
 
     // Command + Enter
-    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+    if (matchShortcut('execute_code', event)) {
       event.preventDefault();
       event.stopPropagation();
       saveAndRunCell();
     }
 
     // Command + Escape
-    if ((event.metaKey || event.ctrlKey) && event.key === 'Escape') {
+    if (matchShortcut('cancel_execution', event)) {
       event.preventDefault();
       event.stopPropagation();
       cancelRun();
     }
 
     // Command + Plus
-    if ((event.metaKey || event.ctrlKey) && event.key === '=') {
+    if (matchShortcut('zoom_in', event)) {
       event.preventDefault();
       event.stopPropagation();
       dispatchEditorAction('editor.action.fontZoomIn');
     }
 
     // Command + Minus
-    if ((event.metaKey || event.ctrlKey) && event.key === '-') {
+    if (matchShortcut('zoom_out', event)) {
       event.preventDefault();
       event.stopPropagation();
       dispatchEditorAction('editor.action.fontZoomOut');
     }
 
     // Command + 0
-    if ((event.metaKey || event.ctrlKey) && event.key === '0') {
+    if (matchShortcut('zoom_to_100', event)) {
       event.preventDefault();
       event.stopPropagation();
       dispatchEditorAction('editor.action.fontZoomReset');

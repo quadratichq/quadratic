@@ -89,8 +89,10 @@ mod test {
 
     use super::*;
     use crate::{controller::GridController, grid::SheetId, Pos, SheetRect};
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_execute_set_cursor() {
         let mut gc = GridController::test();
         let mut transaction = PendingTransaction::default();
