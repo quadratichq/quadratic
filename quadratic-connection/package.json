@@ -17,6 +17,6 @@
     "coverage:html": "grcov . --binary-path ./target/debug/deps/ -s . -t html --branch --ignore-not-existing --ignore '../*' --ignore '/*' -o coverage/html",
     "coverage:view": "open coverage/html/index.html",
     "docker:up": "docker compose --profile quadratic-connection-test up -d && sleep 3",
-    "docker:down": "docker-compose down --profile quadratic-connection-test"
+    "docker:down": "docker compose down --profile quadratic-connection-test"
   }
 }
