@@ -1,4 +1,13 @@
-use crate::{cell_values::CellValues, CellValue, Pos};
+use std::collections::HashMap;
+
+use crate::{
+    cell_values::CellValues,
+    controller::{
+        active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation,
+    },
+    CellValue, Pos,
+};
 
 use super::Sheet;
 
@@ -6,18 +15,89 @@ impl Sheet {
     /// Replace cell_values with CellValues.
     ///
     /// Returns the old CellValues.
-    pub fn merge_cell_values(&mut self, pos: Pos, cell_values: &CellValues) -> CellValues {
+    pub fn merge_cell_values(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        pos: Pos,
+        cell_values: &CellValues,
+        send: bool,
+    ) -> CellValues {
         let mut old = CellValues::new(cell_values.w, cell_values.h);
+
+        // add the values and return the old values
         for x in 0..cell_values.w {
-            let col = self.get_or_create_column((x as i64) + pos.x);
+            let grid_x = pos.x + x as i64;
+            let col = self.get_or_create_column(grid_x);
             for y in 0..cell_values.h {
+                let grid_y = pos.y + y as i64;
+
                 let old_value = if let Some(value) = cell_values.get_except_blank(x, y) {
-                    col.values.insert(pos.y + y as i64, value.clone())
+                    col.values.insert(grid_y, value.clone())
                 } else {
-                    col.values.remove(&(pos.y + y as i64))
+                    col.values.remove(&grid_y)
                 };
                 if let Some(old_value) = old_value {
                     old.set(x, y, old_value);
+                }
+            }
+        }
+
+        // check the validations for the new cells
+        let mut validation_warnings = HashMap::new();
+        for x in 0..cell_values.w {
+            let grid_x = pos.x + x as i64;
+            for y in 0..cell_values.h {
+                let grid_y = pos.y + y as i64;
+                let pos = Pos {
+                    x: grid_x,
+                    y: grid_y,
+                };
+                let sheet_pos = pos.to_sheet_pos(self.id);
+                if let Some(validation) = self.validations.validate(self, pos) {
+                    validation_warnings.insert(pos, validation.id);
+                    transaction
+                        .forward_operations
+                        .push(Operation::SetValidationWarning {
+                            sheet_pos,
+                            validation_id: Some(validation.id),
+                        });
+                } else if self.validations.has_warning(pos) {
+                    transaction
+                        .forward_operations
+                        .push(Operation::SetValidationWarning {
+                            sheet_pos: pos.to_sheet_pos(self.id),
+                            validation_id: None,
+                        });
+                    let old = self.validations.set_warning(sheet_pos, None);
+                    transaction.reverse_operations.insert(0, old);
+                }
+            }
+        }
+
+        if !validation_warnings.is_empty() {
+            // apply the validation warnings to the sheet
+            validation_warnings.iter().for_each(|(pos, validation_id)| {
+                let sheet_pos = pos.to_sheet_pos(self.id);
+                let old = self
+                    .validations
+                    .set_warning(sheet_pos, Some(*validation_id));
+                transaction
+                    .forward_operations
+                    .push(Operation::SetValidationWarning {
+                        sheet_pos: pos.to_sheet_pos(self.id),
+                        validation_id: Some(*validation_id),
+                    });
+                transaction.reverse_operations.insert(0, old);
+            });
+
+            // send the warnings if necessary
+            if send {
+                let validations = validation_warnings
+                    .iter()
+                    .map(|(pos, validation_id)| (pos.x, pos.y, *validation_id, false))
+                    .collect::<Vec<_>>();
+                if let Ok(validations) = serde_json::to_string(&validations) {
+                    crate::wasm_bindings::js::jsValidationWarning(self.id.to_string(), validations);
                 }
             }
         }
@@ -49,13 +129,20 @@ mod test {
     use std::str::FromStr;
 
     use crate::{
-        grid::{formats::format_update::FormatUpdate, NumericFormat},
-        CellValue,
+        grid::{
+            formats::format_update::FormatUpdate,
+            sheet::validations::{validation::Validation, validation_rules::ValidationRule},
+            NumericFormat,
+        },
+        selection::Selection,
+        wasm_bindings::js::expect_js_call,
+        CellValue, Rect,
     };
 
     use super::*;
     use bigdecimal::BigDecimal;
-    use serial_test::parallel;
+    use serial_test::{parallel, serial};
+    use uuid::Uuid;
 
     #[test]
     #[parallel]
@@ -67,7 +154,9 @@ mod test {
         sheet.set_cell_value(Pos { x: 0, y: -1 }, "old-d");
         let cell_values = CellValues::from(vec![vec!["a", "b"], vec!["c", "d"]]);
 
-        let old = sheet.merge_cell_values(Pos { x: -1, y: -2 }, &cell_values);
+        let mut transaction = PendingTransaction::default();
+        let old =
+            sheet.merge_cell_values(&mut transaction, Pos { x: -1, y: -2 }, &cell_values, false);
         assert_eq!(old.w, 2);
         assert_eq!(old.h, 2);
 
@@ -123,5 +212,41 @@ mod test {
 
         // format for to_rendered
         assert_eq!(sheet.rendered_value(pos).unwrap(), "$123.46".to_string());
+    }
+
+    #[test]
+    #[serial]
+    fn merge_cell_values_validations() {
+        let mut sheet = Sheet::test();
+
+        let validation = Validation {
+            id: Uuid::new_v4(),
+            selection: Selection::rect(Rect::new(0, 0, 2, 0), sheet.id),
+            rule: ValidationRule::Logical(Default::default()),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        sheet.validations.set(validation.clone());
+
+        let cell_values = CellValues::from(vec![vec![
+            CellValue::Text("a".into()),
+            CellValue::Text("b".into()),
+            CellValue::Logical(true),
+        ]]);
+        let mut transaction = PendingTransaction::default();
+        sheet.merge_cell_values(&mut transaction, Pos { x: 0, y: 0 }, &cell_values, true);
+
+        assert_eq!(
+            sheet.cell_value(Pos { x: 2, y: 0 }),
+            Some(CellValue::Logical(true))
+        );
+
+        assert_eq!(sheet.validations.warnings.len(), 2);
+        let warnings = vec![(0, 0, validation.id, false), (1, 0, validation.id, false)];
+        expect_js_call(
+            "jsValidationWarning",
+            format!("{},{}", sheet.id, serde_json::to_string(&warnings).unwrap()),
+            true,
+        )
     }
 }

@@ -116,6 +116,11 @@ extern "C" {
     pub fn jsRequestRowHeights(transaction_id: String, sheet_id: String, rows: String);
     // row_heights: Vec<JsRowHeight>
     pub fn jsResizeRowHeights(sheet_id: String, row_heights: String /*Vec<JsRowHeight>*/);
+
+    pub fn jsValidationWarning(
+        sheet_id: String,
+        validations: String, /* Vec<(x, y, validation_id, failed) */
+    );
 }
 
 #[cfg(test)]
@@ -564,5 +569,17 @@ pub fn jsResizeRowHeights(sheet_id: String, row_heights: String /*Vec<JsRowHeigh
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsResizeRowHeights",
         format!("{},{}", sheet_id, row_heights),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsValidationWarning(
+    sheet_id: String,
+    validations: String, /* Vec<(x, y, validation_id, failed) */
+) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsValidationWarning",
+        format!("{},{}", sheet_id, validations),
     ));
 }

@@ -15,11 +15,15 @@ use super::Sheet;
 
 pub mod validation;
 pub mod validation_rules;
+pub mod validation_warnings;
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Validations {
     #[serde(default)]
     pub validations: Vec<Validation>,
+
+    #[serde(default)]
+    pub warnings: HashMap<Pos, Uuid>,
 }
 
 impl Validations {
@@ -172,18 +176,16 @@ impl Validations {
         reverse
     }
 
-    /// Validates a pos in the sheet.
-    pub fn validate(&self, sheet: &Sheet, pos: Pos) -> bool {
+    /// Validates a pos in the sheet. Returns any failing Validation.
+    pub fn validate(&self, sheet: &Sheet, pos: Pos) -> Option<&Validation> {
         for v in self.validations.iter().rev() {
             if v.selection.contains_pos(pos) {
-                if let Some(value) = sheet.cell_value_ref(pos) {
-                    return v.rule.validate(sheet, value);
-                } else {
-                    return v.rule.allow_blank();
+                if !v.rule.validate(sheet, sheet.cell_value_ref(pos)) {
+                    return Some(v);
                 }
             }
         }
-        true
+        None
     }
 
     /// Returns validations that intersect with a rect. Note: this only checks

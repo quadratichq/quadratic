@@ -33,9 +33,8 @@ pub mod search;
 pub mod selection;
 pub mod send_render;
 pub mod sheet_test;
-pub mod validations;
-
 pub mod summarize;
+pub mod validations;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Sheet {

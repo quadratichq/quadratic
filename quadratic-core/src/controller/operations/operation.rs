@@ -127,10 +127,13 @@ pub enum Operation {
     SetValidation {
         validation: Validation,
     },
-
     RemoveValidation {
         sheet_id: SheetId,
         validation_id: Uuid,
+    },
+    SetValidationWarning {
+        sheet_pos: SheetPos,
+        validation_id: Option<Uuid>,
     },
 }
 
@@ -243,6 +246,16 @@ impl fmt::Display for Operation {
                     fmt,
                     "RemoveValidation {{ sheet_id: {}, validation_id: {} }}",
                     sheet_id, validation_id
+                )
+            }
+            Operation::SetValidationWarning {
+                sheet_pos,
+                validation_id,
+            } => {
+                write!(
+                    fmt,
+                    "SetValidationWarning {{ sheet_pos: {:?}, validation_id: {:?} }}",
+                    sheet_pos, validation_id
                 )
             }
         }

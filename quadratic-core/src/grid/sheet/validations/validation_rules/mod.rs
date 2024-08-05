@@ -22,10 +22,10 @@ pub enum ValidationRule {
 
 impl ValidationRule {
     /// Validate a CellValue against the validation rule.
-    pub fn validate(&self, sheet: &Sheet, value: &CellValue) -> bool {
+    pub fn validate(&self, sheet: &Sheet, value: Option<&CellValue>) -> bool {
         match &self {
-            ValidationRule::List(list) => ValidationList::validate(sheet, list, value),
-            ValidationRule::Logical(_) => ValidationLogical::validate(value),
+            ValidationRule::List(list) => list.validate(sheet, value),
+            ValidationRule::Logical(logical) => logical.validate(value),
             ValidationRule::None => true,
         }
     }
@@ -67,8 +67,9 @@ mod tests {
         };
 
         assert!(ValidationRule::List(list.clone())
-            .validate(&sheet, &CellValue::Text("test".to_string())));
-        assert!(!ValidationRule::List(list).validate(&sheet, &CellValue::Text("test2".to_string())));
+            .validate(&sheet, Some(&CellValue::Text("test".to_string()))));
+        assert!(!ValidationRule::List(list)
+            .validate(&sheet, Some(&CellValue::Text("test2".to_string()))));
     }
 
     #[test]
@@ -84,15 +85,15 @@ mod tests {
         };
         let rule = ValidationRule::List(list);
 
-        assert!(rule.validate(&sheet, &CellValue::Text("test".to_string())));
-        assert!(!rule.validate(&sheet, &CellValue::Text("test2".to_string())));
+        assert!(rule.validate(&sheet, Some(&CellValue::Text("test".to_string()))));
+        assert!(!rule.validate(&sheet, Some(&CellValue::Text("test2".to_string()))));
     }
 
     #[test]
     fn validate_none() {
         let sheet = Sheet::test();
         let rule = ValidationRule::None;
-        assert!(rule.validate(&sheet, &CellValue::Text("test".to_string())));
+        assert!(rule.validate(&sheet, Some(&CellValue::Text("test".to_string()))));
     }
 
     #[test]

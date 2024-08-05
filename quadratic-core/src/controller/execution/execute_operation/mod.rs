@@ -55,6 +55,9 @@ impl GridController {
                 Operation::RemoveValidation { .. } => {
                     self.execute_remove_validation(transaction, op)
                 }
+                Operation::SetValidationWarning { .. } => {
+                    self.execute_set_validation_warning(transaction, op)
+                }
             }
 
             if cfg!(target_family = "wasm") && !transaction.is_server() {

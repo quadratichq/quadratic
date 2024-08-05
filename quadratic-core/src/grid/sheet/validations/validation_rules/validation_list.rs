@@ -28,12 +28,16 @@ impl ValidationList {
     }
 
     /// Validates a CellValue against a ValidationList.
-    pub(crate) fn validate(sheet: &Sheet, list: &ValidationList, value: &CellValue) -> bool {
-        match &list.source {
-            ValidationListSource::Selection(selection) => {
-                ValidationList::validate_selection(sheet, selection, value)
+    pub(crate) fn validate(&self, sheet: &Sheet, value: Option<&CellValue>) -> bool {
+        if let Some(value) = value {
+            match &self.source {
+                ValidationListSource::Selection(selection) => {
+                    ValidationList::validate_selection(sheet, selection, value)
+                }
+                ValidationListSource::List(list) => list.contains(&value.to_string()),
             }
-            ValidationListSource::List(list) => list.contains(&value.to_string()),
+        } else {
+            self.ignore_blank
         }
     }
 
@@ -75,16 +79,9 @@ mod tests {
             drop_down: true,
         };
 
-        assert!(ValidationList::validate(
-            &sheet,
-            &list,
-            &CellValue::Text("test".to_string())
-        ));
-        assert!(!ValidationList::validate(
-            &sheet,
-            &list,
-            &CellValue::Text("test2".to_string())
-        ));
+        assert!(list.validate(&sheet, Some(&CellValue::Text("test".to_string()))));
+        assert!(!list.validate(&sheet, Some(&CellValue::Text("test2".to_string()))));
+        assert!(list.validate(&sheet, None));
     }
 
     #[test]
@@ -104,6 +101,13 @@ mod tests {
             &selection,
             &CellValue::Text("test2".to_string())
         ));
+
+        let list = ValidationList {
+            source: ValidationListSource::Selection(selection),
+            ignore_blank: false,
+            drop_down: true,
+        };
+        assert!(!list.validate(&sheet, None));
     }
 
     #[test]
@@ -116,7 +120,6 @@ mod tests {
         };
 
         assert_eq!(list.to_drop_down(&sheet), Some(vec!["test".to_string()]));
-
         let list = ValidationList {
             source: ValidationListSource::List(vec!["test".to_string(), "test2".to_string()]),
             ignore_blank: true,

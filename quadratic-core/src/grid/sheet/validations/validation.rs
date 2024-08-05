@@ -44,7 +44,7 @@ pub struct Validation {
 
 impl Validation {
     /// Validate a cell value against its validation rule.
-    pub fn validate(&self, sheet: &Sheet, value: &CellValue) -> bool {
+    pub fn validate(&self, sheet: &Sheet, value: Option<&CellValue>) -> bool {
         self.rule.validate(sheet, value)
     }
 
