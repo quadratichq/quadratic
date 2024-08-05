@@ -16,7 +16,7 @@ jest.mock('./src/middleware/validateAccessToken', () => {
   };
 });
 
-jest.mock('./src/aws/s3', () => {
+jest.mock('./src/storage/storage', () => {
   return {
     s3Client: {},
     generatePresignedUrl: jest.fn().mockImplementation(async (str) => str),
