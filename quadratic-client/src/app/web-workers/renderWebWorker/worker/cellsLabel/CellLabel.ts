@@ -172,30 +172,25 @@ export class CellLabel {
   changeBold(bold?: boolean) {
     this.bold = !!bold;
     this.updateFontName();
-    this.dirtyText = true;
   }
 
   changeItalic(italic?: boolean) {
     this.italic = !!italic;
     this.updateFontName();
-    this.dirtyText = true;
   }
 
   changeAlign(align?: CellAlign) {
     this.align = align ?? 'left';
     this.calculatePosition();
-    this.dirtyText = true;
   }
 
   changeVerticalAlign(verticalAlign?: CellVerticalAlign) {
     this.verticalAlign = verticalAlign ?? 'top';
     this.calculatePosition();
-    this.dirtyText = true;
   }
 
   changeTextColor(color?: string) {
     this.tint = color ? convertColorStringToTint(color) : undefined;
-    this.dirtyText = true;
   }
 
   checkLeftClip(nextLeft: number): boolean {

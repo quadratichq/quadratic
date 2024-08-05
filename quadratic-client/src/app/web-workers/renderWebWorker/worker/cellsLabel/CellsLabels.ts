@@ -168,6 +168,7 @@ export class CellsLabels {
       if (!delta) return;
       if (hash.adjustHeadings({ column, delta })) {
         hash.dirtyText = true;
+        hash.columnsMaxCache?.delete(column);
         if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
           hash.dirtyBuffers = true;
         }
@@ -193,6 +194,7 @@ export class CellsLabels {
       if (!delta) return;
       if (hash.adjustHeadings({ row, delta })) {
         hash.dirtyText = true;
+        hash.rowsMaxCache?.delete(row);
         if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
           hash.dirtyBuffers = true;
         }

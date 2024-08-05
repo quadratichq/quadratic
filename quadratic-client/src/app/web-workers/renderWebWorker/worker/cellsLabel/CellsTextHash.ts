@@ -409,9 +409,6 @@ export class CellsTextHash {
     const neighborRect = this.cellsLabels.getViewportNeighborBounds();
     if (!neighborRect) return this.columnsMaxCache ?? new Map();
     const visibleOrNeighbor = intersects.rectangleRectangle(this.viewRectangle, neighborRect);
-    if (!Array.isArray(this.dirty) && !this.dirtyText && this.columnsMaxCache !== undefined) {
-      return this.columnsMaxCache;
-    }
     if (visibleOrNeighbor && (Array.isArray(this.dirty) || (this.loaded && !this.dirty && this.dirtyText))) {
       await this.update();
     }
@@ -427,9 +424,6 @@ export class CellsTextHash {
     const neighborRect = this.cellsLabels.getViewportNeighborBounds();
     if (!neighborRect) return this.rowsMaxCache ?? new Map();
     const visibleOrNeighbor = intersects.rectangleRectangle(this.viewRectangle, neighborRect);
-    if (!Array.isArray(this.dirty) && !this.dirtyText && this.rowsMaxCache !== undefined) {
-      return this.rowsMaxCache;
-    }
     if (visibleOrNeighbor && (Array.isArray(this.dirty) || (this.loaded && !this.dirty && this.dirtyText))) {
       await this.update();
     }
