@@ -63,13 +63,13 @@ impl GridController {
     ///
     /// TODO: this is only implemented when only_rects == true; add
     /// only_rects == false when needed.
-    pub fn send_render_cells_selection(&self, selection: Selection, only_rects: bool) {
+    pub fn send_render_cells_selection(&self, selection: &Selection, only_rects: bool) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
         assert!(only_rects == true);
         let mut modified = HashSet::new();
-        if let Some(rects) = selection.rects {
+        if let Some(rects) = selection.rects.as_ref() {
             for rect in rects {
                 for y in rect.y_range() {
                     let y_hash = (y as f64 / CELL_SHEET_HEIGHT as f64).floor() as i64;
