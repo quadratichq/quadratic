@@ -2,6 +2,7 @@ use core::fmt;
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
+use uuid::Uuid;
 
 use super::formats::format::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
@@ -81,6 +82,8 @@ pub struct JsRenderCell {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub number: Option<JsNumber>,
+
+    pub validation: Option<Uuid>,
 }
 
 #[cfg(test)]

@@ -36,12 +36,15 @@ impl Sheet {
         value: &CellValue,
         language: Option<CodeCellLanguage>,
     ) -> JsRenderCell {
+        let validation = self.validations.get_warning(Pos { x, y }).cloned();
+
         if let CellValue::Html(_) = value {
             return JsRenderCell {
                 x,
                 y,
                 language,
                 special: Some(JsRenderCellSpecial::Chart),
+                validation,
                 ..Default::default()
             };
         } else if let CellValue::Error(error) = value {
@@ -55,6 +58,7 @@ impl Sheet {
                 } else {
                     JsRenderCellSpecial::RunError
                 }),
+                validation,
                 ..Default::default()
             };
         } else if let CellValue::Image(_) = value {
@@ -112,6 +116,7 @@ impl Sheet {
                     text_color: format.text_color,
                     special,
                     number,
+                    validation,
                     ..Default::default()
                 }
             }
@@ -147,6 +152,7 @@ impl Sheet {
                     vertical_align: format.vertical_align,
                     special,
                     number,
+                    validation,
                 }
             }
         }
