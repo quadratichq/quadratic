@@ -121,7 +121,8 @@ export class CellsTextHash {
   };
 
   update = async (): Promise<boolean> => {
-    const neighborRect = this.cellsLabels.getViewportNeighborBounds() ?? this.viewRectangle;
+    const neighborRect = this.cellsLabels.getViewportNeighborBounds();
+    if (!neighborRect) return false;
     const visibleOrNeighbor = intersects.rectangleRectangle(this.viewRectangle, neighborRect);
     if (!this.loaded || this.dirty) {
       // If dirty is true, then we need to get the cells from the server; but we
@@ -405,10 +406,13 @@ export class CellsTextHash {
   };
 
   getColumnContentMaxWidths = async (): Promise<Map<number, number>> => {
+    const neighborRect = this.cellsLabels.getViewportNeighborBounds();
+    if (!neighborRect) return this.columnsMaxCache ?? new Map();
+    const visibleOrNeighbor = intersects.rectangleRectangle(this.viewRectangle, neighborRect);
     if (!Array.isArray(this.dirty) && !this.dirtyText && this.columnsMaxCache !== undefined) {
       return this.columnsMaxCache;
     }
-    if (Array.isArray(this.dirty) || this.dirtyText) {
+    if (visibleOrNeighbor && (Array.isArray(this.dirty) || (this.loaded && !this.dirty && this.dirtyText))) {
       await this.update();
     }
     return this.columnsMaxCache ?? new Map();
@@ -420,10 +424,13 @@ export class CellsTextHash {
   };
 
   getRowContentMaxHeights = async (): Promise<Map<number, number>> => {
+    const neighborRect = this.cellsLabels.getViewportNeighborBounds();
+    if (!neighborRect) return this.rowsMaxCache ?? new Map();
+    const visibleOrNeighbor = intersects.rectangleRectangle(this.viewRectangle, neighborRect);
     if (!Array.isArray(this.dirty) && !this.dirtyText && this.rowsMaxCache !== undefined) {
       return this.rowsMaxCache;
     }
-    if (Array.isArray(this.dirty) || this.dirtyText) {
+    if (visibleOrNeighbor && (Array.isArray(this.dirty) || (this.loaded && !this.dirty && this.dirtyText))) {
       await this.update();
     }
     return this.rowsMaxCache ?? new Map();

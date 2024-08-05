@@ -318,12 +318,6 @@ export class PointerHeading {
             const delta = old_size - new_size;
             if (delta !== 0) {
               renderWebWorker.updateSheetOffsetsFinal(sheets.sheet.id, c, r, delta);
-              pixiApp.adjustHeadings({
-                sheetId: sheets.sheet.id,
-                column: c,
-                row: r,
-                delta,
-              });
               quadraticCore.commitTransientResize(sheets.sheet.id, transientResize);
             }
           } catch (error) {

@@ -19,7 +19,7 @@ import { CellsTextHash } from './CellsTextHash';
 // 500 MB maximum memory per sheet before we start unloading hashes (right now
 // this is on a per-sheet basis--we will want to change this to a global limit)
 const MAX_RENDERING_MEMORY = 1024 * 1024 * 500;
-const NEIGHBORS = 25;
+const NEIGHBORS = 10;
 
 export class CellsLabels {
   sheetId: string;
