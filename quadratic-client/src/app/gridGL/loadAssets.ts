@@ -1,7 +1,7 @@
 import { debugShowFileIO } from '@/app/debugFlags';
 import FontFaceObserver from 'fontfaceobserver';
 import { BitmapFont, Loader } from 'pixi.js';
-import { createBorderTypes } from './dashedTextures';
+import { createBorderTypes } from './generateTextures';
 
 const intervalToCheckBitmapFonts = 100;
 export const bitmapFonts = ['OpenSans', 'OpenSans-Bold', 'OpenSans-Italic', 'OpenSans-BoldItalic'];

@@ -8,6 +8,7 @@ use crate::{
         js_types::{
             JsHtmlOutput, JsNumber, JsRenderBorders, JsRenderCell, JsRenderCellSpecial,
             JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsSheetFill,
+            JsValidationWarning,
         },
         CellAlign, CodeCellLanguage, CodeRun, Column,
     },
@@ -36,15 +37,12 @@ impl Sheet {
         value: &CellValue,
         language: Option<CodeCellLanguage>,
     ) -> JsRenderCell {
-        let validation = self.validations.get_warning(Pos { x, y }).cloned();
-
         if let CellValue::Html(_) = value {
             return JsRenderCell {
                 x,
                 y,
                 language,
                 special: Some(JsRenderCellSpecial::Chart),
-                validation,
                 ..Default::default()
             };
         } else if let CellValue::Error(error) = value {
@@ -58,7 +56,6 @@ impl Sheet {
                 } else {
                     JsRenderCellSpecial::RunError
                 }),
-                validation,
                 ..Default::default()
             };
         } else if let CellValue::Image(_) = value {
@@ -116,7 +113,6 @@ impl Sheet {
                     text_color: format.text_color,
                     special,
                     number,
-                    validation,
                     ..Default::default()
                 }
             }
@@ -152,7 +148,6 @@ impl Sheet {
                     vertical_align: format.vertical_align,
                     special,
                     number,
-                    validation,
                 }
             }
         }
@@ -500,6 +495,37 @@ impl Sheet {
                 );
             }
         });
+    }
+
+    /// Sends validation warnings for a hashed region to the client.
+    pub fn send_validation_warnings(&self, hash_x: i64, hash_y: i64, rect: Rect) {
+        let warnings = self
+            .validations
+            .warnings
+            .iter()
+            .filter_map(|(pos, validation_id)| {
+                if rect.contains(*pos) {
+                    let validation = self.validations.validation(*validation_id)?;
+                    Some(JsValidationWarning {
+                        x: pos.x,
+                        y: pos.y,
+                        validation: *validation_id,
+                        style: validation.error.style.clone(),
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+
+        if let Ok(warnings) = serde_json::to_string(&warnings) {
+            crate::wasm_bindings::js::jsRenderValidationWarnings(
+                self.id.to_string(),
+                hash_x,
+                hash_y,
+                warnings,
+            );
+        }
     }
 }
 

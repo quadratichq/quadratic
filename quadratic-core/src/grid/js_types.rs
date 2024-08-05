@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 use super::formats::format::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
+use super::sheet::validations::validation::ValidationStyle;
 use super::{CodeCellLanguage, NumericFormat};
 use crate::grid::BorderStyle;
 use crate::{Pos, SheetRect};
@@ -82,8 +83,6 @@ pub struct JsRenderCell {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub number: Option<JsNumber>,
-
-    pub validation: Option<Uuid>,
 }
 
 #[cfg(test)]
@@ -262,6 +261,14 @@ impl fmt::Display for JsRowHeight {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "JsRowHeight(row: {}, height: {})", self.row, self.height)
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+pub struct JsValidationWarning {
+    pub x: i64,
+    pub y: i64,
+    pub validation: Uuid,
+    pub style: ValidationStyle,
 }
 
 #[cfg(test)]

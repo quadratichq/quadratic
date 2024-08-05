@@ -13,6 +13,7 @@ import {
   JsRenderFill,
   JsRowHeight,
   JsSheetFill,
+  JsValidationWarning,
   MinMax,
   SearchOptions,
   Selection,
@@ -960,6 +961,14 @@ export interface CoreClientGetDisplayCell {
   id: number;
 }
 
+export interface CoreClientRenderValidationWarnings {
+  type: 'coreClientRenderValidationWarnings';
+  sheetId: string;
+  hashX: number;
+  hashY: number;
+  validationWarnings: JsValidationWarning[];
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1094,4 +1103,5 @@ export type CoreClientMessage =
   | CoreClientGetValidationFromPos
   | CoreClientResizeRowHeights
   | CoreClientGetValidationList
-  | CoreClientGetDisplayCell;
+  | CoreClientGetDisplayCell
+  | CoreClientRenderValidationWarnings;

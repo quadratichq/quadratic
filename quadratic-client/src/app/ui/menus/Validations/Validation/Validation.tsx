@@ -15,7 +15,7 @@ import { ValidationRuleSimple } from './validationType';
 import { ValidationNone } from './ValidationNone';
 
 const CRITERIA_OPTIONS: { value: ValidationRuleSimple; label: string }[] = [
-  { value: 'none', label: 'None (message only)' },
+  { value: 'none', label: 'Message only' },
   { value: 'list', label: 'Values from user list (dropdown)' },
   { value: 'list-range', label: 'Values from sheet (dropdown)' },
   { value: 'logical', label: 'Logical (checkbox)' },

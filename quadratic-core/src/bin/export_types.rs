@@ -3,7 +3,7 @@ use std::fs::create_dir_all;
 use controller::operations::clipboard::PasteSpecial;
 use grid::{
     formats::format::Format,
-    js_types::JsSheetFill,
+    js_types::{JsSheetFill, JsValidationWarning},
     sheet::validations::{
         validation::{
             Validation, ValidationDisplay, ValidationDisplaySheet, ValidationError,
@@ -126,6 +126,7 @@ fn main() {
         ValidationStyle,
         ValidationDisplay,
         ValidationDisplaySheet,
+        JsValidationWarning
     );
 
     if create_dir_all("../quadratic-client/src/app/quadratic-core-types").is_ok() {

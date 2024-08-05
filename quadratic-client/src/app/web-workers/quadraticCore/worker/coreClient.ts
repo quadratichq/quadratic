@@ -16,6 +16,7 @@ import {
   JsRenderFill,
   JsRowHeight,
   JsSheetFill,
+  JsValidationWarning,
   Selection,
   SheetBounds,
   SheetInfo,
@@ -85,6 +86,12 @@ declare var self: WorkerGlobalScope &
     sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
     sendSheetValidations: (sheetId: string, validations: Validation[]) => void;
     sendResizeRowHeightsClient(sheetId: string, rowHeights: string): void;
+    sendRenderValidationWarnings: (
+      sheetId: string,
+      hashX: number,
+      hashY: number,
+      validationWarnings: JsValidationWarning[]
+    ) => void;
   };
 
 class CoreClient {
@@ -118,6 +125,8 @@ class CoreClient {
     self.sendImage = coreClient.sendImage;
     self.sendSheetValidations = coreClient.sendSheetValidations;
     self.sendResizeRowHeightsClient = coreClient.sendResizeRowHeights;
+    self.sendRenderValidationWarnings = coreClient.sendRenderValidationWarnings;
+
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -740,6 +749,15 @@ class CoreClient {
     } catch (e) {
       console.error('[coreClient] sendResizeRowHeights: Error parsing JsRowHeight: ', e);
     }
+  };
+
+  sendRenderValidationWarnings = (
+    sheetId: string,
+    hashX: number,
+    hashY: number,
+    validationWarnings: JsValidationWarning[]
+  ) => {
+    this.send({ type: 'coreClientRenderValidationWarnings', sheetId, hashX, hashY, validationWarnings });
   };
 }
 

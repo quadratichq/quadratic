@@ -121,6 +121,13 @@ extern "C" {
         sheet_id: String,
         validations: String, /* Vec<(x, y, validation_id, failed) */
     );
+
+    pub fn jsRenderValidationWarnings(
+        sheet_id: String,
+        hash_x: i64,
+        hash_y: i64,
+        validations: String, /* Vec<(x, y, id) */
+    );
 }
 
 #[cfg(test)]
@@ -581,5 +588,25 @@ pub fn jsValidationWarning(
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsValidationWarning",
         format!("{},{}", sheet_id, validations),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsRenderValidationWarnings(
+    sheet_id: String,
+    hash_x: i64,
+    hash_y: i64,
+    validations: String, /* Vec(x, y, id) */
+) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsRenderValidationWarnings",
+        format!(
+            "{},{},{},{}",
+            sheet_id,
+            hash_x,
+            hash_y,
+            hash_test(&validations)
+        ),
     ));
 }

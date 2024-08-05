@@ -33,6 +33,7 @@ impl GridController {
                         cells,
                     );
                 }
+                sheet.send_validation_warnings(modified.x, modified.y, rect);
             }
         });
     }

@@ -9,6 +9,7 @@ import {
   JsRenderCodeCell,
   JsRenderFill,
   JsSheetFill,
+  JsValidationWarning,
   Selection,
   SheetBounds,
   SheetInfo,
@@ -89,6 +90,12 @@ declare var self: WorkerGlobalScope &
     sendRequestRowHeights: (transactionId: string, sheetId: string, rows: string) => void;
     sendResizeRowHeightsClient: (sheetId: string, rowHeights: string) => void;
     sendResizeRowHeightsRender: (sheetId: string, rowHeights: string) => void;
+    sendRenderValidationWarnings: (
+      sheetId: string,
+      hashX: number,
+      hashY: number,
+      validationWarnings: JsValidationWarning[]
+    ) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -275,4 +282,9 @@ export const jsResizeRowHeights = (sheetId: string, rowHeights: string) => {
 
 export const jsValidationWarning = (sheetId: string, warnings: string) => {
   console.log('TODO', sheetId, warnings);
+};
+
+export const jsRenderValidationWarnings = (sheetId: string, hashX: BigInt, hashY: BigInt, warnings: string) => {
+  const validationWarnings = JSON.parse(warnings) as JsValidationWarning[];
+  self.sendRenderValidationWarnings(sheetId, Number(hashX), Number(hashY), validationWarnings);
 };

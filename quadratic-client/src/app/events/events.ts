@@ -10,6 +10,7 @@ import {
   JsRenderFill,
   JsRowHeight,
   JsSheetFill,
+  JsValidationWarning,
   Selection,
   SheetBounds,
   SheetInfo,
@@ -105,6 +106,7 @@ interface EventTypes {
   insertCodeEditorText: (text: string) => void;
 
   sheetValidations: (sheetId: string, validations: Validation[]) => void;
+  renderValidationWarnings: (sheetId: string, hashX: number, hashY: number, warnings: JsValidationWarning[]) => void;
 
   // pointer down on the grid
   clickedToCell: (column: number, row: number, world: Point | true) => void;

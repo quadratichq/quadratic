@@ -12,10 +12,15 @@ export const colors = {
   cellColorUserJavascript: 0xca8a04,
   cellColorUserAI: 0x1a8c5d,
   cellColorError: 0xf25f5c,
+
+  // todo: these are new and should be reviewed
+  cellColorWarning: 0xffb74d,
+  cellColorInfo: 0x4fc3f7,
+
   cursorCell: 0x6cd4ff,
   searchCell: 0x50c878,
 
-  // todo: this should be changed
+  // todo: this is new and should be reviewed
   movingCells: 0x6cd4ff,
 
   gridBackground: 0xffffff,

@@ -22,7 +22,7 @@ export const ValidationEntry = (props: Props) => {
 
   const title = useMemo(() => {
     if (validation.rule === 'None') {
-      return 'None';
+      return 'Message only';
     }
     if ('List' in validation.rule) {
       const dropdown = validation.rule.List.drop_down ? ' (Dropdown)' : '';

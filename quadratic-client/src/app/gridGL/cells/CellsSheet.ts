@@ -9,6 +9,8 @@ import { CellsImages } from './cellsImages/CellsImages';
 import { CellsLabels } from './cellsLabel/CellsLabels';
 import { CellsMarkers } from './CellsMarkers';
 import { CellsSearch } from './CellsSearch';
+import { events } from '@/app/events/events';
+import { JsValidationWarning } from '@/app/quadratic-core-types';
 
 export class CellsSheet extends Container {
   private cellsFills: CellsFills;
@@ -35,6 +37,8 @@ export class CellsSheet extends Container {
     this.cellsMarkers = this.addChild(new CellsMarkers());
     this.cellsImages = new CellsImages(this);
     this.visible = false;
+
+    events.on('renderValidationWarnings', this.renderValidations);
   }
 
   // used to render all cellsTextHashes to warm up the GPU
@@ -85,4 +89,15 @@ export class CellsSheet extends Container {
   update() {
     this.cellsFills.update();
   }
+
+  private renderValidations = (
+    sheetId: string,
+    hashX: number,
+    hashY: number,
+    validationWarnings: JsValidationWarning[]
+  ) => {
+    if (sheetId === this.sheetId) {
+      this.cellsLabels.renderValidations(hashX, hashY, validationWarnings);
+    }
+  };
 }

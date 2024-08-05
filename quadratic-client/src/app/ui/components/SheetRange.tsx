@@ -41,7 +41,6 @@ export const SheetRange = (props: Props) => {
     (e: FocusEvent<HTMLInputElement>) => {
       const value = e.currentTarget.value;
       const selection = parseSelectionString(value, sheets.sheet.id);
-      console.log(selection);
       if (selection.selection) {
         onChangeRange(selection.selection);
         setRangeError(undefined);

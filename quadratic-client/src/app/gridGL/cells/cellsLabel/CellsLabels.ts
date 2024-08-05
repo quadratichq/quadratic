@@ -21,6 +21,7 @@ import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 import { CellsTextHash } from './CellsTextHash';
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
 import { events } from '@/app/events/events';
+import { JsValidationWarning } from '@/app/quadratic-core-types';
 
 export class CellsLabels extends Container {
   private cellsSheet: CellsSheet;
@@ -64,7 +65,7 @@ export class CellsLabels extends Container {
       cellsTextHash.clearMeshEntries(viewRectangle);
     } else {
       const cellsTextHash = this.cellsTextHashes.addChild(
-        new CellsTextHash(message.hashX, message.hashY, viewRectangle)
+        new CellsTextHash(this.sheetId, message.hashX, message.hashY, viewRectangle)
       );
       this.cellsTextHash.set(key, cellsTextHash);
     }
@@ -176,4 +177,12 @@ export class CellsLabels extends Container {
       hash.special.clickedToCell(column, row, world);
     }
   };
+
+  renderValidations(hashX: number, hashY: number, validationWarnings: JsValidationWarning[]) {
+    const key = `${hashX},${hashY}`;
+    const cellsTextHash = this.cellsTextHash.get(key);
+    if (cellsTextHash) {
+      cellsTextHash.warnings.populate(validationWarnings);
+    }
+  }
 }
