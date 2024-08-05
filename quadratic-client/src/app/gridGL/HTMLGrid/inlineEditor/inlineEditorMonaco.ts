@@ -268,11 +268,20 @@ class InlineEditorMonaco {
     return { bounds, position };
   }
 
-  getCharBeforeCursor(): string {
+  getNonWhitespaceCharBeforeCursor(): string {
     const formula = inlineEditorMonaco.get();
-    const position = inlineEditorMonaco.getPosition();
+
+    // If there is a selection then use the start of the selection; otherwise
+    // use the cursor position.
+    const selection = inlineEditorMonaco.editor?.getSelection()?.getStartPosition();
+    const position = selection ?? inlineEditorMonaco.getPosition();
+
     const line = formula.split('\n')[position.lineNumber - 1];
-    const lastCharacter = line[position.column - 2];
+    const lastCharacter =
+      line
+        .substring(0, position.column - 1) // 1-indexed to 0-indexed
+        .trimEnd()
+        .at(-1) ?? '';
     return lastCharacter;
   }
 
@@ -371,6 +380,7 @@ class InlineEditorMonaco {
     });
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.updateMonacoCursorPosition);
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.keepCursorVisible);
+    this.editor.onMouseDown(() => inlineEditorKeyboard.resetKeyboardPosition());
   }
 
   // Sends a keyboard event to the editor (used when returning

@@ -496,7 +496,7 @@ class InlineEditorHandler {
   // (except when editing formula).
   handleCellPointerDown() {
     if (this.open) {
-      if (!this.formula || inlineEditorFormula.isFormulaValid()) {
+      if (!this.formula || !inlineEditorFormula.wantsCellRef()) {
         this.close(0, 0, false);
       } else {
         if (!this.cursorIsMoving) {
