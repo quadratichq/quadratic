@@ -532,7 +532,7 @@ mod test {
             "91234567891",
             NumericFormatKind::Exponential,
             Some(10),
-        )
+        );
     }
 
     #[test]

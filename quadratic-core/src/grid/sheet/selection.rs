@@ -91,6 +91,7 @@ impl Sheet {
                                     }
                                 }
                             }
+                            Value::Tuple(_) => {} // Tuples are not spilled onto the grid
                         },
                         CodeRunResult::Err(_) => {}
                     }
@@ -128,7 +129,7 @@ impl Sheet {
                             if columns.contains(&x) {
                                 for y in rect.min.y..=rect.max.y {
                                     if let Some(entry) = code_run
-                                        .cell_value_ref((x - pos.x) as u32, (y - pos.y) as u32)
+                                        .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
                                     {
                                         if !matches!(entry, &CellValue::Blank) {
                                             count += 1;
@@ -165,8 +166,8 @@ impl Sheet {
                     for y in rect.min.y..=rect.max.y {
                         if rows.contains(&y) {
                             for x in rect.min.x..=rect.max.x {
-                                if let Some(entry) =
-                                    code_run.cell_value_ref((x - pos.x) as u32, (y - pos.y) as u32)
+                                if let Some(entry) = code_run
+                                    .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
                                 {
                                     if !matches!(entry, &CellValue::Blank) {
                                         count += 1;
@@ -205,8 +206,8 @@ impl Sheet {
                     for x in rect.min.x..=rect.max.x {
                         for y in rect.min.y..=rect.max.y {
                             if rects.iter().any(|rect| rect.contains(Pos { x, y })) {
-                                if let Some(entry) =
-                                    code_run.cell_value_ref((x - pos.x) as u32, (y - pos.y) as u32)
+                                if let Some(entry) = code_run
+                                    .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
                                 {
                                     if !matches!(entry, &CellValue::Blank) {
                                         count += 1;
