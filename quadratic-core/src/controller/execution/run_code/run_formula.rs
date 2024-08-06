@@ -18,7 +18,7 @@ impl GridController {
         transaction.current_sheet_pos = Some(sheet_pos);
         match parse_formula(&code, sheet_pos.into()) {
             Ok(parsed) => {
-                let output = parsed.eval(&mut ctx);
+                let output = parsed.eval(&mut ctx).into_non_tuple();
                 transaction.cells_accessed = ctx.cells_accessed;
                 let new_code_run = CodeRun {
                     std_out: None,

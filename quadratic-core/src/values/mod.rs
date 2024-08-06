@@ -162,13 +162,14 @@ impl Value {
         })
     }
 
-    /// Converts a single error cell value into a `CodeResult::Err`; all other
-    /// values are unchanged.
+    /// Returns the contained error, or panics the value is not just a single
+    /// error.
     #[cfg(test)]
-    pub fn into_non_error_value(self) -> CodeResult<Self> {
+    #[track_caller]
+    pub fn unwrap_err(self) -> crate::RunError {
         match self {
-            Value::Single(CellValue::Error(e)) => Err(*e),
-            other => Ok(other),
+            Value::Single(v) => v.unwrap_err(),
+            other => panic!("expected error value; got {other:?}"),
         }
     }
 }
@@ -260,21 +261,31 @@ impl Spanned<Value> {
         })
     }
 
-    /// Converts a single error cell value into a `CodeResult::Err`; all other
-    /// values are unchanged.
-    #[cfg(test)]
-    pub fn into_non_error_value(self) -> CodeResult<Self> {
-        self.try_map(Value::into_non_error_value)
+    /// Returns the value if is an array or single value, or an error value if
+    /// it is a tuple.
+    pub fn into_non_tuple(self) -> Self {
+        let span = self.span;
+        self.map(|v| {
+            if matches!(v, Value::Tuple(_)) {
+                Value::Single(CellValue::Error(Box::new(
+                    RunErrorMsg::Expected {
+                        expected: "array or value".into(),
+                        got: Some("tuple".into()),
+                    }
+                    .with_span(span),
+                )))
+            } else {
+                v
+            }
+        })
     }
-    /// Returns the contained error, or panics the value is not just a
-    /// single error.
+
+    /// Returns the contained error, or panics the value is not just a single
+    /// error.
     #[cfg(test)]
     #[track_caller]
     pub fn unwrap_err(self) -> crate::RunError {
-        match self.inner {
-            Value::Single(v) => v.unwrap_err(),
-            other => panic!("expected error value; got {other:?}"),
-        }
+        self.inner.unwrap_err()
     }
 }
 

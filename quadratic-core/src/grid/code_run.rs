@@ -4,7 +4,7 @@
 //! any given CellValue::Code type (ie, if it doesn't exist then a run hasn't been
 //! performed yet).
 
-use crate::{ArraySize, CellValue, Pos, Rect, RunError, SheetPos, SheetRect, Value};
+use crate::{ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -58,6 +58,10 @@ impl CodeRun {
                 CodeRunResult::Ok(value) => match value {
                     Value::Single(v) => v.clone(),
                     Value::Array(a) => a.get(x, y).cloned().unwrap_or(CellValue::Blank),
+                    Value::Tuple(_) => CellValue::Error(Box::new(
+                        RunErrorMsg::InternalError("tuple saved as code run result".into())
+                            .without_span(),
+                    )), // should never happen
                 },
                 CodeRunResult::Err(e) => CellValue::Error(Box::new(e.clone())),
             }

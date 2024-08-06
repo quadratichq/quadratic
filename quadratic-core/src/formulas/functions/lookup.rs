@@ -21,10 +21,12 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[examples("INDIRECT(\"Cn7\")", "INDIRECT(\"F\" & B0)")]
             #[zip_map]
             fn INDIRECT(ctx: Ctx, [cellref_string]: (Spanned<String>)) {
+                let span = cellref_string.span;
+                // TODO: support array references
                 let cell_ref = CellRef::parse_a1(&cellref_string.inner, ctx.sheet_pos.into())
-                    .ok_or(RunErrorMsg::BadCellReference.with_span(cellref_string.span))?;
-                let pos = ctx.resolve_ref(&cell_ref, cellref_string.span)?.inner;
-                ctx.get_cell(pos, cellref_string.span)?.inner
+                    .ok_or(RunErrorMsg::BadCellReference.with_span(span))?;
+                let pos = ctx.resolve_ref(&cell_ref, span)?.inner;
+                ctx.get_cell(pos, span).inner
             }
         ),
         formula_fn!(

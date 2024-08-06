@@ -11,7 +11,7 @@ mod parser;
 mod wildcards;
 
 #[cfg(test)]
-mod tests;
+pub mod tests;
 
 use ast::AstNode;
 pub use ast::Formula;

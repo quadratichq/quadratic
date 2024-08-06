@@ -105,6 +105,6 @@ fn test_convert_to_tuple() {
     g.sheets_mut()[0].set_cell_value(pos![A5], "hello");
     // This string format is used for testing and potentially display; not as an
     // unambiguous representation, so it's fine that the string is unquoted.
-    assert_eq!("1", eval_to_string(&mut g, "_TEST_TUPLE(A1:A10)"),);
-    assert_eq!("2", eval_to_string(&mut g, "_TEST_TUPLE((A1:A10, C1:C10))"),);
+    assert_eq!("1", eval_to_string(&mut g, "_TEST_TUPLE(A1:A10)"));
+    assert_eq!("2", eval_to_string(&mut g, "_TEST_TUPLE((A1:A10, C1:C10))"));
 }

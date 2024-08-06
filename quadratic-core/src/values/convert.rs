@@ -1,4 +1,5 @@
 use bigdecimal::{BigDecimal, ToPrimitive, Zero};
+use itertools::Itertools;
 
 use super::{CellValue, IsBlank, Value};
 use crate::{CodeResult, CodeResultExt, RunErrorMsg, Span, Spanned, Unspan};
@@ -290,9 +291,10 @@ impl CoerceInto for Spanned<CellValue> {
 
 impl<'a> CoerceInto for Spanned<&'a Value> {
     fn into_non_error_value(self) -> CodeResult<&'a Value> {
-        let error = match &self.inner {
+        let error = match self.inner {
             Value::Single(v) => v.error(),
             Value::Array(a) => a.first_error(),
+            Value::Tuple(t) => t.iter().find_map(|a| a.first_error()),
         };
         match error {
             Some(e) => Err(e.clone()),
@@ -305,6 +307,11 @@ impl CoerceInto for Spanned<Value> {
         match self.inner {
             Value::Single(v) => v.into_non_error_value().map(Value::Single),
             Value::Array(a) => a.into_non_error_array().map(Value::Array),
+            Value::Tuple(t) => t
+                .into_iter()
+                .map(|a| a.into_non_error_array())
+                .try_collect()
+                .map(Value::Tuple),
         }
     }
 }

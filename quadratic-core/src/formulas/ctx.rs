@@ -88,41 +88,41 @@ impl<'ctx> Ctx<'ctx> {
         }
     }
 
-    /// Fetches the contents of the cell at `ref_pos` evaluated at
-    /// `self.sheet_pos`, or returns an error in the case of a circular
-    /// reference.
-    pub fn get_cell(&mut self, sheet_pos: SheetPos, span: Span) -> CodeResult<Spanned<CellValue>> {
+    /// Fetches the contents of the cell at `pos` evaluated at `self.sheet_pos`,
+    /// or returns an error in the case of a circular reference.
+    pub fn get_cell(&mut self, pos: SheetPos, span: Span) -> Spanned<CellValue> {
         if self.skip_computation {
-            return Ok(CellValue::Blank).with_span(span);
+            let value = CellValue::Blank;
+            return Spanned { span, inner: value };
         }
 
-        if sheet_pos == self.sheet_pos {
-            return Err(RunErrorMsg::CircularReference.with_span(span));
+        let error_value = |e: RunErrorMsg| {
+            let value = CellValue::Error(Box::new(e.with_span(span)));
+            Spanned { inner: value, span }
+        };
+
+        let Some(sheet) = self.grid.try_sheet(pos.sheet_id) else {
+            return error_value(RunErrorMsg::BadCellReference);
+        };
+        if pos == self.sheet_pos {
+            return error_value(RunErrorMsg::CircularReference);
         }
 
-        self.cells_accessed.insert(sheet_pos.into());
+        self.cells_accessed.insert(pos.into());
 
-        let sheet = self
-            .grid
-            .try_sheet(sheet_pos.sheet_id)
-            .ok_or(RunErrorMsg::BadCellReference.with_span(span))?;
-        let value = sheet
-            .display_value(sheet_pos.into())
-            .unwrap_or(CellValue::Blank);
-        Ok(value).with_span(span)
+        let value = sheet.get_cell_for_formula(pos.into());
+        Spanned { inner: value, span }
     }
 
-    pub fn get_cell_array(
-        &mut self,
-        sheet_rect: SheetRect,
-        span: Span,
-    ) -> CodeResult<Spanned<Array>> {
+    /// Fetches the contents of the cell array at `rect`, or returns an error in
+    /// the case of a circular reference.
+    pub fn get_cell_array(&mut self, rect: SheetRect, span: Span) -> CodeResult<Spanned<Array>> {
         if self.skip_computation {
             return Ok(CellValue::Blank.into()).with_span(span);
         }
 
-        let sheet_id = sheet_rect.sheet_id;
-        let array_size = sheet_rect.size();
+        let sheet_id = rect.sheet_id;
+        let array_size = rect.size();
         if std::cmp::max(array_size.w, array_size.h).get() > crate::limits::CELL_RANGE_LIMIT {
             return Err(RunErrorMsg::ArrayTooBig.with_span(span));
         }
@@ -130,10 +130,10 @@ impl<'ctx> Ctx<'ctx> {
         let mut flat_array = smallvec![];
         // Reuse the same `CellRef` object so that we don't have to
         // clone `sheet_name.`
-        for y in sheet_rect.y_range() {
-            for x in sheet_rect.x_range() {
+        for y in rect.y_range() {
+            for x in rect.x_range() {
                 // TODO: record array dependency instead of many individual cell dependencies
-                flat_array.push(self.get_cell(SheetPos { x, y, sheet_id }, span)?.inner);
+                flat_array.push(self.get_cell(SheetPos { x, y, sheet_id }, span).inner);
             }
         }
 
