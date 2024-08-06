@@ -118,6 +118,10 @@ impl Sheet {
             }
         });
 
+        if old_formats == *formats {
+            return (vec![], vec![]);
+        }
+
         // adds operations to revert changes to the columns
         let mut ops = vec![];
         ops.push(Operation::SetCellFormatsSelection {

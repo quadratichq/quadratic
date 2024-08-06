@@ -58,6 +58,10 @@ impl Sheet {
             }
         });
 
+        if old_formats == *formats {
+            return (vec![], vec![]);
+        }
+
         self.send_render_cells(&renders);
         self.send_html_output(&html);
         self.send_fills(&fills);

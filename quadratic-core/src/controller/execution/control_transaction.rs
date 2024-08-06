@@ -99,6 +99,7 @@ impl GridController {
                 TransactionType::Unset => panic!("Expected a transaction type"),
             }
         }
+
         transaction.send_transaction();
 
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {

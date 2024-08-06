@@ -20,7 +20,6 @@ impl GridController {
         } else {
             RunLengthEncoding::new()
         };
-        self.send_updated_bounds_rect(sheet_rect, true);
         result
     }
 
@@ -61,13 +60,6 @@ impl GridController {
     ) {
         let ops = self.toggle_commas_operations(source, sheet_rect);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
-    }
-
-    pub fn get_all_cell_formats(&self, sheet_rect: SheetRect) -> Vec<CellFmtArray> {
-        let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) else {
-            return vec![];
-        };
-        sheet.get_all_cell_formats(sheet_rect, None)
     }
 
     pub fn set_cell_render_size(

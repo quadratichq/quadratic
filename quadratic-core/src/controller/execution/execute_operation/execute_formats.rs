@@ -52,6 +52,9 @@ impl GridController {
                     self.set_cell_formats_for_type::<RenderSize>(&sheet_rect, output_size),
                 ),
             };
+            if old_attr == attr {
+                return;
+            }
 
             if !transaction.is_server() {
                 match &attr {
@@ -106,13 +109,12 @@ impl GridController {
                 .forward_operations
                 .push(Operation::SetCellFormats { sheet_rect, attr });
 
-            transaction.reverse_operations.insert(
-                0,
-                Operation::SetCellFormats {
+            transaction
+                .reverse_operations
+                .push(Operation::SetCellFormats {
                     sheet_rect,
                     attr: old_attr,
-                },
-            );
+                });
         }
     }
 
@@ -125,6 +127,10 @@ impl GridController {
         if let Operation::SetCellFormatsSelection { selection, formats } = op {
             if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
                 let (reverse_operations, rows) = sheet.set_formats_selection(&selection, &formats);
+                if reverse_operations.is_empty() {
+                    return;
+                }
+
                 if !transaction.is_server() {
                     self.send_updated_bounds_selection(&selection, true);
                     if !rows.is_empty() {
@@ -144,7 +150,7 @@ impl GridController {
 
                 transaction
                     .reverse_operations
-                    .splice(0..0, reverse_operations.iter().cloned());
+                    .extend(reverse_operations.iter().cloned());
             }
         }
     }

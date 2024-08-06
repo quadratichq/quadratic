@@ -149,7 +149,7 @@ mod test {
     fn test_add_delete_reorder_sheets() {
         let mut g = GridController::test();
         g.add_sheet(None);
-        g.add_sheet(None);
+        g.add_sheet_with_name("test".into(), None);
         let old_sheet_ids = g.sheet_ids();
         let s1 = old_sheet_ids[0];
         let s2 = old_sheet_ids[1];

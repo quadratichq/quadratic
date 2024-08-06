@@ -20,6 +20,12 @@ impl GridController {
                 // sheet may have been deleted
                 return;
             };
+
+            let old_size = sheet.offsets.set_column_width(column, new_size);
+            if old_size == new_size {
+                return;
+            }
+
             transaction
                 .forward_operations
                 .push(Operation::ResizeColumn {
@@ -29,17 +35,14 @@ impl GridController {
                     client_resized,
                 });
 
-            let old_size = sheet.offsets.set_column_width(column, new_size);
-
-            transaction.reverse_operations.insert(
-                0,
-                Operation::ResizeColumn {
+            transaction
+                .reverse_operations
+                .push(Operation::ResizeColumn {
                     sheet_id,
                     column,
                     new_size: old_size,
                     client_resized: false,
-                },
-            );
+                });
 
             if (cfg!(target_family = "wasm") || cfg!(test))
                 && (transaction.is_undo_redo()
@@ -82,6 +85,13 @@ impl GridController {
                 // sheet may have been deleted
                 return;
             };
+
+            let old_size = sheet.offsets.set_row_height(row, new_size);
+            let old_client_resize = sheet.update_row_resize(row, client_resized);
+            if old_size == new_size && old_client_resize == client_resized {
+                return;
+            }
+
             transaction.forward_operations.push(Operation::ResizeRow {
                 sheet_id,
                 row,
@@ -89,18 +99,12 @@ impl GridController {
                 client_resized,
             });
 
-            let old_size = sheet.offsets.set_row_height(row, new_size);
-            let old_client_resize = sheet.update_row_resize(row, client_resized);
-
-            transaction.reverse_operations.insert(
-                0,
-                Operation::ResizeRow {
-                    sheet_id,
-                    row,
-                    new_size: old_size,
-                    client_resized: old_client_resize,
-                },
-            );
+            transaction.reverse_operations.push(Operation::ResizeRow {
+                sheet_id,
+                row,
+                new_size: old_size,
+                client_resized: old_client_resize,
+            });
 
             if (cfg!(target_family = "wasm") || cfg!(test))
                 && (transaction.is_undo_redo()
@@ -202,7 +206,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let column = 0;
-        let new_size = 100.0;
+        let new_size = 120.0;
         gc.commit_single_resize(sheet_id, Some(column), None, new_size, None);
         let column_width = gc
             .grid
