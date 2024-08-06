@@ -3,12 +3,11 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import {
   AWS_S3_ACCESS_KEY_ID,
   AWS_S3_BUCKET_NAME,
+  AWS_S3_ENDPOINT,
   AWS_S3_REGION,
   AWS_S3_SECRET_ACCESS_KEY,
-  ENVIRONMENT,
 } from '../env-vars';
-const endpoint =
-  ENVIRONMENT === 'docker' ? 'http://localstack:4566' : ENVIRONMENT === 'local' ? 'http://0.0.0.0:4566' : undefined;
+const endpoint = AWS_S3_ENDPOINT;
 
 // Initialize S3 client
 export const s3Client = new S3Client({
