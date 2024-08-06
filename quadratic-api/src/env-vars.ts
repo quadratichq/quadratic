@@ -25,6 +25,7 @@ export const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE as string;
 export const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY as string;
 export const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY as string;
 export const STORAGE_TYPE = process.env.STORAGE_TYPE as string;
+export const AUTH_TYPE = process.env.AUTH_TYPE as string;
 [
   'AUTH0_DOMAIN',
   'AUTH0_CLIENT_ID',
@@ -32,9 +33,10 @@ export const STORAGE_TYPE = process.env.STORAGE_TYPE as string;
   'AUTH0_JWKS_URI',
   'AUTH0_ISSUER',
   'AUTH0_AUDIENCE',
-  'STORAGE_TYPE',
   'STRIPE_SECRET_KEY',
   'ENCRYPTION_KEY',
+  'STORAGE_TYPE',
+  'AUTH_TYPE',
 ].forEach(ensureEnvVarExists);
 
 // Required in prod, optional locally

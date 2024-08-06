@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
-import { getUsersFromAuth0 } from '../../auth0/profile';
+import { getUsers } from '../../auth/auth';
 import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
@@ -86,7 +86,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
   const dbInvites = dbTeam.TeamInvite ? dbTeam.TeamInvite : [];
 
   // Get user info from auth0
-  const auth0UsersById = await getUsersFromAuth0(dbUsers.map(({ user }) => user));
+  const auth0UsersById = await getUsers(dbUsers.map(({ user }) => user));
 
   // Get signed thumbnail URLs
   await Promise.all(

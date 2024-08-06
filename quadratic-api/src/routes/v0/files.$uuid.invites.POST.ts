@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/node';
 import { Response } from 'express';
 import { ApiSchemas, ApiTypes, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
-import { getUsersFromAuth0, lookupUsersFromAuth0ByEmail } from '../../auth0/profile';
+import { getUsers, lookupUsersFromAuth0ByEmail } from '../../auth/auth';
 import dbClient from '../../dbClient';
 import { sendEmail } from '../../email/sendEmail';
 import { templates } from '../../email/templates';
@@ -62,7 +62,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:
   }
 
   // Get the auth0 info (email/name) for the user making the request
-  const resultsById = await getUsersFromAuth0([{ id: userMakingRequestId, auth0Id: userMakingRequestAuth0Id }]);
+  const resultsById = await getUsers([{ id: userMakingRequestId, auth0Id: userMakingRequestAuth0Id }]);
   const { email: userMakingRequestEmail, name: userMakingRequestName } = resultsById[userMakingRequestId];
 
   // Are you trying to invite yourself as the owner? No dice.
