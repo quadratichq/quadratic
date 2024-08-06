@@ -699,25 +699,27 @@ pub(crate) fn export_sheet(sheet: &Sheet) -> current::Sheet {
             .iter()
             .map(|(pos, code_run)| {
                 let result = match &code_run.result {
-                    CodeRunResult::Ok(output) => current::CodeRunResult::Ok(match output {
-                        Value::Single(cell_value) => {
-                            current::OutputValue::Single(export_cell_value(cell_value))
-                        }
-                        Value::Array(array) => current::OutputValue::Array(current::OutputArray {
-                            size: current::OutputSize {
-                                w: array.width() as i64,
-                                h: array.height() as i64,
-                            },
-                            values: array
-                                .rows()
-                                .flat_map(|row| row.iter().map(export_cell_value))
-                                .collect(),
-                        }),
+                    CodeRunResult::Ok(output) => match output {
+                        Value::Single(cell_value) => current::CodeRunResult::Ok(
+                            current::OutputValue::Single(export_cell_value(cell_value)),
+                        ),
+                        Value::Array(array) => current::CodeRunResult::Ok(
+                            current::OutputValue::Array(current::OutputArray {
+                                size: current::OutputSize {
+                                    w: array.width() as i64,
+                                    h: array.height() as i64,
+                                },
+                                values: array
+                                    .rows()
+                                    .flat_map(|row| row.iter().map(export_cell_value))
+                                    .collect(),
+                            }),
+                        ),
                         Value::Tuple(_) => current::CodeRunResult::Err(current::RunError {
                             span: None,
                             msg: current::RunErrorMsg::Unexpected("tuple as cell output".into()),
                         }),
-                    }),
+                    },
                     CodeRunResult::Err(error) => {
                         current::CodeRunResult::Err(current::RunError::from_grid_run_error(error))
                     }
