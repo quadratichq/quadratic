@@ -86,17 +86,20 @@ export const ValidationMessage = (props: Props) => {
         value={validation?.error.style || 'Stop'}
         onChange={(style) => changeErrorStyle(style as ValidationStyle)}
         options={STYLE_OPTIONS}
+        disabled={!validation?.error.show}
       />
       <ValidationInput
         label="Title"
         value={validation?.error.title || ''}
         onChange={(title) => changeErrorTitle(title)}
+        disabled={!validation?.error.show}
       />
       <ValidationTextArea
         label="Message"
         value={validation?.error.message || ''}
         onChange={(message) => changeErrorMessage(message)}
         height="10rem"
+        disabled={!validation?.error.show}
       />
     </>
   );
@@ -116,12 +119,14 @@ export const ValidationMessage = (props: Props) => {
           label="Title"
           value={validation?.message.title || ''}
           onChange={(title) => changeMessageTitle(title)}
+          disabled={!validation?.message.show}
         />
         <ValidationTextArea
           label="Message"
           value={validation?.message.message || ''}
           onChange={(message) => changeMessageMessage(message)}
           height="10rem"
+          disabled={!validation?.message.show}
         />
       </div>
       {!onlyMessage && error}
