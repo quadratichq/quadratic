@@ -36,6 +36,7 @@ const OPEN_SANS_FIX = { x: 1.8, y: -1 };
 const SPILL_ERROR_TEXT = ' #SPILL';
 const RUN_ERROR_TEXT = ' #ERROR';
 const CHART_TEXT = ' CHART';
+const LINE_HEIGHT = 16;
 
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
 
@@ -300,7 +301,7 @@ export class CellLabel {
 
         line++;
         pos.x = 0;
-        pos.y += data.lineHeight;
+        pos.y += LINE_HEIGHT / scale; // data.lineHeight;
         prevCharCode = null;
         spaceCount = 0;
         continue;
@@ -338,7 +339,7 @@ export class CellLabel {
 
         line++;
         pos.x = 0;
-        pos.y += data.lineHeight;
+        pos.y += LINE_HEIGHT / scale; //data.lineHeight;
         prevCharCode = null;
         spaceCount = 0;
       } else {
