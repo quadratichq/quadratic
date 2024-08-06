@@ -528,7 +528,8 @@ export class CellLabel {
     const color = this.tint ? convertTintToArray(this.tint) : undefined;
 
     // This attempts to reduce the decimal precision to ensure the number fits
-    // within the cell. If it doesn't, it shows the pounds
+    // within the cell. If it doesn't, it shows the pounds. The maxWidth is
+    // defined as the width of the box minus the size of the cursor border.
     const maxWidth = this.AABB.width - CURSOR_BORDER_SIZE * 2;
     if (this.number && this.textWidth > maxWidth && this.displayedText) {
       let digits: number | undefined = undefined;
@@ -545,7 +546,6 @@ export class CellLabel {
 
         text = result.number;
         this.updateText(labelMeshes, text);
-        console.log(this.textWidth, this.AABB.width - CURSOR_BORDER_SIZE * 2);
       } while (this.textWidth > maxWidth && digits >= 0 && infinityProtection++ < 1000);
 
       // we were not able to reduce the number to fit the cell, so we show pound characters
