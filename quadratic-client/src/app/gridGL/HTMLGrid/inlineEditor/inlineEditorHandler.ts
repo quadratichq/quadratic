@@ -293,7 +293,8 @@ class InlineEditorHandler {
 
     this.x = cellOutlineOffset + (align === 'right' ? Math.min(x, x + cellContentWidth - inlineEditorWidth) : x);
     this.y =
-      cellOutlineOffset + (verticalAlign === 'bottom' ? Math.min(y, y + cellContentHeight - inlineEditorHeight) : y);
+      cellOutlineOffset / 2 +
+      (verticalAlign === 'bottom' ? Math.min(y, y + cellContentHeight - inlineEditorHeight) : y);
     this.width = inlineEditorWidth;
     this.height = inlineEditorHeight;
 
