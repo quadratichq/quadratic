@@ -241,11 +241,8 @@ impl GridController {
             return Err("Sheet not found".into());
         };
         let source = selection.source();
-        let is_percentage =
-            sheet.cell_numeric_format_kind(source) == Some(NumericFormatKind::Percentage);
-        let source_decimals = sheet
-            .calculate_decimal_places(source, is_percentage)
-            .unwrap_or(0);
+        let kind = sheet.cell_numeric_format_kind(source);
+        let source_decimals = sheet.calculate_decimal_places(source, kind).unwrap_or(0);
         let new_precision = i16::max(0, source_decimals + (delta as i16));
         let formats = Formats::repeat(
             FormatUpdate {

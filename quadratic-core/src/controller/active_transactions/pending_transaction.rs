@@ -4,7 +4,7 @@
 //! * tracking the state of a pending transaction
 //! * converting pending transaction to a completed transaction
 
-use std::collections::{HashSet, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 use uuid::Uuid;
 
@@ -12,7 +12,7 @@ use crate::{
     controller::{
         execution::TransactionType, operations::operation::Operation, transaction::Transaction,
     },
-    grid::CodeCellLanguage,
+    grid::{CodeCellLanguage, SheetId},
     SheetPos, SheetRect,
 };
 
@@ -59,6 +59,8 @@ pub struct PendingTransaction {
 
     // cursor saved for an Undo or Redo
     pub cursor_undo_redo: Option<String>,
+
+    pub resize_rows: HashMap<SheetId, HashSet<i64>>,
 }
 
 impl Default for PendingTransaction {
@@ -80,6 +82,7 @@ impl Default for PendingTransaction {
             complete: false,
             generate_thumbnail: false,
             cursor_undo_redo: None,
+            resize_rows: HashMap::new(),
         }
     }
 }

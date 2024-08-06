@@ -13,7 +13,7 @@ use super::formatting::CellFmtAttr;
 use super::ids::SheetId;
 use super::js_types::CellFormatSummary;
 use super::resize::ResizeMap;
-use super::{CodeRun, NumericFormatKind};
+use super::{CellWrap, CodeRun, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
 use crate::selection::Selection;
 use crate::sheet_offsets::SheetOffsets;
@@ -244,13 +244,14 @@ impl Sheet {
         A::column_data_ref(column).get(pos.y)
     }
 
-    pub fn cell_numeric_format_kind(&self, pos: Pos) -> Option<NumericFormatKind> {
-        let column = self.get_column(pos.x)?;
-        if let Some(format) = column.numeric_format.get(pos.y) {
-            Some(format.kind)
-        } else {
-            None
+    /// Returns the type of number (defaulting to NumericFormatKind::Number) for a cell.
+    pub fn cell_numeric_format_kind(&self, pos: Pos) -> NumericFormatKind {
+        if let Some(column) = self.get_column(pos.x) {
+            if let Some(format) = column.numeric_format.get(pos.y) {
+                return format.kind;
+            }
         }
+        NumericFormatKind::Number
     }
 
     /// Returns a summary of formatting in a region.
@@ -339,16 +340,25 @@ impl Sheet {
     }
 
     /// get or calculate decimal places for a cell
-    pub fn calculate_decimal_places(&self, pos: Pos, is_percentage: bool) -> Option<i16> {
+    pub fn calculate_decimal_places(&self, pos: Pos, kind: NumericFormatKind) -> Option<i16> {
         // first check if numeric_decimals already exists for this cell
         if let Some(decimals) = self.format_cell(pos.x, pos.y, true).numeric_decimals {
             return Some(decimals);
+        }
+
+        // if currency, then use the default 2 decimal places
+        if kind == NumericFormatKind::Currency {
+            return Some(2);
         }
 
         // otherwise check value to see if it has a decimal and use that length
         if let Some(value) = self.display_value(pos) {
             match value {
                 CellValue::Number(n) => {
+                    if kind == NumericFormatKind::Exponential {
+                        return Some(n.to_string().len() as i16 - 1);
+                    }
+
                     let exponent = n.as_bigint_and_exponent().1;
                     let max_decimals = 9;
                     let mut decimals = n
@@ -357,7 +367,7 @@ impl Sheet {
                         .as_bigint_and_exponent()
                         .1 as i16;
 
-                    if is_percentage {
+                    if kind == NumericFormatKind::Percentage {
                         decimals -= 2;
                     }
 
@@ -370,34 +380,84 @@ impl Sheet {
         }
     }
 
-    pub fn get_rows_in_selection(&self, selection: &Selection) -> Vec<i64> {
-        let mut rows = HashSet::<i64>::new();
-        if (selection.all) || selection.columns.is_some() {
-            if let GridBounds::NonEmpty(rect) = self.data_bounds {
-                for y in rect.y_range() {
-                    rows.insert(y);
-                }
-            }
-            if let GridBounds::NonEmpty(rect) = self.format_bounds {
-                for y in rect.y_range() {
-                    rows.insert(y);
-                }
-            }
-        } else {
-            if let Some(selection_rows) = &selection.rows {
-                for &row in selection_rows {
-                    rows.insert(row);
-                }
-            }
-            if let Some(selection_rects) = &selection.rects {
-                for rect in selection_rects {
-                    for y in rect.y_range() {
-                        rows.insert(y);
-                    }
+    pub fn check_if_wrap_in_cell(&self, x: i64, y: i64) -> bool {
+        let value: Option<CellValue> = self.cell_value(Pos { x, y });
+        let format = self.format_cell(x, y, true);
+        value.is_some() && Some(CellWrap::Wrap) == format.wrap
+    }
+
+    pub fn check_if_wrap_in_row(&self, y: i64) -> bool {
+        if let Some((min, max)) = self.row_bounds(y, true) {
+            for x in min..=max {
+                let value: Option<CellValue> = self.cell_value(Pos { x, y });
+                let format = self.format_cell(x, y, true);
+                if value.is_some() && Some(CellWrap::Wrap) == format.wrap {
+                    return true;
                 }
             }
         }
-        rows.into_iter().collect()
+        false
+    }
+
+    pub fn get_rows_with_wrap_in_column(&self, x: i64) -> Vec<i64> {
+        let mut rows = vec![];
+        if let Some((start, end)) = self.column_bounds(x, true) {
+            for y in start..=end {
+                let value: Option<CellValue> = self.cell_value(Pos { x, y });
+                let format = self.format_cell(x, y, true);
+                if value.is_some() && Some(CellWrap::Wrap) == format.wrap {
+                    rows.push(y);
+                }
+            }
+        }
+        rows
+    }
+
+    pub fn get_rows_with_wrap_in_rect(&self, rect: &Rect) -> Vec<i64> {
+        let mut rows = vec![];
+        for y in rect.y_range() {
+            for x in rect.x_range() {
+                let value: Option<CellValue> = self.cell_value(Pos { x, y });
+                let format = self.format_cell(x, y, true);
+                if value.is_some() && Some(CellWrap::Wrap) == format.wrap {
+                    rows.push(y);
+                    break;
+                }
+            }
+        }
+        rows
+    }
+
+    pub fn get_rows_with_wrap_in_selection(&self, selection: &Selection) -> Vec<i64> {
+        let mut rows_set = HashSet::<i64>::new();
+        if selection.all {
+            let bounds = self.bounds(true);
+            if let GridBounds::NonEmpty(rect) = bounds {
+                let rows = self.get_rows_with_wrap_in_rect(&rect);
+                rows_set.extend(rows);
+            }
+        } else {
+            if let Some(columns) = &selection.columns {
+                for x in columns {
+                    let rows = self.get_rows_with_wrap_in_column(*x);
+                    rows_set.extend(rows);
+                }
+            }
+            if let Some(selection_rows) = &selection.rows {
+                for row in selection_rows {
+                    if self.check_if_wrap_in_row(*row) {
+                        rows_set.insert(*row);
+                    }
+                }
+            }
+            if let Some(selection_rects) = &selection.rects {
+                selection_rects.iter().for_each(|rect| {
+                    let rows = self.get_rows_with_wrap_in_rect(rect);
+                    rows_set.extend(rows);
+                });
+            }
+        }
+        rows_set.into_iter().collect()
     }
 }
 
@@ -448,12 +508,12 @@ mod test {
         x: i64,
         y: i64,
         value: &str,
-        is_percentage: bool,
+        kind: NumericFormatKind,
         expected: Option<i16>,
     ) {
         let pos = Pos { x, y };
         let _ = sheet.set_cell_value(pos, CellValue::Number(BigDecimal::from_str(value).unwrap()));
-        assert_eq!(sheet.calculate_decimal_places(pos, is_percentage), expected);
+        assert_eq!(sheet.calculate_decimal_places(pos, kind), expected);
     }
 
     #[test]
@@ -462,16 +522,62 @@ mod test {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
         // validate simple decimal places
-        assert_decimal_places_for_number(&mut sheet, 1, 2, "12.23", false, Some(2));
+        assert_decimal_places_for_number(
+            &mut sheet,
+            1,
+            2,
+            "12.23",
+            NumericFormatKind::Number,
+            Some(2),
+        );
 
         // validate percentage
-        assert_decimal_places_for_number(&mut sheet, 2, 2, "0.23", true, Some(0));
+        assert_decimal_places_for_number(
+            &mut sheet,
+            2,
+            2,
+            "0.23",
+            NumericFormatKind::Percentage,
+            Some(0),
+        );
 
         // validate rounding
-        assert_decimal_places_for_number(&mut sheet, 3, 2, "9.1234567891", false, Some(9));
+        assert_decimal_places_for_number(
+            &mut sheet,
+            3,
+            2,
+            "9.1234567891",
+            NumericFormatKind::Number,
+            Some(9),
+        );
 
         // validate percentage rounding
-        assert_decimal_places_for_number(&mut sheet, 3, 2, "9.1234567891", true, Some(7));
+        assert_decimal_places_for_number(
+            &mut sheet,
+            3,
+            2,
+            "9.1234567891",
+            NumericFormatKind::Percentage,
+            Some(7),
+        );
+
+        assert_decimal_places_for_number(
+            &mut sheet,
+            3,
+            2,
+            "9.1234567891",
+            NumericFormatKind::Currency,
+            Some(2),
+        );
+
+        assert_decimal_places_for_number(
+            &mut sheet,
+            3,
+            2,
+            "91234567891",
+            NumericFormatKind::Exponential,
+            Some(10),
+        );
     }
 
     #[test]
@@ -492,7 +598,7 @@ mod test {
             ),
         );
         assert_eq!(
-            sheet.calculate_decimal_places(Pos { x: 3, y: 3 }, false),
+            sheet.calculate_decimal_places(Pos { x: 3, y: 3 }, NumericFormatKind::Number),
             Some(2)
         );
 
@@ -505,7 +611,15 @@ mod test {
             false,
         );
         assert_eq!(
-            sheet.calculate_decimal_places(Pos { x: 3, y: 3 }, false),
+            sheet.calculate_decimal_places(Pos { x: 3, y: 3 }, NumericFormatKind::Number),
+            Some(3)
+        );
+        assert_eq!(
+            sheet.calculate_decimal_places(Pos { x: 3, y: 3 }, NumericFormatKind::Percentage),
+            Some(3)
+        );
+        assert_eq!(
+            sheet.calculate_decimal_places(Pos { x: 3, y: 3 }, NumericFormatKind::Currency),
             Some(3)
         );
     }
@@ -521,7 +635,7 @@ mod test {
         );
 
         assert_eq!(
-            sheet.calculate_decimal_places(Pos { x: 1, y: 2 }, false),
+            sheet.calculate_decimal_places(Pos { x: 1, y: 2 }, NumericFormatKind::Number),
             None
         );
     }
@@ -538,7 +652,7 @@ mod test {
 
         // expect a single decimal place
         assert_eq!(
-            sheet.calculate_decimal_places(Pos { x: 1, y: 2 }, false),
+            sheet.calculate_decimal_places(Pos { x: 1, y: 2 }, NumericFormatKind::Number),
             Some(1)
         );
     }
@@ -558,7 +672,7 @@ mod test {
 
         assert_eq!(
             sheet.cell_numeric_format_kind(Pos { x: 0, y: 0 }),
-            Some(NumericFormatKind::Percentage)
+            NumericFormatKind::Percentage
         );
     }
 
@@ -670,27 +784,6 @@ mod test {
         assert_eq!(italic, Some(true));
     }
 
-    // TODO(ddimaria): use the code below numeric format kinds are in place
-    #[ignore]
-    #[test]
-    #[parallel]
-    fn test_cell_numeric_format_kinds() {
-        let (grid, sheet_id, _) = test_setup_basic();
-        let sheet = grid.sheet(sheet_id).clone();
-
-        let format_kind = sheet.cell_numeric_format_kind((2, 1).into());
-        assert_eq!(format_kind, Some(NumericFormatKind::Currency));
-
-        let format_kind = sheet.cell_numeric_format_kind((3, 1).into());
-        assert_eq!(format_kind, Some(NumericFormatKind::Percentage));
-
-        let format_kind = sheet.cell_numeric_format_kind((4, 1).into());
-        assert_eq!(format_kind, Some(NumericFormatKind::Exponential));
-
-        let format_kind = sheet.cell_numeric_format_kind((5, 1).into());
-        assert_eq!(format_kind, Some(NumericFormatKind::Number));
-    }
-
     #[test]
     #[parallel]
     fn test_cell_format_summary() {
@@ -766,5 +859,190 @@ mod test {
         assert_eq!(sheet.display_value(pos), None);
         sheet.set_cell_value(pos, CellValue::Blank);
         assert_eq!(sheet.display_value(pos), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_check_if_wrap_in_cell() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
+        assert!(!sheet.check_if_wrap_in_cell(0, 0));
+        let selection = Selection::pos(0, 0, sheet.id);
+        sheet.set_formats_selection(
+            &selection,
+            &Formats::repeat(
+                FormatUpdate {
+                    wrap: Some(Some(CellWrap::Wrap)),
+                    ..FormatUpdate::default()
+                },
+                1,
+            ),
+        );
+        assert!(sheet.check_if_wrap_in_cell(0, 0));
+        sheet.set_formats_selection(
+            &selection,
+            &Formats::repeat(
+                FormatUpdate {
+                    wrap: Some(Some(CellWrap::Overflow)),
+                    ..FormatUpdate::default()
+                },
+                1,
+            ),
+        );
+        assert!(!sheet.check_if_wrap_in_cell(0, 0));
+        sheet.set_formats_selection(
+            &selection,
+            &Formats::repeat(
+                FormatUpdate {
+                    wrap: Some(Some(CellWrap::Wrap)),
+                    ..FormatUpdate::default()
+                },
+                1,
+            ),
+        );
+        assert!(sheet.check_if_wrap_in_cell(0, 0));
+        sheet.set_formats_selection(
+            &selection,
+            &Formats::repeat(
+                FormatUpdate {
+                    wrap: Some(Some(CellWrap::Clip)),
+                    ..FormatUpdate::default()
+                },
+                1,
+            ),
+        );
+        assert!(!sheet.check_if_wrap_in_cell(0, 0));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_check_if_wrap_in_row() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
+        assert!(!sheet.check_if_wrap_in_row(0));
+        let selection = Selection::pos(0, 0, sheet.id);
+        sheet.set_formats_selection(
+            &selection,
+            &Formats::repeat(
+                FormatUpdate {
+                    wrap: Some(Some(CellWrap::Wrap)),
+                    ..FormatUpdate::default()
+                },
+                1,
+            ),
+        );
+        assert!(sheet.check_if_wrap_in_row(0));
+        sheet.set_formats_selection(
+            &selection,
+            &Formats::repeat(
+                FormatUpdate {
+                    wrap: Some(Some(CellWrap::Overflow)),
+                    ..FormatUpdate::default()
+                },
+                1,
+            ),
+        );
+        assert!(!sheet.check_if_wrap_in_row(0));
+        sheet.set_formats_selection(
+            &selection,
+            &Formats::repeat(
+                FormatUpdate {
+                    wrap: Some(Some(CellWrap::Clip)),
+                    ..FormatUpdate::default()
+                },
+                1,
+            ),
+        );
+        assert!(!sheet.check_if_wrap_in_row(0));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_get_rows_with_wrap_in_column() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
+        sheet.set_cell_value(Pos { x: 0, y: 2 }, "test");
+        let rect = Rect {
+            min: Pos { x: 0, y: 0 },
+            max: Pos { x: 0, y: 4 },
+        };
+        assert_eq!(sheet.get_rows_with_wrap_in_column(0), Vec::<i64>::new());
+        sheet.set_formats_selection(
+            &Selection {
+                sheet_id: sheet.id,
+                rects: Some(vec![rect]),
+                ..Default::default()
+            },
+            &Formats::repeat(
+                FormatUpdate {
+                    wrap: Some(Some(CellWrap::Wrap)),
+                    ..FormatUpdate::default()
+                },
+                4,
+            ),
+        );
+        assert_eq!(sheet.get_rows_with_wrap_in_column(0), vec![0, 2]);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_get_rows_with_wrap_in_rect() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
+        sheet.set_cell_value(Pos { x: 0, y: 2 }, "test");
+        let rect = Rect {
+            min: Pos { x: 0, y: 0 },
+            max: Pos { x: 0, y: 4 },
+        };
+        assert_eq!(sheet.get_rows_with_wrap_in_rect(&rect), Vec::<i64>::new());
+        sheet.set_formats_selection(
+            &Selection {
+                sheet_id: sheet.id,
+                rects: Some(vec![rect]),
+                ..Default::default()
+            },
+            &Formats::repeat(
+                FormatUpdate {
+                    wrap: Some(Some(CellWrap::Wrap)),
+                    ..FormatUpdate::default()
+                },
+                4,
+            ),
+        );
+        assert_eq!(sheet.get_rows_with_wrap_in_rect(&rect), vec![0, 2]);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_get_rows_with_wrap_in_selection() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
+        sheet.set_cell_value(Pos { x: 0, y: 2 }, "test");
+        let rect = Rect {
+            min: Pos { x: 0, y: 0 },
+            max: Pos { x: 0, y: 4 },
+        };
+        let selection = Selection {
+            sheet_id: sheet.id,
+            rects: Some(vec![rect]),
+            ..Default::default()
+        };
+        assert_eq!(
+            sheet.get_rows_with_wrap_in_selection(&selection),
+            Vec::<i64>::new()
+        );
+        sheet.set_formats_selection(
+            &selection,
+            &Formats::repeat(
+                FormatUpdate {
+                    wrap: Some(Some(CellWrap::Wrap)),
+                    ..FormatUpdate::default()
+                },
+                4,
+            ),
+        );
+        let mut rows = sheet.get_rows_with_wrap_in_selection(&selection);
+        rows.sort();
+        assert_eq!(rows, vec![0, 2]);
     }
 }

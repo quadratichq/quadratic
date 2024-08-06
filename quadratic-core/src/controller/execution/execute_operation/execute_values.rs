@@ -66,11 +66,16 @@ impl GridController {
                     if !transaction.is_server() {
                         self.send_updated_bounds(sheet_rect.sheet_id);
                         self.send_render_cells(&sheet_rect);
-                        self.start_auto_resize_row_heights(
-                            transaction,
-                            sheet_pos.sheet_id,
-                            sheet_rect.y_range().collect(),
-                        );
+                        if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
+                            let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into());
+                            if !rows.is_empty() {
+                                let resize_rows = transaction
+                                    .resize_rows
+                                    .entry(sheet_pos.sheet_id)
+                                    .or_default();
+                                resize_rows.extend(rows);
+                            }
+                        }
                     }
                 }
             }

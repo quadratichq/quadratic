@@ -387,6 +387,7 @@ mod test {
 
         let ops = gc.import_csv_operations(sheet_id, csv.as_bytes(), "long.csv", pos);
         assert_eq!(ops.as_ref().unwrap().len(), 3);
+
         let first_pos = match ops.as_ref().unwrap()[0] {
             Operation::SetCellValues { sheet_pos, .. } => sheet_pos,
             _ => panic!("Expected SetCellValues operation"),
