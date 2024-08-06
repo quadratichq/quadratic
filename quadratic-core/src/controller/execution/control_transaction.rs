@@ -30,7 +30,7 @@ impl GridController {
             );
         }
         loop {
-            if transaction.operations.is_empty() {
+            if transaction.operations.is_empty() && transaction.resize_rows.is_empty() {
                 transaction.complete = true;
                 break;
             }
@@ -39,6 +39,21 @@ impl GridController {
             if transaction.has_async > 0 {
                 self.transactions.update_async_transaction(transaction);
                 break;
+            } else if let Some((sheet_id, rows)) = transaction
+                .resize_rows
+                .iter()
+                .next()
+                .map(|(&k, v)| (k, v.clone()))
+            {
+                transaction.resize_rows.remove(&sheet_id);
+                if !rows.is_empty() {
+                    self.start_auto_resize_row_heights(
+                        transaction,
+                        sheet_id,
+                        rows.into_iter().collect(),
+                    );
+                    break;
+                }
             }
         }
     }
@@ -54,7 +69,7 @@ impl GridController {
             match transaction.transaction_type {
                 TransactionType::User => {
                     let undo = transaction.to_undo_transaction();
-                    self.undo_stack.push(undo.clone());
+                    self.undo_stack.push(undo);
                     self.redo_stack.clear();
                     self.transactions
                         .unsaved_transactions
@@ -62,19 +77,19 @@ impl GridController {
                 }
                 TransactionType::Unsaved => {
                     let undo = transaction.to_undo_transaction();
-                    self.undo_stack.push(undo.clone());
+                    self.undo_stack.push(undo);
                     self.redo_stack.clear();
                 }
                 TransactionType::Undo => {
                     let undo = transaction.to_undo_transaction();
-                    self.redo_stack.push(undo.clone());
+                    self.redo_stack.push(undo);
                     self.transactions
                         .unsaved_transactions
                         .insert_or_replace(transaction, true);
                 }
                 TransactionType::Redo => {
                     let undo = transaction.to_undo_transaction();
-                    self.undo_stack.push(undo.clone());
+                    self.undo_stack.push(undo);
                     self.transactions
                         .unsaved_transactions
                         .insert_or_replace(transaction, true);
@@ -84,6 +99,7 @@ impl GridController {
                 TransactionType::Unset => panic!("Expected a transaction type"),
             }
         }
+
         transaction.send_transaction();
 
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
