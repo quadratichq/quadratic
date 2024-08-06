@@ -109,10 +109,13 @@ impl PendingTransaction {
 
     /// Creates a transaction to save to the Undo/Redo stack
     pub fn to_undo_transaction(&self) -> Transaction {
+        let mut operations = self.reverse_operations.clone();
+        operations.reverse();
+
         Transaction {
             id: self.id,
             sequence_num: None,
-            operations: self.reverse_operations.clone(),
+            operations,
             cursor: self.cursor.clone(),
         }
     }
@@ -206,6 +209,7 @@ mod tests {
         transaction
             .reverse_operations
             .clone_from(&reverse_operations);
+        transaction.reverse_operations.reverse();
         let forward_transaction = transaction.to_forward_transaction();
         assert_eq!(forward_transaction.id, transaction.id);
         assert_eq!(forward_transaction.operations, forward_operations);

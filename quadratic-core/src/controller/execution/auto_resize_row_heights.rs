@@ -164,6 +164,10 @@ mod tests {
         let async_transaction = gc.transactions.get_async_transaction(transaction_id);
         assert!(async_transaction.is_err());
 
+        let row_heights = vec![JsRowHeight {
+            row: 0,
+            height: 41f64,
+        }];
         mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights);
         // should trigger auto resize row heights and request row heights from renderer
         let transaction_id = gc.last_transaction().unwrap().id;
@@ -621,7 +625,7 @@ mod tests {
         }];
         let row_heights = vec![JsRowHeight {
             row: 0,
-            height: 40f64,
+            height: 41f64,
         }];
         mock_auto_resize_row_heights(&mut gc, sheet_id, ops.clone(), row_heights.clone());
 
