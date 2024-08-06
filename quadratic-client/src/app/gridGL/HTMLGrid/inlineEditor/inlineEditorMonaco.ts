@@ -2,7 +2,7 @@
 
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
-import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
+import { CURSOR_BORDER_SIZE } from '@/app/gridGL/UI/UIConstants';
 import { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
@@ -325,7 +325,7 @@ class InlineEditorMonaco {
       contextmenu: false,
       links: false,
       minimap: { enabled: false },
-      cursorWidth: CURSOR_THICKNESS,
+      cursorWidth: CURSOR_BORDER_SIZE,
       padding: { top: 0, bottom: 0 },
       hideCursorInOverviewRuler: true,
       overviewRulerLanes: 0,

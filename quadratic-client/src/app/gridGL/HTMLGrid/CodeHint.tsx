@@ -6,7 +6,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
-import { CURSOR_THICKNESS } from '../UI/Cursor';
+import { CURSOR_BORDER_SIZE } from '../UI/UIConstants';
 
 export const CodeHint = () => {
   const [cellHasValue, setCellHasValue] = useState(false);
@@ -26,7 +26,7 @@ export const CodeHint = () => {
       setCellHasValue(newCellHasValue);
 
       const offsets = sheets.sheet.getCellOffsets(x, y);
-      if (ref.current && ref.current.offsetWidth < offsets.width - CURSOR_THICKNESS * 2) {
+      if (ref.current && ref.current.offsetWidth < offsets.width - CURSOR_BORDER_SIZE * 2) {
         setOffsets(offsets);
         setHide(false);
       } else {
@@ -77,8 +77,8 @@ export const CodeHint = () => {
       ref={ref}
       className="center pointer-events-none absolute ml-1 whitespace-nowrap pr-0.5 text-xs leading-3 text-muted-foreground"
       style={{
-        left: offsets.x + CURSOR_THICKNESS,
-        top: offsets.y + CURSOR_THICKNESS * 2,
+        left: offsets.x + CURSOR_BORDER_SIZE,
+        top: offsets.y + CURSOR_BORDER_SIZE * 2,
         visibility: hide ? 'hidden' : 'visible',
       }}
     >

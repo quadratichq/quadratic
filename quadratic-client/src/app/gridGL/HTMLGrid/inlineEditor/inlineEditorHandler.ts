@@ -11,7 +11,7 @@ import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEdi
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { SheetPosTS } from '@/app/gridGL/types/size';
-import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
+import { CURSOR_BORDER_SIZE } from '@/app/gridGL/UI/UIConstants';
 import { convertColorStringToHex } from '@/app/helpers/convertColor';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { CellFormatSummary } from '@/app/quadratic-core-types';
@@ -277,7 +277,7 @@ class InlineEditorHandler {
     if (!this.location) return;
 
     const { x, y, width, height } = sheets.sheet.getCellOffsets(this.location.x, this.location.y);
-    const cellOutlineOffset = CURSOR_THICKNESS * (this.formula ? 0.5 : 1);
+    const cellOutlineOffset = CURSOR_BORDER_SIZE * (this.formula ? 0.5 : 1);
     const cellContentWidth = width - cellOutlineOffset * 2;
     const cellContentHeight = height - cellOutlineOffset * 2;
     const align = this.formatSummary?.align ?? 'left';

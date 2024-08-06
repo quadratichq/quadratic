@@ -21,6 +21,7 @@ import { LabelMeshEntry } from './LabelMeshEntry';
 import { LabelMeshes } from './LabelMeshes';
 import { extractCharCode, splitTextToCharacters } from './bitmapTextUtils';
 import { convertNumber, reduceDecimals } from './convertNumber';
+import { CURSOR_BORDER_SIZE } from '@/app/gridGL/UI/UIConstants';
 
 interface CharRenderData {
   charData: RenderBitmapChar;
@@ -528,7 +529,8 @@ export class CellLabel {
 
     // This attempts to reduce the decimal precision to ensure the number fits
     // within the cell. If it doesn't, it shows the pounds
-    if (this.number && this.textWidth > this.AABB.width && this.displayedText) {
+    const maxWidth = this.AABB.width - CURSOR_BORDER_SIZE * 2;
+    if (this.number && this.textWidth > maxWidth && this.displayedText) {
       let digits: number | undefined = undefined;
       let text = this.text;
       let infinityProtection = 0;
@@ -543,7 +545,8 @@ export class CellLabel {
 
         text = result.number;
         this.updateText(labelMeshes, text);
-      } while (this.textWidth > this.AABB.width && digits >= 0 && infinityProtection++ < 1000);
+        console.log(this.textWidth, this.AABB.width - CURSOR_BORDER_SIZE * 2);
+      } while (this.textWidth > maxWidth && digits >= 0 && infinityProtection++ < 1000);
 
       // we were not able to reduce the number to fit the cell, so we show pound characters
       if (digits < 0) {

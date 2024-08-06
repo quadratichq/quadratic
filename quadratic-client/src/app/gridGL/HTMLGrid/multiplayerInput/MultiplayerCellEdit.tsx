@@ -2,7 +2,7 @@ import { CellFormatSummary } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useEffect, useRef, useState } from 'react';
 import { sheets } from '../../../grid/controller/Sheets';
-import { CURSOR_THICKNESS } from '../../UI/Cursor';
+import { CURSOR_BORDER_SIZE } from '../../UI/UIConstants';
 import { MultiplayerCell } from './MultiplayerCellEdits';
 
 interface Props {
@@ -53,15 +53,15 @@ export const MultiplayerCellEdit = (props: Props) => {
           position: 'absolute',
           top: 0,
           left: 0,
-          minWidth: cellOffsets.width - CURSOR_THICKNESS * 2,
+          minWidth: cellOffsets.width - CURSOR_BORDER_SIZE * 2,
           outline: 'none',
           color: formatting?.textColor ?? 'black',
-          padding: `0 ${CURSOR_THICKNESS}px 0 0`,
+          padding: `0 ${CURSOR_BORDER_SIZE}px 0 0`,
           margin: 0,
-          lineHeight: `${cellOffsets.height - CURSOR_THICKNESS * 2}px`,
+          lineHeight: `${cellOffsets.height - CURSOR_BORDER_SIZE * 2}px`,
           verticalAlign: 'text-top',
           transformOrigin: '0 0',
-          transform: `translate(${cellOffsets.x + CURSOR_THICKNESS}px, ${cellOffsets.y + CURSOR_THICKNESS}px)`,
+          transform: `translate(${cellOffsets.x + CURSOR_BORDER_SIZE}px, ${cellOffsets.y + CURSOR_BORDER_SIZE}px)`,
           fontFamily,
           fontSize: '14px',
           backgroundColor: formatting?.fillColor ?? 'white',

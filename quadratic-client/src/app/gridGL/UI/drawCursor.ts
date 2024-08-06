@@ -1,6 +1,6 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ColumnRowCursor, RectangleLike } from '@/app/grid/sheet/SheetCursor';
-import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
+import { CURSOR_BORDER_SIZE } from '@/app/gridGL/UI/UIConstants';
 import { Graphics } from 'pixi.js';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
@@ -9,7 +9,7 @@ const drawCursorOutline = (g: Graphics, color: number) => {
   const sheet = sheets.sheet;
   const cursor = sheet.cursor.getCursor();
   const outline = sheet.getCellOffsets(cursor.x, cursor.y);
-  g.lineStyle({ width: CURSOR_THICKNESS, color, alignment: 0 });
+  g.lineStyle({ width: CURSOR_BORDER_SIZE, color, alignment: 0 });
   g.drawRect(outline.x, outline.y, outline.width, outline.height);
 };
 

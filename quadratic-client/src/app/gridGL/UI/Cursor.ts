@@ -8,8 +8,8 @@ import { colors } from '../../theme/colors';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { drawColumnRowCursor, drawMultiCursor } from './drawCursor';
+import { CURSOR_BORDER_SIZE } from './UIConstants';
 
-export const CURSOR_THICKNESS = 2;
 export const FILL_ALPHA = 0.1;
 
 const INDICATOR_SIZE = 8;
@@ -68,10 +68,10 @@ export class Cursor extends Graphics {
     const inlineShowing = inlineEditorHandler.getShowing();
     if (showInput) {
       if (inlineShowing) {
-        x = inlineEditorHandler.x - CURSOR_THICKNESS;
-        y = inlineEditorHandler.y - CURSOR_THICKNESS;
-        width = inlineEditorHandler.width + CURSOR_THICKNESS * 2;
-        height = inlineEditorHandler.height + CURSOR_THICKNESS * 2;
+        x = inlineEditorHandler.x - CURSOR_BORDER_SIZE;
+        y = inlineEditorHandler.y - CURSOR_BORDER_SIZE;
+        width = inlineEditorHandler.width + CURSOR_BORDER_SIZE * 2;
+        height = inlineEditorHandler.height + CURSOR_BORDER_SIZE * 2;
       } else {
         // we have to wait until react renders #cell-edit to properly calculate the width
         setTimeout(() => (this.dirty = true), 0);
@@ -94,7 +94,7 @@ export class Cursor extends Graphics {
 
     // draw cursor
     this.lineStyle({
-      width: CURSOR_THICKNESS,
+      width: CURSOR_BORDER_SIZE,
       color,
       alignment: 0,
     });
@@ -107,7 +107,7 @@ export class Cursor extends Graphics {
 
     if (showInput && inlineShowing) {
       this.lineStyle({
-        width: CURSOR_THICKNESS * 1.5,
+        width: CURSOR_BORDER_SIZE * 1.5,
         color,
         alpha: CURSOR_INPUT_ALPHA,
         alignment: 1,
@@ -184,10 +184,10 @@ export class Cursor extends Graphics {
     if (inlineEditorHandler.formula && inlineShowing && sheets.sheet.id === inlineShowing.sheetId) {
       color = colors.cellColorUserFormula;
       offsets = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y);
-      offsets.x = inlineEditorHandler.x - CURSOR_THICKNESS * 0.5;
-      offsets.y = inlineEditorHandler.y - CURSOR_THICKNESS * 0.5;
-      offsets.width = inlineEditorHandler.width + CURSOR_THICKNESS;
-      offsets.height = inlineEditorHandler.height + CURSOR_THICKNESS;
+      offsets.x = inlineEditorHandler.x - CURSOR_BORDER_SIZE * 0.5;
+      offsets.y = inlineEditorHandler.y - CURSOR_BORDER_SIZE * 0.5;
+      offsets.width = inlineEditorHandler.width + CURSOR_BORDER_SIZE;
+      offsets.height = inlineEditorHandler.height + CURSOR_BORDER_SIZE;
     } else {
       const { editorInteractionState } = pixiAppSettings;
       const cell = editorInteractionState.selectedCell;
@@ -206,7 +206,7 @@ export class Cursor extends Graphics {
     }
     if (!color || !offsets) return;
     this.lineStyle({
-      width: CURSOR_THICKNESS * 1,
+      width: CURSOR_BORDER_SIZE * 1,
       color,
       alignment: 0.5,
     });
