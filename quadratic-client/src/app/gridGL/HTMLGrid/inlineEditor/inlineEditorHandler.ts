@@ -293,14 +293,11 @@ class InlineEditorHandler {
 
     this.x = cellOutlineOffset + (align === 'right' ? Math.min(x, x + cellContentWidth - inlineEditorWidth) : x);
     this.y =
-      cellOutlineOffset / 2 +
-      (verticalAlign === 'bottom' ? Math.min(y, y + cellContentHeight - inlineEditorHeight) : y);
+      cellOutlineOffset + (verticalAlign === 'bottom' ? Math.min(y, y + cellContentHeight - inlineEditorHeight) : y);
     this.width = inlineEditorWidth;
     this.height = inlineEditorHeight;
-
     this.div?.style.setProperty('left', this.x + 'px');
     this.div?.style.setProperty('top', this.y + 'px');
-
     if (!this.formulaExpandButton) {
       throw new Error('Expected formulaExpandDiv to be defined in InlineEditorHandler');
     }
