@@ -83,6 +83,7 @@ declare var self: WorkerGlobalScope &
     sendUndoRedo: (undo: boolean, redo: boolean) => void;
     sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
     sendResizeRowHeightsClient(sheetId: string, rowHeights: string): void;
+    sendMultiplayerSynced: () => void;
   };
 
 class CoreClient {
@@ -115,6 +116,7 @@ class CoreClient {
     self.sendUndoRedo = coreClient.sendUndoRedo;
     self.sendImage = coreClient.sendImage;
     self.sendResizeRowHeightsClient = coreClient.sendResizeRowHeights;
+    self.sendMultiplayerSynced = coreClient.sendMultiplayerSynced;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -681,6 +683,10 @@ class CoreClient {
     } catch (e) {
       console.error('[coreClient] sendResizeRowHeights: Error parsing JsRowHeight: ', e);
     }
+  };
+
+  sendMultiplayerSynced = () => {
+    this.send({ type: 'coreClientMultiplayerSynced' });
   };
 }
 
