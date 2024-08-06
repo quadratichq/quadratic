@@ -552,6 +552,7 @@ mod tests {
     fn test_floor_math_and_ceiling_math() {
         let g = Grid::new();
         let test_inputs = &[3.5, 2.5, 0.0, -2.5, -3.5];
+        #[allow(clippy::type_complexity)]
         let test_cases: &[([i64; 5], fn(f64) -> String)] = &[
             ([4, 3, 0, -2, -3], |n| format!("CEILING.MATH({n})")),
             ([4, 3, 0, -3, -4], |n| format!("CEILING.MATH({n},, -1)")),

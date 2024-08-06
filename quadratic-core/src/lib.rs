@@ -6,6 +6,7 @@ pub mod util;
 #[macro_use]
 mod error_run;
 pub mod color;
+pub mod compression;
 pub mod controller;
 pub mod error_core;
 pub mod ext;
