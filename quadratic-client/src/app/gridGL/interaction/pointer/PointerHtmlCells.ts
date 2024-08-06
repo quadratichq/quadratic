@@ -46,7 +46,6 @@ export class PointerHtmlCells {
           this.hovering.clearHighlightEdges();
           this.hovering = undefined;
         }
-        this.cursor = 'pointer';
         return true;
       }
     }
