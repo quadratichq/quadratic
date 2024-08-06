@@ -58,7 +58,7 @@ impl Formula {
     pub fn eval(&self, ctx: &mut Ctx<'_>) -> Spanned<Value> {
         self.ast.eval(ctx).unwrap_or_else(|e| Spanned {
             span: self.ast.span,
-            inner: Value::Single(CellValue::Error(Box::new(e))),
+            inner: e.into(),
         })
     }
 }

@@ -23,7 +23,7 @@ pub(crate) fn eval_at(grid: &Grid, pos: SheetPos, s: &str) -> Value {
     let mut ctx = Ctx::new(grid, pos);
     match parse_formula(s, Pos::ORIGIN) {
         Ok(formula) => formula.eval(&mut ctx).inner,
-        Err(e) => Value::Single(CellValue::Error(Box::new(e))),
+        Err(e) => e.into(),
     }
 }
 #[track_caller]
