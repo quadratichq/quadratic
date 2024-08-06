@@ -13,6 +13,7 @@ mod mathematics;
 mod operators;
 mod statistics;
 mod string;
+mod tests;
 mod trigonometry;
 mod util;
 
@@ -21,6 +22,8 @@ use crate::{
     Array, Axis, CellValue, CodeResult, CoerceInto, IsBlank, RunError, RunErrorMsg, Span, Spanned,
     SpannedIterExt, Value,
 };
+
+pub use lookup::IndexFunctionArgs;
 
 pub fn lookup_function(name: &str) -> Option<&'static FormulaFunction> {
     ALL_FUNCTIONS.get(
@@ -38,6 +41,8 @@ pub const CATEGORIES: &[FormulaFunctionCategory] = &[
     logic::CATEGORY,
     string::CATEGORY,
     lookup::CATEGORY,
+    #[cfg(test)]
+    tests::CATEGORY,
 ];
 
 lazy_static! {
@@ -67,7 +72,7 @@ pub struct FormulaFnArgs {
     args_popped: usize,
 }
 impl FormulaFnArgs {
-    /// Constructs a set of arguments values.
+    /// Constructs a list of arguments values.
     pub fn new(
         values: impl Into<VecDeque<Spanned<Value>>>,
         span: Span,
@@ -143,7 +148,7 @@ impl FormulaFnArgs {
 }
 
 /// Function pointer that represents the body of a formula function.
-pub type FormulaFn = for<'a> fn(&'a mut Ctx<'_>, bool, FormulaFnArgs) -> CodeResult<Value>;
+pub type FormulaFn = for<'a> fn(&'a mut Ctx<'_>, FormulaFnArgs) -> CodeResult<Value>;
 
 /// Formula function with associated metadata.
 pub struct FormulaFunction {
