@@ -70,6 +70,9 @@ impl GridController {
         } else {
             sheet.code_runs.shift_remove(&pos)
         };
+        if old_code_run == new_code_run {
+            return;
+        }
 
         if cfg!(target_family = "wasm") || cfg!(test) {
             // if there was html here, send the html update to the client
@@ -139,14 +142,11 @@ impl GridController {
             index,
         });
 
-        transaction.reverse_operations.insert(
-            0,
-            Operation::SetCodeRun {
-                sheet_pos,
-                code_run: old_code_run,
-                index,
-            },
-        );
+        transaction.reverse_operations.push(Operation::SetCodeRun {
+            sheet_pos,
+            code_run: old_code_run,
+            index,
+        });
 
         if transaction.is_user() {
             self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
@@ -176,11 +176,13 @@ impl GridController {
             }
             self.send_updated_bounds_rect(&sheet_rect, false);
             self.send_render_cells(&sheet_rect);
-            self.start_auto_resize_row_heights(
-                transaction,
-                sheet_id,
-                sheet_rect.y_range().collect(),
-            );
+            if let Some(sheet) = self.try_sheet(sheet_id) {
+                let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into());
+                if !rows.is_empty() {
+                    let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
+                    resize_rows.extend(rows);
+                }
+            }
         }
     }
 
@@ -332,7 +334,7 @@ impl GridController {
         let result = if js_code_result.success {
             let result = if let Some(array_output) = js_code_result.output_array {
                 let (array, ops) = Array::from_string_list(start.into(), sheet, array_output);
-                transaction.reverse_operations.splice(0..0, ops);
+                transaction.reverse_operations.extend(ops);
                 if let Some(array) = array {
                     Value::Array(array)
                 } else {
@@ -345,7 +347,7 @@ impl GridController {
                             dbgjs!(format!("Cannot parse {:?}: {}", output_value, e));
                             (CellValue::Blank, vec![])
                         });
-                transaction.reverse_operations.splice(0..0, ops);
+                transaction.reverse_operations.extend(ops);
                 Value::Single(cell_value)
             } else {
                 Value::Single(CellValue::Blank)

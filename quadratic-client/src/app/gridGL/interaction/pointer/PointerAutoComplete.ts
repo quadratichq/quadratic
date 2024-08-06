@@ -238,7 +238,7 @@ export class PointerAutoComplete {
         if (newRectangle.width === 1 && newRectangle.height === 1) {
           cursor.changePosition({ columnRow: null, multiCursor: null });
         } else {
-          sheet.cursor.changePosition({
+          cursor.changePosition({
             columnRow: null,
             multiCursor: [newRectangle],
             ensureVisible: false,

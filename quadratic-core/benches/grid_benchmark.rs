@@ -1,7 +1,9 @@
 use criterion::{criterion_group, criterion_main, Bencher, Criterion};
 use quadratic_core::controller::operations::clipboard::PasteSpecial;
 use quadratic_core::controller::GridController;
-use quadratic_core::grid::Grid;
+use quadratic_core::grid::formats::format_update::FormatUpdate;
+use quadratic_core::grid::formats::Formats;
+use quadratic_core::grid::{CellAlign, Grid};
 use quadratic_core::selection::Selection;
 use quadratic_core::{Pos, Rect, SheetRect};
 use std::time::Duration;
@@ -209,6 +211,18 @@ fn criterion_benchmark(c: &mut Criterion) {
         // add some data
         let sheet = gc.try_sheet_mut(sheet_id).unwrap();
         sheet.random_numbers(&small_selection);
+        let formats = Formats::repeat(
+            FormatUpdate {
+                bold: Some(Some(true)),
+                italic: Some(Some(true)),
+                text_color: Some(Some("blue".to_string())),
+                align: Some(Some(CellAlign::Center)),
+                fill_color: Some(Some("red".to_string())),
+                ..Default::default()
+            },
+            small_selection.len() as usize,
+        );
+        sheet.set_formats_rects(&[small_selection], &formats);
 
         let expand_to = Rect {
             min: Pos { x: 0, y: 0 },
