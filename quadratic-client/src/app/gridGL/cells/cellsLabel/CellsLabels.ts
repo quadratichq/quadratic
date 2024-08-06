@@ -51,6 +51,14 @@ export class CellsLabels extends Container {
     return this.cellsSheet.sheetId;
   }
 
+  private createCellsTextHash(hashX: number, hashY: number, viewRectangle?: Rectangle): CellsTextHash {
+    const key = `${hashX},${hashY}`;
+    const cellsTextHash = new CellsTextHash(this.sheetId, hashX, hashY, viewRectangle);
+    this.cellsTextHash.set(key, cellsTextHash);
+    this.cellsTextHashes.addChild(cellsTextHash);
+    return cellsTextHash;
+  }
+
   // received a clear message before a new set of labelMeshEntries
   clearCellsTextHash(message: RenderClientCellsTextHashClear) {
     const key = `${message.hashX},${message.hashY}`;
@@ -180,9 +188,10 @@ export class CellsLabels extends Container {
 
   renderValidations(hashX: number, hashY: number, validationWarnings: JsValidationWarning[]) {
     const key = `${hashX},${hashY}`;
-    const cellsTextHash = this.cellsTextHash.get(key);
-    if (cellsTextHash) {
-      cellsTextHash.warnings.populate(validationWarnings);
+    let cellsTextHash = this.cellsTextHash.get(key);
+    if (!cellsTextHash) {
+      cellsTextHash = this.createCellsTextHash(hashX, hashY);
     }
+    cellsTextHash.warnings.populate(validationWarnings);
   }
 }

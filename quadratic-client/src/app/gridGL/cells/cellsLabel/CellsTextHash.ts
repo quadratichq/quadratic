@@ -44,10 +44,10 @@ export class CellsTextHash extends Container {
   // color to use for drawDebugBox
   debugColor = Math.floor(Math.random() * 0xffffff);
 
-  constructor(sheetId: string, hashX: number, hashY: number, viewRectangle: Rectangle) {
+  constructor(sheetId: string, hashX: number, hashY: number, viewRectangle?: Rectangle) {
     super();
     this.AABB = new Rectangle(hashX * sheetHashWidth, hashY * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
-    this.viewRectangle = viewRectangle;
+    this.viewRectangle = viewRectangle || this.AABB;
     this.hashX = hashX;
     this.hashY = hashY;
 
