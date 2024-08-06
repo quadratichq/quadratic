@@ -52,7 +52,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 // Ignore error values.
                 numbers
                     .filter(|x| matches!(x, Ok(CellValue::Number(_))))
-                    .count() as f64
+                    .count()
             }
         ),
         formula_fn!(
@@ -65,7 +65,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[examples("COUNTA(A1:A10)")]
             fn COUNTA(range: (Iter<CellValue>)) {
                 // Count error values.
-                range.filter_ok(|v| !v.is_blank()).count() as f64
+                range.filter_ok(|v| !v.is_blank()).count()
             }
         ),
         formula_fn!(
@@ -82,7 +82,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 let criteria = Criterion::try_from(*criteria)?;
                 // Ignore error values.
                 let count = criteria.iter_matching(range, None)?.count();
-                count as f64
+                count
             }
         ),
         formula_fn!(
@@ -98,7 +98,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 range
                     .filter_map(|v| v.ok())
                     .filter(|v| v.is_blank_or_empty_string())
-                    .count() as f64
+                    .count()
             }
         ),
         formula_fn!(

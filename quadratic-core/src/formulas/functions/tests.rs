@@ -34,7 +34,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[include_args_in_completion(false)]
             #[examples("_TEST_TUPLE(1)")]
             fn _TEST_TUPLE(tuple: (Vec<Array>)) {
-                tuple.len() as f64
+                tuple.len()
             }
         ),
     ]

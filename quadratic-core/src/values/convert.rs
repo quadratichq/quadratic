@@ -57,6 +57,11 @@ impl From<u32> for CellValue {
         CellValue::Number(BigDecimal::from(value))
     }
 }
+impl From<usize> for CellValue {
+    fn from(value: usize) -> Self {
+        CellValue::Number(BigDecimal::from(value as u64))
+    }
+}
 impl From<bool> for CellValue {
     fn from(value: bool) -> Self {
         CellValue::Logical(value)
