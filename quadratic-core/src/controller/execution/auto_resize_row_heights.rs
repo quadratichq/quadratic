@@ -126,7 +126,7 @@ mod tests {
         gc.set_cell_wrap(sheet_pos.into(), Some(CellWrap::Wrap), None);
         let ops = gc.set_cell_value_operations(
             sheet_pos,
-            "test_auto_resize_row_heights_on_set_cell_value".to_string(),
+            "test_auto_resize_row_heights_on_set_cell_value_1".to_string(),
         );
         // mock response from renderer
         let row_heights = vec![JsRowHeight {
@@ -139,7 +139,7 @@ mod tests {
         assert_eq!(
             gc.sheet(sheet_id).display_value(sheet_pos.into()),
             Some(CellValue::Text(
-                "test_auto_resize_row_heights_on_set_cell_value".to_string()
+                "test_auto_resize_row_heights_on_set_cell_value_1".to_string()
             ))
         );
         // should trigger auto resize row heights and request row heights from renderer
@@ -164,9 +164,13 @@ mod tests {
         let async_transaction = gc.transactions.get_async_transaction(transaction_id);
         assert!(async_transaction.is_err());
 
+        let ops = gc.set_cell_value_operations(
+            sheet_pos,
+            "test_auto_resize_row_heights_on_set_cell_value_2".to_string(),
+        );
         let row_heights = vec![JsRowHeight {
             row: 0,
-            height: 41f64,
+            height: 40f64,
         }];
         mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights);
         // should trigger auto resize row heights and request row heights from renderer
@@ -620,7 +624,7 @@ mod tests {
         let ops = vec![Operation::ResizeColumn {
             sheet_id,
             column: 0,
-            new_size: 100.0,
+            new_size: 120.0,
             client_resized: (true),
         }];
         let row_heights = vec![JsRowHeight {
@@ -640,6 +644,12 @@ mod tests {
         gc.commit_single_resize(sheet_id, None, Some(1), 25f64, None);
 
         // resize column 0 should trigger auto resize row heights for rows 0, 1, 2, 3
+        let ops = vec![Operation::ResizeColumn {
+            sheet_id,
+            column: 0,
+            new_size: 100.0,
+            client_resized: (true),
+        }];
         mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights);
         let transaction_id = gc.last_transaction().unwrap().id;
         expect_js_call(
