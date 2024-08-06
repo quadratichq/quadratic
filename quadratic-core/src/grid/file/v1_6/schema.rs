@@ -49,6 +49,7 @@ impl From<crate::Pos> for Pos {
         Self { x: pos.x, y: pos.y }
     }
 }
+
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Rect {
     pub min: Pos,
