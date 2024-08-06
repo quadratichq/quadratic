@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::grid::SheetId;
 
-use super::schema::Rect;
+use super::schema::{Pos, Rect};
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Selection {
@@ -82,4 +82,7 @@ pub struct Validation {
 pub struct Validations {
     #[serde(default)]
     pub validations: Vec<Validation>,
+
+    #[serde(default)]
+    pub warnings: Vec<(Pos, Uuid)>,
 }

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use indexmap::IndexMap;
 
 use crate::{
     cell_values::CellValues,
@@ -42,8 +42,9 @@ impl Sheet {
             }
         }
 
-        // check the validations for the new cells
-        let mut validation_warnings = HashMap::new();
+        // check the validations for the new cells; note: IndexMap is necessary
+        // so the tests pass (ie, the order of the cells is deterministic)
+        let mut validation_warnings = IndexMap::new();
         for x in 0..cell_values.w {
             let grid_x = pos.x + x as i64;
             for y in 0..cell_values.h {

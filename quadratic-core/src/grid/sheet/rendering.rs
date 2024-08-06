@@ -1,6 +1,7 @@
 use code_run::CodeRunResult;
 
 use crate::{
+    controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     grid::{
         borders::{get_render_horizontal_borders, get_render_vertical_borders},
         code_run,
@@ -526,6 +527,14 @@ impl Sheet {
                 warnings,
             );
         }
+    }
+
+    /// Sends validation warnings as a response from the request from the
+    /// client. Note, the client always requests hash-sized rects.
+    pub fn send_validation_warnings_rect(&self, rect: Rect) {
+        let hash_x = rect.min.x / CELL_SHEET_WIDTH as i64;
+        let hash_y = rect.min.y / CELL_SHEET_HEIGHT as i64;
+        self.send_validation_warnings(hash_x, hash_y, rect);
     }
 }
 

@@ -1,25 +1,17 @@
 use super::v1_6::file::{export_cell_value, import_cell_value};
+use super::validations::{export_validations, import_validations};
 use super::CURRENT_VERSION;
 use crate::color::Rgba;
 use crate::grid::formats::format::Format;
 use crate::grid::resize::{Resize, ResizeMap};
-use crate::grid::sheet::validations::validation::{Validation, ValidationStyle};
-use crate::grid::sheet::validations::validation_rules::validation_list::{
-    ValidationList, ValidationListSource,
-};
-use crate::grid::sheet::validations::validation_rules::validation_logical::ValidationLogical;
-use crate::grid::sheet::validations::validation_rules::ValidationRule;
-use crate::grid::sheet::validations::Validations;
 use crate::grid::{
     block::SameValue,
     file::v1_6::schema::{self as current},
-    file::v1_6::schema_validation::{self as current_validations},
     formatting::RenderSize,
     generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
     CellVerticalAlign, CellWrap, CodeRun, CodeRunResult, Column, ColumnData, Grid, GridBounds,
     NumericFormat, NumericFormatKind, Sheet, SheetBorders, SheetId,
 };
-use crate::selection::Selection;
 // use crate::selection::Selection;
 use crate::sheet_offsets::SheetOffsets;
 use crate::{CellValue, Pos, Rect, Value};
@@ -331,84 +323,6 @@ fn import_formats(format: &[(i64, (current::Format, i64))]) -> BTreeMap<i64, (Fo
         .iter()
         .map(|(i, (format, timestamp))| (*i, (import_format(format), *timestamp)))
         .collect()
-}
-
-fn import_selection(selection: &current_validations::Selection) -> Selection {
-    Selection {
-        sheet_id: selection.sheet_id.to_owned(),
-        x: selection.x,
-        y: selection.y,
-        rects: selection
-            .rects
-            .as_ref()
-            .map(|rects| rects.iter().map(|r| r.into()).collect()),
-        rows: selection.rows.clone(),
-        columns: selection.columns.clone(),
-        all: selection.all,
-    }
-}
-
-fn import_validation_rule(rule: &current_validations::ValidationRule) -> ValidationRule {
-    match rule {
-        current_validations::ValidationRule::None => ValidationRule::None,
-        current_validations::ValidationRule::List(list) => ValidationRule::List(ValidationList {
-            source: match &list.source {
-                current_validations::ValidationListSource::Selection(selection) => {
-                    ValidationListSource::Selection(import_selection(selection))
-                }
-                current_validations::ValidationListSource::List(list) => {
-                    ValidationListSource::List(list.iter().map(|s| s.to_owned()).collect())
-                }
-            },
-            ignore_blank: list.ignore_blank,
-            drop_down: list.drop_down,
-        }),
-        current_validations::ValidationRule::Logical(logical) => {
-            ValidationRule::Logical(ValidationLogical {
-                show_checkbox: logical.show_checkbox,
-                ignore_blank: logical.ignore_blank,
-            })
-        }
-    }
-}
-
-fn import_validations(validations: &current_validations::Validations) -> Validations {
-    Validations {
-        validations: validations
-            .validations
-            .iter()
-            .map(|validation| {
-                Validation {
-            id: validation.id.to_owned(),
-            selection: import_selection(&validation.selection),
-            rule: import_validation_rule(&validation.rule),
-            message: crate::grid::sheet::validations::validation::ValidationMessage {
-                show: validation.message.show,
-                title: validation.message.title.to_owned(),
-                message: validation.message.message.to_owned(),
-            },
-            error: crate::grid::sheet::validations::validation::ValidationError {
-                show: validation.error.show,
-                style: match validation.error.style {
-                    current_validations::ValidationStyle::Warning => {
-                        crate::grid::sheet::validations::validation::ValidationStyle::Warning
-                    }
-                    current_validations::ValidationStyle::Stop => {
-                        crate::grid::sheet::validations::validation::ValidationStyle::Stop
-                    }
-                    current_validations::ValidationStyle::Information => {
-                        crate::grid::sheet::validations::validation::ValidationStyle::Information
-                    }
-                },
-                title: validation.error.title.to_owned(),
-                message: validation.error.message.to_owned(),
-            },
-        }
-            })
-            .collect(),
-        // todo!!!!
-        warnings: Default::default(),
-    }
 }
 
 pub fn import_rows_size(row_sizes: &[(i64, current::Resize)]) -> Result<ResizeMap> {
@@ -751,82 +665,6 @@ fn export_formats(formats: &BTreeMap<i64, (Format, i64)>) -> Vec<(i64, (current:
             Some((*y, (f, timestamp.to_owned())))
         })
         .collect()
-}
-
-fn export_selection(selection: &Selection) -> current_validations::Selection {
-    current_validations::Selection {
-        sheet_id: selection.sheet_id,
-        x: selection.x,
-        y: selection.y,
-        rects: selection
-            .rects
-            .as_ref()
-            .map(|rects| rects.iter().map(|r| r.into()).collect()),
-        rows: selection.rows.clone(),
-        columns: selection.columns.clone(),
-        all: selection.all,
-    }
-}
-
-fn export_validation_rule(rule: &ValidationRule) -> current_validations::ValidationRule {
-    match rule {
-        ValidationRule::None => current_validations::ValidationRule::None,
-        ValidationRule::List(list) => {
-            current_validations::ValidationRule::List(current_validations::ValidationList {
-                source: match &list.source {
-                    ValidationListSource::Selection(selection) => {
-                        current_validations::ValidationListSource::Selection(export_selection(
-                            &selection,
-                        ))
-                    }
-                    ValidationListSource::List(list) => {
-                        current_validations::ValidationListSource::List(
-                            list.iter().map(|s| s.to_owned()).collect(),
-                        )
-                    }
-                },
-                ignore_blank: list.ignore_blank,
-                drop_down: list.drop_down,
-            })
-        }
-        ValidationRule::Logical(logical) => {
-            current_validations::ValidationRule::Logical(current_validations::ValidationLogical {
-                show_checkbox: logical.show_checkbox,
-                ignore_blank: logical.ignore_blank,
-            })
-        }
-    }
-}
-
-fn export_validations(validations: &Validations) -> current_validations::Validations {
-    current_validations::Validations {
-        validations: validations
-            .validations
-            .iter()
-            .map(|validation| current_validations::Validation {
-                selection: export_selection(&validation.selection),
-                id: validation.id.to_owned(),
-                rule: export_validation_rule(&validation.rule),
-                message: current_validations::ValidationMessage {
-                    show: validation.message.show,
-                    title: validation.message.title.to_owned(),
-                    message: validation.message.message.to_owned(),
-                },
-                error: current_validations::ValidationError {
-                    show: validation.error.show,
-                    style: match validation.error.style {
-                        ValidationStyle::Warning => current_validations::ValidationStyle::Warning,
-                        ValidationStyle::Stop => current_validations::ValidationStyle::Stop,
-                        ValidationStyle::Information => {
-                            current_validations::ValidationStyle::Information
-                        }
-                    },
-                    title: validation.error.title.to_owned(),
-                    message: validation.error.message.to_owned(),
-                },
-            })
-            .collect(),
-    }
 }
 
 pub fn export_rows_size(sheet: &Sheet) -> Vec<(i64, current::Resize)> {
