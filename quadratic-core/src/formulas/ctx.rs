@@ -1,11 +1,11 @@
 use std::collections::HashSet;
 
-use smallvec::SmallVec;
+use smallvec::{smallvec, SmallVec};
 
 use super::*;
 use crate::{
-    grid::Grid, Array, CellValue, CodeResult, RunErrorMsg, SheetPos, SheetRect, Span, Spanned,
-    Value,
+    grid::Grid, Array, CellValue, CodeResult, CodeResultExt, Pos, RunErrorMsg, SheetPos, SheetRect,
+    Span, Spanned, Value,
 };
 
 /// Formula execution context.
@@ -16,6 +16,9 @@ pub struct Ctx<'ctx> {
     pub sheet_pos: SheetPos,
     /// Cells that have been accessed in evaluating the formula.
     pub cells_accessed: HashSet<SheetRect>,
+
+    /// Whether to only parse, skipping expensive computations.
+    pub skip_computation: bool,
 }
 impl<'ctx> Ctx<'ctx> {
     /// Constructs a context for evaluating a formula at `pos` in `grid`.
@@ -24,12 +27,24 @@ impl<'ctx> Ctx<'ctx> {
             grid,
             sheet_pos,
             cells_accessed: HashSet::new(),
+            skip_computation: false,
         }
     }
 
-    /// Fetches the contents of the cell at `ref_pos` evaluated at `base_pos`,
-    /// or returns an error in the case of a circular reference.
-    pub fn get_cell(&mut self, ref_pos: &CellRef, span: Span) -> CodeResult<Spanned<CellValue>> {
+    /// Constructs a context for checking the syntax and some basic types of a
+    /// formula in `grid`. Expensive computations are skipped, so the value
+    /// returned by "evaluating" the formula will be nonsense (probably blank).
+    pub fn new_for_syntax_check(grid: &'ctx Grid) -> Self {
+        Ctx {
+            grid,
+            sheet_pos: Pos::ORIGIN.to_sheet_pos(grid.sheets()[0].id),
+            cells_accessed: HashSet::new(),
+            skip_computation: true,
+        }
+    }
+
+    /// Resolves a cell reference relative to `self.sheet_pos`.
+    pub fn resolve_ref(&self, ref_pos: &CellRef, span: Span) -> CodeResult<Spanned<SheetPos>> {
         let sheet = match &ref_pos.sheet {
             Some(sheet_name) => self
                 .grid
@@ -41,15 +56,88 @@ impl<'ctx> Ctx<'ctx> {
                 .ok_or(RunErrorMsg::BadCellReference.with_span(span))?,
         };
         let ref_pos = ref_pos.resolve_from(self.sheet_pos.into());
-        let ref_pos_with_sheet = ref_pos.to_sheet_pos(sheet.id);
-        if ref_pos_with_sheet == self.sheet_pos {
+        Ok(ref_pos.to_sheet_pos(sheet.id)).with_span(span)
+    }
+    /// Resolves a cell range reference relative to `self.sheet_pos`.
+    pub fn resolve_range_ref(
+        &self,
+        range: &RangeRef,
+        span: Span,
+    ) -> CodeResult<Spanned<SheetRect>> {
+        match range {
+            RangeRef::RowRange { .. } => {
+                Err(RunErrorMsg::Unimplemented("row range".into()).with_span(span))
+            }
+            RangeRef::ColRange { .. } => {
+                Err(RunErrorMsg::Unimplemented("column range".into()).with_span(span))
+            }
+            RangeRef::CellRange { start, end } => {
+                let sheet_pos_start = self.resolve_ref(start, span)?.inner;
+                let sheet_pos_end = self.resolve_ref(end, span)?.inner;
+                Ok(SheetRect::new_pos_span(
+                    sheet_pos_start.into(),
+                    sheet_pos_end.into(),
+                    sheet_pos_start.sheet_id,
+                ))
+                .with_span(span)
+            }
+            RangeRef::Cell { pos } => {
+                let sheet_pos = self.resolve_ref(pos, span)?.inner;
+                Ok(SheetRect::single_sheet_pos(sheet_pos)).with_span(span)
+            }
+        }
+    }
+
+    /// Fetches the contents of the cell at `ref_pos` evaluated at
+    /// `self.sheet_pos`, or returns an error in the case of a circular
+    /// reference.
+    pub fn get_cell(&mut self, sheet_pos: SheetPos, span: Span) -> CodeResult<Spanned<CellValue>> {
+        if self.skip_computation {
+            return Ok(CellValue::Blank).with_span(span);
+        }
+
+        if sheet_pos == self.sheet_pos {
             return Err(RunErrorMsg::CircularReference.with_span(span));
         }
 
-        self.cells_accessed.insert(ref_pos_with_sheet.into());
+        self.cells_accessed.insert(sheet_pos.into());
 
-        let value = sheet.display_value(ref_pos).unwrap_or(CellValue::Blank);
-        Ok(Spanned { inner: value, span })
+        let sheet = self
+            .grid
+            .try_sheet(sheet_pos.sheet_id)
+            .ok_or(RunErrorMsg::BadCellReference.with_span(span))?;
+        let value = sheet
+            .display_value(sheet_pos.into())
+            .unwrap_or(CellValue::Blank);
+        Ok(value).with_span(span)
+    }
+
+    pub fn get_cell_array(
+        &mut self,
+        sheet_rect: SheetRect,
+        span: Span,
+    ) -> CodeResult<Spanned<Array>> {
+        if self.skip_computation {
+            return Ok(CellValue::Blank.into()).with_span(span);
+        }
+
+        let sheet_id = sheet_rect.sheet_id;
+        let array_size = sheet_rect.size();
+        if std::cmp::max(array_size.w, array_size.h).get() > crate::limits::CELL_RANGE_LIMIT {
+            return Err(RunErrorMsg::ArrayTooBig.with_span(span));
+        }
+
+        let mut flat_array = smallvec![];
+        // Reuse the same `CellRef` object so that we don't have to
+        // clone `sheet_name.`
+        for y in sheet_rect.y_range() {
+            for x in sheet_rect.x_range() {
+                // TODO: record array dependency instead of many individual cell dependencies
+                flat_array.push(self.get_cell(SheetPos { x, y, sheet_id }, span)?.inner);
+            }
+        }
+
+        Ok(Array::new_row_major(array_size, flat_array)?).with_span(span)
     }
 
     /// Evaluates a function once for each corresponding set of values from
@@ -71,6 +159,10 @@ impl<'ctx> Ctx<'ctx> {
     where
         I::IntoIter: ExactSizeIterator,
     {
+        if self.skip_computation {
+            return Ok(CellValue::Blank.into());
+        }
+
         let size = Value::common_array_size(arrays)?;
 
         let mut args_buffer = Vec::with_capacity(arrays.into_iter().len());

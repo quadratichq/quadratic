@@ -169,6 +169,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientResizeRowHeights') {
       events.emit('resizeRowHeights', e.data.sheetId, e.data.rowHeights);
       return;
+    } else if (e.data.type === 'coreClientMultiplayerSynced') {
+      events.emit('multiplayerSynced');
+      return;
     }
 
     if (e.data.id !== undefined) {

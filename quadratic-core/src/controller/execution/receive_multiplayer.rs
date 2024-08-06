@@ -112,6 +112,8 @@ impl GridController {
                     );
                 }
             }
+        } else if cfg!(target_family = "wasm") || cfg!(test) {
+            crate::wasm_bindings::js::jsMultiplayerSynced();
         }
     }
 
@@ -293,10 +295,11 @@ mod tests {
     use crate::{
         controller::{transaction::Transaction, transaction_types::JsCodeResult, GridController},
         grid::{CodeCellLanguage, Sheet},
+        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
         CellValue, CodeCellValue, Pos, SheetPos,
     };
     use bigdecimal::BigDecimal;
-    use serial_test::parallel;
+    use serial_test::{parallel, serial};
     use uuid::Uuid;
 
     #[test]
@@ -633,8 +636,10 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
+    #[serial]
     fn test_send_request_transactions() {
+        clear_js_calls();
+
         let mut client = GridController::test();
         let sheet_id = client.sheet_ids()[0];
 
@@ -668,6 +673,8 @@ mod tests {
             Transaction::serialize_and_compress(&other_2_operations).unwrap();
 
         client.receive_sequence_num(2);
+
+        expect_js_call_count("jsMultiplayerSynced", 0, true);
 
         // we send our last_sequence_num + 1 to the server so it can provide all later transactions
         assert_eq!(client.transactions.last_sequence_num, 0);
@@ -705,6 +712,10 @@ mod tests {
                 .display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text("This is sequence_num = 2".to_string()))
         );
+
+        client.receive_sequence_num(2);
+
+        expect_js_call("jsMultiplayerSynced", "".into(), true);
     }
 
     #[test]

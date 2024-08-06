@@ -867,6 +867,10 @@ export interface CoreClientImage {
   h?: string;
 }
 
+export interface CoreClientMultiplayerSynced {
+  type: 'coreClientMultiplayerSynced';
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -987,4 +991,5 @@ export type CoreClientMessage =
   | CoreClientSheetMetaFills
   | CoreClientSetCursorSelection
   | CoreClientOfflineTransactionsApplied
-  | CoreClientResizeRowHeights;
+  | CoreClientResizeRowHeights
+  | CoreClientMultiplayerSynced;

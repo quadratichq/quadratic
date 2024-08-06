@@ -115,6 +115,8 @@ extern "C" {
     pub fn jsRequestRowHeights(transaction_id: String, sheet_id: String, rows: String);
     // row_heights: Vec<JsRowHeight>
     pub fn jsResizeRowHeights(sheet_id: String, row_heights: String /*Vec<JsRowHeight>*/);
+
+    pub fn jsMultiplayerSynced();
 }
 
 #[cfg(test)]
@@ -555,4 +557,13 @@ pub fn jsResizeRowHeights(sheet_id: String, row_heights: String /*Vec<JsRowHeigh
         "jsResizeRowHeights",
         format!("{},{}", sheet_id, row_heights),
     ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsMultiplayerSynced() {
+    TEST_ARRAY
+        .lock()
+        .unwrap()
+        .push(TestFunction::new("jsMultiplayerSynced", "".into()));
 }

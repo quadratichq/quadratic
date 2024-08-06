@@ -367,6 +367,7 @@ impl GridController {
         let return_type = match result {
             CodeRunResult::Ok(Value::Single(ref cell_value)) => Some(cell_value.type_name().into()),
             CodeRunResult::Ok(Value::Array(_)) => Some("array".into()),
+            CodeRunResult::Ok(Value::Tuple(_)) => Some("tuple".into()),
             CodeRunResult::Err(_) => None,
         };
 
