@@ -482,6 +482,20 @@ impl SheetRect {
             sheet_id: self.sheet_id,
         }
     }
+
+    /// Returns the position of the cell at the given offset (0-indexed) within
+    /// the rectangle, or `None` if the coordinates are outside the rectangle.
+    pub fn index_cell(&self, x: u32, y: u32) -> Option<SheetPos> {
+        if (x as usize) < self.width() && (y as usize) < self.height() {
+            Some(SheetPos {
+                x: self.min.x + x as i64,
+                y: self.min.y + y as i64,
+                sheet_id: self.sheet_id,
+            })
+        } else {
+            None
+        }
+    }
 }
 impl fmt::Display for SheetRect {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

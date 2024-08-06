@@ -196,7 +196,7 @@ impl<'a> TryFrom<&'a Value> for &'a CellValue {
     type Error = RunErrorMsg;
 
     fn try_from(value: &'a Value) -> Result<Self, Self::Error> {
-        value.cell_value()
+        value.as_cell_value()
     }
 }
 impl TryFrom<Value> for CellValue {
@@ -213,7 +213,7 @@ macro_rules! impl_try_from_value_for {
             type Error = RunErrorMsg;
 
             fn try_from(value: &'a Value) -> Result<Self, Self::Error> {
-                value.cell_value()?.try_into()
+                value.as_cell_value()?.try_into()
             }
         }
         impl TryFrom<Value> for $type {

@@ -11,6 +11,7 @@ pub(crate) fn try_eval_at(grid: &Grid, pos: SheetPos, s: &str) -> CodeResult<Val
     let mut ctx = Ctx::new(grid, pos);
     Ok(parse_formula(s, Pos::ORIGIN)?.eval(&mut ctx).inner)
 }
+
 #[track_caller]
 pub(crate) fn eval_at(grid: &Grid, sheet_pos: SheetPos, s: &str) -> Value {
     try_eval_at(grid, sheet_pos, s).expect("error evaluating formula")
@@ -22,6 +23,12 @@ pub(crate) fn eval_to_string_at(grid: &Grid, sheet_pos: SheetPos, s: &str) -> St
 
 pub(crate) fn try_eval(grid: &Grid, s: &str) -> CodeResult<Value> {
     try_eval_at(grid, Pos::ORIGIN.to_sheet_pos(grid.sheets()[0].id), s)?.into_non_error_value()
+}
+#[track_caller]
+pub(crate) fn try_check_syntax(grid: &Grid, s: &str) -> CodeResult<()> {
+    println!("Checking syntax of formula {s:?}");
+    let mut ctx = Ctx::new_for_syntax_check(grid);
+    parse_formula(s, Pos::ORIGIN)?.eval(&mut ctx).map(|_| ())
 }
 #[track_caller]
 pub(crate) fn eval(grid: &Grid, s: &str) -> Value {
@@ -43,6 +50,15 @@ pub(crate) fn expect_val(value: impl Into<Value>, ctx: &Grid, s: &str) {
 #[track_caller]
 pub(crate) fn expect_err(error_msg: &RunErrorMsg, ctx: &Grid, s: &str) {
     assert_eq!(*error_msg, eval_to_err(ctx, s).msg);
+}
+
+#[track_caller]
+pub(crate) fn assert_check_syntax_succeeds(grid: &Grid, s: &str) {
+    try_check_syntax(grid, s).expect("error with formula syntax");
+}
+#[track_caller]
+pub(crate) fn check_syntax_to_err(grid: &Grid, s: &str) -> RunError {
+    try_check_syntax(grid, s).expect_err("expected error")
 }
 
 #[test]
@@ -371,6 +387,32 @@ fn test_sheet_references() {
         "{76; 706}",
         eval_to_string_at(&g, pos1, "\"My Other Sheet\"!A3:A4 & A3"),
     );
+}
+
+#[test]
+fn test_cell_range_op_errors() {
+    let g = Grid::new();
+
+    eval_to_string(&g, "A1:B5"); // assert ok
+    assert_check_syntax_succeeds(&g, "A1:B5"); // assert ok
+
+    for (expected, formula_str) in [
+        ("comparison", "A1:(1==2)"),
+        ("expression", "A1:(1+5)"), // error message could be improved
+        ("function call", "A1:SUM(1, 2, 3)"),
+        ("array literal", "A1:{1, 2, 3}"),
+        ("array literal", "A1:{1, 2, 3}"),
+        ("string literal", "A1:\"hello\""),
+        ("numeric literal", "A1:12"),
+        ("boolean literal", "A1:TRUE"),
+    ] {
+        let expected_err = RunErrorMsg::Expected {
+            expected: "cell reference".into(),
+            got: Some(expected.into()),
+        };
+        assert_eq!(expected_err, eval_to_err(&g, formula_str).msg);
+        assert_eq!(expected_err, check_syntax_to_err(&g, formula_str).msg);
+    }
 }
 
 /// Regression test for quadratic#410

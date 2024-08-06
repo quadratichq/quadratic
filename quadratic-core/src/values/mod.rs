@@ -1,5 +1,6 @@
 use std::fmt;
 
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
@@ -28,6 +29,7 @@ use crate::{CodeResult, CodeResultExt, RunErrorMsg, SpannableIterExt, Spanned};
 pub enum Value {
     Single(CellValue),
     Array(Array),
+    Tuple(Vec<Array>),
 }
 impl Default for Value {
     fn default() -> Self {
@@ -39,6 +41,7 @@ impl fmt::Display for Value {
         match self {
             Value::Single(v) => write!(f, "{v}"),
             Value::Array(a) => write!(f, "{a}"),
+            Value::Tuple(t) => write!(f, "({})", t.iter().join(", ")),
         }
     }
 }
@@ -55,15 +58,23 @@ impl From<Array> for Value {
 }
 
 impl Value {
-    pub fn cell_value(&self) -> Result<&CellValue, RunErrorMsg> {
+    /// Returns the cell value for a single value or an array. Returns an error
+    /// for an array with more than a single value, or for a tuple.
+    pub fn as_cell_value(&self) -> Result<&CellValue, RunErrorMsg> {
         match self {
             Value::Single(value) => Ok(value),
             Value::Array(a) => a.cell_value().ok_or_else(|| RunErrorMsg::Expected {
                 expected: "single value".into(),
                 got: Some(a.type_name().into()),
             }),
+            Value::Tuple(_) => Err(RunErrorMsg::Expected {
+                expected: "single value".into(),
+                got: Some("tuple".into()),
+            }),
         }
     }
+    /// Returns the cell value for a single value or an array. Returns an error
+    /// for an array with more than a single value, or for a tuple.
     pub fn into_cell_value(self) -> Result<CellValue, RunErrorMsg> {
         match self {
             Value::Single(value) => Ok(value),
@@ -71,12 +82,58 @@ impl Value {
                 expected: "single value".into(),
                 got: Some(a.type_name().into()),
             }),
+            Value::Tuple(_) => Err(RunErrorMsg::Expected {
+                expected: "single value".into(),
+                got: Some("tuple".into()),
+            }),
         }
     }
-    pub fn cell_values_slice(&self) -> &[CellValue] {
+    /// Returns an array for a single value or array, or an error for a tuple.
+    pub fn into_array(self) -> Result<Array, RunErrorMsg> {
         match self {
-            Value::Single(value) => std::slice::from_ref(value),
-            Value::Array(array) => array.cell_values_slice(),
+            Value::Single(value) => Ok(Array::from(value)),
+            Value::Array(array) => Ok(array),
+            Value::Tuple(_) => Err(RunErrorMsg::Expected {
+                expected: "array".into(),
+                got: Some("tuple".into()),
+            }),
+        }
+    }
+    /// Converts the value into one or more arrays.
+    pub fn into_arrays(self) -> Vec<Array> {
+        match self {
+            Value::Single(value) => vec![Array::from(value)],
+            Value::Array(array) => vec![array],
+            Value::Tuple(tuple) => tuple,
+        }
+    }
+    /// Returns a slice of values for a single value or an array. Returns an
+    /// error for a tuple.
+    pub fn cell_values_slice(&self) -> Result<&[CellValue], RunErrorMsg> {
+        match self {
+            Value::Single(value) => Ok(std::slice::from_ref(value)),
+            Value::Array(array) => Ok(array.cell_values_slice()),
+            Value::Tuple(_) => Err(RunErrorMsg::Expected {
+                expected: "single value or array".into(),
+                got: Some("tuple".into()),
+            }),
+        }
+    }
+
+    /// Returns the value from an array if this is an array value, or the single
+    /// value itself otherwise. If the array index is out of bounds, returns an
+    /// internal error. Also returns an error for a tuple.
+    pub fn get(&self, x: u32, y: u32) -> Result<&CellValue, RunErrorMsg> {
+        match self {
+            Value::Single(value) => Ok(value),
+            Value::Array(a) => a.get(x, y),
+            Value::Tuple(arrays) => match arrays.first() {
+                Some(a) => a.get(x, y),
+                None => Err(RunErrorMsg::Expected {
+                    expected: "value or array".into(),
+                    got: Some("empty tuple".into()),
+                }),
+            },
         }
     }
 
@@ -85,6 +142,7 @@ impl Value {
         match self {
             Value::Single(value) => value.repr(),
             Value::Array(array) => array.repr(),
+            Value::Tuple(tuple) => format!("({})", tuple.iter().map(|a| a.repr()).join(", ")),
         }
     }
 
@@ -116,11 +174,13 @@ impl Value {
 }
 impl Spanned<Value> {
     pub fn cell_value(&self) -> CodeResult<Spanned<&CellValue>> {
-        self.inner.cell_value().with_span(self.span)
+        self.inner.as_cell_value().with_span(self.span)
     }
     pub fn into_cell_value(self) -> CodeResult<Spanned<CellValue>> {
         self.inner.into_cell_value().with_span(self.span)
     }
+    /// Returns an array, or an error if the value is only a single cell or a
+    /// tuple.
     pub fn as_array(&self) -> Option<Spanned<&Array>> {
         match &self.inner {
             Value::Single(_) => None,
@@ -128,18 +188,18 @@ impl Spanned<Value> {
                 span: self.span,
                 inner: array,
             }),
+            Value::Tuple(arrays) => Some(Spanned {
+                span: self.span,
+                inner: arrays.first()?,
+            }),
         }
     }
 
     /// Returns the value from an array if this is an array value, or the single
     /// value itself otherwise. If the array index is out of bounds, returns an
-    /// internal error.
+    /// internal error. Also returns an error for a tuple.
     pub fn get(&self, x: u32, y: u32) -> CodeResult<Spanned<&CellValue>> {
-        match &self.inner {
-            Value::Single(value) => Ok(value),
-            Value::Array(a) => a.get(x, y),
-        }
-        .with_span(self.span)
+        self.inner.get(x, y).with_span(self.span)
     }
 
     /// Iterates over an array, converting values to a particular type. If a
@@ -164,6 +224,12 @@ impl Spanned<Value> {
                 single_value = Some(v.try_coerce::<T>());
             }
             Value::Array(a) => array = a.into_cell_values_vec(),
+            Value::Tuple(t) => {
+                array = t
+                    .into_iter()
+                    .flat_map(|a| a.into_cell_values_vec())
+                    .collect();
+            }
         };
 
         itertools::chain!(
@@ -175,19 +241,16 @@ impl Spanned<Value> {
         )
     }
     /// Returns an iterator over cell values.
-    pub fn iter_cell_values(&self) -> impl Iterator<Item = Spanned<&CellValue>> {
-        self.inner.cell_values_slice().iter().map(move |v| Spanned {
-            span: self.span,
-            inner: v,
-        })
-    }
-    /// Returns an iterator over cell values.
     pub fn into_iter_cell_values(self) -> impl Iterator<Item = CodeResult<Spanned<CellValue>>> {
         let span = self.span;
 
         match self.inner {
             Value::Single(value) => smallvec![value],
             Value::Array(array) => array.into_cell_values_vec(),
+            Value::Tuple(t) => t
+                .into_iter()
+                .flat_map(|a| a.into_cell_values_vec())
+                .collect(),
         }
         .into_iter()
         .with_all_same_span(self.span)
@@ -211,6 +274,19 @@ impl Spanned<Value> {
         match self.inner {
             Value::Single(v) => v.unwrap_err(),
             other => panic!("expected error value; got {other:?}"),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::formulas::tests::*;
+
+    #[test]
+    fn test_value_repr() {
+        let g = Grid::new();
+        for s in ["1", "3.25", "\"hello\"", "\"hello \\\"world\\\"!\""] {
+            assert_eq!(s, eval(&g, s).repr());
         }
     }
 }
