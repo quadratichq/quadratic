@@ -260,13 +260,14 @@ impl Sheet {
         A::column_data_ref(column).get(pos.y)
     }
 
-    pub fn cell_numeric_format_kind(&self, pos: Pos) -> Option<NumericFormatKind> {
-        let column = self.get_column(pos.x)?;
-        if let Some(format) = column.numeric_format.get(pos.y) {
-            Some(format.kind)
-        } else {
-            None
+    /// Returns the type of number (defaulting to NumericFormatKind::Number) for a cell.
+    pub fn cell_numeric_format_kind(&self, pos: Pos) -> NumericFormatKind {
+        if let Some(column) = self.get_column(pos.x) {
+            if let Some(format) = column.numeric_format.get(pos.y) {
+                return format.kind;
+            }
         }
+        NumericFormatKind::Number
     }
 
     /// Returns a summary of formatting in a region.
@@ -355,16 +356,25 @@ impl Sheet {
     }
 
     /// get or calculate decimal places for a cell
-    pub fn calculate_decimal_places(&self, pos: Pos, is_percentage: bool) -> Option<i16> {
+    pub fn calculate_decimal_places(&self, pos: Pos, kind: NumericFormatKind) -> Option<i16> {
         // first check if numeric_decimals already exists for this cell
         if let Some(decimals) = self.format_cell(pos.x, pos.y, true).numeric_decimals {
             return Some(decimals);
+        }
+
+        // if currency, then use the default 2 decimal places
+        if kind == NumericFormatKind::Currency {
+            return Some(2);
         }
 
         // otherwise check value to see if it has a decimal and use that length
         if let Some(value) = self.display_value(pos) {
             match value {
                 CellValue::Number(n) => {
+                    if kind == NumericFormatKind::Exponential {
+                        return Some(n.to_string().len() as i16 - 1);
+                    }
+
                     let exponent = n.as_bigint_and_exponent().1;
                     let max_decimals = 9;
                     let mut decimals = n
@@ -373,7 +383,7 @@ impl Sheet {
                         .as_bigint_and_exponent()
                         .1 as i16;
 
-                    if is_percentage {
+                    if kind == NumericFormatKind::Percentage {
                         decimals -= 2;
                     }
 
@@ -464,12 +474,12 @@ mod test {
         x: i64,
         y: i64,
         value: &str,
-        is_percentage: bool,
+        kind: NumericFormatKind,
         expected: Option<i16>,
     ) {
         let pos = Pos { x, y };
         let _ = sheet.set_cell_value(pos, CellValue::Number(BigDecimal::from_str(value).unwrap()));
-        assert_eq!(sheet.calculate_decimal_places(pos, is_percentage), expected);
+        assert_eq!(sheet.calculate_decimal_places(pos, kind), expected);
     }
 
     #[test]
@@ -478,16 +488,62 @@ mod test {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
         // validate simple decimal places
-        assert_decimal_places_for_number(&mut sheet, 1, 2, "12.23", false, Some(2));
+        assert_decimal_places_for_number(
+            &mut sheet,
+            1,
+            2,
+            "12.23",
+            NumericFormatKind::Number,
+            Some(2),
+        );
 
         // validate percentage
-        assert_decimal_places_for_number(&mut sheet, 2, 2, "0.23", true, Some(0));
+        assert_decimal_places_for_number(
+            &mut sheet,
+            2,
+            2,
+            "0.23",
+            NumericFormatKind::Percentage,
+            Some(0),
+        );
 
         // validate rounding
-        assert_decimal_places_for_number(&mut sheet, 3, 2, "9.1234567891", false, Some(9));
+        assert_decimal_places_for_number(
+            &mut sheet,
+            3,
+            2,
+            "9.1234567891",
+            NumericFormatKind::Number,
+            Some(9),
+        );
 
         // validate percentage rounding
-        assert_decimal_places_for_number(&mut sheet, 3, 2, "9.1234567891", true, Some(7));
+        assert_decimal_places_for_number(
+            &mut sheet,
+            3,
+            2,
+            "9.1234567891",
+            NumericFormatKind::Percentage,
+            Some(7),
+        );
+
+        assert_decimal_places_for_number(
+            &mut sheet,
+            3,
+            2,
+            "9.1234567891",
+            NumericFormatKind::Currency,
+            Some(2),
+        );
+
+        assert_decimal_places_for_number(
+            &mut sheet,
+            3,
+            2,
+            "91234567891",
+            NumericFormatKind::Exponential,
+            Some(10),
+        );
     }
 
     #[test]
@@ -508,7 +564,7 @@ mod test {
             ),
         );
         assert_eq!(
-            sheet.calculate_decimal_places(Pos { x: 3, y: 3 }, false),
+            sheet.calculate_decimal_places(Pos { x: 3, y: 3 }, NumericFormatKind::Number),
             Some(2)
         );
 
@@ -521,7 +577,15 @@ mod test {
             false,
         );
         assert_eq!(
-            sheet.calculate_decimal_places(Pos { x: 3, y: 3 }, false),
+            sheet.calculate_decimal_places(Pos { x: 3, y: 3 }, NumericFormatKind::Number),
+            Some(3)
+        );
+        assert_eq!(
+            sheet.calculate_decimal_places(Pos { x: 3, y: 3 }, NumericFormatKind::Percentage),
+            Some(3)
+        );
+        assert_eq!(
+            sheet.calculate_decimal_places(Pos { x: 3, y: 3 }, NumericFormatKind::Currency),
             Some(3)
         );
     }
@@ -537,7 +601,7 @@ mod test {
         );
 
         assert_eq!(
-            sheet.calculate_decimal_places(Pos { x: 1, y: 2 }, false),
+            sheet.calculate_decimal_places(Pos { x: 1, y: 2 }, NumericFormatKind::Number),
             None
         );
     }
@@ -554,7 +618,7 @@ mod test {
 
         // expect a single decimal place
         assert_eq!(
-            sheet.calculate_decimal_places(Pos { x: 1, y: 2 }, false),
+            sheet.calculate_decimal_places(Pos { x: 1, y: 2 }, NumericFormatKind::Number),
             Some(1)
         );
     }
@@ -574,7 +638,7 @@ mod test {
 
         assert_eq!(
             sheet.cell_numeric_format_kind(Pos { x: 0, y: 0 }),
-            Some(NumericFormatKind::Percentage)
+            NumericFormatKind::Percentage
         );
     }
 
@@ -681,27 +745,6 @@ mod test {
         let value = sheet.get_formatting_value::<Bold>((2, 1).into());
 
         assert_eq!(value, Some(true));
-    }
-
-    // TODO(ddimaria): use the code below numeric format kinds are in place
-    #[ignore]
-    #[test]
-    #[parallel]
-    fn test_cell_numeric_format_kinds() {
-        let (grid, sheet_id, _) = test_setup_basic();
-        let sheet = grid.sheet(sheet_id).clone();
-
-        let format_kind = sheet.cell_numeric_format_kind((2, 1).into());
-        assert_eq!(format_kind, Some(NumericFormatKind::Currency));
-
-        let format_kind = sheet.cell_numeric_format_kind((3, 1).into());
-        assert_eq!(format_kind, Some(NumericFormatKind::Percentage));
-
-        let format_kind = sheet.cell_numeric_format_kind((4, 1).into());
-        assert_eq!(format_kind, Some(NumericFormatKind::Exponential));
-
-        let format_kind = sheet.cell_numeric_format_kind((5, 1).into());
-        assert_eq!(format_kind, Some(NumericFormatKind::Number));
     }
 
     #[test]

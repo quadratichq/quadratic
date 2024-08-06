@@ -46,14 +46,14 @@ export interface CoreClientLoad {
 
 export interface ClientCoreUpgradeGridFile {
   type: 'clientCoreUpgradeGridFile';
-  grid: string;
+  grid: Uint8Array;
   sequenceNumber: number;
   id: number;
 }
 
 export interface CoreClientUpgradeFile {
   type: 'coreClientUpgradeGridFile';
-  grid: string;
+  grid: Uint8Array;
   version: string;
   id: number;
 }
@@ -98,7 +98,7 @@ export interface ClientCoreExport {
 
 export interface CoreClientExport {
   type: 'coreClientExport';
-  grid: string;
+  grid: Uint8Array;
   id: number;
 }
 
@@ -806,14 +806,15 @@ export interface CoreClientUpdateCodeCell {
 
 export interface ClientCoreImportExcel {
   type: 'clientCoreImportExcel';
-  file: File;
+  file: Uint8Array;
+  fileName: string;
   id: number;
 }
 
 export interface CoreClientImportExcel {
   type: 'coreClientImportExcel';
   id: number;
-  contents?: string;
+  contents?: Uint8Array;
   version?: string;
   error?: string;
 }
@@ -864,6 +865,10 @@ export interface CoreClientImage {
   image?: string;
   w?: string;
   h?: string;
+}
+
+export interface CoreClientMultiplayerSynced {
+  type: 'coreClientMultiplayerSynced';
 }
 
 export type ClientCoreMessage =
@@ -986,4 +991,5 @@ export type CoreClientMessage =
   | CoreClientSheetMetaFills
   | CoreClientSetCursorSelection
   | CoreClientOfflineTransactionsApplied
-  | CoreClientResizeRowHeights;
+  | CoreClientResizeRowHeights
+  | CoreClientMultiplayerSynced;

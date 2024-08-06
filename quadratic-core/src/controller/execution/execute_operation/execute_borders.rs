@@ -32,14 +32,7 @@ impl GridController {
 
                 if cfg!(test) || (cfg!(target_family = "wasm") && !transaction.is_server()) {
                     self.send_updated_bounds(sheet_rect.sheet_id);
-                    if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
-                        if let Ok(borders) = serde_json::to_string(&sheet.render_borders()) {
-                            crate::wasm_bindings::js::jsSheetBorders(
-                                sheet_rect.sheet_id.to_string(),
-                                borders,
-                            );
-                        }
-                    }
+                    self.send_render_borders(sheet_rect.sheet_id);
                 }
             }
             _ => unreachable!("Expected Operation::SetBorders"),

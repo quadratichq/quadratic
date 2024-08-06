@@ -87,6 +87,7 @@ declare var self: WorkerGlobalScope &
     sendRequestRowHeights: (transactionId: string, sheetId: string, rows: string) => void;
     sendResizeRowHeightsClient: (sheetId: string, rowHeights: string) => void;
     sendResizeRowHeightsRender: (sheetId: string, rowHeights: string) => void;
+    sendMultiplayerSynced: () => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -264,4 +265,8 @@ export const jsRequestRowHeights = (transactionId: string, sheetId: string, rows
 export const jsResizeRowHeights = (sheetId: string, rowHeights: string) => {
   self.sendResizeRowHeightsClient(sheetId, rowHeights);
   self.sendResizeRowHeightsRender(sheetId, rowHeights);
+};
+
+export const jsMultiplayerSynced = () => {
+  self.sendMultiplayerSynced();
 };
