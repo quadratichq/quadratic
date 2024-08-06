@@ -221,11 +221,15 @@ macro_rules! formula_fn_eval_inner {
         $ctx:ident, $args:ident, $body:expr;
         $($params:tt)*
     ) => {{
+        // `formula_fn_args!` may borrow `$ctx` for `$body`, so we need
+        // to read this flag now while we can.
+        let skip_computation = $ctx.skip_computation;
+
         // Check number of arguments and assign arguments to variables.
         formula_fn_args!(@assign($ctx, $args); $($params)*);
         $args.error_if_more_args()?;
 
-        if $ctx.skip_computation {
+        if skip_computation {
             // Return a dummy value.
             Ok(Value::Single(CellValue::Blank))
         } else {

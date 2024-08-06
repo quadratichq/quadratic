@@ -213,7 +213,7 @@ impl<'ctx> Ctx<'ctx> {
         let mut criteria = vec![criteria1];
         while let Some(eval_range) = remaining_args.take_next_optional() {
             i += 1;
-            eval_ranges.push(eval_range.map(|v| v.into())); // convert to array
+            eval_ranges.push(eval_range.into_array()?);
             criteria.push(remaining_args.take_next_required(format!("criteria{i}"))?);
         }
 
