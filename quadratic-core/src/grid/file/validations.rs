@@ -55,7 +55,7 @@ pub fn import_validations(validations: &current_validations::Validations) -> Val
     }
 }
 
-pub fn import_validation_rule(rule: &current_validations::ValidationRule) -> ValidationRule {
+fn import_validation_rule(rule: &current_validations::ValidationRule) -> ValidationRule {
     match rule {
         current_validations::ValidationRule::None => ValidationRule::None,
         current_validations::ValidationRule::List(list) => ValidationRule::List(ValidationList {
@@ -79,7 +79,7 @@ pub fn import_validation_rule(rule: &current_validations::ValidationRule) -> Val
     }
 }
 
-pub fn export_validation_rule(rule: &ValidationRule) -> current_validations::ValidationRule {
+fn export_validation_rule(rule: &ValidationRule) -> current_validations::ValidationRule {
     match rule {
         ValidationRule::None => current_validations::ValidationRule::None,
         ValidationRule::List(list) => {
