@@ -89,7 +89,7 @@ impl ArraySize {
     pub fn iter(self) -> impl Iterator<Item = (u32, u32)> {
         itertools::iproduct!(0..self.h.get(), 0..self.w.get()).map(|(y, x)| (x, y))
     }
-    /// Flattens an index
+    /// Flattens an index into the array.
     pub fn flatten_index(self, x: u32, y: u32) -> Result<usize, RunErrorMsg> {
         let w = self.w.get();
         let h = self.h.get();
