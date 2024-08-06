@@ -3,7 +3,7 @@ use crate::{
     controller::GridController,
     grid::{
         formats::{format_update::FormatUpdate, Formats},
-        generate_borders, get_rect_borders, BorderSelection, Sheet,
+        generate_borders, BorderSelection, Sheet,
     },
     selection::Selection,
     Rect,
@@ -12,13 +12,7 @@ use crate::{
 impl GridController {
     pub(crate) fn clear_border_op(sheet: &Sheet, rect: &Rect) -> Operation {
         let selections = vec![BorderSelection::Clear];
-        let cur_borders = get_rect_borders(sheet, rect);
-        let new_borders = generate_borders(sheet, rect, selections.clone(), None);
-        let borders = if cur_borders.render_lookup == new_borders.render_lookup {
-            generate_borders(sheet, rect, selections.clone(), None)
-        } else {
-            new_borders
-        };
+        let borders = generate_borders(sheet, rect, selections, None);
         Operation::SetBorders {
             sheet_rect: rect.to_sheet_rect(sheet.id),
             borders,
@@ -51,8 +45,10 @@ impl GridController {
 mod tests {
     use super::*;
     use crate::Rect;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn clear_format_selection_operations() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

@@ -21,11 +21,8 @@ export class CellsBorders extends Container {
         this.draw();
       }
     });
-    events.on('sheetOffsets', (sheetId) => {
-      if (sheetId === this.cellsSheet.sheetId) {
-        this.draw();
-      }
-    });
+    events.on('sheetOffsets', this.drawSheetCells);
+    events.on('resizeRowHeights', this.drawSheetCells);
   }
 
   private get sheet(): Sheet {
@@ -34,7 +31,7 @@ export class CellsBorders extends Container {
     return sheet;
   }
 
-  drawHorizontal() {
+  drawHorizontal = () => {
     if (!this.borders) return;
     for (const border of this.borders.horizontal) {
       if (border.w === undefined) throw new Error('Expected border.w to be defined in CellsBorders.drawHorizontal');
@@ -49,9 +46,9 @@ export class CellsBorders extends Container {
         })
       );
     }
-  }
+  };
 
-  drawVertical() {
+  drawVertical = () => {
     if (!this.borders) return;
     for (const border of this.borders.vertical) {
       if (border.h === undefined) throw new Error('Expected border.h to be defined in CellsBorders.drawVertical');
@@ -66,14 +63,20 @@ export class CellsBorders extends Container {
         })
       );
     }
-  }
+  };
 
-  draw(): void {
+  draw = (): void => {
     this.removeChildren();
     if (!this.borders) return;
     this.drawHorizontal();
     this.drawVertical();
-  }
+  };
+
+  drawSheetCells = (sheetId: string): void => {
+    if (sheetId === this.cellsSheet.sheetId) {
+      this.draw();
+    }
+  };
 
   private getSprite = (tiling?: boolean): Sprite | TilingSprite => {
     if (tiling) {

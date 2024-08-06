@@ -6,10 +6,11 @@
  */
 
 import { debugWebWorkers } from '@/app/debugFlags';
-import { readFileAsArrayBuffer } from '@/app/helpers/files';
 import {
   CellAlign,
   CellFormatSummary,
+  CellVerticalAlign,
+  CellWrap,
   CodeCellLanguage,
   Format,
   JsCodeCell,
@@ -50,9 +51,9 @@ class Core {
   private clientQueue: Function[] = [];
   private renderQueue: Function[] = [];
 
-  private async loadGridFile(file: string): Promise<string> {
+  private async loadGridFile(file: string): Promise<Uint8Array> {
     const res = await fetch(file);
-    return await res.text();
+    return new Uint8Array(await res.arrayBuffer());
   }
 
   constructor() {
@@ -73,7 +74,7 @@ class Core {
     this.next();
   };
 
-  // Creates a Grid form a file. Initializes bother coreClient and coreRender w/metadata.
+  // Creates a Grid from a file. Initializes bother coreClient and coreRender w/metadata.
   async loadFile(message: ClientCoreLoad, renderPort: MessagePort): Promise<{ version: string } | { error: string }> {
     coreRender.init(renderPort);
     const results = await Promise.all([this.loadGridFile(message.url), initCore()]);
@@ -557,7 +558,7 @@ class Core {
     });
   }
 
-  async upgradeGridFile(file: string, sequenceNum: number): Promise<{ grid: string; version: string }> {
+  async upgradeGridFile(file: Uint8Array, sequenceNum: number): Promise<{ grid: Uint8Array; version: string }> {
     await initCore();
     const gc = GridController.newFromFile(file, sequenceNum, false);
     const grid = gc.exportToFile();
@@ -565,7 +566,7 @@ class Core {
     return { grid, version };
   }
 
-  export(): Promise<string> {
+  export(): Promise<Uint8Array> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -597,6 +598,26 @@ class Core {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
         this.gridController.setCellAlign(JSON.stringify(selection, bigIntReplacer), align, cursor);
+        resolve(undefined);
+      });
+    });
+  }
+
+  setCellVerticalAlign(selection: Selection, verticalAlign: CellVerticalAlign, cursor?: string) {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        this.gridController.setCellVerticalAlign(JSON.stringify(selection, bigIntReplacer), verticalAlign, cursor);
+        resolve(undefined);
+      });
+    });
+  }
+
+  setCellWrap(selection: Selection, wrap: CellWrap, cursor?: string) {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        this.gridController.setCellWrap(JSON.stringify(selection, bigIntReplacer), wrap, cursor);
         resolve(undefined);
       });
     });
@@ -651,14 +672,14 @@ class Core {
     y: number,
     width: number,
     height: number,
-    border: string,
+    selection: string,
     style: string | undefined,
     cursor: string
   ) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setRegionBorders(sheetId, numbersToRect(x, y, width, height), border, style, cursor);
+        this.gridController.setRegionBorders(sheetId, numbersToRect(x, y, width, height), selection, style, cursor);
         resolve(undefined);
       });
     });
@@ -742,7 +763,7 @@ class Core {
     });
   }
 
-  findNextColumn(data: ClientCoreFindNextColumn): Promise<number> {
+  findNextColumn(data: ClientCoreFindNextColumn): Promise<number | undefined> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -753,7 +774,7 @@ class Core {
     });
   }
 
-  findNextRow(data: ClientCoreFindNextRow): Promise<number> {
+  findNextRow(data: ClientCoreFindNextRow): Promise<number | undefined> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -799,11 +820,12 @@ class Core {
     return this.gridController.calculationGetCells(transactionId, x, y, w, h, sheet, lineNumber);
   }
 
-  async importExcel(message: ClientCoreImportExcel): Promise<{ contents?: string; version?: string; error?: string }> {
+  async importExcel(
+    message: ClientCoreImportExcel
+  ): Promise<{ contents?: Uint8Array; version?: string; error?: string }> {
     await initCore();
     try {
-      const fileBytes = await readFileAsArrayBuffer(message.file);
-      const gc = GridController.importExcel(fileBytes, message.file.name);
+      const gc = GridController.importExcel(message.file, message.fileName);
       const contents = gc.exportToFile();
       return { contents: contents, version: gc.getVersion() };
     } catch (error: unknown) {
@@ -892,6 +914,11 @@ class Core {
       JSON.stringify(dest, bigIntReplacer),
       message.cursor
     );
+  }
+
+  receiveRowHeights(transactionId: string, sheetId: string, rowHeights: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.receiveRowHeights(transactionId, sheetId, rowHeights);
   }
 }
 

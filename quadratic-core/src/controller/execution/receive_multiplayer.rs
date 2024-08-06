@@ -112,6 +112,8 @@ impl GridController {
                     );
                 }
             }
+        } else if cfg!(target_family = "wasm") || cfg!(test) {
+            crate::wasm_bindings::js::jsMultiplayerSynced();
         }
     }
 
@@ -277,12 +279,15 @@ mod tests {
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
         grid::{CodeCellLanguage, Sheet},
+        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
         CellValue, CodeCellValue, Pos, SheetPos,
     };
     use bigdecimal::BigDecimal;
+    use serial_test::{parallel, serial};
     use uuid::Uuid;
 
     #[test]
+    #[parallel]
     fn test_multiplayer_hello_world() {
         let mut gc1 = GridController::test();
         let sheet_id = gc1.sheet_ids()[0];
@@ -326,6 +331,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_apply_multiplayer_before_unsaved_transaction() {
         let mut gc1 = GridController::test();
         let sheet_id = gc1.sheet_ids()[0];
@@ -377,6 +383,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_server_apply_transaction() {
         let mut client = GridController::test();
         let sheet_id = client.sheet_ids()[0];
@@ -409,6 +416,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_handle_receipt_of_earlier_transactions() {
         // client is where the multiplayer transactions are applied from other
         let mut client = GridController::test();
@@ -463,6 +471,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_handle_receipt_of_out_of_order_transactions() {
         // client is where the multiplayer transactions are applied from other
         let mut client = GridController::test();
@@ -524,6 +533,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_handle_receipt_of_earlier_transactions_and_out_of_order_transactions() {
         let mut client = GridController::test();
         let sheet_id = client.sheet_ids()[0];
@@ -610,7 +620,10 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_send_request_transactions() {
+        clear_js_calls();
+
         let mut client = GridController::test();
         let sheet_id = client.sheet_ids()[0];
 
@@ -639,6 +652,8 @@ mod tests {
         let other_2_operations = other.last_transaction().unwrap().operations.clone();
 
         client.receive_sequence_num(2);
+
+        expect_js_call_count("jsMultiplayerSynced", 0, true);
 
         // we send our last_sequence_num + 1 to the server so it can provide all later transactions
         assert_eq!(client.transactions.last_sequence_num, 0);
@@ -676,9 +691,14 @@ mod tests {
                 .display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text("This is sequence_num = 2".to_string()))
         );
+
+        client.receive_sequence_num(2);
+
+        expect_js_call("jsMultiplayerSynced", "".into(), true);
     }
 
     #[test]
+    #[parallel]
     fn test_receive_multiplayer_while_waiting_for_async() {
         let mut client = GridController::test();
         let sheet_id = client.sheet_ids()[0];
@@ -764,6 +784,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_receive_overlapping_multiplayer_while_waiting_for_async() {
         // Unlike previous test, we receive a multiplayer transaction that will be underneath the async code_cell.
         // We expect the async code_cell to overwrite it when it completes.
@@ -950,6 +971,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn python_multiple_calculations_receive_back_afterwards() {
         let mut gc = GridController::test();
         let (transaction_id_0, operations_0) = create_multiple_calculations_0(&mut gc);
@@ -986,6 +1008,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_python_multiple_calculations_receive_back_between() {
         let mut gc = GridController::test();
         let (transaction_id_0, operations_0) = create_multiple_calculations_0(&mut gc);
@@ -1013,6 +1036,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_receive_offline_unsaved_transaction() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -1046,6 +1070,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn ensure_code_run_ordering_is_maintained_for_undo() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -1123,6 +1148,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn receive_our_transactions_out_of_order() {
         let mut gc = GridController::test();
         let (transaction_id_0, operations_0) = create_multiple_calculations_0(&mut gc);

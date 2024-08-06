@@ -1,10 +1,6 @@
 use uuid::Uuid;
 
-use crate::{
-    controller::{execution::TransactionType, GridController},
-    error_core::CoreError,
-    Rect, RunError, RunErrorMsg,
-};
+use crate::{controller::GridController, error_core::CoreError, Rect, RunError, RunErrorMsg};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -80,11 +76,10 @@ impl GridController {
         let h = h.unwrap_or(sheet.find_last_data_row(x, y, w));
         let rect = Rect::from_numbers(x, y, w, h);
 
-        let transaction_type = transaction.transaction_type.clone();
-        if transaction_type != TransactionType::User {
+        if !transaction.is_user_undo_redo() {
             // this should only be called for a user transaction
             return Err(CoreError::TransactionNotFound(
-                "getCells can only be called for non-user transaction".to_string(),
+                "getCells can only be called for user / undo-redo transaction".to_string(),
             ));
         }
 
@@ -94,7 +89,7 @@ impl GridController {
             .cells_accessed
             .insert(rect.to_sheet_rect(sheet.id));
 
-        self.transactions.add_async_transaction(&transaction);
+        self.transactions.add_async_transaction(&mut transaction);
 
         Ok(response)
     }
@@ -104,8 +99,10 @@ impl GridController {
 mod test {
     use super::*;
     use crate::{grid::CodeCellLanguage, Pos, Rect, SheetPos};
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_calculation_get_cells_bad_transaction_id() {
         let mut gc = GridController::test();
 
@@ -122,6 +119,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_calculation_get_cells_no_transaction() {
         let mut gc = GridController::test();
 
@@ -131,6 +129,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_calculation_get_cells_transaction_but_no_current_sheet_pos() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -153,6 +152,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_calculation_get_cells_sheet_name_not_found() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -191,6 +191,7 @@ mod test {
     // This was previously disallowed. It is now allowed to unlock appending results.
     // Leaving in some commented out code in case we want to revert this behavior.
     #[test]
+    #[parallel]
     fn test_calculation_get_cells_self_reference() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -236,6 +237,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_calculation_get_cells() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -276,6 +278,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn calculation_get_cells_with_no_y1() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

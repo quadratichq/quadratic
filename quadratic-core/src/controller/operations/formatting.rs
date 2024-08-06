@@ -15,27 +15,16 @@ impl GridController {
         sheet_rect: &SheetRect,
         symbol: Option<String>,
     ) -> Vec<Operation> {
-        vec![
-            Operation::SetCellFormats {
-                sheet_rect: *sheet_rect,
-                attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
-                    Some(NumericFormat {
-                        kind: NumericFormatKind::Currency,
-                        symbol,
-                    }),
-                    sheet_rect.len(),
-                )),
-            },
-            // todo: this should not set the decimals
-            // default for currency should be 2 but we should not actually change it
-            Operation::SetCellFormats {
-                sheet_rect: *sheet_rect,
-                attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
-                    Some(2),
-                    sheet_rect.len(),
-                )),
-            },
-        ]
+        vec![Operation::SetCellFormats {
+            sheet_rect: *sheet_rect,
+            attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
+                Some(NumericFormat {
+                    kind: NumericFormatKind::Currency,
+                    symbol,
+                }),
+                sheet_rect.len(),
+            )),
+        }]
     }
 
     /// Sets NumericFormat and NumericDecimals to None
@@ -77,13 +66,11 @@ impl GridController {
         let Some(sheet) = self.try_sheet(source.sheet_id) else {
             return vec![];
         };
-        let is_percentage =
-            sheet.cell_numeric_format_kind(source.into()) == Some(NumericFormatKind::Percentage);
+        let kind = sheet.cell_numeric_format_kind(source.into());
         let source_decimals = sheet
-            .calculate_decimal_places(source.into(), is_percentage)
+            .calculate_decimal_places(source.into(), kind)
             .unwrap_or(0);
         let new_precision = i16::max(0, source_decimals + (delta as i16));
-
         vec![Operation::SetCellFormats {
             sheet_rect,
             attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
@@ -122,6 +109,10 @@ impl GridController {
             Operation::SetCellFormats {
                 sheet_rect,
                 attr: CellFmtArray::Align(RunLengthEncoding::repeat(None, len)),
+            },
+            Operation::SetCellFormats {
+                sheet_rect,
+                attr: CellFmtArray::VerticalAlign(RunLengthEncoding::repeat(None, len)),
             },
             Operation::SetCellFormats {
                 sheet_rect,

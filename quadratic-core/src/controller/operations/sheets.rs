@@ -78,19 +78,48 @@ impl GridController {
     }
 
     pub fn duplicate_sheet_operations(&mut self, sheet_id: SheetId) -> Vec<Operation> {
-        let new_sheet_id = SheetId::new();
-        vec![Operation::DuplicateSheet {
-            sheet_id,
-            new_sheet_id,
-        }]
+        let Some(sheet) = self.try_sheet(sheet_id) else {
+            // sheet may have been deleted
+            return vec![];
+        };
+
+        // clone the sheet and update id, name and order
+        let mut new_sheet = sheet.clone();
+        new_sheet.id = SheetId::new();
+        new_sheet.name = format!("{} Copy", sheet.name);
+        let right_order = self
+            .grid
+            .next_sheet(sheet_id)
+            .map(|right| right.order.clone());
+        if let Ok(order) = key_between(&Some(sheet.order.clone()), &right_order) {
+            new_sheet.order = order;
+        };
+
+        let mut ops = vec![Operation::AddSheetSchema {
+            schema: (export_sheet(&new_sheet)),
+        }];
+
+        // get code run operations for the old sheet, as new sheet is not yet in the grid
+        let mut code_run_ops = self.rerun_sheet_code_cells_operations(sheet_id);
+        // update sheet_id in code_run_ops to new sheet id
+        code_run_ops.iter_mut().for_each(|op| {
+            if let Operation::ComputeCode { sheet_pos } = op {
+                sheet_pos.sheet_id = new_sheet.id;
+            }
+        });
+
+        ops.extend(code_run_ops);
+        ops
     }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_move_sheet_operation() {
         let mut gc = GridController::test();
         gc.add_sheet(None);
@@ -137,6 +166,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn get_sheet_next_name() {
         // Sheet 1
         let mut gc = GridController::test();
@@ -156,6 +186,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn sheet_names() {
         let mut gc = GridController::test();
         gc.add_sheet(None);

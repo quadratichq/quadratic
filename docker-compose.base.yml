@@ -47,6 +47,8 @@ services:
       - DISABLE_CUSTOM_CORS_S3=true
       - DISABLE_CORS_CHECKS=true
       - EXTRA_CORS_ALLOWED_ORIGINS=*
+    networks:
+      - host
 
 networks:
   host:

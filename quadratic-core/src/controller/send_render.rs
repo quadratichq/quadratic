@@ -32,9 +32,10 @@ impl GridController {
                 });
             }
         }
-        // send the modified cells to the render web worker
-        modified.iter().for_each(|modified| {
-            if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
+
+        if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
+            // send the modified cells to the render web worker
+            modified.iter().for_each(|modified| {
                 let rect = Rect::from_numbers(
                     modified.x * CELL_SHEET_WIDTH as i64,
                     modified.y * CELL_SHEET_HEIGHT as i64,
@@ -50,8 +51,21 @@ impl GridController {
                         cells,
                     );
                 }
+            });
+        }
+    }
+
+    pub fn send_render_borders(&self, sheet_id: SheetId) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+
+        if let Some(sheet) = self.try_sheet(sheet_id) {
+            let borders = sheet.render_borders();
+            if let Ok(borders) = serde_json::to_string(&borders) {
+                crate::wasm_bindings::js::jsSheetBorders(sheet_id.to_string(), borders);
             }
-        });
+        }
     }
 
     /// Sends the modified fills to the client
@@ -238,16 +252,8 @@ mod test {
 
         gc.set_cell_value((0, 0, sheet_id).into(), "test 1".to_string(), None);
         let result = vec![JsRenderCell {
-            x: 0,
-            y: 0,
-            language: None,
             value: "test 1".to_string(),
-            special: None,
-            align: None,
-            wrap: None,
-            bold: None,
-            italic: None,
-            text_color: None,
+            ..Default::default()
         }];
         let result = serde_json::to_string(&result).unwrap();
         expect_js_call(
@@ -260,14 +266,8 @@ mod test {
         let result = vec![JsRenderCell {
             x: 100,
             y: 100,
-            language: None,
             value: "test 2".to_string(),
-            special: None,
-            align: None,
-            wrap: None,
-            bold: None,
-            italic: None,
-            text_color: None,
+            ..Default::default()
         }];
         let result = serde_json::to_string(&result).unwrap();
         expect_js_call(
@@ -412,16 +412,8 @@ mod test {
         gc.set_cell_value((100, 100, sheet_id).into(), "test 2".to_string(), None);
 
         let result = vec![JsRenderCell {
-            x: 0,
-            y: 0,
-            language: None,
             value: "test 1".to_string(),
-            special: None,
-            align: None,
-            wrap: None,
-            bold: None,
-            italic: None,
-            text_color: None,
+            ..Default::default()
         }];
         let result = serde_json::to_string(&result).unwrap();
         expect_js_call(
@@ -433,14 +425,8 @@ mod test {
         let result = vec![JsRenderCell {
             x: 100,
             y: 100,
-            language: None,
             value: "test 2".to_string(),
-            special: None,
-            align: None,
-            wrap: None,
-            bold: None,
-            italic: None,
-            text_color: None,
+            ..Default::default()
         }];
         let result = serde_json::to_string(&result).unwrap();
         expect_js_call(

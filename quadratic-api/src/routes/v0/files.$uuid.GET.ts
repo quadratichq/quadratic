@@ -84,5 +84,6 @@ async function handler(
       teamPermissions,
     },
   };
+
   return res.status(200).json(data);
 }

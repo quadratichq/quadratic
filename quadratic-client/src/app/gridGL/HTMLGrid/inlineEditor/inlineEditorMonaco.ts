@@ -3,6 +3,7 @@
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
+import { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
 import * as monaco from 'monaco-editor';
@@ -38,6 +39,7 @@ const PADDING_FOR_GROWING_HORIZONTALLY = 20;
 
 class InlineEditorMonaco {
   private editor?: editor.IStandaloneCodeEditor;
+  private suggestionWidgetShowing: boolean = false;
 
   // Helper function to get the model without having to check if editor or model
   // is defined.
@@ -88,8 +90,16 @@ class InlineEditorMonaco {
     this.editor.focus();
   };
 
-  // Resizes the Monaco editor and returns the width.
-  resize(minWidth: number, height: number): number {
+  // Resizes the editor to the given width and height,
+  // and sets the text alignment and wrap.
+  // Returns the final width and height of the editor.
+  updateTextLayout = (
+    width: number,
+    height: number,
+    textAlign: CellAlign,
+    verticalAlign: CellVerticalAlign,
+    textWrap: CellWrap
+  ): { width: number; height: number } => {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in layout');
     }
@@ -101,10 +111,38 @@ class InlineEditorMonaco {
     if (!textarea) {
       throw new Error('Expected textarea to be defined in layout');
     }
-    const width = Math.max(textarea.scrollWidth + PADDING_FOR_GROWING_HORIZONTALLY, minWidth);
+
+    // configure editor options and default layout
+    this.editor.updateOptions({
+      padding: { top: 0, bottom: 0 },
+    });
+
+    // horizontal text alignment
+    domNode.dataset.textAlign = textAlign;
+
+    // vertical text alignment
+    const contentHeight = this.editor.getContentHeight();
+    let paddingTop = 0;
+    if (verticalAlign === 'middle') {
+      paddingTop = Math.max((height - contentHeight) / 2, 0);
+    } else if (verticalAlign === 'bottom') {
+      paddingTop = Math.max(height - contentHeight, 0);
+    }
+
+    // set text wrap and padding for vertical text alignment
+    this.editor.updateOptions({
+      wordWrap: textWrap === 'wrap' ? 'on' : 'off',
+      padding: { top: paddingTop, bottom: 0 },
+    });
+
+    // set final width and height
+    const scrollWidth = textarea.scrollWidth;
+    width = textWrap === 'wrap' ? width : Math.max(width, scrollWidth + PADDING_FOR_GROWING_HORIZONTALLY);
+    height = Math.max(contentHeight, height);
     this.editor.layout({ width, height });
-    return width;
-  }
+
+    return { width, height };
+  };
 
   removeSelection() {
     if (!this.editor) {
@@ -112,7 +150,12 @@ class InlineEditorMonaco {
     }
     const selection = this.editor.getSelection();
     if (selection) {
-      const range = new monaco.Range(1, selection.getStartPosition().column, 1, selection.getEndPosition().column);
+      const range = new monaco.Range(
+        selection.startLineNumber,
+        selection.getStartPosition().column,
+        selection.endLineNumber,
+        selection.getEndPosition().column
+      );
       const model = this.getModel();
       model.applyEdits([{ range, text: '' }]);
     }
@@ -135,7 +178,9 @@ class InlineEditorMonaco {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in setColumn');
     }
-    this.editor.setPosition({ lineNumber: 1, column });
+    const { lineNumber } = this.getPosition();
+    this.editor.setPosition({ lineNumber, column });
+    this.editor.layout();
   }
 
   // set bracket highlighting and auto closing behavior
@@ -160,8 +205,9 @@ class InlineEditorMonaco {
   // Inserts text at cursor location and returns inserting position.
   insertTextAtCursor(text: string): number {
     const model = this.getModel();
+    const { lineNumber } = this.getPosition();
     const column = this.getCursorColumn();
-    const range = new monaco.Range(1, column, 1, column);
+    const range = new monaco.Range(lineNumber, column, lineNumber, column);
     model.applyEdits([{ range, text }]);
     this.setColumn(column + text.length);
     return column;
@@ -189,11 +235,11 @@ class InlineEditorMonaco {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in getCursorColumn');
     }
-    const editorPosition = this.editor.getPosition();
-    if (!editorPosition) {
+    const position = this.editor.getPosition();
+    if (!position) {
       throw new Error('Expected editorPosition to be defined in getCursorColumn');
     }
-    return editorPosition.column;
+    return position.column;
   }
 
   getSpanPosition(start: number): monaco.Position {
@@ -222,11 +268,20 @@ class InlineEditorMonaco {
     return { bounds, position };
   }
 
-  getCharBeforeCursor(): string {
+  getNonWhitespaceCharBeforeCursor(): string {
     const formula = inlineEditorMonaco.get();
-    const position = inlineEditorMonaco.getPosition();
+
+    // If there is a selection then use the start of the selection; otherwise
+    // use the cursor position.
+    const selection = inlineEditorMonaco.editor?.getSelection()?.getStartPosition();
+    const position = selection ?? inlineEditorMonaco.getPosition();
+
     const line = formula.split('\n')[position.lineNumber - 1];
-    const lastCharacter = line[position.column - 2];
+    const lastCharacter =
+      line
+        .substring(0, position.column - 1) // 1-indexed to 0-indexed
+        .trimEnd()
+        .at(-1) ?? '';
     return lastCharacter;
   }
 
@@ -258,6 +313,7 @@ class InlineEditorMonaco {
       automaticLayout: false,
       readOnly: false,
       renderLineHighlight: 'none',
+      renderWhitespace: 'all',
       // quickSuggestions: false,
       glyphMargin: false,
       lineDecorationsWidth: 0,
@@ -269,12 +325,14 @@ class InlineEditorMonaco {
       contextmenu: false,
       links: false,
       minimap: { enabled: false },
-      overviewRulerLanes: 0,
       cursorWidth: CURSOR_THICKNESS,
       padding: { top: 0, bottom: 0 },
       hideCursorInOverviewRuler: true,
+      overviewRulerLanes: 0,
       overviewRulerBorder: false,
       wordWrap: 'off',
+      wrappingStrategy: 'advanced',
+      wordBreak: 'keepAll',
       occurrencesHighlight: false,
       wordBasedSuggestions: false,
       find: {
@@ -283,7 +341,7 @@ class InlineEditorMonaco {
         seedSearchStringFromSelection: 'never',
       },
       fontSize: 14,
-      lineHeight: 15,
+      lineHeight: 19,
       fontFamily: 'OpenSans',
       fontWeight: 'normal',
       lineNumbers: 'off',
@@ -294,15 +352,35 @@ class InlineEditorMonaco {
         horizontal: 'hidden',
         vertical: 'hidden',
         alwaysConsumeMouseWheel: false,
+        verticalScrollbarSize: 0,
       },
       theme: 'inline-editor',
       stickyScroll: { enabled: false },
       language: inlineEditorHandler.formula ? 'formula' : undefined,
     });
 
+    interface SuggestController {
+      widget: { value: { onDidShow: (fn: () => void) => void; onDidHide: (fn: () => void) => void } };
+    }
+    const suggestionWidget = (
+      this.editor.getContribution('editor.contrib.suggestController') as SuggestController | null
+    )?.widget;
+    if (suggestionWidget) {
+      suggestionWidget.value.onDidShow(() => {
+        this.suggestionWidgetShowing = true;
+      });
+      suggestionWidget.value.onDidHide(() => {
+        this.suggestionWidgetShowing = false;
+      });
+    }
+
+    this.editor.onKeyDown((e) => {
+      if (this.suggestionWidgetShowing) return;
+      inlineEditorKeyboard.keyDown(e.browserEvent);
+    });
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.updateMonacoCursorPosition);
-    this.editor.onKeyDown((e) => inlineEditorKeyboard.keyDown(e.browserEvent));
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.keepCursorVisible);
+    this.editor.onMouseDown(() => inlineEditorKeyboard.resetKeyboardPosition());
   }
 
   // Sends a keyboard event to the editor (used when returning

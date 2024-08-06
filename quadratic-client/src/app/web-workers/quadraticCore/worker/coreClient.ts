@@ -11,8 +11,10 @@ import {
   JsCodeCell,
   JsHtmlOutput,
   JsRenderBorders,
+  JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
+  JsRowHeight,
   JsSheetFill,
   Selection,
   SheetBounds,
@@ -58,6 +60,7 @@ declare var self: WorkerGlobalScope &
     sendUpdateHtml: (html: JsHtmlOutput) => void;
     sendGenerateThumbnail: () => void;
     sendSheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
+    sendSheetRenderCells: (sheetId: string, renderCells: JsRenderCell[]) => void;
     sendSheetCodeCell: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
     sendSheetBoundsUpdateClient: (sheetBounds: SheetInfo) => void;
     sendTransactionStart: (
@@ -79,6 +82,8 @@ declare var self: WorkerGlobalScope &
     ) => void;
     sendUndoRedo: (undo: boolean, redo: boolean) => void;
     sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
+    sendResizeRowHeightsClient(sheetId: string, rowHeights: string): void;
+    sendMultiplayerSynced: () => void;
   };
 
 class CoreClient {
@@ -102,6 +107,7 @@ class CoreClient {
     self.sendUpdateHtml = coreClient.sendUpdateHtml;
     self.sendGenerateThumbnail = coreClient.sendGenerateThumbnail;
     self.sendSheetBorders = coreClient.sendSheetBorders;
+    self.sendSheetRenderCells = coreClient.sendSheetRenderCells;
     self.sendSheetCodeCell = coreClient.sendSheetCodeCell;
     self.sendSheetBoundsUpdateClient = coreClient.sendSheetBoundsUpdate;
     self.sendTransactionStart = coreClient.sendTransactionStart;
@@ -109,6 +115,8 @@ class CoreClient {
     self.sendUpdateCodeCell = coreClient.sendUpdateCodeCell;
     self.sendUndoRedo = coreClient.sendUndoRedo;
     self.sendImage = coreClient.sendImage;
+    self.sendResizeRowHeightsClient = coreClient.sendResizeRowHeights;
+    self.sendMultiplayerSynced = coreClient.sendMultiplayerSynced;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -353,6 +361,14 @@ class CoreClient {
         await core.setCellAlign(e.data.selection, e.data.align, e.data.cursor);
         return;
 
+      case 'clientCoreSetCellVerticalAlign':
+        await core.setCellVerticalAlign(e.data.selection, e.data.verticalAlign, e.data.cursor);
+        break;
+
+      case 'clientCoreSetCellWrap':
+        await core.setCellWrap(e.data.selection, e.data.wrap, e.data.cursor);
+        break;
+
       case 'clientCoreCopyToClipboard':
         const result = await core.copyToClipboard(e.data.selection);
         this.send({ type: 'coreClientCopyToClipboard', id: e.data.id, ...result });
@@ -593,6 +609,10 @@ class CoreClient {
     this.send({ type: 'coreClientSheetBorders', sheetId, borders });
   };
 
+  sendSheetRenderCells = (sheetId: string, renderCells: JsRenderCell[]) => {
+    this.send({ type: 'coreClientSheetRenderCells', sheetId, renderCells });
+  };
+
   sendSheetCodeCell = (sheetId: string, codeCells: JsRenderCodeCell[]) => {
     this.send({ type: 'coreClientSheetCodeCellRender', sheetId, codeCells });
   };
@@ -654,6 +674,19 @@ class CoreClient {
   }
   sendImage = (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => {
     this.send({ type: 'coreClientImage', sheetId, x, y, image, w, h });
+  };
+
+  sendResizeRowHeights = (sheetId: string, rowHeightsString: string) => {
+    try {
+      const rowHeights = JSON.parse(rowHeightsString) as JsRowHeight[];
+      this.send({ type: 'coreClientResizeRowHeights', sheetId, rowHeights });
+    } catch (e) {
+      console.error('[coreClient] sendResizeRowHeights: Error parsing JsRowHeight: ', e);
+    }
+  };
+
+  sendMultiplayerSynced = () => {
+    this.send({ type: 'coreClientMultiplayerSynced' });
   };
 }
 
