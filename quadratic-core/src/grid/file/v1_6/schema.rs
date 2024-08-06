@@ -8,7 +8,7 @@ use std::{
 use uuid::Uuid;
 
 use super::schema_validation::Validations;
-pub use v1_5::{Borders, Offsets, RunError, RunErrorMsg, SheetRect};
+pub use v1_5::RunErrorMsg;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GridSchema {
