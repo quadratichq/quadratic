@@ -969,6 +969,10 @@ export interface CoreClientRenderValidationWarnings {
   validationWarnings: JsValidationWarning[];
 }
 
+export interface CoreClientMultiplayerSynced {
+  type: 'coreClientMultiplayerSynced';
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1104,4 +1108,6 @@ export type CoreClientMessage =
   | CoreClientResizeRowHeights
   | CoreClientGetValidationList
   | CoreClientGetDisplayCell
-  | CoreClientRenderValidationWarnings;
+  | CoreClientRenderValidationWarnings
+  | CoreClientResizeRowHeights
+  | CoreClientMultiplayerSynced;

@@ -121,13 +121,14 @@ extern "C" {
         sheet_id: String,
         validations: String, /* Vec<(x, y, validation_id, failed) */
     );
-
     pub fn jsRenderValidationWarnings(
         sheet_id: String,
         hash_x: i64,
         hash_y: i64,
         validations: String, /* Vec<(x, y, id) */
     );
+
+    pub fn jsMultiplayerSynced();
 }
 
 #[cfg(test)]
@@ -609,4 +610,13 @@ pub fn jsRenderValidationWarnings(
             hash_test(&validations)
         ),
     ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsMultiplayerSynced() {
+    TEST_ARRAY
+        .lock()
+        .unwrap()
+        .push(TestFunction::new("jsMultiplayerSynced", "".into()));
 }

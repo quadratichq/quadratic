@@ -37,8 +37,8 @@ pub fn generate_borders_full(
     };
 
     for style in styles.iter() {
-        let horizontal = compute_indices::horizontal(rect, selections.clone());
-        let vertical = compute_indices::vertical(rect, selections.clone());
+        let horizontal = compute_indices::horizontal(rect, &selections);
+        let vertical = compute_indices::vertical(rect, &selections);
 
         for &horizontal_border_index in &horizontal {
             let above_index = horizontal_border_index - 1;

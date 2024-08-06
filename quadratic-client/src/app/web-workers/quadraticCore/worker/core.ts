@@ -673,7 +673,7 @@ class Core {
     y: number,
     width: number,
     height: number,
-    border: string,
+    selection: string,
     style: string | undefined,
     cursor: string
   ) {
@@ -683,7 +683,7 @@ class Core {
         this.gridController.setRegionBorders(
           sheetId,
           numbersToRectStringified(x, y, width, height),
-          border,
+          selection,
           style,
           cursor
         );

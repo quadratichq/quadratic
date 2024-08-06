@@ -179,6 +179,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientRenderValidationWarnings') {
       events.emit('renderValidationWarnings', e.data.sheetId, e.data.hashX, e.data.hashY, e.data.validationWarnings);
       return;
+    } else if (e.data.type === 'coreClientMultiplayerSynced') {
+      events.emit('multiplayerSynced');
+      return;
     }
 
     if (e.data.id !== undefined) {

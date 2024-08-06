@@ -87,6 +87,19 @@ impl GridController {
         self.send_render_cells_from_hash(selection.sheet_id, modified);
     }
 
+    pub fn send_render_borders(&self, sheet_id: SheetId) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+
+        if let Some(sheet) = self.try_sheet(sheet_id) {
+            let borders = sheet.render_borders();
+            if let Ok(borders) = serde_json::to_string(&borders) {
+                crate::wasm_bindings::js::jsSheetBorders(sheet_id.to_string(), borders);
+            }
+        }
+    }
+
     /// Sends the modified fills to the client
     pub fn send_fill_cells(&self, sheet_rect: &SheetRect) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {

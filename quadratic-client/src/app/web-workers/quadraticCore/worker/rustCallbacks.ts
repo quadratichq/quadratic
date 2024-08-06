@@ -96,6 +96,7 @@ declare var self: WorkerGlobalScope &
       hashY: number,
       validationWarnings: JsValidationWarning[]
     ) => void;
+    sendMultiplayerSynced: () => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -287,4 +288,8 @@ export const jsValidationWarning = (sheetId: string, warnings: string) => {
 export const jsRenderValidationWarnings = (sheetId: string, hashX: BigInt, hashY: BigInt, warnings: string) => {
   const validationWarnings = JSON.parse(warnings) as JsValidationWarning[];
   self.sendRenderValidationWarnings(sheetId, Number(hashX), Number(hashY), validationWarnings);
+};
+
+export const jsMultiplayerSynced = () => {
+  self.sendMultiplayerSynced();
 };
