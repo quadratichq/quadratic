@@ -19,7 +19,7 @@ impl GridController {
         let cur_borders = get_rect_borders(sheet, &sheet_rect.into());
         let new_borders = generate_borders(sheet, &sheet_rect.into(), selections.clone(), style);
         let borders = if cur_borders.render_lookup == new_borders.render_lookup {
-            generate_borders(sheet, &sheet_rect.into(), selections.clone(), None)
+            generate_borders(sheet, &sheet_rect.into(), selections, None)
         } else {
             new_borders
         };

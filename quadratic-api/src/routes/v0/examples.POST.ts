@@ -45,13 +45,14 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/example
     } = (await fetch(apiUrl).then((res) => res.json())) as ApiTypes['/v0/files/:uuid.GET.response'];
 
     // Fetch the contents of the file
-    const fileContents = await fetch(lastCheckpointDataUrl).then((res) => res.text());
+    const fileContents = await fetch(lastCheckpointDataUrl).then((res) => res.arrayBuffer());
+    const buffer = new Uint8Array(fileContents);
 
     // Create a private file for the user in the requested team
     const dbFile = await createFile({
       name,
       userId,
-      contents: fileContents,
+      contents: Buffer.from(new Uint8Array(buffer)).toString('base64'),
       version: lastCheckpointVersion,
       teamId: team.id,
       isPrivate,
