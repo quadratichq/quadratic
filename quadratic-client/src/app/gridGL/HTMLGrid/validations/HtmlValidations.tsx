@@ -6,11 +6,13 @@ import { useHtmlValidations } from './useHtmlValidations';
 export const HtmlValidations = () => {
   const htmlValidationsData = useHtmlValidations();
 
+  const { location, offsets, validation } = htmlValidationsData;
+
   return (
     <>
       <HtmlValidationList htmlValidationsData={htmlValidationsData} />
       <HtmlValidationCheckbox htmlValidationsData={htmlValidationsData} />
-      <HtmlValidationMessage htmlValidationsData={htmlValidationsData} />
+      <HtmlValidationMessage column={location?.x} row={location?.y} offsets={offsets} validation={validation} />
     </>
   );
 };

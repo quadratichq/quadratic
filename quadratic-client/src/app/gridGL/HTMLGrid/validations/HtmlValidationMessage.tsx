@@ -1,22 +1,40 @@
 import { IconButton } from '@mui/material';
-import { HtmlValidationsData } from './useHtmlValidations';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Close } from '@mui/icons-material';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { pixiApp } from '../../pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
+import { usePositionCellMessage } from './usePositionCellMessage';
+import { Rectangle } from 'pixi.js';
+import { Validation } from '@/app/quadratic-core-types';
+import { pixiApp } from '../../pixiApp/PixiApp';
+import { Button } from '@/shared/shadcn/ui/button';
+import ErrorIcon from '@mui/icons-material/Error';
+import WarningIcon from '@mui/icons-material/Warning';
+import InfoIcon from '@mui/icons-material/Info';
 
 interface Props {
-  htmlValidationsData: HtmlValidationsData;
+  column?: number;
+  row?: number;
+  offsets?: Rectangle;
+  validation?: Validation;
 }
 
 export const HtmlValidationMessage = (props: Props) => {
+  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const { annotationState } = useRecoilValue(editorInteractionStateAtom);
-  const { offsets, validation } = props.htmlValidationsData;
+  const { offsets, validation, column, row } = props;
   const [hide, setHide] = useState(true);
 
-  const message = validation?.message;
+  const showError = useMemo(() => {
+    if (column === undefined || row === undefined) {
+      return false;
+    }
+    if (pixiApp.cellsSheets.current?.getErrorMarkerValidation(column, row)) {
+      return true;
+    }
+    return false;
+  }, [column, row]);
 
   const ref = useRef<HTMLDivElement>(null);
 
@@ -24,46 +42,61 @@ export const HtmlValidationMessage = (props: Props) => {
     setHide(false);
   }, [validation]);
 
-  const [top, setTop] = useState(0);
-  const [left, setLeft] = useState(0);
-  useEffect(() => {
-    const updatePosition = () => {
-      if (!offsets) return;
-      const div = ref.current;
-      if (!div) return;
-      const viewport = pixiApp.viewport;
-      const bounds = viewport.getVisibleBounds();
-      // only box to the left if it doesn't fit.
-      if (offsets.right + div.offsetWidth > bounds.right) {
-        // box to the left
-        setLeft(offsets.left - div.offsetWidth);
-      } else {
-        // box to the right
-        setLeft(offsets.right);
-      }
+  const { top, left } = usePositionCellMessage(ref.current, offsets);
 
-      // only box going up if it doesn't fit.
-      if (offsets.top + div.offsetHeight < bounds.bottom) {
-        // box going down
-        setTop(offsets.top);
-      } else {
-        // box going up
-        setTop(offsets.bottom - div.offsetHeight);
-      }
-    };
-    updatePosition();
-    pixiApp.viewport.on('moved', updatePosition);
-    window.addEventListener('resize', updatePosition);
+  const showValidation = useCallback(() => {
+    if (validation) {
+      setEditorInteractionState((old) => {
+        return {
+          ...old,
+          showValidation: validation?.id,
+        };
+      });
+    }
+  }, [setEditorInteractionState, validation]);
 
-    return () => {
-      pixiApp.viewport.off('moved', updatePosition);
-      window.removeEventListener('resize', updatePosition);
-    };
-  }, [offsets]);
+  let title: JSX.Element | null = null;
+  let message: JSX.Element | null = null;
+  if (showError) {
+    let icon: JSX.Element | null = null;
+    switch (validation?.error?.style) {
+      case 'Stop':
+        icon = <ErrorIcon />;
+        break;
+      case 'Warning':
+        icon = <WarningIcon />;
+        break;
+      case 'Information':
+        icon = <InfoIcon />;
+        break;
+    }
+    const errorTitle = validation?.error?.title;
+    title = (
+      <div className="flex align-middle">
+        <span className="mr-2">{icon}</span>
+        <span>{errorTitle ? errorTitle : 'Validation Error'}</span>
+      </div>
+    );
+    message = (
+      <>
+        <div>{validation?.error?.message}</div>
+        <div>
+          <Button className="pointer-events-auto mt-4 text-xs" variant="link" size="none" onClick={showValidation}>
+            Show Validation
+          </Button>
+        </div>
+      </>
+    );
+  } else if (validation?.message) {
+    if (validation?.message.title) {
+      title = <span>{validation.message.title}</span>;
+    }
+    if (validation?.message.message) {
+      message = <span>{validation.message.message}</span>;
+    }
+  }
 
-  const hasMessage = message && (!!message.title || !!message.message);
-
-  if (hide || annotationState === 'dropdown' || !offsets || !hasMessage) return null;
+  if (hide || annotationState === 'dropdown' || !offsets || (!title && !message)) return null;
 
   return (
     <div
@@ -73,7 +106,7 @@ export const HtmlValidationMessage = (props: Props) => {
     >
       <div className="leading-2 whitespace-nowrap">
         <div className="flex items-center justify-between gap-2">
-          <div className="margin-bottom: 0.5rem">{message.title}</div>
+          {title && <div className="margin-bottom: 0.5rem">{title}</div>}
           <IconButton
             sx={{ padding: 0 }}
             className="pointer-events-auto"
@@ -85,7 +118,7 @@ export const HtmlValidationMessage = (props: Props) => {
             <Close sx={{ padding: 0, width: 15 }} />
           </IconButton>
         </div>
-        {message.message && <div className="pb-1 pt-2 text-xs">{message.message}</div>}
+        {message && <div className="pb-1 pt-2 text-xs">{message}</div>}
       </div>
     </div>
   );

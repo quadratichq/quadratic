@@ -46,7 +46,7 @@ export class Cursor extends Container {
 
   // redraws corners if there is an error
   private drawError(cell: Coordinate, x: number, y: number, width: number, height: number) {
-    const error = pixiApp.cellsSheets.current?.hasErrorMarker(cell.x, cell.y);
+    const error = pixiApp.cellsSheets.current?.getErrorMarker(cell.x, cell.y);
     if (error) {
       if (error.triangle) {
         const triangle = this.addChild(new Sprite(error.triangle.texture));

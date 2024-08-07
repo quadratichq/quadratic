@@ -106,7 +106,11 @@ export class CellsSheet extends Container {
     }
   };
 
-  hasErrorMarker(x: number, y: number): ErrorMarker | undefined {
+  getErrorMarker(x: number, y: number): ErrorMarker | undefined {
     return this.cellsMarkers.getErrorMarker(x, y) || this.cellsLabels.getErrorMarker(x, y);
+  }
+
+  getErrorMarkerValidation(x: number, y: number): boolean {
+    return this.cellsLabels.getErrorMarker(x, y) !== undefined;
   }
 }
