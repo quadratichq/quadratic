@@ -973,6 +973,21 @@ export interface CoreClientMultiplayerSynced {
   type: 'coreClientMultiplayerSynced';
 }
 
+export interface ClientCoreValidateInput {
+  type: 'clientCoreValidateInput';
+  id: number;
+  sheetId: string;
+  x: number;
+  y: number;
+  input: string;
+}
+
+export interface CoreClientValidateInput {
+  type: 'coreClientValidateInput';
+  id: number;
+  validationId: string | undefined;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1046,7 +1061,8 @@ export type ClientCoreMessage =
   | ClientCoreRemoveValidations
   | ClientCoreGetValidationFromPos
   | ClientCoreGetValidationList
-  | ClientCoreGetDisplayCell;
+  | ClientCoreGetDisplayCell
+  | ClientCoreValidateInput;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1110,4 +1126,5 @@ export type CoreClientMessage =
   | CoreClientGetDisplayCell
   | CoreClientRenderValidationWarnings
   | CoreClientResizeRowHeights
-  | CoreClientMultiplayerSynced;
+  | CoreClientMultiplayerSynced
+  | CoreClientValidateInput;

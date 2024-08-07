@@ -580,6 +580,14 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreValidateInput':
+        this.send({
+          type: 'coreClientValidateInput',
+          id: e.data.id,
+          validationId: core.validateInput(e.data.sheetId, e.data.x, e.data.y, e.data.input),
+        });
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core

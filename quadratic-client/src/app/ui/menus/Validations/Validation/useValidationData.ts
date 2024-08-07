@@ -4,7 +4,6 @@
 import { v4 as uuid } from 'uuid';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Selection, Validation, ValidationRule } from '@/app/quadratic-core-types';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
 import { getSelectionString } from '@/app/grid/sheet/selection';
 import { useRecoilValue } from 'recoil';
@@ -48,7 +47,7 @@ export const useValidationData = (): ValidationData => {
     const getValidation = async () => {
       let v: Validation | Omit<Validation, 'rule'> | undefined;
       if (showValidation && showValidation !== true && showValidation !== 'new') {
-        v = await quadraticCore.getValidation(sheetId, showValidation);
+        v = sheets.getById(sheetId)?.validations.find((v) => v.id === showValidation);
       }
       if (v) {
         setOriginalValidation(v);

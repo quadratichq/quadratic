@@ -6,11 +6,14 @@ use crate::{
         GridController,
     },
     grid::{
-        sheet::validations::{validation::Validation, validation_rules::ValidationRule},
+        sheet::validations::{
+            validation::{Validation, ValidationStyle},
+            validation_rules::ValidationRule,
+        },
         SheetId,
     },
     selection::Selection,
-    Pos,
+    CellValue, Pos,
 };
 
 impl GridController {
@@ -78,17 +81,37 @@ impl GridController {
             _ => None,
         }
     }
+
+    /// Returns whether an input is valid based on the validation rules. Note:
+    /// this will only return the validation_id if STOP is defined as the error
+    /// condition.
+    pub fn validate_input(&self, sheet_id: SheetId, pos: Pos, input: &str) -> Option<Uuid> {
+        let sheet = self.try_sheet(sheet_id)?;
+        let validation = sheet.validations.get_validation_from_pos(pos)?;
+        if validation.error.style != ValidationStyle::Stop {
+            return None;
+        }
+        let cell_value = CellValue::from(input);
+        if validation.rule.validate(&sheet, Some(&cell_value)) {
+            None
+        } else {
+            Some(validation.id)
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use serial_test::serial;
+    use serial_test::{parallel, serial};
 
     use crate::{
-        grid::sheet::validations::validation_rules::{
-            validation_list::{ValidationList, ValidationListSource},
-            validation_logical::ValidationLogical,
-            ValidationRule,
+        grid::sheet::validations::{
+            validation::ValidationError,
+            validation_rules::{
+                validation_list::{ValidationList, ValidationListSource},
+                validation_logical::ValidationLogical,
+                ValidationRule,
+            },
         },
         wasm_bindings::js::{expect_js_call, hash_test},
         Rect,
@@ -97,6 +120,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[parallel]
     fn validations() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -191,6 +215,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn get_validation_from_pos() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -220,6 +245,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn validation_list_strings() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -246,6 +272,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn validation_list_cells() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -282,5 +309,49 @@ mod tests {
                 "123".to_string()
             ])
         );
+    }
+
+    #[test]
+    #[parallel]
+    fn validate_input() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+
+        let list = ValidationList {
+            source: ValidationListSource::List(vec!["a".to_string(), "b".to_string()]),
+            ignore_blank: true,
+            drop_down: true,
+        };
+        let validation = Validation {
+            id: Uuid::new_v4(),
+            selection: Selection::pos(0, 0, sheet_id),
+            rule: ValidationRule::List(list),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        sheet.validations.set(validation.clone());
+
+        assert_eq!(gc.validate_input(sheet_id, (0, 0).into(), "a"), None);
+        assert_eq!(
+            gc.validate_input(sheet_id, (0, 0).into(), "c"),
+            Some(validation.id)
+        );
+
+        let validation = Validation {
+            id: Uuid::new_v4(),
+            selection: Selection::pos(0, 1, sheet_id),
+            rule: ValidationRule::None,
+            message: Default::default(),
+            error: ValidationError {
+                style: ValidationStyle::Warning,
+                ..Default::default()
+            },
+        };
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.validations.set(validation.clone());
+
+        assert_eq!(gc.validate_input(sheet_id, (0, 1).into(), "a"), None);
+        assert_eq!(gc.validate_input(sheet_id, (0, 1).into(), "c"), None);
     }
 }

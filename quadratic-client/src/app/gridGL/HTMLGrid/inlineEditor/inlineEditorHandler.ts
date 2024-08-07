@@ -349,7 +349,7 @@ class InlineEditorHandler {
 
   // Close editor. It saves the value if cancel = false. It also moves the
   // cursor by (deltaX, deltaY).
-  close = (deltaX = 0, deltaY = 0, cancel: boolean) => {
+  close = async (deltaX = 0, deltaY = 0, cancel: boolean) => {
     if (!this.open) return;
     if (!this.location) {
       throw new Error('Expected location to be defined in InlineEditorHandler');
@@ -387,13 +387,24 @@ class InlineEditorHandler {
           });
         }
       } else {
-        quadraticCore.setCellValue(
+        const validationError = await quadraticCore.validateInput(
           this.location.sheetId,
           this.location.x,
           this.location.y,
-          value.trim(),
-          sheets.getCursorPosition()
+          value
         );
+        if (validationError) {
+          inlineEditorEvents.emit('inputFailedValidation', this.location.x, this.location.y, validationError);
+          return;
+        } else {
+          quadraticCore.setCellValue(
+            this.location.sheetId,
+            this.location.x,
+            this.location.y,
+            value.trim(),
+            sheets.getCursorPosition()
+          );
+        }
       }
     }
 

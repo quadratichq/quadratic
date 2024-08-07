@@ -20,8 +20,8 @@ pub struct ValidationMessage {
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum ValidationStyle {
     #[default]
-    Warning,
     Stop,
+    Warning,
     Information,
 }
 

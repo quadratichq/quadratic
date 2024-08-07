@@ -77,7 +77,7 @@ export const ValidationMessage = (props: Props) => {
     <>
       <div className="border-t border-t-gray-100 pt-4 font-medium">Error Message</div>
       <ValidationUICheckbox
-        label="Show error alert after invalid data"
+        label="Show error for invalid data"
         value={!!validation?.error.show}
         changeValue={showError}
       />

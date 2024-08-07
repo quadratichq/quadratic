@@ -496,6 +496,13 @@ impl Sheet {
         });
     }
 
+    /// Sends all validations for this sheet to the client.
+    pub fn send_all_validations(&self) {
+        if let Ok(validations) = serde_json::to_string(&self.validations.validations) {
+            crate::wasm_bindings::js::jsSheetValidations(self.id.to_string(), validations);
+        }
+    }
+
     /// Sends validation warnings for a hashed region to the client.
     pub fn send_validation_warnings(&self, hash_x: i64, hash_y: i64, rect: Rect) {
         let warnings = self
@@ -1128,6 +1135,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn validation_list() {
         let mut sheet = Sheet::test();
         sheet.validations.set(Validation {
@@ -1142,5 +1150,30 @@ mod tests {
         });
         let render = sheet.get_render_cells(Rect::single_pos((0, 0).into()));
         assert_eq!(render.len(), 1);
+    }
+
+    #[test]
+    #[serial]
+    fn send_all_validations() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.validations.set(Validation {
+            id: Uuid::new_v4(),
+            selection: Selection::rect(Rect::new(0, 0, 1, 1), sheet_id),
+            rule: ValidationRule::Logical(ValidationLogical {
+                show_checkbox: true,
+                ignore_blank: true,
+            }),
+            message: Default::default(),
+            error: Default::default(),
+        });
+        sheet.send_all_validations();
+        let validations = serde_json::to_string(&sheet.validations.validations).unwrap();
+        expect_js_call(
+            "jsSheetValidations",
+            format!("{},{}", sheet.id.to_string(), validations),
+            true,
+        );
     }
 }

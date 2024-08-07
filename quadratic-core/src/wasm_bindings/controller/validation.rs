@@ -94,4 +94,25 @@ impl GridController {
             None
         }
     }
+
+    /// Validates user input against any validation rules.
+    #[wasm_bindgen(js_name = "validateInput")]
+    pub fn js_validate_input(
+        &self,
+        sheet_id: String,
+        pos: String,
+        value: String,
+    ) -> Option<String> {
+        if let (Ok(sheet_id), Ok(pos)) = (
+            SheetId::from_str(&sheet_id),
+            serde_json::from_str::<Pos>(&pos),
+        ) {
+            self.validate_input(sheet_id, pos, &value)
+                .map(|validation| {
+                    serde_json::to_string(&validation.to_string()).unwrap_or_default()
+                })
+        } else {
+            None
+        }
+    }
 }

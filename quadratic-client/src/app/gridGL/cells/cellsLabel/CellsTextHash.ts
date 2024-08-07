@@ -18,6 +18,7 @@ import { LabelMeshEntry } from './LabelMeshEntry';
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
 import { CellsTextHashSpecial } from './CellsTextHashSpecial';
 import { CellsTextHashValidations } from './CellsTextHashValidations';
+import { ErrorMarker } from '../CellsSheet';
 
 // Draw hashed regions of cell glyphs (the text + text formatting)
 export class CellsTextHash extends Container {
@@ -127,5 +128,9 @@ export class CellsTextHash extends Container {
         this.viewRectangle.y += delta;
       }
     }
+  }
+
+  getErrorMarker(x: number, y: number): ErrorMarker | undefined {
+    return this.warnings.getErrorMarker(x, y);
   }
 }

@@ -975,6 +975,11 @@ class Core {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     return this.gridController.getDisplayValue(sheetId, posToPos(x, y));
   }
+
+  validateInput(sheetId: string, x: number, y: number, input: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    return this.gridController.validateInput(sheetId, posToPos(x, y), input);
+  }
 }
 
 export const core = new Core();

@@ -108,6 +108,7 @@ class InlineEditorKeyboard {
     // Enter key
     else if (matchShortcut('save_inline_editor', e)) {
       e.stopPropagation();
+      e.preventDefault();
       inlineEditorHandler.close(0, 1, false);
     }
 

@@ -1,5 +1,5 @@
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { Container, Rectangle } from 'pixi.js';
+import { Container, Rectangle, Sprite } from 'pixi.js';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
@@ -11,6 +11,11 @@ import { CellsMarkers } from './CellsMarkers';
 import { CellsSearch } from './CellsSearch';
 import { events } from '@/app/events/events';
 import { JsValidationWarning } from '@/app/quadratic-core-types';
+
+export interface ErrorMarker {
+  triangle?: Sprite;
+  symbol?: Sprite;
+}
 
 export class CellsSheet extends Container {
   private cellsFills: CellsFills;
@@ -100,4 +105,8 @@ export class CellsSheet extends Container {
       this.cellsLabels.renderValidations(hashX, hashY, validationWarnings);
     }
   };
+
+  hasErrorMarker(x: number, y: number): ErrorMarker | undefined {
+    return this.cellsMarkers.getErrorMarker(x, y) || this.cellsLabels.getErrorMarker(x, y);
+  }
 }

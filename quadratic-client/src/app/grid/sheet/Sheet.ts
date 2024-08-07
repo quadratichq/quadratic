@@ -1,6 +1,6 @@
 import { events } from '@/app/events/events';
 import { GridOverflowLines } from '@/app/grid/sheet/GridOverflowLines';
-import { ColumnRow, GridBounds, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import { ColumnRow, GridBounds, SheetBounds, SheetInfo, Validation } from '@/app/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
@@ -23,6 +23,8 @@ export class Sheet {
   // tracks which Grid lines should not be drawn b/c of overflow
   gridOverflowLines: GridOverflowLines;
 
+  validations: Validation[] = [];
+
   constructor(info: SheetInfo, testSkipOffsetsLoad = false) {
     this.id = info.sheet_id;
     this.name = info.name;
@@ -34,7 +36,14 @@ export class Sheet {
     this.boundsWithoutFormatting = info.bounds_without_formatting;
     this.gridOverflowLines = new GridOverflowLines();
     events.on('sheetBounds', this.updateBounds);
+    events.on('sheetValidations', this.sheetValidations);
   }
+
+  private sheetValidations = (sheetId: string, validations: Validation[]) => {
+    if (sheetId === this.id) {
+      this.validations = validations;
+    }
+  };
 
   static testSheet(): Sheet {
     return new Sheet(

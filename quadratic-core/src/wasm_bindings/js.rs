@@ -111,12 +111,12 @@ extern "C" {
         h: Option<String>,
     );
 
-    pub fn jsSheetValidations(sheet_id: String, validations: String /* JsValidationSheet */);
     // rows: Vec<i64>
     pub fn jsRequestRowHeights(transaction_id: String, sheet_id: String, rows: String);
     // row_heights: Vec<JsRowHeight>
     pub fn jsResizeRowHeights(sheet_id: String, row_heights: String /*Vec<JsRowHeight>*/);
 
+    pub fn jsSheetValidations(sheet_id: String, validations: String /* Vec<Validation> */);
     pub fn jsValidationWarning(
         sheet_id: String,
         validations: String, /* Vec<(x, y, validation_id, failed) */

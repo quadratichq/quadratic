@@ -16,7 +16,7 @@ import {
 } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { Container, Graphics, Point, Rectangle } from 'pixi.js';
-import { CellsSheet } from '../CellsSheet';
+import { CellsSheet, ErrorMarker } from '../CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 import { CellsTextHash } from './CellsTextHash';
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
@@ -193,5 +193,12 @@ export class CellsLabels extends Container {
       cellsTextHash = this.createCellsTextHash(hashX, hashY);
     }
     cellsTextHash.warnings.populate(validationWarnings);
+  }
+
+  getErrorMarker(x: number, y: number): ErrorMarker | undefined {
+    const hash = this.getHash(x, y);
+    if (hash) {
+      return hash.getErrorMarker(x, y);
+    }
   }
 }

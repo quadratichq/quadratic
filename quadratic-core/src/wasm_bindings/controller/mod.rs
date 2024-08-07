@@ -85,6 +85,9 @@ impl GridController {
 
                             // sends all images to the client
                             sheet.send_all_images();
+
+                            // sends all validations to the client
+                            sheet.send_all_validations();
                         }
                     });
                 }

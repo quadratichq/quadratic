@@ -13,16 +13,9 @@ export interface ValidationsData {
 export const useValidationsData = () => {
   const [sheetId] = useState(sheets.sheet.id);
 
-  // gets all validations for this sheet from core
-  const [validations, setValidations] = useState<Validation[]>([]);
-  useEffect(() => {
-    const getValidations = async () => {
-      const v = await quadraticCore.getValidations(sheets.current);
-      setValidations(v || []);
-    };
-    getValidations();
-  }, []);
-
+  // we make a copy of validations from sheet so we can delete pending ones
+  // without affecting the sheet.
+  const [validations, setValidations] = useState([...sheets.sheet.validations]);
   useEffect(() => {
     const updateValidations = (incomingSheetId: string, validations: Validation[]) => {
       if (incomingSheetId === sheetId) {
@@ -38,7 +31,7 @@ export const useValidationsData = () => {
   const deleteValidation = useCallback(
     (validationId: string) => {
       quadraticCore.removeValidation(sheetId, validationId, sheets.getCursorPosition());
-      setValidations((old) => old.filter((v) => v.id !== validationId));
+      setValidations((prev) => prev.filter((v) => v.id !== validationId));
     },
     [sheetId]
   );

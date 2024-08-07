@@ -60,6 +60,7 @@ import {
   CoreClientSearch,
   CoreClientSummarizeSelection,
   CoreClientUpgradeFile,
+  CoreClientValidateInput,
 } from './coreClientMessages';
 
 class QuadraticCore {
@@ -1106,6 +1107,23 @@ class QuadraticCore {
         sheetId,
         x,
         y,
+      });
+    });
+  }
+
+  validateInput(sheetId: string, x: number, y: number, input: string): Promise<string | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientValidateInput) => {
+        resolve(message.validationId);
+      };
+      this.send({
+        type: 'clientCoreValidateInput',
+        id,
+        sheetId,
+        x,
+        y,
+        input,
       });
     });
   }

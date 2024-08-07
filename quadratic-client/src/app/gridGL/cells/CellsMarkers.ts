@@ -3,6 +3,7 @@ import { Container, Point, Rectangle, Sprite, Texture } from 'pixi.js';
 import { colors } from '../../theme/colors';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { generatedTextures } from '../generateTextures';
+import { ErrorMarker } from './CellsSheet';
 
 const INDICATOR_SIZE = 4;
 export const TRIANGLE_SCALE = 0.1;
@@ -12,6 +13,8 @@ export type CellsMarkerTypes = 'CodeIcon' | 'FormulaIcon' | 'AIIcon' | 'ErrorIco
 interface Marker {
   bounds: Rectangle;
   codeCell: JsRenderCodeCell;
+  triangle?: Sprite;
+  symbol?: Sprite;
 }
 
 export class CellsMarkers extends Container {
@@ -24,36 +27,40 @@ export class CellsMarkers extends Container {
 
   add(box: Rectangle, codeCell: JsRenderCodeCell, selected: boolean) {
     const isError = codeCell.state === 'RunError' || codeCell.state === 'SpillError';
+    let triangle: Sprite | undefined;
     if (isError) {
-      const sprite = this.addChild(new Sprite(generatedTextures.triangle));
-      sprite.scale.set(TRIANGLE_SCALE);
-      sprite.position.set(box.x, box.y);
-      sprite.tint = colors.cellColorError;
+      triangle = this.addChild(new Sprite(generatedTextures.triangle));
+      triangle.scale.set(TRIANGLE_SCALE);
+      triangle.position.set(box.x, box.y);
+      triangle.tint = colors.cellColorError;
     }
 
+    let symbol: Sprite | undefined;
     if (isError || selected || pixiAppSettings.showCellTypeOutlines) {
-      const child = this.addChild(new Sprite());
-      child.height = INDICATOR_SIZE;
-      child.width = INDICATOR_SIZE;
-      child.position.set(box.x + 1.25, box.y + 1.25);
+      symbol = this.addChild(new Sprite());
+      symbol.height = INDICATOR_SIZE;
+      symbol.width = INDICATOR_SIZE;
+      symbol.position.set(box.x + 1.25, box.y + 1.25);
       if (codeCell.language === 'Python') {
-        child.texture = Texture.from('/images/python-icon.png');
-        child.tint = isError ? 0xffffff : colors.cellColorUserPython;
+        symbol.texture = Texture.from('/images/python-icon.png');
+        symbol.tint = isError ? 0xffffff : colors.cellColorUserPython;
       } else if (codeCell.language === 'Formula') {
-        child.texture = Texture.from('/images/formula-fx-icon.png');
-        child.tint = isError ? 0xffffff : colors.cellColorUserFormula;
+        symbol.texture = Texture.from('/images/formula-fx-icon.png');
+        symbol.tint = isError ? 0xffffff : colors.cellColorUserFormula;
       } else if (codeCell.language === 'Javascript') {
-        child.texture = Texture.from('/images/javascript-icon.png');
-        child.tint = isError ? colors.cellColorError : colors.cellColorUserJavascript;
+        symbol.texture = Texture.from('/images/javascript-icon.png');
+        symbol.tint = isError ? colors.cellColorError : colors.cellColorUserJavascript;
         if (isError) {
-          child.x -= 1;
-          child.y -= 1;
+          symbol.x -= 1;
+          symbol.y -= 1;
         }
       }
     }
     this.markers.push({
       bounds: new Rectangle(box.x, box.y, box.width, box.height),
       codeCell,
+      triangle,
+      symbol,
     });
   }
 
@@ -61,6 +68,23 @@ export class CellsMarkers extends Container {
     const marker = this.markers.find((marker) => marker.bounds.contains(point.x, point.y));
     if (marker?.codeCell) {
       return marker.codeCell;
+    }
+  }
+
+  getErrorMarker(x: number, y: number): ErrorMarker | undefined {
+    const marker = this.markers.find((marker) => marker.codeCell.x === x && marker.codeCell.y === y);
+    if (marker) {
+      if (marker.codeCell.state === 'RunError') {
+        return {
+          triangle: marker.triangle,
+          symbol: marker.symbol,
+        };
+      } else if (marker.codeCell.state === 'SpillError') {
+        return {
+          triangle: marker.triangle,
+          symbol: marker.symbol,
+        };
+      }
     }
   }
 
