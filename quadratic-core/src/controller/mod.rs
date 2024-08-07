@@ -15,6 +15,7 @@ pub mod transaction;
 pub mod transaction_summary;
 pub mod transaction_types;
 pub mod user_actions;
+pub mod viewport;
 
 #[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]

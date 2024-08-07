@@ -45,6 +45,7 @@ class RenderClient {
         );
         renderText.sheetId = e.data.sheetId;
         if (startUpdate) renderText.ready();
+        renderText.updateViewportBuffer();
         return;
 
       case 'clientRenderSheetOffsetsTransient':

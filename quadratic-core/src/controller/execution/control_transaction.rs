@@ -28,7 +28,13 @@ impl GridController {
                 transaction.id.to_string(),
                 transaction_name,
             );
+
+            crate::wasm_bindings::js::jsSendViewportBuffer(
+                transaction.id.to_string(),
+                transaction.viewport_buffer.get_buffer(),
+            );
         }
+
         loop {
             if transaction.operations.is_empty() && transaction.resize_rows.is_empty() {
                 transaction.complete = true;
@@ -36,6 +42,9 @@ impl GridController {
             }
 
             self.execute_operation(transaction);
+
+            self.process_dirty_hashes(transaction);
+
             if transaction.has_async > 0 {
                 self.transactions.update_async_transaction(transaction);
                 break;
@@ -55,6 +64,10 @@ impl GridController {
                     break;
                 }
             }
+        }
+
+        if cfg!(target_family = "wasm") && !transaction.is_server() {
+            crate::wasm_bindings::js::jsClearViewportBuffer(transaction.id.to_string());
         }
     }
 

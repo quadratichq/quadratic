@@ -11,9 +11,10 @@ use uuid::Uuid;
 use crate::{
     controller::{
         execution::TransactionType, operations::operation::Operation, transaction::Transaction,
+        viewport::ViewportBuffer,
     },
     grid::{CodeCellLanguage, SheetId},
-    SheetPos, SheetRect,
+    Pos, SheetPos, SheetRect,
 };
 
 use super::transaction_name::TransactionName;
@@ -61,6 +62,10 @@ pub struct PendingTransaction {
     pub cursor_undo_redo: Option<String>,
 
     pub resize_rows: HashMap<SheetId, HashSet<i64>>,
+
+    pub dirty_hashes: HashMap<SheetId, HashSet<Pos>>,
+
+    pub viewport_buffer: ViewportBuffer,
 }
 
 impl Default for PendingTransaction {
@@ -83,6 +88,8 @@ impl Default for PendingTransaction {
             generate_thumbnail: false,
             cursor_undo_redo: None,
             resize_rows: HashMap::new(),
+            dirty_hashes: HashMap::new(),
+            viewport_buffer: ViewportBuffer::default(),
         }
     }
 }

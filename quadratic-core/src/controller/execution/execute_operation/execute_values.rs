@@ -65,7 +65,14 @@ impl GridController {
 
                     if !transaction.is_server() {
                         self.send_updated_bounds(sheet_rect.sheet_id);
-                        self.send_render_cells(&sheet_rect);
+
+                        let hashes = sheet_rect.to_hashes();
+                        let dirty_hashes = transaction
+                            .dirty_hashes
+                            .entry(sheet_rect.sheet_id)
+                            .or_default();
+                        dirty_hashes.extend(hashes);
+
                         if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
                             let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into());
                             if !rows.is_empty() {

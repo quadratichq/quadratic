@@ -70,6 +70,18 @@ class RenderCore {
         this.resizeRowHeights(e.data.sheetId, e.data.rowHeights);
         break;
 
+      case 'coreRenderHashesDirty':
+        renderText.setHashesDirty(e.data.sheetId, e.data.hashes);
+        break;
+
+      case 'coreRenderSetViewportBuffer':
+        renderText.setViewportBuffer(e.data.transactionId, e.data.buffer);
+        break;
+
+      case 'coreRenderClearViewportBuffer':
+        renderText.clearViewportBuffer(e.data.transactionId);
+        break;
+
       default:
         console.warn('[renderCore] Unhandled message', e.data);
     }

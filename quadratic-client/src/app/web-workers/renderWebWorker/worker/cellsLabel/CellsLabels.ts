@@ -9,7 +9,7 @@
 import { debugShowLoadingHashes } from '@/app/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
-import { JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import { JsPos, JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
@@ -228,6 +228,14 @@ export class CellsLabels {
     );
   }
 
+  getCornerHashesInBound = (bounds: Rectangle): number[] => {
+    const top_left_x = Math.floor(bounds.x / sheetHashWidth);
+    const top_left_y = Math.floor(bounds.y / sheetHashHeight);
+    const bottom_right_x = Math.floor((bounds.x + bounds.width) / sheetHashWidth);
+    const bottom_right_y = Math.floor((bounds.y + bounds.height) / sheetHashHeight);
+    return [top_left_x, top_left_y, bottom_right_x, bottom_right_y];
+  };
+
   // distance from viewport center to hash center
   private hashDistanceSquared(hash: CellsTextHash, viewport: Rectangle): number {
     const hashRectangle = hash.viewRectangle;
@@ -272,7 +280,25 @@ export class CellsLabels {
       return;
     }
 
-    if (visibleDirtyHashes.length) {
+    visibleDirtyHashes.sort((a, b) => a.hashY - b.hashY);
+    notVisibleDirtyHashes.sort((a, b) => a.distance - b.distance);
+
+    const runningTransaction = renderText.viewportBuffer.size > 0;
+    if (runningTransaction) {
+      const hashWithRenderCells = [
+        ...visibleDirtyHashes.filter((hash) => Array.isArray(hash.dirty)),
+        ...notVisibleDirtyHashes.filter((h) => Array.isArray(h.hash)).map((h) => h.hash),
+      ];
+
+      if (debugShowLoadingHashes)
+        console.log(
+          `[CellsTextHash] rendering visible: ${visibleDirtyHashes[0].hashX}, ${visibleDirtyHashes[0].hashY}`
+        );
+
+      if (hashWithRenderCells.length) {
+        return { hash: hashWithRenderCells[0], visible: true };
+      }
+    } else if (visibleDirtyHashes.length) {
       // if hashes are visible then sort smallest to largest by y and return the first one
       visibleDirtyHashes.sort((a, b) => a.hashY - b.hashY);
 
@@ -345,6 +371,25 @@ export class CellsLabels {
       this.cellsTextHash.set(key, cellsHash);
     }
     cellsHash.dirty = renderCells;
+  }
+
+  setHashesDirty(hashesString: string): void {
+    try {
+      const hashes = JSON.parse(hashesString) as JsPos[];
+      hashes.forEach(({ x, y }) => {
+        const hashX = Number(x);
+        const hashY = Number(y);
+        const key = this.getHashKey(hashX, hashY);
+        let cellsHash = this.cellsTextHash.get(key);
+        if (!cellsHash) {
+          cellsHash = new CellsTextHash(this, hashX, hashY);
+          this.cellsTextHash.set(key, cellsHash);
+        }
+        cellsHash.dirty = true;
+      });
+    } catch (e) {
+      console.error('[CellsLabels] setHashesDirty: Error parsing hashes: ', e);
+    }
   }
 
   // updates the hash that contains the column / row during transient resize
