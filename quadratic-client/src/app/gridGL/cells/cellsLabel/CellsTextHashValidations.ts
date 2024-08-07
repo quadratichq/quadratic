@@ -61,7 +61,6 @@ export class CellsTextHashValidations extends Container {
 
   getErrorMarker(x: number, y: number): ErrorMarker | undefined {
     const sprite = this.warningSprites.get(`${x},${y}`);
-    console.log(sprite);
     if (sprite) {
       return { triangle: sprite };
     }
