@@ -95,7 +95,7 @@ export function CodeEditorEmptyState() {
 
   return (
     <div className="@container">
-      <div className="grid grid-cols-2 gap-2 p-4 @lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 p-4 @lg:grid-cols-3 @4xl:grid-cols-6">
         {buttons.map(({ label, Icon, onClick }) => (
           <Button
             key={label}
