@@ -106,7 +106,7 @@ export const HtmlValidationMessage = (props: Props) => {
     >
       <div className="leading-2 whitespace-nowrap">
         <div className="flex items-center justify-between gap-2">
-          {title && <div className="margin-bottom: 0.5rem">{title}</div>}
+          {<div className="margin-bottom: 0.5rem">{title}</div>}
           <IconButton
             sx={{ padding: 0 }}
             className="pointer-events-auto"
