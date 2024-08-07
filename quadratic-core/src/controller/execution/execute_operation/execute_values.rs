@@ -18,6 +18,10 @@ impl GridController {
                 Some(sheet) => {
                     // update individual cell values and collect old_values
                     let old_values = sheet.merge_cell_values(sheet_pos.into(), &values);
+                    if old_values == values {
+                        return;
+                    }
+
                     if cfg!(target_family = "wasm")
                         && !transaction.is_server()
                         && values.into_iter().any(|(_, _, value)| value.is_html())
@@ -49,24 +53,29 @@ impl GridController {
                             self.check_all_spills(transaction, sheet_rect.sheet_id);
                         }
 
-                        transaction.reverse_operations.insert(
-                            0,
-                            Operation::SetCellValues {
+                        transaction
+                            .reverse_operations
+                            .push(Operation::SetCellValues {
                                 sheet_pos,
                                 values: old_values,
-                            },
-                        );
+                            });
                     }
+
                     transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
 
                     if !transaction.is_server() {
                         self.send_updated_bounds(sheet_rect.sheet_id);
                         self.send_render_cells(&sheet_rect);
-                        self.start_auto_resize_row_heights(
-                            transaction,
-                            sheet_pos.sheet_id,
-                            sheet_rect.y_range().collect(),
-                        );
+                        if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
+                            let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into());
+                            if !rows.is_empty() {
+                                let resize_rows = transaction
+                                    .resize_rows
+                                    .entry(sheet_pos.sheet_id)
+                                    .or_default();
+                                resize_rows.extend(rows);
+                            }
+                        }
                     }
                 }
             }

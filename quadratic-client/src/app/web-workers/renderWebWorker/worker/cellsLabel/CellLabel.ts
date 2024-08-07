@@ -36,6 +36,7 @@ const OPEN_SANS_FIX = { x: 1.8, y: -1 };
 const SPILL_ERROR_TEXT = ' #SPILL';
 const RUN_ERROR_TEXT = ' #ERROR';
 const CHART_TEXT = ' CHART';
+const LINE_HEIGHT = 16;
 
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
 
@@ -94,9 +95,7 @@ export class CellLabel {
   overflowRight?: number;
   overflowLeft?: number;
 
-  alignment?: CellAlign;
-
-  dirty = true;
+  dirtyText = true;
 
   private getText(cell: JsRenderCell) {
     switch (cell?.special) {
@@ -151,48 +150,54 @@ export class CellLabel {
     this.updateCellLimits();
   }
 
-  updateFontName() {
+  clear = () => {
+    this.dirtyText = true;
+    this.chars = [];
+    this.horizontalAlignOffsets = [];
+  };
+
+  updateFontName = () => {
     const bold = this.bold ? 'Bold' : '';
     const italic = this.italic ? 'Italic' : '';
     this.fontName = `OpenSans${bold || italic ? '-' : ''}${bold}${italic}`;
-  }
+    this.clear();
+  };
 
-  updateCellLimits() {
+  updateCellLimits = () => {
     this.cellClipLeft = this.wrap !== 'overflow' && this.align !== 'left' ? this.AABB.left : undefined;
     this.cellClipRight = this.wrap !== 'overflow' && this.align !== 'right' ? this.AABB.right : undefined;
     this.cellClipTop = this.AABB.top;
     this.cellClipBottom = this.AABB.bottom;
     this.maxWidth = this.wrap === 'wrap' ? this.AABB.width - CELL_TEXT_MARGIN_LEFT * 3 : undefined;
-  }
+  };
 
-  changeBold(bold?: boolean) {
+  changeBold = (bold?: boolean) => {
     this.bold = !!bold;
     this.updateFontName();
-    this.dirty = true;
-  }
+  };
 
-  changeItalic(italic?: boolean) {
+  changeItalic = (italic?: boolean) => {
     this.italic = !!italic;
     this.updateFontName();
-    this.dirty = true;
-  }
+  };
 
-  changeAlign(align?: CellAlign) {
+  changeAlign = (align?: CellAlign) => {
     this.align = align ?? 'left';
     this.calculatePosition();
-  }
+    this.clear();
+  };
 
-  changeVerticalAlign(verticalAlign?: CellVerticalAlign) {
+  changeVerticalAlign = (verticalAlign?: CellVerticalAlign) => {
     this.verticalAlign = verticalAlign ?? 'top';
     this.calculatePosition();
-  }
+  };
 
-  changeTextColor(color?: string) {
+  changeTextColor = (color?: string) => {
     this.tint = color ? convertColorStringToTint(color) : undefined;
-    this.dirty = true;
-  }
+    this.dirtyText = true;
+  };
 
-  checkLeftClip(nextLeft: number): boolean {
+  checkLeftClip = (nextLeft: number): boolean => {
     if (this.overflowLeft && this.AABB.left - this.overflowLeft < nextLeft) {
       const nextLeftWidth = this.AABB.right - nextLeft;
       if (this.nextLeftWidth !== nextLeftWidth) {
@@ -204,9 +209,9 @@ export class CellLabel {
       return true;
     }
     return false;
-  }
+  };
 
-  checkRightClip(nextRight: number): boolean {
+  checkRightClip = (nextRight: number): boolean => {
     if (this.overflowRight && this.AABB.right + this.overflowRight > nextRight) {
       const nextRightWidth = nextRight - this.AABB.left;
       if (this.nextRightWidth !== nextRightWidth) {
@@ -218,9 +223,9 @@ export class CellLabel {
       return true;
     }
     return false;
-  }
+  };
 
-  private calculatePosition(): void {
+  private calculatePosition = (): void => {
     this.updateCellLimits();
 
     this.overflowLeft = 0;
@@ -257,10 +262,10 @@ export class CellLabel {
       const actualTop = Math.max(this.AABB.top, this.AABB.top + (this.AABB.height - this.textHeight) / 2);
       this.position.y = Math.max(actualTop, this.AABB.top);
     }
-  }
+  };
 
   /** Calculates the text glyphs and positions */
-  public updateText(labelMeshes: LabelMeshes, originalText = this.text): void {
+  public updateText = (labelMeshes: LabelMeshes, originalText = this.text): void => {
     if (!this.visible) return;
 
     const data = this.cellsLabels.bitmapFonts[this.fontName];
@@ -300,7 +305,7 @@ export class CellLabel {
 
         line++;
         pos.x = 0;
-        pos.y += data.lineHeight;
+        pos.y += LINE_HEIGHT / scale; // data.lineHeight;
         prevCharCode = null;
         spaceCount = 0;
         continue;
@@ -338,7 +343,7 @@ export class CellLabel {
 
         line++;
         pos.x = 0;
-        pos.y += data.lineHeight;
+        pos.y += LINE_HEIGHT / scale; //data.lineHeight;
         prevCharCode = null;
         spaceCount = 0;
       } else {
@@ -396,12 +401,15 @@ export class CellLabel {
     }
     this.displayedText = text;
     this.calculatePosition();
-  }
+    this.dirtyText = false;
+  };
 
   // replaces numbers with pound signs when the number overflows
-  private showPoundLabels(labelMeshes: LabelMeshes): Bounds {
+  private showPoundLabels = (labelMeshes: LabelMeshes): Bounds => {
     const data = this.cellsLabels.bitmapFonts[this.fontName];
     if (!data) throw new Error(`Expected BitmapFont ${this.fontName} to be defined in CellLabel.updateText`);
+
+    if (this.dirtyText) this.updateText(labelMeshes);
 
     const scale = this.fontSize / data.size;
     const color = this.tint ? convertTintToArray(this.tint) : undefined;
@@ -449,9 +457,9 @@ export class CellLabel {
     buffer.reduceSize(6 * (this.chars.length - count));
 
     return bounds;
-  }
+  };
 
-  private insertBuffers(options: {
+  private insertBuffers = (options: {
     buffer: LabelMeshEntry;
     xPos: number;
     yPos: number;
@@ -460,7 +468,7 @@ export class CellLabel {
     scale: number;
     color?: number[];
     bounds: Bounds;
-  }) {
+  }) => {
     const { buffer, xPos, yPos, textureFrame, textureUvs, scale, color, bounds } = options;
 
     const index = buffer.index;
@@ -515,14 +523,17 @@ export class CellLabel {
       buffers.colors![index * 16 + 15] = color[3];
     }
     buffer.index++;
-  }
+  };
 
   /** Adds the glyphs to the CellsLabels */
-  updateLabelMesh(labelMeshes: LabelMeshes): Bounds | undefined {
+  updateLabelMesh = (labelMeshes: LabelMeshes): Bounds | undefined => {
     if (!this.visible) return;
 
     const data = this.cellsLabels.bitmapFonts[this.fontName];
     if (!data) throw new Error('Expected BitmapFont to be defined in CellLabel.updateLabelMesh');
+
+    if (this.dirtyText) this.updateText(labelMeshes);
+
     const scale = this.fontSize / data.size;
     const color = this.tint ? convertTintToArray(this.tint) : undefined;
 
@@ -581,34 +592,35 @@ export class CellLabel {
         this.insertBuffers({ buffer, bounds, xPos, yPos, textureFrame, textureUvs, scale, color });
       }
     }
+    this.clear();
     return bounds;
-  }
+  };
 
   // these are used to adjust column/row sizes without regenerating glyphs
 
-  adjustX(delta: number): void {
+  adjustX = (delta: number): void => {
     this.AABB.x += delta;
     this.calculatePosition();
-  }
+  };
 
-  adjustY(delta: number): void {
+  adjustY = (delta: number): void => {
     this.AABB.y += delta;
     this.calculatePosition();
-  }
+  };
 
-  adjustWidth(delta: number, negativeX: boolean) {
+  adjustWidth = (delta: number, negativeX: boolean) => {
     this.AABB.width -= delta;
     if (negativeX) {
       this.AABB.x += delta;
     }
     this.calculatePosition();
-  }
+  };
 
-  adjustHeight(delta: number, negativeY: boolean): void {
+  adjustHeight = (delta: number, negativeY: boolean): void => {
     this.AABB.height -= delta;
     if (negativeY) {
       this.AABB.y += delta;
     }
     this.calculatePosition();
-  }
+  };
 }
