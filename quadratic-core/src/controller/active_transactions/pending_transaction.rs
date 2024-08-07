@@ -60,10 +60,7 @@ pub struct PendingTransaction {
     // cursor saved for an Undo or Redo
     pub cursor_undo_redo: Option<String>,
 
-    pub resize_rows: 
-  
-  
-  <SheetId, HashSet<i64>>,
+    pub resize_rows: HashMap<SheetId, HashSet<i64>>,
 }
 
 impl Default for PendingTransaction {
