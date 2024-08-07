@@ -1,43 +1,70 @@
-const snippets = [
+export const SNIPPET_PY_API = `import requests 
+import pandas as pd 
+
+response = requests.get('https://jsonplaceholder.typicode.com/users')
+pd.DataFrame(response.json())
+
+# Learn more:
+# https://docs.quadratichq.com/python/api-requests`;
+
+export const SNIPPET_PY_CHART = `# import plotly
+import plotly.express as px
+
+# replace this df with your data
+df = px.data.gapminder().query("country == 'Canada'")
+
+# create your chart type, for more chart types: https://plotly.com/python/
+fig = px.bar(df, x='year', y='pop')
+
+# make chart prettier
+fig.update_layout(
+    plot_bgcolor="White",
+)
+
+# display chart
+fig.show()
+
+# Learn more:
+# https://docs.quadratichq.com/python/charts-visualizations`;
+
+export const SNIPPET_PY_PACKAGE = `import micropip
+await micropip.install('faker')
+from faker import Faker
+
+fake = Faker()
+fake.name()
+
+# Learn more:
+# https://docs.quadratichq.com/python/packages`;
+
+export const SNIPPET_PY_READ = `my_value = cell(0, 0)
+
+# Learn more:
+# https://docs.quadratichq.com/python/reference-cells`;
+
+export const SNIPPET_PY_RETURN = `out = []
+for x in range(10):
+    out.append(x)
+out # Last line returns to the sheet
+
+# Learn more:
+# https://docs.quadratichq.com/python/return-data-to-the-sheet`;
+
+export const snippetsPY = [
   {
     label: 'Read data from the sheet',
     keywords: 'reference cells',
-    code: `# Reference a single value from the sheet; replace x,y with coordinates
-my_cell = cell(x, y)
-
-# Or reference a range of cells (returns a Pandas DataFrame), replace x's and y's with coordinates
-df = cells((x1, y1), (x2, y2), first_row_header=True)
-
-# Reference cell or range of cells in another sheet 
-my_cell = cell(2, 4, 'Sheet 2')
-df = cells((x1, y1), (x2, y2), 'Sheet 2', first_row_header=True)`,
+    code: SNIPPET_PY_READ,
   },
   {
     label: 'Return data to the sheet',
     keywords: 'return value',
-    code: `out = []
-for x in range(10):
-    out.append(x)
-
-# Last line returns to the sheet
-out
-
-# [out] # Wrap in array to expand horizontally`,
+    code: SNIPPET_PY_RETURN,
   },
   {
     label: 'Make a GET request',
     keywords: 'fetch data api network json',
-    code: `import requests 
-import pandas as pd 
-
-# Fetch data - replace URL with your API
-response = requests.get('https://jsonplaceholder.typicode.com/users')
-
-# Get json response into DataFrame
-df = pd.DataFrame(response.json())
-
-# Display DataFrame to sheet
-df`,
+    code: SNIPPET_PY_API,
   },
   {
     label: 'Make a POST request',
@@ -144,39 +171,11 @@ fig.show()`,
   {
     label: 'Create a bar chart',
     keywords: 'plotly',
-    code: `# import plotly
-import plotly.express as px
-
-# replace this df with your data
-df = px.data.gapminder().query("country == 'Canada'")
-
-# create your chart type, for more chart types: https://plotly.com/python/
-fig = px.bar(df, x='year', y='pop')
-
-# make chart prettier
-fig.update_layout(
-    plot_bgcolor="White",
-)
-
-# display chart
-fig.show()`,
+    code: SNIPPET_PY_CHART,
   },
   {
     label: 'Install a 3rd-party package',
     keywords: 'micropip install',
-    code: `# only necessary for libraries that aren't automatically supported by Pyodide
-# https://pyodide.org/en/stable/usage/packages-in-pyodide.html
-# packages from micropip
-# https://pypi.org/search/?q=faker
-import micropip
-await micropip.install('library_name')
-
-import library_name`,
+    code: SNIPPET_PY_PACKAGE,
   },
 ];
-
-export default snippets;
-
-export const SNIPPET_PYTHON_API = snippets[2].code;
-export const SNIPPET_PYTHON_CHART = snippets[8].code;
-export const SNIPPET_PYTHON_PACKAGE = snippets[9].code;

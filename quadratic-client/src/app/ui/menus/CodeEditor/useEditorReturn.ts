@@ -48,7 +48,7 @@ export const useEditorReturn = (
       //   },
       // ]);
 
-      if (evaluationResult.line_number) {
+      if (evaluationResult.line_number && evaluationResult.output_type) {
         decorations.current = editorRef.current?.createDecorationsCollection([
           {
             range: new Range(evaluationResult.line_number, 0, evaluationResult.line_number, 0),

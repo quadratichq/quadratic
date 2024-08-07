@@ -59,7 +59,7 @@ export function ReturnTypeInspector({ evaluationResult, unsaved, language }: Ret
       </>
     ) : (
       <>
-        Use `return` to return data to the sheet{' '}
+        Use `return` to send data to the sheet{' '}
         <Link to={DOCUMENTATION_JAVASCRIPT_RETURN_DATA} target="_blank" rel="nofollow" className="underline">
           (docs)
         </Link>

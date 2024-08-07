@@ -1,40 +1,33 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
-import { BoxIcon } from '@/app/ui/icons';
-import { SNIPPET_PYTHON_API, SNIPPET_PYTHON_CHART, SNIPPET_PYTHON_PACKAGE } from '@/app/ui/menus/CodeEditor/snippets';
+import { BoxIcon, SheetComeFromIcon, SheetGoToIcon } from '@/app/ui/icons';
+import {
+  SNIPPET_JS_API,
+  SNIPPET_JS_CHART,
+  SNIPPET_JS_PACKAGE,
+  SNIPPET_JS_READ,
+  SNIPPET_JS_RETURN,
+} from '@/app/ui/menus/CodeEditor/snippetsJS';
+import {
+  SNIPPET_PY_API,
+  SNIPPET_PY_CHART,
+  SNIPPET_PY_PACKAGE,
+  SNIPPET_PY_READ,
+  SNIPPET_PY_RETURN,
+} from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { Button } from '@/shared/shadcn/ui/button';
 import { ApiOutlined, BarChartOutlined, IntegrationInstructionsOutlined } from '@mui/icons-material';
-import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { useCodeEditor } from './CodeEditorContext';
 
-export function CodeEditorPlaceholder({
-  editorContent,
-  setEditorContent,
-}: {
-  editorContent: string | undefined;
-  setEditorContent: (str: string | undefined) => void;
-}) {
+export function CodeEditorEmptyState() {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const codeCell = getCodeCell(editorInteractionState.mode);
-  const [shouldRunEffect, setShouldRunEffect] = useState<boolean>(false);
   const {
+    editorContent: [editorContent, setEditorContent],
     editorRef,
     showSnippetsPopover: [, setShowSnippetsPopover],
   } = useCodeEditor();
-
-  // When the user chooses to autofill the editor with a predefined snippet,
-  // focus the editor and set the initial cursor position
-  useEffect(() => {
-    if (editorRef && editorRef.current && shouldRunEffect) {
-      editorRef.current.focus();
-      editorRef.current.setPosition({ lineNumber: 0, column: 0 });
-      setShouldRunEffect(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editorContent, shouldRunEffect]);
-
-  console.log(Boolean(editorContent && codeCell?.id === 'Python'));
 
   // Must meet these criteria to even show in the UI
   if (editorContent) {
@@ -44,29 +37,51 @@ export function CodeEditorPlaceholder({
     return null;
   }
 
+  const fillWithSnippet = (code: string) => {
+    setEditorContent(code);
+    editorRef.current?.focus();
+  };
+
   const buttons = [
+    {
+      label: 'Read from sheet',
+      Icon: SheetGoToIcon,
+      onClick: () => {
+        if (codeCell.id === 'Javascript') fillWithSnippet(SNIPPET_JS_READ);
+        else fillWithSnippet(SNIPPET_PY_READ);
+      },
+    },
+    {
+      label: 'Return to sheet',
+      Icon: SheetComeFromIcon,
+      onClick: () => {
+        if (codeCell.id === 'Javascript') fillWithSnippet(SNIPPET_JS_RETURN);
+        else fillWithSnippet(SNIPPET_PY_RETURN);
+      },
+    },
     {
       label: 'Fetch API data',
       Icon: ApiOutlined,
       onClick: () => {
-        setEditorContent(SNIPPET_PYTHON_API);
-        editorRef.current?.focus();
+        if (codeCell.id === 'Javascript') fillWithSnippet(SNIPPET_JS_API);
+        else fillWithSnippet(SNIPPET_PY_API);
       },
     },
     {
       label: 'Create chart',
       Icon: BarChartOutlined,
       onClick: () => {
-        setEditorContent(SNIPPET_PYTHON_CHART);
-        editorRef.current?.focus();
+        if (codeCell.id === 'Javascript') fillWithSnippet(SNIPPET_JS_CHART);
+        else fillWithSnippet(SNIPPET_PY_CHART);
       },
     },
     {
-      label: 'Install package',
+      // Use language-specific terms
+      label: codeCell.id === 'Javascript' ? 'Import module' : 'Install package',
       Icon: BoxIcon,
       onClick: () => {
-        setEditorContent(SNIPPET_PYTHON_PACKAGE);
-        editorRef.current?.focus();
+        if (codeCell.id === 'Javascript') fillWithSnippet(SNIPPET_JS_PACKAGE);
+        else fillWithSnippet(SNIPPET_PY_PACKAGE);
       },
     },
     {
@@ -84,7 +99,7 @@ export function CodeEditorPlaceholder({
         {buttons.map(({ label, Icon, onClick }) => (
           <Button
             key={label}
-            className="flex h-auto flex-col gap-2 bg-background py-4"
+            className="flex h-auto flex-col gap-1 bg-background pb-3 pt-3"
             variant="outline"
             onClick={onClick}
           >
