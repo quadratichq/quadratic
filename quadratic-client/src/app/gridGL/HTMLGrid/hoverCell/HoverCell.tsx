@@ -80,7 +80,7 @@ export const HoverCell = () => {
         const validation = sheets.sheet.validations.find((v) => v.id === cell.validationId);
         if (validation) {
           setText(
-            <HtmlValidationMessage column={cell.x} row={cell.y} offsets={offsets} validation={validation} forceError />
+            <HtmlValidationMessage column={cell.x} row={cell.y} offsets={offsets} validation={validation} hoverError />
           );
         }
         return;

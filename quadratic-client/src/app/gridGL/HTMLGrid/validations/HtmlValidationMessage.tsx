@@ -18,24 +18,24 @@ interface Props {
   row?: number;
   offsets?: Rectangle;
   validation?: Validation;
-  forceError?: boolean;
+  hoverError?: boolean;
 }
 
 export const HtmlValidationMessage = (props: Props) => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const { annotationState } = useRecoilValue(editorInteractionStateAtom);
-  const { offsets, validation, column, row, forceError } = props;
+  const { offsets, validation, column, row, hoverError } = props;
   const [hide, setHide] = useState(true);
 
   const showError = useMemo(() => {
     if (column === undefined || row === undefined) {
       return false;
     }
-    if (forceError || pixiApp.cellsSheets.current?.getErrorMarkerValidation(column, row)) {
+    if (hoverError || pixiApp.cellsSheets.current?.getErrorMarkerValidation(column, row)) {
       return true;
     }
     return false;
-  }, [column, forceError, row]);
+  }, [column, hoverError, row]);
 
   const ref = useRef<HTMLDivElement>(null);
 
@@ -102,13 +102,17 @@ export const HtmlValidationMessage = (props: Props) => {
   return (
     <div
       ref={ref}
-      className="border.gray-300 pointer-events-none absolute rounded-md border bg-popover bg-white p-4 text-popover-foreground shadow-md outline-none"
+      className={
+        hoverError
+          ? ''
+          : 'border.gray-300 pointer-events-none absolute rounded-md border bg-popover bg-white p-4 text-popover-foreground shadow-md outline-none'
+      }
       style={{ top, left }}
     >
       <div className="leading-2 whitespace-nowrap">
         <div className="flex items-center justify-between gap-2">
           {<div className="margin-bottom: 0.5rem">{title}</div>}
-          {!forceError && (
+          {!hoverError && (
             <IconButton
               sx={{ padding: 0 }}
               className="pointer-events-auto"
