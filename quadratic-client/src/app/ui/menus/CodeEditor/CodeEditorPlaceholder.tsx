@@ -1,10 +1,12 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
-import useLocalStorage from '@/shared/hooks/useLocalStorage';
+import { BoxIcon } from '@/app/ui/icons';
+import { SNIPPET_PYTHON_API, SNIPPET_PYTHON_CHART, SNIPPET_PYTHON_PACKAGE } from '@/app/ui/menus/CodeEditor/snippets';
+import { Button } from '@/shared/shadcn/ui/button';
+import { ApiOutlined, BarChartOutlined, IntegrationInstructionsOutlined } from '@mui/icons-material';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { useCodeEditor } from './CodeEditorContext';
-import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
 export function CodeEditorPlaceholder({
   editorContent,
@@ -15,7 +17,6 @@ export function CodeEditorPlaceholder({
 }) {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const codeCell = getCodeCell(editorInteractionState.mode);
-  const [showPlaceholder, setShowPlaceholder] = useLocalStorage<boolean>('showCodeEditorPlaceholder', true);
   const [shouldRunEffect, setShouldRunEffect] = useState<boolean>(false);
   const {
     editorRef,
@@ -33,68 +34,65 @@ export function CodeEditorPlaceholder({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editorContent, shouldRunEffect]);
 
+  console.log(Boolean(editorContent && codeCell?.id === 'Python'));
+
+  // Must meet these criteria to even show in the UI
   if (editorContent) {
     return null;
   }
-
-  if (codeCell?.id === 'Formula') {
+  if (!(codeCell?.id === 'Javascript' || codeCell?.id === 'Python')) {
     return null;
   }
 
-  if (!showPlaceholder) {
-    return null;
-  }
+  const buttons = [
+    {
+      label: 'Fetch API data',
+      Icon: ApiOutlined,
+      onClick: () => {
+        setEditorContent(SNIPPET_PYTHON_API);
+        editorRef.current?.focus();
+      },
+    },
+    {
+      label: 'Create chart',
+      Icon: BarChartOutlined,
+      onClick: () => {
+        setEditorContent(SNIPPET_PYTHON_CHART);
+        editorRef.current?.focus();
+      },
+    },
+    {
+      label: 'Install package',
+      Icon: BoxIcon,
+      onClick: () => {
+        setEditorContent(SNIPPET_PYTHON_PACKAGE);
+        editorRef.current?.focus();
+      },
+    },
+    {
+      label: 'More snippets',
+      Icon: IntegrationInstructionsOutlined,
+      onClick: () => {
+        setShowSnippetsPopover(true);
+      },
+    },
+  ];
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        left: '64px',
-        right: '14%',
-        top: 0,
-        pointerEvents: 'none',
-        // Kinda hacky, but we're copying the style of the code editor
-        ...codeEditorBaseStyles,
-        ...codeEditorCommentStyles,
-      }}
-    >
-      Start typing to dismiss,{' '}
-      {(codeCell?.id === 'Python' || codeCell?.id === 'Javascript') && (
-        <>
-          <button
-            className="pointer-events-auto italic underline"
-            onClick={() => {
-              setShowSnippetsPopover(true);
-            }}
+    <div className="@container">
+      <div className="grid grid-cols-2 gap-2 p-4 @lg:grid-cols-4">
+        {buttons.map(({ label, Icon, onClick }) => (
+          <Button
+            key={label}
+            className="flex h-auto flex-col gap-2 bg-background py-4"
+            variant="outline"
+            onClick={onClick}
           >
-            insert a code snippet
-          </button>
-          , or{' '}
-          <button
-            className={`pointer-events-auto italic underline`}
-            onClick={() => {
-              setShowPlaceholder(false);
-            }}
-          >
-            don’t show this again
-          </button>
-          .
-        </>
-      )}
-      {codeCell?.type === 'connection' && (
-        <>
-          explore your connection schema below, or{' '}
-          <button
-            className={`pointer-events-auto italic underline`}
-            onClick={() => {
-              setShowPlaceholder(false);
-            }}
-          >
-            don’t show this again
-          </button>
-          .
-        </>
-      )}
+            <Icon fontSize="medium" color="primary" />
+            {label}
+          </Button>
+        ))}
+      </div>
     </div>
   );
 }

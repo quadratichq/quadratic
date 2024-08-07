@@ -162,7 +162,7 @@ fig.update_layout(
 fig.show()`,
   },
   {
-    label: 'Import a 3rd-party library',
+    label: 'Install a 3rd-party package',
     keywords: 'micropip install',
     code: `# only necessary for libraries that aren't automatically supported by Pyodide
 # https://pyodide.org/en/stable/usage/packages-in-pyodide.html
@@ -176,3 +176,7 @@ import library_name`,
 ];
 
 export default snippets;
+
+export const SNIPPET_PYTHON_API = snippets[2].code;
+export const SNIPPET_PYTHON_CHART = snippets[8].code;
+export const SNIPPET_PYTHON_PACKAGE = snippets[9].code;

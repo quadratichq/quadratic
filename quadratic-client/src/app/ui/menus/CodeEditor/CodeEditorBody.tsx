@@ -8,7 +8,6 @@ import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { pyrightWorker, uri } from '../../../web-workers/pythonLanguageServer/worker';
 import { useCodeEditor } from './CodeEditorContext';
-import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
 import {
   provideCompletionItems as provideCompletionItemsPython,
@@ -28,8 +27,8 @@ import { SheetRect } from '@/app/quadratic-core-types';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { javascriptLibraryForEditor } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generatedJavascriptForEditor';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import useEventListener from '@/shared/hooks/useEventListener';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
 import { useEditorReturn } from './useEditorReturn';
 
@@ -211,7 +210,7 @@ export const CodeEditorBody = (props: Props) => {
     <div
       style={{
         position: 'relative',
-        minHeight: '100px',
+        minHeight: '2rem',
         flex: '2',
       }}
     >
@@ -238,7 +237,6 @@ export const CodeEditorBody = (props: Props) => {
           showUnused: language === 'Javascript' ? false : true,
         }}
       />
-      <CodeEditorPlaceholder editorContent={editorContent} setEditorContent={setEditorContent} />
     </div>
   );
 };

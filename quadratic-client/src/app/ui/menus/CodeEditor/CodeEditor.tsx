@@ -16,6 +16,7 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlaceholder';
 import { CodeEditorPanel } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanel';
 import { CodeEditorPanels } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelsResize';
 import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
@@ -359,7 +360,6 @@ export const CodeEditor = () => {
   };
 
   const codeEditorPanelData = useCodeEditorPanelData();
-  const showReturnType = Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved);
 
   if (!showCodeEditor) {
     return null;
@@ -434,11 +434,12 @@ export const CodeEditor = () => {
           cellsAccessed={!unsaved ? cellsAccessed : []}
           cellLocation={cellLocation}
         />
-        {editorInteractionState.mode !== 'Formula' && showReturnType && (
+        <CodeEditorPlaceholder editorContent={editorContent} setEditorContent={setEditorContent} />
+        {editorInteractionState.mode !== 'Formula' && editorContent && (
           <ReturnTypeInspector
             language={editorInteractionState.mode}
             evaluationResult={evaluationResult}
-            show={showReturnType}
+            unsaved={unsaved}
           />
         )}
       </div>
