@@ -29,6 +29,7 @@ import { javascriptLibraryForEditor } from '@/app/web-workers/javascriptWebWorke
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import useEventListener from '@/shared/hooks/useEventListener';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { CircularProgress } from '@mui/material';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
 import { useEditorReturn } from './useEditorReturn';
 
@@ -221,6 +222,7 @@ export const CodeEditorBody = (props: Props) => {
         value={editorContent}
         onChange={setEditorContent}
         onMount={onMount}
+        loading={<CircularProgress />}
         options={{
           theme: 'light',
           readOnly: !canEdit,
