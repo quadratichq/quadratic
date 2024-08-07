@@ -16,7 +16,7 @@ import {
 } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { Container, Graphics, Point, Rectangle } from 'pixi.js';
-import { CellsSheet, ErrorMarker } from '../CellsSheet';
+import { CellsSheet, ErrorMarker, ErrorValidation } from '../CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 import { CellsTextHash } from './CellsTextHash';
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
@@ -199,6 +199,16 @@ export class CellsLabels extends Container {
     const hash = this.getHash(x, y);
     if (hash) {
       return hash.getErrorMarker(x, y);
+    }
+  }
+
+  intersectsErrorMarkerValidation(world: Point): ErrorValidation | undefined {
+    const sheet = sheets.getById(this.sheetId);
+    if (!sheet) throw new Error('Expected sheet to be defined in CellsLabels');
+    const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
+    const hash = this.getHash(column, row);
+    if (hash) {
+      return hash.intersectsErrorMarkerValidation(world);
     }
   }
 }

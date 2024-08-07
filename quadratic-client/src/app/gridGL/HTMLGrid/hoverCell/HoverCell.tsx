@@ -9,6 +9,8 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { cn } from '@/shared/shadcn/utils';
 import { useEffect, useRef, useState } from 'react';
 import './HoverCell.css';
+import { ErrorValidation } from '../../cells/CellsSheet';
+import { HtmlValidationMessage } from '../validations/HtmlValidationMessage';
 
 export interface EditingCell {
   x: number;
@@ -19,12 +21,12 @@ export interface EditingCell {
 
 export const HoverCell = () => {
   const { showCodePeek } = useGridSettings();
-  const [cell, setCell] = useState<JsRenderCodeCell | EditingCell | undefined>();
+  const [cell, setCell] = useState<JsRenderCodeCell | EditingCell | ErrorValidation | undefined>();
   const ref = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const addCell = (cell?: JsRenderCodeCell | EditingCell) => {
+    const addCell = (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => {
       const div = ref.current;
       if (!div) return;
       if (!cell) {
@@ -73,6 +75,16 @@ export const HoverCell = () => {
   const [onlyCode, setOnlyCode] = useState(false);
   useEffect(() => {
     const asyncFunction = async () => {
+      if (cell && 'validationId' in cell) {
+        const offsets = sheets.sheet.getCellOffsets(cell.x, cell.y);
+        const validation = sheets.sheet.validations.find((v) => v.id === cell.validationId);
+        if (validation) {
+          setText(
+            <HtmlValidationMessage column={cell.x} row={cell.y} offsets={offsets} validation={validation} forceError />
+          );
+        }
+        return;
+      }
       const code = cell ? await quadraticCore.getCodeCell(sheets.sheet.id, Number(cell.x), Number(cell.y)) : undefined;
       const renderCodeCell = cell as JsRenderCodeCell | undefined;
       const language = getLanguage(renderCodeCell?.language);

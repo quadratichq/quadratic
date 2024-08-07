@@ -18,23 +18,24 @@ interface Props {
   row?: number;
   offsets?: Rectangle;
   validation?: Validation;
+  forceError?: boolean;
 }
 
 export const HtmlValidationMessage = (props: Props) => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const { annotationState } = useRecoilValue(editorInteractionStateAtom);
-  const { offsets, validation, column, row } = props;
+  const { offsets, validation, column, row, forceError } = props;
   const [hide, setHide] = useState(true);
 
   const showError = useMemo(() => {
     if (column === undefined || row === undefined) {
       return false;
     }
-    if (pixiApp.cellsSheets.current?.getErrorMarkerValidation(column, row)) {
+    if (forceError || pixiApp.cellsSheets.current?.getErrorMarkerValidation(column, row)) {
       return true;
     }
     return false;
-  }, [column, row]);
+  }, [column, forceError, row]);
 
   const ref = useRef<HTMLDivElement>(null);
 
@@ -107,16 +108,18 @@ export const HtmlValidationMessage = (props: Props) => {
       <div className="leading-2 whitespace-nowrap">
         <div className="flex items-center justify-between gap-2">
           {<div className="margin-bottom: 0.5rem">{title}</div>}
-          <IconButton
-            sx={{ padding: 0 }}
-            className="pointer-events-auto"
-            onClick={() => {
-              setHide(true);
-              focusGrid();
-            }}
-          >
-            <Close sx={{ padding: 0, width: 15 }} />
-          </IconButton>
+          {!forceError && (
+            <IconButton
+              sx={{ padding: 0 }}
+              className="pointer-events-auto"
+              onClick={() => {
+                setHide(true);
+                focusGrid();
+              }}
+            >
+              <Close sx={{ padding: 0, width: 15 }} />
+            </IconButton>
+          )}
         </div>
         {message && <div className="pb-1 pt-2 text-xs">{message}</div>}
       </div>

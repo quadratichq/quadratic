@@ -28,12 +28,13 @@ import {
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import EventEmitter from 'eventemitter3';
 import { Point } from 'pixi.js';
+import { ErrorValidation } from '../gridGL/cells/CellsSheet';
 
 interface EventTypes {
   needRefresh: (state: 'required' | 'recommended' | 'force') => void;
 
   search: (found?: SheetPosTS[], current?: number) => void;
-  hoverCell: (cell?: JsRenderCodeCell | EditingCell) => void;
+  hoverCell: (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => void;
 
   zoom: (scale: number) => void;
   panMode: (pan: PanMode) => void;

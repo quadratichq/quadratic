@@ -17,6 +17,12 @@ export interface ErrorMarker {
   symbol?: Sprite;
 }
 
+export interface ErrorValidation {
+  x: number;
+  y: number;
+  validationId: string;
+}
+
 export class CellsSheet extends Container {
   private cellsFills: CellsFills;
   private cellsBorders: CellsBorders;

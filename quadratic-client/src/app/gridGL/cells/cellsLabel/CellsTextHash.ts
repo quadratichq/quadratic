@@ -12,13 +12,13 @@
  */
 
 import { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
-import { BitmapText, Container, Graphics, Rectangle, Renderer } from 'pixi.js';
+import { BitmapText, Container, Graphics, Point, Rectangle, Renderer } from 'pixi.js';
 import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 import { LabelMeshEntry } from './LabelMeshEntry';
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
 import { CellsTextHashSpecial } from './CellsTextHashSpecial';
 import { CellsTextHashValidations } from './CellsTextHashValidations';
-import { ErrorMarker } from '../CellsSheet';
+import { ErrorMarker, ErrorValidation } from '../CellsSheet';
 
 // Draw hashed regions of cell glyphs (the text + text formatting)
 export class CellsTextHash extends Container {
@@ -132,5 +132,9 @@ export class CellsTextHash extends Container {
 
   getErrorMarker(x: number, y: number): ErrorMarker | undefined {
     return this.warnings.getErrorMarker(x, y);
+  }
+
+  intersectsErrorMarkerValidation(world: Point): ErrorValidation | undefined {
+    return this.warnings.intersectsErrorMarkerValidation(world);
   }
 }
