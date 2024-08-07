@@ -1,6 +1,6 @@
 #[cfg(test)]
 #[macro_use]
-mod tests;
+pub(crate) mod tests;
 
 pub mod ast;
 mod cell_ref;

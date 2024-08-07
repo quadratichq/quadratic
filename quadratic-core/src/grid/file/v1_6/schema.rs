@@ -7,6 +7,8 @@ use std::{
 };
 use uuid::Uuid;
 
+pub use v1_5::{Borders, Offsets, RunError, RunErrorMsg, SheetRect};
+
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GridSchema {
     pub sheets: Vec<Sheet>,
@@ -46,10 +48,6 @@ impl From<crate::Pos> for Pos {
         Self { x: pos.x, y: pos.y }
     }
 }
-pub type SheetRect = v1_5::SheetRect;
-pub type Offsets = v1_5::Offsets;
-pub type Borders = v1_5::Borders;
-pub type RunError = v1_5::RunError;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Format {

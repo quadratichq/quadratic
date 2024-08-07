@@ -45,8 +45,8 @@ pub fn find_cell_references(source: &str, pos: Pos) -> Vec<Spanned<RangeRef>> {
     ret
 }
 
-/// Parses and checks whether the formula has the correct arguments (which has
-/// to run eval with `only_parse = true`).
+/// Parses and checks whether the formula has the correct arguments, and returns
+/// whether it does.
 pub fn parse_and_check_formula(formula_string: &str, x: i64, y: i64) -> bool {
     // We are not running any calculations, so an empty Grid is fine for
     // purposes of evaluating the formula for correctness. (Especially since we
@@ -55,9 +55,8 @@ pub fn parse_and_check_formula(formula_string: &str, x: i64, y: i64) -> bool {
     match parse_formula(formula_string, pos) {
         Ok(parsed) => {
             let grid = Grid::new();
-            let sheet_id = grid.sheet_ids()[0];
-            let mut ctx = Ctx::new(&grid, pos.to_sheet_pos(sheet_id));
-            parsed.check_syntax(&mut ctx).is_ok()
+            let mut ctx = Ctx::new_for_syntax_check(&grid);
+            parsed.eval(&mut ctx).is_ok()
         }
         Err(_) => false,
     }

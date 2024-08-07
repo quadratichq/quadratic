@@ -166,6 +166,7 @@ impl Sheet {
                             }
                         }
                     }
+                    Value::Tuple(_) => {} // Tuples are not spilled onto the grid
                 },
                 CodeRunResult::Err(_) => (),
             });
