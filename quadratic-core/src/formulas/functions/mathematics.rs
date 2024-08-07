@@ -20,25 +20,55 @@ fn get_functions() -> Vec<FormulaFunction> {
         ),
         formula_fn!(
             /// Evaluates each value based on some criteria, and then adds the
-            /// ones that meet those criteria. If `range_to_sum` is given, then
-            /// values in `range_to_sum` are added instead wherever the
-            /// corresponding value in `range_to_evaluate` meets the criteria.
+            /// ones that meet those criteria. If `sum_range` is given, then
+            /// values in `sum_range` are added instead wherever the
+            /// corresponding value in `eval_range` meets the criteria.
             #[doc = see_docs_for_more_about_criteria!()]
             #[examples(
                 "SUMIF(A1:A10, \"2\")",
                 "SUMIF(A1:A10, \">0\")",
-                "SUMIF(A1:A10, \"<>INVALID\", B1:B10)"
+                "SUMIF(B1:A10, \"<>INVALID\", A1:B10)"
             )]
             #[zip_map]
             fn SUMIF(
                 eval_range: (Spanned<Array>),
                 [criteria]: (Spanned<CellValue>),
-                numbers_range: (Option<Spanned<Array>>),
+                sum_range: (Option<Spanned<Array>>),
             ) {
                 let criteria = Criterion::try_from(*criteria)?;
                 let numbers =
-                    criteria.iter_matching_coerced::<f64>(eval_range, numbers_range.as_ref())?;
+                    criteria.iter_matching_coerced::<f64>(eval_range, sum_range.as_ref())?;
                 numbers.sum::<CodeResult<f64>>()
+            }
+        ),
+        formula_fn!(
+            /// Adds values from `numbers_range` wherever the criteria are met
+            /// at the corresponding value in each `eval_range`.
+            #[doc = see_docs_for_more_about_criteria!()]
+            #[examples(
+                "SUMIFS(A1:A10, \"<>INVALID\", B1:B10)",
+                "SUMIFS(A1:A10, \"<>INVALID\", B1:B10, \"<=0\", C1:C10)"
+            )]
+            fn SUMIFS(
+                ctx: Ctx,
+                sum_range: (Spanned<Array>),
+                eval_range1: (Spanned<Array>),
+                criteria1: (Spanned<Value>),
+                more_eval_ranges_and_criteria: FormulaFnArgs,
+            ) {
+                ctx.zip_map_eval_ranges_and_criteria_from_args(
+                    eval_range1,
+                    criteria1,
+                    more_eval_ranges_and_criteria,
+                    |_ctx, eval_ranges_and_criteria| {
+                        // Same as `SUMIF`
+                        let numbers = Criterion::iter_matching_multi_coerced::<f64>(
+                            &eval_ranges_and_criteria,
+                            &sum_range,
+                        )?;
+                        Ok(numbers.sum::<CodeResult<f64>>()?.into())
+                    },
+                )?
             }
         ),
         formula_fn!(
@@ -268,6 +298,10 @@ mod tests {
         assert_eq!("27", eval_to_string(&g, "SUM(0..5, {\"\"}, {\"abc\"}, 12)"));
         assert_eq!("0", eval_to_string(&g, "SUM({\"\", \"abc\"})"));
         assert_eq!("12", eval_to_string(&g, "SUM({\"\", \"abc\", 12})"));
+        assert_eq!(
+            "55",
+            eval_to_string(&g, "SUM(({1,2;3,4}, {5}, {6}), {7; 8}, {9, 10})"),
+        );
 
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
@@ -289,6 +323,18 @@ mod tests {
 
     #[test]
     #[parallel]
+    fn test_sum_with_tuples() {
+        let g = Grid::new();
+        assert_eq!("10", eval_to_string(&g, "SUM(({1, 2}, {3, 4}))"));
+        assert_eq!("21", eval_to_string(&g, "SUM(({1, 2}, {3; 4}, {5, 6}))"));
+
+        // Test nested tuples
+        assert_eq!("21", eval_to_string(&g, "SUM((({1, 2}, {3; 4}), {5, 6}))"));
+        assert_eq!("21", eval_to_string(&g, "SUM(({1, 2}, ({3; 4}, {5, 6})))"));
+    }
+
+    #[test]
+    #[parallel]
     fn test_sumif() {
         let g = Grid::new();
         assert_eq!("15", eval_to_string(&g, "SUMIF(0..10, \"<=5\")"));
@@ -297,6 +343,47 @@ mod tests {
         assert_eq!(
             "{63, 16; 1984, 1}",
             eval_to_string(&g, "SUMIF(0..10, {\"<=5\", 4; \">5\", 0}, 2^0..10)"),
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_sumifs() {
+        let g = Grid::new();
+        assert_eq!("15", eval_to_string(&g, "SUMIFS(0..10, 0..10, \"<=5\")"));
+        assert_eq!("63", eval_to_string(&g, "SUMIFS(2^0..10, 0..10, \"<=5\")"));
+        // Testing with multiple conditions.
+        assert_eq!(
+            "21",
+            eval_to_string(&g, "SUMIFS(2^0..10, 0..10, \"<=5\", MOD(0..10, 2), 0)"),
+        );
+        // Test with an array of conditions.
+        assert_eq!(
+            "{3, 2; 52, 0}", // tested in Excel
+            eval_to_string(&g, "SUMIFS(0..10, 2^0..10, {\"<=5\", 4; \">5\", 0})"),
+        );
+        // Test missing arguments
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "SUMIFS".into(),
+                arg_name: "criteria1".into(),
+            },
+            eval_to_err(&g, "SUMIFS(0..10, 0..10)").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "SUMIFS".into(),
+                arg_name: "criteria2".into(),
+            },
+            eval_to_err(&g, "SUMIFS(0..10, 0..10, \"<=5\", 0..10)").msg,
+        );
+        // Test mismatched range
+        assert_eq!(
+            RunErrorMsg::ExactArraySizeMismatch {
+                expected: ArraySize::try_from((1, 12)).unwrap(),
+                got: ArraySize::try_from((1, 11)).unwrap(),
+            },
+            eval_to_err(&g, "SUMIFS(0..10, 0..11, \"<=5\")").msg,
         );
     }
 
@@ -481,6 +568,7 @@ mod tests {
     fn test_floor_math_and_ceiling_math() {
         let g = Grid::new();
         let test_inputs = &[3.5, 2.5, 0.0, -2.5, -3.5];
+        #[allow(clippy::type_complexity)]
         let test_cases: &[([i64; 5], fn(f64) -> String)] = &[
             ([4, 3, 0, -2, -3], |n| format!("CEILING.MATH({n})")),
             ([4, 3, 0, -3, -4], |n| format!("CEILING.MATH({n},, -1)")),

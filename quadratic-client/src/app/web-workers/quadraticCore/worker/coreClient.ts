@@ -83,6 +83,7 @@ declare var self: WorkerGlobalScope &
     sendUndoRedo: (undo: boolean, redo: boolean) => void;
     sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
     sendResizeRowHeightsClient(sheetId: string, rowHeights: string): void;
+    sendMultiplayerSynced: () => void;
   };
 
 class CoreClient {
@@ -115,6 +116,7 @@ class CoreClient {
     self.sendUndoRedo = coreClient.sendUndoRedo;
     self.sendImage = coreClient.sendImage;
     self.sendResizeRowHeightsClient = coreClient.sendResizeRowHeights;
+    self.sendMultiplayerSynced = coreClient.sendMultiplayerSynced;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -483,12 +485,12 @@ class CoreClient {
         return;
 
       case 'clientCoreCancelExecution':
-        const langauge = getLanguage(e.data.language);
-        if (langauge === 'Python') {
+        const language = getLanguage(e.data.language);
+        if (language === 'Python') {
           corePython.cancelExecution();
-        } else if (langauge === 'Javascript') {
+        } else if (language === 'Javascript') {
           coreJavascript.cancelExecution();
-        } else if (langauge === 'Connection') {
+        } else if (language === 'Connection') {
           coreConnection.cancelExecution();
         } else {
           console.warn("Unhandled language in 'clientCoreCancelExecution'", e.data.language);
@@ -681,6 +683,10 @@ class CoreClient {
     } catch (e) {
       console.error('[coreClient] sendResizeRowHeights: Error parsing JsRowHeight: ', e);
     }
+  };
+
+  sendMultiplayerSynced = () => {
+    this.send({ type: 'coreClientMultiplayerSynced' });
   };
 }
 

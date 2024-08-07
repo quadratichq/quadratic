@@ -28,12 +28,19 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
       e.pageX - (clientBoundingRect?.left || 0),
       e.pageY - (clientBoundingRect?.top || 0)
     );
-    const sheet = sheets.sheet;
-    const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
-    sheet.cursor.changePosition({
-      cursorPosition: { x: column, y: row },
-      keyboardMovePosition: { x: column, y: row },
-    });
+    const cursor = sheets.sheet.cursor;
+    const { column, row } = sheets.sheet.getColumnRowFromScreen(world.x, world.y);
+    const hasMoved =
+      cursor.cursorPosition.x !== column ||
+      cursor.cursorPosition.y !== row ||
+      cursor.keyboardMovePosition.x !== column ||
+      cursor.keyboardMovePosition.y !== row;
+    if (hasMoved) {
+      cursor.changePosition({
+        cursorPosition: { x: column, y: row },
+        keyboardMovePosition: { x: column, y: row },
+      });
+    }
   };
 
   // handle drag events

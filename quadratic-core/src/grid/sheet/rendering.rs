@@ -93,7 +93,11 @@ impl Sheet {
                     self.format_all.as_ref(),
                 );
                 let align = format.align.or(align);
-                let number: JsNumber = (&format).into();
+                let number: Option<JsNumber> = if matches!(value, CellValue::Number(_)) {
+                    Some((&format).into())
+                } else {
+                    None
+                };
                 JsRenderCell {
                     x,
                     y,
@@ -105,7 +109,7 @@ impl Sheet {
                     bold: format.bold,
                     italic: format.italic,
                     text_color: format.text_color,
-                    number: Some(number),
+                    number,
                     ..Default::default()
                 }
             }
@@ -736,7 +740,7 @@ mod tests {
             result: CodeRunResult::Ok(Value::Array(
                 vec![vec!["1", "2", "3"], vec!["4", "5", "6"]].into(),
             )),
-            return_type: Some("number".into()),
+            return_type: Some("text".into()),
             spill_error: false,
             line_number: None,
             output_type: None,
@@ -752,6 +756,7 @@ mod tests {
         assert_eq!(code_cells.len(), 6);
         assert_eq!(code_cells[0].value, "1".to_string());
         assert_eq!(code_cells[0].language, Some(CodeCellLanguage::Python));
+        assert_eq!(code_cells[0].number, None);
         assert_eq!(code_cells[5].value, "6".to_string());
         assert_eq!(code_cells[5].language, None);
 
@@ -776,6 +781,35 @@ mod tests {
         assert_eq!(code_cells.len(), 1);
         assert_eq!(code_cells[0].value, "1".to_string());
         assert_eq!(code_cells[0].language, Some(CodeCellLanguage::Python));
+
+        let code_run = CodeRun {
+            std_out: None,
+            std_err: None,
+            formatted_code_string: None,
+            last_modified: Utc::now(),
+            cells_accessed: HashSet::new(),
+            result: CodeRunResult::Ok(Value::Single(CellValue::Number(1.into()))),
+            return_type: Some("number".into()),
+            spill_error: false,
+            line_number: None,
+            output_type: None,
+        };
+        let code_cells = sheet.get_code_cells(
+            &code_cell,
+            &code_run,
+            &Rect::from_numbers(0, 0, 10, 10),
+            &Rect::from_numbers(5, 5, 1, 1),
+        );
+        assert_eq!(code_cells[0].value, "1".to_string());
+        assert_eq!(code_cells[0].language, Some(CodeCellLanguage::Python));
+        assert_eq!(
+            code_cells[0].number,
+            Some(JsNumber {
+                decimals: None,
+                commas: None,
+                format: None
+            })
+        );
     }
 
     #[test]

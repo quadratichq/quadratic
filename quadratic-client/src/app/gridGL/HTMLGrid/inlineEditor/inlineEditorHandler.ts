@@ -296,10 +296,8 @@ class InlineEditorHandler {
       cellOutlineOffset + (verticalAlign === 'bottom' ? Math.min(y, y + cellContentHeight - inlineEditorHeight) : y);
     this.width = inlineEditorWidth;
     this.height = inlineEditorHeight;
-
     this.div?.style.setProperty('left', this.x + 'px');
     this.div?.style.setProperty('top', this.y + 'px');
-
     if (!this.formulaExpandButton) {
       throw new Error('Expected formulaExpandDiv to be defined in InlineEditorHandler');
     }
@@ -496,7 +494,7 @@ class InlineEditorHandler {
   // (except when editing formula).
   handleCellPointerDown() {
     if (this.open) {
-      if (!this.formula || inlineEditorFormula.isFormulaValid()) {
+      if (!this.formula || !inlineEditorFormula.wantsCellRef()) {
         this.close(0, 0, false);
       } else {
         if (!this.cursorIsMoving) {

@@ -74,7 +74,7 @@ for more more information.
 
 Docker Compose is a utility that's built into Docker Desktop and is a compact
 infrastructure-as-code framework.  Services (e.g. running Docker containers) are
-defined, along with configuration information, in the `docker-compose.yml` file.
+defined, along with configuration information, in the `docker compose.yml` file.
 Services can talk to each other and can communicate with services in the user's host
 network.
 
@@ -92,9 +92,9 @@ migrate the database.  Docker is run in the background in this script.
 To build images for individual services (from project root):
 
 ```shell
-docker-compose build quadratic-api
-docker-compose build quadratic-files
-docker-compose build quadratic-multiplayer
+docker compose build quadratic-api
+docker compose build quadratic-files
+docker compose build quadratic-multiplayer
 ```
 
 ### Developing without Docker

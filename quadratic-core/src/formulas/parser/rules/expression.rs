@@ -86,6 +86,43 @@ impl OpPrecedence {
     }
 }
 
+/// Matches an expression, nothing, or a tuple of expressions.
+#[derive(Debug, Copy, Clone)]
+pub struct TupleExpression;
+impl_display!(for TupleExpression, "expression or nothing");
+impl SyntaxRule for TupleExpression {
+    type Output = ast::AstNode;
+
+    fn prefix_matches(&self, p: Parser<'_>) -> bool {
+        Expression.prefix_matches(p) // also matches start of tuple (left paren)
+            || EmptyExpression.prefix_matches(p)
+    }
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
+        parse_one_of!(
+            p,
+            [
+                List {
+                    // In Excel, tuples can only contain cell ranges and tuples.
+                    // We allow blanks and other kinds of expressions as well
+                    // because that's just easier.
+                    inner: TupleExpression,
+                    sep: Token::ArgSep,
+                    start: Token::LParen,
+                    end: Token::RParen,
+                    sep_name: "comma",
+                    // If we allowed trailing comma then the tuple `(expr,)`
+                    // would get parsed the same as `(expr)`
+                    allow_trailing_sep: false,
+                    allow_empty: false,
+                }
+                .map(|spanned| spanned.map(ast::AstNodeContents::Paren)),
+                Expression,
+                EmptyExpression
+            ]
+        )
+    }
+}
+
 /// Matches an expression or nothing.
 #[derive(Debug, Copy, Clone)]
 pub struct OptionalExpression;
@@ -341,12 +378,13 @@ impl SyntaxRule for FunctionCall {
         p.prev();
 
         let spanned_args = p.parse(List {
-            inner: OptionalExpression,
+            inner: TupleExpression,
             sep: Token::ArgSep,
             start: Token::FunctionCall,
             end: Token::RParen,
             sep_name: "comma",
             allow_trailing_sep: false,
+            allow_empty: true,
         })?;
         let args = spanned_args.inner;
 
@@ -384,7 +422,7 @@ impl SyntaxRule for ParenExpression {
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         p.parse(Surround::paren(
-            Expression.map(|expr| ast::AstNodeContents::Paren(Box::new(expr))),
+            Expression.map(|expr| ast::AstNodeContents::Paren(vec![expr])),
         ))
     }
 }

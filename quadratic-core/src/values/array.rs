@@ -51,7 +51,7 @@ impl fmt::Display for Array {
                 } else {
                     write!(f, ", ")?;
                 }
-                write!(f, "{value}")?;
+                write!(f, "{value}")?; // TODO: consider replacing this with `value.repr()`
             }
         }
         write!(f, "}}")?;
@@ -67,12 +67,18 @@ impl From<CellValue> for Array {
         }
     }
 }
-impl From<Value> for Array {
-    fn from(value: Value) -> Self {
-        match value {
-            Value::Single(value) => Array::from(value),
-            Value::Array(array) => array,
-        }
+impl TryFrom<Value> for Array {
+    type Error = RunErrorMsg;
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        value.into_array()
+    }
+}
+impl TryFrom<Value> for Vec<Array> {
+    type Error = RunErrorMsg;
+
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        Ok(value.into_arrays())
     }
 }
 
@@ -219,15 +225,15 @@ impl Array {
             None
         }
     }
-    /// Returns the value at a given position in an array. If the width is 1,
-    /// then `x` is ignored. If the height is 1, then `y` is ignored. Otherwise,
-    /// returns an error if a coordinate is out of bounds.
+    /// Returns the value at a given 0-indexed position in an array. If the
+    /// width is 1, then `x` is ignored. If the height is 1, then `y` is
+    /// ignored. Otherwise, returns an error if a coordinate is out of bounds.
     pub fn get(&self, x: u32, y: u32) -> Result<&CellValue, RunErrorMsg> {
         let i = self.size().flatten_index(x, y)?;
         Ok(&self.values[i])
     }
-    /// Sets the value at a given position in an array. Returns an error if `x`
-    /// or `y` is out of range.
+    /// Sets the value at a given 0-indexed position in an array. Returns an
+    /// error if `x` or `y` is out of range.
     pub fn set(&mut self, x: u32, y: u32, value: CellValue) -> Result<(), RunErrorMsg> {
         let i = self.size().flatten_index(x, y)?;
         self.values[i] = value;

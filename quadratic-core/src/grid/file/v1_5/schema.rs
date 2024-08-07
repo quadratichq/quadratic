@@ -167,9 +167,7 @@ pub enum CodeRunResult {
 }
 
 pub type OutputValue = v1_4::OutputValue;
-pub type OutputArray = v1_4::OutputArray;
 pub type OutputSize = v1_4::OutputSize;
-pub type OutputValueValue = v1_4::OutputValueValue;
 pub type Span = v1_4::Span;
 pub type RenderSize = v1_4::RenderSize;
 
@@ -206,6 +204,13 @@ pub enum CellValue {
     Duration(String),
     Error(RunError),
     Image(String),
+}
+
+pub fn string_bool(s: &str) -> bool {
+    match s.to_ascii_lowercase().as_str() {
+        "true" => true,
+        _ => false,
+    }
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

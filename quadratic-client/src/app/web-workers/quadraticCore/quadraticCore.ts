@@ -169,6 +169,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientResizeRowHeights') {
       events.emit('resizeRowHeights', e.data.sheetId, e.data.rowHeights);
       return;
+    } else if (e.data.type === 'coreClientMultiplayerSynced') {
+      events.emit('multiplayerSynced');
+      return;
     }
 
     if (e.data.id !== undefined) {
@@ -234,7 +237,7 @@ class QuadraticCore {
     });
   }
 
-  async upgradeGridFile(grid: string, sequenceNumber: number): Promise<{ grid: string; version: string }> {
+  async upgradeGridFile(grid: Uint8Array, sequenceNumber: number): Promise<{ grid: Uint8Array; version: string }> {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientUpgradeFile) => {
@@ -250,10 +253,10 @@ class QuadraticCore {
     });
   }
 
-  async export(): Promise<string> {
+  async export(): Promise<Uint8Array> {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { grid: string }) => {
+      this.waitingForResponse[id] = (message: { grid: Uint8Array }) => {
         resolve(message.grid);
       };
       this.send({ type: 'clientCoreExport', id });
@@ -968,23 +971,26 @@ class QuadraticCore {
 
   // create a new grid file and import an xlsx file
   importExcel = async (
-    file: File,
+    file: Uint8Array,
+    fileName: string,
     cursor?: string
   ): Promise<{
-    contents?: string;
+    contents?: Uint8Array;
+    fileName: string;
     version?: string;
     error?: string;
   }> => {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { contents: string; version: string }) => {
+      this.waitingForResponse[id] = (message: { contents: Uint8Array; fileName: string; version: string }) => {
         resolve(message);
       };
       this.send({
         type: 'clientCoreImportExcel',
         file,
-        cursor,
+        fileName,
         id,
+        cursor,
       });
     });
   };
