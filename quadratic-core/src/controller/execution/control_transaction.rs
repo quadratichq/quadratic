@@ -11,6 +11,7 @@ use crate::{
         transaction::Transaction,
         transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
         transaction_types::JsCodeResult,
+        viewport::ViewportBuffer,
     },
     error_core::Result,
     grid::{CodeRun, CodeRunResult},
@@ -29,10 +30,12 @@ impl GridController {
                 transaction_name,
             );
 
+            let viewport_buffer = ViewportBuffer::default();
             crate::wasm_bindings::js::jsSendViewportBuffer(
                 transaction.id.to_string(),
-                transaction.viewport_buffer.get_buffer(),
+                viewport_buffer.get_buffer(),
             );
+            transaction.viewport_buffer = Some(viewport_buffer);
         }
 
         loop {

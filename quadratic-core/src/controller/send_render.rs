@@ -67,7 +67,7 @@ impl GridController {
         dirty_hashes: Vec<Pos>,
         viewport_buffer: &ViewportBuffer,
     ) {
-        if !cfg!(target_family = "wasm") && !cfg!(test) || dirty_hashes.is_empty() {
+        if !cfg!(target_family = "wasm") || dirty_hashes.is_empty() {
             return;
         }
 
@@ -109,33 +109,38 @@ impl GridController {
     }
 
     pub fn process_dirty_hashes(&self, transaction: &mut PendingTransaction) {
-        if !cfg!(target_family = "wasm") && !cfg!(test) || transaction.dirty_hashes.is_empty() {
+        if !cfg!(target_family = "wasm") || transaction.dirty_hashes.is_empty() {
             return;
         }
         for (&sheet_id, dirty_hashes) in transaction.dirty_hashes.iter_mut() {
-            if let Some((top_left, bottom_right, viewport_sheet_id)) =
-                transaction.viewport_buffer.get_viewport()
-            {
-                if sheet_id == viewport_sheet_id {
-                    let center = Pos {
-                        x: (top_left.x + bottom_right.x) / 2,
-                        y: (top_left.y + bottom_right.y) / 2,
-                    };
-                    let nearest_dirty_hashes = dirty_hashes
-                        .iter()
-                        .cloned() // Clone each Pos
-                        .sorted_by(|a, b| {
-                            let a_distance = (a.x - center.x).abs() + (a.y - center.y).abs();
-                            let b_distance = (b.x - center.x).abs() + (b.y - center.y).abs();
-                            a_distance.cmp(&b_distance)
-                        })
-                        .collect();
+            if let Some(viewport_buffer) = &transaction.viewport_buffer {
+                if let Some((top_left, bottom_right, viewport_sheet_id)) =
+                    viewport_buffer.get_viewport()
+                {
+                    if sheet_id == viewport_sheet_id {
+                        let center = Pos {
+                            x: (top_left.x + bottom_right.x) / 2,
+                            y: (top_left.y + bottom_right.y) / 2,
+                        };
+                        let nearest_dirty_hashes = dirty_hashes
+                            .iter()
+                            .cloned() // Clone each Pos
+                            .sorted_by(|a, b| {
+                                let a_distance = (a.x - center.x).abs() + (a.y - center.y).abs();
+                                let b_distance = (b.x - center.x).abs() + (b.y - center.y).abs();
+                                a_distance.cmp(&b_distance)
+                            })
+                            .collect();
+                        dirty_hashes.clear();
+                        self.send_render_cells_in_viewport(
+                            sheet_id,
+                            nearest_dirty_hashes,
+                            viewport_buffer,
+                        );
+                    }
+                } else {
+                    self.flag_hashes_dirty(sheet_id, dirty_hashes);
                     dirty_hashes.clear();
-                    self.send_render_cells_in_viewport(
-                        sheet_id,
-                        nearest_dirty_hashes,
-                        &transaction.viewport_buffer,
-                    );
                 }
             } else {
                 self.flag_hashes_dirty(sheet_id, dirty_hashes);
@@ -145,12 +150,12 @@ impl GridController {
         transaction.dirty_hashes.clear();
     }
 
-    pub fn flag_hashes_dirty(&self, sheet_id: SheetId, quadrants: &HashSet<Pos>) {
-        if !cfg!(target_family = "wasm") && !cfg!(test) || quadrants.is_empty() {
+    pub fn flag_hashes_dirty(&self, sheet_id: SheetId, dirty_hashes: &HashSet<Pos>) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) || dirty_hashes.is_empty() {
             return;
         }
 
-        let hashes = quadrants
+        let hashes = dirty_hashes
             .iter()
             .map(|pos| JsPos::from(*pos))
             .collect::<Vec<JsPos>>();

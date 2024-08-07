@@ -65,7 +65,7 @@ pub struct PendingTransaction {
 
     pub dirty_hashes: HashMap<SheetId, HashSet<Pos>>,
 
-    pub viewport_buffer: ViewportBuffer,
+    pub viewport_buffer: Option<ViewportBuffer>,
 }
 
 impl Default for PendingTransaction {
@@ -89,7 +89,7 @@ impl Default for PendingTransaction {
             cursor_undo_redo: None,
             resize_rows: HashMap::new(),
             dirty_hashes: HashMap::new(),
-            viewport_buffer: ViewportBuffer::default(),
+            viewport_buffer: None,
         }
     }
 }
