@@ -1,7 +1,7 @@
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { isMac } from '@/shared/utils/isMac';
 import { Check } from '@mui/icons-material';
 import { Menu, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
@@ -11,7 +11,7 @@ import { isMobile } from 'react-device-detect';
 import { useParams } from 'react-router';
 import { useNavigate, useSubmit } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
-import { authClient } from '../../../../../auth';
+import { authClient } from '../../../../../auth/auth';
 import {
   copyAction,
   createNewFileAction,

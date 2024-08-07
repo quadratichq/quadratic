@@ -2,7 +2,7 @@ import { Auth0Client, User, createAuth0Client } from '@auth0/auth0-spa-js';
 import * as Sentry from '@sentry/react';
 import { useEffect } from 'react';
 import { LoaderFunction, LoaderFunctionArgs, redirect } from 'react-router-dom';
-import { ROUTES } from './shared/constants/routes';
+import { ROUTES } from '../shared/constants/routes';
 
 const AUTH0_DOMAIN = import.meta.env.VITE_AUTH0_DOMAIN || '';
 const AUTH0_CLIENT_ID = import.meta.env.VITE_AUTH0_CLIENT_ID || '';

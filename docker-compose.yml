@@ -15,8 +15,11 @@ services:
     extends:
       file: docker-compose.base.yml
       service: postgres
+    environment:
+      ADDITIONAL_DATABASES: kratos
     volumes:
       - ./docker/postgres/data:/var/lib/postgresql/data
+      - ./docker/postgres/scripts:/docker-entrypoint-initdb.d
     profiles:
       - base
       - all
@@ -153,6 +156,77 @@ services:
       - backend
       - quadratic-connection
       - all
+
+  # Auth Providers
+
+  ory-auth:
+    image: oryd/kratos:v1.2.0
+    ports:
+      - "4433:4433" # public
+      - "4434:4434" # admin
+    command: serve -c /etc/config/kratos/kratos.yml --dev --watch-courier
+    volumes:
+      - ./docker/ory-auth/config:/etc/config/kratos
+    environment:
+      DSN: postgresql://postgres:postgres@host.docker.internal:5432/kratos?sslmode=disable
+      LOG_LEVEL: trace
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - ory-auth-migrate
+    profiles:
+      - ory
+      - all
+    networks:
+      - host
+
+  ory-auth-migrate:
+    image: oryd/kratos:v1.2.0
+    command: migrate -c /etc/config/kratos/kratos.yml sql -e --yes
+    volumes:
+      - ./docker/ory-auth/config:/etc/config/kratos
+    environment:
+      DSN: postgresql://postgres:postgres@host.docker.internal:5432/kratos?sslmode=disable
+    restart: on-failure
+    depends_on:
+      - postgres
+    profiles:
+      - ory
+      - all
+    networks:
+      - host
+
+  ory-auth-node:
+    image: oryd/kratos-selfservice-ui-node:v1.2.0
+    ports:
+      - "4455:4455"
+    environment:
+      PORT: 4455
+      SECURITY_MODE:
+      KRATOS_PUBLIC_URL: http://host.docker.internal:4433/
+      KRATOS_BROWSER_URL: http://127.0.0.1:4433/
+      COOKIE_SECRET: changeme
+      CSRF_COOKIE_NAME: ory_csrf_ui
+      CSRF_COOKIE_SECRET: changeme
+    restart: on-failure
+    profiles:
+      - ory
+      - all
+    networks:
+      - host
+
+  ory-auth-mail:
+    image: oryd/mailslurper:latest-smtps
+    ports:
+      - "1025:1025"
+      - "4436:4436"
+      - "4437:4437"
+      - "8080:8080"
+    profiles:
+      - ory
+      - all
+    networks:
+      - host
 
   # Databases to be used for testing by the connection service
 
