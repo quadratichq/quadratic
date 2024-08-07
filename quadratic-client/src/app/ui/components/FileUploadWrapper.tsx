@@ -80,7 +80,10 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
             addGlobalSnackbar(`Error loading ${file.name}: ${error}`, { severity: 'warning' });
           }
         } else if (fileType === 'excel') {
-          const { error } = await quadraticCore.importExcel(file, sheets.getCursorPosition());
+          const contents = await file.arrayBuffer().catch(console.error);
+          if (!contents) return;
+          const buffer = new Uint8Array(contents);
+          const { error } = await quadraticCore.importExcel(buffer, file.name, sheets.getCursorPosition());
           if (error) {
             addGlobalSnackbar(`Error loading ${file.name}: ${error}`, { severity: 'warning' });
           }
