@@ -42,7 +42,7 @@ export const convertNumber = (n: string, format: JsNumber, currentFractionDigits
     } else if (format.decimals !== null) {
       return number.toExponential(format.decimals);
     } else {
-      return number.toExponential();
+      return number.toExponential(2);
     }
   }
 

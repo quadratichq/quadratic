@@ -108,7 +108,7 @@ export class CellLabel {
       default:
         if (cell.value !== undefined && cell.number) {
           this.number = cell.number;
-          return convertNumber(cell.value, cell.number);
+          return convertNumber(cell.value, cell.number).toUpperCase();
         } else {
           return cell?.value;
         }
@@ -164,8 +164,8 @@ export class CellLabel {
   };
 
   updateCellLimits = () => {
-    this.cellClipLeft = this.wrap !== 'overflow' && this.align !== 'left' ? this.AABB.left : undefined;
-    this.cellClipRight = this.wrap !== 'overflow' && this.align !== 'right' ? this.AABB.right : undefined;
+    this.cellClipLeft = this.wrap === 'clip' && this.align !== 'left' ? this.AABB.left : undefined;
+    this.cellClipRight = this.wrap === 'clip' && this.align !== 'right' ? this.AABB.right : undefined;
     this.cellClipTop = this.AABB.top;
     this.cellClipBottom = this.AABB.bottom;
     this.maxWidth = this.wrap === 'wrap' ? this.AABB.width - CELL_TEXT_MARGIN_LEFT * 3 : undefined;
@@ -539,7 +539,12 @@ export class CellLabel {
 
     // This attempts to reduce the decimal precision to ensure the number fits
     // within the cell. If it doesn't, it shows the pounds
-    if (this.number && this.textWidth > this.AABB.width && this.displayedText) {
+    const clip =
+      this.cellClipLeft !== undefined ||
+      this.cellClipRight !== undefined ||
+      this.nextLeftWidth !== undefined ||
+      this.nextRightWidth !== undefined;
+    if (this.number && this.displayedText && clip) {
       let digits: number | undefined = undefined;
       let text = this.text;
       let infinityProtection = 0;
@@ -561,8 +566,8 @@ export class CellLabel {
         return this.showPoundLabels(labelMeshes);
       }
     }
-    const bounds = new Bounds();
 
+    const bounds = new Bounds();
     for (let i = 0; i < this.chars.length; i++) {
       const char = this.chars[i];
       let horizontalOffset =
