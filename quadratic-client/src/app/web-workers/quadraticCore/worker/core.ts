@@ -321,6 +321,11 @@ class Core {
           this.gridController.multiplayerTransaction(data.id, data.sequence_num, data.operations);
         }
 
+        // TODO(ddimaria): re-enable 5 - 7 days after we roll out the compressed
+        // transactions PR, so that we'll know all transactions are of the same version.
+        //
+        // const transactionsBuffer = JSON.stringify(receive_transactions.transactions);
+        // this.gridController.receiveMultiplayerTransactions(transactionsBuffer);
         if (await offline.unsentTransactionsCount()) {
           coreClient.sendMultiplayerState('syncing');
         } else {

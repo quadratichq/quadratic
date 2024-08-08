@@ -45,6 +45,9 @@ impl GridController {
         )?)
     }
 
+    // TODO(ddimaria): re-enable 5 - 7 days after we roll out the compressed
+    // transactions PR, so that we'll know all transactions are of the same version.
+    //
     // #[wasm_bindgen(js_name = "receiveMultiplayerTransactions")]
     // pub fn js_receive_multiplayer_transactions(
     //     &mut self,
