@@ -46,7 +46,7 @@ export class CellsTextHash {
   // todo: not sure if this is still used as I ran into issues with only rendering buffers:
 
   // update text
-  dirtyText = false;
+  dirtyText = true;
 
   // rebuild only buffers
   dirtyBuffers = true;
@@ -156,6 +156,7 @@ export class CellsTextHash {
       if (visibleOrNeighbor) {
         queueMicrotask(() => this.updateBuffers());
       } else {
+        this.dirtyBuffers = true;
         this.unload();
       }
       return true;
@@ -165,6 +166,7 @@ export class CellsTextHash {
       if (visibleOrNeighbor) {
         queueMicrotask(() => this.updateBuffers());
       } else {
+        this.dirtyBuffers = true;
         this.unload();
       }
       return true;
@@ -182,9 +184,12 @@ export class CellsTextHash {
   };
 
   private updateText = () => {
-    if (!this.loaded) return;
+    if (!this.loaded || this.dirty) {
+      return;
+    }
 
     this.dirtyText = false;
+
     this.labelMeshes.clear();
     this.labels.forEach((child) => child.updateText(this.labelMeshes));
     this.overflowClip();
@@ -256,11 +261,11 @@ export class CellsTextHash {
       }
       const neighborLabel = currentHash.getLabel(column, row);
       if (neighborLabel) {
-        const clipRightResult = neighborLabel.checkRightClip(label.AABB.left);
+        const clipRightResult = neighborLabel.checkRightClip(label.AABB.left, this.labelMeshes);
         if (clipRightResult && currentHash !== this) {
           currentHash.dirtyBuffers = true;
         }
-        label.checkLeftClip(neighborLabel.AABB.right);
+        label.checkLeftClip(neighborLabel.AABB.right, this.labelMeshes);
         break;
       }
       column--;
@@ -276,11 +281,11 @@ export class CellsTextHash {
       }
       const neighborLabel = currentHash.getLabel(column, row);
       if (neighborLabel) {
-        const clipLeftResult = neighborLabel.checkLeftClip(label.AABB.right);
+        const clipLeftResult = neighborLabel.checkLeftClip(label.AABB.right, this.labelMeshes);
         if (clipLeftResult && currentHash !== this) {
           currentHash.dirtyBuffers = true;
         }
-        label.checkRightClip(neighborLabel.AABB.left);
+        label.checkRightClip(neighborLabel.AABB.left, this.labelMeshes);
         return;
       }
       column++;
