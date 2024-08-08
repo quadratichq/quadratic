@@ -17,6 +17,7 @@ import {
 } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { Button } from '@/shared/shadcn/ui/button';
 import { ApiOutlined, BarChartOutlined, IntegrationInstructionsOutlined } from '@mui/icons-material';
+import mixpanel from 'mixpanel-browser';
 import { useRecoilValue } from 'recoil';
 import { useCodeEditor } from './CodeEditorContext';
 
@@ -101,7 +102,10 @@ export function CodeEditorEmptyState() {
             key={label}
             className="flex h-auto flex-col gap-1 bg-background pb-3 pt-3"
             variant="outline"
-            onClick={onClick}
+            onClick={() => {
+              mixpanel.track('[SnippetsEmpty].selected', { label, language: codeCell.id });
+              onClick();
+            }}
           >
             <Icon fontSize="medium" color="primary" />
             {label}
