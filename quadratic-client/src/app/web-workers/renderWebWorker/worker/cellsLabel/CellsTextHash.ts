@@ -172,7 +172,10 @@ export class CellsTextHash {
       return true;
     } else if (this.dirtyBuffers) {
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating buffers ${this.hashX}, ${this.hashY}`);
-      queueMicrotask(() => this.updateBuffers());
+      queueMicrotask(() => {
+        this.updateText();
+        this.updateBuffers();
+      });
       if (!visibleOrNeighbor) {
         this.unload();
       }
