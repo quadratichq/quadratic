@@ -35,14 +35,9 @@ export async function javascriptFindSyntaxError(transformed: {
 
 // Uses a thrown error to find the line number of the return statement.
 export function javascriptAddLineNumberVars(transform: JavascriptTransformedCode): string {
-  // const imports = transform.imports.split('\n');
   const list = transform.code.split('\n');
-  // let multiLineCount = 0;
   let s = '';
-  // let add = imports.length + 1;
-  // let inMultiLineComment = false;
   for (let i = 0; i < list.length; i++) {
-    // multiLineCount += [...list[i].matchAll(/`/g)].length;
     if (list[i].includes('return')) {
       s += `try { throw new Error() } catch (e) { const stackLines = e.stack.split("\\n"); const match = stackLines[1].match(/:(\\d+):(\\d+)/); if (match) { ${LINE_NUMBER_VAR} = match[1];} }`;
     }
