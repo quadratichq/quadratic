@@ -103,6 +103,10 @@ class InlineEditorFormula {
     this.insertingCells = undefined;
   }
 
+  isInsertingCells() {
+    return !!this.insertingCells;
+  }
+
   // Handle the cursorPosition event (and changeSheet via inlineEditorHandler.changeSheet).
   cursorMoved = () => {
     if (inlineEditorHandler.cursorIsMoving) {

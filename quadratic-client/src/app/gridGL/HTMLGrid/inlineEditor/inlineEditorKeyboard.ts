@@ -124,22 +124,34 @@ class InlineEditorKeyboard {
     }
 
     // Arrow up
-    else if (matchShortcut('move_cursor_up', e)) {
+    else if (
+      matchShortcut('move_cursor_up', e) ||
+      (inlineEditorFormula.isInsertingCells() && matchShortcut('expand_selection_up', e))
+    ) {
       handleArrowVertical(false, e);
     }
 
     // Arrow down
-    else if (matchShortcut('move_cursor_down', e)) {
+    else if (
+      matchShortcut('move_cursor_down', e) ||
+      (inlineEditorFormula.isInsertingCells() && matchShortcut('expand_selection_down', e))
+    ) {
       handleArrowVertical(true, e);
     }
 
     // Arrow left
-    else if (matchShortcut('move_cursor_left', e)) {
+    else if (
+      matchShortcut('move_cursor_left', e) ||
+      (inlineEditorFormula.isInsertingCells() && matchShortcut('expand_selection_left', e))
+    ) {
       handleArrowHorizontal(false, e);
     }
 
     // Arrow right
-    else if (matchShortcut('move_cursor_right', e)) {
+    else if (
+      matchShortcut('move_cursor_right', e) ||
+      (inlineEditorFormula.isInsertingCells() && matchShortcut('expand_selection_right', e))
+    ) {
       handleArrowHorizontal(true, e);
     }
 
