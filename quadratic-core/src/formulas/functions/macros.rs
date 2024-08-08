@@ -63,7 +63,15 @@ macro_rules! see_docs_for_more_about_wildcards {
 /// what to put for `eval`, start with this:
 ///
 /// ```ignore
-/// Box::new(move |ctx, args| ...)
+/// Box::new(move |ctx, args| {
+///     todo!("check args");
+///
+///     if ctx.skip_computation {
+///         return Ok(Value::Single(CellValue::Blank))
+///     }
+///
+///     todo!("evaluate formula")
+/// })
 /// ```
 ///
 /// Remember to write a check that all required arguments are present and that
@@ -105,6 +113,8 @@ macro_rules! see_docs_for_more_about_wildcards {
 /// Special types:
 /// - `Ctx` - context (type is `Ctx<'_>`)
 /// - `Span` - span of the function call (type is `Span`)
+/// - `FormulaFnArgs` (must be last parameter) - all subsequent arguments
+///                                              (type is `FormulaFnArgs`)
 ///
 /// Additionally, if the parameter name is surrounded by square brackets (such
 /// as `[arg]: f64`) then if the argument is an array then the function will be
@@ -167,8 +177,8 @@ macro_rules! formula_fn {
 macro_rules! formula_fn_eval {
     ($($tok:tt)*) => {{
         #[allow(unused_mut)]
-        let ret: FormulaFn = |_ctx: &mut Ctx<'_>, _only_parse: bool, mut _args: FormulaFnArgs| -> CodeResult<Value> {
-            formula_fn_eval_inner!(_ctx, _only_parse, _args, $($tok)*)
+        let ret: FormulaFn = |_ctx: &mut Ctx<'_>, mut _args: FormulaFnArgs| -> CodeResult<Value> {
+            formula_fn_eval_inner!(_ctx, _args, $($tok)*)
         };
         ret
     }};
@@ -177,7 +187,7 @@ macro_rules! formula_fn_eval {
 /// Constructs the body of the `eval` function for a `FormulaFunction`.
 macro_rules! formula_fn_eval_inner {
     (
-        $ctx:ident, $only_parse:expr, $args:ident, $body:expr;
+        $ctx:ident, $args:ident, $body:expr;
         #[zip_map]
         $($params:tt)*
     ) => {{
@@ -187,67 +197,45 @@ macro_rules! formula_fn_eval_inner {
         // Check number of arguments and assign arguments to variables.
         formula_fn_args!(@zip($ctx, $args, args_to_zip_map); $($params)*);
         $args.error_if_more_args()?;
+
+        let skip_computation = $ctx.skip_computation;
 
         $ctx.zip_map(
             &args_to_zip_map,
             move |_ctx, zipped_args| -> CodeResult<CellValue> {
                 formula_fn_args!(@unzip(_ctx, zipped_args); $($params)*);
 
-                if $only_parse {
+                if skip_computation {
                     // If we only care about parsing, then we return a blank
                     // cell to avoid processing anything
                     Ok(CellValue::Blank)
                 } else {
                     // Evaluate the body of the function.
-                    CodeResult::Ok(CellValue::from($body))
+                    Ok(CellValue::from($body))
                 }
             },
         )
     }};
 
     (
-        $ctx:ident, $only_parse: expr, $args:ident, $body:expr;
-        #[zip_map]
+        $ctx:ident, $args:ident, $body:expr;
         $($params:tt)*
     ) => {{
-        // Arguments that should be zip-mapped. (See `Ctx::zip_map()`.)
-        let mut args_to_zip_map = vec![];
+        // `formula_fn_args!` may borrow `$ctx` for `$body`, so we need
+        // to read this flag now while we can.
+        let skip_computation = $ctx.skip_computation;
 
-        // Check number of arguments and assign arguments to variables.
-        formula_fn_args!(@zip($ctx, $args, args_to_zip_map); $($params)*);
-        $args.error_if_more_args()?;
-
-        $ctx.zip_map(
-            &args_to_zip_map,
-            |ctx, zipped_args| {
-                formula_fn_args!(@unzip(ctx, zipped_args); $($params)*);
-
-                if $only_parse {
-                    // If we only care about parsing, then we return a blank
-                    // cell to avoid processing anything
-                    Ok(CellValue::Blank)
-                } else {
-                    // Evaluate the body of the function.
-                    CodeResult::Ok(CellValue::from($body))
-                }
-            },
-        )
-    }};
-
-    (
-        $ctx:ident, $only_parse: expr, $args:ident, $body:expr;
-        $($params:tt)*
-    ) => {{
         // Check number of arguments and assign arguments to variables.
         formula_fn_args!(@assign($ctx, $args); $($params)*);
         $args.error_if_more_args()?;
 
-        // if only_parse {
-        //     Ok(())
-        // } else {
+        if skip_computation {
+            // Return a dummy value.
+            Ok(Value::Single(CellValue::Blank))
+        } else {
             // Evaluate the body of the function.
             Ok(Value::from($body))
-        // }
+        }
     }};
 }
 
@@ -290,6 +278,18 @@ macro_rules! formula_fn_arg {
     (@assign($ctx:ident, $args:ident); $arg_name:ident: Span) => {
         let $arg_name = $args.span;
     };
+    // Remaining arguments
+    (@assign($ctx:ident, $args:ident); $arg_name:ident: FormulaFnArgs) => {
+        // Replace the old `$args` with a dummy value that won't error when we
+        // assert there are no more arguments.
+        let replacement = FormulaFnArgs {
+            span: $args.span,
+            values: Default::default(),
+            func_name: $args.func_name,
+            args_popped: $args.args_popped,
+        };
+        let $arg_name = std::mem::replace(&mut $args, replacement);
+    };
 
     // Zip-mapped context argument
     (@zip($ctx:ident, $args:ident, $args_to_zip_map:ident); $arg_name:ident: Ctx) => {
@@ -314,11 +314,11 @@ macro_rules! formula_fn_arg {
     };
 
     // Repeating argument
-    (@assign($ctx:ident, $args:ident); $arg_name:ident: Iter< Spanned< Value > >) => {
+    (@assign($ctx:ident, $args:ident); $arg_name:ident: Iter< Spanned< Value $(>>)* $(>)*) => {
         // Do not flatten `Value`s.
         let mut $arg_name = $args.take_rest().map(CodeResult::Ok);
     };
-    (@assign($ctx:ident, $args:ident); $arg_name:ident: Iter< Spanned< Array > >) => {
+    (@assign($ctx:ident, $args:ident); $arg_name:ident: Iter< Spanned< Array $(>>)* $(>)*) => {
         // Do not flatten arrays.
         let mut $arg_name = $args.take_rest().map(Array::from).map(CodeResult::Ok);
     };
@@ -327,7 +327,7 @@ macro_rules! formula_fn_arg {
 
         // Flatten into iterator over non-array type.
         let remaining_args = $args.take_rest();
-        let $arg_name = remaining_args.flat_map(|arg_value| {
+        let mut $arg_name = remaining_args.flat_map(|arg_value| {
             formula_fn_convert_arg!(arg_value, Value -> Iter< Spanned< $($arg_type)*)
         });
     };
@@ -456,9 +456,6 @@ macro_rules! formula_fn_convert_arg {
     (@convert $value:expr, Value -> Spanned< CellValue > $(>)?) => {
         $value.into_cell_value()?
     };
-    (@convert $value:expr, Value -> Spanned< Array > $(>)?) => {
-        $value.map(Array::from)
-    };
     (@convert $value:expr, Value -> Spanned< $arg_type:ty > $(>)?) => {
         $value.try_coerce::<$arg_type>()?
     };
@@ -495,6 +492,7 @@ macro_rules! params_list {
         })
     };
 
+    (@get_kind FormulaFnArgs) => { ParamKind::Repeating };
     (@get_kind (Iter<$($rest:tt)*)) => { ParamKind::Repeating };
     (@get_kind (Option<$($rest:tt)*)) => { ParamKind::Optional };
     (@get_kind $arg_type:tt) => { ParamKind::Required };

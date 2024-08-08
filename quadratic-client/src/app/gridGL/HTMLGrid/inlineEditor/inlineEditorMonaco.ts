@@ -341,7 +341,7 @@ class InlineEditorMonaco {
         seedSearchStringFromSelection: 'never',
       },
       fontSize: 14,
-      lineHeight: 19,
+      lineHeight: 16,
       fontFamily: 'OpenSans',
       fontWeight: 'normal',
       lineNumbers: 'off',

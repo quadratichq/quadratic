@@ -13,6 +13,7 @@ mod mathematics;
 mod operators;
 mod statistics;
 mod string;
+mod tests;
 mod trigonometry;
 mod util;
 
@@ -21,6 +22,8 @@ use crate::{
     Array, Axis, CellValue, CodeResult, CoerceInto, IsBlank, RunError, RunErrorMsg, Span, Spanned,
     SpannedIterExt, Value,
 };
+
+pub use lookup::IndexFunctionArgs;
 
 pub fn lookup_function(name: &str) -> Option<&'static FormulaFunction> {
     ALL_FUNCTIONS.get(
@@ -38,6 +41,8 @@ pub const CATEGORIES: &[FormulaFunctionCategory] = &[
     logic::CATEGORY,
     string::CATEGORY,
     lookup::CATEGORY,
+    #[cfg(test)]
+    tests::CATEGORY,
 ];
 
 lazy_static! {
@@ -67,7 +72,7 @@ pub struct FormulaFnArgs {
     args_popped: usize,
 }
 impl FormulaFnArgs {
-    /// Constructs a set of arguments values.
+    /// Constructs a list of arguments values.
     pub fn new(
         values: impl Into<VecDeque<Spanned<Value>>>,
         span: Span,
@@ -79,6 +84,10 @@ impl FormulaFnArgs {
             func_name,
             args_popped: 0,
         }
+    }
+    /// Returns whether there is another argument.
+    pub fn has_next(&self) -> bool {
+        !self.values.is_empty()
     }
     /// Takes the next argument.
     fn take_next(&mut self) -> Option<Spanned<Value>> {
@@ -111,6 +120,7 @@ impl FormulaFnArgs {
         std::mem::take(&mut self.values).into_iter()
     }
 
+    /// Returns an error if there are no more arguments.
     pub fn error_if_no_more_args(&self, arg_name: impl Into<Cow<'static, str>>) -> CodeResult<()> {
         if !self.values.is_empty() {
             Ok(())
@@ -138,7 +148,7 @@ impl FormulaFnArgs {
 }
 
 /// Function pointer that represents the body of a formula function.
-pub type FormulaFn = for<'a> fn(&'a mut Ctx<'_>, bool, FormulaFnArgs) -> CodeResult<Value>;
+pub type FormulaFn = for<'a> fn(&'a mut Ctx<'_>, FormulaFnArgs) -> CodeResult<Value>;
 
 /// Formula function with associated metadata.
 pub struct FormulaFunction {
@@ -223,7 +233,7 @@ fn test_autocomplete_snippet() {
 
     // Optional
     assert_eq!(
-        "SUMIF(${1:eval_range}, ${2:criteria}${3:, ${4:[numbers_range]}})",
+        "SUMIF(${1:eval_range}, ${2:criteria}${3:, ${4:[sum_range]}})",
         ALL_FUNCTIONS.get("SUMIF").unwrap().autocomplete_snippet(),
     );
 }
