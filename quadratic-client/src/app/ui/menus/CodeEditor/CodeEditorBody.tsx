@@ -222,7 +222,7 @@ export const CodeEditorBody = (props: Props) => {
         value={editorContent}
         onChange={setEditorContent}
         onMount={onMount}
-        loading={<CircularProgress />}
+        loading={<CircularProgress style={{ width: '18px', height: '18px' }} />}
         options={{
           theme: 'light',
           readOnly: !canEdit,
