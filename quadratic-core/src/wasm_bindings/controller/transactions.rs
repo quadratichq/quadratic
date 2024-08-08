@@ -1,8 +1,7 @@
 use super::*;
 use crate::controller::{
     active_transactions::unsaved_transactions::UnsavedTransaction,
-    operations::operation::Operation,
-    transaction::{Transaction, TransactionServer},
+    operations::operation::Operation, transaction::Transaction,
 };
 use uuid::Uuid;
 
