@@ -54,6 +54,8 @@ new Chart(canvas, {
 return canvas;`;
 
 export const SNIPPET_JS_READ = `let my_value = cell(0, 0);
+let my_range = cells(0, 0, 1, 10);
+return my_range;
 
 // Learn more:
 // https://docs.quadratichq.com/javascript/reference-cells`;

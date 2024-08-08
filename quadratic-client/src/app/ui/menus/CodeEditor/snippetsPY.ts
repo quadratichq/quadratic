@@ -38,6 +38,7 @@ fake.name()
 # https://docs.quadratichq.com/python/packages`;
 
 export const SNIPPET_PY_READ = `my_value = cell(0, 0)
+my_dataframe = cells((0, 0), (1, 10))
 
 # Learn more:
 # https://docs.quadratichq.com/python/reference-cells`;
