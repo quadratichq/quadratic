@@ -1,6 +1,7 @@
 import { Rectangle } from 'pixi.js';
 import { useEffect, useState } from 'react';
 import { pixiApp } from '../pixiApp/PixiApp';
+import { events } from '@/app/events/events';
 
 interface PositionCellMessage {
   top: number;
@@ -35,10 +36,12 @@ export const usePositionCellMessage = (div: HTMLDivElement | null, offsets?: Rec
       }
     };
     updatePosition();
+    events.on('cursorPosition', updatePosition);
     pixiApp.viewport.on('moved', updatePosition);
     window.addEventListener('resize', updatePosition);
 
     return () => {
+      events.off('cursorPosition', updatePosition);
       pixiApp.viewport.off('moved', updatePosition);
       window.removeEventListener('resize', updatePosition);
     };

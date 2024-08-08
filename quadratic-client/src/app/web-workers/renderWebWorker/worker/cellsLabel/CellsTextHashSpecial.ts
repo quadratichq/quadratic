@@ -69,4 +69,18 @@ export class CellsTextHashSpecial {
     });
     bounds.updateRectangle(rectangle);
   }
+
+  adjustWidth(column: number, delta: number) {
+    this.special.checkboxes.forEach((entry) => {
+      if (entry.column > column) {
+        entry.x += delta;
+      }
+    });
+
+    this.special.dropdowns.forEach((entry) => {
+      if (entry.column > column) {
+        entry.x += delta;
+      }
+    });
+  }
 }

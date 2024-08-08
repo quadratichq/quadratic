@@ -12,7 +12,7 @@ export const ValidationLogical = (props: Props) => {
     <div className="flex flex-col gap-5">
       {' '}
       <ValidationUICheckbox label="Show checkbox" value={showUI} changeValue={changeShowUI} />
-      <ValidationUICheckbox label="Ignore blank values" value={ignoreBlank} changeValue={changeIgnoreBlank} />
+      <ValidationUICheckbox label="Allow blank values" value={ignoreBlank} changeValue={changeIgnoreBlank} />
       <ValidationMoreOptions validationData={props.validationData} />
     </div>
   );

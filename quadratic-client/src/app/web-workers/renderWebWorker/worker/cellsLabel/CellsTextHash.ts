@@ -375,6 +375,7 @@ export class CellsTextHash {
       this.labels.forEach((label) => {
         if (label.location.x === column) {
           label.adjustWidth(delta, column < 0);
+          this.special.adjustWidth(column, delta);
           changed = true;
         } else {
           if (column < 0) {

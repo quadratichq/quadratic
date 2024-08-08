@@ -124,7 +124,7 @@ export const ValidationTextArea = (props: InputProps) => {
 export const ValidationMoreOptions = (props: { validationData: ValidationData }) => {
   const { moreOptions, toggleMoreOptions } = props.validationData;
 
-  return <Button onClick={toggleMoreOptions}>{moreOptions ? 'Hide' : 'Show'} Options</Button>;
+  return <Button onClick={toggleMoreOptions}>{moreOptions ? 'Hide' : 'Show'} Messages</Button>;
 };
 
 interface DropdownProps {

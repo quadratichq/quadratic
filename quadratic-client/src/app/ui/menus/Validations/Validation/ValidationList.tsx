@@ -91,7 +91,7 @@ export const ValidationList = (props: Props) => {
       )}
       {rule === 'list' && <ValidationListInput validationData={props.validationData} />}
 
-      <ValidationUICheckbox label="Ignore blank values" value={ignoreBlank} changeValue={changeIgnoreBlank} />
+      <ValidationUICheckbox label="Allow blank values" value={ignoreBlank} changeValue={changeIgnoreBlank} />
       <ValidationUICheckbox label="Show dropdown in cell" value={showDropdown} changeValue={changeDropDown} />
 
       <ValidationMoreOptions validationData={props.validationData} />
