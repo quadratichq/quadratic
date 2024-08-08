@@ -52,3 +52,24 @@ export const SharedWithMeIcon = React.forwardRef<SVGSVGElement, IconProps>(
     );
   }
 );
+
+export const PrivateFileIcon = React.forwardRef<SVGSVGElement, IconProps>(
+  ({ color = 'currentColor', ...props }, forwardedRef) => {
+    return (
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+        <path
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M3.5 2C3.22386 2 3 2.22386 3 2.5V12.5C3 12.7761 3.22386 13 3.5 13H6V14H3.5C2.67157 14 2 13.3284 2 12.5V2.5C2 1.67157 2.67157 1 3.5 1H8.5C8.63261 1 8.75979 1.05268 8.85355 1.14645L12.8536 5.14645C12.9473 5.24021 13 5.36739 13 5.5V6H12H11H8.5C8.22386 6 8 5.77614 8 5.5V2H3.5ZM11.2929 5L9 2.70711V5H11.2929Z"
+          fill={color}
+        />
+        <path
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M10 10.0867C10 9.66363 10.1059 9.40596 10.2431 9.25695C10.3739 9.1149 10.5992 9 11.0007 9C11.4012 9 11.6263 9.1148 11.7571 9.25683C11.8942 9.4058 12 9.66323 12 10.0853V10.5H10V10.0867ZM9 10.5V10.0867C9 9.50949 9.14438 8.97382 9.50746 8.57954C9.87695 8.17832 10.402 8 11.0007 8C11.599 8 12.1235 8.17851 12.4927 8.57946C12.8555 8.97346 13 9.50868 13 10.0853V10.5C13.5523 10.5 14 10.9477 14 11.5V14C14 14.5523 13.5523 15 13 15H9C8.44772 15 8 14.5523 8 14V11.5C8 10.9477 8.44771 10.5 9 10.5ZM9 11.5H13V14H9V11.5Z"
+          fill={color}
+        />
+      </svg>
+    );
+  }
+);

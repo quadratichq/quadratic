@@ -1,4 +1,4 @@
-import { ConnectionsIcon, SharedWithMeIcon } from '@/dashboard/components/CustomRadixIcons';
+import { ConnectionsIcon, PrivateFileIcon, SharedWithMeIcon } from '@/dashboard/components/CustomRadixIcons';
 import { TeamSwitcher } from '@/dashboard/components/TeamSwitcher';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
@@ -84,8 +84,8 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         </Type>
         <div className="relative">
           <SidebarNavLink to={ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)} dropTarget={ownerUserId}>
-            <FileIcon className={classNameIcons} />
-            Files
+            <PrivateFileIcon className={classNameIcons} />
+            My files
           </SidebarNavLink>
           <SidebarNavLinkCreateButton to={ROUTES.CREATE_FILE_PRIVATE(activeTeamUuid)} />
         </div>
