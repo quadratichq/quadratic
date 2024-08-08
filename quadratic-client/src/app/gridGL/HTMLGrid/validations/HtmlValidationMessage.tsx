@@ -25,7 +25,6 @@ interface Props {
 
 export const HtmlValidationMessage = (props: Props) => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
-  // const { annotationState } = useRecoilValue(editorInteractionStateAtom);
   const { offsets, validation, column, row, hoverError } = props;
   const [hide, setHide] = useState(true);
 
@@ -83,7 +82,7 @@ export const HtmlValidationMessage = (props: Props) => {
     );
 
     const invalidValue =
-      hoverError !== 'undefined' ? <div className="pointer-events-auto">"{hoverError}" is not valid</div> : null;
+      hoverError !== undefined ? <div className="pointer-events-auto">"{hoverError}" is not valid</div> : null;
     message = (
       <>
         {invalidValue}
@@ -110,20 +109,29 @@ export const HtmlValidationMessage = (props: Props) => {
   }
 
   if (hide || !offsets || (!title && !message)) return null;
+
+  // if hover error, we have to remove the wrapper as HoverCell handles that.
+  if (hoverError !== undefined) {
+    return (
+      <div className="leading-2 whitespace-nowrap">
+        <div className="flex items-center justify-between gap-2">
+          {<div className="margin-bottom: 0.5rem">{title}</div>}
+        </div>
+        {message && <div className="pb-1 pt-2 text-xs">{message}</div>}
+      </div>
+    );
+  }
+
   return (
     <div
       ref={ref}
-      className={
-        hoverError !== undefined
-          ? ''
-          : 'border.gray-300 pointer-events-none absolute rounded-md border bg-popover bg-white p-4 text-popover-foreground shadow-md outline-none'
-      }
+      className="border.gray-300 pointer-events-none absolute w-64 rounded-md border bg-popover bg-white p-4 text-popover-foreground shadow-md outline-none"
       style={{ top, left }}
     >
       <div className="leading-2 whitespace-nowrap">
         <div className="flex items-center justify-between gap-2">
           {<div className="margin-bottom: 0.5rem">{title}</div>}
-          {hoverError === undefined && (
+          {
             <IconButton
               sx={{ padding: 0 }}
               className="pointer-events-auto"
@@ -134,7 +142,7 @@ export const HtmlValidationMessage = (props: Props) => {
             >
               <Close sx={{ padding: 0, width: 15 }} />
             </IconButton>
-          )}
+          }
         </div>
         {message && <div className="pb-1 pt-2 text-xs">{message}</div>}
       </div>

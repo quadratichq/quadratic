@@ -6,7 +6,7 @@ import { pluralize } from '@/app/helpers/pluralize';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { useGridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { useEffect, useRef, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import './HoverCell.css';
 import { ErrorValidation } from '../../cells/CellsSheet';
 import { HtmlValidationMessage } from '../validations/HtmlValidationMessage';
@@ -74,7 +74,7 @@ export const HoverCell = () => {
     };
   }, []);
 
-  const [text, setText] = useState<React.ReactNode>();
+  const [text, setText] = useState<ReactNode>();
   const [onlyCode, setOnlyCode] = useState(false);
   useEffect(() => {
     const asyncFunction = async () => {
@@ -82,14 +82,17 @@ export const HoverCell = () => {
         const offsets = sheets.sheet.getCellOffsets(cell.x, cell.y);
         const validation = sheets.sheet.getValidationById(cell.validationId);
         if (validation) {
+          const value = await quadraticCore.getDisplayCell(sheets.sheet.id, Number(cell.x), Number(cell.y));
           setText(
-            <HtmlValidationMessage
-              column={cell.x}
-              row={cell.y}
-              offsets={offsets}
-              validation={validation}
-              hoverError={cell.value}
-            />
+            <div className="relative">
+              <HtmlValidationMessage
+                column={cell.x}
+                row={cell.y}
+                offsets={offsets}
+                validation={validation}
+                hoverError={value}
+              />
+            </div>
           );
         }
         return;
@@ -163,11 +166,10 @@ export const HoverCell = () => {
   return (
     <div
       ref={ref}
-      className="absolute z-50 w-64 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none"
+      className="absolute z-50 w-64 rounded-md border bg-popover p-4 text-popover-foreground opacity-0 shadow-md outline-none"
       style={{ left, top, visibility: !onlyCode || showCodePeek ? 'visible' : 'hidden' }}
     >
       {text}
     </div>
-    // </div>
   );
 };
