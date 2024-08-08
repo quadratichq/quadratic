@@ -1,4 +1,4 @@
-import { authClient } from '@/auth';
+import { authClient } from '@/auth/auth';
 import { Empty } from '@/dashboard/components/Empty';
 import { GlobalSnackbarProvider } from '@/shared/components/GlobalSnackbarProvider';
 import { Theme } from '@/shared/components/Theme';

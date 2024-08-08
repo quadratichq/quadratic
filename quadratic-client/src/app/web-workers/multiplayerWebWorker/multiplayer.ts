@@ -8,7 +8,7 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
-import { authClient, parseDomain } from '@/auth';
+import { authClient, parseDomain } from '@/auth/auth';
 import { displayName } from '@/shared/utils/userUtil';
 import { User } from '@auth0/auth0-spa-js';
 import * as Sentry from '@sentry/react';

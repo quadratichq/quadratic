@@ -27,7 +27,7 @@ import {
   SheetRect,
   SummarizeSelectionResult,
 } from '@/app/quadratic-core-types';
-import { authClient } from '@/auth';
+import { authClient } from '@/auth/auth';
 import { Rectangle } from 'pixi.js';
 import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
 import {

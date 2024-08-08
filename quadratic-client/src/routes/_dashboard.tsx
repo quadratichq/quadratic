@@ -1,4 +1,4 @@
-import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
+import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
 import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { Empty } from '@/dashboard/components/Empty';

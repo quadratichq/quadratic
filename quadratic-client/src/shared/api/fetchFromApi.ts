@@ -1,4 +1,4 @@
-import { authClient } from '@/auth';
+import { authClient } from '@/auth/auth';
 import * as Sentry from '@sentry/react';
 import z from 'zod';
 import { apiClient } from './apiClient';

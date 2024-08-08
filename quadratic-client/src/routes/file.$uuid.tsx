@@ -8,7 +8,7 @@ import { VersionComparisonResult, compareVersions } from '@/app/schemas/compareV
 import { QuadraticApp } from '@/app/ui/QuadraticApp';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { initWorkers } from '@/app/web-workers/workers';
-import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
+import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
