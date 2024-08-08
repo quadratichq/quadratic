@@ -344,7 +344,7 @@ export class CellLabel {
         position: new Point(pos.x + charData.xOffset + this.letterSpacing / 2, pos.y + charData.yOffset),
       };
       chars.push(charRenderData);
-      pos.x += Math.max(charData.xAdvance, charData.frame.width) + this.letterSpacing;
+      pos.x += charData.xAdvance + this.letterSpacing;
       prevCharCode = charCode;
       if (maxWidth !== undefined && pos.x - maxWidth / scale > 0.001) {
         const start = lastBreakPos === -1 ? i - spacesRemoved : 1 + lastBreakPos - spacesRemoved;
