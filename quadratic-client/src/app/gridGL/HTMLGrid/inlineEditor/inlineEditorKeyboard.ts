@@ -25,14 +25,14 @@ const handleArrowHorizontal = (isRight: boolean, e: KeyboardEvent) => {
         // if we're not moving and the formula is valid, close the editor
         e.stopPropagation();
         e.preventDefault();
-        if (inlineEditorFormula.isFormulaValid()) {
-          inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
-        } else {
+        if (inlineEditorFormula.wantsCellRef()) {
           if (isRight) {
             inlineEditorHandler.cursorIsMoving = true;
             inlineEditorFormula.addInsertingCells(column);
             keyboardPosition(e);
           }
+        } else {
+          inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
         }
       }
     }
@@ -58,18 +58,19 @@ const handleArrowVertical = (isDown: boolean, e: KeyboardEvent) => {
       // valid" because many formulas are syntactically valid even though
       // it's obvious the user wants to insert a cell reference. For
       // example, `SUM(,)` with the cursor to the left of the comma.
-      if (!inlineEditorFormula.wantsCellRef()) {
+      if (inlineEditorFormula.wantsCellRef()) {
+        const location = inlineEditorHandler.location;
+        if (!location) {
+          throw new Error('Expected inlineEditorHandler.location to be defined in keyDown');
+        }
+        const column = inlineEditorMonaco.getCursorColumn();
+        inlineEditorFormula.addInsertingCells(column);
+        inlineEditorHandler.cursorIsMoving = true;
+        keyboardPosition(e);
+      } else {
         inlineEditorHandler.close(0, isDown ? 1 : -1, false);
         return;
       }
-      const location = inlineEditorHandler.location;
-      if (!location) {
-        throw new Error('Expected inlineEditorHandler.location to be defined in keyDown');
-      }
-      const column = inlineEditorMonaco.getCursorColumn();
-      inlineEditorFormula.addInsertingCells(column);
-      inlineEditorHandler.cursorIsMoving = true;
-      keyboardPosition(e);
     }
   } else {
     e.stopPropagation();
