@@ -368,6 +368,7 @@ impl Sheet {
 mod test {
     use crate::{
         controller::GridController,
+        grid::CellWrap,
         grid::{
             sheet::validations::{
                 validation::Validation,
@@ -375,7 +376,6 @@ mod test {
             },
             CellAlign, CodeCellLanguage, GridBounds, Sheet,
         },
-        grid::{CellAlign, CellWrap, CodeCellLanguage, GridBounds, Sheet},
         selection::Selection,
         CellValue, Pos, Rect, SheetPos, SheetRect,
     };
