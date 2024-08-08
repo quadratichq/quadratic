@@ -1,3 +1,4 @@
+import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import monaco, { Range, editor } from 'monaco-editor';
@@ -13,9 +14,10 @@ export const useEditorReturn = (
   // codeEditorReturn?: ComputedPythonReturnType
 ) => {
   let decorations = useRef<editor.IEditorDecorationsCollection | undefined>(undefined);
+  const codeCell = getCodeCell(language);
 
   useEffect(() => {
-    if (language === 'Formula') return;
+    if (codeCell?.id === 'Formula' || codeCell?.type === 'connection') return;
 
     const editor = editorRef.current;
     const monacoInst = monacoRef.current;
@@ -64,5 +66,5 @@ export const useEditorReturn = (
 
     // remove the return hightlight and decoration when the model changes
     editor.onDidChangeModelContent(() => decorations.current?.clear());
-  }, [isValidRef, editorRef, monacoRef, language, evaluationResult]);
+  }, [isValidRef, editorRef, monacoRef, codeCell, evaluationResult]);
 };
