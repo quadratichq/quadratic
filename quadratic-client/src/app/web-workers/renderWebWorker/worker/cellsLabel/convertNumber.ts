@@ -23,7 +23,7 @@ export const convertNumber = (n: string, format: JsNumber, currentFractionDigits
   if (currentFractionDigits === undefined) {
     if (format.decimals !== null) {
       currentFractionDigits = format.decimals;
-    } else if (isCurrency) {
+    } else if (isCurrency || isScientific) {
       currentFractionDigits = 2;
     }
   }
@@ -38,9 +38,25 @@ export const convertNumber = (n: string, format: JsNumber, currentFractionDigits
 
   if (isScientific) {
     if (currentFractionDigits !== undefined) {
+      // we need to remove trailing zeros for format.decimals === null
+      if (format.decimals === null) {
+        const n = number.toExponential(currentFractionDigits);
+        let [normal, exponential] = n.split('e');
+        if (normal.includes('.')) {
+          for (let i = normal.length - 1; i >= 2; i--) {
+            if (normal[i] === '0') {
+              normal = normal.slice(0, i);
+              if (normal.length === 2) {
+                normal = normal.slice(0, 1);
+              }
+            } else {
+              break;
+            }
+          }
+          return normal + 'e' + exponential;
+        }
+      }
       return number.toExponential(currentFractionDigits);
-    } else if (format.decimals !== null) {
-      return number.toExponential(format.decimals);
     } else {
       return number.toExponential();
     }
