@@ -312,14 +312,15 @@ class Core {
       this.clientQueue.push(async () => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
 
-        // convert the base64 encoded string of operations into buffers
         for (let data of receive_transactions.transactions) {
+          // convert the base64 encoded string of operations into buffers
           if (typeof data.operations === 'string') {
             data.operations = Buffer.from(data.operations, 'base64');
           }
+
+          this.gridController.multiplayerTransaction(data.id, data.sequence_num, data.operations);
         }
-        const transactionsBuffer = Buffer.from(JSON.stringify(receive_transactions.transactions));
-        this.gridController.receiveMultiplayerTransactions(transactionsBuffer);
+
         if (await offline.unsentTransactionsCount()) {
           coreClient.sendMultiplayerState('syncing');
         } else {

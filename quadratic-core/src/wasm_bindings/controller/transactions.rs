@@ -45,21 +45,20 @@ impl GridController {
         )?)
     }
 
-    #[wasm_bindgen(js_name = "receiveMultiplayerTransactions")]
-    pub fn js_receive_multiplayer_transactions(
-        &mut self,
-        transactions: &[u8],
-    ) -> Result<JsValue, JsValue> {
-        if let Ok(transactions) = serde_json::from_slice::<Vec<TransactionServer>>(transactions) {
-            Ok(serde_wasm_bindgen::to_value(
-                &self.received_transactions(&transactions[..]),
-            )?)
-        } else {
-            Err(JsValue::from_str(
-                "Invalid transactions received in receiveMultiplayerTransactions",
-            ))
-        }
-    }
+    // #[wasm_bindgen(js_name = "receiveMultiplayerTransactions")]
+    // pub fn js_receive_multiplayer_transactions(
+    //     &mut self,
+    //     transactions: &str,
+    // ) -> Result<JsValue, JsValue> {
+    //     match serde_json::from_str::<Vec<TransactionServer>>(transactions) {
+    //         Ok(transactions) => Ok(serde_wasm_bindgen::to_value(
+    //             &self.received_transactions(&transactions[..]),
+    //         )?),
+    //         Err(e) => Err(JsValue::from_str(&format!(
+    //             "Invalid transactions received in receiveMultiplayerTransactions: {e}"
+    //         ))),
+    //     }
+    // }
 
     #[wasm_bindgen(js_name = "applyOfflineUnsavedTransaction")]
     pub fn js_apply_offline_unsaved_transaction(
