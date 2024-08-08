@@ -24,6 +24,7 @@ import { events } from '@/app/events/events';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import { codeCellIsAConnection, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
 import { SheetRect } from '@/app/quadratic-core-types';
+import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlaceholder';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { javascriptLibraryForEditor } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generatedJavascriptForEditor';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
@@ -239,6 +240,7 @@ export const CodeEditorBody = (props: Props) => {
           showUnused: language === 'Javascript' ? false : true,
         }}
       />
+      <CodeEditorPlaceholder />
     </div>
   );
 };
