@@ -17,20 +17,22 @@ const handleArrowHorizontal = (isRight: boolean, e: KeyboardEvent) => {
   if (inlineEditorHandler.isEditingFormula()) {
     if (inlineEditorHandler.cursorIsMoving) {
       e.stopPropagation();
+      e.preventDefault();
       keyboardPosition(e);
     } else {
       const column = inlineEditorMonaco.getCursorColumn();
       if (column === target) {
         // if we're not moving and the formula is valid, close the editor
         e.stopPropagation();
-        if (inlineEditorFormula.wantsCellRef()) {
+        e.preventDefault();
+        if (inlineEditorFormula.isFormulaValid()) {
+          inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
+        } else {
           if (isRight) {
             inlineEditorHandler.cursorIsMoving = true;
             inlineEditorFormula.addInsertingCells(column);
             keyboardPosition(e);
           }
-        } else {
-          inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
         }
       }
     }
@@ -38,6 +40,7 @@ const handleArrowHorizontal = (isRight: boolean, e: KeyboardEvent) => {
     const column = inlineEditorMonaco.getCursorColumn();
     if (column === target) {
       e.stopPropagation();
+      e.preventDefault();
       inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
     }
   }
@@ -46,6 +49,7 @@ const handleArrowHorizontal = (isRight: boolean, e: KeyboardEvent) => {
 const handleArrowVertical = (isDown: boolean, e: KeyboardEvent) => {
   if (inlineEditorHandler.isEditingFormula()) {
     e.stopPropagation();
+    e.preventDefault();
     if (inlineEditorHandler.cursorIsMoving) {
       keyboardPosition(e);
     } else {
@@ -69,6 +73,7 @@ const handleArrowVertical = (isDown: boolean, e: KeyboardEvent) => {
     }
   } else {
     e.stopPropagation();
+    e.preventDefault();
     inlineEditorHandler.close(0, isDown ? 1 : -1, false);
   }
 };
@@ -126,7 +131,9 @@ class InlineEditorKeyboard {
     // Arrow up
     else if (
       matchShortcut('move_cursor_up', e) ||
-      (inlineEditorFormula.isInsertingCells() && matchShortcut('expand_selection_up', e))
+      matchShortcut('expand_selection_up', e) ||
+      matchShortcut('jump_cursor_content_top', e) ||
+      matchShortcut('expand_selection_content_top', e)
     ) {
       handleArrowVertical(false, e);
     }
@@ -134,7 +141,9 @@ class InlineEditorKeyboard {
     // Arrow down
     else if (
       matchShortcut('move_cursor_down', e) ||
-      (inlineEditorFormula.isInsertingCells() && matchShortcut('expand_selection_down', e))
+      matchShortcut('expand_selection_down', e) ||
+      matchShortcut('jump_cursor_content_bottom', e) ||
+      matchShortcut('expand_selection_content_bottom', e)
     ) {
       handleArrowVertical(true, e);
     }
@@ -142,7 +151,9 @@ class InlineEditorKeyboard {
     // Arrow left
     else if (
       matchShortcut('move_cursor_left', e) ||
-      (inlineEditorFormula.isInsertingCells() && matchShortcut('expand_selection_left', e))
+      matchShortcut('expand_selection_left', e) ||
+      matchShortcut('jump_cursor_content_left', e) ||
+      matchShortcut('expand_selection_content_left', e)
     ) {
       handleArrowHorizontal(false, e);
     }
@@ -150,7 +161,9 @@ class InlineEditorKeyboard {
     // Arrow right
     else if (
       matchShortcut('move_cursor_right', e) ||
-      (inlineEditorFormula.isInsertingCells() && matchShortcut('expand_selection_right', e))
+      matchShortcut('expand_selection_right', e) ||
+      matchShortcut('jump_cursor_content_right', e) ||
+      matchShortcut('expand_selection_content_right', e)
     ) {
       handleArrowHorizontal(true, e);
     }
