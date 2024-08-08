@@ -163,7 +163,7 @@ export const HoverCell = () => {
   return (
     <div
       ref={ref}
-      className="absolute w-64 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none"
+      className="absolute z-50 w-64 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none"
       style={{ left, top, visibility: !onlyCode || showCodePeek ? 'visible' : 'hidden' }}
     >
       {text}
