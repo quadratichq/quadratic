@@ -9,7 +9,7 @@
 import { debugShowLoadingHashes } from '@/app/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
-import { JsRenderCell, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import { JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
@@ -19,6 +19,7 @@ import { CellsTextHash } from './CellsTextHash';
 // 500 MB maximum memory per sheet before we start unloading hashes (right now
 // this is on a per-sheet basis--we will want to change this to a global limit)
 const MAX_RENDERING_MEMORY = 1024 * 1024 * 500;
+const NEIGHBORS = 10;
 
 export class CellsLabels {
   sheetId: string;
@@ -33,8 +34,8 @@ export class CellsLabels {
 
   // Keep track of headings that need adjusting during next update tick;
   // we aggregate all requests between update ticks
-  private dirtyColumnHeadings: Map<number, number>;
-  private dirtyRowHeadings: Map<number, number>;
+  private dirtyColumnHeadings: Map<number, { current: number; neighbor: number }>;
+  private dirtyRowHeadings: Map<number, { current: number; neighbor: number }>;
 
   constructor(sheetInfo: SheetInfo, bitmapFonts: RenderBitmapFonts) {
     this.sheetId = sheetInfo.sheet_id;
@@ -160,58 +161,71 @@ export class CellsLabels {
     this.dirtyColumnHeadings.clear();
     this.dirtyRowHeadings.clear();
 
-    // hashes that need to update their clipping and buffers
-    const hashesToUpdate: Map<CellsTextHash, number> = new Map();
-    const hashesToUpdateViewRectangle: Set<CellsTextHash> = new Set();
-    const viewport = renderText.viewport;
-    if (!viewport) return false;
+    const neighborRect = this.getViewportNeighborBounds();
+    if (!neighborRect) return false;
 
-    dirtyColumnHeadings.forEach((delta, column) => {
-      const columnHash = Math.floor(column / sheetHashWidth);
-      this.cellsTextHash.forEach((hash) => {
+    const applyColumnDelta = (hash: CellsTextHash, column: number, delta: number) => {
+      if (!delta) return;
+      if (hash.adjustHeadings({ column, delta })) {
+        hash.dirtyText = true;
+        if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
+          hash.dirtyBuffers = true;
+        }
+      }
+    };
+
+    this.cellsTextHash.forEach((hash) => {
+      let delta = 0;
+      dirtyColumnHeadings.forEach(({ current, neighbor }, column) => {
+        const columnHash = Math.floor(column / sheetHashWidth);
         if (hash.hashX === columnHash) {
-          if (hash.adjustHeadings({ column, delta })) {
-            if (!hashesToUpdate.has(hash)) {
-              hashesToUpdateViewRectangle.delete(hash);
-              hashesToUpdate.set(hash, this.hashDistanceSquared(hash, viewport));
-            }
-          } else if (!hashesToUpdate.has(hash)) {
-            hashesToUpdateViewRectangle.add(hash);
-          }
+          applyColumnDelta(hash, column, current);
+        } else if (hash.hashX > columnHash) {
+          delta += neighbor;
         }
       });
+      // column is one less than hash column as it has to applied to all labels in the hash
+      const column = hash.hashX * sheetHashWidth - 1;
+      applyColumnDelta(hash, column, delta);
     });
 
-    dirtyRowHeadings.forEach((delta, row) => {
-      const rowHash = Math.floor(row / sheetHashHeight);
-      this.cellsTextHash.forEach((hash) => {
+    const applyRowDelta = (hash: CellsTextHash, row: number, delta: number) => {
+      if (!delta) return;
+      if (hash.adjustHeadings({ row, delta })) {
+        hash.dirtyText = true;
+        if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
+          hash.dirtyBuffers = true;
+        }
+      }
+    };
+
+    this.cellsTextHash.forEach((hash) => {
+      let delta = 0;
+      dirtyRowHeadings.forEach(({ current, neighbor }, row) => {
+        const rowHash = Math.floor(row / sheetHashHeight);
         if (hash.hashY === rowHash) {
-          if (hash.adjustHeadings({ row, delta })) {
-            if (!!hashesToUpdate.has(hash)) {
-              hashesToUpdateViewRectangle.delete(hash);
-              hashesToUpdate.set(hash, this.hashDistanceSquared(hash, viewport));
-            }
-          } else if (!hashesToUpdate.has(hash)) {
-            hashesToUpdateViewRectangle.add(hash);
-          }
+          applyRowDelta(hash, row, current);
+        } else if (hash.hashY > rowHash) {
+          delta += neighbor;
         }
       });
+      // row is one less than hash row as it has to applied to all labels in the hash
+      const row = hash.hashY * sheetHashHeight - 1;
+      applyRowDelta(hash, row, delta);
     });
 
-    const hashesToUpdateSorted = Array.from(hashesToUpdate).sort((a, b) => {
-      return a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0;
-    });
-    hashesToUpdateSorted.forEach((hash) => {
-      const otherHashes = hash[0].overflowClip();
-      otherHashes.forEach((otherHash) => {
-        if (!hashesToUpdate.has(otherHash)) {
-          hashesToUpdate.set(otherHash, this.hashDistanceSquared(otherHash, viewport));
-        }
-      });
-    });
-    hashesToUpdate.forEach((_, hash) => hash.updateBuffers());
-    hashesToUpdateViewRectangle.forEach((hash) => hash.sendViewRectangle());
     return true;
+  }
+
+  getViewportNeighborBounds(): Rectangle | undefined {
+    const bounds = renderText.viewport;
+    if (!bounds) return undefined;
+    return new Rectangle(
+      bounds.x - NEIGHBORS * bounds.width,
+      bounds.y - 2 * NEIGHBORS * bounds.height,
+      bounds.width * (1 + 2 * NEIGHBORS),
+      bounds.height * (1 + 4 * NEIGHBORS)
+    );
   }
 
   // distance from viewport center to hash center
@@ -229,24 +243,27 @@ export class CellsLabels {
 
     const visibleDirtyHashes: CellsTextHash[] = [];
     const notVisibleDirtyHashes: { hash: CellsTextHash; distance: number }[] = [];
-    const hashesToDelete: { hash: CellsTextHash; distance: number }[] = [];
 
     const bounds = renderText.viewport;
-    if (!bounds) return;
+    const neighborRect = this.getViewportNeighborBounds();
+    if (!bounds || !neighborRect) return;
 
     // This divides the hashes into (1) visible in need of rendering, (2) not
     // visible and in need of rendering, and (3) not visible and loaded.
     this.cellsTextHash.forEach((hash) => {
       if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) {
-        if (hash.dirty || hash.dirtyBuffers || !hash.loaded) {
+        if (!hash.loaded || hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
           visibleDirtyHashes.push(hash);
         }
-      } else {
-        if (hash.dirty || hash.dirtyBuffers || !hash.loaded) {
+      } else if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect) && !findHashToDelete) {
+        if (!hash.loaded || hash.dirty || hash.dirtyText) {
           notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         }
-        if (findHashToDelete && hash.loaded) {
-          hashesToDelete.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
+      } else {
+        if (hash.dirty || hash.dirtyText) {
+          notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
+        } else if (hash.loaded) {
+          hash.unload();
         }
       }
     });
@@ -255,70 +272,25 @@ export class CellsLabels {
       return;
     }
 
-    // sort hashes to delete so the last one is the farthest from viewport.topLeft
-    hashesToDelete.sort((a, b) => (a.distance < b.distance ? -1 : a.distance > b.distance ? 1 : 0));
-
     if (visibleDirtyHashes.length) {
       // if hashes are visible then sort smallest to largest by y and return the first one
-      visibleDirtyHashes.sort((a, b) => (a.hashY < b.hashY ? -1 : a.hashY > b.hashY ? 1 : 0));
-
-      while (memory > MAX_RENDERING_MEMORY && hashesToDelete.length) {
-        const deleted = hashesToDelete.pop();
-        if (deleted) {
-          deleted.hash.unload();
-        } else {
-          // should not happen
-          break;
-        }
-        memory = this.totalMemory();
-      }
+      visibleDirtyHashes.sort((a, b) => a.hashY - b.hashY);
 
       if (debugShowLoadingHashes)
         console.log(
           `[CellsTextHash] rendering visible: ${visibleDirtyHashes[0].hashX}, ${visibleDirtyHashes[0].hashY}`
         );
       return { hash: visibleDirtyHashes[0], visible: true };
-    }
-    // otherwise sort notVisible by distance from viewport.topLeft (by smallest to largest so we can use pop)
-    notVisibleDirtyHashes.sort((a, b) => (a.distance < b.distance ? -1 : a.distance > b.distance ? 1 : 0));
-
-    // This is the next possible not visible hash to render; we'll use it to
-    // compare the the next hash to unload.
-    const nextNotVisibleHash = notVisibleDirtyHashes[0];
-
-    // Free up memory so we can render closer hashes.
-    if (hashesToDelete.length) {
-      while (
-        memory > MAX_RENDERING_MEMORY &&
-        hashesToDelete.length &&
-        // We ensure that we don't delete a hash that is closer than the the
-        // next not visible hash we plan to render.
-        nextNotVisibleHash.distance < hashesToDelete[hashesToDelete.length - 1].distance
-      ) {
-        hashesToDelete.pop()!.hash.unload();
-        memory = this.totalMemory();
-      }
-
-      // if the distance of the dirtyHash is greater than the distance of the
-      // first hash to delete, then we do nothing. This ensures we're not constantly
-      // deleting and rendering the same hash at the edges of memory.
-      if (hashesToDelete.length && nextNotVisibleHash.distance >= hashesToDelete[hashesToDelete.length - 1].distance) {
-        return;
-      }
+    } else if (notVisibleDirtyHashes.length) {
+      // otherwise sort notVisible by distance from viewport.topLeft (by smallest to largest so we can use pop)
+      notVisibleDirtyHashes.sort((a, b) => a.distance - b.distance);
 
       if (debugShowLoadingHashes) {
         console.log(
-          `[CellsTextHash] rendering offscreen: ${nextNotVisibleHash.hash.hashX}, ${nextNotVisibleHash.hash.hashY}`
+          `[CellsTextHash] rendering offscreen: ${notVisibleDirtyHashes[0].hash.hashX}, ${notVisibleDirtyHashes[0].hash.hashY}`
         );
       }
-      return { hash: nextNotVisibleHash.hash, visible: false };
-    } else {
-      if (debugShowLoadingHashes) {
-        console.log(
-          `[CellsTextHash] rendering offscreen: ${nextNotVisibleHash.hash.hashX}, ${nextNotVisibleHash.hash.hashY}`
-        );
-      }
-      return { hash: nextNotVisibleHash.hash, visible: false };
+      return { hash: notVisibleDirtyHashes[0].hash, visible: false };
     }
   }
 
@@ -328,7 +300,7 @@ export class CellsLabels {
     return total;
   }
 
-  async update(): Promise<boolean | 'headings' | 'visible'> {
+  update = async (): Promise<boolean | 'headings' | 'visible'> => {
     if (this.updateHeadings()) return 'headings';
 
     const next = this.nextDirtyHash();
@@ -338,40 +310,34 @@ export class CellsLabels {
       return next.visible ? 'visible' : true;
     }
     return false;
-  }
+  };
 
   // adjust headings without recalculating the glyph geometries
-  adjustHeadings(delta: number, column?: number, row?: number) {
+  adjustHeadings(current: number, neighbor: number, column?: number, row?: number) {
     if (column !== undefined) {
       const existing = this.dirtyColumnHeadings.get(column);
       if (existing) {
-        this.dirtyColumnHeadings.set(column, existing + delta);
+        this.dirtyColumnHeadings.set(column, {
+          current: existing.current + current,
+          neighbor: existing.neighbor + neighbor,
+        });
       } else {
-        this.dirtyColumnHeadings.set(column, delta);
+        this.dirtyColumnHeadings.set(column, { current, neighbor });
       }
     } else if (row !== undefined) {
       const existing = this.dirtyRowHeadings.get(row);
       if (existing) {
-        this.dirtyRowHeadings.set(row, existing + delta);
+        this.dirtyRowHeadings.set(row, {
+          current: existing.current + current,
+          neighbor: existing.neighbor + neighbor,
+        });
       } else {
-        this.dirtyRowHeadings.set(row, delta);
+        this.dirtyRowHeadings.set(row, { current, neighbor });
       }
     }
   }
 
-  getCellsContentMaxWidth(column: number): number {
-    const hashX = Math.floor(column / sheetHashWidth);
-    let max = 0;
-    this.cellsTextHash.forEach((hash) => {
-      if (hash.hashX === hashX) {
-        max = Math.max(max, hash.getCellsContentMaxWidth(column));
-      }
-    });
-    return max;
-  }
-
-  completeRenderCells(hashX: number, hashY: number, cells: string): void {
-    const renderCells: JsRenderCell[] = JSON.parse(cells);
+  completeRenderCells(hashX: number, hashY: number, renderCells: JsRenderCell[]): void {
     const key = this.getHashKey(hashX, hashY);
     let cellsHash = this.cellsTextHash.get(key);
     if (!cellsHash) {
@@ -381,6 +347,8 @@ export class CellsLabels {
     cellsHash.dirty = renderCells;
   }
 
+  // updates the hash that contains the column / row during transient resize
+  // remaining hashes to the right or below the column / row are temporarily updated in pixiApp only
   setOffsetsDelta(column: number | undefined, row: number | undefined, delta: number) {
     if (column !== undefined) {
       const size = this.sheetOffsets.getColumnWidth(column) - delta;
@@ -390,10 +358,19 @@ export class CellsLabels {
       this.sheetOffsets.setRowHeight(row, size);
     }
     if (delta) {
-      this.adjustHeadings(delta, column, row);
+      // apply delta to only current hash
+      this.adjustHeadings(delta, 0, column, row);
     }
   }
 
+  // updates only the hash that is to the right or below the column / row
+  // this is done after transient resize
+  setOffsetsFinal(column: number | undefined, row: number | undefined, delta: number) {
+    // apply delta to only neighbor hashes
+    this.adjustHeadings(0, delta, column, row);
+  }
+
+  // updates all hashes
   setOffsetsSize(column: number | undefined, row: number | undefined, size: number) {
     let delta = 0;
     if (column !== undefined) {
@@ -403,9 +380,9 @@ export class CellsLabels {
       delta = this.sheetOffsets.getRowHeight(row) - size;
       this.sheetOffsets.setRowHeight(row, size);
     }
-
     if (delta) {
-      this.adjustHeadings(delta, column, row);
+      // apply delta to all hashes
+      this.adjustHeadings(delta, delta, column, row);
     }
   }
 
@@ -416,14 +393,91 @@ export class CellsLabels {
     }
   }
 
-  columnMaxWidth(column: number): number {
+  async columnMaxWidth(column: number): Promise<number> {
     const hashX = Math.floor(column / sheetHashWidth);
     let max = 0;
+    const promises: Promise<void>[] = [];
     this.cellsTextHash.forEach((hash) => {
       if (hash.hashX === hashX) {
-        max = Math.max(max, hash.getCellsContentMaxWidth(column));
+        const promise = new Promise<void>(async (resolve) => {
+          const maxContentWidth = await hash.getCellsContentMaxWidth(column);
+          max = Math.max(max, maxContentWidth);
+          resolve();
+        });
+        promises.push(promise);
       }
     });
+    await Promise.all(promises);
     return max;
+  }
+
+  async rowMaxHeight(row: number): Promise<number> {
+    const hashY = Math.floor(row / sheetHashHeight);
+    let max = 0;
+    const promises: Promise<void>[] = [];
+    this.cellsTextHash.forEach((hash) => {
+      if (hash.hashY === hashY) {
+        const promise = new Promise<void>(async (resolve) => {
+          const maxContentHeight = await hash.getCellsContentMaxHeight(row);
+          max = Math.max(max, maxContentHeight);
+          resolve();
+        });
+        promises.push(promise);
+      }
+    });
+    await Promise.all(promises);
+    return max;
+  }
+
+  async rowMaxHeightsInHash(hashY: number): Promise<Map<number, number>> {
+    const rowsMax = new Map<number, number>();
+    const promises: Promise<void>[] = [];
+    this.cellsTextHash.forEach((hash) => {
+      if (hash.hashY === hashY) {
+        const promise = new Promise<void>(async (resolve) => {
+          const hashMax = await hash.getRowContentMaxHeights();
+          hashMax.forEach((height, row) => {
+            const current = rowsMax.get(row) ?? 0;
+            rowsMax.set(row, Math.max(current, height));
+          });
+          resolve();
+        });
+        promises.push(promise);
+      }
+    });
+    await Promise.all(promises);
+    return rowsMax;
+  }
+
+  async getRowHeights(rows: bigint[]): Promise<JsRowHeight[]> {
+    await this.update();
+    const rowHeights = new Map<number, number>();
+    const promises: Promise<void>[] = [];
+    const hashYs = new Set<number>(rows.map((row) => Math.floor(Number(row) / sheetHashHeight)));
+    hashYs.forEach((hashY) => {
+      const promise = new Promise<void>(async (resolve) => {
+        const rowsMax = await this.rowMaxHeightsInHash(hashY);
+        rowsMax.forEach((height, row) => {
+          rowHeights.set(row, height);
+        });
+        resolve();
+      });
+      promises.push(promise);
+    });
+    await Promise.all(promises);
+    const jsRowHeights: JsRowHeight[] = rows.map((row) => {
+      const height = rowHeights.get(Number(row)) ?? this.sheetOffsets.getRowHeight(Number(row));
+      return { row, height };
+    });
+    const changesRowHeights: JsRowHeight[] = jsRowHeights.filter(
+      ({ row, height }) => Math.abs(height - this.sheetOffsets.getRowHeight(Number(row))) > 0.001
+    );
+    return changesRowHeights;
+  }
+
+  resizeRowHeights(rowHeights: JsRowHeight[]) {
+    rowHeights.forEach(({ row, height }) => {
+      this.setOffsetsSize(undefined, Number(row), height);
+    });
   }
 }

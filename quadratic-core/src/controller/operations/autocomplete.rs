@@ -2,7 +2,7 @@ use crate::{
     cell_values::CellValues,
     controller::GridController,
     grid::{
-        formatting::CellFmtArray,
+        formats::Formats,
         series::{find_auto_complete, SeriesOptions},
         SheetId,
     },
@@ -167,30 +167,33 @@ impl GridController {
         down_range: Option<Rect>,
         up_range: Option<Rect>,
     ) -> Result<Vec<Operation>> {
-        let mut format_ops = vec![];
+        let mut format_rects = vec![];
+        let mut formats = Formats::default();
         let mut values = vec![];
-        let mut formats = vec![];
         let mut ops = selection
             .y_range()
             .map(|y| {
+                // for each column, apply the formats to a block (selection.width, y) of new cells
+                let width = selection.width() as usize;
+                range.x_range().step_by(width).for_each(|x| {
+                    let new_x = range.max.x.min(x + width as i64 - 1);
+                    let start_pos = (selection.min.x, y).into();
+                    let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
+                    self.apply_formats(
+                        sheet_id,
+                        start_pos,
+                        format_rect,
+                        &mut format_rects,
+                        &mut formats,
+                    );
+                });
+
                 let source_row = SheetRect::new_pos_span(
                     (selection.min.x, y).into(),
                     (selection.max.x, y).into(),
                     sheet_id,
                 );
                 let target_row = Rect::new_span((range.min.x, y).into(), (range.max.x, y).into());
-                let format = self.get_all_cell_formats(source_row);
-                let width = selection.width() as usize;
-
-                // for each column, apply the formats to a block (selection.width, y) of new cells
-                range.x_range().step_by(width).for_each(|x| {
-                    let new_x = range.max.x.min(x + width as i64 - 1);
-                    let format_rect =
-                        SheetRect::new_pos_span((x, y).into(), (new_x, y).into(), sheet_id);
-                    format_ops.extend(apply_formats(format_rect, &format));
-                });
-
-                formats.push(format);
                 let (operations, cell_values) = self.apply_auto_complete(
                     sheet_id,
                     false,
@@ -227,7 +230,16 @@ impl GridController {
             )?);
         }
 
-        ops.extend(format_ops);
+        let formats_op = Operation::SetCellFormatsSelection {
+            selection: Selection {
+                sheet_id,
+                rects: format_rects.into(),
+                ..Default::default()
+            },
+            formats,
+        };
+        ops.push(formats_op);
+
         Ok(ops)
     }
 
@@ -239,41 +251,39 @@ impl GridController {
         down_range: Option<Rect>,
         up_range: Option<Rect>,
     ) -> Result<Vec<Operation>> {
-        let mut format_ops = vec![];
+        let mut format_rects = vec![];
+        let mut formats = Formats::default();
         let mut values = vec![];
-        let mut formats = vec![];
         let mut ops = selection
             .y_range()
             .map(|y| {
+                // for each column, apply the formats to a block (selection.width, y) of new cells
+                let width = selection.width() as usize;
+                range.x_range().rev().step_by(width).for_each(|x| {
+                    let mut new_x = x - width as i64 + 1;
+                    let start_pos: Pos = if new_x < range.min.x {
+                        let start_pos = (selection.min.x + range.min.x - new_x, y).into();
+                        new_x = range.min.x;
+                        start_pos
+                    } else {
+                        (selection.min.x, y).into()
+                    };
+                    let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
+                    self.apply_formats(
+                        sheet_id,
+                        start_pos,
+                        format_rect,
+                        &mut format_rects,
+                        &mut formats,
+                    );
+                });
+
                 let source_row = SheetRect::new_pos_span(
                     (selection.min.x, y).into(),
                     (selection.max.x, y).into(),
                     sheet_id,
                 );
                 let target_row = Rect::new_span((range.min.x, y).into(), (range.max.x, y).into());
-                let mut format = self.get_all_cell_formats(source_row);
-                let width = selection.width() as usize;
-
-                // for each column, apply the formats to a block (selection.width, y) of new cells
-                range.x_range().rev().step_by(width).for_each(|x| {
-                    let mut new_x = x - width as i64 + 1;
-
-                    if new_x < range.min.x {
-                        let source_col = SheetRect::new_pos_span(
-                            (selection.min.x + range.min.x - new_x, y).into(),
-                            (selection.max.x, y).into(),
-                            sheet_id,
-                        );
-                        new_x = range.min.x;
-                        format = self.get_all_cell_formats(source_col);
-                    }
-
-                    let format_rect =
-                        SheetRect::new_pos_span((x, y).into(), (new_x, y).into(), sheet_id);
-                    format_ops.extend(apply_formats(format_rect, &format));
-                });
-
-                formats.extend(format);
                 let (operations, cell_values) = self.apply_auto_complete(
                     sheet_id,
                     true,
@@ -310,7 +320,15 @@ impl GridController {
             )?);
         }
 
-        ops.extend(format_ops);
+        let formats_op = Operation::SetCellFormatsSelection {
+            selection: Selection {
+                sheet_id,
+                rects: format_rects.into(),
+                ..Default::default()
+            },
+            formats,
+        };
+        ops.push(formats_op);
         Ok(ops)
     }
 
@@ -320,13 +338,27 @@ impl GridController {
         selection: &Rect,
         range: &Rect,
     ) -> Result<Vec<Operation>> {
-        let mut format_ops = vec![];
-        let mut values = vec![];
-        let mut formats = vec![];
+        let mut format_rects = vec![];
+        let mut formats = Formats::default();
         let mut ops = selection
             .x_range()
             .rev()
             .map(|x| {
+                // for each row, apply the formats to a block (x, selection.height) of new cells
+                let height = selection.height() as usize;
+                range.y_range().step_by(height).for_each(|y| {
+                    let new_y = range.max.y.min(y + height as i64 - 1);
+                    let start_pos = (x, selection.min.y).into();
+                    let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
+                    self.apply_formats(
+                        sheet_id,
+                        start_pos,
+                        format_rect,
+                        &mut format_rects,
+                        &mut formats,
+                    );
+                });
+
                 let source_col = SheetRect::new_pos_span(
                     (x, selection.min.y).into(),
                     (x, selection.max.y).into(),
@@ -334,33 +366,29 @@ impl GridController {
                 );
                 let target_col =
                     Rect::new_span((x, selection.max.y + 1).into(), (x, range.max.y).into());
-                let format = self.get_all_cell_formats(source_col);
-                let height = selection.height() as usize;
-
-                // for each row, apply the formats to a block (x, selection.height) of new cells
-                range.y_range().step_by(height).for_each(|y| {
-                    let new_y = range.max.y.min(y + height as i64 - 1);
-                    let format_rect =
-                        SheetRect::new_pos_span((x, y).into(), (x, new_y).into(), sheet_id);
-                    format_ops.extend(apply_formats(format_rect, &format));
-                });
-
-                formats.extend(format);
-                let (operations, cell_values) = self.apply_auto_complete(
+                let (operations, _) = self.apply_auto_complete(
                     sheet_id,
                     false,
                     &source_col.into(),
                     &target_col,
                     None,
                 )?;
-                values.extend(cell_values);
 
                 Ok(operations)
             })
             .flatten_ok()
             .collect::<Result<Vec<Operation>>>()?;
 
-        ops.extend(format_ops);
+        let formats_op = Operation::SetCellFormatsSelection {
+            selection: Selection {
+                sheet_id,
+                rects: format_rects.into(),
+                ..Default::default()
+            },
+            formats,
+        };
+        ops.push(formats_op);
+
         Ok(ops)
     }
 
@@ -370,12 +398,32 @@ impl GridController {
         selection: &Rect,
         range: &Rect,
     ) -> Result<Vec<Operation>> {
-        let mut format_ops = vec![];
-        let mut values = vec![];
-        let mut formats = vec![];
+        let mut format_rects = vec![];
+        let mut formats = Formats::default();
         let mut ops = selection
             .x_range()
             .map(|x| {
+                // for each row, apply the formats to a block (x, selection.height) of new cells
+                let height = selection.height() as usize;
+                range.y_range().rev().step_by(height).for_each(|y| {
+                    let mut new_y = y - height as i64 + 1;
+                    let start_pos: Pos = if new_y < range.min.y {
+                        let start_pos = (x, selection.min.y + range.min.y - new_y).into();
+                        new_y = range.min.y;
+                        start_pos
+                    } else {
+                        (x, selection.min.y).into()
+                    };
+                    let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
+                    self.apply_formats(
+                        sheet_id,
+                        start_pos,
+                        format_rect,
+                        &mut format_rects,
+                        &mut formats,
+                    );
+                });
+
                 let source_col = SheetRect::new_pos_span(
                     (x, selection.min.y).into(),
                     (x, selection.max.y).into(),
@@ -383,46 +431,29 @@ impl GridController {
                 );
                 let target_col =
                     Rect::new_span((x, selection.min.y - 1).into(), (x, range.min.y).into());
-                let mut format = self.get_all_cell_formats(source_col);
-                let height = selection.height() as usize;
-
-                // for each row, apply the formats to a block (x, selection.height) of new cells
-                range.y_range().rev().step_by(height).for_each(|y| {
-                    let mut new_y = y - height as i64 + 1;
-
-                    // since the new_y is less than the range min, we need to
-                    // adjust the format since this is ine reverse order
-                    if new_y < range.min.y {
-                        let source_col = SheetRect::new_pos_span(
-                            (x, selection.min.y + range.min.y - new_y).into(),
-                            (x, selection.max.y).into(),
-                            sheet_id,
-                        );
-                        new_y = range.min.y;
-                        format = self.get_all_cell_formats(source_col);
-                    }
-
-                    let format_rect =
-                        SheetRect::new_pos_span((x, y).into(), (x, new_y).into(), sheet_id);
-                    format_ops.extend(apply_formats(format_rect, &format));
-                });
-
-                formats.extend(format);
-                let (operations, cell_values) = self.apply_auto_complete(
+                let (operations, _) = self.apply_auto_complete(
                     sheet_id,
                     true,
                     &source_col.into(),
                     &target_col,
                     None,
                 )?;
-                values.extend(cell_values);
 
                 Ok(operations)
             })
             .flatten_ok()
             .collect::<Result<Vec<Operation>>>()?;
 
-        ops.extend(format_ops);
+        let formats_op = Operation::SetCellFormatsSelection {
+            selection: Selection {
+                sheet_id,
+                rects: format_rects.into(),
+                ..Default::default()
+            },
+            formats,
+        };
+        ops.push(formats_op);
+
         Ok(ops)
     }
 
@@ -435,9 +466,9 @@ impl GridController {
         width: i64,
         direction: ExpandDirection,
     ) -> Result<Vec<Operation>> {
-        let mut format_ops = vec![];
+        let mut format_rects = vec![];
+        let mut formats = Formats::default();
         let height = values.len() as i64 / width;
-
         let mut ops = range
             .x_range()
             .enumerate()
@@ -455,16 +486,10 @@ impl GridController {
                     .collect::<Vec<_>>();
 
                 let format_x = selection.min.x + (x - selection.min.x) % selection.width() as i64;
-                let format_source_rect = SheetRect::new_pos_span(
-                    (format_x, selection.min.y).into(),
-                    (format_x, selection.max.y).into(),
-                    sheet_id,
-                );
-                let mut format = self.get_all_cell_formats(format_source_rect);
-
                 maybe_reverse_range(range.y_range(), direction == ExpandDirection::Up)
                     .step_by(height as usize)
                     .for_each(|y| {
+                        let mut start_pos = (format_x, selection.min.y).into();
                         let new_y = if direction == ExpandDirection::Down {
                             range.max.y.min(y + height - 1)
                         } else {
@@ -472,20 +497,22 @@ impl GridController {
                             // adjust the format since this is ine reverse order
                             let calc_y = y - height + 1;
                             if calc_y < range.min.y {
-                                let format_source_rect = SheetRect::new_pos_span(
-                                    (format_x, selection.min.y + range.min.y - calc_y).into(),
-                                    (format_x, selection.max.y).into(),
-                                    sheet_id,
-                                );
-                                format = self.get_all_cell_formats(format_source_rect);
+                                start_pos =
+                                    (format_x, selection.min.y + range.min.y - calc_y).into();
                                 range.min.y
                             } else {
                                 y - height + 1
                             }
                         };
-                        let format_rect =
-                            SheetRect::new_pos_span((x, y).into(), (x, new_y).into(), sheet_id);
-                        format_ops.extend(apply_formats(format_rect, &format));
+
+                        let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
+                        self.apply_formats(
+                            sheet_id,
+                            start_pos,
+                            format_rect,
+                            &mut format_rects,
+                            &mut formats,
+                        );
                     });
 
                 let (operations, _) = self.apply_auto_complete(
@@ -501,7 +528,15 @@ impl GridController {
             .flatten_ok()
             .collect::<Result<Vec<Operation>>>()?;
 
-        ops.extend(format_ops);
+        let formats_op = Operation::SetCellFormatsSelection {
+            selection: Selection {
+                sheet_id,
+                rects: format_rects.into(),
+                ..Default::default()
+            },
+            formats,
+        };
+        ops.push(formats_op);
 
         Ok(ops)
     }
@@ -515,7 +550,8 @@ impl GridController {
         width: i64,
         direction: ExpandDirection,
     ) -> Result<Vec<Operation>> {
-        let mut format_ops = vec![];
+        let mut format_rects = vec![];
+        let mut formats = Formats::default();
         let height = values.len() as i64 / width;
 
         let mut ops = range
@@ -540,16 +576,10 @@ impl GridController {
                     .collect::<Vec<_>>();
 
                 let format_x = selection.max.x - (index as i64 % selection.width() as i64);
-                let format_source_rect = SheetRect::new_pos_span(
-                    (format_x, selection.min.y).into(),
-                    (format_x, selection.max.y).into(),
-                    sheet_id,
-                );
-                let mut format = self.get_all_cell_formats(format_source_rect);
-
                 maybe_reverse_range(range.y_range(), direction == ExpandDirection::Up)
                     .step_by(height as usize)
                     .for_each(|y| {
+                        let mut start_pos = (format_x, selection.min.y).into();
                         let new_y = if direction == ExpandDirection::Down {
                             range.max.y.min(y + height - 1)
                         } else {
@@ -557,21 +587,22 @@ impl GridController {
                             // adjust the format since this is ine reverse order
                             let calc_y = y - height + 1;
                             if calc_y < range.min.y {
-                                let format_source_rect = SheetRect::new_pos_span(
-                                    (format_x, selection.min.y + range.min.y - calc_y).into(),
-                                    (format_x, selection.max.y).into(),
-                                    sheet_id,
-                                );
-                                format = self.get_all_cell_formats(format_source_rect);
+                                start_pos =
+                                    (format_x, selection.min.y + range.min.y - calc_y).into();
                                 range.min.y
                             } else {
                                 y - height + 1
                             }
                         };
 
-                        let format_rect =
-                            SheetRect::new_pos_span((x, y).into(), (x, new_y).into(), sheet_id);
-                        format_ops.extend(apply_formats(format_rect, &format));
+                        let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
+                        self.apply_formats(
+                            sheet_id,
+                            start_pos,
+                            format_rect,
+                            &mut format_rects,
+                            &mut formats,
+                        );
                     });
 
                 let (operations, _) = self.apply_auto_complete(
@@ -587,7 +618,15 @@ impl GridController {
             .flatten_ok()
             .collect::<Result<Vec<Operation>>>()?;
 
-        ops.extend(format_ops);
+        let formats_op = Operation::SetCellFormatsSelection {
+            selection: Selection {
+                sheet_id,
+                rects: format_rects.into(),
+                ..Default::default()
+            },
+            formats,
+        };
+        ops.push(formats_op);
 
         Ok(ops)
     }
@@ -640,19 +679,26 @@ impl GridController {
 
         Ok((ops, series))
     }
-}
 
-/// Apply formats to a given region.
-///
-/// TODO(ddimaria): this function is sufficiently generic that it could be moved
-/// TODO(ddimaria): we could remove the clones below by modifying the Operation
-/// calls to accept references since they don't mutate the region.
-pub fn apply_formats(sheet_rect: SheetRect, formats: &[CellFmtArray]) -> Vec<Operation> {
-    formats
-        .iter()
-        .map(|format| Operation::SetCellFormats {
-            sheet_rect,
-            attr: format.clone(),
-        })
-        .collect()
+    fn apply_formats(
+        &self,
+        sheet_id: SheetId,
+        start_pos: Pos,
+        format_rect: Rect,
+        format_rects: &mut Vec<Rect>,
+        formats: &mut Formats,
+    ) {
+        if let Some(sheet) = self.try_sheet(sheet_id) {
+            format_rects.push(format_rect);
+            for x in 0..format_rect.width() as i64 {
+                for y in 0..format_rect.height() as i64 {
+                    formats.push(
+                        sheet
+                            .format_cell(start_pos.x + x, start_pos.y + y, true)
+                            .to_replace(),
+                    );
+                }
+            }
+        }
+    }
 }

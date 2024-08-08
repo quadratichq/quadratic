@@ -152,6 +152,65 @@ impl Criterion {
             // Ignore blank values
             .filter_map_ok(|v| v.coerce_nonblank::<T>()))
     }
+
+    /// Iterates over values, excluding those that do not match all the
+    /// criteria.
+    pub fn iter_matching_multi<'a>(
+        eval_ranges_and_criteria: &'a [(&'a Spanned<Array>, Self)],
+        output_values_range: Option<&'a Spanned<Array>>,
+    ) -> CodeResult<impl 'a + Iterator<Item = Spanned<&'a CellValue>>> {
+        let Some(output_values_range) =
+            output_values_range.or_else(|| Some(eval_ranges_and_criteria.first()?.0))
+        else {
+            internal_error!("no eval range for `iter_matching_multi()`");
+        };
+
+        for (eval_range, _) in eval_ranges_and_criteria {
+            if output_values_range.inner.size() != eval_range.inner.size() {
+                return Err(RunErrorMsg::ExactArraySizeMismatch {
+                    expected: eval_range.inner.size(),
+                    got: output_values_range.inner.size(),
+                }
+                .with_span(output_values_range.span));
+            }
+        }
+
+        Ok(output_values_range
+            .inner
+            .cell_values_slice()
+            .iter()
+            .enumerate()
+            .filter(|&(i, _output_value)| {
+                eval_ranges_and_criteria
+                    .iter()
+                    .all(|(eval_range, criteria)| {
+                        eval_range
+                            .inner
+                            .cell_values_slice()
+                            .get(i)
+                            .is_some_and(|cell_value| criteria.matches(cell_value))
+                    })
+            })
+            .map(|(_i, output_value)| output_value)
+            .with_all_same_span(output_values_range.span))
+    }
+    /// Iterates over values and coerces each one, excluding those that do not
+    /// match all the criteria or where coercion fails.
+    pub fn iter_matching_multi_coerced<'a, T>(
+        eval_ranges_and_criteria: &'a [(&'a Spanned<Array>, Self)],
+        output_values_range: &'a Spanned<Array>,
+    ) -> CodeResult<impl 'a + Iterator<Item = CodeResult<T>>>
+    where
+        &'a CellValue: TryInto<T>,
+    {
+        Ok(
+            Self::iter_matching_multi(eval_ranges_and_criteria, Some(output_values_range))?
+                // Propogate errors
+                .map(|v| v.into_non_error_value())
+                // Ignore blank values
+                .filter_map_ok(|v| v.coerce_nonblank::<T>()),
+        )
+    }
 }
 
 fn strip_compare_fn_prefix(s: &str) -> Option<(CompareFn, &str)> {
@@ -194,6 +253,7 @@ impl CompareFn {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::parallel;
 
     fn make_criterion(v: impl Into<CellValue>) -> Criterion {
         Criterion::try_from(Spanned::new(0, 0, &v.into())).unwrap()
@@ -204,6 +264,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_formula_comparison_criteria() {
         // Excel is much more strict than we are about types. At the time this
         // code was written, we don't have a strong type system in Quadratic, so
@@ -348,6 +409,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_formula_wildcards() {
         fn test_wildcard(
             criteria_string: &str,

@@ -29,34 +29,22 @@ pub struct CodeRun {
 
 impl CodeRun {
     /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
-    /// A spill or error returns CellValue::Blank. Note: this assumes a CellValue::Code exists at the location.
+    /// A spill or error returns [`CellValue::Blank`]. Note: this assumes a [`CellValue::Code`] exists at the location.
     pub fn cell_value_at(&self, x: u32, y: u32) -> Option<CellValue> {
         if self.spill_error {
             Some(CellValue::Blank)
         } else {
-            match &self.result {
-                CodeRunResult::Ok(value) => match value {
-                    Value::Single(v) => Some(v.clone()),
-                    Value::Array(a) => Some(a.get(x, y).ok()?.clone()),
-                },
-                CodeRunResult::Err(_) => None,
-            }
+            self.cell_value_ref_at(x, y).cloned()
         }
     }
 
     /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
-    /// A spill or error returns None. Note: this assumes a CellValue::Code exists at the location.
-    pub fn cell_value_ref(&self, x: u32, y: u32) -> Option<&CellValue> {
+    /// A spill or error returns `None`. Note: this assumes a [`CellValue::Code`] exists at the location.
+    pub fn cell_value_ref_at(&self, x: u32, y: u32) -> Option<&CellValue> {
         if self.spill_error {
             None
         } else {
-            match &self.result {
-                CodeRunResult::Ok(value) => match value {
-                    Value::Single(v) => Some(v),
-                    Value::Array(a) => Some(a.get(x, y).ok()?),
-                },
-                CodeRunResult::Err(_) => None,
-            }
+            self.result.as_std_ref().ok()?.get(x, y).ok()
         }
     }
 
@@ -64,11 +52,10 @@ impl CodeRun {
     /// Note: this does not take spill_error into account.
     pub fn output_size(&self) -> ArraySize {
         match &self.result {
-            CodeRunResult::Ok(value) => match value {
-                Value::Single(_) => ArraySize::_1X1,
-                Value::Array(a) => a.size(),
-            },
-            CodeRunResult::Err(_) => ArraySize::_1X1,
+            CodeRunResult::Ok(Value::Array(a)) => a.size(),
+            CodeRunResult::Ok(Value::Single(_) | Value::Tuple(_)) | CodeRunResult::Err(_) => {
+                ArraySize::_1X1
+            }
         }
     }
 
@@ -150,19 +137,38 @@ impl wasm_bindgen::convert::IntoWasmAbi for ConnectionKind {
     }
 }
 
+/// Custom version of [`std::result::Result`] that serializes the way we want.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum CodeRunResult {
     Ok(Value),
     Err(RunError),
 }
+impl CodeRunResult {
+    /// Converts into a [`std::result::Result`] by value.
+    pub fn into_std(self) -> Result<Value, RunError> {
+        match self {
+            CodeRunResult::Ok(v) => Ok(v),
+            CodeRunResult::Err(e) => Err(e),
+        }
+    }
+    /// Converts into a [`std::result::Result`] by reference.
+    pub fn as_std_ref(&self) -> Result<&Value, &RunError> {
+        match self {
+            CodeRunResult::Ok(v) => Ok(v),
+            CodeRunResult::Err(e) => Err(e),
+        }
+    }
+}
 
 #[cfg(test)]
 mod test {
     use super::*;
     use crate::{grid::SheetId, Array};
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_output_size() {
         let sheet_id = SheetId::new();
         let code_run = CodeRun {
@@ -220,6 +226,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_output_sheet_rect_spill_error() {
         let sheet_id = SheetId::new();
         let code_run = CodeRun {

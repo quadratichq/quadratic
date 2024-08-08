@@ -37,12 +37,14 @@ export class CellsArray extends Container {
     events.on('renderCodeCells', this.renderCodeCells);
     events.on('sheetOffsets', this.sheetOffsets);
     events.on('updateCodeCell', this.updateCodeCell);
+    events.on('resizeRowHeights', this.sheetOffsets);
   }
 
   destroy() {
     events.off('renderCodeCells', this.renderCodeCells);
     events.off('sheetOffsets', this.sheetOffsets);
     events.off('updateCodeCell', this.create);
+    events.off('resizeRowHeights', this.sheetOffsets);
     super.destroy();
   }
 
@@ -123,13 +125,13 @@ export class CellsArray extends Container {
     pixiApp.setViewportDirty();
   }
 
-  updateCellsArray() {
+  updateCellsArray = () => {
     this.create();
-  }
+  };
 
-  cheapCull(bounds: Rectangle): void {
+  cheapCull = (bounds: Rectangle): void => {
     this.lines.forEach((line) => (line.sprite.visible = intersects.rectangleRectangle(bounds, line.rectangle)));
-  }
+  };
 
   get sheet(): Sheet {
     const sheet = sheets.getById(this.sheetId);

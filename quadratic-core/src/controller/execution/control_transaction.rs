@@ -30,26 +30,46 @@ impl GridController {
             );
         }
         loop {
-            if transaction.operations.is_empty() {
+            if transaction.operations.is_empty() && transaction.resize_rows.is_empty() {
                 transaction.complete = true;
                 break;
             }
 
             self.execute_operation(transaction);
-            if transaction.waiting_for_async.is_some() {
-                self.transactions.add_async_transaction(transaction);
+            if transaction.has_async > 0 {
+                self.transactions.update_async_transaction(transaction);
                 break;
+            } else if let Some((sheet_id, rows)) = transaction
+                .resize_rows
+                .iter()
+                .next()
+                .map(|(&k, v)| (k, v.clone()))
+            {
+                transaction.resize_rows.remove(&sheet_id);
+                if !rows.is_empty() {
+                    self.start_auto_resize_row_heights(
+                        transaction,
+                        sheet_id,
+                        rows.into_iter().collect(),
+                    );
+                    break;
+                }
             }
         }
     }
 
     /// Finalizes the transaction and pushes it to the various stacks (if needed)
     pub(super) fn finalize_transaction(&mut self, transaction: &mut PendingTransaction) {
+        if transaction.has_async > 0 {
+            self.transactions.update_async_transaction(transaction);
+            return;
+        }
+
         if transaction.complete {
             match transaction.transaction_type {
                 TransactionType::User => {
                     let undo = transaction.to_undo_transaction();
-                    self.undo_stack.push(undo.clone());
+                    self.undo_stack.push(undo);
                     self.redo_stack.clear();
                     self.transactions
                         .unsaved_transactions
@@ -57,19 +77,19 @@ impl GridController {
                 }
                 TransactionType::Unsaved => {
                     let undo = transaction.to_undo_transaction();
-                    self.undo_stack.push(undo.clone());
+                    self.undo_stack.push(undo);
                     self.redo_stack.clear();
                 }
                 TransactionType::Undo => {
                     let undo = transaction.to_undo_transaction();
-                    self.redo_stack.push(undo.clone());
+                    self.redo_stack.push(undo);
                     self.transactions
                         .unsaved_transactions
                         .insert_or_replace(transaction, true);
                 }
                 TransactionType::Redo => {
                     let undo = transaction.to_undo_transaction();
-                    self.undo_stack.push(undo.clone());
+                    self.undo_stack.push(undo);
                     self.transactions
                         .unsaved_transactions
                         .insert_or_replace(transaction, true);
@@ -79,6 +99,7 @@ impl GridController {
                 TransactionType::Unset => panic!("Expected a transaction type"),
             }
         }
+
         transaction.send_transaction();
 
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
@@ -211,6 +232,7 @@ mod tests {
         grid::{CodeCellLanguage, ConnectionKind, GridBounds},
         CellValue, Pos, Rect, SheetPos,
     };
+    use serial_test::parallel;
 
     fn add_cell_value(sheet_pos: SheetPos, value: CellValue) -> Operation {
         Operation::SetCellValues {
@@ -229,6 +251,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_transactions_finalize_transaction() {
         let mut gc = GridController::test();
         let (operation, operation_undo) = get_operations(&mut gc);
@@ -276,6 +299,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_transactions_undo_redo() {
         let mut gc = GridController::test();
         let (operation, operation_undo) = get_operations(&mut gc);
@@ -300,6 +324,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_transactions_updated_bounds_in_transaction() {
         let mut gc = GridController::test();
         let (operation, _) = get_operations(&mut gc);
@@ -318,6 +343,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_transactions_cell_hash() {
         let hash = "test".to_string();
         let cell_hash = CellHash(hash.clone());
@@ -329,6 +355,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_js_calculation_complete() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -360,6 +387,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_connection_complete() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

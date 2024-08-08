@@ -41,6 +41,7 @@ impl GridController {
 
                 Operation::ResizeColumn { .. } => self.execute_resize_column(transaction, op),
                 Operation::ResizeRow { .. } => self.execute_resize_row(transaction, op),
+                Operation::ResizeRows { .. } => self.execute_resize_rows(transaction, op),
 
                 Operation::SetCursor { .. } => self.execute_set_cursor(transaction, op),
                 Operation::SetCursorSelection { .. } => {
@@ -48,7 +49,7 @@ impl GridController {
                 }
             }
 
-            if cfg!(target_family = "wasm") && !transaction.is_server() {
+            if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
                 crate::wasm_bindings::js::jsTransactionProgress(
                     transaction.id.to_string(),
                     transaction.operations.len() as i32,

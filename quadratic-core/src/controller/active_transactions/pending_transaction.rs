@@ -4,7 +4,7 @@
 //! * tracking the state of a pending transaction
 //! * converting pending transaction to a completed transaction
 
-use std::collections::{HashSet, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 use uuid::Uuid;
 
@@ -12,7 +12,7 @@ use crate::{
     controller::{
         execution::TransactionType, operations::operation::Operation, transaction::Transaction,
     },
-    grid::CodeCellLanguage,
+    grid::{CodeCellLanguage, SheetId},
     SheetPos, SheetRect,
 };
 
@@ -40,7 +40,7 @@ pub struct PendingTransaction {
     pub forward_operations: Vec<Operation>,
 
     // tracks whether there are any async calls (which changes how the transaction is finalized)
-    pub has_async: bool,
+    pub has_async: i64,
 
     // used by Code Cell execution to track dependencies
     pub cells_accessed: HashSet<SheetRect>,
@@ -59,6 +59,8 @@ pub struct PendingTransaction {
 
     // cursor saved for an Undo or Redo
     pub cursor_undo_redo: Option<String>,
+
+    pub resize_rows: HashMap<SheetId, HashSet<i64>>,
 }
 
 impl Default for PendingTransaction {
@@ -73,13 +75,14 @@ impl Default for PendingTransaction {
             operations: VecDeque::new(),
             reverse_operations: Vec::new(),
             forward_operations: Vec::new(),
-            has_async: false,
+            has_async: 0,
             cells_accessed: HashSet::new(),
             current_sheet_pos: None,
             waiting_for_async: None,
             complete: false,
             generate_thumbnail: false,
             cursor_undo_redo: None,
+            resize_rows: HashMap::new(),
         }
     }
 }
@@ -106,10 +109,13 @@ impl PendingTransaction {
 
     /// Creates a transaction to save to the Undo/Redo stack
     pub fn to_undo_transaction(&self) -> Transaction {
+        let mut operations = self.reverse_operations.clone();
+        operations.reverse();
+
         Transaction {
             id: self.id,
             sequence_num: None,
-            operations: self.reverse_operations.clone(),
+            operations,
             cursor: self.cursor.clone(),
         }
     }
@@ -160,6 +166,10 @@ impl PendingTransaction {
     pub fn is_user_undo_redo(&self) -> bool {
         self.is_user() || self.is_undo_redo()
     }
+
+    pub fn is_multiplayer(&self) -> bool {
+        matches!(self.transaction_type, TransactionType::Multiplayer)
+    }
 }
 
 #[cfg(test)]
@@ -167,8 +177,10 @@ mod tests {
     use crate::{controller::operations::operation::Operation, grid::SheetId};
 
     use super::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_to_transaction() {
         let sheet_id = SheetId::new();
         let name = "Sheet 1".to_string();
@@ -197,6 +209,7 @@ mod tests {
         transaction
             .reverse_operations
             .clone_from(&reverse_operations);
+        transaction.reverse_operations.reverse();
         let forward_transaction = transaction.to_forward_transaction();
         assert_eq!(forward_transaction.id, transaction.id);
         assert_eq!(forward_transaction.operations, forward_operations);

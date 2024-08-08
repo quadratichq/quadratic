@@ -70,6 +70,9 @@ impl GridController {
         } else {
             sheet.code_runs.shift_remove(&pos)
         };
+        if old_code_run == new_code_run {
+            return;
+        }
 
         if cfg!(target_family = "wasm") || cfg!(test) {
             // if there was html here, send the html update to the client
@@ -139,14 +142,11 @@ impl GridController {
             index,
         });
 
-        transaction.reverse_operations.insert(
-            0,
-            Operation::SetCodeRun {
-                sheet_pos,
-                code_run: old_code_run,
-                index,
-            },
-        );
+        transaction.reverse_operations.push(Operation::SetCodeRun {
+            sheet_pos,
+            code_run: old_code_run,
+            index,
+        });
 
         if transaction.is_user() {
             self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
@@ -176,6 +176,15 @@ impl GridController {
             }
             self.send_updated_bounds_rect(&sheet_rect, false);
             self.send_render_cells(&sheet_rect);
+            if transaction.is_user() {
+                if let Some(sheet) = self.try_sheet(sheet_id) {
+                    let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into());
+                    if !rows.is_empty() {
+                        let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
+                        resize_rows.extend(rows);
+                    }
+                }
+            }
         }
     }
 
@@ -198,35 +207,20 @@ impl GridController {
                 return Err(CoreError::TransactionNotFound("Expected transaction to be waiting_for_async to be defined in transaction::complete".into()));
             }
             Some(waiting_for_async) => match waiting_for_async {
-                CodeCellLanguage::Python => {
+                CodeCellLanguage::Python | CodeCellLanguage::Javascript => {
                     let new_code_run = self.js_code_result_to_code_cell_value(
                         transaction,
                         result,
                         current_sheet_pos,
                     );
 
+                    transaction.waiting_for_async = None;
                     self.finalize_code_run(
                         transaction,
                         current_sheet_pos,
                         Some(new_code_run),
                         None,
                     );
-                    transaction.waiting_for_async = None;
-                }
-                CodeCellLanguage::Javascript => {
-                    let new_code_run = self.js_code_result_to_code_cell_value(
-                        transaction,
-                        result,
-                        current_sheet_pos,
-                    );
-
-                    self.finalize_code_run(
-                        transaction,
-                        current_sheet_pos,
-                        Some(new_code_run),
-                        None,
-                    );
-                    transaction.waiting_for_async = None;
                 }
                 _ => {
                     return Err(CoreError::UnhandledLanguage(
@@ -305,8 +299,9 @@ impl GridController {
                 cells_accessed: transaction.cells_accessed.clone(),
             },
         };
-        self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
         transaction.waiting_for_async = None;
+        self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
+
         Ok(())
     }
 
@@ -341,7 +336,7 @@ impl GridController {
         let result = if js_code_result.success {
             let result = if let Some(array_output) = js_code_result.output_array {
                 let (array, ops) = Array::from_string_list(start.into(), sheet, array_output);
-                transaction.reverse_operations.splice(0..0, ops);
+                transaction.reverse_operations.extend(ops);
                 if let Some(array) = array {
                     Value::Array(array)
                 } else {
@@ -354,7 +349,7 @@ impl GridController {
                             dbgjs!(format!("Cannot parse {:?}: {}", output_value, e));
                             (CellValue::Blank, vec![])
                         });
-                transaction.reverse_operations.splice(0..0, ops);
+                transaction.reverse_operations.extend(ops);
                 Value::Single(cell_value)
             } else {
                 Value::Single(CellValue::Blank)
@@ -376,6 +371,7 @@ impl GridController {
         let return_type = match result {
             CodeRunResult::Ok(Value::Single(ref cell_value)) => Some(cell_value.type_name().into()),
             CodeRunResult::Ok(Value::Array(_)) => Some("array".into()),
+            CodeRunResult::Ok(Value::Tuple(_)) => Some("tuple".into()),
             CodeRunResult::Err(_) => None,
         };
 
@@ -400,13 +396,14 @@ impl GridController {
 mod test {
     use std::collections::HashSet;
 
-    use serial_test::serial;
+    use serial_test::{parallel, serial};
 
     use crate::{wasm_bindings::js::expect_js_call_count, CodeCellValue};
 
     use super::*;
 
     #[test]
+    #[parallel]
     fn test_finalize_code_cell() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];

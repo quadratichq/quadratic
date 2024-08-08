@@ -97,8 +97,8 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::ComputeCode { sheet_pos } = op {
-            if !transaction.is_user() && !transaction.is_server() {
-                dbgjs!("Only a user/server transaction should have a ComputeCode");
+            if !transaction.is_user_undo_redo() && !transaction.is_server() {
+                dbgjs!("Only user / undo / redo / server transaction should have a ComputeCode");
                 return;
             }
             let sheet_id = sheet_pos.sheet_id;
@@ -136,14 +136,14 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::serial;
-
     use crate::{
         controller::GridController, grid::CodeCellLanguage,
         wasm_bindings::js::expect_js_call_count, CellValue, Pos, SheetPos,
     };
+    use serial_test::{parallel, serial};
 
     #[test]
+    #[parallel]
     fn test_spilled_output_over_normal_cell() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

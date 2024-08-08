@@ -49,22 +49,21 @@ impl Sheet {
                 }
             }
             CellValue::Number(n) => {
-                // first test against unformatted number
                 if n.to_string() == *query || (!whole_cell && n.to_string().contains(query)) {
                     true
+                } else if let Some(column) = column.map_or(self.get_column(pos.x), Some) {
+                    // compare the number using its display value (eg, $ or % or commas)
+                    let numeric_format = column.numeric_format.get(pos.y);
+                    let numeric_decimals = column.numeric_decimals.get(pos.y);
+                    let numeric_commas = column.numeric_commas.get(pos.y);
+                    let display = cell_value.to_number_display(
+                        numeric_format,
+                        numeric_decimals,
+                        numeric_commas,
+                    );
+                    display == *query || (!whole_cell && display.contains(query))
                 } else {
-                    // test against any formatting applied to the number
-                    if let Some(column) = column.map_or(self.get_column(pos.x), Some) {
-                        // compare the number using its display value (eg, $ or % or commas)
-                        let numeric_format = column.numeric_format.get(pos.y);
-                        let numeric_decimals = column.numeric_decimals.get(pos.y);
-                        let numeric_commas = column.numeric_commas.get(pos.y);
-                        let display =
-                            cell_value.to_display(numeric_format, numeric_decimals, numeric_commas);
-                        display == *query || (!whole_cell && display.contains(query))
-                    } else {
-                        false
-                    }
+                    false
                 }
             }
             CellValue::Logical(b) => {
@@ -167,6 +166,7 @@ impl Sheet {
                             }
                         }
                     }
+                    Value::Tuple(_) => {} // Tuples are not spilled onto the grid
                 },
                 CodeRunResult::Err(_) => (),
             });
@@ -213,8 +213,10 @@ mod test {
     };
 
     use super::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn simple_search() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
@@ -229,6 +231,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn case_sensitive_search() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
@@ -260,6 +263,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn whole_cell_search() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
@@ -309,6 +313,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn whole_cell_search_case_sensitive() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Text("hello world".into()));
@@ -359,6 +364,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn search_numbers() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Number(123.into()));
@@ -382,6 +388,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn search_display_numbers() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -456,6 +463,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn search_code_runs() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(
@@ -501,6 +509,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn search_within_code_runs() {
         let mut sheet = Sheet::test();
         let code_run = CodeRun {

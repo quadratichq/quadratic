@@ -433,7 +433,7 @@ impl SheetRect {
         self.width() * self.height()
     }
     pub fn is_empty(&self) -> bool {
-        self.width() == 0 && self.height() == 0
+        self.width() == 0 || self.height() == 0
     }
     pub fn size(&self) -> ArraySize {
         ArraySize::new(self.width() as u32, self.height() as u32)
@@ -480,6 +480,20 @@ impl SheetRect {
             x: self.min.x,
             y: self.min.y,
             sheet_id: self.sheet_id,
+        }
+    }
+
+    /// Returns the position of the cell at the given offset (0-indexed) within
+    /// the rectangle, or `None` if the coordinates are outside the rectangle.
+    pub fn index_cell(&self, x: u32, y: u32) -> Option<SheetPos> {
+        if (x as usize) < self.width() && (y as usize) < self.height() {
+            Some(SheetPos {
+                x: self.min.x + x as i64,
+                y: self.min.y + y as i64,
+                sheet_id: self.sheet_id,
+            })
+        } else {
+            None
         }
     }
 }
@@ -553,8 +567,10 @@ mod test {
         grid::SheetId,
         Pos, Rect, SheetPos, SheetRect,
     };
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_to_sheet_pos() {
         let pos = Pos { x: 1, y: 2 };
         let sheet_id = SheetId::new();
@@ -569,6 +585,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_quadrant_size() {
         assert_eq!(Pos { x: 1, y: 2 }.quadrant(), (0, 0));
         assert_eq!(Pos { x: -1, y: -2 }.quadrant(), (-1, -1));
@@ -591,6 +608,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_a1_string() {
         let pos = Pos { x: 1, y: 2 };
         assert_eq!(pos.a1_string(), "B2");
@@ -605,6 +623,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_pos_into() {
         let pos: Pos = (1, 2).into();
         assert_eq!(pos, Pos { x: 1, y: 2 });
@@ -631,6 +650,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_rect_new_span() {
         let pos1 = Pos { x: 1, y: 2 };
         let pos2 = Pos { x: 3, y: 4 };
@@ -640,6 +660,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_to_sheet_rect() {
         let pos1 = Pos { x: 1, y: 2 };
         let pos2 = Pos { x: 3, y: 4 };
@@ -651,6 +672,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_from_numbers() {
         let rect = Rect::from_numbers(1, 2, 3, 4);
         assert_eq!(rect.min, Pos { x: 1, y: 2 });
@@ -658,6 +680,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_single_pos() {
         let rect = Rect::single_pos(Pos { x: 1, y: 2 });
         assert_eq!(rect.min, Pos { x: 1, y: 2 });
@@ -665,6 +688,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_extend_to() {
         let mut rect = Rect::single_pos(Pos { x: 1, y: 2 });
         rect.extend_to(Pos { x: 3, y: 4 });
@@ -673,6 +697,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_from_ranges() {
         let rect = Rect::from_ranges(1..4, 2..5);
         assert_eq!(rect.min, Pos { x: 1, y: 2 });
@@ -680,12 +705,14 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_size() {
         let rect = Rect::from_ranges(1..4, 2..5);
         assert_eq!(rect.size(), crate::ArraySize::new(3, 3).unwrap());
     }
 
     #[test]
+    #[parallel]
     fn test_from_pos_and_size() {
         let rect =
             Rect::from_pos_and_size(Pos { x: 1, y: 2 }, crate::ArraySize::new(3, 4).unwrap());
@@ -694,6 +721,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_contains() {
         let rect = Rect::from_ranges(1..4, 2..5);
         assert!(rect.contains(Pos { x: 1, y: 2 }));
@@ -705,6 +733,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_intersects() {
         let rect = Rect::from_ranges(1..5, 2..6);
         assert!(rect.intersects(Rect::from_ranges(1..4, 2..5)));
@@ -720,36 +749,42 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_x_range() {
         let rect = Rect::from_ranges(1..4, 2..5);
         assert_eq!(rect.x_range(), 1..4);
     }
 
     #[test]
+    #[parallel]
     fn test_y_range() {
         let rect = Rect::from_ranges(1..4, 2..5);
         assert_eq!(rect.y_range(), 2..5);
     }
 
     #[test]
+    #[parallel]
     fn test_width() {
         let rect = Rect::from_ranges(1..4, 2..5);
         assert_eq!(rect.width(), 3);
     }
 
     #[test]
+    #[parallel]
     fn test_height() {
         let rect = Rect::from_ranges(1..4, 2..5);
         assert_eq!(rect.height(), 3);
     }
 
     #[test]
+    #[parallel]
     fn test_len() {
         let rect = Rect::from_ranges(1..4, 2..5);
         assert_eq!(rect.len(), 9);
     }
 
     #[test]
+    #[parallel]
     fn test_is_empty() {
         let rect = Rect::from_ranges(1..4, 2..5);
         assert!(!rect.is_empty());
@@ -760,6 +795,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_translate() {
         let mut rect = Rect::from_ranges(1..4, 2..5);
         rect.translate(1, 2);
@@ -768,6 +804,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_iter() {
         let rect = Rect::from_ranges(1..4, 2..5);
         let mut iter = rect.iter();
@@ -784,6 +821,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_sheet_rect_new_pos_span() {
         let pos1 = SheetPos {
             x: 1,
@@ -801,6 +839,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_sheet_rect_from_numbers() {
         let rect = SheetRect::from_numbers(1, 2, 3, 4, SheetId::new());
         assert_eq!(rect.min, Pos { x: 1, y: 2 });
@@ -808,6 +847,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_rect_combine() {
         let rect1 = Rect::from_numbers(1, 2, 3, 4);
         let rect2 = Rect::from_numbers(2, 3, 4, 5);
@@ -817,6 +857,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_sheet_rect_union() {
         let sheet_id = SheetId::new();
         let rect1 = SheetRect::from_numbers(1, 2, 3, 4, sheet_id);
@@ -827,6 +868,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     #[should_panic]
     fn test_sheet_rect_union_different_sheets() {
         let rect1 = SheetRect::from_numbers(1, 2, 3, 4, SheetId::new());
@@ -835,6 +877,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_top_left() {
         let sheet_id = SheetId::new();
         let rect = SheetRect::from_numbers(1, 2, 3, 4, sheet_id);
@@ -849,6 +892,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn from_sheet_rect_to_pos() {
         let sheet_id = SheetId::new();
         let rect = SheetRect::from_numbers(1, 2, 3, 4, sheet_id);
@@ -857,6 +901,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn from_sheet_rect_to_sheet_pos() {
         let sheet_id = SheetId::new();
         let rect = SheetRect::from_numbers(1, 2, 3, 4, sheet_id);
@@ -872,12 +917,14 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn count() {
         let rect = Rect::from_numbers(1, 2, 3, 4);
         assert_eq!(rect.count(), 12);
     }
 
     #[test]
+    #[parallel]
     fn rect_from_positions() {
         let positions = vec![Pos { x: 1, y: 1 }, Pos { x: 2, y: 2 }];
         let bounds = Rect::from_positions(positions).unwrap();
@@ -888,6 +935,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn sheet_pos_from_str() {
         let sheet_id = SheetId::new();
         let sheet_pos = SheetPos {
@@ -901,6 +949,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn rect_from_pos() {
         let pos = Pos { x: 1, y: 2 };
         let rect: Rect = pos.into();
@@ -909,6 +958,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn rect_new() {
         let rect = Rect::new(0, 1, 2, 3);
         assert_eq!(rect.min, Pos { x: 0, y: 1 });
@@ -916,6 +966,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn extend_x() {
         let mut rect = Rect::from_numbers(1, 2, 3, 4);
         rect.extend_x(5);
@@ -924,6 +975,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn extend_y() {
         let mut rect = Rect::from_numbers(1, 2, 3, 4);
         rect.extend_y(5);

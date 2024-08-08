@@ -63,7 +63,6 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
     width = 1;
     height = 1;
   }
-  console.log(column, row, width, height);
   const rectangle = sheet.getScreenRectangle(column, row, width - 1, height - 1);
 
   // captures bottom-right border size

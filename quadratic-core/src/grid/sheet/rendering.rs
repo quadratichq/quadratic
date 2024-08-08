@@ -6,10 +6,10 @@ use crate::{
         code_run,
         formats::format::Format,
         js_types::{
-            JsHtmlOutput, JsRenderBorders, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
-            JsRenderCodeCellState, JsRenderFill, JsSheetFill,
+            JsHtmlOutput, JsNumber, JsRenderBorders, JsRenderCell, JsRenderCellSpecial,
+            JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsSheetFill,
         },
-        CellAlign, CodeCellLanguage, CodeRun, Column, NumericFormatKind,
+        CellAlign, CodeCellLanguage, CodeRun, Column,
     },
     CellValue, Pos, Rect, RunError, RunErrorMsg,
 };
@@ -33,69 +33,49 @@ impl Sheet {
         x: i64,
         y: i64,
         column: Option<&Column>,
-        value: CellValue,
+        value: &CellValue,
         language: Option<CodeCellLanguage>,
     ) -> JsRenderCell {
         if let CellValue::Html(_) = value {
             return JsRenderCell {
                 x,
                 y,
-                value: "".to_string(),
                 language,
-                align: None,
-                wrap: None,
-                bold: None,
-                italic: None,
-                text_color: None,
                 special: Some(JsRenderCellSpecial::Chart),
+                ..Default::default()
             };
         } else if let CellValue::Error(error) = value {
             let spill_error = matches!(error.msg, RunErrorMsg::Spill);
             return JsRenderCell {
                 x,
                 y,
-                value: "".into(),
                 language,
-                align: None,
-                wrap: None,
-                bold: None,
-                italic: None,
-                text_color: None,
                 special: Some(if spill_error {
                     JsRenderCellSpecial::SpillError
                 } else {
                     JsRenderCellSpecial::RunError
                 }),
+                ..Default::default()
             };
         } else if let CellValue::Logical(logical) = value {
             return JsRenderCell {
                 x,
                 y,
-                value: "".to_string(),
                 language,
-                align: None,
-                wrap: None,
-                bold: None,
-                italic: None,
-                text_color: None,
-                special: Some(if logical {
+                special: Some(if *logical {
                     JsRenderCellSpecial::True
                 } else {
                     JsRenderCellSpecial::False
                 }),
+                ..Default::default()
             };
         } else if let CellValue::Image(_) = value {
             return JsRenderCell {
                 x,
                 y,
-                value: "".to_string(),
                 language,
-                align: None,
-                wrap: None,
-                bold: None,
-                italic: None,
-                text_color: None,
                 special: Some(JsRenderCellSpecial::Chart),
+                ..Default::default()
             };
         }
 
@@ -113,60 +93,58 @@ impl Sheet {
                     self.format_all.as_ref(),
                 );
                 let align = format.align.or(align);
+                let number: Option<JsNumber> = if matches!(value, CellValue::Number(_)) {
+                    Some((&format).into())
+                } else {
+                    None
+                };
                 JsRenderCell {
                     x,
                     y,
-                    value: value.to_display(None, None, None),
+                    value: value.to_display(),
                     language,
                     align,
+                    vertical_align: format.vertical_align,
                     wrap: format.wrap,
                     bold: format.bold,
                     italic: format.italic,
                     text_color: format.text_color,
-                    special: None,
+                    number,
+                    ..Default::default()
                 }
             }
             Some(column) => {
-                let format = Format::combine(
-                    None,
+                let format_cell = column.format(y);
+                let mut format = Format::combine(
+                    format_cell.as_ref(),
                     self.try_format_column(x).as_ref(),
                     self.try_format_row(y).as_ref(),
                     self.format_all.as_ref(),
                 );
-                let mut align: Option<CellAlign> = column.align.get(y).or(format.align);
-                let wrap = column.wrap.get(y).or(format.wrap);
-                let bold = column.bold.get(y).or(format.bold);
-                let italic = column.italic.get(y).or(format.italic);
-                let text_color = column.text_color.get(y).or(format.text_color);
+                let mut number: Option<JsNumber> = None;
                 let value = match &value {
                     CellValue::Number(_) => {
                         // get numeric_format and numeric_decimal to turn number into a string
-                        let numeric_format = column.numeric_format.get(y).or(format.numeric_format);
-                        let is_percentage = numeric_format.as_ref().is_some_and(|numeric_format| {
-                            numeric_format.kind == NumericFormatKind::Percentage
-                        });
-                        let numeric_decimals =
-                            self.calculate_decimal_places(Pos { x, y }, is_percentage);
-                        let numeric_commas = column.numeric_commas.get(y).or(format.numeric_commas);
-
                         // if align is not set, set it to right only for numbers
-                        align = align.or(format.align).or(Some(CellAlign::Right));
-
-                        value.to_display(numeric_format, numeric_decimals, numeric_commas)
+                        format.align = format.align.or(Some(CellAlign::Right));
+                        number = Some((&format).into());
+                        value.to_display()
                     }
-                    _ => value.to_display(None, None, None),
+                    _ => value.to_display(),
                 };
                 JsRenderCell {
                     x,
                     y,
                     value,
                     language,
-                    align,
-                    wrap,
-                    bold,
-                    italic,
-                    text_color,
-                    special: None,
+                    align: format.align,
+                    vertical_align: format.vertical_align,
+                    wrap: format.wrap,
+                    bold: format.bold,
+                    italic: format.italic,
+                    text_color: format.text_color,
+                    number,
+                    ..Default::default()
                 }
             }
         }
@@ -187,7 +165,7 @@ impl Sheet {
                     code_rect.min.x,
                     code_rect.min.y,
                     None,
-                    CellValue::Error(Box::new(RunError {
+                    &CellValue::Error(Box::new(RunError {
                         span: None,
                         msg: RunErrorMsg::Spill,
                     })),
@@ -198,7 +176,7 @@ impl Sheet {
                     code_rect.min.x,
                     code_rect.min.y,
                     None,
-                    CellValue::Error(Box::new(error)),
+                    &CellValue::Error(Box::new(error)),
                     Some(code.language.to_owned()),
                 ));
             } else {
@@ -236,7 +214,7 @@ impl Sheet {
                             } else {
                                 None
                             };
-                            cells.push(self.get_render_cell(x, y, column, value, language));
+                            cells.push(self.get_render_cell(x, y, column, &value, language));
                         }
                     }
                 }
@@ -248,27 +226,19 @@ impl Sheet {
     /// Returns cell data in a format useful for rendering. This includes only
     /// the data necessary to render raw text values.
     pub fn get_render_cells(&self, rect: Rect) -> Vec<JsRenderCell> {
-        let columns_iter = rect
-            .x_range()
-            .filter_map(|x| Some((x, self.get_column(x)?)));
-
         let mut render_cells = vec![];
 
         // Fetch ordinary value cells.
-        columns_iter.clone().for_each(|(x, column)| {
-            column.values.range(rect.y_range()).for_each(|(y, value)| {
-                // ignore code cells when rendering since they will be taken care in the next part
-                if !matches!(value, CellValue::Code(_)) {
-                    render_cells.push(self.get_render_cell(
-                        x,
-                        *y,
-                        Some(column),
-                        value.clone(),
-                        None,
-                    ));
-                }
+        rect.x_range()
+            .filter_map(|x| Some((x, self.get_column(x)?)))
+            .for_each(|(x, column)| {
+                column.values.range(rect.y_range()).for_each(|(y, value)| {
+                    // ignore code cells when rendering since they will be taken care in the next part
+                    if !matches!(value, CellValue::Code(_)) {
+                        render_cells.push(self.get_render_cell(x, *y, Some(column), value, None));
+                    }
+                });
             });
-        });
 
         // Fetch values from code cells
         self.iter_code_output_in_rect(rect)
@@ -299,7 +269,7 @@ impl Sheet {
             sheet_id: self.id.to_string(),
             x: pos.x,
             y: pos.y,
-            html: Some(output.to_display(None, None, None)),
+            html: Some(output.to_display()),
             w,
             h,
         })
@@ -322,7 +292,7 @@ impl Sheet {
                     sheet_id: self.id.to_string(),
                     x: pos.x,
                     y: pos.y,
-                    html: Some(output.to_display(None, None, None)),
+                    html: Some(output.to_display()),
                     w,
                     h,
                 })
@@ -503,16 +473,18 @@ mod tests {
     use std::collections::HashSet;
 
     use chrono::Utc;
-    use serial_test::serial;
+    use serial_test::{parallel, serial};
 
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
         grid::{
             formats::{format::Format, format_update::FormatUpdate, Formats},
             js_types::{
-                JsHtmlOutput, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell, JsSheetFill,
+                JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
+                JsSheetFill,
             },
-            Bold, CellAlign, CodeCellLanguage, CodeRun, CodeRunResult, Italic, RenderSize, Sheet,
+            Bold, CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, CodeRun, CodeRunResult,
+            Italic, RenderSize, Sheet,
         },
         selection::Selection,
         wasm_bindings::js::{expect_js_call, expect_js_call_count, hash_test},
@@ -520,6 +492,7 @@ mod tests {
     };
 
     #[test]
+    #[parallel]
     fn has_render_cells() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -568,6 +541,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_get_render_cells() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -577,6 +551,11 @@ mod tests {
         let _ = sheet.set_formatting_value::<Bold>(Pos { x: 1, y: 2 }, Some(true));
         let _ =
             sheet.set_formatting_value::<CellAlign>(Pos { x: 1, y: 2 }, Some(CellAlign::Center));
+        let _ = sheet.set_formatting_value::<CellVerticalAlign>(
+            Pos { x: 1, y: 2 },
+            Some(CellVerticalAlign::Middle),
+        );
+        let _ = sheet.set_formatting_value::<CellWrap>(Pos { x: 1, y: 2 }, Some(CellWrap::Wrap));
         let _ = sheet.set_cell_value(Pos { x: 1, y: 3 }, CellValue::Number(123.into()));
         let _ = sheet.set_formatting_value::<Italic>(Pos { x: 1, y: 3 }, Some(true));
         let _ = sheet.set_cell_value(Pos { x: 2, y: 4 }, CellValue::Html("html".to_string()));
@@ -614,13 +593,11 @@ mod tests {
                 x: 1,
                 y: 2,
                 value: "test".to_string(),
-                language: None,
                 align: Some(CellAlign::Center),
-                wrap: None,
+                vertical_align: Some(CellVerticalAlign::Middle),
+                wrap: Some(CellWrap::Wrap),
                 bold: Some(true),
-                italic: None,
-                text_color: None,
-                special: None,
+                ..Default::default()
             },
         );
         assert_eq!(
@@ -629,13 +606,10 @@ mod tests {
                 x: 1,
                 y: 3,
                 value: "123".to_string(),
-                language: None,
                 align: Some(CellAlign::Right),
-                wrap: None,
-                bold: None,
                 italic: Some(true),
-                text_color: None,
-                special: None,
+                number: Some(JsNumber::default()),
+                ..Default::default()
             },
         );
         assert_eq!(
@@ -643,14 +617,8 @@ mod tests {
             JsRenderCell {
                 x: 2,
                 y: 4,
-                value: "".to_string(),
-                language: None,
-                align: None,
-                wrap: None,
-                bold: None,
-                italic: None,
-                text_color: None,
                 special: Some(JsRenderCellSpecial::Chart),
+                ..Default::default()
             },
         );
         assert_eq!(
@@ -658,14 +626,8 @@ mod tests {
             JsRenderCell {
                 x: 2,
                 y: 5,
-                value: "".to_string(),
-                language: None,
-                align: None,
-                wrap: None,
-                bold: None,
-                italic: None,
-                text_color: None,
                 special: Some(JsRenderCellSpecial::True),
+                ..Default::default()
             },
         );
         assert_eq!(
@@ -673,14 +635,8 @@ mod tests {
             JsRenderCell {
                 x: 2,
                 y: 6,
-                value: "".to_string(),
-                language: None,
-                align: None,
-                wrap: None,
-                bold: None,
-                italic: None,
-                text_color: None,
                 special: Some(JsRenderCellSpecial::SpillError),
+                ..Default::default()
             },
         );
         assert_eq!(
@@ -688,19 +644,14 @@ mod tests {
             JsRenderCell {
                 x: 3,
                 y: 3,
-                value: "".to_string(),
-                language: None,
-                align: None,
-                wrap: None,
-                bold: None,
-                italic: None,
-                text_color: None,
                 special: Some(JsRenderCellSpecial::RunError),
+                ..Default::default()
             },
         );
     }
 
     #[test]
+    #[parallel]
     fn test_get_html_output() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -771,6 +722,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_get_code_cells() {
         let sheet = Sheet::test();
         let code_cell = CellValue::Code(CodeCellValue {
@@ -788,7 +740,7 @@ mod tests {
             result: CodeRunResult::Ok(Value::Array(
                 vec![vec!["1", "2", "3"], vec!["4", "5", "6"]].into(),
             )),
-            return_type: Some("number".into()),
+            return_type: Some("text".into()),
             spill_error: false,
             line_number: None,
             output_type: None,
@@ -804,6 +756,7 @@ mod tests {
         assert_eq!(code_cells.len(), 6);
         assert_eq!(code_cells[0].value, "1".to_string());
         assert_eq!(code_cells[0].language, Some(CodeCellLanguage::Python));
+        assert_eq!(code_cells[0].number, None);
         assert_eq!(code_cells[5].value, "6".to_string());
         assert_eq!(code_cells[5].language, None);
 
@@ -828,9 +781,39 @@ mod tests {
         assert_eq!(code_cells.len(), 1);
         assert_eq!(code_cells[0].value, "1".to_string());
         assert_eq!(code_cells[0].language, Some(CodeCellLanguage::Python));
+
+        let code_run = CodeRun {
+            std_out: None,
+            std_err: None,
+            formatted_code_string: None,
+            last_modified: Utc::now(),
+            cells_accessed: HashSet::new(),
+            result: CodeRunResult::Ok(Value::Single(CellValue::Number(1.into()))),
+            return_type: Some("number".into()),
+            spill_error: false,
+            line_number: None,
+            output_type: None,
+        };
+        let code_cells = sheet.get_code_cells(
+            &code_cell,
+            &code_run,
+            &Rect::from_numbers(0, 0, 10, 10),
+            &Rect::from_numbers(5, 5, 1, 1),
+        );
+        assert_eq!(code_cells[0].value, "1".to_string());
+        assert_eq!(code_cells[0].language, Some(CodeCellLanguage::Python));
+        assert_eq!(
+            code_cells[0].number,
+            Some(JsNumber {
+                decimals: None,
+                commas: None,
+                format: None
+            })
+        );
     }
 
     #[test]
+    #[parallel]
     fn test_get_render_cells_code() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -854,16 +837,14 @@ mod tests {
                 value: "2".to_string(),
                 language: Some(CodeCellLanguage::Formula),
                 align: Some(CellAlign::Right),
-                wrap: None,
-                bold: None,
-                italic: None,
-                text_color: None,
-                special: None,
+                number: Some(JsNumber::default()),
+                ..Default::default()
             }]
         );
     }
 
     #[test]
+    #[parallel]
     fn render_cells_boolean() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -890,6 +871,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn render_code_cell() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -928,8 +910,8 @@ mod tests {
         );
     }
 
-    #[serial]
     #[test]
+    #[serial]
     fn render_images() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -985,38 +967,21 @@ mod tests {
             JsRenderCell {
                 x: 0,
                 y: 0,
-                value: "".to_string(),
                 language: Some(CodeCellLanguage::Formula),
-                align: None,
-                wrap: None,
-                bold: None,
-                italic: None,
-                text_color: None,
                 special: Some(JsRenderCellSpecial::True),
+                ..Default::default()
             },
             JsRenderCell {
                 x: 1,
                 y: 0,
-                value: "".to_string(),
-                language: None,
-                align: None,
-                wrap: None,
-                bold: None,
-                italic: None,
-                text_color: None,
                 special: Some(JsRenderCellSpecial::False),
+                ..Default::default()
             },
             JsRenderCell {
                 x: 2,
                 y: 0,
-                value: "".to_string(),
-                language: None,
-                align: None,
-                wrap: None,
-                bold: None,
-                italic: None,
-                text_color: None,
                 special: Some(JsRenderCellSpecial::True),
+                ..Default::default()
             },
         ];
         let cells_string = serde_json::to_string(&cells).unwrap();
@@ -1028,6 +993,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn get_sheet_fills() {
         let mut sheet = Sheet::test();
         assert_eq!(sheet.get_sheet_fills(), JsSheetFill::default());

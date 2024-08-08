@@ -5,12 +5,13 @@ pub(crate) use crate::grid::Grid;
 pub(crate) use crate::values::*;
 pub(crate) use crate::{array, CodeResult, RunError, RunErrorMsg, Spanned};
 use crate::{Pos, SheetPos};
+use serial_test::parallel;
 
 pub(crate) fn try_eval_at(grid: &Grid, pos: SheetPos, s: &str) -> CodeResult<Value> {
-    println!("Evaluating formula {s:?} at {pos:?}");
     let mut ctx = Ctx::new(grid, pos);
     parse_formula(s, Pos::ORIGIN)?.eval(&mut ctx)
 }
+
 #[track_caller]
 pub(crate) fn eval_at(grid: &Grid, sheet_pos: SheetPos, s: &str) -> Value {
     try_eval_at(grid, sheet_pos, s).expect("error evaluating formula")
@@ -22,6 +23,12 @@ pub(crate) fn eval_to_string_at(grid: &Grid, sheet_pos: SheetPos, s: &str) -> St
 
 pub(crate) fn try_eval(grid: &Grid, s: &str) -> CodeResult<Value> {
     try_eval_at(grid, Pos::ORIGIN.to_sheet_pos(grid.sheets()[0].id), s)
+}
+#[track_caller]
+pub(crate) fn try_check_syntax(grid: &Grid, s: &str) -> CodeResult<()> {
+    println!("Checking syntax of formula {s:?}");
+    let mut ctx = Ctx::new_for_syntax_check(grid);
+    parse_formula(s, Pos::ORIGIN)?.eval(&mut ctx).map(|_| ())
 }
 #[track_caller]
 pub(crate) fn eval(grid: &Grid, s: &str) -> Value {
@@ -45,7 +52,17 @@ pub(crate) fn expect_err(error_msg: &RunErrorMsg, ctx: &Grid, s: &str) {
     assert_eq!(*error_msg, eval_to_err(ctx, s).msg);
 }
 
+#[track_caller]
+pub(crate) fn assert_check_syntax_succeeds(grid: &Grid, s: &str) {
+    try_check_syntax(grid, s).expect("error with formula syntax");
+}
+#[track_caller]
+pub(crate) fn check_syntax_to_err(grid: &Grid, s: &str) -> RunError {
+    try_check_syntax(grid, s).expect_err("expected error")
+}
+
 #[test]
+#[parallel]
 fn test_formula_cell_ref() {
     let form = parse_formula("SUM($D$4, $B0, E$n6, B0, nB2)", pos![D4]).unwrap();
 
@@ -74,6 +91,7 @@ fn test_formula_cell_ref() {
 }
 
 #[test]
+#[parallel]
 fn test_formula_circular_array_ref() {
     let form = parse_formula("$B$0:$C$4", pos![A0]).unwrap();
 
@@ -87,6 +105,7 @@ fn test_formula_circular_array_ref() {
 }
 
 #[test]
+#[parallel]
 fn test_formula_range_operator() {
     let expected = "{1; 2; 3; 4; 5}";
     let all_a = ["1", "1.0", ".9"];
@@ -104,6 +123,7 @@ fn test_formula_range_operator() {
 }
 
 #[test]
+#[parallel]
 fn test_formula_blank_array_parsing() {
     let g = Grid::new();
     const B: CellValue = CellValue::Blank;
@@ -118,6 +138,7 @@ fn test_formula_blank_array_parsing() {
 }
 
 #[test]
+#[parallel]
 fn test_formula_array_op() {
     let mut g = Grid::new();
     let sheet = &mut g.sheets_mut()[0];
@@ -162,6 +183,7 @@ fn test_formula_array_op() {
 }
 
 #[test]
+#[parallel]
 fn test_array_parsing() {
     let g = Grid::new();
 
@@ -201,6 +223,7 @@ fn test_array_parsing() {
 }
 
 #[test]
+#[parallel]
 fn test_bool_parsing() {
     let g = Grid::new();
 
@@ -211,6 +234,7 @@ fn test_bool_parsing() {
 }
 
 #[test]
+#[parallel]
 fn test_leading_equals() {
     let g = Grid::new();
     assert_eq!("7", eval_to_string(&g, "=3+4"));
@@ -219,6 +243,7 @@ fn test_leading_equals() {
 
 /// Regression test for quadratic#253
 #[test]
+#[parallel]
 fn test_hyphen_after_cell_ref() {
     let mut g = Grid::new();
     let _ = g.sheets_mut()[0].set_cell_value(pos![Z1], 30);
@@ -227,6 +252,7 @@ fn test_hyphen_after_cell_ref() {
 }
 
 #[test]
+#[parallel]
 fn test_formula_omit_required_argument() {
     let g = Grid::new();
     assert!(eval_to_string(&g, "ATAN2(,1)").starts_with("1.57"));
@@ -249,12 +275,14 @@ fn test_formula_omit_required_argument() {
 }
 
 #[test]
+#[parallel]
 fn test_formula_blank_to_string() {
     let g = Grid::new();
     assert_eq!("", eval_to_string(&g, "IF(1=1,,)"));
 }
 
 #[test]
+#[parallel]
 fn test_find_cell_references() {
     #[track_caller]
     fn a1(s: &str) -> CellRef {
@@ -325,6 +353,7 @@ fn test_find_cell_references() {
 }
 
 #[test]
+#[parallel]
 fn test_sheet_references() {
     let mut g = Grid::new();
 
@@ -361,8 +390,35 @@ fn test_sheet_references() {
     );
 }
 
+#[test]
+fn test_cell_range_op_errors() {
+    let g = Grid::new();
+
+    eval_to_string(&g, "A1:B5"); // assert ok
+    assert_check_syntax_succeeds(&g, "A1:B5"); // assert ok
+
+    for (expected, formula_str) in [
+        ("comparison", "A1:(1==2)"),
+        ("expression", "A1:(1+5)"), // error message could be improved
+        ("function call", "A1:SUM(1, 2, 3)"),
+        ("array literal", "A1:{1, 2, 3}"),
+        ("array literal", "A1:{1, 2, 3}"),
+        ("string literal", "A1:\"hello\""),
+        ("numeric literal", "A1:12"),
+        ("boolean literal", "A1:TRUE"),
+    ] {
+        let expected_err = RunErrorMsg::Expected {
+            expected: "cell reference".into(),
+            got: Some(expected.into()),
+        };
+        assert_eq!(expected_err, eval_to_err(&g, formula_str).msg);
+        assert_eq!(expected_err, check_syntax_to_err(&g, formula_str).msg);
+    }
+}
+
 /// Regression test for quadratic#410
 #[test]
+#[parallel]
 fn test_currency_string() {
     let g = Grid::new();
     assert_eq!("30", eval_to_string(&g, "\"$10\" + 20"));

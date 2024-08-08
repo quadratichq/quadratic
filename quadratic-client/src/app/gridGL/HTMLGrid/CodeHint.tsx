@@ -45,6 +45,8 @@ export const CodeHint = () => {
     events.on('changeSheet', updateCursor);
     events.on('sheetOffsets', updateCursor);
     events.on('resizeHeadingColumn', updateCursor);
+    events.on('resizeHeadingRow', updateCursor);
+    events.on('resizeRowHeights', updateCursor);
 
     return () => {
       events.off('setCursor', updateCursor);
@@ -54,12 +56,14 @@ export const CodeHint = () => {
       events.off('changeSheet', updateCursor);
       events.off('sheetOffsets', updateCursor);
       events.off('resizeHeadingColumn', updateCursor);
+      events.off('resizeHeadingRow', updateCursor);
+      events.off('resizeRowHeights', updateCursor);
     };
   }, []);
 
   if (
     cellHasValue ||
-    cellTypeMenuOpenedCount >= 2 ||
+    cellTypeMenuOpenedCount >= 4 ||
     showCodeEditor ||
     !permissions.includes('FILE_EDIT') ||
     isMobile ||

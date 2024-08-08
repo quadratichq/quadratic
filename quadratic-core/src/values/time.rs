@@ -1,7 +1,7 @@
 use std::fmt::{self, Display};
 
 use anyhow::{bail, Result};
-use chrono::{DateTime, MappedLocalTime, NaiveDateTime};
+use chrono::{DateTime, MappedLocalTime, NaiveDateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::CellValue;
@@ -18,6 +18,10 @@ impl Instant {
     pub fn new(seconds: f64) -> Self {
         Self { seconds }
     }
+
+    pub fn now() -> Self {
+        Utc::now().naive_utc().into()
+    }
 }
 
 impl From<NaiveDateTime> for Instant {
@@ -25,6 +29,12 @@ impl From<NaiveDateTime> for Instant {
         Self {
             seconds: datetime.and_utc().timestamp() as f64,
         }
+    }
+}
+
+impl Default for Instant {
+    fn default() -> Self {
+        Instant::now()
     }
 }
 
@@ -64,6 +74,16 @@ pub struct Duration {
     pub months: i32,
     #[cfg_attr(test, proptest(strategy = "(i32::MIN as f64)..(i32::MAX as f64)"))]
     pub seconds: f64,
+}
+
+impl Default for Duration {
+    fn default() -> Self {
+        Self {
+            years: 0,
+            months: 0,
+            seconds: 0.0,
+        }
+    }
 }
 
 impl fmt::Display for Duration {

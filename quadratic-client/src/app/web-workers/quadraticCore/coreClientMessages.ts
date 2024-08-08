@@ -1,6 +1,8 @@
 import {
   CellAlign,
   CellFormatSummary,
+  CellVerticalAlign,
+  CellWrap,
   CodeCellLanguage,
   Format,
   JsCodeCell,
@@ -9,6 +11,7 @@ import {
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
+  JsRowHeight,
   JsSheetFill,
   MinMax,
   SearchOptions,
@@ -43,14 +46,14 @@ export interface CoreClientLoad {
 
 export interface ClientCoreUpgradeGridFile {
   type: 'clientCoreUpgradeGridFile';
-  grid: string;
+  grid: Uint8Array;
   sequenceNumber: number;
   id: number;
 }
 
 export interface CoreClientUpgradeFile {
   type: 'coreClientUpgradeGridFile';
-  grid: string;
+  grid: Uint8Array;
   version: string;
   id: number;
 }
@@ -95,7 +98,7 @@ export interface ClientCoreExport {
 
 export interface CoreClientExport {
   type: 'coreClientExport';
-  grid: string;
+  grid: Uint8Array;
   id: number;
 }
 
@@ -295,12 +298,6 @@ export interface CoreClientGetRenderCell {
   id: number;
 }
 
-export interface CoreClientRenderCodeCells {
-  type: 'coreClientRenderCodeCells';
-  sheetId: string;
-  codeCells: JsRenderCodeCell[];
-}
-
 export interface CoreClientHtmlOutput {
   type: 'coreClientHtmlOutput';
   html: JsHtmlOutput[];
@@ -356,6 +353,20 @@ export interface ClientCoreSetCellAlign {
   type: 'clientCoreSetCellAlign';
   selection: Selection;
   align: CellAlign;
+  cursor?: string;
+}
+
+export interface ClientCoreSetCellVerticalAlign {
+  type: 'clientCoreSetCellVerticalAlign';
+  selection: Selection;
+  verticalAlign: CellVerticalAlign;
+  cursor?: string;
+}
+
+export interface ClientCoreSetCellWrap {
+  type: 'clientCoreSetCellWrap';
+  selection: Selection;
+  wrap: CellWrap;
   cursor?: string;
 }
 
@@ -603,10 +614,22 @@ export interface CoreClientSheetBorders {
   borders: JsRenderBorders;
 }
 
+export interface CoreClientSheetRenderCells {
+  type: 'coreClientSheetRenderCells';
+  sheetId: string;
+  renderCells: JsRenderCell[];
+}
+
 export interface CoreClientSheetCodeCellRender {
   type: 'coreClientSheetCodeCellRender';
   sheetId: string;
   codeCells: JsRenderCodeCell[];
+}
+
+export interface CoreClientResizeRowHeights {
+  type: 'coreClientResizeRowHeights';
+  sheetId: string;
+  rowHeights: JsRowHeight[];
 }
 
 //#endregion
@@ -710,7 +733,7 @@ export interface ClientCoreFindNextColumn {
 export interface CoreClientFindNextColumn {
   type: 'coreClientFindNextColumn';
   id: number;
-  column: number;
+  column?: number;
 }
 
 export interface ClientCoreFindNextRow {
@@ -726,7 +749,7 @@ export interface ClientCoreFindNextRow {
 export interface CoreClientFindNextRow {
   type: 'coreClientFindNextRow';
   id: number;
-  row: number;
+  row?: number;
 }
 
 export interface ClientCoreCommitTransientResize {
@@ -783,14 +806,15 @@ export interface CoreClientUpdateCodeCell {
 
 export interface ClientCoreImportExcel {
   type: 'clientCoreImportExcel';
-  file: File;
+  file: Uint8Array;
+  fileName: string;
   id: number;
 }
 
 export interface CoreClientImportExcel {
   type: 'coreClientImportExcel';
   id: number;
-  contents?: string;
+  contents?: Uint8Array;
   version?: string;
   error?: string;
 }
@@ -843,6 +867,10 @@ export interface CoreClientImage {
   h?: string;
 }
 
+export interface CoreClientMultiplayerSynced {
+  type: 'coreClientMultiplayerSynced';
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -857,6 +885,8 @@ export type ClientCoreMessage =
   | ClientCoreSetCellFillColor
   | ClientCoreSetCellTextColor
   | ClientCoreSetCellAlign
+  | ClientCoreSetCellVerticalAlign
+  | ClientCoreSetCellWrap
   | ClientCoreSetCurrency
   | ClientCoreSetPercentage
   | ClientCoreSetExponential
@@ -910,7 +940,6 @@ export type ClientCoreMessage =
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
-  | CoreClientRenderCodeCells
   | CoreClientGetEditCell
   | CoreClientCellHasContent
   | CoreClientGetCellFormatSummary
@@ -941,6 +970,7 @@ export type CoreClientMessage =
   | CoreClientGenerateThumbnail
   | CoreClientLoad
   | CoreClientSheetBorders
+  | CoreClientSheetRenderCells
   | CoreClientSheetCodeCellRender
   | CoreClientSheetBoundsUpdate
   | CoreClientImportProgress
@@ -960,4 +990,6 @@ export type CoreClientMessage =
   | CoreClientGetFormatCell
   | CoreClientSheetMetaFills
   | CoreClientSetCursorSelection
-  | CoreClientOfflineTransactionsApplied;
+  | CoreClientOfflineTransactionsApplied
+  | CoreClientResizeRowHeights
+  | CoreClientMultiplayerSynced;
