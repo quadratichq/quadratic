@@ -74,10 +74,22 @@ export const HtmlValidationMessage = (props: Props) => {
         break;
     }
     const errorTitle = validation?.error?.title;
+    let severity = 'Error';
+    switch (validation?.error?.style) {
+      case 'Stop':
+        severity = 'Error';
+        break;
+      case 'Warning':
+        severity = 'Warning';
+        break;
+      case 'Information':
+        severity = 'Information';
+        break;
+    }
     title = (
       <div className="flex align-middle">
         <span className="mr-2">{icon}</span>
-        <span>{errorTitle ? errorTitle : 'Validation Error'}</span>
+        <span>{errorTitle ? errorTitle : `Validation ${severity}`}</span>
       </div>
     );
 
