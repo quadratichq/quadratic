@@ -60,9 +60,6 @@ export class CellsTextHash {
 
   special: CellsTextHashSpecial;
 
-  // keep track of what neighbors we've clipped
-  leftClip: TrackClip[] = [];
-  rightClip: TrackClip[] = [];
   columnsMaxCache?: Map<number, number>;
   rowsMaxCache?: Map<number, number>;
 

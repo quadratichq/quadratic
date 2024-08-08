@@ -1,10 +1,10 @@
-import { IconButton } from '@mui/material';
+import { IconButton, Tooltip } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Close } from '@mui/icons-material';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { usePositionCellMessage } from './usePositionCellMessage';
+import { usePositionCellMessage } from '../usePositionCellMessage';
 import { Rectangle } from 'pixi.js';
 import { Validation } from '@/app/quadratic-core-types';
 import { pixiApp } from '../../pixiApp/PixiApp';
@@ -12,18 +12,20 @@ import { Button } from '@/shared/shadcn/ui/button';
 import ErrorIcon from '@mui/icons-material/Error';
 import WarningIcon from '@mui/icons-material/Warning';
 import InfoIcon from '@mui/icons-material/Info';
+import { colors } from '@/app/theme/colors';
+import { validationText } from '@/app/ui/menus/Validations/Validations/ValidationEntry';
 
 interface Props {
   column?: number;
   row?: number;
   offsets?: Rectangle;
   validation?: Validation;
-  hoverError?: boolean;
+  hoverError?: string;
 }
 
 export const HtmlValidationMessage = (props: Props) => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
-  const { annotationState } = useRecoilValue(editorInteractionStateAtom);
+  // const { annotationState } = useRecoilValue(editorInteractionStateAtom);
   const { offsets, validation, column, row, hoverError } = props;
   const [hide, setHide] = useState(true);
 
@@ -31,7 +33,8 @@ export const HtmlValidationMessage = (props: Props) => {
     if (column === undefined || row === undefined) {
       return false;
     }
-    if (hoverError || pixiApp.cellsSheets.current?.getErrorMarkerValidation(column, row)) {
+
+    if (hoverError !== undefined || pixiApp.cellsSheets.current?.getErrorMarkerValidation(column, row)) {
       return true;
     }
     return false;
@@ -62,7 +65,7 @@ export const HtmlValidationMessage = (props: Props) => {
     let icon: JSX.Element | null = null;
     switch (validation?.error?.style) {
       case 'Stop':
-        icon = <ErrorIcon />;
+        icon = <ErrorIcon style={{ color: colors.error }} />;
         break;
       case 'Warning':
         icon = <WarningIcon />;
@@ -78,13 +81,22 @@ export const HtmlValidationMessage = (props: Props) => {
         <span>{errorTitle ? errorTitle : 'Validation Error'}</span>
       </div>
     );
+
+    const invalidValue =
+      hoverError !== 'undefined' ? <div className="pointer-events-auto">"{hoverError}" is not valid</div> : null;
     message = (
       <>
+        {invalidValue}
         <div>{validation?.error?.message}</div>
         <div>
-          <Button className="pointer-events-auto mt-4 text-xs" variant="link" size="none" onClick={showValidation}>
-            Show Validation
-          </Button>
+          {validation && <div className="mt-2">{}</div>}
+          {validation && (
+            <Tooltip title="Show validation">
+              <Button className="pointer-events-auto mt-4 text-xs" variant="link" size="none" onClick={showValidation}>
+                {validationText(validation)}
+              </Button>
+            </Tooltip>
+          )}
         </div>
       </>
     );
@@ -97,13 +109,12 @@ export const HtmlValidationMessage = (props: Props) => {
     }
   }
 
-  if (hide || annotationState === 'dropdown' || !offsets || (!title && !message)) return null;
-
+  if (hide || !offsets || (!title && !message)) return null;
   return (
     <div
       ref={ref}
       className={
-        hoverError
+        hoverError !== undefined
           ? ''
           : 'border.gray-300 pointer-events-none absolute rounded-md border bg-popover bg-white p-4 text-popover-foreground shadow-md outline-none'
       }
@@ -112,7 +123,7 @@ export const HtmlValidationMessage = (props: Props) => {
       <div className="leading-2 whitespace-nowrap">
         <div className="flex items-center justify-between gap-2">
           {<div className="margin-bottom: 0.5rem">{title}</div>}
-          {!hoverError && (
+          {hoverError === undefined && (
             <IconButton
               sx={{ padding: 0 }}
               className="pointer-events-auto"

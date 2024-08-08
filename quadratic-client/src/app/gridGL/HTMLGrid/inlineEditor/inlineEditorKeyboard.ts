@@ -12,6 +12,7 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { keyboardDropdown } from '../../interaction/keyboard/keyboardDropdown';
+import { events } from '@/app/events/events';
 
 const handleArrowHorizontal = (isRight: boolean, e: KeyboardEvent) => {
   const target = isRight ? inlineEditorMonaco.getLastColumn() : 1;
@@ -86,7 +87,8 @@ class InlineEditorKeyboard {
 
   // Keyboard event for inline editor (via either Monaco's keyDown event or,
   // when on a different sheet, via window's keyDown listener).
-  keyDown = (e: KeyboardEvent) => {
+  keyDown = async (e: KeyboardEvent) => {
+    events.emit('hoverCell');
     if (inlineEditorHandler.cursorIsMoving) {
       this.escapeBackspacePressed = ['Escape', 'Backspace'].includes(e.code);
     } else {
@@ -109,7 +111,19 @@ class InlineEditorKeyboard {
     else if (matchShortcut('save_inline_editor', e)) {
       e.stopPropagation();
       e.preventDefault();
-      inlineEditorHandler.close(0, 1, false);
+      const validationError = await inlineEditorHandler.validateInput();
+      if (validationError && inlineEditorHandler.location) {
+        const value = inlineEditorMonaco.get();
+        const location = inlineEditorHandler.location;
+        events.emit('hoverCell', {
+          x: location.x,
+          y: location.y,
+          validationId: validationError,
+          value,
+        });
+      } else {
+        inlineEditorHandler.close(0, 1, false);
+      }
     }
 
     // Shift+Enter key

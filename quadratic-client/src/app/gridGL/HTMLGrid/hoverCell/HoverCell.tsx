@@ -6,11 +6,12 @@ import { pluralize } from '@/app/helpers/pluralize';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { useGridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { cn } from '@/shared/shadcn/utils';
 import { useEffect, useRef, useState } from 'react';
 import './HoverCell.css';
 import { ErrorValidation } from '../../cells/CellsSheet';
 import { HtmlValidationMessage } from '../validations/HtmlValidationMessage';
+import { usePositionCellMessage } from '../usePositionCellMessage';
+import { Rectangle } from 'pixi.js';
 
 export interface EditingCell {
   x: number;
@@ -22,8 +23,9 @@ export interface EditingCell {
 export const HoverCell = () => {
   const { showCodePeek } = useGridSettings();
   const [cell, setCell] = useState<JsRenderCodeCell | EditingCell | ErrorValidation | undefined>();
+  const [offsets, setOffsets] = useState<Rectangle>(new Rectangle());
+
   const ref = useRef<HTMLDivElement>(null);
-  const textRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const addCell = (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => {
@@ -37,7 +39,7 @@ export const HoverCell = () => {
         }
       } else {
         if (!div.classList.contains('hover-cell-fade-in') && !div.classList.contains('hover-cell-fade-in-no-delay')) {
-          if (window.getComputedStyle(div).getPropertyValue('opacity') !== '0') {
+          if ('validationId' in cell || window.getComputedStyle(div).getPropertyValue('opacity') !== '0') {
             div.classList.add('hover-cell-fade-in-no-delay');
           } else {
             div.classList.add('hover-cell-fade-in');
@@ -45,6 +47,7 @@ export const HoverCell = () => {
           div.classList.remove('hover-cell-fade-out');
         }
         setCell(cell);
+        setOffsets(sheets.sheet.getCellOffsets(cell.x, cell.y));
       }
     };
     events.on('hoverCell', addCell);
@@ -77,10 +80,16 @@ export const HoverCell = () => {
     const asyncFunction = async () => {
       if (cell && 'validationId' in cell) {
         const offsets = sheets.sheet.getCellOffsets(cell.x, cell.y);
-        const validation = sheets.sheet.validations.find((v) => v.id === cell.validationId);
+        const validation = sheets.sheet.getValidationById(cell.validationId);
         if (validation) {
           setText(
-            <HtmlValidationMessage column={cell.x} row={cell.y} offsets={offsets} validation={validation} hoverError />
+            <HtmlValidationMessage
+              column={cell.x}
+              row={cell.y}
+              offsets={offsets}
+              validation={validation}
+              hoverError={cell.value}
+            />
           );
         }
         return;
@@ -149,72 +158,16 @@ export const HoverCell = () => {
     asyncFunction();
   }, [cell]);
 
-  useEffect(() => {
-    const updatePosition = () => {
-      if (!cell) return;
-      const div = ref.current;
-      const textDiv = textRef.current;
-      if (!div || !textDiv) return;
-      const offsets = sheets.sheet.getCellOffsets(cell.x, cell.y);
-      const viewport = pixiApp.viewport;
-      const bounds = viewport.getVisibleBounds();
-      let transformOrigin: string;
-      if (Math.abs(bounds.left - offsets.left) > Math.abs(bounds.right - offsets.right)) {
-        // box to the left
-        div.style.left = `${offsets.left}px`;
-        textDiv.style.right = '0';
-        textDiv.style.left = 'unset';
-        transformOrigin = 'right';
-      } else {
-        // box to the right
-        div.style.left = `${offsets.right}px`;
-        textDiv.style.left = '0';
-        textDiv.style.right = 'unset';
-        transformOrigin = 'left';
-      }
-      if (Math.abs(bounds.top - offsets.top) < Math.abs(bounds.bottom - offsets.bottom)) {
-        // box going down
-        div.style.top = `${offsets.top}px`;
-        textDiv.style.bottom = 'unset';
-        transformOrigin += ' top';
-      } else {
-        // box going up
-        div.style.top = `${offsets.bottom}px`;
-        textDiv.style.bottom = `100%`;
-        transformOrigin += ' bottom';
-      }
-      textDiv.style.transformOrigin = transformOrigin;
-    };
-    updatePosition();
-    pixiApp.viewport.on('moved', updatePosition);
-    window.addEventListener('resize', updatePosition);
-
-    return () => {
-      pixiApp.viewport.off('moved', updatePosition);
-      window.removeEventListener('resize', updatePosition);
-    };
-  }, [cell]);
+  const { top, left } = usePositionCellMessage(ref.current, offsets);
 
   return (
     <div
       ref={ref}
-      className="hover-cell-container"
-      style={{
-        position: 'absolute',
-        visibility: cell ? 'visible' : 'hidden',
-        pointerEvents: 'none',
-        zIndex: 1000,
-      }}
+      className="absolute w-64 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none"
+      style={{ left, top, visibility: !onlyCode || showCodePeek ? 'visible' : 'hidden' }}
     >
-      <div style={{ position: 'relative' }}>
-        <div
-          ref={textRef}
-          className={cn('w-64 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none')}
-          style={{ position: 'absolute', visibility: !onlyCode || showCodePeek ? 'visible' : 'hidden' }}
-        >
-          {text}
-        </div>
-      </div>
+      {text}
     </div>
+    // </div>
   );
 };

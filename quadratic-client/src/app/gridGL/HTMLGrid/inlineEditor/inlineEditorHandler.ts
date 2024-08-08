@@ -345,6 +345,18 @@ class InlineEditorHandler {
     }
   }
 
+  validateInput = async (): Promise<string | undefined> => {
+    if (!this.location) return;
+    const value = inlineEditorMonaco.get();
+    const validationError = await quadraticCore.validateInput(
+      this.location.sheetId,
+      this.location.x,
+      this.location.y,
+      value
+    );
+    return validationError;
+  };
+
   // Close editor. It saves the value if cancel = false. It also moves the
   // cursor by (deltaX, deltaY).
   close = async (deltaX = 0, deltaY = 0, cancel: boolean) => {
@@ -385,15 +397,9 @@ class InlineEditorHandler {
           });
         }
       } else {
-        const validationError = await quadraticCore.validateInput(
-          this.location.sheetId,
-          this.location.x,
-          this.location.y,
-          value
-        );
+        const validationError = await this.validateInput();
         if (validationError) {
-          inlineEditorEvents.emit('inputFailedValidation', this.location.x, this.location.y, validationError);
-          return;
+          events.emit('hoverCell', { x: this.location.x, y: this.location.y, validationId: validationError, value });
         } else {
           quadraticCore.setCellValue(
             this.location.sheetId,
@@ -402,6 +408,7 @@ class InlineEditorHandler {
             value.trim(),
             sheets.getCursorPosition()
           );
+          events.emit('hoverCell');
         }
       }
     }

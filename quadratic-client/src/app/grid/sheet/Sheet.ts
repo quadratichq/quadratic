@@ -153,4 +153,8 @@ export class Sheet {
   }
 
   //#endregion
+
+  getValidationById(id: string): Validation | undefined {
+    return this.validations.find((v) => v.id === id);
+  }
 }

@@ -70,7 +70,7 @@ export class CellsTextHashValidations extends Container {
     for (const [key, sprite] of this.warningSprites) {
       const [x, y] = key.split(',').map((n) => parseInt(n));
       if (sprite[1].contains(world.x, world.y)) {
-        return { x, y, validationId: sprite[2] };
+        return { x, y, validationId: sprite[2], value: undefined };
       }
     }
   }

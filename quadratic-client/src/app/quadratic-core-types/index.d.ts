@@ -65,7 +65,7 @@ export interface ValidationMessage { show: boolean, title: string | null, messag
 export interface ValidationLogical { show_checkbox: boolean, ignore_blank: boolean, }
 export interface ValidationList { source: ValidationListSource, ignore_blank: boolean, drop_down: boolean, }
 export type ValidationListSource = { "Selection": Selection } | { "List": Array<string> };
-export type ValidationStyle = "Warning" | "Stop" | "Information";
+export type ValidationStyle = "Stop" | "Warning" | "Information";
 export interface ValidationDisplay { checkbox: boolean, list: boolean, }
 export interface ValidationDisplaySheet { columns: Array<[bigint, ValidationDisplay]> | null, rows: Array<[bigint, ValidationDisplay]> | null, all: ValidationDisplay | null, }
 export interface JsValidationWarning { x: bigint, y: bigint, validation: string, style: ValidationStyle, }

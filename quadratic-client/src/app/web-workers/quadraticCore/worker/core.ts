@@ -978,7 +978,10 @@ class Core {
 
   validateInput(sheetId: string, x: number, y: number, input: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    return this.gridController.validateInput(sheetId, posToPos(x, y), input);
+    const validationId = this.gridController.validateInput(sheetId, posToPos(x, y), input);
+    if (validationId) {
+      return JSON.parse(validationId);
+    }
   }
 }
 

@@ -21,6 +21,7 @@ export interface ErrorValidation {
   x: number;
   y: number;
   validationId: string;
+  value?: string;
 }
 
 export class CellsSheet extends Container {

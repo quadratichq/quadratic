@@ -1,6 +1,6 @@
 import { Rectangle } from 'pixi.js';
 import { useEffect, useState } from 'react';
-import { pixiApp } from '../../pixiApp/PixiApp';
+import { pixiApp } from '../pixiApp/PixiApp';
 
 interface PositionCellMessage {
   top: number;

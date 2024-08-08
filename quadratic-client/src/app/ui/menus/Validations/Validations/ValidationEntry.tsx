@@ -15,27 +15,29 @@ interface Props {
   highlight: boolean;
 }
 
+export const validationText = (validation: Validation) => {
+  if (validation.rule === 'None') {
+    return 'Message only';
+  }
+  if ('List' in validation.rule) {
+    const dropdown = validation.rule.List.drop_down ? ' (Dropdown)' : '';
+    if ('List' in validation.rule.List.source) {
+      return `List from values${dropdown}`;
+    } else if ('Selection' in validation.rule.List.source) {
+      return `List from selection${dropdown}`;
+    }
+  } else if ('Logical' in validation.rule) {
+    return `Logical${validation.rule.Logical.show_checkbox ? ' (Checkbox)' : ''}`;
+  }
+  return 'Unknown';
+};
+
 export const ValidationEntry = (props: Props) => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const { validation, validationsData, highlight } = props;
   const { deleteValidation } = validationsData;
 
-  const title = useMemo(() => {
-    if (validation.rule === 'None') {
-      return 'Message only';
-    }
-    if ('List' in validation.rule) {
-      const dropdown = validation.rule.List.drop_down ? ' (Dropdown)' : '';
-      if ('List' in validation.rule.List.source) {
-        return `List from values${dropdown}`;
-      } else if ('Selection' in validation.rule.List.source) {
-        return `List from selection${dropdown}`;
-      }
-    } else if ('Logical' in validation.rule) {
-      return `Logical${validation.rule.Logical.show_checkbox ? ' (Checkbox)' : ''}`;
-    }
-    return 'Unknown';
-  }, [validation]);
+  const title = useMemo(() => validationText(validation), [validation]);
 
   const selection = useMemo(() => getSelectionString(validation.selection), [validation.selection]);
 
