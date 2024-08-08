@@ -23,7 +23,7 @@ export const convertNumber = (n: string, format: JsNumber, currentFractionDigits
   if (currentFractionDigits === undefined) {
     if (format.decimals !== null) {
       currentFractionDigits = format.decimals;
-    } else if (isCurrency) {
+    } else if (isCurrency || isScientific) {
       currentFractionDigits = 2;
     }
   }
@@ -38,9 +38,8 @@ export const convertNumber = (n: string, format: JsNumber, currentFractionDigits
 
   if (isScientific) {
     if (currentFractionDigits !== undefined) {
+      // we need to remove trailing zeros for format.decimals === null
       return number.toExponential(currentFractionDigits);
-    } else if (format.decimals !== null) {
-      return number.toExponential(format.decimals);
     } else {
       return number.toExponential(2);
     }

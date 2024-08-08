@@ -15,17 +15,23 @@ describe('convertNumber', () => {
       convertNumber('0.01234', { commas: null, decimals: null, format: { type: 'PERCENTAGE', symbol: null } })
     ).toBe('1.234%');
     expect(
-      convertNumber('123123222', { format: { type: 'EXPONENTIAL', symbol: null }, commas: null, decimals: null })
+      convertNumber('123456789', { commas: null, decimals: null, format: { type: 'EXPONENTIAL', symbol: null } })
     ).toBe('1.23e+8');
     expect(
-      convertNumber('123456789', { commas: null, decimals: 1, format: { type: 'EXPONENTIAL', symbol: null } })
-    ).toBe('1.2e+8');
+      convertNumber('123456789', { commas: null, decimals: 3, format: { type: 'EXPONENTIAL', symbol: null } })
+    ).toBe('1.235e+8');
     expect(
-      convertNumber('123123222', { format: { type: 'EXPONENTIAL', symbol: null }, commas: null, decimals: 5 })
-    ).toBe('1.23123e+8');
+      convertNumber('123456789', { commas: null, decimals: 0, format: { type: 'EXPONENTIAL', symbol: null } })
+    ).toBe('1e+8');
     expect(
       convertNumber('0.0000001', { commas: null, decimals: null, format: { type: 'EXPONENTIAL', symbol: null } })
     ).toBe('1.00e-7');
+    expect(
+      convertNumber('123456789', { commas: null, decimals: null, format: { type: 'EXPONENTIAL', symbol: null } })
+    ).toBe('1.23e+8');
+    expect(
+      convertNumber('-123456789', { commas: null, decimals: null, format: { type: 'EXPONENTIAL', symbol: null } })
+    ).toBe('-1.23e+8');
     expect(
       convertNumber('100200100.1234', { commas: null, decimals: null, format: { type: 'CURRENCY', symbol: '$' } })
     ).toBe('$100,200,100.12');
