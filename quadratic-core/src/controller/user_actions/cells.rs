@@ -52,8 +52,8 @@ impl GridController {
     }
 
     /// Starts a transaction to delete values and formatting in a given rect, and updates dependent cells.
-    pub fn delete_values_and_formatting(&mut self, selection: Selection, cursor: Option<String>) {
-        let ops = self.delete_values_and_formatting_operations(&selection);
+    pub fn delete_values_and_formatting(&mut self, selection: &Selection, cursor: Option<String>) {
+        let ops = self.delete_values_and_formatting_operations(selection);
         self.start_user_transaction(ops, cursor, TransactionName::SetCells);
     }
 }
@@ -62,14 +62,13 @@ impl GridController {
 mod test {
     use crate::{
         controller::GridController,
-        grid::{NumericDecimals, NumericFormat, SheetId},
+        grid::{NumericCommas, NumericDecimals, NumericFormat, SheetId},
         selection::Selection,
         CellValue, Pos, Rect, SheetPos,
     };
     use std::str::FromStr;
 
     use bigdecimal::BigDecimal;
-
     use serial_test::parallel;
 
     #[test]
@@ -166,6 +165,10 @@ mod test {
                 .display_value(sheet_pos.into())
                 .unwrap_or_default()
         };
+        let get_cell_numeric_commas = |g: &GridController| {
+            g.sheet(sheet_id)
+                .get_formatting_value::<NumericCommas>(sheet_pos.into())
+        };
         let get_cell_numeric_format = |g: &GridController| {
             g.sheet(sheet_id)
                 .get_formatting_value::<NumericFormat>(sheet_pos.into())
@@ -185,6 +188,7 @@ mod test {
             get_cell_value(&gc),
             CellValue::Number(BigDecimal::from_str("1.22").unwrap())
         );
+        assert_eq!(get_cell_numeric_commas(&gc), None);
         assert_eq!(
             get_cell_numeric_format(&gc),
             Some(NumericFormat {
@@ -246,6 +250,32 @@ mod test {
         assert_eq!(cells[0].value, "1.12345678");
 
         // ensure not found sheet_id fails silently
-        gc.clear_formatting(&selection, None);
+        gc.clear_formatting(&Selection::pos(0, 0, SheetId::new()), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn delete_values_and_formatting() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            String::from("1.12345678"),
+            None,
+        );
+        let selection = Selection::pos(0, 0, sheet_id);
+        let _ = gc.set_currency_selection(selection.clone(), "$".to_string(), None);
+        gc.delete_values_and_formatting(&selection, None);
+        let cells = gc
+            .sheet(sheet_id)
+            .get_render_cells(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 }));
+        assert_eq!(cells.len(), 0);
+
+        // ensure not found sheet_id fails silently
+        gc.delete_values_and_formatting(&Selection::pos(0, 0, SheetId::new()), None);
     }
 }

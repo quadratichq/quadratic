@@ -85,6 +85,10 @@ impl FormulaFnArgs {
             args_popped: 0,
         }
     }
+    /// Returns whether there is another argument.
+    pub fn has_next(&self) -> bool {
+        !self.values.is_empty()
+    }
     /// Takes the next argument.
     fn take_next(&mut self) -> Option<Spanned<Value>> {
         if !self.values.is_empty() {
@@ -116,6 +120,7 @@ impl FormulaFnArgs {
         std::mem::take(&mut self.values).into_iter()
     }
 
+    /// Returns an error if there are no more arguments.
     pub fn error_if_no_more_args(&self, arg_name: impl Into<Cow<'static, str>>) -> CodeResult<()> {
         if !self.values.is_empty() {
             Ok(())
@@ -228,7 +233,7 @@ fn test_autocomplete_snippet() {
 
     // Optional
     assert_eq!(
-        "SUMIF(${1:eval_range}, ${2:criteria}${3:, ${4:[numbers_range]}})",
+        "SUMIF(${1:eval_range}, ${2:criteria}${3:, ${4:[sum_range]}})",
         ALL_FUNCTIONS.get("SUMIF").unwrap().autocomplete_snippet(),
     );
 }

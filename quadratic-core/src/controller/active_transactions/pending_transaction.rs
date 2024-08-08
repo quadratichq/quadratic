@@ -4,7 +4,7 @@
 //! * tracking the state of a pending transaction
 //! * converting pending transaction to a completed transaction
 
-use std::collections::{HashSet, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 use uuid::Uuid;
 
@@ -62,6 +62,8 @@ pub struct PendingTransaction {
 
     // whether to resend the validations after the transaction completes
     pub send_validations: HashSet<SheetId>,
+
+    pub resize_rows: HashMap<SheetId, HashSet<i64>>,
 }
 
 impl Default for PendingTransaction {
@@ -84,6 +86,7 @@ impl Default for PendingTransaction {
             generate_thumbnail: false,
             cursor_undo_redo: None,
             send_validations: HashSet::new(),
+            resize_rows: HashMap::new(),
         }
     }
 }
@@ -110,10 +113,13 @@ impl PendingTransaction {
 
     /// Creates a transaction to save to the Undo/Redo stack
     pub fn to_undo_transaction(&self) -> Transaction {
+        let mut operations = self.reverse_operations.clone();
+        operations.reverse();
+
         Transaction {
             id: self.id,
             sequence_num: None,
-            operations: self.reverse_operations.clone(),
+            operations,
             cursor: self.cursor.clone(),
         }
     }
@@ -207,6 +213,7 @@ mod tests {
         transaction
             .reverse_operations
             .clone_from(&reverse_operations);
+        transaction.reverse_operations.reverse();
         let forward_transaction = transaction.to_forward_transaction();
         assert_eq!(forward_transaction.id, transaction.id);
         assert_eq!(forward_transaction.operations, forward_operations);

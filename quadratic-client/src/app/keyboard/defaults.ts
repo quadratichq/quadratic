@@ -436,8 +436,8 @@ export const defaultShortcuts: Shortcuts = [
   {
     action: 'save_inline_editor',
     shortcuts: {
-      mac: ['Enter'],
-      windows: ['Enter'],
+      mac: ['Enter', 'Cmd + Enter'],
+      windows: ['Enter', 'Ctrl + Enter'],
     },
   },
   {

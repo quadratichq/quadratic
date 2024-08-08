@@ -130,6 +130,14 @@ impl FormatUpdate {
         self.fill_color.is_some()
     }
 
+    pub fn need_to_rewrap(&self) -> bool {
+        self.numeric_format.is_some()
+            || self.numeric_decimals.is_some()
+            || self.numeric_commas.is_some()
+            || self.bold.is_some()
+            || self.italic.is_some()
+    }
+
     pub fn combine(&self, other: &FormatUpdate) -> FormatUpdate {
         FormatUpdate {
             align: self.align.or(other.align),

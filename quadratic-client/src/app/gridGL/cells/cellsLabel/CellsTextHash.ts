@@ -75,6 +75,8 @@ export class CellsTextHash extends Container {
 
   clearMeshEntries(viewRectangle: Rectangle) {
     this.viewRectangle = viewRectangle;
+    this.x = 0;
+    this.y = 0;
   }
 
   show(): void {
