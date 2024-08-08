@@ -31,7 +31,7 @@ export function CodeEditorEmptyState() {
   } = useCodeEditor();
 
   // Must meet these criteria to even show in the UI
-  if (editorContent) {
+  if (editorContent !== '') {
     return null;
   }
   if (!(codeCell?.id === 'Javascript' || codeCell?.id === 'Python')) {
