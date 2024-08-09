@@ -35,7 +35,7 @@ export function BrowserCompatibilityLayoutRoute() {
       <Empty
         title="Safari not (currently) supported"
         description={[
-          'Your browser lacks the necessary APIs to make Quadratic function properly. We recommend using the latest version of Google Chrome until we find a way to properly support Safari. ',
+          'We are actively working on Safari support. However, Safari is currently not supported in Quadratic. We recommend that you use the latest version of Google Chrome. ',
           <a className={`text-decoration: underline`} href={DOCUMENTATION_BROWSER_COMPATIBILITY_URL}>
             Learn more.
           </a>,
