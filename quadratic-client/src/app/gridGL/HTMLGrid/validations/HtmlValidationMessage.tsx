@@ -1,5 +1,5 @@
 import { IconButton, Tooltip } from '@mui/material';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Close } from '@mui/icons-material';
 import { useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
@@ -39,13 +39,16 @@ export const HtmlValidationMessage = (props: Props) => {
     return false;
   }, [column, hoverError, row]);
 
-  const ref = useRef<HTMLDivElement>(null);
+  const [div, setDiv] = useState<HTMLDivElement | null>(null);
+  const ref = useCallback((node: HTMLDivElement) => {
+    setDiv(node)
+  }, []);
 
   useEffect(() => {
     setHide(false);
   }, [validation]);
 
-  const { top, left } = usePositionCellMessage(ref.current, offsets);
+  const { top, left } = usePositionCellMessage({ div, offsets, forceLeftOnInlineEditor: true });
 
   const showValidation = useCallback(() => {
     if (validation) {

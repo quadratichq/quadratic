@@ -41,7 +41,6 @@ export const useHtmlValidations = (): HtmlValidationsData => {
         return;
       }
 
-      setLocation({ x, y });
       setValidation(validation);
       setValidationType(validationRuleSimple(validation));
 
