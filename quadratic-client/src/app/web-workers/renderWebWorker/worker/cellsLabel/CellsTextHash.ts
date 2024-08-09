@@ -383,7 +383,6 @@ export class CellsTextHash {
       this.labels.forEach((label) => {
         if (label.location.x === column) {
           label.adjustWidth(delta, column < 0);
-          this.special.adjustWidth(column, delta);
           changed = true;
         } else {
           if (column < 0) {
@@ -399,6 +398,7 @@ export class CellsTextHash {
           }
         }
       });
+      this.special.adjustWidth(column, delta);
     } else if (row !== undefined) {
       if (this.AABB.y < 0 && this.AABB.y <= row) {
         this.viewRectangle.y += delta;

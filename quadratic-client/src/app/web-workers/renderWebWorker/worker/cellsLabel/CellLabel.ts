@@ -213,7 +213,7 @@ export class CellLabel {
       return true;
     }
     return false;
-  }
+  };
 
   checkNumberClip = (): boolean => {
     if (this.number === undefined) return false;

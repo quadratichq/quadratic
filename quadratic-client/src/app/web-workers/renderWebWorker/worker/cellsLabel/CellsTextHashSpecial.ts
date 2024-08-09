@@ -72,14 +72,14 @@ export class CellsTextHashSpecial {
 
   adjustWidth(column: number, delta: number) {
     this.special.checkboxes.forEach((entry) => {
-      if (entry.column > column) {
-        entry.x += delta;
+      if (entry.column >= column) {
+        entry.x -= delta / 2;
       }
     });
 
     this.special.dropdowns.forEach((entry) => {
-      if (entry.column > column) {
-        entry.x += delta;
+      if (entry.column >= column) {
+        entry.x -= delta;
       }
     });
   }
