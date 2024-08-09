@@ -21,6 +21,7 @@ import { CellLabel } from './CellLabel';
 import { CellsLabels } from './CellsLabels';
 import { LabelMeshes } from './LabelMeshes';
 import { CellsTextHashSpecial } from './CellsTextHashSpecial';
+import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 
 // Draw hashed regions of cell glyphs (the text + text formatting)
 export class CellsTextHash {
@@ -105,7 +106,12 @@ export class CellsTextHash {
         cell.value === 'true'
       );
     } else if (cell.special === 'List') {
-      this.special.addDropdown(Number(cell.x), Number(cell.y), rectangle.right, rectangle.top);
+      this.special.addDropdown(
+        Number(cell.x),
+        Number(cell.y),
+        rectangle.right + DROPDOWN_SIZE[0] + DROPDOWN_PADDING[0],
+        rectangle.top
+      );
     }
   }
 

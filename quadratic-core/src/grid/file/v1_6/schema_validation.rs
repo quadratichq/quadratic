@@ -63,10 +63,25 @@ pub struct ValidationList {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct ValidationNumber {
+    pub ignore_blank: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct ValidationText {
+    pub ignore_blank: bool,
+    pub exactly: Option<String>,
+    pub contains: Option<String>,
+    pub not_contains: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum ValidationRule {
     None,
     List(ValidationList),
     Logical(ValidationLogical),
+    Text(ValidationText),
+    Number(ValidationNumber),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

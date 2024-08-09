@@ -48,10 +48,6 @@ export class CellLabel {
   private cellsLabels: CellsLabels;
   private position = new Point();
 
-  // track whether the cell is a dropdown list; if so, we have to clip the text
-  // to fit the dropdown image
-  private dropdown: boolean;
-
   visible = true;
 
   private text: string;
@@ -124,10 +120,10 @@ export class CellLabel {
     this.cellsLabels = cellsLabels;
     this.originalText = cell.value;
     this.text = this.getText(cell);
-    this.dropdown = cell.special === 'List';
     this.fontSize = fontSize;
     this.roundPixels = true;
     this.letterSpacing = 0;
+    const isDropdown = cell.special === 'List';
     const isError = cell?.special === 'SpillError' || cell?.special === 'RunError';
     const isChart = cell?.special === 'Chart';
     if (isError) {
@@ -146,6 +142,11 @@ export class CellLabel {
 
     this.location = { x: Number(cell.x), y: Number(cell.y) };
     this.AABB = screenRectangle;
+
+    // need to adjust the right side of the AABB to account for the dropdown indicator
+    if (isDropdown) {
+      this.AABB.width -= DROPDOWN_SIZE[0] + DROPDOWN_PADDING[0];
+    }
 
     this.actualLeft = this.AABB.left;
     this.actualRight = this.AABB.right;
@@ -167,12 +168,7 @@ export class CellLabel {
 
   private updateCellLimits = () => {
     this.cellClipLeft = this.wrap === 'clip' && this.align !== 'left' ? this.AABB.left : undefined;
-    if (this.dropdown) {
-      this.cellClipRight = this.AABB.right - DROPDOWN_SIZE[0] - DROPDOWN_PADDING[0];
-      return false;
-    } else {
-      this.cellClipRight = this.wrap === 'clip' && this.align !== 'right' ? this.AABB.right : undefined;
-    }
+    this.cellClipRight = this.wrap === 'clip' && this.align !== 'right' ? this.AABB.right : undefined;
     this.cellClipTop = this.AABB.top;
     this.cellClipBottom = this.AABB.bottom;
     this.maxWidth = this.wrap === 'wrap' ? this.AABB.width - CELL_TEXT_MARGIN_LEFT * 3 : undefined;
@@ -195,11 +191,6 @@ export class CellLabel {
   };
 
   checkRightClip = (nextRight: number, labelMeshes: LabelMeshes): boolean => {
-    if (this.dropdown) {
-      this.cellClipRight = this.AABB.right - DROPDOWN_SIZE[0] - DROPDOWN_PADDING[0];
-      return false;
-    }
-
     if (this.AABB.right + this.overflowRight > nextRight) {
       const nextRightWidth = nextRight - this.AABB.left;
       if (this.nextRightWidth !== nextRightWidth) {

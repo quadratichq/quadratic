@@ -3,6 +3,8 @@ use crate::grid::sheet::validations::validation_rules::validation_list::{
     ValidationList, ValidationListSource,
 };
 use crate::grid::sheet::validations::validation_rules::validation_logical::ValidationLogical;
+use crate::grid::sheet::validations::validation_rules::validation_number::ValidationNumber;
+use crate::grid::sheet::validations::validation_rules::validation_text::ValidationText;
 use crate::grid::sheet::validations::validation_rules::ValidationRule;
 use crate::grid::sheet::validations::Validations;
 use crate::grid::{
@@ -76,6 +78,17 @@ fn import_validation_rule(rule: &current_validations::ValidationRule) -> Validat
                 ignore_blank: logical.ignore_blank,
             })
         }
+        current_validations::ValidationRule::Text(text) => ValidationRule::Text(ValidationText {
+            ignore_blank: text.ignore_blank,
+            exactly: text.exactly.to_owned(),
+            contains: text.contains.to_owned(),
+            not_contains: text.not_contains.to_owned(),
+        }),
+        current_validations::ValidationRule::Number(text) => {
+            ValidationRule::Number(ValidationNumber {
+                ignore_blank: text.ignore_blank,
+            })
+        }
     }
 }
 
@@ -104,6 +117,19 @@ fn export_validation_rule(rule: &ValidationRule) -> current_validations::Validat
             current_validations::ValidationRule::Logical(current_validations::ValidationLogical {
                 show_checkbox: logical.show_checkbox,
                 ignore_blank: logical.ignore_blank,
+            })
+        }
+        ValidationRule::Text(text) => {
+            current_validations::ValidationRule::Text(current_validations::ValidationText {
+                ignore_blank: text.ignore_blank,
+                exactly: text.exactly.to_owned(),
+                contains: text.contains.to_owned(),
+                not_contains: text.not_contains.to_owned(),
+            })
+        }
+        ValidationRule::Number(text) => {
+            current_validations::ValidationRule::Number(current_validations::ValidationNumber {
+                ignore_blank: text.ignore_blank,
             })
         }
     }

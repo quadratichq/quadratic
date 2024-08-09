@@ -7,17 +7,23 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use validation_list::ValidationList;
 use validation_logical::ValidationLogical;
+use validation_number::ValidationNumber;
+use validation_text::ValidationText;
 
 use super::super::Sheet;
 
 pub mod validation_list;
 pub mod validation_logical;
+pub mod validation_number;
+pub mod validation_text;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum ValidationRule {
     None,
     List(ValidationList),
     Logical(ValidationLogical),
+    Text(ValidationText),
+    Number(ValidationNumber),
 }
 
 impl ValidationRule {
@@ -26,6 +32,8 @@ impl ValidationRule {
         match &self {
             ValidationRule::List(list) => list.validate(sheet, value),
             ValidationRule::Logical(logical) => logical.validate(value),
+            ValidationRule::Text(text) => text.validate(value),
+            ValidationRule::Number(number) => number.validate(value),
             ValidationRule::None => true,
         }
     }
@@ -44,6 +52,8 @@ impl ValidationRule {
         match self {
             ValidationRule::List(list) => list.ignore_blank,
             ValidationRule::Logical(_) => true,
+            ValidationRule::Text(text) => text.ignore_blank,
+            ValidationRule::Number(number) => number.ignore_blank,
             ValidationRule::None => true,
         }
     }

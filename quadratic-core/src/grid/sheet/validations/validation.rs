@@ -65,6 +65,8 @@ impl Validation {
                     None
                 }
             }
+            ValidationRule::Text(_) => None,
+            ValidationRule::Number(_) => None,
             ValidationRule::None => None,
         }
     }

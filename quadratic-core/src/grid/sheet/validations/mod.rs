@@ -96,6 +96,8 @@ impl Validations {
                             checkbox = false;
                         }
                     }
+                    validation_rules::ValidationRule::Number(_) => {}
+                    validation_rules::ValidationRule::Text(_) => {}
                     validation_rules::ValidationRule::None => {}
                 }
             }
