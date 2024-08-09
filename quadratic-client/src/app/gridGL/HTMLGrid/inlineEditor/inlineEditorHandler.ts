@@ -399,7 +399,9 @@ class InlineEditorHandler {
       } else {
         const validationError = await this.validateInput();
         if (validationError) {
-          events.emit('hoverCell', { x: this.location.x, y: this.location.y, validationId: validationError, value });
+          if (this.location) {
+            events.emit('hoverCell', { x: this.location.x, y: this.location.y, validationId: validationError, value });
+          }
         } else {
           quadraticCore.setCellValue(
             this.location.sheetId,
