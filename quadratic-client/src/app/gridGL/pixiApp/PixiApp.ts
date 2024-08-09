@@ -271,11 +271,8 @@ export class PixiApp {
 
   reset(): void {
     this.viewport.scale.set(1);
-    if (pixiAppSettings.showHeadings) {
-      this.viewport.position.set(HEADING_SIZE, HEADING_SIZE);
-    } else {
-      this.viewport.position.set(0, 0);
-    }
+    const { x, y } = this.getStartingViewport();
+    this.viewport.position.set(x, y);
     pixiAppSettings.setEditorInteractionState?.(editorInteractionStateDefault);
   }
 
@@ -296,9 +293,9 @@ export class PixiApp {
 
   getStartingViewport(): { x: number; y: number } {
     if (pixiAppSettings.showHeadings) {
-      return { x: HEADING_SIZE, y: HEADING_SIZE };
+      return { x: HEADING_SIZE + 1, y: HEADING_SIZE + 1 };
     } else {
-      return { x: 0, y: 0 };
+      return { x: 1, y: 1 };
     }
   }
 
