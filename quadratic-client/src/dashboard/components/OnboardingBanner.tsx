@@ -26,6 +26,8 @@ export function OnboardingBanner() {
 
   const completeCreateSheet = files.length > 0 || filesPrivate.length > 0;
   const completeInviteTeam = users.length > 1 || invites.length > 0;
+  const completeCreateConnection = false;
+  const completions = [completeCreateSheet, completeInviteTeam, completeCreateConnection];
   // TODO: connection
 
   // If the above are complete, mark this as done (as a user pref?) and don't show it again
@@ -37,7 +39,7 @@ export function OnboardingBanner() {
         <div className="flex flex-col">
           <h3 className="text-md font-medium leading-6 tracking-tight">Getting started with Quadratic</h3>
           <p className="text-sm text-muted-foreground">
-            <strong className="font-semibold">1 of 3 complete</strong> · Need help?{' '}
+            <strong className="font-semibold">{completions.filter(Boolean).length} of 3 complete</strong> · Need help?{' '}
             <a href={DOCUMENTATION_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
               Read the docs
             </a>{' '}
@@ -45,7 +47,7 @@ export function OnboardingBanner() {
             <a href={CONTACT_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
               contact us
             </a>
-            .
+            , we love hearing from folks.
           </p>
         </div>
       </div>
