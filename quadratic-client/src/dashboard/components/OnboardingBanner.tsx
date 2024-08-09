@@ -76,7 +76,7 @@ export function OnboardingBanner() {
             </p>
             <p>
               <Button asChild variant="outline" className={contentBtnClassName}>
-                <Link to={ROUTES.CREATE_FILE(teamUuid)}>New file</Link>
+                <Link to={ROUTES.CREATE_FILE(teamUuid)}>Create new file</Link>
               </Button>
             </p>
           </Tabs.Content>
