@@ -108,7 +108,9 @@ export class CellLabel {
       default:
         if (cell.value !== undefined && cell.number) {
           this.number = cell.number;
-          return convertNumber(cell.value, cell.number).toUpperCase();
+          // formula computation uses f64 precision, so we need to limit the number of decimals to 16
+          let currentFractionDigits = cell.language === 'Formula' && cell.number.decimals === null ? 16 : undefined;
+          return convertNumber(cell.value, cell.number, currentFractionDigits).toUpperCase();
         } else {
           return cell?.value;
         }
