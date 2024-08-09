@@ -17,7 +17,7 @@ import { events } from '@/app/events/events';
 class InlineEditorKeyboard {
   escapeBackspacePressed = false;
 
-  private handleArrowHorizontal = (isRight: boolean, e: KeyboardEvent) => {
+  private handleArrowHorizontal = async (isRight: boolean, e: KeyboardEvent) => {
     const target = isRight ? inlineEditorMonaco.getLastColumn() : 1;
     if (inlineEditorHandler.isEditingFormula()) {
       if (inlineEditorHandler.cursorIsMoving) {
@@ -37,7 +37,7 @@ class InlineEditorKeyboard {
               keyboardPosition(e);
             }
           } else {
-            if (!this.handleValidationError()) {
+            if (!(await this.handleValidationError())) {
               inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
             }
           }
@@ -48,14 +48,14 @@ class InlineEditorKeyboard {
       if (column === target) {
         e.stopPropagation();
         e.preventDefault();
-        if (!this.handleValidationError()) {
+        if (!(await this.handleValidationError())) {
           inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
         }
       }
     }
   };
 
-  private handleArrowVertical = (isDown: boolean, e: KeyboardEvent) => {
+  private handleArrowVertical = async (isDown: boolean, e: KeyboardEvent) => {
     // if dropdown is showing, then we let dropdown handle the vertical arrow keys
     if (pixiAppSettings.editorInteractionState.annotationState === 'dropdown') {
       keyboardDropdown(e, pixiAppSettings.editorInteractionState);
@@ -84,7 +84,7 @@ class InlineEditorKeyboard {
           inlineEditorHandler.cursorIsMoving = true;
           keyboardPosition(e);
         } else {
-          if (!this.handleValidationError()) {
+          if (!(await this.handleValidationError())) {
             inlineEditorHandler.close(0, isDown ? 1 : -1, false);
           }
           return;
@@ -93,7 +93,7 @@ class InlineEditorKeyboard {
     } else {
       e.stopPropagation();
       e.preventDefault();
-      if (!this.handleValidationError()) {
+      if (!(await this.handleValidationError())) {
         inlineEditorHandler.close(0, isDown ? 1 : -1, false);
       }
     }
@@ -142,7 +142,7 @@ class InlineEditorKeyboard {
     else if (matchShortcut('save_inline_editor', e)) {
       e.stopPropagation();
       e.preventDefault();
-      if (!this.handleValidationError()) {
+      if (!(await this.handleValidationError())) {
         inlineEditorHandler.close(0, 1, false);
       }
     }
@@ -150,7 +150,7 @@ class InlineEditorKeyboard {
     // Shift+Enter key
     else if (matchShortcut('save_inline_editor_move_up', e)) {
       e.stopPropagation();
-      if (!this.handleValidationError()) {
+      if (!(await this.handleValidationError())) {
         inlineEditorHandler.close(0, -1, false);
       }
     }
@@ -159,7 +159,7 @@ class InlineEditorKeyboard {
     else if (matchShortcut('save_inline_editor_move_right', e)) {
       e.stopPropagation();
       e.preventDefault();
-      if (!this.handleValidationError()) {
+      if (!(await this.handleValidationError())) {
         inlineEditorHandler.close(1, 0, false);
       }
     }
@@ -168,7 +168,7 @@ class InlineEditorKeyboard {
     else if (matchShortcut('save_inline_editor_move_left', e)) {
       e.stopPropagation();
       e.preventDefault();
-      if (!this.handleValidationError()) {
+      if (!(await this.handleValidationError())) {
         inlineEditorHandler.close(-1, 0, false);
       }
     }
