@@ -248,6 +248,6 @@ mod test {
             "jsValidationWarning",
             format!("{},{}", sheet.id, serde_json::to_string(&warnings).unwrap()),
             true,
-        )
+        );
     }
 }

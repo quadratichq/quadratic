@@ -178,14 +178,9 @@ impl Validations {
 
     /// Validates a pos in the sheet. Returns any failing Validation.
     pub fn validate(&self, sheet: &Sheet, pos: Pos) -> Option<&Validation> {
-        for v in self.validations.iter().rev() {
-            if v.selection.contains_pos(pos) {
-                if !v.rule.validate(sheet, sheet.cell_value_ref(pos)) {
-                    return Some(v);
-                }
-            }
-        }
-        None
+        self.validations.iter().rev().find(|v| {
+            v.selection.contains_pos(pos) && !v.rule.validate(sheet, sheet.cell_value_ref(pos))
+        })
     }
 
     /// Returns validations that intersect with a rect. Note: this only checks

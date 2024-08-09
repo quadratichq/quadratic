@@ -69,16 +69,13 @@ impl Sheet {
             };
         }
 
-        let special = self
-            .validations
-            .render_special_pos(Pos { x, y })
-            .or_else(|| {
-                if matches!(value, CellValue::Logical(_)) {
-                    Some(JsRenderCellSpecial::Logical)
-                } else {
-                    None
-                }
-            });
+        let special = self.validations.render_special_pos(Pos { x, y }).or({
+            if matches!(value, CellValue::Logical(_)) {
+                Some(JsRenderCellSpecial::Logical)
+            } else {
+                None
+            }
+        });
 
         match column {
             None => {
@@ -112,7 +109,6 @@ impl Sheet {
                     text_color: format.text_color,
                     special,
                     number,
-                    ..Default::default()
                 }
             }
             Some(column) => {
@@ -1073,7 +1069,7 @@ mod tests {
         dbg!(&expected);
         dbg!(&cells);
         assert_eq!(expected.len(), cells.len());
-        assert_eq!(expected.iter().all(|cell| cells.contains(cell)), true);
+        assert!(expected.iter().all(|cell| cells.contains(cell)));
 
         let cells_string = serde_json::to_string(&cells).unwrap();
         expect_js_call(
@@ -1172,7 +1168,7 @@ mod tests {
         let validations = serde_json::to_string(&sheet.validations.validations).unwrap();
         expect_js_call(
             "jsSheetValidations",
-            format!("{},{}", sheet.id.to_string(), validations),
+            format!("{},{}", sheet.id, validations),
             true,
         );
     }

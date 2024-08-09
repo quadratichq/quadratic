@@ -49,14 +49,12 @@ impl GridController {
                     self.execute_set_cursor_selection(transaction, op);
                 }
 
-                Operation::SetValidation { .. } => {
-                    self.execute_set_validation(transaction, op);
-                }
+                Operation::SetValidation { .. } => self.execute_set_validation(transaction, op),
                 Operation::RemoveValidation { .. } => {
-                    self.execute_remove_validation(transaction, op)
+                    self.execute_remove_validation(transaction, op);
                 }
                 Operation::SetValidationWarning { .. } => {
-                    self.execute_set_validation_warning(transaction, op)
+                    self.execute_set_validation_warning(transaction, op);
                 }
             }
 

@@ -57,9 +57,7 @@ impl ValidationList {
                         .collect(),
                 )
             }
-            ValidationListSource::List(ref list) => {
-                Some(list.iter().map(|s| s.clone()).unique().collect())
-            }
+            ValidationListSource::List(ref list) => Some(list.iter().cloned().unique().collect()),
         }
     }
 }

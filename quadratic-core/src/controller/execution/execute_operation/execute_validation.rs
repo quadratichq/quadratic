@@ -75,7 +75,7 @@ impl GridController {
                     });
                 transaction.reverse_operations.push(old);
                 client_warnings.insert(*pos, Some(*validation_id));
-            })
+            });
         }
     }
 
@@ -167,7 +167,7 @@ impl GridController {
                 let selection = sheet
                     .validations
                     .validation(validation_id)
-                    .and_then(|v| Some(v.selection.clone()));
+                    .map(|v| v.selection.clone());
 
                 transaction
                     .reverse_operations

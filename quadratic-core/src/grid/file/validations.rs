@@ -87,7 +87,7 @@ fn export_validation_rule(rule: &ValidationRule) -> current_validations::Validat
                 source: match &list.source {
                     ValidationListSource::Selection(selection) => {
                         current_validations::ValidationListSource::Selection(export_selection(
-                            &selection,
+                            selection,
                         ))
                     }
                     ValidationListSource::List(list) => {

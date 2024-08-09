@@ -170,7 +170,7 @@ impl CellValue {
                 let use_commas = numeric_commas.is_some_and(|c| c)
                     || (numeric_commas.is_none()
                         && numeric_format.kind == NumericFormatKind::Currency);
-                let numeric_decimals = numeric_decimals.or_else(|| {
+                let numeric_decimals = numeric_decimals.or({
                     if matches!(
                         numeric_format,
                         NumericFormat {

@@ -92,7 +92,7 @@ impl GridController {
             return None;
         }
         let cell_value = CellValue::from(input);
-        if validation.rule.validate(&sheet, Some(&cell_value)) {
+        if validation.rule.validate(sheet, Some(&cell_value)) {
             None
         } else {
             Some(validation.id)
@@ -156,7 +156,7 @@ mod tests {
         let validations = sheet.validations.to_string().unwrap();
         expect_js_call(
             "jsSheetValidations",
-            format!("{},{}", sheet_id.to_string(), validations),
+            format!("{},{}", sheet_id, validations),
             true,
         );
     }
@@ -201,7 +201,7 @@ mod tests {
         let validations = sheet.validations.to_string().unwrap();
         expect_js_call(
             "jsSheetValidations",
-            format!("{},{}", sheet_id.to_string(), validations),
+            format!("{},{}", sheet_id, validations),
             false,
         );
 

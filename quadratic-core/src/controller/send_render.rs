@@ -68,7 +68,7 @@ impl GridController {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
-        assert!(only_rects == true);
+        assert!(only_rects, "only_rects == false not implemented");
         let mut modified = HashSet::new();
         if let Some(rects) = selection.rects.as_ref() {
             for rect in rects {
@@ -483,7 +483,7 @@ mod test {
         gc.sheet_mut(gc.sheet_ids()[0]).id = sheet_id;
 
         let rect = Rect::new(1, 1, 2, 2);
-        let selection = Selection::rect(rect.clone(), sheet_id);
+        let selection = Selection::rect(rect, sheet_id);
         gc.update_validation(
             Validation {
                 id: Uuid::new_v4(),
