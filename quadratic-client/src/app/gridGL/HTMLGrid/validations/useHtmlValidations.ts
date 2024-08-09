@@ -8,15 +8,22 @@ import { useEffect, useState } from 'react';
 import { validationRuleSimple, ValidationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
 import { Validation } from '@/app/quadratic-core-types';
 import { Coordinate } from '../../types/size';
+import { hasPermissionToEditFile } from '@/app/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { useRecoilValue } from 'recoil';
 
 export interface HtmlValidationsData {
   offsets?: Rectangle;
   validation?: Validation;
   validationRuleSimple: ValidationRuleSimple;
   location?: Coordinate;
+  readOnly: boolean;
 }
 
 export const useHtmlValidations = (): HtmlValidationsData => {
+  const { permissions } = useRecoilValue(editorInteractionStateAtom);
+  const readOnly = !hasPermissionToEditFile(permissions);
+
   const [offsets, setOffsets] = useState<Rectangle | undefined>();
   const [validation, setValidation] = useState<Validation | undefined>();
   const [validationType, setValidationType] = useState<ValidationRuleSimple>('');
@@ -73,5 +80,6 @@ export const useHtmlValidations = (): HtmlValidationsData => {
     validation,
     validationRuleSimple: validationType,
     location,
+    readOnly,
   };
 };

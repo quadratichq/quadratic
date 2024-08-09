@@ -17,7 +17,7 @@ interface Props {
 
 export const HtmlValidationList = (props: Props) => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { validation, offsets, location } = props.htmlValidationsData;
+  const { validation, offsets, location, readOnly } = props.htmlValidationsData;
 
   // used to track the index of the selected value (as changed via keyboard or
   // when matching when first opening the dropdown)
@@ -129,7 +129,7 @@ export const HtmlValidationList = (props: Props) => {
     };
   }, [changeValue, index, list, setEditorInteractionState]);
 
-  if (editorInteractionState.annotationState !== 'dropdown' || !offsets || !list) return;
+  if (editorInteractionState.annotationState !== 'dropdown' || !offsets || !list || readOnly) return;
 
   return (
     <div

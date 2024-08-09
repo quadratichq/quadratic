@@ -43,7 +43,7 @@ export const HtmlValidationMessage = (props: Props) => {
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((node: HTMLDivElement) => {
-    setDiv(node)
+    setDiv(node);
   }, []);
 
   useEffect(() => {
@@ -99,7 +99,11 @@ export const HtmlValidationMessage = (props: Props) => {
     );
 
     const invalidValue =
-      hoverError !== undefined ? <div className="pointer-events-auto whitespace-normal">"{hoverError}" {rejected ? 'was rejected because it ' : ''} is not valid</div> : null;
+      hoverError !== undefined ? (
+        <div className="pointer-events-auto whitespace-normal">
+          "{hoverError}" {rejected ? 'was rejected because it ' : ''} is not valid
+        </div>
+      ) : null;
     message = (
       <>
         <div className="">{invalidValue}</div>
@@ -133,7 +137,7 @@ export const HtmlValidationMessage = (props: Props) => {
       <div className="leading-2 whitespace-nowrap">
         <div className="flex items-center justify-between gap-2">
           {<div className="margin-bottom: 0.5rem">{title}</div>}
-          { rejected &&
+          {rejected && (
             <IconButton
               sx={{ padding: 0 }}
               className="pointer-events-auto"
@@ -144,8 +148,7 @@ export const HtmlValidationMessage = (props: Props) => {
             >
               <Close sx={{ padding: 0, width: 15 }} />
             </IconButton>
-          }
-
+          )}
         </div>
         {message && <div className="pb-1 pt-2 text-xs">{message}</div>}
       </div>
