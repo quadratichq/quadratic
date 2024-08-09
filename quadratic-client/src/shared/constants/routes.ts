@@ -1,3 +1,5 @@
+import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+
 // Any routes referenced outside of the root router are stored here
 export const ROUTES = {
   LOGOUT: '/logout',
@@ -16,8 +18,8 @@ export const ROUTES = {
   TEAMS_CREATE: `/teams/create`,
   TEAM: (teamUuid: string) => `/teams/${teamUuid}`,
   TEAM_CONNECTIONS: (teamUuid: string) => `/teams/${teamUuid}/connections`,
-  TEAM_CONNECTION_CREATE: (teamUuid: string, connectionType: string) =>
-    `/teams/${teamUuid}/connections/create/${connectionType}`,
+  TEAM_CONNECTION_CREATE: (teamUuid: string, connectionType: ConnectionType) =>
+    `/teams/${teamUuid}/connections?initial-connection-type=${connectionType}`,
   TEAM_FILES: (teamUuid: string) => `/teams/${teamUuid}`,
   TEAM_FILES_PRIVATE: (teamUuid: string) => `/teams/${teamUuid}/files/private`,
   TEAM_MEMBERS: (teamUuid: string) => `/teams/${teamUuid}/members`,

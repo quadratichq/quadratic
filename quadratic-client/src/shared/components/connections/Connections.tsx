@@ -2,10 +2,11 @@ import { CreateConnectionAction, DeleteConnectionAction, UpdateConnectionAction 
 import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
 import { ConnectionsList } from '@/shared/components/connections/ConnectionsList';
 import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';
+import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
-import { useFetchers } from 'react-router-dom';
+import { useFetchers, useSearchParams } from 'react-router-dom';
 
 export type ConnectionsListConnection = {
   uuid: string;
@@ -24,8 +25,16 @@ export type NavigateToEditView = (props: { connectionUuid: string; connectionTyp
 export type NavigateToCreateView = (type: ConnectionType) => void;
 
 export const Connections = ({ connections, connectionsAreLoading, teamUuid, staticIps }: Props) => {
+  // Allo pre-loading the connection type via url params, e.g. /connections?initial-connection-type=MYSQL
+  // Delete it from the url after we store it in local state
+  const [searchParams] = useSearchParams();
+  const initialConnectionType = searchParams.get('initial-connection-type');
+  useUpdateQueryStringValueWithoutNavigation('initial-connection-type', null);
+
   const [activeConnectionUuid, setActiveConnectionUuid] = useState<string | undefined>();
-  const [activeConnectionType, setActiveConnectionType] = useState<ConnectionType | undefined>();
+  const [activeConnectionType, setActiveConnectionType] = useState<ConnectionType | undefined>(
+    initialConnectionType === 'MYSQL' || initialConnectionType === 'POSTGRES' ? initialConnectionType : undefined
+  );
 
   /**
    * Optimistic UI

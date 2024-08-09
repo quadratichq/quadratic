@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import { ApiSchemasConnections } from './typesAndSchemasConnections';
+import { ApiSchemasConnections, ConnectionListSchema } from './typesAndSchemasConnections';
 
 export const UserFileRoleSchema = z.enum(['EDITOR', 'VIEWER']);
 export type UserFileRole = z.infer<typeof UserFileRoleSchema>;
@@ -102,6 +102,8 @@ const TeamFilesSchema = z.array(
     }),
   })
 );
+
+export const TeamClientDataKvSchema = z.record(z.any());
 
 // Zod schemas for API endpoints
 export const ApiSchemas = {
@@ -314,10 +316,17 @@ export const ApiSchemas = {
     filesPrivate: TeamFilesSchema,
     users: z.array(TeamUserSchema),
     invites: z.array(z.object({ email: emailSchema, role: UserTeamRoleSchema, id: z.number() })),
+    connections: ConnectionListSchema,
+    clientDataKv: TeamClientDataKvSchema,
   }),
-  '/v0/teams/:uuid.PATCH.request': TeamSchema.pick({ name: true }),
-  '/v0/teams/:uuid.PATCH.response': TeamSchema.pick({ name: true }),
-
+  '/v0/teams/:uuid.PATCH.request': z.object({
+    name: TeamSchema.shape.name.optional(),
+    clientDataKv: TeamClientDataKvSchema.optional(),
+  }),
+  '/v0/teams/:uuid.PATCH.response': z.object({
+    name: TeamSchema.shape.name.optional(),
+    clientDataKv: TeamClientDataKvSchema.optional(),
+  }),
   '/v0/teams/:uuid/invites.POST.request': TeamUserSchema.pick({ email: true, role: true }),
   '/v0/teams/:uuid/invites.POST.response': z
     .object({

@@ -3,6 +3,7 @@ import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { Empty } from '@/dashboard/components/Empty';
 import { FilesList } from '@/dashboard/components/FilesList';
 import { FilesListEmptyState } from '@/dashboard/components/FilesListEmptyState';
+import { OnboardingBanner } from '@/dashboard/components/OnboardingBanner';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { ROUTES } from '@/shared/constants/routes';
 import { Add } from '@mui/icons-material';
@@ -24,6 +25,8 @@ export const Component = () => {
 
   return (
     <>
+      <OnboardingBanner />
+
       <DashboardHeader
         title="Team files"
         actions={

@@ -1,4 +1,3 @@
-import { OnboardingBanner } from '@/dashboard/components/OnboardingBanner';
 import { TYPE } from '@/shared/constants/appConstants';
 import { ReactNode, useEffect } from 'react';
 
@@ -20,20 +19,17 @@ export function DashboardHeader({
   }, [title]);
 
   return (
-    <>
-      <OnboardingBanner />
-      <header
-        className={`flex min-h-[60px] flex-col gap-2 pb-2 pt-3 sm:flex-row sm:items-center sm:justify-between sm:gap-0`}
-      >
-        <div className="flex items-center">
-          {titleStart}
-          {titleNode ? titleNode : <DashboardHeaderTitle>{title}</DashboardHeaderTitle>}
-          {titleEnd}
-        </div>
+    <header
+      className={`flex min-h-[60px] flex-col gap-2 pb-2 pt-3 sm:flex-row sm:items-center sm:justify-between sm:gap-0`}
+    >
+      <div className="flex items-center">
+        {titleStart}
+        {titleNode ? titleNode : <DashboardHeaderTitle>{title}</DashboardHeaderTitle>}
+        {titleEnd}
+      </div>
 
-        {actions && <div className={`lg:block`}>{actions}</div>}
-      </header>
-    </>
+      {actions && <div className={`lg:block`}>{actions}</div>}
+    </header>
   );
 }
 
