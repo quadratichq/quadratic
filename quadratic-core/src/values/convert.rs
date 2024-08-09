@@ -252,9 +252,7 @@ where
         Self::Unspanned: TryInto<T, Error = RunErrorMsg>,
     {
         let span = (&self).into();
-
-        // If coercion fails, return an error.
-        self.into_non_error_value()?.try_into().with_span(span)
+        self.without_span().try_into().with_span(span)
     }
 
     /// Coerces a value, returning `None` if the value has the wrong type and

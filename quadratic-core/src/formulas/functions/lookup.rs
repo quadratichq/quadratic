@@ -604,6 +604,7 @@ enum LookupSearchMode {
 }
 impl LookupSearchMode {
     fn from_is_sorted(is_sorted: Option<bool>) -> Self {
+        // TODO: the default behavior here may be incorrect.
         match is_sorted {
             Some(false) | None => LookupSearchMode::LinearForward,
             Some(true) => LookupSearchMode::BinaryAscending,
@@ -768,6 +769,15 @@ mod tests {
                 }
             }
         }
+    }
+
+    /// Test that VLOOKUP ignores error values.
+    #[test]
+    #[parallel]
+    fn test_vlookup_ignore_errors() {
+        let g = Grid::from_array(pos![A1], &array!["a", 10; 1.0 / 0.0, 20; "b", 30]);
+        assert_eq!("10", eval_to_string(&g, "VLOOKUP(\"a\", A1:B3, 2)"));
+        assert_eq!("30", eval_to_string(&g, "VLOOKUP(\"b\", A1:B3, 2)"));
     }
 
     /// Test HLOOKUP error conditions.
