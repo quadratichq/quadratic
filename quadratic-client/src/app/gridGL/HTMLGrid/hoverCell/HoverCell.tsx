@@ -68,9 +68,11 @@ export const HoverCell = () => {
     };
     pixiApp.viewport.on('moved', remove);
     pixiApp.viewport.on('zoomed', remove);
+    events.on('cursorPosition', remove);
     return () => {
       pixiApp.viewport.off('moved', remove);
       pixiApp.viewport.off('zoomed', remove);
+      events.off('cursorPosition', remove);
     };
   }, []);
 
@@ -82,7 +84,7 @@ export const HoverCell = () => {
         const offsets = sheets.sheet.getCellOffsets(cell.x, cell.y);
         const validation = sheets.sheet.getValidationById(cell.validationId);
         if (validation) {
-          const value = await quadraticCore.getDisplayCell(sheets.sheet.id, Number(cell.x), Number(cell.y));
+          const value = cell.value ?? await quadraticCore.getDisplayCell(sheets.sheet.id, Number(cell.x), Number(cell.y));
           setText(
             <div className="relative">
               <HtmlValidationMessage
@@ -91,6 +93,7 @@ export const HoverCell = () => {
                 offsets={offsets}
                 validation={validation}
                 hoverError={value}
+                rejected
               />
             </div>
           );

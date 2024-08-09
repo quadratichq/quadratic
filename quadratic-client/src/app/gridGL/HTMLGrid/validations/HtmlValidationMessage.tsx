@@ -14,6 +14,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import InfoIcon from '@mui/icons-material/Info';
 import { colors } from '@/app/theme/colors';
 import { validationText } from '@/app/ui/menus/Validations/Validations/ValidationEntry';
+import { events } from '@/app/events/events';
 
 interface Props {
   column?: number;
@@ -21,11 +22,12 @@ interface Props {
   offsets?: Rectangle;
   validation?: Validation;
   hoverError?: string;
+  rejected?: boolean;
 }
 
 export const HtmlValidationMessage = (props: Props) => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
-  const { offsets, validation, column, row, hoverError } = props;
+  const { offsets, validation, column, row, hoverError, rejected } = props;
   const [hide, setHide] = useState(true);
 
   const showError = useMemo(() => {
@@ -97,10 +99,10 @@ export const HtmlValidationMessage = (props: Props) => {
     );
 
     const invalidValue =
-      hoverError !== undefined ? <div className="pointer-events-auto">"{hoverError}" is not valid</div> : null;
+      hoverError !== undefined ? <div className="pointer-events-auto whitespace-normal">"{hoverError}" {rejected ? 'was rejected because it ' : ''} is not valid</div> : null;
     message = (
       <>
-        {invalidValue}
+        <div className="">{invalidValue}</div>
         <div>{validation?.error?.message}</div>
         <div>
           {validation && <div className="mt-2">{}</div>}
@@ -131,6 +133,19 @@ export const HtmlValidationMessage = (props: Props) => {
       <div className="leading-2 whitespace-nowrap">
         <div className="flex items-center justify-between gap-2">
           {<div className="margin-bottom: 0.5rem">{title}</div>}
+          { rejected &&
+            <IconButton
+              sx={{ padding: 0 }}
+              className="pointer-events-auto"
+              onClick={() => {
+                events.emit('hoverCell');
+                focusGrid();
+              }}
+            >
+              <Close sx={{ padding: 0, width: 15 }} />
+            </IconButton>
+          }
+
         </div>
         {message && <div className="pb-1 pt-2 text-xs">{message}</div>}
       </div>
