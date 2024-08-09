@@ -51,10 +51,6 @@ class RenderClient {
         renderText.sheetOffsetsDelta(e.data.sheetId, e.data.column, e.data.row, e.data.delta);
         return;
 
-      case 'clientRenderSheetOffsetsFinal':
-        renderText.sheetOffsetsFinal(e.data.sheetId, e.data.column, e.data.row, e.data.delta);
-        return;
-
       case 'clientRenderShowLabel':
         renderText.showLabel(e.data.sheetId, e.data.x, e.data.y, e.data.show);
         return;
