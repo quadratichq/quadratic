@@ -310,14 +310,10 @@ export class PointerHeading {
       if (this.resizing) {
         const transientResize = sheets.sheet.offsets.getResizeToApply();
         if (transientResize) {
-          // update remaining hashes hashes in render web worker, which were only updated in pixiApp
           try {
-            const { column, row, old_size, new_size } = JSON.parse(transientResize) as TransientResize;
-            const c = column !== null ? Number(column) : undefined;
-            const r = row !== null ? Number(row) : undefined;
+            const { old_size, new_size } = JSON.parse(transientResize) as TransientResize;
             const delta = old_size - new_size;
             if (delta !== 0) {
-              renderWebWorker.updateSheetOffsetsFinal(sheets.sheet.id, c, r, delta);
               quadraticCore.commitTransientResize(sheets.sheet.id, transientResize);
             }
           } catch (error) {
