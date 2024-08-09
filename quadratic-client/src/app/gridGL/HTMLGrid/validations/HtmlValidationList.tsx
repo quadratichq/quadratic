@@ -36,7 +36,7 @@ export const HtmlValidationList = (props: Props) => {
     if (location?.x !== listCoordinate.current?.x && location?.y !== listCoordinate.current?.y) {
       setEditorInteractionState((prev) => ({ ...prev, annotationState: undefined }));
     }
-  }, [location?.x, location?.y, setEditorInteractionState, validation]);
+  }, [location, location?.x, location?.y, setEditorInteractionState, validation]);
 
   useEffect(() => {
     const updateShowDropdown = async (column: number, row: number, forceOpen: boolean) => {

@@ -31,6 +31,7 @@ export const useHtmlValidations = (): HtmlValidationsData => {
         return;
       }
       const { x, y } = sheets.sheet.cursor.cursorPosition;
+      setLocation({ x, y });
       const validation = await quadraticCore.getValidationFromPos(sheets.sheet.id, x, y);
 
       if (!validation) {
