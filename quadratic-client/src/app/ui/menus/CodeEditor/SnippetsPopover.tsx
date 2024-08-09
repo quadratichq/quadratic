@@ -23,8 +23,8 @@ import mixpanel from 'mixpanel-browser';
 import { ReactNode, useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
 import { useCodeEditor } from './CodeEditorContext';
-import snippetsPython from './snippets';
-import snippetsJavascript from './snippetsJavascript';
+import { snippetsJS } from './snippetsJS';
+import { snippetsPY } from './snippetsPY';
 
 export function SnippetsPopover() {
   const { editorRef } = useCodeEditor();
@@ -40,7 +40,7 @@ export function SnippetsPopover() {
     }
   }, [showSnippetsPopover]);
 
-  const snippets = editorInteractionState.mode === 'Javascript' ? snippetsJavascript : snippetsPython;
+  const snippets = editorInteractionState.mode === 'Javascript' ? snippetsJS : snippetsPY;
   const documentationLink =
     editorInteractionState.mode === 'Javascript' ? DOCUMENTATION_JAVASCRIPT_URL : DOCUMENTATION_PYTHON_URL;
   return (

@@ -57,10 +57,12 @@ impl GridController {
                 );
             }
 
-            let rows = sheet.get_rows_with_wrap_in_column(column);
-            if !rows.is_empty() {
-                let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
-                resize_rows.extend(rows);
+            if transaction.is_user() {
+                let rows = sheet.get_rows_with_wrap_in_column(column);
+                if !rows.is_empty() {
+                    let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
+                    resize_rows.extend(rows);
+                }
             }
 
             if !transaction.is_server() {

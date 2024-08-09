@@ -87,7 +87,8 @@ impl GridController {
                                 | CellFmtArray::NumericCommas(_)
                                 | CellFmtArray::Bold(_)
                                 | CellFmtArray::Italic(_)
-                        ) {
+                        ) && transaction.is_user()
+                        {
                             if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
                                 let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into());
                                 if !rows.is_empty() {
@@ -133,7 +134,7 @@ impl GridController {
 
                 if !transaction.is_server() {
                     self.send_updated_bounds_selection(&selection, true);
-                    if !rows.is_empty() {
+                    if !rows.is_empty() && transaction.is_user() {
                         let resize_rows = transaction
                             .resize_rows
                             .entry(selection.sheet_id)
