@@ -5,7 +5,7 @@ import { isWebGLSupported } from '@pixi/utils';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import { isDesktop, isSafari } from 'react-device-detect';
-import { Outlet } from 'react-router-dom';
+import { Link, Outlet } from 'react-router-dom';
 import { Empty } from './Empty';
 
 export function BrowserCompatibilityLayoutRoute() {
@@ -41,7 +41,11 @@ export function BrowserCompatibilityLayoutRoute() {
           </a>,
         ]}
         Icon={ExclamationTriangleIcon}
-        actions={<Button>Go to dashboard</Button>}
+        actions={
+          <Button>
+            <Link to="/">Go to dashboard</Link>
+          </Button>
+        }
       />
     );
   }
