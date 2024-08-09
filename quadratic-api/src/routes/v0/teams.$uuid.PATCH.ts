@@ -44,7 +44,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   // Validate exisiting data in the db
   const validatedExisitingClientDataKv = validateClientDataKv(exisitingClientDataKv);
 
-  console.log();
   // Update the team with supplied data
   const newTeam = await dbClient.team.update({
     where: {
