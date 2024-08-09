@@ -9,7 +9,7 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 
 interface Props {
   div: HTMLDivElement | null;
-  offsets?: Rectangle,
+  offsets?: Rectangle;
 
   // used to trigger a check to see if the message should be forced to the left
   forceLeft?: boolean;

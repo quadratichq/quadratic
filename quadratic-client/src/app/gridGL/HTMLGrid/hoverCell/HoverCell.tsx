@@ -84,7 +84,8 @@ export const HoverCell = () => {
         const offsets = sheets.sheet.getCellOffsets(cell.x, cell.y);
         const validation = sheets.sheet.getValidationById(cell.validationId);
         if (validation) {
-          const value = cell.value ?? await quadraticCore.getDisplayCell(sheets.sheet.id, Number(cell.x), Number(cell.y));
+          const value =
+            cell.value ?? (await quadraticCore.getDisplayCell(sheets.sheet.id, Number(cell.x), Number(cell.y)));
           setText(
             <div className="relative">
               <HtmlValidationMessage
