@@ -4,11 +4,15 @@ import { pixiApp } from '../pixiApp/PixiApp';
 import { events } from '@/app/events/events';
 import { inlineEditorEvents } from './inlineEditor/inlineEditorEvents';
 import { inlineEditorHandler } from './inlineEditor/inlineEditorHandler';
+import { useRecoilValue } from 'recoil';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 
 interface Props {
   div: HTMLDivElement | null;
   offsets?: Rectangle,
-  forceLeftOnInlineEditor?: boolean;
+
+  // used to trigger a check to see if the message should be forced to the left
+  forceLeft?: boolean;
 }
 
 interface PositionCellMessage {
@@ -17,7 +21,8 @@ interface PositionCellMessage {
 }
 
 export const usePositionCellMessage = (props: Props): PositionCellMessage => {
-  const { div, offsets, forceLeftOnInlineEditor } = props;
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const { div, offsets, forceLeft } = props;
   const [top, setTop] = useState<number | undefined>();
   const [left, setLeft] = useState<number | undefined>();
 
@@ -28,13 +33,14 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
       const viewport = pixiApp.viewport;
       const bounds = viewport.getVisibleBounds();
 
-      let forceLeft = false;
-      if (forceLeftOnInlineEditor) {
-        forceLeft = inlineEditorHandler.isOpen();
+      // checks whether the inline editor or dropdown is open; if so, always
+      // show to the left to avoid overlapping the content
+      let triggerLeft = false;
+      if (forceLeft) {
+        triggerLeft = inlineEditorHandler.isOpen() || editorInteractionState.annotationState === 'dropdown';
       }
-
       // only box to the left if it doesn't fit.
-      if (forceLeft || offsets.right + div.offsetWidth > bounds.right) {
+      if (triggerLeft || offsets.right + div.offsetWidth > bounds.right) {
         // box to the left
         setLeft(offsets.left - div.offsetWidth);
       } else {
@@ -64,7 +70,7 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
       pixiApp.viewport.off('moved', updatePosition);
       window.removeEventListener('resize', updatePosition);
     };
-  }, [div, forceLeftOnInlineEditor, offsets]);
+  }, [div, editorInteractionState.annotationState, forceLeft, offsets]);
 
   return { top, left };
 };

@@ -50,7 +50,7 @@ export const HtmlValidationMessage = (props: Props) => {
     setHide(false);
   }, [validation]);
 
-  const { top, left } = usePositionCellMessage({ div, offsets, forceLeftOnInlineEditor: true });
+  const { top, left } = usePositionCellMessage({ div, offsets, forceLeft: true });
 
   const showValidation = useCallback(() => {
     if (validation) {
