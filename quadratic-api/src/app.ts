@@ -87,10 +87,11 @@ registerRoutes().then(() => {
   // Error-logging middleware
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     if (NODE_ENV !== 'test') {
-      if (err.status >= 500) {
-        console.error(`[${new Date().toISOString()}] ${err.message}`);
-        if (NODE_ENV !== 'production') console.log(`[${new Date().toISOString()}] ${err.message}`);
-      }
+      // if (err.status >= 500) {
+      //   console.error(`[${new Date().toISOString()}] ${err.message}`);
+      //   if (NODE_ENV !== 'production') console.log(`[${new Date().toISOString()}] ${err.message}`);
+      // }
+      console.log(`[${new Date().toISOString()}] ${err}`);
     }
     next(err);
   });

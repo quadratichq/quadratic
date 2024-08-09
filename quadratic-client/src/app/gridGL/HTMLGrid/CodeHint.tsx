@@ -63,7 +63,7 @@ export const CodeHint = () => {
 
   if (
     cellHasValue ||
-    cellTypeMenuOpenedCount >= 2 ||
+    cellTypeMenuOpenedCount >= 4 ||
     showCodeEditor ||
     !permissions.includes('FILE_EDIT') ||
     isMobile ||
