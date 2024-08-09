@@ -172,12 +172,16 @@ export class CellLabel {
       const nextLeftWidth = this.AABB.right - nextLeft;
       if (this.nextLeftWidth !== nextLeftWidth) {
         this.nextLeftWidth = nextLeftWidth;
-        if (this.checkNumberClip()) this.updateText(labelMeshes);
+        if (this.number !== undefined) {
+          this.updateText(labelMeshes);
+        }
         return true;
       }
     } else if (this.nextLeftWidth !== undefined) {
       this.nextLeftWidth = undefined;
-      if (this.checkNumberClip()) this.updateText(labelMeshes);
+      if (this.checkNumberClip()) {
+        this.updateText(labelMeshes);
+      }
       return true;
     }
     return false;
@@ -188,12 +192,16 @@ export class CellLabel {
       const nextRightWidth = nextRight - this.AABB.left;
       if (this.nextRightWidth !== nextRightWidth) {
         this.nextRightWidth = nextRightWidth;
-        if (this.checkNumberClip()) this.updateText(labelMeshes);
+        if (this.number !== undefined) {
+          this.updateText(labelMeshes);
+        }
         return true;
       }
     } else if (this.nextRightWidth !== undefined) {
       this.nextRightWidth = undefined;
-      if (this.checkNumberClip()) this.updateText(labelMeshes);
+      if (this.checkNumberClip()) {
+        this.updateText(labelMeshes);
+      }
       return true;
     }
     return false;
@@ -203,10 +211,10 @@ export class CellLabel {
     if (this.number === undefined) return false;
 
     const clipLeft = Math.max(this.cellClipLeft ?? -Infinity, this.AABB.right - (this.nextLeftWidth ?? Infinity));
-    if (this.actualLeft < clipLeft + CELL_TEXT_MARGIN_LEFT * 3) return true;
+    if (this.actualLeft < clipLeft) return true;
 
     const clipRight = Math.min(this.cellClipRight ?? Infinity, this.AABB.left + (this.nextRightWidth ?? Infinity));
-    if (this.actualRight > clipRight - CELL_TEXT_MARGIN_LEFT * 3) return true;
+    if (this.actualRight > clipRight) return true;
 
     return false;
   };
