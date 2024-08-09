@@ -147,6 +147,11 @@ mod tests {
             eval_to_err(&g, "IFERROR(0/0, 0/0)").msg,
         );
 
+        assert_eq!(
+            "complex!",
+            eval_to_string(&g, "IFERROR(SQRT(-1), \"complex!\")"),
+        );
+
         g.sheets_mut()[0].set_cell_value(pos![A6], "happy");
         assert_eq!("happy", eval_to_string(&g, "IFERROR(A6, 42)"));
         assert_eq!("happy", eval_to_string(&g, "IFERROR(A6, 0/0)"));
