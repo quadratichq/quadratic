@@ -36,11 +36,13 @@ impl From<&str> for CellValue {
         CellValue::Text(value.to_string())
     }
 }
-// todo: this might be wrong for formulas
 impl From<f64> for CellValue {
     fn from(value: f64) -> Self {
-        BigDecimal::try_from(value)
-            .map_or_else(|_| CellValue::Text(value.to_string()), CellValue::Number)
+        match BigDecimal::try_from(value) {
+            Ok(n) => CellValue::Number(n),
+            // TODO: add span information
+            Err(_) => CellValue::Error(Box::new(RunErrorMsg::NaN.without_span())),
+        }
     }
 }
 impl From<i64> for CellValue {
