@@ -35,6 +35,7 @@ export const usePositionCellMessage = (div: HTMLDivElement | null, offsets?: Rec
         setTop(offsets.bottom - div.offsetHeight);
       }
     };
+
     updatePosition();
     events.on('cursorPosition', updatePosition);
     pixiApp.viewport.on('moved', updatePosition);

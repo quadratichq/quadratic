@@ -37,21 +37,18 @@ export const useHtmlValidations = (): HtmlValidationsData => {
         setValidation(undefined);
         setValidationType('');
         setLocation(undefined);
+        setOffsets(undefined);
         return;
-      } else {
-        setLocation({ x, y });
-        setValidation(validation);
-        setValidationType(validationRuleSimple(validation));
       }
 
-      // we only need offsets if validation is present
-      if (validation) {
-        const offsets = sheets.sheet.getCellOffsets(x, y);
-        setOffsets(offsets);
-      } else {
-        setOffsets(undefined);
-      }
+      setLocation({ x, y });
+      setValidation(validation);
+      setValidationType(validationRuleSimple(validation));
+
+      const offsets = sheets.sheet.getCellOffsets(x, y);
+      setOffsets(offsets);
     };
+
     updateCursor();
 
     events.on('cursorPosition', updateCursor);

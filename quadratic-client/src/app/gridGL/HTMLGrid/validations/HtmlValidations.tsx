@@ -7,7 +7,7 @@ export const HtmlValidations = () => {
   const htmlValidationsData = useHtmlValidations();
 
   const { location, offsets, validation } = htmlValidationsData;
-  console.log(offsets);
+
   return (
     <>
       <HtmlValidationList htmlValidationsData={htmlValidationsData} />
