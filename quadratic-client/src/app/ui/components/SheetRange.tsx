@@ -20,10 +20,12 @@ interface Props {
   // used to update the sheet's cursor to the range. If string, then it uses the
   // string as the sheetId; otherwise it uses sheets.sheet.id as the sheetId
   changeCursor?: string | true;
+
+  readOnly?: boolean;
 }
 
 export const SheetRange = (props: Props) => {
-  const { onChangeSelection: onChangeRange, label, initial, triggerError, changeCursor } = props;
+  const { onChangeSelection: onChangeRange, label, initial, triggerError, changeCursor, readOnly } = props;
   const [rangeError, setRangeError] = useState<string | undefined>();
   const ref = useRef<HTMLInputElement>(null);
 
@@ -80,13 +82,15 @@ export const SheetRange = (props: Props) => {
       {props.label && <Label htmlFor={label}>{label}</Label>}
       <div className="flex w-full items-center space-x-2">
         <div className={cn('w-full', rangeError || isError ? 'border border-red-500' : '')}>
-          <Input ref={ref} id={props.label} onBlur={onBlur} onFocus={onFocus} />
+          <Input ref={ref} id={props.label} onBlur={onBlur} onFocus={onFocus} readOnly={readOnly} />
         </div>
-        <TooltipHint title={'Insert current selection'} placement="bottom">
-          <Button size="sm" onClick={onInsert}>
-            <HighlightAltIcon fontSize="small" />
-          </Button>
-        </TooltipHint>
+        {!readOnly && (
+          <TooltipHint title={'Insert current selection'} placement="bottom">
+            <Button size="sm" onClick={onInsert}>
+              <HighlightAltIcon fontSize="small" />
+            </Button>
+          </TooltipHint>
+        )}
       </div>
       {rangeError && <div className="text-xs text-red-500">{rangeError}</div>}
       {!rangeError && isError && <div className="text-xs text-red-500">Empty range</div>}

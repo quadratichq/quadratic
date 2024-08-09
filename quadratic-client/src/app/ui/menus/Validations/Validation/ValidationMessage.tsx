@@ -15,7 +15,7 @@ const STYLE_OPTIONS: { label: string; value: ValidationStyle }[] = [
 
 export const ValidationMessage = (props: Props) => {
   const { onlyMessage } = props;
-  const { validation, setValidation } = props.validationData;
+  const { validation, setValidation, readOnly } = props.validationData;
 
   const changeMessageTitle = (title: string) => {
     setValidation((old) => {
@@ -80,6 +80,7 @@ export const ValidationMessage = (props: Props) => {
         label="Show error for invalid data"
         value={!!validation?.error.show}
         changeValue={showError}
+        readOnly={readOnly}
       />
       <ValidationDropdown
         label="Style"
@@ -87,12 +88,14 @@ export const ValidationMessage = (props: Props) => {
         onChange={(style) => changeErrorStyle(style as ValidationStyle)}
         options={STYLE_OPTIONS}
         disabled={!validation?.error.show}
+        readOnly={readOnly}
       />
       <ValidationInput
         label="Title"
         value={validation?.error.title || ''}
         onChange={(title) => changeErrorTitle(title)}
         disabled={!validation?.error.show}
+        readOnly={readOnly}
       />
       <ValidationTextArea
         label="Message"
@@ -100,6 +103,7 @@ export const ValidationMessage = (props: Props) => {
         onChange={(message) => changeErrorMessage(message)}
         height="10rem"
         disabled={!validation?.error.show}
+        readOnly={readOnly}
       />
     </>
   );
@@ -113,6 +117,7 @@ export const ValidationMessage = (props: Props) => {
             label="Show input message when cell is selected"
             value={!!validation?.message.show}
             changeValue={showMessage}
+            readOnly={readOnly}
           />
         )}
         <ValidationInput
@@ -120,6 +125,7 @@ export const ValidationMessage = (props: Props) => {
           value={validation?.message.title || ''}
           onChange={(title) => changeMessageTitle(title)}
           disabled={!validation?.message.show}
+          readOnly={readOnly}
         />
         <ValidationTextArea
           label="Message"
@@ -127,6 +133,7 @@ export const ValidationMessage = (props: Props) => {
           onChange={(message) => changeMessageMessage(message)}
           height="10rem"
           disabled={!validation?.message.show}
+          readOnly={readOnly}
         />
       </div>
       {!onlyMessage && error}

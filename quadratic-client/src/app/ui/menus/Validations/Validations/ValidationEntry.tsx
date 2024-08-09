@@ -35,7 +35,7 @@ export const validationText = (validation: Validation) => {
 export const ValidationEntry = (props: Props) => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const { validation, validationsData, highlight } = props;
-  const { deleteValidation } = validationsData;
+  const { deleteValidation, readOnly } = validationsData;
 
   const title = useMemo(() => validationText(validation), [validation]);
 
@@ -58,19 +58,21 @@ export const ValidationEntry = (props: Props) => {
           <div className="mb-2">{title}</div>
           <div className="opacity-40">{selection}</div>
         </div>
-        <Button
-          className="invisible px-1 hover:bg-white group-hover:visible"
-          asChild
-          variant="outline"
-          onClick={(e) => {
-            deleteValidation(validation.id);
-            e.stopPropagation();
-          }}
-        >
-          <span>
-            <DeleteIcon className="text-gray-400" />
-          </span>
-        </Button>
+        {!readOnly && (
+          <Button
+            className="invisible px-1 hover:bg-white group-hover:visible"
+            asChild
+            variant="outline"
+            onClick={(e) => {
+              deleteValidation(validation.id);
+              e.stopPropagation();
+            }}
+          >
+            <span>
+              <DeleteIcon className="text-gray-400" />
+            </span>
+          </Button>
+        )}
       </div>
     </Button>
   );

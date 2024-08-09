@@ -9,6 +9,7 @@ import { getSelectionString } from '@/app/grid/sheet/selection';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { validationRuleSimple, ValidationRuleSimple, ValidationUndefined } from './validationType';
+import { hasPermissionToEditFile } from '@/app/actions';
 
 export type SetState<T> = Dispatch<SetStateAction<T>>;
 
@@ -28,10 +29,13 @@ export interface ValidationData {
   validate: () => boolean;
   triggerError: boolean;
   sheetId: string;
+  readOnly: boolean;
 }
 
 export const useValidationData = (): ValidationData => {
-  const { showValidation } = useRecoilValue(editorInteractionStateAtom);
+  const { showValidation, permissions } = useRecoilValue(editorInteractionStateAtom);
+  const readOnly = !hasPermissionToEditFile(permissions);
+
   const [validation, setValidation] = useState<ValidationUndefined>();
   const [originalValidation, setOriginalValidation] = useState<ValidationUndefined>();
   const [moreOptions, setMoreOptions] = useState(false);
@@ -293,5 +297,6 @@ export const useValidationData = (): ValidationData => {
     toggleMoreOptions,
     triggerError,
     sheetId,
+    readOnly,
   };
 };

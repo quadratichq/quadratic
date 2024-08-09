@@ -12,7 +12,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 export const Validations = () => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const validationsData = useValidationsData();
-  const { validations, sheetId } = validationsData;
+  const { validations, sheetId, readOnly } = validationsData;
 
   // track which validations are overlapped by the cursor
   const [highlighted, setHighlighted] = useState<string[]>([]);
@@ -63,14 +63,16 @@ export const Validations = () => {
         ))}
       </div>
 
-      <div className="mt-3 flex w-full border-t border-t-gray-100 pt-2">
-        <div className="mx-auto my-1 flex gap-3">
-          <Button variant="secondary" onClick={removeValidations}>
-            Remove All
-          </Button>
-          <Button onClick={addValidation}>Add Validation</Button>
+      {!readOnly && (
+        <div className="mt-3 flex w-full border-t border-t-gray-100 pt-2">
+          <div className="mx-auto my-1 flex gap-3">
+            <Button variant="secondary" onClick={removeValidations}>
+              Remove All
+            </Button>
+            <Button onClick={addValidation}>Add Validation</Button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -9,6 +9,8 @@ import { intersects } from '../../helpers/intersects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { events } from '@/app/events/events';
+import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
+import { hasPermissionToEditFile } from '@/app/actions';
 
 export class CellsTextHashSpecial extends Container<SpecialSprite> {
   clear() {
@@ -38,6 +40,11 @@ export class CellsTextHashSpecial extends Container<SpecialSprite> {
   // handle clicking on UI elements
   // if world is true, it skips the check and automatically triggers (reuse by pressing Space on cell)
   clickedToCell(column: number, row: number, world: Point | true) {
+    const { permissions } = pixiAppSettings.editorInteractionState;
+    if (!hasPermissionToEditFile(permissions)) {
+      return;
+    }
+
     this.children.forEach((child) => {
       const special = child as SpecialSprite;
       if (special.column === column && special.row === row) {

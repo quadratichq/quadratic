@@ -12,14 +12,15 @@ interface CheckboxProps {
   label: string;
   value: boolean;
   changeValue: (checked: boolean) => void;
+  readOnly?: boolean;
 }
 
 export const ValidationUICheckbox = (props: CheckboxProps) => {
-  const { label, value: showDropdown, changeValue: changeDropDown } = props;
+  const { label, value: showDropdown, changeValue: changeDropDown, readOnly } = props;
 
   return (
     <div className="flex items-center space-x-2">
-      <Checkbox id={label} checked={showDropdown} onCheckedChange={changeDropDown} />
+      <Checkbox id={label} checked={showDropdown} onCheckedChange={changeDropDown} disabled={readOnly} />
       <label htmlFor={label} className="cursor-pointer text-sm font-medium">
         {label}
       </label>
@@ -42,10 +43,12 @@ interface InputProps {
   footer?: string | JSX.Element;
   height?: string;
   placeholder?: string;
+
+  readOnly?: boolean;
 }
 
 export const ValidationInput = (props: InputProps) => {
-  const { label, value, onChange, onInput, footer, height, placeholder, error, disabled } = props;
+  const { label, value, onChange, onInput, footer, height, placeholder, error, disabled, readOnly } = props;
   const ref = useRef<HTMLInputElement>(null);
 
   const onBlur = useCallback(
@@ -75,6 +78,7 @@ export const ValidationInput = (props: InputProps) => {
             style={{ height }}
             placeholder={placeholder}
             disabled={disabled}
+            readOnly={readOnly}
           />
         </div>
         {footer && <div className="text-xs">{footer}</div>}
@@ -85,7 +89,7 @@ export const ValidationInput = (props: InputProps) => {
 };
 
 export const ValidationTextArea = (props: InputProps) => {
-  const { label, value, onChange, onInput, footer, height, placeholder, disabled } = props;
+  const { label, value, onChange, onInput, footer, height, placeholder, disabled, readOnly } = props;
   const ref = useRef<HTMLTextAreaElement>(null);
 
   const onBlur = useCallback(
@@ -114,6 +118,7 @@ export const ValidationTextArea = (props: InputProps) => {
           style={{ height }}
           placeholder={placeholder}
           disabled={disabled}
+          readOnly={readOnly}
         />
         {footer && <div className="text-xs">{footer}</div>}
       </div>
@@ -133,15 +138,16 @@ interface DropdownProps {
   onChange: (value: string) => void;
   options: { value: string; label: string | JSX.Element }[];
   disabled?: boolean;
+  readOnly?: boolean;
 }
 
 export const ValidationDropdown = (props: DropdownProps) => {
-  const { label, value, onChange, options, disabled } = props;
+  const { label, value, onChange, options, disabled, readOnly } = props;
 
   return (
     <div>
       {label && <div className={disabled ? 'opacity-50' : ''}>{label}</div>}
-      <Select value={value} onValueChange={onChange} disabled={disabled}>
+      <Select value={value} onValueChange={onChange} disabled={disabled || readOnly}>
         <SelectTrigger
           className="select-none"
           onClick={(e) => {

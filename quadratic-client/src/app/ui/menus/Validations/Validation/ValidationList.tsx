@@ -11,7 +11,7 @@ interface Props {
 }
 
 export const ValidationListInput = (props: Props) => {
-  const { setValidation, validation, triggerError } = props.validationData;
+  const { setValidation, validation, triggerError, readOnly } = props.validationData;
 
   const changeList = (list: string) => {
     const trimmedList = list.split(',').map((value) => value.trim());
@@ -44,12 +44,14 @@ export const ValidationListInput = (props: Props) => {
       onChange={changeList}
       footer="Enter values separated by commas"
       error={triggerError && list.trim() === '' ? 'Need at least one value in list' : undefined}
+      readOnly={readOnly}
     />
   );
 };
 
 export const ValidationList = (props: Props) => {
   const {
+    validation,
     setValidation,
     rule,
     ignoreBlank,
@@ -58,10 +60,19 @@ export const ValidationList = (props: Props) => {
     changeShowUI: changeDropDown,
     triggerError,
     sheetId,
+    readOnly,
   } = props.validationData;
 
+  const selection = useMemo(() => {
+    if (!validation || !('rule' in validation)) return;
+    const list = validation.rule as ValidationRule;
+    if (list === 'None') return;
+    if ('List' in list && 'source' in list.List && 'Selection' in list.List.source) {
+      return list.List.source.Selection;
+    }
+  }, [validation]);
+
   const changeSelection = (selection: Selection | undefined) => {
-    console.log(selection);
     const rule: ValidationRule = {
       List: {
         source: { Selection: selection ?? defaultSelection(sheets.sheet.id) },
@@ -84,15 +95,27 @@ export const ValidationList = (props: Props) => {
       {rule === 'list-range' && (
         <SheetRange
           label="Range"
+          initial={selection}
           onChangeSelection={changeSelection}
           triggerError={triggerError}
           changeCursor={sheetId}
+          readOnly={readOnly}
         />
       )}
       {rule === 'list' && <ValidationListInput validationData={props.validationData} />}
 
-      <ValidationUICheckbox label="Allow blank values" value={ignoreBlank} changeValue={changeIgnoreBlank} />
-      <ValidationUICheckbox label="Show dropdown in cell" value={showDropdown} changeValue={changeDropDown} />
+      <ValidationUICheckbox
+        label="Allow blank values"
+        value={ignoreBlank}
+        changeValue={changeIgnoreBlank}
+        readOnly={readOnly}
+      />
+      <ValidationUICheckbox
+        label="Show dropdown in cell"
+        value={showDropdown}
+        changeValue={changeDropDown}
+        readOnly={readOnly}
+      />
 
       <ValidationMoreOptions validationData={props.validationData} />
     </div>

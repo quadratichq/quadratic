@@ -25,8 +25,18 @@ export const Validation = () => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
 
   const validationData = useValidationData();
-  const { rule, changeRule, moreOptions, validation, triggerError, validate, setSelection, sheetId, unsaved } =
-    validationData;
+  const {
+    rule,
+    changeRule,
+    moreOptions,
+    validation,
+    triggerError,
+    validate,
+    setSelection,
+    sheetId,
+    unsaved,
+    readOnly,
+  } = validationData;
 
   const validationParameters: JSX.Element | null = useMemo(() => {
     switch (rule) {
@@ -42,10 +52,12 @@ export const Validation = () => {
   }, [rule, validationData]);
 
   const applyValidation = () => {
-    if (validation && 'rule' in validation && validation.rule) {
-      if (!validate()) return;
-      if (unsaved) {
-        quadraticCore.updateValidation(validation, sheets.getCursorPosition());
+    if (!readOnly) {
+      if (validation && 'rule' in validation && validation.rule) {
+        if (!validate()) return;
+        if (unsaved) {
+          quadraticCore.updateValidation(validation, sheets.getCursorPosition());
+        }
       }
     }
     setEditorInteractionState((old) => ({
@@ -78,12 +90,14 @@ export const Validation = () => {
           onChangeSelection={setSelection}
           triggerError={triggerError}
           changeCursor={true}
+          readOnly={readOnly}
         />
         <ValidationDropdown
           label="Criteria"
           value={rule}
           onChange={(value) => changeRule(value as ValidationRuleSimple)}
           options={CRITERIA_OPTIONS}
+          readOnly={readOnly}
         />
         {validationParameters}
         {moreOptions && validationData.rule !== 'none' && <ValidationMessage validationData={validationData} />}
@@ -91,9 +105,11 @@ export const Validation = () => {
 
       <div className="mt-3 flex w-full border-t border-t-gray-100 pt-2">
         <div className="mx-auto my-1 flex gap-3">
-          <Button variant="secondary" onClick={removeValidation}>
-            Remove Rule
-          </Button>
+          {!readOnly && (
+            <Button variant="secondary" onClick={removeValidation}>
+              Remove Rule
+            </Button>
+          )}
           <Button onClick={applyValidation}>Done</Button>
         </div>
       </div>
