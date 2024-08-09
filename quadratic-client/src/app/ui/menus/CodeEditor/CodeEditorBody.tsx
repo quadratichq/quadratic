@@ -8,7 +8,6 @@ import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { pyrightWorker, uri } from '../../../web-workers/pythonLanguageServer/worker';
 import { useCodeEditor } from './CodeEditorContext';
-import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
 import {
   provideCompletionItems as provideCompletionItemsPython,
@@ -25,11 +24,13 @@ import { events } from '@/app/events/events';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import { codeCellIsAConnection, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
 import { SheetRect } from '@/app/quadratic-core-types';
+import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlaceholder';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { javascriptLibraryForEditor } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generatedJavascriptForEditor';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import useEventListener from '@/shared/hooks/useEventListener';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { CircularProgress } from '@mui/material';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
 import { useEditorReturn } from './useEditorReturn';
 
@@ -211,7 +212,7 @@ export const CodeEditorBody = (props: Props) => {
     <div
       style={{
         position: 'relative',
-        minHeight: '100px',
+        minHeight: '2rem',
         flex: '2',
       }}
     >
@@ -222,6 +223,7 @@ export const CodeEditorBody = (props: Props) => {
         value={editorContent}
         onChange={setEditorContent}
         onMount={onMount}
+        loading={<CircularProgress style={{ width: '18px', height: '18px' }} />}
         options={{
           theme: 'light',
           readOnly: !canEdit,
@@ -238,7 +240,7 @@ export const CodeEditorBody = (props: Props) => {
           showUnused: language === 'Javascript' ? false : true,
         }}
       />
-      <CodeEditorPlaceholder editorContent={editorContent} setEditorContent={setEditorContent} />
+      <CodeEditorPlaceholder />
     </div>
   );
 };
