@@ -346,7 +346,7 @@ class InlineEditorHandler {
   }
 
   validateInput = async (): Promise<string | undefined> => {
-    if (!this.location) return;
+    if (!this.open || !this.location || this.formula) return;
     const value = inlineEditorMonaco.get();
     const validationError = await quadraticCore.validateInput(
       this.location.sheetId,
@@ -400,7 +400,6 @@ class InlineEditorHandler {
       } else {
         if (this.location) {
           const validationError = await this.validateInput();
-          console.log(validationError);
           if (validationError) {
             events.emit('hoverCell', { x: this.location.x, y: this.location.y, validationId: validationError, value });
             return false;

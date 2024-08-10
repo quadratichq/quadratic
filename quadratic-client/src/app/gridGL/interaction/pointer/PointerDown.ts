@@ -24,6 +24,24 @@ export class PointerDown {
   // flag that ensures that if pointerUp triggers during setTimeout, pointerUp is still called (see below)
   private afterShowInput?: boolean;
 
+  // Determines whether the input is valid (ie, whether it is open and has a value that does not fail validation)
+  private async isInputValid(): Promise<boolean> {
+    const location = inlineEditorHandler.location;
+    if (!location) return false;
+    const validationError = await inlineEditorHandler.validateInput();
+    if (validationError) {
+      events.emit('hoverCell', {
+        x: location.x,
+        y: location.y,
+        validationId: validationError,
+        value: inlineEditorMonaco.get(),
+      });
+      inlineEditorMonaco.focus();
+      return false;
+    }
+    return true;
+  }
+
   async pointerDown(world: Point, event: PointerEvent) {
     if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || event.button === 1) return;
     const sheet = sheets.sheet;
@@ -72,6 +90,9 @@ export class PointerDown {
     // Select cells between pressed and cursor position. Uses last multiCursor
     // or creates a multiCursor.
     if (event.shiftKey) {
+      // do nothing if we have text is invalid in the input
+      if (!(await this.isInputValid())) return;
+
       const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
       const cursorPosition = cursor.cursorPosition;
       if (column !== cursorPosition.x || row !== cursorPosition.y) {
@@ -108,6 +129,8 @@ export class PointerDown {
 
     // select another multiCursor range
     if (!this.active && (event.metaKey || event.ctrlKey)) {
+      if (!(await this.isInputValid())) return;
+
       const cursorPosition = cursor.cursorPosition;
       if (cursor.multiCursor || column !== cursorPosition.x || row !== cursorPosition.y) {
         event.stopPropagation();
