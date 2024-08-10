@@ -324,8 +324,8 @@ export const ApiSchemas = {
     clientDataKv: TeamClientDataKvSchema.optional(),
   }),
   '/v0/teams/:uuid.PATCH.response': z.object({
-    name: TeamSchema.shape.name.optional(),
-    clientDataKv: TeamClientDataKvSchema.optional(),
+    name: TeamSchema.shape.name,
+    clientDataKv: TeamClientDataKvSchema,
   }),
   '/v0/teams/:uuid/invites.POST.request': TeamUserSchema.pick({ email: true, role: true }),
   '/v0/teams/:uuid/invites.POST.response': z
