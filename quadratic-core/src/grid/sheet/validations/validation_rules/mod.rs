@@ -33,7 +33,7 @@ impl ValidationRule {
             ValidationRule::List(list) => list.validate(sheet, value),
             ValidationRule::Logical(logical) => logical.validate(value),
             ValidationRule::Text(text) => text.validate(value),
-            ValidationRule::Number(number) => number.validate(value),
+            ValidationRule::Number(number) => number.validate(sheet, value),
             ValidationRule::None => true,
         }
     }

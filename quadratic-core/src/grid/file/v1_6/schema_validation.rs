@@ -63,16 +63,42 @@ pub struct ValidationList {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct ValidationNumber {
-    pub ignore_blank: bool,
+pub enum NumberEntry {
+    Number(f64),
+    Cell(Pos),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct ValidationNumber {
+    pub ignore_blank: bool,
+    pub greater_than: Option<NumberEntry>,
+    pub greater_than_or_equal_to: bool,
+    pub less_than: Option<NumberEntry>,
+    pub less_than_or_equal_to: bool,
+    pub equal_to: Option<NumberEntry>,
+    pub not_equal_to: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum TextCase {
+    CaseInsensitive(Vec<String>),
+    CaseSensitive(Vec<String>),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum TextMatch {
+    Exactly(TextCase),
+
+    Contains(TextCase),
+    NotContains(TextCase),
+
+    TextLength { min: Option<i16>, max: Option<i16> },
+}
+
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ValidationText {
     pub ignore_blank: bool,
-    pub exactly: Option<String>,
-    pub contains: Option<String>,
-    pub not_contains: Option<String>,
+    pub text_match: Vec<TextMatch>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
