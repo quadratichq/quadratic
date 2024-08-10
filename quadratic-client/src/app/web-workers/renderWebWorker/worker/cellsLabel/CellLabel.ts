@@ -117,7 +117,6 @@ export class CellLabel {
           }
           return convertNumber(cell.value, cell.number).toUpperCase();
         } else {
-          console.log('cell', cell);
           return cell?.value;
         }
     }
