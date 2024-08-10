@@ -1,13 +1,9 @@
-// Converts the Javascript code before sending it to the worker. This includes
-// using esbuild to find syntax errors, promoting import statements to the top
-// of the file (this is to ensure they are not placed inside of the async
-// anonymous function that allows await at the top level), and attempting to
-// track line numbers so we can return a lineNumber for the return statement. It
-// uses a naive approach to handling multi-line strings with return numbers. We
-// track the ` character and only add the variables where there's an even number
-// of them. We always try to compile and run the code with and without line
-// numbers to ensure that we don't break something when inserting the line
-// numbers.
+//! Converts the Javascript code before sending it to the worker. This includes
+//! using esbuild to find syntax errors, promoting import statements to the top
+//! of the file (this is to ensure they are not placed inside of the async
+//! anonymous function that allows await at the top level), and adding line
+//! numbers to all return statements via a caught thrown error (the only way to
+//! get line numbers in JS).
 
 import * as esbuild from 'esbuild-wasm';
 import { LINE_NUMBER_VAR } from './javascript';
@@ -37,47 +33,15 @@ export async function javascriptFindSyntaxError(transformed: {
   }
 }
 
-// Adds line number variable, keeping track of ` to ensure we don't place line
-// number variables within multiline strings.
-//
-// TODO: A full JS parser would be better as it would handle all cases and can
-// be used to move the import statements to the top of the code as well.
+// Uses a thrown error to find the line number of the return statement.
 export function javascriptAddLineNumberVars(transform: JavascriptTransformedCode): string {
-  const imports = transform.imports.split('\n');
   const list = transform.code.split('\n');
-  let multiLineCount = 0;
   let s = '';
-  let add = imports.length + 1;
-  let inMultiLineComment = false;
   for (let i = 0; i < list.length; i++) {
-    multiLineCount += [...list[i].matchAll(/`/g)].length;
-    s += list[i];
-    if (multiLineCount % 2 === 0) {
-      // inserts a line break if the line includes a comment marker
-      if (s.includes('//')) s += '\n';
-
-      // track multi-line comments created with /* */
-      if (inMultiLineComment) {
-        if (s.includes('*/')) {
-          inMultiLineComment = false;
-        } else {
-          add++;
-          continue;
-        }
-      }
-
-      // if we're inside a multi-line comment, don't add line numbers but track it
-      if (s.includes('/*') && !s.includes('*/')) {
-        inMultiLineComment = true;
-        add++;
-        continue;
-      } else {
-        s += `;${LINE_NUMBER_VAR} += ${add};\n`;
-      }
-      add = 1;
-    } else {
-      add++;
+    if (list[i].includes('return')) {
+      s += `try { throw new Error() } catch (e) { const stackLines = e.stack.split("\\n"); const match = stackLines[1].match(/:(\\d+):(\\d+)/); if (match) { ${LINE_NUMBER_VAR} = match[1];} }`;
     }
+    s += list[i] + '\n';
   }
   return s;
 }
@@ -107,7 +71,7 @@ export function prepareJavascriptCode(
   const code = withLineNumbers ? javascriptAddLineNumberVars(transform) : transform.code;
   const compiledCode =
     transform.imports +
-    (withLineNumbers ? `let ${LINE_NUMBER_VAR} = 1;` : '') +
+    (withLineNumbers ? `let ${LINE_NUMBER_VAR} = 0;` : '') +
     javascriptLibrary.replace('{x:0,y:0}', `{x:${x},y:${y}}`) + // replace the pos() with the correct x,y coordinates
     '(async() => {try{' +
     'let results = await (async () => {' +
