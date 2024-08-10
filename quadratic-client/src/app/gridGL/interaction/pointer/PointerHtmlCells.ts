@@ -142,8 +142,9 @@ export class PointerHtmlCells {
       if (target === 'body' && cell === active) {
         this.setDoubleClick();
         this.clicked = cell;
+        return true;
       }
-      if (target) return true;
+      if (target) return false;
     }
     return false;
   }
