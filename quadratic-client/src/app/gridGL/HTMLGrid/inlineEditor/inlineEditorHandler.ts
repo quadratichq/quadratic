@@ -488,7 +488,8 @@ class InlineEditorHandler {
       visible: false,
       formula: false,
     }));
-
+    this.location = undefined;
+    inlineEditorMonaco.set('');
     this.showing = false;
   };
 
