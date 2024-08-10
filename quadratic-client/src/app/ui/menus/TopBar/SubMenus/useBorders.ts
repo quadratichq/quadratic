@@ -25,7 +25,7 @@ export const useBorders = (): UseBordersResults => {
 
   const changeBorders = (options: ChangeBorder): void => {
     setBorderMenuState((prev) => {
-      const selection = options.selection ?? prev.selection ?? 'all';
+      const selection = options.selection ?? prev.selection;
       const color = options.color ?? prev.color;
       const line = options.line ?? prev.line;
       const cursor = sheets.sheet.cursor;
@@ -43,11 +43,18 @@ export const useBorders = (): UseBordersResults => {
             red: Math.floor(colorArray[0] * 255),
             green: Math.floor(colorArray[1] * 255),
             blue: Math.floor(colorArray[2] * 255),
-            alpha: 0xff,
+            alpha: 1,
           },
           line,
         };
-        quadraticCore.setRegionBorders(sheet.id, rectangle, selection, style);
+        if (options.selection) {
+          quadraticCore.setRegionBorders(sheet.id, rectangle, options.selection, style);
+        } else if (
+          prev.selection &&
+          ((!!options.color && options.color !== prev.color) || (!!options.line && options.line !== prev.line))
+        ) {
+          quadraticCore.setRegionBorders(sheet.id, rectangle, prev.selection, style);
+        }
       }
       return { selection, color, line };
     });
