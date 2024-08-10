@@ -98,15 +98,13 @@ export const HtmlValidationMessage = (props: Props) => {
       </div>
     );
 
-    const invalidValue =
-      hoverError !== undefined ? (
-        <div className="pointer-events-auto whitespace-normal">
-          "{hoverError}" {rejected ? 'was rejected because it ' : ''} is not valid
-        </div>
-      ) : null;
+    // const invalidValue =
+    //   hoverError !== undefined ? (
+    //     <div className="pointer-events-auto whitespace-normal">"{hoverError}" is not valid</div>
+    //   ) : null;
     message = (
       <>
-        <div className="">{invalidValue}</div>
+        {/* <div className="">{invalidValue}</div> */}
         <div>{validation?.error?.message}</div>
         <div>
           {validation && <div className="mt-2">{}</div>}
@@ -137,7 +135,7 @@ export const HtmlValidationMessage = (props: Props) => {
       <div className="leading-2 whitespace-nowrap">
         <div className="flex items-center justify-between gap-2">
           {<div className="margin-bottom: 0.5rem">{title}</div>}
-          {rejected && (
+          {rejected && !hoverError && (
             <IconButton
               sx={{ padding: 0 }}
               className="pointer-events-auto"

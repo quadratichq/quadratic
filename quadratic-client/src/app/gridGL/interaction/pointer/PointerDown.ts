@@ -8,6 +8,7 @@ import { PanMode, pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
 import { events } from '@/app/events/events';
+import { inlineEditorMonaco } from '../../HTMLGrid/inlineEditor/inlineEditorMonaco';
 
 const MINIMUM_MOVE_POSITION = 5;
 
@@ -136,17 +137,22 @@ export class PointerDown {
 
     // Move cursor to mouse down position
     // For single click, hide multiCursor
-    inlineEditorHandler.handleCellPointerDown();
-    cursor.changePosition({
-      keyboardMovePosition: { x: column, y: row },
-      cursorPosition: { x: column, y: row },
-      multiCursor:
-        (event.metaKey || event.ctrlKey) && cursor.multiCursor
-          ? cursor.multiCursor.slice(0, cursor.multiCursor.length - 1)
-          : null,
-      columnRow: event.metaKey || event.ctrlKey ? cursor.columnRow : null,
-      ensureVisible: false,
-    });
+
+    // If the input is rejected, we cannot move the cursor
+    if (await inlineEditorHandler.handleCellPointerDown()) {
+      cursor.changePosition({
+        keyboardMovePosition: { x: column, y: row },
+        cursorPosition: { x: column, y: row },
+        multiCursor:
+          (event.metaKey || event.ctrlKey) && cursor.multiCursor
+            ? cursor.multiCursor.slice(0, cursor.multiCursor.length - 1)
+            : null,
+        columnRow: event.metaKey || event.ctrlKey ? cursor.columnRow : null,
+        ensureVisible: false,
+      });
+    } else {
+      inlineEditorMonaco.focus();
+    }
     events.emit('clickedToCell', column, row, world);
     this.pointerMoved = false;
   }

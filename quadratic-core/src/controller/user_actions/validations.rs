@@ -91,7 +91,7 @@ impl GridController {
         if validation.error.style != ValidationStyle::Stop {
             return None;
         }
-        let cell_value = CellValue::from(input);
+        let cell_value = CellValue::to_cell_value(input);
         if validation.rule.validate(sheet, Some(&cell_value)) {
             None
         } else {
@@ -350,8 +350,29 @@ mod tests {
         };
         let sheet = gc.sheet_mut(sheet_id);
         sheet.validations.set(validation.clone());
-
         assert_eq!(gc.validate_input(sheet_id, (0, 1).into(), "a"), None);
         assert_eq!(gc.validate_input(sheet_id, (0, 1).into(), "c"), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn validate_input_logical() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let validation = Validation {
+            id: Uuid::new_v4(),
+            selection: Selection::pos(0, 2, sheet_id),
+            rule: ValidationRule::Logical(ValidationLogical::default()),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.validations.set(validation.clone());
+        assert_eq!(gc.validate_input(sheet_id, (0, 2).into(), "true"), None);
+        assert_eq!(
+            gc.validate_input(sheet_id, (0, 2).into(), "random"),
+            Some(validation.id)
+        );
     }
 }

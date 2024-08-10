@@ -117,10 +117,12 @@ impl ValidationNumber {
 #[cfg(test)]
 mod tests {
     use bigdecimal::BigDecimal;
+    use serial_test::parallel;
 
     use super::*;
 
     #[test]
+    #[parallel]
     fn validate_number_ignore_blank() {
         let sheet = Sheet::test();
 
@@ -142,6 +144,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn validate_number_less_than() {
         let mut sheet = Sheet::test();
 
@@ -218,6 +221,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn validate_number_greater_than() {
         let mut sheet = Sheet::test();
 
@@ -281,6 +285,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn validate_number_equal_to() {
         let mut sheet = Sheet::test();
 

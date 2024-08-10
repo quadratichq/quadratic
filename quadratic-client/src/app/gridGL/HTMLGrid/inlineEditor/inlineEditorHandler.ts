@@ -359,8 +359,9 @@ class InlineEditorHandler {
 
   // Close editor. It saves the value if cancel = false. It also moves the
   // cursor by (deltaX, deltaY).
-  close = async (deltaX = 0, deltaY = 0, cancel: boolean) => {
-    if (!this.open) return;
+  // @returns whether the editor closed successfully
+  close = async (deltaX = 0, deltaY = 0, cancel: boolean): Promise<boolean> => {
+    if (!this.open) return true;
     if (!this.location) {
       throw new Error('Expected location to be defined in InlineEditorHandler');
     }
@@ -397,20 +398,22 @@ class InlineEditorHandler {
           });
         }
       } else {
-        const validationError = await this.validateInput();
-        if (validationError) {
-          if (this.location) {
+        if (this.location) {
+          const validationError = await this.validateInput();
+          console.log(validationError);
+          if (validationError) {
             events.emit('hoverCell', { x: this.location.x, y: this.location.y, validationId: validationError, value });
+            return false;
+          } else {
+            quadraticCore.setCellValue(
+              this.location.sheetId,
+              this.location.x,
+              this.location.y,
+              value.trim(),
+              sheets.getCursorPosition()
+            );
+            events.emit('hoverCell');
           }
-        } else {
-          quadraticCore.setCellValue(
-            this.location.sheetId,
-            this.location.x,
-            this.location.y,
-            value.trim(),
-            sheets.getCursorPosition()
-          );
-          events.emit('hoverCell');
         }
       }
     }
@@ -434,6 +437,7 @@ class InlineEditorHandler {
 
     // Set focus back to Grid
     focusGrid();
+    return true;
   };
 
   // Handler for the click for the expand code editor button.
@@ -516,11 +520,13 @@ class InlineEditorHandler {
   }
 
   // Called when manually changing cell position via clicking on a new cell
-  // (except when editing formula).
-  handleCellPointerDown() {
+  // (except when editing formula). Returns whether the editor can be closed
+  // (ie, if it fails validation with a ValidationStyle::Stop, we do not let it
+  // close)
+  async handleCellPointerDown(): Promise<boolean> {
     if (this.open) {
       if (!this.formula || !inlineEditorFormula.wantsCellRef()) {
-        this.close(0, 0, false);
+        return await this.close(0, 0, false);
       } else {
         if (!this.cursorIsMoving) {
           this.cursorIsMoving = true;
@@ -528,6 +534,7 @@ class InlineEditorHandler {
         }
       }
     }
+    return true;
   }
 
   private replaceText = (text: string, highlight: boolean) => {
