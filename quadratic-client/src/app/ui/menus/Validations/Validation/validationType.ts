@@ -1,6 +1,6 @@
 import { Validation } from '@/app/quadratic-core-types';
 
-export type ValidationRuleSimple = 'list' | 'list-range' | 'logical' | 'none' | '';
+export type ValidationRuleSimple = 'text' | 'number' | 'list' | 'list-range' | 'logical' | 'none' | '';
 export type ValidationUndefined = Validation | Omit<Validation, 'rule'> | undefined;
 
 // Converts a Validation to a ValidationRuleSimple (to make it easier to work with)
@@ -16,6 +16,10 @@ export const validationRuleSimple = (validation?: ValidationUndefined): Validati
     return 'list';
   } else if ('Logical' in rule) {
     return 'logical';
+  } else if ('Text' in rule) {
+    return 'text';
+  } else if ('Number' in rule) {
+    return 'number';
   }
   throw new Error('Invalid rule in useValidationData');
 };

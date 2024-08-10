@@ -147,6 +147,14 @@ export const useValidationData = (): ValidationData => {
           rule = 'None';
           break;
 
+        case 'number':
+          rule = { Number: { ignore_blank: true, ranges: [] } };
+          break;
+
+        case 'text':
+          rule = { Text: { ignore_blank: true, text_match: [] } };
+          break;
+
         case 'list':
           rule = { List: { source: { List: [] }, ignore_blank: true, drop_down: true } };
           break;
@@ -228,13 +236,13 @@ export const useValidationData = (): ValidationData => {
     const rule = validation?.rule;
     if (rule === 'None') return false;
     if ('List' in rule) {
-      if ('ignore_blank' in rule.List) {
-        return rule.List.ignore_blank;
-      }
+      return rule.List.ignore_blank;
     } else if ('Logical' in rule) {
-      if ('ignore_blank' in rule.Logical) {
-        return rule.Logical.ignore_blank;
-      }
+      return rule.Logical.ignore_blank;
+    } else if ('Text' in rule) {
+      return rule.Text.ignore_blank;
+    } else if ('Number' in rule) {
+      return rule.Number.ignore_blank;
     }
     return false;
   }, [validation]);
@@ -245,8 +253,15 @@ export const useValidationData = (): ValidationData => {
         if (old.rule === 'None') return old;
         if ('List' in old.rule) {
           return { ...old, rule: { List: { ...old.rule.List, ignore_blank: checked } } };
-        } else if ('Logical' in old.rule) {
+        }
+        if ('Logical' in old.rule) {
           return { ...old, rule: { Logical: { ...old.rule.Logical, ignore_blank: checked } } };
+        }
+        if ('Text' in old.rule) {
+          return { ...old, rule: { Text: { ...old.rule.Text, ignore_blank: checked } } };
+        }
+        if ('Number' in old.rule) {
+          return { ...old, rule: { Number: { ...old.rule.Number, ignore_blank: checked } } };
         }
       }
     });

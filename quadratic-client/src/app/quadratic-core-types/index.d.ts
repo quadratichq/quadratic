@@ -59,7 +59,7 @@ export interface Format { align: CellAlign | null, vertical_align: CellVerticalA
 export interface JsSheetFill { columns: Array<[bigint, [string, bigint]]>, rows: Array<[bigint, [string, bigint]]>, all: string | null, }
 export interface ColumnRow { column: number, row: number, }
 export interface Validation { id: string, selection: Selection, rule: ValidationRule, message: ValidationMessage, error: ValidationError, }
-export type ValidationRule = "None" | { "List": ValidationList } | { "Logical": ValidationLogical };
+export type ValidationRule = "None" | { "List": ValidationList } | { "Logical": ValidationLogical } | { "Text": ValidationText } | { "Number": ValidationNumber };
 export interface ValidationError { show: boolean, style: ValidationStyle, title: string | null, message: string | null, }
 export interface ValidationMessage { show: boolean, title: string | null, message: string | null, }
 export interface ValidationLogical { show_checkbox: boolean, ignore_blank: boolean, }
@@ -68,4 +68,11 @@ export type ValidationListSource = { "Selection": Selection } | { "List": Array<
 export type ValidationStyle = "Stop" | "Warning" | "Information";
 export interface ValidationDisplay { checkbox: boolean, list: boolean, }
 export interface ValidationDisplaySheet { columns: Array<[bigint, ValidationDisplay]> | null, rows: Array<[bigint, ValidationDisplay]> | null, all: ValidationDisplay | null, }
+export interface ValidationNumber { ignore_blank: boolean, ranges: Array<NumberRange>, }
+export type NumberRange = { "Range": [NumberInclusive | null, NumberInclusive | null] } | { "Equal": NumberEntry } | { "NotEqual": NumberEntry };
+export type NumberInclusive = { "Inclusive": NumberEntry } | { "Exclusive": NumberEntry };
+export type NumberEntry = { "Number": number } | { "Cell": Pos };
+export type TextCase = { "CaseInsensitive": Array<string> } | { "CaseSensitive": Array<string> };
+export type TextMatch = { "Exactly": TextCase } | { "Contains": TextCase } | { "NotContains": TextCase } | { "TextLength": { min: number | null, max: number | null, } };
+export interface ValidationText { ignore_blank: boolean, text_match: Array<TextMatch>, }
 export interface JsValidationWarning { x: bigint, y: bigint, validation: string, style: ValidationStyle, }

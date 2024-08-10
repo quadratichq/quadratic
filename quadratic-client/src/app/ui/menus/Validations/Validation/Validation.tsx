@@ -13,9 +13,13 @@ import { SheetRange } from '@/app/ui/components/SheetRange';
 import { ValidationLogical } from './ValidationLogical';
 import { ValidationRuleSimple } from './validationType';
 import { ValidationNone } from './ValidationNone';
+import { ValidationText } from './ValidationText';
+import { ValidationNumber } from './ValidationNumber';
 
 const CRITERIA_OPTIONS: { value: ValidationRuleSimple; label: string }[] = [
   { value: 'none', label: 'Message only' },
+  { value: 'text', label: 'Text' },
+  { value: 'number', label: 'Number' },
   { value: 'list', label: 'Values from user list (dropdown)' },
   { value: 'list-range', label: 'Values from sheet (dropdown)' },
   { value: 'logical', label: 'Logical (checkbox)' },
@@ -38,7 +42,7 @@ export const Validation = () => {
     readOnly,
   } = validationData;
 
-  const validationParameters: JSX.Element | null = useMemo(() => {
+  const validationRule: JSX.Element | null = useMemo(() => {
     switch (rule) {
       case 'none':
         return <ValidationNone validationData={validationData} />;
@@ -47,6 +51,10 @@ export const Validation = () => {
         return <ValidationList validationData={validationData} />;
       case 'logical':
         return <ValidationLogical validationData={validationData} />;
+      case 'text':
+        return <ValidationText validationData={validationData} />;
+      case 'number':
+        return <ValidationNumber validationData={validationData} />;
     }
     return null;
   }, [rule, validationData]);
@@ -85,7 +93,7 @@ export const Validation = () => {
 
       <div className="flex flex-grow flex-col gap-5 overflow-y-auto p-1">
         <SheetRange
-          label="Apply to Range"
+          label="Apply to range"
           initial={validation?.selection}
           onChangeSelection={setSelection}
           triggerError={triggerError}
@@ -99,7 +107,7 @@ export const Validation = () => {
           options={CRITERIA_OPTIONS}
           readOnly={readOnly}
         />
-        {validationParameters}
+        {validationRule}
         {moreOptions && validationData.rule !== 'none' && <ValidationMessage validationData={validationData} />}
       </div>
 

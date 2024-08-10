@@ -28,6 +28,10 @@ export const validationText = (validation: Validation) => {
     }
   } else if ('Logical' in validation.rule) {
     return `Logical${validation.rule.Logical.show_checkbox ? ' (Checkbox)' : ''}`;
+  } else if ('Text' in validation.rule) {
+    return 'Text';
+  } else if ('Number' in validation.rule) {
+    return 'Number';
   }
   return 'Unknown';
 };

@@ -9,6 +9,7 @@ import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { cn } from '@/shared/shadcn/utils';
 
 interface CheckboxProps {
+  className?: string;
   label: string;
   value: boolean;
   changeValue: (checked: boolean) => void;
@@ -16,10 +17,10 @@ interface CheckboxProps {
 }
 
 export const ValidationUICheckbox = (props: CheckboxProps) => {
-  const { label, value: showDropdown, changeValue: changeDropDown, readOnly } = props;
+  const { label, value: showDropdown, changeValue: changeDropDown, readOnly, className } = props;
 
   return (
-    <div className="flex items-center space-x-2">
+    <div className={`${className ?? ''} flex items-center space-x-2`}>
       <Checkbox id={label} checked={showDropdown} onCheckedChange={changeDropDown} disabled={readOnly} />
       <label htmlFor={label} className="cursor-pointer text-sm font-medium">
         {label}
