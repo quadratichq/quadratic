@@ -16,6 +16,7 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { CodeEditorEmptyState } from '@/app/ui/menus/CodeEditor/CodeEditorEmptyState';
 import { CodeEditorPanel } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanel';
 import { CodeEditorPanels } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelsResize';
 import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
@@ -46,7 +47,7 @@ export const CodeEditor = () => {
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
   const mode = getLanguage(editorMode);
   const {
-    consoleOutput: [out, setOut],
+    consoleOutput: [, setOut],
     spillError: [, setSpillError],
     codeString: [codeString, setCodeString],
     editorContent: [editorContent, setEditorContent],
@@ -68,13 +69,13 @@ export const CodeEditor = () => {
   // Trigger vanilla changes to code editor
   useEffect(() => {
     events.emit('codeEditor');
-    setPanelBottomActiveTab('console');
+    setPanelBottomActiveTab(mode === 'Connection' ? 'data-browser' : 'console');
     setAiMessages([]);
   }, [
     showCodeEditor,
     editorInteractionState.selectedCell.x,
     editorInteractionState.selectedCell.y,
-    editorInteractionState.mode,
+    mode,
     setPanelBottomActiveTab,
     setAiMessages,
   ]);
@@ -359,7 +360,6 @@ export const CodeEditor = () => {
   };
 
   const codeEditorPanelData = useCodeEditorPanelData();
-  const showReturnType = Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved);
 
   if (!showCodeEditor) {
     return null;
@@ -434,11 +434,12 @@ export const CodeEditor = () => {
           cellsAccessed={!unsaved ? cellsAccessed : []}
           cellLocation={cellLocation}
         />
-        {editorInteractionState.mode !== 'Formula' && showReturnType && (
+        <CodeEditorEmptyState />
+        {editorInteractionState.mode !== 'Formula' && editorContent && (
           <ReturnTypeInspector
             language={editorInteractionState.mode}
             evaluationResult={evaluationResult}
-            show={showReturnType}
+            unsaved={unsaved}
           />
         )}
       </div>
