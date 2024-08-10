@@ -5,14 +5,8 @@ use ts_rs::TS;
 use crate::CellValue;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
-pub enum NumberInclusive {
-    Inclusive(f64),
-    Exclusive(f64),
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum NumberRange {
-    Range(Option<NumberInclusive>, Option<NumberInclusive>),
+    Range(Option<f64>, Option<f64>),
     Equal(Vec<f64>),
     NotEqual(Vec<f64>),
 }
@@ -42,31 +36,13 @@ impl ValidationNumber {
                         NumberRange::Equal(equal) => equal.iter().any(|v| n == *v),
                         NumberRange::Range(min, max) => {
                             if let Some(min) = min.as_ref() {
-                                match min {
-                                    NumberInclusive::Inclusive(min) => {
-                                        if n < *min {
-                                            return false;
-                                        }
-                                    }
-                                    NumberInclusive::Exclusive(min) => {
-                                        if n <= *min {
-                                            return false;
-                                        }
-                                    }
+                                if n < *min {
+                                    return false;
                                 }
                             }
                             if let Some(max) = max.as_ref() {
-                                match max {
-                                    NumberInclusive::Inclusive(max) => {
-                                        if n > *max {
-                                            return false;
-                                        }
-                                    }
-                                    NumberInclusive::Exclusive(max) => {
-                                        if n >= *max {
-                                            return false;
-                                        }
-                                    }
+                                if n > *max {
+                                    return false;
                                 }
                             }
                             true
@@ -110,27 +86,12 @@ mod tests {
     #[parallel]
     fn validate_number_less_than() {
         let rule = ValidationNumber {
-            ranges: vec![NumberRange::Range(
-                None,
-                Some(NumberInclusive::Inclusive(9f64)),
-            )],
+            ranges: vec![NumberRange::Range(None, Some(9f64))],
             ..Default::default()
         };
         assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(10).into()))));
         assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(10).into()))));
         assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(9).into()))));
-        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(8).into()))));
-
-        let rule = ValidationNumber {
-            ranges: vec![NumberRange::Range(
-                None,
-                Some(NumberInclusive::Exclusive(9f64)),
-            )],
-            ..Default::default()
-        };
-        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(10).into()))));
-        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(10).into()))));
-        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(9).into()))));
         assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(8).into()))));
     }
 
@@ -138,27 +99,12 @@ mod tests {
     #[parallel]
     fn validate_number_greater_than() {
         let rule = ValidationNumber {
-            ranges: vec![NumberRange::Range(
-                Some(NumberInclusive::Inclusive(9f64)),
-                None,
-            )],
+            ranges: vec![NumberRange::Range(Some(9f64), None)],
             ..Default::default()
         };
         assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(10).into()))));
         assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(9).into()))));
         assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(8).into()))));
-
-        let rule = ValidationNumber {
-            ranges: vec![NumberRange::Range(
-                Some(NumberInclusive::Exclusive(9f64)),
-                None,
-            )],
-            ..Default::default()
-        };
-        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(10).into()))));
-        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(9).into()))));
-        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(8).into()))));
-        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(10).into()))));
     }
 
     #[test]
@@ -172,5 +118,18 @@ mod tests {
         assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(9).into()))));
         assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(8).into()))));
         assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(-10).into()))));
+    }
+
+    #[test]
+    #[parallel]
+    fn validate_number_not_equal_to() {
+        let rule = ValidationNumber {
+            ranges: vec![NumberRange::NotEqual(vec![9f64, -10f64])],
+            ..Default::default()
+        };
+        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(10).into()))));
+        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(9).into()))));
+        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(8).into()))));
+        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(-10).into()))));
     }
 }

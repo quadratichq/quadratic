@@ -69,9 +69,7 @@ export type ValidationStyle = "Stop" | "Warning" | "Information";
 export interface ValidationDisplay { checkbox: boolean, list: boolean, }
 export interface ValidationDisplaySheet { columns: Array<[bigint, ValidationDisplay]> | null, rows: Array<[bigint, ValidationDisplay]> | null, all: ValidationDisplay | null, }
 export interface ValidationNumber { ignore_blank: boolean, ranges: Array<NumberRange>, }
-export type NumberRange = { "Range": [NumberInclusive | null, NumberInclusive | null] } | { "Equal": NumberEntry } | { "NotEqual": NumberEntry };
-export type NumberInclusive = { "Inclusive": NumberEntry } | { "Exclusive": NumberEntry };
-export type NumberEntry = { "Number": number } | { "Cell": Pos };
+export type NumberRange = { "Range": [number | null, number | null] } | { "Equal": Array<number> } | { "NotEqual": Array<number> };
 export type TextCase = { "CaseInsensitive": Array<string> } | { "CaseSensitive": Array<string> };
 export type TextMatch = { "Exactly": TextCase } | { "Contains": TextCase } | { "NotContains": TextCase } | { "TextLength": { min: number | null, max: number | null, } };
 export interface ValidationText { ignore_blank: boolean, text_match: Array<TextMatch>, }

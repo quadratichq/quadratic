@@ -63,14 +63,8 @@ pub struct ValidationList {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub enum NumberInclusive {
-    Inclusive(f64),
-    Exclusive(f64),
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum NumberRange {
-    Range(Option<NumberInclusive>, Option<NumberInclusive>),
+    Range(Option<f64>, Option<f64>),
     Equal(Vec<f64>),
     NotEqual(Vec<f64>),
 }

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Checkbox } from '@/shared/shadcn/ui/checkbox';
 import { ValidationData } from './useValidationData';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -46,10 +45,12 @@ interface InputProps {
   placeholder?: string;
 
   readOnly?: boolean;
+
+  type?: 'number';
 }
 
 export const ValidationInput = (props: InputProps) => {
-  const { label, value, onChange, onInput, footer, height, placeholder, error, disabled, readOnly } = props;
+  const { label, value, onChange, onInput, footer, height, placeholder, error, disabled, readOnly, type } = props;
   const ref = useRef<HTMLInputElement>(null);
 
   const onBlur = useCallback(
@@ -80,6 +81,7 @@ export const ValidationInput = (props: InputProps) => {
             placeholder={placeholder}
             disabled={disabled}
             readOnly={readOnly}
+            type={type}
           />
         </div>
         {footer && <div className="text-xs">{footer}</div>}

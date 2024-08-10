@@ -4,7 +4,7 @@ use crate::grid::sheet::validations::validation_rules::validation_list::{
 };
 use crate::grid::sheet::validations::validation_rules::validation_logical::ValidationLogical;
 use crate::grid::sheet::validations::validation_rules::validation_number::{
-    NumberInclusive, NumberRange, ValidationNumber,
+    NumberRange, ValidationNumber,
 };
 use crate::grid::sheet::validations::validation_rules::validation_text::{
     TextCase, TextMatch, ValidationText,
@@ -59,19 +59,6 @@ pub fn import_validations(validations: &current_validations::Validations) -> Val
             .map(|(pos, id)| (Pos { x: pos.x, y: pos.y }, *id))
             .collect(),
     }
-}
-
-fn import_number_inclusive(
-    entry: &Option<current_validations::NumberInclusive>,
-) -> Option<NumberInclusive> {
-    entry.as_ref().map(|e| match e {
-        current_validations::NumberInclusive::Inclusive(entry) => {
-            NumberInclusive::Inclusive(entry.to_owned())
-        }
-        current_validations::NumberInclusive::Exclusive(entry) => {
-            NumberInclusive::Exclusive(entry.to_owned())
-        }
-    })
 }
 
 fn import_validation_rule(rule: &current_validations::ValidationRule) -> ValidationRule {
@@ -147,10 +134,9 @@ fn import_validation_rule(rule: &current_validations::ValidationRule) -> Validat
                     .ranges
                     .iter()
                     .map(|range| match range {
-                        current_validations::NumberRange::Range(min, max) => NumberRange::Range(
-                            import_number_inclusive(min),
-                            import_number_inclusive(max),
-                        ),
+                        current_validations::NumberRange::Range(min, max) => {
+                            NumberRange::Range(min.to_owned(), max.to_owned())
+                        }
                         current_validations::NumberRange::Equal(entry) => {
                             NumberRange::Equal(entry.to_owned())
                         }
@@ -162,19 +148,6 @@ fn import_validation_rule(rule: &current_validations::ValidationRule) -> Validat
             })
         }
     }
-}
-
-fn export_number_inclusive(
-    entry: &Option<NumberInclusive>,
-) -> Option<current_validations::NumberInclusive> {
-    entry.as_ref().map(|e| match e {
-        NumberInclusive::Inclusive(entry) => {
-            current_validations::NumberInclusive::Inclusive(entry.clone())
-        }
-        NumberInclusive::Exclusive(entry) => {
-            current_validations::NumberInclusive::Exclusive(entry.clone())
-        }
-    })
 }
 
 fn export_validation_rule(rule: &ValidationRule) -> current_validations::ValidationRule {
@@ -270,10 +243,9 @@ fn export_validation_rule(rule: &ValidationRule) -> current_validations::Validat
                     .ranges
                     .iter()
                     .map(|range| match range {
-                        NumberRange::Range(min, max) => current_validations::NumberRange::Range(
-                            export_number_inclusive(min),
-                            export_number_inclusive(max),
-                        ),
+                        NumberRange::Range(min, max) => {
+                            current_validations::NumberRange::Range(min.clone(), max.clone())
+                        }
                         NumberRange::Equal(entry) => {
                             current_validations::NumberRange::Equal(entry.clone())
                         }
@@ -329,11 +301,7 @@ mod tests {
 
     use uuid::Uuid;
 
-    use crate::{
-        grid::{sheet::validations::validation_rules::validation_number::NumberInclusive, SheetId},
-        selection::Selection,
-        Rect,
-    };
+    use crate::{grid::SheetId, selection::Selection, Rect};
 
     use super::*;
 
@@ -407,10 +375,7 @@ mod tests {
                 rule: ValidationRule::Number(ValidationNumber {
                     ignore_blank: true,
                     ranges: vec![
-                        NumberRange::Range(
-                            Some(NumberInclusive::Inclusive(1f64)),
-                            Some(NumberInclusive::Inclusive(10f64)),
-                        ),
+                        NumberRange::Range(Some(1f64), Some(10f64)),
                         NumberRange::NotEqual(vec![5f64, -10f64]),
                     ],
                 }),
