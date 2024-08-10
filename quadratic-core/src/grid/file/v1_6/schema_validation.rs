@@ -69,14 +69,22 @@ pub enum NumberEntry {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum NumberInclusive {
+    Inclusive(NumberEntry),
+    Exclusive(NumberEntry),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum NumberRange {
+    Range(Option<NumberInclusive>, Option<NumberInclusive>),
+    Equal(NumberEntry),
+    NotEqual(NumberEntry),
+}
+
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ValidationNumber {
     pub ignore_blank: bool,
-    pub greater_than: Option<NumberEntry>,
-    pub greater_than_or_equal_to: bool,
-    pub less_than: Option<NumberEntry>,
-    pub less_than_or_equal_to: bool,
-    pub equal_to: Option<NumberEntry>,
-    pub not_equal_to: bool,
+    pub ranges: Vec<NumberRange>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

@@ -10,26 +10,52 @@ pub enum NumberEntry {
     Cell(Pos),
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+pub enum NumberInclusive {
+    Inclusive(NumberEntry),
+    Exclusive(NumberEntry),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+pub enum NumberRange {
+    Range(Option<NumberInclusive>, Option<NumberInclusive>),
+    Equal(NumberEntry),
+    NotEqual(NumberEntry),
+}
+
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct ValidationNumber {
     pub ignore_blank: bool,
 
-    // greater_than_or_equal_to is just a flag using greater_than for the
-    // comparison.
-    pub greater_than: Option<NumberEntry>,
-    pub greater_than_or_equal_to: bool,
-
-    // less_than_or_equal_to is just a flag using less_than for the
-    // comparison.
-    pub less_than: Option<NumberEntry>,
-    pub less_than_or_equal_to: bool,
-
-    // not_equal_to is just a flag using equal_to for the comparison.
-    pub equal_to: Option<NumberEntry>,
-    pub not_equal_to: bool,
+    // if any range is valid, then the number is valid.
+    pub ranges: Vec<NumberRange>,
 }
 
 impl ValidationNumber {
+    fn validate_number_inclusive(sheet: &Sheet, entry: &NumberInclusive) -> (f64, bool) {
+        match entry {
+            NumberInclusive::Inclusive(entry) => (Self::validate_number_entry(sheet, entry), true),
+            NumberInclusive::Exclusive(entry) => (Self::validate_number_entry(sheet, entry), false),
+        }
+    }
+
+    fn validate_number_entry(sheet: &Sheet, entry: &NumberEntry) -> f64 {
+        match entry {
+            NumberEntry::Number(n) => *n,
+            NumberEntry::Cell(pos) => {
+                if let Some(cell_value) = sheet.cell_value_ref(*pos) {
+                    if let CellValue::Number(n) = cell_value {
+                        n.to_f64().unwrap_or(0f64)
+                    } else {
+                        0f64
+                    }
+                } else {
+                    0f64
+                }
+            }
+        }
+    }
+
     // Validate a CellValue against the validation rule.
     pub fn validate(&self, sheet: &Sheet, value: Option<&CellValue>) -> bool {
         if let Some(cell_value) = value {
@@ -37,78 +63,48 @@ impl ValidationNumber {
                 CellValue::Number(n) => {
                     let n = n.to_f64().unwrap_or(0f64);
 
-                    if let Some(comparison) =
-                        self.greater_than
-                            .as_ref()
-                            .map(|greater_than| match greater_than {
-                                NumberEntry::Number(value) => *value,
-                                NumberEntry::Cell(pos) => {
-                                    if let Some(CellValue::Number(value)) =
-                                        sheet.cell_value_ref(*pos)
-                                    {
-                                        value.to_f64().unwrap_or(0f64)
-                                    } else {
-                                        0f64
+                    if self.ranges.is_empty() {
+                        return true;
+                    }
+
+                    // we're looking for one valid range.
+                    self.ranges.iter().any(|range| match range {
+                        NumberRange::Equal(entry) => {
+                            let equal = Self::validate_number_entry(sheet, entry);
+                            n == equal
+                        }
+                        NumberRange::Range(min, max) => {
+                            if let Some(min) = min.as_ref() {
+                                let (min, inclusive) = Self::validate_number_inclusive(sheet, min);
+                                if inclusive {
+                                    if n < min {
+                                        return false;
+                                    }
+                                } else {
+                                    if n <= min {
+                                        return false;
                                     }
                                 }
-                            })
-                    {
-                        if self.greater_than_or_equal_to {
-                            if !(n >= comparison) {
-                                return false;
                             }
-                        } else {
-                            if !(n > comparison) {
-                                return false;
-                            }
-                        }
-                    }
-
-                    if let Some(comparison) =
-                        self.less_than.as_ref().map(|less_than| match less_than {
-                            NumberEntry::Number(value) => *value,
-                            NumberEntry::Cell(pos) => {
-                                if let Some(CellValue::Number(value)) = sheet.cell_value_ref(*pos) {
-                                    value.to_f64().unwrap_or(0f64)
+                            if let Some(max) = max.as_ref() {
+                                let (max, inclusive) = Self::validate_number_inclusive(sheet, max);
+                                if inclusive {
+                                    if n > max {
+                                        return false;
+                                    }
                                 } else {
-                                    0f64
+                                    if n >= max {
+                                        return false;
+                                    }
                                 }
                             }
-                        })
-                    {
-                        if self.less_than_or_equal_to {
-                            if !(n <= comparison) {
-                                return false;
-                            }
-                        } else {
-                            if !(n < comparison) {
-                                return false;
-                            }
+                            true
                         }
-                    }
-
-                    if let Some(comparison) =
-                        self.equal_to.as_ref().map(|equal_to| match equal_to {
-                            NumberEntry::Number(value) => *value,
-                            NumberEntry::Cell(pos) => {
-                                if let Some(CellValue::Number(value)) = sheet.cell_value_ref(*pos) {
-                                    value.to_f64().unwrap_or(0f64)
-                                } else {
-                                    0f64
-                                }
-                            }
-                        })
-                    {
-                        if self.not_equal_to {
-                            if n == comparison {
-                                return false;
-                            }
-                        } else if n != comparison {
-                            return false;
+                        NumberRange::NotEqual(entry) => {
+                            let not_equal = Self::validate_number_entry(sheet, entry);
+                            n != not_equal
                         }
-                    }
-
-                    return true;
+                    })
                 }
                 _ => false,
             }
@@ -135,7 +131,7 @@ mod tests {
         assert!(rule.validate(&sheet, None));
 
         let rule = ValidationNumber {
-            ignore_blank: true,
+            ignore_blank: false,
             ..Default::default()
         };
         assert!(!rule.validate(&sheet, None));
@@ -150,9 +146,34 @@ mod tests {
         let mut sheet = Sheet::test();
 
         let rule = ValidationNumber {
-            less_than: Some(NumberEntry::Number(9f64)),
+            ranges: vec![NumberRange::Range(
+                None,
+                Some(NumberInclusive::Inclusive(NumberEntry::Number(9f64))),
+            )],
             ..Default::default()
         };
+        assert!(!rule.validate(
+            &sheet,
+            Some(&CellValue::Number(BigDecimal::from(10).into()))
+        ));
+        assert!(!rule.validate(
+            &sheet,
+            Some(&CellValue::Number(BigDecimal::from(10).into()))
+        ));
+        assert!(rule.validate(&sheet, Some(&CellValue::Number(BigDecimal::from(9).into()))));
+        assert!(rule.validate(&sheet, Some(&CellValue::Number(BigDecimal::from(8).into()))));
+
+        let rule = ValidationNumber {
+            ranges: vec![NumberRange::Range(
+                None,
+                Some(NumberInclusive::Exclusive(NumberEntry::Number(9f64))),
+            )],
+            ..Default::default()
+        };
+        assert!(!rule.validate(
+            &sheet,
+            Some(&CellValue::Number(BigDecimal::from(10).into()))
+        ));
         assert!(!rule.validate(
             &sheet,
             Some(&CellValue::Number(BigDecimal::from(10).into()))
@@ -165,10 +186,13 @@ mod tests {
             CellValue::Number(BigDecimal::from(10).into()),
         );
         let rule = ValidationNumber {
-            less_than: Some(NumberEntry::Cell((0, 0).into())),
+            ranges: vec![NumberRange::Range(
+                None,
+                Some(NumberInclusive::Inclusive(NumberEntry::Cell((0, 0).into()))),
+            )],
             ..Default::default()
         };
-        assert!(!rule.validate(
+        assert!(rule.validate(
             &sheet,
             Some(&CellValue::Number(BigDecimal::from(10).into()))
         ));
@@ -177,15 +201,12 @@ mod tests {
             &sheet,
             Some(&CellValue::Number(BigDecimal::from(11).into()))
         ));
-    }
-
-    #[test]
-    fn validate_number_less_than_or_equal_to() {
-        let mut sheet = Sheet::test();
 
         let rule = ValidationNumber {
-            less_than: Some(NumberEntry::Number(9f64)),
-            less_than_or_equal_to: true,
+            ranges: vec![NumberRange::Range(
+                None,
+                Some(NumberInclusive::Exclusive(NumberEntry::Cell((0, 0).into()))),
+            )],
             ..Default::default()
         };
         assert!(!rule.validate(
@@ -194,25 +215,6 @@ mod tests {
         ));
         assert!(rule.validate(&sheet, Some(&CellValue::Number(BigDecimal::from(9).into()))));
         assert!(rule.validate(&sheet, Some(&CellValue::Number(BigDecimal::from(8).into()))));
-
-        sheet.set_cell_value(
-            (0, 0).into(),
-            CellValue::Number(BigDecimal::from(10).into()),
-        );
-        let rule = ValidationNumber {
-            less_than: Some(NumberEntry::Cell((0, 0).into())),
-            less_than_or_equal_to: true,
-            ..Default::default()
-        };
-        assert!(!rule.validate(
-            &sheet,
-            Some(&CellValue::Number(BigDecimal::from(11).into()))
-        ));
-        assert!(rule.validate(
-            &sheet,
-            Some(&CellValue::Number(BigDecimal::from(10).into()))
-        ));
-        assert!(rule.validate(&sheet, Some(&CellValue::Number(BigDecimal::from(9).into()))));
     }
 
     #[test]
@@ -220,43 +222,10 @@ mod tests {
         let mut sheet = Sheet::test();
 
         let rule = ValidationNumber {
-            greater_than: Some(NumberEntry::Number(9f64)),
-            ..Default::default()
-        };
-        assert!(rule.validate(
-            &sheet,
-            Some(&CellValue::Number(BigDecimal::from(10).into()))
-        ));
-        assert!(!rule.validate(&sheet, Some(&CellValue::Number(BigDecimal::from(9).into()))));
-        assert!(!rule.validate(&sheet, Some(&CellValue::Number(BigDecimal::from(8).into()))));
-
-        // greater than 10 (0,0)'s value
-        sheet.set_cell_value(
-            (0, 0).into(),
-            CellValue::Number(BigDecimal::from(10).into()),
-        );
-        let rule = ValidationNumber {
-            greater_than: Some(NumberEntry::Cell((0, 0).into())),
-            ..Default::default()
-        };
-        assert!(rule.validate(
-            &sheet,
-            Some(&CellValue::Number(BigDecimal::from(11).into()))
-        ));
-        assert!(!rule.validate(
-            &sheet,
-            Some(&CellValue::Number(BigDecimal::from(10).into()))
-        ));
-        assert!(!rule.validate(&sheet, Some(&CellValue::Number(BigDecimal::from(9).into()))));
-    }
-
-    #[test]
-    fn validate_number_greater_than_or_equal_to() {
-        let mut sheet = Sheet::test();
-
-        let rule = ValidationNumber {
-            greater_than: Some(NumberEntry::Number(9f64)),
-            greater_than_or_equal_to: true,
+            ranges: vec![NumberRange::Range(
+                Some(NumberInclusive::Inclusive(NumberEntry::Number(9f64))),
+                None,
+            )],
             ..Default::default()
         };
         assert!(rule.validate(
@@ -266,14 +235,34 @@ mod tests {
         assert!(rule.validate(&sheet, Some(&CellValue::Number(BigDecimal::from(9).into()))));
         assert!(!rule.validate(&sheet, Some(&CellValue::Number(BigDecimal::from(8).into()))));
 
-        // greater than or equal to 10 (0,0)'s value
+        let rule = ValidationNumber {
+            ranges: vec![NumberRange::Range(
+                Some(NumberInclusive::Exclusive(NumberEntry::Number(9f64))),
+                None,
+            )],
+            ..Default::default()
+        };
+        assert!(rule.validate(
+            &sheet,
+            Some(&CellValue::Number(BigDecimal::from(10).into()))
+        ));
+        assert!(!rule.validate(&sheet, Some(&CellValue::Number(BigDecimal::from(9).into()))));
+        assert!(!rule.validate(&sheet, Some(&CellValue::Number(BigDecimal::from(8).into()))));
+        assert!(rule.validate(
+            &sheet,
+            Some(&CellValue::Number(BigDecimal::from(10).into()))
+        ));
+
+        // greater than 10 (0,0)'s value
         sheet.set_cell_value(
             (0, 0).into(),
             CellValue::Number(BigDecimal::from(10).into()),
         );
         let rule = ValidationNumber {
-            greater_than: Some(NumberEntry::Cell((0, 0).into())),
-            greater_than_or_equal_to: true,
+            ranges: vec![NumberRange::Range(
+                Some(NumberInclusive::Inclusive(NumberEntry::Cell((0, 0).into()))),
+                None,
+            )],
             ..Default::default()
         };
         assert!(rule.validate(
@@ -283,6 +272,10 @@ mod tests {
         assert!(rule.validate(
             &sheet,
             Some(&CellValue::Number(BigDecimal::from(10).into()))
+        ));
+        assert!(rule.validate(
+            &sheet,
+            Some(&CellValue::Number(BigDecimal::from(11).into()))
         ));
         assert!(!rule.validate(&sheet, Some(&CellValue::Number(BigDecimal::from(9).into()))));
     }
@@ -292,7 +285,7 @@ mod tests {
         let mut sheet = Sheet::test();
 
         let rule = ValidationNumber {
-            equal_to: Some(NumberEntry::Number(9f64)),
+            ranges: vec![NumberRange::Equal(NumberEntry::Number(9f64))],
             ..Default::default()
         };
         assert!(!rule.validate(
@@ -309,17 +302,17 @@ mod tests {
         );
         let rule = ValidationNumber {
             ignore_blank: false,
-            equal_to: Some(NumberEntry::Cell((0, 0).into())),
+            ranges: vec![NumberRange::NotEqual(NumberEntry::Cell((0, 0).into()))],
             ..Default::default()
         };
-        assert!(!rule.validate(
+        assert!(rule.validate(
             &sheet,
             Some(&CellValue::Number(BigDecimal::from(11).into()))
         ));
-        assert!(rule.validate(
+        assert!(!rule.validate(
             &sheet,
             Some(&CellValue::Number(BigDecimal::from(10).into()))
         ));
-        assert!(!rule.validate(&sheet, Some(&CellValue::Number(BigDecimal::from(9).into()))));
+        assert!(rule.validate(&sheet, Some(&CellValue::Number(BigDecimal::from(9).into()))));
     }
 }
