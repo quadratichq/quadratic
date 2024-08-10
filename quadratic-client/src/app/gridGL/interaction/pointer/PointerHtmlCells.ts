@@ -49,7 +49,7 @@ export class PointerHtmlCells {
           this.hovering = undefined;
         }
         this.cursor = undefined;
-        return true;
+        return false;
       }
     }
     this.cursor = undefined;
