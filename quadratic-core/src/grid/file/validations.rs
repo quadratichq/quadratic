@@ -4,7 +4,7 @@ use crate::grid::sheet::validations::validation_rules::validation_list::{
 };
 use crate::grid::sheet::validations::validation_rules::validation_logical::ValidationLogical;
 use crate::grid::sheet::validations::validation_rules::validation_number::{
-    NumberEntry, NumberInclusive, NumberRange, ValidationNumber,
+    NumberInclusive, NumberRange, ValidationNumber,
 };
 use crate::grid::sheet::validations::validation_rules::validation_text::{
     TextCase, TextMatch, ValidationText,
@@ -61,24 +61,15 @@ pub fn import_validations(validations: &current_validations::Validations) -> Val
     }
 }
 
-fn import_number_entry(entry: &current_validations::NumberEntry) -> NumberEntry {
-    match entry {
-        current_validations::NumberEntry::Number(value) => NumberEntry::Number(*value),
-        current_validations::NumberEntry::Cell(pos) => {
-            NumberEntry::Cell(Pos { x: pos.x, y: pos.y })
-        }
-    }
-}
-
 fn import_number_inclusive(
     entry: &Option<current_validations::NumberInclusive>,
 ) -> Option<NumberInclusive> {
     entry.as_ref().map(|e| match e {
         current_validations::NumberInclusive::Inclusive(entry) => {
-            NumberInclusive::Inclusive(import_number_entry(entry))
+            NumberInclusive::Inclusive(entry.to_owned())
         }
         current_validations::NumberInclusive::Exclusive(entry) => {
-            NumberInclusive::Exclusive(import_number_entry(entry))
+            NumberInclusive::Exclusive(entry.to_owned())
         }
     })
 }
@@ -161,23 +152,14 @@ fn import_validation_rule(rule: &current_validations::ValidationRule) -> Validat
                             import_number_inclusive(max),
                         ),
                         current_validations::NumberRange::Equal(entry) => {
-                            NumberRange::Equal(import_number_entry(entry))
+                            NumberRange::Equal(entry.to_owned())
                         }
                         current_validations::NumberRange::NotEqual(entry) => {
-                            NumberRange::NotEqual(import_number_entry(entry))
+                            NumberRange::NotEqual(entry.to_owned())
                         }
                     })
                     .collect(),
             })
-        }
-    }
-}
-
-fn export_number_entry(entry: &NumberEntry) -> current_validations::NumberEntry {
-    match entry {
-        NumberEntry::Number(value) => current_validations::NumberEntry::Number(*value),
-        NumberEntry::Cell(pos) => {
-            current_validations::NumberEntry::Cell(current::Pos { x: pos.x, y: pos.y })
         }
     }
 }
@@ -187,10 +169,10 @@ fn export_number_inclusive(
 ) -> Option<current_validations::NumberInclusive> {
     entry.as_ref().map(|e| match e {
         NumberInclusive::Inclusive(entry) => {
-            current_validations::NumberInclusive::Inclusive(export_number_entry(entry))
+            current_validations::NumberInclusive::Inclusive(entry.clone())
         }
         NumberInclusive::Exclusive(entry) => {
-            current_validations::NumberInclusive::Exclusive(export_number_entry(entry))
+            current_validations::NumberInclusive::Exclusive(entry.clone())
         }
     })
 }
@@ -293,10 +275,10 @@ fn export_validation_rule(rule: &ValidationRule) -> current_validations::Validat
                             export_number_inclusive(max),
                         ),
                         NumberRange::Equal(entry) => {
-                            current_validations::NumberRange::Equal(export_number_entry(entry))
+                            current_validations::NumberRange::Equal(entry.clone())
                         }
                         NumberRange::NotEqual(entry) => {
-                            current_validations::NumberRange::NotEqual(export_number_entry(entry))
+                            current_validations::NumberRange::NotEqual(entry.clone())
                         }
                     })
                     .collect(),
@@ -426,11 +408,10 @@ mod tests {
                     ignore_blank: true,
                     ranges: vec![
                         NumberRange::Range(
-                            Some(NumberInclusive::Inclusive(NumberEntry::Number(1f64))),
-                            Some(NumberInclusive::Inclusive(NumberEntry::Number(10f64))),
+                            Some(NumberInclusive::Inclusive(1f64)),
+                            Some(NumberInclusive::Inclusive(10f64)),
                         ),
-                        NumberRange::Equal(NumberEntry::Cell(Pos { x: 1, y: 2 })),
-                        NumberRange::NotEqual(NumberEntry::Number(5f64)),
+                        NumberRange::NotEqual(vec![5f64, -10f64]),
                     ],
                 }),
                 message: crate::grid::sheet::validations::validation::ValidationMessage {

@@ -12,7 +12,7 @@ use grid::{
         validation_rules::{
             validation_list::{ValidationList, ValidationListSource},
             validation_logical::ValidationLogical,
-            validation_number::{NumberEntry, NumberInclusive, NumberRange, ValidationNumber},
+            validation_number::{NumberInclusive, NumberRange, ValidationNumber},
             validation_text::{TextCase, TextMatch, ValidationText},
             ValidationRule,
         },
@@ -131,7 +131,6 @@ fn main() {
         ValidationNumber,
         NumberRange,
         NumberInclusive,
-        NumberEntry,
         TextCase,
         TextMatch,
         ValidationText,
