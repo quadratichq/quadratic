@@ -139,6 +139,8 @@ export class Pointer {
       this.pointerHeading.pointerUp() ||
       this.pointerAutoComplete.pointerUp() ||
       this.pointerDown.pointerUp();
+
+    this.updateCursor();
   };
 
   handleEscape(): boolean {
