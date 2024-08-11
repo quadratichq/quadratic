@@ -40,7 +40,10 @@ export const HtmlValidationMessage = (props: Props) => {
       return true;
     }
     return false;
-  }, [column, hoverError, row]);
+
+    // we need to watch changes to validations to check if error has changed
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [column, hoverError, row, validation]);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((node: HTMLDivElement) => {

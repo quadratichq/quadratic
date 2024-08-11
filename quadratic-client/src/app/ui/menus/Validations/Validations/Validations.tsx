@@ -52,7 +52,7 @@ export const Validations = () => {
     >
       <ValidationsHeader />
 
-      <div className="grow">
+      <div className="grow overflow-auto">
         {validations.map((validation) => (
           <ValidationEntry
             key={validation.id}
