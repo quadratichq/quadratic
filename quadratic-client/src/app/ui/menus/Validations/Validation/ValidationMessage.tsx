@@ -5,6 +5,7 @@ import { ValidationUICheckbox, ValidationDropdown, ValidationInput, ValidationTe
 interface Props {
   validationData: ValidationData;
   onlyMessage?: boolean;
+  onEnter?: () => void;
 }
 
 const STYLE_OPTIONS: { label: string; value: ValidationStyle }[] = [
@@ -14,7 +15,7 @@ const STYLE_OPTIONS: { label: string; value: ValidationStyle }[] = [
 ];
 
 export const ValidationMessage = (props: Props) => {
-  const { onlyMessage } = props;
+  const { onlyMessage, onEnter } = props;
   const { validation, setValidation, readOnly } = props.validationData;
 
   const changeMessageTitle = (title: string) => {
@@ -96,6 +97,7 @@ export const ValidationMessage = (props: Props) => {
         onChange={(title) => changeErrorTitle(title)}
         disabled={!validation?.error.show}
         readOnly={readOnly}
+        onEnter={onEnter}
       />
       <ValidationTextArea
         label="Message"
@@ -104,6 +106,7 @@ export const ValidationMessage = (props: Props) => {
         height="10rem"
         disabled={!validation?.error.show}
         readOnly={readOnly}
+        onEnter={onEnter}
       />
     </>
   );
@@ -126,6 +129,7 @@ export const ValidationMessage = (props: Props) => {
           onChange={(title) => changeMessageTitle(title)}
           disabled={!validation?.message.show}
           readOnly={readOnly}
+          onEnter={onEnter}
         />
         <ValidationTextArea
           label="Message"
@@ -134,6 +138,7 @@ export const ValidationMessage = (props: Props) => {
           height="10rem"
           disabled={!validation?.message.show}
           readOnly={readOnly}
+          onEnter={onEnter}
         />
       </div>
       {!onlyMessage && error}

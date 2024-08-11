@@ -1,7 +1,7 @@
 import { ValidationHeader } from './ValidationHeader';
 import { Button } from '@/shared/shadcn/ui/button';
 import { useValidationData } from './useValidationData';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { ValidationList } from './ValidationList';
 import { ValidationMessage } from './ValidationMessage';
 import { ValidationDropdown } from './ValidationUI';
@@ -42,24 +42,7 @@ export const Validation = () => {
     readOnly,
   } = validationData;
 
-  const validationRule: JSX.Element | null = useMemo(() => {
-    switch (rule) {
-      case 'none':
-        return <ValidationNone validationData={validationData} />;
-      case 'list-range':
-      case 'list':
-        return <ValidationList validationData={validationData} />;
-      case 'logical':
-        return <ValidationLogical validationData={validationData} />;
-      case 'text':
-        return <ValidationText validationData={validationData} />;
-      case 'number':
-        return <ValidationNumber validationData={validationData} />;
-    }
-    return null;
-  }, [rule, validationData]);
-
-  const applyValidation = () => {
+  const applyValidation = useCallback(() => {
     if (!readOnly) {
       if (validation && 'rule' in validation && validation.rule) {
         if (!validate()) return;
@@ -72,7 +55,24 @@ export const Validation = () => {
       ...old,
       showValidation: true,
     }));
-  };
+  }, [readOnly, setEditorInteractionState, unsaved, validate, validation]);
+
+  const validationRule: JSX.Element | null = useMemo(() => {
+    switch (rule) {
+      case 'none':
+        return <ValidationNone validationData={validationData} onEnter={applyValidation} />;
+      case 'list-range':
+      case 'list':
+        return <ValidationList validationData={validationData} onEnter={applyValidation} />;
+      case 'logical':
+        return <ValidationLogical validationData={validationData} />;
+      case 'text':
+        return <ValidationText validationData={validationData} onEnter={applyValidation} />;
+      case 'number':
+        return <ValidationNumber validationData={validationData} onEnter={applyValidation} />;
+    }
+    return null;
+  }, [applyValidation, rule, validationData]);
 
   const removeValidation = () => {
     if (validation) {
@@ -99,6 +99,7 @@ export const Validation = () => {
           triggerError={triggerError}
           changeCursor={true}
           readOnly={readOnly}
+          onEnter={applyValidation}
         />
         <ValidationDropdown
           label="Criteria"
@@ -108,7 +109,9 @@ export const Validation = () => {
           readOnly={readOnly}
         />
         {validationRule}
-        {moreOptions && validationData.rule !== 'none' && <ValidationMessage validationData={validationData} />}
+        {moreOptions && validationData.rule !== 'none' && (
+          <ValidationMessage validationData={validationData} onEnter={applyValidation} />
+        )}
       </div>
 
       <div className="mt-3 flex w-full border-t border-t-gray-100 pt-2">

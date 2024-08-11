@@ -8,6 +8,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 
 interface Props {
   validationData: ValidationData;
+  onEnter?: () => void;
 }
 
 export const ValidationListInput = (props: Props) => {
@@ -50,6 +51,7 @@ export const ValidationListInput = (props: Props) => {
 };
 
 export const ValidationList = (props: Props) => {
+  const { onEnter, validationData } = props;
   const {
     validation,
     setValidation,
@@ -61,7 +63,7 @@ export const ValidationList = (props: Props) => {
     triggerError,
     sheetId,
     readOnly,
-  } = props.validationData;
+  } = validationData;
 
   const selection = useMemo(() => {
     if (!validation || !('rule' in validation)) return;
@@ -100,6 +102,7 @@ export const ValidationList = (props: Props) => {
           triggerError={triggerError}
           changeCursor={sheetId}
           readOnly={readOnly}
+          onEnter={onEnter}
         />
       )}
       {rule === 'list' && <ValidationListInput validationData={props.validationData} />}

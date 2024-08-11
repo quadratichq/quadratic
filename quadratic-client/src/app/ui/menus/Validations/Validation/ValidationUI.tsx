@@ -40,6 +40,8 @@ interface InputProps {
   // used to update whenever the input is changed (ie, a character is changes within the input box)
   onInput?: (value: string) => void;
 
+  onEnter?: () => void;
+
   footer?: string | JSX.Element;
   height?: string;
   placeholder?: string;
@@ -50,7 +52,8 @@ interface InputProps {
 }
 
 export const ValidationInput = (props: InputProps) => {
-  const { label, value, onChange, onInput, footer, height, placeholder, error, disabled, readOnly, type } = props;
+  const { label, value, onChange, onInput, footer, height, placeholder, error, disabled, readOnly, type, onEnter } =
+    props;
   const ref = useRef<HTMLInputElement>(null);
 
   const onBlur = useCallback(
@@ -82,6 +85,11 @@ export const ValidationInput = (props: InputProps) => {
             disabled={disabled}
             readOnly={readOnly}
             type={type}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && onEnter) {
+                onEnter();
+              }
+            }}
           />
         </div>
         {footer && <div className="text-xs">{footer}</div>}
@@ -92,7 +100,7 @@ export const ValidationInput = (props: InputProps) => {
 };
 
 export const ValidationTextArea = (props: InputProps) => {
-  const { label, value, onChange, onInput, footer, height, placeholder, disabled, readOnly } = props;
+  const { label, value, onChange, onInput, footer, height, placeholder, disabled, readOnly, onEnter } = props;
   const ref = useRef<HTMLTextAreaElement>(null);
 
   const onBlur = useCallback(
@@ -122,6 +130,11 @@ export const ValidationTextArea = (props: InputProps) => {
           placeholder={placeholder}
           disabled={disabled}
           readOnly={readOnly}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && onEnter) {
+              onEnter();
+            }
+          }}
         />
         {footer && <div className="text-xs">{footer}</div>}
       </div>

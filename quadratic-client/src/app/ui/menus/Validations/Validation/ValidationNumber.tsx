@@ -12,10 +12,12 @@ import { cn } from '@/shared/shadcn/utils';
 
 interface Props {
   validationData: ValidationData;
+  onEnter?: () => void;
 }
 
 export const ValidationNumber = (props: Props) => {
-  const { ignoreBlank, changeIgnoreBlank, readOnly, validation, setValidation } = props.validationData;
+  const { onEnter, validationData } = props;
+  const { ignoreBlank, changeIgnoreBlank, readOnly, validation, setValidation } = validationData;
 
   const [equalsError, setEqualsError] = useState(false);
 
@@ -290,6 +292,7 @@ export const ValidationNumber = (props: Props) => {
                 onInput={changeEquals}
                 readOnly={readOnly}
                 error={equalsError ? 'Please enter valid numbers separated by commas' : undefined}
+                onEnter={onEnter}
               />
             </div>
           </AccordionContent>
@@ -316,6 +319,7 @@ export const ValidationNumber = (props: Props) => {
                 onInput={changeNotEquals}
                 readOnly={readOnly}
                 error={equalsError ? 'Please enter valid numbers separated by commas' : undefined}
+                onEnter={onEnter}
               />
             </div>
           </AccordionContent>
@@ -347,6 +351,7 @@ export const ValidationNumber = (props: Props) => {
                       disabled={readOnly}
                       value={min}
                       onChange={(value) => changeRange(i, value, 'min')}
+                      onEnter={onEnter}
                     />
                     <ValidationInput
                       type="number"
@@ -354,6 +359,7 @@ export const ValidationNumber = (props: Props) => {
                       disabled={readOnly}
                       value={max}
                       onChange={(value) => changeRange(i, value, 'max')}
+                      onEnter={onEnter}
                     />
                     <Button
                       className={cn('grow-0 px-2', i !== ranges.length - 1 ? '' : 'invisible')}

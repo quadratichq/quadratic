@@ -7,10 +7,12 @@ import { Tooltip } from '@mui/material';
 
 interface Props {
   validationData: ValidationData;
+  onEnter?: () => void;
 }
 
 export const ValidationText = (props: Props) => {
-  const { ignoreBlank, changeIgnoreBlank, readOnly, validation, setValidation } = props.validationData;
+  const { onEnter, validationData } = props;
+  const { ignoreBlank, changeIgnoreBlank, readOnly, validation, setValidation } = validationData;
 
   //#region Exactly
 
@@ -381,6 +383,7 @@ export const ValidationText = (props: Props) => {
                 value={exactly?.join(', ') ?? ''}
                 onChange={changeExactly}
                 readOnly={readOnly}
+                onEnter={onEnter}
               />
               <ValidationUICheckbox
                 label="Case sensitive"
@@ -412,6 +415,7 @@ export const ValidationText = (props: Props) => {
                 value={contains ? contains.join(', ') : ''}
                 onChange={changeContains}
                 readOnly={readOnly}
+                onEnter={onEnter}
               />
               <ValidationUICheckbox
                 label="Case sensitive"
@@ -442,6 +446,7 @@ export const ValidationText = (props: Props) => {
                 disabled={readOnly}
                 value={notContains ? notContains.join(', ') : ''}
                 onChange={changeNotContains}
+                onEnter={onEnter}
               />
               <ValidationUICheckbox
                 label="Case sensitive"
@@ -472,12 +477,14 @@ export const ValidationText = (props: Props) => {
                 disabled={readOnly}
                 value={minLength?.toString() ?? ''}
                 onChange={changeMinLength}
+                onEnter={onEnter}
               />
               <ValidationInput
                 placeholder="Maximum length"
                 disabled={readOnly}
                 value={maxLength?.toString() ?? ''}
                 onChange={changeMaxLength}
+                onEnter={onEnter}
               />
             </div>
           </AccordionContent>

@@ -22,6 +22,8 @@ interface Props {
   changeCursor?: string | true;
 
   readOnly?: boolean;
+
+  onEnter?: () => void;
 }
 
 export const SheetRange = (props: Props) => {
@@ -82,7 +84,18 @@ export const SheetRange = (props: Props) => {
       {props.label && <Label htmlFor={label}>{label}</Label>}
       <div className="flex w-full items-center space-x-2">
         <div className={cn('w-full', rangeError || isError ? 'border border-red-500' : '')}>
-          <Input ref={ref} id={props.label} onBlur={onBlur} onFocus={onFocus} readOnly={readOnly} />
+          <Input
+            ref={ref}
+            id={props.label}
+            onBlur={onBlur}
+            onFocus={onFocus}
+            readOnly={readOnly}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && props.onEnter) {
+                props.onEnter();
+              }
+            }}
+          />
         </div>
         {!readOnly && (
           <TooltipHint title={'Insert current selection'} placement="bottom">
