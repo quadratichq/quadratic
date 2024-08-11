@@ -1,37 +1,18 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
-import { useEffect, useState } from 'react';
+import mixpanel from 'mixpanel-browser';
 import { useRecoilValue } from 'recoil';
 import { useCodeEditor } from './CodeEditorContext';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
-export function CodeEditorPlaceholder({
-  editorContent,
-  setEditorContent,
-}: {
-  editorContent: string | undefined;
-  setEditorContent: (str: string | undefined) => void;
-}) {
+export function CodeEditorPlaceholder() {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const codeCell = getCodeCell(editorInteractionState.mode);
   const [showPlaceholder, setShowPlaceholder] = useLocalStorage<boolean>('showCodeEditorPlaceholder', true);
-  const [shouldRunEffect, setShouldRunEffect] = useState<boolean>(false);
   const {
-    editorRef,
-    showSnippetsPopover: [, setShowSnippetsPopover],
+    editorContent: [editorContent],
   } = useCodeEditor();
-
-  // When the user chooses to autofill the editor with a predefined snippet,
-  // focus the editor and set the initial cursor position
-  useEffect(() => {
-    if (editorRef && editorRef.current && shouldRunEffect) {
-      editorRef.current.focus();
-      editorRef.current.setPosition({ lineNumber: 0, column: 0 });
-      setShouldRunEffect(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editorContent, shouldRunEffect]);
 
   if (editorContent) {
     return null;
@@ -59,42 +40,19 @@ export function CodeEditorPlaceholder({
       }}
     >
       Start typing to dismiss,{' '}
-      {(codeCell?.id === 'Python' || codeCell?.id === 'Javascript') && (
-        <>
-          <button
-            className="pointer-events-auto italic underline"
-            onClick={() => {
-              setShowSnippetsPopover(true);
-            }}
-          >
-            insert a code snippet
-          </button>
-          , or{' '}
-          <button
-            className={`pointer-events-auto italic underline`}
-            onClick={() => {
-              setShowPlaceholder(false);
-            }}
-          >
-            don’t show this again
-          </button>
-          .
-        </>
-      )}
-      {codeCell?.type === 'connection' && (
-        <>
-          explore your connection schema below, or{' '}
-          <button
-            className={`pointer-events-auto italic underline`}
-            onClick={() => {
-              setShowPlaceholder(false);
-            }}
-          >
-            don’t show this again
-          </button>
-          .
-        </>
-      )}
+      {(codeCell?.id === 'Python' || codeCell?.id === 'Javascript') && <>insert a code snippet below,</>}
+      {codeCell?.type === 'connection' && <>explore your connection schema below,</>}
+      {' or '}
+      <button
+        className={`pointer-events-auto italic underline`}
+        onClick={() => {
+          setShowPlaceholder(false);
+          mixpanel.track('[CodeEditorPlaceholder].dismissed');
+        }}
+      >
+        don’t show this again
+      </button>
+      .
     </div>
   );
 }

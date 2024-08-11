@@ -73,14 +73,16 @@ impl GridController {
                             .or_default();
                         dirty_hashes.extend(hashes);
 
-                        if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
-                            let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into());
-                            if !rows.is_empty() {
-                                let resize_rows = transaction
-                                    .resize_rows
-                                    .entry(sheet_pos.sheet_id)
-                                    .or_default();
-                                resize_rows.extend(rows);
+                        if transaction.is_user() {
+                            if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
+                                let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into());
+                                if !rows.is_empty() {
+                                    let resize_rows = transaction
+                                        .resize_rows
+                                        .entry(sheet_pos.sheet_id)
+                                        .or_default();
+                                    resize_rows.extend(rows);
+                                }
                             }
                         }
                     }
