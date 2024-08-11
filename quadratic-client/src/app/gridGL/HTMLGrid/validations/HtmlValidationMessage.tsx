@@ -14,7 +14,6 @@ import WarningIcon from '@mui/icons-material/Warning';
 import InfoIcon from '@mui/icons-material/Info';
 import { colors } from '@/app/theme/colors';
 import { validationText } from '@/app/ui/menus/Validations/Validations/ValidationEntry';
-import { events } from '@/app/events/events';
 import { translateValidationError } from './translateValidationError';
 
 interface Props {
@@ -22,13 +21,12 @@ interface Props {
   row?: number;
   offsets?: Rectangle;
   validation?: Validation;
-  hoverError?: string;
-  rejected?: boolean;
+  hoverError?: boolean;
 }
 
 export const HtmlValidationMessage = (props: Props) => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
-  const { offsets, validation, column, row, hoverError, rejected } = props;
+  const { offsets, validation, column, row, hoverError } = props;
   const [hide, setHide] = useState(true);
 
   const showError = useMemo(() => {
@@ -69,6 +67,7 @@ export const HtmlValidationMessage = (props: Props) => {
 
   let title: JSX.Element | null = null;
   let message: JSX.Element | null = null;
+
   if (showError) {
     let icon: JSX.Element | null = null;
     switch (validation?.error?.style) {
@@ -126,7 +125,6 @@ export const HtmlValidationMessage = (props: Props) => {
       message = <span>{validation.message.message}</span>;
     }
   }
-
   if (hide || !offsets || (!title && !message)) return null;
 
   // if hover error, we have to remove the wrapper as HoverCell handles that.
@@ -135,7 +133,7 @@ export const HtmlValidationMessage = (props: Props) => {
       <div className="leading-2 whitespace-nowrap">
         <div className="flex items-center justify-between gap-2">
           {<div className="margin-bottom: 0.5rem">{title}</div>}
-          {rejected && !hoverError && (
+          {/* {rejected && !hoverError && (
             <IconButton
               sx={{ padding: 0 }}
               className="pointer-events-auto"
@@ -146,7 +144,7 @@ export const HtmlValidationMessage = (props: Props) => {
             >
               <Close sx={{ padding: 0, width: 15 }} />
             </IconButton>
-          )}
+          )} */}
         </div>
         {message && <div className="pb-1 pt-2 text-xs">{message}</div>}
       </div>

@@ -1,3 +1,4 @@
+import { getSelectionString } from '@/app/grid/sheet/selection';
 import { Validation } from '@/app/quadratic-core-types';
 
 export const translateValidationError = (validation: Validation): JSX.Element | null => {
@@ -140,6 +141,24 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
         Value {verb} be <span className={listClassName}>true</span> or <span className={listClassName}>false</span>.
       </div>
     );
+  }
+
+  if ('List' in validation.rule && validation.rule.List) {
+    if ('List' in validation.rule.List.source) {
+      return (
+        <div className="whitespace-normal">
+          Value {verb} be one of these values:{' '}
+          <span className={listClassName}>{validation.rule.List.source.List.join(', ')}</span>.
+        </div>
+      );
+    } else if ('Selection' in validation.rule.List.source) {
+      return (
+        <div className="whitespace-normal">
+          Value {verb} be one of the values in the selected range{' '}
+          <span className={listClassName}>{getSelectionString(validation.rule.List.source.Selection)}</span>.
+        </div>
+      );
+    }
   }
 
   return null;
