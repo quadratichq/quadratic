@@ -48,7 +48,8 @@ export class Update {
 
   sendRenderViewport() {
     const bounds = pixiApp.viewport.getVisibleBounds();
-    renderWebWorker.updateViewport(sheets.sheet.id, bounds);
+    const scale = pixiApp.viewport.scale.x;
+    renderWebWorker.updateViewport(sheets.sheet.id, bounds, scale);
   }
 
   updateViewport(): void {

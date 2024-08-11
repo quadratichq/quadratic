@@ -29,7 +29,7 @@ export class CellsSheets extends Container<CellsSheet> {
         this.current = child;
       }
     }
-    renderWebWorker.pixiIsReady(sheets.sheet.id, pixiApp.viewport.getVisibleBounds());
+    renderWebWorker.pixiIsReady(sheets.sheet.id, pixiApp.viewport.getVisibleBounds(), pixiApp.viewport.scale.x);
   }
 
   isReady(): boolean {

@@ -91,7 +91,7 @@ export class PixiApp {
     urlParams.init();
 
     if (this.sheetsCreated) {
-      renderWebWorker.pixiIsReady(sheets.current, this.viewport.getVisibleBounds());
+      renderWebWorker.pixiIsReady(sheets.current, this.viewport.getVisibleBounds(), this.viewport.scale.x);
     }
     return new Promise((resolve) => {
       this.waitingForFirstRender = resolve;

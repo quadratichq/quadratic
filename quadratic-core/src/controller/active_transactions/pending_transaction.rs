@@ -11,9 +11,9 @@ use uuid::Uuid;
 use crate::{
     controller::{
         execution::TransactionType, operations::operation::Operation, transaction::Transaction,
-        viewport::ViewportBuffer,
     },
     grid::{CodeCellLanguage, SheetId},
+    viewport::ViewportBuffer,
     Pos, SheetPos, SheetRect,
 };
 

@@ -11,7 +11,6 @@ use crate::{
         transaction::Transaction,
         transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
         transaction_types::JsCodeResult,
-        viewport::ViewportBuffer,
     },
     error_core::Result,
     grid::{CodeRun, CodeRunResult},
@@ -29,14 +28,9 @@ impl GridController {
                 transaction.id.to_string(),
                 transaction_name,
             );
-
-            let viewport_buffer = ViewportBuffer::default();
-            crate::wasm_bindings::js::jsSendViewportBuffer(
-                transaction.id.to_string(),
-                viewport_buffer.get_buffer(),
-            );
-            transaction.viewport_buffer = Some(viewport_buffer);
         }
+
+        self.send_viewport_buffer(transaction);
 
         loop {
             if transaction.operations.is_empty() && transaction.resize_rows.is_empty() {
@@ -46,7 +40,7 @@ impl GridController {
 
             self.execute_operation(transaction);
 
-            self.process_dirty_hashes(transaction);
+            self.process_live_dirty_hashes(transaction);
 
             if transaction.has_async > 0 {
                 self.transactions.update_async_transaction(transaction);
@@ -69,9 +63,8 @@ impl GridController {
             }
         }
 
-        if cfg!(target_family = "wasm") && !transaction.is_server() {
-            crate::wasm_bindings::js::jsClearViewportBuffer(transaction.id.to_string());
-        }
+        self.process_remaining_dirty_hashes(transaction);
+        self.clear_viewport_buffer(transaction);
     }
 
     /// Finalizes the transaction and pushes it to the various stacks (if needed)

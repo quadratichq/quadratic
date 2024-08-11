@@ -1,72 +1,192 @@
-use js_sys::{Int32Array, SharedArrayBuffer, Uint8Array};
-use wasm_bindgen::prelude::*;
+use std::collections::HashSet;
 
-use crate::{grid::SheetId, Pos};
+use itertools::Itertools;
 
-use std::str::FromStr;
+use crate::{
+    controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
+    grid::{js_types::JsPos, SheetId},
+    viewport::ViewportBuffer,
+    Pos, Rect, SheetRect,
+};
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "js", wasm_bindgen)]
-pub struct ViewportBuffer {
-    buffer: SharedArrayBuffer,
-}
+use super::{active_transactions::pending_transaction::PendingTransaction, GridController};
 
-impl Default for ViewportBuffer {
-    fn default() -> Self {
-        // 5 int32 + 36 uint8
-        // first int32 is flag
-        // next 4 int32 are top_left_hash and bottom_right_hash
-        // next 36 uint8 are sheet_id
-        let buffer = SharedArrayBuffer::new(56);
-        ViewportBuffer { buffer }
-    }
-}
-
-impl PartialEq for ViewportBuffer {
-    fn eq(&self, _: &Self) -> bool {
-        true
-    }
-}
-
-impl ViewportBuffer {
-    pub fn get_buffer(&self) -> SharedArrayBuffer {
-        self.buffer.clone()
-    }
-
-    pub fn get_viewport(&self) -> Option<(Pos, Pos, SheetId)> {
-        let array = Int32Array::new(&self.buffer);
-        let flag = array.get_index(0);
-        if flag == 0 {
-            return None;
+impl GridController {
+    pub fn send_viewport_buffer(&self, transaction: &mut PendingTransaction) {
+        if !cfg!(target_family = "wasm") || transaction.is_server() {
+            return;
         }
 
-        let top_left_hash = Pos {
-            x: array.get_index(1) as i64,
-            y: array.get_index(2) as i64,
-        };
-        let bottom_right_hash = Pos {
-            x: array.get_index(3) as i64,
-            y: array.get_index(4) as i64,
-        };
+        let viewport_buffer = ViewportBuffer::default();
+        crate::wasm_bindings::js::jsSendViewportBuffer(
+            transaction.id.to_string(),
+            viewport_buffer.get_buffer(),
+        );
+        transaction.viewport_buffer = Some(viewport_buffer);
+    }
 
-        let uuid_array = Uint8Array::new(&self.buffer);
-        let mut uuid_bytes = [0u8; 36];
-        uuid_array.slice(20, 56).copy_to(&mut uuid_bytes[..]);
-        match std::str::from_utf8(&uuid_bytes) {
-            Ok(uuid_str) => match SheetId::from_str(uuid_str) {
-                Ok(sheet_id) => Some((top_left_hash, bottom_right_hash, sheet_id)),
-                Err(_) => {
-                    dbgjs!(format!(
-                        "[controller.viewport] Invalid SheetId string: {:?}",
-                        uuid_str
-                    ));
-                    None
+    pub fn clear_viewport_buffer(&self, transaction: &mut PendingTransaction) {
+        if !cfg!(target_family = "wasm") || transaction.is_server() {
+            return;
+        }
+
+        crate::wasm_bindings::js::jsClearViewportBuffer(transaction.id.to_string());
+        transaction.viewport_buffer = None;
+    }
+
+    pub fn add_dirty_hashes_from_sheet_rect(
+        &self,
+        transaction: &mut PendingTransaction,
+        sheet_rect: SheetRect,
+    ) {
+        if !cfg!(target_family = "wasm") || transaction.is_server() {
+            return;
+        }
+
+        let hashes = sheet_rect.to_hashes();
+        let dirty_hashes = transaction
+            .dirty_hashes
+            .entry(sheet_rect.sheet_id)
+            .or_default();
+        dirty_hashes.extend(hashes);
+    }
+
+    pub fn add_dirty_hashes_from_sheet_cell_positions(
+        &self,
+        transaction: &mut PendingTransaction,
+        sheet_id: SheetId,
+        positions: HashSet<Pos>,
+    ) {
+        if !cfg!(target_family = "wasm") || transaction.is_server() {
+            return;
+        }
+
+        let mut hashes = HashSet::new();
+        positions.iter().for_each(|pos| {
+            let quadrant = pos.quadrant();
+            hashes.insert(Pos {
+                x: quadrant.0,
+                y: quadrant.1,
+            });
+        });
+
+        let dirty_hashes = transaction.dirty_hashes.entry(sheet_id).or_default();
+        dirty_hashes.extend(hashes);
+    }
+
+    pub fn process_live_dirty_hashes(&self, transaction: &mut PendingTransaction) {
+        if !cfg!(target_family = "wasm")
+            || transaction.dirty_hashes.is_empty()
+            || transaction.is_server()
+        {
+            return;
+        }
+
+        if let Some(viewport_buffer) = &transaction.viewport_buffer {
+            if let Some((top_left, bottom_right, viewport_sheet_id)) =
+                viewport_buffer.get_viewport()
+            {
+                if let Some(dirty_hashes_in_viewport) =
+                    transaction.dirty_hashes.get(&viewport_sheet_id)
+                {
+                    let center = Pos {
+                        x: (top_left.x + bottom_right.x) / 2,
+                        y: (top_left.y + bottom_right.y) / 2,
+                    };
+                    let nearest_dirty_hashes = dirty_hashes_in_viewport
+                        .iter()
+                        .cloned()
+                        .sorted_by(|a, b| {
+                            let a_distance = (a.x - center.x).abs() + (a.y - center.y).abs();
+                            let b_distance = (b.x - center.x).abs() + (b.y - center.y).abs();
+                            a_distance.cmp(&b_distance)
+                        })
+                        .collect();
+
+                    let remaining_hashes = self.send_render_cells_in_viewport(
+                        viewport_sheet_id,
+                        nearest_dirty_hashes,
+                        viewport_buffer,
+                    );
+                    transaction
+                        .dirty_hashes
+                        .insert(viewport_sheet_id, remaining_hashes);
                 }
-            },
-            Err(_) => {
-                dbgjs!(format!("[controller.viewport] Invalid SheetId bytes"));
-                None
             }
+        }
+    }
+
+    pub fn send_render_cells_in_viewport(
+        &self,
+        sheet_id: SheetId,
+        dirty_hashes: Vec<Pos>,
+        viewport_buffer: &ViewportBuffer,
+    ) -> HashSet<Pos> {
+        if !cfg!(target_family = "wasm") || dirty_hashes.is_empty() {
+            return HashSet::new();
+        }
+
+        let mut remaining_hashes = HashSet::new();
+        if let Some(sheet) = self.try_sheet(sheet_id) {
+            for pos in dirty_hashes.iter() {
+                if let Some((top_left, bottom_right, viewport_sheet_id)) =
+                    viewport_buffer.get_viewport()
+                {
+                    if sheet_id == viewport_sheet_id
+                        && pos.x >= top_left.x
+                        && pos.x <= bottom_right.x
+                        && pos.y >= top_left.y
+                        && pos.y <= bottom_right.y
+                    {
+                        let rect = Rect::from_numbers(
+                            pos.x * CELL_SHEET_WIDTH as i64,
+                            pos.y * CELL_SHEET_HEIGHT as i64,
+                            CELL_SHEET_WIDTH as i64,
+                            CELL_SHEET_HEIGHT as i64,
+                        );
+                        let render_cells = sheet.get_render_cells(rect);
+                        if let Ok(cells) = serde_json::to_string(&render_cells) {
+                            crate::wasm_bindings::js::jsRenderCellSheets(
+                                sheet_id.to_string(),
+                                pos.x,
+                                pos.y,
+                                cells,
+                            );
+                        }
+                        dbgjs!(format!("Sending render cells for {:?}", pos));
+                    } else {
+                        remaining_hashes.insert(pos.to_owned());
+                    }
+                }
+            }
+        }
+        remaining_hashes
+    }
+
+    pub fn process_remaining_dirty_hashes(&self, transaction: &mut PendingTransaction) {
+        if !cfg!(target_family = "wasm") || transaction.dirty_hashes.is_empty() {
+            return;
+        }
+
+        for (&sheet_id, dirty_hashes) in transaction.dirty_hashes.iter_mut() {
+            self.flag_hashes_dirty(sheet_id, dirty_hashes);
+            dirty_hashes.clear();
+        }
+        transaction.dirty_hashes.clear();
+    }
+
+    pub fn flag_hashes_dirty(&self, sheet_id: SheetId, dirty_hashes: &HashSet<Pos>) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) || dirty_hashes.is_empty() {
+            return;
+        }
+
+        let hashes = dirty_hashes
+            .iter()
+            .map(|pos| JsPos::from(*pos))
+            .collect::<Vec<JsPos>>();
+
+        if let Ok(hashes_string) = serde_json::to_string(&hashes) {
+            crate::wasm_bindings::js::jsHashesDirty(sheet_id.to_string(), hashes_string);
         }
     }
 }

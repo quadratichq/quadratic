@@ -233,10 +233,10 @@ export class CellsLabels {
     const bounds = renderText.viewport;
     if (!bounds) return undefined;
     return new Rectangle(
-      bounds.x - NEIGHBORS * bounds.width,
-      bounds.y - 2 * NEIGHBORS * bounds.height,
-      bounds.width * (1 + 2 * NEIGHBORS),
-      bounds.height * (1 + 4 * NEIGHBORS)
+      bounds.x - bounds.width * NEIGHBORS * (renderText.scale ?? 1),
+      bounds.y - bounds.height * 2 * NEIGHBORS * (renderText.scale ?? 1),
+      bounds.width * (1 + 2 * NEIGHBORS * (renderText.scale ?? 1)),
+      bounds.height * (1 + 4 * NEIGHBORS * (renderText.scale ?? 1))
     );
   }
 
@@ -268,6 +268,8 @@ export class CellsLabels {
     const neighborRect = this.getViewportNeighborBounds();
     if (!bounds || !neighborRect) return;
 
+    const runningTransaction = renderText.viewportBuffer.size > 0;
+
     // This divides the hashes into (1) visible in need of rendering, (2) not
     // visible and in need of rendering, and (3) not visible and loaded.
     this.cellsTextHash.forEach((hash) => {
@@ -282,7 +284,7 @@ export class CellsLabels {
       } else {
         if (hash.dirty || hash.dirtyText) {
           notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
-        } else if (hash.loaded) {
+        } else if (hash.loaded && !runningTransaction) {
           hash.unload();
         }
       }
@@ -295,7 +297,6 @@ export class CellsLabels {
     visibleDirtyHashes.sort((a, b) => a.hashY - b.hashY);
     notVisibleDirtyHashes.sort((a, b) => a.distance - b.distance);
 
-    const runningTransaction = renderText.viewportBuffer.size > 0;
     if (runningTransaction) {
       const hashWithRenderCells = [
         ...visibleDirtyHashes.filter((hash) => Array.isArray(hash.dirty)),

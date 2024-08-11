@@ -34,6 +34,7 @@ class RenderText {
   bitmapFonts?: RenderBitmapFonts;
   viewport?: Rectangle;
   sheetId?: string;
+  scale?: number;
 
   lastUpdateTick = 0;
   viewportBuffer: Map<string, SharedArrayBuffer>;

@@ -66,12 +66,7 @@ impl GridController {
                     if !transaction.is_server() {
                         self.send_updated_bounds(sheet_rect.sheet_id);
 
-                        let hashes = sheet_rect.to_hashes();
-                        let dirty_hashes = transaction
-                            .dirty_hashes
-                            .entry(sheet_rect.sheet_id)
-                            .or_default();
-                        dirty_hashes.extend(hashes);
+                        self.add_dirty_hashes_from_sheet_rect(transaction, sheet_rect);
 
                         if transaction.is_user() {
                             if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {

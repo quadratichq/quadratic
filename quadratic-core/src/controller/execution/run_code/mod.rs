@@ -175,7 +175,7 @@ impl GridController {
                 }
             }
             self.send_updated_bounds_rect(&sheet_rect, false);
-            self.send_render_cells(&sheet_rect);
+            self.add_dirty_hashes_from_sheet_rect(transaction, sheet_rect);
             if transaction.is_user() {
                 if let Some(sheet) = self.try_sheet(sheet_id) {
                     let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into());
