@@ -1,12 +1,13 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useRootRouteLoaderData } from '@/routes/_root';
+import { FixedBottomAlert } from '@/shared/components/FixedBottomAlert';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Stack, useTheme } from '@mui/material';
 import { Cross2Icon } from '@radix-ui/react-icons';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { Link } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
@@ -69,12 +70,4 @@ export function PermissionOverlay() {
   }
 
   return null;
-}
-
-export function FixedBottomAlert({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="fixed bottom-16 left-1/2 z-10  flex w-[95%] max-w-xl -translate-x-1/2 flex-row items-center justify-between gap-4 rounded border border-border bg-background px-4 py-3 shadow-lg">
-      {children}
-    </div>
-  );
 }

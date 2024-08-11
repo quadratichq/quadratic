@@ -808,8 +808,8 @@ export interface ClientCoreImportExcel {
   type: 'clientCoreImportExcel';
   file: Uint8Array;
   fileName: string;
-  id: number;
   cursor?: string;
+  id: number;
 }
 
 export interface CoreClientImportExcel {

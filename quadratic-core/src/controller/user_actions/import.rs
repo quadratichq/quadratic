@@ -230,6 +230,66 @@ mod tests {
 
     #[test]
     #[parallel]
+    fn imports_a_simple_excel_file_into_existing_file() {
+        let mut grid_controller = GridController::test();
+        let pos = Pos { x: 0, y: 0 };
+        let file: Vec<u8> = std::fs::read(EXCEL_FILE).expect("Failed to read file");
+        let sheet_id = grid_controller.grid.sheets()[0].id;
+        let _ = grid_controller.import_excel(file, "basic.xlsx", Some("".into()));
+
+        let new_sheet_id = grid_controller.grid.sheets()[1].id;
+
+        print_table(
+            &grid_controller,
+            sheet_id,
+            Rect::new_span(pos, Pos { x: 10, y: 10 }),
+        );
+
+        assert_cell_value_row(
+            &grid_controller,
+            new_sheet_id,
+            0,
+            10,
+            1,
+            vec![
+                "Empty",
+                "String",
+                "DateTimeIso",
+                "DurationIso",
+                "Float",
+                "DateTime",
+                "Int",
+                "Error",
+                "Bool",
+                "Bold",
+                "Red",
+            ],
+        );
+
+        assert_cell_value_row(
+            &grid_controller,
+            new_sheet_id,
+            0,
+            10,
+            2,
+            vec![
+                "",
+                "Hello",
+                "2016-10-20 00:00:00",
+                "",
+                "1.1",
+                "2024-01-01 13:00:00",
+                "1",
+                "",
+                "TRUE",
+                "Hello Bold",
+                "Hello Red",
+            ],
+        );
+    }
+
+    #[test]
+    #[parallel]
     fn import_all_excel_functions() {
         let mut grid_controller = GridController::test_blank();
         let pos = Pos { x: 0, y: 0 };

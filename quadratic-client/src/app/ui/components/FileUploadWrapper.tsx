@@ -1,18 +1,13 @@
+import { hasPermissionToEditFile } from '@/app/actions';
+import { userMessageAtom } from '@/app/atoms/userMessageAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/app/gridGL/types/size';
-import { isCsv, isExcel, isParquet } from '@/app/helpers/files';
+import { DragAndDropFileType, isCsv, isDraggedFileExcel, isExcel, isParquet } from '@/app/helpers/files';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { DragEvent, PropsWithChildren, useRef, useState } from 'react';
-
-export type DragAndDropFileType = 'csv' | 'excel' | 'parquet';
-
-const isDraggedFileExcel = (e: DragEvent<HTMLDivElement>) => {
-  const excelTypes = ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
-  const fileMimeTypes = e.dataTransfer.items[0].type;
-  return excelTypes.includes(fileMimeTypes);
-};
+import { useSetRecoilState } from 'recoil';
 
 const getFileType = (file: File): DragAndDropFileType => {
   if (isCsv(file)) return 'csv';
@@ -27,6 +22,7 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
   const [dragActive, setDragActive] = useState(false);
   const divRef = useRef<HTMLDivElement>(null);
   const { addGlobalSnackbar } = useGlobalSnackbar();
+  const setUserMessageState = useSetRecoilState(userMessageAtom);
 
   const moveCursor = (e: DragEvent<HTMLDivElement>): void => {
     const clientBoundingRect = divRef?.current?.getBoundingClientRect();
@@ -53,15 +49,20 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
   const handleDrag = function (e: DragEvent<HTMLDivElement>) {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!hasPermissionToEditFile) return;
+
     if (e.type === 'dragenter' || e.type === 'dragover') {
       setDragActive(true);
       if (isDraggedFileExcel(e)) {
-        // show overlay for excel files
+        setUserMessageState({ message: 'Dropped Excel file(s) will be imported as new sheet(s) in this file.' });
       } else {
+        setUserMessageState({ message: undefined });
         moveCursor(e);
       }
     } else if (e.type === 'dragleave') {
       setDragActive(false);
+      setUserMessageState({ message: undefined });
     }
   };
 
@@ -69,6 +70,9 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
   const handleDrop = async (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!hasPermissionToEditFile) return;
+
     setDragActive(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
@@ -90,16 +94,25 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
             addGlobalSnackbar(`Error loading ${file.name}: ${error}`, { severity: 'warning' });
           }
         } else if (fileType === 'excel') {
+          setUserMessageState({ message: undefined });
           for (const file of e.dataTransfer.files) {
-            const fileType = getFileType(file);
-            if (fileType !== 'excel') continue;
+            try {
+              const fileType = getFileType(file);
+              if (fileType !== 'excel') {
+                throw new Error('Cannot load multiple file types');
+              }
 
-            const contents = await file.arrayBuffer().catch(console.error);
-            if (!contents) return;
+              const contents = await file.arrayBuffer().catch(console.error);
+              if (!contents) {
+                throw new Error('Failed to read file');
+              }
 
-            const buffer = new Uint8Array(contents);
-            const { error } = await quadraticCore.importExcel(buffer, file.name, sheets.getCursorPosition());
-            if (error) {
+              const buffer = new Uint8Array(contents);
+              const { error } = await quadraticCore.importExcel(buffer, file.name, sheets.getCursorPosition());
+              if (error) {
+                throw new Error(error);
+              }
+            } catch (error) {
               addGlobalSnackbar(`Error loading ${file.name}: ${error}`, { severity: 'warning' });
             }
           }

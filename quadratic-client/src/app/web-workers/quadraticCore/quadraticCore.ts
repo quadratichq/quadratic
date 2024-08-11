@@ -989,8 +989,8 @@ class QuadraticCore {
         type: 'clientCoreImportExcel',
         file,
         fileName,
-        id,
         cursor,
+        id,
       });
     });
   };
