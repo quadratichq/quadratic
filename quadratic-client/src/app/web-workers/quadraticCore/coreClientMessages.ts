@@ -964,8 +964,8 @@ export interface CoreClientGetDisplayCell {
 export interface CoreClientRenderValidationWarnings {
   type: 'coreClientRenderValidationWarnings';
   sheetId: string;
-  hashX: number;
-  hashY: number;
+  hashX: number | undefined;
+  hashY: number | undefined;
   validationWarnings: JsValidationWarning[];
 }
 

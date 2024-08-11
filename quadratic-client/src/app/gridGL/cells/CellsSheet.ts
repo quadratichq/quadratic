@@ -104,12 +104,16 @@ export class CellsSheet extends Container {
 
   private renderValidations = (
     sheetId: string,
-    hashX: number,
-    hashY: number,
+    hashX: number | undefined,
+    hashY: number | undefined,
     validationWarnings: JsValidationWarning[]
   ) => {
     if (sheetId === this.sheetId) {
-      this.cellsLabels.renderValidations(hashX, hashY, validationWarnings);
+      if (hashX === undefined || hashY === undefined) {
+        this.cellsLabels.renderValidationUpdates(validationWarnings);
+      } else {
+        this.cellsLabels.renderValidations(hashX, hashY, validationWarnings);
+      }
     }
   };
 

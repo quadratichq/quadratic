@@ -762,8 +762,8 @@ class CoreClient {
 
   sendRenderValidationWarnings = (
     sheetId: string,
-    hashX: number,
-    hashY: number,
+    hashX: number | undefined,
+    hashY: number | undefined,
     validationWarnings: JsValidationWarning[]
   ) => {
     this.send({ type: 'coreClientRenderValidationWarnings', sheetId, hashX, hashY, validationWarnings });

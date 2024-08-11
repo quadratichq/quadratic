@@ -511,8 +511,8 @@ impl Sheet {
                     Some(JsValidationWarning {
                         x: pos.x,
                         y: pos.y,
-                        validation: *validation_id,
-                        style: validation.error.style.clone(),
+                        validation: Some(*validation_id),
+                        style: Some(validation.error.style.clone()),
                     })
                 } else {
                     None

@@ -92,8 +92,8 @@ declare var self: WorkerGlobalScope &
     sendResizeRowHeightsRender: (sheetId: string, rowHeights: string) => void;
     sendRenderValidationWarnings: (
       sheetId: string,
-      hashX: number,
-      hashY: number,
+      hashX: number | undefined,
+      hashY: number | undefined,
       validationWarnings: JsValidationWarning[]
     ) => void;
     sendMultiplayerSynced: () => void;
@@ -281,8 +281,9 @@ export const jsResizeRowHeights = (sheetId: string, rowHeights: string) => {
   self.sendResizeRowHeightsRender(sheetId, rowHeights);
 };
 
-export const jsValidationWarning = (sheetId: string, warnings: string) => {
-  console.log('TODO', sheetId, warnings);
+export const jsValidationWarning = (sheetId: string, warningsStringified: string) => {
+  const warnings = JSON.parse(warningsStringified);
+  self.sendRenderValidationWarnings(sheetId, undefined, undefined, warnings);
 };
 
 export const jsRenderValidationWarnings = (sheetId: string, hashX: BigInt, hashY: BigInt, warnings: string) => {

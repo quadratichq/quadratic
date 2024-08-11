@@ -27,7 +27,7 @@ export class PointerDown {
   // Determines whether the input is valid (ie, whether it is open and has a value that does not fail validation)
   private async isInputValid(): Promise<boolean> {
     const location = inlineEditorHandler.location;
-    if (!location) return false;
+    if (!location || !inlineEditorHandler.isOpen()) return true;
     const validationError = await inlineEditorHandler.validateInput();
     if (validationError) {
       events.emit('hoverCell', {

@@ -267,8 +267,8 @@ impl fmt::Display for JsRowHeight {
 pub struct JsValidationWarning {
     pub x: i64,
     pub y: i64,
-    pub validation: Uuid,
-    pub style: ValidationStyle,
+    pub validation: Option<Uuid>,
+    pub style: Option<ValidationStyle>,
 }
 
 #[cfg(test)]

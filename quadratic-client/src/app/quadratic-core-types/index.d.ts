@@ -73,4 +73,4 @@ export type NumberRange = { "Range": [number | null, number | null] } | { "Equal
 export type TextCase = { "CaseInsensitive": Array<string> } | { "CaseSensitive": Array<string> };
 export type TextMatch = { "Exactly": TextCase } | { "Contains": TextCase } | { "NotContains": TextCase } | { "TextLength": { min: number | null, max: number | null, } };
 export interface ValidationText { ignore_blank: boolean, text_match: Array<TextMatch>, }
-export interface JsValidationWarning { x: bigint, y: bigint, validation: string, style: ValidationStyle, }
+export interface JsValidationWarning { x: bigint, y: bigint, validation: string | null, style: ValidationStyle | null, }

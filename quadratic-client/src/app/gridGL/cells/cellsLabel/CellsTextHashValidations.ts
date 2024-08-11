@@ -26,6 +26,8 @@ export class CellsTextHashValidations extends Container {
     return sprite;
   }
 
+  // This is called when the entire hash has been rendered by core and all known
+  // warnings are available.
   populate(warnings: JsValidationWarning[]) {
     this.removeChildren();
     this.warningSprites = new Map();
@@ -33,7 +35,9 @@ export class CellsTextHashValidations extends Container {
       const sheet = sheets.getById(this.sheetId);
       if (!sheet) throw new Error('Expected sheet to be defined in CellsTextHashValidations');
       warnings.forEach((warning) => {
-        const { x, y, style } = warning;
+        const { x, y, style, validation } = warning;
+        if (!validation) return;
+
         const offset = sheet.getCellOffsets(x, y);
         let color = 0;
         switch (style) {
@@ -48,15 +52,33 @@ export class CellsTextHashValidations extends Container {
             break;
         }
         const sprite = this.addWarning(offset.x + offset.width, offset.y, color);
-        this.warningSprites.set(`${x},${y}`, [sprite, offset, warning.validation]);
+        this.warningSprites.set(`${x},${y}`, [sprite, offset, validation]);
       });
     }
     this.warnings = warnings;
   }
 
+  // This is used when individual cells warnings have updated, but we've not
+  // rerendered the entire hash.
+  updateWarnings(warning: JsValidationWarning) {
+    const index = this.warnings.findIndex((w) => w.x === warning.x && w.y === warning.y);
+    if (index === -1) {
+      if (warning.validation) {
+        this.warnings.push(warning);
+      }
+    } else {
+      if (warning.validation) {
+        this.warnings[index] = warning;
+      } else {
+        this.warnings.splice(index, 1);
+      }
+    }
+    this.populate(this.warnings);
+  }
+
   // returns a validation warning id for a cell
   getValidationWarningId(x: number, y: number): string | undefined {
-    return this.warnings.find((warning) => warning.x === BigInt(x) && warning.y === BigInt(y))?.validation;
+    return this.warnings.find((warning) => warning.x === BigInt(x) && warning.y === BigInt(y))?.validation ?? undefined;
   }
 
   getErrorMarker(x: number, y: number): ErrorMarker | undefined {

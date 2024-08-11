@@ -161,9 +161,14 @@ export class CellsLabels extends Container {
     return await renderWebWorker.getCellsColumnMaxWidth(this.sheetId, column);
   }
 
-  private getHash(x: number, y: number): CellsTextHash | undefined {
-    const hash = CellsLabels.getHash(x, y);
-    return this.cellsTextHash.get(`${hash.x},${hash.y}`);
+  private getHash(screenX: number, screenY: number, create?: boolean): CellsTextHash | undefined {
+    const hashPosition = CellsLabels.getHash(screenX, screenY);
+    const hash = this.cellsTextHash.get(`${hashPosition.x},${hashPosition.y}`);
+    if (hash) {
+      return hash;
+    } else if (create) {
+      return this.createCellsTextHash(hashPosition.x, hashPosition.y);
+    }
   }
 
   async getCellsContentMaxHeight(row: number): Promise<number> {
@@ -185,6 +190,16 @@ export class CellsLabels extends Container {
       hash.special.clickedToCell(column, row, world);
     }
   };
+
+  renderValidationUpdates(validationWarnings: JsValidationWarning[]) {
+    validationWarnings.forEach((v) => {
+      const { x, y } = v;
+      const cellsTextHash = this.getHash(Number(x), Number(y), true);
+      if (cellsTextHash) {
+        cellsTextHash.warnings.updateWarnings(v);
+      }
+    });
+  }
 
   renderValidations(hashX: number, hashY: number, validationWarnings: JsValidationWarning[]) {
     const key = `${hashX},${hashY}`;
