@@ -2,6 +2,7 @@ import { hasPermissionToEditFile } from '@/app/actions';
 import { userMessageAtom } from '@/app/atoms/userMessageAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { DragAndDropFileType, isCsv, isDraggedFileExcel, isExcel, isParquet } from '@/app/helpers/files';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -50,7 +51,7 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!hasPermissionToEditFile) return;
+    if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
 
     if (e.type === 'dragenter') {
       setDragActive(true);
@@ -72,7 +73,7 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!hasPermissionToEditFile) return;
+    if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
 
     setDragActive(false);
 
