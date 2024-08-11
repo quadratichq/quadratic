@@ -74,7 +74,7 @@ impl GridController {
         dirty_hashes.extend(hashes);
     }
 
-    pub fn process_live_dirty_hashes(&self, transaction: &mut PendingTransaction) {
+    pub fn process_visible_dirty_hashes(&self, transaction: &mut PendingTransaction) {
         if !cfg!(target_family = "wasm")
             || transaction.dirty_hashes.is_empty()
             || transaction.is_server()
