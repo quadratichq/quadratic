@@ -287,6 +287,18 @@ impl Rect {
         self.min.y = self.min.y.min(y);
         self.max.y = self.max.y.max(y);
     }
+
+    pub fn to_hashes(&self) -> HashSet<Pos> {
+        let mut hashes = HashSet::new();
+        let min_hash = self.min.quadrant();
+        let max_hash = self.max.quadrant();
+        for x in min_hash.0..=max_hash.0 {
+            for y in min_hash.1..=max_hash.1 {
+                hashes.insert(Pos { x, y });
+            }
+        }
+        hashes
+    }
 }
 
 impl From<Pos> for Rect {

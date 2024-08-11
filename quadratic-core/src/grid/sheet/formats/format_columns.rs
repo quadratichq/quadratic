@@ -40,12 +40,12 @@ impl Sheet {
         &mut self,
         columns: &[i64],
         formats: &Formats,
-    ) -> (Vec<Operation>, Vec<i64>) {
+    ) -> (Vec<Operation>, HashSet<Pos>, Vec<i64>) {
         let mut old_formats = Formats::default();
         let mut formats_iter = formats.iter_values();
 
-        // tracks which column of cells need to be rerendered
-        let mut render_columns = HashSet::new();
+        // tracks which hashes than need to be updated
+        let mut dirty_hashes = HashSet::new();
 
         // tracks whether we need to update fills for the column
         let mut render_column_fills = false;
@@ -65,7 +65,13 @@ impl Sheet {
                 // don't need to do anything if there are no changes
                 if !format_update.is_default() {
                     if format_update.render_cells_changed() {
-                        render_columns.insert(*x);
+                        if let Some((start, end)) = self.column_bounds(*x, true) {
+                            for row in start..=end {
+                                let pos = Pos { x: *x, y: row };
+                                let (x, y) = pos.quadrant();
+                                dirty_hashes.insert(Pos { x, y });
+                            }
+                        }
                     }
 
                     if format_update.fill_changed() {
@@ -153,11 +159,6 @@ impl Sheet {
             });
         }
 
-        // force a rerender of all impacted cells
-        if !render_columns.is_empty() {
-            self.send_column_render_cells(render_columns.into_iter().collect());
-        }
-
         // force a rerender of all column, row, and sheet fills
         if render_column_fills {
             self.send_sheet_fills();
@@ -168,7 +169,7 @@ impl Sheet {
             self.send_fills(&render_fills);
         }
 
-        (ops, resize_rows.into_iter().collect())
+        (ops, dirty_hashes, resize_rows.into_iter().collect())
     }
 }
 

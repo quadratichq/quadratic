@@ -17,11 +17,11 @@ impl Sheet {
         &mut self,
         rects: &[Rect],
         formats: &Formats,
-    ) -> (Vec<Operation>, Vec<i64>) {
+    ) -> (Vec<Operation>, HashSet<Pos>, Vec<i64>) {
         let mut formats_iter = formats.iter_values();
 
-        // tracks client changes
-        let mut renders = HashSet::new();
+        // tracks which hashes than need to be updated
+        let mut dirty_hashes = HashSet::new();
         let mut html = HashSet::new();
         let mut fills = HashSet::new();
         let mut resize_rows = HashSet::new();
@@ -37,7 +37,8 @@ impl Sheet {
                         old_formats.push(old);
 
                         if format_update.render_cells_changed() {
-                            renders.insert(pos);
+                            let (x, y) = pos.quadrant();
+                            dirty_hashes.insert(Pos { x, y });
                         }
                         if format_update.html_changed() {
                             html.insert(pos);
@@ -59,10 +60,9 @@ impl Sheet {
         });
 
         if old_formats == *formats {
-            return (vec![], vec![]);
+            return (vec![], HashSet::new(), vec![]);
         }
 
-        self.send_render_cells(&renders);
         self.send_html_output(&html);
         self.send_fills(&fills);
 
@@ -75,6 +75,7 @@ impl Sheet {
                 },
                 formats: old_formats,
             }],
+            dirty_hashes,
             resize_rows.into_iter().collect(),
         )
     }

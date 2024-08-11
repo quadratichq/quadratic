@@ -126,7 +126,9 @@ class RenderText {
 
       // Update the viewport in the SharedArrayBuffer
       const int32Array = new Int32Array(buffer);
-      int32Array[0] = 1; // Set flag to indicate viewport is set
+
+      int32Array[0] = 0; // Set flag to indicate viewport is set
+
       int32Array[1] = cornerHashes[0];
       int32Array[2] = cornerHashes[1];
       int32Array[3] = cornerHashes[2];
@@ -137,6 +139,8 @@ class RenderText {
       const encoder = new TextEncoder();
       const sheetIdBytes = encoder.encode(this.sheetId);
       uint8Array.set(sheetIdBytes, 20);
+
+      int32Array[0] = 1; // Set flag to indicate viewport is set
     });
   };
 
