@@ -235,6 +235,28 @@ export const ValidationNumber = (props: Props) => {
     [setValidation, ranges]
   );
 
+  const removeRange = useCallback(
+    (index: number) => {
+      setValidation((validation) => {
+        if (!validation || !('rule' in validation) || validation.rule === 'None' || !('Number' in validation.rule)) {
+          return;
+        }
+        const newRanges = [...ranges];
+        newRanges.splice(index, 1);
+        return {
+          ...validation,
+          rule: {
+            Number: {
+              ...validation.rule.Number,
+              ranges: newRanges,
+            },
+          },
+        };
+      });
+    },
+    [setValidation, ranges]
+  );
+
   //#endregion
 
   const equalsOverrides = useMemo(() => {
@@ -290,7 +312,7 @@ export const ValidationNumber = (props: Props) => {
               <ValidationInput
                 placeholder="Enter numbers separated by commas"
                 disabled={readOnly}
-                value={equals ? equals.join(', ') : ''}
+                value={notEquals ? notEquals.join(', ') : ''}
                 onInput={changeNotEquals}
                 readOnly={readOnly}
                 error={equalsError ? 'Please enter valid numbers separated by commas' : undefined}
@@ -333,7 +355,10 @@ export const ValidationNumber = (props: Props) => {
                       value={max}
                       onChange={(value) => changeRange(i, value, 'max')}
                     />
-                    <Button className={cn('grow-0 px-2', i !== ranges.length - 1 ? '' : 'invisible')}>
+                    <Button
+                      className={cn('grow-0 px-2', i !== ranges.length - 1 ? '' : 'invisible')}
+                      onClick={() => removeRange(i)}
+                    >
                       <DeleteIcon />
                     </Button>
                   </div>

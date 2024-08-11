@@ -15,6 +15,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import { colors } from '@/app/theme/colors';
 import { validationText } from '@/app/ui/menus/Validations/Validations/ValidationEntry';
 import { events } from '@/app/events/events';
+import { translateValidationError } from './translateValidationError';
 
 interface Props {
   column?: number;
@@ -98,20 +99,16 @@ export const HtmlValidationMessage = (props: Props) => {
       </div>
     );
 
-    // const invalidValue =
-    //   hoverError !== undefined ? (
-    //     <div className="pointer-events-auto whitespace-normal">"{hoverError}" is not valid</div>
-    //   ) : null;
     message = (
       <>
-        {/* <div className="">{invalidValue}</div> */}
         <div>{validation?.error?.message}</div>
+        {validation && translateValidationError(validation)}
         <div>
           {validation && <div className="mt-2">{}</div>}
           {validation && (
             <Tooltip title="Show validation">
-              <Button className="pointer-events-auto mt-4 text-xs" variant="link" size="none" onClick={showValidation}>
-                {validationText(validation)}
+              <Button className="pointer-events-auto mt-1 text-xs" variant="link" size="none" onClick={showValidation}>
+                Rule: {validationText(validation)}
               </Button>
             </Tooltip>
           )}
