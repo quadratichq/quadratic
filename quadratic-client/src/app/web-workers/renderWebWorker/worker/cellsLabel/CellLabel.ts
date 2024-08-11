@@ -108,7 +108,9 @@ export class CellLabel {
       default:
         if (cell.value !== undefined && cell.number) {
           this.number = cell.number;
-          return convertNumber(cell.value, cell.number).toUpperCase();
+          // formula computation uses f64 precision, so we need to limit the number of decimals to 16
+          let currentFractionDigits = cell.language === 'Formula' && cell.number.decimals === null ? 16 : undefined;
+          return convertNumber(cell.value, cell.number, currentFractionDigits).toUpperCase();
         } else {
           return cell?.value;
         }
@@ -149,7 +151,7 @@ export class CellLabel {
     this.updateFontName();
     this.align = cell.align ?? 'left';
     this.verticalAlign = cell.verticalAlign ?? 'top';
-    this.wrap = cell.wrap ?? 'overflow';
+    this.wrap = cell.wrap === undefined && this.isNumber() ? 'clip' : cell.wrap ?? 'overflow';
     this.updateCellLimits();
   }
 
@@ -172,12 +174,16 @@ export class CellLabel {
       const nextLeftWidth = this.AABB.right - nextLeft;
       if (this.nextLeftWidth !== nextLeftWidth) {
         this.nextLeftWidth = nextLeftWidth;
-        if (this.number !== undefined && this.checkNumberClip()) this.updateText(labelMeshes);
+        if (this.isNumber()) {
+          this.updateText(labelMeshes);
+        }
         return true;
       }
     } else if (this.nextLeftWidth !== undefined) {
       this.nextLeftWidth = undefined;
-      if (this.number !== undefined && this.checkNumberClip()) this.updateText(labelMeshes);
+      if (this.checkNumberClip()) {
+        this.updateText(labelMeshes);
+      }
       return true;
     }
     return false;
@@ -188,25 +194,33 @@ export class CellLabel {
       const nextRightWidth = nextRight - this.AABB.left;
       if (this.nextRightWidth !== nextRightWidth) {
         this.nextRightWidth = nextRightWidth;
-        if (this.number !== undefined && this.checkNumberClip()) this.updateText(labelMeshes);
+        if (this.isNumber()) {
+          this.updateText(labelMeshes);
+        }
         return true;
       }
     } else if (this.nextRightWidth !== undefined) {
       this.nextRightWidth = undefined;
-      if (this.number !== undefined && this.checkNumberClip()) this.updateText(labelMeshes);
+      if (this.checkNumberClip()) {
+        this.updateText(labelMeshes);
+      }
       return true;
     }
     return false;
   };
 
+  isNumber = (): boolean => {
+    return this.number !== undefined || !isNaN(parseFloat(this.text));
+  };
+
   checkNumberClip = (): boolean => {
-    if (this.number === undefined) return false;
+    if (!this.isNumber()) return false;
 
     const clipLeft = Math.max(this.cellClipLeft ?? -Infinity, this.AABB.right - (this.nextLeftWidth ?? Infinity));
-    if (this.actualLeft < clipLeft + CELL_TEXT_MARGIN_LEFT * 3) return true;
+    if (this.actualLeft < clipLeft) return true;
 
     const clipRight = Math.min(this.cellClipRight ?? Infinity, this.AABB.left + (this.nextRightWidth ?? Infinity));
-    if (this.actualRight > clipRight - CELL_TEXT_MARGIN_LEFT * 3) return true;
+    if (this.actualRight > clipRight) return true;
 
     return false;
   };
@@ -261,12 +275,11 @@ export class CellLabel {
     this.chars = processedText.chars;
     this.textWidth = processedText.textWidth;
     this.textHeight = processedText.textHeight;
-    this.unwrappedTextWidth = processedText.unwrappedTextWidth;
     this.horizontalAlignOffsets = processedText.horizontalAlignOffsets;
+    this.unwrappedTextWidth = this.getUnwrappedTextWidth(this.text);
 
     this.calculatePosition();
 
-    // replaces numbers with pound signs when the number overflows
     if (this.checkNumberClip()) {
       const clippedNumber = this.getClippedNumber(this.originalText, this.text, this.number);
       const processedNumberText = this.processText(labelMeshes, clippedNumber);
@@ -274,7 +287,7 @@ export class CellLabel {
 
       this.chars = processedNumberText.chars;
       this.textWidth = processedNumberText.textWidth;
-      this.textHeight = processedText.textHeight;
+      this.textHeight = processedNumberText.textHeight;
       this.horizontalAlignOffsets = processedNumberText.horizontalAlignOffsets;
 
       this.calculatePosition();
@@ -380,6 +393,36 @@ export class CellLabel {
       maxLineWidth = Math.max(maxLineWidth, lastLineWidth);
     }
 
+    const horizontalAlignOffsets = [];
+    for (let i = 0; i <= line; i++) {
+      let alignOffset = 0;
+      if (this.align === 'right') {
+        alignOffset = maxLineWidth - lineWidths[i];
+      } else if (this.align === 'center') {
+        alignOffset = (maxLineWidth - lineWidths[i]) / 2;
+      } else if (this.align === 'justify') {
+        alignOffset = lineSpaces[i] < 0 ? 0 : (maxLineWidth - lineWidths[i]) / lineSpaces[i];
+      }
+      horizontalAlignOffsets.push(alignOffset);
+    }
+
+    return {
+      chars,
+      textWidth: maxLineWidth * scale + OPEN_SANS_FIX.x * 2,
+      textHeight: Math.max(textHeight * scale, CELL_HEIGHT),
+      displayText,
+      horizontalAlignOffsets,
+    };
+  };
+
+  private getUnwrappedTextWidth = (text: string): number => {
+    const data = this.cellsLabels.bitmapFonts[this.fontName];
+    if (!data) throw new Error(`Expected BitmapFont ${this.fontName} to be defined in CellLabel.updateText`);
+
+    const scale = this.fontSize / data.size;
+
+    const charsInput = splitTextToCharacters(text);
+    let prevCharCode = null;
     // calculate the unwrapped text width, content can be multi-line due to \n or \r
     let curUnwrappedTextWidth = 0;
     let maxUnwrappedTextWidth = 0;
@@ -401,28 +444,7 @@ export class CellLabel {
       prevCharCode = charCode;
     }
     const unwrappedTextWidth = (maxUnwrappedTextWidth + 3 * CELL_TEXT_MARGIN_LEFT) * scale;
-
-    const horizontalAlignOffsets = [];
-    for (let i = 0; i <= line; i++) {
-      let alignOffset = 0;
-      if (this.align === 'right') {
-        alignOffset = maxLineWidth - lineWidths[i];
-      } else if (this.align === 'center') {
-        alignOffset = (maxLineWidth - lineWidths[i]) / 2;
-      } else if (this.align === 'justify') {
-        alignOffset = lineSpaces[i] < 0 ? 0 : (maxLineWidth - lineWidths[i]) / lineSpaces[i];
-      }
-      horizontalAlignOffsets.push(alignOffset);
-    }
-
-    return {
-      chars,
-      textWidth: maxLineWidth * scale + OPEN_SANS_FIX.x * 2,
-      textHeight: Math.max(textHeight * scale, CELL_HEIGHT),
-      unwrappedTextWidth,
-      displayText,
-      horizontalAlignOffsets,
-    };
+    return unwrappedTextWidth;
   };
 
   // This attempts to reduce the decimal precision to ensure the number fits
@@ -432,17 +454,23 @@ export class CellLabel {
 
     let digits: number | undefined = undefined;
     let infinityProtection = 0;
+    let textWidth = this.getUnwrappedTextWidth(text);
     do {
       const result = reduceDecimals(originalText, text, number, digits);
       // we cannot reduce decimals anymore, so we show pound characters
-      if (!result) return this.getPoundText();
+      if (!result) {
+        return this.getPoundText();
+      }
 
       digits = result.currentFractionDigits - 1;
       text = result.number;
-    } while (this.textWidth > this.AABB.width && digits >= 0 && infinityProtection++ < 1000);
+      textWidth = this.getUnwrappedTextWidth(text);
+    } while (textWidth > this.AABB.width && digits >= 0 && infinityProtection++ < 1000);
 
     // we were not able to reduce the number to fit the cell, so we show pound characters
-    if (digits < 0) return this.getPoundText();
+    if (digits < 0) {
+      return this.getPoundText();
+    }
 
     return text;
   };
