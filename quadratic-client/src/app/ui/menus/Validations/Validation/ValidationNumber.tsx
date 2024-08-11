@@ -191,7 +191,7 @@ export const ValidationNumber = (props: Props) => {
         if (!validation || !('rule' in validation) || validation.rule === 'None' || !('Number' in validation.rule)) {
           return;
         }
-        const newRanges = [...ranges];
+        const newRanges = [...ranges].filter((r) => 'Range' in r && (r.Range[0] !== null || r.Range[1] !== null));
         const current = newRanges[index];
         if (!('Range' in current)) throw new Error('Expected Range in changeRange');
         if (value.length) {
@@ -223,6 +223,7 @@ export const ValidationNumber = (props: Props) => {
             });
           }
         }
+
         return {
           ...validation,
           rule: {

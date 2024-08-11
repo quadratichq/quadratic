@@ -132,4 +132,24 @@ mod tests {
         assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(8).into()))));
         assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(-10).into()))));
     }
+
+    #[test]
+    #[parallel]
+    fn validate_ranges() {
+        let rule = ValidationNumber {
+            ranges: vec![
+                NumberRange::Range(Some(1f64), Some(10f64)),
+                NumberRange::Range(Some(20f64), Some(30f64)),
+            ],
+            ..Default::default()
+        };
+        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(0).into()))));
+        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(1).into()))));
+        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(10).into()))));
+        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(11).into()))));
+        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(19).into()))));
+        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(20).into()))));
+        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(30).into()))));
+        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(31).into()))));
+    }
 }
