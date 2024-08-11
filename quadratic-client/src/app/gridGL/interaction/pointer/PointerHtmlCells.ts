@@ -49,7 +49,7 @@ export class PointerHtmlCells {
           this.hovering = undefined;
         }
         this.cursor = undefined;
-        return true;
+        return false;
       }
     }
     this.cursor = undefined;
@@ -142,8 +142,9 @@ export class PointerHtmlCells {
       if (target === 'body' && cell === active) {
         this.setDoubleClick();
         this.clicked = cell;
+        return true;
       }
-      if (target) return true;
+      if (target) return false;
     }
     return false;
   }
