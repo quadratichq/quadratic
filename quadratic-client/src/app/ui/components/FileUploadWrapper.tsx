@@ -134,6 +134,8 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
     <div
       ref={divRef}
       onDragEnter={handleDrag}
+      onDragLeave={handleDrag}
+      onDragOver={handleDrag}
       style={{
         display: 'flex',
         flexDirection: 'column',
