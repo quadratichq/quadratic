@@ -244,7 +244,7 @@ fn export_validation_rule(rule: &ValidationRule) -> current_validations::Validat
                     .iter()
                     .map(|range| match range {
                         NumberRange::Range(min, max) => {
-                            current_validations::NumberRange::Range(min.clone(), max.clone())
+                            current_validations::NumberRange::Range(*min, *max)
                         }
                         NumberRange::Equal(entry) => {
                             current_validations::NumberRange::Equal(entry.clone())

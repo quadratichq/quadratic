@@ -1,8 +1,10 @@
 //! Text Validation. This is a validation rule that includes a list of possible scenarios:
+//!
 //! 1. Exactly: the cell value must match exactly one of the strings in the list.
 //! 2. Contains: the cell value must contain one of the strings in the list.
 //! 3. Not Contains: the cell value must not contain any of the strings in the list.
 //! 4. Text Length: the cell value must have a length within the specified range.
+//!
 //! Rules 2, 3, and 4 may be combined in any way. All rules can be applied as case
 //! sensitive or insensitive.
 
