@@ -87,6 +87,8 @@ export const ValidationInput = (props: InputProps) => {
             type={type}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && onEnter) {
+                onInput?.(e.currentTarget.value);
+                onChange?.(e.currentTarget.value);
                 onEnter();
               }
             }}
@@ -132,6 +134,8 @@ export const ValidationTextArea = (props: InputProps) => {
           readOnly={readOnly}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && onEnter) {
+              onInput?.(e.currentTarget.value);
+              onChange?.(e.currentTarget.value);
               onEnter();
             }
           }}

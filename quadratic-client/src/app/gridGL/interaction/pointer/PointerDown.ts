@@ -69,6 +69,8 @@ export class PointerDown {
     if (this.doubleClickTimeout) {
       window.clearTimeout(this.doubleClickTimeout);
       this.doubleClickTimeout = undefined;
+      if (!(await this.isInputValid())) return;
+
       if (this.previousPosition && column === this.previousPosition.x && row === this.previousPosition.y) {
         // ignore right click
         if (rightClick) {

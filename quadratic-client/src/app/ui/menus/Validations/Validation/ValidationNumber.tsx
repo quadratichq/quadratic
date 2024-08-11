@@ -194,38 +194,37 @@ export const ValidationNumber = (props: Props) => {
         const newRanges = [...ranges];
         const current = newRanges[index];
         if (!('Range' in current)) throw new Error('Expected Range in changeRange');
-        if (value.length) {
-          if (type === 'min') {
-            if (current.Range[1] !== null && parseFloat(value) > current.Range[1]) {
-              setRangeError((rangeError) => {
-                const r = rangeError.filter((r) => r !== index);
-                r.push(index);
-                return r;
-              });
-              return validation;
-            }
-            current.Range[0] = parseFloat(value);
+        if (type === 'min') {
+          // check for error (min > max)
+          if (current.Range[1] !== null && parseFloat(value) > current.Range[1]) {
             setRangeError((rangeError) => {
-              return rangeError.filter((r) => r !== index);
+              const r = rangeError.filter((r) => r !== index);
+              r.push(index);
+              return r;
             });
-          } else {
-            if (current.Range[0] !== null && parseFloat(value) < current.Range[0]) {
-              setRangeError((rangeError) => {
-                const r = rangeError.filter((r) => r !== index);
-                r.push(index);
-                return r;
-              });
-              return validation;
-            }
-            current.Range[1] = parseFloat(value);
-            setRangeError((rangeError) => {
-              return rangeError.filter((r) => r !== index);
-            });
+            return validation;
           }
+          current.Range[0] = value ? parseFloat(value) : null;
+          setRangeError((rangeError) => {
+            return rangeError.filter((r) => r !== index);
+          });
+        } else {
+          // check for error (max < min)
+          if (current.Range[0] !== null && parseFloat(value) < current.Range[0]) {
+            setRangeError((rangeError) => {
+              const r = rangeError.filter((r) => r !== index);
+              r.push(index);
+              return r;
+            });
+            return validation;
+          }
+          current.Range[1] = value ? parseFloat(value) : null;
+          setRangeError((rangeError) => {
+            return rangeError.filter((r) => r !== index);
+          });
         }
 
         const filteredRanges = newRanges.filter((r) => 'Range' in r && (r.Range[0] !== null || r.Range[1] !== null));
-        console.log(filteredRanges);
         return {
           ...validation,
           rule: {
