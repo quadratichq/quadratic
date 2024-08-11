@@ -134,5 +134,13 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
     );
   }
 
+  if ('Logical' in validation.rule && validation.rule.Logical) {
+    return (
+      <div>
+        Value {verb} be <span className={listClassName}>true</span> or <span className={listClassName}>false</span>.
+      </div>
+    );
+  }
+
   return null;
 };
