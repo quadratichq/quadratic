@@ -41,9 +41,8 @@ export const SheetRange = (props: Props) => {
     }
   }, [onChangeRange]);
 
-  const onBlur = useCallback(
-    (e: FocusEvent<HTMLInputElement>) => {
-      const value = e.currentTarget.value;
+  const updateValue = useCallback(
+    (value: string) => {
       const selection = parseSelectionString(value, sheets.sheet.id);
       if (selection.selection) {
         onChangeRange(selection.selection);
@@ -56,6 +55,14 @@ export const SheetRange = (props: Props) => {
       }
     },
     [onChangeRange]
+  );
+
+  const onBlur = useCallback(
+    (e: FocusEvent<HTMLInputElement>) => {
+      const value = e.currentTarget.value;
+      updateValue(value);
+    },
+    [updateValue]
   );
 
   useEffect(() => {
@@ -92,6 +99,7 @@ export const SheetRange = (props: Props) => {
             readOnly={readOnly}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && props.onEnter) {
+                updateValue(e.currentTarget.value);
                 props.onEnter();
               }
             }}

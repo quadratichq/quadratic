@@ -42,34 +42,37 @@ export const Validation = () => {
     readOnly,
   } = validationData;
 
-  const applyValidation = useCallback(() => {
-    if (!readOnly) {
-      if (validation && 'rule' in validation && validation.rule) {
-        if (!validate()) return;
-        if (unsaved) {
-          quadraticCore.updateValidation(validation, sheets.getCursorPosition());
+  const applyValidation = useCallback(
+    (force?: boolean) => {
+      if (!readOnly) {
+        if (validation && 'rule' in validation && validation.rule) {
+          if (!validate()) return;
+          if (force || unsaved) {
+            quadraticCore.updateValidation(validation, sheets.getCursorPosition());
+          }
         }
       }
-    }
-    setEditorInteractionState((old) => ({
-      ...old,
-      showValidation: true,
-    }));
-  }, [readOnly, setEditorInteractionState, unsaved, validate, validation]);
+      setEditorInteractionState((old) => ({
+        ...old,
+        showValidation: true,
+      }));
+    },
+    [unsaved, readOnly, setEditorInteractionState, validate, validation]
+  );
 
   const validationRule: JSX.Element | null = useMemo(() => {
     switch (rule) {
       case 'none':
-        return <ValidationNone validationData={validationData} onEnter={applyValidation} />;
+        return <ValidationNone validationData={validationData} onEnter={() => applyValidation(true)} />;
       case 'list-range':
       case 'list':
-        return <ValidationList validationData={validationData} onEnter={applyValidation} />;
+        return <ValidationList validationData={validationData} onEnter={() => applyValidation(true)} />;
       case 'logical':
         return <ValidationLogical validationData={validationData} />;
       case 'text':
-        return <ValidationText validationData={validationData} onEnter={applyValidation} />;
+        return <ValidationText validationData={validationData} onEnter={() => applyValidation(true)} />;
       case 'number':
-        return <ValidationNumber validationData={validationData} onEnter={applyValidation} />;
+        return <ValidationNumber validationData={validationData} onEnter={() => applyValidation(true)} />;
     }
     return null;
   }, [applyValidation, rule, validationData]);
@@ -99,7 +102,7 @@ export const Validation = () => {
           triggerError={triggerError}
           changeCursor={true}
           readOnly={readOnly}
-          onEnter={applyValidation}
+          onEnter={() => applyValidation(true)}
         />
         <ValidationDropdown
           label="Criteria"
@@ -121,7 +124,7 @@ export const Validation = () => {
               Remove Rule
             </Button>
           )}
-          <Button onClick={applyValidation}>Done</Button>
+          <Button onClick={() => applyValidation()}>Done</Button>
         </div>
       </div>
     </div>
