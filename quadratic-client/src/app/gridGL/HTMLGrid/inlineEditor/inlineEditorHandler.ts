@@ -398,21 +398,20 @@ class InlineEditorHandler {
           });
         }
       } else {
-        if (this.location) {
-          const validationError = await this.validateInput();
-          if (validationError) {
-            events.emit('hoverCell', { x: this.location.x, y: this.location.y, validationId: validationError, value });
-            return false;
-          } else {
-            quadraticCore.setCellValue(
-              this.location.sheetId,
-              this.location.x,
-              this.location.y,
-              value.trim(),
-              sheets.getCursorPosition()
-            );
-            events.emit('hoverCell');
-          }
+        const location = { ...this.location };
+        const validationError = await this.validateInput();
+        if (validationError) {
+          events.emit('hoverCell', { x: this.location.x, y: this.location.y, validationId: validationError, value });
+          return false;
+        } else {
+          quadraticCore.setCellValue(
+            location.sheetId,
+            location.x,
+            location.y,
+            value.trim(),
+            sheets.getCursorPosition()
+          );
+          events.emit('hoverCell');
         }
       }
     }
