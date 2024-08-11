@@ -57,7 +57,7 @@ export const ValidationEntry = (props: Props) => {
       className={cn('h-fit w-full border-b border-gray-100', highlight ? 'bg-gray-50' : '')}
       onClick={selectValidation}
     >
-      <div className="group flex w-full items-center justify-between py-3">
+      <div className="group flex w-full items-center justify-between py-2">
         <div className="flex shrink flex-col items-start text-left">
           <div className="mb-2">{title}</div>
           <div className="opacity-40">{selection}</div>
