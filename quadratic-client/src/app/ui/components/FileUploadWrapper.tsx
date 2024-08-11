@@ -52,8 +52,9 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
 
     if (!hasPermissionToEditFile) return;
 
-    if (e.type === 'dragenter' || e.type === 'dragover') {
+    if (e.type === 'dragenter') {
       setDragActive(true);
+    } else if (e.type === 'dragover') {
       if (isDraggedFileExcel(e)) {
         setUserMessageState({ message: 'Dropped Excel file(s) will be imported as new sheet(s) in this file.' });
       } else {
@@ -134,8 +135,6 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
     <div
       ref={divRef}
       onDragEnter={handleDrag}
-      onDragLeave={handleDrag}
-      onDragOver={handleDrag}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -149,7 +148,6 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
       {dragActive && (
         <div
           id="drag-file-element"
-          onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
