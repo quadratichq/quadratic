@@ -1,3 +1,4 @@
+import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
 import { events } from '@/app/events/events';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { ImportProgress } from '@/app/ui/components/ImportProgress';
@@ -37,9 +38,11 @@ export default function QuadraticGrid() {
   }, []);
 
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const [inlineEditorState, setInlineEditorState] = useRecoilState(inlineEditorAtom);
   useEffect(() => {
     pixiAppSettings.updateEditorInteractionState(editorInteractionState, setEditorInteractionState);
-  }, [editorInteractionState, setEditorInteractionState]);
+    pixiAppSettings.updateInlineEditorState(inlineEditorState, setInlineEditorState);
+  }, [editorInteractionState, inlineEditorState, setEditorInteractionState, setInlineEditorState]);
 
   // Right click menu
   const [showContextMenu, setShowContextMenu] = useState(false);
