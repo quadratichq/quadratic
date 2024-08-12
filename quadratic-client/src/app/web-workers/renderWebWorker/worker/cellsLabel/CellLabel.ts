@@ -215,7 +215,7 @@ export class CellLabel {
   };
 
   isNumber = (): boolean => {
-    return this.number !== undefined || !isNaN(parseFloat(this.text));
+    return this.number !== undefined;
   };
 
   checkNumberClip = (): boolean => {
