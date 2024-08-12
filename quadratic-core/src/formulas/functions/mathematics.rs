@@ -272,8 +272,13 @@ fn get_functions() -> Vec<FormulaFunction> {
             ///     https://en.wikipedia.org/wiki/Common_logarithm
             #[examples("LOG(100)", "LOG(144, 12)", "LOG(144, 10)")]
             #[zip_map]
-            fn LOG([number]: f64, [base]: (Option<f64>)) {
-                number.log(base.unwrap_or(10.0))
+            fn LOG(span: Span, [number]: f64, [base]: (Option<f64>)) {
+                let base = base.unwrap_or(10.0);
+                if base > 0.0 {
+                    number.log(base)
+                } else {
+                    return Err(RunErrorMsg::NaN.with_span(span));
+                }
             }
         ),
         formula_fn!(
