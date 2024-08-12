@@ -705,7 +705,7 @@ mod tests {
     #[parallel]
     fn test_log_errors() {
         let g = Grid::new();
-        let e = RunErrorMsg::BadNumber;
+        let e = RunErrorMsg::NaN;
         for n in ["0", "-0.1", "-2"] {
             assert_eq!(e, eval_to_err(&g, &format!("LN({n})")).msg);
             assert_eq!(e, eval_to_err(&g, &format!("LOG({n})")).msg);
@@ -721,7 +721,7 @@ mod tests {
     #[parallel]
     fn test_negative_pow() {
         let g = Grid::new();
-        let e = RunErrorMsg::BadNumber;
+        let e = RunErrorMsg::NaN;
 
         assert_eq!("1", eval_to_string(&g, "POWER(-2, 0)"));
         assert_eq!("1", eval_to_string(&g, "(-2)^0"));
