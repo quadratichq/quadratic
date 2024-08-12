@@ -11,9 +11,18 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
 fn get_functions() -> Vec<FormulaFunction> {
     vec![
         formula_fn!(
+            /// Same as `CONCAT`, but kept for compatibility.
+            #[examples("CONCATENATE(\"Hello, \", C0, \"!\")")]
+            fn CONCATENATE(strings: (Iter<String>)) {
+                strings.try_fold(String::new(), |a, b| Ok(a + &b?))
+            }
+        ),
+        formula_fn!(
             /// [Concatenates](https://en.wikipedia.org/wiki/Concatenation) all
             /// values as strings.
-            #[examples("CONCAT(\"Hello, \", C0, \"!\")")]
+            ///
+            /// `&` can also be used to concatenate text.
+            #[examples("CONCAT(\"Hello, \", C0, \"!\")", "\"Hello, \" & C0 & \"!\"")]
             fn CONCAT(strings: (Iter<String>)) {
                 strings.try_fold(String::new(), |a, b| Ok(a + &b?))
             }
@@ -107,6 +116,10 @@ mod tests {
         assert_eq!(
             "Hello, 14000605 worlds!".to_string(),
             eval_to_string(&g, "CONCAT('Hello, ',14000605,\" worlds!\")"),
+        );
+        assert_eq!(
+            "Hello, 14000605 worlds!".to_string(),
+            eval_to_string(&g, "CONCATENATE('Hello, ',14000605,\" worlds!\")"),
         );
     }
 
