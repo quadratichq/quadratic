@@ -61,6 +61,17 @@ fn get_functions() -> Vec<FormulaFunction> {
                     .to_string()
             }
         ),
+        formula_fn!(
+            /// Removes nonprintable [ASCII] characters 0-31 (0x00-0x1F) from a
+            /// string. This removes tabs and newlines, but not spaces.
+            ///
+            /// [ASCII]: https://en.wikipedia.org/wiki/ASCII
+            #[examples("CLEAN(CHAR(9) & \"(only the parenthetical will survive)\" & CHAR(10))")]
+            #[zip_map]
+            fn CLEAN([s]: String) {
+                s.chars().filter(|&c| c as u64 >= 0x20).collect::<String>()
+            }
+        ),
     ]
 }
 
@@ -146,5 +157,16 @@ mod tests {
             RunErrorMsg::IndexOutOfBounds,
             eval_to_err(&g, "CHAR(2^24)").msg,
         );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_formula_clean() {
+        let g = Grid::new();
+
+        assert_eq!(
+            "  A BC",
+            eval_to_string(&g, "CLEAN(\"  A\u{0} \u{A}\nB\u{1C}C\t\")"),
+        )
     }
 }
