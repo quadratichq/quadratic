@@ -39,7 +39,7 @@ impl From<&str> for CellValue {
 impl From<f64> for CellValue {
     fn from(value: f64) -> Self {
         match BigDecimal::try_from(value) {
-            Ok(n) => CellValue::Number(n),
+            Ok(n) => CellValue::Number(n.with_prec(16)), // just enough to not lose information
             // TODO: add span information
             Err(_) => CellValue::Error(Box::new(RunErrorMsg::NaN.without_span())),
         }
