@@ -242,6 +242,62 @@ fn get_functions() -> Vec<FormulaFunction> {
                 number - util::checked_div(span, number, divisor)?.floor() * divisor
             }
         ),
+        formula_fn!(
+            /// Returns the result of raising `base` to the power of `exponent`.
+            #[examples("POWER(2, 32)", "POWER(1.1, 7)")]
+            #[zip_map]
+            fn POWER([base]: f64, [exponent]: f64) {
+                base.powf(exponent)
+            }
+        ),
+        formula_fn!(
+            /// Returns the result of raising [Euler's number] _e_ to the power
+            /// of `exponent`.
+            ///
+            /// [Euler's number]:
+            ///     https://en.wikipedia.org/wiki/E_(mathematical_constant)
+            #[examples("EXP(1), EXP(2/3), EXP(C9)")]
+            #[zip_map]
+            fn EXP([exponent]: f64) {
+                exponent.exp()
+            }
+        ),
+        formula_fn!(
+            /// Returns the [logarithm] of `number` to the base `base`. If
+            /// `base` is omitted, it is assumed to be 10, the base of the
+            /// [common logarithm].
+            ///
+            /// [logarithm]: https://en.wikipedia.org/wiki/Logarithm
+            /// [common logarithm]:
+            ///     https://en.wikipedia.org/wiki/Common_logarithm
+            #[examples("LOG(100)", "LOG(144, 12)", "LOG(144, 10)")]
+            #[zip_map]
+            fn LOG([number]: f64, [base]: (Option<f64>)) {
+                number.log(base.unwrap_or(10.0))
+            }
+        ),
+        formula_fn!(
+            /// Returns the [base-10 logarithm] of `number`.
+            ///
+            /// [base-10 logarithm]:
+            ///     https://en.wikipedia.org/wiki/Common_logarithm
+            #[examples("LOG10(100)")]
+            #[zip_map]
+            fn LOG10([number]: f64) {
+                number.log10()
+            }
+        ),
+        formula_fn!(
+            /// Returns the [natural logarithm] of `number`.
+            ///
+            /// [natural logarithm]:
+            ///     https://en.wikipedia.org/wiki/Natural_logarithm
+            #[examples("LN(50)")]
+            #[zip_map]
+            fn LN([number]: f64) {
+                number.ln()
+            }
+        ),
         // Constants
         formula_fn!(
             /// Returns π, the circle constant.
@@ -621,6 +677,72 @@ mod tests {
             let should_equal_n = eval(&g, &format!("INT({n} / {d}) * {d} + MOD({n}, {d})")).coerce_nonblank::<f64>().unwrap();
             assert!((should_equal_n - n).abs() < 0.01);
         }
+    }
+
+    proptest! {
+        #[test]
+        #[parallel]
+        fn test_pow_log_invariant(n in -10.0..10.0_f64) {
+            let g = Grid::new();
+
+            for s in [
+                format!("LN(EXP({n}))"),
+                format!("LOG10(10^{n})"),
+                format!("LOG10(POWER(10,{n}))"),
+                format!("LOG(POWER(10,{n}))"),
+                format!("LOG(POWER(2,{n}),2)"),
+                format!("LOG(POWER(1.1,{n}),1.1)"),
+            ] {
+                let should_equal_n = eval(&g, &s).coerce_nonblank::<f64>().unwrap();
+                assert!((should_equal_n - n).abs() < 0.01);
+            }
+        }
+    }
+
+    #[test]
+    #[parallel]
+    fn test_pow_0_0() {
+        // See https://en.wikipedia.org/wiki/Zero_to_the_power_of_zero
+
+        // This is compatible with Google Sheets, but not Excel
+        let g = Grid::new();
+        assert_eq!("1", eval_to_string(&g, "POWER(0,0)"));
+        assert_eq!("1", eval_to_string(&g, "0^0"));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_log_errors() {
+        let g = Grid::new();
+        let e = RunErrorMsg::BadNumber;
+        for n in ["0", "-0.1", "-2"] {
+            assert_eq!(e, eval_to_err(&g, &format!("LN({n})")).msg);
+            assert_eq!(e, eval_to_err(&g, &format!("LOG({n})")).msg);
+            assert_eq!(e, eval_to_err(&g, &format!("LOG({n},2)")).msg);
+
+            // test negative base
+            assert_eq!(e, eval_to_err(&g, &format!("LOG(1,{n})")).msg);
+            assert_eq!(e, eval_to_err(&g, &format!("LOG({n},{n})")).msg);
+        }
+    }
+
+    #[test]
+    #[parallel]
+    fn test_negative_pow() {
+        let g = Grid::new();
+        let e = RunErrorMsg::BadNumber;
+
+        assert_eq!("1", eval_to_string(&g, "POWER(-2, 0)"));
+        assert_eq!("1", eval_to_string(&g, "(-2)^0"));
+        assert_eq!("-2", eval_to_string(&g, "POWER(-2, 1)"));
+        assert_eq!("-2", eval_to_string(&g, "(-2)^1"));
+        assert_eq!("-8", eval_to_string(&g, "POWER(-2, 3)"));
+        assert_eq!("-8", eval_to_string(&g, "(-2)^3"));
+        assert_eq!("16", eval_to_string(&g, "POWER(-2, 4)"));
+        assert_eq!("16", eval_to_string(&g, "(-2)^4"));
+
+        assert_eq!(e, eval_to_err(&g, "POWER(-2, 1.5)").msg);
+        assert_eq!(e, eval_to_err(&g, "(-2)^1.5").msg);
     }
 
     #[test]
