@@ -42,25 +42,25 @@ fn get_functions() -> Vec<FormulaFunction> {
 
 #[test]
 fn test_convert_to_cell_value() {
-    let mut g = Grid::new();
+    let g = Grid::new();
 
-    assert_eq!("3", eval_to_string(&mut g, "_TEST_CELL_VALUE(3)"));
-    assert_eq!("", eval_to_string(&mut g, "_TEST_CELL_VALUE(A1)"));
-    assert_eq!("3", eval_to_string(&mut g, "_TEST_CELL_VALUE({3})"));
-    assert_eq!("", eval_to_string(&mut g, "_TEST_CELL_VALUE(A1:A1)"));
+    assert_eq!("3", eval_to_string(&g, "_TEST_CELL_VALUE(3)"));
+    assert_eq!("", eval_to_string(&g, "_TEST_CELL_VALUE(A1)"));
+    assert_eq!("3", eval_to_string(&g, "_TEST_CELL_VALUE({3})"));
+    assert_eq!("", eval_to_string(&g, "_TEST_CELL_VALUE(A1:A1)"));
     assert_eq!(
         RunErrorMsg::Expected {
             expected: "single value".into(),
             got: Some("array".into())
         },
-        eval_to_err(&mut g, "_TEST_CELL_VALUE(A1:A10)").msg,
+        eval_to_err(&g, "_TEST_CELL_VALUE(A1:A10)").msg,
     );
     assert_eq!(
         RunErrorMsg::Expected {
             expected: "single value".into(),
             got: Some("tuple".into())
         },
-        eval_to_err(&mut g, "_TEST_CELL_VALUE((A1:A10, C1:C10))").msg,
+        eval_to_err(&g, "_TEST_CELL_VALUE((A1:A10, C1:C10))").msg,
     );
 }
 
@@ -68,10 +68,10 @@ fn test_convert_to_cell_value() {
 fn test_convert_to_array() {
     let mut g = Grid::new();
 
-    assert_eq!("{3}", eval_to_string(&mut g, "_TEST_ARRAY(3)"));
-    assert_eq!("{}", eval_to_string(&mut g, "_TEST_ARRAY(A1)"));
-    assert_eq!("{3}", eval_to_string(&mut g, "_TEST_ARRAY({3})"));
-    assert_eq!("{}", eval_to_string(&mut g, "_TEST_ARRAY(A1:A1)"));
+    assert_eq!("{3}", eval_to_string(&g, "_TEST_ARRAY(3)"));
+    assert_eq!("{}", eval_to_string(&g, "_TEST_ARRAY(A1)"));
+    assert_eq!("{3}", eval_to_string(&g, "_TEST_ARRAY({3})"));
+    assert_eq!("{}", eval_to_string(&g, "_TEST_ARRAY(A1:A1)"));
     g.sheets_mut()[0].set_cell_value(pos![A2], 0);
     g.sheets_mut()[0].set_cell_value(pos![A3], 1);
     g.sheets_mut()[0].set_cell_value(pos![A4], -5);
@@ -80,14 +80,14 @@ fn test_convert_to_array() {
     // unambiguous representation, so it's fine that the string is unquoted.
     assert_eq!(
         "{; 0; 1; -5; hello; ; ; ; ; }",
-        eval_to_string(&mut g, "_TEST_ARRAY(A1:A10)"),
+        eval_to_string(&g, "_TEST_ARRAY(A1:A10)"),
     );
     assert_eq!(
         RunErrorMsg::Expected {
             expected: "array".into(),
             got: Some("tuple".into())
         },
-        eval_to_err(&mut g, "_TEST_ARRAY((A1:A10, C1:C10))").msg,
+        eval_to_err(&g, "_TEST_ARRAY((A1:A10, C1:C10))").msg,
     );
 }
 
@@ -95,16 +95,16 @@ fn test_convert_to_array() {
 fn test_convert_to_tuple() {
     let mut g = Grid::new();
 
-    assert_eq!("1", eval_to_string(&mut g, "_TEST_TUPLE(3)"));
-    assert_eq!("1", eval_to_string(&mut g, "_TEST_TUPLE(A1)"));
-    assert_eq!("1", eval_to_string(&mut g, "_TEST_TUPLE({3})"));
-    assert_eq!("1", eval_to_string(&mut g, "_TEST_TUPLE(A1:A1)"));
+    assert_eq!("1", eval_to_string(&g, "_TEST_TUPLE(3)"));
+    assert_eq!("1", eval_to_string(&g, "_TEST_TUPLE(A1)"));
+    assert_eq!("1", eval_to_string(&g, "_TEST_TUPLE({3})"));
+    assert_eq!("1", eval_to_string(&g, "_TEST_TUPLE(A1:A1)"));
     g.sheets_mut()[0].set_cell_value(pos![A2], 0);
     g.sheets_mut()[0].set_cell_value(pos![A3], 1);
     g.sheets_mut()[0].set_cell_value(pos![A4], -5);
     g.sheets_mut()[0].set_cell_value(pos![A5], "hello");
     // This string format is used for testing and potentially display; not as an
     // unambiguous representation, so it's fine that the string is unquoted.
-    assert_eq!("1", eval_to_string(&mut g, "_TEST_TUPLE(A1:A10)"),);
-    assert_eq!("2", eval_to_string(&mut g, "_TEST_TUPLE((A1:A10, C1:C10))"),);
+    assert_eq!("1", eval_to_string(&g, "_TEST_TUPLE(A1:A10)"),);
+    assert_eq!("2", eval_to_string(&g, "_TEST_TUPLE((A1:A10, C1:C10))"),);
 }

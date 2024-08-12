@@ -109,16 +109,6 @@ class RenderWebWorker {
     });
   }
 
-  updateSheetOffsetsFinal(sheetId: string, column: number | undefined, row: number | undefined, delta: number) {
-    this.send({
-      type: 'clientRenderSheetOffsetsFinal',
-      sheetId,
-      column,
-      row,
-      delta,
-    });
-  }
-
   showLabel(sheetId: string, x: number, y: number, show: boolean) {
     this.send({
       type: 'clientRenderShowLabel',

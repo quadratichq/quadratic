@@ -29,6 +29,8 @@ export class PointerHtmlCells {
 
     const cells = htmlCellsHandler.getCells();
     for (const cell of cells) {
+      if (cell.sheet !== sheets.sheet) continue;
+
       const target = cell.hover(e);
       // pointer hover over chart edge
       if (target === 'right' || target === 'bottom' || target === 'corner') {
@@ -46,7 +48,8 @@ export class PointerHtmlCells {
           this.hovering.clearHighlightEdges();
           this.hovering = undefined;
         }
-        return true;
+        this.cursor = undefined;
+        return false;
       }
     }
     this.cursor = undefined;
@@ -65,6 +68,8 @@ export class PointerHtmlCells {
 
     const cells = htmlCellsHandler.getCells();
     for (const cell of cells) {
+      if (cell.sheet !== sheets.sheet) continue;
+
       const target = cell.hover(e);
       // pointer down on chart edge, start resizing
       if (target === 'right' || target === 'bottom' || target === 'corner') {
@@ -131,12 +136,15 @@ export class PointerHtmlCells {
     // add double click timer
     const cells = htmlCellsHandler.getCells();
     for (const cell of cells) {
+      if (cell.sheet !== sheets.sheet) continue;
+
       const target = cell.hover(e);
       if (target === 'body' && cell === active) {
         this.setDoubleClick();
         this.clicked = cell;
+        return true;
       }
-      if (target) return true;
+      if (target) return false;
     }
     return false;
   }

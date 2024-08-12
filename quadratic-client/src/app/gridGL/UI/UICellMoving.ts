@@ -19,7 +19,7 @@ export class UICellMoving extends Container {
   }
 
   private drawMove() {
-    const moving = pixiApp.pointer.pointerCellMoving.moving;
+    const moving = pixiApp.pointer.pointerCellMoving.movingCells;
     if (!moving) {
       throw new Error('Expected moving to be defined in drawMove');
     }
