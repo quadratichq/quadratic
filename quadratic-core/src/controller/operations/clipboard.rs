@@ -19,6 +19,8 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+// todo: break up this file so tests are easier to write
+
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, ts_rs::TS)]
 pub enum PasteSpecial {
     None,
@@ -179,7 +181,7 @@ impl GridController {
     fn set_clipboard_validations(
         &self,
         validations: &Option<ClipboardValidations>,
-        start_pos: Pos,
+        start_pos: SheetPos,
     ) -> Vec<Operation> {
         if let Some(validations) = validations {
             validations
@@ -188,6 +190,7 @@ impl GridController {
                 .map(|validation| {
                     let mut validation = validation.clone();
                     validation.id = Uuid::new_v4();
+                    validation.selection.sheet_id = start_pos.sheet_id;
                     validation
                         .selection
                         .translate_in_place(start_pos.x, start_pos.y);
@@ -339,7 +342,10 @@ impl GridController {
                     }
                 });
 
-                ops.extend(self.set_clipboard_validations(&clipboard.validations, start_pos));
+                ops.extend(self.set_clipboard_validations(
+                    &clipboard.validations,
+                    start_pos.to_sheet_pos(sheet.id),
+                ));
             }
         }
 
@@ -689,7 +695,14 @@ mod test {
                 error: Default::default(),
             }],
         };
-        let operations = gc.set_clipboard_validations(&Some(validations), Pos { x: 1, y: 1 });
+        let operations = gc.set_clipboard_validations(
+            &Some(validations),
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id: SheetId::test(),
+            },
+        );
         assert_eq!(operations.len(), 1);
         if let Operation::SetValidation { validation } = &operations[0] {
             assert_eq!(
