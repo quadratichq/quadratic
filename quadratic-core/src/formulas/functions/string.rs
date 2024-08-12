@@ -97,6 +97,19 @@ fn get_functions() -> Vec<FormulaFunction> {
                 s.chars().filter(|&c| c as u64 >= 0x20).collect::<String>()
             }
         ),
+        formula_fn!(
+            /// Returns whether two strings are exactly equal, using
+            /// case-sensitive comparison (but ignoring formatting).
+            #[examples(
+                "EXACT(\"Abc\", \"abc\")=FALSE",
+                "EXACT(\"abc\", \"abc\")=TRUE",
+                "EXACT(\"abc\", \"def\")=FALSE"
+            )]
+            #[zip_map]
+            fn EXACT([s1]: String, [s2]: String) {
+                s1 == s2
+            }
+        ),
     ]
 }
 
@@ -207,5 +220,15 @@ mod tests {
             "  A BC",
             eval_to_string(&g, "CLEAN(\"  A\u{0} \u{A}\nB\u{1C}C\t\")"),
         )
+    }
+
+    #[test]
+    #[parallel]
+    fn test_formula_exact() {
+        let g = Grid::new();
+
+        assert_eq!("FALSE", eval_to_string(&g, "EXACT(\"Abc\", \"abc\")"));
+        assert_eq!("TRUE", eval_to_string(&g, "EXACT(\"abc\", \"abc\")"));
+        assert_eq!("FALSE", eval_to_string(&g, "EXACT(\"abc\", \"def\")"));
     }
 }
