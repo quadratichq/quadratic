@@ -81,6 +81,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             fn COUNTIF(range: (Spanned<Array>), [criteria]: (Spanned<CellValue>)) {
                 let criteria = Criterion::try_from(*criteria)?;
                 // Ignore error values.
+                // The `let` binding is necessary to avoid a lifetime error.
+                #[allow(clippy::let_and_return)]
                 let count = criteria.iter_matching(range, None)?.count();
                 count
             }
