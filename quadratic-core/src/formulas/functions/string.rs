@@ -46,7 +46,12 @@ fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
-            /// Returns the Unicode character ()
+            /// Returns a string containing the given [Unicode] code unit. For
+            /// numbers in the range 0-127, this converts from a number to its
+            /// corresponding [ASCII] character.
+            ///
+            /// [Unicode]: https://en.wikipedia.org/wiki/Unicode
+            /// [ASCII]: https://en.wikipedia.org/wiki/ASCII
             #[examples("CHAR(65) = \"A\"")]
             #[zip_map]
             fn CHAR(span: Span, [code_point]: u32) {
