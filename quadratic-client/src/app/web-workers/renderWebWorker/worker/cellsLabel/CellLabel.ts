@@ -21,7 +21,7 @@ import { CellsLabels } from './CellsLabels';
 import { LabelMeshEntry } from './LabelMeshEntry';
 import { LabelMeshes } from './LabelMeshes';
 import { extractCharCode, splitTextToCharacters } from './bitmapTextUtils';
-import { convertNumber, reduceDecimals } from './convertNumber';
+import { convertNumber, getFractionDigits, reduceDecimals } from './convertNumber';
 
 interface CharRenderData {
   charData: RenderBitmapChar;
@@ -109,9 +109,14 @@ export class CellLabel {
       default:
         if (cell.value !== undefined && cell.number) {
           this.number = cell.number;
-          // formula computation uses f64 precision, so we need to limit the number of decimals to 16
-          let currentFractionDigits = cell.language === 'Formula' && cell.number.decimals === null ? 16 : undefined;
-          return convertNumber(cell.value, cell.number, currentFractionDigits).toUpperCase();
+          if (cell.language) {
+            // fraction digits in number, max 16 (f64 precision)
+            const numberFractionDigits = Math.min(getFractionDigits(cell.value, cell.number), 16);
+            // display fraction digits in number, default 9
+            const displayFractionDigits = Math.min(this.number.decimals ?? 9, numberFractionDigits);
+            this.number.decimals = displayFractionDigits;
+          }
+          return convertNumber(cell.value, cell.number).toUpperCase();
         } else {
           return cell?.value;
         }
@@ -217,7 +222,7 @@ export class CellLabel {
   };
 
   isNumber = (): boolean => {
-    return this.number !== undefined || !isNaN(parseFloat(this.text));
+    return this.number !== undefined;
   };
 
   checkNumberClip = (): boolean => {
@@ -479,7 +484,7 @@ export class CellLabel {
       return this.getPoundText();
     }
 
-    return text;
+    return text.toUpperCase();
   };
 
   private getPoundText = () => {

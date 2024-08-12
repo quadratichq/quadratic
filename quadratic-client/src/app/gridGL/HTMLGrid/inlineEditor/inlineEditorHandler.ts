@@ -74,7 +74,7 @@ class InlineEditorHandler {
     this.cursorIsMoving = false;
     this.x = this.y = this.width = this.height = 0;
     this.location = undefined;
-    this.formula = false;
+    this.formula = undefined;
     this.formatSummary = undefined;
     this.temporaryBold = undefined;
     this.temporaryItalic = undefined;
