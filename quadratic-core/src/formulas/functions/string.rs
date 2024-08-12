@@ -59,7 +59,11 @@ mod tests {
         let g = Grid::new();
         assert_eq!(
             "Hello, 14000605 worlds!".to_string(),
-            eval_to_string(&g, "'Hello, ' & 14000605 & ' worlds!'"),
+            eval_to_string(&g, "\"Hello, \" & 14000605 & ' worlds!'"),
+        );
+        assert_eq!(
+            "Hello, 14000605 worlds!".to_string(),
+            eval_to_string(&g, "CONCAT('Hello, ',14000605,\" worlds!\")"),
         );
     }
 
