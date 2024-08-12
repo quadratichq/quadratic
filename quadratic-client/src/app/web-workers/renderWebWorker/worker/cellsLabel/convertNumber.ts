@@ -58,7 +58,8 @@ export const reduceDecimals = (
   currentFractionDigits?: number
 ): { number: string; currentFractionDigits: number } | undefined => {
   if (currentFractionDigits === undefined) {
-    currentFractionDigits = getFractionDigits(number, format) - 1;
+    currentFractionDigits = getFractionDigits(number, format);
+    currentFractionDigits = Math.max(0, currentFractionDigits - 1);
   }
   const updated = convertNumber(number, format, currentFractionDigits);
   if (updated !== current) {
