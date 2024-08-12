@@ -10,6 +10,7 @@ import * as monaco from 'monaco-editor';
 import { editor } from 'monaco-editor';
 import DefaultEditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import TsEditorWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
+import { inlineEditorEvents } from './inlineEditorEvents';
 
 const theme: editor.IStandaloneThemeData = {
   base: 'vs',
@@ -388,6 +389,7 @@ class InlineEditorMonaco {
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.updateMonacoCursorPosition);
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.keepCursorVisible);
     this.editor.onMouseDown(() => inlineEditorKeyboard.resetKeyboardPosition());
+    this.editor.onDidChangeModelContent(() => inlineEditorEvents.emit('valueChanged', this.get()));
   }
 
   // Sends a keyboard event to the editor (used when returning

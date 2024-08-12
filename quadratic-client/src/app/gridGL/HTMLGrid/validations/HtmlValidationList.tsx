@@ -38,6 +38,17 @@ export const HtmlValidationList = (props: Props) => {
     }
   }, [location, location?.x, location?.y, setEditorInteractionState, validation]);
 
+  const [filter, setFilter] = useState<string | undefined>();
+  useEffect(() => {
+    inlineEditorEvents.on('valueChanged', (value) => {
+      if (value.trim()) {
+        setFilter(value);
+      } else {
+        setFilter(undefined);
+      }
+    });
+  }, []);
+
   useEffect(() => {
     const updateShowDropdown = async (column: number, row: number, forceOpen: boolean) => {
       // if the dropdown is already open and the user clicked on the dropdown in
@@ -140,15 +151,20 @@ export const HtmlValidationList = (props: Props) => {
       style={{ top: offsets.bottom, left: offsets.left, minWidth: offsets.width }}
     >
       <div className="block w-full px-1">
-        {list.map((item, i) => (
-          <div
-            className={cn('block w-full whitespace-nowrap px-1 hover:bg-gray-100', index === i ? 'bg-gray-100' : '')}
-            key={item}
-            onClick={() => changeValue(item)}
-          >
-            {item}
-          </div>
-        ))}
+        {list
+          .filter((item) => {
+            if (!filter) return true;
+            return item.toLowerCase().includes(filter.toLowerCase());
+          })
+          .map((item, i) => (
+            <div
+              className={cn('block w-full whitespace-nowrap px-1 hover:bg-gray-100', index === i ? 'bg-gray-100' : '')}
+              key={item}
+              onClick={() => changeValue(item)}
+            >
+              {item}
+            </div>
+          ))}
       </div>
     </div>
   );

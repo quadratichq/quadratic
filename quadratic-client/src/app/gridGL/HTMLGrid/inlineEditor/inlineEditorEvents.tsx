@@ -6,6 +6,8 @@ interface EventTypes {
   replaceText: (text: string, highlight: boolean) => void;
 
   inputFailedValidation: (x: number, y: number, validationId: string) => void;
+
+  valueChanged: (value: string) => void;
 }
 
 export const inlineEditorEvents = new EventEmitter<EventTypes>();
