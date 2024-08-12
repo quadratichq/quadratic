@@ -46,6 +46,22 @@ fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
+            /// Returns the first [Unicode] code point in a string as a number.
+            /// If the first character is part of standard (non-extended)
+            /// [ASCII], then this is the same as its ASCII number.
+            ///
+            /// [Unicode]: https://en.wikipedia.org/wiki/Unicode
+            /// [ASCII]: https://en.wikipedia.org/wiki/ASCII
+            #[examples("CODE(\"Alpha\")=65")]
+            #[zip_map]
+            fn CODE(span: Span, [s]: String) {
+                match s.chars().next() {
+                    Some(c) => c as u32,
+                    None => return Err(RunErrorMsg::InvalidArgument.with_span(span)),
+                }
+            }
+        ),
+        formula_fn!(
             /// Returns a string containing the given [Unicode] code unit. For
             /// numbers in the range 0-127, this converts from a number to its
             /// corresponding [ASCII] character.
@@ -57,7 +73,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             fn CHAR(span: Span, [code_point]: u32) {
                 char::from_u32(code_point)
                     .filter(|&c| c != '\0')
-                    .ok_or_else(|| RunErrorMsg::IndexOutOfBounds.with_span(span))?
+                    .ok_or_else(|| RunErrorMsg::InvalidArgument.with_span(span))?
                     .to_string()
             }
         ),
@@ -134,6 +150,19 @@ mod tests {
 
     #[test]
     #[parallel]
+    fn test_formula_code() {
+        let g = Grid::new();
+
+        assert_eq!("65", eval_to_string(&g, "CODE('ABC')"));
+        assert_eq!("65", eval_to_string(&g, "CODE('A')"));
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "CODE('')").msg,
+        );
+    }
+
+    #[test]
+    #[parallel]
     fn test_formula_char() {
         let g = Grid::new();
 
@@ -146,15 +175,12 @@ mod tests {
         assert_eq!("F", eval_to_string(&g, "CHAR(65+5)"));
 
         assert_eq!(
-            RunErrorMsg::IndexOutOfBounds,
+            RunErrorMsg::InvalidArgument,
             eval_to_err(&g, "CHAR(-3)").msg,
         );
+        assert_eq!(RunErrorMsg::InvalidArgument, eval_to_err(&g, "CHAR(0)").msg,);
         assert_eq!(
-            RunErrorMsg::IndexOutOfBounds,
-            eval_to_err(&g, "CHAR(0)").msg,
-        );
-        assert_eq!(
-            RunErrorMsg::IndexOutOfBounds,
+            RunErrorMsg::InvalidArgument,
             eval_to_err(&g, "CHAR(2^24)").msg,
         );
     }
