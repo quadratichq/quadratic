@@ -31,6 +31,7 @@ export interface RenderClientCellsTextHashClear {
   hashY: number;
   viewRectangle: { x: number; y: number; width: number; height: number };
   overflowGridLines: Coordinate[];
+  content: Uint32Array;
 }
 
 export interface ClientRenderViewport {

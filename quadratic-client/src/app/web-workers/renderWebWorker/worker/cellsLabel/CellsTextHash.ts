@@ -22,6 +22,7 @@ import { CellsLabels } from './CellsLabels';
 import { LabelMeshes } from './LabelMeshes';
 import { CellsTextHashSpecial } from './CellsTextHashSpecial';
 import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
+import { CellsTextHashContent } from './CellsTextHashContent';
 
 // Draw hashed regions of cell glyphs (the text + text formatting)
 export class CellsTextHash {
@@ -64,6 +65,8 @@ export class CellsTextHash {
   columnsMaxCache?: Map<number, number>;
   rowsMaxCache?: Map<number, number>;
 
+  content: CellsTextHashContent;
+
   constructor(cellsLabels: CellsLabels, hashX: number, hashY: number) {
     this.cellsLabels = cellsLabels;
     this.labels = new Map();
@@ -80,6 +83,7 @@ export class CellsTextHash {
     this.hashX = hashX;
     this.hashY = hashY;
     this.special = new CellsTextHashSpecial();
+    this.content = new CellsTextHashContent();
   }
 
   // key used to find individual cell labels
@@ -113,10 +117,12 @@ export class CellsTextHash {
         rectangle.top
       );
     }
+    this.content.add(cell.x, cell.y);
   }
 
   private createLabels(cells: JsRenderCell[]) {
     this.labels = new Map();
+    this.content.clear();
     cells.forEach((cell) => this.createLabel(cell));
     this.loaded = true;
   }
@@ -139,7 +145,8 @@ export class CellsTextHash {
       this.hashX,
       this.hashY,
       this.viewRectangle,
-      this.overflowGridLines
+      this.overflowGridLines,
+      this.content.export()
     );
   };
 
@@ -358,7 +365,8 @@ export class CellsTextHash {
       this.hashX,
       this.hashY,
       this.viewRectangle,
-      this.overflowGridLines
+      this.overflowGridLines,
+      this.content.export()
     );
 
     // completes the rendering for the CellsTextHash

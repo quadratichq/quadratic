@@ -62,7 +62,7 @@ export class CellsLabels extends Container {
   // received a clear message before a new set of labelMeshEntries
   clearCellsTextHash(message: RenderClientCellsTextHashClear) {
     const key = `${message.hashX},${message.hashY}`;
-    const cellsTextHash = this.cellsTextHash.get(key);
+    let cellsTextHash = this.cellsTextHash.get(key);
     const viewRectangle = new Rectangle(
       message.viewRectangle.x,
       message.viewRectangle.y,
@@ -72,11 +72,24 @@ export class CellsLabels extends Container {
     if (cellsTextHash) {
       cellsTextHash.clearMeshEntries(viewRectangle);
     } else {
-      const cellsTextHash = this.cellsTextHashes.addChild(
+      cellsTextHash = this.cellsTextHashes.addChild(
         new CellsTextHash(this.sheetId, message.hashX, message.hashY, viewRectangle)
       );
       this.cellsTextHash.set(key, cellsTextHash);
     }
+    cellsTextHash.content.import(message.content);
+  }
+
+  // Returns whether the cell has content by checking CellsTextHashContent.
+  hasCell(column: number, row: number): boolean {
+    const hashX = Math.floor(column / sheetHashWidth);
+    const hashY = Math.floor(row / sheetHashHeight);
+    const key = `${hashX},${hashY}`;
+    const cellsTextHash = this.cellsTextHash.get(key);
+    if (cellsTextHash) {
+      return cellsTextHash.content.hasContent(column, row);
+    }
+    return false;
   }
 
   // received a new LabelMeshEntry to add to a CellsTextHash
@@ -189,6 +202,7 @@ export class CellsLabels extends Container {
     if (hash) {
       hash.special.clickedToCell(column, row, world);
     }
+    pixiApp.validations.clickedToCell(column, row, world);
   };
 
   renderValidationUpdates(validationWarnings: JsValidationWarning[]) {

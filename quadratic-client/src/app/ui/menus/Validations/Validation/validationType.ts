@@ -2,6 +2,7 @@ import { Validation } from '@/app/quadratic-core-types';
 
 export type ValidationRuleSimple = 'text' | 'number' | 'list' | 'list-range' | 'logical' | 'none' | '';
 export type ValidationUndefined = Validation | Omit<Validation, 'rule'> | undefined;
+export type ValidationUIType = 'checkbox' | 'dropdown';
 
 // Converts a Validation to a ValidationRuleSimple (to make it easier to work with)
 export const validationRuleSimple = (validation?: ValidationUndefined): ValidationRuleSimple => {
@@ -22,4 +23,15 @@ export const validationRuleSimple = (validation?: ValidationUndefined): Validati
     return 'number';
   }
   throw new Error('Invalid rule in useValidationData');
+};
+
+export const validationUIType = (validation?: ValidationUndefined): ValidationUIType | undefined => {
+  if (!validation || !('rule' in validation) || !validation.rule) return;
+  const rule = validation.rule;
+  if (rule === 'None') return;
+  if ('List' in rule) {
+    return 'dropdown';
+  } else if ('Logical' in rule) {
+    return 'checkbox';
+  }
 };

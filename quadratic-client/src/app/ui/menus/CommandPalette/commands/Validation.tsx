@@ -4,7 +4,7 @@ import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem'
 import { useSetRecoilState } from 'recoil';
 
 export const validationCommandGroup: CommandGroup = {
-  heading: 'Data Validation',
+  heading: 'Data Validations',
   commands: [
     {
       label: validationAction.label,

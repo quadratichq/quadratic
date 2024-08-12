@@ -19,6 +19,7 @@ import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cel
 import { CellsTextHashSpecial } from './CellsTextHashSpecial';
 import { CellsTextHashValidations } from './CellsTextHashValidations';
 import { ErrorMarker, ErrorValidation } from '../CellsSheet';
+import { CellsTextHashContent } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashContent';
 
 // Draw hashed regions of cell glyphs (the text + text formatting)
 export class CellsTextHash extends Container {
@@ -45,6 +46,8 @@ export class CellsTextHash extends Container {
   // color to use for drawDebugBox
   debugColor = Math.floor(Math.random() * 0xffffff);
 
+  content: CellsTextHashContent;
+
   constructor(sheetId: string, hashX: number, hashY: number, viewRectangle?: Rectangle) {
     super();
     this.AABB = new Rectangle(hashX * sheetHashWidth, hashY * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
@@ -55,6 +58,8 @@ export class CellsTextHash extends Container {
     this.entries = this.addChild(new Container<LabelMeshEntry>());
     this.special = this.addChild(new CellsTextHashSpecial());
     this.warnings = this.addChild(new CellsTextHashValidations(sheetId));
+
+    this.content = new CellsTextHashContent();
   }
 
   clear() {

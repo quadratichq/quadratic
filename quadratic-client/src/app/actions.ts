@@ -199,6 +199,6 @@ export const resizeColumnAction = {
 };
 
 export const validationAction = {
-  label: 'Data Validation',
+  label: 'Data Validations',
   isAvailable: isAvailableBecauseCanEditFile,
 };

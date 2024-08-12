@@ -79,7 +79,8 @@ class RenderClient {
     hashX: number,
     hashY: number,
     viewRectangle: { x: number; y: number; width: number; height: number },
-    overflowGridLines: Coordinate[]
+    overflowGridLines: Coordinate[],
+    content: Uint32Array
   ) {
     const message: RenderClientCellsTextHashClear = {
       type: 'renderClientCellsTextHashClear',
@@ -88,6 +89,7 @@ class RenderClient {
       hashY,
       viewRectangle,
       overflowGridLines,
+      content,
     };
     this.send(message);
   }
