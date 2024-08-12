@@ -45,6 +45,17 @@ fn get_functions() -> Vec<FormulaFunction> {
                 s.len()
             }
         ),
+        formula_fn!(
+            /// Returns the Unicode character ()
+            #[examples("CHAR(65) = \"A\"")]
+            #[zip_map]
+            fn CHAR(span: Span, [code_point]: u32) {
+                char::from_u32(code_point)
+                    .filter(|&c| c != '\0')
+                    .ok_or_else(|| RunErrorMsg::IndexOutOfBounds.with_span(span))?
+                    .to_string()
+            }
+        ),
     ]
 }
 
@@ -102,6 +113,33 @@ mod tests {
         assert_eq!(
             "{2, 3; 1, 4}",
             eval_to_string(&g, "LENB({\"aa\", \"bbb\"; \"c\", \"dddd\"})"),
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_formula_char() {
+        let g = Grid::new();
+
+        assert_eq!("A", eval_to_string(&g, "CHAR(65)"));
+
+        // Excel rounds numbers down, so even `65.9` would still give `A`.
+        // We're incompatible in that respect.
+        assert_eq!("A", eval_to_string(&g, "CHAR(65.4)")); // round to int
+
+        assert_eq!("F", eval_to_string(&g, "CHAR(65+5)"));
+
+        assert_eq!(
+            RunErrorMsg::IndexOutOfBounds,
+            eval_to_err(&g, "CHAR(-3)").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::IndexOutOfBounds,
+            eval_to_err(&g, "CHAR(0)").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::IndexOutOfBounds,
+            eval_to_err(&g, "CHAR(2^24)").msg,
         );
     }
 }
