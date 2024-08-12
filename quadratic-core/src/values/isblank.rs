@@ -62,10 +62,10 @@ mod tests {
         assert!(!Value::from(0).is_blank());
         assert!(!Value::from(1).is_blank());
 
-        assert!((&Value::Single(CellValue::Blank)).is_blank());
-        assert!(!(&Value::from("")).is_blank());
-        assert!(!(&Value::from(0)).is_blank());
-        assert!(!(&Value::from(1)).is_blank());
+        assert!((Value::Single(CellValue::Blank)).is_blank());
+        assert!(!(Value::from("")).is_blank());
+        assert!(!(Value::from(0)).is_blank());
+        assert!(!(Value::from(1)).is_blank());
 
         let a = Array::from_random_floats(crate::ArraySize::new(1, 2).unwrap());
         assert!(!Value::Array(a.clone()).is_blank());

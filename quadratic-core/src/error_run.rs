@@ -69,6 +69,8 @@ pub enum RunErrorMsg {
     BadFunctionName,
     BadCellReference,
     BadNumber,
+    /// NaN or ±Infinity
+    NaN,
 
     // Array size errors
     ExactArraySizeMismatch {
@@ -157,6 +159,9 @@ impl fmt::Display for RunErrorMsg {
             }
             Self::BadNumber => {
                 write!(f, "Bad numeric literal")
+            }
+            Self::NaN => {
+                write!(f, "NaN")
             }
 
             Self::ExactArraySizeMismatch { expected, got } => {

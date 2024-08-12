@@ -220,7 +220,7 @@ mod tests {
                 "1.1",
                 "2024-01-01 13:00:00",
                 "1",
-                "",
+                "Divide by zero",
                 "TRUE",
                 "Hello Bold",
                 "Hello Red",
