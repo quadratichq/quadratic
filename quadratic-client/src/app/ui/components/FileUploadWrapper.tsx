@@ -4,7 +4,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Coordinate } from '@/app/gridGL/types/size';
-import { DragAndDropFileType, isCsv, isDraggedFileExcel, isExcel, isParquet } from '@/app/helpers/files';
+import { DragAndDropFileType, isCsv, isExcel, isExcelMimeType, isParquet } from '@/app/helpers/files';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { DragEvent, PropsWithChildren, useRef, useState } from 'react';
@@ -56,7 +56,8 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
     if (e.type === 'dragenter') {
       setDragActive(true);
     } else if (e.type === 'dragover') {
-      if (isDraggedFileExcel(e)) {
+      const mimeType = e.dataTransfer.items[0].type;
+      if (isExcelMimeType(mimeType)) {
         setUserMessageState({ message: 'Dropped Excel file(s) will be imported as new sheet(s) in this file.' });
       } else {
         setUserMessageState({ message: undefined });

@@ -1,5 +1,3 @@
-import { DragEvent } from 'react';
-
 export type DragAndDropFileType = 'csv' | 'excel' | 'parquet';
 
 export function readFileAsArrayBuffer(file: File): Promise<Uint8Array> {
@@ -43,18 +41,14 @@ export function isCsv(file: File): boolean {
   return file.type === 'text/csv' || file.type === 'text/tab-separated-values' || hasExtension(file.name, 'csv');
 }
 
-export function isExcel(file: File): boolean {
-  return (
-    ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'].includes(
-      file.type
-    ) || hasExtension(file.name, 'xlsx')
+export function isExcelMimeType(mimeType: string): boolean {
+  return ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'].includes(
+    mimeType
   );
 }
 
-export function isDraggedFileExcel(e: DragEvent<HTMLDivElement>) {
-  const excelTypes = ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
-  const fileMimeTypes = e.dataTransfer.items[0].type;
-  return excelTypes.includes(fileMimeTypes);
+export function isExcel(file: File): boolean {
+  return isExcelMimeType(file.type) || hasExtension(file.name, 'xlsx');
 }
 
 export function isGrid(file: File): boolean {
