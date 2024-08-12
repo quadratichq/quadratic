@@ -113,6 +113,8 @@ macro_rules! see_docs_for_more_about_wildcards {
 /// Special types:
 /// - `Ctx` - context (type is `Ctx<'_>`)
 /// - `Span` - span of the function call (type is `Span`)
+/// - `FormulaFnArgs` (must be last parameter) - all subsequent arguments
+///                                              (type is `FormulaFnArgs`)
 ///
 /// Additionally, if the parameter name is surrounded by square brackets (such
 /// as `[arg]: f64`) then if the argument is an array then the function will be
@@ -219,11 +221,15 @@ macro_rules! formula_fn_eval_inner {
         $ctx:ident, $args:ident, $body:expr;
         $($params:tt)*
     ) => {{
+        // `formula_fn_args!` may borrow `$ctx` for `$body`, so we need
+        // to read this flag now while we can.
+        let skip_computation = $ctx.skip_computation;
+
         // Check number of arguments and assign arguments to variables.
         formula_fn_args!(@assign($ctx, $args); $($params)*);
         $args.error_if_more_args()?;
 
-        if $ctx.skip_computation {
+        if skip_computation {
             // Return a dummy value.
             Ok(Value::Single(CellValue::Blank))
         } else {
@@ -272,6 +278,18 @@ macro_rules! formula_fn_arg {
     (@assign($ctx:ident, $args:ident); $arg_name:ident: Span) => {
         let $arg_name = $args.span;
     };
+    // Remaining arguments
+    (@assign($ctx:ident, $args:ident); $arg_name:ident: FormulaFnArgs) => {
+        // Replace the old `$args` with a dummy value that won't error when we
+        // assert there are no more arguments.
+        let replacement = FormulaFnArgs {
+            span: $args.span,
+            values: Default::default(),
+            func_name: $args.func_name,
+            args_popped: $args.args_popped,
+        };
+        let $arg_name = std::mem::replace(&mut $args, replacement);
+    };
 
     // Zip-mapped context argument
     (@zip($ctx:ident, $args:ident, $args_to_zip_map:ident); $arg_name:ident: Ctx) => {
@@ -296,11 +314,11 @@ macro_rules! formula_fn_arg {
     };
 
     // Repeating argument
-    (@assign($ctx:ident, $args:ident); $arg_name:ident: Iter< Spanned< Value > >) => {
+    (@assign($ctx:ident, $args:ident); $arg_name:ident: Iter< Spanned< Value $(>>)* $(>)*) => {
         // Do not flatten `Value`s.
         let mut $arg_name = $args.take_rest().map(CodeResult::Ok);
     };
-    (@assign($ctx:ident, $args:ident); $arg_name:ident: Iter< Spanned< Array > >) => {
+    (@assign($ctx:ident, $args:ident); $arg_name:ident: Iter< Spanned< Array $(>>)* $(>)*) => {
         // Do not flatten arrays.
         let mut $arg_name = $args.take_rest().map(Array::from).map(CodeResult::Ok);
     };
@@ -309,7 +327,7 @@ macro_rules! formula_fn_arg {
 
         // Flatten into iterator over non-array type.
         let remaining_args = $args.take_rest();
-        let $arg_name = remaining_args.flat_map(|arg_value| {
+        let mut $arg_name = remaining_args.flat_map(|arg_value| {
             formula_fn_convert_arg!(arg_value, Value -> Iter< Spanned< $($arg_type)*)
         });
     };
@@ -474,6 +492,7 @@ macro_rules! params_list {
         })
     };
 
+    (@get_kind FormulaFnArgs) => { ParamKind::Repeating };
     (@get_kind (Iter<$($rest:tt)*)) => { ParamKind::Repeating };
     (@get_kind (Option<$($rest:tt)*)) => { ParamKind::Optional };
     (@get_kind $arg_type:tt) => { ParamKind::Required };

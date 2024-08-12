@@ -61,6 +61,7 @@ export class Pointer {
     pixiApp.canvas.removeEventListener('pointerleave', this.pointerLeave);
     window.removeEventListener('blur', this.pointerLeave);
     this.pointerDown.destroy();
+    this.pointerHtmlCells.destroy();
   }
 
   // check if more than one touch point (let the viewport handle the event)
@@ -132,13 +133,14 @@ export class Pointer {
 
   private pointerUp = (e: InteractionEvent): void => {
     if (this.isMoreThanOneTouch(e)) return;
-    this.pointerHtmlCells.pointerUp() ||
+    this.pointerHtmlCells.pointerUp(e) ||
       this.pointerImages.pointerUp() ||
       this.pointerCellMoving.pointerUp() ||
-      this.pointerHtmlCells.pointerUp() ||
       this.pointerHeading.pointerUp() ||
       this.pointerAutoComplete.pointerUp() ||
       this.pointerDown.pointerUp();
+
+    this.updateCursor();
   };
 
   handleEscape(): boolean {

@@ -185,9 +185,9 @@ impl Spanned<Value> {
     pub fn into_cell_value(self) -> CodeResult<Spanned<CellValue>> {
         self.inner.into_cell_value().with_span(self.span)
     }
-    /// Returns an array, or an error if the value is only a single cell or a
+    /// Returns an array, or `None` if the value is only a single cell or a
     /// tuple.
-    pub fn as_array(&self) -> Option<Spanned<&Array>> {
+    fn as_array(&self) -> Option<Spanned<&Array>> {
         match &self.inner {
             Value::Single(_) => None,
             Value::Array(array) => Some(Spanned {
@@ -199,6 +199,10 @@ impl Spanned<Value> {
                 inner: arrays.first()?,
             }),
         }
+    }
+    /// Returns an array for a single value or array, or an error for a tuple.
+    pub fn into_array(self) -> CodeResult<Spanned<Array>> {
+        self.inner.into_array().with_span(self.span)
     }
 
     /// Returns the value from an array if this is an array value, or the single

@@ -30,7 +30,7 @@ impl GridController {
                 });
             transaction
                 .reverse_operations
-                .insert(0, Operation::DeleteSheet { sheet_id });
+                .push(Operation::DeleteSheet { sheet_id });
         }
     }
 
@@ -62,7 +62,7 @@ impl GridController {
                     .push(Operation::AddSheetSchema { schema });
                 transaction
                     .reverse_operations
-                    .insert(0, Operation::DeleteSheet { sheet_id });
+                    .push(Operation::DeleteSheet { sheet_id });
             }
         }
     }
@@ -86,14 +86,13 @@ impl GridController {
                 .push(Operation::DeleteSheet { sheet_id });
 
             for op in code_run_ops {
-                transaction.reverse_operations.insert(0, op);
+                transaction.reverse_operations.push(op);
             }
-            transaction.reverse_operations.insert(
-                0,
-                Operation::AddSheetSchema {
+            transaction
+                .reverse_operations
+                .push(Operation::AddSheetSchema {
                     schema: export_sheet(&deleted_sheet),
-                },
-            );
+                });
 
             // create a sheet if we deleted the last one (only for user actions)
             if transaction.is_user() && self.sheet_ids().is_empty() {
@@ -106,12 +105,9 @@ impl GridController {
                 transaction.forward_operations.push(Operation::AddSheet {
                     sheet: new_first_sheet,
                 });
-                transaction.reverse_operations.insert(
-                    0,
-                    Operation::DeleteSheet {
-                        sheet_id: new_first_sheet_id,
-                    },
-                );
+                transaction.reverse_operations.push(Operation::DeleteSheet {
+                    sheet_id: new_first_sheet_id,
+                });
 
                 // if that's the last sheet, then we created a new one and we have to let the workers know
                 self.send_add_sheet(new_first_sheet_id, transaction);
@@ -142,13 +138,12 @@ impl GridController {
             transaction
                 .forward_operations
                 .push(Operation::ReorderSheet { target, order });
-            transaction.reverse_operations.insert(
-                0,
-                Operation::ReorderSheet {
+            transaction
+                .reverse_operations
+                .push(Operation::ReorderSheet {
                     target,
                     order: original_order,
-                },
-            );
+                });
 
             self.send_sheet_info(target);
         }
@@ -170,13 +165,12 @@ impl GridController {
             transaction
                 .forward_operations
                 .push(Operation::SetSheetName { sheet_id, name });
-            transaction.reverse_operations.insert(
-                0,
-                Operation::SetSheetName {
+            transaction
+                .reverse_operations
+                .push(Operation::SetSheetName {
                     sheet_id,
                     name: old_name,
-                },
-            );
+                });
 
             self.send_sheet_info(sheet_id);
         }
@@ -198,13 +192,12 @@ impl GridController {
             transaction
                 .forward_operations
                 .push(Operation::SetSheetColor { sheet_id, color });
-            transaction.reverse_operations.insert(
-                0,
-                Operation::SetSheetColor {
+            transaction
+                .reverse_operations
+                .push(Operation::SetSheetColor {
                     sheet_id,
                     color: old_color,
-                },
-            );
+                });
 
             self.send_sheet_info(sheet_id);
         }
@@ -248,12 +241,9 @@ impl GridController {
                     sheet_id,
                     new_sheet_id,
                 });
-            transaction.reverse_operations.insert(
-                0,
-                Operation::DeleteSheet {
-                    sheet_id: new_sheet_id,
-                },
-            );
+            transaction.reverse_operations.push(Operation::DeleteSheet {
+                sheet_id: new_sheet_id,
+            });
         }
     }
 }
