@@ -4,43 +4,44 @@ pub(crate) use super::*;
 pub(crate) use crate::grid::Grid;
 pub(crate) use crate::values::*;
 pub(crate) use crate::{array, CodeResult, RunError, RunErrorMsg, Spanned};
-use crate::{Pos, SheetPos};
+use crate::{CoerceInto, Pos, SheetPos};
 use serial_test::parallel;
 
-pub(crate) fn try_eval_at(grid: &Grid, pos: SheetPos, s: &str) -> CodeResult<Value> {
-    let mut ctx = Ctx::new(grid, pos);
-    parse_formula(s, Pos::ORIGIN)?.eval(&mut ctx)
+#[track_caller]
+pub(crate) fn try_check_syntax(grid: &Grid, s: &str) -> CodeResult<()> {
+    println!("Checking syntax of formula {s:?}");
+    let mut ctx = Ctx::new_for_syntax_check(grid);
+    parse_formula(s, Pos::ORIGIN)?
+        .eval(&mut ctx)
+        .into_non_error_value()
+        .map(|_| ())
 }
 
 #[track_caller]
-pub(crate) fn eval_at(grid: &Grid, sheet_pos: SheetPos, s: &str) -> Value {
-    try_eval_at(grid, sheet_pos, s).expect("error evaluating formula")
+pub(crate) fn eval_at(grid: &Grid, pos: SheetPos, s: &str) -> Value {
+    println!("Evaluating formula {s:?}");
+    let mut ctx = Ctx::new(grid, pos);
+    match parse_formula(s, Pos::ORIGIN) {
+        Ok(formula) => formula.eval(&mut ctx).inner,
+        Err(e) => e.into(),
+    }
+}
+#[track_caller]
+pub(crate) fn eval(grid: &Grid, s: &str) -> Value {
+    eval_at(grid, Pos::ORIGIN.to_sheet_pos(grid.sheets()[0].id), s)
 }
 #[track_caller]
 pub(crate) fn eval_to_string_at(grid: &Grid, sheet_pos: SheetPos, s: &str) -> String {
     eval_at(grid, sheet_pos, s).to_string()
 }
-
-pub(crate) fn try_eval(grid: &Grid, s: &str) -> CodeResult<Value> {
-    try_eval_at(grid, Pos::ORIGIN.to_sheet_pos(grid.sheets()[0].id), s)
-}
-#[track_caller]
-pub(crate) fn try_check_syntax(grid: &Grid, s: &str) -> CodeResult<()> {
-    println!("Checking syntax of formula {s:?}");
-    let mut ctx = Ctx::new_for_syntax_check(grid);
-    parse_formula(s, Pos::ORIGIN)?.eval(&mut ctx).map(|_| ())
-}
-#[track_caller]
-pub(crate) fn eval(grid: &Grid, s: &str) -> Value {
-    try_eval(grid, s).expect("error evaluating formula")
-}
 #[track_caller]
 pub(crate) fn eval_to_string(grid: &Grid, s: &str) -> String {
     eval(grid, s).to_string()
 }
+
 #[track_caller]
 pub(crate) fn eval_to_err(grid: &Grid, s: &str) -> RunError {
-    try_eval(grid, s).expect_err("expected error")
+    eval(grid, s).unwrap_err()
 }
 
 #[track_caller]
@@ -84,10 +85,7 @@ fn test_formula_cell_ref() {
 
     // Evaluate at B2
     let mut ctx = Ctx::new(&g, pos![B2].to_sheet_pos(sheet_id));
-    assert_eq!(
-        "11111".to_string(),
-        form.eval(&mut ctx).unwrap().to_string(),
-    );
+    assert_eq!("11111".to_string(), form.eval(&mut ctx).to_string(),);
 }
 
 #[test]
@@ -97,10 +95,12 @@ fn test_formula_circular_array_ref() {
 
     let g = Grid::new();
     let mut ctx = Ctx::new(&g, pos![B2].to_sheet_pos(g.sheets()[0].id));
-
     assert_eq!(
         RunErrorMsg::CircularReference,
-        form.eval(&mut ctx).unwrap_err().msg,
+        form.eval(&mut ctx).inner.cell_values_slice().unwrap()[4]
+            .clone()
+            .unwrap_err()
+            .msg,
     );
 }
 
@@ -422,4 +422,16 @@ fn test_cell_range_op_errors() {
 fn test_currency_string() {
     let g = Grid::new();
     assert_eq!("30", eval_to_string(&g, "\"$10\" + 20"));
+}
+
+#[test]
+fn test_syntax_check_ok() {
+    let g = Grid::new();
+    assert_check_syntax_succeeds(&g, "1+1");
+    assert_check_syntax_succeeds(&g, "1/0");
+    assert_check_syntax_succeeds(&g, "SUM(1, 2, 3)");
+    assert_check_syntax_succeeds(&g, "{1, 2, 3}");
+    assert_check_syntax_succeeds(&g, "{1, 2; 3, 4}");
+    assert_check_syntax_succeeds(&g, "XLOOKUP(\"zebra\", A1:Z1, A4:Z6)");
+    assert_check_syntax_succeeds(&g, "ABS(({1, 2; 3, 4}, A1:C10))");
 }
