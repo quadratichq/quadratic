@@ -88,6 +88,6 @@ mod tests {
         assert_eq!(
             clipboard_validations.validations[0].selection,
             selection.translate(0, 0)
-        )
+        );
     }
 }
