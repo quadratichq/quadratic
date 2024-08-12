@@ -153,8 +153,8 @@ mod tests {
     fn test_formula_radian_degree_conversion() {
         let g = Grid::new();
 
-        assert_eq!("-4", eval_to_string(&g, "RADIANS(-720) / PI()"));
-        assert_eq!("-720", eval_to_string(&g, "DEGREES(-PI() * 4)"));
+        crate::util::assert_f64_approx_eq(-4.0, &eval_to_string(&g, "RADIANS(-720) / PI()"));
+        crate::util::assert_f64_approx_eq(-720.0, &eval_to_string(&g, "DEGREES(-PI() * 4)"));
     }
 
     #[test]
