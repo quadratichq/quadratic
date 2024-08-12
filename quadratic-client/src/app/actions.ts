@@ -186,6 +186,11 @@ export const downloadSelectionAsCsvAction = {
   },
 };
 
+export const dataValidations = {
+  label: 'Data Validations',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
 export const findInSheet = {
   label: 'Find in current sheet',
 };
