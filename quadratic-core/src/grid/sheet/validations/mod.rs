@@ -16,6 +16,7 @@ use super::Sheet;
 pub mod validation;
 pub mod validation_rules;
 pub mod validation_warnings;
+pub mod validations_clipboard;
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Validations {

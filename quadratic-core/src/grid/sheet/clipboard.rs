@@ -250,6 +250,8 @@ impl Sheet {
             }
         }
         let sheet_formats = self.sheet_formats(selection, &clipboard_origin);
+        let validations = self.validations.to_clipboard(selection, &clipboard_origin);
+
         let clipboard = Clipboard {
             cells,
             formats,
@@ -260,6 +262,7 @@ impl Sheet {
             h: sheet_bounds.map_or(0, |b| b.height()),
             origin: clipboard_origin,
             selection: Some(selection.clone()),
+            validations,
         };
 
         html.push_str("</td></tr></tbody></table>");

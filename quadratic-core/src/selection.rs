@@ -217,7 +217,31 @@ impl Selection {
         }
     }
 
-    // Translates the selection by a clipboard origin.
+    /// Translates the selection in place.
+    pub fn translate_in_place(&mut self, delta_x: i64, delta_y: i64) {
+        self.x += delta_x;
+        self.y += delta_y;
+        if let Some(columns) = self.columns.as_mut() {
+            for x in columns {
+                *x += delta_x;
+            }
+        }
+        if let Some(rows) = self.rows.as_mut() {
+            for y in rows {
+                *y += delta_y;
+            }
+        }
+        if let Some(rects) = self.rects.as_mut() {
+            for rect in rects {
+                rect.min.x += delta_x;
+                rect.min.y += delta_y;
+                rect.max.x += delta_x;
+                rect.max.y += delta_y;
+            }
+        }
+    }
+
+    // Translates the selection and returns a new selection.
     pub fn translate(&self, delta_x: i64, delta_y: i64) -> Selection {
         Selection {
             x: self.x + delta_x,
@@ -245,6 +269,73 @@ impl Selection {
                     .collect()
             }),
             ..self.clone()
+        }
+    }
+
+    /// Determines whether the Selection is empty.
+    pub fn is_empty(&self) -> bool {
+        !self.all && self.columns.is_none() && self.rows.is_none() && self.rects.is_none()
+    }
+
+    /// Finds intersection of two Selections. Note: x,y of the resulting
+    /// Selection is defined as self.x and self.y (mostly not useful).
+    pub fn intersection(&self, other: &Selection) -> Option<Selection> {
+        if self.sheet_id != other.sheet_id {
+            return None;
+        }
+        let all = self.all && other.all;
+        let rows = if let (Some(rows), Some(other_rows)) = (&self.rows, &other.rows) {
+            Some(
+                rows.iter()
+                    .filter(|r| other_rows.contains(r))
+                    .cloned()
+                    .collect(),
+            )
+        } else {
+            None
+        };
+        let columns = if let (Some(columns), Some(other_columns)) = (&self.columns, &other.columns)
+        {
+            Some(
+                columns
+                    .iter()
+                    .filter(|c| other_columns.contains(c))
+                    .cloned()
+                    .collect(),
+            )
+        } else {
+            None
+        };
+        let rects = if let (Some(rects), Some(other_rects)) = (&self.rects, &other.rects) {
+            let mut new_rects = Vec::new();
+            for rect in rects {
+                for other_rect in other_rects {
+                    if let Some(intersect) = rect.intersection(other_rect) {
+                        new_rects.push(intersect);
+                    }
+                }
+            }
+            if new_rects.is_empty() {
+                None
+            } else {
+                Some(new_rects)
+            }
+        } else {
+            None
+        };
+        let selection = Selection {
+            sheet_id: self.sheet_id,
+            x: self.x,
+            y: self.y,
+            all,
+            rows,
+            columns,
+            rects,
+        };
+        if selection.is_empty() {
+            None
+        } else {
+            Some(selection)
         }
     }
 }
@@ -588,6 +679,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn contains_column() {
         let sheet_id = SheetId::test();
         let selection = Selection::columns(&[1, 2, 3], sheet_id);
@@ -596,6 +688,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn contains_row() {
         let sheet_id = SheetId::test();
         let selection = Selection::rows(&[1, 2, 3], sheet_id);
@@ -604,6 +697,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn in_rect() {
         let sheet_id = SheetId::test();
         let selection = Selection {
@@ -617,5 +711,109 @@ mod test {
         };
         assert!(selection.in_rects(Rect::from_numbers(1, 2, 3, 4)));
         assert!(!selection.in_rects(Rect::from_numbers(4, 5, 6, 7)));
+    }
+
+    #[test]
+    #[parallel]
+    fn is_empty() {
+        let sheet_id = SheetId::test();
+        let selection = Selection {
+            sheet_id,
+            x: 0,
+            y: 0,
+            rects: Some(vec![Rect::from_numbers(1, 2, 3, 4)]),
+            rows: None,
+            columns: None,
+            all: false,
+        };
+        assert!(!selection.is_empty());
+
+        let selection = Selection {
+            sheet_id,
+            x: 0,
+            y: 0,
+            rects: None,
+            rows: None,
+            columns: None,
+            all: false,
+        };
+        assert!(selection.is_empty());
+    }
+
+    #[test]
+    #[parallel]
+    fn translate_in_place() {
+        let sheet_id = SheetId::test();
+        let mut selection = Selection {
+            sheet_id,
+            x: 1,
+            y: 2,
+            rects: Some(vec![Rect::from_numbers(1, 2, 3, 4)]),
+            columns: Some(vec![1, 2, 3]),
+            rows: Some(vec![4, 5, 6]),
+            all: false,
+        };
+        selection.translate_in_place(1, 2);
+        assert_eq!(
+            selection,
+            Selection {
+                sheet_id,
+                x: 2,
+                y: 4,
+                rects: Some(vec![Rect::from_numbers(2, 4, 3, 4)]),
+                columns: Some(vec![2, 3, 4]),
+                rows: Some(vec![6, 7, 8]),
+                all: false
+            }
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn intersection() {
+        let sheet_id = SheetId::test();
+        let selection1 = Selection {
+            sheet_id,
+            x: 0,
+            y: 0,
+            rects: Some(vec![Rect::from_numbers(1, 2, 3, 4)]),
+            columns: Some(vec![1, 2, 3]),
+            rows: Some(vec![4, 5, 6]),
+            all: false,
+        };
+        let selection2 = Selection {
+            sheet_id,
+            x: 1,
+            y: 2,
+            rects: Some(vec![Rect::from_numbers(1, 2, 3, 4)]),
+            columns: Some(vec![1, 2, 3]),
+            rows: Some(vec![4, 5, 6]),
+            all: false,
+        };
+        let intersection = selection1.intersection(&selection2).unwrap();
+        assert_eq!(
+            intersection,
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: Some(vec![Rect::from_numbers(1, 2, 3, 4)]),
+                columns: Some(vec![1, 2, 3]),
+                rows: Some(vec![4, 5, 6]),
+                all: false
+            }
+        );
+
+        let selection2 = Selection {
+            sheet_id,
+            x: 1,
+            y: 2,
+            rects: Some(vec![Rect::from_numbers(4, 5, 6, 7)]),
+            columns: None,
+            rows: None,
+            all: false,
+        };
+        let intersection = selection1.intersection(&selection2);
+        assert!(intersection.is_none());
     }
 }
