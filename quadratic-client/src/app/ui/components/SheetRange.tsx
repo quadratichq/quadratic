@@ -8,6 +8,7 @@ import { getSelectionString, parseSelectionString } from '@/app/grid/sheet/selec
 import { sheets } from '@/app/grid/controller/Sheets';
 import { cn } from '@/shared/shadcn/utils';
 import { Selection } from '@/app/quadratic-core-types';
+import { events } from '@/app/events/events';
 
 interface Props {
   label?: string;
@@ -24,10 +25,20 @@ interface Props {
   readOnly?: boolean;
 
   onEnter?: () => void;
+
+  requireSheetId?: string;
 }
 
 export const SheetRange = (props: Props) => {
-  const { onChangeSelection: onChangeRange, label, initial, triggerError, changeCursor, readOnly } = props;
+  const {
+    onChangeSelection: onChangeRange,
+    label,
+    initial,
+    triggerError,
+    changeCursor,
+    readOnly,
+    requireSheetId,
+  } = props;
   const [rangeError, setRangeError] = useState<string | undefined>();
   const ref = useRef<HTMLInputElement>(null);
 
@@ -86,6 +97,17 @@ export const SheetRange = (props: Props) => {
   };
 
   const isError = triggerError && (!ref.current || ref.current.value === '');
+
+  const [sheetId, setSheetId] = useState(sheets.sheet.id);
+  useEffect(() => {
+    const updateSheet = () => setSheetId(sheets.sheet.id);
+    events.on('changeSheet', updateSheet);
+    return () => {
+      events.off('changeSheet', updateSheet);
+    };
+  }, []);
+  const disableButton = requireSheetId ? requireSheetId !== sheetId : false;
+
   return (
     <div>
       {props.label && <Label htmlFor={label}>{label}</Label>}
@@ -106,10 +128,15 @@ export const SheetRange = (props: Props) => {
           />
         </div>
         {!readOnly && (
-          <TooltipHint title={'Insert current selection'} placement="bottom">
-            <Button size="sm" onClick={onInsert}>
-              <HighlightAltIcon fontSize="small" />
-            </Button>
+          <TooltipHint
+            title={disableButton ? 'Can only insert from original sheet' : 'Insert current selection'}
+            placement="bottom"
+          >
+            <span>
+              <Button size="sm" onClick={onInsert} disabled={disableButton}>
+                <HighlightAltIcon fontSize="small" />
+              </Button>
+            </span>
           </TooltipHint>
         )}
       </div>

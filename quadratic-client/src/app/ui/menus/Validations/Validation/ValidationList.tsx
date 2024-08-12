@@ -103,6 +103,7 @@ export const ValidationList = (props: Props) => {
           changeCursor={sheetId}
           readOnly={readOnly}
           onEnter={onEnter}
+          requireSheetId={sheetId}
         />
       )}
       {rule === 'list' && <ValidationListInput validationData={props.validationData} />}

@@ -18,7 +18,22 @@ export const useValidationsData = (): ValidationsData => {
   const { permissions } = useRecoilValue(editorInteractionStateAtom);
   const readOnly = !hasPermissionToEditFile(permissions);
 
-  const [sheetId] = useState(sheets.sheet.id);
+  const [sheetId, setSheetId] = useState(sheets.sheet.id);
+  useEffect(() => {
+    const updateSheet = () => {
+      setSheetId((current: string) => {
+        if (current !== sheets.sheet.id) {
+          setValidations([...sheets.sheet.validations]);
+          return sheets.sheet.id;
+        }
+        return current;
+      });
+    };
+    events.on('changeSheet', updateSheet);
+    return () => {
+      events.off('changeSheet', updateSheet);
+    };
+  });
 
   // we make a copy of validations from sheet so we can delete pending ones
   // without affecting the sheet.

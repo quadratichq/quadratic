@@ -103,6 +103,7 @@ export const Validation = () => {
           changeCursor={true}
           readOnly={readOnly}
           onEnter={() => applyValidation(true)}
+          requireSheetId={sheetId}
         />
         <ValidationDropdown
           label="Criteria"
