@@ -234,14 +234,13 @@ mod tests {
         let mut grid_controller = GridController::test();
         let pos = Pos { x: 0, y: 0 };
         let file: Vec<u8> = std::fs::read(EXCEL_FILE).expect("Failed to read file");
-        let sheet_id = grid_controller.grid.sheets()[0].id;
         let _ = grid_controller.import_excel(file, "basic.xlsx", Some("".into()));
 
         let new_sheet_id = grid_controller.grid.sheets()[1].id;
 
         print_table(
             &grid_controller,
-            sheet_id,
+            new_sheet_id,
             Rect::new_span(pos, Pos { x: 10, y: 10 }),
         );
 
@@ -280,7 +279,7 @@ mod tests {
                 "1.1",
                 "2024-01-01 13:00:00",
                 "1",
-                "",
+                "Divide by zero",
                 "TRUE",
                 "Hello Bold",
                 "Hello Red",
