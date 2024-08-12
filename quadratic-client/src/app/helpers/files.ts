@@ -1,3 +1,5 @@
+export type DragAndDropFileType = 'csv' | 'excel' | 'parquet';
+
 export function readFileAsArrayBuffer(file: File): Promise<Uint8Array> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -39,10 +41,14 @@ export function isCsv(file: File): boolean {
   return file.type === 'text/csv' || file.type === 'text/tab-separated-values' || hasExtension(file.name, 'csv');
 }
 
-export function isExcel(file: File): boolean {
-  return (
-    file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || hasExtension(file.name, 'xlsx')
+export function isExcelMimeType(mimeType: string): boolean {
+  return ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'].includes(
+    mimeType
   );
+}
+
+export function isExcel(file: File): boolean {
+  return isExcelMimeType(file.type) || hasExtension(file.name, 'xlsx');
 }
 
 export function isGrid(file: File): boolean {

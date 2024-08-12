@@ -1,6 +1,7 @@
 import { CodeEditorProvider } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import ConnectionsMenu from '@/app/ui/menus/ConnectionsMenu';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
+import { UserMessage } from '@/shared/components/UserMessage';
 import { useEffect } from 'react';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState } from 'recoil';
@@ -104,6 +105,7 @@ export default function QuadraticUI() {
       <PermissionOverlay />
       {!isEmbed && <PermissionOverlay />}
       <UpdateAlertVersion />
+      <UserMessage />
     </div>
   );
 }
