@@ -119,6 +119,7 @@ pub enum CodeCellLanguage {
 pub enum ConnectionKind {
     Postgres,
     Mysql,
+    Mssql,
 }
 
 impl wasm_bindgen::describe::WasmDescribe for ConnectionKind {

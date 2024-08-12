@@ -1,6 +1,6 @@
 import { CodeCellIds } from '@/app/helpers/codeCellLanguage';
 import { colors } from '@/app/theme/colors';
-import { Formula, JavaScript, MysqlIcon, PostgresIcon, Python } from '@/app/ui/icons';
+import { Formula, JavaScript, MssqlIcon, MysqlIcon, PostgresIcon, Python } from '@/app/ui/icons';
 import { Subject } from '@mui/icons-material';
 import { SvgIconProps } from '@mui/material/SvgIcon';
 
@@ -19,6 +19,8 @@ export function LanguageIcon({ language, ...props }: LanguageIconProps) {
     <PostgresIcon sx={{ color: colors.languagePostgres }} {...props} />
   ) : language === 'MYSQL' ? (
     <MysqlIcon sx={{ color: colors.languageMysql }} {...props} />
+  ) : language === 'MSSQL' ? (
+    <MssqlIcon sx={{ color: colors.languageMssql }} {...props} />
   ) : (
     <Subject {...props} />
   );
