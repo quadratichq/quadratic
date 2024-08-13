@@ -1,15 +1,18 @@
+import { hasPermissionToEditFile } from '@/app/actions';
+import { userMessageAtom } from '@/app/atoms/userMessageAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Coordinate } from '@/app/gridGL/types/size';
-import { isCsv, isParquet } from '@/app/helpers/files';
+import { DragAndDropFileType, isCsv, isExcel, isExcelMimeType, isParquet } from '@/app/helpers/files';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { DragEvent, PropsWithChildren, useRef, useState } from 'react';
-
-export type DragAndDropFileType = 'csv' | 'parquet';
+import { useSetRecoilState } from 'recoil';
 
 const getFileType = (file: File): DragAndDropFileType => {
   if (isCsv(file)) return 'csv';
+  if (isExcel(file)) return 'excel';
   if (isParquet(file)) return 'parquet';
 
   throw new Error(`Unsupported file type`);
@@ -20,6 +23,7 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
   const [dragActive, setDragActive] = useState(false);
   const divRef = useRef<HTMLDivElement>(null);
   const { addGlobalSnackbar } = useGlobalSnackbar();
+  const setUserMessageState = useSetRecoilState(userMessageAtom);
 
   const moveCursor = (e: DragEvent<HTMLDivElement>): void => {
     const clientBoundingRect = divRef?.current?.getBoundingClientRect();
@@ -46,11 +50,22 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
   const handleDrag = function (e: DragEvent<HTMLDivElement>) {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
+
+    if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
+
+    if (e.type === 'dragenter') {
       setDragActive(true);
-      moveCursor(e);
+    } else if (e.type === 'dragover') {
+      const mimeType = e.dataTransfer.items[0].type;
+      if (isExcelMimeType(mimeType)) {
+        setUserMessageState({ message: 'Dropped Excel file(s) will be imported as new sheet(s) in this file.' });
+      } else {
+        setUserMessageState({ message: undefined });
+        moveCursor(e);
+      }
     } else if (e.type === 'dragleave') {
       setDragActive(false);
+      setUserMessageState({ message: undefined });
     }
   };
 
@@ -58,6 +73,9 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
   const handleDrop = async (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
+
     setDragActive(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
@@ -77,6 +95,29 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
           const error = await quadraticCore.importCsv(sheets.sheet.id, file, insertAtCellLocation);
           if (error) {
             addGlobalSnackbar(`Error loading ${file.name}: ${error}`, { severity: 'warning' });
+          }
+        } else if (fileType === 'excel') {
+          setUserMessageState({ message: undefined });
+          for (const file of e.dataTransfer.files) {
+            try {
+              const fileType = getFileType(file);
+              if (fileType !== 'excel') {
+                throw new Error('Cannot load multiple file types');
+              }
+
+              const contents = await file.arrayBuffer().catch(console.error);
+              if (!contents) {
+                throw new Error('Failed to read file');
+              }
+
+              const buffer = new Uint8Array(contents);
+              const { error } = await quadraticCore.importExcel(buffer, file.name, sheets.getCursorPosition());
+              if (error) {
+                throw new Error(error);
+              }
+            } catch (error) {
+              addGlobalSnackbar(`Error loading ${file.name}: ${error}`, { severity: 'warning' });
+            }
           }
         } else if (fileType === 'parquet') {
           const error = await quadraticCore.importParquet(sheets.sheet.id, file, insertAtCellLocation);
@@ -109,7 +150,6 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
       {dragActive && (
         <div
           id="drag-file-element"
-          onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}

@@ -463,30 +463,21 @@ mod tests {
         let g = Grid::new();
         crate::util::assert_f64_approx_eq(3.0_f64.sqrt(), &eval_to_string(&g, "SQRT(3)"));
         assert_eq!("4", eval_to_string(&g, "SQRT(16)"));
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
             RunErrorMsg::MissingRequiredArgument {
                 func_name: "SQRT".into(),
                 arg_name: "number".into(),
             },
-            parse_formula("SQRT()", Pos::ORIGIN)
-                .unwrap()
-                .eval(&mut ctx)
-                .unwrap_err()
-                .msg,
+            eval_to_err(&g, "SQRT()").msg,
         );
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
             RunErrorMsg::TooManyArguments {
                 func_name: "SQRT".into(),
                 max_arg_count: 1,
             },
-            parse_formula("SQRT(16, 17)", Pos::ORIGIN)
-                .unwrap()
-                .eval(&mut ctx)
-                .unwrap_err()
-                .msg,
+            eval_to_err(&g, "SQRT(16, 17)").msg,
         );
+        assert_eq!(RunErrorMsg::NaN, eval_to_err(&g, "SQRT(-1)").msg);
     }
 
     #[test]
@@ -618,8 +609,10 @@ mod tests {
         #[parallel]
         fn proptest_int_mod_invariant(n in -100.0..100.0_f64, d in -100.0..100.0_f64) {
             let g = Grid::new();
-            let should_equal_n = eval(&g, &format!("INT({n} / {d}) * {d} + MOD({n}, {d})")).coerce_nonblank::<f64>().unwrap();
-            assert!((should_equal_n - n).abs() < 0.01);
+            crate::util::assert_f64_approx_eq(
+                n,
+                &eval_to_string(&g, &format!("INT({n} / {d}) * {d} + MOD({n}, {d})")),
+            );
         }
     }
 
