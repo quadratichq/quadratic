@@ -153,6 +153,9 @@ impl Format {
         if self.render_size.is_some() && update.render_size.is_some() {
             old.render_size = Some(None);
         }
+        if self.date_time.is_some() && update.date_time.is_some() {
+            old.date_time = Some(None);
+        }
         if old.is_default() {
             None
         } else {

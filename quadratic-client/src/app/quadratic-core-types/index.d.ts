@@ -22,7 +22,7 @@ export type NumericFormatKind = "NUMBER" | "CURRENCY" | "PERCENTAGE" | "EXPONENT
 export interface SheetId { id: string, }
 export interface JsRenderCell { x: bigint, y: bigint, value: string, language?: CodeCellLanguage, align?: CellAlign, verticalAlign?: CellVerticalAlign, wrap?: CellWrap, bold?: boolean, italic?: boolean, textColor?: string, special: JsRenderCellSpecial | null, number?: JsNumber, }
 export interface JsRenderFill { x: bigint, y: bigint, w: number, h: number, color: string, }
-export interface CellFormatSummary { bold: boolean | null, italic: boolean | null, commas: boolean | null, textColor: string | null, fillColor: string | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, }
+export interface CellFormatSummary { bold: boolean | null, italic: boolean | null, commas: boolean | null, textColor: string | null, fillColor: string | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, dateTime: string | null, }
 export interface JsClipboard { plainText: string, html: string, }
 export interface JsRowHeight { row: bigint, height: number, }
 export interface ArraySize { w: number, h: number, }
@@ -30,7 +30,7 @@ export type Axis = "X" | "Y";
 export interface Instant { seconds: number, }
 export interface Duration { years: number, months: number, seconds: number, }
 export interface RunError { span: Span | null, msg: RunErrorMsg, }
-export type RunErrorMsg = { "PythonError": string } | "Spill" | { "Unimplemented": string } | "UnknownError" | { "InternalError": string } | { "Unterminated": string } | { "Expected": { expected: string, got: string | null, } } | { "Unexpected": string } | { "TooManyArguments": { func_name: string, max_arg_count: number, } } | { "MissingRequiredArgument": { func_name: string, arg_name: string, } } | "BadFunctionName" | "BadCellReference" | "BadNumber" | { "ExactArraySizeMismatch": { expected: ArraySize, got: ArraySize, } } | { "ExactArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | { "ArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | "EmptyArray" | "NonRectangularArray" | "NonLinearArray" | "ArrayTooBig" | "CircularReference" | "Overflow" | "DivideByZero" | "NegativeExponent" | "NotANumber" | "Infinity" | "IndexOutOfBounds" | "NoMatch" | "InvalidArgument";
+export type RunErrorMsg = { "PythonError": string } | "Spill" | { "Unimplemented": string } | "UnknownError" | { "InternalError": string } | { "Unterminated": string } | { "Expected": { expected: string, got: string | null, } } | { "Unexpected": string } | { "TooManyArguments": { func_name: string, max_arg_count: number, } } | { "MissingRequiredArgument": { func_name: string, arg_name: string, } } | "BadFunctionName" | "BadCellReference" | "BadNumber" | "NaN" | { "ExactArraySizeMismatch": { expected: ArraySize, got: ArraySize, } } | { "ExactArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | { "ArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | "EmptyArray" | "NonRectangularArray" | "NonLinearArray" | "ArrayTooBig" | "CircularReference" | "Overflow" | "DivideByZero" | "NegativeExponent" | "NotANumber" | "Infinity" | "IndexOutOfBounds" | "NoMatch" | "InvalidArgument";
 export interface Pos { x: bigint, y: bigint, }
 export interface Rect { min: Pos, max: Pos, }
 export interface Span { start: number, end: number, }
@@ -55,6 +55,6 @@ export interface SheetBounds { sheet_id: string, bounds: GridBounds, bounds_with
 export type TransactionName = "Unknown" | "ResizeColumn" | "ResizeRow" | "ResizeRows" | "Autocomplete" | "SetBorders" | "SetCells" | "SetFormats" | "CutClipboard" | "PasteClipboard" | "SetCode" | "RunCode" | "Import" | "SetSheetMetadata" | "SheetAdd" | "SheetDelete" | "DuplicateSheet" | "MoveCells";
 export interface JsGetCellResponse { x: bigint, y: bigint, value: string, type_name: string, }
 export interface SummarizeSelectionResult { count: bigint, sum: number | null, average: number | null, }
-export interface Format { align: CellAlign | null, vertical_align: CellVerticalAlign | null, wrap: CellWrap | null, numeric_format: NumericFormat | null, numeric_decimals: number | null, numeric_commas: boolean | null, bold: boolean | null, italic: boolean | null, text_color: string | null, fill_color: string | null, render_size: RenderSize | null, }
+export interface Format { align: CellAlign | null, vertical_align: CellVerticalAlign | null, wrap: CellWrap | null, numeric_format: NumericFormat | null, numeric_decimals: number | null, numeric_commas: boolean | null, bold: boolean | null, italic: boolean | null, text_color: string | null, fill_color: string | null, render_size: RenderSize | null, date_time: string | null, }
 export interface JsSheetFill { columns: Array<[bigint, [string, bigint]]>, rows: Array<[bigint, [string, bigint]]>, all: string | null, }
 export interface ColumnRow { column: number, row: number, }

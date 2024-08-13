@@ -480,7 +480,7 @@ mod tests {
 
         assert_eq!(cleared.align, Some(None));
         assert_eq!(cleared.vertical_align, Some(None));
-        assert_eq!(cleared.wrap, None);
+        assert_eq!(cleared.wrap, Some(None));
         assert_eq!(cleared.numeric_format, Some(None));
         assert_eq!(cleared.numeric_decimals, Some(None));
         assert_eq!(cleared.numeric_commas, Some(None));

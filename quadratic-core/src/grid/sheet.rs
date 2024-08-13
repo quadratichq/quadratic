@@ -302,6 +302,7 @@ impl Sheet {
             align: format.align,
             vertical_align: format.vertical_align,
             wrap: format.wrap,
+            date_time: format.date_time,
         }
     }
 
@@ -814,13 +815,7 @@ mod test {
         let value = sheet.cell_format_summary((2, 1).into(), false);
         let mut cell_format_summary = CellFormatSummary {
             bold: Some(true),
-            italic: None,
-            text_color: None,
-            fill_color: None,
-            commas: None,
-            align: None,
-            vertical_align: None,
-            wrap: None,
+            ..Default::default()
         };
         assert_eq!(value, cell_format_summary);
 

@@ -171,6 +171,8 @@ pub struct CellFormatSummary {
     pub align: Option<CellAlign>,
     pub vertical_align: Option<CellVerticalAlign>,
     pub wrap: Option<CellWrap>,
+
+    pub date_time: Option<String>,
 }
 
 #[derive(Serialize, PartialEq, Debug)]

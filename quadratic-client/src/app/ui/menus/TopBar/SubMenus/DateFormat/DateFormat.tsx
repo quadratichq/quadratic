@@ -5,15 +5,31 @@ import { Label } from '@/shared/shadcn/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/shared/shadcn/ui/radio-group';
 import { cn } from '@/shared/shadcn/utils';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import { Tooltip } from '@mui/material';
 import { CheckIcon } from '@radix-ui/react-icons';
 import { useEffect, useRef, useState } from 'react';
 
-interface Props {
+// first format is default rendering
+const DATE_FORMATS = [
+  { value: '%m/%d/%Y', label: '3/4/2024' },
+  { value: '%Y-%m-%d', label: '2024-3-4' },
+  { value: '%B %d, %Y', label: 'March 4, 2024' },
+];
+
+// first format is default rendering
+const TIME_FORMATS = [
+  { value: '%I:%M %p', label: '3:14 PM' },
+  { value: '%I:%M:%S %p', label: '3:14:01 PM' },
+  { value: '%H:%M', label: '15:14' },
+  { value: '%H:%M:%S', label: '15:14:01' },
+];
+
+interface RadioEntryProps {
   value: string;
   label: string;
 }
 
-const RadioEntry = (props: Props) => {
+const RadioEntry = (props: RadioEntryProps) => {
   const { value, label } = props;
 
   return (
@@ -24,27 +40,21 @@ const RadioEntry = (props: Props) => {
   );
 };
 
-interface CustomProps {
-  value: string;
-}
-
-const Custom = (props: CustomProps) => {
-  const { value } = props;
-  return (
-    <div className="flex items-center">
-      <RadioGroupItem value={value} className="mr-2 border-0" />
-      <Input className="h-6" placeholder="Custom" />
-      <HelpOutlineIcon fontSize="small" />
-    </div>
-  );
-};
+const customHelp = (
+  <div className="h-full cursor-pointer" onClick={() => console.log('open help for date time formats')}>
+    <Tooltip title="Help with custom date and time formats" className="align-super">
+      <HelpOutlineIcon sx={{ width: '0.85rem', height: '0.85rem' }} />
+    </Tooltip>
+  </div>
+);
 
 export const DateFormat = () => {
   const ref = useRef<HTMLInputElement>(null);
 
-  const [time, setTime] = useState<string | undefined>();
-  const [date, setDate] = useState<string | undefined>();
+  const [time, setTime] = useState<string | undefined>(TIME_FORMATS[0].value);
+  const [date, setDate] = useState<string | undefined>(DATE_FORMATS[0].value);
   const [custom, setCustom] = useState<string | undefined>();
+
   useEffect(() => {
     const findCurrent = async () => {
       const cursorPosition = sheets.sheet.cursor.cursorPosition;
@@ -54,22 +64,47 @@ export const DateFormat = () => {
         cursorPosition.y,
         true
       );
-      console.log(summary);
-      setDate('a');
-      setTime('a');
-      setCustom(undefined);
+      if (summary?.dateTime) {
+        let foundDate: string | undefined;
+        let foundTime: string | undefined;
+        for (const format of DATE_FORMATS) {
+          if (summary.dateTime.includes(format.value)) {
+            foundDate = format.value;
+            break;
+          }
+        }
+        for (const format of TIME_FORMATS) {
+          if (summary.dateTime.includes(format.value)) {
+            foundTime = format.value;
+            break;
+          }
+        }
+        if (foundDate && foundTime && summary.dateTime.replace(foundDate, '').replace(foundTime, '').trim() === '') {
+          setDate(foundDate);
+          setTime(foundTime);
+          setCustom(undefined);
+        } else {
+          setCustom(summary.dateTime);
+          setDate(undefined);
+          setTime(undefined);
+        }
+      }
     };
     findCurrent();
   }, []);
 
-  const changeDate = (value: string) => {};
+  const changeDate = (value: string) => {
+    setDate(value);
+    const currentTime = time ?? TIME_FORMATS[0].value;
+    const newTime = `${value} ${currentTime}`;
+    setCustom(undefined);
+  };
 
   const changeTime = (value: string) => {};
 
   const changeCustom = (value: string) => {
+    setTime(value);
     setCustom(value);
-    setDate(undefined);
-    setTime(undefined);
   };
 
   const customFocus = () => {
@@ -81,21 +116,17 @@ export const DateFormat = () => {
       <div>
         <RadioGroup defaultValue={date} onValueChange={changeDate}>
           <div className="flex flex-col gap-1">Date Format</div>
-          <RadioEntry value="a" label="3/4/2024" />
-          <RadioEntry value="b" label="2024-3-4" />
-          <RadioEntry value="c" label="March 4, 2024" />
-          <Custom value="custom-date" />
+          {DATE_FORMATS.map((format) => (
+            <RadioEntry key={format.value} value={format.value} label={format.label} />
+          ))}
         </RadioGroup>
       </div>
       <div>
         <RadioGroup defaultValue={time} onValueChange={changeTime}>
           <div>Time Format</div>
-          <RadioEntry value="a" label="3:14 PM" />
-          <RadioEntry value="b" label="3:14 pm" />
-          <RadioEntry value="c" label="3:14:01 pm" />
-          <RadioEntry value="d" label="3:14:01 PM" />
-          <RadioEntry value="e" label="15:14" />
-          <Custom value="custom-time" />
+          {TIME_FORMATS.map((format) => (
+            <RadioEntry key={format.value} value={format.value} label={format.label} />
+          ))}
         </RadioGroup>
       </div>
       <div>
@@ -108,7 +139,7 @@ export const DateFormat = () => {
             <CheckIcon className={(cn('h-3.5 w-3.5 fill-primary'), custom ? '' : 'invisible')} />
           </div>
           <Input ref={ref} className="h-6" placeholder="Custom" onChange={(e) => changeCustom(e.currentTarget.value)} />
-          <HelpOutlineIcon fontSize="small" />
+          {customHelp}
         </div>
       </div>
     </div>
