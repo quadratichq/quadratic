@@ -10,6 +10,7 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
 
 fn get_functions() -> Vec<FormulaFunction> {
     vec![
+        // Concatenation
         formula_fn!(
             /// Same as `CONCAT`, but kept for compatibility.
             #[examples("CONCATENATE(\"Hello, \", C0, \"!\")")]
@@ -27,6 +28,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 strings.try_fold(String::new(), |a, b| Ok(a + &b?))
             }
         ),
+        // Length
         formula_fn!(
             /// Returns half the length of the string in [Unicode
             /// code-points](https://tonsky.me/blog/unicode/). This is often the
@@ -54,6 +56,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 s.len()
             }
         ),
+        // Number <-> character conversion
         formula_fn!(
             /// Returns the first [Unicode] code point in a string as a number.
             /// If the first character is part of standard (non-extended)
@@ -96,6 +99,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 unichar(*span, code_point)?.to_string()
             }
         ),
+        // Fixed substitutions
         formula_fn!(
             /// Removes nonprintable [ASCII] characters 0-31 (0x00-0x1F) from a
             /// string. This removes tabs and newlines, but not spaces.
@@ -107,6 +111,57 @@ fn get_functions() -> Vec<FormulaFunction> {
                 s.chars().filter(|&c| c as u64 >= 0x20).collect::<String>()
             }
         ),
+        formula_fn!(
+            /// Returns the lowercase equivalent of a string.
+            #[examples("LOWER(\"ὈΔΥΣΣΕΎΣ is my FAVORITE character!\") = \"ὀδυσσεύς is my favorite character!\"")]
+            #[zip_map]
+            fn LOWER([s]: String) {
+                s.to_lowercase()
+            }
+        ),
+        formula_fn!(
+            /// Returns the uppercase equivalent of a string.
+            #[examples("UPPER(\"tschüß, my friend\") = \"TSCHÜSS, MY FRIEND\"")]
+            #[zip_map]
+            fn UPPER([s]: String) {
+                s.to_uppercase()
+            }
+        ),
+        formula_fn!(
+            /// Capitalizes letters that do not have another letter before them,
+            /// and lowercases the rest.
+            #[examples("PROPER(\"ὈΔΥΣΣΕΎΣ is my FAVORITE character!\") = \"Ὀδυσσεύς Is My Favorite Character!\"")]
+            #[zip_map]
+            fn PROPER([s]: String) {
+                let mut last_char = '\0';
+                let mut ret = String::new();
+                // Convert to lowercase first so that we get correct handling of
+                // word-final sigma. This *may* cause issues where the first
+                // character is not preserved, since it gets lowercased and then
+                // titlecased.
+                for c in s.to_lowercase().chars() {
+                    if last_char.is_alphabetic() {
+                        ret.push(c)
+                    } else {
+                        // We can't just uppercase the charater, because Unicode
+                        // contains some ligatures like `ǆ` which should be
+                        // titlecased to `ǅ` rather than `Ǆ`.
+                        match unicode_case_mapping::to_titlecase(c) {
+                            [0, 0, 0] => ret.push(c), // unchanged
+                            char_seq => ret.extend(
+                                char_seq
+                                    .into_iter()
+                                    .filter(|&c| c != 0)
+                                    .filter_map(char::from_u32),
+                            ),
+                        }
+                    }
+                    last_char = c;
+                }
+                ret
+            }
+        ),
+        // Comparison
         formula_fn!(
             /// Returns whether two strings are exactly equal, using
             /// case-sensitive comparison (but ignoring formatting).
@@ -136,12 +191,11 @@ fn unichar(span: Span, code_point: u32) -> CodeResult<char> {
 }
 
 #[cfg(test)]
+#[cfg_attr(test, serial_test::parallel)]
 mod tests {
     use crate::formulas::tests::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_formula_concat() {
         let g = Grid::new();
         assert_eq!(
@@ -159,7 +213,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_formula_len_and_lenb() {
         let g = Grid::new();
 
@@ -197,7 +250,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_formula_code() {
         let g = Grid::new();
 
@@ -214,7 +266,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_formula_char() {
         let g = Grid::new();
 
@@ -245,7 +296,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_formula_clean() {
         let g = Grid::new();
 
@@ -256,7 +306,49 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
+    fn test_formula_casing() {
+        let g = Grid::new();
+
+        let odysseus = "ὈΔΥΣΣΕΎΣ is my FAVORITE character!";
+        assert_eq!(
+            "ὀδυσσεύς is my favorite character!",
+            eval_to_string(&g, &format!("LOWER({odysseus:?})")),
+        );
+        assert_eq!(
+            "ὈΔΥΣΣΕΎΣ IS MY FAVORITE CHARACTER!",
+            eval_to_string(&g, &format!("UPPER({odysseus:?})")),
+        );
+        assert_eq!(
+            "Ὀδυσσεύς Is My Favorite Character!",
+            eval_to_string(&g, &format!("PROPER({odysseus:?})")),
+        );
+
+        let goodbye = "tschüß, my friend";
+        assert_eq!(goodbye, eval_to_string(&g, &format!("LOWER({goodbye:?})")));
+        assert_eq!(
+            "TSCHÜSS, MY FRIEND",
+            eval_to_string(&g, &format!("UPPER({goodbye:?})")),
+        );
+        assert_eq!(
+            "Tschüß, My Friend",
+            eval_to_string(&g, &format!("PROPER({goodbye:?})")),
+        );
+
+        // Excel considers the string "Σ" to contain a final sigma and so it's
+        // lowercased to "ς", but Rust lowercases it to "σ". For context: Rust
+        // contains a hard-coded exception for sigma.
+        // https://doc.rust-lang.org/1.80.1/src/alloc/str.rs.html#379-387
+        assert_eq!("σ", eval_to_string(&g, "LOWER('Σ')"));
+        // assert_eq!("ς", eval_to_string(&g, &format!("LOWER('Σ')"))); // This is what Excel does
+
+        // You think Excel handles ligature characters correctly? Ha! Nope.
+        assert_eq!("ǆa", eval_to_string(&g, "LOWER('ǄA')"));
+        assert_eq!("ǄA", eval_to_string(&g, "UPPER('ǆa')"));
+        assert_eq!("ǅa", eval_to_string(&g, "PROPER('ǆA')"));
+        // assert_eq!("Ǆa", eval_to_string(&g, "PROPER('ǆA')")); // This is what Excel does
+    }
+
+    #[test]
     fn test_formula_exact() {
         let g = Grid::new();
 
