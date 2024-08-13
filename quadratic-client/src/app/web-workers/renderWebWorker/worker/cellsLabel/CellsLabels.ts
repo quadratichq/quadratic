@@ -34,8 +34,10 @@ export class CellsLabels {
 
   // Keep track of headings that need adjusting during next update tick;
   // we aggregate all requests between update ticks
-  private dirtyColumnHeadings: Map<number, { current: number; neighbor: number }>;
-  private dirtyRowHeadings: Map<number, { current: number; neighbor: number }>;
+  private dirtyColumnHeadings: Map<number, number>;
+  private columnTransient: boolean;
+  private dirtyRowHeadings: Map<number, number>;
+  private rowTransient: boolean;
 
   constructor(sheetInfo: SheetInfo, bitmapFonts: RenderBitmapFonts) {
     this.sheetId = sheetInfo.sheet_id;
@@ -51,7 +53,9 @@ export class CellsLabels {
     this.bitmapFonts = bitmapFonts;
     this.cellsTextHash = new Map();
     this.dirtyColumnHeadings = new Map();
+    this.columnTransient = false;
     this.dirtyRowHeadings = new Map();
+    this.rowTransient = false;
 
     this.createHashes();
   }
@@ -157,61 +161,69 @@ export class CellsLabels {
     if (!this.dirtyColumnHeadings.size && !this.dirtyRowHeadings.size) return false;
     // make a copy so new dirty markings are properly handled
     const dirtyColumnHeadings = new Map(this.dirtyColumnHeadings);
+    const columnTransient = this.columnTransient;
     const dirtyRowHeadings = new Map(this.dirtyRowHeadings);
+    const rowTransient = this.rowTransient;
     this.dirtyColumnHeadings.clear();
+    this.columnTransient = false;
     this.dirtyRowHeadings.clear();
+    this.rowTransient = false;
 
     const neighborRect = this.getViewportNeighborBounds();
     if (!neighborRect) return false;
 
-    const applyColumnDelta = (hash: CellsTextHash, column: number, delta: number) => {
+    const applyColumnDelta = (hash: CellsTextHash, column: number, delta: number, transient: boolean) => {
       if (!delta) return;
       if (hash.adjustHeadings({ column, delta })) {
-        hash.dirtyText = true;
-        if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
-          hash.dirtyBuffers = true;
+        if (transient) {
+          hash.dirtyText = true;
+          if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
+            hash.dirtyBuffers = true;
+          }
         }
       }
     };
 
     this.cellsTextHash.forEach((hash) => {
-      let delta = 0;
-      dirtyColumnHeadings.forEach(({ current, neighbor }, column) => {
+      let totalNeighborDelta = 0;
+      dirtyColumnHeadings.forEach((delta, column) => {
         const columnHash = Math.floor(column / sheetHashWidth);
         if (hash.hashX === columnHash) {
-          applyColumnDelta(hash, column, current);
+          applyColumnDelta(hash, column, delta, true);
         } else if (hash.hashX > columnHash) {
-          delta += neighbor;
+          totalNeighborDelta += delta;
         }
       });
       // column is one less than hash column as it has to applied to all labels in the hash
       const column = hash.hashX * sheetHashWidth - 1;
-      applyColumnDelta(hash, column, delta);
+      applyColumnDelta(hash, column, totalNeighborDelta, !columnTransient);
     });
 
-    const applyRowDelta = (hash: CellsTextHash, row: number, delta: number) => {
+    const applyRowDelta = (hash: CellsTextHash, row: number, delta: number, transient: boolean) => {
       if (!delta) return;
-      if (hash.adjustHeadings({ row, delta })) {
-        hash.dirtyText = true;
-        if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
-          hash.dirtyBuffers = true;
+      if (transient) {
+        if (hash.adjustHeadings({ row, delta })) {
+          hash.dirtyText = true;
+          if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
+            hash.dirtyBuffers = true;
+          }
         }
       }
     };
 
     this.cellsTextHash.forEach((hash) => {
-      let delta = 0;
-      dirtyRowHeadings.forEach(({ current, neighbor }, row) => {
+      let totalNeighborDelta = 0;
+      dirtyRowHeadings.forEach((delta, row) => {
         const rowHash = Math.floor(row / sheetHashHeight);
         if (hash.hashY === rowHash) {
-          applyRowDelta(hash, row, current);
+          applyRowDelta(hash, row, delta, true);
         } else if (hash.hashY > rowHash) {
-          delta += neighbor;
+          totalNeighborDelta += delta;
         }
       });
       // row is one less than hash row as it has to applied to all labels in the hash
       const row = hash.hashY * sheetHashHeight - 1;
-      applyRowDelta(hash, row, delta);
+      applyRowDelta(hash, row, totalNeighborDelta, !rowTransient);
     });
 
     return true;
@@ -313,26 +325,20 @@ export class CellsLabels {
   };
 
   // adjust headings without recalculating the glyph geometries
-  adjustHeadings(current: number, neighbor: number, column?: number, row?: number) {
+  adjustHeadings(delta: number, column?: number, row?: number) {
     if (column !== undefined) {
       const existing = this.dirtyColumnHeadings.get(column);
       if (existing) {
-        this.dirtyColumnHeadings.set(column, {
-          current: existing.current + current,
-          neighbor: existing.neighbor + neighbor,
-        });
+        this.dirtyColumnHeadings.set(column, existing + delta);
       } else {
-        this.dirtyColumnHeadings.set(column, { current, neighbor });
+        this.dirtyColumnHeadings.set(column, delta);
       }
     } else if (row !== undefined) {
       const existing = this.dirtyRowHeadings.get(row);
       if (existing) {
-        this.dirtyRowHeadings.set(row, {
-          current: existing.current + current,
-          neighbor: existing.neighbor + neighbor,
-        });
+        this.dirtyRowHeadings.set(row, existing + delta);
       } else {
-        this.dirtyRowHeadings.set(row, { current, neighbor });
+        this.dirtyRowHeadings.set(row, delta);
       }
     }
   }
@@ -347,42 +353,34 @@ export class CellsLabels {
     cellsHash.dirty = renderCells;
   }
 
-  // updates the hash that contains the column / row during transient resize
-  // remaining hashes to the right or below the column / row are temporarily updated in pixiApp only
   setOffsetsDelta(column: number | undefined, row: number | undefined, delta: number) {
     if (column !== undefined) {
       const size = this.sheetOffsets.getColumnWidth(column) - delta;
       this.sheetOffsets.setColumnWidth(column, size);
+      this.columnTransient = true;
     } else if (row !== undefined) {
       const size = this.sheetOffsets.getRowHeight(row) - delta;
       this.sheetOffsets.setRowHeight(row, size);
+      this.rowTransient = true;
     }
     if (delta) {
-      // apply delta to only current hash
-      this.adjustHeadings(delta, 0, column, row);
+      this.adjustHeadings(delta, column, row);
     }
   }
 
-  // updates only the hash that is to the right or below the column / row
-  // this is done after transient resize
-  setOffsetsFinal(column: number | undefined, row: number | undefined, delta: number) {
-    // apply delta to only neighbor hashes
-    this.adjustHeadings(0, delta, column, row);
-  }
-
-  // updates all hashes
   setOffsetsSize(column: number | undefined, row: number | undefined, size: number) {
     let delta = 0;
     if (column !== undefined) {
       delta = this.sheetOffsets.getColumnWidth(column) - size;
       this.sheetOffsets.setColumnWidth(column, size);
+      this.columnTransient = false;
     } else if (row !== undefined) {
       delta = this.sheetOffsets.getRowHeight(row) - size;
       this.sheetOffsets.setRowHeight(row, size);
+      this.rowTransient = false;
     }
     if (delta) {
-      // apply delta to all hashes
-      this.adjustHeadings(delta, delta, column, row);
+      this.adjustHeadings(delta, column, row);
     }
   }
 

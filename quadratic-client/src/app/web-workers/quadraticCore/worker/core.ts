@@ -823,11 +823,17 @@ class Core {
   async importExcel(
     message: ClientCoreImportExcel
   ): Promise<{ contents?: Uint8Array; version?: string; error?: string }> {
-    await initCore();
     try {
-      const gc = GridController.importExcel(message.file, message.fileName);
-      const contents = gc.exportToFile();
-      return { contents: contents, version: gc.getVersion() };
+      if (message.cursor === undefined) {
+        await initCore();
+        const gc = GridController.importExcel(message.file, message.fileName);
+        const contents = gc.exportToFile();
+        return { contents: contents, version: gc.getVersion() };
+      } else {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        this.gridController.importExcelIntoExistingFile(message.file, message.fileName, message.cursor);
+        return {};
+      }
     } catch (error: unknown) {
       // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
       // type in the UI.
