@@ -34,6 +34,9 @@ pub fn export_cell_value(cell_value: &CellValue) -> current::CellValue {
         CellValue::Logical(logical) => current::CellValue::Logical(*logical),
         CellValue::Instant(instant) => current::CellValue::Instant(instant.to_string()),
         CellValue::Duration(duration) => current::CellValue::Duration(duration.to_string()),
+        CellValue::Date(d) => current::CellValue::Date(*d),
+        CellValue::Time(t) => current::CellValue::Time(*t),
+        CellValue::DateTime(dt) => current::CellValue::DateTime(*dt),
         CellValue::Error(error) => {
             current::CellValue::Error(current::RunError::from_grid_run_error(error))
         }
@@ -83,6 +86,9 @@ pub fn import_cell_value(value: &current::CellValue) -> CellValue {
         current::CellValue::Duration(duration) => {
             CellValue::Duration(serde_json::from_str(duration).unwrap_or_default())
         }
+        current::CellValue::Date(date) => CellValue::Date(*date),
+        current::CellValue::Time(time) => CellValue::Time(*time),
+        current::CellValue::DateTime(dt) => CellValue::DateTime(*dt),
         current::CellValue::Error(error) => CellValue::Error(Box::new((*error).clone().into())),
         current::CellValue::Image(text) => CellValue::Image(text.to_owned()),
     }

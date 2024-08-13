@@ -2,7 +2,8 @@ use std::{fmt, str::FromStr};
 
 use anyhow::{bail, Result};
 use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
-use chrono::{TimeZone, Utc};
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc};
+use dateparser::parse_with_timezone;
 use serde::{Deserialize, Serialize};
 
 use super::{Duration, Instant, IsBlank};
@@ -41,6 +42,12 @@ pub enum CellValue {
     Logical(bool),
     /// Instant in time.
     Instant(Instant),
+    #[cfg_attr(test, proptest(skip))]
+    DateTime(NaiveDateTime),
+    #[cfg_attr(test, proptest(skip))]
+    Date(NaiveDate),
+    #[cfg_attr(test, proptest(skip))]
+    Time(NaiveTime),
     /// Duration of time.
     Duration(Duration),
     /// Error value.
@@ -62,6 +69,9 @@ impl fmt::Display for CellValue {
             CellValue::Logical(false) => write!(f, "FALSE"),
             CellValue::Instant(i) => write!(f, "{i}"),
             CellValue::Duration(d) => write!(f, "{d}"),
+            CellValue::Date(d) => write!(f, "{d}"),
+            CellValue::Time(d) => write!(f, "{d}"),
+            CellValue::DateTime(dt) => write!(f, "{dt}"),
             CellValue::Error(e) => write!(f, "{}", e.msg),
             CellValue::Html(s) => write!(f, "{}", s),
             CellValue::Code(code) => write!(f, "{:?}", code),
@@ -91,6 +101,9 @@ impl CellValue {
             CellValue::Html(_) => "html",
             CellValue::Code(_) => "code",
             CellValue::Image(_) => "image",
+            CellValue::Date(_) => "date",
+            CellValue::Time(_) => "time",
+            CellValue::DateTime(_) => "date time",
         }
     }
     /// Returns a formula-source-code representation of the value.
@@ -107,6 +120,9 @@ impl CellValue {
             CellValue::Html(s) => s.clone(),
             CellValue::Code(_) => todo!("repr of code"),
             CellValue::Image(_) => todo!("repr of image"),
+            CellValue::Date(d) => d.to_string(),
+            CellValue::Time(d) => d.to_string(),
+            CellValue::DateTime(d) => d.to_string(),
         }
     }
 
@@ -151,6 +167,9 @@ impl CellValue {
             CellValue::Instant(_) => todo!("repr of Instant"),
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
+            CellValue::Date(d) => d.to_string(),
+            CellValue::Time(d) => d.to_string(),
+            CellValue::DateTime(d) => d.to_string(),
 
             // these should not render
             CellValue::Code(_) => String::new(),
@@ -234,6 +253,9 @@ impl CellValue {
             CellValue::Logical(true) => "true".to_string(),
             CellValue::Logical(false) => "false".to_string(),
             CellValue::Instant(_) => todo!("repr of Instant"),
+            CellValue::Date(d) => d.format("%d/%m/%Y").to_string(),
+            CellValue::Time(t) => t.format("%-I:%M %p").to_string(),
+            CellValue::DateTime(t) => t.format("%-I:%M %p %-I:%M %p").to_string(),
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
 
@@ -309,6 +331,12 @@ impl CellValue {
         ))
     }
 
+    pub fn unpack_date_time(value: &str) -> Option<CellValue> {
+        parse_with_timezone(value, &Utc)
+            .map(|dt| CellValue::DateTime(dt.naive_utc()))
+            .ok()
+    }
+
     pub fn unpack_str_float(value: &str, default: CellValue) -> CellValue {
         BigDecimal::from_str(value).map_or_else(|_| default, CellValue::Number)
     }
@@ -357,6 +385,11 @@ impl CellValue {
             }
             (CellValue::Logical(a), CellValue::Logical(b)) => a.cmp(b),
             (CellValue::Instant(a), CellValue::Instant(b)) => a.cmp(b),
+            (CellValue::Date(a), CellValue::Date(b)) => a.cmp(b),
+            (CellValue::Time(a), CellValue::Time(b)) => a.cmp(b),
+            (CellValue::DateTime(a), CellValue::DateTime(b)) => a.cmp(b),
+            (CellValue::DateTime(a), CellValue::Date(b)) => a.date().cmp(b),
+            (CellValue::Date(a), CellValue::DateTime(b)) => a.cmp(&b.date()),
             (CellValue::Duration(a), CellValue::Duration(b)) => a.cmp(b),
             (CellValue::Blank, CellValue::Blank) => std::cmp::Ordering::Equal,
 
@@ -365,6 +398,9 @@ impl CellValue {
             | (CellValue::Logical(_), _)
             | (CellValue::Instant(_), _)
             | (CellValue::Duration(_), _)
+            | (CellValue::Date(_), _)
+            | (CellValue::Time(_), _)
+            | (CellValue::DateTime(_), _)
             | (CellValue::Html(_), _)
             | (CellValue::Code(_), _)
             | (CellValue::Image(_), _)
@@ -391,6 +427,9 @@ impl CellValue {
                 CellValue::Html(_) => 7,
                 CellValue::Code(_) => 8,
                 CellValue::Image(_) => 9,
+                CellValue::Date(_) => 10,
+                CellValue::Time(_) => 11,
+                CellValue::DateTime(_) => 12,
             }
         }
 

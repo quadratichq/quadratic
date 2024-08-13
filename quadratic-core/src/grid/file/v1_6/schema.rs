@@ -1,5 +1,5 @@
 use crate::grid::file::v1_5::schema as v1_5;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -165,6 +165,9 @@ pub enum CellValue {
     Code(CodeCell),
     Logical(bool),
     Instant(String),
+    Date(NaiveDate),
+    Time(NaiveTime),
+    DateTime(NaiveDateTime),
     Duration(String),
     Error(RunError),
     Image(String),

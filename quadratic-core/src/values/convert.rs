@@ -99,6 +99,9 @@ impl<'a> TryFrom<&'a CellValue> for String {
             CellValue::Logical(false) => Ok("FALSE".to_string()),
             CellValue::Instant(i) => Ok(i.to_string()),
             CellValue::Duration(d) => Ok(d.to_string()),
+            CellValue::Date(d) => Ok(d.to_string()),
+            CellValue::Time(t) => Ok(t.to_string()),
+            CellValue::DateTime(dt) => Ok(dt.to_string()),
             CellValue::Error(e) => Err(e.msg.clone()),
             CellValue::Html(s) => Ok(s.clone()),
             CellValue::Code(_) => Ok(String::new()),
@@ -134,6 +137,14 @@ impl<'a> TryFrom<&'a CellValue> for f64 {
                 expected: "number".into(),
                 got: Some(value.type_name().into()),
             }),
+            CellValue::Time(_) | CellValue::Date(_) => Err(RunErrorMsg::Expected {
+                expected: "number".into(),
+                got: Some(value.type_name().into()),
+            }),
+            CellValue::DateTime(_) => Err(RunErrorMsg::Expected {
+                expected: "number".into(),
+                got: Some(value.type_name().into()),
+            }),
             CellValue::Error(e) => Err(e.msg.clone()),
             CellValue::Html(_) => Ok(0.0),
             CellValue::Code(_) => Ok(0.0),
@@ -141,6 +152,7 @@ impl<'a> TryFrom<&'a CellValue> for f64 {
         }
     }
 }
+
 impl<'a> TryFrom<&'a CellValue> for i64 {
     type Error = RunErrorMsg;
 
