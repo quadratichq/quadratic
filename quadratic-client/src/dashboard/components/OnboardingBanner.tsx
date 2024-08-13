@@ -154,7 +154,7 @@ export function OnboardingBanner() {
                   <a href={CONTACT_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
                     contact us
                   </a>
-                  , we love hearing from folks.
+                  , we’d love to hear from you.
                 </>
               )}
             </p>
