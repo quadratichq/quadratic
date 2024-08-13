@@ -1,8 +1,8 @@
-import CreateFileButton from '@/dashboard/components/CreateFileButton';
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { Empty } from '@/dashboard/components/Empty';
 import { FilesList } from '@/dashboard/components/FilesList';
 import { FilesListEmptyState } from '@/dashboard/components/FilesListEmptyState';
+import NewFileButton from '@/dashboard/components/NewFileButton';
 import { OnboardingBanner } from '@/dashboard/components/OnboardingBanner';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { ROUTES } from '@/shared/constants/routes';
@@ -47,7 +47,7 @@ export const Component = () => {
                 </AvatarGroup>
               </Link>
             </div>
-            {canEdit && <CreateFileButton />}
+            {canEdit && <NewFileButton />}
           </div>
         }
       />

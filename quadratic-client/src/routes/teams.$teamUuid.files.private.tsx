@@ -3,11 +3,11 @@ import { Box, useTheme } from '@mui/material';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { useRouteError } from 'react-router-dom';
 import { debugShowUILogs } from '../app/debugFlags';
-import CreateFileButton from '../dashboard/components/CreateFileButton';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 import { Empty } from '../dashboard/components/Empty';
 import { FilesList } from '../dashboard/components/FilesList';
 import { FilesListEmptyState } from '../dashboard/components/FilesListEmptyState';
+import NewFileButton from '../dashboard/components/NewFileButton';
 
 export const Component = () => {
   const {
@@ -31,7 +31,7 @@ export const Component = () => {
 
   return (
     <>
-      <DashboardHeader title="Private files" actions={<CreateFileButton isPrivate />} />
+      <DashboardHeader title="Private files" actions={<NewFileButton isPrivate />} />
       <FilesList files={files} emptyState={<FilesListEmptyState isPrivate />} />
     </>
   );

@@ -1,7 +1,9 @@
 import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
+import { DashboardProvider, useDashboardState } from '@/dashboard/components/DashboardProvider';
 import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { Empty } from '@/dashboard/components/Empty';
+import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
@@ -14,7 +16,7 @@ import { LiveChatWidget } from '@livechat/widget-react';
 import { ExclamationTriangleIcon, HamburgerMenuIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Link,
   LoaderFunctionArgs,
@@ -33,14 +35,6 @@ import {
 
 const DRAWER_WIDTH = 264;
 export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
-
-/**
- * Dashboard state & context
- */
-type DashboardState = {};
-const initialDashboardState: DashboardState = {};
-const DashboardContext = createContext(initialDashboardState);
-export const useDashboardContext = () => useContext(DashboardContext);
 
 /**
  * Revalidation
@@ -181,7 +175,7 @@ export const Component = () => {
   useCheckForAuthorizationTokenOnWindowFocus();
 
   return (
-    <DashboardContext.Provider value={{}}>
+    <DashboardProvider>
       <LiveChatWidget license="14763831" customerEmail={user?.email} customerName={user?.name} />
       <div className={`h-full lg:flex lg:flex-row`}>
         <div
@@ -214,9 +208,19 @@ export const Component = () => {
         </div>
         {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.EDUCATION && <EducationDialog />}
       </div>
-    </DashboardContext.Provider>
+      <NewFileDialogWrapper />
+    </DashboardProvider>
   );
 };
+
+function NewFileDialogWrapper() {
+  const [dashboardState, setDashboardState] = useDashboardState();
+  if (!dashboardState.showNewFileDialog) {
+    return null;
+  }
+
+  return <NewFileDialog onClose={() => setDashboardState((prev) => ({ ...prev, showNewFileDialog: false }))} />;
+}
 
 export const ErrorBoundary = () => {
   const error = useRouteError();

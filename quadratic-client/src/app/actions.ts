@@ -70,7 +70,7 @@ export const isAvailableBecauseFileLocationIsAccessibleAndWriteable = ({
 }: IsAvailableArgs) => Boolean(fileTeamPrivacy) && Boolean(teamPermissions?.includes('TEAM_EDIT'));
 
 export const createNewFileAction = {
-  label: 'Create',
+  label: 'New',
   isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
   run({ navigate, teamUuid }: { navigate: NavigateFunction; teamUuid: string }) {
     navigate(ROUTES.CREATE_FILE_PRIVATE(teamUuid));
