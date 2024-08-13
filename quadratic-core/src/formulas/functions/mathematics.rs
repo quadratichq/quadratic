@@ -609,8 +609,10 @@ mod tests {
         #[parallel]
         fn proptest_int_mod_invariant(n in -100.0..100.0_f64, d in -100.0..100.0_f64) {
             let g = Grid::new();
-            let should_equal_n = eval(&g, &format!("INT({n} / {d}) * {d} + MOD({n}, {d})")).coerce_nonblank::<f64>().unwrap();
-            assert!((should_equal_n - n).abs() < 0.01);
+            crate::util::assert_f64_approx_eq(
+                n,
+                &eval_to_string(&g, &format!("INT({n} / {d}) * {d} + MOD({n}, {d})")),
+            );
         }
     }
 
