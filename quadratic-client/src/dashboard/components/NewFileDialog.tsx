@@ -5,7 +5,7 @@ import { ROUTES } from '@/shared/constants/routes';
 import { useSchemaBrowser } from '@/shared/hooks/useSchemaBrowser';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { cn } from '@/shared/shadcn/utils';
-import { ArrowDownIcon, ChevronRightIcon, MixIcon, PlusIcon, RocketIcon } from '@radix-ui/react-icons';
+import { ArrowDownIcon, ChevronRightIcon, LockClosedIcon, MixIcon, PlusIcon, RocketIcon } from '@radix-ui/react-icons';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -27,6 +27,7 @@ export function NewFileDialog({ onClose, isPrivate }: { onClose: () => void; isP
   // TODO: implement private
 
   const activeConnection = connections.find((connection) => connection.uuid === activeConnectionUuid);
+  const headerLabel = isPrivate ? 'New private file' : 'New file';
 
   return (
     <Dialog open={true} onOpenChange={(open) => onClose()}>
@@ -34,13 +35,14 @@ export function NewFileDialog({ onClose, isPrivate }: { onClose: () => void; isP
         <DialogHeader>
           <DialogTitle>
             <div className="flex h-6 items-center gap-2">
+              {isPrivate && <LockClosedIcon />}
               {activeConnection ? (
                 <>
                   <button
                     className="text-muted-foreground underline hover:text-primary"
                     onClick={() => setActiveConnectionUuid('')}
                   >
-                    New file
+                    {headerLabel}
                   </button>
                   <ChevronRightIcon className="text-muted-foreground" />
                   <div className="flex items-center gap-2">
@@ -49,7 +51,7 @@ export function NewFileDialog({ onClose, isPrivate }: { onClose: () => void; isP
                   </div>
                 </>
               ) : (
-                'New file'
+                headerLabel
               )}
             </div>
           </DialogTitle>
