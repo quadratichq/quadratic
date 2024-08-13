@@ -11,6 +11,7 @@ export interface EditorInteractionState {
   showConnectionsMenu: boolean;
   showGoToMenu: boolean;
   showFeedbackMenu: boolean;
+  showNewFileMenu: boolean;
   showShareFileMenu: boolean;
   showSearch: boolean | SearchOptions;
   permissions: FilePermission[];
@@ -40,6 +41,7 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   showConnectionsMenu: false,
   showGoToMenu: false,
   showFeedbackMenu: false,
+  showNewFileMenu: false,
   showShareFileMenu: false,
   showSearch: false,
   permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
@@ -67,6 +69,7 @@ export const editorInteractionStateAtom = atom({
           oldValue.showConnectionsMenu ||
           oldValue.showGoToMenu ||
           oldValue.showFeedbackMenu ||
+          oldValue.showNewFileMenu ||
           oldValue.showShareFileMenu ||
           oldValue.showSearch;
         const newModelShow =
@@ -76,6 +79,7 @@ export const editorInteractionStateAtom = atom({
           newValue.showConnectionsMenu ||
           newValue.showGoToMenu ||
           newValue.showFeedbackMenu ||
+          newValue.showNewFileMenu ||
           newValue.showShareFileMenu ||
           newValue.showSearch;
         if (oldModalShow && !newModelShow) {

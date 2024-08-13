@@ -38,20 +38,22 @@ export const useSchemaBrowser = ({ uuid, type }: { uuid: string | undefined; typ
 
   console.log('ran', uuid, type);
 
+  const reloadSchema = () => {
+    mixpanel.track('[Connections].schemaViewer.refresh');
+    fetcher.load(fetcherUrl);
+  };
+
   return {
     // TODO: fix the empty values - how will these work in the app?
     SchemaBrowser: () => (
       <SchemaBrowser2
         connectionType={type || ''}
         fetcher={fetcher}
-
+        reloadSchema={reloadSchema}
         // queryButton={}
       />
     ),
     schemaFetcher: fetcher,
-    reloadSchema: () => {
-      mixpanel.track('[Connections].schemaViewer.refresh');
-      fetcher.load(fetcherUrl);
-    },
+    reloadSchema,
   };
 };

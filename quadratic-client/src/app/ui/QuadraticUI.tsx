@@ -1,7 +1,10 @@
+import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { CodeEditorProvider } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import ConnectionsMenu from '@/app/ui/menus/ConnectionsMenu';
+import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { useEffect } from 'react';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState } from 'recoil';
@@ -26,6 +29,10 @@ import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 import { useMultiplayerUsers } from './menus/TopBar/useMultiplayerUsers';
 
 export default function QuadraticUI() {
+  const {
+    team: { uuid: teamUuid },
+  } = useFileRouteLoaderData();
+  const connectionsFetcher = useConnectionsFetcher();
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { presentationMode } = useGridSettings();
   const navigation = useNavigation();
@@ -97,6 +104,16 @@ export default function QuadraticUI() {
           }}
           name={name}
           uuid={uuid}
+        />
+      )}
+      {editorInteractionState.showNewFileMenu && (
+        <NewFileDialog
+          onClose={() => {
+            setEditorInteractionState((prev) => ({ ...prev, showNewFileMenu: false }));
+          }}
+          isPrivate={true}
+          connections={connectionsFetcher.data ? connectionsFetcher.data.connections : []}
+          teamUuid={teamUuid}
         />
       )}
       {presentationMode && <PresentationModeHint />}
