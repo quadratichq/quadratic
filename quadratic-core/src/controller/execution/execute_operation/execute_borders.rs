@@ -31,7 +31,7 @@ impl GridController {
                     borders: old_borders,
                 });
 
-                if cfg!(test) || (cfg!(target_family = "wasm") && !transaction.is_server()) {
+                if (cfg!(test) || cfg!(target_family = "wasm")) && !transaction.is_server() {
                     self.send_updated_bounds(sheet_rect.sheet_id);
                     self.send_render_borders(sheet_rect.sheet_id);
                 }
