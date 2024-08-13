@@ -181,13 +181,12 @@ function TableListItem({
   };
 
   return (
-    <li>
-      <div
+    <li className="group/item relative">
+      <button
         className={
-          'group/item sticky top-0 z-10 flex w-full cursor-default items-stretch justify-between gap-1 bg-background px-2 hover:bg-accent'
+          'sticky top-0 z-10 flex h-8 w-full cursor-default items-stretch justify-between gap-1 bg-background hover:bg-accent'
         }
         onClick={() => {
-          console.log('trigger expand');
           setIsExpanded((prev) => !prev);
           if (expandAll) setExpandAll(false);
         }}
@@ -201,13 +200,10 @@ function TableListItem({
           </div>
           <div className="truncate">{name}</div>
         </div>
-
+      </button>
+      <div className={`absolute right-1 top-0.5 z-10 hidden group-hover/item:block`}>
         <TooltipHint title="Insert query">
-          <IconButton
-            size="small"
-            className={`${expanded ? '' : 'opacity-0'} group-hover/item:opacity-100`}
-            onClick={onQuery}
-          >
+          <IconButton size="small" onClick={onQuery}>
             <ContentPasteGoOutlined fontSize="inherit" />
           </IconButton>
         </TooltipHint>
