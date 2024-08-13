@@ -2,8 +2,7 @@ use std::{fmt, str::FromStr};
 
 use anyhow::{bail, Result};
 use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc};
-use dateparser::parse_with_timezone;
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use serde::{Deserialize, Serialize};
 
 use super::{Duration, Instant, IsBlank};
@@ -41,6 +40,7 @@ pub enum CellValue {
     /// Logical value.
     Logical(bool),
     /// Instant in time.
+    #[cfg_attr(test, proptest(skip))]
     Instant(Instant),
     #[cfg_attr(test, proptest(skip))]
     DateTime(NaiveDateTime),
@@ -315,28 +315,6 @@ impl CellValue {
         })
     }
 
-    pub fn unpack_str_unix_timestamp(value: &str) -> anyhow::Result<CellValue> {
-        let parsed: i64 = value.parse()?;
-        Self::unpack_unix_timestamp(parsed)
-    }
-
-    pub fn unpack_unix_timestamp(value: i64) -> anyhow::Result<CellValue> {
-        let timestamp = match Utc.timestamp_opt(value, 0) {
-            chrono::LocalResult::Single(timestamp) => timestamp,
-            _ => bail!("Could not parse timestamp: {}", value),
-        };
-        // TODO(ddimaria): convert to Instant when they're implement
-        Ok(CellValue::Text(
-            timestamp.format("%Y-%m-%d %H:%M:%S").to_string(),
-        ))
-    }
-
-    pub fn unpack_date_time(value: &str) -> Option<CellValue> {
-        parse_with_timezone(value, &Utc)
-            .map(|dt| CellValue::DateTime(dt.naive_utc()))
-            .ok()
-    }
-
     pub fn unpack_str_float(value: &str, default: CellValue) -> CellValue {
         BigDecimal::from_str(value).map_or_else(|_| default, CellValue::Number)
     }
@@ -567,7 +545,7 @@ impl CellValue {
                 let is_true = value.eq_ignore_ascii_case("true");
                 CellValue::Logical(is_true)
             }
-            "instant" => CellValue::unpack_str_unix_timestamp(value)?,
+            "instant" => CellValue::Text("not implemented".into()), //unpack_str_unix_timestamp(value)?,
             "duration" => CellValue::Text("not implemented".into()),
             "image" => CellValue::Image(value.into()),
             _ => CellValue::Text(value.into()),
