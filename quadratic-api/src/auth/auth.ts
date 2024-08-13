@@ -37,7 +37,7 @@ export const getUsersByEmail = async (email: string): Promise<ByEmailUser[]> => 
     case 'ory':
       return await getUsersFromOryByEmail(email);
     default:
-      throw new Error(`Unsupported auth type in getUsers(): ${AUTH_TYPE}`);
+      throw new Error(`Unsupported auth type in getUsersByEmail(): ${AUTH_TYPE}`);
   }
 };
 
@@ -48,6 +48,6 @@ export const jwtConfig = () => {
     case 'ory':
       return jwtConfigOry;
     default:
-      throw new Error(`Unsupported auth type in getUsers(): ${AUTH_TYPE}`);
+      throw new Error(`Unsupported auth type in jwtConfig(): ${AUTH_TYPE}`);
   }
 };
