@@ -61,13 +61,18 @@ fn get_functions() -> Vec<FormulaFunction> {
             ///
             /// [Unicode]: https://en.wikipedia.org/wiki/Unicode
             /// [ASCII]: https://en.wikipedia.org/wiki/ASCII
-            #[examples("CODE(\"Alpha\")=65")]
+            #[examples("UNICODE(\"a\")=97", "UNICODE(\"Alpha\")=65")]
+            #[zip_map]
+            fn UNICODE(span: Span, [s]: String) {
+                unicode(*span, s)?
+            }
+        ),
+        formula_fn!(
+            /// Same as `UNICODE`. Prefer `UNICODE`.
+            #[examples("CODE(\"a\")=97", "CODE(\"Alpha\")=65")]
             #[zip_map]
             fn CODE(span: Span, [s]: String) {
-                match s.chars().next() {
-                    Some(c) => c as u32,
-                    None => return Err(RunErrorMsg::InvalidArgument.with_span(span)),
-                }
+                unicode(*span, s)?
             }
         ),
         formula_fn!(
@@ -77,13 +82,18 @@ fn get_functions() -> Vec<FormulaFunction> {
             ///
             /// [Unicode]: https://en.wikipedia.org/wiki/Unicode
             /// [ASCII]: https://en.wikipedia.org/wiki/ASCII
-            #[examples("CHAR(65) = \"A\"")]
+            #[examples("UNICHAR(97) = \"a\"", "UNICHAR(65) = \"A\"")]
+            #[zip_map]
+            fn UNICHAR(span: Span, [code_point]: u32) {
+                unichar(*span, code_point)?.to_string()
+            }
+        ),
+        formula_fn!(
+            /// Same as `UNICHAR`. Prefer `UNICHAR`.
+            #[examples("CHAR(97) = \"a\"", "CHAR(65) = \"A\"")]
             #[zip_map]
             fn CHAR(span: Span, [code_point]: u32) {
-                char::from_u32(code_point)
-                    .filter(|&c| c != '\0')
-                    .ok_or_else(|| RunErrorMsg::InvalidArgument.with_span(span))?
-                    .to_string()
+                unichar(*span, code_point)?.to_string()
             }
         ),
         formula_fn!(
@@ -111,6 +121,18 @@ fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
     ]
+}
+
+fn unicode(span: Span, s: String) -> CodeResult<u32> {
+    match s.chars().next() {
+        Some(c) => Ok(c as u32),
+        None => return Err(RunErrorMsg::InvalidArgument.with_span(span)),
+    }
+}
+fn unichar(span: Span, code_point: u32) -> CodeResult<char> {
+    char::from_u32(code_point)
+        .filter(|&c| c != '\0')
+        .ok_or_else(|| RunErrorMsg::InvalidArgument.with_span(span))
 }
 
 #[cfg(test)]
@@ -179,11 +201,15 @@ mod tests {
     fn test_formula_code() {
         let g = Grid::new();
 
+        // These share implementation so we only need to thoroughly test one.
         assert_eq!("65", eval_to_string(&g, "CODE('ABC')"));
-        assert_eq!("65", eval_to_string(&g, "CODE('A')"));
+        assert_eq!("65", eval_to_string(&g, "UNICODE('ABC')"));
+
+        assert_eq!("97", eval_to_string(&g, "UNICODE('a')"));
+        assert_eq!("65", eval_to_string(&g, "UNICODE('A')"));
         assert_eq!(
             RunErrorMsg::InvalidArgument,
-            eval_to_err(&g, "CODE('')").msg,
+            eval_to_err(&g, "UNICODE('')").msg,
         );
     }
 
@@ -192,22 +218,29 @@ mod tests {
     fn test_formula_char() {
         let g = Grid::new();
 
+        // These share implementation so we only need to thoroughly test one.
         assert_eq!("A", eval_to_string(&g, "CHAR(65)"));
+        assert_eq!("A", eval_to_string(&g, "UNICHAR(65)"));
+
+        assert_eq!("a", eval_to_string(&g, "UNICHAR(97)"));
 
         // Excel rounds numbers down, so even `65.9` would still give `A`.
         // We're incompatible in that respect.
-        assert_eq!("A", eval_to_string(&g, "CHAR(65.4)")); // round to int
+        assert_eq!("A", eval_to_string(&g, "UNICHAR(65.4)")); // round to int
 
-        assert_eq!("F", eval_to_string(&g, "CHAR(65+5)"));
+        assert_eq!("F", eval_to_string(&g, "UNICHAR(65+5)"));
 
         assert_eq!(
             RunErrorMsg::InvalidArgument,
-            eval_to_err(&g, "CHAR(-3)").msg,
+            eval_to_err(&g, "UNICHAR(-3)").msg,
         );
-        assert_eq!(RunErrorMsg::InvalidArgument, eval_to_err(&g, "CHAR(0)").msg,);
         assert_eq!(
             RunErrorMsg::InvalidArgument,
-            eval_to_err(&g, "CHAR(2^24)").msg,
+            eval_to_err(&g, "UNICHAR(0)").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "UNICHAR(2^24)").msg,
         );
     }
 
