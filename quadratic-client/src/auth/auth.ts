@@ -1,10 +1,20 @@
 import { auth0Client } from '@/auth/auth0';
-import { User } from '@auth0/auth0-spa-js';
+import { oryClient } from '@/auth/ory';
 import { useEffect } from 'react';
 import { LoaderFunction, LoaderFunctionArgs, redirect } from 'react-router-dom';
 import { ROUTES } from '../shared/constants/routes';
 
 const AUTH_TYPE = import.meta.env.VITE_AUTH_TYPE || '';
+
+export interface User {
+  name?: string;
+  given_name?: string;
+  family_name?: string;
+  picture?: string;
+  email?: string;
+  index?: number;
+  sub?: string;
+}
 
 export interface AuthClient {
   isAuthenticated(): Promise<boolean>;
@@ -19,6 +29,8 @@ const getAuthClient = () => {
   switch (AUTH_TYPE) {
     case 'auth0':
       return auth0Client;
+    case 'ory':
+      return oryClient;
     default:
       throw new Error(`Unsupported auth type in getAuthClient(): ${AUTH_TYPE}`);
   }

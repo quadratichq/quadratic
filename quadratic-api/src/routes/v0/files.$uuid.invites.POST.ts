@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/node';
 import { Response } from 'express';
 import { ApiSchemas, ApiTypes, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
-import { getUsers, lookupUsersFromAuth0ByEmail } from '../../auth/auth';
+import { getUsers, getUsersByEmail } from '../../auth/auth';
 import dbClient from '../../dbClient';
 import { sendEmail } from '../../email/sendEmail';
 import { templates } from '../../email/templates';
@@ -92,7 +92,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:
   };
 
   // Look up the invited user by email in Auth0 and then 1 of 3 things will happen:
-  const auth0Users = await lookupUsersFromAuth0ByEmail(email);
+  const auth0Users = await getUsersByEmail(email);
 
   // 1.
   // If there are 0 users, somebody who doesn't have a Quadratic account is

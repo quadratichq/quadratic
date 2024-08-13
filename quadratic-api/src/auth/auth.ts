@@ -1,15 +1,46 @@
 import { AUTH_TYPE } from '../env-vars';
-import { getUsersFromAuth0 } from './auth0';
+import { getUsersFromAuth0, jwtConfigAuth0, lookupUsersFromAuth0ByEmail } from './auth0';
+import { getUsersFromOry, jwtConfigOry } from './ory';
 
 export type UsersRequest = {
   id: number;
   auth0Id: string;
 };
 
-export const getUsers = async (users: UsersRequest[]) => {
+export type User = {
+  id: number;
+  auth0Id: string;
+  email: string;
+  name?: string | undefined;
+  picture?: string | undefined;
+};
+
+export const getUsers = async (users: UsersRequest[]): Promise<Record<number, User>> => {
   switch (AUTH_TYPE) {
     case 'auth0':
       return await getUsersFromAuth0(users);
+    case 'ory':
+      return await getUsersFromOry(users);
+    default:
+      throw new Error(`Unsupported auth type in getUsers(): ${AUTH_TYPE}`);
+  }
+};
+
+export const getUsersByEmail = async (email: string) => {
+  switch (AUTH_TYPE) {
+    case 'auth0':
+      return await lookupUsersFromAuth0ByEmail(email);
+    default:
+      throw new Error(`Unsupported auth type in getUsers(): ${AUTH_TYPE}`);
+  }
+};
+
+export const jwtConfig = () => {
+  switch (AUTH_TYPE) {
+    case 'auth0':
+      return jwtConfigAuth0;
+    case 'ory':
+      return jwtConfigOry;
     default:
       throw new Error(`Unsupported auth type in getUsers(): ${AUTH_TYPE}`);
   }

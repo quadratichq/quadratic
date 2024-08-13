@@ -61,6 +61,9 @@ app.use((req, res, next) => {
   return next();
 });
 
+// static assets in the /public directory
+app.use(express.static('public'));
+
 // Health-check
 app.get('/', (req, res) => {
   res.status(200).json({ message: 'OK' });

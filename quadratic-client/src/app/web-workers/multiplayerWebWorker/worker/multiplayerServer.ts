@@ -2,7 +2,7 @@
  * Communication between the multiplayer web worker and the quadratic-multiplayer server
  */
 
-import { User } from '@auth0/auth0-spa-js';
+import { User } from '@/auth/auth';
 import * as Sentry from '@sentry/react';
 import sharedConstants from '../../../../../../updateAlertVersion.json';
 import { debugShow, debugShowMultiplayer } from '../../../debugFlags';

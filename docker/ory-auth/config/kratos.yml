@@ -1,19 +1,37 @@
-version: v0.13.0
+# https://raw.githubusercontent.com/ory/kratos/v1.2.0/.schemastore/config.schema.json
+version: v1.2.0
 
 dsn: memory
 
 serve:
   public:
-    base_url: http://127.0.0.1:4433/
+    base_url: http://localhost:4433/
     cors:
       enabled: true
+      allowed_origins:
+        - http://localhost:3000
+      allowed_methods:
+        - POST
+        - GET
+        - PUT
+        - PATCH
+        - DELETE
+      allowed_headers:
+        - Authorization
+        - Access-Control-Allow-Origin
+        - Cookie
+        - Content-Type
+      exposed_headers:
+        - Content-Type
+        - Set-Cookie
   admin:
     base_url: http://kratos:4434/
 
 selfservice:
-  default_browser_return_url: http://127.0.0.1:4455/welcome
+  default_browser_return_url: http://localhost:3000
   allowed_return_urls:
-    - http://127.0.0.1:4455
+    - http://localhost:4455
+    - http://localhost:3000
     - http://localhost:19006/Callback
     - exp://localhost:8081/--/Callback
 
@@ -33,41 +51,50 @@ selfservice:
 
   flows:
     error:
-      ui_url: http://127.0.0.1:4455/error
+      ui_url: http://localhost:4455/error
 
     settings:
-      ui_url: http://127.0.0.1:4455/settings
+      ui_url: http://localhost:4455/settings
       privileged_session_max_age: 15m
       required_aal: highest_available
 
     recovery:
       enabled: true
-      ui_url: http://127.0.0.1:4455/recovery
+      ui_url: http://localhost:4455/recovery
       use: code
 
     verification:
       enabled: true
-      ui_url: http://127.0.0.1:4455/verification
+      ui_url: http://localhost:4455/verification
       use: code
       after:
-        default_browser_return_url: http://127.0.0.1:4455/welcome
+        default_browser_return_url: http://localhost:3000
 
     logout:
       after:
-        default_browser_return_url: http://127.0.0.1:4455/login
+        default_browser_return_url: http://localhost:4455/login
 
     login:
-      ui_url: http://127.0.0.1:4455/login
+      ui_url: http://localhost:4455/login
       lifespan: 10m
 
     registration:
       lifespan: 10m
-      ui_url: http://127.0.0.1:4455/registration
+      ui_url: http://localhost:4455/registration
       after:
         password:
           hooks:
             - hook: session
             - hook: show_verification_ui
+
+session:
+  whoami:
+    tokenizer:
+      templates:
+        jwt_template:
+          jwks_url: http://host.docker.internal:3000/.well-known/jwks.json
+          # claims_mapper_url: base64://... # A JsonNet template for modifying the claims
+          ttl: 1m # 1 minute (defaults to 10 minutes)
 
 log:
   level: debug

@@ -1,10 +1,9 @@
-import { authClient } from '@/auth/auth';
+import { User, authClient } from '@/auth/auth';
 import { Empty } from '@/dashboard/components/Empty';
 import { GlobalSnackbarProvider } from '@/shared/components/GlobalSnackbarProvider';
 import { Theme } from '@/shared/components/Theme';
 import { ROUTE_LOADER_IDS } from '@/shared/constants/routes';
 import { initializeAnalytics } from '@/shared/utils/analytics';
-import { User } from '@auth0/auth0-spa-js';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import { LoaderFunctionArgs, Outlet, useRouteError, useRouteLoaderData } from 'react-router-dom';

@@ -1,12 +1,12 @@
 import { debugShow } from '@/app/debugFlags';
+import { User as AuthUser } from '@/auth/auth';
 import * as amplitude from '@amplitude/analytics-browser';
-import { User as Auth0User } from '@auth0/auth0-spa-js';
 import { setUser } from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 
 // Quadratic only shares analytics on the QuadraticHQ.com hosted version where the environment variables are set.
 
-type User = Auth0User | undefined;
+type User = AuthUser | undefined;
 
 export function googleAnalyticsAvailable(): boolean {
   return import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG && import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG !== 'none';
