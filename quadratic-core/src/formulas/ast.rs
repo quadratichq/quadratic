@@ -55,8 +55,11 @@ impl AstNodeContents {
 
 impl Formula {
     /// Evaluates a formula.
-    pub fn eval(&self, ctx: &mut Ctx<'_>) -> CodeResult<Value> {
-        self.ast.eval(ctx)?.into_non_error_value()
+    pub fn eval(&self, ctx: &mut Ctx<'_>) -> Spanned<Value> {
+        self.ast.eval(ctx).unwrap_or_else(|e| Spanned {
+            span: self.ast.span,
+            inner: e.into(),
+        })
     }
 }
 
@@ -133,7 +136,7 @@ impl AstNode {
             // Single cell references return 1x1 arrays for Excel compatibility.
             AstNodeContents::CellRef(cell_ref) => {
                 let pos = ctx.resolve_ref(cell_ref, self.span)?.inner;
-                Array::from(ctx.get_cell(pos, self.span)?.inner).into()
+                Array::from(ctx.get_cell(pos, self.span).inner).into()
             }
 
             AstNodeContents::String(s) => Value::from(s.to_string()),
