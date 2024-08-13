@@ -28,9 +28,9 @@ fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
-            /// Returns the half the length of the string in [Unicode
+            /// Returns half the length of the string in [Unicode
             /// code-points](https://tonsky.me/blog/unicode/). This is often the
-            /// same as the number of characters in a string, but not in the
+            /// same as the number of characters in a string, but not for
             /// certain diacritics, emojis, or other cases.
             #[examples("LEN(\"abc\") = 3", "LEN(\"résumé\") = 6", "LEN(\"ȍ̶̭h̸̲͝ ̵͈̚ņ̶̾ő̶͖\") = ??")]
             #[zip_map]
@@ -42,7 +42,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
-            /// Returns the half the length of the string in bytes, using UTF-8
+            /// Returns half the length of the string in bytes, using UTF-8
             /// encoding.
             #[examples("LENB(\"abc\") = 3", "LENB(\"résumé\") = 8")]
             #[zip_map]
