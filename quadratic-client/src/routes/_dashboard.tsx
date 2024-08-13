@@ -182,7 +182,7 @@ export const Component = () => {
           ref={contentPaneRef}
           className={cn(
             `relative order-2 h-full w-full px-4 pb-10 transition-all sm:pt-0 lg:px-10`,
-            isLoading ? 'overflow-hidden' : 'overflow-scroll',
+            isLoading ? 'overflow-hidden' : 'overflow-auto',
             isLoading && 'pointer-events-none opacity-25'
           )}
         >
@@ -217,6 +217,7 @@ function NewFileDialogWrapper() {
   const [dashboardState, setDashboardState] = useDashboardState();
   const {
     activeTeam: {
+      connections,
       team: { uuid },
     },
   } = useDashboardRouteLoaderData();
@@ -228,6 +229,8 @@ function NewFileDialogWrapper() {
   }
   return (
     <NewFileDialog
+      connections={connections}
+      teamUuid={uuid}
       onClose={() => setDashboardState((prev) => ({ ...prev, showNewFileDialog: false }))}
       isPrivate={isPrivate}
     />

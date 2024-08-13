@@ -3,11 +3,13 @@ import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { useConnectionSchemaFetcher } from '@/app/ui/menus/CodeEditor/useConnectionSchemaFetcher';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { Type } from '@/shared/components/Type';
+import { CONTACT_URL } from '@/shared/constants/urls';
 import { cn } from '@/shared/shadcn/utils';
 import { ContentPasteGoOutlined, KeyboardArrowRight, Refresh } from '@mui/icons-material';
-import { IconButton } from '@mui/material';
+import { CircularProgress, IconButton } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 type Table = {
   name: string;
@@ -39,7 +41,7 @@ export const SchemaBrowser = (props: Props) => {
 
   // Designed to live in a box that takes up the full height of its container
   return (
-    <div className="h-full overflow-scroll text-sm">
+    <div className="h-full overflow-auto text-sm">
       <div className={cn('absolute z-50', bottom ? 'right-12 top-1.5' : 'right-1 top-1')}>
         <TooltipHint title="Refresh schema">
           <IconButton size="small" onClick={reloadSchema}>
@@ -74,34 +76,72 @@ export const SchemaBrowser = (props: Props) => {
   );
 };
 
-export const SchemaBrowser2 = (props: { connectionType: string; fetcher: any }) => {
-  const { connectionType, fetcher } = props;
-
+export const SchemaBrowser2 = (props: { connectionType: string; fetcher: any; reloadSchema: () => void }) => {
+  const { connectionType, fetcher, reloadSchema } = props;
   const [expandAll, setExpandAll] = useState(false);
 
   // const isLoading = fetcher.state !== 'idle';
 
+  let loadState = 'LOADING';
+  if (fetcher.data) {
+    if (fetcher.data.ok) {
+      loadState = 'LOADED';
+    } else {
+      loadState = 'ERROR';
+    }
+  }
+
   // Designed to live in a box that takes up the full height of its container
-  return fetcher.data ? (
-    fetcher.data.ok ? (
-      <ul className="text-sm">
-        {
-          // @ts-expect-error
-          fetcher.data?.data?.tables.map((table, i) => (
-            <TableListItem
-              data={table}
-              key={i}
-              expandAll={expandAll}
-              setExpandAll={setExpandAll}
-              query={getTableQuery({ table, connectionKind: connectionType })}
-            />
-          ))
-        }
-      </ul>
-    ) : (
-      <Type className="mx-3 my-2 text-sm text-destructive">Error loading data schema. .</Type>
-    )
-  ) : null;
+  return (
+    <div className="h-full overflow-auto text-sm">
+      {loadState === 'LOADING' && (
+        <div className="flex min-h-16 items-center justify-center">
+          <CircularProgress style={{ width: 18, height: 18 }} />
+        </div>
+      )}
+      {loadState === 'LOADED' && (
+        <ul className="text-sm">
+          {
+            // @ts-expect-error
+            fetcher.data?.data?.tables.map((table, i) => (
+              <TableListItem
+                data={table}
+                key={i}
+                expandAll={expandAll}
+                setExpandAll={setExpandAll}
+                query={getTableQuery({ table, connectionKind: connectionType })}
+              />
+            ))
+          }
+        </ul>
+      )}
+      {loadState === 'ERROR' && (
+        <div className="mx-auto my-2 flex max-w-md flex-col items-center justify-center text-center text-sm text-destructive">
+          <h4 className="font-semibold">Error loading connection schema</h4>
+          <p>
+            <button className="underline" onClick={reloadSchema}>
+              Reload the schema
+            </button>{' '}
+            or{' '}
+            <button
+              className="underline"
+              onClick={() => {
+                // TODO: (jimniels) know when to do an in-memory navigation or an redirect document
+                window.location.href = '/';
+              }}
+            >
+              view the connection details
+            </button>{' '}
+            to ensure it’s properly configured. If you still have problems,{' '}
+            <Link to={CONTACT_URL} target="_blank" rel="noreferrer" className="underline">
+              contact us
+            </Link>
+            .
+          </p>
+        </div>
+      )}
+    </div>
+  );
 };
 
 function TableListItem({

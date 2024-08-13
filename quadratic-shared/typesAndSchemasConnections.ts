@@ -61,6 +61,7 @@ export const ConnectionTypeDetailsMysqlSchema = ConnectionTypeDetailsPostgresSch
 export const ConnectionListSchema = z.array(
   ConnectionSchema.pick({ uuid: true, name: true, createdDate: true, type: true })
 );
+export type ConnectionList = z.infer<typeof ConnectionListSchema>;
 
 export const ApiSchemasConnections = {
   // List connections

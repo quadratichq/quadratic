@@ -1,22 +1,23 @@
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
-import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { ROUTES } from '@/shared/constants/routes';
 import { useSchemaBrowser } from '@/shared/hooks/useSchemaBrowser';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { cn } from '@/shared/shadcn/utils';
 import { ArrowDownIcon, ChevronRightIcon, LockClosedIcon, MixIcon, PlusIcon, RocketIcon } from '@radix-ui/react-icons';
+import { ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-export function NewFileDialog({ onClose, isPrivate }: { onClose: () => void; isPrivate?: boolean }) {
+type Props = {
+  connections: ConnectionList;
+  onClose: () => void;
+  teamUuid: string;
+  isPrivate?: boolean;
+};
+
+export function NewFileDialog({ connections, teamUuid, onClose, isPrivate }: Props) {
   const [activeConnectionUuid, setActiveConnectionUuid] = useState<string>('');
-  const {
-    activeTeam: {
-      team: { uuid: teamUuid },
-      connections,
-    },
-  } = useDashboardRouteLoaderData();
   const gridItemClassName =
     'flex flex-col items-center justify-center gap-1 rounded-lg border border-border p-4 pt-5 w-full';
   const gridItemInteractiveClassName = 'hover:bg-accent hover:text-foreground cursor-pointer';

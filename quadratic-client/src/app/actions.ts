@@ -9,7 +9,7 @@ import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { ApiTypes, FilePermission, FilePermissionSchema, TeamPermission } from 'quadratic-shared/typesAndSchemas';
-import { NavigateFunction, SubmitFunction } from 'react-router-dom';
+import { SubmitFunction } from 'react-router-dom';
 import { SetterOrUpdater } from 'recoil';
 const { FILE_EDIT, FILE_DELETE } = FilePermissionSchema.enum;
 
@@ -72,8 +72,8 @@ export const isAvailableBecauseFileLocationIsAccessibleAndWriteable = ({
 export const createNewFileAction = {
   label: 'New',
   isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
-  run({ navigate, teamUuid }: { navigate: NavigateFunction; teamUuid: string }) {
-    navigate(ROUTES.CREATE_FILE_PRIVATE(teamUuid));
+  run({ setEditorInteractionState }: { setEditorInteractionState: SetterOrUpdater<EditorInteractionState> }) {
+    setEditorInteractionState((prevState) => ({ ...prevState, showNewFileMenu: true }));
   },
 };
 
