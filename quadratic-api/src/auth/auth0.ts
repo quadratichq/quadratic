@@ -10,6 +10,7 @@ import {
   AUTH0_ISSUER,
   AUTH0_JWKS_URI,
 } from '../env-vars';
+import { ByEmailUser } from './auth';
 
 // Guide to Setting up on Auth0
 // 1. Create an Auth0 Machine to Machine Application
@@ -101,7 +102,7 @@ export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]
   return usersById;
 };
 
-export const lookupUsersFromAuth0ByEmail = async (email: string) => {
+export const lookupUsersFromAuth0ByEmail = async (email: string): Promise<ByEmailUser[]> => {
   const auth0Users = await auth0.getUsersByEmail(email);
   return auth0Users;
 };

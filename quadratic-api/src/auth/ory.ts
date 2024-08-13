@@ -3,7 +3,7 @@ import * as Sentry from '@sentry/node';
 import { Algorithm } from 'jsonwebtoken';
 import jwksRsa, { GetVerificationKey } from 'jwks-rsa';
 import { ORY_ADMIN_HOST, ORY_JWKS_URI } from '../env-vars';
-import { User } from './auth';
+import { ByEmailUser, User } from './auth';
 
 const config = new Configuration({
   basePath: ORY_ADMIN_HOST,
@@ -23,7 +23,7 @@ export const jwtConfigOry = {
   algorithms: ['RS256'] as Algorithm[],
 };
 
-export const getUsersFromOry = async (users: { id: number; auth0Id: string }[]) => {
+export const getUsersFromOry = async (users: { id: number; auth0Id: string }[]): Promise<Record<number, User>> => {
   // If we got nothing, we return an empty object
   if (users.length === 0) return {};
 
@@ -44,7 +44,7 @@ export const getUsersFromOry = async (users: { id: number; auth0Id: string }[]) 
     // If we're missing data we expect, log it to Sentry and skip this user
     if (!oryUser || oryUser.traits.email === undefined) {
       Sentry.captureException({
-        message: 'Auth0 user returned without `email`',
+        message: 'Ory user returned without `email`',
         level: 'error',
         extra: {
           auth0IdInOurDb: auth0Id,
@@ -69,4 +69,17 @@ export const getUsersFromOry = async (users: { id: number; auth0Id: string }[]) 
   }, {});
 
   return usersById;
+};
+
+export const getUsersFromOryByEmail = async (email: string): Promise<ByEmailUser[]> => {
+  let identities;
+
+  try {
+    identities = (await sdk.listIdentities({ credentialsIdentifier: email })).data;
+  } catch (e) {
+    console.error(e);
+    return [];
+  }
+
+  return identities.map(({ id }) => ({ user_id: id }));
 };
