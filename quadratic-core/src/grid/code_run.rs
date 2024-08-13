@@ -4,7 +4,7 @@
 //! any given CellValue::Code type (ie, if it doesn't exist then a run hasn't been
 //! performed yet).
 
-use crate::{ArraySize, CellValue, Pos, Rect, RunError, SheetPos, SheetRect, Value};
+use crate::{ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -45,6 +45,26 @@ impl CodeRun {
             None
         } else {
             self.result.as_std_ref().ok()?.get(x, y).ok()
+        }
+    }
+
+    /// Returns the cell value at a relative location (0-indexed) into the code
+    /// run output, for use when a formula references a cell.
+    pub fn get_cell_for_formula(&self, x: u32, y: u32) -> CellValue {
+        if self.spill_error {
+            CellValue::Blank
+        } else {
+            match &self.result {
+                CodeRunResult::Ok(value) => match value {
+                    Value::Single(v) => v.clone(),
+                    Value::Array(a) => a.get(x, y).cloned().unwrap_or(CellValue::Blank),
+                    Value::Tuple(_) => CellValue::Error(Box::new(
+                        RunErrorMsg::InternalError("tuple saved as code run result".into())
+                            .without_span(),
+                    )), // should never happen
+                },
+                CodeRunResult::Err(e) => CellValue::Error(Box::new(e.clone())),
+            }
         }
     }
 

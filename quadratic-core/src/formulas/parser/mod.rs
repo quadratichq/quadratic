@@ -12,7 +12,7 @@ use lexer::Token;
 use rules::SyntaxRule;
 
 use super::*;
-use crate::{grid::Grid, CodeResult, Pos, RunError, RunErrorMsg, Span, Spanned};
+use crate::{grid::Grid, CodeResult, CoerceInto, Pos, RunError, RunErrorMsg, Span, Spanned};
 
 pub fn parse_formula(source: &str, pos: Pos) -> CodeResult<ast::Formula> {
     Ok(Formula {
@@ -56,7 +56,7 @@ pub fn parse_and_check_formula(formula_string: &str, x: i64, y: i64) -> bool {
         Ok(parsed) => {
             let grid = Grid::new();
             let mut ctx = Ctx::new_for_syntax_check(&grid);
-            parsed.eval(&mut ctx).is_ok()
+            parsed.eval(&mut ctx).into_non_error_value().is_ok()
         }
         Err(_) => false,
     }

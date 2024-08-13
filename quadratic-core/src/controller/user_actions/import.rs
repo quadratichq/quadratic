@@ -21,9 +21,18 @@ impl GridController {
     /// Imports an Excel file into the grid.
     ///
     /// Returns a [`TransactionSummary`].
-    pub fn import_excel(&mut self, file: Vec<u8>, file_name: &str) -> Result<()> {
-        let import_ops = self.import_excel_operations(file, file_name)?;
-        self.server_apply_transaction(import_ops);
+    pub fn import_excel(
+        &mut self,
+        file: Vec<u8>,
+        file_name: &str,
+        cursor: Option<String>,
+    ) -> Result<()> {
+        let ops = self.import_excel_operations(file, file_name)?;
+        if cursor.is_some() {
+            self.start_user_transaction(ops, cursor, TransactionName::Import);
+        } else {
+            self.server_apply_transaction(ops);
+        }
 
         // Rerun all code cells after importing Excel file
         // This is required to run compute cells in order
@@ -167,7 +176,7 @@ mod tests {
         let mut grid_controller = GridController::test_blank();
         let pos = Pos { x: 0, y: 0 };
         let file: Vec<u8> = std::fs::read(EXCEL_FILE).expect("Failed to read file");
-        let _ = grid_controller.import_excel(file, "basic.xlsx");
+        let _ = grid_controller.import_excel(file, "basic.xlsx", None);
         let sheet_id = grid_controller.grid.sheets()[0].id;
 
         print_table(
@@ -211,7 +220,66 @@ mod tests {
                 "1.1",
                 "2024-01-01 13:00:00",
                 "1",
+                "Divide by zero",
+                "TRUE",
+                "Hello Bold",
+                "Hello Red",
+            ],
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn imports_a_simple_excel_file_into_existing_file() {
+        let mut grid_controller = GridController::test();
+        let pos = Pos { x: 0, y: 0 };
+        let file: Vec<u8> = std::fs::read(EXCEL_FILE).expect("Failed to read file");
+        let _ = grid_controller.import_excel(file, "basic.xlsx", Some("".into()));
+
+        let new_sheet_id = grid_controller.grid.sheets()[1].id;
+
+        print_table(
+            &grid_controller,
+            new_sheet_id,
+            Rect::new_span(pos, Pos { x: 10, y: 10 }),
+        );
+
+        assert_cell_value_row(
+            &grid_controller,
+            new_sheet_id,
+            0,
+            10,
+            1,
+            vec![
+                "Empty",
+                "String",
+                "DateTimeIso",
+                "DurationIso",
+                "Float",
+                "DateTime",
+                "Int",
+                "Error",
+                "Bool",
+                "Bold",
+                "Red",
+            ],
+        );
+
+        assert_cell_value_row(
+            &grid_controller,
+            new_sheet_id,
+            0,
+            10,
+            2,
+            vec![
                 "",
+                "Hello",
+                "2016-10-20 00:00:00",
+                "",
+                "1.1",
+                "2024-01-01 13:00:00",
+                "1",
+                "Divide by zero",
                 "TRUE",
                 "Hello Bold",
                 "Hello Red",
@@ -225,7 +293,7 @@ mod tests {
         let mut grid_controller = GridController::test_blank();
         let pos = Pos { x: 0, y: 0 };
         let file: Vec<u8> = std::fs::read(EXCEL_FUNCTIONS_FILE).expect("Failed to read file");
-        let _ = grid_controller.import_excel(file, "all_excel_functions.xlsx");
+        let _ = grid_controller.import_excel(file, "all_excel_functions.xlsx", None);
         let sheet_id = grid_controller.grid.sheets()[0].id;
 
         print_table(
