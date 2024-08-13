@@ -7,7 +7,7 @@ export interface MultiplayerCoreSequenceNum {
 
 export interface CoreMultiplayerTransaction {
   type: 'coreMultiplayerTransaction';
-  operations: string;
+  operations: ArrayBuffer;
   transaction_id: string;
 }
 

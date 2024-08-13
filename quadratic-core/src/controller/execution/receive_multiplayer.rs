@@ -267,7 +267,7 @@ impl GridController {
                 if let Ok(compressed_ops) = compressed_ops {
                     crate::wasm_bindings::js::jsSendTransaction(
                         transaction_id.to_string(),
-                        &compressed_ops,
+                        compressed_ops,
                     );
                 } else {
                     dbgjs!("Unable to serialize and compress operations in apply_offline_unsaved_transaction()");

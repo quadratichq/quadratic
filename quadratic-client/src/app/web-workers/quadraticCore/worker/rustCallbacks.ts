@@ -18,7 +18,7 @@ import {
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
     addUnsentTransaction: (transactionId: string, transaction: string, operations: number) => void;
-    sendTransaction: (transactionId: string, operations: Uint8Array) => void;
+    sendTransaction: (transactionId: string, operations: ArrayBuffer) => void;
     sendImportProgress: (
       filename: string,
       current: number,
@@ -95,7 +95,7 @@ export const addUnsentTransaction = (transactionId: string, transactions: string
 };
 
 export const jsSendTransaction = (transactionId: string, operations: Uint8Array) => {
-  return self.sendTransaction(transactionId, operations);
+  return self.sendTransaction(transactionId, operations.buffer);
 };
 
 export const jsTime = (name: string) => console.time(name);

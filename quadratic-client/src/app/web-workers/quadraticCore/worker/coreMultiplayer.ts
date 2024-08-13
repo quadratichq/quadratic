@@ -4,7 +4,7 @@ import { core } from './core';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
-    sendTransaction: (transactionId: string, operations: string) => void;
+    sendTransaction: (transactionId: string, operations: Uint8Array) => void;
     requestTransactions: (sequenceNum: number) => void;
   };
 
@@ -18,9 +18,13 @@ class CoreMultiplayer {
     if (debugWebWorkers) console.log('[coreMultiplayer] initialized');
   }
 
-  private send(message: CoreMultiplayerMessage) {
+  private send(message: CoreMultiplayerMessage, transfer?: Transferable[]) {
     if (!this.coreMessagePort) throw new Error('Expected coreMessagePort to be defined in CoreMultiplayer');
-    this.coreMessagePort.postMessage(message);
+    if (transfer) {
+      this.coreMessagePort.postMessage(message, transfer);
+    } else {
+      this.coreMessagePort.postMessage(message);
+    }
   }
 
   private handleMessage = (e: MessageEvent<MultiplayerCoreMessage>) => {
@@ -44,12 +48,15 @@ class CoreMultiplayer {
     }
   };
 
-  sendTransaction = (transactionId: string, operations: string) => {
-    this.send({
-      type: 'coreMultiplayerTransaction',
-      operations,
-      transaction_id: transactionId,
-    });
+  sendTransaction = (transactionId: string, operations: ArrayBuffer) => {
+    this.send(
+      {
+        type: 'coreMultiplayerTransaction',
+        operations,
+        transaction_id: transactionId,
+      },
+      [operations]
+    );
   };
 
   requestTransactions = (sequenceNum: number) => {
