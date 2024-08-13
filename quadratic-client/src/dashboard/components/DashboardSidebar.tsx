@@ -166,7 +166,7 @@ function SidebarNavLinkCreateButton({ to }: { to: string }) {
             </Link>
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Create file</TooltipContent>
+        <TooltipContent>New blank file</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );

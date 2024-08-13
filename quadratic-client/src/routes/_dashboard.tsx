@@ -215,11 +215,23 @@ export const Component = () => {
 
 function NewFileDialogWrapper() {
   const [dashboardState, setDashboardState] = useDashboardState();
+  const {
+    activeTeam: {
+      team: { uuid },
+    },
+  } = useDashboardRouteLoaderData();
+  const location = useLocation();
+  const isPrivate = location.pathname === ROUTES.TEAM_FILES_PRIVATE(uuid);
+
   if (!dashboardState.showNewFileDialog) {
     return null;
   }
-
-  return <NewFileDialog onClose={() => setDashboardState((prev) => ({ ...prev, showNewFileDialog: false }))} />;
+  return (
+    <NewFileDialog
+      onClose={() => setDashboardState((prev) => ({ ...prev, showNewFileDialog: false }))}
+      isPrivate={isPrivate}
+    />
+  );
 }
 
 export const ErrorBoundary = () => {
