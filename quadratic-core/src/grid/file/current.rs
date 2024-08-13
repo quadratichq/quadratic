@@ -313,6 +313,7 @@ fn import_format(format: &current::Format) -> Format {
             w: render_size.w.to_owned(),
             h: render_size.h.to_owned(),
         }),
+        date_time: format.date_time.to_owned(),
     }
 }
 
@@ -563,6 +564,7 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                     text_color: export_column_data_string(&column.text_color),
                     fill_color: export_column_data_string(&column.fill_color),
                     render_size: export_column_data_render_size(&column.render_size),
+                    date_time: export_column_data_string(&column.date_time),
                     values: export_values(&column.values),
                 },
             )
@@ -650,6 +652,7 @@ fn export_format(format: &Format) -> Option<current::Format> {
                     w: render_size.w.to_owned(),
                     h: render_size.h.to_owned(),
                 }),
+            date_time: format.date_time.to_owned(),
         })
     }
 }

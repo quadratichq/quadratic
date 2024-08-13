@@ -1,5 +1,4 @@
-import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
-
+import { Menu, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { MenuLineItem } from '../MenuLineItem';
 import {
@@ -24,6 +23,8 @@ import {
 } from '@/app/ui/icons';
 import '@szhsin/react-menu/dist/index.css';
 import { TopBarMenuItem } from '../TopBarMenuItem';
+import { DateFormat } from './DateFormat/DateFormat';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 
 export const NumberFormatMenu = () => {
   return (
@@ -74,6 +75,16 @@ export const NumberFormatMenu = () => {
           icon={DecimalDecreaseIcon}
         />
       </MenuItem>
+
+      <MenuDivider />
+
+      <SubMenu
+        label={
+          <MenuLineItem primary="Date and Time Format" secondary="3/4/2024" icon={CalendarMonthIcon}></MenuLineItem>
+        }
+      >
+        <DateFormat />
+      </SubMenu>
     </Menu>
   );
 };

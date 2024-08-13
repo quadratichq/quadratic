@@ -19,6 +19,7 @@ pub struct Format {
     pub text_color: Option<String>,
     pub fill_color: Option<String>,
     pub render_size: Option<RenderSize>,
+    pub date_time: Option<String>,
 }
 
 impl Format {
@@ -34,6 +35,7 @@ impl Format {
             && self.text_color.is_none()
             && self.fill_color.is_none()
             && self.render_size.is_none()
+            && self.date_time.is_none()
     }
 
     /// Clears all formatting.
@@ -49,6 +51,7 @@ impl Format {
         self.text_color = None;
         self.fill_color = None;
         self.render_size = None;
+        self.date_time = None;
     }
 
     /// Merges a FormatUpdate into this Format, returning a FormatUpdate to undo the change.
@@ -97,6 +100,10 @@ impl Format {
         if let Some(render_size) = update.render_size.as_ref() {
             old.render_size = Some(self.render_size.clone());
             self.render_size.clone_from(render_size);
+        }
+        if let Some(date_time) = update.date_time.as_ref() {
+            old.date_time = Some(self.date_time.clone());
+            self.date_time.clone_from(date_time);
         }
         old
     }
@@ -203,6 +210,7 @@ impl Format {
                 .render_size
                 .clone()
                 .map_or(Some(None), |r| Some(Some(r))),
+            date_time: self.date_time.clone().map_or(Some(None), |d| Some(Some(d))),
         }
     }
 }
@@ -240,6 +248,9 @@ impl Display for Format {
         if let Some(render_size) = &self.render_size {
             s.push_str(&format!("render_size: {:?}, ", render_size));
         }
+        if let Some(date_time) = &self.date_time {
+            s.push_str(&format!("date_time: {:?}, ", date_time));
+        }
         write!(f, "{}", s)
     }
 }
@@ -259,6 +270,7 @@ impl From<&Format> for FormatUpdate {
             text_color: format.text_color.clone().map(Some),
             fill_color: format.fill_color.clone().map(Some),
             render_size: format.render_size.clone().map(Some),
+            date_time: format.date_time.clone().map(Some),
         }
     }
 }
@@ -278,6 +290,7 @@ impl From<Format> for FormatUpdate {
             text_color: format.text_color.clone().map(Some),
             fill_color: format.fill_color.clone().map(Some),
             render_size: format.render_size.clone().map(Some),
+            date_time: format.date_time.clone().map(Some),
         }
     }
 }
@@ -316,6 +329,7 @@ mod test {
                 w: "1".to_string(),
                 h: "2".to_string(),
             }),
+            date_time: Some("%H".to_string()),
         };
 
         format.clear();
@@ -331,6 +345,7 @@ mod test {
         assert_eq!(format.text_color, None);
         assert_eq!(format.fill_color, None);
         assert_eq!(format.render_size, None);
+        assert_eq!(format.date_time, None);
     }
 
     #[test]
@@ -354,6 +369,7 @@ mod test {
                 w: "1".to_string(),
                 h: "2".to_string(),
             }),
+            date_time: Some("%H".to_string()),
         };
 
         let update = FormatUpdate {
@@ -374,6 +390,7 @@ mod test {
                 w: "3".to_string(),
                 h: "4".to_string(),
             })),
+            date_time: Some(Some("%M".to_string())),
         };
 
         let clear_update = format
@@ -392,7 +409,8 @@ mod test {
                 italic: Some(None),
                 text_color: Some(None),
                 fill_color: Some(None),
-                render_size: Some(None)
+                render_size: Some(None),
+                date_time: Some(None),
             }
         );
     }
@@ -401,7 +419,7 @@ mod test {
     #[parallel]
     fn merge_update_into() {
         let mut format = Format::default();
-        let update = super::FormatUpdate {
+        let update = FormatUpdate {
             align: Some(Some(CellAlign::Center)),
             vertical_align: Some(Some(CellVerticalAlign::Middle)),
             wrap: Some(Some(CellWrap::Wrap)),
@@ -419,6 +437,7 @@ mod test {
                 w: "1".to_string(),
                 h: "2".to_string(),
             })),
+            date_time: Some(Some("%H".to_string())),
         };
 
         let old = format.merge_update_into(&update);
@@ -446,6 +465,7 @@ mod test {
                 h: "2".to_string()
             })
         );
+        assert_eq!(format.date_time, Some("%H".to_string()));
 
         let undo = format.merge_update_into(&old);
         assert!(format.is_default());
@@ -526,6 +546,7 @@ mod test {
                 w: "1".to_string(),
                 h: "2".to_string(),
             }),
+            date_time: Some("%H".to_string()),
         };
 
         let update: FormatUpdate = (&format).into();
@@ -553,6 +574,7 @@ mod test {
                 h: "2".to_string()
             }))
         );
+        assert_eq!(update.date_time, Some(Some("%H".to_string())));
     }
 
     #[test]
@@ -576,6 +598,7 @@ mod test {
                 w: "1".to_string(),
                 h: "2".to_string(),
             }),
+            date_time: Some("%H".to_string()),
         };
 
         let update: FormatUpdate = format.into();
@@ -603,6 +626,7 @@ mod test {
                 h: "2".to_string()
             }))
         );
+        assert_eq!(update.date_time, Some(Some("%H".to_string())));
     }
 
     #[test]
@@ -623,6 +647,7 @@ mod test {
                 text_color: Some(None),
                 fill_color: Some(None),
                 render_size: Some(None),
+                date_time: Some(None),
             }
         );
     }

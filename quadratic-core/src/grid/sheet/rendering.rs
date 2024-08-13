@@ -79,13 +79,18 @@ impl Sheet {
             };
         }
 
+        let align = if matches!(value, CellValue::Number(_))
+            || matches!(value, CellValue::DateTime(_))
+            || matches!(value, CellValue::Date(_))
+            || matches!(value, CellValue::Time(_))
+        {
+            Some(CellAlign::Right)
+        } else {
+            None
+        };
+
         match column {
             None => {
-                let align = if matches!(value, CellValue::Number(_)) {
-                    Some(CellAlign::Right)
-                } else {
-                    None
-                };
                 let format = Format::combine(
                     None,
                     self.try_format_column(x).as_ref(),
@@ -137,7 +142,7 @@ impl Sheet {
                     y,
                     value,
                     language,
-                    align: format.align,
+                    align: format.align.or(align),
                     vertical_align: format.vertical_align,
                     wrap: format.wrap,
                     bold: format.bold,

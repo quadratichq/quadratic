@@ -167,9 +167,9 @@ impl CellValue {
             CellValue::Instant(_) => todo!("repr of Instant"),
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
-            CellValue::Date(d) => d.to_string(),
-            CellValue::Time(d) => d.to_string(),
-            CellValue::DateTime(d) => d.to_string(),
+            CellValue::Date(d) => d.format("%m/%d/%Y").to_string(),
+            CellValue::Time(d) => d.format("%-I:%M %p").to_string(),
+            CellValue::DateTime(d) => d.format("%m/%d/%Y %-I:%M %p").to_string(),
 
             // these should not render
             CellValue::Code(_) => String::new(),
@@ -253,9 +253,9 @@ impl CellValue {
             CellValue::Logical(true) => "true".to_string(),
             CellValue::Logical(false) => "false".to_string(),
             CellValue::Instant(_) => todo!("repr of Instant"),
-            CellValue::Date(d) => d.format("%d/%m/%Y").to_string(),
+            CellValue::Date(d) => d.format("%m/%d/%Y").to_string(),
             CellValue::Time(t) => t.format("%-I:%M %p").to_string(),
-            CellValue::DateTime(t) => t.format("%-I:%M %p %-I:%M %p").to_string(),
+            CellValue::DateTime(t) => t.format("%m/%d/%Y %-I:%M %p").to_string(),
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
 

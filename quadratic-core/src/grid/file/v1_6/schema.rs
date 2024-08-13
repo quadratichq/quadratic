@@ -62,6 +62,9 @@ pub struct Format {
     pub text_color: Option<String>,
     pub fill_color: Option<String>,
     pub render_size: Option<RenderSize>,
+
+    #[serde(default)]
+    pub date_time: Option<String>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -154,6 +157,9 @@ pub struct Column {
     pub text_color: HashMap<String, ColumnRepeat<String>>,
     pub fill_color: HashMap<String, ColumnRepeat<String>>,
     pub render_size: HashMap<String, ColumnRepeat<RenderSize>>,
+
+    #[serde(default)]
+    pub date_time: HashMap<String, ColumnRepeat<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

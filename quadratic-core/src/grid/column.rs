@@ -28,6 +28,9 @@ pub struct Column {
     pub text_color: ColumnData<SameValue<String>>,
     pub fill_color: ColumnData<SameValue<String>>,
     pub render_size: ColumnData<SameValue<RenderSize>>,
+
+    #[serde(default)]
+    pub date_time: ColumnData<SameValue<String>>,
 }
 impl Column {
     pub fn new(x: i64) -> Self {
@@ -111,6 +114,7 @@ impl Column {
             text_color: self.text_color.get(y),
             fill_color: self.fill_color.get(y),
             render_size: self.render_size.get(y),
+            date_time: self.date_time.get(y),
         };
         if format.is_default() {
             None
