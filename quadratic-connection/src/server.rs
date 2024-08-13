@@ -9,8 +9,7 @@ use axum::{
     Extension, Json, Router,
 };
 use jsonwebtoken::jwk::JwkSet;
-use quadratic_rust_shared::auth::jwt::get_jwks;
-use quadratic_rust_shared::sql::Connection;
+use quadratic_rust_shared::{auth::jwt::get_jwks, connections::Connection};
 use serde::{Deserialize, Serialize};
 use std::{iter::once, time::Duration};
 use tokio::{sync::OnceCell, time};

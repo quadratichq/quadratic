@@ -1,36 +1,19 @@
-use arrow::{
-    array::{
-        ArrayRef, BooleanArray, Date32Array, Date64Array, Float32Array, Float64Array, Int16Array,
-        Int32Array, Int64Array, Int8Array, RecordBatch, StringArray, Time32SecondArray,
-        TimestampMillisecondArray, UInt16Array, UInt32Array, UInt64Array, UInt8Array,
-    },
-    datatypes::{Schema as ArrowSchema, *},
+use arrow::array::{
+    ArrayRef, BooleanArray, Date32Array, Date64Array, Float32Array, Float64Array, Int16Array,
+    Int32Array, Int64Array, Int8Array, StringArray, Time32SecondArray, TimestampMillisecondArray,
+    UInt16Array, UInt32Array, UInt64Array, UInt8Array,
 };
-use async_trait::async_trait;
 use bigdecimal::BigDecimal;
-use bytes::Bytes;
 use chrono::{DateTime, Local, NaiveDateTime, NaiveTime, Timelike};
-use parquet::arrow::ArrowWriter;
-use serde::Serialize;
 use serde_json::Value;
-use sqlx::{Column, Row};
-use std::{collections::BTreeMap, sync::Arc};
 use uuid::Uuid;
 
-use self::{mysql_connection::MySqlConnection, postgres_connection::PostgresConnection};
-use crate::error::Result;
+use std::sync::Arc;
+
 use crate::{
     vec_arrow_type_to_array_ref, vec_string_arrow_type_to_array_ref,
     vec_time_arrow_type_to_array_ref,
 };
-
-pub mod mysql_connection;
-pub mod postgres_connection;
-
-pub enum SqlConnection {
-    Postgres(PostgresConnection),
-    Mysql(MySqlConnection),
-}
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ArrowType {
@@ -185,158 +168,3 @@ macro_rules! vec_time_arrow_type_to_array_ref {
         Arc::new(<TimestampMillisecondArray>::from_iter(converted)) as ArrayRef
     }};
 }
-
-#[derive(Debug, Serialize, PartialEq)]
-pub struct SchemaColumn {
-    pub name: String,
-    pub r#type: String,
-    pub is_nullable: bool,
-}
-
-#[derive(Debug, Serialize, PartialEq)]
-pub struct SchemaTable {
-    pub name: String,
-    pub schema: String,
-    pub columns: Vec<SchemaColumn>,
-}
-
-#[derive(Debug, Serialize, PartialEq)]
-pub struct DatabaseSchema {
-    pub database: String,
-    pub tables: BTreeMap<String, SchemaTable>,
-}
-
-#[async_trait]
-pub trait Connection {
-    type Conn: sqlx::Connection;
-    type Row: Row;
-    type Column: Column;
-
-    // Connect to a database
-    async fn connect(&self) -> Result<Self::Conn>;
-
-    /// Generically query a database
-    async fn query(
-        &self,
-        pool: Self::Conn,
-        sql: &str,
-        max_bytes: Option<u64>,
-    ) -> Result<(Vec<Self::Row>, bool)>;
-
-    /// Generically query a database
-    async fn schema(&self, pool: Self::Conn) -> Result<DatabaseSchema>;
-
-    /// Convert a database-specific column to an Arrow type
-    fn to_arrow(
-        row: &Self::Row,
-        column: &<<Self::Row as sqlx::Row>::Database as sqlx::Database>::Column,
-        index: usize,
-    ) -> ArrowType;
-
-    /// Default implementation of converting a vec of rows to a Parquet byte array
-    ///
-    /// This should work over any row/colmn SQLx vec
-    fn to_parquet(data: Vec<Self::Row>) -> Result<Bytes>
-    where
-        Self::Row: Row,
-        Self::Column: Column,
-    {
-        if data.is_empty() {
-            // return Err(SharedError::Sql(Sql::ParquetConversion(
-            //     "No data to convert".to_string(),
-            // )));
-            return Ok(Bytes::new());
-        }
-
-        let col_count = data[0].len();
-
-        // transpose columns to rows, converting to Arrow types
-        let mut transposed = vec![vec![]; col_count];
-
-        data.iter().for_each(|row| {
-            row.columns()
-                .iter()
-                .enumerate()
-                .for_each(|(col_index, col)| {
-                    let value = Self::to_arrow(row, col, col_index);
-                    transposed[col_index].push(value);
-                });
-        });
-
-        let file = Vec::new();
-        let cols = transposed
-            .into_iter()
-            .map(ArrowType::to_array_ref)
-            .collect::<Vec<ArrayRef>>();
-
-        // headings
-        let fields = data[0]
-            .columns()
-            .iter()
-            .enumerate()
-            .map(|(index, col)| {
-                Field::new(
-                    col.name().to_string(),
-                    cols[index].data_type().to_owned(),
-                    true,
-                )
-            })
-            .collect::<Vec<Field>>();
-
-        // for (index, col) in cols.iter().enumerate() {
-        //     println!(
-        //         "{} ({}) = {:?}",
-        //         fields[index].name(),
-        //         fields[index].data_type(),
-        //         col
-        //     );
-        // }
-
-        let schema = ArrowSchema::new(fields);
-        let mut writer = ArrowWriter::try_new(file, Arc::new(schema.clone()), None)?;
-        writer.write(&RecordBatch::try_new(Arc::new(schema), cols)?)?;
-        let parquet = writer.into_inner()?;
-
-        Ok(parquet.into())
-    }
-}
-
-// async fn schema<<T: Connection>::Conn>(
-//     conn: impl Connection,
-//     sql_conn: SqlConnection,
-//     database: &str,
-//     query: Result<Vec<T>>>,
-// ) -> Result<DatabaseSchema> {
-//     let rows = query.await?;
-
-//     let mut schema = DatabaseSchema {
-//         database: database.to_owned(),
-//         tables: BTreeMap::new(),
-//     };
-
-//     for row in rows.into_iter() {
-//         let table_name = row.get::<String, usize>(2);
-
-//         schema
-//             .tables
-//             // get or insert the table
-//             .entry(table_name.to_owned())
-//             .or_insert_with(|| SchemaTable {
-//                 name: table_name,
-//                 schema: row.get::<String, usize>(1),
-//                 columns: vec![],
-//             })
-//             .columns
-//             // add the column to the table
-//             .push(SchemaColumn {
-//                 name: row.get::<String, usize>(3),
-//                 r#type: row.get::<String, usize>(4),
-//                 is_nullable: match row.get::<String, usize>(5).to_lowercase().as_str() {
-//                     "yes" => true,
-//                     _ => false,
-//                 },
-//             });
-//     }
-
-//     Ok(schema)
-// }

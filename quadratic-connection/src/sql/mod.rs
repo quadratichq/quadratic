@@ -1,5 +1,5 @@
 use axum::{http::HeaderMap, response::IntoResponse, Extension, Json};
-use quadratic_rust_shared::sql::{Connection, SchemaTable};
+use quadratic_rust_shared::connections::{schema::SchemaTable, Connection};
 use serde::Serialize;
 use tokio::time::Instant;
 use uuid::Uuid;
@@ -37,13 +37,13 @@ pub(crate) async fn query_generic<T: Connection>(
     // headers.insert("ELAPSED-API-CONNECTION-MS", time_header(start));
 
     let start_connect = Instant::now();
-    let pool = connection.connect().await?;
+    let mut pool = connection.connect().await?;
 
     headers.insert("ELAPSED-DATABASE-CONNECTION-MS", time_header(start_connect));
 
     let start_query = Instant::now();
     let (rows, over_the_limit) = connection
-        .query(pool, &sql_query.query, Some(max_response_bytes))
+        .query(&mut pool, &sql_query.query, Some(max_response_bytes))
         .await?;
 
     headers.insert("RECORD-COUNT", number_header(rows.len()));

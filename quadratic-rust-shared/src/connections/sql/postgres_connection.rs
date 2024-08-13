@@ -7,18 +7,18 @@ use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use uuid::Uuid;
+
 use sqlx::{
     postgres::{types::PgTimeTz, PgColumn, PgConnectOptions, PgRow, PgTypeKind},
     Column, ConnectOptions, PgConnection, Row, TypeInfo,
 };
-use uuid::Uuid;
 
+use crate::arrow::arrow_type::ArrowType;
+use crate::connections::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
+use crate::connections::Connection;
+use crate::convert_pg_type;
 use crate::error::{Result, SharedError, Sql};
-use crate::sql::{ArrowType, Connection};
-use crate::{
-    convert_pg_type,
-    sql::{DatabaseSchema, SchemaColumn, SchemaTable},
-};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PostgresConnection {
@@ -53,6 +53,18 @@ impl Connection for PostgresConnection {
     type Row = PgRow;
     type Column = PgColumn;
 
+    fn row_len(row: &Self::Row) -> usize {
+        row.len()
+    }
+
+    fn row_columns(row: &Self::Row) -> Box<dyn Iterator<Item = &Self::Column> + '_> {
+        Box::new(row.columns().iter())
+    }
+
+    fn column_name(col: &Self::Column) -> &str {
+        col.name()
+    }
+
     async fn connect(&self) -> Result<Self::Conn> {
         let mut options = PgConnectOptions::new();
         options = options.host(&self.host);
@@ -85,7 +97,7 @@ impl Connection for PostgresConnection {
 
     async fn query(
         &self,
-        mut pool: Self::Conn,
+        pool: &mut Self::Conn,
         sql: &str,
         max_bytes: Option<u64>,
     ) -> Result<(Vec<Self::Row>, bool)> {
@@ -94,7 +106,7 @@ impl Connection for PostgresConnection {
 
         if let Some(max_bytes) = max_bytes {
             let mut bytes = 0;
-            let mut stream = sqlx::query(sql).fetch(&mut pool);
+            let mut stream = sqlx::query(sql).fetch(pool);
 
             while let Some(row) = stream.next().await {
                 let row = row.map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
@@ -110,7 +122,7 @@ impl Connection for PostgresConnection {
             tracing::info!("Query executed with {bytes} bytes");
         } else {
             rows = sqlx::query(sql)
-                .fetch_all(&mut pool)
+                .fetch_all(pool)
                 .await
                 .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
         }
@@ -118,7 +130,7 @@ impl Connection for PostgresConnection {
         Ok((rows, over_the_limit))
     }
 
-    async fn schema(&self, pool: Self::Conn) -> Result<DatabaseSchema> {
+    async fn schema(&self, pool: &mut Self::Conn) -> Result<DatabaseSchema> {
         let database = self.database.as_ref().ok_or_else(|| {
             SharedError::Sql(Sql::Schema("Database name is required for MySQL".into()))
         })?;
@@ -265,11 +277,11 @@ mod tests {
     #[traced_test]
     async fn test_postgres_connection() {
         let connection = new_postgres_connection();
-        let pool = connection.connect().await.unwrap();
+        let mut pool = connection.connect().await.unwrap();
         let (rows, _) = connection
             // .query(pool, "select * from \"FileCheckpoint\" limit 10")
             .query(
-                pool,
+                &mut pool,
                 "select * from all_native_data_types order by id limit 1",
                 None,
             )
@@ -292,8 +304,8 @@ mod tests {
     #[traced_test]
     async fn test_postgres_schema() {
         let connection = new_postgres_connection();
-        let pool = connection.connect().await.unwrap();
-        let _schema = connection.schema(pool).await.unwrap();
+        let mut pool = connection.connect().await.unwrap();
+        let _schema = connection.schema(&mut pool).await.unwrap();
 
         // println!("{:?}", schema);
     }
