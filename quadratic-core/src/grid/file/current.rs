@@ -181,6 +181,7 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
             set_column_format_string(&mut col.text_color, &column.text_color);
             set_column_format_string(&mut col.fill_color, &column.fill_color);
             set_column_format_render_size(&mut col.render_size, &column.render_size);
+            set_column_format_string(&mut col.date_time, &column.date_time);
 
             // todo: there's probably a better way of doing this
             for (y, value) in column.values.iter() {
@@ -761,4 +762,23 @@ pub fn export(grid: &Grid) -> Result<current::GridSchema> {
         version: Some(CURRENT_VERSION.into()),
         sheets: grid.sheets().iter().map(export_sheet).collect(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use serial_test::parallel;
+
+    use crate::{controller::GridController, grid::file, selection::Selection};
+
+    #[test]
+    #[parallel]
+    fn import_and_export_date_time() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_date_time_format(Selection::pos(0, 0, sheet_id), Some("%H".to_string()), None)
+            .unwrap();
+        let exported = file::export(gc.grid()).unwrap();
+        let imported = file::import(&exported).unwrap();
+        assert_eq!(imported, *gc.grid());
+    }
 }

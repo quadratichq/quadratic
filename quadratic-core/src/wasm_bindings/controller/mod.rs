@@ -105,7 +105,7 @@ impl GridController {
     /// Exports a [`GridController`] to a file. Returns a `String`.
     #[wasm_bindgen(js_name = "exportToFile")]
     pub fn js_export_to_file(&mut self) -> Result<Uint8Array, JsValue> {
-        match file::export(self.grid_mut()) {
+        match file::export(self.grid()) {
             Ok(file) => Ok(Uint8Array::from(&file[..])),
             Err(e) => Err(JsValue::from_str(&e.to_string())),
         }

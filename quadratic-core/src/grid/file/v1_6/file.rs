@@ -98,6 +98,7 @@ pub fn import_cell_value(value: &current::CellValue) -> CellValue {
 mod tests {
     use crate::grid::file::v1_5::schema::GridSchema;
     use anyhow::{anyhow, Result};
+    use serial_test::parallel;
 
     const V1_5_FILE: &str =
         include_str!("../../../../../quadratic-rust-shared/data/grid/v1_5_simple.grid");
@@ -112,6 +113,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn import_and_export_a_v1_5_file() {
         let imported = import(V1_5_FILE).unwrap();
         let exported = export(&imported).unwrap();

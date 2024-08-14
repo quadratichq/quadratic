@@ -65,6 +65,7 @@ impl Column {
                 self.italic.range(),
                 self.text_color.range(),
                 self.fill_color.range(),
+                self.date_time.range(),
             ])
         }
     }
@@ -81,6 +82,7 @@ impl Column {
             self.italic.range(),
             self.text_color.range(),
             self.fill_color.range(),
+            self.date_time.range(),
         ])
     }
 
@@ -98,6 +100,7 @@ impl Column {
             || self.italic.get(y).is_some()
             || self.text_color.get(y).is_some()
             || self.fill_color.get(y).is_some()
+            || self.date_time.get(y).is_some()
     }
 
     /// Gets the Format for a column (which will eventually replace the data structure)
