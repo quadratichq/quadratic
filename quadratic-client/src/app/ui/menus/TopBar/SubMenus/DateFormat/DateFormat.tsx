@@ -40,6 +40,8 @@ const RadioEntry = (props: RadioEntryProps) => {
   );
 };
 
+// todo: add link to help page...
+
 const customHelp = (
   <div className="h-full cursor-pointer" onClick={() => console.log('open help for date time formats')}>
     <Tooltip title="Help with custom date and time formats" className="align-super">
@@ -69,24 +71,25 @@ export const DateFormat = (props: DateFormatProps) => {
         cursorPosition.y,
         true
       );
-      let date = DATE_FORMATS[0].value;
-      let time = TIME_FORMATS[0].value;
+      let updatedDate = DATE_FORMATS[0].value;
+      let updatedTime = TIME_FORMATS[0].value;
+
       if (summary?.dateTime) {
         for (const format of DATE_FORMATS) {
           if (summary.dateTime.includes(format.value)) {
-            date = format.value;
+            updatedDate = format.value;
             break;
           }
         }
         for (const format of TIME_FORMATS) {
           if (summary.dateTime.includes(format.value)) {
-            time = format.value;
+            updatedTime = format.value;
             break;
           }
         }
-        if (summary.dateTime.replace(date, '').replace(time, '').trim() === '') {
-          setTime(time);
-          setDate(date);
+        if (summary.dateTime.replace(updatedDate, '').replace(updatedTime, '').trim() === '') {
+          setTime(updatedTime);
+          setDate(updatedDate);
           setCustom(undefined);
         } else {
           setCustom(summary.dateTime);
@@ -94,8 +97,8 @@ export const DateFormat = (props: DateFormatProps) => {
           setTime(undefined);
         }
       } else {
-        setDate(date);
-        setTime(time);
+        setDate(updatedDate);
+        setTime(updatedTime);
         setCustom(undefined);
       }
     };
@@ -128,7 +131,7 @@ export const DateFormat = (props: DateFormatProps) => {
   const customFocus = () => {
     ref.current?.focus();
   };
-
+  console.log(date, time);
   return (
     <div className="flex flex-col gap-5 px-8 py-4">
       <div>
