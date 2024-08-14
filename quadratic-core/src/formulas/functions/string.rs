@@ -16,9 +16,9 @@ fn get_functions() -> Vec<FormulaFunction> {
         formula_fn!(
             /// Converts an array of values to a string.
             ///
-            /// If `format` is `0` or omitted, returns a human-readable
+            /// If `format` is 0 or omitted, returns a human-readable
             /// representation such as `Apple, banana, 42, hello, world!`. If
-            /// `format` is `1`, returns a machine-readable representation in
+            /// `format` is 1, returns a machine-readable representation in
             /// valid formula syntax such as `{"Apple", "banana", 42, "Hello,
             /// world!"}`. If `format` is any other value, returns an error.
             #[examples(
@@ -59,9 +59,14 @@ fn get_functions() -> Vec<FormulaFunction> {
         // Substrings
         formula_fn!(
             /// Returns the first `char_count` characters from the beginning of
-            /// the string `s`. If `char_count` is omitted, it is assumed to be
-            /// `1`. If `char_count` is greater than the number of characters in
-            /// `s`, then the entire string is returned.
+            /// the string `s`.
+            ///
+            /// Returns an error if `char_count` is less than 0.
+            ///
+            /// If `char_count` is omitted, it is assumed to be 1.
+            ///
+            /// If `char_count` is greater than the number of characters in `s`,
+            /// then the entire string is returned.
             #[examples(
                 "LEFT(\"Hello, world!\") = \"H\"",
                 "LEFT(\"Hello, world!\", 6) = \"Hello,\"",
@@ -69,17 +74,22 @@ fn get_functions() -> Vec<FormulaFunction> {
                 "LEFT(\"抱歉，我不懂普通话\", 6) = \"抱歉，我不懂\""
             )]
             #[zip_map]
-            fn LEFT([s]: String, [char_count]: (Option<i64>)) {
-                let char_count = clamp_i64_to_usize(char_count.unwrap_or(1));
+            fn LEFT([s]: String, [char_count]: (Option<Spanned<i64>>)) {
+                let char_count = char_count.map_or(Ok(1), clamp_i64_to_usize)?;
                 s.chars().take(char_count).collect::<String>()
             }
         ),
         formula_fn!(
             /// Returns the first `byte_count` bytes from the beginning of the
-            /// string `s`, encoded using UTF-8. If `byte_count` is omitted, it
-            /// is assumed to be `1`. If `byte_count` is greater than the number
-            /// of bytes in `s`, then the entire string is returned. If the
-            /// string would be split in the middle of a character, then
+            /// string `s`, encoded using UTF-8.
+            ///
+            /// Returns an error if `byte_count` is less than 0.
+            ///
+            /// If `byte_count` is omitted, it is assumed to be 1. If
+            /// `byte_count` is greater than the number of bytes in `s`, then
+            /// the entire string is returned.
+            ///
+            /// If the string would be split in the middle of a character, then
             /// `byte_count` is rounded down to the previous character boundary
             /// so the the returned string takes at most `byte_count` bytes.
             #[examples(
@@ -90,13 +100,17 @@ fn get_functions() -> Vec<FormulaFunction> {
                 "LEFTB(\"抱歉，我不懂普通话\", 8) = \"抱歉\""
             )]
             #[zip_map]
-            fn LEFTB([s]: String, [byte_count]: (Option<i64>)) {
-                s[..floor_char_boundary(&s, byte_count.unwrap_or(1))].to_owned()
+            fn LEFTB([s]: String, [byte_count]: (Option<Spanned<i64>>)) {
+                let byte_count = byte_count.map_or(Ok(1), clamp_i64_to_usize)?;
+                s[..floor_char_boundary(&s, byte_count)].to_owned()
             }
         ),
         formula_fn!(
             /// Returns the last `char_count` characters from the end of the
-            /// string `s`. If `char_count` is omitted, it is assumed to be `1`.
+            /// string `s`.
+            ///
+            /// If `char_count` is omitted, it is assumed to be 1.
+            ///
             /// If `char_count` is greater than the number of characters in `s`,
             /// then the entire string is returned.
             #[examples(
@@ -106,8 +120,8 @@ fn get_functions() -> Vec<FormulaFunction> {
                 "RIGHT(\"抱歉，我不懂普通话\", 6) = \"我不懂普通话\""
             )]
             #[zip_map]
-            fn RIGHT([s]: String, [char_count]: (Option<i64>)) {
-                let char_count = clamp_i64_to_usize(char_count.unwrap_or(1));
+            fn RIGHT([s]: String, [char_count]: (Option<Spanned<i64>>)) {
+                let char_count = char_count.map_or(Ok(1), clamp_i64_to_usize)?;
                 if char_count == 0 {
                     String::new()
                 } else {
@@ -120,12 +134,16 @@ fn get_functions() -> Vec<FormulaFunction> {
         ),
         formula_fn!(
             /// Returns the last `byte_count` bytes from the end of the string
-            /// `s`, encoded using UTF-8. If `byte_count` is omitted, it is
-            /// assumed to be `1`. If `byte_count` is greater than the number of
-            /// bytes in `s`, then the entire string is returned. If the string
-            /// would be split in the middle of a character, then `byte_count`
-            /// is rounded down to the next character boundary so that the
-            /// returned string takes at most `byte_count` bytes.
+            /// `s`, encoded using UTF-8.
+            ///
+            /// If `byte_count` is omitted, it is assumed to be 1.
+            ///
+            /// If `byte_count` is greater than the number of bytes in `s`, then
+            /// the entire string is returned.
+            ///
+            /// If the string would be split in the middle of a character, then
+            /// `byte_count` is rounded down to the next character boundary so
+            /// that the returned string takes at most `byte_count` bytes.
             #[examples(
                 "RIGHTB(\"Hello, world!\") = \"!\"",
                 "RIGHTB(\"Hello, world!\", 6) = \"world!\"",
@@ -134,8 +152,9 @@ fn get_functions() -> Vec<FormulaFunction> {
                 "RIGHTB(\"抱歉，我不懂普通话\", 7) = \"通话\""
             )]
             #[zip_map]
-            fn RIGHTB([s]: String, [byte_count]: (Option<i64>)) {
-                let byte_index = (s.len() as i64).saturating_sub(byte_count.unwrap_or(1));
+            fn RIGHTB([s]: String, [byte_count]: (Option<Spanned<i64>>)) {
+                let byte_count = byte_count.map_or(Ok(1), clamp_i64_to_usize)?;
+                let byte_index = s.len().saturating_sub(byte_count);
                 s[ceil_char_boundary(&s, byte_index)..].to_owned()
             }
         ),
@@ -301,14 +320,16 @@ fn unichar(span: Span, code_point: u32) -> CodeResult<char> {
         .ok_or_else(|| RunErrorMsg::InvalidArgument.with_span(span))
 }
 
-fn clamp_i64_to_usize(x: i64) -> usize {
-    x.max(0).try_into().unwrap_or(usize::MAX)
+fn clamp_i64_to_usize(Spanned { span, inner: n }: Spanned<i64>) -> CodeResult<usize> {
+    usize::try_from(n).map_err(|_| RunErrorMsg::InvalidArgument.with_span(span))
+}
+fn clamp_i64_minus_1_to_usize(value: Spanned<i64>) -> CodeResult<usize> {
+    clamp_i64_to_usize(value.map(|n| i64::saturating_sub(n, 1)))
 }
 
-fn floor_char_boundary(s: &str, x: i64) -> usize {
+fn floor_char_boundary(s: &str, mut byte_index: usize) -> usize {
     // At time of writing, `str::floor_char_boundary()` is still
     // unstable: https://github.com/rust-lang/rust/issues/93743
-    let mut byte_index = clamp_i64_to_usize(x);
     if byte_index >= s.len() {
         s.len()
     } else {
@@ -319,10 +340,9 @@ fn floor_char_boundary(s: &str, x: i64) -> usize {
     }
 }
 
-fn ceil_char_boundary(s: &str, x: i64) -> usize {
+fn ceil_char_boundary(s: &str, mut byte_index: usize) -> usize {
     // At time of writing, `str::ceil_char_boundary()` is still
     // unstable: https://github.com/rust-lang/rust/issues/93743
-    let mut byte_index = clamp_i64_to_usize(x);
     if byte_index >= s.len() {
         s.len()
     } else {
@@ -337,8 +357,6 @@ fn ceil_char_boundary(s: &str, x: i64) -> usize {
 #[cfg_attr(test, serial_test::parallel)]
 mod tests {
     use crate::formulas::tests::*;
-
-    use super::clamp_i64_to_usize;
 
     #[test]
     fn test_formula_array_to_text() {
@@ -386,36 +404,49 @@ mod tests {
         for (formula, expected_output) in [
             // LEFT
             ("LEFT('Hello, world!')", "H"),
+            ("LEFT('Hello, world!', 0)", ""),
             ("LEFT('Hello, world!', 6)", "Hello,"),
-            ("LEFT('Hello, world!', -10)", ""),
             ("LEFT('Hello, world!', 99)", "Hello, world!"),
             ("LEFT('抱', 6)", "抱"),
             ("LEFT('抱歉，我不懂普通话', 6)", "抱歉，我不懂"),
             // LEFTB
             ("LEFTB('Hello, world!')", "H"),
+            ("LEFTB('Hello, world!', 0)", ""),
             ("LEFTB('Hello, world!', 6)", "Hello,"),
-            ("LEFTB('Hello, world!', -10)", ""),
             ("LEFTB('Hello, world!', 99)", "Hello, world!"),
             ("LEFTB('抱歉，我不懂普通话')", ""),
             ("LEFTB('抱歉，我不懂普通话', 6)", "抱歉"),
             ("LEFTB('抱歉，我不懂普通话', 8)", "抱歉"),
             // RIGHT
             ("RIGHT('Hello, world!', 6)", "world!"),
+            ("RIGHT('Hello, world!', 0)", ""),
             ("RIGHT('Hello, world!')", "!"),
-            ("RIGHT('Hello, world!', -10)", ""),
             ("RIGHT('Hello, world!', 99)", "Hello, world!"),
             ("RIGHT('抱歉，我不懂普通话')", "话"),
             ("RIGHT('抱歉，我不懂普通话', 6)", "我不懂普通话"),
             // RIGHTB
             ("RIGHTB('Hello, world!')", "!"),
+            ("RIGHTB('Hello, world!', 0)", ""),
             ("RIGHTB('Hello, world!', 6)", "world!"),
-            ("RIGHTB('Hello, world!', -10)", ""),
             ("RIGHTB('Hello, world!', 99)", "Hello, world!"),
             ("RIGHTB('抱歉，我不懂普通话')", ""),
             ("RIGHTB('抱歉，我不懂普通话', 6)", "通话"),
             ("RIGHTB('抱歉，我不懂普通话', 7)", "通话"),
         ] {
             assert_eq!(expected_output, eval_to_string(&g, formula));
+        }
+
+        for formula in [
+            "LEFT('Hello, world!', -1)",
+            "LEFT('Hello, world!', -10)",
+            "LEFTB('Hello, world!', -1)",
+            "LEFTB('Hello, world!', -10)",
+            "RIGHT('Hello, world!', -1)",
+            "RIGHT('Hello, world!', -10)",
+            "RIGHTB('Hello, world!', -1)",
+            "RIGHTB('Hello, world!', -10)",
+        ] {
+            assert_eq!(RunErrorMsg::InvalidArgument, eval_to_err(&g, formula).msg);
         }
     }
 
@@ -562,15 +593,5 @@ mod tests {
         assert_eq!("FALSE", eval_to_string(&g, "EXACT(\"Abc\", \"abc\")"));
         assert_eq!("TRUE", eval_to_string(&g, "EXACT(\"abc\", \"abc\")"));
         assert_eq!("FALSE", eval_to_string(&g, "EXACT(\"abc\", \"def\")"));
-    }
-
-    #[test]
-    fn test_i64_to_usize() {
-        assert_eq!(0, clamp_i64_to_usize(-10));
-        assert_eq!(0, clamp_i64_to_usize(-1));
-        assert_eq!(0, clamp_i64_to_usize(0));
-        assert_eq!(1, clamp_i64_to_usize(1));
-        assert_eq!(10, clamp_i64_to_usize(10));
-        assert_eq!(u32::MAX as usize, clamp_i64_to_usize(u32::MAX as i64));
     }
 }
