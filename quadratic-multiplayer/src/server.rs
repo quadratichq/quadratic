@@ -541,7 +541,7 @@ pub(crate) mod tests {
             id,
             session_id,
             file_id,
-            operations: compressed_ops.clone(),
+            operations: encoded_ops.clone(),
         };
         let expected = MessageResponse::Transaction {
             id,

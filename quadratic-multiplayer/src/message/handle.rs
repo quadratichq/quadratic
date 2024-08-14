@@ -186,18 +186,23 @@ pub(crate) async fn handle_message(
 
             // get and increment the room's sequence_num
             let room_sequence_num = get_mut_room!(state, file_id)?.increment_sequence_num();
-            let encoded_operations = STANDARD.encode(&operations);
+            let decoded_operations = STANDARD.decode(&operations).map_err(|e| {
+                MpError::Serialization(format!(
+                    "Could not decode base64 encoded operations in transaction {id}: {:?}",
+                    e
+                ))
+            })?;
 
             // add the transaction to the transaction queue
             let sequence_num = state
-                .push_pubsub(id, file_id, operations, room_sequence_num)
+                .push_pubsub(id, file_id, decoded_operations, room_sequence_num)
                 .await?;
 
             // broadcast the transaction to all users in the room
             let response = MessageResponse::Transaction {
                 id,
                 file_id,
-                operations: encoded_operations,
+                operations: operations,
                 sequence_num,
             };
 
@@ -470,7 +475,7 @@ pub(crate) mod tests {
             id,
             file_id,
             session_id,
-            operations: compressed_ops.clone(),
+            operations: encoded_ops.clone(),
         };
 
         let response = MessageResponse::Transaction {
