@@ -75,7 +75,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             )]
             #[zip_map]
             fn LEFT([s]: String, [char_count]: (Option<Spanned<i64>>)) {
-                let char_count = char_count.map_or(Ok(1), clamp_i64_to_usize)?;
+                let char_count = char_count.map_or(Ok(1), try_i64_to_usize)?;
                 s.chars().take(char_count).collect::<String>()
             }
         ),
@@ -101,13 +101,15 @@ fn get_functions() -> Vec<FormulaFunction> {
             )]
             #[zip_map]
             fn LEFTB([s]: String, [byte_count]: (Option<Spanned<i64>>)) {
-                let byte_count = byte_count.map_or(Ok(1), clamp_i64_to_usize)?;
+                let byte_count = byte_count.map_or(Ok(1), try_i64_to_usize)?;
                 s[..floor_char_boundary(&s, byte_count)].to_owned()
             }
         ),
         formula_fn!(
             /// Returns the last `char_count` characters from the end of the
             /// string `s`.
+            ///
+            /// Returns an error if `char_count` is less than 0.
             ///
             /// If `char_count` is omitted, it is assumed to be 1.
             ///
@@ -121,7 +123,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             )]
             #[zip_map]
             fn RIGHT([s]: String, [char_count]: (Option<Spanned<i64>>)) {
-                let char_count = char_count.map_or(Ok(1), clamp_i64_to_usize)?;
+                let char_count = char_count.map_or(Ok(1), try_i64_to_usize)?;
                 if char_count == 0 {
                     String::new()
                 } else {
@@ -135,6 +137,8 @@ fn get_functions() -> Vec<FormulaFunction> {
         formula_fn!(
             /// Returns the last `byte_count` bytes from the end of the string
             /// `s`, encoded using UTF-8.
+            ///
+            /// Returns an error if `byte_count` is less than 0.
             ///
             /// If `byte_count` is omitted, it is assumed to be 1.
             ///
@@ -153,9 +157,60 @@ fn get_functions() -> Vec<FormulaFunction> {
             )]
             #[zip_map]
             fn RIGHTB([s]: String, [byte_count]: (Option<Spanned<i64>>)) {
-                let byte_count = byte_count.map_or(Ok(1), clamp_i64_to_usize)?;
+                let byte_count = byte_count.map_or(Ok(1), try_i64_to_usize)?;
                 let byte_index = s.len().saturating_sub(byte_count);
                 s[ceil_char_boundary(&s, byte_index)..].to_owned()
+            }
+        ),
+        formula_fn!(
+            /// Returns the substring of a string `s` starting at the
+            /// `start_char`th character and with a length of `char_count`.
+            ///
+            /// Returns an error if `start_char` is less than 1 or if
+            /// `char_count` is less than 0.
+            ///
+            /// If `start_char` is past the end of the string, returns an empty
+            /// string. If `start_char + char_count` is past the end of the
+            /// string, returns the rest of the string starting at `start_char`.
+            #[examples(
+                "MID(\"Hello, world!\", 4, 6) = \"lo, wo\"",
+                "MID(\"Hello, world!\", 1, 5) = \"Hello\"",
+                "MID(\"抱歉，我不懂普通话\", 4, 4) = \"我不懂普\""
+            )]
+            #[zip_map]
+            fn MID([s]: String, [start_char]: (Spanned<i64>), [char_count]: (Spanned<i64>)) {
+                let start = try_i64_minus_1_to_usize(start_char)?; // 1-indexed
+                let len = try_i64_to_usize(char_count)?;
+                s.chars().skip(start).take(len).collect::<String>()
+            }
+        ),
+        formula_fn!(
+            /// Returns the substring of a string `s` starting at the
+            /// `start_byte`th byte and with a length of `byte_count` bytes,
+            /// encoded using UTF-8.
+            ///
+            /// Returns an error if `start_byte` is less than 1 or if
+            /// `byte_count` is less than 0.
+            ///
+            /// If `start_byte` is past the end of the string, returns an empty
+            /// string. If `start_byte + byte_count` is past the end of the
+            /// string, returns the rest of the string starting at `start_byte`.
+            ///
+            /// If the string would be split in the middle of a character, then
+            /// `start_byte` is rounded up to the next character boundary and
+            /// `byte_count` is rounded down to the previous character boundary
+            /// so that the returned string takes at most `byte_count` bytes.
+            #[examples(
+                "MIDB(\"Hello, world!\", 4, 6) = \"lo, wo\"",
+                "MIDB(\"Hello, world!\", 1, 5) = \"Hello\"",
+                "MIDB(\"抱歉，我不懂普通话\", 10, 12) = \"我不懂普\"",
+                "MIDB(\"抱歉，我不懂普通话\", 8, 16) = \"我不懂普\""
+            )]
+            #[zip_map]
+            fn MIDB([s]: String, [start_byte]: (Spanned<i64>), [byte_count]: (Spanned<i64>)) {
+                let start = try_i64_minus_1_to_usize(start_byte)?;
+                let end = start.saturating_add(try_i64_to_usize(byte_count)?);
+                s[ceil_char_boundary(&s, start)..floor_char_boundary(&s, end)].to_owned()
             }
         ),
         // Length
@@ -320,11 +375,11 @@ fn unichar(span: Span, code_point: u32) -> CodeResult<char> {
         .ok_or_else(|| RunErrorMsg::InvalidArgument.with_span(span))
 }
 
-fn clamp_i64_to_usize(Spanned { span, inner: n }: Spanned<i64>) -> CodeResult<usize> {
+fn try_i64_to_usize(Spanned { span, inner: n }: Spanned<i64>) -> CodeResult<usize> {
     usize::try_from(n).map_err(|_| RunErrorMsg::InvalidArgument.with_span(span))
 }
-fn clamp_i64_minus_1_to_usize(value: Spanned<i64>) -> CodeResult<usize> {
-    clamp_i64_to_usize(value.map(|n| i64::saturating_sub(n, 1)))
+fn try_i64_minus_1_to_usize(value: Spanned<i64>) -> CodeResult<usize> {
+    try_i64_to_usize(value.map(|n| i64::saturating_sub(n, 1)))
 }
 
 fn floor_char_boundary(s: &str, mut byte_index: usize) -> usize {
@@ -398,7 +453,7 @@ mod tests {
     }
 
     #[test]
-    fn test_formula_left_right() {
+    fn test_formula_left_right_mid() {
         let g = Grid::new();
 
         for (formula, expected_output) in [
@@ -432,19 +487,44 @@ mod tests {
             ("RIGHTB('抱歉，我不懂普通话')", ""),
             ("RIGHTB('抱歉，我不懂普通话', 6)", "通话"),
             ("RIGHTB('抱歉，我不懂普通话', 7)", "通话"),
+            // MID
+            ("MID(\"Hello, world!\", 4, 6)", "lo, wo"),
+            ("MID(\"Hello, world!\", 4, 99)", "lo, world!"),
+            ("MID(\"Hello, world!\", 1, 5)", "Hello"),
+            ("MID(\"抱歉，我不懂普通话\", 4, 4)", "我不懂普"),
+            // MIDB
+            ("MIDB(\"Hello, world!\", 4, 6)", "lo, wo"),
+            ("MIDB(\"Hello, world!\", 4, 99)", "lo, world!"),
+            ("MIDB(\"Hello, world!\", 1, 5)", "Hello"),
+            ("MIDB(\"抱歉，我不懂普通话\", 10, 12)", "我不懂普"),
+            ("MIDB(\"抱歉，我不懂普通话\", 8, 16)", "我不懂普"),
         ] {
             assert_eq!(expected_output, eval_to_string(&g, formula));
         }
 
         for formula in [
+            // LEFT
             "LEFT('Hello, world!', -1)",
             "LEFT('Hello, world!', -10)",
+            // LEFTB
             "LEFTB('Hello, world!', -1)",
             "LEFTB('Hello, world!', -10)",
+            // RIGHT
             "RIGHT('Hello, world!', -1)",
             "RIGHT('Hello, world!', -10)",
+            // RIGHTB
             "RIGHTB('Hello, world!', -1)",
             "RIGHTB('Hello, world!', -10)",
+            // MID
+            "MID('Hello, world!', 0, 5)",
+            "MID('Hello, world!', -5, 5)",
+            "MID('Hello, world!', 5, -1)",
+            "MID('Hello, world!', 5, -10)",
+            // MIDB
+            "MIDB('Hello, world!', 0, 5)",
+            "MIDB('Hello, world!', -5, 5)",
+            "MIDB('Hello, world!', 5, -1)",
+            "MIDB('Hello, world!', 5, -10)",
         ] {
             assert_eq!(RunErrorMsg::InvalidArgument, eval_to_err(&g, formula).msg);
         }
