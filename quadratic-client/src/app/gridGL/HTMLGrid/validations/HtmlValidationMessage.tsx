@@ -95,7 +95,7 @@ export const HtmlValidationMessage = (props: Props) => {
         break;
     }
     title = (
-      <div className="flex align-middle">
+      <div className="flex items-start whitespace-normal align-middle">
         <span className="mr-2">{icon}</span>
         <span>{errorTitle ? errorTitle : `Validation ${severity}`}</span>
       </div>
@@ -133,18 +133,6 @@ export const HtmlValidationMessage = (props: Props) => {
       <div className="leading-2 whitespace-nowrap">
         <div className="flex items-center justify-between gap-2">
           {<div className="margin-bottom: 0.5rem">{title}</div>}
-          {/* {rejected && !hoverError && (
-            <IconButton
-              sx={{ padding: 0 }}
-              className="pointer-events-auto"
-              onClick={() => {
-                events.emit('hoverCell');
-                focusGrid();
-              }}
-            >
-              <Close sx={{ padding: 0, width: 15 }} />
-            </IconButton>
-          )} */}
         </div>
         {message && <div className="pb-1 pt-2 text-xs">{message}</div>}
       </div>
@@ -158,18 +146,18 @@ export const HtmlValidationMessage = (props: Props) => {
       style={{ top, left }}
     >
       <div className="leading-2 whitespace-nowrap">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-start justify-between gap-2">
           {<div className="margin-bottom: 0.5rem">{title}</div>}
           {
             <IconButton
-              sx={{ padding: 0 }}
+              sx={{ padding: 0.5 }}
               className="pointer-events-auto"
               onClick={() => {
                 setHide(true);
                 focusGrid();
               }}
             >
-              <Close sx={{ padding: 0, width: 15 }} />
+              <Close sx={{ padding: 0, width: 15, height: 15 }} />
             </IconButton>
           }
         </div>
