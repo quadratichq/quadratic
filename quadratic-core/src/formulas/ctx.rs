@@ -1,11 +1,12 @@
 use std::collections::HashSet;
 
-use smallvec::SmallVec;
+use itertools::Itertools;
+use smallvec::{smallvec, SmallVec};
 
 use super::*;
 use crate::{
-    grid::Grid, Array, CellValue, CodeResult, RunErrorMsg, SheetPos, SheetRect, Span, Spanned,
-    Value,
+    grid::Grid, Array, CellValue, CodeResult, CodeResultExt, Pos, RunErrorMsg, SheetPos, SheetRect,
+    Span, Spanned, Value,
 };
 
 /// Formula execution context.
@@ -16,6 +17,9 @@ pub struct Ctx<'ctx> {
     pub sheet_pos: SheetPos,
     /// Cells that have been accessed in evaluating the formula.
     pub cells_accessed: HashSet<SheetRect>,
+
+    /// Whether to only parse, skipping expensive computations.
+    pub skip_computation: bool,
 }
 impl<'ctx> Ctx<'ctx> {
     /// Constructs a context for evaluating a formula at `pos` in `grid`.
@@ -24,12 +28,24 @@ impl<'ctx> Ctx<'ctx> {
             grid,
             sheet_pos,
             cells_accessed: HashSet::new(),
+            skip_computation: false,
         }
     }
 
-    /// Fetches the contents of the cell at `ref_pos` evaluated at `base_pos`,
-    /// or returns an error in the case of a circular reference.
-    pub fn get_cell(&mut self, ref_pos: &CellRef, span: Span) -> CodeResult<Spanned<CellValue>> {
+    /// Constructs a context for checking the syntax and some basic types of a
+    /// formula in `grid`. Expensive computations are skipped, so the value
+    /// returned by "evaluating" the formula will be nonsense (probably blank).
+    pub fn new_for_syntax_check(grid: &'ctx Grid) -> Self {
+        Ctx {
+            grid,
+            sheet_pos: Pos::ORIGIN.to_sheet_pos(grid.sheets()[0].id),
+            cells_accessed: HashSet::new(),
+            skip_computation: true,
+        }
+    }
+
+    /// Resolves a cell reference relative to `self.sheet_pos`.
+    pub fn resolve_ref(&self, ref_pos: &CellRef, span: Span) -> CodeResult<Spanned<SheetPos>> {
         let sheet = match &ref_pos.sheet {
             Some(sheet_name) => self
                 .grid
@@ -41,15 +57,88 @@ impl<'ctx> Ctx<'ctx> {
                 .ok_or(RunErrorMsg::BadCellReference.with_span(span))?,
         };
         let ref_pos = ref_pos.resolve_from(self.sheet_pos.into());
-        let ref_pos_with_sheet = ref_pos.to_sheet_pos(sheet.id);
-        if ref_pos_with_sheet == self.sheet_pos {
-            return Err(RunErrorMsg::CircularReference.with_span(span));
+        Ok(ref_pos.to_sheet_pos(sheet.id)).with_span(span)
+    }
+    /// Resolves a cell range reference relative to `self.sheet_pos`.
+    pub fn resolve_range_ref(
+        &self,
+        range: &RangeRef,
+        span: Span,
+    ) -> CodeResult<Spanned<SheetRect>> {
+        match range {
+            RangeRef::RowRange { .. } => {
+                Err(RunErrorMsg::Unimplemented("row range".into()).with_span(span))
+            }
+            RangeRef::ColRange { .. } => {
+                Err(RunErrorMsg::Unimplemented("column range".into()).with_span(span))
+            }
+            RangeRef::CellRange { start, end } => {
+                let sheet_pos_start = self.resolve_ref(start, span)?.inner;
+                let sheet_pos_end = self.resolve_ref(end, span)?.inner;
+                Ok(SheetRect::new_pos_span(
+                    sheet_pos_start.into(),
+                    sheet_pos_end.into(),
+                    sheet_pos_start.sheet_id,
+                ))
+                .with_span(span)
+            }
+            RangeRef::Cell { pos } => {
+                let sheet_pos = self.resolve_ref(pos, span)?.inner;
+                Ok(SheetRect::single_sheet_pos(sheet_pos)).with_span(span)
+            }
+        }
+    }
+
+    /// Fetches the contents of the cell at `pos` evaluated at `self.sheet_pos`,
+    /// or returns an error in the case of a circular reference.
+    pub fn get_cell(&mut self, pos: SheetPos, span: Span) -> Spanned<CellValue> {
+        if self.skip_computation {
+            let value = CellValue::Blank;
+            return Spanned { span, inner: value };
         }
 
-        self.cells_accessed.insert(ref_pos_with_sheet.into());
+        let error_value = |e: RunErrorMsg| {
+            let value = CellValue::Error(Box::new(e.with_span(span)));
+            Spanned { inner: value, span }
+        };
 
-        let value = sheet.display_value(ref_pos).unwrap_or(CellValue::Blank);
-        Ok(Spanned { inner: value, span })
+        let Some(sheet) = self.grid.try_sheet(pos.sheet_id) else {
+            return error_value(RunErrorMsg::BadCellReference);
+        };
+        if pos == self.sheet_pos {
+            return error_value(RunErrorMsg::CircularReference);
+        }
+
+        self.cells_accessed.insert(pos.into());
+
+        let value = sheet.get_cell_for_formula(pos.into());
+        Spanned { inner: value, span }
+    }
+
+    /// Fetches the contents of the cell array at `rect`, or returns an error in
+    /// the case of a circular reference.
+    pub fn get_cell_array(&mut self, rect: SheetRect, span: Span) -> CodeResult<Spanned<Array>> {
+        if self.skip_computation {
+            return Ok(CellValue::Blank.into()).with_span(span);
+        }
+
+        let sheet_id = rect.sheet_id;
+        let array_size = rect.size();
+        if std::cmp::max(array_size.w, array_size.h).get() > crate::limits::CELL_RANGE_LIMIT {
+            return Err(RunErrorMsg::ArrayTooBig.with_span(span));
+        }
+
+        let mut flat_array = smallvec![];
+        // Reuse the same `CellRef` object so that we don't have to
+        // clone `sheet_name.`
+        for y in rect.y_range() {
+            for x in rect.x_range() {
+                // TODO: record array dependency instead of many individual cell dependencies
+                flat_array.push(self.get_cell(SheetPos { x, y, sheet_id }, span).inner);
+            }
+        }
+
+        Ok(Array::new_row_major(array_size, flat_array)?).with_span(span)
     }
 
     /// Evaluates a function once for each corresponding set of values from
@@ -71,6 +160,10 @@ impl<'ctx> Ctx<'ctx> {
     where
         I::IntoIter: ExactSizeIterator,
     {
+        if self.skip_computation {
+            return Ok(CellValue::Blank.into());
+        }
+
         let size = Value::common_array_size(arrays)?;
 
         let mut args_buffer = Vec::with_capacity(arrays.into_iter().len());
@@ -97,5 +190,43 @@ impl<'ctx> Ctx<'ctx> {
 
         let result = Array::new_row_major(size, values)?;
         Ok(Value::Array(result))
+    }
+
+    /// Parses a sequence of `eval_range` and `criteria` arguments from `args`,
+    /// then runs [`Ctx::zip_map()`] over the criteria arrays.
+    ///
+    /// This is useful for implementing functions that take multiple criteria,
+    /// like `SUMIFS`, `COUNTIFS`, etc.
+    pub fn zip_map_eval_ranges_and_criteria_from_args(
+        &mut self,
+        eval_range1: Spanned<Array>,
+        criteria1: Spanned<Value>,
+        mut remaining_args: FormulaFnArgs,
+        f: impl for<'b> Fn(
+            &'b mut Ctx<'_>,
+            Vec<(&'b Spanned<Array>, Criterion)>,
+        ) -> CodeResult<CellValue>,
+    ) -> CodeResult<Value> {
+        // Handle arguments.
+        let mut i = 1;
+        let mut eval_ranges = vec![eval_range1];
+        let mut criteria = vec![criteria1];
+        while let Some(eval_range) = remaining_args.take_next_optional() {
+            i += 1;
+            eval_ranges.push(eval_range.into_array()?);
+            criteria.push(remaining_args.take_next_required(format!("criteria{i}"))?);
+        }
+
+        // Evaluate.
+        self.zip_map(&criteria, |ctx, criteria| {
+            let eval_ranges_and_criteria: Vec<(&Spanned<Array>, Criterion)> = eval_ranges
+                .iter()
+                .zip(criteria)
+                .map(|(eval_range, &criterion_value)| {
+                    CodeResult::Ok((eval_range, Criterion::try_from(criterion_value)?))
+                })
+                .try_collect()?;
+            f(ctx, eval_ranges_and_criteria)
+        })
     }
 }

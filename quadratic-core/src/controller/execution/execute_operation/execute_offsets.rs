@@ -20,6 +20,12 @@ impl GridController {
                 // sheet may have been deleted
                 return;
             };
+
+            let old_size = sheet.offsets.set_column_width(column, new_size);
+            if old_size == new_size {
+                return;
+            }
+
             transaction
                 .forward_operations
                 .push(Operation::ResizeColumn {
@@ -29,17 +35,14 @@ impl GridController {
                     client_resized,
                 });
 
-            let old_size = sheet.offsets.set_column_width(column, new_size);
-
-            transaction.reverse_operations.insert(
-                0,
-                Operation::ResizeColumn {
+            transaction
+                .reverse_operations
+                .push(Operation::ResizeColumn {
                     sheet_id,
                     column,
                     new_size: old_size,
                     client_resized: false,
-                },
-            );
+                });
 
             if (cfg!(target_family = "wasm") || cfg!(test))
                 && (transaction.is_undo_redo()
@@ -54,8 +57,12 @@ impl GridController {
                 );
             }
 
-            if let Some((start, end)) = sheet.column_bounds(column, true) {
-                self.start_auto_resize_row_heights(transaction, sheet_id, (start..=end).collect());
+            if transaction.is_user() {
+                let rows = sheet.get_rows_with_wrap_in_column(column);
+                if !rows.is_empty() {
+                    let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
+                    resize_rows.extend(rows);
+                }
             }
 
             if !transaction.is_server() {
@@ -80,6 +87,13 @@ impl GridController {
                 // sheet may have been deleted
                 return;
             };
+
+            let old_size = sheet.offsets.set_row_height(row, new_size);
+            let old_client_resize = sheet.update_row_resize(row, client_resized);
+            if old_size == new_size && old_client_resize == client_resized {
+                return;
+            }
+
             transaction.forward_operations.push(Operation::ResizeRow {
                 sheet_id,
                 row,
@@ -87,18 +101,12 @@ impl GridController {
                 client_resized,
             });
 
-            let old_size = sheet.offsets.set_row_height(row, new_size);
-            let old_client_resize = sheet.update_row_resize(row, client_resized);
-
-            transaction.reverse_operations.insert(
-                0,
-                Operation::ResizeRow {
-                    sheet_id,
-                    row,
-                    new_size: old_size,
-                    client_resized: old_client_resize,
-                },
-            );
+            transaction.reverse_operations.push(Operation::ResizeRow {
+                sheet_id,
+                row,
+                new_size: old_size,
+                client_resized: old_client_resize,
+            });
 
             if (cfg!(target_family = "wasm") || cfg!(test))
                 && (transaction.is_undo_redo()
@@ -152,13 +160,14 @@ impl GridController {
                 })
                 .collect();
 
-            transaction.reverse_operations.insert(
-                0,
-                Operation::ResizeRows {
-                    sheet_id,
-                    row_heights: old_row_heights,
-                },
-            );
+            if old_row_heights == row_heights {
+                return;
+            }
+
+            transaction.reverse_operations.push(Operation::ResizeRows {
+                sheet_id,
+                row_heights: old_row_heights,
+            });
 
             if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
                 if let Ok(row_heights_string) = serde_json::to_string(&row_heights) {
@@ -196,7 +205,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let column = 0;
-        let new_size = 100.0;
+        let new_size = 120.0;
         gc.commit_single_resize(sheet_id, Some(column), None, new_size, None);
         let column_width = gc
             .grid

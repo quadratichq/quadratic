@@ -14,7 +14,8 @@ type Context = {
     messages: [AiMessage[], React.Dispatch<React.SetStateAction<AiMessage[]>>];
     prompt: [string, React.Dispatch<React.SetStateAction<string>>];
   };
-  codeString: [string, React.Dispatch<React.SetStateAction<string>>];
+  // `undefined` is used here as a loading state. Once the editor mounts, it becomes a string (possibly empty)
+  codeString: [string | undefined, React.Dispatch<React.SetStateAction<string | undefined>>];
   consoleOutput: [
     { stdOut?: string; stdErr?: string } | undefined,
     React.Dispatch<React.SetStateAction<{ stdOut?: string; stdErr?: string } | undefined>>
@@ -36,7 +37,7 @@ const CodeEditorContext = createContext<Context>({
     messages: [[], () => {}],
     prompt: ['', () => {}],
   },
-  codeString: ['', () => {}],
+  codeString: [undefined, () => {}],
   consoleOutput: [undefined, () => {}],
   // containerRef: { current: null },
   editorContent: [undefined, () => {}],
@@ -55,7 +56,7 @@ export const CodeEditorProvider = () => {
     messages: useState<Context['aiAssistant']['messages'][0]>([]),
     controllerRef: useRef<Context['aiAssistant']['controllerRef']['current']>(null),
   };
-  const codeString = useState<Context['codeString'][0]>(''); // update code cell
+  const codeString = useState<Context['codeString'][0]>(undefined); // update code cell
   const consoleOutput = useState<Context['consoleOutput'][0]>(undefined);
   // const containerRef = useRef<Context['containerRef']['current']>(null);
   const editorContent = useState<Context['editorContent'][0]>(codeString[0]);

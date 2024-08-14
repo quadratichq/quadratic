@@ -169,6 +169,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientResizeRowHeights') {
       events.emit('resizeRowHeights', e.data.sheetId, e.data.rowHeights);
       return;
+    } else if (e.data.type === 'coreClientMultiplayerSynced') {
+      events.emit('multiplayerSynced');
+      return;
     }
 
     if (e.data.id !== undefined) {
@@ -969,7 +972,8 @@ class QuadraticCore {
   // create a new grid file and import an xlsx file
   importExcel = async (
     file: Uint8Array,
-    fileName: string
+    fileName: string,
+    cursor?: string
   ): Promise<{
     contents?: Uint8Array;
     fileName: string;
@@ -985,6 +989,7 @@ class QuadraticCore {
         type: 'clientCoreImportExcel',
         file,
         fileName,
+        cursor,
         id,
       });
     });

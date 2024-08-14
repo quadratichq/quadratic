@@ -4,7 +4,7 @@
 //! any given CellValue::Code type (ie, if it doesn't exist then a run hasn't been
 //! performed yet).
 
-use crate::{ArraySize, CellValue, Pos, Rect, RunError, SheetPos, SheetRect, Value};
+use crate::{ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -29,33 +29,41 @@ pub struct CodeRun {
 
 impl CodeRun {
     /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
-    /// A spill or error returns CellValue::Blank. Note: this assumes a CellValue::Code exists at the location.
+    /// A spill or error returns [`CellValue::Blank`]. Note: this assumes a [`CellValue::Code`] exists at the location.
     pub fn cell_value_at(&self, x: u32, y: u32) -> Option<CellValue> {
         if self.spill_error {
             Some(CellValue::Blank)
         } else {
-            match &self.result {
-                CodeRunResult::Ok(value) => match value {
-                    Value::Single(v) => Some(v.clone()),
-                    Value::Array(a) => Some(a.get(x, y).ok()?.clone()),
-                },
-                CodeRunResult::Err(_) => None,
-            }
+            self.cell_value_ref_at(x, y).cloned()
         }
     }
 
     /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
-    /// A spill or error returns None. Note: this assumes a CellValue::Code exists at the location.
-    pub fn cell_value_ref(&self, x: u32, y: u32) -> Option<&CellValue> {
+    /// A spill or error returns `None`. Note: this assumes a [`CellValue::Code`] exists at the location.
+    pub fn cell_value_ref_at(&self, x: u32, y: u32) -> Option<&CellValue> {
         if self.spill_error {
             None
         } else {
+            self.result.as_std_ref().ok()?.get(x, y).ok()
+        }
+    }
+
+    /// Returns the cell value at a relative location (0-indexed) into the code
+    /// run output, for use when a formula references a cell.
+    pub fn get_cell_for_formula(&self, x: u32, y: u32) -> CellValue {
+        if self.spill_error {
+            CellValue::Blank
+        } else {
             match &self.result {
                 CodeRunResult::Ok(value) => match value {
-                    Value::Single(v) => Some(v),
-                    Value::Array(a) => Some(a.get(x, y).ok()?),
+                    Value::Single(v) => v.clone(),
+                    Value::Array(a) => a.get(x, y).cloned().unwrap_or(CellValue::Blank),
+                    Value::Tuple(_) => CellValue::Error(Box::new(
+                        RunErrorMsg::InternalError("tuple saved as code run result".into())
+                            .without_span(),
+                    )), // should never happen
                 },
-                CodeRunResult::Err(_) => None,
+                CodeRunResult::Err(e) => CellValue::Error(Box::new(e.clone())),
             }
         }
     }
@@ -64,11 +72,10 @@ impl CodeRun {
     /// Note: this does not take spill_error into account.
     pub fn output_size(&self) -> ArraySize {
         match &self.result {
-            CodeRunResult::Ok(value) => match value {
-                Value::Single(_) => ArraySize::_1X1,
-                Value::Array(a) => a.size(),
-            },
-            CodeRunResult::Err(_) => ArraySize::_1X1,
+            CodeRunResult::Ok(Value::Array(a)) => a.size(),
+            CodeRunResult::Ok(Value::Single(_) | Value::Tuple(_)) | CodeRunResult::Err(_) => {
+                ArraySize::_1X1
+            }
         }
     }
 
@@ -150,11 +157,28 @@ impl wasm_bindgen::convert::IntoWasmAbi for ConnectionKind {
     }
 }
 
+/// Custom version of [`std::result::Result`] that serializes the way we want.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum CodeRunResult {
     Ok(Value),
     Err(RunError),
+}
+impl CodeRunResult {
+    /// Converts into a [`std::result::Result`] by value.
+    pub fn into_std(self) -> Result<Value, RunError> {
+        match self {
+            CodeRunResult::Ok(v) => Ok(v),
+            CodeRunResult::Err(e) => Err(e),
+        }
+    }
+    /// Converts into a [`std::result::Result`] by reference.
+    pub fn as_std_ref(&self) -> Result<&Value, &RunError> {
+        match self {
+            CodeRunResult::Ok(v) => Ok(v),
+            CodeRunResult::Err(e) => Err(e),
+        }
+    }
 }
 
 #[cfg(test)]

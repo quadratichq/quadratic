@@ -8,6 +8,7 @@ export const CORS = process.env.CORS || '*';
 export const SENTRY_DSN = process.env.SENTRY_DSN;
 export const NODE_ENV = process.env.NODE_ENV || 'development';
 export const PORT = process.env.PORT || 8000;
+export const AWS_S3_ENDPOINT = process.env.AWS_S3_ENDPOINT || undefined;
 export const ENVIRONMENT = process.env.ENVIRONMENT;
 export const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN as string;
 export const AUTH0_CLIENT_ID = process.env.AUTH0_CLIENT_ID as string;

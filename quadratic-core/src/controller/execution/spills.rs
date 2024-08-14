@@ -22,14 +22,11 @@ impl GridController {
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             if let Some((pos, run)) = sheet.code_runs.get_index_mut(index) {
                 let sheet_pos = pos.to_sheet_pos(sheet.id);
-                transaction.reverse_operations.insert(
-                    0,
-                    Operation::SetCodeRun {
-                        sheet_pos,
-                        code_run: Some(run.clone()),
-                        index,
-                    },
-                );
+                transaction.reverse_operations.push(Operation::SetCodeRun {
+                    sheet_pos,
+                    code_run: Some(run.clone()),
+                    index,
+                });
                 run.spill_error = spill_error;
                 transaction.forward_operations.push(Operation::SetCodeRun {
                     sheet_pos,

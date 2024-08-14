@@ -57,7 +57,7 @@ interface EventTypes {
   htmlOutput: (html: JsHtmlOutput[]) => void;
   htmlUpdate: (html: JsHtmlOutput) => void;
   sheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
-  renderCells: (sheetId: string, codeCells: JsRenderCell[]) => void;
+  renderCells: (sheetId: string, renderCells: JsRenderCell[]) => void;
   renderCodeCells: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
   resizeRowHeights: (sheetId: string, rowHeights: JsRowHeight[]) => void;
 
@@ -87,6 +87,7 @@ interface EventTypes {
   multiplayerCellEdit: (cellEdit: CellEdit, player: MultiplayerUser) => void;
   multiplayerFollow: () => void;
   multiplayerCodeRunning: (multiplayerUser: MultiplayerUser) => void;
+  multiplayerSynced: () => void;
 
   resizeHeadingColumn: (sheetId: string, column: number) => void;
   resizeHeadingRow: (sheetId: string, row: number) => void;

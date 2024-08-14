@@ -3,7 +3,7 @@ use itertools::Itertools;
 use crate::grid::borders::style::BorderSelection;
 use crate::Rect;
 
-pub(super) fn vertical(rect: &Rect, selections: Vec<BorderSelection>) -> Vec<i64> {
+pub(super) fn vertical(rect: &Rect, selections: &[BorderSelection]) -> Vec<i64> {
     selections
         .iter()
         .flat_map(|&selection| vertical_selection(rect, selection))
@@ -26,7 +26,7 @@ fn vertical_selection(rect: &Rect, selection: BorderSelection) -> Vec<i64> {
     }
 }
 
-pub(super) fn horizontal(rect: &Rect, selections: Vec<BorderSelection>) -> Vec<i64> {
+pub(super) fn horizontal(rect: &Rect, selections: &[BorderSelection]) -> Vec<i64> {
     selections
         .iter()
         .flat_map(|&selection| horizontal_selection(rect, selection))
@@ -62,36 +62,33 @@ mod tests {
         let rect = Rect::new_span(Pos { x: 10, y: 20 }, Pos { x: 13, y: 23 });
 
         assert_eq!(
-            horizontal(&rect, vec![BorderSelection::All]),
+            horizontal(&rect, &[BorderSelection::All]),
             vec![20, 21, 22, 23, 24]
         );
         assert_eq!(
-            horizontal(&rect, vec![BorderSelection::Inner]),
+            horizontal(&rect, &[BorderSelection::Inner]),
             vec![21, 22, 23]
         );
+        assert_eq!(horizontal(&rect, &[BorderSelection::Outer]), vec![20, 24]);
         assert_eq!(
-            horizontal(&rect, vec![BorderSelection::Outer]),
-            vec![20, 24]
-        );
-        assert_eq!(
-            horizontal(&rect, vec![BorderSelection::Horizontal]),
+            horizontal(&rect, &[BorderSelection::Horizontal]),
             vec![21, 22, 23]
         );
-        assert!(horizontal(&rect, vec![BorderSelection::Vertical]).is_empty());
-        assert!(horizontal(&rect, vec![BorderSelection::Left]).is_empty());
-        assert_eq!(horizontal(&rect, vec![BorderSelection::Top]), vec![20]);
-        assert!(horizontal(&rect, vec![BorderSelection::Right]).is_empty());
-        assert_eq!(horizontal(&rect, vec![BorderSelection::Bottom]), vec![24]);
+        assert!(horizontal(&rect, &[BorderSelection::Vertical]).is_empty());
+        assert!(horizontal(&rect, &[BorderSelection::Left]).is_empty());
+        assert_eq!(horizontal(&rect, &[BorderSelection::Top]), vec![20]);
+        assert!(horizontal(&rect, &[BorderSelection::Right]).is_empty());
+        assert_eq!(horizontal(&rect, &[BorderSelection::Bottom]), vec![24]);
 
         assert_eq!(
-            horizontal(&rect, vec![BorderSelection::Top, BorderSelection::Bottom]),
+            horizontal(&rect, &[BorderSelection::Top, BorderSelection::Bottom]),
             vec![20, 24]
         );
         assert_eq!(
-            horizontal(&rect, vec![BorderSelection::Bottom, BorderSelection::Top]),
+            horizontal(&rect, &[BorderSelection::Bottom, BorderSelection::Top]),
             vec![20, 24]
         );
-        assert!(horizontal(&rect, vec![BorderSelection::Left, BorderSelection::Right]).is_empty());
+        assert!(horizontal(&rect, &[BorderSelection::Left, BorderSelection::Right]).is_empty());
     }
 
     #[test]
@@ -100,32 +97,29 @@ mod tests {
         let rect = Rect::new_span(Pos { x: 10, y: 20 }, Pos { x: 13, y: 23 });
 
         assert_eq!(
-            vertical(&rect, vec![BorderSelection::All]),
+            vertical(&rect, &[BorderSelection::All]),
             vec![10, 11, 12, 13, 14]
         );
+        assert_eq!(vertical(&rect, &[BorderSelection::Inner]), vec![11, 12, 13]);
+        assert_eq!(vertical(&rect, &[BorderSelection::Outer]), vec![10, 14]);
+        assert!(vertical(&rect, &[BorderSelection::Horizontal]).is_empty());
         assert_eq!(
-            vertical(&rect, vec![BorderSelection::Inner]),
+            vertical(&rect, &[BorderSelection::Vertical]),
             vec![11, 12, 13]
         );
-        assert_eq!(vertical(&rect, vec![BorderSelection::Outer]), vec![10, 14]);
-        assert!(vertical(&rect, vec![BorderSelection::Horizontal]).is_empty());
-        assert_eq!(
-            vertical(&rect, vec![BorderSelection::Vertical]),
-            vec![11, 12, 13]
-        );
-        assert_eq!(vertical(&rect, vec![BorderSelection::Left]), vec![10]);
-        assert!(vertical(&rect, vec![BorderSelection::Top]).is_empty());
-        assert_eq!(vertical(&rect, vec![BorderSelection::Right]), vec![14]);
-        assert!(vertical(&rect, vec![BorderSelection::Bottom]).is_empty());
+        assert_eq!(vertical(&rect, &[BorderSelection::Left]), vec![10]);
+        assert!(vertical(&rect, &[BorderSelection::Top]).is_empty());
+        assert_eq!(vertical(&rect, &[BorderSelection::Right]), vec![14]);
+        assert!(vertical(&rect, &[BorderSelection::Bottom]).is_empty());
 
-        assert!(vertical(&rect, vec![BorderSelection::Top, BorderSelection::Bottom]).is_empty());
+        assert!(vertical(&rect, &[BorderSelection::Top, BorderSelection::Bottom]).is_empty());
 
         assert_eq!(
-            vertical(&rect, vec![BorderSelection::Left, BorderSelection::Right]),
+            vertical(&rect, &[BorderSelection::Left, BorderSelection::Right]),
             vec![10, 14]
         );
         assert_eq!(
-            vertical(&rect, vec![BorderSelection::Right, BorderSelection::Left]),
+            vertical(&rect, &[BorderSelection::Right, BorderSelection::Left]),
             vec![10, 14]
         );
     }

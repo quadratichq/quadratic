@@ -177,11 +177,8 @@ impl CellValue {
                 };
                 let mut number = if numeric_format.kind == NumericFormatKind::Exponential {
                     let num = result.to_f64().unwrap_or_default();
-                    if let Some(decimals) = numeric_decimals {
-                        format!("{:.precision$e}", num, precision = decimals as usize)
-                    } else {
-                        format!("{:.e}", num)
-                    }
+                    let decimals = numeric_decimals.unwrap_or(2);
+                    format!("{:.precision$e}", num, precision = decimals as usize)
                 } else if let Some(decimals) = numeric_decimals {
                     let scaled =
                         result.with_scale_round(decimals as i64, bigdecimal::RoundingMode::HalfUp);
@@ -324,6 +321,13 @@ impl CellValue {
         match self {
             CellValue::Error(e) => Some(e),
             _ => None,
+        }
+    }
+    /// Converts an error value into an actual error.
+    pub fn into_non_error_value(self) -> CodeResult<Self> {
+        match self {
+            CellValue::Error(e) => Err(*e),
+            other => Ok(other),
         }
     }
 
@@ -540,6 +544,16 @@ impl CellValue {
     pub fn is_image(&self) -> bool {
         matches!(self, CellValue::Image(_))
     }
+
+    /// Returns the contained error, or panics the value is not an error.
+    #[cfg(test)]
+    #[track_caller]
+    pub fn unwrap_err(self) -> RunError {
+        match self {
+            CellValue::Error(e) => *e,
+            other => panic!("expected error value; got {other:?}"),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -695,6 +709,61 @@ mod test {
                 Some(true),
             ),
             String::from("123,112,312,399.1224%")
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn to_number_display_scientific() {
+        let cv = CellValue::Number(BigDecimal::from_str("12345678").unwrap());
+        assert_eq!(
+            cv.to_number_display(
+                Some(NumericFormat {
+                    kind: NumericFormatKind::Exponential,
+                    symbol: None,
+                }),
+                None,
+                None
+            ),
+            String::from("1.23e7")
+        );
+
+        assert_eq!(
+            cv.to_number_display(
+                Some(NumericFormat {
+                    kind: NumericFormatKind::Exponential,
+                    symbol: None,
+                }),
+                Some(3),
+                None
+            ),
+            String::from("1.235e7")
+        );
+
+        let cv = CellValue::Number(BigDecimal::from_str("-12345678").unwrap());
+        assert_eq!(
+            cv.to_number_display(
+                Some(NumericFormat {
+                    kind: NumericFormatKind::Exponential,
+                    symbol: None,
+                }),
+                None,
+                None
+            ),
+            String::from("-1.23e7")
+        );
+
+        let cv = CellValue::Number(BigDecimal::from_str("1000000").unwrap());
+        assert_eq!(
+            cv.to_number_display(
+                Some(NumericFormat {
+                    kind: NumericFormatKind::Exponential,
+                    symbol: None,
+                }),
+                None,
+                None
+            ),
+            String::from("1.00e6")
         );
     }
 

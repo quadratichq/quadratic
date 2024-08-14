@@ -129,12 +129,6 @@ class RenderText {
     cellsLabels.setOffsetsDelta(column, row, delta);
   }
 
-  sheetOffsetsFinal(sheetId: string, column: number | undefined, row: number | undefined, delta: number) {
-    const cellsLabels = this.cellsLabels.get(sheetId);
-    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.setOffsetsFinal');
-    cellsLabels.setOffsetsFinal(column, row, delta);
-  }
-
   sheetOffsetsSize(sheetId: string, column: number | undefined, row: number | undefined, size: number) {
     const cellsLabels = this.cellsLabels.get(sheetId);
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.sheetOffsetsSize');

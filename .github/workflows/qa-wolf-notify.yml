@@ -14,8 +14,8 @@ jobs:
     steps:
       - uses: actions/checkout@v1
 
-      - name: Wait for 15 minutes
-        run: sleep 900
+      - name: Wait for 30 minutes
+        run: sleep 1800
 
       - name: Notify deploy_success
         id: run_tests
