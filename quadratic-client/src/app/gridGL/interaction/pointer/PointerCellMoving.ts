@@ -27,7 +27,8 @@ interface MoveCells {
 }
 
 export class PointerCellMoving {
-  moving?: MoveCells;
+  startCell?: Point;
+  movingCells?: MoveCells;
   state?: 'hover' | 'move';
 
   get cursor(): string | undefined {
@@ -47,8 +48,9 @@ export class PointerCellMoving {
   pointerDown(event: PointerEvent): boolean {
     if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || event.button === 1) return false;
 
-    if (this.state === 'hover' && this.moving) {
+    if (this.state === 'hover' && this.movingCells && event.button === 0) {
       this.state = 'move';
+      this.startCell = new Point(this.movingCells.column, this.movingCells.row);
       events.emit('cellMoving', true);
       pixiApp.viewport.mouseEdges({
         distance: MOUSE_EDGES_DISTANCE,
@@ -61,23 +63,24 @@ export class PointerCellMoving {
   }
 
   private reset() {
-    this.moving = undefined;
+    this.movingCells = undefined;
     if (this.state === 'move') {
       pixiApp.cellMoving.dirty = true;
       events.emit('cellMoving', false);
       pixiApp.viewport.plugins.remove('mouse-edges');
     }
     this.state = undefined;
+    this.startCell = undefined;
   }
 
   private pointerMoveMoving(world: Point) {
-    if (this.state !== 'move' || !this.moving) {
+    if (this.state !== 'move' || !this.movingCells) {
       throw new Error('Expected moving to be defined in pointerMoveMoving');
     }
     const sheet = sheets.sheet;
     const position = sheet.getColumnRowFromScreen(world.x, world.y);
-    this.moving.toColumn = position.column + this.moving.offset.x;
-    this.moving.toRow = position.row + this.moving.offset.y;
+    this.movingCells.toColumn = position.column + this.movingCells.offset.x;
+    this.movingCells.toRow = position.row + this.movingCells.offset.y;
     pixiApp.cellMoving.dirty = true;
   }
 
@@ -165,7 +168,7 @@ export class PointerCellMoving {
       const offset = sheets.sheet.getColumnRowFromScreen(world.x, world.y);
       offset.column = Math.min(Math.max(offset.column, rectangle.left), rectangle.right);
       offset.row = Math.min(Math.max(offset.row, rectangle.top), rectangle.bottom);
-      this.moving = {
+      this.movingCells = {
         column,
         row,
         width: rectangle.width,
@@ -196,15 +199,21 @@ export class PointerCellMoving {
 
   pointerUp(): boolean {
     if (this.state === 'move') {
-      if (this.moving) {
+      if (this.startCell === undefined) {
+        throw new Error('[PointerCellMoving] Expected startCell to be defined in pointerUp');
+      }
+      if (
+        this.movingCells &&
+        (this.startCell.x !== this.movingCells.toColumn || this.startCell.y !== this.movingCells.toRow)
+      ) {
         const rectangle = sheets.sheet.cursor.getLargestMultiCursorRectangle();
         quadraticCore.moveCells(
           rectToSheetRect(
             new Rectangle(rectangle.x, rectangle.y, rectangle.width - 1, rectangle.height - 1),
             sheets.sheet.id
           ),
-          this.moving.toColumn,
-          this.moving.toRow,
+          this.movingCells.toColumn,
+          this.movingCells.toRow,
           sheets.sheet.id
         );
 
@@ -220,8 +229,8 @@ export class PointerCellMoving {
               ...pixiAppSettings.editorInteractionState,
               initialCode: pixiAppSettings.unsavedEditorChanges,
               selectedCell: {
-                x: state.selectedCell.x + this.moving.toColumn - this.moving.column,
-                y: state.selectedCell.y + this.moving.toRow - this.moving.row,
+                x: state.selectedCell.x + this.movingCells.toColumn - this.movingCells.column,
+                y: state.selectedCell.y + this.movingCells.toRow - this.movingCells.row,
               },
             });
           }

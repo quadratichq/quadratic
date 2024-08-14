@@ -13,7 +13,7 @@ use super::formatting::CellFmtAttr;
 use super::ids::SheetId;
 use super::js_types::CellFormatSummary;
 use super::resize::ResizeMap;
-use super::{CodeRun, NumericFormatKind};
+use super::{CellWrap, CodeRun, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
 use crate::selection::Selection;
 use crate::sheet_offsets::SheetOffsets;
@@ -238,6 +238,22 @@ impl Sheet {
         column.values.get(&pos.y)
     }
 
+    /// Returns the cell value at a position using both `column.values` and
+    /// `code_runs`, for use when a formula references a cell.
+    pub fn get_cell_for_formula(&self, pos: Pos) -> CellValue {
+        match self
+            .get_column(pos.x)
+            .and_then(|column| column.values.get(&pos.y))
+            .unwrap_or(&CellValue::Blank)
+        {
+            CellValue::Blank | CellValue::Code(_) => match self.code_runs.get(&pos) {
+                Some(run) => run.get_cell_for_formula(0, 0),
+                None => CellValue::Blank,
+            },
+            other => other.clone(),
+        }
+    }
+
     /// Returns a formatting property of a cell.
     pub fn get_formatting_value<A: CellFmtAttr>(&self, pos: Pos) -> Option<A::Value> {
         let column = self.get_column(pos.x)?;
@@ -380,34 +396,84 @@ impl Sheet {
         }
     }
 
-    pub fn get_rows_in_selection(&self, selection: &Selection) -> Vec<i64> {
-        let mut rows = HashSet::<i64>::new();
-        if (selection.all) || selection.columns.is_some() {
-            if let GridBounds::NonEmpty(rect) = self.data_bounds {
-                for y in rect.y_range() {
-                    rows.insert(y);
-                }
-            }
-            if let GridBounds::NonEmpty(rect) = self.format_bounds {
-                for y in rect.y_range() {
-                    rows.insert(y);
-                }
-            }
-        } else {
-            if let Some(selection_rows) = &selection.rows {
-                for &row in selection_rows {
-                    rows.insert(row);
-                }
-            }
-            if let Some(selection_rects) = &selection.rects {
-                for rect in selection_rects {
-                    for y in rect.y_range() {
-                        rows.insert(y);
-                    }
+    pub fn check_if_wrap_in_cell(&self, x: i64, y: i64) -> bool {
+        let value: Option<CellValue> = self.cell_value(Pos { x, y });
+        let format = self.format_cell(x, y, true);
+        value.is_some() && Some(CellWrap::Wrap) == format.wrap
+    }
+
+    pub fn check_if_wrap_in_row(&self, y: i64) -> bool {
+        if let Some((min, max)) = self.row_bounds(y, true) {
+            for x in min..=max {
+                let value: Option<CellValue> = self.cell_value(Pos { x, y });
+                let format = self.format_cell(x, y, true);
+                if value.is_some() && Some(CellWrap::Wrap) == format.wrap {
+                    return true;
                 }
             }
         }
-        rows.into_iter().collect()
+        false
+    }
+
+    pub fn get_rows_with_wrap_in_column(&self, x: i64) -> Vec<i64> {
+        let mut rows = vec![];
+        if let Some((start, end)) = self.column_bounds(x, true) {
+            for y in start..=end {
+                let value: Option<CellValue> = self.cell_value(Pos { x, y });
+                let format = self.format_cell(x, y, true);
+                if value.is_some() && Some(CellWrap::Wrap) == format.wrap {
+                    rows.push(y);
+                }
+            }
+        }
+        rows
+    }
+
+    pub fn get_rows_with_wrap_in_rect(&self, rect: &Rect) -> Vec<i64> {
+        let mut rows = vec![];
+        for y in rect.y_range() {
+            for x in rect.x_range() {
+                let value: Option<CellValue> = self.cell_value(Pos { x, y });
+                let format = self.format_cell(x, y, true);
+                if value.is_some() && Some(CellWrap::Wrap) == format.wrap {
+                    rows.push(y);
+                    break;
+                }
+            }
+        }
+        rows
+    }
+
+    pub fn get_rows_with_wrap_in_selection(&self, selection: &Selection) -> Vec<i64> {
+        let mut rows_set = HashSet::<i64>::new();
+        if selection.all {
+            let bounds = self.bounds(true);
+            if let GridBounds::NonEmpty(rect) = bounds {
+                let rows = self.get_rows_with_wrap_in_rect(&rect);
+                rows_set.extend(rows);
+            }
+        } else {
+            if let Some(columns) = &selection.columns {
+                for x in columns {
+                    let rows = self.get_rows_with_wrap_in_column(*x);
+                    rows_set.extend(rows);
+                }
+            }
+            if let Some(selection_rows) = &selection.rows {
+                for row in selection_rows {
+                    if self.check_if_wrap_in_row(*row) {
+                        rows_set.insert(*row);
+                    }
+                }
+            }
+            if let Some(selection_rects) = &selection.rects {
+                selection_rects.iter().for_each(|rect| {
+                    let rows = self.get_rows_with_wrap_in_rect(rect);
+                    rows_set.extend(rows);
+                });
+            }
+        }
+        rows_set.into_iter().collect()
     }
 }
 
@@ -527,7 +593,7 @@ mod test {
             "91234567891",
             NumericFormatKind::Exponential,
             Some(10),
-        )
+        );
     }
 
     #[test]
@@ -726,9 +792,12 @@ mod test {
         let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.sheet(sheet_id).clone();
         let _ = sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
-        let value = sheet.get_formatting_value::<Bold>((2, 1).into());
+        let bold: Option<bool> = sheet.get_formatting_value::<Bold>((2, 1).into());
+        assert_eq!(bold, Some(true));
 
-        assert_eq!(value, Some(true));
+        let _ = sheet.set_formatting_value::<Italic>((2, 1).into(), Some(true));
+        let italic = sheet.get_formatting_value::<Italic>((2, 1).into());
+        assert_eq!(italic, Some(true));
     }
 
     #[test]
@@ -806,5 +875,190 @@ mod test {
         assert_eq!(sheet.display_value(pos), None);
         sheet.set_cell_value(pos, CellValue::Blank);
         assert_eq!(sheet.display_value(pos), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_check_if_wrap_in_cell() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
+        assert!(!sheet.check_if_wrap_in_cell(0, 0));
+        let selection = Selection::pos(0, 0, sheet.id);
+        sheet.set_formats_selection(
+            &selection,
+            &Formats::repeat(
+                FormatUpdate {
+                    wrap: Some(Some(CellWrap::Wrap)),
+                    ..FormatUpdate::default()
+                },
+                1,
+            ),
+        );
+        assert!(sheet.check_if_wrap_in_cell(0, 0));
+        sheet.set_formats_selection(
+            &selection,
+            &Formats::repeat(
+                FormatUpdate {
+                    wrap: Some(Some(CellWrap::Overflow)),
+                    ..FormatUpdate::default()
+                },
+                1,
+            ),
+        );
+        assert!(!sheet.check_if_wrap_in_cell(0, 0));
+        sheet.set_formats_selection(
+            &selection,
+            &Formats::repeat(
+                FormatUpdate {
+                    wrap: Some(Some(CellWrap::Wrap)),
+                    ..FormatUpdate::default()
+                },
+                1,
+            ),
+        );
+        assert!(sheet.check_if_wrap_in_cell(0, 0));
+        sheet.set_formats_selection(
+            &selection,
+            &Formats::repeat(
+                FormatUpdate {
+                    wrap: Some(Some(CellWrap::Clip)),
+                    ..FormatUpdate::default()
+                },
+                1,
+            ),
+        );
+        assert!(!sheet.check_if_wrap_in_cell(0, 0));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_check_if_wrap_in_row() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
+        assert!(!sheet.check_if_wrap_in_row(0));
+        let selection = Selection::pos(0, 0, sheet.id);
+        sheet.set_formats_selection(
+            &selection,
+            &Formats::repeat(
+                FormatUpdate {
+                    wrap: Some(Some(CellWrap::Wrap)),
+                    ..FormatUpdate::default()
+                },
+                1,
+            ),
+        );
+        assert!(sheet.check_if_wrap_in_row(0));
+        sheet.set_formats_selection(
+            &selection,
+            &Formats::repeat(
+                FormatUpdate {
+                    wrap: Some(Some(CellWrap::Overflow)),
+                    ..FormatUpdate::default()
+                },
+                1,
+            ),
+        );
+        assert!(!sheet.check_if_wrap_in_row(0));
+        sheet.set_formats_selection(
+            &selection,
+            &Formats::repeat(
+                FormatUpdate {
+                    wrap: Some(Some(CellWrap::Clip)),
+                    ..FormatUpdate::default()
+                },
+                1,
+            ),
+        );
+        assert!(!sheet.check_if_wrap_in_row(0));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_get_rows_with_wrap_in_column() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
+        sheet.set_cell_value(Pos { x: 0, y: 2 }, "test");
+        let rect = Rect {
+            min: Pos { x: 0, y: 0 },
+            max: Pos { x: 0, y: 4 },
+        };
+        assert_eq!(sheet.get_rows_with_wrap_in_column(0), Vec::<i64>::new());
+        sheet.set_formats_selection(
+            &Selection {
+                sheet_id: sheet.id,
+                rects: Some(vec![rect]),
+                ..Default::default()
+            },
+            &Formats::repeat(
+                FormatUpdate {
+                    wrap: Some(Some(CellWrap::Wrap)),
+                    ..FormatUpdate::default()
+                },
+                4,
+            ),
+        );
+        assert_eq!(sheet.get_rows_with_wrap_in_column(0), vec![0, 2]);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_get_rows_with_wrap_in_rect() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
+        sheet.set_cell_value(Pos { x: 0, y: 2 }, "test");
+        let rect = Rect {
+            min: Pos { x: 0, y: 0 },
+            max: Pos { x: 0, y: 4 },
+        };
+        assert_eq!(sheet.get_rows_with_wrap_in_rect(&rect), Vec::<i64>::new());
+        sheet.set_formats_selection(
+            &Selection {
+                sheet_id: sheet.id,
+                rects: Some(vec![rect]),
+                ..Default::default()
+            },
+            &Formats::repeat(
+                FormatUpdate {
+                    wrap: Some(Some(CellWrap::Wrap)),
+                    ..FormatUpdate::default()
+                },
+                4,
+            ),
+        );
+        assert_eq!(sheet.get_rows_with_wrap_in_rect(&rect), vec![0, 2]);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_get_rows_with_wrap_in_selection() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
+        sheet.set_cell_value(Pos { x: 0, y: 2 }, "test");
+        let rect = Rect {
+            min: Pos { x: 0, y: 0 },
+            max: Pos { x: 0, y: 4 },
+        };
+        let selection = Selection {
+            sheet_id: sheet.id,
+            rects: Some(vec![rect]),
+            ..Default::default()
+        };
+        assert_eq!(
+            sheet.get_rows_with_wrap_in_selection(&selection),
+            Vec::<i64>::new()
+        );
+        sheet.set_formats_selection(
+            &selection,
+            &Formats::repeat(
+                FormatUpdate {
+                    wrap: Some(Some(CellWrap::Wrap)),
+                    ..FormatUpdate::default()
+                },
+                4,
+            ),
+        );
+        let mut rows = sheet.get_rows_with_wrap_in_selection(&selection);
+        rows.sort();
+        assert_eq!(rows, vec![0, 2]);
     }
 }

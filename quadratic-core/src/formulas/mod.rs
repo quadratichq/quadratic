@@ -1,7 +1,3 @@
-#[cfg(test)]
-#[macro_use]
-mod tests;
-
 pub mod ast;
 mod cell_ref;
 mod criteria;
@@ -13,6 +9,9 @@ pub mod lsp;
 mod params;
 mod parser;
 mod wildcards;
+
+#[cfg(test)]
+pub mod tests;
 
 use ast::AstNode;
 pub use ast::Formula;

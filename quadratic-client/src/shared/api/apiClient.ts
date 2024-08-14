@@ -1,29 +1,12 @@
 import { downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
-import { generateKeyBetween } from '@/shared/utils/fractionalIndexing';
 import * as Sentry from '@sentry/react';
+import { Buffer } from 'buffer';
 import mixpanel from 'mixpanel-browser';
 import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { v4 as uuid } from 'uuid';
 import { fetchFromApi } from './fetchFromApi';
 
-const DEFAULT_FILE: any = {
-  sheets: [
-    {
-      name: 'Sheet 1',
-      id: { id: uuid() },
-      order: generateKeyBetween(null, null),
-      cells: [],
-      code_cells: [],
-      formats: [],
-      columns: [],
-      rows: [],
-      offsets: [[], []],
-      borders: {},
-    },
-  ],
-  // TODO(ddimaria): make this dynamic
-  version: '1.4',
-};
+// TODO(ddimaria): make this dynamic
+const CURRENT_FILE_VERSION = '1.6';
 
 export const apiClient = {
   teams: {
@@ -123,7 +106,7 @@ export const apiClient = {
       if (file === undefined) {
         file = {
           name: 'Untitled',
-          version: DEFAULT_FILE.version,
+          version: CURRENT_FILE_VERSION,
         };
       }
 
@@ -153,7 +136,9 @@ export const apiClient = {
       } = await apiClient.files.get(uuid);
 
       // Get the most recent checkpoint for the file
-      const lastCheckpointContents = await fetch(lastCheckpointDataUrl).then((res) => res.text());
+      const lastCheckpointContents = await fetch(lastCheckpointDataUrl).then((res) => res.arrayBuffer());
+      const buffer = new Uint8Array(lastCheckpointContents);
+      const contents = Buffer.from(new Uint8Array(buffer)).toString('base64');
 
       // Create it on the server
       const {
@@ -162,7 +147,7 @@ export const apiClient = {
         file: {
           name: name + ' (Copy)',
           version: lastCheckpointVersion,
-          contents: lastCheckpointContents,
+          contents,
         },
         teamUuid: team.uuid,
         isPrivate,

@@ -20,25 +20,55 @@ fn get_functions() -> Vec<FormulaFunction> {
         ),
         formula_fn!(
             /// Evaluates each value based on some criteria, and then adds the
-            /// ones that meet those criteria. If `range_to_sum` is given, then
-            /// values in `range_to_sum` are added instead wherever the
-            /// corresponding value in `range_to_evaluate` meets the criteria.
+            /// ones that meet those criteria. If `sum_range` is given, then
+            /// values in `sum_range` are added instead wherever the
+            /// corresponding value in `eval_range` meets the criteria.
             #[doc = see_docs_for_more_about_criteria!()]
             #[examples(
                 "SUMIF(A1:A10, \"2\")",
                 "SUMIF(A1:A10, \">0\")",
-                "SUMIF(A1:A10, \"<>INVALID\", B1:B10)"
+                "SUMIF(B1:A10, \"<>INVALID\", A1:B10)"
             )]
             #[zip_map]
             fn SUMIF(
                 eval_range: (Spanned<Array>),
                 [criteria]: (Spanned<CellValue>),
-                numbers_range: (Option<Spanned<Array>>),
+                sum_range: (Option<Spanned<Array>>),
             ) {
                 let criteria = Criterion::try_from(*criteria)?;
                 let numbers =
-                    criteria.iter_matching_coerced::<f64>(eval_range, numbers_range.as_ref())?;
+                    criteria.iter_matching_coerced::<f64>(eval_range, sum_range.as_ref())?;
                 numbers.sum::<CodeResult<f64>>()
+            }
+        ),
+        formula_fn!(
+            /// Adds values from `numbers_range` wherever the criteria are met
+            /// at the corresponding value in each `eval_range`.
+            #[doc = see_docs_for_more_about_criteria!()]
+            #[examples(
+                "SUMIFS(A1:A10, \"<>INVALID\", B1:B10)",
+                "SUMIFS(A1:A10, \"<>INVALID\", B1:B10, \"<=0\", C1:C10)"
+            )]
+            fn SUMIFS(
+                ctx: Ctx,
+                sum_range: (Spanned<Array>),
+                eval_range1: (Spanned<Array>),
+                criteria1: (Spanned<Value>),
+                more_eval_ranges_and_criteria: FormulaFnArgs,
+            ) {
+                ctx.zip_map_eval_ranges_and_criteria_from_args(
+                    eval_range1,
+                    criteria1,
+                    more_eval_ranges_and_criteria,
+                    |_ctx, eval_ranges_and_criteria| {
+                        // Same as `SUMIF`
+                        let numbers = Criterion::iter_matching_multi_coerced::<f64>(
+                            &eval_ranges_and_criteria,
+                            &sum_range,
+                        )?;
+                        Ok(numbers.sum::<CodeResult<f64>>()?.into())
+                    },
+                )?
             }
         ),
         formula_fn!(
@@ -212,6 +242,67 @@ fn get_functions() -> Vec<FormulaFunction> {
                 number - util::checked_div(span, number, divisor)?.floor() * divisor
             }
         ),
+        formula_fn!(
+            /// Returns the result of raising `base` to the power of `exponent`.
+            #[examples("POWER(2, 32)", "POWER(1.1, 7)")]
+            #[zip_map]
+            fn POWER([base]: f64, [exponent]: f64) {
+                base.powf(exponent)
+            }
+        ),
+        formula_fn!(
+            /// Returns the result of raising [Euler's number] _e_ to the power
+            /// of `exponent`.
+            ///
+            /// [Euler's number]:
+            ///     https://en.wikipedia.org/wiki/E_(mathematical_constant)
+            #[examples("EXP(1), EXP(2/3), EXP(C9)")]
+            #[zip_map]
+            fn EXP([exponent]: f64) {
+                exponent.exp()
+            }
+        ),
+        formula_fn!(
+            /// Returns the [logarithm] of `number` to the base `base`. If
+            /// `base` is omitted, it is assumed to be 10, the base of the
+            /// [common logarithm].
+            ///
+            /// [logarithm]: https://en.wikipedia.org/wiki/Logarithm
+            /// [common logarithm]:
+            ///     https://en.wikipedia.org/wiki/Common_logarithm
+            #[examples("LOG(100)", "LOG(144, 12)", "LOG(144, 10)")]
+            #[zip_map]
+            fn LOG(span: Span, [number]: f64, [base]: (Option<f64>)) {
+                let base = base.unwrap_or(10.0);
+                if base > 0.0 {
+                    number.log(base)
+                } else {
+                    return Err(RunErrorMsg::NaN.with_span(span));
+                }
+            }
+        ),
+        formula_fn!(
+            /// Returns the [base-10 logarithm] of `number`.
+            ///
+            /// [base-10 logarithm]:
+            ///     https://en.wikipedia.org/wiki/Common_logarithm
+            #[examples("LOG10(100)")]
+            #[zip_map]
+            fn LOG10([number]: f64) {
+                number.log10()
+            }
+        ),
+        formula_fn!(
+            /// Returns the [natural logarithm] of `number`.
+            ///
+            /// [natural logarithm]:
+            ///     https://en.wikipedia.org/wiki/Natural_logarithm
+            #[examples("LN(50)")]
+            #[zip_map]
+            fn LN([number]: f64) {
+                number.ln()
+            }
+        ),
         // Constants
         formula_fn!(
             /// Returns π, the circle constant.
@@ -268,6 +359,10 @@ mod tests {
         assert_eq!("27", eval_to_string(&g, "SUM(0..5, {\"\"}, {\"abc\"}, 12)"));
         assert_eq!("0", eval_to_string(&g, "SUM({\"\", \"abc\"})"));
         assert_eq!("12", eval_to_string(&g, "SUM({\"\", \"abc\", 12})"));
+        assert_eq!(
+            "55",
+            eval_to_string(&g, "SUM(({1,2;3,4}, {5}, {6}), {7; 8}, {9, 10})"),
+        );
 
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
@@ -289,6 +384,18 @@ mod tests {
 
     #[test]
     #[parallel]
+    fn test_sum_with_tuples() {
+        let g = Grid::new();
+        assert_eq!("10", eval_to_string(&g, "SUM(({1, 2}, {3, 4}))"));
+        assert_eq!("21", eval_to_string(&g, "SUM(({1, 2}, {3; 4}, {5, 6}))"));
+
+        // Test nested tuples
+        assert_eq!("21", eval_to_string(&g, "SUM((({1, 2}, {3; 4}), {5, 6}))"));
+        assert_eq!("21", eval_to_string(&g, "SUM(({1, 2}, ({3; 4}, {5, 6})))"));
+    }
+
+    #[test]
+    #[parallel]
     fn test_sumif() {
         let g = Grid::new();
         assert_eq!("15", eval_to_string(&g, "SUMIF(0..10, \"<=5\")"));
@@ -297,6 +404,47 @@ mod tests {
         assert_eq!(
             "{63, 16; 1984, 1}",
             eval_to_string(&g, "SUMIF(0..10, {\"<=5\", 4; \">5\", 0}, 2^0..10)"),
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_sumifs() {
+        let g = Grid::new();
+        assert_eq!("15", eval_to_string(&g, "SUMIFS(0..10, 0..10, \"<=5\")"));
+        assert_eq!("63", eval_to_string(&g, "SUMIFS(2^0..10, 0..10, \"<=5\")"));
+        // Testing with multiple conditions.
+        assert_eq!(
+            "21",
+            eval_to_string(&g, "SUMIFS(2^0..10, 0..10, \"<=5\", MOD(0..10, 2), 0)"),
+        );
+        // Test with an array of conditions.
+        assert_eq!(
+            "{3, 2; 52, 0}", // tested in Excel
+            eval_to_string(&g, "SUMIFS(0..10, 2^0..10, {\"<=5\", 4; \">5\", 0})"),
+        );
+        // Test missing arguments
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "SUMIFS".into(),
+                arg_name: "criteria1".into(),
+            },
+            eval_to_err(&g, "SUMIFS(0..10, 0..10)").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "SUMIFS".into(),
+                arg_name: "criteria2".into(),
+            },
+            eval_to_err(&g, "SUMIFS(0..10, 0..10, \"<=5\", 0..10)").msg,
+        );
+        // Test mismatched range
+        assert_eq!(
+            RunErrorMsg::ExactArraySizeMismatch {
+                expected: ArraySize::try_from((1, 12)).unwrap(),
+                got: ArraySize::try_from((1, 11)).unwrap(),
+            },
+            eval_to_err(&g, "SUMIFS(0..10, 0..11, \"<=5\")").msg,
         );
     }
 
@@ -376,30 +524,21 @@ mod tests {
         let g = Grid::new();
         crate::util::assert_f64_approx_eq(3.0_f64.sqrt(), &eval_to_string(&g, "SQRT(3)"));
         assert_eq!("4", eval_to_string(&g, "SQRT(16)"));
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
             RunErrorMsg::MissingRequiredArgument {
                 func_name: "SQRT".into(),
                 arg_name: "number".into(),
             },
-            parse_formula("SQRT()", Pos::ORIGIN)
-                .unwrap()
-                .eval(&mut ctx)
-                .unwrap_err()
-                .msg,
+            eval_to_err(&g, "SQRT()").msg,
         );
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
             RunErrorMsg::TooManyArguments {
                 func_name: "SQRT".into(),
                 max_arg_count: 1,
             },
-            parse_formula("SQRT(16, 17)", Pos::ORIGIN)
-                .unwrap()
-                .eval(&mut ctx)
-                .unwrap_err()
-                .msg,
+            eval_to_err(&g, "SQRT(16, 17)").msg,
         );
+        assert_eq!(RunErrorMsg::NaN, eval_to_err(&g, "SQRT(-1)").msg);
     }
 
     #[test]
@@ -531,9 +670,77 @@ mod tests {
         #[parallel]
         fn proptest_int_mod_invariant(n in -100.0..100.0_f64, d in -100.0..100.0_f64) {
             let g = Grid::new();
-            let should_equal_n = eval(&g, &format!("INT({n} / {d}) * {d} + MOD({n}, {d})")).coerce_nonblank::<f64>().unwrap();
-            assert!((should_equal_n - n).abs() < 0.01);
+            crate::util::assert_f64_approx_eq(
+                n,
+                &eval_to_string(&g, &format!("INT({n} / {d}) * {d} + MOD({n}, {d})")),
+            );
         }
+    }
+
+    proptest! {
+        #[test]
+        #[parallel]
+        fn test_pow_log_invariant(n in -10.0..10.0_f64) {
+            let g = Grid::new();
+
+            for s in [
+                format!("LN(EXP({n}))"),
+                format!("LOG10(10^{n})"),
+                format!("LOG10(POWER(10,{n}))"),
+                format!("LOG(POWER(10,{n}))"),
+                format!("LOG(POWER(2,{n}),2)"),
+                format!("LOG(POWER(1.1,{n}),1.1)"),
+            ] {
+                let should_equal_n = eval(&g, &s).coerce_nonblank::<f64>().unwrap();
+                assert!((should_equal_n - n).abs() < 0.01);
+            }
+        }
+    }
+
+    #[test]
+    #[parallel]
+    fn test_pow_0_0() {
+        // See https://en.wikipedia.org/wiki/Zero_to_the_power_of_zero
+
+        // This is compatible with Google Sheets, but not Excel
+        let g = Grid::new();
+        assert_eq!("1", eval_to_string(&g, "POWER(0,0)"));
+        assert_eq!("1", eval_to_string(&g, "0^0"));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_log_errors() {
+        let g = Grid::new();
+        let e = RunErrorMsg::NaN;
+        for n in ["0", "-0.1", "-2"] {
+            assert_eq!(e, eval_to_err(&g, &format!("LN({n})")).msg);
+            assert_eq!(e, eval_to_err(&g, &format!("LOG({n})")).msg);
+            assert_eq!(e, eval_to_err(&g, &format!("LOG({n},2)")).msg);
+
+            // test negative base
+            assert_eq!(e, eval_to_err(&g, &format!("LOG(1,{n})")).msg);
+            assert_eq!(e, eval_to_err(&g, &format!("LOG({n},{n})")).msg);
+        }
+    }
+
+    #[test]
+    #[parallel]
+    fn test_negative_pow() {
+        let g = Grid::new();
+        let e = RunErrorMsg::NaN;
+
+        assert_eq!("1", eval_to_string(&g, "POWER(-2, 0)"));
+        assert_eq!("1", eval_to_string(&g, "(-2)^0"));
+        assert_eq!("-2", eval_to_string(&g, "POWER(-2, 1)"));
+        assert_eq!("-2", eval_to_string(&g, "(-2)^1"));
+        assert_eq!("-8", eval_to_string(&g, "POWER(-2, 3)"));
+        assert_eq!("-8", eval_to_string(&g, "(-2)^3"));
+        assert_eq!("16", eval_to_string(&g, "POWER(-2, 4)"));
+        assert_eq!("16", eval_to_string(&g, "(-2)^4"));
+
+        assert_eq!(e, eval_to_err(&g, "POWER(-2, 1.5)").msg);
+        assert_eq!(e, eval_to_err(&g, "(-2)^1.5").msg);
     }
 
     #[test]

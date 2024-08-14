@@ -17,20 +17,22 @@ const handleArrowHorizontal = (isRight: boolean, e: KeyboardEvent) => {
   if (inlineEditorHandler.isEditingFormula()) {
     if (inlineEditorHandler.cursorIsMoving) {
       e.stopPropagation();
+      e.preventDefault();
       keyboardPosition(e);
     } else {
       const column = inlineEditorMonaco.getCursorColumn();
       if (column === target) {
         // if we're not moving and the formula is valid, close the editor
         e.stopPropagation();
-        if (inlineEditorFormula.isFormulaValid()) {
-          inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
-        } else {
+        e.preventDefault();
+        if (inlineEditorFormula.wantsCellRef()) {
           if (isRight) {
             inlineEditorHandler.cursorIsMoving = true;
             inlineEditorFormula.addInsertingCells(column);
             keyboardPosition(e);
           }
+        } else {
+          inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
         }
       }
     }
@@ -38,6 +40,7 @@ const handleArrowHorizontal = (isRight: boolean, e: KeyboardEvent) => {
     const column = inlineEditorMonaco.getCursorColumn();
     if (column === target) {
       e.stopPropagation();
+      e.preventDefault();
       inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
     }
   }
@@ -46,25 +49,32 @@ const handleArrowHorizontal = (isRight: boolean, e: KeyboardEvent) => {
 const handleArrowVertical = (isDown: boolean, e: KeyboardEvent) => {
   if (inlineEditorHandler.isEditingFormula()) {
     e.stopPropagation();
+    e.preventDefault();
     if (inlineEditorHandler.cursorIsMoving) {
       keyboardPosition(e);
     } else {
-      // if we're not moving and the formula is valid, close the editor
-      if (inlineEditorFormula.isFormulaValid()) {
+      // If we're not moving and the formula doesn't want a cell reference,
+      // close the editor. We can't just use "is the formula syntactically
+      // valid" because many formulas are syntactically valid even though
+      // it's obvious the user wants to insert a cell reference. For
+      // example, `SUM(,)` with the cursor to the left of the comma.
+      if (inlineEditorFormula.wantsCellRef()) {
+        const location = inlineEditorHandler.location;
+        if (!location) {
+          throw new Error('Expected inlineEditorHandler.location to be defined in keyDown');
+        }
+        const column = inlineEditorMonaco.getCursorColumn();
+        inlineEditorFormula.addInsertingCells(column);
+        inlineEditorHandler.cursorIsMoving = true;
+        keyboardPosition(e);
+      } else {
         inlineEditorHandler.close(0, isDown ? 1 : -1, false);
         return;
       }
-      const location = inlineEditorHandler.location;
-      if (!location) {
-        throw new Error('Expected inlineEditorHandler.location to be defined in keyDown');
-      }
-      const column = inlineEditorMonaco.getCursorColumn();
-      inlineEditorFormula.addInsertingCells(column);
-      inlineEditorHandler.cursorIsMoving = true;
-      keyboardPosition(e);
     }
   } else {
     e.stopPropagation();
+    e.preventDefault();
     inlineEditorHandler.close(0, isDown ? 1 : -1, false);
   }
 };
@@ -120,22 +130,42 @@ class InlineEditorKeyboard {
     }
 
     // Arrow up
-    else if (matchShortcut('move_cursor_up', e)) {
+    else if (
+      matchShortcut('move_cursor_up', e) ||
+      matchShortcut('expand_selection_up', e) ||
+      matchShortcut('jump_cursor_content_top', e) ||
+      matchShortcut('expand_selection_content_top', e)
+    ) {
       handleArrowVertical(false, e);
     }
 
     // Arrow down
-    else if (matchShortcut('move_cursor_down', e)) {
+    else if (
+      matchShortcut('move_cursor_down', e) ||
+      matchShortcut('expand_selection_down', e) ||
+      matchShortcut('jump_cursor_content_bottom', e) ||
+      matchShortcut('expand_selection_content_bottom', e)
+    ) {
       handleArrowVertical(true, e);
     }
 
     // Arrow left
-    else if (matchShortcut('move_cursor_left', e)) {
+    else if (
+      matchShortcut('move_cursor_left', e) ||
+      matchShortcut('expand_selection_left', e) ||
+      matchShortcut('jump_cursor_content_left', e) ||
+      matchShortcut('expand_selection_content_left', e)
+    ) {
       handleArrowHorizontal(false, e);
     }
 
     // Arrow right
-    else if (matchShortcut('move_cursor_right', e)) {
+    else if (
+      matchShortcut('move_cursor_right', e) ||
+      matchShortcut('expand_selection_right', e) ||
+      matchShortcut('jump_cursor_content_right', e) ||
+      matchShortcut('expand_selection_content_right', e)
+    ) {
       handleArrowHorizontal(true, e);
     }
 

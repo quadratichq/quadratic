@@ -39,6 +39,7 @@ const PADDING_FOR_GROWING_HORIZONTALLY = 20;
 
 class InlineEditorMonaco {
   private editor?: editor.IStandaloneCodeEditor;
+  private suggestionWidgetShowing: boolean = false;
 
   // Helper function to get the model without having to check if editor or model
   // is defined.
@@ -267,11 +268,20 @@ class InlineEditorMonaco {
     return { bounds, position };
   }
 
-  getCharBeforeCursor(): string {
+  getNonWhitespaceCharBeforeCursor(): string {
     const formula = inlineEditorMonaco.get();
-    const position = inlineEditorMonaco.getPosition();
+
+    // If there is a selection then use the start of the selection; otherwise
+    // use the cursor position.
+    const selection = inlineEditorMonaco.editor?.getSelection()?.getStartPosition();
+    const position = selection ?? inlineEditorMonaco.getPosition();
+
     const line = formula.split('\n')[position.lineNumber - 1];
-    const lastCharacter = line[position.column - 2];
+    const lastCharacter =
+      line
+        .substring(0, position.column - 1) // 1-indexed to 0-indexed
+        .trimEnd()
+        .at(-1) ?? '';
     return lastCharacter;
   }
 
@@ -331,7 +341,7 @@ class InlineEditorMonaco {
         seedSearchStringFromSelection: 'never',
       },
       fontSize: 14,
-      lineHeight: 19,
+      lineHeight: 16,
       fontFamily: 'OpenSans',
       fontWeight: 'normal',
       lineNumbers: 'off',
@@ -349,9 +359,28 @@ class InlineEditorMonaco {
       language: inlineEditorHandler.formula ? 'formula' : undefined,
     });
 
+    interface SuggestController {
+      widget: { value: { onDidShow: (fn: () => void) => void; onDidHide: (fn: () => void) => void } };
+    }
+    const suggestionWidget = (
+      this.editor.getContribution('editor.contrib.suggestController') as SuggestController | null
+    )?.widget;
+    if (suggestionWidget) {
+      suggestionWidget.value.onDidShow(() => {
+        this.suggestionWidgetShowing = true;
+      });
+      suggestionWidget.value.onDidHide(() => {
+        this.suggestionWidgetShowing = false;
+      });
+    }
+
+    this.editor.onKeyDown((e) => {
+      if (this.suggestionWidgetShowing) return;
+      inlineEditorKeyboard.keyDown(e.browserEvent);
+    });
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.updateMonacoCursorPosition);
-    this.editor.onKeyDown((e) => inlineEditorKeyboard.keyDown(e.browserEvent));
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.keepCursorVisible);
+    this.editor.onMouseDown(() => inlineEditorKeyboard.resetKeyboardPosition());
   }
 
   // Sends a keyboard event to the editor (used when returning

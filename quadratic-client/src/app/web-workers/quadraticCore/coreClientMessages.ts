@@ -808,6 +808,7 @@ export interface ClientCoreImportExcel {
   type: 'clientCoreImportExcel';
   file: Uint8Array;
   fileName: string;
+  cursor?: string;
   id: number;
 }
 
@@ -865,6 +866,10 @@ export interface CoreClientImage {
   image?: string;
   w?: string;
   h?: string;
+}
+
+export interface CoreClientMultiplayerSynced {
+  type: 'coreClientMultiplayerSynced';
 }
 
 export type ClientCoreMessage =
@@ -928,7 +933,6 @@ export type ClientCoreMessage =
   | ClientCoreCancelExecution
   | ClientCoreGetJwt
   | ClientCoreMoveCells
-  | ClientCoreMoveCells
   | ClientCoreGetFormatAll
   | ClientCoreGetFormatColumn
   | ClientCoreGetFormatRow
@@ -987,4 +991,5 @@ export type CoreClientMessage =
   | CoreClientSheetMetaFills
   | CoreClientSetCursorSelection
   | CoreClientOfflineTransactionsApplied
-  | CoreClientResizeRowHeights;
+  | CoreClientResizeRowHeights
+  | CoreClientMultiplayerSynced;
