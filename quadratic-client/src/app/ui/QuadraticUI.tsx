@@ -3,6 +3,7 @@ import { CodeEditorProvider } from '@/app/ui/menus/CodeEditor/CodeEditorContext'
 import ConnectionsMenu from '@/app/ui/menus/ConnectionsMenu';
 import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
+import { UserMessage } from '@/shared/components/UserMessage';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { useEffect } from 'react';
 import { useNavigation, useParams } from 'react-router';
@@ -121,6 +122,7 @@ export default function QuadraticUI() {
       <PermissionOverlay />
       {!isEmbed && <PermissionOverlay />}
       <UpdateAlertVersion />
+      <UserMessage />
     </div>
   );
 }
