@@ -60,6 +60,9 @@ pub struct PendingTransaction {
     // cursor saved for an Undo or Redo
     pub cursor_undo_redo: Option<String>,
 
+    // whether to resend the validations after the transaction completes
+    pub send_validations: HashSet<SheetId>,
+
     pub resize_rows: HashMap<SheetId, HashSet<i64>>,
 }
 
@@ -82,6 +85,7 @@ impl Default for PendingTransaction {
             complete: false,
             generate_thumbnail: false,
             cursor_undo_redo: None,
+            send_validations: HashSet::new(),
             resize_rows: HashMap::new(),
         }
     }

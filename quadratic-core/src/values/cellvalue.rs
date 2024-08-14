@@ -189,6 +189,19 @@ impl CellValue {
                 let use_commas = numeric_commas.is_some_and(|c| c)
                     || (numeric_commas.is_none()
                         && numeric_format.kind == NumericFormatKind::Currency);
+                let numeric_decimals = numeric_decimals.or({
+                    if matches!(
+                        numeric_format,
+                        NumericFormat {
+                            kind: NumericFormatKind::Currency,
+                            ..
+                        }
+                    ) {
+                        Some(2)
+                    } else {
+                        None
+                    }
+                });
                 let result: BigDecimal = if numeric_format.kind == NumericFormatKind::Percentage {
                     n * 100
                 } else {

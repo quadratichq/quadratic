@@ -1,6 +1,7 @@
 import { CodeEditorProvider } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import ConnectionsMenu from '@/app/ui/menus/ConnectionsMenu';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
+import { UserMessage } from '@/shared/components/UserMessage';
 import { useEffect } from 'react';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState } from 'recoil';
@@ -23,6 +24,7 @@ import GoTo from './menus/GoTo';
 import SheetBar from './menus/SheetBar';
 import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 import { useMultiplayerUsers } from './menus/TopBar/useMultiplayerUsers';
+import { ValidationPanel } from './menus/Validations/ValidationPanel';
 
 export default function QuadraticUI() {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
@@ -71,6 +73,7 @@ export default function QuadraticUI() {
           {!presentationMode && <SheetBar />}
         </FileUploadWrapper>
         {editorInteractionState.showCodeEditor && <CodeEditorProvider />}
+        {editorInteractionState.showValidation && <ValidationPanel />}
         <Following follow={follow} />
         <div
           style={{
@@ -104,6 +107,7 @@ export default function QuadraticUI() {
       <PermissionOverlay />
       {!isEmbed && <PermissionOverlay />}
       <UpdateAlertVersion />
+      <UserMessage />
     </div>
   );
 }

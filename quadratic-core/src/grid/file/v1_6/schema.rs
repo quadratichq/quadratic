@@ -7,7 +7,8 @@ use std::{
 };
 use uuid::Uuid;
 
-pub use v1_5::{Borders, Offsets, RunError, RunErrorMsg, SheetRect};
+use super::schema_validation::Validations;
+pub use v1_5::RunErrorMsg;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GridSchema {
@@ -50,6 +51,47 @@ impl From<crate::Pos> for Pos {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Rect {
+    pub min: Pos,
+    pub max: Pos,
+}
+
+impl From<&crate::Rect> for Rect {
+    fn from(rect: &crate::Rect) -> Self {
+        Self {
+            min: Pos {
+                x: rect.min.x,
+                y: rect.min.y,
+            },
+            max: Pos {
+                x: rect.max.x,
+                y: rect.max.y,
+            },
+        }
+    }
+}
+
+impl From<&Rect> for crate::Rect {
+    fn from(rect: &Rect) -> Self {
+        Self {
+            min: crate::Pos {
+                x: rect.min.x,
+                y: rect.min.y,
+            },
+            max: crate::Pos {
+                x: rect.max.x,
+                y: rect.max.y,
+            },
+        }
+    }
+}
+
+pub type SheetRect = v1_5::SheetRect;
+pub type Offsets = v1_5::Offsets;
+pub type Borders = v1_5::Borders;
+pub type RunError = v1_5::RunError;
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Format {
     pub align: Option<CellAlign>,
     pub vertical_align: Option<CellVerticalAlign>,
@@ -83,6 +125,9 @@ pub struct Sheet {
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub rows_resize: Vec<(i64, Resize)>,
+
+    #[serde(default)]
+    pub validations: Validations,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

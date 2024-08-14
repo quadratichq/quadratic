@@ -6,6 +6,8 @@ use crate::{CodeResult, CodeResultExt, RunErrorMsg, Span, Spanned, Unspan};
 
 const CURRENCY_PREFIXES: &[char] = &['$', '¥', '£', '€'];
 
+const F64_DECIMAL_PRECISION: u64 = 16; // just enough to not lose information
+
 /*
  * CONVERSIONS (specific type -> Value)
  */
@@ -39,7 +41,11 @@ impl From<&str> for CellValue {
 impl From<f64> for CellValue {
     fn from(value: f64) -> Self {
         match BigDecimal::try_from(value) {
-            Ok(n) => CellValue::Number(n),
+            Ok(n) => CellValue::Number(if n.digits() > F64_DECIMAL_PRECISION {
+                n.with_prec(F64_DECIMAL_PRECISION)
+            } else {
+                n
+            }),
             // TODO: add span information
             Err(_) => CellValue::Error(Box::new(RunErrorMsg::NaN.without_span())),
         }

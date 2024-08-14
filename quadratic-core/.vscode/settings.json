@@ -4,6 +4,8 @@
     "dateparser",
     "dbgjs",
     "htmlescape",
+    "indexmap",
+    "Itertools",
     "Rects",
     "rposition",
     "Strftime",

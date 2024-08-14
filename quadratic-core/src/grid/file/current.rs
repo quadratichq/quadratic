@@ -1,4 +1,5 @@
 use super::v1_6::file::{export_cell_value, import_cell_value};
+use super::validations::{export_validations, import_validations};
 use super::CURRENT_VERSION;
 use crate::color::Rgba;
 use crate::grid::formats::format::Format;
@@ -11,6 +12,7 @@ use crate::grid::{
     CellVerticalAlign, CellWrap, CodeRun, CodeRunResult, Column, ColumnData, Grid, GridBounds,
     NumericFormat, NumericFormatKind, Sheet, SheetBorders, SheetId,
 };
+// use crate::selection::Selection;
 use crate::sheet_offsets::SheetOffsets;
 use crate::{CellValue, Pos, Rect, Value};
 use anyhow::Result;
@@ -360,6 +362,7 @@ pub fn import_sheet(sheet: &current::Sheet) -> Result<Sheet> {
         formats_columns: import_formats(&sheet.formats_columns),
         formats_rows: import_formats(&sheet.formats_rows),
 
+        validations: import_validations(&sheet.validations),
         rows_resize: import_rows_size(&sheet.rows_resize)?,
     };
     new_sheet.recalculate_bounds();
@@ -696,6 +699,7 @@ pub(crate) fn export_sheet(sheet: &Sheet) -> current::Sheet {
         formats_all: sheet.format_all.as_ref().and_then(export_format),
         formats_columns: export_formats(&sheet.formats_columns),
         formats_rows: export_formats(&sheet.formats_rows),
+        validations: export_validations(&sheet.validations),
         rows_resize: export_rows_size(sheet),
         code_runs: sheet
             .code_runs

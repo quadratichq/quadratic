@@ -13,6 +13,7 @@ import {
   JsRenderFill,
   JsRowHeight,
   JsSheetFill,
+  JsValidationWarning,
   MinMax,
   SearchOptions,
   Selection,
@@ -22,6 +23,7 @@ import {
   SheetRect,
   SummarizeSelectionResult,
   TransactionName,
+  Validation,
 } from '@/app/quadratic-core-types';
 import { CodeRun } from '../CodeRun';
 import { MultiplayerState } from '../multiplayerWebWorker/multiplayerClientMessages';
@@ -521,6 +523,33 @@ export interface ClientCoreAutocomplete {
   cursor: string;
 }
 
+export interface ClientCoreUpdateValidation {
+  type: 'clientCoreUpdateValidation';
+  validation: Validation;
+  cursor: string;
+}
+
+export interface ClientCoreRemoveValidation {
+  type: 'clientCoreRemoveValidation';
+  sheetId: string;
+  validationId: string;
+  cursor: string;
+}
+
+export interface ClientCoreRemoveValidations {
+  type: 'clientCoreRemoveValidations';
+  sheetId: string;
+  cursor: string;
+}
+
+export interface ClientCoreGetValidationFromPos {
+  type: 'clientCoreGetValidationFromPos';
+  sheetId: string;
+  x: number;
+  y: number;
+  id: number;
+}
+
 //#endregion
 
 //#region Sheets
@@ -808,6 +837,7 @@ export interface ClientCoreImportExcel {
   type: 'clientCoreImportExcel';
   file: Uint8Array;
   fileName: string;
+  cursor?: string;
   id: number;
 }
 
@@ -867,6 +897,79 @@ export interface CoreClientImage {
   h?: string;
 }
 
+export interface ClientCoreGetValidation {
+  type: 'clientCoreGetValidation';
+  id: number;
+  sheetId: string;
+  validationId: string;
+}
+
+export interface CoreClientGetValidation {
+  type: 'coreClientGetValidation';
+  id: number;
+  validation: Validation | undefined;
+}
+
+export interface ClientCoreGetValidations {
+  type: 'clientCoreGetValidations';
+  id: number;
+  sheetId: string;
+}
+
+export interface CoreClientGetValidations {
+  type: 'coreClientGetValidations';
+  id: number;
+  validations: Validation[];
+}
+
+export interface CoreClientSheetValidations {
+  type: 'coreClientSheetValidations';
+  sheetId: string;
+  validations: Validation[];
+}
+
+export interface CoreClientGetValidationFromPos {
+  type: 'coreClientGetValidationFromPos';
+  id: number;
+  validation: Validation | undefined;
+}
+
+export interface ClientCoreGetValidationList {
+  type: 'clientCoreGetValidationList';
+  id: number;
+  sheetId: string;
+  x: number;
+  y: number;
+}
+
+export interface CoreClientGetValidationList {
+  type: 'coreClientGetValidationList';
+  id: number;
+  validations: string[];
+}
+
+export interface ClientCoreGetDisplayCell {
+  type: 'clientCoreGetDisplayCell';
+  sheetId: string;
+  x: number;
+  y: number;
+  id: number;
+}
+
+export interface CoreClientGetDisplayCell {
+  type: 'coreClientGetDisplayCell';
+  cell?: string;
+  id: number;
+}
+
+export interface CoreClientRenderValidationWarnings {
+  type: 'coreClientRenderValidationWarnings';
+  sheetId: string;
+  hashX: number | undefined;
+  hashY: number | undefined;
+  validationWarnings: JsValidationWarning[];
+}
+
 export interface CoreClientMultiplayerSynced {
   type: 'coreClientMultiplayerSynced';
 }
@@ -876,6 +979,21 @@ export interface ClientCoreSetDateTimeFormat {
   selection: Selection;
   format: string;
   cursor: string;
+}
+
+export interface ClientCoreValidateInput {
+  type: 'clientCoreValidateInput';
+  id: number;
+  sheetId: string;
+  x: number;
+  y: number;
+  input: string;
+}
+
+export interface CoreClientValidateInput {
+  type: 'coreClientValidateInput';
+  id: number;
+  validationId: string | undefined;
 }
 
 export type ClientCoreMessage =
@@ -939,12 +1057,20 @@ export type ClientCoreMessage =
   | ClientCoreCancelExecution
   | ClientCoreGetJwt
   | ClientCoreMoveCells
-  | ClientCoreMoveCells
   | ClientCoreGetFormatAll
   | ClientCoreGetFormatColumn
   | ClientCoreGetFormatRow
   | ClientCoreGetFormatCell
-  | ClientCoreSetDateTimeFormat;
+  | ClientCoreSetDateTimeFormat
+  | ClientCoreGetValidation
+  | ClientCoreGetValidations
+  | ClientCoreUpdateValidation
+  | ClientCoreRemoveValidation
+  | ClientCoreRemoveValidations
+  | ClientCoreGetValidationFromPos
+  | ClientCoreGetValidationList
+  | ClientCoreGetDisplayCell
+  | ClientCoreValidateInput;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -998,6 +1124,15 @@ export type CoreClientMessage =
   | CoreClientGetFormatCell
   | CoreClientSheetMetaFills
   | CoreClientSetCursorSelection
+  | CoreClientGetValidation
   | CoreClientOfflineTransactionsApplied
+  | CoreClientGetValidations
+  | CoreClientSheetValidations
+  | CoreClientGetValidationFromPos
   | CoreClientResizeRowHeights
-  | CoreClientMultiplayerSynced;
+  | CoreClientGetValidationList
+  | CoreClientGetDisplayCell
+  | CoreClientRenderValidationWarnings
+  | CoreClientResizeRowHeights
+  | CoreClientMultiplayerSynced
+  | CoreClientValidateInput;

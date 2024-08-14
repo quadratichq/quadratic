@@ -1,5 +1,5 @@
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { Container, Rectangle } from 'pixi.js';
+import { Container, Rectangle, Sprite } from 'pixi.js';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
@@ -9,6 +9,20 @@ import { CellsImages } from './cellsImages/CellsImages';
 import { CellsLabels } from './cellsLabel/CellsLabels';
 import { CellsMarkers } from './CellsMarkers';
 import { CellsSearch } from './CellsSearch';
+import { events } from '@/app/events/events';
+import { JsValidationWarning } from '@/app/quadratic-core-types';
+
+export interface ErrorMarker {
+  triangle?: Sprite;
+  symbol?: Sprite;
+}
+
+export interface ErrorValidation {
+  x: number;
+  y: number;
+  validationId: string;
+  value?: string;
+}
 
 export class CellsSheet extends Container {
   private cellsFills: CellsFills;
@@ -35,6 +49,8 @@ export class CellsSheet extends Container {
     this.cellsMarkers = this.addChild(new CellsMarkers());
     this.cellsImages = new CellsImages(this);
     this.visible = false;
+
+    events.on('renderValidationWarnings', this.renderValidations);
   }
 
   // used to render all cellsTextHashes to warm up the GPU
@@ -84,5 +100,28 @@ export class CellsSheet extends Container {
 
   update() {
     this.cellsFills.update();
+  }
+
+  private renderValidations = (
+    sheetId: string,
+    hashX: number | undefined,
+    hashY: number | undefined,
+    validationWarnings: JsValidationWarning[]
+  ) => {
+    if (sheetId === this.sheetId) {
+      if (hashX === undefined || hashY === undefined) {
+        this.cellsLabels.renderValidationUpdates(validationWarnings);
+      } else {
+        this.cellsLabels.renderValidations(hashX, hashY, validationWarnings);
+      }
+    }
+  };
+
+  getErrorMarker(x: number, y: number): ErrorMarker | undefined {
+    return this.cellsMarkers.getErrorMarker(x, y) || this.cellsLabels.getErrorMarker(x, y);
+  }
+
+  getErrorMarkerValidation(x: number, y: number): boolean {
+    return this.cellsLabels.getErrorMarker(x, y) !== undefined;
   }
 }

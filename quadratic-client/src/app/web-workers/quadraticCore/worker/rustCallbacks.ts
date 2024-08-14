@@ -9,10 +9,12 @@ import {
   JsRenderCodeCell,
   JsRenderFill,
   JsSheetFill,
+  JsValidationWarning,
   Selection,
   SheetBounds,
   SheetInfo,
   TransactionName,
+  Validation,
 } from '@/app/quadratic-core-types';
 
 declare var self: WorkerGlobalScope &
@@ -84,9 +86,16 @@ declare var self: WorkerGlobalScope &
       connection_id: String
     ) => void;
     sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
+    sendSheetValidations: (sheetId: string, validations: Validation[]) => void;
     sendRequestRowHeights: (transactionId: string, sheetId: string, rows: string) => void;
     sendResizeRowHeightsClient: (sheetId: string, rowHeights: string) => void;
     sendResizeRowHeightsRender: (sheetId: string, rowHeights: string) => void;
+    sendRenderValidationWarnings: (
+      sheetId: string,
+      hashX: number | undefined,
+      hashY: number | undefined,
+      validationWarnings: JsValidationWarning[]
+    ) => void;
     sendMultiplayerSynced: () => void;
   };
 
@@ -258,6 +267,11 @@ export const jsSheetMetaFills = (sheetId: string, sheetMetaFillsStringified: str
   self.sendSheetMetaFills(sheetId, sheetMetaFills);
 };
 
+export const jsSheetValidations = (sheetId: string, validations: string) => {
+  const validationsParsed = JSON.parse(validations) as Validation[];
+  self.sendSheetValidations(sheetId, validationsParsed);
+};
+
 export const jsRequestRowHeights = (transactionId: string, sheetId: string, rows: string) => {
   self.sendRequestRowHeights(transactionId, sheetId, rows);
 };
@@ -265,6 +279,16 @@ export const jsRequestRowHeights = (transactionId: string, sheetId: string, rows
 export const jsResizeRowHeights = (sheetId: string, rowHeights: string) => {
   self.sendResizeRowHeightsClient(sheetId, rowHeights);
   self.sendResizeRowHeightsRender(sheetId, rowHeights);
+};
+
+export const jsValidationWarning = (sheetId: string, warningsStringified: string) => {
+  const warnings = JSON.parse(warningsStringified);
+  self.sendRenderValidationWarnings(sheetId, undefined, undefined, warnings);
+};
+
+export const jsRenderValidationWarnings = (sheetId: string, hashX: BigInt, hashY: BigInt, warnings: string) => {
+  const validationWarnings = JSON.parse(warnings) as JsValidationWarning[];
+  self.sendRenderValidationWarnings(sheetId, Number(hashX), Number(hashY), validationWarnings);
 };
 
 export const jsMultiplayerSynced = () => {

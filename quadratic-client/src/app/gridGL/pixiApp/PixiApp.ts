@@ -32,6 +32,7 @@ import { Update } from './Update';
 import { Viewport } from './Viewport';
 import './pixiApp.css';
 import { urlParams } from './urlParams/urlParams';
+import { UIValidations } from '../UI/UIValidations';
 
 utils.skipHello();
 
@@ -62,6 +63,8 @@ export class PixiApp {
   htmlPlaceholders!: HtmlPlaceholders;
   imagePlaceholders!: Container;
   cellImages!: UICellImages;
+  validations: UIValidations;
+
   renderer!: Renderer;
   stage = new Container();
   loading = true;
@@ -80,6 +83,7 @@ export class PixiApp {
     // This is created first so it can listen to messages from QuadraticCore.
     this.cellsSheets = new CellsSheets();
     this.cellImages = new UICellImages();
+    this.validations = new UIValidations();
     this.viewport = new Viewport();
   }
 
@@ -150,6 +154,7 @@ export class PixiApp {
     this.imagePlaceholders = this.viewportContents.addChild(new Container());
     this.cellHighlights = this.viewportContents.addChild(new CellHighlights());
     this.cellMoving = this.viewportContents.addChild(new UICellMoving());
+    this.validations = this.viewportContents.addChild(this.validations);
     this.headings = this.viewportContents.addChild(new GridHeadings());
 
     this.reset();

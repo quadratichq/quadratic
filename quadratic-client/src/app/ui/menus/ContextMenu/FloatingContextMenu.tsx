@@ -64,23 +64,23 @@ import { Divider, IconButton, Toolbar } from '@mui/material';
 import { ControlledMenu, Menu, MenuDivider, MenuInstance, MenuItem, useMenuState } from '@szhsin/react-menu';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilState } from 'recoil';
 import './floatingMenuStyles.scss';
 
 // todo: this file needs to be broken up and rewritten
 
 interface Props {
   container?: HTMLDivElement;
-  showContextMenu: boolean;
 }
 
 const HORIZONTAL_PADDING = 15;
 const VERTICAL_PADDING = 20;
 
 export const FloatingContextMenu = (props: Props) => {
-  const { container, showContextMenu } = props;
+  const { container } = props;
   const { addGlobalSnackbar } = useGlobalSnackbar();
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const showContextMenu = editorInteractionState.showContextMenu;
   const [moreMenuProps, moreMenuToggle] = useMenuState();
   const menuDiv = useRef<HTMLDivElement>(null);
   const moreMenuButtonRef = useRef(null);
@@ -672,6 +672,19 @@ export const FloatingContextMenu = (props: Props) => {
           menuStyle={{ padding: '2px 0', color: 'inherit' }}
           anchorRef={moreMenuButtonRef}
         >
+          <MenuItem
+            onClick={() => {
+              setEditorInteractionState((editorInteractionState) => ({
+                ...editorInteractionState,
+                showValidation: true,
+                showContextMenu: false,
+              }));
+              moreMenuToggle();
+            }}
+          >
+            <MenuLineItem primary="Data Validation" />
+          </MenuItem>
+          <MenuDivider />
           <MenuItem
             onClick={() => {
               pasteFromClipboard('Values');
