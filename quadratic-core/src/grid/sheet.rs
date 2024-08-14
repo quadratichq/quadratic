@@ -27,6 +27,7 @@ pub mod code;
 pub mod formats;
 pub mod formatting;
 pub mod rendering;
+pub mod rendering_date_time;
 pub mod row_resize;
 pub mod search;
 pub mod selection;

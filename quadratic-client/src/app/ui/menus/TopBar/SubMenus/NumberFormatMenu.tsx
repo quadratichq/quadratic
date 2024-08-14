@@ -25,8 +25,11 @@ import '@szhsin/react-menu/dist/index.css';
 import { TopBarMenuItem } from '../TopBarMenuItem';
 import { DateFormat } from './DateFormat/DateFormat';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import { useState } from 'react';
 
 export const NumberFormatMenu = () => {
+  const [statusDateFormat, setStatusDateFormat] = useState(false);
+
   return (
     <Menu
       menuButton={({ open }) => (
@@ -82,8 +85,11 @@ export const NumberFormatMenu = () => {
         label={
           <MenuLineItem primary="Date and Time Format" secondary="3/4/2024" icon={CalendarMonthIcon}></MenuLineItem>
         }
+        onMenuChange={(change) => {
+          setStatusDateFormat(change.open);
+        }}
       >
-        <DateFormat />
+        <DateFormat status={statusDateFormat} />
       </SubMenu>
     </Menu>
   );

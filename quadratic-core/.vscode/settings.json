@@ -5,6 +5,8 @@
     "dbgjs",
     "htmlescape",
     "Rects",
+    "rposition",
+    "Strftime",
     "undoable"
   ],
   "lldb.displayFormat": "auto",

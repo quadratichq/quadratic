@@ -48,7 +48,12 @@ const customHelp = (
   </div>
 );
 
-export const DateFormat = () => {
+interface DateFormatProps {
+  status: boolean;
+}
+
+export const DateFormat = (props: DateFormatProps) => {
+  const { status } = props;
   const ref = useRef<HTMLInputElement>(null);
 
   const [time, setTime] = useState<string | undefined>(TIME_FORMATS[0].value);
@@ -64,45 +69,56 @@ export const DateFormat = () => {
         cursorPosition.y,
         true
       );
+      let date = DATE_FORMATS[0].value;
+      let time = TIME_FORMATS[0].value;
       if (summary?.dateTime) {
-        let foundDate: string | undefined;
-        let foundTime: string | undefined;
         for (const format of DATE_FORMATS) {
           if (summary.dateTime.includes(format.value)) {
-            foundDate = format.value;
+            date = format.value;
             break;
           }
         }
         for (const format of TIME_FORMATS) {
           if (summary.dateTime.includes(format.value)) {
-            foundTime = format.value;
+            time = format.value;
             break;
           }
         }
-        if (foundDate && foundTime && summary.dateTime.replace(foundDate, '').replace(foundTime, '').trim() === '') {
-          setDate(foundDate);
-          setTime(foundTime);
+        if (summary.dateTime.replace(date, '').replace(time, '').trim() === '') {
+          setTime(time);
+          setDate(date);
           setCustom(undefined);
         } else {
           setCustom(summary.dateTime);
           setDate(undefined);
           setTime(undefined);
         }
+      } else {
+        setDate(date);
+        setTime(time);
+        setCustom(undefined);
       }
     };
-    findCurrent();
-  }, []);
+    if (status) {
+      findCurrent();
+    }
+  }, [status]);
 
   const changeDate = (value: string) => {
     setDate(value);
-    debugger;
     const currentTime = time ?? TIME_FORMATS[0].value;
     const newTime = `${value} ${currentTime}`;
     setCustom(undefined);
     quadraticCore.setDateTimeFormat(sheets.getRustSelection(), newTime, sheets.getCursorPosition());
   };
 
-  const changeTime = (value: string) => {};
+  const changeTime = (value: string) => {
+    setTime(value);
+    const currentDate = date ?? DATE_FORMATS[0].value;
+    const newTime = `${currentDate} ${value}`;
+    setCustom(undefined);
+    quadraticCore.setDateTimeFormat(sheets.getRustSelection(), newTime, sheets.getCursorPosition());
+  };
 
   const changeCustom = (value: string) => {
     setTime(value);
