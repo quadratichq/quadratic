@@ -102,6 +102,7 @@ export const DateFormat = (props: DateFormatProps) => {
         setCustom(undefined);
       }
     };
+
     if (status) {
       findCurrent();
     }
@@ -131,11 +132,11 @@ export const DateFormat = (props: DateFormatProps) => {
   const customFocus = () => {
     ref.current?.focus();
   };
-  console.log(date, time);
+
   return (
     <div className="flex flex-col gap-5 px-8 py-4">
       <div>
-        <RadioGroup defaultValue={date} onValueChange={changeDate}>
+        <RadioGroup value={date} onValueChange={changeDate}>
           <div className="flex flex-col gap-1">Date Format</div>
           {DATE_FORMATS.map((format) => (
             <RadioEntry key={format.value} value={format.value} label={format.label} />
@@ -143,7 +144,7 @@ export const DateFormat = (props: DateFormatProps) => {
         </RadioGroup>
       </div>
       <div>
-        <RadioGroup defaultValue={time} onValueChange={changeTime}>
+        <RadioGroup value={time} onValueChange={changeTime}>
           <div>Time Format</div>
           {TIME_FORMATS.map((format) => (
             <RadioEntry key={format.value} value={format.value} label={format.label} />

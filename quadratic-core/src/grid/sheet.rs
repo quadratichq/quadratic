@@ -287,6 +287,7 @@ impl Sheet {
             align: column.align.get(pos.y),
             vertical_align: column.vertical_align.get(pos.y),
             wrap: column.wrap.get(pos.y),
+            date_time: column.date_time.get(pos.y),
             ..Default::default()
         });
         let format = if include_sheet_info {
