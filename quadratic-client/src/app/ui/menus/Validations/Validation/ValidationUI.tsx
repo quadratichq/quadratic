@@ -3,7 +3,7 @@ import { ValidationData } from './useValidationData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/shadcn/ui/select';
-import { FocusEvent, useCallback, useEffect, useRef } from 'react';
+import { FocusEvent, forwardRef, Ref, useCallback, useEffect, useRef } from 'react';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { cn } from '@/shared/shadcn/utils';
 
@@ -29,6 +29,8 @@ export const ValidationUICheckbox = (props: CheckboxProps) => {
 };
 
 interface InputProps {
+  className?: string;
+
   label?: string;
   value: string;
   error?: string;
@@ -51,10 +53,22 @@ interface InputProps {
   type?: 'number';
 }
 
-export const ValidationInput = (props: InputProps) => {
-  const { label, value, onChange, onInput, footer, height, placeholder, error, disabled, readOnly, type, onEnter } =
-    props;
-  const ref = useRef<HTMLInputElement>(null);
+export const ValidationInput = forwardRef((props: InputProps, ref: Ref<HTMLInputElement>) => {
+  const {
+    label,
+    value,
+    onChange,
+    onInput,
+    footer,
+    height,
+    placeholder,
+    error,
+    disabled,
+    readOnly,
+    type,
+    onEnter,
+    className,
+  } = props;
 
   const onBlur = useCallback(
     (e: FocusEvent<HTMLInputElement>) => {
@@ -65,19 +79,15 @@ export const ValidationInput = (props: InputProps) => {
     [onChange]
   );
 
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.value = value;
-    }
-  }, [value]);
-
   return (
     <div>
       {label && <div className={disabled ? 'opacity-50' : ''}>{label}</div>}
       <div>
         <div className={cn('flex w-full items-center space-x-2', error ? 'border border-red-500' : '')}>
           <Input
+            className={className}
             ref={ref}
+            defaultValue={value}
             onBlur={onBlur}
             onInput={onInput ? (e) => onInput(e.currentTarget.value) : undefined}
             style={{ height }}
@@ -101,7 +111,7 @@ export const ValidationInput = (props: InputProps) => {
       </div>
     </div>
   );
-};
+});
 
 export const ValidationTextArea = (props: InputProps) => {
   const { label, value, onChange, onInput, footer, height, placeholder, disabled, readOnly, onEnter } = props;

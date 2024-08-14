@@ -1,6 +1,5 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/shared/shadcn/ui/radio-group';
 import { cn } from '@/shared/shadcn/utils';
@@ -8,6 +7,7 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { Tooltip } from '@mui/material';
 import { CheckIcon } from '@radix-ui/react-icons';
 import { useEffect, useRef, useState } from 'react';
+import { ValidationInput } from '../../../Validations/Validation/ValidationUI';
 
 // first format is default rendering
 const DATE_FORMATS = [
@@ -52,10 +52,11 @@ const customHelp = (
 
 interface DateFormatProps {
   status: boolean;
+  closeMenu: () => void;
 }
 
 export const DateFormat = (props: DateFormatProps) => {
-  const { status } = props;
+  const { status, closeMenu } = props;
   const ref = useRef<HTMLInputElement>(null);
 
   const [time, setTime] = useState<string | undefined>(TIME_FORMATS[0].value);
@@ -124,9 +125,11 @@ export const DateFormat = (props: DateFormatProps) => {
     quadraticCore.setDateTimeFormat(sheets.getRustSelection(), newTime, sheets.getCursorPosition());
   };
 
-  const changeCustom = (value: string) => {
-    setTime(value);
+  const changeCustom = async (value: string) => {
+    setTime(undefined);
+    setDate(undefined);
     setCustom(value);
+    quadraticCore.setDateTimeFormat(sheets.getRustSelection(), value, sheets.getCursorPosition());
   };
 
   const customFocus = () => {
@@ -160,7 +163,14 @@ export const DateFormat = (props: DateFormatProps) => {
           >
             <CheckIcon className={(cn('h-3.5 w-3.5 fill-primary'), custom ? '' : 'invisible')} />
           </div>
-          <Input ref={ref} className="h-6" placeholder="Custom" onChange={(e) => changeCustom(e.currentTarget.value)} />
+          <ValidationInput
+            ref={ref}
+            className="h-6"
+            placeholder="Custom"
+            onChange={changeCustom}
+            value={custom ?? ''}
+            onEnter={closeMenu}
+          />
           {customHelp}
         </div>
       </div>
