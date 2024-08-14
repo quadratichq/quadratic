@@ -27,6 +27,18 @@ impl Sheet {
         }) || self.iter_code_output_in_rect(rect).count() > 0
     }
 
+    fn value_date_time(date_time: &Option<String>, value: &CellValue) -> String {
+        match date_time {
+            Some(date_time) => match value {
+                CellValue::Date(d) => d.format(date_time).to_string(),
+                CellValue::DateTime(dt) => dt.format(date_time).to_string(),
+                CellValue::Time(t) => t.format(date_time).to_string(),
+                _ => value.to_display(),
+            },
+            None => value.to_display(),
+        }
+    }
+
     /// creates a render for a single cell
     fn get_render_cell(
         &self,
@@ -103,10 +115,11 @@ impl Sheet {
                 } else {
                     None
                 };
+                let value = Self::value_date_time(&format.date_time, value);
                 JsRenderCell {
                     x,
                     y,
-                    value: value.to_display(),
+                    value,
                     language,
                     align,
                     vertical_align: format.vertical_align,
@@ -134,6 +147,9 @@ impl Sheet {
                         format.align = format.align.or(Some(CellAlign::Right));
                         number = Some((&format).into());
                         value.to_display()
+                    }
+                    CellValue::Date(_) | CellValue::DateTime(_) | CellValue::Time(_) => {
+                        Self::value_date_time(&format.date_time, value)
                     }
                     _ => value.to_display(),
                 };
@@ -477,7 +493,7 @@ impl Sheet {
 mod tests {
     use std::collections::HashSet;
 
-    use chrono::Utc;
+    use chrono::{NaiveDateTime, Utc};
     use serial_test::{parallel, serial};
 
     use crate::{
@@ -1046,5 +1062,62 @@ mod tests {
         assert_eq!(fills.columns[0].1 .0, "blue".to_string());
         assert_eq!(fills.rows.len(), 1);
         assert_eq!(fills.rows[0].1 .0, "red".to_string());
+    }
+
+    #[test]
+    #[parallel]
+    fn render_cell_date_time() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        let pos = (0, 0).into();
+        let date_time = "%Y-%m-%d %H:%M:%S".to_string();
+        let value = CellValue::DateTime(
+            NaiveDateTime::parse_from_str("2014-5-17T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z")
+                .unwrap(),
+        );
+        sheet.set_cell_value(pos, value);
+        let rendering = sheet.get_render_cells(Rect::from_numbers(0, 0, 1, 1));
+        assert_eq!(rendering.len(), 1);
+        assert_eq!(
+            rendering[0],
+            JsRenderCell {
+                align: Some(CellAlign::Right),
+                value: "05/17/2014 12:34 PM".to_string(),
+                ..Default::default()
+            }
+        );
+
+        let format = Format {
+            date_time: Some(date_time.clone()),
+            ..Default::default()
+        };
+        sheet.set_formats_columns(&[0], &Formats::repeat(format.into(), 1));
+        let rendering = sheet.get_render_cells(Rect::from_numbers(0, 0, 1, 1));
+        assert_eq!(rendering.len(), 1);
+        assert_eq!(
+            rendering[0],
+            JsRenderCell {
+                align: Some(CellAlign::Right),
+                value: "2014-05-17 12:34:56".to_string(),
+                ..Default::default()
+            }
+        );
+
+        let format = Format {
+            date_time: Some("%Y-%m-%d".to_string()),
+            ..Default::default()
+        };
+        sheet.set_formats_columns(&[0], &Formats::repeat(format.into(), 1));
+        let rendering = sheet.get_render_cells(Rect::from_numbers(0, 0, 1, 1));
+        assert_eq!(rendering.len(), 1);
+        assert_eq!(
+            rendering[0],
+            JsRenderCell {
+                align: Some(CellAlign::Right),
+                value: "2014-05-17".to_string(),
+                ..Default::default()
+            }
+        );
     }
 }

@@ -517,6 +517,10 @@ class CoreClient {
         core.moveCells(e.data);
         return;
 
+      case 'clientCoreSetDateTimeFormat':
+        core.setDateTimeFormat(e.data.selection, e.data.format, e.data.cursor);
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core

@@ -638,6 +638,15 @@ class QuadraticCore {
     });
   }
 
+  setDateTimeFormat(selection: Selection, format: string, cursor: string) {
+    this.send({
+      type: 'clientCoreSetDateTimeFormat',
+      selection,
+      format,
+      cursor,
+    });
+  }
+
   deleteCellValues(selection: Selection, cursor?: string) {
     this.send({
       type: 'clientCoreDeleteCellValues',

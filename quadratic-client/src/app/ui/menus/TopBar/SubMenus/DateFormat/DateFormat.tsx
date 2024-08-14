@@ -95,9 +95,11 @@ export const DateFormat = () => {
 
   const changeDate = (value: string) => {
     setDate(value);
+    debugger;
     const currentTime = time ?? TIME_FORMATS[0].value;
     const newTime = `${value} ${currentTime}`;
     setCustom(undefined);
+    quadraticCore.setDateTimeFormat(sheets.getRustSelection(), newTime, sheets.getCursorPosition());
   };
 
   const changeTime = (value: string) => {};

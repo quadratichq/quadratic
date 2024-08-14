@@ -920,6 +920,11 @@ class Core {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.receiveRowHeights(transactionId, sheetId, rowHeights);
   }
+
+  setDateTimeFormat(selection: Selection, format: string, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.setDateTimeFormat(JSON.stringify(selection, bigIntReplacer), format, cursor);
+  }
 }
 
 export const core = new Core();

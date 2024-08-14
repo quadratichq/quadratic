@@ -871,6 +871,13 @@ export interface CoreClientMultiplayerSynced {
   type: 'coreClientMultiplayerSynced';
 }
 
+export interface ClientCoreSetDateTimeFormat {
+  type: 'clientCoreSetDateTimeFormat';
+  selection: Selection;
+  format: string;
+  cursor: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -936,7 +943,8 @@ export type ClientCoreMessage =
   | ClientCoreGetFormatAll
   | ClientCoreGetFormatColumn
   | ClientCoreGetFormatRow
-  | ClientCoreGetFormatCell;
+  | ClientCoreGetFormatCell
+  | ClientCoreSetDateTimeFormat;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
