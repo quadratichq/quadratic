@@ -837,6 +837,7 @@ export interface ClientCoreImportExcel {
   type: 'clientCoreImportExcel';
   file: Uint8Array;
   fileName: string;
+  cursor?: string;
   id: number;
 }
 
@@ -1048,7 +1049,6 @@ export type ClientCoreMessage =
   | ClientCoreImportExcel
   | ClientCoreCancelExecution
   | ClientCoreGetJwt
-  | ClientCoreMoveCells
   | ClientCoreMoveCells
   | ClientCoreGetFormatAll
   | ClientCoreGetFormatColumn

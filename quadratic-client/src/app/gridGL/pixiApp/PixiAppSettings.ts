@@ -1,10 +1,11 @@
+import { defaultInlineEditor, InlineEditorState } from '@/app/atoms/inlineEditorAtom';
 import { events } from '@/app/events/events';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../grid/controller/Sheets';
-import { GridSettings, defaultGridSettings } from '../../ui/menus/TopBar/SubMenus/useGridSettings';
+import { defaultGridSettings, GridSettings } from '../../ui/menus/TopBar/SubMenus/useGridSettings';
 import { pixiApp } from './PixiApp';
 
 export enum PanMode {
@@ -37,6 +38,8 @@ class PixiAppSettings {
   editorInteractionState = editorInteractionStateDefault;
   setEditorInteractionState?: (value: EditorInteractionState) => void;
   addGlobalSnackbar?: (message: string, options?: { severity?: 'error' | 'warning' }) => void;
+  inlineEditorState = defaultInlineEditor;
+  setInlineEditorState?: (fn: (prev: InlineEditorState) => InlineEditorState) => void;
 
   constructor() {
     const settings = localStorage.getItem('viewSettings');
@@ -86,6 +89,22 @@ class PixiAppSettings {
   ): void {
     this.editorInteractionState = editorInteractionState;
     this.setEditorInteractionState = setEditorInteractionState;
+
+    // these ifs are needed to because pixiApp may be in a bad state during hmr
+    if (pixiApp.headings) {
+      pixiApp.headings.dirty = true;
+    }
+    if (pixiApp.cursor) {
+      pixiApp.cursor.dirty = true;
+    }
+  }
+
+  updateInlineEditorState(
+    inlineEditorState: InlineEditorState,
+    setInlineEditorState: (fn: (prev: InlineEditorState) => InlineEditorState) => void
+  ): void {
+    this.inlineEditorState = inlineEditorState;
+    this.setInlineEditorState = setInlineEditorState;
 
     // these ifs are needed to because pixiApp may be in a bad state during hmr
     if (pixiApp.headings) {

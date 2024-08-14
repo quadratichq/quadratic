@@ -1000,7 +1000,8 @@ class QuadraticCore {
   // create a new grid file and import an xlsx file
   importExcel = async (
     file: Uint8Array,
-    fileName: string
+    fileName: string,
+    cursor?: string
   ): Promise<{
     contents?: Uint8Array;
     fileName: string;
@@ -1016,6 +1017,7 @@ class QuadraticCore {
         type: 'clientCoreImportExcel',
         file,
         fileName,
+        cursor,
         id,
       });
     });

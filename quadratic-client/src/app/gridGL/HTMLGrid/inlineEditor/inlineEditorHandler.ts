@@ -29,9 +29,6 @@ const MINIMUM_MOVE_VIEWPORT = 50;
 class InlineEditorHandler {
   private div?: HTMLDivElement;
 
-  // this is used to display the formula expand button
-  private formulaExpandButton?: HTMLDivElement;
-
   private open = false;
   private showing = false;
 
@@ -144,7 +141,6 @@ class InlineEditorHandler {
         window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
         this.updateMonacoCursorPosition();
         this.keepCursorVisible();
-        inlineEditorMonaco.focus();
       }
       inlineEditorFormula.cursorMoved();
     } else {
@@ -300,12 +296,16 @@ class InlineEditorHandler {
       cellOutlineOffset + (verticalAlign === 'bottom' ? Math.min(y, y + cellContentHeight - inlineEditorHeight) : y);
     this.width = inlineEditorWidth;
     this.height = inlineEditorHeight;
-    this.div?.style.setProperty('left', this.x + 'px');
-    this.div?.style.setProperty('top', this.y + 'px');
-    if (!this.formulaExpandButton) {
-      throw new Error('Expected formulaExpandDiv to be defined in InlineEditorHandler');
+
+    if (!pixiAppSettings.setInlineEditorState) {
+      throw new Error('Expected pixiAppSettings.setInlineEditorState to be defined in InlineEditorHandler');
     }
-    this.formulaExpandButton.style.lineHeight = this.height + 'px';
+    pixiAppSettings.setInlineEditorState((prev) => ({
+      ...prev,
+      left: this.x,
+      top: this.y,
+      lineHeight: this.height,
+    }));
 
     pixiApp.cursor.dirty = true;
   };
@@ -313,8 +313,8 @@ class InlineEditorHandler {
   // Toggle between normal editor and formula editor.
   private changeToFormula = (formula: boolean) => {
     if (this.formula === formula) return;
-    if (!this.formulaExpandButton) {
-      throw new Error('Expected formulaExpandDiv to be defined in InlineEditorHandler');
+    if (!pixiAppSettings.setInlineEditorState) {
+      throw new Error('Expected pixiAppSettings.setInlineEditorState to be defined in InlineEditorHandler');
     }
     this.formula = formula;
     if (formula) {
@@ -326,10 +326,10 @@ class InlineEditorHandler {
       inlineEditorMonaco.setLanguage('plaintext');
     }
 
-    // We need to use visibility instead of display to avoid an annoying warning
-    // with <Tooltip>.
-    this.formulaExpandButton.style.visibility = formula ? 'visible' : 'hidden';
-    this.formulaExpandButton.style.pointerEvents = formula ? 'auto' : 'none';
+    pixiAppSettings.setInlineEditorState((prev) => ({
+      ...prev,
+      formula,
+    }));
 
     if (formula && this.location) {
       inlineEditorFormula.cellHighlights(this.location, inlineEditorMonaco.get().slice(1));
@@ -439,7 +439,7 @@ class InlineEditorHandler {
   };
 
   // Handler for the click for the expand code editor button.
-  private openCodeEditor = (e: MouseEvent) => {
+  openCodeEditor = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     e.stopPropagation();
     if (!pixiAppSettings.setEditorInteractionState) {
       throw new Error('Expected setEditorInteractionState to be defined in openCodeEditor');
@@ -466,12 +466,6 @@ class InlineEditorHandler {
     }
     this.div = div;
 
-    const expandButton = div?.childNodes[1] as HTMLDivElement | undefined;
-    if (expandButton) {
-      this.formulaExpandButton = expandButton;
-      this.formulaExpandButton.removeEventListener('click', this.openCodeEditor);
-      this.formulaExpandButton.addEventListener('click', this.openCodeEditor);
-    }
     this.hideDiv();
   }
 
@@ -491,31 +485,41 @@ class InlineEditorHandler {
     return this.open;
   }
 
-  showDiv() {
+  showDiv = () => {
     if (!this.div) {
       throw new Error('Expected div to be defined in showDiv');
     }
-    // We need to use visibility instead of display to avoid an annoying warning
-    // with <Tooltip>.
-    this.div.style.visibility = 'visible';
-    this.div.style.pointerEvents = 'auto';
+
+    if (!pixiAppSettings.setInlineEditorState) {
+      throw new Error('Expected pixiAppSettings.setInlineEditorState to be defined in InlineEditorHandler');
+    }
+
+    pixiAppSettings.setInlineEditorState((prev) => ({
+      ...prev,
+      visible: true,
+    }));
 
     this.showing = true;
-  }
+  };
 
-  hideDiv() {
-    if (!this.div) return;
-
-    // We need to use visibility instead of display to avoid an annoying warning
-    // with <Tooltip>.
-    this.div.style.visibility = 'hidden';
-    this.div.style.pointerEvents = 'none';
-
-    if (this.formulaExpandButton) {
-      this.formulaExpandButton.style.visibility = 'hidden';
+  hideDiv = () => {
+    if (!this.div) {
+      throw new Error('Expected div to be defined in showDiv');
     }
+
+    if (!pixiAppSettings.setInlineEditorState) {
+      throw new Error('Expected pixiAppSettings.setInlineEditorState to be defined in InlineEditorHandler');
+    }
+
+    pixiAppSettings.setInlineEditorState((prev) => ({
+      ...prev,
+      visible: false,
+      formula: false,
+    }));
+    this.location = undefined;
+    inlineEditorMonaco.set('');
     this.showing = false;
-  }
+  };
 
   // Called when manually changing cell position via clicking on a new cell
   // (except when editing formula). Returns whether the editor can be closed

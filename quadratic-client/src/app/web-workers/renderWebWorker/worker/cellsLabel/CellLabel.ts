@@ -21,7 +21,7 @@ import { CellsLabels } from './CellsLabels';
 import { LabelMeshEntry } from './LabelMeshEntry';
 import { LabelMeshes } from './LabelMeshes';
 import { extractCharCode, splitTextToCharacters } from './bitmapTextUtils';
-import { convertNumber, getFractionDigits, reduceDecimals } from './convertNumber';
+import { convertNumber, reduceDecimals } from './convertNumber';
 
 interface CharRenderData {
   charData: RenderBitmapChar;
@@ -109,13 +109,6 @@ export class CellLabel {
       default:
         if (cell.value !== undefined && cell.number) {
           this.number = cell.number;
-          if (cell.language) {
-            // fraction digits in number, max 16 (f64 precision)
-            const numberFractionDigits = Math.min(getFractionDigits(cell.value, cell.number), 16);
-            // display fraction digits in number, default 9
-            const displayFractionDigits = Math.min(this.number.decimals ?? 9, numberFractionDigits);
-            this.number.decimals = displayFractionDigits;
-          }
           return convertNumber(cell.value, cell.number).toUpperCase();
         } else {
           return cell?.value;
