@@ -12,6 +12,32 @@ fn get_functions() -> Vec<FormulaFunction> {
     vec![
         // Concatenation
         formula_fn!(
+            /// Converts an array of values to a string.
+            ///
+            /// If `format` is `0` or omitted, returns a human-readable
+            /// representation such as `Apple, banana, 42, hello, world!`. If
+            /// `format` is `1`, returns a machine-readable representation in
+            /// valid formula syntax such as `{"Apple", "banana", 42, "Hello,
+            /// world!"}`. If `format` is any other value, returns an error.
+            #[examples(
+                "ARRAYTOTEXT({\"Apple\", \"banana\"; 42, \"Hello, world!\"})",
+                "ARRAYTOTEXT({\"Apple\", \"banana\"; 42, \"Hello, world!\"}, 1)"
+            )]
+            fn ARRAYTOTEXT(array: Array, format: (Option<Spanned<i64>>)) {
+                match format {
+                    Some(Spanned { inner: 0, .. }) | None => array
+                        .cell_values_slice()
+                        .iter()
+                        .map(|v| v.to_display())
+                        .join(", "),
+                    Some(Spanned { inner: 1, .. }) => array.repr(),
+                    Some(Spanned { span, .. }) => {
+                        return Err(RunErrorMsg::InvalidArgument.with_span(span))
+                    }
+                }
+            }
+        ),
+        formula_fn!(
             /// Same as `CONCAT`, but kept for compatibility.
             #[examples("CONCATENATE(\"Hello, \", C0, \"!\")")]
             fn CONCATENATE(strings: (Iter<String>)) {
@@ -194,6 +220,28 @@ fn unichar(span: Span, code_point: u32) -> CodeResult<char> {
 #[cfg_attr(test, serial_test::parallel)]
 mod tests {
     use crate::formulas::tests::*;
+
+    #[test]
+    fn test_formula_array_to_text() {
+        let a = array!["Apple", "banana"; 42.0, "Hello, world!"];
+        let g = Grid::from_array(pos![A1], &a);
+        assert_eq!(
+            "Apple, banana, 42, Hello, world!",
+            eval_to_string(&g, "ARRAYTOTEXT(A1:B2)"),
+        );
+        assert_eq!(
+            "Apple, banana, 42, Hello, world!",
+            eval_to_string(&g, "ARRAYTOTEXT(A1:B2, 0)"),
+        );
+        assert_eq!(
+            "{\"Apple\", \"banana\"; 42, \"Hello, world!\"}",
+            eval_to_string(&g, "ARRAYTOTEXT(A1:B2, 1)"),
+        );
+        assert_eq!(
+            RunErrorMsg::InvalidArgument,
+            eval_to_err(&g, "ARRAYTOTEXT(A1:B2, 2)").msg,
+        );
+    }
 
     #[test]
     fn test_formula_concat() {
