@@ -1,3 +1,5 @@
+use std::usize;
+
 use super::*;
 
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
@@ -52,6 +54,89 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[examples("CONCAT(\"Hello, \", C0, \"!\")", "\"Hello, \" & C0 & \"!\"")]
             fn CONCAT(strings: (Iter<String>)) {
                 strings.try_fold(String::new(), |a, b| Ok(a + &b?))
+            }
+        ),
+        // Substrings
+        formula_fn!(
+            /// Returns the first `char_count` characters from the beginning of
+            /// the string `s`. If `char_count` is omitted, it is assumed to be
+            /// `1`. If `char_count` is greater than the number of characters in
+            /// `s`, then the entire string is returned.
+            #[examples(
+                "LEFT(\"Hello, world!\") = \"H\"",
+                "LEFT(\"Hello, world!\", 6) = \"Hello,\"",
+                "LEFT(\"抱歉，我不懂普通话\") = \"抱\"",
+                "LEFT(\"抱歉，我不懂普通话\", 6) = \"抱歉，我不懂\""
+            )]
+            #[zip_map]
+            fn LEFT([s]: String, [char_count]: (Option<i64>)) {
+                let char_count = clamp_i64_to_usize(char_count.unwrap_or(1));
+                s.chars().take(char_count).collect::<String>()
+            }
+        ),
+        formula_fn!(
+            /// Returns the first `byte_count` bytes from the beginning of the
+            /// string `s`, encoded using UTF-8. If `byte_count` is omitted, it
+            /// is assumed to be `1`. If `byte_count` is greater than the number
+            /// of bytes in `s`, then the entire string is returned. If the
+            /// string would be split in the middle of a character, then
+            /// `byte_count` is rounded down to the previous character boundary
+            /// so the the returned string takes at most `byte_count` bytes.
+            #[examples(
+                "LEFTB(\"Hello, world!\") = \"H\"",
+                "LEFTB(\"Hello, world!\", 6) = \"Hello,\"",
+                "LEFTB(\"抱歉，我不懂普通话\") = \"\"",
+                "LEFTB(\"抱歉，我不懂普通话\", 6) = \"抱歉\"",
+                "LEFTB(\"抱歉，我不懂普通话\", 8) = \"抱歉\""
+            )]
+            #[zip_map]
+            fn LEFTB([s]: String, [byte_count]: (Option<i64>)) {
+                s[..floor_char_boundary(&s, byte_count.unwrap_or(1))].to_owned()
+            }
+        ),
+        formula_fn!(
+            /// Returns the last `char_count` characters from the end of the
+            /// string `s`. If `char_count` is omitted, it is assumed to be `1`.
+            /// If `char_count` is greater than the number of characters in `s`,
+            /// then the entire string is returned.
+            #[examples(
+                "RIGHT(\"Hello, world!\") = \"!\"",
+                "RIGHT(\"Hello, world!\", 6) = \"world!\"",
+                "RIGHT(\"抱歉，我不懂普通话\") = \"话\"",
+                "RIGHT(\"抱歉，我不懂普通话\", 6) = \"我不懂普通话\""
+            )]
+            #[zip_map]
+            fn RIGHT([s]: String, [char_count]: (Option<i64>)) {
+                let char_count = clamp_i64_to_usize(char_count.unwrap_or(1));
+                if char_count == 0 {
+                    String::new()
+                } else {
+                    match s.char_indices().nth_back(char_count - 1) {
+                        Some((i, _)) => s[i..].to_owned(),
+                        None => s,
+                    }
+                }
+            }
+        ),
+        formula_fn!(
+            /// Returns the last `byte_count` bytes from the end of the string
+            /// `s`, encoded using UTF-8. If `byte_count` is omitted, it is
+            /// assumed to be `1`. If `byte_count` is greater than the number of
+            /// bytes in `s`, then the entire string is returned. If the string
+            /// would be split in the middle of a character, then `byte_count`
+            /// is rounded down to the next character boundary so that the
+            /// returned string takes at most `byte_count` bytes.
+            #[examples(
+                "RIGHTB(\"Hello, world!\") = \"!\"",
+                "RIGHTB(\"Hello, world!\", 6) = \"world!\"",
+                "RIGHTB(\"抱歉，我不懂普通话\") = \"\"",
+                "RIGHTB(\"抱歉，我不懂普通话\", 6) = \"通话\"",
+                "RIGHTB(\"抱歉，我不懂普通话\", 7) = \"通话\""
+            )]
+            #[zip_map]
+            fn RIGHTB([s]: String, [byte_count]: (Option<i64>)) {
+                let byte_index = (s.len() as i64).saturating_sub(byte_count.unwrap_or(1));
+                s[ceil_char_boundary(&s, byte_index)..].to_owned()
             }
         ),
         // Length
@@ -216,10 +301,44 @@ fn unichar(span: Span, code_point: u32) -> CodeResult<char> {
         .ok_or_else(|| RunErrorMsg::InvalidArgument.with_span(span))
 }
 
+fn clamp_i64_to_usize(x: i64) -> usize {
+    x.max(0).try_into().unwrap_or(usize::MAX)
+}
+
+fn floor_char_boundary(s: &str, x: i64) -> usize {
+    // At time of writing, `str::floor_char_boundary()` is still
+    // unstable: https://github.com/rust-lang/rust/issues/93743
+    let mut byte_index = clamp_i64_to_usize(x);
+    if byte_index >= s.len() {
+        s.len()
+    } else {
+        while !s.is_char_boundary(byte_index) {
+            byte_index -= 1;
+        }
+        byte_index
+    }
+}
+
+fn ceil_char_boundary(s: &str, x: i64) -> usize {
+    // At time of writing, `str::ceil_char_boundary()` is still
+    // unstable: https://github.com/rust-lang/rust/issues/93743
+    let mut byte_index = clamp_i64_to_usize(x);
+    if byte_index >= s.len() {
+        s.len()
+    } else {
+        while !s.is_char_boundary(byte_index) {
+            byte_index += 1;
+        }
+        byte_index
+    }
+}
+
 #[cfg(test)]
 #[cfg_attr(test, serial_test::parallel)]
 mod tests {
     use crate::formulas::tests::*;
+
+    use super::clamp_i64_to_usize;
 
     #[test]
     fn test_formula_array_to_text() {
@@ -258,6 +377,46 @@ mod tests {
             "Hello, 14000605 worlds!".to_string(),
             eval_to_string(&g, "CONCATENATE('Hello, ',14000605,\" worlds!\")"),
         );
+    }
+
+    #[test]
+    fn test_formula_left_right() {
+        let g = Grid::new();
+
+        for (formula, expected_output) in [
+            // LEFT
+            ("LEFT('Hello, world!')", "H"),
+            ("LEFT('Hello, world!', 6)", "Hello,"),
+            ("LEFT('Hello, world!', -10)", ""),
+            ("LEFT('Hello, world!', 99)", "Hello, world!"),
+            ("LEFT('抱', 6)", "抱"),
+            ("LEFT('抱歉，我不懂普通话', 6)", "抱歉，我不懂"),
+            // LEFTB
+            ("LEFTB('Hello, world!')", "H"),
+            ("LEFTB('Hello, world!', 6)", "Hello,"),
+            ("LEFTB('Hello, world!', -10)", ""),
+            ("LEFTB('Hello, world!', 99)", "Hello, world!"),
+            ("LEFTB('抱歉，我不懂普通话')", ""),
+            ("LEFTB('抱歉，我不懂普通话', 6)", "抱歉"),
+            ("LEFTB('抱歉，我不懂普通话', 8)", "抱歉"),
+            // RIGHT
+            ("RIGHT('Hello, world!', 6)", "world!"),
+            ("RIGHT('Hello, world!')", "!"),
+            ("RIGHT('Hello, world!', -10)", ""),
+            ("RIGHT('Hello, world!', 99)", "Hello, world!"),
+            ("RIGHT('抱歉，我不懂普通话')", "话"),
+            ("RIGHT('抱歉，我不懂普通话', 6)", "我不懂普通话"),
+            // RIGHTB
+            ("RIGHTB('Hello, world!')", "!"),
+            ("RIGHTB('Hello, world!', 6)", "world!"),
+            ("RIGHTB('Hello, world!', -10)", ""),
+            ("RIGHTB('Hello, world!', 99)", "Hello, world!"),
+            ("RIGHTB('抱歉，我不懂普通话')", ""),
+            ("RIGHTB('抱歉，我不懂普通话', 6)", "通话"),
+            ("RIGHTB('抱歉，我不懂普通话', 7)", "通话"),
+        ] {
+            assert_eq!(expected_output, eval_to_string(&g, formula));
+        }
     }
 
     #[test]
@@ -403,5 +562,15 @@ mod tests {
         assert_eq!("FALSE", eval_to_string(&g, "EXACT(\"Abc\", \"abc\")"));
         assert_eq!("TRUE", eval_to_string(&g, "EXACT(\"abc\", \"abc\")"));
         assert_eq!("FALSE", eval_to_string(&g, "EXACT(\"abc\", \"def\")"));
+    }
+
+    #[test]
+    fn test_i64_to_usize() {
+        assert_eq!(0, clamp_i64_to_usize(-10));
+        assert_eq!(0, clamp_i64_to_usize(-1));
+        assert_eq!(0, clamp_i64_to_usize(0));
+        assert_eq!(1, clamp_i64_to_usize(1));
+        assert_eq!(10, clamp_i64_to_usize(10));
+        assert_eq!(u32::MAX as usize, clamp_i64_to_usize(u32::MAX as i64));
     }
 }
