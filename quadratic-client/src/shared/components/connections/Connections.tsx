@@ -1,4 +1,5 @@
 import { CreateConnectionAction, DeleteConnectionAction, UpdateConnectionAction } from '@/routes/api.connections';
+import { ConnectionDetails } from '@/shared/components/connections/ConnectionDetails';
 import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
 import { ConnectionsList } from '@/shared/components/connections/ConnectionsList';
 import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';
@@ -21,7 +22,7 @@ type Props = {
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
 };
-export type NavigateToEditView = (props: { connectionUuid: string; connectionType: ConnectionType }) => void;
+export type NavigateToView = (props: { connectionUuid: string; connectionType: ConnectionType }) => void;
 export type NavigateToCreateView = (type: ConnectionType) => void;
 
 export const Connections = ({ connections, connectionsAreLoading, teamUuid, staticIps }: Props) => {
@@ -31,7 +32,9 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
   const initialConnectionType = searchParams.get('initial-connection-type');
   useUpdateQueryStringValueWithoutNavigation('initial-connection-type', null);
 
-  const [activeConnectionUuid, setActiveConnectionUuid] = useState<string | undefined>();
+  const [activeConnectionState, setActiveConnectionState] = useState<
+    { uuid: string; view: 'edit' | 'details' } | undefined
+  >();
   const [activeConnectionType, setActiveConnectionType] = useState<ConnectionType | undefined>(
     initialConnectionType === 'MYSQL' || initialConnectionType === 'POSTGRES' ? initialConnectionType : undefined
   );
@@ -94,27 +97,39 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
    * Navigation
    */
   const handleNavigateToListView = () => {
-    setActiveConnectionUuid(undefined);
+    setActiveConnectionState(undefined);
     setActiveConnectionType(undefined);
   };
   const handleNavigateToCreateView: NavigateToCreateView = (connectionType) => {
     setActiveConnectionType(connectionType);
-    setActiveConnectionUuid(undefined);
+    setActiveConnectionState(undefined);
   };
-  const handleNavigateToEditView: NavigateToEditView = ({ connectionType, connectionUuid }) => {
-    setActiveConnectionUuid(connectionUuid);
+  const handleNavigateToEditView: NavigateToView = ({ connectionType, connectionUuid }) => {
+    setActiveConnectionState({ uuid: connectionUuid, view: 'edit' });
+    setActiveConnectionType(connectionType);
+  };
+  const hangleNavigateToDetailsView: NavigateToView = ({ connectionType, connectionUuid }) => {
+    setActiveConnectionState({ uuid: connectionUuid, view: 'details' });
     setActiveConnectionType(connectionType);
   };
 
   return (
     <div className="flex flex-col gap-8 md:flex-row">
       <div className="flex flex-col gap-2 md:w-2/3">
-        {activeConnectionUuid && activeConnectionType ? (
-          <ConnectionFormEdit
-            connectionUuid={activeConnectionUuid}
-            connectionType={activeConnectionType}
-            handleNavigateToListView={handleNavigateToListView}
-          />
+        {activeConnectionState && activeConnectionType ? (
+          activeConnectionState.view === 'edit' ? (
+            <ConnectionFormEdit
+              connectionUuid={activeConnectionState.uuid}
+              connectionType={activeConnectionType}
+              handleNavigateToListView={handleNavigateToListView}
+            />
+          ) : (
+            <ConnectionDetails
+              connectionUuid={activeConnectionState.uuid}
+              connectionType={activeConnectionType}
+              handleNavigateToListView={handleNavigateToListView}
+            />
+          )
         ) : activeConnectionType ? (
           <ConnectionFormCreate
             teamUuid={teamUuid}
@@ -127,6 +142,7 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
             connectionsAreLoading={connectionsAreLoading}
             handleNavigateToCreateView={handleNavigateToCreateView}
             handleNavigateToEditView={handleNavigateToEditView}
+            hangleNavigateToDetailsView={hangleNavigateToDetailsView}
           />
         )}
       </div>
