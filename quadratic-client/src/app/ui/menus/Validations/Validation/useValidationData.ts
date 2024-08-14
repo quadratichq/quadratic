@@ -6,10 +6,11 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { Selection, Validation, ValidationRule } from '@/app/quadratic-core-types';
 import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
 import { getSelectionString } from '@/app/grid/sheet/selection';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { validationRuleSimple, ValidationRuleSimple, ValidationUndefined } from './validationType';
 import { hasPermissionToEditFile } from '@/app/actions';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 export type SetState<T> = Dispatch<SetStateAction<T>>;
 
@@ -30,9 +31,11 @@ export interface ValidationData {
   triggerError: boolean;
   sheetId: string;
   readOnly: boolean;
+  applyValidation: () => void;
 }
 
 export const useValidationData = (): ValidationData => {
+  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const { showValidation, permissions } = useRecoilValue(editorInteractionStateAtom);
   const readOnly = !hasPermissionToEditFile(permissions);
 
@@ -137,6 +140,21 @@ export const useValidationData = (): ValidationData => {
 
     return true;
   }, [validation]);
+
+  const applyValidation = useCallback(() => {
+    if (!readOnly) {
+      if (validation && 'rule' in validation && validation.rule) {
+        if (!validate()) return;
+        if (unsaved) {
+          quadraticCore.updateValidation(validation, sheets.getCursorPosition());
+        }
+      }
+    }
+    setEditorInteractionState((old) => ({
+      ...old,
+      showValidation: true,
+    }));
+  }, [readOnly, setEditorInteractionState, unsaved, validate, validation]);
 
   // change the rule using the simple rule type; creates a default value for that rule
   const changeRule = useCallback(
@@ -313,5 +331,6 @@ export const useValidationData = (): ValidationData => {
     triggerError,
     sheetId,
     readOnly,
+    applyValidation,
   };
 };

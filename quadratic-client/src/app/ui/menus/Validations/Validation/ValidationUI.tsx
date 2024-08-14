@@ -87,12 +87,11 @@ export const ValidationInput = (props: InputProps) => {
             type={type}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && onEnter) {
-                onInput?.(e.currentTarget.value);
-                onChange?.(e.currentTarget.value);
-
-                if (value !== e.currentTarget.value && onEnter) {
-                  onEnter();
+                if (value !== e.currentTarget.value) {
+                  onInput?.(e.currentTarget.value);
+                  onChange?.(e.currentTarget.value);
                 }
+                setTimeout(onEnter, 0);
               }
             }}
           />
@@ -137,12 +136,12 @@ export const ValidationTextArea = (props: InputProps) => {
           readOnly={readOnly}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && onEnter) {
-              onInput?.(e.currentTarget.value);
-              onChange?.(e.currentTarget.value);
-
-              if (value !== e.currentTarget.value && onEnter) {
-                onEnter();
+              // need to ensure the value is set when pressing enter
+              if (value !== e.currentTarget.value) {
+                onInput?.(e.currentTarget.value);
+                onChange?.(e.currentTarget.value);
               }
+              setTimeout(onEnter, 0);
             }
           }}
         />

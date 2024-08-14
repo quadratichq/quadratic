@@ -13,6 +13,7 @@ interface Props {
   validation: Validation;
   validationsData: ValidationsData;
   highlight: boolean;
+  active: boolean;
 }
 
 export const validationText = (validation: Validation) => {
@@ -38,7 +39,7 @@ export const validationText = (validation: Validation) => {
 
 export const ValidationEntry = (props: Props) => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
-  const { validation, validationsData, highlight } = props;
+  const { validation, validationsData, highlight, active } = props;
   const { deleteValidation, readOnly } = validationsData;
 
   const title = useMemo(() => validationText(validation), [validation]);
@@ -51,8 +52,19 @@ export const ValidationEntry = (props: Props) => {
       showValidation: validation.id,
     }));
   }, [setEditorInteractionState, validation.id]);
+
+  const ref = useCallback(
+    (node: HTMLButtonElement) => {
+      if (active) {
+        node?.scrollIntoView({ block: 'center' });
+      }
+    },
+    [active]
+  );
+
   return (
     <Button
+      ref={ref}
       variant="ghost"
       className={cn('h-fit w-full border-b border-gray-100', highlight ? 'bg-gray-50' : '')}
       onClick={selectValidation}

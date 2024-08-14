@@ -59,6 +59,7 @@ export const Validations = () => {
             validation={validation}
             validationsData={validationsData}
             highlight={highlighted.includes(validation.id)}
+            active={validation.id === highlighted[0]}
           />
         ))}
       </div>

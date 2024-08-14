@@ -1,7 +1,6 @@
 import { ValidationHeader } from './ValidationHeader';
 import { Button } from '@/shared/shadcn/ui/button';
 import { useValidationData } from './useValidationData';
-import { useCallback, useMemo } from 'react';
 import { ValidationList } from './ValidationList';
 import { ValidationMessage } from './ValidationMessage';
 import { ValidationDropdown } from './ValidationUI';
@@ -15,6 +14,7 @@ import { ValidationRuleSimple } from './validationType';
 import { ValidationNone } from './ValidationNone';
 import { ValidationText } from './ValidationText';
 import { ValidationNumber } from './ValidationNumber';
+import { useCallback, useEffect, useState } from 'react';
 
 const CRITERIA_OPTIONS: { value: ValidationRuleSimple; label: string }[] = [
   { value: 'none', label: 'Message only' },
@@ -29,53 +29,8 @@ export const Validation = () => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
 
   const validationData = useValidationData();
-  const {
-    rule,
-    changeRule,
-    moreOptions,
-    validation,
-    triggerError,
-    validate,
-    setSelection,
-    sheetId,
-    unsaved,
-    readOnly,
-  } = validationData;
-
-  const applyValidation = useCallback(
-    (force?: boolean) => {
-      if (!readOnly) {
-        if (validation && 'rule' in validation && validation.rule) {
-          if (!validate()) return;
-          if (force || unsaved) {
-            quadraticCore.updateValidation(validation, sheets.getCursorPosition());
-          }
-        }
-      }
-      setEditorInteractionState((old) => ({
-        ...old,
-        showValidation: true,
-      }));
-    },
-    [unsaved, readOnly, setEditorInteractionState, validate, validation]
-  );
-
-  const validationRule: JSX.Element | null = useMemo(() => {
-    switch (rule) {
-      case 'none':
-        return <ValidationNone validationData={validationData} onEnter={() => applyValidation(true)} />;
-      case 'list-range':
-      case 'list':
-        return <ValidationList validationData={validationData} onEnter={() => applyValidation(true)} />;
-      case 'logical':
-        return <ValidationLogical validationData={validationData} />;
-      case 'text':
-        return <ValidationText validationData={validationData} onEnter={() => applyValidation(true)} />;
-      case 'number':
-        return <ValidationNumber validationData={validationData} onEnter={() => applyValidation(true)} />;
-    }
-    return null;
-  }, [applyValidation, rule, validationData]);
+  const { rule, changeRule, moreOptions, validation, triggerError, setSelection, sheetId, readOnly, applyValidation } =
+    validationData;
 
   const removeValidation = () => {
     if (validation) {
@@ -86,6 +41,15 @@ export const Validation = () => {
       showValidation: true,
     }));
   };
+
+  const [enterTrigger, setEnterTrigger] = useState(false);
+  useEffect(() => {
+    if (enterTrigger) {
+      applyValidation();
+      setEnterTrigger(false);
+    }
+  }, [applyValidation, enterTrigger]);
+  const onEnter = useCallback(() => setEnterTrigger(true), []);
 
   return (
     <div
@@ -102,7 +66,7 @@ export const Validation = () => {
           triggerError={triggerError}
           changeCursor={true}
           readOnly={readOnly}
-          onEnter={() => applyValidation(true)}
+          onEnter={onEnter}
           requireSheetId={sheetId}
         />
         <ValidationDropdown
@@ -112,9 +76,15 @@ export const Validation = () => {
           options={CRITERIA_OPTIONS}
           readOnly={readOnly}
         />
-        {validationRule}
+        {rule === 'none' && <ValidationNone validationData={validationData} onEnter={onEnter} />}
+        {(rule === 'list-range' || rule === 'list') && (
+          <ValidationList validationData={validationData} onEnter={onEnter} />
+        )}
+        {rule === 'logical' && <ValidationLogical validationData={validationData} />}
+        {rule === 'text' && <ValidationText validationData={validationData} onEnter={onEnter} />}
+        {rule === 'number' && <ValidationNumber validationData={validationData} onEnter={onEnter} />}
         {moreOptions && validationData.rule !== 'none' && (
-          <ValidationMessage validationData={validationData} onEnter={applyValidation} />
+          <ValidationMessage validationData={validationData} onEnter={onEnter} />
         )}
       </div>
 
