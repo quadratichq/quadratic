@@ -5,7 +5,7 @@ type DashboardState = {
 };
 
 const initialDashboardState: DashboardState = {
-  showNewFileDialog: true,
+  showNewFileDialog: false,
 };
 
 const DashboardContext = createContext<

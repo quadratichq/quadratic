@@ -1,4 +1,5 @@
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
+import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { ROUTES } from '@/shared/constants/routes';
 import { useSchemaBrowser } from '@/shared/hooks/useSchemaBrowser';
@@ -6,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadc
 import { cn } from '@/shared/shadcn/utils';
 import { ArrowDownIcon, ChevronRightIcon, LockClosedIcon, MixIcon, PlusIcon, RocketIcon } from '@radix-ui/react-icons';
 import { ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 type Props = {
@@ -16,18 +17,24 @@ type Props = {
   isPrivate?: boolean;
 };
 
+const gridItemClassName =
+  'flex flex-col items-center justify-center gap-1 rounded-lg border border-border p-4 pt-5 w-full';
+const gridItemInteractiveClassName = 'hover:bg-accent hover:text-foreground cursor-pointer';
+
 export function NewFileDialog({ connections, teamUuid, onClose, isPrivate }: Props) {
   const [activeConnectionUuid, setActiveConnectionUuid] = useState<string>('');
-  const gridItemClassName =
-    'flex flex-col items-center justify-center gap-1 rounded-lg border border-border p-4 pt-5 w-full';
-  const gridItemInteractiveClassName = 'hover:bg-accent hover:text-foreground cursor-pointer';
+
+  const activeConnection = useMemo(() => {
+    return connections.find((connection) => connection.uuid === activeConnectionUuid);
+  }, [activeConnectionUuid, connections]);
+
+  const handleFileImport = useFileImport();
 
   // TODO: style
   const hasConnections = connections.length > 0;
 
   // TODO: implement private
 
-  const activeConnection = connections.find((connection) => connection.uuid === activeConnectionUuid);
   const headerLabel = isPrivate ? 'New private file' : 'New file';
 
   return (
@@ -79,6 +86,10 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate }: Pro
                   gridItemClassName,
                   gridItemInteractiveClassName
                 )}
+                onClick={() => {
+                  onClose();
+                  handleFileImport({ isPrivate, teamUuid });
+                }}
               >
                 <ItemIcon>
                   <ArrowDownIcon />

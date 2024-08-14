@@ -28,7 +28,9 @@ import * as Sentry from '@sentry/react';
 import {
   ClientCoreFindNextColumn,
   ClientCoreFindNextRow,
+  ClientCoreImportCsv,
   ClientCoreImportExcel,
+  ClientCoreImportParquet,
   ClientCoreLoad,
   ClientCoreMoveCells,
   ClientCoreSummarizeSelection,
@@ -400,55 +402,141 @@ class Core {
     });
   }
 
-  importCsv(
-    sheetId: string,
-    x: number,
-    y: number,
+  async upgradeGridFile(
     file: ArrayBuffer,
-    fileName: string,
-    cursor?: string
-  ): Promise<string | undefined> {
-    return new Promise((resolve) => {
-      this.clientQueue.push(() => {
-        if (!this.gridController) throw new Error('Expected gridController to be defined');
-        try {
-          this.gridController.importCsv(sheetId, new Uint8Array(file), fileName, posToPos(x, y), cursor);
-          resolve(undefined);
-        } catch (error) {
-          // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
-          // type in the UI.
-          console.error(error);
-          reportError(error);
-          Sentry.captureException(error);
-          resolve(error as string);
-        }
-      });
-    });
+    sequenceNum: number
+  ): Promise<{ contents?: ArrayBuffer; version?: string; error?: string }> {
+    try {
+      await initCore();
+      const gc = GridController.newFromFile(new Uint8Array(file), sequenceNum, false);
+      const contents = gc.exportToFile();
+      const version = gc.getVersion();
+      return { contents: contents.buffer, version };
+    } catch (error: unknown) {
+      console.error(error);
+      reportError(error);
+      Sentry.captureException(error);
+      return { error: error as string };
+    }
   }
 
-  importParquet(
-    sheetId: string,
-    x: number,
-    y: number,
-    file: ArrayBuffer,
-    fileName: string,
-    cursor?: string
-  ): Promise<string | undefined> {
-    return new Promise((resolve) => {
-      this.clientQueue.push(() => {
-        if (!this.gridController) throw new Error('Expected gridController to be defined');
-        try {
-          this.gridController.importParquet(sheetId, new Uint8Array(file), fileName, posToPos(x, y), cursor);
-          resolve(undefined);
-        } catch (error) {
-          // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
-          // type in the UI.
-          reportError(error);
-          Sentry.captureException(error);
-          resolve(error as string);
-        }
+  async importExcel({
+    file,
+    fileName,
+    cursor,
+  }: ClientCoreImportExcel): Promise<{ contents?: ArrayBuffer; version?: string; error?: string }> {
+    if (cursor === undefined) {
+      try {
+        await initCore();
+        const gc = GridController.importExcel(new Uint8Array(file), fileName);
+        const contents = gc.exportToFile();
+        const version = gc.getVersion();
+        return { contents: contents.buffer, version };
+      } catch (error: unknown) {
+        console.error(error);
+        reportError(error);
+        Sentry.captureException(error);
+        return { error: error as string };
+      }
+    } else {
+      return new Promise((resolve) => {
+        this.clientQueue.push(() => {
+          if (!this.gridController) throw new Error('Expected gridController to be defined');
+          try {
+            this.gridController.importExcelIntoExistingFile(new Uint8Array(file), fileName, cursor);
+            resolve({});
+          } catch (error: unknown) {
+            // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
+            // type in the UI.
+            console.error(error);
+            reportError(error);
+            Sentry.captureException(error);
+            resolve({ error: error as string });
+          }
+        });
       });
-    });
+    }
+  }
+
+  async importCsv({
+    file,
+    fileName,
+    sheetId,
+    location,
+    cursor,
+  }: ClientCoreImportCsv): Promise<{ contents?: ArrayBuffer; version?: string; error?: string }> {
+    if (sheetId === undefined || location === undefined || cursor === undefined) {
+      try {
+        await initCore();
+        const gc = GridController.importCsv(new Uint8Array(file), fileName);
+        const contents = gc.exportToFile();
+        const version = gc.getVersion();
+        return { contents: contents.buffer, version };
+      } catch (error: unknown) {
+        console.error(error);
+        reportError(error);
+        Sentry.captureException(error);
+        return { error: error as string };
+      }
+    } else {
+      return new Promise((resolve) => {
+        this.clientQueue.push(() => {
+          if (!this.gridController) throw new Error('Expected gridController to be defined');
+          try {
+            const insertAt = posToPos(location.x, location.y);
+            this.gridController.importCsvIntoExistingFile(new Uint8Array(file), fileName, sheetId, insertAt, cursor);
+            resolve({});
+          } catch (error) {
+            // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
+            // type in the UI.
+            console.error(error);
+            reportError(error);
+            Sentry.captureException(error);
+            resolve({ error: error as string });
+          }
+        });
+      });
+    }
+  }
+
+  async importParquet({
+    file,
+    fileName,
+    sheetId,
+    location,
+    cursor,
+  }: ClientCoreImportParquet): Promise<{ contents?: ArrayBuffer; version?: string; error?: string }> {
+    if (sheetId === undefined || location === undefined || cursor === undefined) {
+      await initCore();
+      const gc = GridController.importParquet(new Uint8Array(file), fileName);
+      const contents = gc.exportToFile();
+      const version = gc.getVersion();
+      return { contents: contents.buffer, version };
+    } else {
+      return new Promise((resolve) => {
+        this.clientQueue.push(() => {
+          if (!this.gridController) throw new Error('Expected gridController to be defined');
+          try {
+            const insertAt = posToPos(location.x, location.y);
+            this.gridController.importParquetIntoExistingFile(
+              new Uint8Array(file),
+              fileName,
+              sheetId,
+              insertAt,
+              cursor
+            );
+            resolve({});
+          } catch (error) {
+            // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
+            // type in the UI.
+            console.error(error);
+            reportError(error);
+            Sentry.captureException(error);
+            resolve({ error: error as string });
+          }
+        });
+      });
+    }
   }
 
   deleteCellValues(selection: Selection, cursor?: string) {
@@ -556,14 +644,6 @@ class Core {
         resolve(undefined);
       });
     });
-  }
-
-  async upgradeGridFile(file: Uint8Array, sequenceNum: number): Promise<{ grid: Uint8Array; version: string }> {
-    await initCore();
-    const gc = GridController.newFromFile(file, sequenceNum, false);
-    const grid = gc.exportToFile();
-    const version = gc.getVersion();
-    return { grid, version };
   }
 
   export(): Promise<Uint8Array> {
@@ -818,30 +898,6 @@ class Core {
   getCells(transactionId: string, x: number, y: number, w: number, h?: number, sheet?: string, lineNumber?: number) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     return this.gridController.calculationGetCells(transactionId, x, y, w, h, sheet, lineNumber);
-  }
-
-  async importExcel(
-    message: ClientCoreImportExcel
-  ): Promise<{ contents?: Uint8Array; version?: string; error?: string }> {
-    try {
-      if (message.cursor === undefined) {
-        await initCore();
-        const gc = GridController.importExcel(message.file, message.fileName);
-        const contents = gc.exportToFile();
-        return { contents: contents, version: gc.getVersion() };
-      } else {
-        if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.importExcelIntoExistingFile(message.file, message.fileName, message.cursor);
-        return {};
-      }
-    } catch (error: unknown) {
-      // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
-      // type in the UI.
-      console.error(error);
-      reportError(error);
-      Sentry.captureException(error);
-      return { error: error as string };
-    }
   }
 
   // Returns true if the transaction was applied successfully.

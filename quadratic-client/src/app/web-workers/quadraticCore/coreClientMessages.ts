@@ -1,3 +1,4 @@
+import { Coordinate } from '@/app/gridGL/types/size';
 import {
   CellAlign,
   CellFormatSummary,
@@ -42,20 +43,6 @@ export interface CoreClientLoad {
   id: number;
   version?: string;
   error?: string;
-}
-
-export interface ClientCoreUpgradeGridFile {
-  type: 'clientCoreUpgradeGridFile';
-  grid: Uint8Array;
-  sequenceNumber: number;
-  id: number;
-}
-
-export interface CoreClientUpgradeFile {
-  type: 'coreClientUpgradeGridFile';
-  grid: Uint8Array;
-  version: string;
-  id: number;
 }
 
 export interface ClientCoreInit {
@@ -415,38 +402,68 @@ export interface ClientCoreSetCommas {
   cursor?: string;
 }
 
-export interface ClientCoreImportCsv {
-  type: 'clientCoreImportCsv';
-  sheetId: string;
-  x: number;
-  y: number;
+export interface ClientCoreUpgradeGridFile {
+  type: 'clientCoreUpgradeGridFile';
+  grid: ArrayBuffer;
+  sequenceNumber: number;
   id: number;
+}
+
+export interface CoreClientUpgradeFile {
+  type: 'coreClientUpgradeGridFile';
+  id: number;
+  contents?: ArrayBuffer;
+  version?: string;
+  error?: string;
+}
+
+export interface ClientCoreImportExcel {
+  type: 'clientCoreImportExcel';
   file: ArrayBuffer;
   fileName: string;
   cursor?: string;
+  id: number;
+}
+
+export interface CoreClientImportExcel {
+  type: 'coreClientImportExcel';
+  id: number;
+}
+
+export interface ClientCoreImportCsv {
+  type: 'clientCoreImportCsv';
+  file: ArrayBuffer;
+  fileName: string;
+  sheetId?: string;
+  location?: Coordinate;
+  cursor?: string;
+  id: number;
 }
 
 export interface CoreClientImportCsv {
   type: 'coreClientImportCsv';
   id: number;
-  error: string | undefined;
+  contents?: ArrayBuffer;
+  version?: string;
+  error?: string;
 }
 
 export interface ClientCoreImportParquet {
   type: 'clientCoreImportParquet';
-  sheetId: string;
-  x: number;
-  y: number;
-  id: number;
   file: ArrayBuffer;
   fileName: string;
+  sheetId?: string;
+  location?: Coordinate;
   cursor?: string;
+  id: number;
 }
 
 export interface CoreClientImportParquet {
   type: 'coreClientImportParquet';
   id: number;
-  error: string | undefined;
+  contents?: ArrayBuffer;
+  version?: string;
+  error?: string;
 }
 
 export interface ClientCoreDeleteCellValues {
@@ -802,22 +819,6 @@ export interface CoreClientUpdateCodeCell {
   y: number;
   codeCell?: JsCodeCell;
   renderCodeCell?: JsRenderCodeCell;
-}
-
-export interface ClientCoreImportExcel {
-  type: 'clientCoreImportExcel';
-  file: Uint8Array;
-  fileName: string;
-  cursor?: string;
-  id: number;
-}
-
-export interface CoreClientImportExcel {
-  type: 'coreClientImportExcel';
-  id: number;
-  contents?: Uint8Array;
-  version?: string;
-  error?: string;
 }
 
 export interface ClientCoreCancelExecution {

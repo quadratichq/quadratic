@@ -3,7 +3,7 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import {
   FileDeleteIcon,
-  FileDowndloadIcon,
+  FileDownloadIcon,
   FileDuplicateIcon,
   // FileDeleteIcon, FileDownloadIcon, FileDuplicateIcon,
   FileIcon,
@@ -48,7 +48,7 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             action={() => downloadFileAction.run({ name })}
-            icon={<FileDowndloadIcon />}
+            icon={<FileDownloadIcon />}
           />
         );
       },

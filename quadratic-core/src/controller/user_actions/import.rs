@@ -5,6 +5,8 @@ use anyhow::Result;
 
 impl GridController {
     /// Imports a CSV file into the grid.
+    ///
+    /// Using `cursor` here also as a flag to denote import into new / existing file.
     pub fn import_csv(
         &mut self,
         sheet_id: SheetId,
@@ -14,13 +16,18 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<()> {
         let ops = self.import_csv_operations(sheet_id, file, file_name, insert_at)?;
-        self.start_user_transaction(ops, cursor, TransactionName::Import);
+        if cursor.is_some() {
+            self.start_user_transaction(ops, cursor, TransactionName::Import);
+        } else {
+            self.server_apply_transaction(ops);
+        }
+
         Ok(())
     }
 
     /// Imports an Excel file into the grid.
     ///
-    /// Returns a [`TransactionSummary`].
+    /// Using `cursor` here also as a flag to denote import into new / existing file.
     pub fn import_excel(
         &mut self,
         file: Vec<u8>,
@@ -42,6 +49,8 @@ impl GridController {
     }
 
     /// Imports a Parquet file into the grid.
+    ///
+    /// Using `cursor` here also as a flag to denote import into new / existing file.
     pub fn import_parquet(
         &mut self,
         sheet_id: SheetId,
@@ -51,7 +60,12 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<()> {
         let ops = self.import_parquet_operations(sheet_id, file, file_name, insert_at)?;
-        self.start_user_transaction(ops, cursor, TransactionName::Import);
+        if cursor.is_some() {
+            self.start_user_transaction(ops, cursor, TransactionName::Import);
+        } else {
+            self.server_apply_transaction(ops);
+        }
+
         Ok(())
     }
 }

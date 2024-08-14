@@ -60,7 +60,7 @@ pub enum SharedError {
     #[error("Error with Pubsub: {0}")]
     PubSub(String),
 
-    #[error("Error with Reqwest: {0}")]
+    #[error("Error with Request: {0}")]
     Request(String),
 
     #[error("Error serializing or deserializing: {0}")]
