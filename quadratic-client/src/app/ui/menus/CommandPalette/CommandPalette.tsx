@@ -40,6 +40,13 @@ export const CommandPalette = () => {
     }));
   };
 
+  const openDateFormat = () => {
+    setEditorInteractionState((state) => ({
+      ...state,
+      annotationState: 'date-format',
+    }));
+  };
+
   useEffect(() => {
     mixpanel.track('[CommandPalette].open');
   }, []);
@@ -65,7 +72,10 @@ export const CommandPalette = () => {
 
   return (
     <CommandDialog
-      dialogProps={{ open: editorInteractionState.showCommandPalette, onOpenChange: closeCommandPalette }}
+      dialogProps={{
+        open: editorInteractionState.showCommandPalette,
+        onOpenChange: closeCommandPalette,
+      }}
       commandProps={{ shouldFilter: false }}
     >
       <CommandInput
@@ -114,6 +124,7 @@ export const CommandPalette = () => {
                   label={label}
                   fuzzysortResult={fuzzysortResult}
                   closeCommandPalette={closeCommandPalette}
+                  openDateFormat={openDateFormat}
                 />
               ))}
             </CommandGroup>

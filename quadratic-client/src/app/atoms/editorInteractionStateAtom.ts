@@ -14,7 +14,7 @@ export interface EditorInteractionState {
   showShareFileMenu: boolean;
   showSearch: boolean | SearchOptions;
   showValidation: boolean | string;
-  annotationState?: 'dropdown';
+  annotationState?: 'dropdown' | 'date-format';
   showContextMenu: boolean;
   permissions: FilePermission[];
   uuid: string;
@@ -47,6 +47,7 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   showSearch: false,
   showContextMenu: false,
   showValidation: false,
+  annotationState: 'date-format',
   permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
   uuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
   selectedCell: { x: 0, y: 0 },
