@@ -22,6 +22,7 @@ export function doubleClickCell(options: {
 
   if (multiplayer.cellIsBeingEdited(column, row, sheets.sheet.id)) return;
 
+  // Open the correct code editor
   if (language) {
     const formula = language === 'Formula';
 
@@ -60,7 +61,10 @@ export function doubleClickCell(options: {
         });
       }
     }
-  } else if (hasPermission) {
+  }
+
+  // Open the text editor
+  else if (hasPermission) {
     settings.changeInput(true, cell);
   }
 }

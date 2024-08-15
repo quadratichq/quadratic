@@ -263,28 +263,28 @@ class TestUtils(TestCase):
 
         # instant
         assert to_quadratic_type(pd.Timestamp("2012-11-10")) == (
-            "1352505600",
-            "instant",
+            "2012-11-10T00:00:00",
+            "date",
         )
         assert to_quadratic_type(pd.Timestamp("2012-11-10T03:30")) == (
-            "1352518200",
-            "instant",
+            "2012-11-10T03:30:00",
+            "date",
         )
         assert to_quadratic_type(np.datetime64("2012-11-10")) == (
-            "1352505600",
-            "instant",
+            "2012-11-10T00:00:00",
+            "date",
         )
         assert to_quadratic_type(np.datetime64("2012-11-10T03:30")) == (
-            "1352518200",
-            "instant",
+            "2012-11-10T03:30:00",
+            "date",
         )
         assert to_quadratic_type(datetime.strptime("2012-11-10", "%Y-%m-%d")) == (
-            "1352505600",
-            "instant",
+            "2012-11-10T00:00:00",
+            "date",
         )
         assert to_quadratic_type(
             datetime.strptime("2012-11-10 03:30", "%Y-%m-%d %H:%M")
-        ) == ("1352518200", "instant")
+        ) == ("2012-11-10T03:30:00", "date")
         # assert to_quadratic_type("2012-11-10") == ("1352505600", "instant")
 
         # TODO(ddimaria): implement when we implement duration in Rust
@@ -311,11 +311,11 @@ class TestUtils(TestCase):
         assert to_python_type("123abc", "text") == "123abc"
         assert to_python_type("abc123", "text") == "abc123"
 
-        # instant
-        assert to_python_type("1352505600", "instant") == pd.Timestamp(
+        # date
+        assert to_python_type("2012-11-10T00:00:00", "date") == pd.Timestamp(
             "2012-11-10 00:00:00+00:00"
         )
-        assert to_python_type("1352518200", "instant") == pd.Timestamp(
+        assert to_python_type("2012-11-10T00:00:00", "date") == pd.Timestamp(
             "2012-11-10 03:30:00+00:00"
         )
 

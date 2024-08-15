@@ -39,8 +39,8 @@ def attempt_fix_await(code: str) -> str:
     return code
 
 
-def to_unix_timestamp(value: pd.Timestamp | date | time | datetime):
-    return (value - pd.Timestamp("1970-01-01")) // pd.Timedelta("1s")
+def to_iso_format(value: pd.Timestamp | date | time | datetime):
+    return value.isoformat()
 
 
 def to_interval(
@@ -49,8 +49,8 @@ def to_interval(
     ]
 ):
     return (
-        str(to_unix_timestamp(value.start_time)),
-        str(to_unix_timestamp(value.end_time)),
+        str(to_iso_format(value.start_time)),
+        str(to_iso_format(value.end_time)),
     )
 
 
@@ -97,7 +97,7 @@ def to_quadratic_type(
         elif isinstance(
             value, (pd.Timestamp, np.datetime64, date, time, datetime)
         ) or pd.api.types.is_datetime64_dtype(value):
-            return (str(to_unix_timestamp(value)), "instant")
+            return (str(to_iso_format(value)), "date")
 
         # TODO(ddimaria): implement when we implement duration in Rust
         # elif isinstance(value, (pd.Period, np.timedelta64, timedelta)):
@@ -120,8 +120,12 @@ def to_python_type(value: str, value_type: str) -> int | float | str | bool:
             return str(value)
         elif value_type == "logical":
             return ast.literal_eval(normalize_bool(value))
-        elif value_type == "instant":
-            return datetime.fromtimestamp(int(value), tz=pytz.utc)
+        elif value_type == "time":
+            return datetime.fromisoformat(str(value), tz=pytz.utc).time()
+        elif value_type == "date":
+            return datetime.fromisoformat(str(value), tz=pytz.utc)
+        elif value_type == "datetime":
+            return datetime.fromisoformat(str(value), tz=pytz.utc)
         else:
             return value
     except:

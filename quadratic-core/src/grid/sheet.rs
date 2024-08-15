@@ -12,7 +12,7 @@ use super::column::Column;
 use super::formats::format::Format;
 use super::formatting::CellFmtAttr;
 use super::ids::SheetId;
-use super::js_types::CellFormatSummary;
+use super::js_types::{CellFormatSummary, CellType};
 use super::resize::ResizeMap;
 use super::{CellWrap, CodeRun, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
@@ -290,6 +290,13 @@ impl Sheet {
             date_time: column.date_time.get(pos.y),
             ..Default::default()
         });
+        let cell_type = self
+            .display_value(pos)
+            .and_then(|cell_value| match cell_value {
+                CellValue::Date(_) => Some(CellType::Date),
+                CellValue::DateTime(_) => Some(CellType::DateTime),
+                _ => None,
+            });
         let format = if include_sheet_info {
             Format::combine(
                 cell.as_ref(),
@@ -310,6 +317,7 @@ impl Sheet {
             vertical_align: format.vertical_align,
             wrap: format.wrap,
             date_time: format.date_time,
+            cell_type,
         }
     }
 
@@ -499,6 +507,7 @@ mod test {
         CodeCellValue, SheetPos,
     };
     use bigdecimal::BigDecimal;
+    use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
     use serial_test::parallel;
     use std::str::FromStr;
 
@@ -810,7 +819,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn test_cell_format_summary() {
+    fn cell_format_summary() {
         let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.sheet(sheet_id).clone();
 
@@ -837,6 +846,27 @@ mod test {
 
         let existing_cell_format_summary = sheet.cell_format_summary((2, 1).into(), false);
         assert_eq!(cell_format_summary.clone(), existing_cell_format_summary);
+
+        sheet.set_cell_value(
+            Pos { x: 0, y: 0 },
+            CellValue::Date(NaiveDate::from_str("2024-12-21").unwrap()),
+        );
+        let format_summary = sheet.cell_format_summary((0, 0).into(), false);
+        assert_eq!(format_summary.cell_type, Some(CellType::Date));
+
+        sheet.set_cell_value(
+            Pos { x: 1, y: 0 },
+            CellValue::DateTime(NaiveDateTime::from_str("2024-12-21 1:23 PM").unwrap()),
+        );
+        let format_summary = sheet.cell_format_summary((1, 0).into(), false);
+        assert_eq!(format_summary.cell_type, Some(CellType::DateTime));
+
+        sheet.set_cell_value(
+            Pos { x: 2, y: 0 },
+            CellValue::Time(NaiveTime::from_str("1:23 pm").unwrap()),
+        );
+        let format_summary = sheet.cell_format_summary((2, 0).into(), false);
+        assert_eq!(format_summary.cell_type, None);
     }
 
     #[test]

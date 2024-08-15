@@ -278,6 +278,28 @@ impl CellValue {
         }
     }
 
+    /// Returns the value as a string that can be used by get_cells in languages
+    pub fn to_get_cells(&self) -> String {
+        match self {
+            CellValue::Blank => String::new(),
+            CellValue::Text(s) => s.to_string(),
+            CellValue::Html(_) => String::new(),
+            CellValue::Number(n) => n.to_string(),
+            CellValue::Logical(true) => "true".to_string(),
+            CellValue::Logical(false) => "false".to_string(),
+            CellValue::Instant(_) => todo!("repr of Instant"),
+            CellValue::Date(d) => d.format("%Y-%m-%d").to_string(),
+            CellValue::Time(t) => t.format("%H:%M:%S%.3f").to_string(),
+            CellValue::DateTime(t) => t.format("%Y-%m-%dT%H:%M:%S%.3f").to_string(),
+            CellValue::Duration(_) => todo!("repr of Duration"),
+            CellValue::Error(_) => "[error]".to_string(),
+
+            // these should not return a value
+            CellValue::Code(_) => String::new(),
+            CellValue::Image(_) => String::new(),
+        }
+    }
+
     pub fn unpack_percentage(s: &str) -> Option<BigDecimal> {
         if s.is_empty() {
             return None;
@@ -489,6 +511,20 @@ impl CellValue {
         }
     }
 
+    // Converts a JS Date to either a Date or DateTime (depending if the time is set to midnight)
+    fn from_js_date(value: &String) -> CellValue {
+        // need to strip timezone info
+        let value = value.trim_end_matches('Z');
+        let Ok(date) = NaiveDateTime::parse_from_str(&value, "%Y-%m-%dT%H:%M:%S%.f") else {
+            return CellValue::Text(value.to_owned());
+        };
+        if date.time() == NaiveTime::default() {
+            CellValue::Date(date.date())
+        } else {
+            CellValue::DateTime(date)
+        }
+    }
+
     /// Convert stringified values and types from JS to CellValue
     ///
     /// `value` is the stringified value
@@ -499,6 +535,8 @@ impl CellValue {
         pos: Pos,
         sheet: &mut Sheet,
     ) -> Result<(CellValue, Vec<Operation>)> {
+        dbgjs!(value);
+        dbgjs!(js_type);
         let mut ops = vec![];
         let sheet_rect = SheetRect::single_pos(pos, sheet.id);
 
@@ -561,6 +599,7 @@ impl CellValue {
             "instant" => CellValue::Text("not implemented".into()), //unpack_str_unix_timestamp(value)?,
             "duration" => CellValue::Text("not implemented".into()),
             "image" => CellValue::Image(value.into()),
+            "date" => Self::from_js_date(value),
             _ => CellValue::Text(value.into()),
         };
 
@@ -852,5 +891,57 @@ mod test {
         assert!(value.is_image());
         let value = CellValue::Text("test".into());
         assert!(!value.is_image());
+    }
+
+    #[test]
+    #[parallel]
+    fn from_js_date() {
+        let value = "2024-08-15T10:53:48.750Z".to_string();
+        let js_type = "date";
+        let pos = (0, 1).into();
+        let sheet = &mut Sheet::test();
+        let value = CellValue::from_js(&value, js_type, pos, sheet);
+        assert_eq!(
+            value.unwrap().0,
+            CellValue::DateTime(
+                NaiveDateTime::parse_from_str("2024-08-15T10:53:48.750", "%Y-%m-%dT%H:%M:%S%.f")
+                    .unwrap()
+            )
+        );
+
+        let value = "2021-09-01T00:00:00.000Z".to_string();
+        let js_type = "date";
+        let pos = (0, 1).into();
+        let sheet = &mut Sheet::test();
+        let value = CellValue::from_js(&value, js_type, pos, sheet);
+        assert_eq!(
+            value.unwrap().0,
+            CellValue::Date(NaiveDate::parse_from_str("2021-09-01", "%Y-%m-%d").unwrap())
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn to_get_cells() {
+        let value = CellValue::Number(BigDecimal::from_str("123123.1233").unwrap());
+        assert_eq!(value.to_get_cells(), "123123.1233");
+
+        let value = CellValue::Logical(true);
+        assert_eq!(value.to_get_cells(), "true");
+
+        let value = CellValue::Logical(false);
+        assert_eq!(value.to_get_cells(), "false");
+
+        let value = CellValue::Text("test".into());
+        assert_eq!(value.to_get_cells(), "test");
+
+        let value = CellValue::Date(NaiveDate::parse_from_str("2021-09-01", "%Y-%m-%d").unwrap());
+        assert_eq!(value.to_get_cells(), "2021-09-01");
+
+        let value = CellValue::DateTime(
+            NaiveDateTime::parse_from_str("2024-08-15T10:53:48.750", "%Y-%m-%dT%H:%M:%S%.f")
+                .unwrap(),
+        );
+        assert_eq!(value.to_get_cells(), "2024-08-15T10:53:48.750");
     }
 }

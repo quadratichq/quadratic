@@ -123,7 +123,7 @@ const getCellsDB = (
   x1: number,
   y1?: number,
   sheetName?: string
-): (number | string | boolean | undefined)[][] => {
+): (number | string | boolean | Date | undefined)[][] => {
   try {
     // This is a shared buffer that will be used to communicate with core
     // The first 4 bytes are used to signal the python core that the data is ready
@@ -162,7 +162,14 @@ const getCellsDB = (
 
     const decoder = new TextDecoder();
     const cellsStringified = decoder.decode(nonSharedView);
-    const cells = convertNullToUndefined(JSON.parse(cellsStringified) as (number | string | boolean | null)[][]);
+    const cells = convertNullToUndefined(JSON.parse(cellsStringified) as (number | string | boolean | Date | null)[][]);
+    cells.forEach((row) => {
+      row.forEach((cell, i) => {
+        if (typeof cell === 'string' && cell.startsWith('___date___')) {
+          row[i] = new Date(parseInt(cell.substring('___date___'.length)));
+        }
+      });
+    });
     return cells;
   } catch (e) {
     console.warn('[javascriptLibrary] getCells error', e);
@@ -173,8 +180,8 @@ const getCellsDB = (
 // JSON.parse convert undefined to null,
 // so we need to convert null back to undefined
 function convertNullToUndefined(
-  arr: (number | string | boolean | null)[][]
-): (number | string | boolean | undefined)[][] {
+  arr: (number | string | boolean | Date | null)[][]
+): (number | string | boolean | Date | undefined)[][] {
   return arr.map((subArr) => subArr.map((element) => (element === null ? undefined : element)));
 }
 
@@ -196,7 +203,7 @@ export const getCells = (
   x1: number,
   y1?: number,
   sheetName?: string
-): (number | string | boolean | undefined)[][] => {
+): (number | string | boolean | Date | undefined)[][] => {
   if (isNaN(x0) || isNaN(y0) || isNaN(x1)) {
     const line = lineNumber();
     throw new Error(
@@ -223,7 +230,7 @@ export const getCellsWithHeadings = (
   x1: number,
   y1?: number,
   sheetName?: string
-): Record<string, number | string | boolean | undefined>[] => {
+): Record<string, number | string | boolean | Date | undefined>[] => {
   if (isNaN(x0) || isNaN(y0) || isNaN(x1)) {
     const line = lineNumber();
     throw new Error(
@@ -242,7 +249,7 @@ export const getCellsWithHeadings = (
   const cells = getCells(x0, y0, x1, y1, sheetName);
   const headers = cells[0];
   return cells.slice(1).map((row) => {
-    const obj: Record<string, number | string | boolean | undefined> = {};
+    const obj: Record<string, number | string | boolean | Date | undefined> = {};
     headers.forEach((header, i) => {
       obj[header as string] = row[i];
     });
@@ -250,7 +257,7 @@ export const getCellsWithHeadings = (
   });
 };
 
-export const getCell = (x: number, y: number, sheetName?: string): number | string | boolean | undefined => {
+export const getCell = (x: number, y: number, sheetName?: string): number | string | boolean | Date | undefined => {
   if (isNaN(x) || isNaN(y)) {
     const line = lineNumber();
     throw new Error(
