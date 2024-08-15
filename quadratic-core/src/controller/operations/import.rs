@@ -150,6 +150,17 @@ impl GridController {
             y: row as i64 + 1,
         };
 
+        // total rows for calculating import progress
+        let total_rows = sheets
+            .iter()
+            .try_fold(0, |acc, sheet_name| {
+                let range = workbook.worksheet_range(&sheet_name)?;
+                // counted twice because we have to read values and formulas
+                Ok(acc + 2 * range.rows().count())
+            })
+            .map_err(error)?;
+        let mut current_y = 0;
+
         let mut order = key_between(&None, &None).unwrap_or("A0".to_string());
         for sheet_name in sheets {
             // add the sheet
@@ -200,6 +211,21 @@ impl GridController {
                         cell_value,
                     );
                 }
+
+                current_y += 1;
+                // send progress to the client, every IMPORT_LINES_PER_OPERATION
+                if cfg!(target_family = "wasm") && current_y % IMPORT_LINES_PER_OPERATION == 0 {
+                    let width = row.len() as u32;
+                    crate::wasm_bindings::js::jsImportProgress(
+                        file_name,
+                        current_y,
+                        total_rows as u32,
+                        0,
+                        1,
+                        width,
+                        total_rows as u32,
+                    );
+                }
             }
 
             // formulas
@@ -223,6 +249,21 @@ impl GridController {
                             sheet_pos: pos.to_sheet_pos(sheet.id),
                         });
                     }
+                }
+
+                current_y += 1;
+                // send progress to the client, every IMPORT_LINES_PER_OPERATION
+                if cfg!(target_family = "wasm") && current_y % IMPORT_LINES_PER_OPERATION == 0 {
+                    let width = row.len() as u32;
+                    crate::wasm_bindings::js::jsImportProgress(
+                        file_name,
+                        current_y,
+                        total_rows as u32,
+                        0,
+                        1,
+                        width,
+                        total_rows as u32,
+                    );
                 }
             }
             // add new sheets

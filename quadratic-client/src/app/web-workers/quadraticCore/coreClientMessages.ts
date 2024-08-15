@@ -85,7 +85,7 @@ export interface ClientCoreExport {
 
 export interface CoreClientExport {
   type: 'coreClientExport';
-  grid: Uint8Array;
+  grid: ArrayBuffer;
   id: number;
 }
 

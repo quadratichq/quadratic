@@ -1,7 +1,7 @@
 use super::*;
 use crate::grid::js_types::*;
 use crate::wasm_bindings::controller::sheet_info::SheetInfo;
-use js_sys::Uint8Array;
+use js_sys::{ArrayBuffer, Uint8Array};
 use std::str::FromStr;
 
 pub mod auto_complete;
@@ -100,9 +100,9 @@ impl GridController {
 
     /// Exports a [`GridController`] to a file. Returns a `String`.
     #[wasm_bindgen(js_name = "exportToFile")]
-    pub fn js_export_to_file(&mut self) -> Result<Uint8Array, JsValue> {
+    pub fn js_export_to_file(&mut self) -> Result<ArrayBuffer, JsValue> {
         match file::export(self.grid_mut()) {
-            Ok(file) => Ok(Uint8Array::from(&file[..])),
+            Ok(file) => Ok(Uint8Array::from(&file[..]).buffer()),
             Err(e) => Err(JsValue::from_str(&e.to_string())),
         }
     }

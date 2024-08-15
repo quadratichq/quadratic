@@ -3,7 +3,8 @@ use std::collections::VecDeque;
 use super::TransactionType;
 use crate::controller::{
     active_transactions::{
-        pending_transaction::PendingTransaction, unsaved_transactions::UnsavedTransaction,
+        pending_transaction::PendingTransaction, transaction_name::TransactionName,
+        unsaved_transactions::UnsavedTransaction,
     },
     operations::operation::Operation,
     transaction::TransactionServer,
@@ -79,10 +80,15 @@ impl GridController {
 
     /// Used by the server to apply transactions. Since the server owns the sequence_num,
     /// there's no need to check or alter the execution order.
-    pub fn server_apply_transaction(&mut self, operations: Vec<Operation>) {
+    pub fn server_apply_transaction(
+        &mut self,
+        operations: Vec<Operation>,
+        transaction_name: Option<TransactionName>,
+    ) {
         let mut transaction = PendingTransaction {
             transaction_type: TransactionType::Server,
             operations: operations.into(),
+            transaction_name: transaction_name.unwrap_or(TransactionName::Unknown),
             ..Default::default()
         };
         self.start_transaction(&mut transaction);
@@ -407,7 +413,7 @@ mod tests {
 
         let mut server = GridController::test();
         server.grid.try_sheet_mut(server.sheet_ids()[0]).unwrap().id = sheet_id;
-        server.server_apply_transaction(operations);
+        server.server_apply_transaction(operations, None);
         let sheet = server.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.display_value(Pos { x: 0, y: 0 }),

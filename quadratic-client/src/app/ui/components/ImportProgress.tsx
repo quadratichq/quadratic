@@ -1,69 +1,13 @@
-import { events } from '@/app/events/events';
-import {
-  CoreClientImportProgress,
-  CoreClientTransactionProgress,
-  CoreClientTransactionStart,
-} from '@/app/web-workers/quadraticCore/coreClientMessages';
+import { fileImportProgressSelector } from '@/dashboard/atoms/fileImportProgressAtom';
 import { Progress } from '@/shared/shadcn/ui/progress';
-import { useEffect, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 
 // The last message.total + 1 is used to track the execute operation progress.
 
 export const ImportProgress = () => {
-  const [filename, setFilename] = useState<string | undefined>(undefined);
-  const [percentage, setPercentage] = useState<number | undefined>(undefined);
-  const [total, setTotal] = useState<number | undefined>(undefined);
-  const [show, setShow] = useState(false);
+  const { fileName, importing, totalProgress } = useRecoilValue(fileImportProgressSelector);
 
-  // Used to track the import operation-creation progress.
-  useEffect(() => {
-    const handleProgress = (message: CoreClientImportProgress) => {
-      setFilename(message.filename);
-      const progress = (message.current / (message.total * 2)) * 100;
-      setTotal(message.total * 2);
-      setPercentage(progress);
-      setShow(true);
-    };
-    events.on('importProgress', handleProgress);
-    return () => {
-      events.off('importProgress', handleProgress);
-    };
-  }, []);
-
-  // Used to track the execute operation for the import
-  useEffect(() => {
-    if (!total) return;
-    let transactionId: string | undefined;
-    let maxOperations = 0;
-    const transactionStart = (message: CoreClientTransactionStart) => {
-      if (message.transactionType === 'Import') {
-        transactionId = message.transactionId;
-      }
-    };
-    const transactionProgress = (message: CoreClientTransactionProgress) => {
-      maxOperations = Math.max(maxOperations, message.remainingOperations);
-      if (message.transactionId === transactionId) {
-        setPercentage((percentage) => {
-          if (!percentage) return percentage;
-          const operationPercentage = (1 - message.remainingOperations / maxOperations) * 50;
-          const final = 50 + operationPercentage;
-          if (final >= 100) {
-            // allow the bar to complete before removing it
-            setTimeout(() => setShow(false), 250);
-          }
-          return final;
-        });
-      }
-    };
-    events.on('transactionStart', transactionStart);
-    events.on('transactionProgress', transactionProgress);
-    return () => {
-      events.off('transactionStart', transactionStart);
-      events.off('transactionProgress', transactionProgress);
-    };
-  }, [total]);
-
-  if (!show) return;
+  if (!importing) return;
 
   return (
     <div
@@ -79,8 +23,8 @@ export const ImportProgress = () => {
         pointerEvents: 'none',
       }}
     >
-      <div style={{ marginBottom: '1rem' }}>Importing {filename}...</div>
-      <Progress value={percentage} />
+      <div style={{ marginBottom: '1rem' }}>Importing {fileName}...</div>
+      <Progress value={totalProgress} />
     </div>
   );
 };

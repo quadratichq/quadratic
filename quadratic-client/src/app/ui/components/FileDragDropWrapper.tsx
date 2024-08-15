@@ -9,7 +9,7 @@ import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { DragEvent, PropsWithChildren, useCallback, useRef, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 
-export const FileUploadWrapper = (props: PropsWithChildren) => {
+export const FileDragDropWrapper = (props: PropsWithChildren) => {
   // drag state
   const [dragActive, setDragActive] = useState(false);
   const divRef = useRef<HTMLDivElement>(null);

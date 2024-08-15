@@ -325,7 +325,8 @@ class CoreClient {
         return;
 
       case 'clientCoreExport':
-        this.send({ type: 'coreClientExport', id: e.data.id, grid: await core.export() });
+        const exportGrid = await core.export();
+        this.send({ type: 'coreClientExport', id: e.data.id, grid: exportGrid }, exportGrid);
         return;
 
       case 'clientCoreSearch':

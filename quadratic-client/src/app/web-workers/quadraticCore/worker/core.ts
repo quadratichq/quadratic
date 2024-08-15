@@ -411,7 +411,7 @@ class Core {
       const gc = GridController.newFromFile(new Uint8Array(file), sequenceNum, false);
       const contents = gc.exportToFile();
       const version = gc.getVersion();
-      return { contents: contents.buffer, version };
+      return { contents, version };
     } catch (error: unknown) {
       console.error(error);
       reportError(error);
@@ -431,7 +431,7 @@ class Core {
         const gc = GridController.importExcel(new Uint8Array(file), fileName);
         const contents = gc.exportToFile();
         const version = gc.getVersion();
-        return { contents: contents.buffer, version };
+        return { contents, version };
       } catch (error: unknown) {
         console.error(error);
         reportError(error);
@@ -471,7 +471,7 @@ class Core {
         const gc = GridController.importCsv(new Uint8Array(file), fileName);
         const contents = gc.exportToFile();
         const version = gc.getVersion();
-        return { contents: contents.buffer, version };
+        return { contents, version };
       } catch (error: unknown) {
         console.error(error);
         reportError(error);
@@ -511,7 +511,7 @@ class Core {
       const gc = GridController.importParquet(new Uint8Array(file), fileName);
       const contents = gc.exportToFile();
       const version = gc.getVersion();
-      return { contents: contents.buffer, version };
+      return { contents, version };
     } else {
       return new Promise((resolve) => {
         this.clientQueue.push(() => {
@@ -646,7 +646,7 @@ class Core {
     });
   }
 
-  export(): Promise<Uint8Array> {
+  export(): Promise<ArrayBuffer> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');

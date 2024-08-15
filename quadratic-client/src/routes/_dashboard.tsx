@@ -1,5 +1,6 @@
+import { ImportProgress } from '@/app/ui/components/ImportProgress';
 import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
-import { DashboardProvider, useDashboardState } from '@/dashboard/components/DashboardProvider';
+import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { Empty } from '@/dashboard/components/Empty';
@@ -32,6 +33,7 @@ import {
   useRouteLoaderData,
   useSearchParams,
 } from 'react-router-dom';
+import { RecoilRoot, useRecoilState } from 'recoil';
 
 const DRAWER_WIDTH = 264;
 export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
@@ -175,7 +177,7 @@ export const Component = () => {
   useCheckForAuthorizationTokenOnWindowFocus();
 
   return (
-    <DashboardProvider>
+    <RecoilRoot>
       <LiveChatWidget license="14763831" customerEmail={user?.email} customerName={user?.name} />
       <div className={`h-full lg:flex lg:flex-row`}>
         <div
@@ -209,12 +211,13 @@ export const Component = () => {
         {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.EDUCATION && <EducationDialog />}
       </div>
       <NewFileDialogWrapper />
-    </DashboardProvider>
+      <ImportProgress />
+    </RecoilRoot>
   );
 };
 
 function NewFileDialogWrapper() {
-  const [dashboardState, setDashboardState] = useDashboardState();
+  const [newFileDialogState, setNewFileDialogState] = useRecoilState(newFileDialogAtom);
   const {
     activeTeam: {
       connections,
@@ -224,14 +227,13 @@ function NewFileDialogWrapper() {
   const location = useLocation();
   const isPrivate = location.pathname === ROUTES.TEAM_FILES_PRIVATE(uuid);
 
-  if (!dashboardState.showNewFileDialog) {
-    return null;
-  }
+  if (!newFileDialogState.show) return;
+
   return (
     <NewFileDialog
       connections={connections}
       teamUuid={uuid}
-      onClose={() => setDashboardState((prev) => ({ ...prev, showNewFileDialog: false }))}
+      onClose={() => setNewFileDialogState({ show: false })}
       isPrivate={isPrivate}
     />
   );

@@ -40,7 +40,7 @@ pub(crate) fn export_file(key: &str, grid: &mut Grid) -> Result<Vec<u8>> {
 
 /// Apply a vec of operations to the grid
 pub(crate) fn apply_transaction(grid: &mut GridController, operations: Vec<Operation>) {
-    grid.server_apply_transaction(operations)
+    grid.server_apply_transaction(operations, None)
 }
 
 /// Exports a .grid file

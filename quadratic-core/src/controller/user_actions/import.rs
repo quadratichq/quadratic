@@ -19,7 +19,7 @@ impl GridController {
         if cursor.is_some() {
             self.start_user_transaction(ops, cursor, TransactionName::Import);
         } else {
-            self.server_apply_transaction(ops);
+            self.server_apply_transaction(ops, Some(TransactionName::Import));
         }
 
         Ok(())
@@ -38,13 +38,13 @@ impl GridController {
         if cursor.is_some() {
             self.start_user_transaction(ops, cursor, TransactionName::Import);
         } else {
-            self.server_apply_transaction(ops);
+            self.server_apply_transaction(ops, Some(TransactionName::Import));
         }
 
         // Rerun all code cells after importing Excel file
         // This is required to run compute cells in order
         let code_rerun_ops = self.rerun_all_code_cells_operations();
-        self.server_apply_transaction(code_rerun_ops);
+        self.server_apply_transaction(code_rerun_ops, None);
         Ok(())
     }
 
@@ -63,7 +63,7 @@ impl GridController {
         if cursor.is_some() {
             self.start_user_transaction(ops, cursor, TransactionName::Import);
         } else {
-            self.server_apply_transaction(ops);
+            self.server_apply_transaction(ops, Some(TransactionName::Import));
         }
 
         Ok(())

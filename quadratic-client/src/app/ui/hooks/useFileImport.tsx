@@ -1,13 +1,16 @@
 import { Coordinate } from '@/app/gridGL/types/size';
 import { getFileType, stripExtension, supportedFileTypes, uploadFile } from '@/app/helpers/files';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { fileImportProgressAtom } from '@/dashboard/atoms/fileImportProgressAtom';
 import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { Buffer } from 'buffer';
 import { useNavigate } from 'react-router-dom';
+import { useSetRecoilState } from 'recoil';
 
 export function useFileImport() {
+  const setFileImportProgressState = useSetRecoilState(fileImportProgressAtom);
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const navigate = useNavigate();
 
@@ -35,6 +38,11 @@ export function useFileImport() {
     const createFile =
       cursor === undefined && sheetId === undefined && insertAt === undefined && teamUuid !== undefined;
 
+    const redirectToFile = createFile && files.length === 1;
+    let redirectToFileUuid: string | undefined = undefined;
+
+    const redirectToTeam = createFile && files.length > 1;
+
     if (!createFile && firstFileType === 'grid') {
       addGlobalSnackbar(`Error importing ${files[0].name}: Cannot import grid file into existing file`, {
         severity: 'warning',
@@ -42,11 +50,6 @@ export function useFileImport() {
       files = [];
       return;
     }
-
-    const redirectFile = createFile && files.length === 1;
-    let redirectFileUuid: string | undefined = undefined;
-
-    const redirectTeam = createFile && files.length > 1;
 
     // Only one file can be imported at a time (except for excel), inside a existing file
     if (!createFile && files.length > 1) {
@@ -77,7 +80,36 @@ export function useFileImport() {
       }
     }
 
-    for (const file of files) {
+    files = Array.from(files).reverse(); // reverse the order of files to import the last file first
+    const totalFilesSize = files.reduce((acc, file) => acc + file.size, 0);
+
+    setFileImportProgressState((prev) => ({
+      ...prev,
+      importing: true,
+      saveRequired: createFile,
+      totalFiles: files.length,
+      totalFilesSize,
+      remainingFiles: files.length,
+      remainingFilesSize: totalFilesSize,
+    }));
+
+    while (files.length > 0) {
+      const file = files.pop();
+      if (file === undefined) continue;
+
+      setFileImportProgressState((prev) => ({
+        ...prev,
+        remainingFiles: files.length + 1,
+        remainingFilesSize: (prev.remainingFilesSize ?? totalFilesSize) - (prev.currentFileSize ?? 0),
+        currentFileName: file.name,
+        currentFileSize: file.size,
+        currentFileStep: 'read',
+        currentFileReadProgress: undefined,
+        currentFileCreateProgress: undefined,
+        currentFileTransactionId: undefined,
+        currentFileTransactionOps: undefined,
+      }));
+
       try {
         const fileType = getFileType(file);
         const arrayBuffer = await file.arrayBuffer().catch(console.error);
@@ -110,14 +142,15 @@ export function useFileImport() {
 
         // contents and version are returned when importing into a new file
         else if (createFile && result?.contents !== undefined && result?.version !== undefined) {
+          setFileImportProgressState((prev) => ({ ...prev, currentFileStep: 'save' }));
           const name = file.name ? stripExtension(file.name) : 'Untitled';
-          const contents = Buffer.from(new Uint8Array(result.contents)).toString('base64');
+          const contents = Buffer.from(result.contents).toString('base64');
           const version = result.version;
           const {
             file: { uuid },
           } = await apiClient.files.create({ file: { name, contents, version }, teamUuid, isPrivate });
-          if (redirectFile) {
-            redirectFileUuid = uuid;
+          if (redirectToFile) {
+            redirectToFileUuid = uuid;
           }
         }
       } catch (e) {
@@ -127,9 +160,11 @@ export function useFileImport() {
       }
     }
 
-    if (redirectFile && redirectFileUuid !== undefined) {
-      navigate(ROUTES.FILE(redirectFileUuid));
-    } else if (redirectTeam) {
+    setFileImportProgressState((prev) => ({ ...prev, importing: false }));
+
+    if (redirectToFile && redirectToFileUuid !== undefined) {
+      navigate(ROUTES.FILE(redirectToFileUuid));
+    } else if (redirectToTeam) {
       navigate(isPrivate ? ROUTES.TEAM_FILES_PRIVATE(teamUuid) : ROUTES.TEAM_FILES(teamUuid));
     }
   };
