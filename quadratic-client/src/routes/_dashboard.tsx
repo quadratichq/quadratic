@@ -34,6 +34,7 @@ import {
   useSearchParams,
 } from 'react-router-dom';
 import { RecoilRoot, useRecoilState } from 'recoil';
+import { FileDragDrop } from '../dashboard/components/FileDragDrop';
 
 const DRAWER_WIDTH = 264;
 export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
@@ -183,7 +184,7 @@ export const Component = () => {
         <div
           ref={contentPaneRef}
           className={cn(
-            `relative order-2 h-full w-full px-4 pb-10 transition-all sm:pt-0 lg:px-10`,
+            `relative order-2 flex w-full flex-grow flex-col px-4 pb-10 transition-all sm:pt-0 lg:px-10`,
             isLoading ? 'overflow-hidden' : 'overflow-auto',
             isLoading && 'pointer-events-none opacity-25'
           )}
@@ -212,6 +213,7 @@ export const Component = () => {
       </div>
       <NewFileDialogWrapper />
       <ImportProgress />
+      <FileDragDrop />
     </RecoilRoot>
   );
 };
@@ -221,18 +223,18 @@ function NewFileDialogWrapper() {
   const {
     activeTeam: {
       connections,
-      team: { uuid },
+      team: { uuid: teamUuid },
     },
   } = useDashboardRouteLoaderData();
   const location = useLocation();
-  const isPrivate = location.pathname === ROUTES.TEAM_FILES_PRIVATE(uuid);
+  const isPrivate = location.pathname !== ROUTES.TEAM_FILES(teamUuid);
 
   if (!newFileDialogState.show) return;
 
   return (
     <NewFileDialog
       connections={connections}
-      teamUuid={uuid}
+      teamUuid={teamUuid}
       onClose={() => setNewFileDialogState({ show: false })}
       isPrivate={isPrivate}
     />

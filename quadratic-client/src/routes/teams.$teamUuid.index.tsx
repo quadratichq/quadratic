@@ -24,7 +24,7 @@ export const Component = () => {
   const avatarSxProps = { width: 24, height: 24, fontSize: '.875rem' };
 
   return (
-    <>
+    <div className="flex flex-grow flex-col">
       <OnboardingBanner />
 
       <DashboardHeader
@@ -62,6 +62,8 @@ export const Component = () => {
           publicLinkAccess: file.publicLinkAccess,
           permissions: userMakingRequest.filePermissions,
         }))}
+        teamUuid={teamUuid}
+        isPrivate={false}
         emptyState={
           canEdit ? (
             <FilesListEmptyState />
@@ -74,6 +76,6 @@ export const Component = () => {
           )
         }
       />
-    </>
+    </div>
   );
 };

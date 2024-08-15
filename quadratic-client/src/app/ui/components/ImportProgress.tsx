@@ -15,7 +15,7 @@ export const ImportProgress = () => {
         position: 'absolute',
         left: '2rem',
         bottom: '1rem',
-        zIndex: 2,
+        zIndex: 10,
         background: 'white',
         border: '1px solid black',
         padding: '1rem',
