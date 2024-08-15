@@ -125,7 +125,7 @@ function ListItems({
   return filteredItems.length > 0 ? (
     <div className="relative -mt-3">
       {filteredItems.map(({ uuid, name, type, createdDate, disabled }, i) => (
-        <div className="relative flex items-center gap-1">
+        <div className="group relative flex items-center gap-1">
           <button
             onClick={() => {
               hangleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type });
@@ -134,7 +134,7 @@ function ListItems({
             key={uuid}
             className={cn(
               `flex w-full items-center gap-4 rounded px-1 py-2`,
-              disabled ? 'cursor-not-allowed opacity-50' : 'hover:bg-accent'
+              disabled ? 'cursor-not-allowed opacity-50' : 'group-hover:bg-accent'
               // i < filteredConnections.length - 1 && 'border-b border-border'
             )}
           >
@@ -152,7 +152,7 @@ function ListItems({
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-0 top-2 rounded text-muted-foreground"
+              className="absolute right-2 top-2 rounded text-muted-foreground hover:bg-background"
               onClick={() => {
                 handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
               }}
