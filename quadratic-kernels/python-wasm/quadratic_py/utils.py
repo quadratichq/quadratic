@@ -77,7 +77,6 @@ def to_quadratic_type(
         | None
     ),
 ) -> Tuple[str, str]:
-
     try:
         if value == None or value == "":
             return ("", "blank")
@@ -94,10 +93,14 @@ def to_quadratic_type(
             return (str(value), "number")
         elif type(value) == bool:
             return (str(bool(value)), "logical")
+        elif isinstance(value, time):
+            return (to_iso_format(value), "time")
+        elif isinstance(value, date):
+            return (to_iso_format(value), "date")
         elif isinstance(
-            value, (pd.Timestamp, np.datetime64, date, time, datetime)
+            value, (pd.Timestamp, np.datetime64, datetime)
         ) or pd.api.types.is_datetime64_dtype(value):
-            return (str(to_iso_format(value)), "date")
+            return (to_iso_format(value), "date time")
 
         # TODO(ddimaria): implement when we implement duration in Rust
         # elif isinstance(value, (pd.Period, np.timedelta64, timedelta)):
@@ -121,11 +124,13 @@ def to_python_type(value: str, value_type: str) -> int | float | str | bool:
         elif value_type == "logical":
             return ast.literal_eval(normalize_bool(value))
         elif value_type == "time":
-            return datetime.fromisoformat(str(value), tz=pytz.utc).time()
+            return datetime.fromisoformat(
+                value,
+            ).time()
         elif value_type == "date":
-            return datetime.fromisoformat(str(value), tz=pytz.utc)
+            return datetime.fromisoformat(value)
         elif value_type == "datetime":
-            return datetime.fromisoformat(str(value), tz=pytz.utc)
+            return datetime.fromisoformat(value)
         else:
             return value
     except:
