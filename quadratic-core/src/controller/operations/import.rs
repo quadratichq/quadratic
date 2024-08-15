@@ -164,7 +164,8 @@ impl GridController {
                     let cell_value = match cell {
                         ExcelData::Empty => continue,
                         ExcelData::String(value) => CellValue::Text(value.to_string()),
-                        ExcelData::DateTimeIso(ref value) => CellValue::Text(value.to_string()),
+                        ExcelData::DateTimeIso(ref value) => CellValue::unpack_date_time(value)
+                            .unwrap_or(CellValue::Text(value.to_string())),
                         ExcelData::DurationIso(ref value) => CellValue::Text(value.to_string()),
                         ExcelData::Float(ref value) => {
                             CellValue::unpack_str_float(&value.to_string(), CellValue::Blank)
