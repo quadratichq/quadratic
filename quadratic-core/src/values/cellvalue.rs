@@ -535,8 +535,6 @@ impl CellValue {
         pos: Pos,
         sheet: &mut Sheet,
     ) -> Result<(CellValue, Vec<Operation>)> {
-        dbgjs!(value);
-        dbgjs!(js_type);
         let mut ops = vec![];
         let sheet_rect = SheetRect::single_pos(pos, sheet.id);
 
@@ -602,7 +600,8 @@ impl CellValue {
             "duration" => CellValue::Text("not implemented".into()),
             "image" => CellValue::Image(value.into()),
             "date" => Self::from_js_date(value),
-            _ => CellValue::Text(value.into()),
+            "date time" => Self::from_js_date(value),
+            _ => CellValue::unpack_date_time(value).unwrap_or(CellValue::Text(value.into())),
         };
 
         Ok((cell_value, ops))

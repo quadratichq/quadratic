@@ -133,8 +133,31 @@ def to_python_type(value: str, value_type: str) -> int | float | str | bool:
             ).time()
         elif value_type == "date":
             return datetime.fromisoformat(value)
-        elif value_type == "datetime":
+        elif value_type == "date time":
             return datetime.fromisoformat(value)
+        else:
+            return value
+    except:
+        return value
+
+
+# Convert from quadratic types to python df types
+def to_python_type_df(value: str, value_type: str) -> int | float | str | bool:
+    try:
+        if value_type == "blank":
+            return None
+        elif value_type == "number":
+            return number_type(value)
+        elif value_type == "text":
+            return str(value)
+        elif value_type == "logical":
+            return ast.literal_eval(normalize_bool(value))
+        elif value_type == "time":
+            return str(value)
+        elif value_type == "date":
+            return pd.to_datetime(value)
+        elif value_type == "date time":
+            return pd.to_datetime(value)
         else:
             return value
     except:
