@@ -4,7 +4,7 @@
 //! is only a Date or Time. In this case, we need to truncate the format string
 //! to only include the relevant elements. (Otherwise it throws an error.)
 
-use chrono::format::{Item, Numeric, StrftimeItems};
+use chrono::format::{Fixed, Item, Numeric, StrftimeItems};
 
 use crate::CellValue;
 
@@ -30,7 +30,20 @@ impl Sheet {
                 Numeric::Ordinal => true,
                 _ => false,
             },
-            Item::Fixed(_) | Item::Space(_) | Item::Literal(_) | _ => false,
+            Item::Fixed(
+                Fixed::ShortMonthName
+                | Fixed::LongMonthName
+                | Fixed::LongWeekdayName
+                | Fixed::ShortWeekdayName
+                | Fixed::TimezoneName
+                | Fixed::TimezoneOffset
+                | Fixed::TimezoneOffsetColon
+                | Fixed::TimezoneOffsetColonZ
+                | Fixed::TimezoneOffsetDoubleColon
+                | Fixed::TimezoneOffsetTripleColon
+                | Fixed::TimezoneOffsetZ,
+            ) => true,
+            _ => false,
         }
     }
 
@@ -45,7 +58,15 @@ impl Sheet {
                 Numeric::Timestamp => true,
                 _ => false,
             },
-            Item::Fixed(_) | Item::Space(_) | Item::Literal(_) | _ => false,
+            Item::Fixed(
+                Fixed::LowerAmPm
+                | Fixed::Nanosecond
+                | Fixed::Nanosecond3
+                | Fixed::Nanosecond6
+                | Fixed::Nanosecond9
+                | Fixed::UpperAmPm,
+            ) => true,
+            _ => false,
         }
     }
 
@@ -105,8 +126,13 @@ impl Sheet {
                             // handle case where there are no time items, only date items
                             return value.to_display();
                         }
-                        t.format_with_items(items.iter()).to_string()
+
+                        // todo: this can throw an uncaught error if the format
+                        // string is invalid. This should be handled better and
+                        // fallback to to_display on error.
+
                         // remove any date items before the time items
+                        t.format_with_items(items.iter()).to_string()
                     }
                     _ => value.to_display(),
                 }
@@ -118,7 +144,9 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
-    use chrono::NaiveDateTime;
+    use std::str::FromStr;
+
+    use chrono::{NaiveDateTime, NaiveTime};
     use serial_test::parallel;
 
     use crate::{
@@ -222,5 +250,13 @@ mod tests {
                 ..Default::default()
             }
         );
+    }
+
+    #[test]
+    #[parallel]
+    fn cell_date_time_error() {
+        let format = "%Y-%m-%d %I:%M:%S %p".to_string();
+        let value = CellValue::Time(NaiveTime::from_str("17:12:00").unwrap());
+        assert_eq!(Sheet::value_date_time(&Some(format), &value), "05:12:00 PM");
     }
 }
