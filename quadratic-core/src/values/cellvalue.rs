@@ -542,12 +542,14 @@ impl CellValue {
 
         let cell_value = match js_type {
             "text" => {
-                let is_html = value.to_lowercase().starts_with("<html>")
-                    || value.to_lowercase().starts_with("<div>");
-
-                match is_html {
-                    true => CellValue::Html(value.to_string()),
-                    false => CellValue::Text(value.to_string()),
+                if value.to_lowercase().starts_with("<html>")
+                    || value.to_lowercase().starts_with("<div>")
+                {
+                    CellValue::Html(value.to_string())
+                } else if let Some(time) = Self::unpack_time(value) {
+                    time
+                } else {
+                    CellValue::Text(value.to_string())
                 }
             }
             "number" => {

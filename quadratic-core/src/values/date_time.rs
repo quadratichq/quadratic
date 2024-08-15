@@ -12,6 +12,7 @@ impl CellValue {
             "%H:%M",
             "%I:%M:%S",
             "%I:%M",
+            "%H:%M:%S%.3f",
         ];
 
         for &format in formats.iter() {
@@ -76,6 +77,14 @@ mod tests {
         assert_eq!(
             CellValue::unpack_time(&value),
             Some(CellValue::Time(NaiveTime::from_hms_opt(12, 34, 0).unwrap()))
+        );
+
+        let value = String::from("17:12:00.000");
+        assert_eq!(
+            CellValue::unpack_time(&value),
+            Some(CellValue::Time(
+                NaiveTime::from_hms_milli_opt(17, 12, 0, 0).unwrap()
+            ))
         );
     }
 
