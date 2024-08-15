@@ -154,7 +154,7 @@ impl GridController {
         let total_rows = sheets
             .iter()
             .try_fold(0, |acc, sheet_name| {
-                let range = workbook.worksheet_range(&sheet_name)?;
+                let range = workbook.worksheet_range(sheet_name)?;
                 // counted twice because we have to read values and formulas
                 Ok(acc + 2 * range.rows().count())
             })

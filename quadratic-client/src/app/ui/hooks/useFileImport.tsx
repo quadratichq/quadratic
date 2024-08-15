@@ -6,13 +6,14 @@ import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { Buffer } from 'buffer';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSubmit } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 
 export function useFileImport() {
   const setFileImportProgressState = useSetRecoilState(fileImportProgressAtom);
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const navigate = useNavigate();
+  const submit = useSubmit();
 
   const handleImport = async ({
     files,
@@ -39,9 +40,8 @@ export function useFileImport() {
       cursor === undefined && sheetId === undefined && insertAt === undefined && teamUuid !== undefined;
 
     const redirectToFile = createFile && files.length === 1;
-    let redirectToFileUuid: string | undefined = undefined;
-
     const redirectToTeam = createFile && files.length > 1;
+    const createPromises = [];
 
     if (!createFile && firstFileType === 'grid') {
       addGlobalSnackbar(`Error importing ${files[0].name}: Cannot import grid file into existing file`, {
@@ -146,11 +146,14 @@ export function useFileImport() {
           const name = file.name ? stripExtension(file.name) : 'Untitled';
           const contents = Buffer.from(result.contents).toString('base64');
           const version = result.version;
-          const {
-            file: { uuid },
-          } = await apiClient.files.create({ file: { name, contents, version }, teamUuid, isPrivate });
+          const data = { name, contents, version };
           if (redirectToFile) {
-            redirectToFileUuid = uuid;
+            const action = isPrivate ? ROUTES.CREATE_FILE_PRIVATE(teamUuid) : ROUTES.CREATE_FILE(teamUuid);
+            submit(data, { method: 'POST', action, encType: 'application/json' });
+            setFileImportProgressState((prev) => ({ ...prev, importing: false }));
+          } else {
+            const createPromise = apiClient.files.create({ file: data, teamUuid, isPrivate });
+            createPromises.push(createPromise);
           }
         }
       } catch (e) {
@@ -160,13 +163,15 @@ export function useFileImport() {
       }
     }
 
-    setFileImportProgressState((prev) => ({ ...prev, importing: false }));
+    await Promise.all(createPromises).catch(() => {
+      addGlobalSnackbar(`Error saving file`, { severity: 'error' });
+    });
 
-    if (redirectToFile && redirectToFileUuid !== undefined) {
-      navigate(ROUTES.FILE(redirectToFileUuid));
-    } else if (redirectToTeam) {
+    if (redirectToTeam) {
       navigate(isPrivate ? ROUTES.TEAM_FILES_PRIVATE(teamUuid) : ROUTES.TEAM_FILES(teamUuid));
     }
+
+    setFileImportProgressState((prev) => ({ ...prev, importing: false }));
   };
 
   return handleImport;
