@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import numpy as np
 import pandas as pd
+
 from inspect_python_test import *
 from process_output_test import *
 from quadratic_py.utils import attempt_fix_await, to_python_type, to_quadratic_type
@@ -284,10 +285,10 @@ class TestUtils(TestCase):
         )
         assert to_quadratic_type(
             datetime.strptime("2012-11-10 03:30", "%Y-%m-%d %H:%M")
-        ) == ("2012-11-10T03:30:00", "date")
+        ) == ("2012-11-10T03:30:00", "date time")
         # assert to_quadratic_type("2012-11-10") == ("1352505600", "instant")
 
-        assert to_quadratic_type(date(2012, 12, 21)) == ("2012-12-21T00:00:00", "date")
+        assert to_quadratic_type(date(2012, 12, 21)) == ("2012-12-21", "date")
         assert to_quadratic_type(time(3, 30)) == ("03:30:00", "time")
 
         # TODO(ddimaria): implement when we implement duration in Rust
