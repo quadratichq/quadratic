@@ -27,7 +27,7 @@ impl GridController {
     /// Imports a [`GridController`] from a JSON string.
     #[wasm_bindgen(js_name = "newFromFile")]
     pub fn js_new_from_file(
-        file: &[u8],
+        file: Vec<u8>,
         last_sequence_num: u32,
         initialize: bool,
     ) -> Result<GridController, JsValue> {
@@ -100,8 +100,8 @@ impl GridController {
 
     /// Exports a [`GridController`] to a file. Returns a `String`.
     #[wasm_bindgen(js_name = "exportToFile")]
-    pub fn js_export_to_file(&mut self) -> Result<ArrayBuffer, JsValue> {
-        match file::export(self.grid_mut()) {
+    pub fn js_export_to_file(self) -> Result<ArrayBuffer, JsValue> {
+        match file::export(self.into_grid()) {
             Ok(file) => Ok(Uint8Array::from(&file[..]).buffer()),
             Err(e) => Err(JsValue::from_str(&e.to_string())),
         }

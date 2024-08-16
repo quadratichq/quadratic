@@ -10,7 +10,7 @@ impl GridController {
     pub fn import_csv(
         &mut self,
         sheet_id: SheetId,
-        file: &[u8],
+        file: Vec<u8>,
         file_name: &str,
         insert_at: Pos,
         cursor: Option<String>,
@@ -106,8 +106,13 @@ mod tests {
         let sheet_id = grid_controller.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
 
-        let _ =
-            grid_controller.import_csv(sheet_id, scv_file.as_slice(), "smallpop.csv", pos, None);
+        let _ = grid_controller.import_csv(
+            sheet_id,
+            scv_file.as_slice().to_vec(),
+            "smallpop.csv",
+            pos,
+            None,
+        );
 
         print_table(
             &grid_controller,
@@ -141,7 +146,8 @@ mod tests {
         let sheet_id = grid_controller.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
 
-        let result = grid_controller.import_csv(sheet_id, "".as_bytes(), "smallpop.csv", pos, None);
+        let result =
+            grid_controller.import_csv(sheet_id, "".as_bytes().to_vec(), "smallpop.csv", pos, None);
         assert!(result.is_err());
     }
 
@@ -158,7 +164,7 @@ mod tests {
         }
         let result = gc.import_csv(
             gc.grid.sheets()[0].id,
-            csv.as_bytes(),
+            csv.as_bytes().to_vec(),
             "large.csv",
             Pos { x: 0, y: 0 },
             None,
@@ -175,7 +181,7 @@ mod tests {
         let ops = gc
             .import_csv_operations(
                 gc.grid.sheets()[0].id,
-                csv.as_bytes(),
+                csv.as_bytes().to_vec(),
                 "bad line",
                 Pos { x: 0, y: 0 },
             )
@@ -449,8 +455,14 @@ mod tests {
         let sheet_id = gc.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
 
-        gc.import_csv(sheet_id, scv_file.as_slice(), "test.csv", pos, None)
-            .expect("import_csv");
+        gc.import_csv(
+            sheet_id,
+            scv_file.as_slice().to_vec(),
+            "test.csv",
+            pos,
+            None,
+        )
+        .expect("import_csv");
 
         print_table(&gc, sheet_id, Rect::new_span(pos, Pos { x: 3, y: 4 }));
 
@@ -467,8 +479,14 @@ mod tests {
         let sheet_id = gc.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
 
-        gc.import_csv(sheet_id, scv_file.as_slice(), "test.csv", pos, None)
-            .expect("import_csv");
+        gc.import_csv(
+            sheet_id,
+            scv_file.as_slice().to_vec(),
+            "test.csv",
+            pos,
+            None,
+        )
+        .expect("import_csv");
 
         print_table(&gc, sheet_id, Rect::new_span(pos, Pos { x: 3, y: 4 }));
 
@@ -486,8 +504,14 @@ mod tests {
         let sheet_id = gc.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
 
-        gc.import_csv(sheet_id, scv_file.as_slice(), "test.csv", pos, None)
-            .expect("import_csv");
+        gc.import_csv(
+            sheet_id,
+            scv_file.as_slice().to_vec(),
+            "test.csv",
+            pos,
+            None,
+        )
+        .expect("import_csv");
 
         print_table(&gc, sheet_id, Rect::new_span(pos, Pos { x: 2, y: 3 }));
 

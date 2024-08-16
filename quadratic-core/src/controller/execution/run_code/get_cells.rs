@@ -61,7 +61,7 @@ impl GridController {
                 };
 
                 self.start_transaction(&mut transaction);
-                self.finalize_transaction(&mut transaction);
+                self.finalize_transaction(transaction);
 
                 return Err(error);
             }
@@ -69,7 +69,7 @@ impl GridController {
             sheet
         } else {
             self.start_transaction(&mut transaction);
-            self.finalize_transaction(&mut transaction);
+            self.finalize_transaction(transaction);
             return Err(CoreError::CodeCellSheetError("Sheet not found".to_string()));
         };
 

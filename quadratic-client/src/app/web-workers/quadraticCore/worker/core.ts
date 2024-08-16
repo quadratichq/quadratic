@@ -409,8 +409,8 @@ class Core {
     try {
       await initCore();
       const gc = GridController.newFromFile(new Uint8Array(file), sequenceNum, false);
-      const contents = gc.exportToFile();
       const version = gc.getVersion();
+      const contents = gc.exportToFile();
       return { contents, version };
     } catch (error: unknown) {
       console.error(error);
@@ -429,8 +429,8 @@ class Core {
       try {
         await initCore();
         const gc = GridController.importExcel(new Uint8Array(file), fileName);
-        const contents = gc.exportToFile();
         const version = gc.getVersion();
+        const contents = gc.exportToFile();
         return { contents, version };
       } catch (error: unknown) {
         console.error(error);
@@ -469,8 +469,8 @@ class Core {
       try {
         await initCore();
         const gc = GridController.importCsv(new Uint8Array(file), fileName);
-        const contents = gc.exportToFile();
         const version = gc.getVersion();
+        const contents = gc.exportToFile();
         return { contents, version };
       } catch (error: unknown) {
         console.error(error);
@@ -509,8 +509,8 @@ class Core {
     if (sheetId === undefined || location === undefined || cursor === undefined) {
       await initCore();
       const gc = GridController.importParquet(new Uint8Array(file), fileName);
-      const contents = gc.exportToFile();
       const version = gc.getVersion();
+      const contents = gc.exportToFile();
       return { contents, version };
     } else {
       return new Promise((resolve) => {

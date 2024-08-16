@@ -10,7 +10,7 @@ use crate::{
 #[wasm_bindgen]
 impl GridController {
     #[wasm_bindgen(js_name = "importCsv")]
-    pub fn js_import_csv(file: &[u8], file_name: &str) -> Result<GridController, JsValue> {
+    pub fn js_import_csv(file: Vec<u8>, file_name: &str) -> Result<GridController, JsValue> {
         let mut grid = Grid::new_blank();
         let sheet_id = grid.add_sheet(None);
         let insert_at = Pos { x: 0, y: 0 };
@@ -29,7 +29,7 @@ impl GridController {
     #[wasm_bindgen(js_name = "importCsvIntoExistingFile")]
     pub fn js_import_csv_into_existing_file(
         &mut self,
-        file: &[u8],
+        file: Vec<u8>,
         file_name: &str,
         sheet_id: &str,
         insert_at: &str,

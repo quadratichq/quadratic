@@ -22,23 +22,23 @@ impl GridController {
     pub fn import_csv_operations(
         &mut self,
         sheet_id: SheetId,
-        file: &[u8],
+        file: Vec<u8>,
         file_name: &str,
         insert_at: Pos,
     ) -> Result<Vec<Operation>> {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
-        let file = match String::from_utf8_lossy(file) {
-            std::borrow::Cow::Borrowed(_) => file,
+        let file: &[u8] = match String::from_utf8_lossy(&file) {
+            std::borrow::Cow::Borrowed(_) => &file,
             std::borrow::Cow::Owned(_) => {
-                if let Some(utf) = read_utf16(file) {
+                if let Some(utf) = read_utf16(&file) {
                     return self.import_csv_operations(
                         sheet_id,
-                        utf.as_bytes(),
+                        utf.as_bytes().to_vec(),
                         file_name,
                         insert_at,
                     );
                 }
-                file
+                &file
             }
         };
 
@@ -268,7 +268,7 @@ impl GridController {
             }
             // add new sheets
             ops.push(Operation::AddSheetSchema {
-                schema: export_sheet(&sheet),
+                schema: export_sheet(sheet),
             });
             ops.extend(formula_compute_ops);
         }
@@ -400,7 +400,12 @@ mod test {
         const SIMPLE_CSV: &str =
             "city,region,country,population\nSouthborough,MA,United States,a lot of people";
 
-        let ops = gc.import_csv_operations(sheet_id, SIMPLE_CSV.as_bytes(), "smallpop.csv", pos);
+        let ops = gc.import_csv_operations(
+            sheet_id,
+            SIMPLE_CSV.as_bytes().to_vec(),
+            "smallpop.csv",
+            pos,
+        );
         assert_eq!(ops.as_ref().unwrap().len(), 1);
         assert_eq!(
             ops.unwrap()[0],
@@ -432,7 +437,7 @@ mod test {
             csv.push_str(&format!("city{},MA,United States,{}\n", i, i * 1000));
         }
 
-        let ops = gc.import_csv_operations(sheet_id, csv.as_bytes(), "long.csv", pos);
+        let ops = gc.import_csv_operations(sheet_id, csv.as_bytes().to_vec(), "long.csv", pos);
         assert_eq!(ops.as_ref().unwrap().len(), 3);
 
         let first_pos = match ops.as_ref().unwrap()[0] {

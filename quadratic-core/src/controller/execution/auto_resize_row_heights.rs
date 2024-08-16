@@ -63,7 +63,7 @@ impl GridController {
             });
         }
         self.start_transaction(&mut transaction);
-        self.finalize_transaction(&mut transaction);
+        self.finalize_transaction(transaction);
         Ok(())
     }
 }

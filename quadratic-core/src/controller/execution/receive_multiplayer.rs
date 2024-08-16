@@ -30,7 +30,7 @@ impl GridController {
             ..Default::default()
         };
         self.client_apply_transaction(&mut transaction, sequence_num);
-        self.finalize_transaction(&mut transaction);
+        self.finalize_transaction(transaction);
     }
 
     /// Rolls back unsaved transactions to apply earlier transactions received from the server.
@@ -223,7 +223,7 @@ impl GridController {
     /// Received transactions from the server
     pub fn received_transactions(&mut self, transactions: &[TransactionServer]) {
         // used to track client changes when combining transactions
-        let mut results = PendingTransaction {
+        let results = PendingTransaction {
             transaction_type: TransactionType::Multiplayer,
             ..Default::default()
         };
@@ -241,7 +241,7 @@ impl GridController {
             self.client_apply_transaction(&mut transaction, t.sequence_num);
         });
         self.reapply_unsaved_transactions();
-        self.finalize_transaction(&mut results);
+        self.finalize_transaction(results);
     }
 
     /// Called by TS for each offline transaction it has in its offline queue.
@@ -264,7 +264,7 @@ impl GridController {
                 }
             }
         } else {
-            let transaction = &mut PendingTransaction {
+            let mut transaction = PendingTransaction {
                 id: transaction_id,
                 transaction_type: TransactionType::Unsaved,
                 ..Default::default()
@@ -273,7 +273,7 @@ impl GridController {
                 .operations
                 .extend(unsaved_transaction.forward.operations.clone());
 
-            self.start_transaction(transaction);
+            self.start_transaction(&mut transaction);
             self.finalize_transaction(transaction);
         }
     }

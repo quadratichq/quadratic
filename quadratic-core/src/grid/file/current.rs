@@ -338,7 +338,7 @@ pub fn import_rows_size(row_sizes: &[(i64, current::Resize)]) -> Result<ResizeMa
         })
 }
 
-pub fn import_sheet(sheet: &current::Sheet) -> Result<Sheet> {
+pub fn import_sheet(sheet: current::Sheet) -> Result<Sheet> {
     let mut new_sheet = Sheet {
         id: SheetId::from_str(&sheet.id.id)?,
         name: sheet.name.to_owned(),
@@ -351,7 +351,7 @@ pub fn import_sheet(sheet: &current::Sheet) -> Result<Sheet> {
         // todo: borders need to be refactored
         borders: SheetBorders::new(),
 
-        code_runs: import_code_cell_builder(sheet)?,
+        code_runs: import_code_cell_builder(&sheet)?,
         data_bounds: GridBounds::Empty,
         format_bounds: GridBounds::Empty,
 
@@ -362,7 +362,7 @@ pub fn import_sheet(sheet: &current::Sheet) -> Result<Sheet> {
         rows_resize: import_rows_size(&sheet.rows_resize)?,
     };
     new_sheet.recalculate_bounds();
-    import_borders_builder(&mut new_sheet, sheet);
+    import_borders_builder(&mut new_sheet, &sheet);
     Ok(new_sheet)
 }
 
@@ -371,7 +371,7 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
         sheets: file
             .sheets
             .into_iter()
-            .map(|sheet| import_sheet(&sheet))
+            .map(import_sheet)
             .collect::<Result<_>>()?,
     })
 }
@@ -679,7 +679,7 @@ pub fn export_rows_size(sheet: &Sheet) -> Vec<(i64, current::Resize)> {
         .collect()
 }
 
-pub(crate) fn export_sheet(sheet: &Sheet) -> current::Sheet {
+pub(crate) fn export_sheet(sheet: Sheet) -> current::Sheet {
     current::Sheet {
         id: current::Id {
             id: sheet.id.to_string(),
@@ -688,12 +688,12 @@ pub(crate) fn export_sheet(sheet: &Sheet) -> current::Sheet {
         color: sheet.color.to_owned(),
         order: sheet.order.to_owned(),
         offsets: sheet.offsets.export(),
-        columns: export_column_builder(sheet),
-        borders: export_borders_builder(sheet),
+        columns: export_column_builder(&sheet),
+        borders: export_borders_builder(&sheet),
         formats_all: sheet.format_all.as_ref().and_then(export_format),
         formats_columns: export_formats(&sheet.formats_columns),
         formats_rows: export_formats(&sheet.formats_rows),
-        rows_resize: export_rows_size(sheet),
+        rows_resize: export_rows_size(&sheet),
         code_runs: sheet
             .code_runs
             .iter()
@@ -749,9 +749,9 @@ pub(crate) fn export_sheet(sheet: &Sheet) -> current::Sheet {
     }
 }
 
-pub fn export(grid: &Grid) -> Result<current::GridSchema> {
+pub fn export(grid: Grid) -> Result<current::GridSchema> {
     Ok(current::GridSchema {
         version: Some(CURRENT_VERSION.into()),
-        sheets: grid.sheets().iter().map(export_sheet).collect(),
+        sheets: grid.sheets.into_iter().map(export_sheet).collect(),
     })
 }

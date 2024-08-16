@@ -41,7 +41,7 @@ export function useFileImport() {
 
     const redirectToFile = createFile && files.length === 1;
     const redirectToTeam = createFile && files.length > 1;
-    const createPromises = [];
+    const uploadFilePromises = [];
 
     if (!createFile && firstFileType === 'grid') {
       addGlobalSnackbar(`Error importing ${files[0].name}: Cannot import grid file into existing file`, {
@@ -152,8 +152,8 @@ export function useFileImport() {
             submit(data, { method: 'POST', action, encType: 'application/json' });
             setFileImportProgressState((prev) => ({ ...prev, importing: false }));
           } else {
-            const createPromise = apiClient.files.create({ file: data, teamUuid, isPrivate });
-            createPromises.push(createPromise);
+            const uploadFilePromise = apiClient.files.create({ file: data, teamUuid, isPrivate });
+            uploadFilePromises.push(uploadFilePromise);
           }
         }
       } catch (e) {
@@ -163,7 +163,7 @@ export function useFileImport() {
       }
     }
 
-    await Promise.all(createPromises).catch(() => {
+    await Promise.all(uploadFilePromises).catch(() => {
       addGlobalSnackbar(`Error saving file`, { severity: 'error' });
     });
 

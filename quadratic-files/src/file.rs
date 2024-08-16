@@ -29,12 +29,12 @@ use crate::{
 pub static GROUP_NAME: &str = "quadratic-file-service-1";
 
 /// Load a .grid file
-pub(crate) fn load_file(key: &str, file: &[u8]) -> Result<Grid> {
+pub(crate) fn load_file(key: &str, file: Vec<u8>) -> Result<Grid> {
     import(file).map_err(|e| FilesError::ImportFile(key.into(), e.to_string()))
 }
 
 /// Exports a .grid file
-pub(crate) fn export_file(key: &str, grid: &mut Grid) -> Result<Vec<u8>> {
+pub(crate) fn export_file(key: &str, grid: Grid) -> Result<Vec<u8>> {
     export(grid).map_err(|e| FilesError::ExportFile(key.into(), e.to_string()))
 }
 
@@ -57,7 +57,7 @@ pub(crate) async fn get_and_load_object(
         .await
         .map_err(|e| FilesError::LoadFile(key.into(), bucket.to_string(), e.to_string()))?
         .into_bytes();
-    let grid = load_file(key, &body)?;
+    let grid = load_file(key, body.to_vec())?;
 
     Ok(GridController::from_grid(grid, sequence_num))
 }
@@ -86,7 +86,7 @@ pub(crate) async fn process_transactions(
     let key = key(file_id, final_sequence_num);
 
     apply_transaction(&mut grid, operations);
-    let body = export_file(&key, grid.grid_mut())?;
+    let body = export_file(&key, grid.into_grid())?;
 
     upload_object(client, bucket, &key, &body).await?;
 
@@ -268,9 +268,9 @@ mod tests {
         let key = "test";
 
         // load the file
-        let mut file = load_file(
+        let file = load_file(
             key,
-            include_bytes!("../../quadratic-rust-shared/data/grid/v1_4_simple.grid"),
+            include_bytes!("../../quadratic-rust-shared/data/grid/v1_4_simple.grid").to_vec(),
         )
         .unwrap();
 
@@ -303,7 +303,7 @@ mod tests {
             Some(CellValue::Text("hello".to_string()))
         );
 
-        let grid = export_file(key, &mut file);
+        let grid = export_file(key, file);
         assert!(grid.is_ok());
     }
 
