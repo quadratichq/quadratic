@@ -8,25 +8,27 @@ export const FilesListEmptyState = () => {
   const setNewFileDialogState = useSetRecoilState(newFileDialogAtom);
 
   return (
-    <Empty
-      className="max-w-xl"
-      title="No files"
-      description={
-        <>
-          You don’t have any files yet.{' '}
-          <button
-            className="underline hover:text-primary"
-            onClick={() => {
-              mixpanel.track('[FilesEmptyState].clickCreateBlankFile');
-              setNewFileDialogState({ show: true });
-            }}
-          >
-            Create a new file
-          </button>
-          .
-        </>
-      }
-      Icon={FileIcon}
-    />
+    <div className="flex min-h-80 items-center justify-center border-4 border-dashed border-border">
+      <Empty
+        className="max-w-xl"
+        title="No files"
+        description={
+          <>
+            You don’t have any files yet.{' '}
+            <button
+              className="underline hover:text-primary"
+              onClick={() => {
+                mixpanel.track('[FilesEmptyState].clickCreateBlankFile');
+                setNewFileDialogState({ show: true });
+              }}
+            >
+              Create a new file
+            </button>{' '}
+            or drag and drop files here.
+          </>
+        }
+        Icon={FileIcon}
+      />
+    </div>
   );
 };

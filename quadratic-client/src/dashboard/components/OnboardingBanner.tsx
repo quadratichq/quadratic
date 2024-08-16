@@ -1,4 +1,5 @@
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
+import { useDashboardState } from '@/dashboard/components/DashboardProvider';
 import Logo from '@/dashboard/components/quadratic-logo.svg';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
@@ -33,6 +34,7 @@ export function OnboardingBanner() {
       userMakingRequest: { teamPermissions },
     },
   } = useDashboardRouteLoaderData();
+  const [, setDashboardState] = useDashboardState();
   const [isOpenConfirmDismiss, setIsOpenConfirmDismiss] = useState(false);
   // Only show the banner to people who can 1) write to the team, and 2) haven't dismissed it yet
   const [showBanner, setShowBanner] = useState(
@@ -52,8 +54,12 @@ export function OnboardingBanner() {
             external data source.
           </p>
           <p>
-            <Button asChild variant="outline" className={contentBtnClassName}>
-              <Link to={ROUTES.CREATE_FILE(teamUuid)}>New file</Link>
+            <Button
+              variant="outline"
+              className={contentBtnClassName}
+              onClick={() => setDashboardState((prev) => ({ ...prev, showNewFileDialog: true }))}
+            >
+              New file
             </Button>
           </p>
         </>
