@@ -124,7 +124,8 @@ export const apiClient = {
             'Content-Type': 'multipart/form-data',
           },
         },
-        ApiSchemas['/v0/files.POST.response']
+        ApiSchemas['/v0/files.POST.response'],
+        onUploadProgress
       );
     },
     async delete(uuid: string) {
