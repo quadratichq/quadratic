@@ -4,6 +4,7 @@ import { DateFormatCell } from './DateFormatCell';
 import { Rectangle } from 'pixi.js';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { events } from '@/app/events/events';
+import { CalendarPicker } from './CalendarPicker';
 
 export const Annotations = () => {
   const ref = useRef<HTMLDivElement>(null);
@@ -28,6 +29,7 @@ export const Annotations = () => {
   return (
     <div ref={ref} className="absolute" style={{ top, left }}>
       <DateFormatCell />
+      <CalendarPicker />
     </div>
   );
 };

@@ -592,6 +592,14 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreGetCellValue':
+        this.send({
+          type: 'coreClientGetCellValue',
+          id: e.data.id,
+          value: core.getCellValue(e.data.sheetId, e.data.x, e.data.y),
+        });
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core

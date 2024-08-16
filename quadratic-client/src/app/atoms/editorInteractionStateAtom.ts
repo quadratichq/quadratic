@@ -14,7 +14,7 @@ export interface EditorInteractionState {
   showShareFileMenu: boolean;
   showSearch: boolean | SearchOptions;
   showValidation: boolean | string;
-  annotationState?: 'dropdown' | 'date-format';
+  annotationState?: 'dropdown' | 'date-format' | 'calendar' | 'calendar-time';
   showContextMenu: boolean;
   permissions: FilePermission[];
   uuid: string;

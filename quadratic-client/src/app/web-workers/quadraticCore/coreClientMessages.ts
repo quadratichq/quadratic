@@ -5,6 +5,7 @@ import {
   CellWrap,
   CodeCellLanguage,
   Format,
+  JsCellValue,
   JsCodeCell,
   JsHtmlOutput,
   JsRenderBorders,
@@ -996,6 +997,20 @@ export interface CoreClientValidateInput {
   validationId: string | undefined;
 }
 
+export interface ClientCoreGetCellValue {
+  type: 'clientCoreGetCellValue';
+  id: number;
+  sheetId: string;
+  x: number;
+  y: number;
+}
+
+export interface CoreClientGetCellValue {
+  type: 'coreClientGetCellValue';
+  id: number;
+  value: JsCellValue | undefined;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1070,7 +1085,8 @@ export type ClientCoreMessage =
   | ClientCoreGetValidationFromPos
   | ClientCoreGetValidationList
   | ClientCoreGetDisplayCell
-  | ClientCoreValidateInput;
+  | ClientCoreValidateInput
+  | ClientCoreGetCellValue;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1135,4 +1151,5 @@ export type CoreClientMessage =
   | CoreClientRenderValidationWarnings
   | CoreClientResizeRowHeights
   | CoreClientMultiplayerSynced
-  | CoreClientValidateInput;
+  | CoreClientValidateInput
+  | CoreClientGetCellValue;

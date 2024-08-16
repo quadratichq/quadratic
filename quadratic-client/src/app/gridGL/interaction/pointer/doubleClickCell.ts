@@ -4,13 +4,14 @@ import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer'
 import { hasPermissionToEditFile } from '../../../actions';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
-export function doubleClickCell(options: {
+export async function doubleClickCell(options: {
   column: number;
   row: number;
   language?: CodeCellLanguage;
   cell?: string;
-}): void {
+}) {
   if (inlineEditorHandler.isEditingFormula()) return;
 
   const { language, cell, column, row } = options;
@@ -18,7 +19,7 @@ export function doubleClickCell(options: {
 
   const hasPermission = hasPermissionToEditFile(settings.editorInteractionState.permissions);
 
-  if (!settings.setEditorInteractionState) return;
+  if (!settings.setEditorInteractionState || !settings.editorInteractionState) return;
 
   if (multiplayer.cellIsBeingEdited(column, row, sheets.sheet.id)) return;
 
@@ -65,6 +66,15 @@ export function doubleClickCell(options: {
 
   // Open the text editor
   else if (hasPermission) {
+    const value = await quadraticCore.getCellValue(sheets.sheet.id, column, row);
+
+    // open the calendar pick if the cell is a date
+    if (value && ['date', 'date time'].includes(value.kind)) {
+      settings.setEditorInteractionState({
+        ...settings.editorInteractionState,
+        annotationState: `calendar${value.kind === 'date time' ? '-time' : ''}`,
+      });
+    }
     settings.changeInput(true, cell);
   }
 }

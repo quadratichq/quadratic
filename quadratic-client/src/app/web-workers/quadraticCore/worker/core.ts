@@ -13,6 +13,7 @@ import {
   CellWrap,
   CodeCellLanguage,
   Format,
+  JsCellValue,
   JsCodeCell,
   JsCodeResult,
   JsRenderCell,
@@ -992,6 +993,14 @@ class Core {
     const validationId = this.gridController.validateInput(sheetId, posToPos(x, y), input);
     if (validationId) {
       return JSON.parse(validationId);
+    }
+  }
+
+  getCellValue(sheetId: string, x: number, y: number): JsCellValue | undefined {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const cellValue = this.gridController.getCellValue(sheetId, posToPos(x, y));
+    if (cellValue) {
+      return JSON.parse(cellValue);
     }
   }
 }

@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use super::{Duration, Instant, IsBlank};
 use crate::{
     controller::operations::operation::Operation,
+    date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
     grid::{formatting::CellFmtArray, CodeCellLanguage, NumericFormat, NumericFormatKind, Sheet},
     CodeResult, Pos, RunError, RunLengthEncoding, SheetRect,
 };
@@ -167,9 +168,9 @@ impl CellValue {
             CellValue::Instant(_) => todo!("repr of Instant"),
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
-            CellValue::Date(d) => d.format("%m/%d/%Y").to_string(),
-            CellValue::Time(d) => d.format("%-I:%M %p").to_string(),
-            CellValue::DateTime(d) => d.format("%m/%d/%Y %-I:%M %p").to_string(),
+            CellValue::Date(d) => d.format(DEFAULT_DATE_FORMAT).to_string(),
+            CellValue::Time(d) => d.format(DEFAULT_TIME_FORMAT).to_string(),
+            CellValue::DateTime(d) => d.format(DEFAULT_DATE_TIME_FORMAT).to_string(),
 
             // these should not render
             CellValue::Code(_) => String::new(),

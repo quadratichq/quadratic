@@ -87,6 +87,22 @@ impl GridController {
         sheet.rendered_value(pos).unwrap_or(String::default())
     }
 
+    /// gets the value and type for a cell
+    /// returns a stringified JsCellValue
+    #[wasm_bindgen(js_name = "getCellValue")]
+    pub fn js_get_cell_value(&self, sheet_id: String, pos: String) -> String {
+        let pos = serde_json::from_str(&pos).unwrap_or_default();
+        if let Some(sheet) = self.try_sheet_from_string_id(sheet_id) {
+            if let Some(cv) = sheet.js_cell_value(pos) {
+                match serde_json::to_string(&cv) {
+                    Ok(s) => return s,
+                    Err(_) => return String::new(),
+                }
+            }
+        }
+        String::new()
+    }
+
     /// Deletes a region of cells.
     #[wasm_bindgen(js_name = "deleteCellValues")]
     pub fn js_delete_cell_values(

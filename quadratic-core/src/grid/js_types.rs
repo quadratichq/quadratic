@@ -53,6 +53,12 @@ impl From<&Format> for JsNumber {
     }
 }
 
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+pub struct JsCellValue {
+    pub value: String,
+    pub kind: String,
+}
+
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]

@@ -100,7 +100,7 @@ impl Sheet {
                 } else {
                     None
                 };
-                let value = Self::value_date_time(&format.date_time, value);
+                let value = Self::value_date_time(value, format.date_time);
                 JsRenderCell {
                     x,
                     y,
@@ -134,7 +134,7 @@ impl Sheet {
                         value.to_display()
                     }
                     CellValue::Date(_) | CellValue::DateTime(_) | CellValue::Time(_) => {
-                        Self::value_date_time(&format.date_time, value)
+                        Self::value_date_time(value, format.date_time)
                     }
                     _ => value.to_display(),
                 };

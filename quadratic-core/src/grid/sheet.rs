@@ -12,7 +12,7 @@ use super::column::Column;
 use super::formats::format::Format;
 use super::formatting::CellFmtAttr;
 use super::ids::SheetId;
-use super::js_types::{CellFormatSummary, CellType};
+use super::js_types::{CellFormatSummary, CellType, JsCellValue};
 use super::resize::ResizeMap;
 use super::{CellWrap, CodeRun, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
@@ -231,6 +231,14 @@ impl Sheet {
             // if there is no CellValue at Pos, then we still need to check code_runs
             self.get_code_cell_value(pos)
         }
+    }
+
+    /// Returns the JsCellValue at a position
+    pub fn js_cell_value(&self, pos: Pos) -> Option<JsCellValue> {
+        self.display_value(pos).map(|value| JsCellValue {
+            value: value.to_string(),
+            kind: value.type_name().to_string(),
+        })
     }
 
     /// Returns the cell_value at the Pos in column.values. This does not check or return results within code_runs.
@@ -1094,5 +1102,20 @@ mod test {
         let mut rows = sheet.get_rows_with_wrap_in_selection(&selection);
         rows.sort();
         assert_eq!(rows, vec![0, 2]);
+    }
+
+    #[test]
+    #[parallel]
+    fn js_cell_value() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
+        let js_cell_value = sheet.js_cell_value(Pos { x: 0, y: 0 });
+        assert_eq!(
+            js_cell_value,
+            Some(JsCellValue {
+                value: "test".to_string(),
+                kind: "text".to_string()
+            })
+        );
     }
 }
