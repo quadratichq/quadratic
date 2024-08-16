@@ -10,7 +10,6 @@ import { CORS, NODE_ENV, SENTRY_DSN } from './env-vars';
 import ai_chat_router from './routes/ai_chat';
 import internal_router from './routes/internal';
 import { ApiError } from './utils/ApiError';
-
 export const app = express();
 
 // Configure Sentry
