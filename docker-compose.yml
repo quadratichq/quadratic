@@ -89,14 +89,13 @@ services:
     build:
       context: .
       dockerfile: client.Dockerfile
-    env_file:
-      - quadratic-client/.env.local
-      - quadratic-client/.env.docker
-    # override env vars here
     environment:
+      VITE_DEBUG: 1
       VITE_QUADRATIC_API_URL: http://localhost:8000
-      VITE_QUADRATIC_MULTIPLAYER_URL: ws://localhost:3001
-      VITE_QUADRATIC_CONNECTION_URL: http://0.0.0.0:3003
+      VITE_QUADRATIC_MULTIPLAYER_URL: ws://localhost:3001/ws
+      VITE_QUADRATIC_CONNECTION_URL: http://localhost:3003
+      VITE_AUTH_TYPE: ory
+      VITE_ORY_HOST: http://localhost:4433
     restart: "always"
     ports:
       # - "3000:3000"
@@ -219,6 +218,7 @@ services:
     #     condition: service_healthy
     #   quadratic-api:
     #     condition: service_started
+
     profiles:
       - backend
       - quadratic-connection

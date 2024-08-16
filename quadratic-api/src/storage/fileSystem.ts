@@ -1,17 +1,21 @@
 import { Request } from 'express';
 import multer from 'multer';
 import stream, { Readable } from 'node:stream';
-import { QUADRATIC_FILE_URI } from '../env-vars';
+import { QUADRATIC_FILE_URI, QUADRATIC_FILE_URI_PUBLIC } from '../env-vars';
 import { UploadFile } from '../types/Request';
 import { encryptFromEnv } from '../utils/crypto';
 import { UploadFileResponse } from './storage';
 
-const generateUrl = (key: string): string => `${QUADRATIC_FILE_URI}/storage/${key}`;
-const generatePresignedUrl = (key: string): string => generateUrl(`presigned/${key}`);
+const generateUrl = (key: string, isPublic: boolean): string => {
+  const baseUrl = isPublic ? QUADRATIC_FILE_URI_PUBLIC : QUADRATIC_FILE_URI;
+  return `${baseUrl}/storage/${key}`;
+};
+
+const generatePresignedUrl = (key: string): string => generateUrl(`presigned/${key}`, true);
 
 // Get the URL for a given file (key) for the file service.
 export const getStorageUrl = (key: string): string => {
-  return generateUrl(key);
+  return generateUrl(key, true);
 };
 
 // Get a presigned URL for a given file (key) for the file service.
@@ -22,7 +26,11 @@ export const getPresignedStorageUrl = (key: string): string => {
 
 // Upload a file to the file service.
 export const upload = async (key: string, contents: string | Uint8Array, jwt: string): Promise<UploadFileResponse> => {
-  const url = generateUrl(key);
+  const url = generateUrl(key, false);
+
+  if (typeof contents === 'string') {
+    contents = new Uint8Array(Buffer.from(contents, 'base64'));
+  }
 
   try {
     const response = await fetch(url, {

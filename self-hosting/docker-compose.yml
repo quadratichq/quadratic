@@ -1,0 +1,209 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis/redis-stack:latest
+    restart: always
+    ports:
+      - "6379:6379"
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: "5s"
+    volumes:
+      - ./docker/redis/data:/data
+    profiles:
+      - base
+
+  postgres:
+    image: postgres:15
+    restart: always
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      PGUSER: postgres
+      POSTGRES_PASSWORD: postgres
+      ADDITIONAL_DATABASES: kratos
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ./docker/postgres/data:/var/lib/postgresql/data
+      - ./docker/postgres/scripts:/docker-entrypoint-initdb.d
+    profiles:
+      - base
+
+  caddy:
+    image: caddy:latest
+    container_name: caddy
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/caddy/config/Caddyfile:/etc/caddy/Caddyfile
+      - ./docker/caddy/quadratic-client:/srv
+    depends_on:
+      - frontend
+    profiles:
+      - caddy
+
+  quadratic-api:
+    image: quadratic_quadratic-api
+    env_file:
+      - ../quadratic-api/.env.docker
+    restart: "always"
+    ports:
+      - "8000:8000"
+    command: "npm run start:prod --workspace=quadratic-api"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - api
+      - frontend
+
+  quadratic-multiplayer:
+    image: quadratic-multiplayer
+    env_file:
+      - ../quadratic-multiplayer/.env.docker
+    # override env vars here
+    environment:
+      RUST_LOG: info
+    restart: "always"
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      quadratic-api:
+        condition: service_started
+    profiles:
+      - backend
+      - multiplayer
+    networks:
+      - host
+
+  quadratic-files:
+    image: quadratic-files
+    env_file:
+      - ../quadratic-files/.env.docker
+    # override env vars here
+    environment:
+      RUST_LOG: info
+    restart: "always"
+    ports:
+      - "3002:3002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      quadratic-api:
+        condition: service_started
+    volumes:
+      - ./docker/file-storage:/file-storage
+    profiles:
+      - backend
+      - files
+    networks:
+      - host
+
+  quadratic-connection:
+    image: quadratic-connection
+    env_file:
+      - ../quadratic-connection/.env.docker
+    # override env vars here
+    environment:
+      RUST_LOG: info
+    restart: "always"
+    ports:
+      - "3003:3003"
+    depends_on:
+      caddy:
+        condition: service_started
+    #   postgres:
+    #     condition: service_healthy
+    #   quadratic-api:
+    #     condition: service_started
+    profiles:
+      - backend
+      - connection
+
+  # Auth Providers
+
+  ory-auth:
+    image: oryd/kratos:v1.2.0
+    ports:
+      - "4433:4433" # public
+      - "4434:4434" # admin
+    command: serve -c /etc/config/kratos/kratos.yml --dev --watch-courier
+    volumes:
+      - ./docker/ory-auth/config:/etc/config/kratos
+    environment:
+      DSN: postgresql://postgres:postgres@host.docker.internal:5432/kratos?sslmode=disable
+      LOG_LEVEL: trace
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - ory-auth-migrate
+    profiles:
+      - ory
+    networks:
+      - host
+
+  ory-auth-migrate:
+    image: oryd/kratos:v1.2.0
+    command: migrate -c /etc/config/kratos/kratos.yml sql -e --yes
+    volumes:
+      - ./docker/ory-auth/config:/etc/config/kratos
+    environment:
+      DSN: postgresql://postgres:postgres@host.docker.internal:5432/kratos?sslmode=disable
+    restart: on-failure
+    depends_on:
+      - postgres
+    profiles:
+      - ory
+    networks:
+      - host
+
+  ory-auth-node:
+    image: oryd/kratos-selfservice-ui-node:v1.2.0
+    ports:
+      - "4455:4455"
+    environment:
+      PORT: 4455
+      SECURITY_MODE:
+      KRATOS_PUBLIC_URL: http://host.docker.internal:4433/
+      KRATOS_BROWSER_URL: http://localhost:4433/
+      COOKIE_SECRET: changeme
+      CSRF_COOKIE_NAME: ory_csrf_ui
+      CSRF_COOKIE_SECRET: changeme
+    restart: on-failure
+    profiles:
+      - ory
+    networks:
+      - host
+
+  ory-auth-mail:
+    image: oryd/mailslurper:latest-smtps
+    ports:
+      - "1025:1025"
+      - "4436:4436"
+      - "4437:4437"
+      - "8080:8080"
+    profiles:
+      - ory
+    networks:
+      - host
+
+volumes:
+  docker:
+    name: docker
+
+networks:
+  host:

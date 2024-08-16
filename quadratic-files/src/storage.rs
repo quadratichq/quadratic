@@ -52,7 +52,7 @@ pub(crate) async fn get_presigned_storage(
             Ok(file.into_response())
         }
         _ => Err(FilesError::Storage(
-            "Presigned URLs supported in FileSystem storage options".to_string(),
+            "Presigned URLs only supported in FileSystem storage options".to_string(),
         )),
     }
 }

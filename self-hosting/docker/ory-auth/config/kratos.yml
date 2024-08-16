@@ -9,6 +9,7 @@ serve:
     cors:
       enabled: true
       allowed_origins:
+        - http://localhost
         - http://localhost:3000
       allowed_methods:
         - POST
@@ -28,7 +29,7 @@ serve:
     base_url: http://kratos:4434/
 
 selfservice:
-  default_browser_return_url: http://localhost:3000
+  default_browser_return_url: http://localhost
   allowed_return_urls:
     - http://localhost:4455
     - http://localhost:3000
@@ -68,7 +69,7 @@ selfservice:
       ui_url: http://localhost:4455/verification
       use: code
       after:
-        default_browser_return_url: http://localhost:3000
+        default_browser_return_url: http://localhost
 
     logout:
       after:
@@ -92,7 +93,7 @@ session:
     tokenizer:
       templates:
         jwt_template:
-          jwks_url: http://host.docker.internal:3000/.well-known/jwks.json
+          jwks_url: http://host.docker.internal/.well-known/jwks.json
           # claims_mapper_url: base64://... # A JsonNet template for modifying the claims
           ttl: 24h # 24 hours (defaults to 10 minutes)
 

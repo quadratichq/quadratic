@@ -47,6 +47,7 @@ RUN echo 'Building quadratic-rust-client...' && npm run build --workspace=quadra
 WORKDIR /app
 RUN echo 'Building front-end...'
 RUN npm ci
+RUN npm install typescript
 RUN npx tsc ./quadratic-shared/*.ts
 RUN npm run build --workspace=quadratic-client
 
@@ -56,6 +57,6 @@ RUN npm run build --workspace=quadratic-client
 FROM nginx:stable-alpine
 COPY --from=build /app/build /usr/share/nginx/html
 
-EXPOSE 80 443 3000
+EXPOSE 3000
 
 CMD ["nginx", "-g", "daemon off;"]

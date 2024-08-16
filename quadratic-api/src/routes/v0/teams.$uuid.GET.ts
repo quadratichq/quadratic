@@ -114,16 +114,18 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     },
     // IDEA: (enhancement) we could put this in /sharing and just return the userCount
     // then require the data for the team share modal to be a seaparte network request
-    users: dbUsers.map(({ userId: id, role }) => {
-      const { email, name, picture } = auth0UsersById[id];
-      return {
-        id,
-        email,
-        role,
-        name,
-        picture,
-      };
-    }),
+    users: dbUsers
+      .filter(({ userId: id }) => auth0UsersById[id])
+      .map(({ userId: id, role }) => {
+        const { email, name, picture } = auth0UsersById[id];
+        return {
+          id,
+          email,
+          role,
+          name,
+          picture,
+        };
+      }),
     invites: dbInvites.map(({ email, role, id }) => ({ email, role, id })),
     files: dbFiles
       .filter((file) => !file.ownerUserId)

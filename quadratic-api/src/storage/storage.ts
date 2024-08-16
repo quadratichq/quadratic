@@ -22,7 +22,6 @@ export const getFileUrl = async (key: string) => {
 
 // Get a presigned URL for a given file (key).
 export const getPresignedFileUrl = async (key: string) => {
-  console.warn('getPresignedFileUrl', getPresignedFileUrl);
   switch (STORAGE_TYPE) {
     case 's3':
       return await generatePresignedUrl(key);
