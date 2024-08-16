@@ -125,10 +125,13 @@ export const ApiSchemas = {
   ),
   '/v0/files.POST.request': z.object({
     name: FileSchema.shape.name,
-    contents: z.string().optional(),
+    contents: z.instanceof(ArrayBuffer).optional(),
     version: z.string(),
     teamUuid: TeamSchema.shape.uuid,
-    isPrivate: z.boolean().optional(),
+    isPrivate: z
+      .string()
+      .transform((val) => val === 'true')
+      .optional(),
   }),
   '/v0/files.POST.response': z.object({
     file: FileSchema.pick({ uuid: true, name: true }),

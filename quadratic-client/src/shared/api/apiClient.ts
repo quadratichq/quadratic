@@ -1,6 +1,7 @@
 import { downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
+import { axiosFromApi } from '@/shared/api/axiosFromApi';
 import * as Sentry from '@sentry/react';
-import { Buffer } from 'buffer';
+import { AxiosProgressEvent } from 'axios';
 import mixpanel from 'mixpanel-browser';
 import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { fetchFromApi } from './fetchFromApi';
@@ -97,22 +98,32 @@ export const apiClient = {
       file,
       teamUuid,
       isPrivate,
+      onUploadProgress,
     }: {
       // TODO(ddimaria): remove Partial and "contents" once we duplicate directly on S3
       file?: Partial<Pick<ApiTypes['/v0/files.POST.request'], 'name' | 'contents' | 'version'>>;
       teamUuid: ApiTypes['/v0/files.POST.request']['teamUuid'];
       isPrivate: ApiTypes['/v0/files.POST.request']['isPrivate'];
+      onUploadProgress?: (progressEvent: AxiosProgressEvent) => void;
     }) {
-      if (file === undefined) {
-        file = {
-          name: 'Untitled',
-          version: CURRENT_FILE_VERSION,
-        };
+      const formData = new FormData();
+      formData.append('name', file?.name ?? 'Untitled');
+      formData.append('version', file?.version ?? CURRENT_FILE_VERSION);
+      if (file?.contents) {
+        formData.append('contents', new Blob([file.contents]), file.name || 'Untitled');
       }
+      formData.append('teamUuid', teamUuid);
+      formData.append('isPrivate', String(isPrivate));
 
-      return fetchFromApi(
+      return axiosFromApi(
         `/v0/files`,
-        { method: 'POST', body: JSON.stringify({ ...file, teamUuid, isPrivate }) },
+        {
+          method: 'POST',
+          data: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        },
         ApiSchemas['/v0/files.POST.response']
       );
     },
@@ -136,9 +147,7 @@ export const apiClient = {
       } = await apiClient.files.get(uuid);
 
       // Get the most recent checkpoint for the file
-      const lastCheckpointContents = await fetch(lastCheckpointDataUrl).then((res) => res.arrayBuffer());
-      const buffer = new Uint8Array(lastCheckpointContents);
-      const contents = Buffer.from(new Uint8Array(buffer)).toString('base64');
+      const contents = await fetch(lastCheckpointDataUrl).then((res) => res.arrayBuffer());
 
       // Create it on the server
       const {

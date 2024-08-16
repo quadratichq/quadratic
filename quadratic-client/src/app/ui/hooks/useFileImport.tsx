@@ -5,15 +5,14 @@ import { fileImportProgressAtom } from '@/dashboard/atoms/fileImportProgressAtom
 import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
-import { Buffer } from 'buffer';
-import { useNavigate, useSubmit } from 'react-router-dom';
+import { AxiosProgressEvent } from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 
 export function useFileImport() {
   const setFileImportProgressState = useSetRecoilState(fileImportProgressAtom);
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const navigate = useNavigate();
-  const submit = useSubmit();
 
   const handleImport = async ({
     files,
@@ -39,7 +38,6 @@ export function useFileImport() {
     const createFile =
       cursor === undefined && sheetId === undefined && insertAt === undefined && teamUuid !== undefined;
 
-    const redirectToFile = createFile && files.length === 1;
     const redirectToTeam = createFile && files.length > 1;
     const uploadFilePromises = [];
 
@@ -144,17 +142,18 @@ export function useFileImport() {
         else if (createFile && result?.contents !== undefined && result?.version !== undefined) {
           setFileImportProgressState((prev) => ({ ...prev, currentFileStep: 'save' }));
           const name = file.name ? stripExtension(file.name) : 'Untitled';
-          const contents = Buffer.from(result.contents).toString('base64');
+          const contents = result.contents;
           const version = result.version;
           const data = { name, contents, version };
-          if (redirectToFile) {
-            const action = isPrivate ? ROUTES.CREATE_FILE_PRIVATE(teamUuid) : ROUTES.CREATE_FILE(teamUuid);
-            submit(data, { method: 'POST', action, encType: 'application/json' });
-            setFileImportProgressState((prev) => ({ ...prev, importing: false }));
-          } else {
-            const uploadFilePromise = apiClient.files.create({ file: data, teamUuid, isPrivate });
-            uploadFilePromises.push(uploadFilePromise);
-          }
+          const uploadFilePromise = apiClient.files.create({
+            file: data,
+            teamUuid,
+            isPrivate,
+            onUploadProgress: (progressEvent: AxiosProgressEvent) => {
+              console.log('name', progressEvent);
+            },
+          });
+          uploadFilePromises.push(uploadFilePromise);
         }
       } catch (e) {
         if (e instanceof Error) {

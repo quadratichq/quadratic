@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import multer from 'multer';
 import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import { getTeam } from '../../middleware/getTeam';
@@ -9,7 +10,9 @@ import { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 import { createFile } from '../../utils/createFile';
 
-export default [validateAccessToken, userMiddleware, handler];
+const upload = multer().single('contents');
+
+export default [validateAccessToken, userMiddleware, upload, handler];
 
 const schema = z.object({
   body: ApiSchemas['/v0/files.POST.request'],
@@ -17,8 +20,10 @@ const schema = z.object({
 
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.POST.response']>) {
   const {
-    body: { name, contents, version, teamUuid, isPrivate },
+    body: { name, version, teamUuid, isPrivate },
   } = parseRequest(req, schema);
+  const contents = req.file?.buffer;
+  const fileString = contents === undefined ? contents : Buffer.from(contents).toString('base64');
   const {
     user: { id: userId },
   } = req;
@@ -42,7 +47,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.P
   }
 
   // Ok, create it!
-  const dbFile = await createFile({ name, userId, teamId, contents, version, isPrivate });
+  const dbFile = await createFile({ name, userId, teamId, contents: fileString, version, isPrivate });
   return res.status(201).json({
     file: { uuid: dbFile.uuid, name: dbFile.name },
     team: {
