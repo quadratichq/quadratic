@@ -1,18 +1,19 @@
 import { Coordinate } from '@/app/gridGL/types/size';
 import { getFileType, stripExtension, supportedFileTypes, uploadFile } from '@/app/helpers/files';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { fileImportProgressAtom } from '@/dashboard/atoms/fileImportProgressAtom';
+import { FileImportProgress, filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
 import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { AxiosProgressEvent } from 'axios';
 import { Buffer } from 'buffer';
-import { useNavigate } from 'react-router-dom';
-import { useSetRecoilState } from 'recoil';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { DefaultValue, useSetRecoilState } from 'recoil';
 
 export function useFileImport() {
-  const setFileImportProgressState = useSetRecoilState(fileImportProgressAtom);
+  const setFilesImportProgressState = useSetRecoilState(filesImportProgressAtom);
   const { addGlobalSnackbar } = useGlobalSnackbar();
+  const location = useLocation();
   const navigate = useNavigate();
 
   const handleImport = async ({
@@ -22,6 +23,7 @@ export function useFileImport() {
     cursor,
     isPrivate = true,
     teamUuid,
+    refreshTeamsPath = false,
   }: {
     files?: File[] | FileList;
     sheetId?: string;
@@ -29,6 +31,7 @@ export function useFileImport() {
     cursor?: string; // cursor is available when importing into a existing file, it is also being used as a flag to denote this
     isPrivate?: boolean;
     teamUuid?: string;
+    refreshTeamsPath?: boolean;
   }) => {
     quadraticCore.initWorker();
 
@@ -36,13 +39,10 @@ export function useFileImport() {
     if (files.length === 0) return;
 
     const firstFileType = getFileType(files[0]);
-    const createFile =
+    const createNewFile =
       cursor === undefined && sheetId === undefined && insertAt === undefined && teamUuid !== undefined;
 
-    const redirectToTeam = createFile && files.length > 1;
-    const uploadFilePromises = [];
-
-    if (!createFile && firstFileType === 'grid') {
+    if (!createNewFile && firstFileType === 'grid') {
       addGlobalSnackbar(`Error importing ${files[0].name}: Cannot import grid file into existing file`, {
         severity: 'warning',
       });
@@ -51,7 +51,7 @@ export function useFileImport() {
     }
 
     // Only one file can be imported at a time (except for excel), inside a existing file
-    if (!createFile && files.length > 1) {
+    if (!createNewFile && files.length > 1) {
       if (firstFileType === 'excel') {
         // importing into a existing file, use only excel files
         files = [...files].filter((file) => {
@@ -79,34 +79,31 @@ export function useFileImport() {
       }
     }
 
-    files = Array.from(files).reverse(); // reverse the order of files to import the last file first
-    const totalFilesSize = files.reduce((acc, file) => acc + file.size, 0);
+    files = Array.from(files);
 
-    setFileImportProgressState((prev) => ({
-      ...prev,
+    setFilesImportProgressState(() => ({
       importing: true,
-      saveRequired: createFile,
-      totalFiles: files.length,
-      totalFilesSize,
-      remainingFiles: files.length,
-      remainingFilesSize: totalFilesSize,
+      createNewFile,
+      currentFileIndex: -1,
+      files: files.map((file) => ({
+        name: file.name,
+        size: file.size,
+        step: 'read',
+        progress: 0,
+        transactionId: undefined,
+        transactionOps: undefined,
+      })),
     }));
 
+    const uploadFilePromises = [];
+
     while (files.length > 0) {
-      const file = files.pop();
+      const file = files.shift();
       if (file === undefined) continue;
 
-      setFileImportProgressState((prev) => ({
+      setFilesImportProgressState((prev) => ({
         ...prev,
-        remainingFiles: files.length + 1,
-        remainingFilesSize: (prev.remainingFilesSize ?? totalFilesSize) - (prev.currentFileSize ?? 0),
-        currentFileName: file.name,
-        currentFileSize: file.size,
-        currentFileStep: 'read',
-        currentFileReadProgress: undefined,
-        currentFileCreateProgress: undefined,
-        currentFileTransactionId: undefined,
-        currentFileTransactionOps: undefined,
+        currentFileIndex: prev.currentFileIndex + 1,
       }));
 
       try {
@@ -140,25 +137,85 @@ export function useFileImport() {
         }
 
         // contents and version are returned when importing into a new file
-        else if (createFile && result?.contents !== undefined && result?.version !== undefined) {
-          setFileImportProgressState((prev) => ({ ...prev, currentFileStep: 'save' }));
+        else if (createNewFile && result?.contents !== undefined && result?.version !== undefined) {
           const name = file.name ? stripExtension(file.name) : 'Untitled';
           const contents = Buffer.from(result.contents).toString('base64');
           const version = result.version;
           const data = { name, contents, version };
-          const uploadFilePromise = apiClient.files.create({
-            file: data,
-            teamUuid,
-            isPrivate,
-            onUploadProgress: (progressEvent: AxiosProgressEvent) => {
-              console.log(name, progressEvent);
-            },
-          });
+          const fileIndex = uploadFilePromises.length;
+          const uploadFilePromise = apiClient.files
+            .create({
+              file: data,
+              teamUuid,
+              isPrivate,
+              onUploadProgress: (progressEvent: AxiosProgressEvent) => {
+                setFilesImportProgressState((prev) => {
+                  if (prev instanceof DefaultValue) return prev;
+                  const updatedFiles = prev.files.map((file, index) => {
+                    if (index !== fileIndex) return file;
+                    const newFile: FileImportProgress = {
+                      name: file.name,
+                      size: file.size,
+                      step: 'save',
+                      progress: (Math.round((progressEvent.progress ?? 0) * 100) + 200) / 3,
+                      transactionId: file.transactionId,
+                      transactionOps: file.transactionOps,
+                    };
+                    return newFile;
+                  });
+                  return {
+                    ...prev,
+                    files: updatedFiles,
+                  };
+                });
+              },
+            })
+            .catch((error) => {
+              setFilesImportProgressState((prev) => {
+                if (prev instanceof DefaultValue) return prev;
+                const updatedFiles = prev.files.map((file, index) => {
+                  if (index !== fileIndex) return file;
+                  const newProgress: FileImportProgress = {
+                    name: file.name,
+                    size: file.size,
+                    step: 'error',
+                    progress: 0,
+                    transactionId: undefined,
+                    transactionOps: undefined,
+                  };
+                  return newProgress;
+                });
+                return {
+                  ...prev,
+                  files: updatedFiles,
+                };
+              });
+              throw new Error(`Error importing ${file.name}: ${error}`);
+            });
           uploadFilePromises.push(uploadFilePromise);
         }
       } catch (e) {
         if (e instanceof Error) {
           addGlobalSnackbar(e.message, { severity: 'warning' });
+          setFilesImportProgressState((prev) => {
+            if (prev instanceof DefaultValue) return prev;
+            const updatedFiles = prev.files.map((file, index) => {
+              if (index !== prev.currentFileIndex) return file;
+              const newFile: FileImportProgress = {
+                name: file.name,
+                size: file.size,
+                step: 'error',
+                progress: 0,
+                transactionId: undefined,
+                transactionOps: undefined,
+              };
+              return newFile;
+            });
+            return {
+              ...prev,
+              files: updatedFiles,
+            };
+          });
         }
       }
     }
@@ -167,11 +224,11 @@ export function useFileImport() {
       addGlobalSnackbar(`Error saving file`, { severity: 'error' });
     });
 
-    if (redirectToTeam) {
+    if (location.pathname.includes('/teams/') && teamUuid !== undefined) {
       navigate(isPrivate ? ROUTES.TEAM_FILES_PRIVATE(teamUuid) : ROUTES.TEAM_FILES(teamUuid));
     }
 
-    setFileImportProgressState((prev) => ({ ...prev, importing: false }));
+    setFilesImportProgressState((prev) => ({ ...prev, importing: false }));
   };
 
   return handleImport;

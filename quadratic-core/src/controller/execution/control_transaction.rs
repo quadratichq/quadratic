@@ -2,21 +2,16 @@ use chrono::Utc;
 use uuid::Uuid;
 
 use super::{GridController, TransactionType};
-use crate::{
-    controller::{
-        active_transactions::{
-            pending_transaction::PendingTransaction, transaction_name::TransactionName,
-        },
-        operations::operation::Operation,
-        transaction::Transaction,
-        transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-        transaction_types::JsCodeResult,
-    },
-    error_core::Result,
-    grid::{CodeRun, CodeRunResult},
-    parquet::parquet_to_vec,
-    Pos, Value,
-};
+use crate::controller::active_transactions::pending_transaction::PendingTransaction;
+use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::controller::operations::operation::Operation;
+use crate::controller::transaction::Transaction;
+use crate::controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
+use crate::controller::transaction_types::JsCodeResult;
+use crate::error_core::Result;
+use crate::grid::{CodeRun, CodeRunResult};
+use crate::parquet::parquet_to_vec;
+use crate::{Pos, Value};
 
 impl GridController {
     // loop compute cycle until complete or an async call is made
@@ -59,9 +54,9 @@ impl GridController {
     }
 
     /// Finalizes the transaction and pushes it to the various stacks (if needed)
-    pub(super) fn finalize_transaction(&mut self, mut transaction: PendingTransaction) {
+    pub(super) fn finalize_transaction(&mut self, transaction: PendingTransaction) {
         if transaction.has_async > 0 {
-            self.transactions.update_async_transaction(&mut transaction);
+            self.transactions.update_async_transaction(&transaction);
             return;
         }
 
@@ -226,13 +221,12 @@ impl From<Pos> for CellHash {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
-        cell_values::CellValues,
-        grid::{CodeCellLanguage, ConnectionKind, GridBounds},
-        CellValue, Pos, Rect, SheetPos,
-    };
     use serial_test::parallel;
+
+    use super::*;
+    use crate::cell_values::CellValues;
+    use crate::grid::{CodeCellLanguage, ConnectionKind, GridBounds};
+    use crate::{CellValue, Pos, Rect, SheetPos};
 
     fn add_cell_value(sheet_pos: SheetPos, value: CellValue) -> Operation {
         Operation::SetCellValues {
