@@ -5,13 +5,10 @@ from typing import Tuple
 import micropip
 import pandas as pd
 import pyodide
-import requests
 from quadratic_py import code_trace, plotly_patch, process_output
 
 from .quadratic_api.quadratic import getCell, getCells
 from .utils import attempt_fix_await
-
-requests.packages.urllib3.disable_warnings()
 
 
 def error_result(
