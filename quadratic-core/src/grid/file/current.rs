@@ -1,25 +1,25 @@
+use std::collections::{BTreeMap, HashMap};
+use std::str::FromStr;
+
+use anyhow::Result;
+use chrono::Utc;
+use indexmap::IndexMap;
+
 use super::v1_6::file::{export_cell_value, import_cell_value};
 use super::CURRENT_VERSION;
 use crate::color::Rgba;
+use crate::grid::block::SameValue;
+use crate::grid::file::v1_6::schema::{self as current};
 use crate::grid::formats::format::Format;
+use crate::grid::formatting::RenderSize;
 use crate::grid::resize::{Resize, ResizeMap};
 use crate::grid::{
-    block::SameValue,
-    file::v1_6::schema::{self as current},
-    formatting::RenderSize,
     generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
     CellVerticalAlign, CellWrap, CodeRun, CodeRunResult, Column, ColumnData, Grid, GridBounds,
     NumericFormat, NumericFormatKind, Sheet, SheetBorders, SheetId,
 };
 use crate::sheet_offsets::SheetOffsets;
 use crate::{CellValue, Pos, Rect, Value};
-use anyhow::Result;
-use chrono::Utc;
-use indexmap::IndexMap;
-use std::{
-    collections::{BTreeMap, HashMap},
-    str::FromStr,
-};
 
 fn set_column_format_align(
     column_data: &mut ColumnData<SameValue<CellAlign>>,
@@ -537,20 +537,20 @@ fn export_column_data_wrap(
         .collect()
 }
 
-fn export_values(values: &BTreeMap<i64, CellValue>) -> HashMap<String, current::CellValue> {
+fn export_values(values: BTreeMap<i64, CellValue>) -> HashMap<String, current::CellValue> {
     values
-        .iter()
+        .into_iter()
         .map(|(y, value)| (y.to_string(), export_cell_value(value)))
         .collect()
 }
 
-fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
+fn export_column_builder(sheet: Sheet) -> Vec<(i64, current::Column)> {
     sheet
         .columns
-        .iter()
+        .into_iter()
         .map(|(x, column)| {
             (
-                *x,
+                x,
                 current::Column {
                     align: export_column_data_align(&column.align),
                     vertical_align: export_column_data_vertical_align(&column.vertical_align),
@@ -563,7 +563,7 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                     text_color: export_column_data_string(&column.text_color),
                     fill_color: export_column_data_string(&column.fill_color),
                     render_size: export_column_data_render_size(&column.render_size),
-                    values: export_values(&column.values),
+                    values: export_values(column.values),
                 },
             )
         })
@@ -679,6 +679,64 @@ pub fn export_rows_size(sheet: &Sheet) -> Vec<(i64, current::Resize)> {
         .collect()
 }
 
+pub fn export_rows_code_runs(sheet: &Sheet) -> Vec<(current::Pos, current::CodeRun)> {
+    sheet
+        .code_runs
+        .iter()
+        .map(|(pos, code_run)| {
+            let result = match &code_run.result {
+                CodeRunResult::Ok(output) => match output {
+                    Value::Single(cell_value) => current::CodeRunResult::Ok(
+                        current::OutputValue::Single(export_cell_value(cell_value.to_owned())),
+                    ),
+                    Value::Array(array) => current::CodeRunResult::Ok(current::OutputValue::Array(
+                        current::OutputArray {
+                            size: current::OutputSize {
+                                w: array.width() as i64,
+                                h: array.height() as i64,
+                            },
+                            values: array
+                                .rows()
+                                .flat_map(|row| {
+                                    row.iter()
+                                        .map(|cell_value| export_cell_value(cell_value.to_owned()))
+                                })
+                                .collect(),
+                        },
+                    )),
+                    Value::Tuple(_) => current::CodeRunResult::Err(current::RunError {
+                        span: None,
+                        msg: current::RunErrorMsg::Unexpected("tuple as cell output".into()),
+                    }),
+                },
+                CodeRunResult::Err(error) => current::CodeRunResult::Err(
+                    current::RunError::from_grid_run_error(error.to_owned()),
+                ),
+            };
+
+            (
+                current::Pos::from(*pos),
+                current::CodeRun {
+                    formatted_code_string: code_run.formatted_code_string.clone(),
+                    last_modified: Some(code_run.last_modified),
+                    std_out: code_run.std_out.clone(),
+                    std_err: code_run.std_err.clone(),
+                    spill_error: code_run.spill_error,
+                    cells_accessed: code_run
+                        .cells_accessed
+                        .iter()
+                        .map(|sheet_rect| current::SheetRect::from(*sheet_rect))
+                        .collect(),
+                    result,
+                    return_type: code_run.return_type.clone(),
+                    line_number: code_run.line_number,
+                    output_type: code_run.output_type.clone(),
+                },
+            )
+        })
+        .collect()
+}
+
 pub(crate) fn export_sheet(sheet: Sheet) -> current::Sheet {
     current::Sheet {
         id: current::Id {
@@ -688,64 +746,13 @@ pub(crate) fn export_sheet(sheet: Sheet) -> current::Sheet {
         color: sheet.color.to_owned(),
         order: sheet.order.to_owned(),
         offsets: sheet.offsets.export(),
-        columns: export_column_builder(&sheet),
         borders: export_borders_builder(&sheet),
         formats_all: sheet.format_all.as_ref().and_then(export_format),
         formats_columns: export_formats(&sheet.formats_columns),
         formats_rows: export_formats(&sheet.formats_rows),
         rows_resize: export_rows_size(&sheet),
-        code_runs: sheet
-            .code_runs
-            .iter()
-            .map(|(pos, code_run)| {
-                let result = match &code_run.result {
-                    CodeRunResult::Ok(output) => match output {
-                        Value::Single(cell_value) => current::CodeRunResult::Ok(
-                            current::OutputValue::Single(export_cell_value(cell_value)),
-                        ),
-                        Value::Array(array) => current::CodeRunResult::Ok(
-                            current::OutputValue::Array(current::OutputArray {
-                                size: current::OutputSize {
-                                    w: array.width() as i64,
-                                    h: array.height() as i64,
-                                },
-                                values: array
-                                    .rows()
-                                    .flat_map(|row| row.iter().map(export_cell_value))
-                                    .collect(),
-                            }),
-                        ),
-                        Value::Tuple(_) => current::CodeRunResult::Err(current::RunError {
-                            span: None,
-                            msg: current::RunErrorMsg::Unexpected("tuple as cell output".into()),
-                        }),
-                    },
-                    CodeRunResult::Err(error) => {
-                        current::CodeRunResult::Err(current::RunError::from_grid_run_error(error))
-                    }
-                };
-
-                (
-                    current::Pos::from(*pos),
-                    current::CodeRun {
-                        formatted_code_string: code_run.formatted_code_string.clone(),
-                        last_modified: Some(code_run.last_modified),
-                        std_out: code_run.std_out.clone(),
-                        std_err: code_run.std_err.clone(),
-                        spill_error: code_run.spill_error,
-                        cells_accessed: code_run
-                            .cells_accessed
-                            .iter()
-                            .map(|sheet_rect| current::SheetRect::from(*sheet_rect))
-                            .collect(),
-                        result,
-                        return_type: code_run.return_type.clone(),
-                        line_number: code_run.line_number,
-                        output_type: code_run.output_type.clone(),
-                    },
-                )
-            })
-            .collect(),
+        code_runs: export_rows_code_runs(&sheet),
+        columns: export_column_builder(sheet),
     }
 }
 

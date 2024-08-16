@@ -106,20 +106,18 @@ export const apiClient = {
       isPrivate: ApiTypes['/v0/files.POST.request']['isPrivate'];
       onUploadProgress?: (progressEvent: AxiosProgressEvent) => void;
     }) {
-      const formData = new FormData();
-      formData.append('name', file?.name ?? 'Untitled');
-      formData.append('version', file?.version ?? CURRENT_FILE_VERSION);
-      if (file?.contents) {
-        formData.append('contents', new Blob([file.contents]), file.name || 'Untitled');
+      if (file === undefined) {
+        file = {
+          name: 'Untitled',
+          version: CURRENT_FILE_VERSION,
+        };
       }
-      formData.append('teamUuid', teamUuid);
-      formData.append('isPrivate', String(isPrivate));
 
       return axiosFromApi(
         `/v0/files`,
         {
           method: 'POST',
-          data: formData,
+          data: { ...file, teamUuid, isPrivate },
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -148,7 +146,9 @@ export const apiClient = {
       } = await apiClient.files.get(uuid);
 
       // Get the most recent checkpoint for the file
-      const contents = await fetch(lastCheckpointDataUrl).then((res) => res.arrayBuffer());
+      const lastCheckpointContents = await fetch(lastCheckpointDataUrl).then((res) => res.arrayBuffer());
+      const buffer = new Uint8Array(lastCheckpointContents);
+      const contents = Buffer.from(new Uint8Array(buffer)).toString('base64');
 
       // Create it on the server
       const {

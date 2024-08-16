@@ -6,6 +6,7 @@ import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { AxiosProgressEvent } from 'axios';
+import { Buffer } from 'buffer';
 import { useNavigate } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 
@@ -142,7 +143,7 @@ export function useFileImport() {
         else if (createFile && result?.contents !== undefined && result?.version !== undefined) {
           setFileImportProgressState((prev) => ({ ...prev, currentFileStep: 'save' }));
           const name = file.name ? stripExtension(file.name) : 'Untitled';
-          const contents = result.contents;
+          const contents = Buffer.from(result.contents).toString('base64');
           const version = result.version;
           const data = { name, contents, version };
           const uploadFilePromise = apiClient.files.create({
@@ -150,7 +151,7 @@ export function useFileImport() {
             teamUuid,
             isPrivate,
             onUploadProgress: (progressEvent: AxiosProgressEvent) => {
-              console.log('name', progressEvent);
+              console.log(name, progressEvent);
             },
           });
           uploadFilePromises.push(uploadFilePromise);

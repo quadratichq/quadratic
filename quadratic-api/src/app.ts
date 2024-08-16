@@ -43,9 +43,6 @@ app.use((req: express.Request, res: express.Response, next: express.NextFunction
   if (req.originalUrl === '/v0/webhooks/stripe') {
     // If the request is a stripe webhook, use raw parser
     express.raw({ type: 'application/json' })(req, res, next);
-  } else if (req.headers['content-type']?.startsWith('multipart/form-data')) {
-    // If the request is a multipart form, use multer at the route level
-    next();
   } else {
     // Use JSON parser for all other routes
     express.json({ limit: '75mb' })(req, res, next);

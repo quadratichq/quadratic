@@ -74,7 +74,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
 export type CreateActionRequest = {
   name: string;
-  contents: ArrayBuffer;
+  contents: string;
   version: string;
 };
 
