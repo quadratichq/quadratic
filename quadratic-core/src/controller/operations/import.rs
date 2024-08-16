@@ -276,6 +276,8 @@ impl GridController {
 
             for col_index in 0..num_cols {
                 let col = batch.column(col_index);
+
+                // arrow.rs has the `impl TryFrom<&ArrayRef> for CellValues` block
                 let values: CellValues = col.try_into()?;
 
                 let operations = Operation::SetCellValues {
@@ -338,6 +340,7 @@ mod test {
     use super::read_utf16;
     use super::*;
     use crate::CellValue;
+    use chrono::{NaiveDate, NaiveTime};
     use serial_test::parallel;
 
     const INVALID_ENCODING_FILE: &[u8] =
@@ -460,5 +463,87 @@ mod test {
         let file = include_bytes!("../../../test-files/invalid.xlsx");
         let result = gc.import_excel(file.to_vec(), "invalid.xlsx", None);
         assert!(result.is_err());
+    }
+
+    #[test]
+    #[parallel]
+    fn import_parquet_date_time() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let file = include_bytes!("../../../test-files/date_time_formats_arrow.parquet");
+        let pos = Pos { x: 0, y: 0 };
+        gc.import_parquet(sheet_id, file.to_vec(), "parquet", pos, None)
+            .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+
+        // date
+        assert_eq!(
+            sheet.cell_value((0, 1).into()),
+            Some(CellValue::Date(
+                NaiveDate::parse_from_str("2024-12-21", "%Y-%m-%d").unwrap()
+            ))
+        );
+        assert_eq!(
+            sheet.cell_value((0, 2).into()),
+            Some(CellValue::Date(
+                NaiveDate::parse_from_str("2024-12-22", "%Y-%m-%d").unwrap()
+            ))
+        );
+        assert_eq!(
+            sheet.cell_value((0, 3).into()),
+            Some(CellValue::Date(
+                NaiveDate::parse_from_str("2024-12-23", "%Y-%m-%d").unwrap()
+            ))
+        );
+
+        // time
+        assert_eq!(
+            sheet.cell_value((1, 1).into()),
+            Some(CellValue::Time(
+                NaiveTime::parse_from_str("13:23:00", "%H:%M:%S").unwrap()
+            ))
+        );
+        assert_eq!(
+            sheet.cell_value((1, 2).into()),
+            Some(CellValue::Time(
+                NaiveTime::parse_from_str("14:45:00", "%H:%M:%S").unwrap()
+            ))
+        );
+        assert_eq!(
+            sheet.cell_value((1, 3).into()),
+            Some(CellValue::Time(
+                NaiveTime::parse_from_str("16:30:00", "%H:%M:%S").unwrap()
+            ))
+        );
+
+        // date time
+        assert_eq!(
+            sheet.cell_value((2, 1).into()),
+            Some(CellValue::DateTime(
+                NaiveDate::from_ymd_opt(2024, 12, 21)
+                    .unwrap()
+                    .and_hms_opt(13, 23, 0)
+                    .unwrap()
+            ))
+        );
+        assert_eq!(
+            sheet.cell_value((2, 2).into()),
+            Some(CellValue::DateTime(
+                NaiveDate::from_ymd_opt(2024, 12, 22)
+                    .unwrap()
+                    .and_hms_opt(14, 30, 0)
+                    .unwrap()
+            ))
+        );
+        assert_eq!(
+            sheet.cell_value((2, 3).into()),
+            Some(CellValue::DateTime(
+                NaiveDate::from_ymd_opt(2024, 12, 23)
+                    .unwrap()
+                    .and_hms_opt(16, 45, 0)
+                    .unwrap()
+            ))
+        );
     }
 }

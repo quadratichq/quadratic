@@ -3,15 +3,14 @@ use std::sync::Arc;
 use anyhow::Result;
 use arrow_array::{
     cast::AsArray,
-    temporal_conversions::{self, as_time},
     types::{Date32Type, Date64Type},
-    Array, ArrayRef, ArrowPrimitiveType,
+    Array, ArrayRef,
 };
 use arrow_buffer::ArrowNativeType;
 use arrow_data::ArrayData;
 use arrow_schema::{DataType, TimeUnit};
 use bigdecimal::BigDecimal;
-use chrono::{NaiveDate, NaiveTime, TimeZone, Utc};
+use chrono::{NaiveDate, NaiveTime, TimeDelta, TimeZone, Utc};
 
 use crate::{cell_values::CellValues, CellValue};
 
@@ -52,9 +51,9 @@ pub fn arrow_col_to_cell_value_vec(array: &ArrayRef) -> Result<Vec<CellValue>> {
             array_data,
             &i64_naive_date,
         )),
-        DataType::Time32(unit) => arrow_time_unit_to_cell_values::<DataType, i32>(array_data),
-        DataType::Time64(unit) => arrow_time_unit_to_cell_values::<i64>(array_data),
-        DataType::Timestamp(unit, extra) => arrow_time_unit_to_cell_values::<i64>(array_data),
+        DataType::Time32(unit) => arrow_time_unit_to_cell_values::<i32>(array_data, unit),
+        DataType::Time64(unit) => arrow_time_unit_to_cell_values::<i64>(array_data, unit),
+        DataType::Timestamp(unit, extra) => arrow_timestamp_to_cell_value(array_data, unit, extra),
         // unsupported data type
         _ => {
             dbg!("Unhandled arrow type: {:?} => {:?}", data_type, array_data);
@@ -167,10 +166,7 @@ where
         let data = buffer.typed_data::<T>();
         values.extend(
             data.iter()
-                .map(|v| {
-                    let timestamp = conversion_fn(*v).format("%Y-%m-%d").to_string();
-                    CellValue::Text(timestamp)
-                })
+                .map(|v| CellValue::Date(conversion_fn(*v)))
                 .collect::<Vec<CellValue>>(),
         );
     }
@@ -178,24 +174,78 @@ where
     values
 }
 
-fn arrow_time_unit_to_cell_values<T, U>(array_data: ArrayData) -> Result<Vec<CellValue>>
+fn arrow_time_unit_to_cell_values<T>(
+    array_data: ArrayData,
+    time_unit: &TimeUnit,
+) -> Result<Vec<CellValue>>
 where
-    T: ArrowPrimitiveType,
-    U: ArrowNativeType,
-    U: Into<i64>,
+    T: ArrowNativeType,
+    T: Into<i64>,
 {
     let mut values = vec![];
 
     for buffer in array_data.buffers() {
-        let data = buffer.typed_data::<U>();
+        let data = buffer.typed_data::<T>();
         values.extend(
             data.iter()
                 .map(|v| {
-                    if let Some(time) = as_time::<T>((*v).into()) {
-                        Ok(CellValue::Time(time))
+                    if let Some(nt) = NaiveTime::from_hms_opt(0, 0, 0) {
+                        let time_result = match time_unit {
+                            TimeUnit::Second => {
+                                nt.overflowing_add_signed(TimeDelta::seconds((*v).into())).0
+                            }
+                            TimeUnit::Millisecond => {
+                                nt.overflowing_add_signed(TimeDelta::milliseconds((*v).into()))
+                                    .0
+                            }
+                            TimeUnit::Microsecond => {
+                                nt.overflowing_add_signed(TimeDelta::microseconds((*v).into()))
+                                    .0
+                            }
+                            TimeUnit::Nanosecond => {
+                                nt.overflowing_add_signed(TimeDelta::nanoseconds((*v).into()))
+                                    .0
+                            }
+                        };
+
+                        Ok(CellValue::Time(time_result))
                     } else {
-                        Ok(CellValue::Text(String::default()))
+                        Err(anyhow::anyhow!("Invalid time"))
                     }
+                })
+                .collect::<Result<Vec<CellValue>>>()?,
+        );
+    }
+
+    Ok(values)
+}
+
+fn arrow_timestamp_to_cell_value(
+    array_date: ArrayData,
+    unit: &TimeUnit,
+    _extra: &Option<Arc<str>>,
+) -> Result<Vec<CellValue>> {
+    let mut values = vec![];
+
+    for buffer in array_date.buffers() {
+        let data = buffer.typed_data::<i64>();
+        values.extend(
+            data.iter()
+                .map(|v| {
+                    let dt = match unit {
+                        TimeUnit::Nanosecond => Utc.timestamp_nanos((*v).into()),
+                        TimeUnit::Microsecond => {
+                            map_local_result(Utc.timestamp_micros((*v).into()))?
+                        }
+                        TimeUnit::Millisecond => {
+                            map_local_result(Utc.timestamp_millis_opt((*v).into()))?
+                        }
+                        TimeUnit::Second => {
+                            map_local_result(Utc.timestamp_millis_opt((*v).into()))?
+                        }
+                    };
+                    let naive_dt = dt.naive_utc();
+                    Ok(CellValue::DateTime(naive_dt))
                 })
                 .collect::<Result<Vec<CellValue>>>()?,
         );

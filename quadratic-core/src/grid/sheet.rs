@@ -856,14 +856,16 @@ mod test {
 
         sheet.set_cell_value(
             Pos { x: 1, y: 0 },
-            CellValue::DateTime(NaiveDateTime::from_str("2024-12-21 1:23 PM").unwrap()),
+            CellValue::DateTime(
+                NaiveDateTime::parse_from_str("2024-12-21 1:23 PM", "%Y-%m-%d %-I:%M %p").unwrap(),
+            ),
         );
         let format_summary = sheet.cell_format_summary((1, 0).into(), false);
         assert_eq!(format_summary.cell_type, Some(CellType::DateTime));
 
         sheet.set_cell_value(
             Pos { x: 2, y: 0 },
-            CellValue::Time(NaiveTime::from_str("1:23 pm").unwrap()),
+            CellValue::Time(NaiveTime::parse_from_str("1:23 pm", "%-I:%M %p").unwrap()),
         );
         let format_summary = sheet.cell_format_summary((2, 0).into(), false);
         assert_eq!(format_summary.cell_type, None);
