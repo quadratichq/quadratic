@@ -46,12 +46,16 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.P
     throw new ApiError(403, 'User does not have permission to create a public file in this team.');
   }
 
-  // Ok, create it!
-  const dbFile = await createFile({ name, userId, teamId, contents: fileString, version, isPrivate });
-  return res.status(201).json({
-    file: { uuid: dbFile.uuid, name: dbFile.name },
-    team: {
-      uuid: (dbFile.ownerTeam as any).uuid,
-    },
-  });
+  try {
+    // Ok, create it!
+    const dbFile = await createFile({ name, userId, teamId, contents: fileString, version, isPrivate });
+    return res.status(201).json({
+      file: { uuid: dbFile.uuid, name: dbFile.name },
+      team: {
+        uuid: (dbFile.ownerTeam as any).uuid,
+      },
+    });
+  } catch (e) {
+    throw new ApiError(500, 'Failed to create file', e);
+  }
 }
