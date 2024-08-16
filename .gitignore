@@ -70,3 +70,5 @@ docker/mysql-connection/data
 
 # JMeter
 jmeter.log
+
+~$*

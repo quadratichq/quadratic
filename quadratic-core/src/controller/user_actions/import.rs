@@ -19,8 +19,6 @@ impl GridController {
     }
 
     /// Imports an Excel file into the grid.
-    ///
-    /// Returns a [`TransactionSummary`].
     pub fn import_excel(
         &mut self,
         file: Vec<u8>,
