@@ -1,7 +1,11 @@
+import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
+import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
+import { useSchemaBrowserTableQueryActionNewFile } from '@/dashboard/hooks/useSchemaBrowserTableQueryActionNewFile';
+import { connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { ROUTES } from '@/shared/constants/routes';
-import { useSchemaBrowser } from '@/shared/hooks/useSchemaBrowser';
+import { SchemaBrowser } from '@/shared/hooks/useSchemaBrowser';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { cn } from '@/shared/shadcn/utils';
 import { ArrowDownIcon, ChevronRightIcon, LockClosedIcon, MixIcon, PlusIcon, RocketIcon } from '@radix-ui/react-icons';
@@ -30,9 +34,19 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate }: Pro
   const activeConnection = connections.find((connection) => connection.uuid === activeConnectionUuid);
   const headerLabel = isPrivate ? 'New private file' : 'New file';
 
+  // Create a new file from an API snippet
+  const stateUrlParam = {
+    codeString: SNIPPET_PY_API,
+    language: 'Python' as CodeCellLanguage,
+  };
+  const newFileApiHref = isPrivate
+    ? ROUTES.CREATE_FILE_PRIVATE(teamUuid, stateUrlParam)
+    : ROUTES.CREATE_FILE(teamUuid, stateUrlParam);
+
   return (
     <Dialog open={true} onOpenChange={(open) => onClose()}>
-      <DialogContent className="max-w-xl">
+      {/* overflow: visible here fixes a bug with the tooltip being cut off */}
+      <DialogContent className="max-w-xl overflow-visible">
         <DialogHeader>
           <DialogTitle>
             <div className="flex h-6 items-center gap-2">
@@ -48,7 +62,7 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate }: Pro
                   <ChevronRightIcon className="text-muted-foreground" />
                   <div className="flex items-center gap-2">
                     <LanguageIcon language={activeConnection.type} />
-                    <span>{activeConnection.name}</span>
+                    <span>From {connectionsByType[activeConnection.type].name} connection</span>
                   </div>
                 </>
               ) : (
@@ -87,12 +101,15 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate }: Pro
               </button>
             </li>
             <li className={`col-span-2`}>
-              <button className={cn('text-muted-foreground', gridItemClassName, gridItemInteractiveClassName)}>
+              <Link
+                to={newFileApiHref}
+                className={cn('text-muted-foreground', gridItemClassName, gridItemInteractiveClassName)}
+              >
                 <ItemIcon>
                   <RocketIcon />
                 </ItemIcon>
                 Fetch data from an API
-              </button>
+              </Link>
             </li>
             <li className={`col-span-2`}>
               <Link
@@ -168,22 +185,14 @@ function SchemaBrowserInternal({
     type: 'POSTGRES' | 'MYSQL';
   };
 }) {
-  // TODO: if you do this, move the component this hook returns
-  // TODO: rename to useConnectionSchemaBrowser()?
-
-  const { SchemaBrowser } = useSchemaBrowser({
-    type: connection.type,
-    uuid: connection.uuid,
-  });
-  // console.log('running', SchemaBrowser);
+  const { tableQueryAction } = useSchemaBrowserTableQueryActionNewFile();
 
   return (
-    <div>
-      {/* <div className="flex items-center gap-3 border-b border-t border-border py-2">
-        <LanguageIcon language={connection.type} />
-        <span className="font-medium">{connection.name}</span>
-      </div> */}
-      <SchemaBrowser />
-    </div>
+    <SchemaBrowser
+      selfContained={true}
+      connectionType={connection.type}
+      connectionUuid={connection.uuid}
+      tableQueryAction={tableQueryAction}
+    />
   );
 }

@@ -1,24 +1,28 @@
 import { connectionClient } from '@/shared/api/connectionClient';
-import { SchemaBrowser2 } from '@/shared/components/SchemaBrowser';
+import { Type } from '@/shared/components/Type';
+import { CONTACT_URL } from '@/shared/constants/urls';
+import { Button } from '@/shared/shadcn/ui/button';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
+import { cn } from '@/shared/shadcn/utils';
+import { KeyboardArrowRight } from '@mui/icons-material';
+import { ReloadIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
-import { useEffect } from 'react';
-import { useFetcher } from 'react-router-dom';
-
-export type SchemaData = Awaited<ReturnType<typeof connectionClient.schemas.get>>;
+import { ReactNode, useEffect, useState } from 'react';
+import { Link, useFetcher } from 'react-router-dom';
 
 /**
  * Anywhere we want to access the data for the connection schema, we use this hook.
  * It uses the connection UUID as the fetcher key, so the data persists on the
  * fetcher across multiple renders and different connections.
  *
- * This is primarily useful when you’re using this inside of the app. But it functions
- * the same way when used in the app.
+ * This is primarily useful when you’re using this inside of the app (for example,
+ * the AI assistant needs to know the connection schema).
  *
- * @param {Object} arg
- * @param {string?} arg.uuid - The connection UUID
- * @param {string?} arg.type - The connection type
+ * Because it’s used this way, the props can be undefined because in the app
+ * we may be dealing with a cell that is not a connection. Or the connection
+ * no longer exists, even though it's in the file.
  */
-export const useSchemaBrowser = ({ uuid, type }: { uuid: string | undefined; type: string | undefined }) => {
+export const useSchemaBrowser = ({ type, uuid }: { uuid: string | undefined; type: string | undefined }) => {
   const fetcher = useFetcher<{ ok: boolean; data: SchemaData }>({
     key: uuid ? `SCHEMA_FOR_CONNECTION_${uuid}` : undefined,
   });
@@ -36,8 +40,6 @@ export const useSchemaBrowser = ({ uuid, type }: { uuid: string | undefined; typ
     }
   }, [fetcher, fetcherUrl]);
 
-  console.log('ran', uuid, type);
-
   const reloadSchema = () => {
     mixpanel.track('[Connections].schemaViewer.refresh');
     fetcher.load(fetcherUrl);
@@ -45,15 +47,214 @@ export const useSchemaBrowser = ({ uuid, type }: { uuid: string | undefined; typ
 
   return {
     // TODO: fix the empty values - how will these work in the app?
-    SchemaBrowser: () => (
-      <SchemaBrowser2
-        connectionType={type || ''}
-        fetcher={fetcher}
-        reloadSchema={reloadSchema}
-        // queryButton={}
-      />
-    ),
+    // SchemaBrowser: (props: SchemaBrowserPropsExternal = {}) => {
+    //   if (uuid === undefined || type === undefined) return null;
+
+    //   return (
+    //     <SchemaBrowser
+    //       {...props}
+
+    //       reloadSchema={reloadSchema}
+
+    //     />
+    //   );
+    // },
+    isLoading: fetcher.state !== 'idle',
+    // undefined = hasn't loaded yet, null = error, otherwise the data
+    data: fetcher.data === undefined ? undefined : fetcher.data.ok ? fetcher.data.data : null,
     schemaFetcher: fetcher,
     reloadSchema,
   };
 };
+
+type SchemaData = Awaited<ReturnType<typeof connectionClient.schemas.get>>;
+
+type TableQueryAction = (query: string) => ReactNode;
+
+type SchemaBrowserProps = {
+  selfContained?: boolean;
+  // TODO:
+  tableQueryAction: TableQueryAction;
+  connectionUuid?: string;
+  connectionType?: string;
+};
+// type SchemaBrowserPropsInternal = {
+//   // undefined = hasn't loaded yet, null = error, otherwise the data
+//   data: SchemaData | null | undefined;
+//   isLoading: boolean;
+//   reloadSchema: () => void;
+// };
+// type SchemaBrowserProps = SchemaBrowserProps & SchemaBrowserPropsInternal;
+
+export const SchemaBrowser = ({
+  // uuid, type, selfContained, tableQueryAction
+  connectionUuid,
+  connectionType,
+  selfContained,
+  tableQueryAction,
+}: SchemaBrowserProps) => {
+  const { data, isLoading, reloadSchema } = useSchemaBrowser({ type: connectionType, uuid: connectionUuid });
+
+  if (connectionType === undefined || connectionUuid === undefined) return null;
+
+  // Designed to live in a box that takes up the full height of its container
+  return (
+    <div
+      className={cn(
+        'h-full overflow-auto text-sm',
+        selfContained && 'max-h-[17.5rem] overflow-auto rounded border border-border'
+      )}
+    >
+      <div className={cn('flex items-center justify-between pb-1', selfContained ? 'px-4 pt-1.5' : 'px-2')}>
+        <h3 className="font-medium tracking-tight">{data?.name ? data.name : ''}</h3>
+        <div className="flex items-center gap-1">
+          <Type variant="caption">{data?.tables ? data.tables.length + ' tables' : ''}</Type>
+          <TooltipPopover label="Reload schema">
+            <Button onClick={reloadSchema} variant="ghost" size="icon-sm" className="text-muted-foreground">
+              <ReloadIcon className={isLoading ? 'animate-spin' : ''} />
+            </Button>
+          </TooltipPopover>
+        </div>
+      </div>
+      {isLoading && data === undefined && (
+        <div className="mb-4 flex min-h-16 items-center justify-center text-muted-foreground">Loading…</div>
+      )}
+      {data && (
+        <ul className="text-sm">
+          {data.tables.map((table, i) => (
+            <TableListItem
+              data={table}
+              key={i}
+              tableQuery={tableQueryAction(getTableQuery({ table, connectionKind: data.type }))}
+            />
+          ))}
+        </ul>
+      )}
+      {data === null && (
+        <div className="mx-auto my-2 flex max-w-md flex-col items-center justify-center gap-2 pb-4 text-center text-sm text-muted-foreground">
+          <h4 className="font-semibold text-destructive">Error loading connection schema</h4>
+          <p>
+            Try to{' '}
+            <button className="underline hover:text-primary" onClick={reloadSchema}>
+              reload the schema
+            </button>
+            . If that doesn’t work,{' '}
+            <button
+              className="underline hover:text-primary"
+              onClick={() => {
+                // TODO: (jimniels) know when to do an in-memory navigation or an redirect document
+                window.location.href = '/';
+              }}
+            >
+              view the connection details
+            </button>{' '}
+            and ensure it’s properly configured.
+          </p>
+          <p>
+            If you still have problems,{' '}
+            <Link to={CONTACT_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
+              contact us
+            </Link>
+            .
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+type Table = {
+  name: string;
+  schema: string;
+  columns: Column[];
+};
+
+type Column = {
+  is_nullable: boolean;
+  name: string;
+  type: string;
+};
+
+function TableListItem({
+  data: { name, columns, schema },
+  selfContained,
+
+  tableQuery,
+}: {
+  data: Table;
+  selfContained?: boolean;
+  tableQuery: ReactNode;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <li className="group relative z-10">
+      <div className={cn('sticky top-0', isExpanded && 'z-10 bg-accent')}>
+        <button
+          className={cn(
+            'z-10 flex h-8 w-full cursor-default items-stretch justify-between gap-1 bg-background group-hover:bg-accent',
+            isExpanded && 'bg-accent',
+            selfContained ? 'px-2' : 'px-1'
+          )}
+          onClick={() => {
+            setIsExpanded((prev) => !prev);
+          }}
+        >
+          <div className="flex items-center truncate">
+            <div className="flex h-6 w-6 items-center justify-center">
+              <KeyboardArrowRight
+                fontSize="inherit"
+                className={cn(isExpanded && 'rotate-90', 'text-xs text-muted-foreground')}
+              />
+            </div>
+            <div className="truncate">{name}</div>
+          </div>
+        </button>
+        <div
+          className={cn(
+            `absolute top-0.5 z-10 hidden group-hover:block`,
+            isExpanded && 'block',
+            selfContained ? 'right-4' : 'right-2'
+          )}
+        >
+          {tableQuery}
+        </div>
+      </div>
+      {isExpanded && (
+        <ul className={cn('pr-2', selfContained ? 'pl-5' : 'pl-4')}>
+          {columns.length ? (
+            columns.map(({ name, type, is_nullable }, k) => (
+              <li key={k} className="border border-l border-transparent border-l-border pl-3">
+                <div className="flex w-full items-center gap-1 py-0.5 pl-2">
+                  <div className="truncate after:ml-1 after:text-muted-foreground after:opacity-30 after:content-['/']">
+                    {name}
+                  </div>
+
+                  <div className="flex items-center gap-1 font-mono text-sm text-muted-foreground">
+                    {type}
+                    {is_nullable && '?'}
+                  </div>
+                </div>
+              </li>
+            ))
+          ) : (
+            <div className="border border-l border-transparent border-l-border pl-3">
+              <Type className="font-mono text-sm italic text-muted-foreground">[No columns]</Type>
+            </div>
+          )}
+        </ul>
+      )}
+    </li>
+  );
+}
+
+function getTableQuery({ table: { name, schema }, connectionKind }: { table: Table; connectionKind: string }) {
+  switch (connectionKind) {
+    case 'POSTGRES':
+      return `SELECT * FROM "${schema}"."${name}" LIMIT 100`;
+    case 'MYSQL':
+      return `SELECT * FROM \`${schema}\`.\`${name}\` LIMIT 100`;
+    default:
+      return '';
+  }
+}
