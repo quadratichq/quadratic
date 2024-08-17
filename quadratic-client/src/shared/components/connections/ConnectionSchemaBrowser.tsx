@@ -1,102 +1,30 @@
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
-import { connectionClient } from '@/shared/api/connectionClient';
 import { Type } from '@/shared/components/Type';
 import { CONTACT_URL } from '@/shared/constants/urls';
+import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { KeyboardArrowRight } from '@mui/icons-material';
 import { ReloadIcon } from '@radix-ui/react-icons';
-import mixpanel from 'mixpanel-browser';
-import { ReactNode, useEffect, useState } from 'react';
-import { Link, useFetcher } from 'react-router-dom';
+import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import { ReactNode, useState } from 'react';
+import { Link } from 'react-router-dom';
 
-/**
- * Anywhere we want to access the data for the connection schema, we use this hook.
- * It uses the connection UUID as the fetcher key, so the data persists on the
- * fetcher across multiple renders and different connections.
- *
- * This is primarily useful when you’re using this inside of the app (for example,
- * the AI assistant needs to know the connection schema).
- *
- * Because it’s used this way, the props can be undefined because in the app
- * we may be dealing with a cell that is not a connection. Or the connection
- * no longer exists, even though it's in the file.
- */
-export const useSchemaBrowser = ({ type, uuid }: { uuid: string | undefined; type: string | undefined }) => {
-  const fetcher = useFetcher<{ ok: boolean; data: SchemaData }>({
-    key: uuid ? `SCHEMA_FOR_CONNECTION_${uuid}` : undefined,
-  });
-
-  const fetcherUrl = uuid && type ? `/api/connections/${uuid}/schema/${type?.toLowerCase()}` : '';
-
-  useEffect(() => {
-    // Don’t bother fetching anything if we don't have the connection
-    // (this hook runs on cells like python that aren't connections)
-    if (!fetcherUrl) return;
-
-    // Otherwise, fetch the schema data if we don't have it yet
-    if (fetcher.state === 'idle' && fetcher.data === undefined) {
-      fetcher.load(fetcherUrl);
-    }
-  }, [fetcher, fetcherUrl]);
-
-  const reloadSchema = () => {
-    mixpanel.track('[Connections].schemaViewer.refresh');
-    fetcher.load(fetcherUrl);
-  };
-
-  return {
-    // TODO: fix the empty values - how will these work in the app?
-    // SchemaBrowser: (props: SchemaBrowserPropsExternal = {}) => {
-    //   if (uuid === undefined || type === undefined) return null;
-
-    //   return (
-    //     <SchemaBrowser
-    //       {...props}
-
-    //       reloadSchema={reloadSchema}
-
-    //     />
-    //   );
-    // },
-    isLoading: fetcher.state !== 'idle',
-    // undefined = hasn't loaded yet, null = error, otherwise the data
-    data: fetcher.data === undefined ? undefined : fetcher.data.ok ? fetcher.data.data : null,
-    schemaFetcher: fetcher,
-    reloadSchema,
-  };
-};
-
-type SchemaData = Awaited<ReturnType<typeof connectionClient.schemas.get>>;
-
-type TableQueryAction = (query: string) => ReactNode;
-
-type SchemaBrowserProps = {
-  selfContained?: boolean;
-  // TODO:
-  tableQueryAction: TableQueryAction;
-  connectionUuid?: string;
-  connectionType?: string;
-};
-// type SchemaBrowserPropsInternal = {
-//   // undefined = hasn't loaded yet, null = error, otherwise the data
-//   data: SchemaData | null | undefined;
-//   isLoading: boolean;
-//   reloadSchema: () => void;
-// };
-// type SchemaBrowserProps = SchemaBrowserProps & SchemaBrowserPropsInternal;
-
-export const SchemaBrowser = ({
-  // uuid, type, selfContained, tableQueryAction
-  connectionUuid,
-  connectionType,
-  selfContained,
+export const ConnectionSchemaBrowser = ({
   tableQueryAction,
-}: SchemaBrowserProps) => {
-  const { data, isLoading, reloadSchema } = useSchemaBrowser({ type: connectionType, uuid: connectionUuid });
+  selfContained,
+  type,
+  uuid,
+}: {
+  tableQueryAction: (query: string) => ReactNode;
+  selfContained?: boolean;
+  type?: ConnectionType;
+  uuid?: string;
+}) => {
+  const { data, isLoading, reloadSchema } = useConnectionSchemaBrowser({ type, uuid });
 
-  if (connectionType === undefined || connectionUuid === undefined) return null;
+  if (type === undefined || uuid === undefined) return null;
 
   // Designed to live in a box that takes up the full height of its container
   return (

@@ -5,8 +5,8 @@ import { PanelPositionBottomIcon, PanelPositionLeftIcon } from '@/app/ui/icons';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { CodeEditorPanelData, PanelPosition } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { useRootRouteLoaderData } from '@/routes/_root';
+import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { SchemaBrowser } from '@/shared/hooks/useSchemaBrowser';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
@@ -27,6 +27,7 @@ export const CodeEditorPanel = memo((props: Props) => {
   const {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
+  const { editorRef } = useCodeEditor();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const connectionInfo = getConnectionInfo(editorInteractionState.mode);
   const isConnection = connectionInfo !== undefined;
@@ -41,19 +42,13 @@ export const CodeEditorPanel = memo((props: Props) => {
     [setPanelPosition]
   );
 
-  const { editorRef } = useCodeEditor();
-  // <TooltipHint title="Insert query">
-  //           <Button variant="ghost" onClick={onQuery} size="icon-sm" className="hover:bg-background">
-  //             <ClipboardCopyIcon />
-  //           </Button>
-  //         </TooltipHint>
-
-  // const onQuery = ;
-  const showSchemaViewer = Boolean(isAuthenticated && isConnection && teamPermissions?.includes('TEAM_EDIT'));
-  const schemaBrowser = showSchemaViewer ? (
-    <SchemaBrowser
-      connectionType={connectionInfo?.kind}
-      connectionUuid={connectionInfo?.id}
+  const showSchemaBrowser = Boolean(isAuthenticated && isConnection && teamPermissions?.includes('TEAM_EDIT'));
+  const schemaBrowser = showSchemaBrowser ? (
+    <ConnectionSchemaBrowser
+      // TODO: (jimniels) fix types
+      // @ts-expect-error
+      type={connectionInfo?.kind}
+      uuid={connectionInfo?.id}
       tableQueryAction={(query: string) => (
         <TooltipPopover label="Insert query">
           <Button

@@ -2,9 +2,9 @@ import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
-import { useSchemaBrowserTableQueryActionNewFile } from '@/dashboard/hooks/useSchemaBrowserTableQueryActionNewFile';
+import { useConnectionSchemaBrowserTableQueryActionNewFile } from '@/dashboard/hooks/useConnectionSchemaBrowserTableQueryActionNewFile';
+import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
 import { ROUTES } from '@/shared/constants/routes';
-import { SchemaBrowser } from '@/shared/hooks/useSchemaBrowser';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
@@ -24,7 +24,7 @@ type Props = {
 export function NewFileDialog({ connections, teamUuid, onClose, isPrivate }: Props) {
   const [activeConnectionUuid, setActiveConnectionUuid] = useState<string>('');
   const gridItemClassName =
-    'flex flex-col items-center justify-center gap-1 rounded-lg border border-border p-4 pt-5 w-full';
+    'flex flex-col items-center justify-center gap-1 rounded-lg border border-border p-4 pt-5 w-full group';
   const gridItemInteractiveClassName = 'hover:bg-accent hover:text-foreground cursor-pointer';
 
   // TODO: style a zero state
@@ -63,15 +63,15 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate }: Pro
           </DialogTitle>
         </DialogHeader>
         {activeConnection ? (
-          <SchemaBrowserInternal connection={activeConnection} />
+          <SchemaBrowser connectionUuid={activeConnection.uuid} connectionType={activeConnection.type} />
         ) : (
           <ul className="grid grid-cols-4 grid-rows-[1f_1fr_auto] gap-2 text-sm">
             <li className={`col-span-1`}>
               <Link
                 to={isPrivate ? ROUTES.CREATE_FILE_PRIVATE(teamUuid) : ROUTES.CREATE_FILE(teamUuid)}
-                className={cn('text-muted-foreground', gridItemClassName, gridItemInteractiveClassName)}
+                className={cn(gridItemClassName, gridItemInteractiveClassName, 'border-primary text-muted-foreground')}
               >
-                <ItemIcon inverted>
+                <ItemIcon>
                   <PlusIcon />
                 </ItemIcon>
                 Blank
@@ -118,7 +118,7 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate }: Pro
             </li>
             <li className={`col-span-4 rounded border border-border`}>
               <div className={`text-muted-foreground ${gridItemClassName} border-none`}>
-                <ItemIcon>
+                <ItemIcon disabled>
                   <ConnectionsIcon className="text-muted-foreground" />
                 </ItemIcon>
                 Query data from a connection
@@ -154,35 +154,33 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate }: Pro
   );
 }
 
-function ItemIcon({ children, inverted }: { children: React.ReactNode; inverted?: boolean }) {
+function ItemIcon({ children, disabled }: { children: React.ReactNode; disabled?: boolean }) {
   return (
     <div
-      className={`flex h-6 w-6 items-center justify-center rounded ${
-        inverted ? 'bg-primary text-background' : 'bg-accent text-primary'
-      }`}
+      className={cn(
+        `flex h-6 w-6 items-center justify-center rounded bg-accent text-primary`,
+        disabled ? '' : `group-hover:bg-primary group-hover:text-background`
+      )}
     >
       {children}
     </div>
   );
 }
 
-function SchemaBrowserInternal({
-  connection,
+function SchemaBrowser({
+  connectionType,
+  connectionUuid,
 }: {
-  connection: {
-    uuid: string;
-    name: string;
-    createdDate: string;
-    type: 'POSTGRES' | 'MYSQL';
-  };
+  connectionType: 'POSTGRES' | 'MYSQL';
+  connectionUuid: string;
 }) {
-  const { tableQueryAction } = useSchemaBrowserTableQueryActionNewFile();
+  const { tableQueryAction } = useConnectionSchemaBrowserTableQueryActionNewFile();
 
   return (
-    <SchemaBrowser
+    <ConnectionSchemaBrowser
       selfContained={true}
-      connectionType={connection.type}
-      connectionUuid={connection.uuid}
+      type={connectionType}
+      uuid={connectionUuid}
       tableQueryAction={tableQueryAction}
     />
   );

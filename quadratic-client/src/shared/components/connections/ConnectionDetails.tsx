@@ -1,6 +1,6 @@
-import { useSchemaBrowserTableQueryActionNewFile } from '@/dashboard/hooks/useSchemaBrowserTableQueryActionNewFile';
+import { useConnectionSchemaBrowserTableQueryActionNewFile } from '@/dashboard/hooks/useConnectionSchemaBrowserTableQueryActionNewFile';
 import { ConnectionHeader } from '@/shared/components/connections/ConnectionHeader';
-import { SchemaBrowser } from '@/shared/hooks/useSchemaBrowser';
+import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
 export const ConnectionDetails = ({
@@ -12,18 +12,18 @@ export const ConnectionDetails = ({
   connectionUuid: string;
   handleNavigateToListView: () => void;
 }) => {
-  const { tableQueryAction } = useSchemaBrowserTableQueryActionNewFile();
+  const { tableQueryAction } = useConnectionSchemaBrowserTableQueryActionNewFile();
   return (
     <div>
       <ConnectionHeader type={connectionType} handleNavigateToListView={handleNavigateToListView}>
         Browse
       </ConnectionHeader>
 
-      <SchemaBrowser
+      <ConnectionSchemaBrowser
         selfContained={true}
         tableQueryAction={tableQueryAction}
-        connectionUuid={connectionUuid}
-        connectionType={connectionType}
+        uuid={connectionUuid}
+        type={connectionType}
       />
     </div>
   );
