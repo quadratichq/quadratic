@@ -107,7 +107,13 @@ export const CalendarPicker = () => {
     }
   };
 
-  const setCurrentTime = () => {};
+  const setCurrentDateTime = () => {
+    const newDate = new Date();
+    const replacement = formatDateTime(dateToDateTimeString(newDate), dateFormat);
+    setDate(newDate);
+    inlineEditorEvents.emit('replaceText', replacement, false);
+    inlineEditorHandler.close(0, 0, false);
+  };
 
   const close = () => {
     setEditorInteractionState((state) => ({
@@ -121,7 +127,6 @@ export const CalendarPicker = () => {
 
   if (!showCalendar || !date || !value) return null;
 
-  console.log(formatTime(value, dateFormat));
   return (
     <div className="pointer-events-auto border bg-white shadow">
       <div className="px-1 pb-0 pt-1 text-right">
@@ -133,8 +138,8 @@ export const CalendarPicker = () => {
       {showTime && (
         <div className="flex w-full gap-2 p-3">
           <ValidationInput value={formatTime(value, dateFormat)} onChange={changeTime} onEnter={finish} />
-          <Tooltip title="Set as current time">
-            <Button onClick={setCurrentTime} className="p-1">
+          <Tooltip title="Set current date and time">
+            <Button onClick={setCurrentDateTime} className="p-1">
               <AccessTimeIcon />
             </Button>
           </Tooltip>
