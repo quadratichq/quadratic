@@ -15,7 +15,7 @@ use super::CellValue;
 impl CellValue {
     // Converts a JS Date to a Date
     fn from_js_date(value: &String) -> CellValue {
-        let Ok(date) = NaiveDate::parse_from_str(&value, "%Y-%m-%d") else {
+        let Ok(date) = NaiveDate::parse_from_str(value, "%Y-%m-%d") else {
             return CellValue::Text(value.to_owned());
         };
         CellValue::Date(date)
@@ -24,10 +24,10 @@ impl CellValue {
     // Converts a JS Date to either a Date or DateTime (depending if the time is
     // set to midnight). This is used by languages that don't return a different
     // response for Date and DateTime
-    fn from_js_date_time(value: &String) -> CellValue {
+    fn from_js_date_time(value: &str) -> CellValue {
         // need to strip timezone info
         let value = value.trim_end_matches('Z');
-        let Ok(date) = NaiveDateTime::parse_from_str(&value, "%Y-%m-%dT%H:%M:%S%.f") else {
+        let Ok(date) = NaiveDateTime::parse_from_str(value, "%Y-%m-%dT%H:%M:%S%.f") else {
             return CellValue::Text(value.to_owned());
         };
         if date.time() == NaiveTime::default() {
@@ -142,7 +142,7 @@ mod tests {
     #[parallel]
     fn from_js_date() {
         let value = "2024-08-15T10:53:48.750Z".to_string();
-        let js_type = "date";
+        let js_type = "date time";
         let pos = (0, 1).into();
         let sheet = &mut Sheet::test();
         let value = CellValue::from_js(&value, js_type, pos, sheet);
@@ -155,6 +155,16 @@ mod tests {
         );
 
         let value = "2021-09-01T00:00:00.000Z".to_string();
+        let js_type = "date time";
+        let pos = (0, 1).into();
+        let sheet = &mut Sheet::test();
+        let value = CellValue::from_js(&value, js_type, pos, sheet);
+        assert_eq!(
+            value.unwrap().0,
+            CellValue::Date(NaiveDate::parse_from_str("2021-09-01", "%Y-%m-%d").unwrap())
+        );
+
+        let value = "2021-09-01".to_string();
         let js_type = "date";
         let pos = (0, 1).into();
         let sheet = &mut Sheet::test();

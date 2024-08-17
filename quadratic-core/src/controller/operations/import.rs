@@ -185,10 +185,10 @@ impl GridController {
                                             } else if v.date() == zero_date {
                                                 CellValue::Time(v.time())
                                             } else {
-                                                CellValue::DateTime(v.into())
+                                                CellValue::DateTime(v)
                                             }
                                         } else {
-                                            CellValue::DateTime(v.into())
+                                            CellValue::DateTime(v)
                                         }
                                     },
                                 )

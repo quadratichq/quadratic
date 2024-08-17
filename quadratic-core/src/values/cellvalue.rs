@@ -1,16 +1,15 @@
 use std::{fmt, str::FromStr};
 
-use anyhow::{bail, Result};
+use anyhow::Result;
 use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use serde::{Deserialize, Serialize};
 
 use super::{Duration, Instant, IsBlank};
 use crate::{
-    controller::operations::operation::Operation,
     date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
-    grid::{formatting::CellFmtArray, CodeCellLanguage, NumericFormat, NumericFormatKind, Sheet},
-    CodeResult, Pos, RunError, RunLengthEncoding, SheetRect,
+    grid::{CodeCellLanguage, NumericFormat, NumericFormatKind},
+    CodeResult, RunError,
 };
 
 // todo: fill this out

@@ -5,7 +5,7 @@ use super::CellValue;
 
 impl CellValue {
     pub fn unpack_time(value: &str) -> Option<CellValue> {
-        let formats = vec![
+        let formats = [
             "%H:%M:%S",
             "%I:%M:%S %p",
             "%I:%M %p",

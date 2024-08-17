@@ -207,7 +207,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        return self.set_date_time_format(selection, date_time, cursor);
+        self.set_date_time_format(selection, date_time, cursor)
     }
 
     /// Changes cell numeric decimals.

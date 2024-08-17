@@ -233,16 +233,10 @@ fn arrow_timestamp_to_cell_value(
             data.iter()
                 .map(|v| {
                     let dt = match unit {
-                        TimeUnit::Nanosecond => Utc.timestamp_nanos((*v).into()),
-                        TimeUnit::Microsecond => {
-                            map_local_result(Utc.timestamp_micros((*v).into()))?
-                        }
-                        TimeUnit::Millisecond => {
-                            map_local_result(Utc.timestamp_millis_opt((*v).into()))?
-                        }
-                        TimeUnit::Second => {
-                            map_local_result(Utc.timestamp_millis_opt((*v).into()))?
-                        }
+                        TimeUnit::Nanosecond => Utc.timestamp_nanos(*v),
+                        TimeUnit::Microsecond => map_local_result(Utc.timestamp_micros(*v))?,
+                        TimeUnit::Millisecond => map_local_result(Utc.timestamp_millis_opt(*v))?,
+                        TimeUnit::Second => map_local_result(Utc.timestamp_millis_opt(*v))?,
                     };
                     let naive_dt = dt.naive_utc();
                     Ok(CellValue::DateTime(naive_dt))
