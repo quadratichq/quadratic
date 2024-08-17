@@ -1,19 +1,22 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { Calendar } from '../../../../shared/shadcn/ui/calendar';
-import { useRecoilValue } from 'recoil';
+import { useRecoilState } from 'recoil';
 import { useEffect, useState } from 'react';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorEvents } from '../inlineEditor/inlineEditorEvents';
-import { formatDate, formatTime } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { formatDate, formatDateTime, formatTime, parseTime } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { inlineEditorHandler } from '../inlineEditor/inlineEditorHandler';
 import { events } from '@/app/events/events';
 import { ValidationInput } from '@/app/ui/menus/Validations/Validation/ValidationUI';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { Button } from '@/shared/shadcn/ui/button';
+import { IconButton, Tooltip } from '@mui/material';
+import { Close } from '@mui/icons-material';
+import { inlineEditorMonaco } from '../inlineEditor/inlineEditorMonaco';
 
 export const CalendarPicker = () => {
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
 
   const showTime = editorInteractionState.annotationState === 'calendar-time';
   const showCalendar =
@@ -62,32 +65,79 @@ export const CalendarPicker = () => {
     };
   });
 
-  const dateToDateTimeString = (date: Date): string => {
+  const dateToDateString = (date: Date): string => {
     return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   };
 
-  const changeDate = (date: Date | undefined) => {
-    if (!date) return;
-    const formattedDate = formatDate(dateToDateTimeString(date), dateFormat);
-    setDate(date);
-    inlineEditorEvents.emit('replaceText', formattedDate, false);
+  const dateToDateTimeString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  };
+
+  const changeDate = (newDate: Date | undefined) => {
+    if (!newDate || !date) return;
+    let replacement: string;
+    if (showTime) {
+      newDate.setHours(date.getHours(), date.getMinutes(), date.getSeconds());
+      replacement = formatDateTime(dateToDateTimeString(newDate), dateFormat);
+    } else {
+      replacement = formatDate(dateToDateString(newDate), dateFormat);
+    }
+    setDate(newDate);
+    inlineEditorEvents.emit('replaceText', replacement, false);
     if (!showTime) {
       inlineEditorHandler.close(0, 0, false);
     }
   };
+
+  const changeTime = (time: string) => {
+    if (!date) return;
+    const combinedDate = parseTime(dateToDateString(date), time);
+    if (combinedDate) {
+      const newDate = new Date(combinedDate);
+      if (!isNaN(newDate as any)) {
+        setDate(newDate);
+        inlineEditorEvents.emit('replaceText', formatDateTime(dateToDateTimeString(newDate), dateFormat), false);
+      }
+    }
+  };
+
+  const setCurrentTime = () => {};
+
+  const close = () => {
+    setEditorInteractionState((state) => ({
+      ...state,
+      annotationState: undefined,
+    }));
+    inlineEditorMonaco.focus();
+  };
+
+  const finish = () => inlineEditorHandler.close(0, 0, false);
 
   if (!showCalendar || !date || !value) return null;
 
   console.log(formatTime(value, dateFormat));
   return (
     <div className="pointer-events-auto border bg-white shadow">
+      <div className="px-1 pb-0 pt-1 text-right">
+        <IconButton sx={{ padding: 0, width: 20, height: 20 }} onClick={close}>
+          <Close sx={{ padding: 0, width: 15, height: 15 }} />
+        </IconButton>
+      </div>
       <Calendar mode="single" selected={date} defaultMonth={date} onSelect={changeDate} />
       {showTime && (
         <div className="flex w-full gap-2 p-3">
-          <ValidationInput value={formatTime(value, dateFormat)} />
-          <Button className="p-1">
-            <AccessTimeIcon />
-          </Button>
+          <ValidationInput value={formatTime(value, dateFormat)} onChange={changeTime} onEnter={finish} />
+          <Tooltip title="Set as current time">
+            <Button onClick={setCurrentTime} className="p-1">
+              <AccessTimeIcon />
+            </Button>
+          </Tooltip>
         </div>
       )}
     </div>

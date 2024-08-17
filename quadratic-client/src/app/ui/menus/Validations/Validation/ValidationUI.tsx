@@ -102,6 +102,8 @@ export const ValidationInput = forwardRef((props: InputProps, ref: Ref<HTMLInput
                   onChange?.(e.currentTarget.value);
                 }
                 setTimeout(onEnter, 0);
+                e.preventDefault();
+                e.stopPropagation();
               }
             }}
           />

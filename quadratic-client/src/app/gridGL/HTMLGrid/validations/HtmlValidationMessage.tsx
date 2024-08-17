@@ -125,6 +125,7 @@ export const HtmlValidationMessage = (props: Props) => {
       message = <span>{validation.message.message}</span>;
     }
   }
+
   if (hide || !offsets || (!title && !message)) return null;
 
   // if hover error, we have to remove the wrapper as HoverCell handles that.
