@@ -31,7 +31,7 @@ export const ConnectionSchemaBrowser = ({
     <div
       className={cn(
         'h-full overflow-auto text-sm',
-        selfContained && 'max-h-[17.5rem] overflow-auto rounded border border-border'
+        selfContained && 'h-[17.5rem] overflow-auto rounded border border-border'
       )}
     >
       <div className={cn('flex items-center justify-between pb-1', selfContained ? 'px-2 pt-1.5' : 'px-2')}>
@@ -50,7 +50,7 @@ export const ConnectionSchemaBrowser = ({
         <div className="flex items-center gap-1">
           {/* <Type variant="caption">{data?.tables ? data.tables.length + ' tables' : ''}</Type> */}
           <TooltipPopover label="Reload schema">
-            <Button onClick={reloadSchema} variant="ghost" size="icon-sm" className="text-muted-foreground">
+            <Button onClick={reloadSchema} variant="ghost" size="icon-sm">
               <ReloadIcon className={isLoading ? 'animate-spin' : ''} />
             </Button>
           </TooltipPopover>
