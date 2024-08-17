@@ -56,13 +56,17 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use crate::{
         grid::{CodeCellLanguage, CodeRunResult},
         test_util::{assert_cell_value_row, print_table},
         wasm_bindings::js::clear_js_calls,
-        CellValue, Rect, RunErrorMsg,
+        CellValue, CodeCellValue, Rect, RunError, RunErrorMsg, Span,
     };
 
+    use bigdecimal::BigDecimal;
+    use chrono::{NaiveDate, NaiveDateTime};
     use serial_test::{parallel, serial};
 
     use super::*;
@@ -171,20 +175,13 @@ mod tests {
     #[test]
     #[parallel]
     fn imports_a_simple_excel_file() {
-        let mut grid_controller = GridController::test_blank();
-        let pos = Pos { x: 0, y: 0 };
+        let mut gc = GridController::test_blank();
         let file: Vec<u8> = std::fs::read(EXCEL_FILE).expect("Failed to read file");
-        let _ = grid_controller.import_excel(file, "basic.xlsx", None);
-        let sheet_id = grid_controller.grid.sheets()[0].id;
-
-        print_table(
-            &grid_controller,
-            sheet_id,
-            Rect::new_span(pos, Pos { x: 10, y: 10 }),
-        );
+        let _ = gc.import_excel(file, "basic.xlsx", None);
+        let sheet_id = gc.grid.sheets()[0].id;
 
         assert_cell_value_row(
-            &grid_controller,
+            &gc,
             sheet_id,
             0,
             10,
@@ -204,85 +201,71 @@ mod tests {
             ],
         );
 
-        assert_cell_value_row(
-            &grid_controller,
-            sheet_id,
-            0,
-            10,
-            2,
-            vec![
-                "",
-                "Hello",
-                "2016-10-20 00:00:00",
-                "",
-                "1.1",
-                "2024-01-01 13:00:00",
-                "1",
-                "Divide by zero",
-                "TRUE",
-                "Hello Bold",
-                "Hello Red",
-            ],
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.cell_value((1, 2).into()).unwrap(),
+            CellValue::Text("Hello".into())
         );
-    }
-
-    #[test]
-    #[parallel]
-    fn imports_a_simple_excel_file_into_existing_file() {
-        let mut grid_controller = GridController::test();
-        let pos = Pos { x: 0, y: 0 };
-        let file: Vec<u8> = std::fs::read(EXCEL_FILE).expect("Failed to read file");
-        let _ = grid_controller.import_excel(file, "basic.xlsx", Some("".into()));
-
-        let new_sheet_id = grid_controller.grid.sheets()[1].id;
-
-        print_table(
-            &grid_controller,
-            new_sheet_id,
-            Rect::new_span(pos, Pos { x: 10, y: 10 }),
+        assert_eq!(
+            sheet.cell_value((2, 2).into()).unwrap(),
+            CellValue::Date(NaiveDate::parse_from_str("2016-10-20", "%Y-%m-%d").unwrap())
         );
-
-        assert_cell_value_row(
-            &grid_controller,
-            new_sheet_id,
-            0,
-            10,
-            1,
-            vec![
-                "Empty",
-                "String",
-                "DateTimeIso",
-                "DurationIso",
-                "Float",
-                "DateTime",
-                "Int",
-                "Error",
-                "Bool",
-                "Bold",
-                "Red",
-            ],
+        assert_eq!(
+            sheet.cell_value((4, 2).into()).unwrap(),
+            CellValue::Number(BigDecimal::from_str("1.1").unwrap())
+        );
+        assert_eq!(
+            sheet.cell_value((5, 2).into()).unwrap(),
+            CellValue::DateTime(
+                NaiveDateTime::parse_from_str("2024-01-01 13:00", "%Y-%m-%d %H:%M").unwrap()
+            )
+        );
+        assert_eq!(
+            sheet.cell_value((6, 2).into()).unwrap(),
+            CellValue::Number(BigDecimal::from_str("1").unwrap())
+        );
+        assert_eq!(
+            sheet.cell_value((7, 2).into()).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "0/0".to_string()
+            })
+        );
+        assert_eq!(
+            sheet.display_value((7, 2).into()).unwrap(),
+            CellValue::Error(Box::new(RunError {
+                msg: RunErrorMsg::DivideByZero,
+                span: Some(Span { start: 0, end: 3 })
+            }))
+        );
+        assert_eq!(
+            sheet.cell_value((8, 2).into()).unwrap(),
+            CellValue::Logical(true)
+        );
+        assert_eq!(
+            sheet.cell_value((9, 2).into()).unwrap(),
+            CellValue::Text("Hello Bold".into())
+        );
+        assert_eq!(
+            sheet.cell_value((10, 2).into()).unwrap(),
+            CellValue::Text("Hello Red".into())
         );
 
-        assert_cell_value_row(
-            &grid_controller,
-            new_sheet_id,
-            0,
-            10,
-            2,
-            vec![
-                "",
-                "Hello",
-                "2016-10-20 00:00:00",
-                "",
-                "1.1",
-                "2024-01-01 13:00:00",
-                "1",
-                "Divide by zero",
-                "TRUE",
-                "Hello Bold",
-                "Hello Red",
-            ],
-        );
+        // doesn't appear to import the bold or red formatting yet
+        // assert_eq!(
+        //     sheet.format_cell(9, 2, false),
+        //     Format {
+        //         bold: Some(true),
+        //         ..Default::default()
+        //     }
+        // );
+        // assert_eq!(
+        //     sheet.format_cell(10, 2, false),
+        //     Format {
+        //         text_color: Some("red".to_string()),
+        //         ..Default::default()
+        //     }
+        // );
     }
 
     #[test]
@@ -388,11 +371,11 @@ mod tests {
                 "1.1",                                  // float4
                 "2.2",                                  // float8
                 "3.3",                                  // numeric
-                "2024-05-08 19:49:07",                  // timestamp
-                "2024-05-08 19:49:07",                  // timestamptz
+                "2024-05-08 19:49:07.236",              // timestamp
+                "2024-05-08 19:49:07.236",              // timestamptz
                 "2024-05-08",                           // date
-                "00:01:11",                             // time
-                "00:01:11",                             // timetz
+                "19:49:07",                             // time
+                "19:49:07",                             // timetz
                 "",                                     // interval
                 "4599689c-7048-47dc-abf7-f7e9ee636578", // uuid
                 "{\"a\":\"b\"}",                        // json

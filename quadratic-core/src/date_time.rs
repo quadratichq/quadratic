@@ -150,13 +150,13 @@ mod tests {
 
     #[test]
     fn time() {
-        let date_time = "12/23/2024; 4:45 PM".to_string();
-        let format = "%m/%d/%Y HH:mm:ss %p".to_string();
+        let date_time = "12/23/2024 4:45 PM".to_string();
+        let format = "%m/%d/%Y %-I:%M %p".to_string();
 
         let date_time = NaiveDateTime::parse_from_str(&date_time, &format).unwrap();
         assert_eq!(
             time_to_time_string(date_time.time(), Some(format)),
-            "16:45:00".to_string()
+            "4:45 PM".to_string()
         );
     }
 }
