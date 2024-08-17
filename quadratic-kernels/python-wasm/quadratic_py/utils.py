@@ -95,7 +95,6 @@ def to_quadratic_type(
         elif type(value) == bool:
             return (str(bool(value)), "logical")
         elif isinstance(value, np.datetime64):
-            print("HERE")
             return (to_iso_format(pd.Timestamp(value)), "date time")
         elif isinstance(value, pd.Timestamp) or pd.api.types.is_datetime64_dtype(value):
             return (to_iso_format(value), "date time")
@@ -105,11 +104,6 @@ def to_quadratic_type(
             return (to_iso_format(value), "date")
         elif isinstance(value, time):
             return (to_iso_format(value), "time")
-
-        # TODO(ddimaria): implement when we implement duration in Rust
-        # elif isinstance(value, (pd.Period, np.timedelta64, timedelta)):
-        # elif isinstance(value, pd.Period):
-        #     return (to_interval(value), "duration")
         else:
             return (str(value), "text")
     except Exception as e:

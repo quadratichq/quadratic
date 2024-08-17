@@ -46,7 +46,7 @@ export function javascriptConvertOutputType(
       );
       return null;
     }
-    return { output: [value.toISOString(), 'date'], displayType: 'Date' };
+    return { output: [value.toISOString(), 'date time'], displayType: 'Date' };
   } else if (typeof value === 'function') {
     message.push(
       `WARNING: Unsupported output type: 'function' ${
