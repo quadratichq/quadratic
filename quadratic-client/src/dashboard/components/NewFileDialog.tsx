@@ -3,12 +3,13 @@ import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { useSchemaBrowserTableQueryActionNewFile } from '@/dashboard/hooks/useSchemaBrowserTableQueryActionNewFile';
-import { connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { ROUTES } from '@/shared/constants/routes';
 import { SchemaBrowser } from '@/shared/hooks/useSchemaBrowser';
+import { Badge } from '@/shared/shadcn/ui/badge';
+import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { cn } from '@/shared/shadcn/utils';
-import { ArrowDownIcon, ChevronRightIcon, LockClosedIcon, MixIcon, PlusIcon, RocketIcon } from '@radix-ui/react-icons';
+import { ArrowDownIcon, ArrowLeftIcon, ChevronRightIcon, MixIcon, PlusIcon, RocketIcon } from '@radix-ui/react-icons';
 import { ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -26,13 +27,10 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate }: Pro
     'flex flex-col items-center justify-center gap-1 rounded-lg border border-border p-4 pt-5 w-full';
   const gridItemInteractiveClassName = 'hover:bg-accent hover:text-foreground cursor-pointer';
 
-  // TODO: style
+  // TODO: style a zero state
   const hasConnections = connections.length > 0;
 
-  // TODO: implement private
-
   const activeConnection = connections.find((connection) => connection.uuid === activeConnectionUuid);
-  const headerLabel = isPrivate ? 'New private file' : 'New file';
 
   // Create a new file from an API snippet
   const stateUrlParam = {
@@ -50,24 +48,17 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate }: Pro
         <DialogHeader>
           <DialogTitle>
             <div className="flex h-6 items-center gap-2">
-              {isPrivate && <LockClosedIcon />}
               {activeConnection ? (
                 <>
-                  <button
-                    className="text-muted-foreground underline hover:text-primary"
-                    onClick={() => setActiveConnectionUuid('')}
-                  >
-                    {headerLabel}
-                  </button>
-                  <ChevronRightIcon className="text-muted-foreground" />
-                  <div className="flex items-center gap-2">
-                    <LanguageIcon language={activeConnection.type} />
-                    <span>From {connectionsByType[activeConnection.type].name} connection</span>
-                  </div>
+                  <Button onClick={() => setActiveConnectionUuid('')} variant="ghost" size="icon">
+                    <ArrowLeftIcon />
+                  </Button>
+                  New file from connection
                 </>
               ) : (
-                headerLabel
+                'New file'
               )}
+              {isPrivate && <Badge>Private</Badge>}
             </div>
           </DialogTitle>
         </DialogHeader>
@@ -78,7 +69,7 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate }: Pro
             <li className={`col-span-1`}>
               <Link
                 to={isPrivate ? ROUTES.CREATE_FILE_PRIVATE(teamUuid) : ROUTES.CREATE_FILE(teamUuid)}
-                className={cn(gridItemClassName, gridItemInteractiveClassName)}
+                className={cn('text-muted-foreground', gridItemClassName, gridItemInteractiveClassName)}
               >
                 <ItemIcon inverted>
                   <PlusIcon />
@@ -128,21 +119,21 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate }: Pro
             <li className={`col-span-4 rounded border border-border`}>
               <div className={`text-muted-foreground ${gridItemClassName} border-none`}>
                 <ItemIcon>
-                  <ConnectionsIcon />
+                  <ConnectionsIcon className="text-muted-foreground" />
                 </ItemIcon>
                 Query data from a connection
               </div>
               {hasConnections ? (
                 <ul className="w-full border-border">
-                  {connections.map((connection) => (
+                  {connections.slice(0, 5).map((connection) => (
                     <li key={connection.uuid}>
                       <button
                         className="flex w-full cursor-pointer items-center gap-4 border-t border-border px-4 py-2 hover:bg-accent"
                         onClick={() => setActiveConnectionUuid(connection.uuid)}
                       >
-                        <LanguageIcon language={connection.type} />
+                        <LanguageIcon language={connection.type} sx={{ width: 18, height: 18 }} />
                         {connection.name}
-                        <ChevronRightIcon className="ml-auto" />
+                        <ChevronRightIcon className="ml-auto text-muted-foreground opacity-50" />
                       </button>
                     </li>
                   ))}
@@ -167,7 +158,7 @@ function ItemIcon({ children, inverted }: { children: React.ReactNode; inverted?
   return (
     <div
       className={`flex h-6 w-6 items-center justify-center rounded ${
-        inverted ? 'bg-foreground text-background' : 'bg-accent text-foreground'
+        inverted ? 'bg-primary text-background' : 'bg-accent text-primary'
       }`}
     >
       {children}

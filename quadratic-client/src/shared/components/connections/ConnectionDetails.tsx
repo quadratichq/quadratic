@@ -1,7 +1,6 @@
 import { useSchemaBrowserTableQueryActionNewFile } from '@/dashboard/hooks/useSchemaBrowserTableQueryActionNewFile';
 import { ConnectionHeader } from '@/shared/components/connections/ConnectionHeader';
 import { SchemaBrowser } from '@/shared/hooks/useSchemaBrowser';
-import { Button } from '@/shared/shadcn/ui/button';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
 export const ConnectionDetails = ({
@@ -16,7 +15,9 @@ export const ConnectionDetails = ({
   const { tableQueryAction } = useSchemaBrowserTableQueryActionNewFile();
   return (
     <div>
-      <ConnectionHeader type={connectionType}>Browse</ConnectionHeader>
+      <ConnectionHeader type={connectionType} handleNavigateToListView={handleNavigateToListView}>
+        Browse
+      </ConnectionHeader>
 
       <SchemaBrowser
         selfContained={true}
@@ -24,10 +25,6 @@ export const ConnectionDetails = ({
         connectionUuid={connectionUuid}
         connectionType={connectionType}
       />
-
-      <Button onClick={handleNavigateToListView} variant="outline" className="mt-4">
-        Back
-      </Button>
     </div>
   );
 };

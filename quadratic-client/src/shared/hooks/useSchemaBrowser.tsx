@@ -1,3 +1,4 @@
+import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { Type } from '@/shared/components/Type';
 import { CONTACT_URL } from '@/shared/constants/urls';
@@ -105,10 +106,21 @@ export const SchemaBrowser = ({
         selfContained && 'max-h-[17.5rem] overflow-auto rounded border border-border'
       )}
     >
-      <div className={cn('flex items-center justify-between pb-1', selfContained ? 'px-4 pt-1.5' : 'px-2')}>
-        <h3 className="font-medium tracking-tight">{data?.name ? data.name : ''}</h3>
+      <div className={cn('flex items-center justify-between pb-1', selfContained ? 'px-2 pt-1.5' : 'px-2')}>
+        <div className="flex items-center gap-1 truncate">
+          {data && data.type ? (
+            <div className="flex h-6 w-6 items-center ">
+              <LanguageIcon
+                // TODO: (jimniels) fix this
+                language={data.type}
+                sx={{ width: 15, height: 15 }}
+              />
+            </div>
+          ) : null}
+          <h3 className="truncate font-medium tracking-tight">{data?.name ? data.name : ''}</h3>
+        </div>
         <div className="flex items-center gap-1">
-          <Type variant="caption">{data?.tables ? data.tables.length + ' tables' : ''}</Type>
+          {/* <Type variant="caption">{data?.tables ? data.tables.length + ' tables' : ''}</Type> */}
           <TooltipPopover label="Reload schema">
             <Button onClick={reloadSchema} variant="ghost" size="icon-sm" className="text-muted-foreground">
               <ReloadIcon className={isLoading ? 'animate-spin' : ''} />
@@ -123,6 +135,7 @@ export const SchemaBrowser = ({
         <ul className="text-sm">
           {data.tables.map((table, i) => (
             <TableListItem
+              selfContained={selfContained}
               data={table}
               key={i}
               tableQuery={tableQueryAction(getTableQuery({ table, connectionKind: data.type }))}
@@ -214,7 +227,7 @@ function TableListItem({
           className={cn(
             `absolute top-0.5 z-10 hidden group-hover:block`,
             isExpanded && 'block',
-            selfContained ? 'right-4' : 'right-2'
+            selfContained ? 'right-2' : 'right-2'
           )}
         >
           {tableQuery}
