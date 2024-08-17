@@ -1,13 +1,18 @@
+import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
+import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
+import { useConnectionSchemaBrowserTableQueryActionNewFile } from '@/dashboard/hooks/useConnectionSchemaBrowserTableQueryActionNewFile';
+import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
 import { ROUTES } from '@/shared/constants/routes';
-import { useSchemaBrowser } from '@/shared/hooks/useSchemaBrowser';
+import { Badge } from '@/shared/shadcn/ui/badge';
+import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { cn } from '@/shared/shadcn/utils';
-import { ArrowDownIcon, ChevronRightIcon, LockClosedIcon, MixIcon, PlusIcon, RocketIcon } from '@radix-ui/react-icons';
+import { ArrowDownIcon, ArrowLeftIcon, ChevronRightIcon, MixIcon, PlusIcon, RocketIcon } from '@radix-ui/react-icons';
 import { ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 type Props = {
@@ -17,63 +22,59 @@ type Props = {
   isPrivate?: boolean;
 };
 
-const gridItemClassName =
-  'flex flex-col items-center justify-center gap-1 rounded-lg border border-border p-4 pt-5 w-full';
-const gridItemInteractiveClassName = 'hover:bg-accent hover:text-foreground cursor-pointer';
-
 export function NewFileDialog({ connections, teamUuid, onClose, isPrivate }: Props) {
   const [activeConnectionUuid, setActiveConnectionUuid] = useState<string>('');
-
-  const activeConnection = useMemo(() => {
-    return connections.find((connection) => connection.uuid === activeConnectionUuid);
-  }, [activeConnectionUuid, connections]);
-
   const handleFileImport = useFileImport();
 
-  // TODO: style
+  const gridItemClassName =
+    'flex flex-col items-center justify-center gap-1 rounded-lg border border-border p-4 pt-5 w-full group';
+  const gridItemInteractiveClassName = 'hover:bg-accent hover:text-foreground cursor-pointer';
+
+  // TODO: style a zero state
   const hasConnections = connections.length > 0;
 
-  // TODO: implement private
+  const activeConnection = connections.find((connection) => connection.uuid === activeConnectionUuid);
 
-  const headerLabel = isPrivate ? 'New private file' : 'New file';
+  // Create a new file from an API snippet
+  const stateUrlParam = {
+    codeString: SNIPPET_PY_API,
+    language: 'Python' as CodeCellLanguage,
+  };
+  const newFileApiHref = isPrivate
+    ? ROUTES.CREATE_FILE_PRIVATE(teamUuid, stateUrlParam)
+    : ROUTES.CREATE_FILE(teamUuid, stateUrlParam);
 
   return (
     <Dialog open={true} onOpenChange={(open) => onClose()}>
-      <DialogContent className="max-w-xl">
+      {/* overflow: visible here fixes a bug with the tooltip being cut off */}
+      <DialogContent className="max-w-xl overflow-visible">
         <DialogHeader>
           <DialogTitle>
             <div className="flex h-6 items-center gap-2">
-              {isPrivate && <LockClosedIcon />}
               {activeConnection ? (
                 <>
-                  <button
-                    className="text-muted-foreground underline hover:text-primary"
-                    onClick={() => setActiveConnectionUuid('')}
-                  >
-                    {headerLabel}
-                  </button>
-                  <ChevronRightIcon className="text-muted-foreground" />
-                  <div className="flex items-center gap-2">
-                    <LanguageIcon language={activeConnection.type} />
-                    <span>{activeConnection.name}</span>
-                  </div>
+                  <Button onClick={() => setActiveConnectionUuid('')} variant="ghost" size="icon">
+                    <ArrowLeftIcon />
+                  </Button>
+                  New file from connection
                 </>
               ) : (
-                headerLabel
+                'New file'
               )}
+              {isPrivate && <Badge>Private</Badge>}
             </div>
           </DialogTitle>
         </DialogHeader>
         {activeConnection ? (
-          <SchemaBrowserInternal connection={activeConnection} />
+          <SchemaBrowser connectionUuid={activeConnection.uuid} connectionType={activeConnection.type} />
         ) : (
           <ul className="grid grid-cols-4 grid-rows-[1f_1fr_auto] gap-2 text-sm">
             <li className={`col-span-1`}>
               <Link
                 to={isPrivate ? ROUTES.CREATE_FILE_PRIVATE(teamUuid) : ROUTES.CREATE_FILE(teamUuid)}
-                className={cn(gridItemClassName, gridItemInteractiveClassName)}
+                className={cn(gridItemClassName, gridItemInteractiveClassName, 'border-primary text-muted-foreground')}
               >
-                <ItemIcon inverted>
+                <ItemIcon>
                   <PlusIcon />
                 </ItemIcon>
                 Blank
@@ -98,12 +99,15 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate }: Pro
               </button>
             </li>
             <li className={`col-span-2`}>
-              <button className={cn('text-muted-foreground', gridItemClassName, gridItemInteractiveClassName)}>
+              <Link
+                to={newFileApiHref}
+                className={cn('text-muted-foreground', gridItemClassName, gridItemInteractiveClassName)}
+              >
                 <ItemIcon>
                   <RocketIcon />
                 </ItemIcon>
                 Fetch data from an API
-              </button>
+              </Link>
             </li>
             <li className={`col-span-2`}>
               <Link
@@ -121,22 +125,22 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate }: Pro
             </li>
             <li className={`col-span-4 rounded border border-border`}>
               <div className={`text-muted-foreground ${gridItemClassName} border-none`}>
-                <ItemIcon>
-                  <ConnectionsIcon />
+                <ItemIcon disabled>
+                  <ConnectionsIcon className="text-muted-foreground" />
                 </ItemIcon>
                 Query data from a connection
               </div>
               {hasConnections ? (
                 <ul className="w-full border-border">
-                  {connections.map((connection) => (
+                  {connections.slice(0, 5).map((connection) => (
                     <li key={connection.uuid}>
                       <button
                         className="flex w-full cursor-pointer items-center gap-4 border-t border-border px-4 py-2 hover:bg-accent"
                         onClick={() => setActiveConnectionUuid(connection.uuid)}
                       >
-                        <LanguageIcon language={connection.type} />
+                        <LanguageIcon language={connection.type} sx={{ width: 18, height: 18 }} />
                         {connection.name}
-                        <ChevronRightIcon className="ml-auto" />
+                        <ChevronRightIcon className="ml-auto text-muted-foreground opacity-50" />
                       </button>
                     </li>
                   ))}
@@ -157,44 +161,34 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate }: Pro
   );
 }
 
-function ItemIcon({ children, inverted }: { children: React.ReactNode; inverted?: boolean }) {
+function ItemIcon({ children, disabled }: { children: React.ReactNode; disabled?: boolean }) {
   return (
     <div
-      className={`flex h-6 w-6 items-center justify-center rounded ${
-        inverted ? 'bg-foreground text-background' : 'bg-accent text-foreground'
-      }`}
+      className={cn(
+        `flex h-6 w-6 items-center justify-center rounded bg-accent text-primary`,
+        disabled ? '' : `group-hover:bg-primary group-hover:text-background`
+      )}
     >
       {children}
     </div>
   );
 }
 
-function SchemaBrowserInternal({
-  connection,
+function SchemaBrowser({
+  connectionType,
+  connectionUuid,
 }: {
-  connection: {
-    uuid: string;
-    name: string;
-    createdDate: string;
-    type: 'POSTGRES' | 'MYSQL';
-  };
+  connectionType: 'POSTGRES' | 'MYSQL';
+  connectionUuid: string;
 }) {
-  // TODO: if you do this, move the component this hook returns
-  // TODO: rename to useConnectionSchemaBrowser()?
-
-  const { SchemaBrowser } = useSchemaBrowser({
-    type: connection.type,
-    uuid: connection.uuid,
-  });
-  // console.log('running', SchemaBrowser);
+  const { tableQueryAction } = useConnectionSchemaBrowserTableQueryActionNewFile();
 
   return (
-    <div>
-      {/* <div className="flex items-center gap-3 border-b border-t border-border py-2">
-        <LanguageIcon language={connection.type} />
-        <span className="font-medium">{connection.name}</span>
-      </div> */}
-      <SchemaBrowser />
-    </div>
+    <ConnectionSchemaBrowser
+      selfContained={true}
+      type={connectionType}
+      uuid={connectionUuid}
+      tableQueryAction={tableQueryAction}
+    />
   );
 }

@@ -125,7 +125,7 @@ function ListItems({
   return filteredItems.length > 0 ? (
     <div className="relative -mt-3">
       {filteredItems.map(({ uuid, name, type, createdDate, disabled }, i) => (
-        <div className="group relative flex items-center gap-1">
+        <div className="group relative flex items-center gap-1" key={uuid}>
           <button
             onClick={() => {
               hangleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type });

@@ -1,3 +1,4 @@
+import { UrlParamsDevState } from '@/app/gridGL/pixiApp/urlParams/UrlParamsDev';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
 // Any routes referenced outside of the root router are stored here
@@ -10,10 +11,14 @@ export const ROUTES = {
   FILES_SHARED_WITH_ME: '/files/shared-with-me',
   FILE: (uuid: string) => `/file/${uuid}`,
 
-  CREATE_FILE: (teamUuid: string) => `/teams/${teamUuid}/files/create`,
+  CREATE_FILE: (teamUuid: string, state?: UrlParamsDevState['insertAndRunCodeInNewSheet']) =>
+    `/teams/${teamUuid}/files/create` +
+    (state ? `?state=${btoa(JSON.stringify({ insertAndRunCodeInNewSheet: state }))}` : ''),
   CREATE_FILE_EXAMPLE: (teamUuid: string, publicFileUrlInProduction: string, isPrivate: boolean) =>
     `/teams/${teamUuid}/files/create?example=${publicFileUrlInProduction}${isPrivate ? '&private' : ''}`,
-  CREATE_FILE_PRIVATE: (teamUuid: string) => `/teams/${teamUuid}/files/create?private`,
+  CREATE_FILE_PRIVATE: (teamUuid: string, state?: UrlParamsDevState['insertAndRunCodeInNewSheet']) =>
+    `/teams/${teamUuid}/files/create?private` +
+    (state ? `&state=${btoa(JSON.stringify({ insertAndRunCodeInNewSheet: state }))}` : ''),
   TEAMS: `/teams`,
   TEAMS_CREATE: `/teams/create`,
   TEAM: (teamUuid: string) => `/teams/${teamUuid}`,

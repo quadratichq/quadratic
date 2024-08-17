@@ -1,25 +1,30 @@
+import { useConnectionSchemaBrowserTableQueryActionNewFile } from '@/dashboard/hooks/useConnectionSchemaBrowserTableQueryActionNewFile';
 import { ConnectionHeader } from '@/shared/components/connections/ConnectionHeader';
-import { useSchemaBrowser } from '@/shared/hooks/useSchemaBrowser';
-import { Button } from '@/shared/shadcn/ui/button';
+import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
 export const ConnectionDetails = ({
-  connectionUuid,
   connectionType,
+  connectionUuid,
   handleNavigateToListView,
 }: {
-  connectionUuid: string;
   connectionType: ConnectionType;
+  connectionUuid: string;
   handleNavigateToListView: () => void;
 }) => {
-  const { SchemaBrowser } = useSchemaBrowser({ uuid: connectionUuid, type: connectionType });
+  const { tableQueryAction } = useConnectionSchemaBrowserTableQueryActionNewFile();
   return (
     <div>
-      <ConnectionHeader type={connectionType}>Browse</ConnectionHeader>
-      <SchemaBrowser />
-      <Button onClick={handleNavigateToListView} variant="outline">
-        Back
-      </Button>
+      <ConnectionHeader type={connectionType} handleNavigateToListView={handleNavigateToListView}>
+        Browse
+      </ConnectionHeader>
+
+      <ConnectionSchemaBrowser
+        selfContained={true}
+        tableQueryAction={tableQueryAction}
+        uuid={connectionUuid}
+        type={connectionType}
+      />
     </div>
   );
 };

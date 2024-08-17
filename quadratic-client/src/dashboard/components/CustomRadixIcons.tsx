@@ -73,3 +73,20 @@ export const PrivateFileIcon = React.forwardRef<SVGSVGElement, IconProps>(
     );
   }
 );
+
+export const NewFileIcon = React.forwardRef<SVGSVGElement, IconProps>(
+  ({ color = 'currentColor', ...props }, forwardedRef) => {
+    return (
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+        <path
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M3 2.5C3 2.22386 3.22386 2 3.5 2H8V5.5C8 5.77614 8.22386 6 8.5 6H12V7H13V5.5C13 5.36739 12.9473 5.24021 12.8536 5.14645L8.85355 1.14645C8.75979 1.05268 8.63261 1 8.5 1H3.5C2.67157 1 2 1.67157 2 2.5V12.5C2 13.3284 2.67157 14 3.5 14H7V13H3.5C3.22386 13 3 12.7761 3 12.5V2.5ZM11.2929 5L9 2.70711V5H11.2929Z"
+          fill={color}
+        />
+        <path d="M9.25 11.5H13.75" stroke={color} strokeLinecap="round" />
+        <path d="M11.5 13.75V9.25" stroke={color} strokeLinecap="round" />
+      </svg>
+    );
+  }
+);

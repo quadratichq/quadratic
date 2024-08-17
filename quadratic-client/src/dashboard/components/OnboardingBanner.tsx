@@ -139,18 +139,14 @@ export function OnboardingBanner() {
           <div className="flex flex-col">
             <h3 className="text-md font-medium leading-6 tracking-tight">Getting started with your team</h3>
             <p className="text-sm text-muted-foreground">
-              <strong className="font-semibold">
+              <strong className={cn('font-semibold', tasksCompletedCount === tasksCount && 'text-success')}>
                 {tasksCompletedCount} of {tasksCount} complete
               </strong>{' '}
               ·{' '}
               {tasksCompletedCount === tasksCount ? (
-                <span className="text-success">
-                  All tasks complete!{' '}
-                  <Button onClick={handleDismiss} variant="link" className="h-auto p-0 text-inherit underline">
-                    Dismiss
-                  </Button>
-                  .
-                </span>
+                <Button onClick={handleDismiss} variant="link" className="h-auto p-0 text-inherit underline">
+                  Dismiss
+                </Button>
               ) : (
                 <>
                   Need help?{' '}

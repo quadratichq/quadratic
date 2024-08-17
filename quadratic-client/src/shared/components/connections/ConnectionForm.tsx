@@ -42,7 +42,9 @@ export function ConnectionFormCreate({
 
   return (
     <>
-      <ConnectionHeader type={type}>Create</ConnectionHeader>
+      <ConnectionHeader type={type} handleNavigateToListView={handleNavigateToListView}>
+        Create
+      </ConnectionHeader>
       <ConnectionFormWrapper type={type} props={props} />
     </>
   );
@@ -77,7 +79,9 @@ export function ConnectionFormEdit({
 
   return (
     <>
-      <ConnectionHeader type={connectionType}>Edit</ConnectionHeader>
+      <ConnectionHeader type={connectionType} handleNavigateToListView={handleNavigateToListView}>
+        Edit
+      </ConnectionHeader>
       {fetcher.data?.ok ? (
         <ConnectionFormWrapper
           type={fetcher.data.connection.type}
