@@ -10,6 +10,7 @@ use grid::{
             ValidationMessage, ValidationStyle,
         },
         validation_rules::{
+            validation_date_time::{DateTimeRange, ValidationDateTime},
             validation_list::{ValidationList, ValidationListSource},
             validation_logical::ValidationLogical,
             validation_number::{NumberRange, ValidationNumber},
@@ -129,7 +130,9 @@ fn main() {
         ValidationDisplay,
         ValidationDisplaySheet,
         ValidationNumber,
+        ValidationDateTime,
         NumberRange,
+        DateTimeRange,
         TextCase,
         TextMatch,
         ValidationText,

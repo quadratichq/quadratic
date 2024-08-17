@@ -11,6 +11,7 @@
     "Rects",
     "rposition",
     "Strftime",
+    "Timelike",
     "undoable"
   ],
   "lldb.displayFormat": "auto",
