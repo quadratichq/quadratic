@@ -1,30 +1,36 @@
 import { filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
+import { Button } from '@/shared/shadcn/ui/button';
 import { Progress } from '@/shared/shadcn/ui/progress';
 import { useRecoilValue } from 'recoil';
 
-// The last message.total + 1 is used to track the execute operation progress.
-
 export const ImportProgress = () => {
   const { importing, files, currentFileIndex } = useRecoilValue(filesImportProgressAtom);
-
   if (!importing) return;
 
+  const fileNo = currentFileIndex + 1;
+  const totalFiles = files.length;
+  const name = files[currentFileIndex].name;
+  const progress = files[currentFileIndex].progress;
+
   return (
-    <div
-      style={{
-        position: 'absolute',
-        left: '2rem',
-        bottom: '1rem',
-        zIndex: 10,
-        background: 'white',
-        border: '1px solid black',
-        padding: '1rem',
-        minWidth: '300px',
-        pointerEvents: 'none',
-      }}
-    >
-      <div style={{ marginBottom: '1rem' }}>Importing {files[currentFileIndex].name}...</div>
-      <Progress value={files[currentFileIndex].progress ?? 0} />
+    <div className="fixed bottom-16 left-8 z-10 h-[92px] w-[403px] select-none border border-slate-200 bg-white pb-2 pl-4 pr-4 pt-2 tracking-tight shadow-[0_2px_5px_0px_rgba(0,0,0,0.15)]">
+      <div className="flex justify-between">
+        <div className="min-w-0">
+          <div className="text-base font-medium">
+            Importing file {fileNo} of {totalFiles}
+          </div>
+
+          <div className="overflow-hidden text-ellipsis whitespace-nowrap pb-2 text-sm font-normal text-slate-500">
+            {name}
+          </div>
+        </div>
+
+        <Button variant="ghost" size="sm" className="text-primary hover:text-primary">
+          Cancel
+        </Button>
+      </div>
+
+      <Progress value={progress} />
     </div>
   );
 };

@@ -2,6 +2,7 @@ import { Coordinate } from '@/app/gridGL/types/size';
 import { getFileType, stripExtension, supportedFileTypes, uploadFile } from '@/app/helpers/files';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { FileImportProgress, filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
+import { filesImportProgressListAtom } from '@/dashboard/atoms/filesImportProgressListAtom';
 import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
@@ -12,6 +13,8 @@ import { DefaultValue, useSetRecoilState } from 'recoil';
 
 export function useFileImport() {
   const setFilesImportProgressState = useSetRecoilState(filesImportProgressAtom);
+  const setFilesImportProgressListState = useSetRecoilState(filesImportProgressListAtom);
+
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const location = useLocation();
   const navigate = useNavigate();
@@ -23,7 +26,6 @@ export function useFileImport() {
     cursor,
     isPrivate = true,
     teamUuid,
-    refreshTeamsPath = false,
   }: {
     files?: File[] | FileList;
     sheetId?: string;
@@ -31,7 +33,6 @@ export function useFileImport() {
     cursor?: string; // cursor is available when importing into a existing file, it is also being used as a flag to denote this
     isPrivate?: boolean;
     teamUuid?: string;
-    refreshTeamsPath?: boolean;
   }) => {
     quadraticCore.initWorker();
 
@@ -41,6 +42,10 @@ export function useFileImport() {
     const firstFileType = getFileType(files[0]);
     const createNewFile =
       cursor === undefined && sheetId === undefined && insertAt === undefined && teamUuid !== undefined;
+    const userOnTeamsPage = location.pathname.includes('/teams/');
+    if (userOnTeamsPage) {
+      setFilesImportProgressListState(() => ({ show: true }));
+    }
 
     if (!createNewFile && firstFileType === 'grid') {
       addGlobalSnackbar(`Error importing ${files[0].name}: Cannot import grid file into existing file`, {
@@ -153,13 +158,11 @@ export function useFileImport() {
                   if (prev instanceof DefaultValue) return prev;
                   const updatedFiles = prev.files.map((file, index) => {
                     if (index !== fileIndex) return file;
+                    const progress = (Math.round((progressEvent.progress ?? 0) * 100) + 200) / 3;
                     const newFile: FileImportProgress = {
-                      name: file.name,
-                      size: file.size,
-                      step: 'save',
-                      progress: (Math.round((progressEvent.progress ?? 0) * 100) + 200) / 3,
-                      transactionId: file.transactionId,
-                      transactionOps: file.transactionOps,
+                      ...file,
+                      step: progress === 100 ? 'done' : 'save',
+                      progress,
                     };
                     return newFile;
                   });
@@ -170,18 +173,34 @@ export function useFileImport() {
                 });
               },
             })
+            .then(({ file: { uuid } }) => {
+              setFilesImportProgressState((prev) => {
+                if (prev instanceof DefaultValue) return prev;
+                const updatedFiles = prev.files.map((file, index) => {
+                  if (index !== fileIndex) return file;
+                  const newProgress: FileImportProgress = {
+                    ...file,
+                    step: 'done',
+                    progress: 100,
+                    uuid,
+                  };
+                  return newProgress;
+                });
+                return {
+                  ...prev,
+                  files: updatedFiles,
+                };
+              });
+            })
             .catch((error) => {
               setFilesImportProgressState((prev) => {
                 if (prev instanceof DefaultValue) return prev;
                 const updatedFiles = prev.files.map((file, index) => {
                   if (index !== fileIndex) return file;
                   const newProgress: FileImportProgress = {
-                    name: file.name,
-                    size: file.size,
+                    ...file,
                     step: 'error',
                     progress: 0,
-                    transactionId: undefined,
-                    transactionOps: undefined,
                   };
                   return newProgress;
                 });
@@ -192,7 +211,12 @@ export function useFileImport() {
               });
               throw new Error(`Error importing ${file.name}: ${error}`);
             });
-          uploadFilePromises.push(uploadFilePromise);
+
+          if (userOnTeamsPage) {
+            uploadFilePromises.push(uploadFilePromise);
+          } else {
+            await uploadFilePromise;
+          }
         }
       } catch (e) {
         if (e instanceof Error) {
@@ -202,12 +226,9 @@ export function useFileImport() {
             const updatedFiles = prev.files.map((file, index) => {
               if (index !== prev.currentFileIndex) return file;
               const newFile: FileImportProgress = {
-                name: file.name,
-                size: file.size,
+                ...file,
                 step: 'error',
                 progress: 0,
-                transactionId: undefined,
-                transactionOps: undefined,
               };
               return newFile;
             });
@@ -220,11 +241,10 @@ export function useFileImport() {
       }
     }
 
-    await Promise.all(uploadFilePromises).catch(() => {
-      addGlobalSnackbar(`Error saving file`, { severity: 'error' });
-    });
+    await Promise.all(uploadFilePromises);
 
-    if (location.pathname.includes('/teams/') && teamUuid !== undefined) {
+    // refresh the page if the user is on the team files page
+    if (userOnTeamsPage && teamUuid !== undefined) {
       navigate(isPrivate ? ROUTES.TEAM_FILES_PRIVATE(teamUuid) : ROUTES.TEAM_FILES(teamUuid));
     }
 

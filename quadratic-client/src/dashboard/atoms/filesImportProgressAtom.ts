@@ -4,15 +4,17 @@ import {
   CoreClientTransactionProgress,
   CoreClientTransactionStart,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
+import { filesImportProgressListAtom } from '@/dashboard/atoms/filesImportProgressListAtom';
 import { atom, DefaultValue } from 'recoil';
 
 export interface FileImportProgress {
   name: string;
   size: number;
   step: 'read' | 'create' | 'save' | 'done' | 'error' | 'cancel';
-  progress: number; // read input file
+  progress: number;
   transactionId?: string;
   transactionOps?: number;
+  uuid?: string;
 }
 
 interface FilesImportProgressState {
@@ -33,7 +35,7 @@ export const filesImportProgressAtom = atom({
   key: 'filesImportProgress',
   default: defaultFilesImportProgressState,
   effects: [
-    ({ onSet, setSelf }) => {
+    ({ onSet, setSelf, getLoadable }) => {
       onSet((newValue, oldValue) => {
         if (oldValue instanceof DefaultValue) return;
 
@@ -43,12 +45,9 @@ export const filesImportProgressAtom = atom({
             const updatedFiles = prev.files.map((file, index) => {
               if (index !== prev.currentFileIndex) return file;
               const newFile: FileImportProgress = {
-                name: file.name,
-                size: file.size,
+                ...file,
                 step: 'read',
                 progress: Math.round((message.current / message.total) * 100) / 3,
-                transactionId: file.transactionId,
-                transactionOps: file.transactionOps,
               };
               return newFile;
             });
@@ -66,8 +65,7 @@ export const filesImportProgressAtom = atom({
               const updatedFiles = prev.files.map((file, index) => {
                 if (index !== prev.currentFileIndex) return file;
                 const newFile: FileImportProgress = {
-                  name: file.name,
-                  size: file.size,
+                  ...file,
                   step: 'create',
                   progress: 100 / 3,
                   transactionId: message.transactionId,
@@ -93,11 +91,9 @@ export const filesImportProgressAtom = atom({
               const progress =
                 (Math.round((1 - message.remainingOperations / transactionOps) * 100) + 100) / totalSteps;
               const newFile: FileImportProgress = {
-                name: file.name,
-                size: file.size,
+                ...file,
                 step: 'create',
                 progress,
-                transactionId: file.transactionId,
                 transactionOps,
               };
               return newFile;
@@ -115,18 +111,21 @@ export const filesImportProgressAtom = atom({
           events.on('transactionStart', handleTransactionStart);
           events.on('transactionProgress', handleTransactionProgress);
         } else if (oldValue.importing && !newValue.importing) {
-          // reset state
-          setSelf({
-            importing: false,
-            currentFileIndex: 0,
-            createNewFile: false,
-            files: [],
-          });
-
+          const filesImportProgressListState = getLoadable(filesImportProgressListAtom);
           // remove event listeners
           events.off('importProgress', handleImportProgress);
           events.off('transactionStart', handleTransactionStart);
           events.off('transactionProgress', handleTransactionProgress);
+
+          // reset state
+          if (!filesImportProgressListState.contents.show) {
+            setSelf({
+              importing: false,
+              currentFileIndex: 0,
+              createNewFile: false,
+              files: [],
+            });
+          }
         }
       });
     },

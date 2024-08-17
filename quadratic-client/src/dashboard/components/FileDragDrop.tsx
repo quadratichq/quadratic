@@ -37,19 +37,20 @@ export function FileDragDrop() {
 
   return (
     <div
-      className="absolute left-0 top-0 z-10 flex h-full w-full flex-col items-center  justify-center bg-[#E3E8EF] opacity-75 "
+      className="absolute left-0 top-0 z-10 flex h-full w-full flex-col items-center  justify-center bg-white opacity-90"
       onDragEnter={handleDrag}
       onDragLeave={handleDrag}
       onDragOver={handleDrag}
     >
       <div
-        className="relative z-10 h-[90%] w-[90%] select-none rounded-lg border-4 border-dashed border-[#020817] bg-[#E3E8EF] opacity-95"
+        className="relative z-10 h-[90%] w-[90%] select-none rounded-lg border-4 border-dashed border-border bg-white opacity-90"
         onDrop={handleDrop}
       >
         <div className="pointer-events-none flex h-full w-full flex-col items-center justify-center gap-4">
           <span className="text-2xl font-bold text-[#020817]">Drop file here</span>
-          <span className="p-5 text-center text-base font-medium text-[#6A778B]">
-            Start a new spreadsheet by importing a Grid, Excel, CSV or Parquet file
+
+          <span className="pl-4 pr-4 text-center text-base font-medium text-[#6A778B]">
+            Start a new spreadsheet by importing a CSV, Parquet, Excel or Grid file(s)
           </span>
         </div>
       </div>

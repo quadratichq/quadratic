@@ -1,9 +1,9 @@
-import { ImportProgress } from '@/app/ui/components/ImportProgress';
 import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
 import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { Empty } from '@/dashboard/components/Empty';
+import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
 import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
@@ -212,7 +212,7 @@ export const Component = () => {
         {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.EDUCATION && <EducationDialog />}
       </div>
       <NewFileDialogWrapper />
-      <ImportProgress />
+      <ImportProgressList />
       <FileDragDrop />
     </RecoilRoot>
   );
