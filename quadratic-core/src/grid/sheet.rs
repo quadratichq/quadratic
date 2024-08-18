@@ -238,6 +238,12 @@ impl Sheet {
         column.values.get(&pos.y)
     }
 
+    /// Returns the cell value at a position using both `column.values` and
+    /// `code_runs`, for use when a formula references a cell.
+    pub fn get_cell_for_formula(&self, pos: Pos) -> CellValue {
+        self.display_value(pos).unwrap_or(CellValue::Blank)
+    }
+
     /// Returns a formatting property of a cell.
     pub fn get_formatting_value<A: CellFmtAttr>(&self, pos: Pos) -> Option<A::Value> {
         let column = self.get_column(pos.x)?;
