@@ -4,9 +4,9 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { FileImportProgress, filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
 import { filesImportProgressListAtom } from '@/dashboard/atoms/filesImportProgressListAtom';
 import { apiClient } from '@/shared/api/apiClient';
+import { ApiError } from '@/shared/api/fetchFromApi';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
-import { AxiosProgressEvent } from 'axios';
 import { Buffer } from 'buffer';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { DefaultValue, useSetRecoilState } from 'recoil';
@@ -149,21 +149,43 @@ export function useFileImport() {
           const version = result.version;
           const data = { name, contents, version };
           const fileIndex = uploadFilePromises.length;
+          const abortController = new AbortController();
+          abortController.signal.addEventListener('abort', () => {
+            setFilesImportProgressState((prev) => {
+              if (prev instanceof DefaultValue) return prev;
+              const updatedFiles = prev.files.map((file, index) => {
+                if (index !== fileIndex) return file;
+                const newFile: FileImportProgress = {
+                  ...file,
+                  step: 'cancel',
+                  progress: 0,
+                  abortController: undefined,
+                };
+                return newFile;
+              });
+              return {
+                ...prev,
+                files: updatedFiles,
+              };
+            });
+          });
           const uploadFilePromise = apiClient.files
             .create({
               file: data,
               teamUuid,
               isPrivate,
-              onUploadProgress: (progressEvent: AxiosProgressEvent) => {
+              abortController,
+              onUploadProgress: (uploadProgress: number) => {
                 setFilesImportProgressState((prev) => {
                   if (prev instanceof DefaultValue) return prev;
                   const updatedFiles = prev.files.map((file, index) => {
                     if (index !== fileIndex) return file;
-                    const progress = (Math.round((progressEvent.progress ?? 0) * 100) + 200) / 3;
+                    const progress = (Math.round((uploadProgress ?? 0) * 100) + 200) / 3;
                     const newFile: FileImportProgress = {
                       ...file,
                       step: progress === 100 ? 'done' : 'save',
                       progress,
+                      abortController,
                     };
                     return newFile;
                   });
@@ -184,6 +206,7 @@ export function useFileImport() {
                     step: 'done',
                     progress: 100,
                     uuid,
+                    abortController: undefined,
                   };
                   return newProgress;
                 });
@@ -194,14 +217,19 @@ export function useFileImport() {
               });
             })
             .catch((error) => {
+              let step: FileImportProgress['step'] = 'error';
+              if (error instanceof ApiError && error.message === 'Request was aborted') {
+                step = 'cancel';
+              }
               setFilesImportProgressState((prev) => {
                 if (prev instanceof DefaultValue) return prev;
                 const updatedFiles = prev.files.map((file, index) => {
                   if (index !== fileIndex) return file;
                   const newProgress: FileImportProgress = {
                     ...file,
-                    step: 'error',
+                    step,
                     progress: 0,
+                    abortController: undefined,
                   };
                   return newProgress;
                 });
@@ -210,7 +238,9 @@ export function useFileImport() {
                   files: updatedFiles,
                 };
               });
-              throw new Error(`Error importing ${file.name}: ${error}`);
+              if (step !== 'cancel') {
+                throw new Error(`Error importing ${file.name}: ${error}`);
+              }
             });
 
           if (userOnTeamsPage) {

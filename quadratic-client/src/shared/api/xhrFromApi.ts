@@ -1,0 +1,115 @@
+import { authClient } from '@/auth';
+import { ApiError } from '@/shared/api/fetchFromApi';
+import * as Sentry from '@sentry/react';
+import z from 'zod';
+import { apiClient } from './apiClient';
+
+interface XhrRequestConfig {
+  method: string;
+  headers?: Record<string, string>;
+  data?: any;
+  abortController?: AbortController;
+  onUploadProgress?: (progress: number) => void;
+  onDownloadProgress?: (progress: number) => void;
+}
+
+export async function xhrFromApi<T>(
+  path: string,
+  config: XhrRequestConfig,
+  schema: z.Schema<T>
+): Promise<z.infer<typeof schema>> {
+  const { method, data, abortController, onUploadProgress, onDownloadProgress } = config;
+  return new Promise(async (resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const url = apiClient.getApiUrl() + path;
+
+    xhr.open(method, url, true);
+
+    // Set up headers
+    const isAuthenticated = await authClient.isAuthenticated();
+    const token = isAuthenticated ? await authClient.getTokenOrRedirect() : '';
+    const headers: Record<string, string> = { ...config.headers };
+    if (isAuthenticated) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    if (!(data instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
+    Object.entries(headers).forEach(([key, value]) => {
+      xhr.setRequestHeader(key, value);
+    });
+
+    // Set up abort handler
+    if (abortController) {
+      abortController.signal.addEventListener('abort', () => {
+        xhr.abort();
+        reject(new ApiError('Request aborted', 0, config.method));
+      });
+    }
+
+    // Set up progress handlers
+    if (onUploadProgress) {
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          onUploadProgress(event.loaded / event.total);
+        }
+      };
+    }
+    if (onDownloadProgress) {
+      xhr.onprogress = (event) => {
+        if (event.lengthComputable) {
+          onDownloadProgress(event.loaded / event.total);
+        }
+      };
+    }
+
+    xhr.onload = () => {
+      try {
+        const json = JSON.parse(xhr.responseText);
+        const result = schema.safeParse(json);
+        if (result.success) {
+          resolve(result.data);
+        } else {
+          console.error(`Zod schema validation failed at: ${path}`, JSON.stringify(result.error, null, 2));
+          reject(new ApiError('Unexpected response schema', xhr.status, method, JSON.stringify(result.error)));
+        }
+      } catch (error) {
+        Sentry.captureException(error);
+        reject(new ApiError('An unknown error occurred: response is not JSON.', xhr.status, method));
+      }
+    };
+
+    xhr.onerror = () => {
+      let details = 'No detailed error message provided';
+      try {
+        const json = JSON.parse(xhr.responseText);
+        if (json.error?.message) {
+          details = json.error.message;
+        } else if (json.errors) {
+          details = JSON.stringify(json.errors);
+        }
+      } catch (error) {
+        // If parsing fails, use the raw response text
+        details = xhr.responseText;
+      }
+      reject(new ApiError(`Failed to fetch ${url}`, xhr.status, method, details));
+    };
+
+    xhr.onabort = () => {
+      reject(new ApiError('Request was aborted', xhr.status, method));
+    };
+
+    xhr.ontimeout = () => {
+      reject(new ApiError('Request timed out', xhr.status, method));
+    };
+
+    // Send the request
+    if (data instanceof FormData) {
+      xhr.send(data);
+    } else if (data) {
+      xhr.send(JSON.stringify(data));
+    } else {
+      xhr.send();
+    }
+  });
+}

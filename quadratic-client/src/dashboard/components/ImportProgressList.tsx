@@ -77,6 +77,7 @@ const ImportProgressItem = ({
   const fileName = stripExtension(file.name);
   const extension = getExtension(file.name);
   const progress = Math.round(file.progress);
+  const abortController = file.abortController;
 
   const state =
     file.step === 'error'
@@ -112,7 +113,12 @@ const ImportProgressItem = ({
         )}
 
         {state === 'Importing...' || state === 'Pending...' ? (
-          <Button variant="ghost" className="w-[82px] text-primary hover:text-primary">
+          <Button
+            variant="ghost"
+            className="w-[82px] text-primary hover:text-primary"
+            disabled={abortController === undefined}
+            onClick={() => abortController?.abort()}
+          >
             Cancel
           </Button>
         ) : state === 'Imported' ? (

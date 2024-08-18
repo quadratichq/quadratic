@@ -15,6 +15,7 @@ export interface FileImportProgress {
   transactionId?: string;
   transactionOps?: number;
   uuid?: string;
+  abortController?: AbortController;
 }
 
 interface FilesImportProgressState {

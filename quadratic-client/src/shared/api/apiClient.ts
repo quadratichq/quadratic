@@ -1,7 +1,6 @@
 import { downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
-import { axiosFromApi } from '@/shared/api/axiosFromApi';
+import { xhrFromApi } from '@/shared/api/xhrFromApi';
 import * as Sentry from '@sentry/react';
-import { AxiosProgressEvent } from 'axios';
 import { Buffer } from 'buffer';
 import mixpanel from 'mixpanel-browser';
 import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
@@ -99,13 +98,15 @@ export const apiClient = {
       file,
       teamUuid,
       isPrivate,
+      abortController,
       onUploadProgress,
     }: {
       // TODO(ddimaria): remove Partial and "contents" once we duplicate directly on S3
       file?: Partial<Pick<ApiTypes['/v0/files.POST.request'], 'name' | 'contents' | 'version'>>;
       teamUuid: ApiTypes['/v0/files.POST.request']['teamUuid'];
       isPrivate: ApiTypes['/v0/files.POST.request']['isPrivate'];
-      onUploadProgress?: (progressEvent: AxiosProgressEvent) => void;
+      abortController?: AbortController;
+      onUploadProgress?: (uploadProgress: number) => void;
     }) {
       if (file === undefined) {
         file = {
@@ -114,14 +115,15 @@ export const apiClient = {
         };
       }
 
-      return axiosFromApi(
+      return xhrFromApi(
         `/v0/files`,
         {
           method: 'POST',
           data: { ...file, teamUuid, isPrivate },
+          abortController,
+          onUploadProgress,
         },
-        ApiSchemas['/v0/files.POST.response'],
-        onUploadProgress
+        ApiSchemas['/v0/files.POST.response']
       );
     },
     async delete(uuid: string) {
