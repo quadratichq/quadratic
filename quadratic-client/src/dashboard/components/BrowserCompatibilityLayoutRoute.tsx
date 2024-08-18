@@ -1,11 +1,9 @@
 import { DOCUMENTATION_BROWSER_COMPATIBILITY_URL } from '@/shared/constants/urls';
-import { Button } from '@/shared/shadcn/ui/button';
 import { isWASMSupported } from '@/shared/utils/isWASMSupported';
 import { isWebGLSupported } from '@pixi/utils';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
-import { isDesktop, isSafari } from 'react-device-detect';
-import { Link, Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { Empty } from './Empty';
 
 export function BrowserCompatibilityLayoutRoute() {
@@ -26,26 +24,6 @@ export function BrowserCompatibilityLayoutRoute() {
         ]}
         Icon={ExclamationTriangleIcon}
         severity="error"
-      />
-    );
-  }
-
-  if (isSafari && isDesktop) {
-    return (
-      <Empty
-        title="Safari not (currently) supported"
-        description={[
-          'We are actively working on Safari support. However, Safari is currently not supported in Quadratic. We recommend that you use the latest version of Google Chrome. ',
-          <a className={`text-decoration: underline`} href={DOCUMENTATION_BROWSER_COMPATIBILITY_URL}>
-            Learn more.
-          </a>,
-        ]}
-        Icon={ExclamationTriangleIcon}
-        actions={
-          <Button>
-            <Link to="/">Go to dashboard</Link>
-          </Button>
-        }
       />
     );
   }
