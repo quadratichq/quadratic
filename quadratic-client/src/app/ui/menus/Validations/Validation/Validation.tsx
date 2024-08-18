@@ -24,6 +24,7 @@ const CRITERIA_OPTIONS: { value: ValidationRuleSimple; label: string }[] = [
   { value: 'list', label: 'Values from user list (dropdown)' },
   { value: 'list-range', label: 'Values from sheet (dropdown)' },
   { value: 'logical', label: 'Logical (checkbox)' },
+  { value: 'date', label: 'Date and Time' },
 ];
 
 export const Validation = () => {

@@ -201,6 +201,19 @@ export const useValidationData = (): ValidationData => {
           rule = { Logical: { show_checkbox: true, ignore_blank: true } };
           break;
 
+        case 'date':
+          rule = {
+            DateTime: {
+              ignore_blank: true,
+              require_date: false,
+              require_time: false,
+              prohibit_date: false,
+              prohibit_time: false,
+              ranges: [],
+            },
+          };
+          break;
+
         default:
           throw new Error('Invalid rule type in useValidationData.changeRule');
       }

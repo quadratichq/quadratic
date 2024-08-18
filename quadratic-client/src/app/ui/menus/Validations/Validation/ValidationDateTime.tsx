@@ -3,7 +3,12 @@ import { ValidationData } from './useValidationData';
 import { ValidationInput, ValidationMoreOptions, ValidationUICheckbox } from './ValidationUI';
 import { Tooltip } from '@mui/material';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { DateTimeRange } from '@/app/quadratic-core-types';
+import { ValidationUndefined } from './validationType';
+import { Button } from '@/shared/shadcn/ui/button';
+import { cn } from '@/shared/shadcn/utils';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 interface Props {
   validationData: ValidationData;
@@ -21,9 +26,9 @@ export const ValidationDateTime = (props: Props) => {
   const equals = useMemo(() => {
     if (validation && 'rule' in validation && validation.rule && validation.rule !== 'None') {
       if ('DateTime' in validation.rule) {
-        const equals = validation.rule.Number.ranges.find((r) => 'Equal' in r);
-        if (equals && 'Equal' in equals) {
-          return equals.Equal;
+        const equals = validation.rule.DateTime.ranges.find((r) => 'DateEqual' in r);
+        if (equals && 'DateEqual' in equals) {
+          return equals.DateEqual;
         }
       }
     }
@@ -31,14 +36,14 @@ export const ValidationDateTime = (props: Props) => {
 
   const changeEquals = useCallback(
     (values: string) => {
-      const numbers = values.split(',').flatMap((v) => {
+      const dates = values.split(',').flatMap((v) => {
         if (!v.trim()) {
           return [];
         } else {
           return [parseFloat(v)];
         }
       });
-      if (numbers.some((n) => isNaN(n))) {
+      if (dates.some((n) => isNaN(n))) {
         setEqualsError(true);
         return;
       }
@@ -49,7 +54,7 @@ export const ValidationDateTime = (props: Props) => {
           return;
         }
 
-        if (!numbers.length) {
+        if (!dates.length) {
           return {
             ...validation,
             rule: {
@@ -64,7 +69,7 @@ export const ValidationDateTime = (props: Props) => {
         const rules = validation.rule.Number.ranges.filter((m) => !('Equal' in m));
         if (values.length) {
           rules.push({
-            Equal: numbers,
+            Equal: dates,
           });
         }
         return {
@@ -74,7 +79,7 @@ export const ValidationDateTime = (props: Props) => {
               ...validation.rule.Number,
               ranges: [
                 {
-                  Equal: numbers,
+                  Equal: dates,
                 },
               ],
             },
@@ -160,11 +165,11 @@ export const ValidationDateTime = (props: Props) => {
 
   //#region Ranges
 
-  const ranges: NumberRange[] = useMemo(() => {
-    const ranges: NumberRange[] = [];
+  const ranges: DateTimeRange[] = useMemo(() => {
+    const ranges: DateTimeRange[] = [];
     if (validation && 'rule' in validation && validation.rule && validation.rule !== 'None') {
-      if ('Number' in validation.rule) {
-        validation.rule.Number.ranges.forEach((r) => {
+      if ('DateTime' in validation.rule) {
+        validation.rule.DateTime.ranges.forEach((r) => {
           ranges.push(r);
         });
       }
@@ -172,8 +177,8 @@ export const ValidationDateTime = (props: Props) => {
 
     // always add an empty range to the bottom of the list
     const last = ranges[ranges.length - 1];
-    if (!last || ('Range' in last && (last.Range[0] !== null || last.Range[1] !== null))) {
-      ranges.push({ Range: [null, null] });
+    if (!last || ('DateRange' in last && (last.DateRange[0] !== null || last.DateRange[1] !== null))) {
+      ranges.push({ DateRange: [null, null] });
     }
     return ranges;
   }, [validation]);
@@ -181,17 +186,17 @@ export const ValidationDateTime = (props: Props) => {
   const [rangeError, setRangeError] = useState<number[]>([]);
   const changeRange = useCallback(
     (index: number, value: string, type: 'min' | 'max') => {
-      value = value.trim();
+      const date = new Date(value.trim()).getTime();
       setValidation((validation): ValidationUndefined => {
-        if (!validation || !('rule' in validation) || validation.rule === 'None' || !('Number' in validation.rule)) {
+        if (!validation || !('rule' in validation) || validation.rule === 'None' || !('DateTime' in validation.rule)) {
           return;
         }
         const newRanges = [...ranges];
         const current = newRanges[index];
-        if (!('Range' in current)) throw new Error('Expected Range in changeRange');
+        if (!('DateRange' in current)) throw new Error('Expected Range in changeRange');
         if (type === 'min') {
           // check for error (min > max)
-          if (current.Range[1] !== null && parseFloat(value) > current.Range[1]) {
+          if (current.DateRange[1] !== null && date > current.DateRange[1]) {
             setRangeError((rangeError) => {
               const r = rangeError.filter((r) => r !== index);
               r.push(index);
@@ -199,13 +204,13 @@ export const ValidationDateTime = (props: Props) => {
             });
             return validation;
           }
-          current.Range[0] = value ? parseFloat(value) : null;
+          current.DateRange[0] = date ? BigInt(date) : null;
           setRangeError((rangeError) => {
             return rangeError.filter((r) => r !== index);
           });
         } else {
           // check for error (max < min)
-          if (current.Range[0] !== null && parseFloat(value) < current.Range[0]) {
+          if (current.DateRange[0] !== null && date < current.DateRange[0]) {
             setRangeError((rangeError) => {
               const r = rangeError.filter((r) => r !== index);
               r.push(index);
@@ -213,18 +218,20 @@ export const ValidationDateTime = (props: Props) => {
             });
             return validation;
           }
-          current.Range[1] = value ? parseFloat(value) : null;
+          current.DateRange[1] = date ? BigInt(date) : null;
           setRangeError((rangeError) => {
             return rangeError.filter((r) => r !== index);
           });
         }
 
-        const filteredRanges = newRanges.filter((r) => 'Range' in r && (r.Range[0] !== null || r.Range[1] !== null));
+        const filteredRanges = newRanges.filter(
+          (r) => 'DateRange' in r && (r.DateRange[0] !== null || r.DateRange[1] !== null)
+        );
         return {
           ...validation,
           rule: {
-            Number: {
-              ...validation.rule.Number,
+            DateTime: {
+              ...validation.rule.DateTime,
               ranges: filteredRanges,
             },
           },
@@ -237,7 +244,7 @@ export const ValidationDateTime = (props: Props) => {
   const removeRange = useCallback(
     (index: number) => {
       setValidation((validation) => {
-        if (!validation || !('rule' in validation) || validation.rule === 'None' || !('Number' in validation.rule)) {
+        if (!validation || !('rule' in validation) || validation.rule === 'None' || !('DateTime' in validation.rule)) {
           return;
         }
         const newRanges = [...ranges];
@@ -246,7 +253,7 @@ export const ValidationDateTime = (props: Props) => {
           ...validation,
           rule: {
             Number: {
-              ...validation.rule.Number,
+              ...validation.rule.DateTime,
               ranges: newRanges,
             },
           },
@@ -336,7 +343,7 @@ export const ValidationDateTime = (props: Props) => {
           </AccordionTrigger>
           <AccordionContent className="px-1 pt-1">
             {ranges.map((range, i) => {
-              const r = 'Range' in range ? range.Range : [null, null];
+              const r = 'DateRange' in range ? range.DateRange : [null, null];
               const min = r[0]?.toString() ?? '';
               const max = r[1]?.toString() ?? '';
               return (

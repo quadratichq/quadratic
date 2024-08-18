@@ -1,5 +1,5 @@
 import { events } from '@/app/events/events';
-import { useUndo } from '@/app/events/useUndo';
+import { useEvents } from '@/app/events/useEvents';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
@@ -93,7 +93,7 @@ export function QuadraticApp() {
     }
   }, [multiplayerLoading]);
 
-  useUndo();
+  useEvents();
 
   // Show loading screen until everything is loaded
   if (offlineLoading || multiplayerLoading) {

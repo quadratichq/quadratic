@@ -59,7 +59,7 @@ export interface Format { align: CellAlign | null, vertical_align: CellVerticalA
 export interface JsSheetFill { columns: Array<[bigint, [string, bigint]]>, rows: Array<[bigint, [string, bigint]]>, all: string | null, }
 export interface ColumnRow { column: number, row: number, }
 export interface Validation { id: string, selection: Selection, rule: ValidationRule, message: ValidationMessage, error: ValidationError, }
-export type ValidationRule = "None" | { "List": ValidationList } | { "Logical": ValidationLogical } | { "Text": ValidationText } | { "Number": ValidationNumber };
+export type ValidationRule = "None" | { "List": ValidationList } | { "Logical": ValidationLogical } | { "Text": ValidationText } | { "Number": ValidationNumber } | { "DateTime": ValidationDateTime };
 export interface ValidationError { show: boolean, style: ValidationStyle, title: string | null, message: string | null, }
 export interface ValidationMessage { show: boolean, title: string | null, message: string | null, }
 export interface ValidationLogical { show_checkbox: boolean, ignore_blank: boolean, }
