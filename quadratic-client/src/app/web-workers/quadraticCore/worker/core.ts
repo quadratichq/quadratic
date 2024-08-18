@@ -57,7 +57,6 @@ class Core {
       headers: {
         Authorization: `Bearer ${jwt}`,
       },
-      mode: 'no-cors',
     });
     return new Uint8Array(await res.arrayBuffer());
   }
