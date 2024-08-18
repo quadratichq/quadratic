@@ -2,6 +2,7 @@ import { downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
 import { axiosFromApi } from '@/shared/api/axiosFromApi';
 import * as Sentry from '@sentry/react';
 import { AxiosProgressEvent } from 'axios';
+import { Buffer } from 'buffer';
 import mixpanel from 'mixpanel-browser';
 import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { fetchFromApi } from './fetchFromApi';
@@ -118,9 +119,6 @@ export const apiClient = {
         {
           method: 'POST',
           data: { ...file, teamUuid, isPrivate },
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
         },
         ApiSchemas['/v0/files.POST.response'],
         onUploadProgress

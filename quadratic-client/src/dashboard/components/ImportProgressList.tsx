@@ -5,7 +5,7 @@ import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Progress } from '@/shared/shadcn/ui/progress';
 import { useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
 
 export const ImportProgressList = () => {
@@ -26,10 +26,10 @@ export const ImportProgressList = () => {
 
   return (
     <div className="absolute left-0 top-0 z-10 flex h-full w-full flex-col items-center overflow-hidden bg-white bg-opacity-90">
-      <div className="z-10 mt-12 w-[565px] select-none rounded-sm border border-slate-200 bg-white p-6 tracking-tight shadow-[0_4px_8px_0px_rgba(0,0,0,0.15)]">
+      <div className="z-10 mb-12 mt-12 w-[565px] select-none rounded-sm border border-slate-200 bg-white p-6 tracking-tight shadow-[0_4px_8px_0px_rgba(0,0,0,0.15)]">
         <div className="pb-4 text-lg font-semibold">Import files</div>
 
-        <div className="flex w-full flex-col">
+        <div className="flex max-h-[75vh] w-full flex-col overflow-y-auto">
           {files.map((file, index) => (
             <ImportProgressItem
               file={file}
@@ -37,6 +37,7 @@ export const ImportProgressList = () => {
               current={currentFileIndex}
               importing={importing}
               key={index}
+              handleClose={handleClose}
             />
           ))}
         </div>
@@ -56,12 +57,23 @@ const ImportProgressItem = ({
   index,
   current,
   importing,
+  handleClose,
 }: {
   file: FileImportProgress;
   index: number;
   current: number;
   importing: boolean;
+  handleClose: () => void;
 }) => {
+  const navigate = useNavigate();
+
+  const handleOpen = useCallback(() => {
+    handleClose();
+    if (file.uuid !== undefined) {
+      navigate(ROUTES.FILE(file.uuid));
+    }
+  }, [file.uuid, handleClose, navigate]);
+
   const fileName = stripExtension(file.name);
   const extension = getExtension(file.name);
   const progress = Math.round(file.progress);
@@ -79,7 +91,7 @@ const ImportProgressItem = ({
 
   const textColor = file.step === 'error' || file.step === 'cancel' ? 'text-destructive' : 'text-[#6A778B]';
   return (
-    <div className="mb-1 mt-1 flex w-[517px] flex-row items-center justify-between">
+    <div className="mb-1 mt-1 flex max-w-[517px] flex-grow flex-row items-center justify-between p-1">
       <div className="min-w-0 grow">
         <div className="overflow-hidden text-ellipsis whitespace-nowrap pr-2 text-sm font-semibold text-[#0A0F1C]">
           {fileName}
@@ -104,8 +116,13 @@ const ImportProgressItem = ({
             Cancel
           </Button>
         ) : state === 'Imported' ? (
-          <Button variant="outline" disabled={importing || file.uuid === undefined} className="w-[82px]">
-            <Link to={ROUTES.FILE(file.uuid ?? '')}>Open</Link>
+          <Button
+            variant="outline"
+            disabled={importing || file.uuid === undefined}
+            className="w-[82px]"
+            onClick={handleOpen}
+          >
+            Open
           </Button>
         ) : null}
       </div>

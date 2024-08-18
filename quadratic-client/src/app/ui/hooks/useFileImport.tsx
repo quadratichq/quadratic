@@ -16,6 +16,7 @@ export function useFileImport() {
   const setFilesImportProgressListState = useSetRecoilState(filesImportProgressListAtom);
 
   const { addGlobalSnackbar } = useGlobalSnackbar();
+
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -241,7 +242,14 @@ export function useFileImport() {
       }
     }
 
-    await Promise.all(uploadFilePromises);
+    // promise.all is not used here because we want to wait for all promises to be resolved
+    for (const uploadFilePromise of uploadFilePromises) {
+      try {
+        await uploadFilePromise;
+      } catch (e) {
+        console.error(e);
+      }
+    }
 
     // refresh the page if the user is on the team files page
     if (userOnTeamsPage && teamUuid !== undefined) {
