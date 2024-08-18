@@ -157,7 +157,8 @@ impl GridController {
                 Ok(acc + 2 * range.rows().count())
             })
             .map_err(error)?;
-        let mut current_y = 0;
+        let mut current_y_values = 0;
+        let mut current_y_formula = 0;
 
         let mut order = key_between(&None, &None).unwrap_or("A0".to_string());
         for sheet_name in sheets {
@@ -210,15 +211,14 @@ impl GridController {
                     );
                 }
 
-                current_y += 1;
                 // send progress to the client, every IMPORT_LINES_PER_OPERATION
                 if (cfg!(target_family = "wasm") || cfg!(test))
-                    && current_y % IMPORT_LINES_PER_OPERATION == 0
+                    && current_y_values % IMPORT_LINES_PER_OPERATION == 0
                 {
                     let width = row.len() as u32;
                     crate::wasm_bindings::js::jsImportProgress(
                         file_name,
-                        current_y,
+                        current_y_values + current_y_formula,
                         total_rows as u32,
                         0,
                         1,
@@ -226,6 +226,7 @@ impl GridController {
                         total_rows as u32,
                     );
                 }
+                current_y_values += 1;
             }
 
             // formulas
@@ -251,15 +252,14 @@ impl GridController {
                     }
                 }
 
-                current_y += 1;
                 // send progress to the client, every IMPORT_LINES_PER_OPERATION
                 if (cfg!(target_family = "wasm") || cfg!(test))
-                    && current_y % IMPORT_LINES_PER_OPERATION == 0
+                    && current_y_formula % IMPORT_LINES_PER_OPERATION == 0
                 {
                     let width = row.len() as u32;
                     crate::wasm_bindings::js::jsImportProgress(
                         file_name,
-                        current_y,
+                        current_y_values + current_y_formula,
                         total_rows as u32,
                         0,
                         1,
@@ -267,6 +267,7 @@ impl GridController {
                         total_rows as u32,
                     );
                 }
+                current_y_formula += 1;
             }
             // add new sheets
             ops.push(Operation::AddSheetSchema {
