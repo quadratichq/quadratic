@@ -5,7 +5,7 @@ import { useRecoilValue } from 'recoil';
 
 export const ImportProgress = () => {
   const { importing, files, currentFileIndex } = useRecoilValue(filesImportProgressAtom);
-  if (!importing) return;
+  if (!importing || currentFileIndex === undefined) return;
 
   const fileNo = currentFileIndex + 1;
   const totalFiles = files.length;
@@ -37,7 +37,7 @@ export const ImportProgress = () => {
         </Button>
       </div>
 
-      <Progress value={progress} />
+      <Progress key={fileNo} value={progress} />
     </div>
   );
 };

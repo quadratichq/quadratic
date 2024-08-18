@@ -21,14 +21,14 @@ export interface FileImportProgress {
 interface FilesImportProgressState {
   importing: boolean;
   createNewFile: boolean;
-  currentFileIndex: number;
+  currentFileIndex?: number;
   files: FileImportProgress[];
 }
 
 const defaultFilesImportProgressState: FilesImportProgressState = {
   importing: false,
   createNewFile: false,
-  currentFileIndex: 0,
+  currentFileIndex: undefined,
   files: [],
 };
 
@@ -122,7 +122,7 @@ export const filesImportProgressAtom = atom({
           if (!filesImportProgressListState.contents.show) {
             setSelf({
               importing: false,
-              currentFileIndex: 0,
+              currentFileIndex: undefined,
               createNewFile: false,
               files: [],
             });

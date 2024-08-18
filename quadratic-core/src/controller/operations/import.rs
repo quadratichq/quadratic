@@ -1,19 +1,17 @@
 use std::io::Cursor;
 
 use anyhow::{anyhow, bail, Result};
-use lexicon_fractional_index::key_between;
-
-use crate::{
-    cell_values::CellValues,
-    controller::GridController,
-    grid::{file::sheet_schema::export_sheet, CodeCellLanguage, Sheet, SheetId},
-    CellValue, CodeCellValue, Pos, SheetPos,
-};
 use bytes::Bytes;
 use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
+use lexicon_fractional_index::key_between;
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 
 use super::operation::Operation;
+use crate::cell_values::CellValues;
+use crate::controller::GridController;
+use crate::grid::file::sheet_schema::export_sheet;
+use crate::grid::{CodeCellLanguage, Sheet, SheetId};
+use crate::{CellValue, CodeCellValue, Pos, SheetPos};
 
 const IMPORT_LINES_PER_OPERATION: u32 = 10000;
 
@@ -97,7 +95,7 @@ impl GridController {
                 cell_values = CellValues::new(width, h);
 
                 // update the progress bar every time there's a new operation
-                if cfg!(target_family = "wasm") {
+                if cfg!(target_family = "wasm") || cfg!(test) {
                     crate::wasm_bindings::js::jsImportProgress(
                         file_name,
                         current_y,
@@ -214,7 +212,9 @@ impl GridController {
 
                 current_y += 1;
                 // send progress to the client, every IMPORT_LINES_PER_OPERATION
-                if cfg!(target_family = "wasm") && current_y % IMPORT_LINES_PER_OPERATION == 0 {
+                if (cfg!(target_family = "wasm") || cfg!(test))
+                    && current_y % IMPORT_LINES_PER_OPERATION == 0
+                {
                     let width = row.len() as u32;
                     crate::wasm_bindings::js::jsImportProgress(
                         file_name,
@@ -253,7 +253,9 @@ impl GridController {
 
                 current_y += 1;
                 // send progress to the client, every IMPORT_LINES_PER_OPERATION
-                if cfg!(target_family = "wasm") && current_y % IMPORT_LINES_PER_OPERATION == 0 {
+                if (cfg!(target_family = "wasm") || cfg!(test))
+                    && current_y % IMPORT_LINES_PER_OPERATION == 0
+                {
                     let width = row.len() as u32;
                     crate::wasm_bindings::js::jsImportProgress(
                         file_name,
@@ -330,7 +332,7 @@ impl GridController {
                 ops.push(operations);
 
                 // update the progress bar every time there's a new operation
-                if cfg!(target_family = "wasm") {
+                if cfg!(target_family = "wasm") || cfg!(test) {
                     crate::wasm_bindings::js::jsImportProgress(
                         file_name,
                         current_size as u32,
@@ -375,10 +377,10 @@ fn read_utf16(bytes: &[u8]) -> Option<String> {
 
 #[cfg(test)]
 mod test {
-    use super::read_utf16;
-    use super::*;
-    use crate::CellValue;
     use serial_test::parallel;
+
+    use super::{read_utf16, *};
+    use crate::CellValue;
 
     const INVALID_ENCODING_FILE: &[u8] =
         include_bytes!("../../../../quadratic-rust-shared/data/csv/encoding_issue.csv");

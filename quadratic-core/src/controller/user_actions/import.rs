@@ -1,7 +1,9 @@
+use anyhow::Result;
+
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::GridController;
-use crate::{grid::SheetId, Pos};
-use anyhow::Result;
+use crate::grid::SheetId;
+use crate::Pos;
 
 impl GridController {
     /// Imports a CSV file into the grid.
@@ -72,16 +74,13 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        grid::{CodeCellLanguage, CodeRunResult},
-        test_util::{assert_cell_value_row, print_table},
-        wasm_bindings::js::clear_js_calls,
-        CellValue, Rect, RunErrorMsg,
-    };
-
     use serial_test::{parallel, serial};
 
     use super::*;
+    use crate::grid::{CodeCellLanguage, CodeRunResult};
+    use crate::test_util::{assert_cell_value_row, print_table};
+    use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
+    use crate::{CellValue, Rect, RunErrorMsg};
 
     fn read_test_csv_file(file_name: &str) -> Vec<u8> {
         let path = format!("../quadratic-rust-shared/data/csv/{file_name}");
@@ -154,6 +153,7 @@ mod tests {
     #[test]
     #[serial]
     fn import_large_csv() {
+        clear_js_calls();
         let mut gc = GridController::test();
         let mut csv = String::new();
         for _ in 0..10000 {
@@ -170,7 +170,7 @@ mod tests {
             None,
         );
         assert!(result.is_ok());
-        clear_js_calls();
+        expect_js_call_count("jsImportProgress", 1, true);
     }
 
     #[test]

@@ -1,11 +1,11 @@
 use std::str::FromStr;
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
-use crate::{
-    controller::GridController,
-    grid::{Grid, SheetId},
-    Pos,
-};
+use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::JsValue;
+
+use crate::controller::GridController;
+use crate::grid::{Grid, SheetId};
+use crate::Pos;
 
 #[wasm_bindgen]
 impl GridController {

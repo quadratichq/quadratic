@@ -9,7 +9,7 @@ import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { Buffer } from 'buffer';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { DefaultValue, useSetRecoilState } from 'recoil';
+import { useSetRecoilState } from 'recoil';
 
 export function useFileImport() {
   const setFilesImportProgressState = useSetRecoilState(filesImportProgressAtom);
@@ -28,7 +28,7 @@ export function useFileImport() {
     isPrivate = true,
     teamUuid,
   }: {
-    files?: File[] | FileList;
+    files?: FileList | File[];
     sheetId?: string;
     insertAt?: Coordinate;
     cursor?: string; // cursor is available when importing into a existing file, it is also being used as a flag to denote this
@@ -86,35 +86,57 @@ export function useFileImport() {
     }
 
     files = Array.from(files);
+    const totalFiles = files.length;
 
     setFilesImportProgressState(() => ({
       importing: true,
       createNewFile,
-      currentFileIndex: -1,
-      files: files.map((file) => ({
-        name: file.name,
-        size: file.size,
-        step: 'read',
-        progress: 0,
-        transactionId: undefined,
-        transactionOps: undefined,
-      })),
+      currentFileIndex: undefined,
+      files: files.map((file) => {
+        const fileState: FileImportProgress = {
+          name: file.name,
+          size: file.size,
+          step: 'read',
+          progress: 0,
+          transactionId: undefined,
+          transactionOps: undefined,
+          abortController: undefined,
+        };
+        return fileState;
+      }),
     }));
 
-    const uploadFilePromises = [];
+    const uploadFilePromises: Promise<void>[] = [];
 
     while (files.length > 0) {
-      const file = files.shift();
+      let currentFileIndex = totalFiles - files.length;
+      let file: File | undefined = files.shift();
       if (file === undefined) continue;
 
       setFilesImportProgressState((prev) => ({
         ...prev,
-        currentFileIndex: prev.currentFileIndex + 1,
+        currentFileIndex,
       }));
 
+      const updateCurrentFileState = (newFileStatePartial: Partial<FileImportProgress>) => {
+        setFilesImportProgressState((prev) => {
+          const newFilesState = prev.files.map((fileState, index) => {
+            if (index !== currentFileIndex) return fileState;
+            const newFileState: FileImportProgress = { ...fileState, ...newFileStatePartial };
+            return newFileState;
+          });
+          return {
+            ...prev,
+            files: newFilesState,
+          };
+        });
+      };
+
       try {
+        const fileName = file.name;
         const fileType = getFileType(file);
         const arrayBuffer = await file.arrayBuffer().catch(console.error);
+        file = undefined;
         if (!arrayBuffer) {
           throw new Error('Failed to read file');
         }
@@ -126,101 +148,55 @@ export function useFileImport() {
             result = await quadraticCore.upgradeGridFile(arrayBuffer, 0);
             break;
           case 'excel':
-            result = await quadraticCore.importExcel(arrayBuffer, file.name, cursor);
+            result = await quadraticCore.importExcel(arrayBuffer, fileName, cursor);
             break;
           case 'csv':
-            result = await quadraticCore.importCsv(arrayBuffer, file.name, sheetId, insertAt, cursor);
+            result = await quadraticCore.importCsv(arrayBuffer, fileName, sheetId, insertAt, cursor);
             break;
           case 'parquet':
-            result = await quadraticCore.importParquet(arrayBuffer, file.name, sheetId, insertAt, cursor);
+            result = await quadraticCore.importParquet(arrayBuffer, fileName, sheetId, insertAt, cursor);
             break;
           default:
-            throw new Error(`Error importing ${file.name}: Unsupported file type`);
+            throw new Error(`Error importing ${fileName}: Unsupported file type`);
         }
 
         if (result?.error !== undefined) {
-          throw new Error(`Error importing ${file.name}: ${result.error}`);
+          throw new Error(`Error importing ${fileName}: ${result.error}`);
         }
 
         // contents and version are returned when importing into a new file
         else if (createNewFile && result?.contents !== undefined && result?.version !== undefined) {
-          const name = file.name ? stripExtension(file.name) : 'Untitled';
+          const name = fileName ? stripExtension(fileName) : 'Untitled';
           const contents = Buffer.from(result.contents).toString('base64');
           const version = result.version;
           const data = { name, contents, version };
-          const fileIndex = uploadFilePromises.length;
+
           const abortController = new AbortController();
+          updateCurrentFileState({ step: 'create', abortController });
+
+          const onUploadProgress = (uploadProgress: number) => {
+            const progress = (Math.round((uploadProgress ?? 0) * 100) + 200) / 3;
+            const step: FileImportProgress['step'] = progress === 100 ? 'done' : 'create';
+            updateCurrentFileState({ step, progress });
+          };
           const uploadFilePromise = apiClient.files
             .create({
               file: data,
               teamUuid,
               isPrivate,
               abortController,
-              onUploadProgress: (uploadProgress: number) => {
-                setFilesImportProgressState((prev) => {
-                  if (prev instanceof DefaultValue) return prev;
-                  const updatedFiles = prev.files.map((file, index) => {
-                    if (index !== fileIndex) return file;
-                    const progress = (Math.round((uploadProgress ?? 0) * 100) + 200) / 3;
-                    const newFile: FileImportProgress = {
-                      ...file,
-                      step: progress === 100 ? 'done' : 'save',
-                      progress,
-                      abortController,
-                    };
-                    return newFile;
-                  });
-                  return {
-                    ...prev,
-                    files: updatedFiles,
-                  };
-                });
-              },
+              onUploadProgress,
             })
             .then(({ file: { uuid } }) => {
-              setFilesImportProgressState((prev) => {
-                if (prev instanceof DefaultValue) return prev;
-                const updatedFiles = prev.files.map((file, index) => {
-                  if (index !== fileIndex) return file;
-                  const newProgress: FileImportProgress = {
-                    ...file,
-                    step: 'done',
-                    progress: 100,
-                    uuid,
-                    abortController: undefined,
-                  };
-                  return newProgress;
-                });
-                return {
-                  ...prev,
-                  files: updatedFiles,
-                };
-              });
+              updateCurrentFileState({ step: 'done', progress: 100, uuid, abortController: undefined });
             })
             .catch((error) => {
               let step: FileImportProgress['step'] = 'error';
-              if (error instanceof ApiError && error.status === 499) {
-                step = 'cancel';
-              }
-              setFilesImportProgressState((prev) => {
-                if (prev instanceof DefaultValue) return prev;
-                const updatedFiles = prev.files.map((file, index) => {
-                  if (index !== fileIndex) return file;
-                  const newProgress: FileImportProgress = {
-                    ...file,
-                    step,
-                    progress: 0,
-                    abortController: undefined,
-                  };
-                  return newProgress;
-                });
-                return {
-                  ...prev,
-                  files: updatedFiles,
-                };
-              });
+              if (error instanceof ApiError && error.status === 499) step = 'cancel';
+              updateCurrentFileState({ step, progress: 0, abortController: undefined });
+
               if (step !== 'cancel') {
-                throw new Error(`Error importing ${file.name}: ${error}`);
+                throw new Error(`Error importing ${fileName}: ${error}`);
               }
             });
 
@@ -232,24 +208,8 @@ export function useFileImport() {
         }
       } catch (e) {
         if (e instanceof Error) {
+          updateCurrentFileState({ step: 'error', progress: 0, abortController: undefined });
           addGlobalSnackbar(e.message, { severity: 'warning' });
-          setFilesImportProgressState((prev) => {
-            if (prev instanceof DefaultValue) return prev;
-            const updatedFiles = prev.files.map((file, index) => {
-              if (index !== prev.currentFileIndex) return file;
-              const newFile: FileImportProgress = {
-                ...file,
-                step: 'error',
-                progress: 0,
-                abortController: undefined,
-              };
-              return newFile;
-            });
-            return {
-              ...prev,
-              files: updatedFiles,
-            };
-          });
         }
       }
     }

@@ -16,13 +16,13 @@ export const ImportProgressList = () => {
     setShow({ show: false });
     setFilesImportProgressState({
       importing: false,
-      currentFileIndex: 0,
       createNewFile: false,
+      currentFileIndex: undefined,
       files: [],
     });
   }, [setFilesImportProgressState, setShow]);
 
-  if (!show) return;
+  if (!show || currentFileIndex === undefined) return;
 
   return (
     <div className="absolute left-0 top-0 z-10 flex h-full w-full flex-col items-center overflow-hidden bg-white bg-opacity-90">
@@ -37,7 +37,7 @@ export const ImportProgressList = () => {
               current={currentFileIndex}
               importing={importing}
               key={index}
-              handleClose={handleClose}
+              onOpen={handleClose}
             />
           ))}
         </div>
@@ -57,22 +57,22 @@ const ImportProgressItem = ({
   index,
   current,
   importing,
-  handleClose,
+  onOpen,
 }: {
   file: FileImportProgress;
   index: number;
   current: number;
   importing: boolean;
-  handleClose: () => void;
+  onOpen: () => void;
 }) => {
   const navigate = useNavigate();
 
   const handleOpen = useCallback(() => {
-    handleClose();
+    onOpen();
     if (file.uuid !== undefined) {
       navigate(ROUTES.FILE(file.uuid));
     }
-  }, [file.uuid, handleClose, navigate]);
+  }, [file.uuid, onOpen, navigate]);
 
   const fileName = stripExtension(file.name);
   const extension = getExtension(file.name);

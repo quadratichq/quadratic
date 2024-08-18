@@ -507,11 +507,18 @@ class Core {
     cursor,
   }: ClientCoreImportParquet): Promise<{ contents?: ArrayBuffer; version?: string; error?: string }> {
     if (sheetId === undefined || location === undefined || cursor === undefined) {
-      await initCore();
-      const gc = GridController.importParquet(new Uint8Array(file), fileName);
-      const version = gc.getVersion();
-      const contents = gc.exportToFile();
-      return { contents, version };
+      try {
+        await initCore();
+        const gc = GridController.importParquet(new Uint8Array(file), fileName);
+        const version = gc.getVersion();
+        const contents = gc.exportToFile();
+        return { contents, version };
+      } catch (error) {
+        console.error(error);
+        reportError(error);
+        Sentry.captureException(error);
+        return { error: error as string };
+      }
     } else {
       return new Promise((resolve) => {
         this.clientQueue.push(() => {
