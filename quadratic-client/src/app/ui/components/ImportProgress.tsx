@@ -31,6 +31,7 @@ export const ImportProgress = () => {
           size="sm"
           className="text-primary hover:text-primary"
           disabled={abortController === undefined}
+          onClick={() => abortController?.abort()}
         >
           Cancel
         </Button>

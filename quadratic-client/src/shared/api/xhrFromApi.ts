@@ -40,12 +40,7 @@ export async function xhrFromApi<T>(
     });
 
     // Set up abort handler
-    if (abortController) {
-      abortController.signal.addEventListener('abort', () => {
-        xhr.abort();
-        reject(new ApiError('Request aborted', 0, config.method));
-      });
-    }
+    abortController?.signal.addEventListener('abort', () => xhr.abort());
 
     // Set up progress handlers
     if (onUploadProgress) {
@@ -96,7 +91,7 @@ export async function xhrFromApi<T>(
     };
 
     xhr.onabort = () => {
-      reject(new ApiError('Request was aborted', xhr.status, method));
+      reject(new ApiError('Request aborted', 499, method));
     };
 
     xhr.ontimeout = () => {

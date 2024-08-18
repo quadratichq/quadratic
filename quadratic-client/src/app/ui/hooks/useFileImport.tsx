@@ -150,25 +150,6 @@ export function useFileImport() {
           const data = { name, contents, version };
           const fileIndex = uploadFilePromises.length;
           const abortController = new AbortController();
-          abortController.signal.addEventListener('abort', () => {
-            setFilesImportProgressState((prev) => {
-              if (prev instanceof DefaultValue) return prev;
-              const updatedFiles = prev.files.map((file, index) => {
-                if (index !== fileIndex) return file;
-                const newFile: FileImportProgress = {
-                  ...file,
-                  step: 'cancel',
-                  progress: 0,
-                  abortController: undefined,
-                };
-                return newFile;
-              });
-              return {
-                ...prev,
-                files: updatedFiles,
-              };
-            });
-          });
           const uploadFilePromise = apiClient.files
             .create({
               file: data,
@@ -218,7 +199,7 @@ export function useFileImport() {
             })
             .catch((error) => {
               let step: FileImportProgress['step'] = 'error';
-              if (error instanceof ApiError && error.message === 'Request was aborted') {
+              if (error instanceof ApiError && error.status === 499) {
                 step = 'cancel';
               }
               setFilesImportProgressState((prev) => {
@@ -260,6 +241,7 @@ export function useFileImport() {
                 ...file,
                 step: 'error',
                 progress: 0,
+                abortController: undefined,
               };
               return newFile;
             });
