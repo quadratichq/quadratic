@@ -1,6 +1,3 @@
-pub mod schema;
-pub mod sql;
-
 use arrow::{
     array::{ArrayRef, RecordBatch},
     datatypes::{Schema as ArrowSchema, *},
@@ -12,6 +9,23 @@ use schema::DatabaseSchema;
 use std::sync::Arc;
 
 use crate::{arrow::arrow_type::ArrowType, error::Result};
+
+use self::{
+    // mssql_connection::MsSqlConnection,
+    mysql_connection::MySqlConnection,
+    postgres_connection::PostgresConnection,
+};
+
+// pub mod mssql_connection;
+pub mod mysql_connection;
+pub mod postgres_connection;
+pub mod schema;
+
+pub enum SqlConnection {
+    Postgres(PostgresConnection),
+    Mysql(MySqlConnection),
+    // Mssql(MsSqlConnection),
+}
 
 #[async_trait]
 pub trait Connection {

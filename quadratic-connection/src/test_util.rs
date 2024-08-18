@@ -14,7 +14,7 @@ use bytes::Bytes;
 use futures::StreamExt;
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 use parquet::data_type::AsBytes;
-use quadratic_rust_shared::connections::sql::postgres_connection::PostgresConnection;
+use quadratic_rust_shared::sql::postgres_connection::PostgresConnection;
 use serde::de::DeserializeOwned;
 
 use crate::auth::Claims;

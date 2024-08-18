@@ -1,7 +1,7 @@
 use axum::{extract::Path, response::IntoResponse, Extension, Json};
 use quadratic_rust_shared::{
-    connections::sql::postgres_connection::PostgresConnection, connections::Connection,
     quadratic_api::Connection as ApiConnection,
+    sql::{postgres_connection::PostgresConnection, Connection},
 };
 use uuid::Uuid;
 
@@ -100,7 +100,7 @@ mod tests {
     use bytes::Bytes;
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
     use http::StatusCode;
-    use quadratic_rust_shared::connections::schema::{SchemaColumn, SchemaTable};
+    use quadratic_rust_shared::sql::schema::{SchemaColumn, SchemaTable};
     use tracing_test::traced_test;
     use uuid::Uuid;
 

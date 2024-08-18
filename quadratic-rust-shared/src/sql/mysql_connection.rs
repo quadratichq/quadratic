@@ -15,10 +15,10 @@ use sqlx::{
 };
 
 use crate::arrow::arrow_type::ArrowType;
-use crate::connections::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
-use crate::connections::Connection;
 use crate::convert_mysql_type;
 use crate::error::{Result, SharedError, Sql};
+use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
+use crate::sql::Connection;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MySqlConnection {

@@ -7,7 +7,7 @@ import {
   ConnectionNameSchema,
   ConnectionTypeDetailsMssqlSchema,
   ConnectionTypeSchema,
-} from 'quadratic-shared/typesAndSchemasConnections';
+} from 'quadratic-shared/typesAndSchemasConnections.js';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 

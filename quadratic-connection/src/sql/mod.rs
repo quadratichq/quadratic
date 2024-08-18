@@ -1,5 +1,5 @@
 use axum::{http::HeaderMap, response::IntoResponse, Extension, Json};
-use quadratic_rust_shared::connections::{schema::SchemaTable, Connection};
+use quadratic_rust_shared::sql::{schema::SchemaTable, Connection};
 use serde::Serialize;
 use tokio::time::Instant;
 use uuid::Uuid;
