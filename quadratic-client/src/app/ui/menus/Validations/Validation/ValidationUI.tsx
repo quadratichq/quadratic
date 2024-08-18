@@ -51,6 +51,9 @@ interface InputProps {
   readOnly?: boolean;
 
   type?: 'number';
+
+  onFocus?: () => void;
+  onBlur?: () => void;
 }
 
 export const ValidationInput = forwardRef((props: InputProps, ref: Ref<HTMLInputElement>) => {
@@ -68,15 +71,18 @@ export const ValidationInput = forwardRef((props: InputProps, ref: Ref<HTMLInput
     type,
     onEnter,
     className,
+    onFocus,
+    onBlur,
   } = props;
 
-  const onBlur = useCallback(
+  const handleOnBlur = useCallback(
     (e: FocusEvent<HTMLInputElement>) => {
       if (onChange) {
         onChange(e.currentTarget.value);
       }
+      onBlur?.();
     },
-    [onChange]
+    [onBlur, onChange]
   );
 
   return (
@@ -88,7 +94,8 @@ export const ValidationInput = forwardRef((props: InputProps, ref: Ref<HTMLInput
             className={className}
             ref={ref}
             defaultValue={value}
-            onBlur={onBlur}
+            onFocus={onFocus}
+            onBlur={handleOnBlur}
             onInput={onInput ? (e) => onInput(e.currentTarget.value) : undefined}
             style={{ height }}
             placeholder={placeholder}

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/shared/shadcn/ui/accordion';
 import { ValidationData } from './useValidationData';
 import { ValidationDropdown, ValidationInput, ValidationMoreOptions, ValidationUICheckbox } from './ValidationUI';
@@ -9,6 +10,8 @@ import { ValidationUndefined } from './validationType';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { Calendar } from '@/shared/shadcn/ui/calendar';
+import { ValidationCalendar } from './ValidationCalendar';
 
 interface Props {
   validationData: ValidationData;
@@ -21,8 +24,10 @@ export const ValidationDateTime = (props: Props) => {
 
   const [equalsError, setEqualsError] = useState(false);
 
-  //#region Require Date and Time
   console.log(validation);
+
+  //#region Require Date and Time
+
   const dateRequire = useMemo(() => {
     if (validation && 'rule' in validation && validation.rule && validation.rule !== 'None') {
       if ('DateTime' in validation.rule) {
@@ -102,6 +107,9 @@ export const ValidationDateTime = (props: Props) => {
     [setValidation]
   );
 
+  const noDate = dateRequire === 'prohibit';
+  const noTime = timeRequire === 'prohibit';
+
   //#endregion
 
   //#region Equals
@@ -119,6 +127,7 @@ export const ValidationDateTime = (props: Props) => {
 
   const changeEquals = useCallback(
     (values: string) => {
+      debugger;
       const dates = values.split(',').flatMap((v) => {
         if (!v.trim()) {
           return [];
@@ -359,6 +368,28 @@ export const ValidationDateTime = (props: Props) => {
     return null;
   }, [equals]);
 
+  const noDateOverrides = useMemo(() => {
+    if (noDate) {
+      return (
+        <Tooltip title="Date part is prohibited">
+          <InfoCircledIcon />
+        </Tooltip>
+      );
+    }
+    return null;
+  }, [noDate]);
+
+  const noTimeOverrides = useMemo(() => {
+    if (noTime) {
+      return (
+        <Tooltip title="Time part is prohibited">
+          <InfoCircledIcon />
+        </Tooltip>
+      );
+    }
+    return null;
+  }, [noTime]);
+
   return (
     <div className="flex w-full flex-col gap-5">
       <ValidationUICheckbox
@@ -388,45 +419,51 @@ export const ValidationDateTime = (props: Props) => {
         />
       </div>
 
-      <Accordion type="single" collapsible className="w-full" defaultValue={equals ? 'datetime-equals' : undefined}>
-        <AccordionItem value="datetime-equals">
-          <AccordionTrigger>Date equals</AccordionTrigger>
-          <AccordionContent className="px-1 pt-1">
-            <div className="flex w-full flex-col gap-1">
-              <ValidationInput
-                placeholder="Enter numbers separated by commas"
-                disabled={readOnly}
-                value={equals ? equals.join(', ') : ''}
-                onInput={changeEquals}
-                readOnly={readOnly}
-                error={equalsError ? 'Please enter valid numbers separated by commas' : undefined}
-                onEnter={onEnter}
-              />
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-
-      <Accordion
-        type="single"
-        collapsible
-        className="w-full"
-        defaultValue={notEquals ? 'datetime-not-equals' : undefined}
-        value={equals ? '' : undefined}
-      >
-        <AccordionItem value="datetime-not-equals">
-          <AccordionTrigger className={equals ? 'opacity-50' : ''} disabled={!!equals}>
-            <div className="flex">Number does not equal{equalsOverrides}</div>
+      <Accordion type="single" collapsible className="w-full" defaultValue={equals ? 'date-equals' : undefined}>
+        <AccordionItem value="date-equals">
+          <AccordionTrigger disabled={noDate} className={noDate ? 'opacity-50' : ''}>
+            <div className="flex">Date equals{noDateOverrides}</div>
           </AccordionTrigger>
           <AccordionContent className="px-1 pt-1">
             <div className="flex w-full flex-col gap-1">
               <ValidationInput
-                placeholder="Enter numbers separated by commas"
+                placeholder="Enter dates separated by commas"
+                disabled={readOnly}
+                value={equals ? equals.join(', ') : ''}
+                onInput={changeEquals}
+                readOnly={readOnly}
+                error={equalsError ? 'Please enter valid dates separated by commas' : undefined}
+                onEnter={onEnter}
+              />
+              <ValidationCalendar
+                dates={equals?.map((d) => new Date(Number(d)))}
+                setDates={(dates) => changeEquals(dates.map((d) => d.getTime()).join(','))}
+              />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
+      <Accordion
+        type="single"
+        collapsible
+        className="w-full"
+        defaultValue={notEquals ? 'date-not-equals' : undefined}
+        value={equals ? '' : undefined}
+      >
+        <AccordionItem value="date-not-equals">
+          <AccordionTrigger className={noDate ? 'opacity-50' : ''} disabled={noDate}>
+            <div className="flex">Date does not equal{noDateOverrides}</div>
+          </AccordionTrigger>
+          <AccordionContent className="px-1 pt-1">
+            <div className="flex w-full flex-col gap-1">
+              <ValidationInput
+                placeholder="Enter dates separated by commas"
                 disabled={readOnly}
                 value={notEquals ? notEquals.join(', ') : ''}
                 onInput={changeNotEquals}
                 readOnly={readOnly}
-                error={equalsError ? 'Please enter valid numbers separated by commas' : undefined}
+                error={equalsError ? 'Please enter valid dates separated by commas' : undefined}
                 onEnter={onEnter}
               />
             </div>
@@ -438,12 +475,12 @@ export const ValidationDateTime = (props: Props) => {
         type="single"
         collapsible
         className="w-full"
-        defaultValue={ranges.length > 1 ? 'datetime-range' : undefined}
+        defaultValue={ranges.length > 1 ? 'date-range' : undefined}
         value={equals ? '' : undefined}
       >
-        <AccordionItem value="datetime-range">
-          <AccordionTrigger className={equals ? 'opacity-50' : ''} disabled={!!equals}>
-            <div className="flex">Number ranges{equalsOverrides}</div>
+        <AccordionItem value="date-range">
+          <AccordionTrigger className={noDate ? 'opacity-50' : ''} disabled={noDate}>
+            <div className="flex">Date ranges{noDateOverrides}</div>
           </AccordionTrigger>
           <AccordionContent className="px-1 pt-1">
             {ranges.map((range, i) => {
