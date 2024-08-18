@@ -172,17 +172,23 @@ export const ValidationMoreOptions = (props: { validationData: ValidationData })
 interface DropdownProps {
   label?: string;
   value: string;
+  className?: string;
   onChange: (value: string) => void;
-  options: { value: string; label: string | JSX.Element }[];
+  options: (string | { value: string; label: string | JSX.Element })[];
   disabled?: boolean;
   readOnly?: boolean;
+
+  // first entry is blank
+  includeBlank?: boolean;
 }
 
 export const ValidationDropdown = (props: DropdownProps) => {
-  const { label, value, onChange, options, disabled, readOnly } = props;
+  const { label, value, className, onChange, options, disabled, readOnly, includeBlank } = props;
+
+  const optionsBlank = includeBlank ? [{ value: 'blank', label: '' }, ...options] : options;
 
   return (
-    <div>
+    <div className={className}>
       {label && <div className={disabled ? 'opacity-50' : ''}>{label}</div>}
       <Select value={value} onValueChange={onChange} disabled={disabled || readOnly}>
         <SelectTrigger
@@ -195,9 +201,13 @@ export const ValidationDropdown = (props: DropdownProps) => {
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {options.map(({ value, label }) => (
-            <SelectItem key={value} value={value}>
-              {label}
+          {optionsBlank.map((option) => (
+            <SelectItem
+              className="h-7"
+              key={typeof option === 'string' ? option : option.value}
+              value={typeof option === 'string' ? option : option.value}
+            >
+              {typeof option === 'string' ? option : option.label}
             </SelectItem>
           ))}
         </SelectContent>

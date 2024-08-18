@@ -1,10 +1,10 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/shared/shadcn/ui/accordion';
 import { ValidationData } from './useValidationData';
-import { ValidationInput, ValidationMoreOptions, ValidationUICheckbox } from './ValidationUI';
+import { ValidationDropdown, ValidationInput, ValidationMoreOptions, ValidationUICheckbox } from './ValidationUI';
 import { Tooltip } from '@mui/material';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
 import { useCallback, useMemo, useState } from 'react';
-import { DateTimeRange } from '@/app/quadratic-core-types';
+import { DateTimeRange, ValidationRule } from '@/app/quadratic-core-types';
 import { ValidationUndefined } from './validationType';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
@@ -20,6 +20,89 @@ export const ValidationDateTime = (props: Props) => {
   const { ignoreBlank, changeIgnoreBlank, readOnly, validation, setValidation } = validationData;
 
   const [equalsError, setEqualsError] = useState(false);
+
+  //#region Require Date and Time
+  console.log(validation);
+  const dateRequire = useMemo(() => {
+    if (validation && 'rule' in validation && validation.rule && validation.rule !== 'None') {
+      if ('DateTime' in validation.rule) {
+        const rule = validation.rule.DateTime;
+        if (rule.require_date) {
+          return 'required';
+        }
+        if (rule.prohibit_date) {
+          return 'prohibit';
+        }
+      }
+    }
+    return '';
+  }, [validation]);
+
+  const timeRequire = useMemo(() => {
+    if (validation && 'rule' in validation && validation.rule && validation.rule !== 'None') {
+      if ('DateTime' in validation.rule) {
+        const rule = validation.rule.DateTime;
+        if (rule.require_time) {
+          return 'required';
+        }
+        if (rule.prohibit_time) {
+          return 'prohibit';
+        }
+      }
+    }
+    return '';
+  }, [validation]);
+
+  const changeDateRequire = useCallback(
+    (value: string) => {
+      setValidation((validation) => {
+        if (!validation || !('rule' in validation) || validation.rule === 'None') {
+          return;
+        }
+        if ('DateTime' in validation.rule) {
+          const rule: ValidationRule = {
+            DateTime: {
+              ...validation.rule.DateTime,
+              require_date: value === 'required',
+              prohibit_date: value === 'prohibit',
+            },
+          };
+
+          return {
+            ...validation,
+            rule,
+          };
+        }
+      });
+    },
+    [setValidation]
+  );
+
+  const changeTimeRequire = useCallback(
+    (value: string) => {
+      setValidation((validation) => {
+        if (!validation || !('rule' in validation) || validation.rule === 'None') {
+          return;
+        }
+        if ('DateTime' in validation.rule) {
+          const rule: ValidationRule = {
+            DateTime: {
+              ...validation.rule.DateTime,
+              require_time: value === 'required',
+              prohibit_time: value === 'prohibit',
+            },
+          };
+          return {
+            ...validation,
+            rule,
+          };
+        }
+      });
+    },
+    [setValidation]
+  );
+
+  //#endregion
 
   //#region Equals
 
@@ -277,13 +360,34 @@ export const ValidationDateTime = (props: Props) => {
   }, [equals]);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex w-full flex-col gap-5">
       <ValidationUICheckbox
         label="Allow blank values"
         value={ignoreBlank}
         changeValue={changeIgnoreBlank}
         readOnly={readOnly}
       />
+      <div className="flex w-full gap-2">
+        <ValidationDropdown
+          className="w-full"
+          label="Date part"
+          value={dateRequire}
+          onChange={changeDateRequire}
+          includeBlank
+          options={['required', 'prohibit']}
+          readOnly={readOnly}
+        />
+        <ValidationDropdown
+          className="w-full"
+          label="Time part"
+          value={timeRequire}
+          onChange={changeTimeRequire}
+          includeBlank
+          options={['required', 'prohibit']}
+          readOnly={readOnly}
+        />
+      </div>
+
       <Accordion type="single" collapsible className="w-full" defaultValue={equals ? 'datetime-equals' : undefined}>
         <AccordionItem value="datetime-equals">
           <AccordionTrigger>Date equals</AccordionTrigger>
