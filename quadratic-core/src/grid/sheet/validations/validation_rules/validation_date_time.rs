@@ -299,6 +299,54 @@ mod tests {
     }
 
     #[test]
+    fn date_range_start() {
+        // range from 2021-02-01 to the end of time
+        let rule = ValidationDateTime {
+            ranges: vec![DateTimeRange::DateRange(Some(1612137600), None)],
+            ..Default::default()
+        };
+        assert!(rule.validate(Some(&CellValue::Date(
+            NaiveDate::parse_from_str("2021-02-01", "%Y-%m-%d").unwrap()
+        ))));
+        assert!(rule.validate(Some(&CellValue::Date(
+            NaiveDate::parse_from_str("2021-02-02", "%Y-%m-%d").unwrap()
+        ))));
+        assert!(!rule.validate(Some(&CellValue::Date(
+            NaiveDate::parse_from_str("2021-01-01", "%Y-%m-%d").unwrap()
+        ))));
+        assert!(!rule.validate(Some(&CellValue::DateTime(
+            NaiveDateTime::parse_from_str("2021-01-01T00:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
+        ))));
+        assert!(!rule.validate(Some(&CellValue::DateTime(
+            NaiveDateTime::parse_from_str("2021-01-02T00:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
+        ))));
+        assert!(!rule.validate(Some(&CellValue::DateTime(
+            NaiveDateTime::parse_from_str("2021-01-03T00:10:00", "%Y-%m-%dT%H:%M:%S").unwrap()
+        ))));
+    }
+
+    #[test]
+    fn date_range_end() {
+        // range from the beginning of time to 2021-02-01
+        let rule = ValidationDateTime {
+            ranges: vec![DateTimeRange::DateRange(None, Some(1612137600))],
+            ..Default::default()
+        };
+        assert!(rule.validate(Some(&CellValue::Date(
+            NaiveDate::parse_from_str("2021-02-01", "%Y-%m-%d").unwrap()
+        ))));
+        assert!(!rule.validate(Some(&CellValue::Date(
+            NaiveDate::parse_from_str("2021-02-02", "%Y-%m-%d").unwrap()
+        ))));
+        assert!(rule.validate(Some(&CellValue::Date(
+            NaiveDate::parse_from_str("2021-01-01", "%Y-%m-%d").unwrap()
+        ))));
+        assert!(rule.validate(Some(&CellValue::DateTime(
+            NaiveDateTime::parse_from_str("2021-01-01T00:00:00", "%Y-%m-%dT%H:%M:%S").unwrap()
+        ))));
+    }
+
+    #[test]
     fn time_equal() {
         let rule = ValidationDateTime {
             ranges: vec![DateTimeRange::TimeEqual(vec![0])],
@@ -363,6 +411,43 @@ mod tests {
         };
         assert!(rule.validate(Some(&CellValue::Time(
             NaiveTime::parse_from_str("00:00:00", "%H:%M:%S").unwrap()
+        ))));
+        assert!(rule.validate(Some(&CellValue::Time(
+            NaiveTime::parse_from_str("00:00:01", "%H:%M:%S").unwrap()
+        ))));
+        assert!(!rule.validate(Some(&CellValue::Time(
+            NaiveTime::parse_from_str("00:00:02", "%H:%M:%S").unwrap()
+        ))));
+    }
+
+    #[test]
+    fn time_ranges_start() {
+        let rule = ValidationDateTime {
+            ranges: vec![DateTimeRange::TimeRange(Some(1), None)],
+            ..Default::default()
+        };
+        assert!(rule.validate(Some(&CellValue::Time(
+            NaiveTime::parse_from_str("00:00:01", "%H:%M:%S").unwrap()
+        ))));
+        assert!(rule.validate(Some(&CellValue::Time(
+            NaiveTime::parse_from_str("00:00:01", "%H:%M:%S").unwrap()
+        ))));
+        assert!(rule.validate(Some(&CellValue::Time(
+            NaiveTime::parse_from_str("00:00:02", "%H:%M:%S").unwrap()
+        ))));
+        assert!(!rule.validate(Some(&CellValue::Time(
+            NaiveTime::parse_from_str("00:00:00", "%H:%M:%S").unwrap()
+        ))));
+    }
+
+    #[test]
+    fn time_ranges_end() {
+        let rule = ValidationDateTime {
+            ranges: vec![DateTimeRange::TimeRange(None, Some(1))],
+            ..Default::default()
+        };
+        assert!(rule.validate(Some(&CellValue::Time(
+            NaiveTime::parse_from_str("00:00:01", "%H:%M:%S").unwrap()
         ))));
         assert!(rule.validate(Some(&CellValue::Time(
             NaiveTime::parse_from_str("00:00:01", "%H:%M:%S").unwrap()
