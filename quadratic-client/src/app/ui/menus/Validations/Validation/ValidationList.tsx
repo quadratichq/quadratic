@@ -8,7 +8,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 
 interface Props {
   validationData: ValidationData;
-  onEnter?: () => void;
+  onEnter: () => void;
 }
 
 export const ValidationListInput = (props: Props) => {
@@ -106,7 +106,7 @@ export const ValidationList = (props: Props) => {
           requireSheetId={sheetId}
         />
       )}
-      {rule === 'list' && <ValidationListInput validationData={props.validationData} />}
+      {rule === 'list' && <ValidationListInput validationData={props.validationData} onEnter={onEnter} />}
 
       <ValidationUICheckbox
         label="Allow blank values"

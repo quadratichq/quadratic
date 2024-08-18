@@ -1,22 +1,17 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/shared/shadcn/ui/accordion';
 import { ValidationData } from './useValidationData';
 import { ValidationInput, ValidationMoreOptions, ValidationUICheckbox } from './ValidationUI';
-import { useCallback, useMemo, useState } from 'react';
 import { Tooltip } from '@mui/material';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
-import { Button } from '@/shared/shadcn/ui/button';
-import DeleteIcon from '@mui/icons-material/Delete';
-import { ValidationUndefined } from './validationType';
-import { NumberRange } from '@/app/quadratic-core-types';
-import { cn } from '@/shared/shadcn/utils';
+import { useMemo, useState } from 'react';
 
 interface Props {
   validationData: ValidationData;
   onEnter: () => void;
 }
 
-export const ValidationNumber = (props: Props) => {
-  const { onEnter, validationData } = props;
+export const ValidationDateTime = (props: Props) => {
+  const { validationData, onEnter } = props;
   const { ignoreBlank, changeIgnoreBlank, readOnly, validation, setValidation } = validationData;
 
   const [equalsError, setEqualsError] = useState(false);
@@ -25,7 +20,7 @@ export const ValidationNumber = (props: Props) => {
 
   const equals = useMemo(() => {
     if (validation && 'rule' in validation && validation.rule && validation.rule !== 'None') {
-      if ('Number' in validation.rule) {
+      if ('DateTime' in validation.rule) {
         const equals = validation.rule.Number.ranges.find((r) => 'Equal' in r);
         if (equals && 'Equal' in equals) {
           return equals.Equal;
@@ -266,7 +261,7 @@ export const ValidationNumber = (props: Props) => {
   const equalsOverrides = useMemo(() => {
     if (equals) {
       return (
-        <Tooltip title="'Number equals' cannot be combined with other rules">
+        <Tooltip title="'Date time equals' cannot be combined with other rules">
           <InfoCircledIcon />
         </Tooltip>
       );
@@ -282,9 +277,9 @@ export const ValidationNumber = (props: Props) => {
         changeValue={changeIgnoreBlank}
         readOnly={readOnly}
       />
-      <Accordion type="single" collapsible className="w-full" defaultValue={equals ? 'number-equals' : undefined}>
-        <AccordionItem value="number-equals">
-          <AccordionTrigger>Number equals</AccordionTrigger>
+      <Accordion type="single" collapsible className="w-full" defaultValue={equals ? 'datetime-equals' : undefined}>
+        <AccordionItem value="datetime-equals">
+          <AccordionTrigger>Date equals</AccordionTrigger>
           <AccordionContent className="px-1 pt-1">
             <div className="flex w-full flex-col gap-1">
               <ValidationInput
@@ -305,10 +300,10 @@ export const ValidationNumber = (props: Props) => {
         type="single"
         collapsible
         className="w-full"
-        defaultValue={notEquals ? 'number-not-equals' : undefined}
+        defaultValue={notEquals ? 'datetime-not-equals' : undefined}
         value={equals ? '' : undefined}
       >
-        <AccordionItem value="number-not-equals">
+        <AccordionItem value="datetime-not-equals">
           <AccordionTrigger className={equals ? 'opacity-50' : ''} disabled={!!equals}>
             <div className="flex">Number does not equal{equalsOverrides}</div>
           </AccordionTrigger>
@@ -332,10 +327,10 @@ export const ValidationNumber = (props: Props) => {
         type="single"
         collapsible
         className="w-full"
-        defaultValue={ranges.length > 1 ? 'number-range' : undefined}
+        defaultValue={ranges.length > 1 ? 'datetime-range' : undefined}
         value={equals ? '' : undefined}
       >
-        <AccordionItem value="number-range">
+        <AccordionItem value="datetime-range">
           <AccordionTrigger className={equals ? 'opacity-50' : ''} disabled={!!equals}>
             <div className="flex">Number ranges{equalsOverrides}</div>
           </AccordionTrigger>

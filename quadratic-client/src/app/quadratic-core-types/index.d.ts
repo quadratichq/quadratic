@@ -69,7 +69,9 @@ export type ValidationStyle = "Stop" | "Warning" | "Information";
 export interface ValidationDisplay { checkbox: boolean, list: boolean, }
 export interface ValidationDisplaySheet { columns: Array<[bigint, ValidationDisplay]> | null, rows: Array<[bigint, ValidationDisplay]> | null, all: ValidationDisplay | null, }
 export interface ValidationNumber { ignore_blank: boolean, ranges: Array<NumberRange>, }
+export interface ValidationDateTime { ignore_blank: boolean, require_date: boolean, require_time: boolean, prohibit_date: boolean, prohibit_time: boolean, ranges: Array<DateTimeRange>, }
 export type NumberRange = { "Range": [number | null, number | null] } | { "Equal": Array<number> } | { "NotEqual": Array<number> };
+export type DateTimeRange = { "DateRange": [bigint | null, bigint | null] } | { "DateEqual": Array<bigint> } | { "DateNotEqual": Array<bigint> } | { "TimeRange": [number | null, number | null] } | { "TimeEqual": Array<number> } | { "TimeNotEqual": Array<number> };
 export type TextCase = { "CaseInsensitive": Array<string> } | { "CaseSensitive": Array<string> };
 export type TextMatch = { "Exactly": TextCase } | { "Contains": TextCase } | { "NotContains": TextCase } | { "TextLength": { min: number | null, max: number | null, } };
 export interface ValidationText { ignore_blank: boolean, text_match: Array<TextMatch>, }

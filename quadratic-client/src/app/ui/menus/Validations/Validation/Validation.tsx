@@ -15,6 +15,7 @@ import { ValidationNone } from './ValidationNone';
 import { ValidationText } from './ValidationText';
 import { ValidationNumber } from './ValidationNumber';
 import { useCallback, useEffect, useState } from 'react';
+import { ValidationDateTime } from './ValidationDateTime';
 
 const CRITERIA_OPTIONS: { value: ValidationRuleSimple; label: string }[] = [
   { value: 'none', label: 'Message only' },
@@ -83,6 +84,7 @@ export const Validation = () => {
         {rule === 'logical' && <ValidationLogical validationData={validationData} />}
         {rule === 'text' && <ValidationText validationData={validationData} onEnter={onEnter} />}
         {rule === 'number' && <ValidationNumber validationData={validationData} onEnter={onEnter} />}
+        {rule === 'date' && <ValidationDateTime validationData={validationData} onEnter={onEnter} />}
         {moreOptions && validationData.rule !== 'none' && (
           <ValidationMessage validationData={validationData} onEnter={onEnter} />
         )}
