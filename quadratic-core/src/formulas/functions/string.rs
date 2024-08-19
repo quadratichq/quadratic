@@ -295,6 +295,32 @@ fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
+            /// Removes spaces from the beginning and end of a string `s`, and
+            /// replaces each run of consecutive space within the string with a
+            /// single space.
+            ///
+            /// [Other forms of whitespace][whitespace], including tabs and
+            /// newlines, are preserved.
+            ///
+            /// [whitespace]: https://en.wikipedia.org/wiki/Whitespace_character
+            #[examples("TRIM(\"    a    b    c    \")=\"a b c\"")]
+            #[zip_map]
+            fn TRIM([s]: String) {
+                // This would be a one-liner if we wanted to apply it to all
+                // whitespace: `s.split_whitespace().join(" ")`
+                let mut allow_next_space = false;
+                s.trim_end_matches(' ')
+                    .chars()
+                    .filter(|&c| {
+                        let is_space = c == ' ';
+                        let keep = if is_space { allow_next_space } else { true };
+                        allow_next_space = !is_space;
+                        keep
+                    })
+                    .collect::<String>()
+            }
+        ),
+        formula_fn!(
             /// Returns the lowercase equivalent of a string.
             #[examples("LOWER(\"ὈΔΥΣΣΕΎΣ is my FAVORITE character!\") = \"ὀδυσσεύς is my favorite character!\"")]
             #[zip_map]
@@ -711,7 +737,26 @@ mod tests {
         assert_eq!(
             "  A BC",
             eval_to_string(&g, "CLEAN(\"  A\u{0} \u{A}\nB\u{1C}C\t\")"),
-        )
+        );
+
+        // Test idempotence
+        assert_eq!("  A BC", eval_to_string(&g, "CLEAN(\"  A BC\")"));
+    }
+
+    #[test]
+    fn test_formula_trim() {
+        let g = Grid::new();
+
+        assert_eq!(
+            "I'm in \t space!\n",
+            eval_to_string(&g, "TRIM(\"   I'm in  \t    space!\n   \")"),
+        );
+
+        // Test idempotence
+        assert_eq!(
+            "I'm in \t space!\n",
+            eval_to_string(&g, "TRIM(\"I'm in \t space!\n\")"),
+        );
     }
 
     #[test]
