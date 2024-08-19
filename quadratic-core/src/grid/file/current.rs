@@ -377,7 +377,7 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
 }
 
 fn export_column_data_bool(
-    column_data: &ColumnData<SameValue<bool>>,
+    column_data: ColumnData<SameValue<bool>>,
 ) -> HashMap<String, current::ColumnRepeat<bool>> {
     column_data
         .blocks()
@@ -394,7 +394,7 @@ fn export_column_data_bool(
 }
 
 fn export_column_data_string(
-    column_data: &ColumnData<SameValue<String>>,
+    column_data: ColumnData<SameValue<String>>,
 ) -> HashMap<String, current::ColumnRepeat<String>> {
     column_data
         .blocks()
@@ -411,7 +411,7 @@ fn export_column_data_string(
 }
 
 fn export_column_data_i16(
-    column_data: &ColumnData<SameValue<i16>>,
+    column_data: ColumnData<SameValue<i16>>,
 ) -> HashMap<String, current::ColumnRepeat<i16>> {
     column_data
         .blocks()
@@ -428,7 +428,7 @@ fn export_column_data_i16(
 }
 
 fn export_column_data_numeric_format(
-    column_data: &ColumnData<SameValue<NumericFormat>>,
+    column_data: ColumnData<SameValue<NumericFormat>>,
 ) -> HashMap<String, current::ColumnRepeat<current::NumericFormat>> {
     column_data
         .blocks()
@@ -455,7 +455,7 @@ fn export_column_data_numeric_format(
 }
 
 fn export_column_data_render_size(
-    column_data: &ColumnData<SameValue<RenderSize>>,
+    column_data: ColumnData<SameValue<RenderSize>>,
 ) -> HashMap<String, current::ColumnRepeat<current::RenderSize>> {
     column_data
         .blocks()
@@ -475,7 +475,7 @@ fn export_column_data_render_size(
 }
 
 fn export_column_data_align(
-    column_data: &ColumnData<SameValue<CellAlign>>,
+    column_data: ColumnData<SameValue<CellAlign>>,
 ) -> HashMap<String, current::ColumnRepeat<current::CellAlign>> {
     column_data
         .blocks()
@@ -496,7 +496,7 @@ fn export_column_data_align(
 }
 
 fn export_column_data_vertical_align(
-    column_data: &ColumnData<SameValue<CellVerticalAlign>>,
+    column_data: ColumnData<SameValue<CellVerticalAlign>>,
 ) -> HashMap<String, current::ColumnRepeat<current::CellVerticalAlign>> {
     column_data
         .blocks()
@@ -517,7 +517,7 @@ fn export_column_data_vertical_align(
 }
 
 fn export_column_data_wrap(
-    column_data: &ColumnData<SameValue<CellWrap>>,
+    column_data: ColumnData<SameValue<CellWrap>>,
 ) -> HashMap<String, current::ColumnRepeat<current::CellWrap>> {
     column_data
         .blocks()
@@ -552,17 +552,17 @@ fn export_column_builder(sheet: Sheet) -> Vec<(i64, current::Column)> {
             (
                 x,
                 current::Column {
-                    align: export_column_data_align(&column.align),
-                    vertical_align: export_column_data_vertical_align(&column.vertical_align),
-                    wrap: export_column_data_wrap(&column.wrap),
-                    numeric_decimals: export_column_data_i16(&column.numeric_decimals),
-                    numeric_format: export_column_data_numeric_format(&column.numeric_format),
-                    numeric_commas: export_column_data_bool(&column.numeric_commas),
-                    bold: export_column_data_bool(&column.bold),
-                    italic: export_column_data_bool(&column.italic),
-                    text_color: export_column_data_string(&column.text_color),
-                    fill_color: export_column_data_string(&column.fill_color),
-                    render_size: export_column_data_render_size(&column.render_size),
+                    align: export_column_data_align(column.align),
+                    vertical_align: export_column_data_vertical_align(column.vertical_align),
+                    wrap: export_column_data_wrap(column.wrap),
+                    numeric_decimals: export_column_data_i16(column.numeric_decimals),
+                    numeric_format: export_column_data_numeric_format(column.numeric_format),
+                    numeric_commas: export_column_data_bool(column.numeric_commas),
+                    bold: export_column_data_bool(column.bold),
+                    italic: export_column_data_bool(column.italic),
+                    text_color: export_column_data_string(column.text_color),
+                    fill_color: export_column_data_string(column.fill_color),
+                    render_size: export_column_data_render_size(column.render_size),
                     values: export_values(column.values),
                 },
             )
