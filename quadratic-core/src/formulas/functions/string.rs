@@ -346,6 +346,72 @@ fn get_functions() -> Vec<FormulaFunction> {
                 ret
             }
         ),
+        // Other string conversions
+        formula_fn!(
+            /// Parses a number from a string `s`, using `decimal_sep` as the
+            /// decimal separator and `group_sep` as the group separator.
+            ///
+            /// If `decimal_sep` is omitted, it is assumed to be `.`. If
+            /// `group_sep` is omitted, it is assumed to be `,`. Only the first
+            /// character of each is considered. If the decimal separator and
+            /// the group separator are the same or if either is an empty
+            /// string, an error is returned.
+            ///
+            /// The decimal separator must appear at most once in the string.
+            /// The group separator must not appear at any point after a decimal
+            /// separator. Whitespace may appear anywhere in the string.
+            /// Whitespace and group separators are ignored and have no effect
+            /// on the returned number.
+            #[examples("NUMBERVALUE(\"4,000,096.25\")", "NUMBERVALUE(\"4.000.096,25\")")]
+            #[zip_map]
+            fn NUMBERVALUE(
+                [s]: (Spanned<String>),
+                [decimal_sep]: (Option<Spanned<String>>),
+                [group_sep]: (Option<Spanned<String>>),
+            ) {
+                let decimal_sep_char = first_char_of_nonempty_string(&decimal_sep)?.unwrap_or('.');
+                let mut group_sep_char = first_char_of_nonempty_string(&group_sep)?.unwrap_or(',');
+
+                if decimal_sep_char == group_sep_char {
+                    match group_sep {
+                        Some(s) => return Err(RunErrorMsg::InvalidArgument.with_span(s.span)),
+                        None => group_sep_char = '.',
+                    }
+                }
+
+                let mut seen_decimal_sep = false;
+                let actual_number_string = s
+                    .inner
+                    .chars()
+                    .filter_map(|c| {
+                        if c.is_whitespace() {
+                            None
+                        } else if c == group_sep_char {
+                            if seen_decimal_sep {
+                                Some('H') // something that will fail to parse
+                            } else {
+                                None
+                            }
+                        } else if c == decimal_sep_char {
+                            seen_decimal_sep = true;
+                            Some('.')
+                        } else if c.is_ascii_digit() {
+                            Some(c)
+                        } else {
+                            Some('H') // something that will fail to parse
+                        }
+                    })
+                    .collect::<String>();
+
+                if actual_number_string.is_empty() && !seen_decimal_sep {
+                    Ok(0.0)
+                } else {
+                    actual_number_string
+                        .parse::<f64>()
+                        .map_err(|_| RunErrorMsg::InvalidArgument.with_span(s.span))
+                }
+            }
+        ),
         // Comparison
         formula_fn!(
             /// Returns whether two strings are exactly equal, using
@@ -405,6 +471,17 @@ fn ceil_char_boundary(s: &str, mut byte_index: usize) -> usize {
             byte_index += 1;
         }
         byte_index
+    }
+}
+
+fn first_char_of_nonempty_string(arg: &Option<Spanned<String>>) -> CodeResult<Option<char>> {
+    match arg {
+        Some(s) => {
+            Ok(Some(s.inner.chars().next().ok_or_else(|| {
+                RunErrorMsg::InvalidArgument.with_span(s.span)
+            })?))
+        }
+        None => Ok(None),
     }
 }
 
@@ -664,6 +741,86 @@ mod tests {
         assert_eq!("ǄA", eval_to_string(&g, "UPPER('ǆa')"));
         assert_eq!("ǅa", eval_to_string(&g, "PROPER('ǆA')"));
         // assert_eq!("Ǆa", eval_to_string(&g, "PROPER('ǆA')")); // This is what Excel does
+    }
+
+    #[test]
+    fn test_formula_numbervalue() {
+        let g = Grid::new();
+
+        for (decimal_sep, group_sep) in [
+            (None, None),
+            (Some("a"), None),
+            (Some(","), Some(".")),
+            (Some(","), None),      // infer `.` for group sep
+            (Some(",zerty"), None), // infer `.` for group sep
+            (Some(","), Some("b")),
+            (Some("a"), Some("b")),
+            (Some("azerty"), Some("bwerty")),
+            (Some("8"), Some("9")), // cursed! but allowed
+        ] {
+            // Format as a string
+            let mut extra_args = String::new();
+            if let Some(s) = decimal_sep {
+                extra_args += &format!(", {s:?}");
+            }
+            if let Some(s) = group_sep {
+                extra_args += &format!(", {s:?}");
+            }
+
+            // Extract first character
+            let decimal_sep = decimal_sep.map(|s| s.chars().next().unwrap());
+            let mut group_sep = group_sep.map(|s| s.chars().next().unwrap());
+            // Infer second argument
+            if decimal_sep == Some(',') && group_sep.is_none() {
+                group_sep = Some('.');
+            }
+            // Convert to string
+            let decimal_sep = decimal_sep.unwrap_or('.').to_string();
+            let group_sep = group_sep.unwrap_or(',').to_string();
+
+            // Test ok cases
+            for (expected, arg) in [
+                ("0", ""),
+                ("25", "25"),
+                ("25", "2 5d"),       // `2 5.`
+                ("25", "g 2 g5 g d"), // `, 2 ,5 , .`
+                ("0.25", "d2 5"),     // .2 5
+                ("12.5", "gg 12d 5"), // `,, 12. 5`
+            ] {
+                let arg = arg.replace('d', &decimal_sep).replace('g', &group_sep);
+                assert_eq!(
+                    expected,
+                    eval_to_string(&g, &format!("NUMBERVALUE({arg:?}{extra_args})")),
+                );
+            }
+
+            // Test error cases
+            for arg in [
+                "1z",    // unknown symbol
+                "d",     // only decimal sep
+                "1d2g3", // group sep after decimal sep
+                "1d2d3", // 2x decimal sep
+            ] {
+                let arg = arg.replace('d', &decimal_sep).replace('g', &group_sep);
+                eval_to_err(&g, &format!("NUMBERVALUE({arg:?}{extra_args})"));
+            }
+        }
+
+        // It should be case sensitive
+        assert_eq!("12.5", eval_to_string(&g, "NUMBERVALUE('12a5', 'a')"));
+        assert_eq!("12.5", eval_to_string(&g, "NUMBERVALUE('12A5', 'A')"));
+        eval_to_err(&g, "NUMBERVALUE('12a5', 'A')");
+        eval_to_err(&g, "NUMBERVALUE('12A5', 'a')");
+
+        // Error if decimal sep and group sep are the same
+        eval_to_err(&g, "NUMBERVALUE('', 'azerty', 'apple')");
+
+        // Error if the decimal sep or group sep are empty
+        eval_to_err(&g, "NUMBERVALUE('123', '')");
+        eval_to_err(&g, "NUMBERVALUE('123', '.', '')");
+
+        // Reparse a number if it's passed in as-is
+        assert_eq!("1.5", eval_to_string(&g, "NUMBERVALUE(185, '88888888')"));
     }
 
     #[test]
