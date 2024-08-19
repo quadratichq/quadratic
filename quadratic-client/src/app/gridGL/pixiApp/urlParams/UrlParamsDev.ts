@@ -98,18 +98,16 @@ export class UrlParamsDev {
       const sheetId = sheets.current;
       const { language, codeString } = this.state.insertAndRunCodeInNewSheet;
 
+      // TODO: (jimniels) remove
       console.log(
-        `Inserting at:
-        x: %s
-        y: %s
-        sheetId: %s
-        codeString: %s
-        language %s`,
-        x,
-        y,
-        sheetId,
-        codeString,
-        JSON.stringify(language)
+        [
+          `Inserting:`,
+          `x: ${x}`,
+          `y: ${y}`,
+          `sheetId: ${sheetId}`,
+          `language: ${JSON.stringify(language)}`,
+          `codeString:\n  ${codeString.split('\n').join('\n  ')}`,
+        ].join('\n')
       );
 
       if (!pixiAppSettings.setEditorInteractionState) {
@@ -133,9 +131,9 @@ export class UrlParamsDev {
         language,
         codeString,
       });
-      // quadraticCore.rerunCodeCells(sheetId, x, y, '');
 
       // Remove the `state` param when we're done
+      // TODO: (jimniels) this doesn't work for connections
       const url = new URL(window.location.href);
       const params = new URLSearchParams(url.search);
       params.delete('state');

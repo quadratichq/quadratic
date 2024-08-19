@@ -2,15 +2,23 @@ import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
-import { useConnectionSchemaBrowserTableQueryActionNewFile } from '@/dashboard/hooks/useConnectionSchemaBrowserTableQueryActionNewFile';
+import { useConnectionSchemaBrowserTableQueryActionNewFile } from '@/dashboard/hooks/useConnectionSchemaBrowserTableQueryAction';
 import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
+import { PrivateFileToggle } from '@/shared/components/connections/PrivateFileToggle';
 import { ROUTES } from '@/shared/constants/routes';
-import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { cn } from '@/shared/shadcn/utils';
-import { ArrowDownIcon, ArrowLeftIcon, ChevronRightIcon, MixIcon, PlusIcon, RocketIcon } from '@radix-ui/react-icons';
-import { ConnectionList } from 'quadratic-shared/typesAndSchemasConnections';
+import {
+  ArrowDownIcon,
+  ArrowLeftIcon,
+  ChevronRightIcon,
+  LockClosedIcon,
+  MixIcon,
+  PlusIcon,
+  RocketIcon,
+} from '@radix-ui/react-icons';
+import { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -18,10 +26,11 @@ type Props = {
   connections: ConnectionList;
   onClose: () => void;
   teamUuid: string;
-  isPrivate?: boolean;
+  isPrivate: boolean;
 };
 
-export function NewFileDialog({ connections, teamUuid, onClose, isPrivate }: Props) {
+export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: intialIsPrivate }: Props) {
+  const [isPrivate, setIsPrivate] = useState<boolean>(!!intialIsPrivate);
   const [activeConnectionUuid, setActiveConnectionUuid] = useState<string>('');
   const gridItemClassName =
     'flex flex-col items-center justify-center gap-1 rounded-lg border border-border p-4 pt-5 w-full group';
@@ -45,25 +54,37 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate }: Pro
     <Dialog open={true} onOpenChange={(open) => onClose()}>
       {/* overflow: visible here fixes a bug with the tooltip being cut off */}
       <DialogContent className="max-w-xl overflow-visible">
-        <DialogHeader>
-          <DialogTitle>
-            <div className="flex h-6 items-center gap-2">
-              {activeConnection ? (
-                <>
-                  <Button onClick={() => setActiveConnectionUuid('')} variant="ghost" size="icon">
-                    <ArrowLeftIcon />
-                  </Button>
-                  New file from connection
-                </>
-              ) : (
-                'New file'
-              )}
-              {isPrivate && <Badge>Private</Badge>}
-            </div>
+        <DialogHeader className="relative pl-12">
+          <Button
+            onClick={() => setActiveConnectionUuid('')}
+            variant="ghost"
+            size="icon"
+            disabled={!activeConnection}
+            className="absolute left-0 top-3"
+          >
+            <ArrowLeftIcon />
+          </Button>
+          <DialogTitle className="flex items-center gap-1.5">
+            {activeConnection ? 'New file from connection' : 'New file'}
+            {isPrivate && <LockClosedIcon className="mr-0.5" />}
           </DialogTitle>
+          <DialogDescription asChild>
+            <PrivateFileToggle
+              className="flex flex-row items-center gap-1 font-medium"
+              isPrivate={isPrivate}
+              onToggle={() => setIsPrivate((prev) => !prev)}
+            >
+              Private to me
+            </PrivateFileToggle>
+          </DialogDescription>
         </DialogHeader>
         {activeConnection ? (
-          <SchemaBrowser connectionUuid={activeConnection.uuid} connectionType={activeConnection.type} />
+          <SchemaBrowser
+            connectionUuid={activeConnection.uuid}
+            connectionType={activeConnection.type}
+            isPrivate={isPrivate}
+            teamUuid={teamUuid}
+          />
         ) : (
           <ul className="grid grid-cols-4 grid-rows-[1f_1fr_auto] gap-2 text-sm">
             <li className={`col-span-1`}>
@@ -170,18 +191,27 @@ function ItemIcon({ children, disabled }: { children: React.ReactNode; disabled?
 function SchemaBrowser({
   connectionType,
   connectionUuid,
+  isPrivate,
+  teamUuid,
 }: {
-  connectionType: 'POSTGRES' | 'MYSQL';
+  connectionType: ConnectionType;
   connectionUuid: string;
+  isPrivate: boolean;
+  teamUuid: string;
 }) {
-  const { tableQueryAction } = useConnectionSchemaBrowserTableQueryActionNewFile();
+  const { TableQueryAction } = useConnectionSchemaBrowserTableQueryActionNewFile({
+    connectionType,
+    connectionUuid,
+    isPrivate,
+    teamUuid,
+  });
 
   return (
     <ConnectionSchemaBrowser
       selfContained={true}
       type={connectionType}
       uuid={connectionUuid}
-      tableQueryAction={tableQueryAction}
+      TableQueryAction={TableQueryAction}
     />
   );
 }

@@ -12,12 +12,12 @@ import { ReactNode, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 export const ConnectionSchemaBrowser = ({
-  tableQueryAction,
+  TableQueryAction,
   selfContained,
   type,
   uuid,
 }: {
-  tableQueryAction: (query: string) => ReactNode;
+  TableQueryAction: React.FC<{ query: string }>;
   selfContained?: boolean;
   type?: ConnectionType;
   uuid?: string;
@@ -66,7 +66,7 @@ export const ConnectionSchemaBrowser = ({
               selfContained={selfContained}
               data={table}
               key={i}
-              tableQuery={tableQueryAction(getTableQuery({ table, connectionKind: data.type }))}
+              tableQuery={<TableQueryAction query={getTableQuery({ table, connectionKind: data.type })} />}
             />
           ))}
         </ul>
@@ -119,7 +119,6 @@ type Column = {
 function TableListItem({
   data: { name, columns, schema },
   selfContained,
-
   tableQuery,
 }: {
   data: Table;
