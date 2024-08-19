@@ -108,9 +108,7 @@ export class CellLabel {
       default:
         if (cell.value !== undefined && cell.number) {
           this.number = cell.number;
-          // formula computation uses f64 precision, so we need to limit the number of decimals to 16
-          let currentFractionDigits = cell.language === 'Formula' && cell.number.decimals === null ? 16 : undefined;
-          return convertNumber(cell.value, cell.number, currentFractionDigits).toUpperCase();
+          return convertNumber(cell.value, cell.number).toUpperCase();
         } else {
           return cell?.value;
         }
@@ -210,7 +208,7 @@ export class CellLabel {
   };
 
   isNumber = (): boolean => {
-    return this.number !== undefined || !isNaN(parseFloat(this.text));
+    return this.number !== undefined;
   };
 
   checkNumberClip = (): boolean => {
@@ -472,7 +470,7 @@ export class CellLabel {
       return this.getPoundText();
     }
 
-    return text;
+    return text.toUpperCase();
   };
 
   private getPoundText = () => {

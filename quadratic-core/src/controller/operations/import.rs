@@ -136,6 +136,12 @@ impl GridController {
         let mut workbook: Xlsx<_> = ExcelReader::new(cursor).map_err(error)?;
         let sheets = workbook.sheet_names().to_owned();
 
+        let existing_sheet_names = self.sheet_names();
+        for sheet_name in sheets.iter() {
+            if existing_sheet_names.contains(&sheet_name.as_str()) {
+                bail!("Sheet with name {} already exists", sheet_name);
+            }
+        }
         // first cell in excel is A1, but first cell in quadratic is A0
         // so we need to offset rows by 1, so that values are inserted in the original A1 notations cell
         // this is required so that cell references (A1 notations) in formulas are correct
@@ -422,7 +428,7 @@ mod test {
     fn import_excel() {
         let mut gc = GridController::test_blank();
         let file = include_bytes!("../../../test-files/simple.xlsx");
-        gc.import_excel(file.to_vec(), "simple.xlsx").unwrap();
+        gc.import_excel(file.to_vec(), "simple.xlsx", None).unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;
         let sheet = gc.sheet(sheet_id);
@@ -451,7 +457,7 @@ mod test {
     fn import_excel_invalid() {
         let mut gc = GridController::test_blank();
         let file = include_bytes!("../../../test-files/invalid.xlsx");
-        let result = gc.import_excel(file.to_vec(), "invalid.xlsx");
+        let result = gc.import_excel(file.to_vec(), "invalid.xlsx", None);
         assert!(result.is_err());
     }
 }
