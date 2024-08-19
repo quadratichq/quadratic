@@ -241,16 +241,20 @@ impl Sheet {
     /// Returns the cell value at a position using both `column.values` and
     /// `code_runs`, for use when a formula references a cell.
     pub fn get_cell_for_formula(&self, pos: Pos) -> CellValue {
-        match self
+        let cell_value = self
             .get_column(pos.x)
-            .and_then(|column| column.values.get(&pos.y))
-            .unwrap_or(&CellValue::Blank)
-        {
-            CellValue::Blank | CellValue::Code(_) => match self.code_runs.get(&pos) {
-                Some(run) => run.get_cell_for_formula(0, 0),
-                None => CellValue::Blank,
-            },
-            other => other.clone(),
+            .and_then(|column| column.values.get(&pos.y));
+
+        if let Some(cell_value) = cell_value {
+            match cell_value {
+                CellValue::Blank | CellValue::Code(_) => match self.code_runs.get(&pos) {
+                    Some(run) => run.get_cell_for_formula(0, 0),
+                    None => CellValue::Blank,
+                },
+                other => other.clone(),
+            }
+        } else {
+            self.get_code_cell_value(pos).unwrap_or(CellValue::Blank)
         }
     }
 
