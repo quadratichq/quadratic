@@ -116,7 +116,7 @@ export function OnboardingBanner() {
 
   return showBanner ? (
     <>
-      <div className="relative mt-3 flex flex-col rounded-md border border-input px-4 py-3 shadow-sm">
+      <div className="relative mt-3 hidden rounded-md border border-input px-4 py-3 shadow-sm md:flex md:flex-col">
         <Button
           variant="link"
           size="icon"
