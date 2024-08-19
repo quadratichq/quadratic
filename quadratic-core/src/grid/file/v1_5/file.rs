@@ -1,6 +1,7 @@
+use anyhow::Result;
+
 use crate::grid::file::v1_5::schema as v1_5;
 use crate::grid::file::v1_6::schema as v1_6;
-use anyhow::Result;
 
 fn upgrade_column(x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
     (
@@ -284,6 +285,10 @@ fn upgrade_code_runs(sheet: &v1_5::Sheet) -> Vec<(v1_6::Pos, v1_6::CodeRun)> {
                                         v1_6::OutputValue::Single(v1_6::CellValue::Html(
                                             value.value.to_owned(),
                                         ))
+                                    } else if value.type_field.to_lowercase() == "image" {
+                                        v1_6::OutputValue::Single(v1_6::CellValue::Image(
+                                            value.value.to_owned(),
+                                        ))
                                     } else if value.type_field.to_lowercase() == "blank" {
                                         v1_6::OutputValue::Single(v1_6::CellValue::Blank)
                                     } else {
@@ -314,6 +319,9 @@ fn upgrade_code_runs(sheet: &v1_5::Sheet) -> Vec<(v1_6::Pos, v1_6::CodeRun)> {
                                                 } else if value.type_field.to_lowercase() == "html"
                                                 {
                                                     v1_6::CellValue::Html(value.value.to_owned())
+                                                } else if value.type_field.to_lowercase() == "image"
+                                                {
+                                                    v1_6::CellValue::Image(value.value.to_owned())
                                                 } else if value.type_field.to_lowercase() == "blank"
                                                 {
                                                     v1_6::CellValue::Blank
@@ -385,9 +393,10 @@ pub(crate) fn upgrade(schema: v1_5::GridSchema) -> Result<v1_6::GridSchema> {
 
 #[cfg(test)]
 mod tests {
-    use crate::grid::file::v1_5::schema::GridSchema;
     use anyhow::{anyhow, Result};
     use serial_test::parallel;
+
+    use crate::grid::file::v1_5::schema::GridSchema;
 
     const V1_5_FILE: &str =
         include_str!("../../../../../quadratic-rust-shared/data/grid/v1_5_simple.grid");
