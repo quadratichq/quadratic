@@ -348,6 +348,22 @@ fn get_functions() -> Vec<FormulaFunction> {
         ),
         // Other string conversions
         formula_fn!(
+            /// Returns a string value unmodified, or returns the empty string if passed a value other than a string.
+            #[examples(
+                "T(\"some text\")=\"some text\"",
+                "T(\"123\")=\"123\"",
+                "T(123)=\"\"",
+                "T(FALSE)=\"\""
+            )]
+            #[zip_map]
+            fn T([v]: CellValue) {
+                match v {
+                    CellValue::Text(s) => s.as_str(),
+                    _ => "",
+                }
+            }
+        ),
+        formula_fn!(
             /// Parses a number from a string `s`, using `decimal_sep` as the
             /// decimal separator and `group_sep` as the group separator.
             ///
@@ -741,6 +757,15 @@ mod tests {
         assert_eq!("ǄA", eval_to_string(&g, "UPPER('ǆa')"));
         assert_eq!("ǅa", eval_to_string(&g, "PROPER('ǆA')"));
         // assert_eq!("Ǆa", eval_to_string(&g, "PROPER('ǆA')")); // This is what Excel does
+    }
+
+    #[test]
+    fn test_formula_t() {
+        let g = Grid::new();
+        assert_eq!("some text", eval_to_string(&g, "T(\"some text\")"));
+        assert_eq!("123", eval_to_string(&g, "T(\"123\")"));
+        assert_eq!("", eval_to_string(&g, "T(123)"));
+        assert_eq!("", eval_to_string(&g, "T(FALSE)"));
     }
 
     #[test]
