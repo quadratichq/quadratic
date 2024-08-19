@@ -1,5 +1,3 @@
-use std::usize;
-
 use super::*;
 
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
@@ -326,7 +324,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 // titlecased.
                 for c in s.to_lowercase().chars() {
                     if last_char.is_alphabetic() {
-                        ret.push(c)
+                        ret.push(c);
                     } else {
                         // We can't just uppercase the charater, because Unicode
                         // contains some ligatures like `ǆ` which should be
@@ -448,7 +446,7 @@ fn get_functions() -> Vec<FormulaFunction> {
 fn unicode(span: Span, s: String) -> CodeResult<u32> {
     match s.chars().next() {
         Some(c) => Ok(c as u32),
-        None => return Err(RunErrorMsg::InvalidArgument.with_span(span)),
+        None => Err(RunErrorMsg::InvalidArgument.with_span(span)),
     }
 }
 fn unichar(span: Span, code_point: u32) -> CodeResult<char> {
