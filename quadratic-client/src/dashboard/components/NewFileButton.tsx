@@ -7,10 +7,7 @@ export default function NewFileButton({ isPrivate }: { isPrivate?: boolean }) {
   return (
     <Button
       onClick={() => {
-        setDashboardState((prev) => {
-          const newState = { ...prev, showNewFileDialog: true };
-          return newState;
-        });
+        setDashboardState((prev) => ({ ...prev, showNewFileDialog: isPrivate ? 'private' : 'public' }));
       }}
     >
       New file

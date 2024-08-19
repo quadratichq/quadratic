@@ -1,11 +1,11 @@
 import { createContext, ReactNode, useContext, useState } from 'react';
 
 type DashboardState = {
-  showNewFileDialog: boolean;
+  showNewFileDialog: 'private' | 'public' | '';
 };
 
 const initialDashboardState: DashboardState = {
-  showNewFileDialog: false,
+  showNewFileDialog: '',
 };
 
 const DashboardContext = createContext<

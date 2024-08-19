@@ -1,4 +1,5 @@
 import { ConnectionsIcon, PrivateFileIcon, SharedWithMeIcon } from '@/dashboard/components/CustomRadixIcons';
+import { useDashboardState } from '@/dashboard/components/DashboardProvider';
 import { TeamSwitcher } from '@/dashboard/components/TeamSwitcher';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
@@ -16,7 +17,7 @@ import { SchoolOutlined } from '@mui/icons-material';
 import { AvatarImage } from '@radix-ui/react-avatar';
 import { ExternalLinkIcon, FileIcon, GearIcon, MixIcon, PersonIcon, PlusIcon } from '@radix-ui/react-icons';
 import { ReactNode, useState } from 'react';
-import { Link, NavLink, useLocation, useNavigation, useSearchParams, useSubmit } from 'react-router-dom';
+import { NavLink, useLocation, useNavigation, useSearchParams, useSubmit } from 'react-router-dom';
 
 /**
  * Dashboard Navbar
@@ -55,7 +56,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
               <FileIcon className={classNameIcons} />
               Files
             </SidebarNavLink>
-            {canEditTeam && <SidebarNavLinkCreateButton to={ROUTES.CREATE_FILE(activeTeamUuid)} />}
+            {canEditTeam && <SidebarNavLinkCreateButton>New file</SidebarNavLinkCreateButton>}
           </div>
           {canEditTeam && (
             <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
@@ -87,7 +88,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             <PrivateFileIcon className={classNameIcons} />
             My files
           </SidebarNavLink>
-          <SidebarNavLinkCreateButton to={ROUTES.CREATE_FILE_PRIVATE(activeTeamUuid)} />
+          <SidebarNavLinkCreateButton isPrivate>New private file</SidebarNavLinkCreateButton>
         </div>
         <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
           <SharedWithMeIcon className={classNameIcons} />
@@ -155,18 +156,24 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
   );
 }
 
-function SidebarNavLinkCreateButton({ to }: { to: string }) {
+function SidebarNavLinkCreateButton({ children, isPrivate }: { children?: ReactNode; isPrivate?: boolean }) {
+  const [, setDashboardState] = useDashboardState();
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon-sm" asChild>
-            <Link to={to} className="absolute right-2 top-1 ml-auto opacity-30 hover:opacity-100">
-              <PlusIcon />
-            </Link>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="absolute right-2 top-1 ml-auto opacity-30 hover:opacity-100"
+            onClick={() =>
+              setDashboardState((prev) => ({ ...prev, showNewFileDialog: isPrivate ? 'private' : 'public' }))
+            }
+          >
+            <PlusIcon />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>New blank file</TooltipContent>
+        <TooltipContent>{children}</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );

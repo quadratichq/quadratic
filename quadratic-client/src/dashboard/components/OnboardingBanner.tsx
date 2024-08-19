@@ -57,7 +57,7 @@ export function OnboardingBanner() {
             <Button
               variant="outline"
               className={contentBtnClassName}
-              onClick={() => setDashboardState((prev) => ({ ...prev, showNewFileDialog: true }))}
+              onClick={() => setDashboardState((prev) => ({ ...prev, showNewFileDialog: 'public' }))}
             >
               New file
             </Button>

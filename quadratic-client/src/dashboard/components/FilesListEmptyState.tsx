@@ -18,7 +18,7 @@ export const FilesListEmptyState = ({ isPrivate }: { isPrivate?: boolean }) => {
               className="underline hover:text-primary"
               onClick={() => {
                 mixpanel.track('[FilesEmptyState].clickCreateBlankFile');
-                setDashboardState((prev) => ({ ...prev, showNewFileDialog: true }));
+                setDashboardState((prev) => ({ ...prev, showNewFileDialog: isPrivate ? 'private' : 'public' }));
               }}
             >
               Create a new file
