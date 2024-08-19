@@ -59,9 +59,9 @@ class CoreConnection {
     };
 
     let buffer = new ArrayBuffer(0);
-    let std_out = '';
-    let std_err = '';
-    let extra = '';
+    let std_out = undefined;
+    let std_err = undefined;
+    let extra = undefined;
     let codeRun: CodeRun = {
       transactionId,
       sheetPos: { x, y, sheetId },
@@ -95,7 +95,7 @@ class CoreConnection {
       }
 
       // send the parquet bytes to core
-      core.connectionComplete(transactionId, buffer, std_out, std_err.replace(/\\/g, '').replace(/"/g, ''), extra);
+      core.connectionComplete(transactionId, buffer, std_out, std_err?.replace(/\\/g, '').replace(/"/g, ''), extra);
       this.sendConnectionState('ready');
     } catch (e) {
       console.error(`Error fetching ${url}`, e);
