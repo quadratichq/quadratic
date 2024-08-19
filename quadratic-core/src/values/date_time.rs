@@ -1,41 +1,19 @@
-use chrono::{NaiveDate, NaiveTime, Utc};
+use chrono::Utc;
 use dateparser::parse_with_timezone;
+
+use crate::date_time::{parse_date, parse_time};
 
 use super::CellValue;
 
 impl CellValue {
     pub fn unpack_time(value: &str) -> Option<CellValue> {
-        let formats = [
-            "%H:%M:%S",
-            "%I:%M:%S %p",
-            "%I:%M %p",
-            "%H:%M",
-            "%I:%M:%S",
-            "%I:%M",
-            "%H:%M:%S%.3f",
-        ];
-
-        for &format in formats.iter() {
-            if let Ok(parsed_time) = NaiveTime::parse_from_str(value, format) {
-                return Some(CellValue::Time(parsed_time));
-            }
-        }
-        None
+        let time = parse_time(value)?;
+        Some(CellValue::Time(time))
     }
 
     pub fn unpack_date(value: &str) -> Option<CellValue> {
-        let formats = vec![
-            "%Y-%m-%d", "%m-%d-%Y", "%d-%m-%Y", "%Y/%m/%d", "%m/%d/%Y", "%d/%m/%Y", "%Y.%m.%d",
-            "%m.%d.%Y", "%d.%m.%Y", "%Y %m %d", "%m %d %Y", "%d %m %Y", "%Y %b %d", "%b %d %Y",
-            "%d %b %Y", "%Y %B %d", "%B %d %Y", "%d %B %Y",
-        ];
-
-        for &format in formats.iter() {
-            if let Ok(parsed_date) = NaiveDate::parse_from_str(value, format) {
-                return Some(CellValue::Date(parsed_date));
-            }
-        }
-        None
+        let date = parse_date(value)?;
+        Some(CellValue::Date(date))
     }
 
     pub fn unpack_date_time(value: &str) -> Option<CellValue> {
@@ -47,6 +25,8 @@ impl CellValue {
 
 #[cfg(test)]
 mod tests {
+    use chrono::{NaiveDate, NaiveTime};
+
     use super::*;
 
     #[test]

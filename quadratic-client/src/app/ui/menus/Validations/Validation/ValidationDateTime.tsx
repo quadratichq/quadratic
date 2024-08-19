@@ -4,14 +4,14 @@ import { ValidationData } from './useValidationData';
 import { ValidationDropdown, ValidationInput, ValidationMoreOptions, ValidationUICheckbox } from './ValidationUI';
 import { Tooltip } from '@mui/material';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { DateTimeRange, ValidationRule } from '@/app/quadratic-core-types';
 import { ValidationUndefined } from './validationType';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { Calendar } from '@/shared/shadcn/ui/calendar';
 import { ValidationCalendar } from './ValidationCalendar';
+import { numberToDate, userDateToNumber } from '@/app/quadratic-rust-client/quadratic_rust_client';
 
 interface Props {
   validationData: ValidationData;
@@ -24,7 +24,12 @@ export const ValidationDateTime = (props: Props) => {
 
   const [equalsError, setEqualsError] = useState(false);
 
-  console.log(validation);
+  const divRef = useRef<HTMLDivElement>(null);
+  const focusDiv = useCallback(() => {
+    console.log('focussing...');
+    debugger;
+    divRef.current?.focus();
+  }, []);
 
   //#region Require Date and Time
 
@@ -119,61 +124,81 @@ export const ValidationDateTime = (props: Props) => {
       if ('DateTime' in validation.rule) {
         const equals = validation.rule.DateTime.ranges.find((r) => 'DateEqual' in r);
         if (equals && 'DateEqual' in equals) {
-          return equals.DateEqual;
+          return equals.DateEqual.flatMap((d) => {
+            const date = numberToDate(BigInt(d));
+            if (date) {
+              return [date];
+            } else {
+              return [];
+            }
+          });
+        } else {
+          return [];
         }
       }
     }
   }, [validation]);
 
+  const dateEqualsSet = !!equals?.length;
+
+  const datesStringToNumber = (date: string): bigint[] | undefined => {
+    const split = date.split(',');
+    const dates: bigint[] = [];
+    for (const v of split) {
+      if (v.trim()) {
+        const parsed = userDateToNumber(v.trim());
+        if (parsed) {
+          dates.push(parsed);
+        } else {
+          return;
+        }
+      }
+    }
+    return dates;
+  };
+
   const changeEquals = useCallback(
     (values: string) => {
-      debugger;
-      const dates = values.split(',').flatMap((v) => {
-        if (!v.trim()) {
-          return [];
-        } else {
-          return [parseFloat(v)];
-        }
-      });
-      if (dates.some((n) => isNaN(n))) {
+      const dates = datesStringToNumber(values);
+      if (!dates) {
         setEqualsError(true);
         return;
       }
-      setEqualsError(false);
 
-      setValidation((validation) => {
-        if (!validation || !('rule' in validation) || validation.rule === 'None' || !('Number' in validation.rule)) {
+      setValidation((validation: ValidationUndefined) => {
+        if (!validation || !('rule' in validation) || validation.rule === 'None' || !('DateTime' in validation.rule)) {
           return;
         }
+
+        setEqualsError(false);
 
         if (!dates.length) {
           return {
             ...validation,
             rule: {
-              Number: {
-                ...validation.rule.Number,
+              DateTime: {
+                ...validation.rule.DateTime,
                 ranges: [],
               },
             },
           };
         }
 
-        const rules = validation.rule.Number.ranges.filter((m) => !('Equal' in m));
+        // DateEqual can only exist with other time rules; not with other date rules
+        const rules: DateTimeRange[] = validation.rule.DateTime.ranges.filter(
+          (m) => 'TimeEqual' in m || 'TimeNotEqual' in m || 'TimeRange' in m
+        );
         if (values.length) {
           rules.push({
-            Equal: dates,
+            DateEqual: dates,
           });
         }
         return {
           ...validation,
           rule: {
-            Number: {
-              ...validation.rule.Number,
-              ranges: [
-                {
-                  Equal: dates,
-                },
-              ],
+            DateTime: {
+              ...validation.rule.DateTime,
+              ranges: rules,
             },
           },
         };
@@ -188,10 +213,12 @@ export const ValidationDateTime = (props: Props) => {
 
   const notEquals = useMemo(() => {
     if (validation && 'rule' in validation && validation.rule && validation.rule !== 'None') {
-      if ('Number' in validation.rule) {
-        const notEquals = validation.rule.Number.ranges.find((r) => 'NotEqual' in r);
-        if (notEquals && 'NotEqual' in notEquals) {
-          return notEquals.NotEqual;
+      if ('DateTime' in validation.rule) {
+        const notEquals = validation.rule.DateTime.ranges.find((r) => 'DateNotEqual' in r);
+        if (notEquals && 'DateNotEqual' in notEquals) {
+          return notEquals.DateNotEqual.map((d) => numberToDate(BigInt(d)));
+        } else {
+          return [];
         }
       }
     }
@@ -199,50 +226,44 @@ export const ValidationDateTime = (props: Props) => {
 
   const changeNotEquals = useCallback(
     (values: string) => {
-      const numbers = values.split(',').flatMap((v) => {
-        if (!v.trim()) {
-          return [];
-        } else {
-          return [parseFloat(v)];
-        }
-      });
-      if (numbers.some((n) => isNaN(n))) {
+      const dates = datesStringToNumber(values);
+      if (!dates) {
         setEqualsError(true);
         return;
       }
       setEqualsError(false);
 
       setValidation((validation) => {
-        if (!validation || !('rule' in validation) || validation.rule === 'None' || !('Number' in validation.rule)) {
+        if (!validation || !('rule' in validation) || validation.rule === 'None' || !('DateTime' in validation.rule)) {
           return;
         }
 
-        if (!numbers.length) {
+        if (!dates.length) {
           return {
             ...validation,
             rule: {
               Number: {
-                ...validation.rule.Number,
+                ...validation.rule.DateTime,
                 ranges: [],
               },
             },
           };
         }
 
-        const rules = validation.rule.Number.ranges.filter((m) => !('NotEqual' in m));
+        const rules = validation.rule.DateTime.ranges.filter((m) => !('NotEqual' in m));
         if (values.length) {
           rules.push({
-            NotEqual: numbers,
+            DateNotEqual: dates,
           });
         }
         return {
           ...validation,
           rule: {
-            Number: {
-              ...validation.rule.Number,
+            DateTime: {
+              ...validation.rule.DateTime,
               ranges: [
                 {
-                  NotEqual: numbers,
+                  DateNotEqual: dates,
                 },
               ],
             },
@@ -262,14 +283,19 @@ export const ValidationDateTime = (props: Props) => {
     if (validation && 'rule' in validation && validation.rule && validation.rule !== 'None') {
       if ('DateTime' in validation.rule) {
         validation.rule.DateTime.ranges.forEach((r) => {
-          ranges.push(r);
+          if ('DateRange' in r) {
+            ranges.push(r);
+          }
         });
       }
     }
 
     // always add an empty range to the bottom of the list
-    const last = ranges[ranges.length - 1];
-    if (!last || ('DateRange' in last && (last.DateRange[0] !== null || last.DateRange[1] !== null))) {
+    const dateRange = ranges.find((r) => 'DateRange' in r);
+    if (
+      !dateRange ||
+      ('DateRange' in dateRange && (dateRange.DateRange[0] !== null || dateRange.DateRange[1] !== null))
+    ) {
       ranges.push({ DateRange: [null, null] });
     }
     return ranges;
@@ -277,8 +303,9 @@ export const ValidationDateTime = (props: Props) => {
 
   const [rangeError, setRangeError] = useState<number[]>([]);
   const changeRange = useCallback(
-    (index: number, value: string, type: 'min' | 'max') => {
-      const date = new Date(value.trim()).getTime();
+    (index: number, value: string, type: 'start' | 'end') => {
+      const date = userDateToNumber(value) ?? null;
+
       setValidation((validation): ValidationUndefined => {
         if (!validation || !('rule' in validation) || validation.rule === 'None' || !('DateTime' in validation.rule)) {
           return;
@@ -286,9 +313,9 @@ export const ValidationDateTime = (props: Props) => {
         const newRanges = [...ranges];
         const current = newRanges[index];
         if (!('DateRange' in current)) throw new Error('Expected Range in changeRange');
-        if (type === 'min') {
+        if (type === 'start') {
           // check for error (min > max)
-          if (current.DateRange[1] !== null && date > current.DateRange[1]) {
+          if (current.DateRange[1] !== null && date && date > current.DateRange[1]) {
             setRangeError((rangeError) => {
               const r = rangeError.filter((r) => r !== index);
               r.push(index);
@@ -302,7 +329,7 @@ export const ValidationDateTime = (props: Props) => {
           });
         } else {
           // check for error (max < min)
-          if (current.DateRange[0] !== null && date < current.DateRange[0]) {
+          if (current.DateRange[0] !== null && date && date < current.DateRange[0]) {
             setRangeError((rangeError) => {
               const r = rangeError.filter((r) => r !== index);
               r.push(index);
@@ -358,7 +385,7 @@ export const ValidationDateTime = (props: Props) => {
   //#endregion
 
   const equalsOverrides = useMemo(() => {
-    if (equals) {
+    if (equals?.length) {
       return (
         <Tooltip title="'Date time equals' cannot be combined with other rules">
           <InfoCircledIcon />
@@ -391,7 +418,8 @@ export const ValidationDateTime = (props: Props) => {
   }, [noTime]);
 
   return (
-    <div className="flex w-full flex-col gap-5">
+    // tabIndex allows the calendar to close when clicking outside it
+    <div className="flex w-full flex-col gap-5" tabIndex={0} ref={divRef}>
       <ValidationUICheckbox
         label="Allow blank values"
         value={ignoreBlank}
@@ -419,27 +447,30 @@ export const ValidationDateTime = (props: Props) => {
         />
       </div>
 
-      <Accordion type="single" collapsible className="w-full" defaultValue={equals ? 'date-equals' : undefined}>
+      <Accordion type="single" collapsible className="w-full" defaultValue={equals?.length ? 'date-equals' : undefined}>
         <AccordionItem value="date-equals">
           <AccordionTrigger disabled={noDate} className={noDate ? 'opacity-50' : ''}>
             <div className="flex">Date equals{noDateOverrides}</div>
           </AccordionTrigger>
           <AccordionContent className="px-1 pt-1">
-            <div className="flex w-full flex-col gap-1">
-              <ValidationInput
-                placeholder="Enter dates separated by commas"
-                disabled={readOnly}
-                value={equals ? equals.join(', ') : ''}
-                onInput={changeEquals}
-                readOnly={readOnly}
-                error={equalsError ? 'Please enter valid dates separated by commas' : undefined}
-                onEnter={onEnter}
-              />
-              <ValidationCalendar
-                dates={equals?.map((d) => new Date(Number(d)))}
-                setDates={(dates) => changeEquals(dates.map((d) => d.getTime()).join(','))}
-              />
-            </div>
+            <ValidationInput
+              placeholder="Enter dates separated by commas"
+              disabled={readOnly}
+              value={equals ? equals.join(', ') : ''}
+              onChange={changeEquals}
+              readOnly={readOnly}
+              error={equalsError ? 'Please enter valid dates separated by commas' : undefined}
+              onEnter={onEnter}
+              showOnFocus={
+                <ValidationCalendar
+                  dates={equals?.map((d) => new Date(d))}
+                  setDates={(dates) => {
+                    changeEquals(dates);
+                    return false;
+                  }}
+                />
+              }
+            />
           </AccordionContent>
         </AccordionItem>
       </Accordion>
@@ -448,12 +479,15 @@ export const ValidationDateTime = (props: Props) => {
         type="single"
         collapsible
         className="w-full"
-        defaultValue={notEquals ? 'date-not-equals' : undefined}
-        value={equals ? '' : undefined}
+        defaultValue={notEquals?.length ? 'date-not-equals' : undefined}
+        value={equals?.length ? '' : undefined}
       >
         <AccordionItem value="date-not-equals">
-          <AccordionTrigger className={noDate ? 'opacity-50' : ''} disabled={noDate}>
-            <div className="flex">Date does not equal{noDateOverrides}</div>
+          <AccordionTrigger className={noDate || dateEqualsSet ? 'opacity-50' : ''} disabled={noDate || dateEqualsSet}>
+            <div className="flex">
+              Date does not equal{noDateOverrides}
+              {equalsOverrides}
+            </div>
           </AccordionTrigger>
           <AccordionContent className="px-1 pt-1">
             <div className="flex w-full flex-col gap-1">
@@ -465,6 +499,15 @@ export const ValidationDateTime = (props: Props) => {
                 readOnly={readOnly}
                 error={equalsError ? 'Please enter valid dates separated by commas' : undefined}
                 onEnter={onEnter}
+                showOnFocus={
+                  <ValidationCalendar
+                    dates={equals?.map((d) => new Date(d))}
+                    setDates={(dates) => {
+                      changeNotEquals(dates);
+                      return false;
+                    }}
+                  />
+                }
               />
             </div>
           </AccordionContent>
@@ -476,36 +519,63 @@ export const ValidationDateTime = (props: Props) => {
         collapsible
         className="w-full"
         defaultValue={ranges.length > 1 ? 'date-range' : undefined}
-        value={equals ? '' : undefined}
+        value={equals?.length ? '' : undefined}
       >
         <AccordionItem value="date-range">
-          <AccordionTrigger className={noDate ? 'opacity-50' : ''} disabled={noDate}>
-            <div className="flex">Date ranges{noDateOverrides}</div>
+          <AccordionTrigger className={noDate || dateEqualsSet ? 'opacity-50' : ''} disabled={noDate || dateEqualsSet}>
+            {' '}
+            <div className="flex">
+              Date ranges{noDateOverrides}
+              {equalsOverrides}
+            </div>
           </AccordionTrigger>
           <AccordionContent className="px-1 pt-1">
             {ranges.map((range, i) => {
               const r = 'DateRange' in range ? range.DateRange : [null, null];
-              const min = r[0]?.toString() ?? '';
-              const max = r[1]?.toString() ?? '';
+              const start = r[0] ? numberToDate(BigInt(r[0])) : undefined;
+              const end = r[1] ? numberToDate(BigInt(r[1])) : undefined;
               return (
-                <div className="mb-2 flex w-full flex-col gap-1 " key={i}>
-                  <div className="flex items-center gap-1">
-                    <ValidationInput
-                      type="number"
-                      placeholder="Minimum"
-                      disabled={readOnly}
-                      value={min}
-                      onChange={(value) => changeRange(i, value, 'min')}
-                      onEnter={onEnter}
-                    />
-                    <ValidationInput
-                      type="number"
-                      placeholder="Maximum"
-                      disabled={readOnly}
-                      value={max}
-                      onChange={(value) => changeRange(i, value, 'max')}
-                      onEnter={onEnter}
-                    />
+                <div className="flex w-full flex-col" key={i}>
+                  <div className="mb-6 flex w-full items-center gap-2">
+                    <div className="flex w-full flex-col gap-2">
+                      <ValidationInput
+                        className="w-full"
+                        placeholder="Start Date"
+                        disabled={readOnly}
+                        value={start}
+                        onChange={(value) => changeRange(i, value, 'start')}
+                        onEnter={onEnter}
+                        showOnFocus={
+                          <ValidationCalendar
+                            singleDate
+                            dates={start ? [new Date(start)] : []}
+                            setDates={(dates) => {
+                              changeRange(i, dates, 'start');
+                              return true;
+                            }}
+                            fallbackMonth={end ? new Date(end) : undefined}
+                          />
+                        }
+                      />
+                      <ValidationInput
+                        placeholder="End Date"
+                        disabled={readOnly}
+                        value={end}
+                        onChange={(value) => changeRange(i, value, 'end')}
+                        onEnter={onEnter}
+                        showOnFocus={
+                          <ValidationCalendar
+                            singleDate
+                            dates={end ? [new Date(end)] : undefined}
+                            fallbackMonth={start ? new Date(start) : undefined}
+                            setDates={(dates) => {
+                              changeRange(i, dates, 'end');
+                              return true;
+                            }}
+                          />
+                        }
+                      />
+                    </div>
                     <Button
                       className={cn('grow-0 px-2', i !== ranges.length - 1 ? '' : 'invisible')}
                       onClick={() => removeRange(i)}
@@ -514,7 +584,7 @@ export const ValidationDateTime = (props: Props) => {
                     </Button>
                   </div>
                   {rangeError.includes(i) && (
-                    <div className="mb-2 text-xs text-red-500">Range minimum must be less than maximum</div>
+                    <div className="mb-2 text-xs text-red-500">Range start must be before end</div>
                   )}
                 </div>
               );

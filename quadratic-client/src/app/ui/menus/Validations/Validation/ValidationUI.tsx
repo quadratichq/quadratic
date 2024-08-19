@@ -3,9 +3,11 @@ import { ValidationData } from './useValidationData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/shadcn/ui/select';
-import { FocusEvent, forwardRef, Ref, useCallback, useEffect, useRef } from 'react';
+import { FocusEvent, forwardRef, Ref, useCallback, useEffect, useRef, useState } from 'react';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { cn } from '@/shared/shadcn/utils';
+import { IconButton } from '@mui/material';
+import { Close } from '@mui/icons-material';
 
 interface CheckboxProps {
   className?: string;
@@ -32,7 +34,7 @@ interface InputProps {
   className?: string;
 
   label?: string;
-  value: string;
+  value?: string;
   error?: string;
   disabled?: boolean;
 
@@ -52,8 +54,7 @@ interface InputProps {
 
   type?: 'number';
 
-  onFocus?: () => void;
-  onBlur?: () => void;
+  showOnFocus?: JSX.Element;
 }
 
 export const ValidationInput = forwardRef((props: InputProps, ref: Ref<HTMLInputElement>) => {
@@ -71,31 +72,37 @@ export const ValidationInput = forwardRef((props: InputProps, ref: Ref<HTMLInput
     type,
     onEnter,
     className,
-    onFocus,
-    onBlur,
+    showOnFocus,
   } = props;
+
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  const [hasFocus, setHasFocus] = useState(false);
 
   const handleOnBlur = useCallback(
     (e: FocusEvent<HTMLInputElement>) => {
       if (onChange) {
         onChange(e.currentTarget.value);
       }
-      onBlur?.();
+
+      if (!parentRef.current?.contains(e.relatedTarget as Node)) {
+        setHasFocus(false);
+      }
     },
-    [onBlur, onChange]
+    [onChange]
   );
 
   return (
     <div>
       {label && <div className={disabled ? 'opacity-50' : ''}>{label}</div>}
-      <div>
+      <div ref={parentRef}>
         <div className={cn('flex w-full items-center space-x-2', error ? 'border border-red-500' : '')}>
           <Input
             className={className}
             ref={ref}
             defaultValue={value}
-            onFocus={onFocus}
             onBlur={handleOnBlur}
+            onFocus={() => setHasFocus(true)}
             onInput={onInput ? (e) => onInput(e.currentTarget.value) : undefined}
             style={{ height }}
             placeholder={placeholder}
@@ -117,6 +124,7 @@ export const ValidationInput = forwardRef((props: InputProps, ref: Ref<HTMLInput
         </div>
         {footer && <div className="text-xs">{footer}</div>}
         {error && <div className="text-xs text-red-500">{error}</div>}
+        {hasFocus && showOnFocus}
       </div>
     </div>
   );
@@ -137,7 +145,7 @@ export const ValidationTextArea = (props: InputProps) => {
 
   useEffect(() => {
     if (ref.current) {
-      ref.current.value = value;
+      ref.current.value = value ?? '';
     }
   }, [value]);
 
@@ -220,5 +228,18 @@ export const ValidationDropdown = (props: DropdownProps) => {
         </SelectContent>
       </Select>
     </div>
+  );
+};
+
+interface CloseProps {
+  onClose: () => void;
+}
+
+export const ValidationClose = (props: CloseProps) => {
+  const { onClose } = props;
+  return (
+    <IconButton sx={{ padding: 0, width: 20, height: 20 }} onClick={onClose}>
+      <Close sx={{ padding: 0, width: 15, height: 15 }} />
+    </IconButton>
   );
 };

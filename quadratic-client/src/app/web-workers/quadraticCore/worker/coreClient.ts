@@ -532,14 +532,6 @@ class CoreClient {
         core.setDateTimeFormat(e.data.selection, e.data.format, e.data.cursor);
         return;
 
-      case 'clientCoreGetValidation':
-        this.send({
-          type: 'coreClientGetValidation',
-          id: e.data.id,
-          validation: core.getValidation(e.data.sheetId, e.data.validationId),
-        });
-        return;
-
       case 'clientCoreUpdateValidation':
         core.updateValidation(e.data.validation, e.data.cursor);
         return;

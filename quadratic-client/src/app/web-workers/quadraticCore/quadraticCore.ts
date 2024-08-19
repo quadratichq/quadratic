@@ -1053,21 +1053,6 @@ class QuadraticCore {
 
   //#region Data Validation
 
-  getValidation(sheetId: string, validationId: string): Promise<Validation | undefined> {
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: { validation: Validation | undefined }) => {
-        resolve(message.validation);
-      };
-      this.send({
-        type: 'clientCoreGetValidation',
-        id,
-        sheetId,
-        validationId,
-      });
-    });
-  }
-
   getValidationFromPos(sheetId: string, x: number, y: number): Promise<Validation | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;

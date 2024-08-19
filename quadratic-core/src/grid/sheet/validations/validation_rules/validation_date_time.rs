@@ -1,8 +1,10 @@
-use chrono::{NaiveDateTime, NaiveTime, Timelike};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::CellValue;
+use crate::{
+    date_time::{naive_date_to_i64, naive_time_to_i32},
+    CellValue,
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum DateTimeRange {
@@ -27,15 +29,6 @@ pub struct ValidationDateTime {
     pub ranges: Vec<DateTimeRange>,
 }
 
-// Convert the entire time into seconds since midnight
-fn naive_time_to_i32(time: NaiveTime) -> i32 {
-    let hours = time.hour() as i32;
-    let minutes = time.minute() as i32;
-    let seconds = time.second() as i32;
-
-    hours * 3600 + minutes * 60 + seconds
-}
-
 impl ValidationDateTime {
     // Validate a CellValue against the validation rule.
     pub fn validate(&self, value: Option<&CellValue>) -> bool {
@@ -51,8 +44,10 @@ impl ValidationDateTime {
                     if self.prohibit_date || self.require_time {
                         return false;
                     }
-                    let dt = NaiveDateTime::new(*d, NaiveTime::from_hms_opt(0, 0, 0).unwrap());
-                    (dt.and_utc().timestamp(), 0)
+                    let Some(date_i64) = naive_date_to_i64(*d) else {
+                        return false;
+                    };
+                    (date_i64, 0)
                 }
                 CellValue::Time(t) => {
                     if self.require_date || self.prohibit_time {
@@ -109,7 +104,7 @@ impl ValidationDateTime {
 
 #[cfg(test)]
 mod tests {
-    use chrono::{NaiveDate, NaiveDateTime};
+    use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
     use super::*;
 

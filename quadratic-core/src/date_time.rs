@@ -7,7 +7,7 @@
 
 use chrono::{
     format::{Fixed, Item, Numeric, StrftimeItems},
-    NaiveDate, NaiveDateTime, NaiveTime,
+    DateTime, NaiveDate, NaiveDateTime, NaiveTime, Timelike,
 };
 
 pub const DEFAULT_DATE_FORMAT: &str = "%m/%d/%Y";
@@ -144,6 +144,75 @@ pub fn time_to_time_string(time: NaiveTime, format: Option<String>) -> String {
     time.format_with_items(items.iter()).to_string()
 }
 
+/// Parses a time string using a list of possible formats.
+pub fn parse_time(value: &str) -> Option<NaiveTime> {
+    let formats = [
+        "%H:%M:%S",
+        "%I:%M:%S %p",
+        "%I:%M %p",
+        "%H:%M",
+        "%I:%M:%S",
+        "%I:%M",
+        "%H:%M:%S%.3f",
+    ];
+
+    for &format in formats.iter() {
+        if let Ok(parsed_time) = NaiveTime::parse_from_str(value, format) {
+            return Some(parsed_time);
+        }
+    }
+    None
+}
+
+/// Parses a date string using a list of possible formats.
+pub fn parse_date(value: &str) -> Option<NaiveDate> {
+    let formats = vec![
+        "%Y-%m-%d", "%m-%d-%Y", "%d-%m-%Y", "%Y/%m/%d", "%m/%d/%Y", "%d/%m/%Y", "%Y.%m.%d",
+        "%m.%d.%Y", "%d.%m.%Y", "%Y %m %d", "%m %d %Y", "%d %m %Y", "%Y %b %d", "%b %d %Y",
+        "%d %b %Y", "%Y %B %d", "%B %d %Y", "%d %B %Y",
+    ];
+
+    for &format in formats.iter() {
+        if let Ok(parsed_date) = NaiveDate::parse_from_str(value, format) {
+            return Some(parsed_date);
+        }
+    }
+    None
+}
+
+/// Convert the entire time into seconds since midnight
+pub fn naive_time_to_i32(time: NaiveTime) -> i32 {
+    let hours = time.hour() as i32;
+    let minutes = time.minute() as i32;
+    let seconds = time.second() as i32;
+    hours * 3600 + minutes * 60 + seconds
+}
+
+pub fn i32_to_naive_time(time: i32) -> Option<NaiveTime> {
+    let hours = time / 3600;
+    let minutes = (time % 3600) / 60;
+    let seconds = time % 60;
+    NaiveTime::from_hms_opt(hours as u32, minutes as u32, seconds as u32)
+}
+
+/// Convert a NaiveDateTime to an i64 timestamp.
+pub fn naive_date_time_to_i64(date: NaiveDateTime) -> i64 {
+    date.and_utc().timestamp()
+}
+
+/// Convert a NaiveDate to an i64 timestamp.
+pub fn naive_date_to_i64(date: NaiveDate) -> Option<i64> {
+    let time = NaiveTime::from_hms_opt(0, 0, 0)?;
+    let dt = NaiveDateTime::new(date, time);
+    Some(naive_date_time_to_i64(dt))
+}
+
+/// Convert an i64 timestamp to a NaiveDate.
+pub fn i64_to_naive_date(timestamp: i64) -> Option<NaiveDate> {
+    let dt = DateTime::from_timestamp(timestamp, 0)?;
+    Some(dt.date_naive())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -158,5 +227,37 @@ mod tests {
             time_to_time_string(date_time.time(), Some(format)),
             "4:45 PM".to_string()
         );
+    }
+
+    #[test]
+    fn naive_time_i32() {
+        let time = NaiveTime::from_hms_opt(12, 34, 56);
+        assert_eq!(naive_time_to_i32(time.unwrap()), 45296);
+        assert_eq!(i32_to_naive_time(45296), time);
+    }
+
+    #[test]
+    fn naive_date_i64() {
+        let date = NaiveDate::from_ymd_opt(2024, 12, 23);
+        assert_eq!(naive_date_to_i64(date.unwrap()), Some(1734912000));
+        assert_eq!(i64_to_naive_date(1734912000), date);
+    }
+
+    #[test]
+    fn test_parse_date() {
+        let date = "12/23/2024".to_string();
+        let parsed_date = parse_date(&date).unwrap();
+        assert_eq!(parsed_date, NaiveDate::from_ymd_opt(2024, 12, 23).unwrap());
+
+        // more test functions are in validation_date_time.rs
+    }
+
+    #[test]
+    fn test_parse_time() {
+        let time = "4:45 PM".to_string();
+        let parsed_time = parse_time(&time).unwrap();
+        assert_eq!(parsed_time, NaiveTime::from_hms_opt(16, 45, 0).unwrap());
+
+        // more test functions are in validation_date_time.rs
     }
 }

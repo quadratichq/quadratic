@@ -898,19 +898,6 @@ export interface CoreClientImage {
   h?: string;
 }
 
-export interface ClientCoreGetValidation {
-  type: 'clientCoreGetValidation';
-  id: number;
-  sheetId: string;
-  validationId: string;
-}
-
-export interface CoreClientGetValidation {
-  type: 'coreClientGetValidation';
-  id: number;
-  validation: Validation | undefined;
-}
-
 export interface ClientCoreGetValidations {
   type: 'clientCoreGetValidations';
   id: number;
@@ -1077,7 +1064,6 @@ export type ClientCoreMessage =
   | ClientCoreGetFormatRow
   | ClientCoreGetFormatCell
   | ClientCoreSetDateTimeFormat
-  | ClientCoreGetValidation
   | ClientCoreGetValidations
   | ClientCoreUpdateValidation
   | ClientCoreRemoveValidation
@@ -1140,7 +1126,6 @@ export type CoreClientMessage =
   | CoreClientGetFormatCell
   | CoreClientSheetMetaFills
   | CoreClientSetCursorSelection
-  | CoreClientGetValidation
   | CoreClientOfflineTransactionsApplied
   | CoreClientGetValidations
   | CoreClientSheetValidations
