@@ -15,6 +15,7 @@ impl Validations {
         self.warnings.contains_key(&pos)
     }
 
+    /// Sets a validation warning. Removes the validation if None is passed.
     pub fn set_warning(&mut self, sheet_pos: SheetPos, validation_id: Option<Uuid>) -> Operation {
         let old = if let Some(validation_id) = validation_id {
             self.warnings.insert(sheet_pos.into(), validation_id)
