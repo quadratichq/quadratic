@@ -20,7 +20,7 @@ import {
 } from '@radix-ui/react-icons';
 import { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 type Props = {
   connections: ConnectionList;
@@ -30,15 +30,12 @@ type Props = {
 };
 
 export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: intialIsPrivate }: Props) {
+  const location = useLocation();
   const [isPrivate, setIsPrivate] = useState<boolean>(!!intialIsPrivate);
   const [activeConnectionUuid, setActiveConnectionUuid] = useState<string>('');
   const gridItemClassName =
     'flex flex-col items-center justify-center gap-1 rounded-lg border border-border p-4 pt-5 w-full group';
   const gridItemInteractiveClassName = 'hover:bg-accent hover:text-foreground cursor-pointer';
-
-  // TODO: style a zero state
-  const hasConnections = connections.length > 0;
-
   const activeConnection = connections.find((connection) => connection.uuid === activeConnectionUuid);
 
   // Create a new file from an API snippet
@@ -50,8 +47,11 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: intia
     ? ROUTES.CREATE_FILE_PRIVATE(teamUuid, stateUrlParam)
     : ROUTES.CREATE_FILE(teamUuid, stateUrlParam);
 
+  // Do an in-memory navigation if we're not in the app
+  const reloadDocument = location.pathname.startsWith('/file/');
+
   return (
-    <Dialog open={true} onOpenChange={(open) => onClose()}>
+    <Dialog open={true} onOpenChange={onClose}>
       {/* overflow: visible here fixes a bug with the tooltip being cut off */}
       <DialogContent className="max-w-xl overflow-visible">
         <DialogHeader className="relative pl-12">
@@ -74,7 +74,7 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: intia
               isPrivate={isPrivate}
               onToggle={() => setIsPrivate((prev) => !prev)}
             >
-              Private to me
+              Make private
             </PrivateFileToggle>
           </DialogDescription>
         </DialogHeader>
@@ -127,9 +127,8 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: intia
               <Link
                 to={ROUTES.EXAMPLES}
                 className={cn(`text-muted-foreground`, gridItemClassName, gridItemInteractiveClassName)}
-                onClick={() => {
-                  onClose();
-                }}
+                reloadDocument={reloadDocument}
+                onClick={onClose}
               >
                 <ItemIcon>
                   <MixIcon />
@@ -144,7 +143,7 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: intia
                 </ItemIcon>
                 Query data from a connection
               </div>
-              {hasConnections ? (
+              {connections.length > 0 ? (
                 <ul className="w-full border-border">
                   {connections.slice(0, 5).map((connection) => (
                     <li key={connection.uuid}>
@@ -160,11 +159,17 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: intia
                   ))}
                 </ul>
               ) : (
-                <div>
-                  You don’t have any yet ·{' '}
-                  <Link to={ROUTES.TEAM_CONNECTIONS(teamUuid)} className="underline hover:text-primary">
-                    Create one now
+                <div className="border-t border-border p-2 text-center text-sm text-muted-foreground">
+                  No connections,{' '}
+                  <Link
+                    to={ROUTES.TEAM_CONNECTIONS(teamUuid)}
+                    className="underline hover:text-primary"
+                    reloadDocument={reloadDocument}
+                    onClick={onClose}
+                  >
+                    create one
                   </Link>
+                  .
                 </div>
               )}
             </li>

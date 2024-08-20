@@ -34,7 +34,7 @@ export const ConnectionDetails = ({
       </ConnectionHeader>
 
       <PrivateFileToggle className="mb-4" isPrivate={isPrivate} onToggle={() => setIsPrivate((prev) => !prev)}>
-        Create new file as private to me
+        Make new file private
       </PrivateFileToggle>
 
       <ConnectionSchemaBrowser

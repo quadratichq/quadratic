@@ -30,7 +30,7 @@ export function FilesListItemCore({
 
   return (
     <div className={`flex w-full items-center gap-1`}>
-      <div className={`flex flex-1 items-center justify-between overflow-hidden`}>
+      <div className={`flex flex-1 items-center justify-between gap-1 overflow-hidden`}>
         <div className={cn(`flex-1 overflow-hidden`, isGrid ? 'flex-col' : 'flex-col gap-0.5')}>
           <h2
             className={cn(isGrid ? 'truncate text-sm' : 'text-md flex-1 leading-tight')}
@@ -40,13 +40,13 @@ export function FilesListItemCore({
           {hasNetworkError ? (
             <p className={`${TYPE.caption} !text-destructive`}>Failed to sync changes</p>
           ) : (
-            <p className={`flex items-center ${TYPE.caption} mr-1 truncate`}>
+            <p className={`${TYPE.caption}`}>
               {isShared && (
                 <span className={`after:mr-1 after:pl-1 after:content-['·']`}>
                   <GlobeIcon className="relative -top-[1px] inline h-3 w-3" /> Public
                 </span>
               )}
-              <span className="truncate">{description}</span>
+              {description}
             </p>
           )}
         </div>
