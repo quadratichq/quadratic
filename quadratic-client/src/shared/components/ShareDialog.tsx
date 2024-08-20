@@ -16,6 +16,7 @@ import {
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { getAuth0AvatarSrc } from '@/shared/utils/auth0UserImageSrc';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { Avatar } from '@mui/material';
 import {
@@ -808,7 +809,7 @@ function ListItemUser({
   return (
     <ListItem>
       <div>
-        <AvatarWithLetters src={picture} size="small">
+        <AvatarWithLetters src={getAuth0AvatarSrc(picture)} size="small">
           {label}
         </AvatarWithLetters>
       </div>

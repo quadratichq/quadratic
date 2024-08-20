@@ -337,7 +337,6 @@ function ListItemView({
             alt="File thumbnail screenshot"
             className="object-cover"
             draggable="false"
-            crossOrigin="anonymous"
           />
         ) : (
           <div className="flex items-center justify-center">
@@ -366,7 +365,6 @@ function ListItemView({
             className={`aspect-video object-fill`}
             width="80"
             draggable="false"
-            crossOrigin="anonymous"
           />
         ) : (
           <div className="flex aspect-video w-20 items-center justify-center bg-background">

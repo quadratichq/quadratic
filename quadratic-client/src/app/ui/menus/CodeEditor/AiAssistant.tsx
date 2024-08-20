@@ -11,6 +11,7 @@ import { authClient } from '@/auth';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
+import { getAuth0AvatarSrc } from '@/shared/utils/auth0UserImageSrc';
 import { Send, Stop } from '@mui/icons-material';
 import { Avatar, CircularProgress, IconButton } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
@@ -230,7 +231,8 @@ ${QuadraticDocs}`,
                     marginBottom: '0.5rem',
                   }}
                   alt={user?.name}
-                  src={user?.picture}
+                  src={getAuth0AvatarSrc(user?.picture)}
+                  imgProps={{ crossOrigin: 'anonymous' }}
                 ></Avatar>
               ) : (
                 <Avatar

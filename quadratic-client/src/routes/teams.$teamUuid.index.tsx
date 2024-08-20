@@ -5,6 +5,7 @@ import { FilesList } from '@/dashboard/components/FilesList';
 import { FilesListEmptyState } from '@/dashboard/components/FilesListEmptyState';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { ROUTES } from '@/shared/constants/routes';
+import { getAuth0AvatarSrc } from '@/shared/utils/auth0UserImageSrc';
 import { Add } from '@mui/icons-material';
 import { Avatar, AvatarGroup } from '@mui/material';
 import { FileIcon } from '@radix-ui/react-icons';
@@ -39,7 +40,13 @@ export const Component = () => {
                     <Add fontSize="inherit" />
                   </Avatar>
                   {users.map((user, key) => (
-                    <Avatar key={key} alt={user.name} src={user.picture} sx={avatarSxProps} />
+                    <Avatar
+                      key={key}
+                      alt={user.name}
+                      src={getAuth0AvatarSrc(user.picture)}
+                      sx={avatarSxProps}
+                      imgProps={{ crossOrigin: 'anonymous' }}
+                    />
                   ))}
                 </AvatarGroup>
               </Link>

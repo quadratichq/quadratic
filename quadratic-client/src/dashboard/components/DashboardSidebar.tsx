@@ -1,3 +1,4 @@
+import { colors } from '@/app/theme/colors';
 import { ConnectionsIcon, SharedWithMeIcon } from '@/dashboard/components/CustomRadixIcons';
 import { TeamSwitcher } from '@/dashboard/components/TeamSwitcher';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
@@ -7,13 +8,13 @@ import { Type } from '@/shared/components/Type';
 import { TYPE } from '@/shared/constants/appConstants';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
-import { Avatar, AvatarFallback } from '@/shared/shadcn/ui/avatar';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { getAuth0AvatarSrc } from '@/shared/utils/auth0UserImageSrc';
 import { SchoolOutlined } from '@mui/icons-material';
-import { AvatarImage } from '@radix-ui/react-avatar';
+import { Avatar } from '@mui/material';
 import { ExternalLinkIcon, FileIcon, GearIcon, MixIcon, PersonIcon, PlusIcon } from '@radix-ui/react-icons';
 import { ReactNode, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigation, useSearchParams, useSubmit } from 'react-router-dom';
@@ -140,10 +141,17 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           </SidebarNavLink>
         )}
         <SidebarNavLink to={ROUTES.ACCOUNT}>
-          <Avatar className="h-6 w-6 bg-muted text-muted-foreground">
-            <AvatarImage src={user?.picture} />
-            <AvatarFallback>{user && user.name ? user.name[0] : '?'}</AvatarFallback>
-          </Avatar>
+          <Avatar
+            alt={user?.name}
+            src={getAuth0AvatarSrc(user?.picture)}
+            sx={{
+              bgcolor: colors.quadraticSecondary,
+              width: 24,
+              height: 24,
+              fontSize: '.8125rem',
+            }}
+            imgProps={{ crossOrigin: 'anonymous' }}
+          />
 
           <div className={`flex flex-col overflow-hidden`}>
             {user?.name || 'You'}
