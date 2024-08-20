@@ -27,7 +27,6 @@ export const CodeEditorPanel = memo((props: Props) => {
   const { editorRef } = useCodeEditor();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const connectionInfo = getConnectionInfo(editorInteractionState.mode);
-  const isConnection = connectionInfo !== undefined;
   const { codeEditorPanelData } = props;
   const { panelPosition, setPanelPosition } = codeEditorPanelData;
 
@@ -40,16 +39,14 @@ export const CodeEditorPanel = memo((props: Props) => {
   );
 
   const { TableQueryAction } = useConnectionSchemaBrowserTableQueryActionInsertQuery({ editorRef });
-  const showSchemaBrowser = Boolean(isAuthenticated && isConnection && teamPermissions?.includes('TEAM_EDIT'));
-  const schemaBrowser = showSchemaBrowser ? (
-    <ConnectionSchemaBrowser
-      // TODO: (jimniels) fix types
-      // @ts-expect-error
-      type={connectionInfo?.kind}
-      uuid={connectionInfo?.id}
-      TableQueryAction={TableQueryAction}
-    />
-  ) : undefined;
+  const schemaBrowser =
+    isAuthenticated && connectionInfo !== undefined && teamPermissions?.includes('TEAM_EDIT') ? (
+      <ConnectionSchemaBrowser
+        type={connectionInfo.kind}
+        uuid={connectionInfo.id}
+        TableQueryAction={TableQueryAction}
+      />
+    ) : undefined;
 
   const showAiAssistant = Boolean(isAuthenticated);
 
