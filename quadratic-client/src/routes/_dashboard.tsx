@@ -113,6 +113,13 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
     // If there are search params, keep 'em
     return redirect(ROUTES.TEAM(initialActiveTeamUuid) + url.search);
   }
+  // If it was a shortcut team route, redirect there
+  // e.g. /?team-shortcut=connections
+  const teamShortcut = url.searchParams.get('team-shortcut');
+  if (teamShortcut) {
+    url.searchParams.delete('team-shortcut');
+    return redirect(ROUTES.TEAM_CONNECTIONS(initialActiveTeamUuid) + url.search);
+  }
 
   /**
    * Get data for the active team
@@ -229,13 +236,13 @@ function NewFileDialogWrapper() {
   const location = useLocation();
   const isPrivate = location.pathname !== ROUTES.TEAM_FILES(teamUuid);
 
-  if (!newFileDialogState.show) return;
+  if (!newFileDialogState.show) return null;
 
   return (
     <NewFileDialog
       connections={connections}
       teamUuid={teamUuid}
-      onClose={() => setNewFileDialogState({ show: false })}
+      onClose={() => setNewFileDialogState({ show: false, isPrivate })}
       isPrivate={isPrivate}
     />
   );

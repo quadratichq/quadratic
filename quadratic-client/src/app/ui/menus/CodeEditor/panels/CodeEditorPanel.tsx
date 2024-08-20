@@ -4,15 +4,12 @@ import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { PanelPositionBottomIcon, PanelPositionLeftIcon } from '@/app/ui/icons';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { CodeEditorPanelData, PanelPosition } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import { useConnectionSchemaBrowserTableQueryActionInsertQuery } from '@/dashboard/hooks/useConnectionSchemaBrowserTableQueryAction';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { Button } from '@/shared/shadcn/ui/button';
-import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { IconButton } from '@mui/material';
-import { ClipboardCopyIcon } from '@radix-ui/react-icons';
-import mixpanel from 'mixpanel-browser';
 import { MouseEvent, memo, useCallback } from 'react';
 import { useRecoilValue } from 'recoil';
 import { CodeEditorPanelBottom } from './CodeEditorPanelBottom';
@@ -30,7 +27,6 @@ export const CodeEditorPanel = memo((props: Props) => {
   const { editorRef } = useCodeEditor();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const connectionInfo = getConnectionInfo(editorInteractionState.mode);
-  const isConnection = connectionInfo !== undefined;
   const { codeEditorPanelData } = props;
   const { panelPosition, setPanelPosition } = codeEditorPanelData;
 
@@ -42,44 +38,15 @@ export const CodeEditorPanel = memo((props: Props) => {
     [setPanelPosition]
   );
 
-  const showSchemaBrowser = Boolean(isAuthenticated && isConnection && teamPermissions?.includes('TEAM_EDIT'));
-  const schemaBrowser = showSchemaBrowser ? (
-    <ConnectionSchemaBrowser
-      // TODO: (jimniels) fix types
-      // @ts-expect-error
-      type={connectionInfo?.kind}
-      uuid={connectionInfo?.id}
-      tableQueryAction={(query: string) => (
-        <TooltipPopover label="Insert query">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-              mixpanel.track('[Connections].schemaViewer.insertQuery');
-
-              if (editorRef.current) {
-                const model = editorRef.current.getModel();
-                if (!model) return;
-
-                const range = model.getFullModelRange();
-                editorRef.current.executeEdits('insert-query', [
-                  {
-                    range,
-                    text: query,
-                  },
-                ]);
-
-                editorRef.current.focus();
-              }
-            }}
-          >
-            <ClipboardCopyIcon />
-          </Button>
-        </TooltipPopover>
-      )}
-    />
-  ) : undefined;
+  const { TableQueryAction } = useConnectionSchemaBrowserTableQueryActionInsertQuery({ editorRef });
+  const schemaBrowser =
+    isAuthenticated && connectionInfo !== undefined && teamPermissions?.includes('TEAM_EDIT') ? (
+      <ConnectionSchemaBrowser
+        type={connectionInfo.kind}
+        uuid={connectionInfo.id}
+        TableQueryAction={TableQueryAction}
+      />
+    ) : undefined;
 
   const showAiAssistant = Boolean(isAuthenticated);
 

@@ -193,7 +193,7 @@ mod tests {
     #[test]
     #[parallel]
     fn imports_a_simple_excel_file() {
-        let mut grid_controller = GridController::test_blank();
+        let mut grid_controller = GridController::new_blank();
         let pos = Pos { x: 0, y: 0 };
         let file: Vec<u8> = std::fs::read(EXCEL_FILE).expect("Failed to read file");
         let _ = grid_controller.import_excel(file, "basic.xlsx", None);
@@ -310,7 +310,7 @@ mod tests {
     #[test]
     #[parallel]
     fn import_all_excel_functions() {
-        let mut grid_controller = GridController::test_blank();
+        let mut grid_controller = GridController::new_blank();
         let pos = Pos { x: 0, y: 0 };
         let file: Vec<u8> = std::fs::read(EXCEL_FUNCTIONS_FILE).expect("Failed to read file");
         let _ = grid_controller.import_excel(file, "all_excel_functions.xlsx", None);

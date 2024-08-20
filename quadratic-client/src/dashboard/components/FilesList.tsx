@@ -21,6 +21,10 @@ export type FilesListUserFile = {
   thumbnail: string | null;
   updatedDate: string;
   uuid: string;
+  creator?: {
+    name?: string;
+    picture?: string;
+  };
 };
 
 export function FilesList({

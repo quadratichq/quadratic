@@ -26,6 +26,7 @@ export interface UrlParamsDevState {
 
 export class UrlParamsDev {
   dirty = false;
+  noUpdates = false;
 
   private state: UrlParamsDevState = {
     sheets: {},
@@ -38,18 +39,21 @@ export class UrlParamsDev {
     if (read) {
       // We need this timeout to ensure the setEditorInteraction is set in
       // pixiAppSettings before we try to load the code.
+      try {
+        this.state = JSON.parse(atob(read));
+      } catch (e) {
+        console.warn('Unable to parse URL param ?state=', e);
+      }
+
       setTimeout(() => {
-        try {
-          this.state = JSON.parse(atob(read));
-          this.loadSheets();
-          this.loadCode();
-          this.loadCodeAndRun();
-        } catch (e) {
-          console.warn('Unable to parse URL param ?state=', e);
+        this.loadSheets();
+        this.loadCode();
+        this.loadCodeAndRun();
+        if (!this.noUpdates) {
+          this.setupListeners();
         }
       }, WAIT_FOR_SET_EDITOR_INTERACTION_STATE_TIMEOUT_MS);
     }
-    this.setupListeners();
   }
 
   // Loads the sheet.cursor state from the URL.
@@ -98,19 +102,17 @@ export class UrlParamsDev {
       const sheetId = sheets.current;
       const { language, codeString } = this.state.insertAndRunCodeInNewSheet;
 
-      console.log(
-        `Inserting at:
-        x: %s
-        y: %s
-        sheetId: %s
-        codeString: %s
-        language %s`,
-        x,
-        y,
-        sheetId,
-        codeString,
-        JSON.stringify(language)
-      );
+      // For dev purposes: see what is loading & running
+      // console.log(
+      //   [
+      //     `Inserting:`,
+      //     `x: ${x}`,
+      //     `y: ${y}`,
+      //     `sheetId: ${sheetId}`,
+      //     `language: ${JSON.stringify(language)}`,
+      //     `codeString:\n  ${codeString.split('\n').join('\n  ')}`,
+      //   ].join('\n')
+      // );
 
       if (!pixiAppSettings.setEditorInteractionState) {
         throw new Error('Expected setEditorInteractionState to be set in urlParams.insertAndRunCodeInNewSheet');
@@ -133,7 +135,6 @@ export class UrlParamsDev {
         language,
         codeString,
       });
-      // quadraticCore.rerunCodeCells(sheetId, x, y, '');
 
       // Remove the `state` param when we're done
       const url = new URL(window.location.href);
@@ -141,6 +142,8 @@ export class UrlParamsDev {
       params.delete('state');
       url.search = params.toString();
       window.history.replaceState(null, '', url.toString());
+
+      this.noUpdates = true;
     }
   }
 

@@ -69,7 +69,8 @@ impl GridController {
             .map(|t| &t.forward)
     }
 
-    pub fn test_blank() -> Self {
+    #[cfg(test)]
+    pub fn new_blank() -> Self {
         Self::from_grid(Grid::new_blank(), 0)
     }
 }

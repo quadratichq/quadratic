@@ -4,7 +4,7 @@ import { FileIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { useSetRecoilState } from 'recoil';
 
-export const FilesListEmptyState = () => {
+export const FilesListEmptyState = ({ isPrivate = false }: { isPrivate?: boolean }) => {
   const setNewFileDialogState = useSetRecoilState(newFileDialogAtom);
 
   return (
@@ -19,7 +19,7 @@ export const FilesListEmptyState = () => {
               className="underline hover:text-primary"
               onClick={() => {
                 mixpanel.track('[FilesEmptyState].clickCreateBlankFile');
-                setNewFileDialogState({ show: true });
+                setNewFileDialogState({ show: true, isPrivate });
               }}
             >
               Create a new file

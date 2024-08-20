@@ -1,5 +1,6 @@
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
+import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -12,12 +13,12 @@ import { ReactNode, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 export const ConnectionSchemaBrowser = ({
-  tableQueryAction,
+  TableQueryAction,
   selfContained,
   type,
   uuid,
 }: {
-  tableQueryAction: (query: string) => ReactNode;
+  TableQueryAction: React.FC<{ query: string }>;
   selfContained?: boolean;
   type?: ConnectionType;
   uuid?: string;
@@ -38,11 +39,7 @@ export const ConnectionSchemaBrowser = ({
         <div className="flex items-center gap-1 truncate">
           {data && data.type ? (
             <div className="flex h-6 w-6 items-center ">
-              <LanguageIcon
-                // TODO: (jimniels) fix this
-                language={data.type}
-                sx={{ width: 15, height: 15 }}
-              />
+              <LanguageIcon language={data.type} sx={{ width: 15, height: 15 }} />
             </div>
           ) : null}
           <h3 className="truncate font-medium tracking-tight">{data?.name ? data.name : ''}</h3>
@@ -66,7 +63,7 @@ export const ConnectionSchemaBrowser = ({
               selfContained={selfContained}
               data={table}
               key={i}
-              tableQuery={tableQueryAction(getTableQuery({ table, connectionKind: data.type }))}
+              tableQuery={<TableQueryAction query={getTableQuery({ table, connectionKind: data.type })} />}
             />
           ))}
         </ul>
@@ -80,15 +77,14 @@ export const ConnectionSchemaBrowser = ({
               reload the schema
             </button>
             . If that doesn’t work,{' '}
-            <button
+            <Link
+              // Enhancement: do the logic to know when to do an in-memory navigation or redirect the document entirely
+              to={ROUTES.TEAM_SHORTCUT.CONNECTIONS}
+              reloadDocument={true}
               className="underline hover:text-primary"
-              onClick={() => {
-                // TODO: (jimniels) know when to do an in-memory navigation or an redirect document
-                window.location.href = '/';
-              }}
             >
               view the connection details
-            </button>{' '}
+            </Link>{' '}
             and ensure it’s properly configured.
           </p>
           <p>
@@ -119,7 +115,6 @@ type Column = {
 function TableListItem({
   data: { name, columns, schema },
   selfContained,
-
   tableQuery,
 }: {
   data: Table;

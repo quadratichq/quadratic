@@ -128,6 +128,7 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
               connectionUuid={activeConnectionState.uuid}
               connectionType={activeConnectionType}
               handleNavigateToListView={handleNavigateToListView}
+              teamUuid={teamUuid}
             />
           )
         ) : activeConnectionType ? (
