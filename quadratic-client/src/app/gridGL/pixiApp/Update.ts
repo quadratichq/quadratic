@@ -143,7 +143,7 @@ export class Update {
     debugTimeCheck('[Update] cellMoving');
     pixiApp.cellsSheets.update();
     debugTimeCheck('[Update] cellsSheets');
-    pixiApp.validations.update(pixiApp.viewport.dirty)
+    pixiApp.validations.update(pixiApp.viewport.dirty);
 
     if (pixiApp.viewport.dirty || rendererDirty) {
       debugTimeReset();
