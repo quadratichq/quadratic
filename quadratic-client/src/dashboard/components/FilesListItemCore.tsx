@@ -1,4 +1,6 @@
 import { TYPE } from '@/shared/constants/appConstants';
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/shadcn/ui/avatar';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { GlobeIcon } from '@radix-ui/react-icons';
 import { ReactNode } from 'react';
@@ -8,6 +10,7 @@ export function FilesListItemCore({
   name,
   description,
   filterValue,
+  creator,
   hasNetworkError,
   isShared,
   viewPreferences,
@@ -17,6 +20,7 @@ export function FilesListItemCore({
   description: string;
   filterValue: string;
   viewPreferences: ViewPreferences;
+  creator?: { name?: string; picture?: string };
   hasNetworkError?: boolean;
   isShared?: boolean;
   actions?: ReactNode;
@@ -25,27 +29,41 @@ export function FilesListItemCore({
   const isGrid = viewPreferences.layout === Layout.Grid;
 
   return (
-    <div className={`flex flex-row items-center gap-2`}>
-      <div className={cn(`relative mr-auto flex min-w-0 flex-grow-[2]`, isGrid ? 'flex-col' : 'flex-col gap-0.5')}>
-        <h2
-          className={cn(isGrid ? 'truncate text-sm' : 'text-md flex-1 leading-tight')}
-          dangerouslySetInnerHTML={{ __html }}
-        />
+    <div className={`flex w-full items-center gap-1`}>
+      <div className={`flex flex-1 items-center justify-between overflow-hidden`}>
+        <div className={cn(`flex-1 overflow-hidden`, isGrid ? 'flex-col' : 'flex-col gap-0.5')}>
+          <h2
+            className={cn(isGrid ? 'truncate text-sm' : 'text-md flex-1 leading-tight')}
+            dangerouslySetInnerHTML={{ __html }}
+          />
 
-        {hasNetworkError ? (
-          <p className={`${TYPE.caption} !text-destructive`}>Failed to sync changes</p>
-        ) : (
-          <ul className={`flex items-center ${TYPE.caption}`}>
-            {isShared && (
-              <li className={`after:mr-1 after:pl-1 after:content-['·']`}>
-                <GlobeIcon className="relative -top-[1px] inline h-3 w-3" /> Public
-              </li>
-            )}
-            <li>{description}</li>
-          </ul>
+          {hasNetworkError ? (
+            <p className={`${TYPE.caption} !text-destructive`}>Failed to sync changes</p>
+          ) : (
+            <p className={`flex items-center ${TYPE.caption} mr-1 truncate`}>
+              {isShared && (
+                <span className={`after:mr-1 after:pl-1 after:content-['·']`}>
+                  <GlobeIcon className="relative -top-[1px] inline h-3 w-3" /> Public
+                </span>
+              )}
+              <span className="truncate">{description}</span>
+            </p>
+          )}
+        </div>
+        {creator && creator.name && (
+          <TooltipPopover label={`Created by ${creator.name}`}>
+            <Avatar className="h-6 w-6 text-muted-foreground">
+              <AvatarImage src={creator?.picture} alt={creator.name} />
+              <AvatarFallback>
+                {creator.name[0]}
+                {creator.picture}
+              </AvatarFallback>
+            </Avatar>
+          </TooltipPopover>
         )}
       </div>
-      {actions}
+
+      {actions && <div className="flex-none">{actions}</div>}
     </div>
   );
 }

@@ -138,6 +138,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
           updatedDate: file.updatedDate.toISOString(),
           publicLinkAccess: file.publicLinkAccess,
           thumbnail: file.thumbnail,
+          creatorId: file.creatorUserId,
         },
         userMakingRequest: {
           filePermissions: getFilePermissions({

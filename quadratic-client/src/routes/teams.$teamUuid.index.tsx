@@ -13,6 +13,7 @@ import { Link } from 'react-router-dom';
 
 export const Component = () => {
   const {
+    userMakingRequest: { id: userMakingRequestId },
     activeTeam: {
       team: { uuid: teamUuid },
       files,
@@ -22,6 +23,14 @@ export const Component = () => {
   } = useDashboardRouteLoaderData();
   const canEdit = teamPermissions.includes('TEAM_EDIT');
   const avatarSxProps = { width: 24, height: 24, fontSize: '.875rem' };
+
+  const usersById: Record<number, { name: string | undefined; picture: string | undefined }> = users.reduce(
+    (acc, user) => ({
+      ...acc,
+      [user.id]: { name: user.name, picture: user.picture },
+    }),
+    {}
+  );
 
   return (
     <>
@@ -53,15 +62,20 @@ export const Component = () => {
       />
 
       <FilesList
-        files={files.map(({ file, userMakingRequest }) => ({
-          name: file.name,
-          createdDate: file.createdDate,
-          updatedDate: file.updatedDate,
-          thumbnail: file.thumbnail,
-          uuid: file.uuid,
-          publicLinkAccess: file.publicLinkAccess,
-          permissions: userMakingRequest.filePermissions,
-        }))}
+        files={files.map(({ file, userMakingRequest }) => {
+          // Don't include the creator if it's the person logged in
+          const creator = userMakingRequestId !== file.creatorId ? usersById[file.creatorId] : undefined;
+          return {
+            name: file.name,
+            createdDate: file.createdDate,
+            updatedDate: file.updatedDate,
+            thumbnail: file.thumbnail,
+            uuid: file.uuid,
+            publicLinkAccess: file.publicLinkAccess,
+            permissions: userMakingRequest.filePermissions,
+            creator,
+          };
+        })}
         emptyState={
           canEdit ? (
             <FilesListEmptyState />

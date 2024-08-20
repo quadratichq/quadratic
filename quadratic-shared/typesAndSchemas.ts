@@ -87,21 +87,20 @@ const FileSchema = z.object({
   thumbnail: z.string().url().nullable(),
 });
 
-const TeamFilesSchema = z.array(
-  z.object({
-    file: FileSchema.pick({
-      uuid: true,
-      name: true,
-      createdDate: true,
-      updatedDate: true,
-      publicLinkAccess: true,
-      thumbnail: true,
-    }),
-    userMakingRequest: z.object({
-      filePermissions: z.array(FilePermissionSchema),
-    }),
-  })
-);
+const TeamPrivateFileSchema = FileSchema.pick({
+  uuid: true,
+  name: true,
+  createdDate: true,
+  updatedDate: true,
+  publicLinkAccess: true,
+  thumbnail: true,
+});
+const TeamPublicFileSchema = TeamPrivateFileSchema.extend({
+  creatorId: z.number(),
+});
+const TeamUserMakingRequestSchema = z.object({
+  filePermissions: z.array(FilePermissionSchema),
+});
 
 export const TeamClientDataKvSchema = z.record(z.any());
 
@@ -312,8 +311,18 @@ export const ApiSchemas = {
       status: TeamSubscriptionStatusSchema.optional(),
       currentPeriodEnd: z.string().optional(),
     }),
-    files: TeamFilesSchema,
-    filesPrivate: TeamFilesSchema,
+    files: z.array(
+      z.object({
+        file: TeamPublicFileSchema,
+        userMakingRequest: TeamUserMakingRequestSchema,
+      })
+    ),
+    filesPrivate: z.array(
+      z.object({
+        file: TeamPrivateFileSchema,
+        userMakingRequest: TeamUserMakingRequestSchema,
+      })
+    ),
     users: z.array(TeamUserSchema),
     invites: z.array(z.object({ email: emailSchema, role: UserTeamRoleSchema, id: z.number() })),
     connections: ConnectionListSchema,
