@@ -5,11 +5,11 @@ dsn: memory
 
 serve:
   public:
-    base_url: http://localhost:4433/
+    base_url: https://kratos.localhost/
     cors:
       enabled: true
       allowed_origins:
-        - http://localhost
+        - https://localhost
         - http://localhost:3000
       allowed_methods:
         - POST
@@ -31,7 +31,7 @@ serve:
 selfservice:
   default_browser_return_url: http://localhost
   allowed_return_urls:
-    - http://localhost:4455
+    - https://kratos-client.localhost
     - http://localhost:3000
     - http://localhost:19006/Callback
     - exp://localhost:8081/--/Callback
@@ -52,36 +52,36 @@ selfservice:
 
   flows:
     error:
-      ui_url: http://localhost:4455/error
+      ui_url: https://kratos-client.localhost/error
 
     settings:
-      ui_url: http://localhost:4455/settings
+      ui_url: https://kratos-client.localhost/settings
       privileged_session_max_age: 15m
       required_aal: highest_available
 
     recovery:
       enabled: true
-      ui_url: http://localhost:4455/recovery
+      ui_url: https://kratos-client.localhost/recovery
       use: code
 
     verification:
       enabled: true
-      ui_url: http://localhost:4455/verification
+      ui_url: https://kratos-client.localhost/verification
       use: code
       after:
         default_browser_return_url: http://localhost
 
     logout:
       after:
-        default_browser_return_url: http://localhost:4455/login
+        default_browser_return_url: https://kratos-client.localhost/login
 
     login:
-      ui_url: http://localhost:4455/login
+      ui_url: https://kratos-client.localhost/login
       lifespan: 10m
 
     registration:
       lifespan: 10m
-      ui_url: http://localhost:4455/registration
+      ui_url: https://kratos-client.localhost/registration
       after:
         password:
           hooks:
@@ -93,14 +93,15 @@ session:
     tokenizer:
       templates:
         jwt_template:
-          jwks_url: http://host.docker.internal/.well-known/jwks.json
+          jwks_url: http://host.docker.internal:3000/.well-known/jwks.json
           # claims_mapper_url: base64://... # A JsonNet template for modifying the claims
           ttl: 24h # 24 hours (defaults to 10 minutes)
 
 log:
-  level: debug
-  format: text
-  leak_sensitive_values: true
+  level: warning
+  format: json
+  redaction_text: ""
+  leak_sensitive_values: false
 
 secrets:
   cookie:

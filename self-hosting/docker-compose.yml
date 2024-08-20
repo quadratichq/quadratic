@@ -42,13 +42,39 @@ services:
     container_name: caddy
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./docker/caddy/config/Caddyfile:/etc/caddy/Caddyfile
-      - ./docker/caddy/quadratic-client:/srv
-    depends_on:
-      - frontend
+      # - ./docker/caddy/quadratic-client/html:/srv
     profiles:
       - caddy
+      - frontend
+    networks:
+      - host
+
+  quadratic-client:
+    image: quadratic_quadratic-client:latest
+    env_file:
+      - ./docker/client/config/.env
+    restart: "always"
+    ports:
+      - "3000:80"
+    command: >
+      sh -c "/client/scripts/replace_env_vars.sh &&
+            nginx -g \"daemon off;\""
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://host.docker.internal:3000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+    volumes:
+      - ./docker/client:/client
+      - ./docker/client/config/default.conf:/etc/nginx/conf.d/default.conf
+      # - ./docker/client/build:/usr/share/nginx/html
+    profiles:
+      - client
+      - frontend
+    networks:
+      - host
 
   quadratic-api:
     image: quadratic_quadratic-api
@@ -64,6 +90,8 @@ services:
     profiles:
       - api
       - frontend
+    networks:
+      - host
 
   quadratic-multiplayer:
     image: quadratic-multiplayer
@@ -82,6 +110,8 @@ services:
         condition: service_healthy
       quadratic-api:
         condition: service_started
+      quadratic-client:
+        condition: service_healthy
     profiles:
       - backend
       - multiplayer
@@ -105,6 +135,8 @@ services:
         condition: service_healthy
       quadratic-api:
         condition: service_started
+      quadratic-client:
+        condition: service_healthy
     volumes:
       - ./docker/file-storage:/file-storage
     profiles:
@@ -126,6 +158,8 @@ services:
     depends_on:
       caddy:
         condition: service_started
+      quadratic-client:
+        condition: service_healthy
     #   postgres:
     #     condition: service_healthy
     #   quadratic-api:
@@ -133,6 +167,8 @@ services:
     profiles:
       - backend
       - connection
+    networks:
+      - host
 
   # Auth Providers
 
@@ -145,7 +181,7 @@ services:
     volumes:
       - ./docker/ory-auth/config:/etc/config/kratos
     environment:
-      DSN: postgresql://postgres:postgres@host.docker.internal:5432/kratos?sslmode=disable
+      DSN: postgresql://postgres:postgres@host.docker.internal:5432/kratos
       LOG_LEVEL: trace
     restart: unless-stopped
     depends_on:
@@ -162,7 +198,7 @@ services:
     volumes:
       - ./docker/ory-auth/config:/etc/config/kratos
     environment:
-      DSN: postgresql://postgres:postgres@host.docker.internal:5432/kratos?sslmode=disable
+      DSN: postgresql://postgres:postgres@host.docker.internal:5432/kratos
     restart: on-failure
     depends_on:
       - postgres
@@ -179,7 +215,7 @@ services:
       PORT: 4455
       SECURITY_MODE:
       KRATOS_PUBLIC_URL: http://host.docker.internal:4433/
-      KRATOS_BROWSER_URL: http://localhost:4433/
+      KRATOS_BROWSER_URL: https://kratos.localhost/
       COOKIE_SECRET: changeme
       CSRF_COOKIE_NAME: ory_csrf_ui
       CSRF_COOKIE_SECRET: changeme

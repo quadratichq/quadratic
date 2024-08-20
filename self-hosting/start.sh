@@ -8,7 +8,7 @@ escape_for_sed() {
 replace_env_vars() {
   TEMP=$'\r\n' GLOBIGNORE='*' command eval  'ENV_VARS=($(cat .env))'
 
-  find "docker/caddy/quadratic-client" -type f -name "*.js" | while read file; do
+  find "/usr/share/nginx/html" -type f -name "*.js" | while read file; do
     echo "Replacing values in $file"
     
     for env_var in "${ENV_VARS[@]}"; do
@@ -23,10 +23,10 @@ replace_env_vars() {
   done
 }
 
-cd ..
-rm -rf self-hosting/docker/caddy/quadratic-client/*
-npm run build --workspace=quadratic-client
-cp -r quadratic-client/build self-hosting/docker/caddy/quadratic-client
+# cd ..
+# rm -rf self-hosting/docker/caddy/quadratic-client/*
+# npm run build --workspace=quadratic-client
+# cp -r quadratic-client/build self-hosting/docker/caddy/quadratic-client
 
-cd self-hosting
-# replace_env_vars
+# cd self-hosting
+replace_env_vars

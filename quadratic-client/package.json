@@ -54,6 +54,7 @@
     "color": "^4.2.3",
     "esbuild-wasm": "^0.20.2",
     "eventemitter3": "^5.0.1",
+    "events": "^3.3.0",
     "fontfaceobserver": "^2.3.0",
     "fuzzysort": "^2.0.4",
     "localforage": "^1.10.0",

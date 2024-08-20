@@ -1,5 +1,19 @@
-:80 {
-  root * /srv
-  try_files {path} /index.html
-  file_server
+localhost {
+  tls internal
+  reverse_proxy http://host.docker.internal:3000
+}
+
+api.localhost {
+  tls internal
+  reverse_proxy http://host.docker.internal:8000
+}
+
+kratos.localhost {
+  tls internal
+  reverse_proxy http://host.docker.internal:4433
+}
+
+kratos-client.localhost {
+  tls internal
+  reverse_proxy http://host.docker.internal:4455
 }
