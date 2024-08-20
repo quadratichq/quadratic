@@ -54,10 +54,7 @@ export function FilesListItemCore({
           <TooltipPopover label={`Created by ${creator.name}`}>
             <Avatar className="h-6 w-6 text-muted-foreground">
               <AvatarImage src={creator?.picture} alt={creator.name} />
-              <AvatarFallback>
-                {creator.name[0]}
-                {creator.picture}
-              </AvatarFallback>
+              <AvatarFallback>{creator.name[0]}</AvatarFallback>
             </Avatar>
           </TooltipPopover>
         )}
