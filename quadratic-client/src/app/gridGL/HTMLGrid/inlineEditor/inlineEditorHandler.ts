@@ -21,6 +21,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import mixpanel from 'mixpanel-browser';
 import { Rectangle } from 'pixi.js';
+import { inlineEditorEvents } from './inlineEditorEvents';
 
 // Minimum amount to scroll viewport when cursor is near the edge.
 const MINIMUM_MOVE_VIEWPORT = 50;
@@ -51,6 +52,7 @@ class InlineEditorHandler {
     events.on('resizeHeadingColumn', this.sheetOffsets);
     events.on('resizeHeadingRow', this.sheetOffsets);
     events.on('resizeRowHeights', this.sheetOffsets);
+    inlineEditorEvents.on('replaceText', this.replaceText);
     createFormulaStyleHighlights();
   }
 
@@ -63,8 +65,9 @@ class InlineEditorHandler {
   };
 
   // Resets state after editing is complete.
-  private reset() {
+  reset() {
     this.open = false;
+    inlineEditorEvents.emit('status', false);
     this.cursorIsMoving = false;
     this.x = this.y = this.width = this.height = 0;
     this.location = undefined;
@@ -195,6 +198,8 @@ class InlineEditorHandler {
       this.changeToFormula(changeToFormula);
       this.updateMonacoCursorPosition();
       this.keepCursorVisible();
+      inlineEditorMonaco.focus();
+      inlineEditorEvents.emit('status', true, value);
     } else {
       this.close(0, 0, false);
     }
@@ -340,9 +345,23 @@ class InlineEditorHandler {
     }
   }
 
+  validateInput = async (): Promise<string | undefined> => {
+    if (!this.open || !this.location || this.formula) return;
+    const value = inlineEditorMonaco.get();
+    const validationError = await quadraticCore.validateInput(
+      this.location.sheetId,
+      this.location.x,
+      this.location.y,
+      value
+    );
+    return validationError;
+  };
+
   // Close editor. It saves the value if cancel = false. It also moves the
   // cursor by (deltaX, deltaY).
-  close = (deltaX = 0, deltaY = 0, cancel: boolean) => {
+  // @returns whether the editor closed successfully
+  close = async (deltaX = 0, deltaY = 0, cancel: boolean): Promise<boolean> => {
+    if (!this.open) return true;
     if (!this.location) {
       throw new Error('Expected location to be defined in InlineEditorHandler');
     }
@@ -379,13 +398,21 @@ class InlineEditorHandler {
           });
         }
       } else {
-        quadraticCore.setCellValue(
-          this.location.sheetId,
-          this.location.x,
-          this.location.y,
-          value.trim(),
-          sheets.getCursorPosition()
-        );
+        const location = { ...this.location };
+        const validationError = await this.validateInput();
+        if (validationError) {
+          events.emit('hoverCell', { x: this.location.x, y: this.location.y, validationId: validationError, value });
+          return false;
+        } else {
+          quadraticCore.setCellValue(
+            location.sheetId,
+            location.x,
+            location.y,
+            value.trim(),
+            sheets.getCursorPosition()
+          );
+          events.emit('hoverCell');
+        }
       }
     }
 
@@ -408,6 +435,7 @@ class InlineEditorHandler {
 
     // Set focus back to Grid
     focusGrid();
+    return true;
   };
 
   // Handler for the click for the expand code editor button.
@@ -494,11 +522,13 @@ class InlineEditorHandler {
   };
 
   // Called when manually changing cell position via clicking on a new cell
-  // (except when editing formula).
-  handleCellPointerDown() {
+  // (except when editing formula). Returns whether the editor can be closed
+  // (ie, if it fails validation with a ValidationStyle::Stop, we do not let it
+  // close)
+  async handleCellPointerDown(): Promise<boolean> {
     if (this.open) {
       if (!this.formula || !inlineEditorFormula.wantsCellRef()) {
-        this.close(0, 0, false);
+        return await this.close(0, 0, false);
       } else {
         if (!this.cursorIsMoving) {
           this.cursorIsMoving = true;
@@ -506,7 +536,13 @@ class InlineEditorHandler {
         }
       }
     }
+    return true;
   }
+
+  private replaceText = (text: string, highlight: boolean) => {
+    if (!this.open) return;
+    inlineEditorMonaco.set(text, highlight);
+  };
 }
 
 export const inlineEditorHandler = new InlineEditorHandler();

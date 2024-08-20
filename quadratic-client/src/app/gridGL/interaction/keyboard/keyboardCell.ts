@@ -9,6 +9,7 @@ import { sheets } from '../../../grid/controller/Sheets';
 import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { doubleClickCell } from '../pointer/doubleClickCell';
 import { isAllowedFirstChar } from './keyboardCellChars';
+import { events } from '@/app/events/events';
 
 function inCodeEditor(editorInteractionState: EditorInteractionState, cursor: SheetCursor): boolean {
   if (!editorInteractionState.showCodeEditor) return false;
@@ -118,6 +119,12 @@ export function keyboardCell(options: {
   if (matchShortcut('show_cell_type_menu', event)) {
     openCodeEditor();
     return true;
+  }
+
+  // Triggers Validation UI
+  if (matchShortcut('trigger_cell', event)) {
+    const p = sheets.sheet.cursor.cursorPosition;
+    events.emit('triggerCell', p.x, p.y, true);
   }
 
   if (isAllowedFirstChar(event.key)) {

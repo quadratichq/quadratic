@@ -1,5 +1,9 @@
 import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
-import { downloadSelectionAsCsvAction, isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
+import {
+  dataValidations,
+  downloadSelectionAsCsvAction,
+  isAvailableBecauseFileLocationIsAccessibleAndWriteable,
+} from '@/app/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { useFileContext } from '@/app/ui/components/FileProvider';
@@ -79,6 +83,10 @@ export const DataMenu = () => {
           </>
         )}
 
+        <MenuDivider />
+        <MenuItem onClick={() => setEditorInteractionState((prev) => ({ ...prev, showValidation: true }))}>
+          <MenuLineItem primary={dataValidations.label}></MenuLineItem>
+        </MenuItem>
         <MenuDivider />
         <MenuItem
           onClick={() => {

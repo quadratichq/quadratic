@@ -112,4 +112,17 @@ export class Bounds {
   atBounds(x: number, y: number): boolean {
     return x <= this.minX || x >= this.maxX || y <= this.minY || y >= this.maxX;
   }
+
+  // Updates an in-place rectangle with the results of the bounds
+  updateRectangle(rectangle: Rectangle) {
+    if (this.empty) {
+      rectangle.width = 0;
+      rectangle.height = 0;
+      return;
+    }
+    rectangle.x = this.minX;
+    rectangle.y = this.minY;
+    rectangle.width = this.maxX - this.minX;
+    rectangle.height = this.maxY - this.minY;
+  }
 }

@@ -21,6 +21,7 @@ import {
   Selection,
   SheetPos,
   SummarizeSelectionResult,
+  Validation,
 } from '@/app/quadratic-core-types';
 import initCore, { GridController } from '@/app/quadratic-core/quadratic_core';
 import { MultiplayerCoreReceiveTransaction } from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
@@ -36,7 +37,7 @@ import {
 import { coreClient } from './coreClient';
 import { coreRender } from './coreRender';
 import { offline } from './offline';
-import { numbersToRect, pointsToRect, posToPos, posToRect } from './rustConversions';
+import { numbersToRectStringified, pointsToRect, posToPos, posToRect } from './rustConversions';
 
 // Used to coerce bigints to numbers for JSON.stringify; see
 // https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-2064279949.
@@ -152,7 +153,7 @@ class Core {
         if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getGridBounds');
         const cells = this.gridController.getRenderCells(
           data.sheetId,
-          numbersToRect(data.x, data.y, data.width, data.height)
+          numbersToRectStringified(data.x, data.y, data.width, data.height)
         );
         resolve(JSON.parse(cells));
       });
@@ -588,7 +589,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        resolve(this.gridController.hasRenderCells(sheetId, numbersToRect(x, y, width, height)));
+        resolve(this.gridController.hasRenderCells(sheetId, numbersToRectStringified(x, y, width, height)));
       });
     });
   }
@@ -679,7 +680,13 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setRegionBorders(sheetId, numbersToRect(x, y, width, height), selection, style, cursor);
+        this.gridController.setRegionBorders(
+          sheetId,
+          numbersToRectStringified(x, y, width, height),
+          selection,
+          style,
+          cursor
+        );
         resolve(undefined);
       });
     });
@@ -691,7 +698,7 @@ class Core {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
         this.gridController.setCellRenderSize(
           sheetId,
-          numbersToRect(x, y, 1, 1),
+          numbersToRectStringified(x, y, 1, 1),
           width.toString(),
           height.toString(),
           cursor
@@ -922,9 +929,65 @@ class Core {
     );
   }
 
+  getValidation(sheetId: string, validationId: string): Validation | undefined {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const validation = this.gridController.getValidation(sheetId, validationId);
+    if (validation) {
+      return JSON.parse(validation);
+    }
+  }
+
+  getValidations(sheetId: string): Validation[] {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const validations = this.gridController.getValidations(sheetId);
+    return JSON.parse(validations);
+  }
+
+  updateValidation(validation: Validation, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.updateValidation(JSON.stringify(validation, bigIntReplacer), cursor);
+  }
+
+  removeValidation(sheetId: string, validationId: string, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.removeValidation(sheetId, validationId, cursor);
+  }
+
+  removeValidations(sheetId: string, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.removeValidations(sheetId, cursor);
+  }
+
+  getValidationFromPos(sheetId: string, x: number, y: number) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const validation = this.gridController.getValidationFromPos(sheetId, posToPos(x, y));
+    if (validation) {
+      return JSON.parse(validation);
+    }
+  }
+
   receiveRowHeights(transactionId: string, sheetId: string, rowHeights: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.receiveRowHeights(transactionId, sheetId, rowHeights);
+  }
+
+  getValidationList(sheetId: string, x: number, y: number) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const list = this.gridController.getValidationList(sheetId, BigInt(x), BigInt(y));
+    return JSON.parse(list);
+  }
+
+  getDisplayCell(sheetId: string, x: number, y: number) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    return this.gridController.getDisplayValue(sheetId, posToPos(x, y));
+  }
+
+  validateInput(sheetId: string, x: number, y: number, input: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const validationId = this.gridController.validateInput(sheetId, posToPos(x, y), input);
+    if (validationId) {
+      return JSON.parse(validationId);
+    }
   }
 }
 

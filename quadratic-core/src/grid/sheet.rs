@@ -5,6 +5,7 @@ use bigdecimal::{BigDecimal, RoundingMode};
 use indexmap::IndexMap;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
+use validations::Validations;
 
 use super::bounds::GridBounds;
 use super::column::Column;
@@ -32,8 +33,8 @@ pub mod search;
 pub mod selection;
 pub mod send_render;
 pub mod sheet_test;
-
 pub mod summarize;
+pub mod validations;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Sheet {
@@ -75,6 +76,9 @@ pub struct Sheet {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub format_all: Option<Format>,
 
+    #[serde(default)]
+    pub validations: Validations,
+
     // bounds for the grid with only data
     pub(super) data_bounds: GridBounds,
 
@@ -107,6 +111,7 @@ impl Sheet {
 
             format_bounds: GridBounds::Empty,
 
+            validations: Validations::default(),
             rows_resize: ResizeMap::default(),
         }
     }
