@@ -100,6 +100,7 @@ class Python {
         'micropip',
         'pyodide-http',
         'pandas',
+        'requests',
         `${IS_TEST ? 'public' : ''}/quadratic_py-0.1.0-py3-none-any.whl`,
       ],
     });
@@ -108,6 +109,9 @@ class Python {
 
     // patch requests https://github.com/koenvo/pyodide-http
     await this.pyodide.runPythonAsync('import pyodide_http; pyodide_http.patch_all();');
+
+    // disable urllib3 warnings
+    await this.pyodide.runPythonAsync(`import requests; requests.packages.urllib3.disable_warnings();`);
 
     try {
       // make run_python easier to call later

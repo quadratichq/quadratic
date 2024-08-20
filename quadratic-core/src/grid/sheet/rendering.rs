@@ -1,6 +1,7 @@
 use code_run::CodeRunResult;
 
 use crate::{
+    controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     grid::{
         borders::{get_render_horizontal_borders, get_render_vertical_borders},
         code_run,
@@ -8,6 +9,7 @@ use crate::{
         js_types::{
             JsHtmlOutput, JsNumber, JsRenderBorders, JsRenderCell, JsRenderCellSpecial,
             JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsSheetFill,
+            JsValidationWarning,
         },
         CellAlign, CodeCellLanguage, CodeRun, Column,
     },
@@ -57,18 +59,6 @@ impl Sheet {
                 }),
                 ..Default::default()
             };
-        } else if let CellValue::Logical(logical) = value {
-            return JsRenderCell {
-                x,
-                y,
-                language,
-                special: Some(if *logical {
-                    JsRenderCellSpecial::True
-                } else {
-                    JsRenderCellSpecial::False
-                }),
-                ..Default::default()
-            };
         } else if let CellValue::Image(_) = value {
             return JsRenderCell {
                 x,
@@ -78,6 +68,14 @@ impl Sheet {
                 ..Default::default()
             };
         }
+
+        let special = self.validations.render_special_pos(Pos { x, y }).or({
+            if matches!(value, CellValue::Logical(_)) {
+                Some(JsRenderCellSpecial::Logical)
+            } else {
+                None
+            }
+        });
 
         match column {
             None => {
@@ -109,8 +107,8 @@ impl Sheet {
                     bold: format.bold,
                     italic: format.italic,
                     text_color: format.text_color,
+                    special,
                     number,
-                    ..Default::default()
                 }
             }
             Some(column) => {
@@ -138,13 +136,13 @@ impl Sheet {
                     value,
                     language,
                     align: format.align,
-                    vertical_align: format.vertical_align,
                     wrap: format.wrap,
                     bold: format.bold,
                     italic: format.italic,
                     text_color: format.text_color,
+                    vertical_align: format.vertical_align,
+                    special,
                     number,
-                    ..Default::default()
                 }
             }
         }
@@ -249,6 +247,33 @@ impl Sheet {
                     y: code_rect.min.y,
                 }) {
                     render_cells.extend(self.get_code_cells(&code, code_run, &rect, &code_rect));
+                }
+            });
+
+        // Populate validations for cells that are not yet in the render_cells
+        self.validations
+            .in_rect(rect)
+            .iter()
+            .rev() // we need to reverse to ensure that later rules overwrite earlier ones
+            .for_each(|validation| {
+                if let Some(special) = validation.render_special() {
+                    if let Some(rects) = validation.selection.rects.as_ref() {
+                        rects.iter().for_each(|r| {
+                            r.iter().filter(|pos| rect.contains(*pos)).for_each(|pos| {
+                                if !render_cells
+                                    .iter()
+                                    .any(|cell| cell.x == pos.x && cell.y == pos.y)
+                                {
+                                    render_cells.push(JsRenderCell {
+                                        x: pos.x,
+                                        y: pos.y,
+                                        special: Some(special.clone()),
+                                        ..Default::default()
+                                    });
+                                }
+                            });
+                        });
+                    }
                 }
             });
         render_cells
@@ -466,6 +491,52 @@ impl Sheet {
             }
         });
     }
+
+    /// Sends all validations for this sheet to the client.
+    pub fn send_all_validations(&self) {
+        if let Ok(validations) = serde_json::to_string(&self.validations.validations) {
+            crate::wasm_bindings::js::jsSheetValidations(self.id.to_string(), validations);
+        }
+    }
+
+    /// Sends validation warnings for a hashed region to the client.
+    pub fn send_validation_warnings(&self, hash_x: i64, hash_y: i64, rect: Rect) {
+        let warnings = self
+            .validations
+            .warnings
+            .iter()
+            .filter_map(|(pos, validation_id)| {
+                if rect.contains(*pos) {
+                    let validation = self.validations.validation(*validation_id)?;
+                    Some(JsValidationWarning {
+                        x: pos.x,
+                        y: pos.y,
+                        validation: Some(*validation_id),
+                        style: Some(validation.error.style.clone()),
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+
+        if let Ok(warnings) = serde_json::to_string(&warnings) {
+            crate::wasm_bindings::js::jsRenderValidationWarnings(
+                self.id.to_string(),
+                hash_x,
+                hash_y,
+                warnings,
+            );
+        }
+    }
+
+    /// Sends validation warnings as a response from the request from the
+    /// client. Note, the client always requests hash-sized rects.
+    pub fn send_validation_warnings_rect(&self, rect: Rect) {
+        let hash_x = rect.min.x / CELL_SHEET_WIDTH as i64;
+        let hash_y = rect.min.y / CELL_SHEET_HEIGHT as i64;
+        self.send_validation_warnings(hash_x, hash_y, rect);
+    }
 }
 
 #[cfg(test)]
@@ -474,6 +545,7 @@ mod tests {
 
     use chrono::Utc;
     use serial_test::{parallel, serial};
+    use uuid::Uuid;
 
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
@@ -482,6 +554,10 @@ mod tests {
             js_types::{
                 JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
                 JsSheetFill,
+            },
+            sheet::validations::{
+                validation::Validation,
+                validation_rules::{validation_logical::ValidationLogical, ValidationRule},
             },
             Bold, CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, CodeRun, CodeRunResult,
             Italic, RenderSize, Sheet,
@@ -626,7 +702,8 @@ mod tests {
             JsRenderCell {
                 x: 2,
                 y: 5,
-                special: Some(JsRenderCellSpecial::True),
+                value: "true".to_string(),
+                special: Some(JsRenderCellSpecial::Logical),
                 ..Default::default()
             },
         );
@@ -861,12 +938,12 @@ mod tests {
             max: (5, 5).into(),
         });
         for (i, rendering) in rendering.iter().enumerate().take(5 + 1) {
-            assert_eq!(rendering.value, "".to_string());
             if i % 2 == 0 {
-                assert_eq!(rendering.special, Some(JsRenderCellSpecial::True));
+                assert_eq!(rendering.value, "true".to_string());
             } else {
-                assert_eq!(rendering.special, Some(JsRenderCellSpecial::False));
+                assert_eq!(rendering.value, "false".to_string());
             }
+            assert_eq!(rendering.special, Some(JsRenderCellSpecial::Logical));
         }
     }
 
@@ -967,23 +1044,31 @@ mod tests {
             JsRenderCell {
                 x: 0,
                 y: 0,
+                value: "true".to_string(),
                 language: Some(CodeCellLanguage::Formula),
-                special: Some(JsRenderCellSpecial::True),
+                special: Some(JsRenderCellSpecial::Logical),
                 ..Default::default()
             },
             JsRenderCell {
                 x: 1,
                 y: 0,
-                special: Some(JsRenderCellSpecial::False),
+                value: "false".to_string(),
+                special: Some(JsRenderCellSpecial::Logical),
                 ..Default::default()
             },
             JsRenderCell {
                 x: 2,
                 y: 0,
-                special: Some(JsRenderCellSpecial::True),
+                value: "true".to_string(),
+                special: Some(JsRenderCellSpecial::Logical),
                 ..Default::default()
             },
         ];
+        let sheet = gc.sheet(sheet_id);
+        let expected = sheet.get_render_cells(Rect::new(0, 0, 2, 0));
+        assert_eq!(expected.len(), cells.len());
+        assert!(expected.iter().all(|cell| cells.contains(cell)));
+
         let cells_string = serde_json::to_string(&cells).unwrap();
         expect_js_call(
             "jsRenderCellSheets",
@@ -1041,5 +1126,48 @@ mod tests {
         assert_eq!(fills.columns[0].1 .0, "blue".to_string());
         assert_eq!(fills.rows.len(), 1);
         assert_eq!(fills.rows[0].1 .0, "red".to_string());
+    }
+
+    #[test]
+    #[parallel]
+    fn validation_list() {
+        let mut sheet = Sheet::test();
+        sheet.validations.set(Validation {
+            id: Uuid::new_v4(),
+            selection: Selection::rect(Rect::new(0, 0, 1, 1), sheet.id),
+            rule: ValidationRule::Logical(ValidationLogical {
+                show_checkbox: true,
+                ignore_blank: true,
+            }),
+            message: Default::default(),
+            error: Default::default(),
+        });
+        let render = sheet.get_render_cells(Rect::single_pos((0, 0).into()));
+        assert_eq!(render.len(), 1);
+    }
+
+    #[test]
+    #[serial]
+    fn send_all_validations() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.validations.set(Validation {
+            id: Uuid::new_v4(),
+            selection: Selection::rect(Rect::new(0, 0, 1, 1), sheet_id),
+            rule: ValidationRule::Logical(ValidationLogical {
+                show_checkbox: true,
+                ignore_blank: true,
+            }),
+            message: Default::default(),
+            error: Default::default(),
+        });
+        sheet.send_all_validations();
+        let validations = serde_json::to_string(&sheet.validations.validations).unwrap();
+        expect_js_call(
+            "jsSheetValidations",
+            format!("{},{}", sheet.id, validations),
+            true,
+        );
     }
 }

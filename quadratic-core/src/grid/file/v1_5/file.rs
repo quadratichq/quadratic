@@ -2,6 +2,7 @@ use anyhow::Result;
 
 use crate::grid::file::v1_5::schema as v1_5;
 use crate::grid::file::v1_6::schema as v1_6;
+use crate::grid::file::v1_6::schema_validation::Validations;
 
 fn upgrade_column(x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
     (
@@ -380,6 +381,7 @@ fn upgrade_sheet(sheet: &v1_5::Sheet) -> v1_6::Sheet {
         formats_columns: vec![],
         formats_rows: vec![],
         rows_resize: vec![],
+        validations: Validations::default(),
     }
 }
 

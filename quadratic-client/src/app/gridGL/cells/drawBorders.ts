@@ -1,7 +1,7 @@
 import { CellBorderLine, Rgba } from '@/app/quadratic-core-types';
 import { Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
 import { colors } from '../../theme/colors';
-import { dashedTextures } from '../dashedTextures';
+import { generatedTextures } from '../generateTextures';
 
 export interface BorderCull {
   sprite: Sprite | TilingSprite;
@@ -12,9 +12,9 @@ export const borderLineWidth = 1;
 
 function setTexture(sprite: Sprite | TilingSprite, horizontal: boolean, borderLine?: CellBorderLine): void {
   if (borderLine === 'dashed') {
-    sprite.texture = horizontal ? dashedTextures.dashedHorizontal : dashedTextures.dashedVertical;
+    sprite.texture = horizontal ? generatedTextures.dashedHorizontal : generatedTextures.dashedVertical;
   } else if (borderLine === 'dotted') {
-    sprite.texture = horizontal ? dashedTextures.dottedHorizontal : dashedTextures.dottedVertical;
+    sprite.texture = horizontal ? generatedTextures.dottedHorizontal : generatedTextures.dottedVertical;
   } else {
     sprite.texture = Texture.WHITE;
   }

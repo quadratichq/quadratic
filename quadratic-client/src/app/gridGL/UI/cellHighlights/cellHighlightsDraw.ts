@@ -1,4 +1,4 @@
-import { DASHED, DASHED_THICKNESS, dashedTextures } from '@/app/gridGL/dashedTextures';
+import { DASHED, DASHED_THICKNESS, generatedTextures } from '@/app/gridGL/generateTextures';
 import { CURSOR_THICKNESS, CursorCell, FILL_ALPHA } from '@/app/gridGL/UI/Cursor';
 import { Graphics } from 'pixi.js';
 
@@ -35,7 +35,7 @@ export function drawDashedRectangle(options: {
 
   g.moveTo(minX, minY);
   for (let i = 0; i < path.length; i++) {
-    const texture = i % 2 === 0 ? dashedTextures.dashedHorizontal : dashedTextures.dashedVertical;
+    const texture = i % 2 === 0 ? generatedTextures.dashedHorizontal : generatedTextures.dashedVertical;
     g.lineStyle({
       width: CURSOR_THICKNESS,
       color,

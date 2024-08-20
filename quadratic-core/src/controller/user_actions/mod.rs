@@ -10,3 +10,4 @@ pub mod formatting;
 pub mod import;
 pub mod sheets;
 pub mod undo;
+pub mod validations;

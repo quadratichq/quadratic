@@ -20,6 +20,7 @@ import searchCommandGroup from './commands/Search';
 import getSheetCommandGroup from './commands/Sheets';
 import textCommandGroup from './commands/Text';
 import viewCommandGroup from './commands/View';
+import { validationCommandGroup } from './commands/Validation';
 
 export const CommandPalette = () => {
   const { isAuthenticated } = useRootRouteLoaderData();
@@ -59,6 +60,7 @@ export const CommandPalette = () => {
     codeCommandGroup,
     searchCommandGroup,
     columnRowCommandGroup,
+    validationCommandGroup,
   ];
 
   return (

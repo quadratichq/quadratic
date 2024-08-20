@@ -14,6 +14,7 @@ import { keyboardSearch } from './keyboardSearch';
 import { keyboardSelect } from './keyboardSelect';
 import { keyboardUndoRedo } from './keyboardUndoRedo';
 import { keyboardViewport } from './keyboardViewport';
+import { keyboardDropdown } from './keyboardDropdown';
 
 export interface IProps {
   editorInteractionState: EditorInteractionState;
@@ -59,6 +60,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
         addGlobalSnackbar,
         fileName,
       }) ||
+      keyboardDropdown(event.nativeEvent, editorInteractionState) ||
       keyboardUndoRedo(event) ||
       keyboardSelect(event) ||
       keyboardCode(event, editorInteractionState) ||

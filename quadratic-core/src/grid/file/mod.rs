@@ -11,11 +11,13 @@ use std::str;
 use v1_6::schema::GridSchema;
 
 pub mod current;
+mod selection;
 pub mod sheet_schema;
 mod v1_3;
 mod v1_4;
 mod v1_5;
 mod v1_6;
+mod validations;
 
 pub static CURRENT_VERSION: &str = "1.6";
 pub static SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Json;

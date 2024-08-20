@@ -2,7 +2,9 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use crate::grid::file::v1_4::schema as v1_4;
-use crate::grid::file::v1_5::schema::{self as v1_5, CellAlign, CodeCellLanguage, ColumnRepeat};
+use crate::grid::file::v1_5::schema::{
+    self as v1_5, CellAlign, CodeCellLanguage, ColumnRepeat,
+};
 use anyhow::Result;
 use chrono::DateTime;
 
