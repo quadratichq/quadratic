@@ -24,8 +24,12 @@ import {
   Validation,
 } from '@/app/quadratic-core-types';
 import initCore, { GridController } from '@/app/quadratic-core/quadratic_core';
-import { MultiplayerCoreReceiveTransaction } from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
+import {
+  MultiplayerCoreReceiveTransaction,
+  MultiplayerCoreReceiveTransactions,
+} from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
 import * as Sentry from '@sentry/react';
+import { Buffer } from 'buffer';
 import {
   ClientCoreFindNextColumn,
   ClientCoreFindNextRow,
@@ -287,6 +291,11 @@ class Core {
       this.clientQueue.push(async () => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
         const data = message.transaction;
+
+        if (typeof data.operations === 'string') {
+          data.operations = Buffer.from(data.operations, 'base64');
+        }
+
         this.gridController.multiplayerTransaction(data.id, data.sequence_num, data.operations);
         offline.markTransactionSent(data.id);
         if (await offline.unsentTransactionsCount()) {
@@ -299,11 +308,25 @@ class Core {
     });
   }
 
-  receiveTransactions(transactions: string) {
+  receiveTransactions(receive_transactions: MultiplayerCoreReceiveTransactions) {
     return new Promise((resolve) => {
       this.clientQueue.push(async () => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.receiveMultiplayerTransactions(transactions);
+
+        for (let data of receive_transactions.transactions) {
+          // convert the base64 encoded string of operations into buffers
+          if (typeof data.operations === 'string') {
+            data.operations = Buffer.from(data.operations, 'base64');
+          }
+
+          this.gridController.multiplayerTransaction(data.id, data.sequence_num, data.operations);
+        }
+
+        // TODO(ddimaria): re-enable 5 - 7 days after we roll out the compressed
+        // transactions PR, so that we'll know all transactions are of the same version.
+        //
+        // const transactionsBuffer = JSON.stringify(receive_transactions.transactions);
+        // this.gridController.receiveMultiplayerTransactions(transactionsBuffer);
         if (await offline.unsentTransactionsCount()) {
           coreClient.sendMultiplayerState('syncing');
         } else {

@@ -131,8 +131,12 @@ class CoreClient {
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
-  private send(message: CoreClientMessage) {
-    self.postMessage(message);
+  private send(message: CoreClientMessage, transfer?: Transferable[]) {
+    if (transfer) {
+      self.postMessage(message, transfer);
+    } else {
+      self.postMessage(message);
+    }
   }
 
   private handleMessage = async (e: MessageEvent<ClientCoreMessage>) => {
@@ -349,7 +353,8 @@ class CoreClient {
         return;
 
       case 'clientCoreExport':
-        this.send({ type: 'coreClientExport', id: e.data.id, grid: await core.export() });
+        const exported = await core.export();
+        this.send({ type: 'coreClientExport', id: e.data.id, grid: exported }, [exported.buffer]);
         return;
 
       case 'clientCoreSearch':

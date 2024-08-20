@@ -86,7 +86,7 @@ extern "C" {
     );
     pub fn jsTransactionStart(transaction_id: String, name: String);
     pub fn addUnsentTransaction(transaction_id: String, transaction: String, operations: u32);
-    pub fn jsSendTransaction(transaction_id: String, transaction: String);
+    pub fn jsSendTransaction(transaction_id: String, transaction: Vec<u8>);
 
     pub fn jsTransactionProgress(transaction_id: String, remaining_operations: i32);
 
@@ -477,7 +477,7 @@ pub fn addUnsentTransaction(transaction_id: String, transaction: String, operati
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSendTransaction(transaction_id: String, _transaction: String) {
+pub fn jsSendTransaction(transaction_id: String, _transaction: Vec<u8>) {
     // We do not include the actual transaction as we don't want to save that in
     // the TEST_ARRAY because of its potential size.
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(

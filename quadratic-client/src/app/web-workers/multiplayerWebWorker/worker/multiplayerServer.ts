@@ -4,6 +4,7 @@
 
 import { User } from '@auth0/auth0-spa-js';
 import * as Sentry from '@sentry/react';
+import { Buffer } from 'buffer';
 import sharedConstants from '../../../../../../updateAlertVersion.json';
 import { debugShow, debugShowMultiplayer } from '../../../debugFlags';
 import { ClientMultiplayerInit, MultiplayerState } from '../multiplayerClientMessages';
@@ -244,7 +245,7 @@ export class MultiplayerServer {
         break;
 
       case 'Transactions':
-        multiplayerCore.receiveTransactions(data.transactions);
+        multiplayerCore.receiveTransactions(data);
         break;
 
       case 'EnterRoom':
@@ -304,7 +305,7 @@ export class MultiplayerServer {
       id: transactionMessage.transaction_id,
       session_id: this.sessionId!,
       file_id: this.fileId!,
-      operations: transactionMessage.operations,
+      operations: Buffer.from(transactionMessage.operations).toString('base64'),
     };
     this.send(message);
   }

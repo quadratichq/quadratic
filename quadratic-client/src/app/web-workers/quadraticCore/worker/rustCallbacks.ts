@@ -20,7 +20,7 @@ import {
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
     addUnsentTransaction: (transactionId: string, transaction: string, operations: number) => void;
-    sendTransaction: (transactionId: string, operations: string) => void;
+    sendTransaction: (transactionId: string, operations: ArrayBuffer) => void;
     sendImportProgress: (
       filename: string,
       current: number,
@@ -103,8 +103,8 @@ export const addUnsentTransaction = (transactionId: string, transactions: string
   return self.addUnsentTransaction(transactionId, transactions, operations);
 };
 
-export const jsSendTransaction = (transactionId: string, operations: string) => {
-  return self.sendTransaction(transactionId, operations);
+export const jsSendTransaction = (transactionId: string, operations: Uint8Array) => {
+  return self.sendTransaction(transactionId, operations.buffer);
 };
 
 export const jsTime = (name: string) => console.time(name);
