@@ -426,7 +426,7 @@ mod test {
     #[test]
     #[parallel]
     fn import_excel() {
-        let mut gc = GridController::test_blank();
+        let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/simple.xlsx");
         gc.import_excel(file.to_vec(), "simple.xlsx", None).unwrap();
 
@@ -455,7 +455,7 @@ mod test {
     #[test]
     #[parallel]
     fn import_excel_invalid() {
-        let mut gc = GridController::test_blank();
+        let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/invalid.xlsx");
         let result = gc.import_excel(file.to_vec(), "invalid.xlsx", None);
         assert!(result.is_err());
