@@ -334,6 +334,7 @@ function ListItemView({
           <img
             loading={lazyLoad ? 'lazy' : 'eager'}
             src={thumbnail}
+            crossOrigin="anonymous"
             alt="File thumbnail screenshot"
             className="object-cover"
             draggable="false"
@@ -361,6 +362,7 @@ function ListItemView({
           <img
             loading={lazyLoad ? 'lazy' : 'eager'}
             src={thumbnail}
+            crossOrigin="anonymous"
             alt="File thumbnail screenshot"
             className={`aspect-video object-fill`}
             width="80"
