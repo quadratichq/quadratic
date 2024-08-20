@@ -3,6 +3,7 @@ import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { Empty } from '@/dashboard/components/Empty';
+import { FileDragDrop } from '@/dashboard/components/FileDragDrop';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
 import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
 import { useRootRouteLoaderData } from '@/routes/_root';
@@ -34,7 +35,6 @@ import {
   useSearchParams,
 } from 'react-router-dom';
 import { RecoilRoot, useRecoilState } from 'recoil';
-import { FileDragDrop } from '../dashboard/components/FileDragDrop';
 
 const DRAWER_WIDTH = 264;
 export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
@@ -209,6 +209,7 @@ export const Component = () => {
             </Sheet>
           </div>
           <Outlet />
+          <FileDragDrop />
         </div>
         <div
           className={`order-1 hidden flex-shrink-0 border-r border-r-border lg:block`}
@@ -220,7 +221,6 @@ export const Component = () => {
       </div>
       <NewFileDialogWrapper />
       <ImportProgressList />
-      <FileDragDrop />
     </RecoilRoot>
   );
 };

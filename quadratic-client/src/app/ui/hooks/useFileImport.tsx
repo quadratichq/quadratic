@@ -43,6 +43,7 @@ export function useFileImport() {
     const firstFileType = getFileType(files[0]);
     const createNewFile =
       cursor === undefined && sheetId === undefined && insertAt === undefined && teamUuid !== undefined;
+    const openImportedFile = createNewFile && files.length === 1;
     const userOnTeamsPage = location.pathname.includes('/teams/');
     if (userOnTeamsPage) {
       setFilesImportProgressListState(() => ({ show: true }));
@@ -189,6 +190,7 @@ export function useFileImport() {
             })
             .then(({ file: { uuid } }) => {
               updateCurrentFileState({ step: 'done', progress: 100, uuid, abortController: undefined });
+              if (openImportedFile) navigate(ROUTES.FILE(uuid));
             })
             .catch((error) => {
               let step: FileImportProgress['step'] = 'error';
@@ -224,7 +226,7 @@ export function useFileImport() {
     }
 
     // refresh the page if the user is on the team files page
-    if (userOnTeamsPage && teamUuid !== undefined) {
+    if (userOnTeamsPage && teamUuid !== undefined && !openImportedFile) {
       navigate(isPrivate ? ROUTES.TEAM_FILES_PRIVATE(teamUuid) : ROUTES.TEAM_FILES(teamUuid));
     }
 
