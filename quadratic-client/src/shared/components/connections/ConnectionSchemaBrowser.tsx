@@ -1,5 +1,6 @@
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
+import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -80,15 +81,14 @@ export const ConnectionSchemaBrowser = ({
               reload the schema
             </button>
             . If that doesn’t work,{' '}
-            <button
+            <Link
+              // Enhancement: do the logic to know when to do an in-memory navigation or redirect the document entirely
+              to={ROUTES.TEAM_SHORTCUT.CONNECTIONS}
+              reloadDocument={true}
               className="underline hover:text-primary"
-              onClick={() => {
-                // TODO: (jimniels) know when to do an in-memory navigation or an redirect document
-                window.location.href = '/';
-              }}
             >
               view the connection details
-            </button>{' '}
+            </Link>{' '}
             and ensure it’s properly configured.
           </p>
           <p>

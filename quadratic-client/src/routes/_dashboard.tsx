@@ -110,6 +110,13 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
     // If there are search params, keep 'em
     return redirect(ROUTES.TEAM(initialActiveTeamUuid) + url.search);
   }
+  // If it was a shortcut team route, redirect there
+  // e.g. /?team-shortcut=connections
+  const teamShortcut = url.searchParams.get('team-shortcut');
+  if (teamShortcut) {
+    url.searchParams.delete('team-shortcut');
+    return redirect(ROUTES.TEAM_CONNECTIONS(initialActiveTeamUuid) + url.search);
+  }
 
   /**
    * Get data for the active team
