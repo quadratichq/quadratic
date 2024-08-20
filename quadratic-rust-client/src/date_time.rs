@@ -6,7 +6,6 @@ use quadratic_core::{
         naive_date_time_to_i64, naive_date_to_i64, naive_time_to_i32, parse_date, parse_time,
         time_to_time_string, DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT,
     },
-    util::dbgjs,
     CellValue,
 };
 use wasm_bindgen::prelude::*;
