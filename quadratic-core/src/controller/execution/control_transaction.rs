@@ -41,12 +41,13 @@ impl GridController {
                 .map(|(&k, v)| (k, v.clone()))
             {
                 transaction.resize_rows.remove(&sheet_id);
-                if !rows.is_empty() {
-                    self.start_auto_resize_row_heights(
-                        transaction,
-                        sheet_id,
-                        rows.into_iter().collect(),
-                    );
+                let resizing = self.start_auto_resize_row_heights(
+                    transaction,
+                    sheet_id,
+                    rows.into_iter().collect(),
+                );
+                // break only if async resize operation is being executed
+                if resizing {
                     break;
                 }
             }
