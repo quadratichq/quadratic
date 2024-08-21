@@ -20,4 +20,5 @@ pub enum TransactionName {
     SheetDelete,
     DuplicateSheet,
     MoveCells,
+    Validation,
 }

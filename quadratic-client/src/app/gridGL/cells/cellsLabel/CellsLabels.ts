@@ -15,10 +15,13 @@ import {
   RenderClientLabelMeshEntry,
 } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { Container, Graphics, Rectangle } from 'pixi.js';
-import { CellsSheet } from '../CellsSheet';
+import { Container, Graphics, Point, Rectangle } from 'pixi.js';
+import { CellsSheet, ErrorMarker, ErrorValidation } from '../CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 import { CellsTextHash } from './CellsTextHash';
+import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
+import { events } from '@/app/events/events';
+import { JsValidationWarning } from '@/app/quadratic-core-types';
 
 export class CellsLabels extends Container {
   private cellsSheet: CellsSheet;
@@ -40,16 +43,26 @@ export class CellsLabels extends Container {
     this.cellsTextHashes = this.addChild(new Container<CellsTextHash>());
     this.cellsTextDebug = this.addChild(new Graphics());
     this.cellsTextHashDebug = this.addChild(new Container());
+
+    events.on('clickedToCell', this.clickedToCell);
   }
 
   get sheetId(): string {
     return this.cellsSheet.sheetId;
   }
 
+  private createCellsTextHash(hashX: number, hashY: number, viewRectangle?: Rectangle): CellsTextHash {
+    const key = `${hashX},${hashY}`;
+    const cellsTextHash = new CellsTextHash(this.sheetId, hashX, hashY, viewRectangle);
+    this.cellsTextHash.set(key, cellsTextHash);
+    this.cellsTextHashes.addChild(cellsTextHash);
+    return cellsTextHash;
+  }
+
   // received a clear message before a new set of labelMeshEntries
   clearCellsTextHash(message: RenderClientCellsTextHashClear) {
     const key = `${message.hashX},${message.hashY}`;
-    const cellsTextHash = this.cellsTextHash.get(key);
+    let cellsTextHash = this.cellsTextHash.get(key);
     const viewRectangle = new Rectangle(
       message.viewRectangle.x,
       message.viewRectangle.y,
@@ -59,11 +72,24 @@ export class CellsLabels extends Container {
     if (cellsTextHash) {
       cellsTextHash.clearMeshEntries(viewRectangle);
     } else {
-      const cellsTextHash = this.cellsTextHashes.addChild(
-        new CellsTextHash(message.hashX, message.hashY, viewRectangle)
+      cellsTextHash = this.cellsTextHashes.addChild(
+        new CellsTextHash(this.sheetId, message.hashX, message.hashY, viewRectangle)
       );
       this.cellsTextHash.set(key, cellsTextHash);
     }
+    cellsTextHash.content.import(message.content);
+  }
+
+  // Returns whether the cell has content by checking CellsTextHashContent.
+  hasCell(column: number, row: number): boolean {
+    const hashX = Math.floor(column / sheetHashWidth);
+    const hashY = Math.floor(row / sheetHashHeight);
+    const key = `${hashX},${hashY}`;
+    const cellsTextHash = this.cellsTextHash.get(key);
+    if (cellsTextHash) {
+      return cellsTextHash.content.hasContent(column, row);
+    }
+    return false;
   }
 
   // received a new LabelMeshEntry to add to a CellsTextHash
@@ -77,11 +103,11 @@ export class CellsLabels extends Container {
     cellsTextHash.addLabelMeshEntry(message);
   }
 
-  finalizeCellsTextHash(hashX: number, hashY: number) {
+  finalizeCellsTextHash(hashX: number, hashY: number, special?: RenderSpecial) {
     const key = `${hashX},${hashY}`;
     const cellsTextHash = this.cellsTextHash.get(key);
     if (cellsTextHash) {
-      cellsTextHash.finalizeLabelMeshEntries();
+      cellsTextHash.finalizeLabelMeshEntries(special);
 
       // refresh viewport if necessary
       if (sheets.sheet.id === this.cellsSheet.sheetId) {
@@ -148,6 +174,16 @@ export class CellsLabels extends Container {
     return await renderWebWorker.getCellsColumnMaxWidth(this.sheetId, column);
   }
 
+  private getHash(screenX: number, screenY: number, create?: boolean): CellsTextHash | undefined {
+    const hashPosition = CellsLabels.getHash(screenX, screenY);
+    const hash = this.cellsTextHash.get(`${hashPosition.x},${hashPosition.y}`);
+    if (hash) {
+      return hash;
+    } else if (create) {
+      return this.createCellsTextHash(hashPosition.x, hashPosition.y);
+    }
+  }
+
   async getCellsContentMaxHeight(row: number): Promise<number> {
     return await renderWebWorker.getCellsRowMaxHeight(this.sheetId, row);
   }
@@ -157,6 +193,51 @@ export class CellsLabels extends Container {
     const cellsTextHash = this.cellsTextHash.get(key);
     if (cellsTextHash) {
       cellsTextHash.clear();
+    }
+  }
+
+  private clickedToCell = (column: number, row: number, world: Point | true) => {
+    if (sheets.sheet.id !== this.sheetId) return;
+    const hash = this.getHash(column, row);
+    if (hash) {
+      hash.special.clickedToCell(column, row, world);
+    }
+    pixiApp.validations.clickedToCell(column, row, world);
+  };
+
+  renderValidationUpdates(validationWarnings: JsValidationWarning[]) {
+    validationWarnings.forEach((v) => {
+      const { x, y } = v;
+      const cellsTextHash = this.getHash(Number(x), Number(y), true);
+      if (cellsTextHash) {
+        cellsTextHash.warnings.updateWarnings(v);
+      }
+    });
+  }
+
+  renderValidations(hashX: number, hashY: number, validationWarnings: JsValidationWarning[]) {
+    const key = `${hashX},${hashY}`;
+    let cellsTextHash = this.cellsTextHash.get(key);
+    if (!cellsTextHash) {
+      cellsTextHash = this.createCellsTextHash(hashX, hashY);
+    }
+    cellsTextHash.warnings.populate(validationWarnings);
+  }
+
+  getErrorMarker(x: number, y: number): ErrorMarker | undefined {
+    const hash = this.getHash(x, y);
+    if (hash) {
+      return hash.getErrorMarker(x, y);
+    }
+  }
+
+  intersectsErrorMarkerValidation(world: Point): ErrorValidation | undefined {
+    const sheet = sheets.getById(this.sheetId);
+    if (!sheet) throw new Error('Expected sheet to be defined in CellsLabels');
+    const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
+    const hash = this.getHash(column, row);
+    if (hash) {
+      return hash.intersectsErrorMarkerValidation(world);
     }
   }
 }

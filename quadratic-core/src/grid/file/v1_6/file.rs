@@ -3,10 +3,8 @@ use std::str::FromStr;
 use bigdecimal::BigDecimal;
 
 use super::schema::{self as current};
-use crate::{
-    grid::{CodeCellLanguage, ConnectionKind},
-    CellValue, CodeCellValue,
-};
+use crate::grid::{CodeCellLanguage, ConnectionKind};
+use crate::{CellValue, CodeCellValue};
 
 pub fn export_cell_value(cell_value: CellValue) -> current::CellValue {
     match cell_value {
@@ -37,7 +35,7 @@ pub fn export_cell_value(cell_value: CellValue) -> current::CellValue {
         CellValue::Error(error) => {
             current::CellValue::Error(current::RunError::from_grid_run_error(*error))
         }
-        CellValue::Image(image) => current::CellValue::Text(image.clone()),
+        CellValue::Image(image) => current::CellValue::Image(image.clone()),
     }
 }
 
@@ -90,8 +88,9 @@ pub fn import_cell_value(value: &current::CellValue) -> CellValue {
 
 #[cfg(test)]
 mod tests {
-    use crate::grid::file::v1_5::schema::GridSchema;
     use anyhow::{anyhow, Result};
+
+    use crate::grid::file::v1_5::schema::GridSchema;
 
     const V1_5_FILE: &str =
         include_str!("../../../../../quadratic-rust-shared/data/grid/v1_5_simple.grid");

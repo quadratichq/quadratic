@@ -16,6 +16,7 @@ import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT } from '@/shared/constants/gridConst
 import { removeItems } from '@pixi/utils';
 import { Point, Rectangle } from 'pixi.js';
 import { RenderBitmapChar } from '../../renderBitmapFonts';
+import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { CellsLabels } from './CellsLabels';
 import { LabelMeshEntry } from './LabelMeshEntry';
 import { LabelMeshes } from './LabelMeshes';
@@ -122,6 +123,7 @@ export class CellLabel {
     this.fontSize = fontSize;
     this.roundPixels = true;
     this.letterSpacing = 0;
+    const isDropdown = cell.special === 'List';
     const isError = cell?.special === 'SpillError' || cell?.special === 'RunError';
     const isChart = cell?.special === 'Chart';
     if (isError) {
@@ -133,13 +135,18 @@ export class CellLabel {
     } else {
       this.tint = 0;
     }
-    if (cell.special === 'True' || cell.special === 'False') {
-      this.text = cell.special === 'True' ? 'TRUE' : 'FALSE';
+    if (cell.special === 'Logical') {
+      this.text = cell.value === 'true' ? 'TRUE' : 'FALSE';
       cell.align = cell.align ?? 'center';
     }
 
     this.location = { x: Number(cell.x), y: Number(cell.y) };
     this.AABB = screenRectangle;
+
+    // need to adjust the right side of the AABB to account for the dropdown indicator
+    if (isDropdown) {
+      this.AABB.width -= DROPDOWN_SIZE[0] + DROPDOWN_PADDING[0];
+    }
 
     this.actualLeft = this.AABB.left;
     this.actualRight = this.AABB.right;

@@ -1,7 +1,7 @@
 import { debugShowFileIO } from '@/app/debugFlags';
 import FontFaceObserver from 'fontfaceobserver';
 import { BitmapFont, Loader } from 'pixi.js';
-import { createBorderTypes } from './dashedTextures';
+import { createBorderTypes } from './generateTextures';
 
 const intervalToCheckBitmapFonts = 100;
 export const bitmapFonts = ['OpenSans', 'OpenSans-Bold', 'OpenSans-Italic', 'OpenSans-BoldItalic'];
@@ -46,8 +46,14 @@ export function loadAssets(): Promise<void> {
     addResourceOnce('python-icon', '/images/python-icon.png');
     addResourceOnce('javascript-icon', '/images/javascript-icon.png');
 
+    Loader.shared.add('/images/checkbox.png');
+    Loader.shared.add('/images/checkbox-checked.png');
+    Loader.shared.add('/images/dropdown.png');
+
     // Wait until pixi fonts are loaded before resolving
-    Loader.shared.load(() => ensureBitmapFontLoaded(resolve));
+    Loader.shared.load(() => {
+      ensureBitmapFontLoaded(resolve);
+    });
   });
 }
 

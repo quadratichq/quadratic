@@ -1,3 +1,5 @@
+// note: changed the file name b/c I changed the filename case and messed up git :)
+
 import { Rectangle } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
 import { Bounds } from './Bounds';
@@ -115,5 +117,14 @@ describe('bounds', () => {
     expect(bounds2.contains(3, 4)).toBe(false);
     expect(bounds2.contains(4, 5)).toBe(false);
     expect(bounds2.contains(-3, -4)).toBe(true);
+  });
+
+  it('updates an in-place rectangle', () => {
+    const bounds = new Bounds();
+    bounds.add(0, 1);
+    bounds.add(-1, -2);
+    const rectangle = new Rectangle(0, 0, 0, 0);
+    bounds.updateRectangle(rectangle);
+    expect(rectangle).toEqual(new Rectangle(-1, -2, 1, 3));
   });
 });

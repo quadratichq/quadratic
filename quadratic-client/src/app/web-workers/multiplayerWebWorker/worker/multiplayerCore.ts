@@ -4,7 +4,7 @@
 
 import { debugWebWorkersMessages } from '@/app/debugFlags';
 import { CoreMultiplayerMessage, MultiplayerCoreMessage } from '../multiplayerCoreMessages';
-import { ReceiveTransaction } from '../multiplayerTypes';
+import { ReceiveTransaction, ReceiveTransactions } from '../multiplayerTypes';
 import { multiplayerServer } from './multiplayerServer';
 
 class MultiplayerCore {
@@ -51,10 +51,10 @@ class MultiplayerCore {
     });
   }
 
-  receiveTransactions(transactions: string) {
+  receiveTransactions(receive_transactions: ReceiveTransactions) {
     this.send({
       type: 'multiplayerCoreReceiveTransactions',
-      transactions,
+      transactions: receive_transactions.transactions,
     });
   }
 }

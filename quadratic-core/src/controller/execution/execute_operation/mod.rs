@@ -9,6 +9,7 @@ pub mod execute_formats;
 pub mod execute_move_cells;
 pub mod execute_offsets;
 pub mod execute_sheets;
+pub mod execute_validation;
 pub mod execute_values;
 
 impl GridController {
@@ -46,6 +47,14 @@ impl GridController {
                 Operation::SetCursor { .. } => self.execute_set_cursor(transaction, op),
                 Operation::SetCursorSelection { .. } => {
                     self.execute_set_cursor_selection(transaction, op);
+                }
+
+                Operation::SetValidation { .. } => self.execute_set_validation(transaction, op),
+                Operation::RemoveValidation { .. } => {
+                    self.execute_remove_validation(transaction, op);
+                }
+                Operation::SetValidationWarning { .. } => {
+                    self.execute_set_validation_warning(transaction, op);
                 }
             }
 

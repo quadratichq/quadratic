@@ -16,10 +16,12 @@ import {
   JsRenderFill,
   JsRowHeight,
   JsSheetFill,
+  JsValidationWarning,
   Selection,
   SheetBounds,
   SheetInfo,
   TransactionName,
+  Validation,
 } from '@/app/quadratic-core-types';
 import { coreConnection } from '@/app/web-workers/quadraticCore/worker/coreConnection';
 import { MultiplayerState } from '../../multiplayerWebWorker/multiplayerClientMessages';
@@ -82,7 +84,14 @@ declare var self: WorkerGlobalScope &
     ) => void;
     sendUndoRedo: (undo: boolean, redo: boolean) => void;
     sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
+    sendSheetValidations: (sheetId: string, validations: Validation[]) => void;
     sendResizeRowHeightsClient(sheetId: string, rowHeights: string): void;
+    sendRenderValidationWarnings: (
+      sheetId: string,
+      hashX: number,
+      hashY: number,
+      validationWarnings: JsValidationWarning[]
+    ) => void;
     sendMultiplayerSynced: () => void;
   };
 
@@ -115,7 +124,9 @@ class CoreClient {
     self.sendUpdateCodeCell = coreClient.sendUpdateCodeCell;
     self.sendUndoRedo = coreClient.sendUndoRedo;
     self.sendImage = coreClient.sendImage;
+    self.sendSheetValidations = coreClient.sendSheetValidations;
     self.sendResizeRowHeightsClient = coreClient.sendResizeRowHeights;
+    self.sendRenderValidationWarnings = coreClient.sendRenderValidationWarnings;
     self.sendMultiplayerSynced = coreClient.sendMultiplayerSynced;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
@@ -501,6 +512,66 @@ class CoreClient {
         core.moveCells(e.data);
         return;
 
+      case 'clientCoreGetValidation':
+        this.send({
+          type: 'coreClientGetValidation',
+          id: e.data.id,
+          validation: core.getValidation(e.data.sheetId, e.data.validationId),
+        });
+        return;
+
+      case 'clientCoreUpdateValidation':
+        core.updateValidation(e.data.validation, e.data.cursor);
+        return;
+
+      case 'clientCoreGetValidations':
+        this.send({
+          type: 'coreClientGetValidations',
+          id: e.data.id,
+          validations: core.getValidations(e.data.sheetId),
+        });
+        return;
+
+      case 'clientCoreRemoveValidation':
+        core.removeValidation(e.data.sheetId, e.data.validationId, e.data.cursor);
+        return;
+
+      case 'clientCoreRemoveValidations':
+        core.removeValidations(e.data.sheetId, e.data.cursor);
+        return;
+
+      case 'clientCoreGetValidationFromPos':
+        this.send({
+          type: 'coreClientGetValidationFromPos',
+          id: e.data.id,
+          validation: core.getValidationFromPos(e.data.sheetId, e.data.x, e.data.y),
+        });
+        return;
+
+      case 'clientCoreGetValidationList':
+        this.send({
+          type: 'coreClientGetValidationList',
+          id: e.data.id,
+          validations: core.getValidationList(e.data.sheetId, e.data.x, e.data.y),
+        });
+        return;
+
+      case 'clientCoreGetDisplayCell':
+        this.send({
+          type: 'coreClientGetDisplayCell',
+          id: e.data.id,
+          cell: core.getDisplayCell(e.data.sheetId, e.data.x, e.data.y),
+        });
+        return;
+
+      case 'clientCoreValidateInput':
+        this.send({
+          type: 'coreClientValidateInput',
+          id: e.data.id,
+          validationId: core.validateInput(e.data.sheetId, e.data.x, e.data.y, e.data.input),
+        });
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core
@@ -660,6 +731,10 @@ class CoreClient {
     this.send({ type: 'coreClientImage', sheetId, x, y, image, w, h });
   };
 
+  sendSheetValidations = (sheetId: string, validations: Validation[]) => {
+    this.send({ type: 'coreClientSheetValidations', sheetId, validations });
+  };
+
   sendResizeRowHeights = (sheetId: string, rowHeightsString: string) => {
     try {
       const rowHeights = JSON.parse(rowHeightsString) as JsRowHeight[];
@@ -667,6 +742,15 @@ class CoreClient {
     } catch (e) {
       console.error('[coreClient] sendResizeRowHeights: Error parsing JsRowHeight: ', e);
     }
+  };
+
+  sendRenderValidationWarnings = (
+    sheetId: string,
+    hashX: number | undefined,
+    hashY: number | undefined,
+    validationWarnings: JsValidationWarning[]
+  ) => {
+    this.send({ type: 'coreClientRenderValidationWarnings', sheetId, hashX, hashY, validationWarnings });
   };
 
   sendMultiplayerSynced = () => {

@@ -1,5 +1,5 @@
 use chrono::{Days, Utc};
-use std::sync::Arc;
+use std::{str::from_utf8, sync::Arc};
 use tokio::time::Instant;
 
 use quadratic_rust_shared::pubsub::PubSub as PubSubTrait;
@@ -13,7 +13,9 @@ pub(crate) fn processed_transaction_key(file_id: &str, sequence_num: &str) -> St
     format!("{}.{}", file_id, sequence_num)
 }
 
-pub(crate) fn parse_processed_transaction_key(key: &str) -> Result<(String, String)> {
+pub(crate) fn parse_processed_transaction_key(key: &[u8]) -> Result<(String, String)> {
+    let key = from_utf8(key)
+        .map_err(|_| FilesError::Unknown("Could not parse key as UTF-8 string".into()))?;
     let split = key.split('.').collect::<Vec<&str>>();
 
     if split.len() < 2 {
@@ -37,7 +39,7 @@ async fn add_processed_transaction_with_key(
         .lock()
         .await
         .connection
-        .publish(channel, key, message, None)
+        .publish(channel, key, message.as_bytes(), None)
         .await?;
 
     Ok(())
@@ -97,7 +99,7 @@ pub(crate) async fn get_messages(
     state: &Arc<State>,
     processed_transactions_channel: &str,
     transaction_age_days: u64,
-) -> Result<Vec<(String, String)>> {
+) -> Result<Vec<(String, Vec<u8>)>> {
     // milliseconds from TRANSACTION_AGE_DAYS ago
     let millis = Utc::now()
         .checked_sub_days(Days::new(transaction_age_days))
@@ -210,7 +212,7 @@ mod tests {
                     .publish(
                         &file_id.to_string(),
                         &j.to_string(),
-                        &format!("message {i}-{j}"),
+                        format!("message {i}-{j}").as_bytes(),
                         Some("active_channels"),
                     )
                     .await

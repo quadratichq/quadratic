@@ -27,6 +27,7 @@ import GoTo from './menus/GoTo';
 import SheetBar from './menus/SheetBar';
 import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 import { useMultiplayerUsers } from './menus/TopBar/useMultiplayerUsers';
+import { ValidationPanel } from './menus/Validations/ValidationPanel';
 
 export default function QuadraticUI() {
   const {
@@ -79,6 +80,7 @@ export default function QuadraticUI() {
           {!presentationMode && <SheetBar />}
         </FileDragDropWrapper>
         {editorInteractionState.showCodeEditor && <CodeEditorProvider />}
+        {editorInteractionState.showValidation && <ValidationPanel />}
         <Following follow={follow} />
         <div
           style={{
