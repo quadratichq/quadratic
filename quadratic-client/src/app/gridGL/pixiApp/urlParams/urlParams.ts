@@ -21,6 +21,7 @@ class UrlParams {
     const params = new URLSearchParams(window.location.search);
     if (debugSaveURLState) {
       this.urlParamsDev = new UrlParamsDev(params);
+      if (this.urlParamsDev.noUpdates) return;
     } else {
       this.urlParamsUser = new UrlParamsUser(params);
     }

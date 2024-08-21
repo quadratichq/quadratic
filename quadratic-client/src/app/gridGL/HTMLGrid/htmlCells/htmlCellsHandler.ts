@@ -24,6 +24,12 @@ class HTMLCellsHandler {
     parent.appendChild(this.div);
   };
 
+  detach = () => {
+    this.div.remove();
+    this.div = document.createElement('div');
+    this.div.className = 'html-cells';
+  };
+
   private htmlOutput = (htmlCells: JsHtmlOutput[]) => {
     this.prepareCells([...this.cells], htmlCells);
   };
