@@ -486,9 +486,12 @@ class QuadraticCore {
     });
   }
 
-  importExcel = async (
+  importFile = async (
     file: ArrayBuffer,
     fileName: string,
+    fileType: 'csv' | 'parquet' | 'excel',
+    sheetId?: string,
+    location?: Coordinate,
     cursor?: string
   ): Promise<{
     contents?: ArrayBuffer;
@@ -502,9 +505,12 @@ class QuadraticCore {
       };
       this.send(
         {
-          type: 'clientCoreImportExcel',
+          type: 'clientCoreImportFile',
           file,
           fileName,
+          fileType,
+          sheetId,
+          location,
           cursor,
           id,
         },
@@ -512,70 +518,6 @@ class QuadraticCore {
       );
     });
   };
-
-  // Imports a CSV and returns a string with an error if not successful
-  async importCsv(
-    file: ArrayBuffer,
-    fileName: string,
-    sheetId?: string,
-    location?: Coordinate,
-    cursor?: string
-  ): Promise<{
-    contents?: ArrayBuffer;
-    version?: string;
-    error?: string;
-  }> {
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: { contents?: ArrayBuffer; version?: string; error?: string }) => {
-        resolve(message);
-      };
-      this.send(
-        {
-          type: 'clientCoreImportCsv',
-          file,
-          fileName,
-          sheetId,
-          location,
-          cursor,
-          id,
-        },
-        file
-      );
-    });
-  }
-
-  // Imports a Parquet and returns a string with an error if not successful
-  async importParquet(
-    file: ArrayBuffer,
-    fileName: string,
-    sheetId?: string,
-    location?: Coordinate,
-    cursor?: string
-  ): Promise<{
-    contents?: ArrayBuffer;
-    version?: string;
-    error?: string;
-  }> {
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: { contents?: ArrayBuffer; version?: string; error?: string }) => {
-        resolve(message);
-      };
-      this.send(
-        {
-          type: 'clientCoreImportParquet',
-          file,
-          fileName,
-          sheetId,
-          location,
-          cursor,
-          id,
-        },
-        file
-      );
-    });
-  }
 
   initMultiplayer(port: MessagePort) {
     this.send({ type: 'clientCoreInitMultiplayer' }, port);

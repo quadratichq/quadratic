@@ -419,49 +419,19 @@ export interface CoreClientUpgradeFile {
   error?: string;
 }
 
-export interface ClientCoreImportExcel {
-  type: 'clientCoreImportExcel';
+export interface ClientCoreImportFile {
+  type: 'clientCoreImportFile';
   file: ArrayBuffer;
   fileName: string;
-  cursor?: string;
-  id: number;
-}
-
-export interface CoreClientImportExcel {
-  type: 'coreClientImportExcel';
-  id: number;
-}
-
-export interface ClientCoreImportCsv {
-  type: 'clientCoreImportCsv';
-  file: ArrayBuffer;
-  fileName: string;
+  fileType: 'csv' | 'parquet' | 'excel';
   sheetId?: string;
   location?: Coordinate;
   cursor?: string;
   id: number;
 }
 
-export interface CoreClientImportCsv {
-  type: 'coreClientImportCsv';
-  id: number;
-  contents?: ArrayBuffer;
-  version?: string;
-  error?: string;
-}
-
-export interface ClientCoreImportParquet {
-  type: 'clientCoreImportParquet';
-  file: ArrayBuffer;
-  fileName: string;
-  sheetId?: string;
-  location?: Coordinate;
-  cursor?: string;
-  id: number;
-}
-
-export interface CoreClientImportParquet {
-  type: 'coreClientImportParquet';
+export interface CoreClientImportFile {
+  type: 'coreClientImportFile';
   id: number;
   contents?: ArrayBuffer;
   version?: string;
@@ -1014,8 +984,7 @@ export type ClientCoreMessage =
   | ClientCoreClearFormatting
   | ClientCoreGetRenderCell
   | ClientCoreSetCommas
-  | ClientCoreImportCsv
-  | ClientCoreImportParquet
+  | ClientCoreImportFile
   | ClientCoreDeleteCellValues
   | ClientCoreSetCodeCellValue
   | ClientCoreAddSheet
@@ -1047,7 +1016,6 @@ export type ClientCoreMessage =
   | ClientCoreInit
   | ClientCoreInitPython
   | ClientCoreInitJavascript
-  | ClientCoreImportExcel
   | ClientCoreCancelExecution
   | ClientCoreGetJwt
   | ClientCoreMoveCells
@@ -1072,8 +1040,7 @@ export type CoreClientMessage =
   | CoreClientGetCellFormatSummary
   | CoreClientSummarizeSelection
   | CoreClientGetRenderCell
-  | CoreClientImportCsv
-  | CoreClientImportParquet
+  | CoreClientImportFile
   | CoreClientAddSheet
   | CoreClientSheetInfo
   | CoreClientSheetFills
@@ -1104,7 +1071,6 @@ export type CoreClientMessage =
   | CoreClientTransactionStart
   | CoreClientTransactionProgress
   | CoreClientUpdateCodeCell
-  | CoreClientImportExcel
   | CoreClientMultiplayerState
   | CoreClientConnectionState
   | CoreClientOfflineTransactions

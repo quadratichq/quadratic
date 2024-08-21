@@ -273,19 +273,9 @@ class CoreClient {
         this.send({ type: 'coreClientUpgradeGridFile', id: e.data.id, ...gridResult }, gridResult.contents);
         return;
 
-      case 'clientCoreImportExcel':
-        const excelResult = await core.importExcel(e.data);
-        this.send({ type: 'coreClientImportExcel', id: e.data.id, ...excelResult }, excelResult.contents);
-        return;
-
-      case 'clientCoreImportCsv':
-        const csvResult = await core.importCsv(e.data);
-        this.send({ type: 'coreClientImportCsv', id: e.data.id, ...csvResult }, csvResult.contents);
-        return;
-
-      case 'clientCoreImportParquet':
-        const parquetResult = await core.importParquet(e.data);
-        this.send({ type: 'coreClientImportParquet', id: e.data.id, ...parquetResult }, parquetResult.contents);
+      case 'clientCoreImportFile':
+        const fileResult = await core.importFile(e.data);
+        this.send({ type: 'coreClientImportFile', id: e.data.id, ...fileResult }, fileResult.contents);
         return;
 
       case 'clientCoreDeleteCellValues':

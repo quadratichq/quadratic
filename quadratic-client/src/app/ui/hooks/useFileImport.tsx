@@ -149,13 +149,13 @@ export function useFileImport() {
             result = await quadraticCore.upgradeGridFile(arrayBuffer, 0);
             break;
           case 'excel':
-            result = await quadraticCore.importExcel(arrayBuffer, fileName, cursor);
+            result = await quadraticCore.importFile(arrayBuffer, fileName, fileType, cursor);
             break;
           case 'csv':
-            result = await quadraticCore.importCsv(arrayBuffer, fileName, sheetId, insertAt, cursor);
+            result = await quadraticCore.importFile(arrayBuffer, fileName, fileType, sheetId, insertAt, cursor);
             break;
           case 'parquet':
-            result = await quadraticCore.importParquet(arrayBuffer, fileName, sheetId, insertAt, cursor);
+            result = await quadraticCore.importFile(arrayBuffer, fileName, fileType, sheetId, insertAt, cursor);
             break;
           default:
             throw new Error(`Error importing ${fileName}: Unsupported file type`);
