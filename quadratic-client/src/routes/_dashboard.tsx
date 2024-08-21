@@ -241,7 +241,7 @@ function NewFileDialogWrapper() {
       connections={connections}
       teamUuid={teamUuid}
       onClose={() => setNewFileDialogState({ show: false, isPrivate })}
-      isPrivate={isPrivate}
+      isPrivate={newFileDialogState.isPrivate}
     />
   );
 }

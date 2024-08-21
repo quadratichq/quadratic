@@ -1,7 +1,5 @@
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
-import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { fileDragDropModalAtom } from '@/dashboard/atoms/fileDragDropModalAtom';
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { FileDragDrop } from '@/dashboard/components/FileDragDrop';
@@ -9,6 +7,7 @@ import { useConnectionSchemaBrowserTableQueryActionNewFile } from '@/dashboard/h
 import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
 import { PrivateFileToggle } from '@/shared/components/connections/PrivateFileToggle';
 import { ROUTES } from '@/shared/constants/routes';
+import { useNewFileFromStatePythonApi } from '@/shared/hooks/useNewFileFromState';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { cn } from '@/shared/shadcn/utils';
@@ -38,20 +37,12 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: initi
   const [isPrivate, setIsPrivate] = useState<boolean>(!!initialIsPrivate);
   const [activeConnectionUuid, setActiveConnectionUuid] = useState<string>('');
   const handleFileImport = useFileImport();
+  const newFileApiHref = useNewFileFromStatePythonApi({ isPrivate, teamUuid });
 
   const gridItemClassName =
     'flex flex-col items-center justify-center gap-1 rounded-lg border border-border p-4 pt-5 w-full group';
   const gridItemInteractiveClassName = 'hover:bg-accent hover:text-foreground cursor-pointer';
   const activeConnection = connections.find((connection) => connection.uuid === activeConnectionUuid);
-
-  // Create a new file from an API snippet
-  const stateUrlParam = {
-    codeString: SNIPPET_PY_API,
-    language: 'Python' as CodeCellLanguage,
-  };
-  const newFileApiHref = isPrivate
-    ? ROUTES.CREATE_FILE_PRIVATE(teamUuid, stateUrlParam)
-    : ROUTES.CREATE_FILE(teamUuid, stateUrlParam);
 
   // Do an in-memory navigation if we're not in the app
   const reloadDocument = location.pathname.startsWith('/file/');
@@ -66,27 +57,32 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: initi
     <Dialog open={true} onOpenChange={onClose}>
       {/* overflow: visible here fixes a bug with the tooltip being cut off */}
       <DialogContent className="max-w-xl overflow-visible" onDragEnter={handleDragEnter}>
-        <DialogHeader className="relative pl-12">
-          <Button
-            onClick={() => setActiveConnectionUuid('')}
-            variant="ghost"
-            size="icon"
-            disabled={!activeConnection}
-            className="absolute left-0 top-3"
-          >
-            <ArrowLeftIcon />
-          </Button>
-          <DialogTitle className="flex items-center gap-1.5">
-            {activeConnection ? 'New file from connection' : 'New file'}
+        <DialogHeader className="space-y-0">
+          <DialogTitle className="flex h-7 items-center gap-1.5">
+            {activeConnection ? (
+              <>
+                <Button
+                  onClick={() => setActiveConnectionUuid('')}
+                  variant="ghost"
+                  size="icon-sm"
+                  disabled={!activeConnection}
+                >
+                  <ArrowLeftIcon />
+                </Button>
+                New file from connection
+              </>
+            ) : (
+              'New file'
+            )}
             {isPrivate && <LockClosedIcon className="mr-0.5" />}
           </DialogTitle>
           <DialogDescription asChild>
             <PrivateFileToggle
-              className="flex flex-row items-center gap-1 font-medium"
+              className="text-muted-foreground"
               isPrivate={isPrivate}
               onToggle={() => setIsPrivate((prev) => !prev)}
             >
-              Make private
+              Create in:{' '}
             </PrivateFileToggle>
           </DialogDescription>
         </DialogHeader>

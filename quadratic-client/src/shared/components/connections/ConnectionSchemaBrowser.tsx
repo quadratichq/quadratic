@@ -30,10 +30,7 @@ export const ConnectionSchemaBrowser = ({
   // Designed to live in a box that takes up the full height of its container
   return (
     <div
-      className={cn(
-        'h-full overflow-auto text-sm',
-        selfContained && 'h-[17.5rem] overflow-auto rounded border border-border'
-      )}
+      className={cn('h-full overflow-auto text-sm', selfContained && 'h-96 overflow-auto rounded border border-border')}
     >
       <div className={cn('flex items-center justify-between pb-1', selfContained ? 'px-2 pt-1.5' : 'px-2')}>
         <div className="flex items-center gap-1 truncate">

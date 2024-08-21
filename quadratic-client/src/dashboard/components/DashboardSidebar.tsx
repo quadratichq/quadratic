@@ -57,7 +57,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
               <FileIcon className={classNameIcons} />
               Files
             </SidebarNavLink>
-            {canEditTeam && <SidebarNavLinkCreateButton>New file</SidebarNavLinkCreateButton>}
+            {canEditTeam && <SidebarNavLinkCreateButton isPrivate={false}>New file</SidebarNavLinkCreateButton>}
           </div>
           {canEditTeam && (
             <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
@@ -82,14 +82,14 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           variant="overline"
           className={`mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}
         >
-          Private
+          Personal
         </Type>
         <div className="relative">
           <SidebarNavLink to={ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)} dropTarget={ownerUserId}>
             <PrivateFileIcon className={classNameIcons} />
             My files
           </SidebarNavLink>
-          <SidebarNavLinkCreateButton isPrivate>New private file</SidebarNavLinkCreateButton>
+          <SidebarNavLinkCreateButton isPrivate={true}>New private file</SidebarNavLinkCreateButton>
         </div>
         <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
           <SharedWithMeIcon className={classNameIcons} />
@@ -157,7 +157,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
   );
 }
 
-function SidebarNavLinkCreateButton({ children, isPrivate = true }: { children?: ReactNode; isPrivate?: boolean }) {
+function SidebarNavLinkCreateButton({ children, isPrivate }: { children: ReactNode; isPrivate: boolean }) {
   const setNewFileDialogState = useSetRecoilState(newFileDialogAtom);
   return (
     <TooltipProvider>

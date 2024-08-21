@@ -34,7 +34,7 @@ export const Component = () => {
 
   return (
     <>
-      <DashboardHeader title="Private files" actions={<NewFileButton />} />
+      <DashboardHeader title="My personal files" actions={<NewFileButton isPrivate={true} />} />
       <FilesList files={files} emptyState={<FilesListEmptyState />} teamUuid={teamUuid} isPrivate={true} />
     </>
   );

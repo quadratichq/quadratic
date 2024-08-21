@@ -56,7 +56,7 @@ export const Component = () => {
                 </AvatarGroup>
               </Link>
             </div>
-            {canEdit && <NewFileButton />}
+            {canEdit && <NewFileButton isPrivate={false} />}
           </div>
         }
       />
