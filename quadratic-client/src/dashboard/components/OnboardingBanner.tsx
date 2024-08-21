@@ -24,7 +24,7 @@ import { CheckCircledIcon, CircleIcon, Cross1Icon, MixIcon, PlusIcon } from '@ra
 import * as Tabs from '@radix-ui/react-tabs';
 import mixpanel from 'mixpanel-browser';
 import { UserTeamRoleSchema } from 'quadratic-shared/typesAndSchemas';
-import { FormEvent, useRef, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useSubmit } from 'react-router-dom';
 import { z } from 'zod';
 
@@ -47,10 +47,14 @@ export function OnboardingBanner() {
   };
   const newApiFileToLink = useNewFileFromStatePythonApi({ isPrivate: false, teamUuid });
   const [isOpenConfirmDismiss, setIsOpenConfirmDismiss] = useState(false);
+
   // Only show the banner to people who can 1) write to the team, and 2) haven't dismissed it yet
-  const [showBanner, setShowBanner] = useState(
-    teamPermissions.includes('TEAM_EDIT') && !clientDataKv.onboardingBannerDismissed
-  );
+  const initialValueOfShowBanner = teamPermissions.includes('TEAM_EDIT') && !clientDataKv.onboardingBannerDismissed;
+  const [showBanner, setShowBanner] = useState(initialValueOfShowBanner);
+  // If the user switches teams, reset the banner's visibility
+  useEffect(() => {
+    setShowBanner(initialValueOfShowBanner);
+  }, [initialValueOfShowBanner]);
 
   const trackCreateConnection = () => {
     mixpanel.track('[OnboardingBanner].createConnection');
