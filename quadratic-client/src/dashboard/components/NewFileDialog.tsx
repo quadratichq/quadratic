@@ -22,7 +22,7 @@ import {
 } from '@radix-ui/react-icons';
 import { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useCallback, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigation } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 
 type Props = {
@@ -34,6 +34,7 @@ type Props = {
 
 export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: initialIsPrivate }: Props) {
   const location = useLocation();
+  const navigation = useNavigation();
   const [isPrivate, setIsPrivate] = useState<boolean>(!!initialIsPrivate);
   const [activeConnectionUuid, setActiveConnectionUuid] = useState<string>('');
   const handleFileImport = useFileImport();
@@ -56,7 +57,10 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: initi
   return (
     <Dialog open={true} onOpenChange={onClose}>
       {/* overflow: visible here fixes a bug with the tooltip being cut off */}
-      <DialogContent className="max-w-xl overflow-visible" onDragEnter={handleDragEnter}>
+      <DialogContent className="relative max-w-xl overflow-visible" onDragEnter={handleDragEnter}>
+        {navigation.state !== 'idle' && (
+          <div className="absolute left-0 right-0 top-0 h-full w-full bg-background/60" />
+        )}
         <DialogHeader className="space-y-0">
           <DialogTitle className="flex h-7 items-center gap-1.5">
             {activeConnection ? (
