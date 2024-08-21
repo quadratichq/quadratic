@@ -82,7 +82,7 @@ describe('PATCH /v0/teams/:uuid', () => {
           expect(res.body.name).toBe('Foobar');
         });
     });
-    it.only('accepst key/value pair updates', async () => {
+    it('accepst key/value pair updates', async () => {
       // Create value
       await request(app)
         .patch(`/v0/teams/00000000-0000-4000-8000-000000000001`)
