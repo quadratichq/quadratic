@@ -1,10 +1,12 @@
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
+import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { DragEvent, useCallback } from 'react';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useSetRecoilState } from 'recoil';
 import { fileDragDropModalAtom } from '../atoms/fileDragDropModalAtom';
 
 export function FileDragDrop() {
   const [fileDragDropModal, setFileDragDropModal] = useRecoilState(fileDragDropModalAtom);
+  const setNewFileDialogState = useSetRecoilState(newFileDialogAtom);
   const handleFileImport = useFileImport();
 
   const handleDrag = useCallback(
@@ -25,12 +27,13 @@ export function FileDragDrop() {
       e.stopPropagation();
 
       setFileDragDropModal({ show: false, teamUuid: undefined, isPrivate: undefined });
+      setNewFileDialogState((prev) => ({ ...prev, show: false }));
 
       const files = e.dataTransfer.files;
       const { isPrivate, teamUuid } = fileDragDropModal;
       handleFileImport({ files, isPrivate, teamUuid });
     },
-    [fileDragDropModal, handleFileImport, setFileDragDropModal]
+    [fileDragDropModal, handleFileImport, setFileDragDropModal, setNewFileDialogState]
   );
 
   if (!fileDragDropModal.show) return null;
@@ -38,7 +41,7 @@ export function FileDragDrop() {
   return (
     <div
       id="file-drag-drop"
-      className="z-15 absolute left-0 top-0 flex h-full w-full flex-col items-center  justify-center bg-white opacity-90"
+      className="absolute left-0 top-0 z-20 flex h-full w-full flex-col items-center justify-center bg-white opacity-90"
       onDragEnter={handleDrag}
       onDragLeave={handleDrag}
       onDragOver={handleDrag}
