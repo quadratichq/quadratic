@@ -62,7 +62,7 @@ impl GridController {
     ) {
         if let Some(sheet) = self.try_sheet_mut(sheet_id) {
             let mut warnings = vec![];
-            if let Some(values) = sheet.selection(&validation.selection, None, false) {
+            if let Some(values) = sheet.selection(&validation.selection, None, false, true) {
                 let positions = values.iter().map(|(pos, _)| pos).collect::<Vec<_>>();
                 positions.iter().for_each(|pos| {
                     if let Some(validation) = sheet.validations.validate(sheet, **pos) {

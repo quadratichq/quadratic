@@ -1,19 +1,27 @@
 import { sheets } from '@/app/grid/controller/Sheets';
+import { Bounds } from '@/app/grid/sheet/Bounds';
+import { CellsTextHash } from '@/app/gridGL/cells/cellsLabel/CellsTextHash';
 import { JsValidationWarning } from '@/app/quadratic-core-types';
+import { colors } from '@/app/theme/colors';
 import { Container, Point, Rectangle, Sprite } from 'pixi.js';
 import { generatedTextures } from '../../generateTextures';
-import { colors } from '@/app/theme/colors';
 import { TRIANGLE_SCALE } from '../CellsMarkers';
 import { ErrorMarker, ErrorValidation } from '../CellsSheet';
 
 export class CellsTextHashValidations extends Container {
+  private cellsTextHash: CellsTextHash;
   private sheetId: string;
   private warnings: JsValidationWarning[] = [];
   private warningSprites: Map<string, [Sprite, Rectangle, string]> = new Map();
 
-  constructor(sheetId: string) {
+  // any bounds for the warnings
+  bounds: Bounds;
+
+  constructor(cellsTextHash: CellsTextHash, sheetId: string) {
     super();
+    this.cellsTextHash = cellsTextHash;
     this.sheetId = sheetId;
+    this.bounds = new Bounds();
   }
 
   private addWarning(x: number, y: number, color: number): Sprite {
@@ -23,13 +31,21 @@ export class CellsTextHashValidations extends Container {
     sprite.position.set(x, y + sprite.height);
     sprite.anchor.set(1, 0);
     sprite.rotation = Math.PI / 2;
+    this.bounds.addRectanglePoints(
+      x - sprite.width + this.cellsTextHash.AABB.x,
+      y,
+      sprite.width,
+      sprite.height + this.cellsTextHash.AABB.y
+    );
     return sprite;
   }
 
   // This is called when the entire hash has been rendered by core and all known
   // warnings are available.
   populate(warnings: JsValidationWarning[]) {
+    console.log('populating...');
     this.removeChildren();
+    this.bounds.clear();
     this.warningSprites = new Map();
     if (warnings.length) {
       const sheet = sheets.getById(this.sheetId);
@@ -56,6 +72,7 @@ export class CellsTextHashValidations extends Container {
       });
     }
     this.warnings = warnings;
+    this.cellsTextHash.updateHashBounds();
   }
 
   // This is used when individual cells warnings have updated, but we've not

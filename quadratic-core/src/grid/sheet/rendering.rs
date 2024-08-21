@@ -507,6 +507,28 @@ impl Sheet {
         }
     }
 
+    /// Sends all validation warnings for this sheet to the client.
+    pub fn send_all_validation_warnings(&self) {
+        let warnings = self
+            .validations
+            .warnings
+            .iter()
+            .map(|(pos, validation_id)| JsValidationWarning {
+                x: pos.x,
+                y: pos.y,
+                validation: Some(*validation_id),
+                style: self
+                    .validations
+                    .validation(*validation_id)
+                    .map(|v| v.error.style.clone()),
+            })
+            .collect::<Vec<_>>();
+
+        if let Ok(warnings) = serde_json::to_string(&warnings) {
+            crate::wasm_bindings::js::jsValidationWarning(self.id.to_string(), warnings);
+        }
+    }
+
     /// Sends validation warnings for a hashed region to the client.
     pub fn send_validation_warnings(&self, hash_x: i64, hash_y: i64, rect: Rect) {
         let warnings = self
@@ -561,10 +583,10 @@ mod tests {
             formats::{format::Format, format_update::FormatUpdate, Formats},
             js_types::{
                 JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
-                JsSheetFill,
+                JsSheetFill, JsValidationWarning,
             },
             sheet::validations::{
-                validation::Validation,
+                validation::{Validation, ValidationStyle},
                 validation_rules::{validation_logical::ValidationLogical, ValidationRule},
             },
             Bold, CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, CodeRun, CodeRunResult,
@@ -1177,6 +1199,41 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!("{},{}", sheet.id, validations),
+            true,
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn send_all_validation_warnings() {
+        let mut sheet = Sheet::test();
+        let sheet_id = sheet.id;
+        let validation_id = Uuid::new_v4();
+        sheet.validations.set(Validation {
+            id: validation_id,
+            selection: Selection::rect(Rect::new(0, 0, 1, 1), sheet_id),
+            rule: ValidationRule::Logical(ValidationLogical {
+                ignore_blank: false,
+                ..Default::default()
+            }),
+            message: Default::default(),
+            error: Default::default(),
+        });
+        sheet
+            .validations
+            .warnings
+            .insert((0, 0).into(), validation_id);
+        sheet.send_all_validation_warnings();
+        let warnings = serde_json::to_string(&vec![JsValidationWarning {
+            x: 0,
+            y: 0,
+            validation: Some(validation_id),
+            style: Some(ValidationStyle::Stop),
+        }])
+        .unwrap();
+        expect_js_call(
+            "jsValidationWarning",
+            format!("{},{}", sheet.id, warnings),
             true,
         );
     }

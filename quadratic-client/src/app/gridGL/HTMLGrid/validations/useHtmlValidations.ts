@@ -1,16 +1,16 @@
 //! Gets the current cell's validation and offsets.
 
+import { hasPermissionToEditFile } from '@/app/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { Validation } from '@/app/quadratic-core-types';
+import { validationRuleSimple, ValidationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { useEffect, useState } from 'react';
-import { validationRuleSimple, ValidationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
-import { Validation } from '@/app/quadratic-core-types';
-import { Coordinate } from '../../types/size';
-import { hasPermissionToEditFile } from '@/app/actions';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useRecoilValue } from 'recoil';
+import { Coordinate } from '../../types/size';
 
 export interface HtmlValidationsData {
   offsets?: Rectangle;

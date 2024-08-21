@@ -149,7 +149,9 @@ pub fn parse_time(value: &str) -> Option<NaiveTime> {
     let formats = [
         "%H:%M:%S",
         "%I:%M:%S %p",
+        "%I:%M:%S%p",
         "%I:%M %p",
+        "%I:%M%p",
         "%H:%M",
         "%I:%M:%S",
         "%I:%M",
@@ -158,6 +160,22 @@ pub fn parse_time(value: &str) -> Option<NaiveTime> {
 
     for &format in formats.iter() {
         if let Ok(parsed_time) = NaiveTime::parse_from_str(value, format) {
+            return Some(parsed_time);
+        }
+
+        // this is a hack to handle the case where the user leaves out minutes in a time
+        // e.g. 4pm instead of 4:00pm
+        let lowercase = value.to_lowercase();
+        let (time_number, am_pm) = if lowercase.contains("pm") {
+            (lowercase.replace("pm", "").trim().to_string(), "PM")
+        } else if lowercase.contains("am") {
+            (lowercase.replace("am", "").trim().to_string(), "AM")
+        } else {
+            continue;
+        };
+        if let Ok(parsed_time) =
+            NaiveTime::parse_from_str(&format!("{}:00 {}", time_number, am_pm), format)
+        {
             return Some(parsed_time);
         }
     }
@@ -259,5 +277,16 @@ mod tests {
         assert_eq!(parsed_time, NaiveTime::from_hms_opt(16, 45, 0).unwrap());
 
         // more test functions are in validation_date_time.rs
+    }
+
+    #[test]
+    fn parse_simple_times() {
+        let time = "4pm".to_string();
+        let parsed_time = parse_time(&time).unwrap();
+        assert_eq!(parsed_time, NaiveTime::from_hms_opt(16, 0, 0).unwrap());
+
+        let time = "4 pm".to_string();
+        let parsed_time = parse_time(&time).unwrap();
+        assert_eq!(parsed_time, NaiveTime::from_hms_opt(16, 0, 0).unwrap());
     }
 }

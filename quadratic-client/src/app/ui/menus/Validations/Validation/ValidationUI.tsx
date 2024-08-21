@@ -81,13 +81,20 @@ export const ValidationInput = forwardRef((props: InputProps, ref: Ref<HTMLInput
 
   const handleOnBlur = useCallback(
     (e: FocusEvent<HTMLInputElement>) => {
-      if (!parentRef.current?.contains(e.relatedTarget as Node)) {
-        if (onChange) {
-          onChange(e.currentTarget.value);
-        }
-
-        setHasFocus(false);
+      // only blur if we're outside the div
+      if (e.currentTarget.contains(e.relatedTarget)) {
+        return;
       }
+
+      if (onChange) {
+        const input = parentRef.current?.querySelector('input');
+        if (!input) {
+          throw new Error('Expected input to be present in ValidationInput');
+        }
+        onChange(input.value);
+      }
+
+      setHasFocus(false);
     },
     [onChange]
   );
@@ -95,13 +102,12 @@ export const ValidationInput = forwardRef((props: InputProps, ref: Ref<HTMLInput
   return (
     <div>
       {label && <div className={disabled ? 'opacity-50' : ''}>{label}</div>}
-      <div ref={parentRef}>
+      <div ref={parentRef} onBlur={handleOnBlur} tabIndex={0}>
         <div className={cn('flex w-full items-center space-x-2', error ? 'border border-red-500' : '')}>
           <Input
             className={className}
             ref={ref}
             defaultValue={value}
-            onBlur={handleOnBlur}
             onFocus={() => setHasFocus(true)}
             onInput={onInput ? (e) => onInput(e.currentTarget.value) : undefined}
             style={{ height }}
