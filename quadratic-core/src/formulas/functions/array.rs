@@ -140,6 +140,41 @@ mod tests {
             eval_to_string(&g, "FILTER(A1:C5, {0;0;0;0;0}, 'oh no')"),
         );
 
+        // Single `include` value (not array)
+        let expected = all_shapes.to_string();
+        assert_eq!(expected, eval_to_string(&g, "FILTER(A1:C5, 1)"));
+        assert_eq!(expected, eval_to_string(&g, "FILTER(A1:C5, {1})"));
+        assert_eq!("oh no", eval_to_string(&g, "FILTER(A1:C5, 0, 'oh no')"));
+        assert_eq!("oh no", eval_to_string(&g, "FILTER(A1:C5, {0}, 'oh no')"));
+        assert_eq!(
+            RunErrorMsg::EmptyArray,
+            eval_to_err(&g, "FILTER(A1:C5, 0)").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::EmptyArray,
+            eval_to_err(&g, "FILTER(A1:C5, {0})").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::Expected {
+                expected: "boolean".into(),
+                got: Some("text".into()),
+            },
+            eval_to_err(&g, "FILTER(A1:C5, 'a')").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::Expected {
+                expected: "boolean".into(),
+                got: Some("text".into()),
+            },
+            eval_to_err(&g, "FILTER(A1:C5, 'a', 'oh no')").msg,
+        );
+
+        // Nonlinear `include` array
+        assert_eq!(
+            RunErrorMsg::NonLinearArray,
+            eval_to_err(&g, "FILTER(A1:B2, {0,0;0,0}, 'oh no')").msg,
+        );
+
         // Transposed
         let g = Grid::from_array(pos![A1], &all_shapes.transpose());
         assert_eq!(
@@ -166,7 +201,7 @@ mod tests {
                 got: Some("text".into())
             },
             eval_to_err(&g, "FILTER(A1:E3, {0,1,-6,'a',TRUE}, 'oh no')").msg,
-        )
+        );
     }
 
     #[test]
