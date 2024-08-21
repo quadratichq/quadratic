@@ -43,7 +43,7 @@ export class CellsArray extends Container {
   destroy() {
     events.off('renderCodeCells', this.renderCodeCells);
     events.off('sheetOffsets', this.sheetOffsets);
-    events.off('updateCodeCell', this.create);
+    events.off('updateCodeCell', this.updateCodeCell);
     events.off('resizeRowHeights', this.sheetOffsets);
     super.destroy();
   }
@@ -53,7 +53,7 @@ export class CellsArray extends Container {
   }
 
   private renderCodeCells = (sheetId: string, codeCells: JsRenderCodeCell[]) => {
-    if (sheetId === this.cellsSheet.sheetId) {
+    if (sheetId === this.sheetId) {
       const map = new Map();
       codeCells.forEach((cell) => map.set(this.key(cell.x, cell.y), cell));
       this.codeCells = map;
@@ -75,7 +75,7 @@ export class CellsArray extends Container {
     codeCell?: JsCodeCell;
   }) => {
     const { sheetId, x, y, renderCodeCell, codeCell } = options;
-    if (sheetId === this.cellsSheet.sheetId) {
+    if (sheetId === this.sheetId) {
       if (renderCodeCell) {
         this.codeCells.set(this.key(x, y), renderCodeCell);
       } else {
