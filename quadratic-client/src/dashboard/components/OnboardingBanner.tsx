@@ -1,10 +1,12 @@
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
-import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
+import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import Logo from '@/dashboard/components/quadratic-logo.svg';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { TeamAction } from '@/routes/teams.$teamUuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
+import { useNewFileFromStatePythonApi } from '@/shared/hooks/useNewFileFromState';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,12 +18,15 @@ import {
   AlertDialogTitle,
 } from '@/shared/shadcn/ui/alert-dialog';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
-import { CheckCircledIcon, CircleIcon, Cross1Icon } from '@radix-ui/react-icons';
+import { CheckCircledIcon, CircleIcon, Cross1Icon, MixIcon, PlusIcon } from '@radix-ui/react-icons';
 import * as Tabs from '@radix-ui/react-tabs';
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useSetRecoilState } from 'recoil';
+import mixpanel from 'mixpanel-browser';
+import { UserTeamRoleSchema } from 'quadratic-shared/typesAndSchemas';
+import { FormEvent, useRef, useState } from 'react';
+import { Link, useSubmit } from 'react-router-dom';
+import { z } from 'zod';
 
 export function OnboardingBanner() {
   const {
@@ -35,34 +40,75 @@ export function OnboardingBanner() {
       userMakingRequest: { teamPermissions },
     },
   } = useDashboardRouteLoaderData();
-  const setNewFileDialogState = useSetRecoilState(newFileDialogAtom);
+  const handleFileImport = useFileImport();
+  const onClickImport = () => {
+    mixpanel.track('[OnboardingBanner].newFileFromImport');
+    handleFileImport({ isPrivate: false, teamUuid });
+  };
+  const newApiFileToLink = useNewFileFromStatePythonApi({ isPrivate: false, teamUuid });
   const [isOpenConfirmDismiss, setIsOpenConfirmDismiss] = useState(false);
   // Only show the banner to people who can 1) write to the team, and 2) haven't dismissed it yet
   const [showBanner, setShowBanner] = useState(
     teamPermissions.includes('TEAM_EDIT') && !clientDataKv.onboardingBannerDismissed
   );
+
+  const trackCreateConnection = () => {
+    mixpanel.track('[OnboardingBanner].createConnection');
+  };
   const tabContentClassName = 'flex flex-col gap-2';
-  const contentBtnClassName = 'min-w-44';
+  const contentBtnClassName = 'min-w-40';
 
   const tabs = [
     {
-      label: 'Create a sheet',
+      label: 'Create a file',
       completed: files.length > 0,
       content: (
         <>
-          <p>
-            Start with a blank file, one of our example files, or by importing your own data from a file, an API, or an
-            external data source.
-          </p>
-          <p>
-            <Button
-              variant="outline"
-              className={contentBtnClassName}
-              onClick={() => setNewFileDialogState({ show: true, isPrivate: false })}
-            >
-              New file
+          <p>Start with one of our files:</p>
+          <div className="mb-2 flex gap-2">
+            <Button variant="outline" className={contentBtnClassName} asChild>
+              <Link
+                to={ROUTES.CREATE_FILE(teamUuid)}
+                onClick={() => {
+                  mixpanel.track('[OnboardingBanner].newFileBlank');
+                }}
+              >
+                <PlusIcon className="mr-2" /> Create new file
+              </Link>
             </Button>
-          </p>
+            <Button variant="outline" className={contentBtnClassName} asChild>
+              <Link
+                to={ROUTES.EXAMPLES}
+                onClick={() => {
+                  mixpanel.track('[OnboardingBanner].newFileFromExample');
+                }}
+              >
+                <MixIcon className="mr-2" /> Explore example files
+              </Link>
+            </Button>
+          </div>
+          <p>Or bring your own data:</p>
+          <div className="flex gap-2">
+            <Button variant="outline" asChild>
+              <Link
+                to={newApiFileToLink}
+                onClick={() => {
+                  mixpanel.track('[OnboardingBanner].newFileFromApi');
+                }}
+              >
+                Fetch from an API
+              </Link>
+            </Button>
+            <Button variant="outline" onClick={onClickImport}>
+              Import CSV
+            </Button>
+            <Button variant="outline" onClick={onClickImport}>
+              Import Excel
+            </Button>
+            <Button variant="outline" onClick={onClickImport}>
+              Import Parquet
+            </Button>
+          </div>
         </>
       ),
     },
@@ -71,15 +117,22 @@ export function OnboardingBanner() {
       completed: connections.length > 0,
       content: (
         <>
-          <p>Connect to an external data source and pull your data into Quadratic.</p>
+          {/* TODO: (enhancement) set this up 
+          <p>Try pulling data from one of our example connections:</p>
+          <div className="mb-2">
+            <Button variant="outline" className={contentBtnClassName + ' gap-2'}>
+              <LanguageIcon language="MYSQL" /> Quadratic Sample Data
+            </Button>
+          </div> */}
+          <p>Connect and pull data form your own external data source:</p>
           <div className="flex gap-2">
             <Button variant="outline" className={contentBtnClassName + ' gap-2'} asChild>
-              <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'MYSQL')}>
+              <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'MYSQL')} onClick={trackCreateConnection}>
                 <LanguageIcon language="MYSQL" /> MySQL
               </Link>
             </Button>
             <Button variant="outline" className={contentBtnClassName + ' gap-2'} asChild>
-              <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'POSTGRES')}>
+              <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'POSTGRES')} onClick={trackCreateConnection}>
                 <LanguageIcon language="POSTGRES" /> Postgres
               </Link>
             </Button>
@@ -92,12 +145,16 @@ export function OnboardingBanner() {
       completed: users.length > 1 || invites.length > 0,
       content: (
         <>
-          <p>Quadratic is best with other people. Invite others and collaborate in real-time on your data analyses.</p>
-          <div>
-            <Button asChild variant="outline" className={contentBtnClassName}>
-              <Link to={ROUTES.TEAM_MEMBERS(teamUuid)}>Invite people</Link>
-            </Button>
-          </div>
+          <p>Invite a collaborator to Quadratic — it’s free.</p>
+
+          <InviteForm teamUuid={teamUuid} />
+          <p className="text-muted-foreground">
+            You can always{' '}
+            <Link to={ROUTES.TEAM_MEMBERS(teamUuid)} className="underline hover:text-primary">
+              manage your team members
+            </Link>{' '}
+            at any time.
+          </p>
         </>
       ),
     },
@@ -211,6 +268,7 @@ export function OnboardingBanner() {
               onClick={() => {
                 setIsOpenConfirmDismiss(false);
                 handleDismiss();
+                mixpanel.track('[OnboardingBanner].dismissOverride');
               }}
             >
               Dismiss
@@ -220,4 +278,78 @@ export function OnboardingBanner() {
       </AlertDialog>
     </>
   ) : null;
+}
+
+function InviteForm({ teamUuid }: { teamUuid: string }) {
+  const [error, setError] = useState('');
+  const [invited, setInvited] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const submit = useSubmit();
+
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    // Get the data from the form
+    const formData = new FormData(e.currentTarget);
+    const emailFromUser = String(formData.get('email_search')).trim();
+
+    // Validate email
+    let email;
+    try {
+      email = z.string().email().parse(emailFromUser);
+    } catch (e) {
+      setError('Invalid email');
+      return;
+    }
+
+    // Submit the data
+    const data: TeamAction['request.create-team-invite'] = {
+      intent: 'create-team-invite',
+      email: email,
+      role: UserTeamRoleSchema.enum.EDITOR,
+    };
+    submit(data, { method: 'POST', action: ROUTES.TEAM(teamUuid), encType: 'application/json', navigate: false });
+
+    // UI feedback that it was sent
+    setInvited(true);
+    setTimeout(() => {
+      setInvited(false);
+    }, 3000);
+
+    // Track it
+    mixpanel.track('[OnboardingBanner].inviteSent');
+
+    // Reset the email input & focus it
+    if (inputRef.current) {
+      inputRef.current.value = '';
+      inputRef.current.focus();
+    }
+  };
+
+  return (
+    <form className="mb-1 max-w-96 gap-2 text-sm" onSubmit={onSubmit}>
+      <div className="flex gap-2">
+        <Input
+          autoComplete="off"
+          spellCheck="false"
+          aria-label="Email"
+          // We have to put the `search` in the name because Safari
+          // https://bytes.grubhub.com/disabling-safari-autofill-for-a-single-line-address-input-b83137b5b1c7
+          name="email_search"
+          autoFocus
+          ref={inputRef}
+          onChange={(e) => {
+            setError('');
+          }}
+          placeholder="your_coworker@company.com"
+        />
+        <Button type="submit" variant="outline">
+          Invite
+        </Button>
+      </div>
+      <p className={cn('mt-1 text-xs', invited && 'text-success', error && 'text-destructive')}>
+        {invited ? 'Invite sent!' : error ? error : <>&nbsp;</>}
+      </p>
+    </form>
+  );
 }

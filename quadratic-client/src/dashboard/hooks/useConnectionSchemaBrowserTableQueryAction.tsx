@@ -1,5 +1,5 @@
 import { NewFileIcon } from '@/dashboard/components/CustomRadixIcons';
-import { ROUTES } from '@/shared/constants/routes';
+import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { ClipboardCopyIcon } from '@radix-ui/react-icons';
@@ -23,13 +23,7 @@ export const useConnectionSchemaBrowserTableQueryActionNewFile = ({
 }) => {
   return {
     TableQueryAction: ({ query }: { query: string }) => {
-      const stateUrlParam = {
-        codeString: query,
-        language: { Connection: { kind: connectionType, id: connectionUuid } },
-      };
-      const to = isPrivate
-        ? ROUTES.CREATE_FILE_PRIVATE(teamUuid, stateUrlParam)
-        : ROUTES.CREATE_FILE(teamUuid, stateUrlParam);
+      const to = newNewFileFromStateConnection({ query, isPrivate, teamUuid, connectionType, connectionUuid });
       return (
         <TooltipPopover label="New file querying this table">
           <Button size="icon-sm" variant="ghost" asChild>
