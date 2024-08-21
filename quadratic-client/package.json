@@ -18,7 +18,6 @@
     "@emotion/react": "^11.7.0",
     "@emotion/styled": "^11.6.0",
     "@hookform/resolvers": "^3.3.2",
-    "@livechat/widget-react": "^1.3.2",
     "@monaco-editor/react": "^4.3.1",
     "@mui/icons-material": "^5.2.0",
     "@mui/material": "^5.2.2",
