@@ -2,26 +2,21 @@ use chrono::Utc;
 use uuid::Uuid;
 
 use super::{GridController, TransactionType};
-use crate::{
-    controller::{
-        active_transactions::{
-            pending_transaction::PendingTransaction, transaction_name::TransactionName,
-        },
-        operations::operation::Operation,
-        transaction::Transaction,
-        transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-        transaction_types::JsCodeResult,
-    },
-    error_core::Result,
-    grid::{CodeRun, CodeRunResult},
-    parquet::parquet_to_vec,
-    Pos, Value,
-};
+use crate::controller::active_transactions::pending_transaction::PendingTransaction;
+use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::controller::operations::operation::Operation;
+use crate::controller::transaction::Transaction;
+use crate::controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
+use crate::controller::transaction_types::JsCodeResult;
+use crate::error_core::Result;
+use crate::grid::{CodeRun, CodeRunResult};
+use crate::parquet::parquet_to_vec;
+use crate::{Pos, Value};
 
 impl GridController {
     // loop compute cycle until complete or an async call is made
     pub(super) fn start_transaction(&mut self, transaction: &mut PendingTransaction) {
-        if cfg!(target_family = "wasm") && !transaction.is_server() {
+        if cfg!(target_family = "wasm") {
             let transaction_name = serde_json::to_string(&transaction.transaction_name)
                 .unwrap_or("Unknown".to_string());
             crate::wasm_bindings::js::jsTransactionStart(
@@ -59,9 +54,9 @@ impl GridController {
     }
 
     /// Finalizes the transaction and pushes it to the various stacks (if needed)
-    pub(super) fn finalize_transaction(&mut self, transaction: &mut PendingTransaction) {
+    pub(super) fn finalize_transaction(&mut self, transaction: PendingTransaction) {
         if transaction.has_async > 0 {
-            self.transactions.update_async_transaction(transaction);
+            self.transactions.update_async_transaction(&transaction);
             return;
         }
 
@@ -73,7 +68,7 @@ impl GridController {
                     self.redo_stack.clear();
                     self.transactions
                         .unsaved_transactions
-                        .insert_or_replace(transaction, true);
+                        .insert_or_replace(&transaction, true);
                 }
                 TransactionType::Unsaved => {
                     let undo = transaction.to_undo_transaction();
@@ -85,14 +80,14 @@ impl GridController {
                     self.redo_stack.push(undo);
                     self.transactions
                         .unsaved_transactions
-                        .insert_or_replace(transaction, true);
+                        .insert_or_replace(&transaction, true);
                 }
                 TransactionType::Redo => {
                     let undo = transaction.to_undo_transaction();
                     self.undo_stack.push(undo);
                     self.transactions
                         .unsaved_transactions
-                        .insert_or_replace(transaction, true);
+                        .insert_or_replace(&transaction, true);
                 }
                 TransactionType::Multiplayer => (),
                 TransactionType::Server => (),
@@ -124,7 +119,7 @@ impl GridController {
             ..Default::default()
         };
         self.start_transaction(&mut transaction);
-        self.finalize_transaction(&mut transaction);
+        self.finalize_transaction(transaction);
     }
 
     pub fn start_undo_transaction(
@@ -136,7 +131,7 @@ impl GridController {
         let mut pending = transaction.to_undo_transaction(transaction_type, cursor);
         pending.id = Uuid::new_v4();
         self.start_transaction(&mut pending);
-        self.finalize_transaction(&mut pending);
+        self.finalize_transaction(pending);
     }
 
     /// Externally called when an async calculation completes
@@ -149,7 +144,7 @@ impl GridController {
         }
 
         self.after_calculation_async(&mut transaction, result)?;
-        self.finalize_transaction(&mut transaction);
+        self.finalize_transaction(transaction);
         Ok(())
     }
 
@@ -196,7 +191,7 @@ impl GridController {
             self.finalize_code_run(&mut transaction, current_sheet_pos, Some(code_run), None);
             transaction.waiting_for_async = None;
             self.start_transaction(&mut transaction);
-            self.finalize_transaction(&mut transaction);
+            self.finalize_transaction(transaction);
         }
 
         Ok(())
@@ -226,13 +221,12 @@ impl From<Pos> for CellHash {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
-        cell_values::CellValues,
-        grid::{CodeCellLanguage, ConnectionKind, GridBounds},
-        CellValue, Pos, Rect, SheetPos,
-    };
     use serial_test::parallel;
+
+    use super::*;
+    use crate::cell_values::CellValues;
+    use crate::grid::{CodeCellLanguage, ConnectionKind, GridBounds};
+    use crate::{CellValue, Pos, Rect, SheetPos};
 
     fn add_cell_value(sheet_pos: SheetPos, value: CellValue) -> Operation {
         Operation::SetCellValues {
@@ -263,7 +257,7 @@ mod tests {
             ..Default::default()
         };
         gc.start_transaction(&mut transaction);
-        gc.finalize_transaction(&mut transaction);
+        gc.finalize_transaction(transaction);
 
         assert_eq!(gc.undo_stack.len(), 1);
         assert_eq!(gc.redo_stack.len(), 0);
@@ -276,7 +270,7 @@ mod tests {
             ..Default::default()
         };
         gc.start_transaction(&mut transaction);
-        gc.finalize_transaction(&mut transaction);
+        gc.finalize_transaction(transaction);
 
         assert_eq!(gc.undo_stack.len(), 1);
         assert_eq!(gc.redo_stack.len(), 1);
@@ -290,7 +284,7 @@ mod tests {
             ..Default::default()
         };
         gc.start_transaction(&mut transaction);
-        gc.finalize_transaction(&mut transaction);
+        gc.finalize_transaction(transaction);
 
         assert_eq!(gc.undo_stack.len(), 2);
         assert_eq!(gc.redo_stack.len(), 1);
@@ -336,7 +330,7 @@ mod tests {
             ..Default::default()
         };
         gc.start_transaction(&mut transaction);
-        gc.finalize_transaction(&mut transaction);
+        gc.finalize_transaction(transaction);
 
         let expected = GridBounds::NonEmpty(Rect::single_pos((0, 0).into()));
         assert_eq!(gc.grid().sheets()[0].bounds(true), expected);

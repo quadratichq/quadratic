@@ -11,7 +11,10 @@ import NewFileButton from '../dashboard/components/NewFileButton';
 
 export const Component = () => {
   const {
-    activeTeam: { filesPrivate },
+    activeTeam: {
+      filesPrivate,
+      team: { uuid: teamUuid },
+    },
   } = useDashboardRouteLoaderData();
 
   const files = filesPrivate.map(
@@ -31,8 +34,8 @@ export const Component = () => {
 
   return (
     <>
-      <DashboardHeader title="Private files" actions={<NewFileButton isPrivate />} />
-      <FilesList files={files} emptyState={<FilesListEmptyState isPrivate />} />
+      <DashboardHeader title="Private files" actions={<NewFileButton />} />
+      <FilesList files={files} emptyState={<FilesListEmptyState />} teamUuid={teamUuid} isPrivate={true} />
     </>
   );
 };

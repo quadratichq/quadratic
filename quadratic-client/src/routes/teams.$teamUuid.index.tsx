@@ -33,7 +33,7 @@ export const Component = () => {
   );
 
   return (
-    <>
+    <div className="flex flex-grow flex-col">
       <OnboardingBanner />
 
       <DashboardHeader
@@ -76,6 +76,8 @@ export const Component = () => {
             creator,
           };
         })}
+        teamUuid={teamUuid}
+        isPrivate={false}
         emptyState={
           canEdit ? (
             <FilesListEmptyState />
@@ -88,6 +90,6 @@ export const Component = () => {
           )
         }
       />
-    </>
+    </div>
   );
 };

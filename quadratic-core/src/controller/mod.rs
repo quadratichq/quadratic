@@ -52,6 +52,10 @@ impl GridController {
         &mut self.grid
     }
 
+    pub fn into_grid(self) -> Grid {
+        self.grid
+    }
+
     // create a new gc for testing purposes in both Rust and TS
     pub fn test() -> Self {
         Self::from_grid(Grid::new(), 0)

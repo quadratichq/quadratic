@@ -21,7 +21,7 @@ pub enum SerializationFormat {
 pub fn serialize_and_compress<T>(
     serialization_format: &SerializationFormat,
     compression_format: &CompressionFormat,
-    data: &T,
+    data: T,
 ) -> Result<Vec<u8>>
 where
     T: serde::Serialize,
@@ -44,13 +44,13 @@ where
 
 // SERIALIZATION
 
-pub fn serialize<T>(serialization_format: &SerializationFormat, data: &T) -> Result<Vec<u8>>
+pub fn serialize<T>(serialization_format: &SerializationFormat, data: T) -> Result<Vec<u8>>
 where
     T: serde::Serialize,
 {
     match serialization_format {
-        SerializationFormat::Bincode => Ok(bincode::serialize::<T>(data)?),
-        SerializationFormat::Json => Ok(serde_json::to_string(data)?.into_bytes()),
+        SerializationFormat::Bincode => Ok(bincode::serialize::<T>(&data)?),
+        SerializationFormat::Json => Ok(serde_json::to_string(&data)?.into_bytes()),
     }
 }
 
@@ -127,7 +127,7 @@ mod test {
     ) {
         let data = "hello world";
         let compressed =
-            serialize_and_compress(serialization_format, compression_format, &data).unwrap();
+            serialize_and_compress(serialization_format, compression_format, data).unwrap();
         let decompressed = decompress_and_deserialize::<String>(
             serialization_format,
             compression_format,

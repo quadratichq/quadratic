@@ -14,8 +14,8 @@ import { pixiApp } from '../gridGL/pixiApp/PixiApp';
 import { isEmbed } from '../helpers/isEmbed';
 import { TopBar } from '../ui/menus/TopBar/TopBar';
 import { UpdateAlertVersion } from './UpdateAlertVersion';
+import { FileDragDropWrapper } from './components/FileDragDropWrapper';
 import { useFileContext } from './components/FileProvider';
-import { FileUploadWrapper } from './components/FileUploadWrapper';
 import { Following } from './components/Following';
 import { PermissionOverlay } from './components/PermissionOverlay';
 import PresentationModeHint from './components/PresentationModeHint';
@@ -74,10 +74,10 @@ export default function QuadraticUI() {
           position: 'relative',
         }}
       >
-        <FileUploadWrapper>
+        <FileDragDropWrapper>
           <QuadraticGrid />
           {!presentationMode && <SheetBar />}
-        </FileUploadWrapper>
+        </FileDragDropWrapper>
         {editorInteractionState.showCodeEditor && <CodeEditorProvider />}
         <Following follow={follow} />
         <div

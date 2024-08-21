@@ -1,10 +1,11 @@
-import { useDashboardState } from '@/dashboard/components/DashboardProvider';
+import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { Empty } from '@/dashboard/components/Empty';
 import { FileIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
+import { useSetRecoilState } from 'recoil';
 
-export const FilesListEmptyState = ({ isPrivate }: { isPrivate?: boolean }) => {
-  const [, setDashboardState] = useDashboardState();
+export const FilesListEmptyState = ({ isPrivate = false }: { isPrivate?: boolean }) => {
+  const setNewFileDialogState = useSetRecoilState(newFileDialogAtom);
 
   return (
     <div className="flex min-h-80 items-center justify-center border-4 border-dashed border-border">
@@ -18,7 +19,7 @@ export const FilesListEmptyState = ({ isPrivate }: { isPrivate?: boolean }) => {
               className="underline hover:text-primary"
               onClick={() => {
                 mixpanel.track('[FilesEmptyState].clickCreateBlankFile');
-                setDashboardState((prev) => ({ ...prev, showNewFileDialog: isPrivate ? 'private' : 'public' }));
+                setNewFileDialogState({ show: true, isPrivate });
               }}
             >
               Create a new file

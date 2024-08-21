@@ -1,11 +1,13 @@
+import { fileDragDropModalAtom } from '@/dashboard/atoms/fileDragDropModalAtom';
 import { Action as FilesAction } from '@/routes/api.files.$uuid';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { FilePermission, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useCallback, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useFetchers, useLocation } from 'react-router-dom';
+import { useSetRecoilState } from 'recoil';
 import { Empty } from './Empty';
 import { FilesListItemExampleFile, FilesListItemUserFile, FilesListItems } from './FilesListItem';
 import { FilesListViewControls } from './FilesListViewControls';
@@ -25,7 +27,17 @@ export type FilesListUserFile = {
   };
 };
 
-export function FilesList({ files, emptyState }: { files: FilesListUserFile[]; emptyState?: ReactNode }) {
+export function FilesList({
+  files,
+  emptyState,
+  teamUuid,
+  isPrivate,
+}: {
+  files: FilesListUserFile[];
+  emptyState?: ReactNode;
+  teamUuid?: string;
+  isPrivate?: boolean;
+}) {
   const { pathname } = useLocation();
   const [filterValue, setFilterValue] = useState<string>('');
   const fetchers = useFetchers();
@@ -88,8 +100,14 @@ export function FilesList({ files, emptyState }: { files: FilesListUserFile[]; e
   const filesBeingDeleted = fetchers.filter((fetcher) => (fetcher.json as FilesAction['request'])?.action === 'delete');
   const activeShareMenuFileName = files.find((file) => file.uuid === activeShareMenuFileId)?.name || '';
 
+  const setFileDragDropState = useSetRecoilState(fileDragDropModalAtom);
+  const handleDragEnter = useCallback(() => {
+    if (teamUuid === undefined || isPrivate === undefined) return;
+    setFileDragDropState({ show: true, teamUuid, isPrivate });
+  }, [isPrivate, setFileDragDropState, teamUuid]);
+
   return (
-    <>
+    <div className="flex flex-grow flex-col" onDragEnter={handleDragEnter}>
       <FilesListViewControls
         filterValue={filterValue}
         setFilterValue={setFilterValue}
@@ -124,7 +142,7 @@ export function FilesList({ files, emptyState }: { files: FilesListUserFile[]; e
           name={activeShareMenuFileName}
         />
       )}
-    </>
+    </div>
   );
 }
 

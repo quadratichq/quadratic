@@ -1,8 +1,10 @@
 import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
-import { DashboardProvider, useDashboardState } from '@/dashboard/components/DashboardProvider';
+import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { Empty } from '@/dashboard/components/Empty';
+import { FileDragDrop } from '@/dashboard/components/FileDragDrop';
+import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
 import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
@@ -32,6 +34,7 @@ import {
   useRouteLoaderData,
   useSearchParams,
 } from 'react-router-dom';
+import { RecoilRoot, useRecoilState } from 'recoil';
 
 const DRAWER_WIDTH = 264;
 export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
@@ -182,13 +185,13 @@ export const Component = () => {
   useCheckForAuthorizationTokenOnWindowFocus();
 
   return (
-    <DashboardProvider>
+    <RecoilRoot>
       <LiveChatWidget license="14763831" customerEmail={user?.email} customerName={user?.name} />
       <div className={`h-full lg:flex lg:flex-row`}>
         <div
           ref={contentPaneRef}
           className={cn(
-            `relative order-2 h-full w-full px-4 pb-10 transition-all sm:pt-0 lg:px-10`,
+            `relative order-2 flex w-full flex-grow flex-col px-4 pb-10 transition-all sm:pt-0 lg:px-10`,
             isLoading ? 'overflow-hidden' : 'overflow-auto',
             isLoading && 'pointer-events-none opacity-25'
           )}
@@ -206,6 +209,7 @@ export const Component = () => {
             </Sheet>
           </div>
           <Outlet />
+          <FileDragDrop />
         </div>
         <div
           className={`order-1 hidden flex-shrink-0 border-r border-r-border lg:block`}
@@ -216,28 +220,30 @@ export const Component = () => {
         {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.EDUCATION && <EducationDialog />}
       </div>
       <NewFileDialogWrapper />
-    </DashboardProvider>
+      <ImportProgressList />
+    </RecoilRoot>
   );
 };
 
 function NewFileDialogWrapper() {
-  const [dashboardState, setDashboardState] = useDashboardState();
+  const [newFileDialogState, setNewFileDialogState] = useRecoilState(newFileDialogAtom);
   const {
     activeTeam: {
       connections,
-      team: { uuid },
+      team: { uuid: teamUuid },
     },
   } = useDashboardRouteLoaderData();
+  const location = useLocation();
+  const isPrivate = location.pathname !== ROUTES.TEAM_FILES(teamUuid);
 
-  if (dashboardState.showNewFileDialog === '') {
-    return null;
-  }
+  if (!newFileDialogState.show) return null;
+
   return (
     <NewFileDialog
       connections={connections}
-      teamUuid={uuid}
-      onClose={() => setDashboardState((prev) => ({ ...prev, showNewFileDialog: '' }))}
-      isPrivate={dashboardState.showNewFileDialog === 'private'}
+      teamUuid={teamUuid}
+      onClose={() => setNewFileDialogState({ show: false, isPrivate })}
+      isPrivate={isPrivate}
     />
   );
 }

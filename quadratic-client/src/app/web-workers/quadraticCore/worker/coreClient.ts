@@ -120,8 +120,12 @@ class CoreClient {
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
-  private send(message: CoreClientMessage) {
-    self.postMessage(message);
+  private send(message: CoreClientMessage, transfer?: Transferable) {
+    if (transfer) {
+      self.postMessage(message, [transfer]);
+    } else {
+      self.postMessage(message);
+    }
   }
 
   private handleMessage = async (e: MessageEvent<ClientCoreMessage>) => {
@@ -253,36 +257,24 @@ class CoreClient {
         await core.setCurrency(e.data.selection, e.data.symbol, e.data.cursor);
         return;
 
+      case 'clientCoreUpgradeGridFile':
+        const gridResult = await core.upgradeGridFile(e.data.grid, e.data.sequenceNumber);
+        this.send({ type: 'coreClientUpgradeGridFile', id: e.data.id, ...gridResult }, gridResult.contents);
+        return;
+
+      case 'clientCoreImportExcel':
+        const excelResult = await core.importExcel(e.data);
+        this.send({ type: 'coreClientImportExcel', id: e.data.id, ...excelResult }, excelResult.contents);
+        return;
+
       case 'clientCoreImportCsv':
-        try {
-          const error = await core.importCsv(
-            e.data.sheetId,
-            e.data.x,
-            e.data.y,
-            e.data.file,
-            e.data.fileName,
-            e.data.cursor
-          );
-          this.send({ type: 'coreClientImportCsv', id: e.data.id, error });
-        } catch (error) {
-          this.send({ type: 'coreClientImportCsv', id: e.data.id, error: error as string });
-        }
+        const csvResult = await core.importCsv(e.data);
+        this.send({ type: 'coreClientImportCsv', id: e.data.id, ...csvResult }, csvResult.contents);
         return;
 
       case 'clientCoreImportParquet':
-        try {
-          const error = await core.importParquet(
-            e.data.sheetId,
-            e.data.x,
-            e.data.y,
-            e.data.file,
-            e.data.fileName,
-            e.data.cursor
-          );
-          this.send({ type: 'coreClientImportParquet', id: e.data.id, error });
-        } catch (error) {
-          this.send({ type: 'coreClientImportParquet', id: e.data.id, error: error as string });
-        }
+        const parquetResult = await core.importParquet(e.data);
+        this.send({ type: 'coreClientImportParquet', id: e.data.id, ...parquetResult }, parquetResult.contents);
         return;
 
       case 'clientCoreDeleteCellValues':
@@ -332,13 +324,9 @@ class CoreClient {
         await core.redo(e.data.cursor);
         return;
 
-      case 'clientCoreUpgradeGridFile':
-        const { grid, version } = await core.upgradeGridFile(e.data.grid, e.data.sequenceNumber);
-        this.send({ type: 'coreClientUpgradeGridFile', id: e.data.id, grid, version });
-        return;
-
       case 'clientCoreExport':
-        this.send({ type: 'coreClientExport', id: e.data.id, grid: await core.export() });
+        const exportGrid = await core.export();
+        this.send({ type: 'coreClientExport', id: e.data.id, grid: exportGrid }, exportGrid);
         return;
 
       case 'clientCoreSearch':
@@ -471,10 +459,6 @@ class CoreClient {
       case 'clientCoreInitJavascript':
         coreJavascript.init(e.ports[0]);
         break;
-
-      case 'clientCoreImportExcel':
-        this.send({ type: 'coreClientImportExcel', id: e.data.id, ...(await core.importExcel(e.data)) });
-        return;
 
       case 'clientCoreClearFormatting':
         core.clearFormatting(e.data.selection, e.data.cursor);

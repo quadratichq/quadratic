@@ -246,7 +246,7 @@ export const FileDeleteIcon = (props: SvgIconProps) => (
   </SvgIcon>
 );
 
-export const FileDowndloadIcon = (props: SvgIconProps) => (
+export const FileDownloadIcon = (props: SvgIconProps) => (
   <SvgIcon {...props}>
     <path
       fillRule="evenodd"

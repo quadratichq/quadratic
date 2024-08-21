@@ -1,5 +1,6 @@
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
+import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { useConnectionSchemaBrowserTableQueryActionNewFile } from '@/dashboard/hooks/useConnectionSchemaBrowserTableQueryAction';
@@ -33,6 +34,8 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: intia
   const location = useLocation();
   const [isPrivate, setIsPrivate] = useState<boolean>(!!intialIsPrivate);
   const [activeConnectionUuid, setActiveConnectionUuid] = useState<string>('');
+  const handleFileImport = useFileImport();
+
   const gridItemClassName =
     'flex flex-col items-center justify-center gap-1 rounded-lg border border-border p-4 pt-5 w-full group';
   const gridItemInteractiveClassName = 'hover:bg-accent hover:text-foreground cursor-pointer';
@@ -105,6 +108,10 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: intia
                   gridItemClassName,
                   gridItemInteractiveClassName
                 )}
+                onClick={() => {
+                  onClose();
+                  handleFileImport({ isPrivate, teamUuid });
+                }}
               >
                 <ItemIcon>
                   <ArrowDownIcon />

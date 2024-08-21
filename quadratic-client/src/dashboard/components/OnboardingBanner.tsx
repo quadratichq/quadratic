@@ -1,5 +1,5 @@
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
-import { useDashboardState } from '@/dashboard/components/DashboardProvider';
+import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import Logo from '@/dashboard/components/quadratic-logo.svg';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
@@ -21,6 +21,7 @@ import { CheckCircledIcon, CircleIcon, Cross1Icon } from '@radix-ui/react-icons'
 import * as Tabs from '@radix-ui/react-tabs';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useSetRecoilState } from 'recoil';
 
 export function OnboardingBanner() {
   const {
@@ -34,7 +35,7 @@ export function OnboardingBanner() {
       userMakingRequest: { teamPermissions },
     },
   } = useDashboardRouteLoaderData();
-  const [, setDashboardState] = useDashboardState();
+  const setNewFileDialogState = useSetRecoilState(newFileDialogAtom);
   const [isOpenConfirmDismiss, setIsOpenConfirmDismiss] = useState(false);
   // Only show the banner to people who can 1) write to the team, and 2) haven't dismissed it yet
   const [showBanner, setShowBanner] = useState(
@@ -57,7 +58,7 @@ export function OnboardingBanner() {
             <Button
               variant="outline"
               className={contentBtnClassName}
-              onClick={() => setDashboardState((prev) => ({ ...prev, showNewFileDialog: 'public' }))}
+              onClick={() => setNewFileDialogState({ show: true, isPrivate: false })}
             >
               New file
             </Button>

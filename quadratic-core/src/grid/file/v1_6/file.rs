@@ -8,34 +8,34 @@ use crate::{
     CellValue, CodeCellValue,
 };
 
-pub fn export_cell_value(cell_value: &CellValue) -> current::CellValue {
+pub fn export_cell_value(cell_value: CellValue) -> current::CellValue {
     match cell_value {
         CellValue::Blank => current::CellValue::Blank,
-        CellValue::Text(text) => current::CellValue::Text(text.to_owned()),
+        CellValue::Text(text) => current::CellValue::Text(text),
         CellValue::Number(number) => export_cell_value_number(number),
-        CellValue::Html(html) => current::CellValue::Html(html.to_owned()),
+        CellValue::Html(html) => current::CellValue::Html(html),
         CellValue::Code(cell_code) => current::CellValue::Code(current::CodeCell {
-            code: cell_code.code.to_owned(),
+            code: cell_code.code,
             language: match cell_code.language {
                 CodeCellLanguage::Python => current::CodeCellLanguage::Python,
                 CodeCellLanguage::Formula => current::CodeCellLanguage::Formula,
                 CodeCellLanguage::Javascript => current::CodeCellLanguage::Javascript,
-                CodeCellLanguage::Connection { kind, ref id } => {
+                CodeCellLanguage::Connection { kind, id } => {
                     current::CodeCellLanguage::Connection {
                         kind: match kind {
                             ConnectionKind::Postgres => current::ConnectionKind::Postgres,
                             ConnectionKind::Mysql => current::ConnectionKind::Mysql,
                         },
-                        id: id.clone(),
+                        id,
                     }
                 }
             },
         }),
-        CellValue::Logical(logical) => current::CellValue::Logical(*logical),
+        CellValue::Logical(logical) => current::CellValue::Logical(logical),
         CellValue::Instant(instant) => current::CellValue::Instant(instant.to_string()),
         CellValue::Duration(duration) => current::CellValue::Duration(duration.to_string()),
         CellValue::Error(error) => {
-            current::CellValue::Error(current::RunError::from_grid_run_error(error))
+            current::CellValue::Error(current::RunError::from_grid_run_error(*error))
         }
         CellValue::Image(image) => current::CellValue::Text(image.clone()),
     }
@@ -43,7 +43,7 @@ pub fn export_cell_value(cell_value: &CellValue) -> current::CellValue {
 
 // Change BigDecimal to a current::CellValue (this will be used to convert BD to
 // various CellValue::Number* types, such as NumberF32, etc.)
-pub fn export_cell_value_number(number: &BigDecimal) -> current::CellValue {
+pub fn export_cell_value_number(number: BigDecimal) -> current::CellValue {
     current::CellValue::Number(number.to_string())
 }
 

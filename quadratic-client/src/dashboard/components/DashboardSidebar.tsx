@@ -1,5 +1,5 @@
+import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { ConnectionsIcon, PrivateFileIcon, SharedWithMeIcon } from '@/dashboard/components/CustomRadixIcons';
-import { useDashboardState } from '@/dashboard/components/DashboardProvider';
 import { TeamSwitcher } from '@/dashboard/components/TeamSwitcher';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
@@ -18,6 +18,7 @@ import { AvatarImage } from '@radix-ui/react-avatar';
 import { ExternalLinkIcon, FileIcon, GearIcon, MixIcon, PersonIcon, PlusIcon } from '@radix-ui/react-icons';
 import { ReactNode, useState } from 'react';
 import { NavLink, useLocation, useNavigation, useSearchParams, useSubmit } from 'react-router-dom';
+import { useSetRecoilState } from 'recoil';
 
 /**
  * Dashboard Navbar
@@ -156,8 +157,8 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
   );
 }
 
-function SidebarNavLinkCreateButton({ children, isPrivate }: { children?: ReactNode; isPrivate?: boolean }) {
-  const [, setDashboardState] = useDashboardState();
+function SidebarNavLinkCreateButton({ children, isPrivate = true }: { children?: ReactNode; isPrivate?: boolean }) {
+  const setNewFileDialogState = useSetRecoilState(newFileDialogAtom);
   return (
     <TooltipProvider>
       <Tooltip>
@@ -166,9 +167,7 @@ function SidebarNavLinkCreateButton({ children, isPrivate }: { children?: ReactN
             variant="ghost"
             size="icon-sm"
             className="absolute right-2 top-1 ml-auto opacity-30 hover:opacity-100"
-            onClick={() =>
-              setDashboardState((prev) => ({ ...prev, showNewFileDialog: isPrivate ? 'private' : 'public' }))
-            }
+            onClick={() => setNewFileDialogState({ show: true, isPrivate })}
           >
             <PlusIcon />
           </Button>
