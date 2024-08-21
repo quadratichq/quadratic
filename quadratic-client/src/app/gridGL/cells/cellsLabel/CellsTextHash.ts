@@ -88,7 +88,6 @@ export class CellsTextHash extends Container {
     this.bounds.clear();
     this.bounds.addRectangle(this.textBounds);
     this.bounds.mergeInto(this.warnings.bounds);
-    console.log(this.bounds);
   }
 
   clearMeshEntries(viewRectangle: Rectangle) {

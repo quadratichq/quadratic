@@ -43,7 +43,6 @@ export class CellsTextHashValidations extends Container {
   // This is called when the entire hash has been rendered by core and all known
   // warnings are available.
   populate(warnings: JsValidationWarning[]) {
-    console.log('populating...');
     this.removeChildren();
     this.bounds.clear();
     this.warningSprites = new Map();
