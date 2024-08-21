@@ -11,80 +11,115 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-
-const handleArrowHorizontal = (isRight: boolean, e: KeyboardEvent) => {
-  const target = isRight ? inlineEditorMonaco.getLastColumn() : 1;
-  if (inlineEditorHandler.isEditingFormula()) {
-    if (inlineEditorHandler.cursorIsMoving) {
-      e.stopPropagation();
-      e.preventDefault();
-      keyboardPosition(e);
-    } else {
-      const column = inlineEditorMonaco.getCursorColumn();
-      if (column === target) {
-        // if we're not moving and the formula is valid, close the editor
-        e.stopPropagation();
-        e.preventDefault();
-        if (inlineEditorFormula.wantsCellRef()) {
-          if (isRight) {
-            inlineEditorHandler.cursorIsMoving = true;
-            inlineEditorFormula.addInsertingCells(column);
-            keyboardPosition(e);
-          }
-        } else {
-          inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
-        }
-      }
-    }
-  } else {
-    const column = inlineEditorMonaco.getCursorColumn();
-    if (column === target) {
-      e.stopPropagation();
-      e.preventDefault();
-      inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
-    }
-  }
-};
-
-const handleArrowVertical = (isDown: boolean, e: KeyboardEvent) => {
-  if (inlineEditorHandler.isEditingFormula()) {
-    e.stopPropagation();
-    e.preventDefault();
-    if (inlineEditorHandler.cursorIsMoving) {
-      keyboardPosition(e);
-    } else {
-      // If we're not moving and the formula doesn't want a cell reference,
-      // close the editor. We can't just use "is the formula syntactically
-      // valid" because many formulas are syntactically valid even though
-      // it's obvious the user wants to insert a cell reference. For
-      // example, `SUM(,)` with the cursor to the left of the comma.
-      if (inlineEditorFormula.wantsCellRef()) {
-        const location = inlineEditorHandler.location;
-        if (!location) {
-          throw new Error('Expected inlineEditorHandler.location to be defined in keyDown');
-        }
-        const column = inlineEditorMonaco.getCursorColumn();
-        inlineEditorFormula.addInsertingCells(column);
-        inlineEditorHandler.cursorIsMoving = true;
-        keyboardPosition(e);
-      } else {
-        inlineEditorHandler.close(0, isDown ? 1 : -1, false);
-        return;
-      }
-    }
-  } else {
-    e.stopPropagation();
-    e.preventDefault();
-    inlineEditorHandler.close(0, isDown ? 1 : -1, false);
-  }
-};
+import { keyboardDropdown } from '../../interaction/keyboard/keyboardDropdown';
+import { events } from '@/app/events/events';
 
 class InlineEditorKeyboard {
   escapeBackspacePressed = false;
 
+  private handleArrowHorizontal = async (isRight: boolean, e: KeyboardEvent) => {
+    const target = isRight ? inlineEditorMonaco.getLastColumn() : 1;
+    if (inlineEditorHandler.isEditingFormula()) {
+      if (inlineEditorHandler.cursorIsMoving) {
+        e.stopPropagation();
+        e.preventDefault();
+        keyboardPosition(e);
+      } else {
+        const column = inlineEditorMonaco.getCursorColumn();
+        if (column === target) {
+          // if we're not moving and the formula is valid, close the editor
+          e.stopPropagation();
+          e.preventDefault();
+          if (inlineEditorFormula.wantsCellRef()) {
+            if (isRight) {
+              inlineEditorHandler.cursorIsMoving = true;
+              inlineEditorFormula.addInsertingCells(column);
+              keyboardPosition(e);
+            }
+          } else {
+            if (!(await this.handleValidationError())) {
+              inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
+            }
+          }
+        }
+      }
+    } else {
+      const column = inlineEditorMonaco.getCursorColumn();
+      if (column === target) {
+        e.stopPropagation();
+        e.preventDefault();
+        if (!(await this.handleValidationError())) {
+          inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
+        }
+      }
+    }
+  };
+
+  private handleArrowVertical = async (isDown: boolean, e: KeyboardEvent) => {
+    // if dropdown is showing, then we let dropdown handle the vertical arrow keys
+    if (pixiAppSettings.editorInteractionState.annotationState === 'dropdown') {
+      keyboardDropdown(e, pixiAppSettings.editorInteractionState);
+      e.stopPropagation();
+      return;
+    }
+
+    if (inlineEditorHandler.isEditingFormula()) {
+      e.stopPropagation();
+      e.preventDefault();
+      if (inlineEditorHandler.cursorIsMoving) {
+        keyboardPosition(e);
+      } else {
+        // If we're not moving and the formula doesn't want a cell reference,
+        // close the editor. We can't just use "is the formula syntactically
+        // valid" because many formulas are syntactically valid even though
+        // it's obvious the user wants to insert a cell reference. For
+        // example, `SUM(,)` with the cursor to the left of the comma.
+        if (inlineEditorFormula.wantsCellRef()) {
+          const location = inlineEditorHandler.location;
+          if (!location) {
+            throw new Error('Expected inlineEditorHandler.location to be defined in keyDown');
+          }
+          const column = inlineEditorMonaco.getCursorColumn();
+          inlineEditorFormula.addInsertingCells(column);
+          inlineEditorHandler.cursorIsMoving = true;
+          keyboardPosition(e);
+        } else {
+          if (!(await this.handleValidationError())) {
+            inlineEditorHandler.close(0, isDown ? 1 : -1, false);
+          }
+          return;
+        }
+      }
+    } else {
+      e.stopPropagation();
+      e.preventDefault();
+      if (!(await this.handleValidationError())) {
+        inlineEditorHandler.close(0, isDown ? 1 : -1, false);
+      }
+    }
+  };
+
+  // Checks and handles validation errors when the user leaves the current cell.
+  private async handleValidationError(): Promise<boolean> {
+    const validationError = await inlineEditorHandler.validateInput();
+    if (validationError && inlineEditorHandler.location) {
+      const value = inlineEditorMonaco.get();
+      const location = inlineEditorHandler.location;
+      events.emit('hoverCell', {
+        x: location.x,
+        y: location.y,
+        validationId: validationError,
+        value,
+      });
+      return true;
+    }
+    return false;
+  }
+
   // Keyboard event for inline editor (via either Monaco's keyDown event or,
   // when on a different sheet, via window's keyDown listener).
-  keyDown = (e: KeyboardEvent) => {
+  keyDown = async (e: KeyboardEvent) => {
+    events.emit('hoverCell');
     if (inlineEditorHandler.cursorIsMoving) {
       this.escapeBackspacePressed = ['Escape', 'Backspace'].includes(e.code);
     } else {
@@ -106,27 +141,36 @@ class InlineEditorKeyboard {
     // Enter key
     else if (matchShortcut('save_inline_editor', e)) {
       e.stopPropagation();
-      inlineEditorHandler.close(0, 1, false);
+      e.preventDefault();
+      if (!(await this.handleValidationError())) {
+        inlineEditorHandler.close(0, 1, false);
+      }
     }
 
     // Shift+Enter key
     else if (matchShortcut('save_inline_editor_move_up', e)) {
       e.stopPropagation();
-      inlineEditorHandler.close(0, -1, false);
+      if (!(await this.handleValidationError())) {
+        inlineEditorHandler.close(0, -1, false);
+      }
     }
 
     // Tab key
     else if (matchShortcut('save_inline_editor_move_right', e)) {
       e.stopPropagation();
       e.preventDefault();
-      inlineEditorHandler.close(1, 0, false);
+      if (!(await this.handleValidationError())) {
+        inlineEditorHandler.close(1, 0, false);
+      }
     }
 
     // Shift+Tab key
     else if (matchShortcut('save_inline_editor_move_left', e)) {
       e.stopPropagation();
       e.preventDefault();
-      inlineEditorHandler.close(-1, 0, false);
+      if (!(await this.handleValidationError())) {
+        inlineEditorHandler.close(-1, 0, false);
+      }
     }
 
     // Arrow up
@@ -136,7 +180,7 @@ class InlineEditorKeyboard {
       matchShortcut('jump_cursor_content_top', e) ||
       matchShortcut('expand_selection_content_top', e)
     ) {
-      handleArrowVertical(false, e);
+      this.handleArrowVertical(false, e);
     }
 
     // Arrow down
@@ -146,7 +190,7 @@ class InlineEditorKeyboard {
       matchShortcut('jump_cursor_content_bottom', e) ||
       matchShortcut('expand_selection_content_bottom', e)
     ) {
-      handleArrowVertical(true, e);
+      this.handleArrowVertical(true, e);
     }
 
     // Arrow left
@@ -156,7 +200,7 @@ class InlineEditorKeyboard {
       matchShortcut('jump_cursor_content_left', e) ||
       matchShortcut('expand_selection_content_left', e)
     ) {
-      handleArrowHorizontal(false, e);
+      this.handleArrowHorizontal(false, e);
     }
 
     // Arrow right
@@ -166,7 +210,7 @@ class InlineEditorKeyboard {
       matchShortcut('jump_cursor_content_right', e) ||
       matchShortcut('expand_selection_content_right', e)
     ) {
-      handleArrowHorizontal(true, e);
+      this.handleArrowHorizontal(true, e);
     }
 
     // handle ShiftKey when cursorIsMoving (do nothing or it adds additional references)

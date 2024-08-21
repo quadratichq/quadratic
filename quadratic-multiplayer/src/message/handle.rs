@@ -6,8 +6,8 @@
 //! to all users in a room.
 
 use axum::extract::ws::{Message, WebSocket};
+use base64::{engine::general_purpose::STANDARD, Engine};
 use futures_util::stream::SplitSink;
-use quadratic_core::controller::operations::operation::Operation;
 use quadratic_rust_shared::quadratic_api::{get_file_perms, FilePermRole};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -15,6 +15,7 @@ use uuid::Uuid;
 
 use crate::error::{ErrorLevel, MpError, Result};
 use crate::get_mut_room;
+use crate::message::response::Transaction;
 use crate::message::{
     broadcast, request::MessageRequest, response::MessageResponse, send_user_message,
 };
@@ -177,29 +178,34 @@ pub(crate) async fn handle_message(
             state.update_user_heartbeat(file_id, &session_id).await?;
 
             tracing::trace!(
-                "Transaction received for room {} from user {}",
+                "Transaction received for room {} from user {}, operations: {:?}",
                 file_id,
-                session_id
+                session_id,
+                &operations
             );
-
-            // unpack the operations or return an error
-            let operations_unpacked: Vec<Operation> = serde_json::from_str(&operations)?;
 
             // get and increment the room's sequence_num
             let room_sequence_num = get_mut_room!(state, file_id)?.increment_sequence_num();
+            let decoded_operations = STANDARD.decode(&operations).map_err(|e| {
+                MpError::Serialization(format!(
+                    "Could not decode base64 encoded operations in transaction {id}: {:?}",
+                    e
+                ))
+            })?;
 
             // add the transaction to the transaction queue
             let sequence_num = state
-                .push_pubsub(id, file_id, operations_unpacked, room_sequence_num)
+                .push_pubsub(id, file_id, decoded_operations, room_sequence_num)
                 .await?;
 
             // broadcast the transaction to all users in the room
             let response = MessageResponse::Transaction {
                 id,
                 file_id,
-                operations,
+                operations: operations,
                 sequence_num,
             };
+
             broadcast(vec![], file_id, Arc::clone(&state), response);
 
             Ok(None)
@@ -225,15 +231,18 @@ pub(crate) async fn handle_message(
                 .unwrap_or_default()
                 + 1;
 
-            tracing::warn!("min_sequence_num: {}", min_sequence_num);
-            tracing::warn!("sequence_num: {}", sequence_num);
-            tracing::warn!("expected_num_transactions: {}", expected_num_transactions);
+            tracing::trace!("min_sequence_num: {}", min_sequence_num);
+            tracing::trace!("sequence_num: {}", sequence_num);
+            tracing::trace!("expected_num_transactions: {}", expected_num_transactions);
 
             let transactions = state
                 .get_messages_from_pubsub(&file_id, min_sequence_num)
-                .await?;
+                .await?
+                .into_iter()
+                .map(|transaction| transaction.into())
+                .collect::<Vec<Transaction>>();
 
-            tracing::warn!("got: {}", transactions.len());
+            tracing::trace!("got: {}", transactions.len());
 
             // we don't have the expected number of transactions
             // send an error to the client so they can reload
@@ -247,9 +256,7 @@ pub(crate) async fn handle_message(
                 }));
             }
 
-            let response = MessageResponse::Transactions {
-                transactions: serde_json::to_string(&transactions)?,
-            };
+            let response = MessageResponse::Transactions { transactions };
 
             Ok(Some(response))
         }
@@ -297,6 +304,7 @@ pub(crate) async fn handle_message(
 #[cfg(test)]
 pub(crate) mod tests {
     use quadratic_core::controller::operations::operation::Operation;
+    use quadratic_core::controller::transaction::Transaction as CoreTransaction;
     use quadratic_core::grid::SheetId;
     use tokio::net::TcpStream;
     use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
@@ -456,23 +464,24 @@ pub(crate) mod tests {
         let (socket, state, _, file_id, user_1, _) = setup().await;
         let id = Uuid::new_v4();
         let session_id = user_1.session_id;
-        let operations = serde_json::to_string(&vec![Operation::SetSheetColor {
+        let operations = vec![Operation::SetSheetColor {
             sheet_id: SheetId::new(),
             color: Some("red".to_string()),
-        }])
-        .unwrap();
+        }];
+        let compressed_ops = CoreTransaction::serialize_and_compress(&operations).unwrap();
+        let encoded_ops = STANDARD.encode(&compressed_ops);
 
         let request = MessageRequest::Transaction {
             id,
             file_id,
             session_id,
-            operations: operations.clone(),
+            operations: encoded_ops.clone(),
         };
 
         let response = MessageResponse::Transaction {
             id,
             file_id,
-            operations: operations.clone(),
+            operations: encoded_ops.clone(),
             sequence_num: 1,
         };
 
@@ -493,13 +502,16 @@ pub(crate) mod tests {
             session_id,
             min_sequence_num: 1,
         };
-
-        let string_operations = operations.to_string();
+        let transaction = Transaction {
+            id,
+            file_id,
+            operations: encoded_ops,
+            sequence_num: 1,
+        };
         let response = MessageResponse::Transactions {
-            transactions: format!("[{{\"id\":\"{id}\",\"file_id\":\"{file_id}\",\"operations\":{string_operations},\"sequence_num\":1}}]"),
+            transactions: vec![transaction],
         };
 
-        // expect an empty array since there are no transactions
         test_handle(
             socket,
             state,

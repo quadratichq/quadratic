@@ -10,9 +10,11 @@ import {
   JsRenderFill,
   JsRowHeight,
   JsSheetFill,
+  JsValidationWarning,
   Selection,
   SheetBounds,
   SheetInfo,
+  Validation,
 } from '@/app/quadratic-core-types';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
@@ -25,12 +27,14 @@ import {
   CoreClientTransactionStart,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import EventEmitter from 'eventemitter3';
+import { Point } from 'pixi.js';
+import { ErrorValidation } from '../gridGL/cells/CellsSheet';
 
 interface EventTypes {
   needRefresh: (state: 'required' | 'recommended' | 'force') => void;
 
   search: (found?: SheetPosTS[], current?: number) => void;
-  hoverCell: (cell?: JsRenderCodeCell | EditingCell) => void;
+  hoverCell: (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => void;
 
   zoom: (scale: number) => void;
   panMode: (pan: PanMode) => void;
@@ -102,6 +106,21 @@ interface EventTypes {
   cellMoving: (move: boolean) => void;
 
   insertCodeEditorText: (text: string) => void;
+
+  sheetValidations: (sheetId: string, validations: Validation[]) => void;
+  renderValidationWarnings: (
+    sheetId: string,
+    hashX: number | undefined,
+    hashY: number | undefined,
+    warnings: JsValidationWarning[]
+  ) => void;
+
+  // pointer down on the grid
+  clickedToCell: (column: number, row: number, world: Point | true) => void;
+
+  // dropdown button is pressed for dropdown Validation
+  triggerCell: (column: number, row: number, forceOpen: boolean) => void;
+  dropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape') => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

@@ -1,10 +1,13 @@
+use serde::de::DeserializeOwned;
 use std::sync::Arc;
 use tokio::time::Instant;
 use uuid::Uuid;
 
 use quadratic_core::{
     controller::{
-        operations::operation::Operation, transaction::TransactionServer, GridController,
+        operations::operation::Operation,
+        transaction::{Transaction, TransactionServer},
+        GridController,
     },
     grid::{
         file::{export, import, CURRENT_VERSION},
@@ -127,8 +130,8 @@ pub(crate) async fn process_queue_for_room(
         .connection
         .get_messages_from(channel, &checkpoint_sequence_num.to_string(), false)
         .await?
-        .iter()
-        .flat_map(|(_, message)| serde_json::from_str::<TransactionServer>(message))
+        .into_iter()
+        .flat_map(|(_, message)| decompress_and_deserialize::<TransactionServer>(message))
         .collect::<Vec<TransactionServer>>();
 
     tracing::trace!(
@@ -164,9 +167,9 @@ pub(crate) async fn process_queue_for_room(
             //     transaction.id,
             //     transaction.sequence_num
             // );
-
-            transaction.operations
+            decompress_and_deserialize::<Vec<Operation>>(transaction.operations)
         })
+        .flatten()
         .collect::<Vec<Operation>>();
 
     // process the transactions and save the file to S3
@@ -256,6 +259,11 @@ pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result
     }
 
     Ok(())
+}
+
+fn decompress_and_deserialize<T: DeserializeOwned>(data: Vec<u8>) -> Result<T> {
+    Transaction::decompress_and_deserialize::<T>(&data)
+        .map_err(|e| FilesError::Serialization(e.to_string()))
 }
 
 #[cfg(test)]

@@ -86,7 +86,7 @@ extern "C" {
     );
     pub fn jsTransactionStart(transaction_id: String, name: String);
     pub fn addUnsentTransaction(transaction_id: String, transaction: String, operations: u32);
-    pub fn jsSendTransaction(transaction_id: String, transaction: String);
+    pub fn jsSendTransaction(transaction_id: String, transaction: Vec<u8>);
 
     pub fn jsTransactionProgress(transaction_id: String, remaining_operations: i32);
 
@@ -115,6 +115,18 @@ extern "C" {
     pub fn jsRequestRowHeights(transaction_id: String, sheet_id: String, rows: String);
     // row_heights: Vec<JsRowHeight>
     pub fn jsResizeRowHeights(sheet_id: String, row_heights: String /*Vec<JsRowHeight>*/);
+
+    pub fn jsSheetValidations(sheet_id: String, validations: String /* Vec<Validation> */);
+    pub fn jsValidationWarning(
+        sheet_id: String,
+        validations: String, /* Vec<(x, y, validation_id, failed) */
+    );
+    pub fn jsRenderValidationWarnings(
+        sheet_id: String,
+        hash_x: i64,
+        hash_y: i64,
+        validations: String, /* Vec<(x, y, id) */
+    );
 
     pub fn jsMultiplayerSynced();
 }
@@ -465,7 +477,7 @@ pub fn addUnsentTransaction(transaction_id: String, transaction: String, operati
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSendTransaction(transaction_id: String, _transaction: String) {
+pub fn jsSendTransaction(transaction_id: String, _transaction: Vec<u8>) {
     // We do not include the actual transaction as we don't want to save that in
     // the TEST_ARRAY because of its potential size.
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
@@ -539,6 +551,15 @@ pub fn jsSendImage(
 
 #[cfg(test)]
 #[allow(non_snake_case)]
+pub fn jsSheetValidations(sheet_id: String, validations: String /* JsValidation */) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsSheetValidations",
+        format!("{},{}", sheet_id, validations),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
 pub fn jsRequestRowHeights(
     transaction_id: String,
     sheet_id: String,
@@ -556,6 +577,38 @@ pub fn jsResizeRowHeights(sheet_id: String, row_heights: String /*Vec<JsRowHeigh
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsResizeRowHeights",
         format!("{},{}", sheet_id, row_heights),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsValidationWarning(
+    sheet_id: String,
+    validations: String, /* Vec<(x, y, validation_id, failed) */
+) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsValidationWarning",
+        format!("{},{}", sheet_id, validations),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsRenderValidationWarnings(
+    sheet_id: String,
+    hash_x: i64,
+    hash_y: i64,
+    validations: String, /* Vec(x, y, id) */
+) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsRenderValidationWarnings",
+        format!(
+            "{},{},{},{}",
+            sheet_id,
+            hash_x,
+            hash_y,
+            hash_test(&validations)
+        ),
     ));
 }
 

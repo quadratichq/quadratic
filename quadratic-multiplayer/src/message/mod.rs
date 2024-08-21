@@ -67,16 +67,23 @@ pub(crate) fn broadcast(
     tokio::spawn(async move {
         if let Ok(room) = state.get_room(&file_id).await {
             let result = async {
-                for user in room
+                let included_users = room
                     .users
                     .iter()
-                    .filter(|user| !exclude.contains(&user.session_id))
-                {
+                    .filter(|user| !exclude.contains(&user.session_id));
+
+                if included_users.clone().count() == 0 {
+                    return Ok::<_, MpError>(());
+                }
+
+                let serialized_message = serde_json::to_string(&message)?;
+
+                for user in included_users {
                     if let Some(sender) = &user.socket {
                         let sent = sender
                             .lock()
                             .await
-                            .send(Message::Text(serde_json::to_string(&message)?))
+                            .send(Message::Text(serialized_message.clone()))
                             .await
                             .map_err(|e| MpError::SendingMessage(e.to_string()));
 
