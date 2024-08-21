@@ -24,7 +24,10 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// If no rows/columns are included in the output, then `if_empty` is
             /// outputted instead. If no rows/columns are included in the output
             /// _and_ `if_empty` is omitted, then an error is returned.
-            #[examples("FILTER(A1:C5, D1:D5, )")]
+            #[examples(
+                "FILTER(A1:C5, D1:D5, \"No results\")",
+                "FILTER(A1:C5, {FALSE; TRUE; TRUE; FALSE; TRUE})"
+            )]
             fn FILTER(
                 span: Span,
                 array: (Spanned<Array>),
