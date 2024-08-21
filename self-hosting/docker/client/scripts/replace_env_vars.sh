@@ -24,7 +24,7 @@ replace_env_vars() {
       appended_var="${var}_VAL"
       escaped_val=$(escape_for_sed "$val")
 
-      echo "Replacing $appended_var with $escaped_val in $file"
+      # echo "Replacing $appended_var with $escaped_val in $file"
       sed -i "s/${appended_var}/${escaped_val}/g" "$file"
     done
   done
