@@ -11,7 +11,7 @@ use super::{Duration, Instant, IsBlank};
 use crate::{
     controller::operations::operation::Operation,
     grid::{formatting::CellFmtArray, CodeCellLanguage, NumericFormat, NumericFormatKind, Sheet},
-    CodeResult, Pos, RunError, RunLengthEncoding, SheetRect,
+    CodeResult, Pos, RunError, RunErrorMsg, RunLengthEncoding, SheetRect,
 };
 
 // todo: fill this out
@@ -387,28 +387,28 @@ impl CellValue {
         }))
     }
 
+    /// Returns the sort order of a value, based on the results of Excel's
+    /// `SORT()` function. The comparison operators are the same, except that
+    /// blank coerces to `0`, `FALSE`, or `""` before comparison.
+    fn type_id(&self) -> u8 {
+        match self {
+            CellValue::Number(_) => 0,
+            CellValue::Text(_) => 1,
+            CellValue::Logical(_) => 2,
+            CellValue::Error(_) => 3,
+            CellValue::Instant(_) => 4,
+            CellValue::Duration(_) => 5,
+            CellValue::Blank => 6,
+            CellValue::Html(_) => 7,
+            CellValue::Code(_) => 8,
+            CellValue::Image(_) => 9,
+        }
+    }
+
     /// Compares two values using a total ordering that propagates errors and
     /// converts blanks to zeros.
     #[allow(clippy::should_implement_trait)]
     pub fn cmp(&self, other: &Self) -> CodeResult<std::cmp::Ordering> {
-        fn type_id(v: &CellValue) -> u8 {
-            // Sort order, based on the results of Excel's `SORT()` function.
-            // The comparison operators are the same, except that blank coerces
-            // to zero before comparison.
-            match v {
-                CellValue::Number(_) => 0,
-                CellValue::Text(_) => 1,
-                CellValue::Logical(_) => 2,
-                CellValue::Error(_) => 3,
-                CellValue::Instant(_) => 4,
-                CellValue::Duration(_) => 5,
-                CellValue::Blank => 6,
-                CellValue::Html(_) => 7,
-                CellValue::Code(_) => 8,
-                CellValue::Image(_) => 9,
-            }
-        }
-
         // Coerce blank to zero.
         let mut lhs = self;
         let mut rhs = other;
@@ -425,7 +425,7 @@ impl CellValue {
 
         Ok(lhs
             .partial_cmp(rhs)?
-            .unwrap_or_else(|| type_id(lhs).cmp(&type_id(rhs))))
+            .unwrap_or_else(|| lhs.type_id().cmp(&rhs.type_id())))
     }
 
     /// Returns whether `self == other` using a case-insensitive and
@@ -585,41 +585,44 @@ impl CellValue {
             other => panic!("expected error value; got {other:?}"),
         }
     }
+
+    /// Returns a hashable value that is unique per-value for most common types,
+    /// but may not always be unique.
+    pub fn hash(&self) -> CellValueHash {
+        match self {
+            CellValue::Blank => CellValueHash::Blank,
+            CellValue::Text(s) => CellValueHash::Text(crate::util::case_fold(s)),
+            CellValue::Number(n) => CellValueHash::Number(n.clone()),
+            CellValue::Logical(b) => CellValueHash::Logical(*b),
+            CellValue::Instant(Instant { seconds }) => {
+                CellValueHash::Instant(seconds.to_ne_bytes())
+            }
+            CellValue::Duration(Duration {
+                years,
+                months,
+                seconds,
+            }) => CellValueHash::Duration(*years, *months, seconds.to_ne_bytes()),
+            CellValue::Error(e) => CellValueHash::Error(e.msg.clone()),
+            _ => CellValueHash::Unknown(self.type_id()),
+        }
+    }
 }
 
-/// Hashable subset of [`CellValue`], for performance optimization.
+/// Unique hash of [`CellValue`], for performance optimization. This is
+/// **case-folded**, so strings with the same contents in a different case will
+/// hash to the same value.
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
-pub enum HashableCellValue {
+pub enum CellValueHash {
     #[default]
     Blank,
     Text(String),
     // If we ever switch to using `f64`, replace this with `[u8; 8]`.
     Number(BigDecimal),
     Logical(bool),
-    // `Instant` and `Duration` may be added in the future.
-}
-impl TryFrom<CellValue> for HashableCellValue {
-    type Error = ();
-
-    fn try_from(value: CellValue) -> std::result::Result<Self, Self::Error> {
-        match value {
-            CellValue::Blank => Ok(Self::Blank),
-            CellValue::Text(s) => Ok(Self::Text(s)),
-            CellValue::Number(n) => Ok(Self::Number(n)),
-            CellValue::Logical(b) => Ok(Self::Logical(b)),
-            _ => Err(()),
-        }
-    }
-}
-impl From<HashableCellValue> for CellValue {
-    fn from(value: HashableCellValue) -> Self {
-        match value {
-            HashableCellValue::Blank => Self::Blank,
-            HashableCellValue::Text(s) => Self::Text(s),
-            HashableCellValue::Number(n) => Self::Number(n),
-            HashableCellValue::Logical(b) => Self::Logical(b),
-        }
-    }
+    Instant([u8; 8]),
+    Duration(i32, i32, [u8; 8]),
+    Error(RunErrorMsg),
+    Unknown(u8),
 }
 
 #[cfg(test)]

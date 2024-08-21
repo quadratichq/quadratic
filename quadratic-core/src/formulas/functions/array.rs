@@ -1,3 +1,9 @@
+use std::collections::{HashMap, HashSet};
+
+use smallvec::SmallVec;
+
+use crate::CellValueHash;
+
 use super::*;
 
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
@@ -73,14 +79,6 @@ fn get_functions() -> Vec<FormulaFunction> {
         ),
         formula_fn!(
             /// TODO: documentation
-            #[examples("UNIQUE()")]
-            fn UNIQUE(array: Array, by_column: (Option<bool>), exactly_once: (Option<bool>)) {
-                // let mut unique_values = HashSet::new();
-                array // TODO
-            }
-        ),
-        formula_fn!(
-            /// TODO: documentation
             #[examples("SORT()")]
             fn SORT(
                 array: Array,
@@ -91,7 +89,59 @@ fn get_functions() -> Vec<FormulaFunction> {
                 array // TODO
             }
         ),
+        formula_fn!(
+            /// TODO: documentation
+            #[examples("UNIQUE()")]
+            fn UNIQUE(
+                span: Span,
+                array: Array,
+                by_column: (Option<bool>),
+                exactly_once: (Option<bool>),
+            ) {
+                let axis = by_column_to_axis(by_column);
+
+                // Count how many times we've seen each slice.
+                let mut slice_counts: Vec<(Vec<&CellValue>, usize)> = vec![];
+                // Instead of doing a linear search in `slice_counts`, record a
+                // list of possible indices for each hash. We're basically
+                // making our own hashmap here from the stdlib one, but we can't
+                // use the stdlib one directly because `CellValue` doesn't impl
+                // `Hash` and `CellValueHash` isn't unique.
+                let mut indices = HashMap::<Vec<CellValueHash>, SmallVec<[usize; 1]>>::new();
+
+                for slice in array.slices(axis) {
+                    let possible_indices = indices
+                        .entry(slice.iter().map(|v| v.hash()).collect_vec())
+                        .or_default();
+                    if let Some(&i) = possible_indices.iter().find(|&&i| {
+                        let past_slice = &slice_counts[i].0;
+                        std::iter::zip(past_slice, &slice)
+                            .all(|(l, r)| l.partial_cmp(r) == Ok(Some(std::cmp::Ordering::Equal)))
+                    }) {
+                        slice_counts[i].1 += 1;
+                    } else {
+                        slice_counts.push((slice, 1));
+                    }
+                }
+                let new_slices = slice_counts
+                    .into_iter()
+                    .filter(|(_, count)| match exactly_once {
+                        Some(true) => *count == 1,
+                        None | Some(false) => *count > 0,
+                    })
+                    .map(|(slice, _)| slice);
+                Array::from_slices(axis, new_slices)
+                    .ok_or(RunErrorMsg::EmptyArray.with_span(span))?
+            }
+        ),
     ]
+}
+
+fn by_column_to_axis(by_column: Option<bool>) -> Axis {
+    match by_column {
+        Some(true) => Axis::X,
+        None | Some(false) => Axis::Y,
+    }
 }
 
 #[cfg(test)]
