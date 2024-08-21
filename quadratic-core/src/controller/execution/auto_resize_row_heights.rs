@@ -725,4 +725,57 @@ mod tests {
         let async_transaction = gc.transactions.get_async_transaction(transaction_id);
         assert!(async_transaction.is_err());
     }
+
+    #[test]
+    #[serial]
+    fn test_transaction_save_when_auto_resize_row_heights_when_not_executed() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos {
+            x: 0,
+            y: 0,
+            sheet_id,
+        };
+        // set wrap
+        gc.set_cell_wrap(sheet_pos.into(), Some(CellWrap::Wrap), None);
+
+        // manually resize row 0
+        gc.commit_offsets_resize(
+            sheet_id,
+            TransientResize {
+                row: Some(0),
+                column: None,
+                old_size: gc.sheet(sheet_id).offsets.row_height(0),
+                new_size: 40.0,
+            },
+            None,
+        );
+
+        let prev_transaction_id = gc.last_transaction().unwrap().id;
+
+        clear_js_calls();
+        // set cell value, should not trigger auto resize row heights because manually resized
+        gc.set_cell_value(
+            sheet_pos,
+            "test_auto_resize_row_heights_on_user_transaction_only".to_string(),
+            None,
+        );
+        // confirm no auto resize row heights call
+        expect_js_call_count("jsRequestRowHeights", 0, true);
+
+        let next_transaction = gc.last_transaction().unwrap();
+
+        // confirm new transaction save
+        assert_ne!(prev_transaction_id, next_transaction.id);
+
+        // confirm new transaction has set cell value operation
+        assert!(matches!(
+            next_transaction.operations[0],
+            Operation::SetCellValues { .. }
+        ));
+
+        // confirm no pending async transaction
+        let async_transaction = gc.transactions.get_async_transaction(next_transaction.id);
+        assert!(async_transaction.is_err());
+    }
 }
