@@ -66,8 +66,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
 function validateClientDataKv(clientDataKv: unknown) {
   const parseResult = TeamClientDataKvSchema.safeParse(clientDataKv);
   if (!parseResult.success) {
-    // TODO: log to sentry, this is a corrupdated data problem
-    throw new ApiError(400, '`clientDataKv` must be a valid JSON object');
+    throw new ApiError(500, '`clientDataKv` must be a valid JSON object');
   }
   return parseResult.data;
 }
