@@ -1,9 +1,7 @@
 import { useConnectionSchemaBrowserTableQueryActionNewFile } from '@/dashboard/hooks/useConnectionSchemaBrowserTableQueryAction';
 import { ConnectionHeader } from '@/shared/components/connections/ConnectionHeader';
 import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
-import { PrivateFileToggle } from '@/shared/components/connections/PrivateFileToggle';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { useState } from 'react';
 
 export const ConnectionDetails = ({
   connectionType,
@@ -16,14 +14,10 @@ export const ConnectionDetails = ({
   handleNavigateToListView: () => void;
   teamUuid: string;
 }) => {
-  const [isPrivate, setIsPrivate] = useState<boolean>(true);
-
-  // From this view, you're not really in the explicit context of a team. So we decide
-  // to create it manually as a public team file.
   const { TableQueryAction } = useConnectionSchemaBrowserTableQueryActionNewFile({
     connectionType,
     connectionUuid,
-    isPrivate: false,
+    isPrivate: true,
     teamUuid,
   });
 
@@ -32,10 +26,6 @@ export const ConnectionDetails = ({
       <ConnectionHeader type={connectionType} handleNavigateToListView={handleNavigateToListView}>
         Browse
       </ConnectionHeader>
-
-      <PrivateFileToggle className="mb-4" isPrivate={isPrivate} onToggle={() => setIsPrivate((prev) => !prev)}>
-        Create new file in:
-      </PrivateFileToggle>
 
       <ConnectionSchemaBrowser
         selfContained={true}
