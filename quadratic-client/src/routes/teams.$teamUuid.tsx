@@ -3,6 +3,7 @@ import { ACTIVE_TEAM_UUID_KEY } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
 import { Button } from '@/shared/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
+import mixpanel from 'mixpanel-browser';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ActionFunctionArgs, Link, Outlet, redirectDocument } from 'react-router-dom';
 
@@ -57,6 +58,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
   }
 
   if (intent === 'create-team-invite') {
+    mixpanel.track('[Team].[Users].createInvite');
     try {
       const { email, role } = data;
       await apiClient.teams.invites.create(teamUuid, { email, role });
@@ -67,6 +69,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
   }
 
   if (intent === 'delete-team-invite') {
+    mixpanel.track('[Team].[Users].deleteInvite');
     try {
       const { inviteId } = data;
       await apiClient.teams.invites.delete(teamUuid, inviteId);
@@ -77,6 +80,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
   }
 
   if (intent === 'update-team-user') {
+    mixpanel.track('[Team].[Users].updateRole');
     try {
       const { userId, role } = data;
       await apiClient.teams.users.update(teamUuid, userId, { role });
@@ -87,6 +91,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
   }
 
   if (intent === 'delete-team-user') {
+    mixpanel.track('[Team].[Users].delete');
     try {
       const { userId } = data;
       const res = await apiClient.teams.users.delete(teamUuid, userId);
