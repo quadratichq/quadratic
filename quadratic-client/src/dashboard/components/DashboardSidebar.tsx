@@ -4,6 +4,7 @@ import { TeamSwitcher } from '@/dashboard/components/TeamSwitcher';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { getActionFileMove } from '@/routes/api.files.$uuid';
+import { Avatar } from '@/shared/components/Avatar';
 import { Type } from '@/shared/components/Type';
 import { TYPE } from '@/shared/constants/appConstants';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
@@ -14,7 +15,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shar
 import { cn } from '@/shared/shadcn/utils';
 import { getAuth0AvatarSrc } from '@/shared/utils/auth0UserImageSrc';
 import { SchoolOutlined } from '@mui/icons-material';
-import { Avatar } from '@mui/material';
 import { ExternalLinkIcon, FileIcon, GearIcon, MixIcon, PersonIcon, PlusIcon } from '@radix-ui/react-icons';
 import { ReactNode, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigation, useSearchParams, useSubmit } from 'react-router-dom';
@@ -142,16 +142,19 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         )}
         <SidebarNavLink to={ROUTES.ACCOUNT}>
           <Avatar
-            alt={user?.name}
             src={getAuth0AvatarSrc(user?.picture)}
-            sx={{
-              bgcolor: colors.quadraticSecondary,
-              width: 24,
-              height: 24,
+            alt={user?.name}
+            crossOrigin="anonymous"
+            style={{
+              width: '24px',
+              height: '24px',
               fontSize: '.8125rem',
+              borderRadius: '50%',
+              backgroundColor: colors.quadraticSecondary,
             }}
-            imgProps={{ crossOrigin: 'anonymous' }}
-          />
+          >
+            {user?.name}
+          </Avatar>
 
           <div className={`flex flex-col overflow-hidden`}>
             {user?.name || 'You'}

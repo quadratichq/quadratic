@@ -10,10 +10,11 @@ import { useConnectionSchemaFetcher } from '@/app/ui/menus/CodeEditor/useConnect
 import { authClient } from '@/auth';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
+import { Avatar } from '@/shared/components/Avatar';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { getAuth0AvatarSrc } from '@/shared/utils/auth0UserImageSrc';
 import { Send, Stop } from '@mui/icons-material';
-import { Avatar, CircularProgress, IconButton } from '@mui/material';
+import { CircularProgress, IconButton } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
 import { useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -222,29 +223,30 @@ ${QuadraticDocs}`,
             >
               {message.role === 'user' ? (
                 <Avatar
-                  variant="rounded"
-                  sx={{
-                    bgcolor: colors.quadraticSecondary,
-                    width: 24,
-                    height: 24,
-                    fontSize: '0.8rem',
-                    marginBottom: '0.5rem',
-                  }}
-                  alt={user?.name}
                   src={getAuth0AvatarSrc(user?.picture)}
-                  imgProps={{ crossOrigin: 'anonymous' }}
-                ></Avatar>
+                  alt={user?.name}
+                  crossOrigin="anonymous"
+                  style={{
+                    width: '24px',
+                    height: '24px',
+                    fontSize: '0.8125rem',
+                    borderRadius: '50%',
+                    backgroundColor: colors.quadraticSecondary,
+                  }}
+                >
+                  {user?.name}
+                </Avatar>
               ) : (
                 <Avatar
-                  variant="rounded"
-                  sx={{
-                    bgcolor: 'white',
-                    width: 24,
-                    height: 24,
+                  alt="AI Assistant"
+                  style={{
+                    width: '24px',
+                    height: '24px',
                     fontSize: '0.8rem',
+                    borderRadius: '50%',
+                    backgroundColor: 'white',
                     marginBottom: '0.5rem',
                   }}
-                  alt="AI Assistant"
                 >
                   <AI sx={{ color: colors.languageAI }}></AI>
                 </Avatar>
