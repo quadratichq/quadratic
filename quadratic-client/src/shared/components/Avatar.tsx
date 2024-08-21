@@ -31,8 +31,8 @@ export const Avatar: React.FC<AvatarProps> = ({ fallbackSrc, src, alt, size, sty
         <img
           alt={alt}
           src={error ? fallbackSrc : src ?? ''}
-          style={{ ...stylePreset, ...style }}
           onError={() => setError(true)}
+          style={{ ...stylePreset, ...style }}
           {...rest}
         />
       )}
