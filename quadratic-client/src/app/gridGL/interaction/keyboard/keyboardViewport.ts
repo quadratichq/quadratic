@@ -50,6 +50,13 @@ export function keyboardViewport(options: {
         editorEscapePressed: true,
       });
       return true;
+    } else if (editorInteractionState.showValidation) {
+      // todo: this should check for changes first!!!
+      setEditorInteractionState({
+        ...editorInteractionState,
+        showValidation: false,
+      });
+      return true;
     }
     return pointer.handleEscape();
   }

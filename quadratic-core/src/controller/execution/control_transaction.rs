@@ -2,21 +2,16 @@ use chrono::Utc;
 use uuid::Uuid;
 
 use super::{GridController, TransactionType};
-use crate::{
-    controller::{
-        active_transactions::{
-            pending_transaction::PendingTransaction, transaction_name::TransactionName,
-        },
-        operations::operation::Operation,
-        transaction::Transaction,
-        transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-        transaction_types::JsCodeResult,
-    },
-    error_core::Result,
-    grid::{CodeRun, CodeRunResult},
-    parquet::parquet_to_vec,
-    Pos, Value,
-};
+use crate::controller::active_transactions::pending_transaction::PendingTransaction;
+use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::controller::operations::operation::Operation;
+use crate::controller::transaction::Transaction;
+use crate::controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
+use crate::controller::transaction_types::JsCodeResult;
+use crate::error_core::Result;
+use crate::grid::{CodeRun, CodeRunResult};
+use crate::parquet::parquet_to_vec;
+use crate::{Pos, RunError, RunErrorMsg, Value};
 
 impl GridController {
     // loop compute cycle until complete or an async call is made
@@ -46,12 +41,13 @@ impl GridController {
                 .map(|(&k, v)| (k, v.clone()))
             {
                 transaction.resize_rows.remove(&sheet_id);
-                if !rows.is_empty() {
-                    self.start_auto_resize_row_heights(
-                        transaction,
-                        sheet_id,
-                        rows.into_iter().collect(),
-                    );
+                let resizing = self.start_auto_resize_row_heights(
+                    transaction,
+                    sheet_id,
+                    rows.into_iter().collect(),
+                );
+                // break only if async resize operation is being executed
+                if resizing {
                     break;
                 }
             }
@@ -107,6 +103,12 @@ impl GridController {
                 !self.undo_stack.is_empty(),
                 !self.redo_stack.is_empty(),
             );
+
+            transaction.send_validations.iter().for_each(|sheet_id| {
+                if let Some(sheet) = self.try_sheet(*sheet_id) {
+                    sheet.send_all_validations();
+                }
+            });
         }
     }
 
@@ -178,7 +180,12 @@ impl GridController {
                 return_type = format!("{return_type}\n{extra}");
             }
 
-            let result = CodeRunResult::Ok(Value::Array(array.into()));
+            let result = if let Some(error_msg) = &std_err {
+                let msg = RunErrorMsg::PythonError(error_msg.clone().into());
+                CodeRunResult::Err(RunError { span: None, msg })
+            } else {
+                CodeRunResult::Ok(Value::Array(array.into()))
+            };
 
             let code_run = CodeRun {
                 formatted_code_string: None,
@@ -226,13 +233,12 @@ impl From<Pos> for CellHash {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
-        cell_values::CellValues,
-        grid::{CodeCellLanguage, ConnectionKind, GridBounds},
-        CellValue, Pos, Rect, SheetPos,
-    };
     use serial_test::parallel;
+
+    use super::*;
+    use crate::cell_values::CellValues;
+    use crate::grid::{CodeCellLanguage, ConnectionKind, GridBounds};
+    use crate::{CellValue, Pos, Rect, SheetPos};
 
     fn add_cell_value(sheet_pos: SheetPos, value: CellValue) -> Operation {
         Operation::SetCellValues {

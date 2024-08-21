@@ -5,9 +5,19 @@
 use crate::error::{ErrorLevel, MpError};
 use crate::state::settings::MinVersion;
 use crate::state::user::{User, UserStateUpdate};
+use base64::{engine::general_purpose::STANDARD, Engine};
 use dashmap::DashMap;
+use quadratic_core::controller::transaction::TransactionServer;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub(crate) struct Transaction {
+    pub(crate) id: Uuid,
+    pub(crate) file_id: Uuid,
+    pub(crate) sequence_num: u64,
+    pub(crate) operations: String,
+}
 
 // NOTE: needs to be kept in sync with multiplayerTypes.ts
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -29,7 +39,7 @@ pub(crate) enum MessageResponse {
         operations: String,
     },
     Transactions {
-        transactions: String,
+        transactions: Vec<Transaction>,
     },
     EnterRoom {
         file_id: Uuid,
@@ -42,6 +52,17 @@ pub(crate) enum MessageResponse {
         error: MpError,
         error_level: ErrorLevel,
     },
+}
+
+impl From<TransactionServer> for Transaction {
+    fn from(transaction_server: TransactionServer) -> Self {
+        Transaction {
+            id: transaction_server.id,
+            file_id: transaction_server.file_id,
+            sequence_num: transaction_server.sequence_num,
+            operations: STANDARD.encode(&transaction_server.operations),
+        }
+    }
 }
 
 impl From<(DashMap<Uuid, User>, &MinVersion)> for MessageResponse {

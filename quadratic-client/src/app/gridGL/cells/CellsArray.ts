@@ -7,7 +7,7 @@ import { JsCodeCell, JsRenderCodeCell, RunError } from '@/app/quadratic-core-typ
 import mixpanel from 'mixpanel-browser';
 import { Container, Graphics, ParticleContainer, Point, Rectangle, Sprite, Texture } from 'pixi.js';
 import { colors } from '../../theme/colors';
-import { dashedTextures } from '../dashedTextures';
+import { generatedTextures } from '../generateTextures';
 import { intersects } from '../helpers/intersects';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
@@ -43,7 +43,7 @@ export class CellsArray extends Container {
   destroy() {
     events.off('renderCodeCells', this.renderCodeCells);
     events.off('sheetOffsets', this.sheetOffsets);
-    events.off('updateCodeCell', this.create);
+    events.off('updateCodeCell', this.updateCodeCell);
     events.off('resizeRowHeights', this.sheetOffsets);
     super.destroy();
   }
@@ -53,7 +53,7 @@ export class CellsArray extends Container {
   }
 
   private renderCodeCells = (sheetId: string, codeCells: JsRenderCodeCell[]) => {
-    if (sheetId === this.cellsSheet.sheetId) {
+    if (sheetId === this.sheetId) {
       const map = new Map();
       codeCells.forEach((cell) => map.set(this.key(cell.x, cell.y), cell));
       this.codeCells = map;
@@ -75,7 +75,7 @@ export class CellsArray extends Container {
     codeCell?: JsCodeCell;
   }) => {
     const { sheetId, x, y, renderCodeCell, codeCell } = options;
-    if (sheetId === this.cellsSheet.sheetId) {
+    if (sheetId === this.sheetId) {
       if (renderCodeCell) {
         this.codeCells.set(this.key(x, y), renderCodeCell);
       } else {
@@ -268,7 +268,7 @@ export class CellsArray extends Container {
       this.graphics.lineStyle({
         width: SPILL_HIGHLIGHT_THICKNESS,
         color,
-        texture: i % 2 === 0 ? dashedTextures.dashedHorizontal : dashedTextures.dashedVertical,
+        texture: i % 2 === 0 ? generatedTextures.dashedHorizontal : generatedTextures.dashedVertical,
       });
       this.graphics.lineTo(path[i][0], path[i][1]);
     }

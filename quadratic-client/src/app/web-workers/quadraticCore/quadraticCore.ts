@@ -26,6 +26,7 @@ import {
   SheetPos,
   SheetRect,
   SummarizeSelectionResult,
+  Validation,
 } from '@/app/quadratic-core-types';
 import { authClient } from '@/auth';
 import { Rectangle } from 'pixi.js';
@@ -34,6 +35,7 @@ import {
   ClientCoreCellHasContent,
   ClientCoreGetCellFormatSummary,
   ClientCoreGetCodeCell,
+  ClientCoreGetDisplayCell,
   ClientCoreGetEditCell,
   ClientCoreGetRenderCell,
   ClientCoreHasRenderCells,
@@ -44,10 +46,12 @@ import {
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
   CoreClientGetColumnsBounds,
+  CoreClientGetDisplayCell,
   CoreClientGetEditCell,
   CoreClientGetJwt,
   CoreClientGetRenderCell,
   CoreClientGetRowsBounds,
+  CoreClientGetValidationList,
   CoreClientHasRenderCells,
   CoreClientImportCsv,
   CoreClientImportParquet,
@@ -56,6 +60,7 @@ import {
   CoreClientSearch,
   CoreClientSummarizeSelection,
   CoreClientUpgradeFile,
+  CoreClientValidateInput,
 } from './coreClientMessages';
 
 class QuadraticCore {
@@ -166,8 +171,14 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientSetCursorSelection') {
       events.emit('setCursor', undefined, e.data.selection);
       return;
+    } else if (e.data.type === 'coreClientSheetValidations') {
+      events.emit('sheetValidations', e.data.sheetId, e.data.validations);
+      return;
     } else if (e.data.type === 'coreClientResizeRowHeights') {
       events.emit('resizeRowHeights', e.data.sheetId, e.data.rowHeights);
+      return;
+    } else if (e.data.type === 'coreClientRenderValidationWarnings') {
+      events.emit('renderValidationWarnings', e.data.sheetId, e.data.hashX, e.data.hashY, e.data.validationWarnings);
       return;
     } else if (e.data.type === 'coreClientMultiplayerSynced') {
       events.emit('multiplayerSynced');
@@ -326,6 +337,23 @@ class QuadraticCore {
         id,
       };
       this.waitingForResponse[id] = (message: CoreClientGetEditCell) => {
+        resolve(message.cell);
+      };
+      this.send(message);
+    });
+  }
+
+  getDisplayCell(sheetId: string, x: number, y: number): Promise<string | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      const message: ClientCoreGetDisplayCell = {
+        type: 'clientCoreGetDisplayCell',
+        sheetId,
+        x,
+        y,
+        id,
+      };
+      this.waitingForResponse[id] = (message: CoreClientGetDisplayCell) => {
         resolve(message.cell);
       };
       this.send(message);
@@ -994,6 +1022,113 @@ class QuadraticCore {
       });
     });
   };
+
+  //#endregion
+
+  //#region Data Validation
+
+  getValidation(sheetId: string, validationId: string): Promise<Validation | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { validation: Validation | undefined }) => {
+        resolve(message.validation);
+      };
+      this.send({
+        type: 'clientCoreGetValidation',
+        id,
+        sheetId,
+        validationId,
+      });
+    });
+  }
+
+  getValidationFromPos(sheetId: string, x: number, y: number): Promise<Validation | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { validation: Validation | undefined }) => {
+        resolve(message.validation);
+      };
+      this.send({
+        type: 'clientCoreGetValidationFromPos',
+        id,
+        sheetId,
+        x,
+        y,
+      });
+    });
+  }
+
+  getValidations(sheetId: string): Promise<Validation[]> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { validations: Validation[] }) => {
+        resolve(message.validations);
+      };
+      this.send({
+        type: 'clientCoreGetValidations',
+        id,
+        sheetId,
+      });
+    });
+  }
+
+  updateValidation(validation: Validation, cursor: string) {
+    this.send({
+      type: 'clientCoreUpdateValidation',
+      validation,
+      cursor,
+    });
+  }
+
+  removeValidation(sheetId: string, validationId: string, cursor: string) {
+    this.send({
+      type: 'clientCoreRemoveValidation',
+      sheetId,
+      validationId,
+      cursor,
+    });
+  }
+
+  removeValidations(sheetId: string) {
+    this.send({
+      type: 'clientCoreRemoveValidations',
+      sheetId,
+      cursor: sheets.getCursorPosition(),
+    });
+  }
+
+  getValidationList(sheetId: string, x: number, y: number): Promise<string[] | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientGetValidationList) => {
+        resolve(message.validations);
+      };
+      this.send({
+        type: 'clientCoreGetValidationList',
+        id,
+        sheetId,
+        x,
+        y,
+      });
+    });
+  }
+
+  validateInput(sheetId: string, x: number, y: number, input: string): Promise<string | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientValidateInput) => {
+        resolve(message.validationId);
+      };
+      this.send({
+        type: 'clientCoreValidateInput',
+        id,
+        sheetId,
+        x,
+        y,
+        input,
+      });
+    });
+  }
 
   //#endregion
 }

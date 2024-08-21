@@ -468,4 +468,11 @@ export const defaultShortcuts: Shortcuts = [
       windows: ['Backspace'],
     },
   },
+  {
+    action: 'trigger_cell',
+    shortcuts: {
+      mac: ['Space'],
+      windows: ['Space'],
+    },
+  },
 ];

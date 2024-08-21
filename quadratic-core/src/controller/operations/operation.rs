@@ -1,11 +1,13 @@
 use core::fmt;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::{
     cell_values::CellValues,
     grid::{
         file::sheet_schema::SheetSchema, formats::Formats, formatting::CellFmtArray,
-        js_types::JsRowHeight, CodeRun, Sheet, SheetBorders, SheetId,
+        js_types::JsRowHeight, sheet::validations::validation::Validation, CodeRun, Sheet,
+        SheetBorders, SheetId,
     },
     selection::Selection,
     SheetPos, SheetRect,
@@ -121,6 +123,18 @@ pub enum Operation {
         source: SheetRect,
         dest: SheetPos,
     },
+
+    SetValidation {
+        validation: Validation,
+    },
+    RemoveValidation {
+        sheet_id: SheetId,
+        validation_id: Uuid,
+    },
+    SetValidationWarning {
+        sheet_pos: SheetPos,
+        validation_id: Option<Uuid>,
+    },
 }
 
 impl fmt::Display for Operation {
@@ -220,6 +234,29 @@ impl fmt::Display for Operation {
             }
             Operation::AddSheetSchema { schema } => {
                 write!(fmt, "AddSheetSchema {{ schema: {:?} }}", schema)
+            }
+            Operation::SetValidation { validation } => {
+                write!(fmt, "SetValidation {{ validation: {:?} }}", validation)
+            }
+            Operation::RemoveValidation {
+                sheet_id,
+                validation_id,
+            } => {
+                write!(
+                    fmt,
+                    "RemoveValidation {{ sheet_id: {}, validation_id: {} }}",
+                    sheet_id, validation_id
+                )
+            }
+            Operation::SetValidationWarning {
+                sheet_pos,
+                validation_id,
+            } => {
+                write!(
+                    fmt,
+                    "SetValidationWarning {{ sheet_pos: {:?}, validation_id: {:?} }}",
+                    sheet_pos, validation_id
+                )
             }
         }
     }

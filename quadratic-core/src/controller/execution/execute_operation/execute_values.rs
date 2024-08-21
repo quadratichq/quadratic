@@ -1,10 +1,7 @@
-use crate::{
-    controller::{
-        active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::Operation, GridController,
-    },
-    Pos, SheetRect,
-};
+use crate::controller::active_transactions::pending_transaction::PendingTransaction;
+use crate::controller::operations::operation::Operation;
+use crate::controller::GridController;
+use crate::{Pos, SheetRect};
 
 impl GridController {
     pub(crate) fn execute_set_cell_values(
@@ -17,7 +14,12 @@ impl GridController {
                 None => (), // sheet may have been deleted
                 Some(sheet) => {
                     // update individual cell values and collect old_values
-                    let old_values = sheet.merge_cell_values(sheet_pos.into(), &values);
+                    let old_values = sheet.merge_cell_values(
+                        transaction,
+                        sheet_pos.into(),
+                        &values,
+                        !transaction.is_server(),
+                    );
                     if old_values == values {
                         return;
                     }
@@ -50,7 +52,7 @@ impl GridController {
                         if transaction.is_user() {
                             self.check_deleted_code_runs(transaction, &sheet_rect);
                             self.add_compute_operations(transaction, &sheet_rect, None);
-                            self.check_all_spills(transaction, sheet_rect.sheet_id);
+                            self.check_all_spills(transaction, sheet_rect.sheet_id, true);
                         }
 
                         transaction
@@ -88,10 +90,11 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use bigdecimal::BigDecimal;
-
-    use crate::{controller::GridController, grid::SheetId, CellValue, Pos, SheetPos};
-
     use serial_test::parallel;
+
+    use crate::controller::GridController;
+    use crate::grid::SheetId;
+    use crate::{CellValue, Pos, SheetPos};
 
     #[test]
     #[parallel]
@@ -166,10 +169,12 @@ mod tests {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use crate::{grid::CodeCellLanguage, CellValue, SheetPos};
     use bigdecimal::BigDecimal;
     use serial_test::parallel;
+
+    use super::*;
+    use crate::grid::CodeCellLanguage;
+    use crate::{CellValue, SheetPos};
 
     #[test]
     #[parallel]
