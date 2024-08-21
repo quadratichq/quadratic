@@ -8,9 +8,9 @@ export const FilesListEmptyState = ({ isPrivate = false }: { isPrivate?: boolean
   const setNewFileDialogState = useSetRecoilState(newFileDialogAtom);
 
   return (
-    <div className="flex min-h-80 items-center justify-center border-4 border-dashed border-border">
+    <div className="flex min-h-80 items-center justify-center border-2 border-dashed border-border">
       <Empty
-        className="max-w-xl"
+        className="max-w-lg"
         title="No files"
         description={
           <>
@@ -24,7 +24,7 @@ export const FilesListEmptyState = ({ isPrivate = false }: { isPrivate?: boolean
             >
               Create a new file
             </button>{' '}
-            or drag and drop files here.
+            or drag and drop a CSV, Excel, Parquet, or Quadratic file here.
           </>
         }
         Icon={FileIcon}
