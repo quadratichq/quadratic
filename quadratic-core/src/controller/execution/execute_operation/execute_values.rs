@@ -14,7 +14,12 @@ impl GridController {
                 None => (), // sheet may have been deleted
                 Some(sheet) => {
                     // update individual cell values and collect old_values
-                    let old_values = sheet.merge_cell_values(sheet_pos.into(), &values);
+                    let old_values = sheet.merge_cell_values(
+                        transaction,
+                        sheet_pos.into(),
+                        &values,
+                        !transaction.is_server(),
+                    );
                     if old_values == values {
                         return;
                     }

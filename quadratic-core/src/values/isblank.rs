@@ -62,7 +62,7 @@ mod tests {
         assert!(!Value::from(0).is_blank());
         assert!(!Value::from(1).is_blank());
 
-        assert!((Value::Single(CellValue::Blank)).is_blank());
+        assert!(Value::Single(CellValue::Blank).is_blank());
         assert!(!(Value::from("")).is_blank());
         assert!(!(Value::from(0)).is_blank());
         assert!(!(Value::from(1)).is_blank());

@@ -13,6 +13,9 @@ export interface EditorInteractionState {
   showFeedbackMenu: boolean;
   showShareFileMenu: boolean;
   showSearch: boolean | SearchOptions;
+  showValidation: boolean | string;
+  annotationState?: 'dropdown';
+  showContextMenu: boolean;
   permissions: FilePermission[];
   uuid: string;
   selectedCell: Coordinate;
@@ -42,6 +45,8 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   showFeedbackMenu: false,
   showShareFileMenu: false,
   showSearch: false,
+  showContextMenu: false,
+  showValidation: false,
   permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
   uuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
   selectedCell: { x: 0, y: 0 },

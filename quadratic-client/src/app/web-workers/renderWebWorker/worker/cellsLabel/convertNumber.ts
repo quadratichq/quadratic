@@ -58,7 +58,7 @@ export const reduceDecimals = (
   currentFractionDigits?: number
 ): { number: string; currentFractionDigits: number } | undefined => {
   if (currentFractionDigits === undefined) {
-    currentFractionDigits = getFractionDigits(number, format);
+    currentFractionDigits = getFractionDigits(number, current, format);
     currentFractionDigits = Math.max(0, currentFractionDigits - 1);
   }
   const updated = convertNumber(number, format, currentFractionDigits);
@@ -67,12 +67,12 @@ export const reduceDecimals = (
   }
 };
 
-export const getFractionDigits = (number: string, format: JsNumber): number => {
+export const getFractionDigits = (number: string, current: string, format: JsNumber): number => {
   // this only works if there is a fractional part
   if (format.format?.type === 'EXPONENTIAL') {
     return number.length - (number[0] === '-' ? 2 : 1);
-  } else if (number.includes('.')) {
-    return number.split('.')[1].length;
+  } else if (current.includes('.')) {
+    return current.split('.')[1].length;
   }
   return 0;
 };
