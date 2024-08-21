@@ -3084,6 +3084,7 @@ dependencies = [
  "thiserror",
  "tokio-test",
  "ts-rs",
+ "unicode-case-mapping",
  "uuid",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -4791,6 +4792,12 @@ name = "unicode-bidi"
 version = "0.3.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08f95100a766bf4f8f28f90d77e0a5461bbdb219042e7679bebe79004fed8d75"
+
+[[package]]
+name = "unicode-case-mapping"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b92e07ac57786e12073609c8a91417884306b753d974108ca48c8434ed9b99cb"
 
 [[package]]
 name = "unicode-ident"
