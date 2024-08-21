@@ -587,6 +587,41 @@ impl CellValue {
     }
 }
 
+/// Hashable subset of [`CellValue`], for performance optimization.
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
+pub enum HashableCellValue {
+    #[default]
+    Blank,
+    Text(String),
+    // If we ever switch to using `f64`, replace this with `[u8; 8]`.
+    Number(BigDecimal),
+    Logical(bool),
+    // `Instant` and `Duration` may be added in the future.
+}
+impl TryFrom<CellValue> for HashableCellValue {
+    type Error = ();
+
+    fn try_from(value: CellValue) -> std::result::Result<Self, Self::Error> {
+        match value {
+            CellValue::Blank => Ok(Self::Blank),
+            CellValue::Text(s) => Ok(Self::Text(s)),
+            CellValue::Number(n) => Ok(Self::Number(n)),
+            CellValue::Logical(b) => Ok(Self::Logical(b)),
+            _ => Err(()),
+        }
+    }
+}
+impl From<HashableCellValue> for CellValue {
+    fn from(value: HashableCellValue) -> Self {
+        match value {
+            HashableCellValue::Blank => Self::Blank,
+            HashableCellValue::Text(s) => Self::Text(s),
+            HashableCellValue::Number(n) => Self::Number(n),
+            HashableCellValue::Logical(b) => Self::Logical(b),
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

@@ -1,7 +1,4 @@
-use smallvec::smallvec;
-
 use super::*;
-use crate::ArraySize;
 
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
     include_in_docs: true,
@@ -57,30 +54,15 @@ fn get_functions() -> Vec<FormulaFunction> {
 
                     Some(axis) => {
                         array.check_array_size_on(axis, include.len() as u32)?;
-                        let mut matches = 0;
-                        let mut return_values = smallvec![];
-                        let perpendicular_len = array.inner.size()[axis.other_axis()].get();
-                        for i in include.iter().positions(|&x| x) {
-                            matches += 1;
-                            let i = i as u32;
-                            for j in 0..perpendicular_len {
-                                let v = match axis {
-                                    Axis::X => array.inner.get(i, j),
-                                    Axis::Y => array.inner.get(j, i),
-                                };
-                                return_values.push(v.map_err(|e| e.with_span(span))?.clone());
-                            }
-                        }
-                        let return_array_size = ArraySize::new(perpendicular_len, matches);
-                        match return_array_size {
+                        let new_slices = array
+                            .inner
+                            .slices(axis)
+                            .zip(include)
+                            .filter(|(_, include)| *include)
+                            .map(|(slice, _)| slice);
+                        match Array::from_slices(axis, new_slices) {
+                            Some(a) => Value::from(a),
                             None => empty_result?,
-                            Some(size) => {
-                                let a = Array::new_row_major(size, return_values)?;
-                                Value::from(match axis {
-                                    Axis::X => a.transpose(),
-                                    Axis::Y => a,
-                                })
-                            }
                         }
                     }
                 }
@@ -90,6 +72,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// TODO: documentation
             #[examples("UNIQUE()")]
             fn UNIQUE(array: Array, by_column: (Option<bool>), exactly_once: (Option<bool>)) {
+                // let mut unique_values = HashSet::new();
                 array // TODO
             }
         ),
@@ -150,11 +133,11 @@ mod tests {
         // No results
         assert_eq!(
             RunErrorMsg::EmptyArray,
-            eval_to_err(&g, "FILTER(A1:C5, {0;0;0;0;0}").msg,
+            eval_to_err(&g, "FILTER(A1:C5, {0;0;0;0;0})").msg,
         );
         assert_eq!(
             "oh no",
-            eval_to_string(&g, "FILTER(A1:C5, {0;0;0;0;0}, 'oh no'"),
+            eval_to_string(&g, "FILTER(A1:C5, {0;0;0;0;0}, 'oh no')"),
         );
 
         // Transposed
@@ -178,7 +161,10 @@ mod tests {
 
         // Bad filter value
         assert_eq!(
-            RunErrorMsg::InvalidArgument,
+            RunErrorMsg::Expected {
+                expected: "boolean".into(),
+                got: Some("text".into())
+            },
             eval_to_err(&g, "FILTER(A1:E3, {0,1,-6,'a',TRUE}, 'oh no')").msg,
         )
     }

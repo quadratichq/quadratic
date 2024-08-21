@@ -164,6 +164,37 @@ impl Array {
         )
     }
 
+    /// Iterates over rows (if `axis` is `Axis::Y`) or columns (if `axis` is
+    /// `Axis::X`).
+    pub fn slices(&self, axis: Axis) -> impl Iterator<Item = Vec<&CellValue>> {
+        (0..self.size()[axis].get()).map(move |i| {
+            (0..self.size()[axis.other_axis()].get())
+                .filter_map(|j| match axis {
+                    Axis::X => self.get(i, j).ok(),
+                    Axis::Y => self.get(j, i).ok(),
+                })
+                .collect()
+        })
+    }
+    /// Constructs an array from rows (if `axis` is `Axis::Y`) or columns (if
+    /// `axis` is `Axis::X`). All rows/columns must have the same length, or
+    /// else the result is undefined. Returns `None` if `slices` is empty or if
+    /// each slice is empty.
+    pub fn from_slices<'a>(
+        axis: Axis,
+        slices: impl IntoIterator<Item = Vec<&'a CellValue>>,
+    ) -> Option<Self> {
+        let slices = slices.into_iter().collect_vec();
+        let main_len = slices.len() as u32;
+        let other_len = slices.get(0)?.len() as u32;
+        let size = ArraySize::new(other_len, main_len)?;
+        let a = Self::new_row_major(size, slices.into_iter().flatten().cloned().collect()).ok();
+        match axis {
+            Axis::X => a.map(|a| a.transpose()),
+            Axis::Y => a,
+        }
+    }
+
     /// Transposes an array (swaps rows and columns). This is an expensive
     /// operation for large arrays.
     pub fn transpose(&self) -> Array {
