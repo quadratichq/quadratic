@@ -20,7 +20,15 @@ import {
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
-import { CheckCircledIcon, CircleIcon, Cross1Icon, MixIcon, PlusIcon } from '@radix-ui/react-icons';
+import {
+  ArrowDownIcon,
+  CheckCircledIcon,
+  CircleIcon,
+  Cross1Icon,
+  MixIcon,
+  PlusIcon,
+  RocketIcon,
+} from '@radix-ui/react-icons';
 import * as Tabs from '@radix-ui/react-tabs';
 import mixpanel from 'mixpanel-browser';
 import { UserTeamRoleSchema } from 'quadratic-shared/typesAndSchemas';
@@ -77,7 +85,7 @@ export function OnboardingBanner() {
                   mixpanel.track('[OnboardingBanner].newFileBlank');
                 }}
               >
-                <PlusIcon className="mr-2" /> Create new file
+                <PlusIcon className="mr-1" /> Create blank file
               </Link>
             </Button>
             <Button variant="outline" className={contentBtnClassName} asChild>
@@ -87,7 +95,7 @@ export function OnboardingBanner() {
                   mixpanel.track('[OnboardingBanner].newFileFromExample');
                 }}
               >
-                <MixIcon className="mr-2" /> Explore example files
+                <MixIcon className="mr-1" /> Explore example files
               </Link>
             </Button>
           </div>
@@ -100,17 +108,11 @@ export function OnboardingBanner() {
                   mixpanel.track('[OnboardingBanner].newFileFromApi');
                 }}
               >
-                Fetch from an API
+                <RocketIcon className="mr-1" /> Fetch data from an API
               </Link>
             </Button>
             <Button variant="outline" onClick={onClickImport}>
-              Import CSV
-            </Button>
-            <Button variant="outline" onClick={onClickImport}>
-              Import Excel
-            </Button>
-            <Button variant="outline" onClick={onClickImport}>
-              Import Parquet
+              <ArrowDownIcon className="mr-1" /> Import CSV, Excel, or Parquet file
             </Button>
           </div>
         </>
