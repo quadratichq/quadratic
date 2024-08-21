@@ -231,8 +231,6 @@ function NewFileDialogWrapper() {
       team: { uuid: teamUuid },
     },
   } = useDashboardRouteLoaderData();
-  const location = useLocation();
-  const isPrivate = location.pathname !== ROUTES.TEAM_FILES(teamUuid);
 
   if (!newFileDialogState.show) return null;
 
@@ -240,7 +238,7 @@ function NewFileDialogWrapper() {
     <NewFileDialog
       connections={connections}
       teamUuid={teamUuid}
-      onClose={() => setNewFileDialogState({ show: false, isPrivate })}
+      onClose={() => setNewFileDialogState((prev) => ({ ...prev, show: false }))}
       isPrivate={newFileDialogState.isPrivate}
     />
   );
