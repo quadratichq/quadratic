@@ -55,7 +55,7 @@ impl ValidationDateTime {
                     }
                     (0, naive_time_to_i32(*t))
                 }
-                _ => return true,
+                _ => return false,
             };
 
             if self.ranges.is_empty() {

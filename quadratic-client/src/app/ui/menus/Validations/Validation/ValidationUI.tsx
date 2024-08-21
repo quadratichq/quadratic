@@ -1,13 +1,13 @@
-import { Checkbox } from '@/shared/shadcn/ui/checkbox';
-import { ValidationData } from './useValidationData';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Checkbox } from '@/shared/shadcn/ui/checkbox';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/shadcn/ui/select';
-import { FocusEvent, forwardRef, Ref, useCallback, useEffect, useRef, useState } from 'react';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { cn } from '@/shared/shadcn/utils';
-import { IconButton } from '@mui/material';
 import { Close } from '@mui/icons-material';
+import { IconButton } from '@mui/material';
+import { FocusEvent, forwardRef, Ref, useCallback, useEffect, useRef, useState } from 'react';
+import { ValidationData } from './useValidationData';
 
 interface CheckboxProps {
   className?: string;
@@ -81,11 +81,11 @@ export const ValidationInput = forwardRef((props: InputProps, ref: Ref<HTMLInput
 
   const handleOnBlur = useCallback(
     (e: FocusEvent<HTMLInputElement>) => {
-      if (onChange) {
-        onChange(e.currentTarget.value);
-      }
-
       if (!parentRef.current?.contains(e.relatedTarget as Node)) {
+        if (onChange) {
+          onChange(e.currentTarget.value);
+        }
+
         setHasFocus(false);
       }
     },

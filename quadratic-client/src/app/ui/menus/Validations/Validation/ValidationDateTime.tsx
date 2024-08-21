@@ -1,17 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/shared/shadcn/ui/accordion';
-import { ValidationData } from './useValidationData';
-import { ValidationDropdown, ValidationInput, ValidationMoreOptions, ValidationUICheckbox } from './ValidationUI';
-import { Tooltip } from '@mui/material';
-import { InfoCircledIcon } from '@radix-ui/react-icons';
-import { useCallback, useMemo, useRef, useState } from 'react';
 import { DateTimeRange, ValidationRule } from '@/app/quadratic-core-types';
-import { ValidationUndefined } from './validationType';
+import { numberToDate, userDateToNumber } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/shared/shadcn/ui/accordion';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { Tooltip } from '@mui/material';
+import { InfoCircledIcon } from '@radix-ui/react-icons';
+import { useCallback, useMemo, useState } from 'react';
+import { ValidationData } from './useValidationData';
 import { ValidationCalendar } from './ValidationCalendar';
-import { numberToDate, userDateToNumber } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { ValidationUndefined } from './validationType';
+import { ValidationDropdown, ValidationInput, ValidationMoreOptions, ValidationUICheckbox } from './ValidationUI';
 
 interface Props {
   validationData: ValidationData;
@@ -23,13 +23,6 @@ export const ValidationDateTime = (props: Props) => {
   const { ignoreBlank, changeIgnoreBlank, readOnly, validation, setValidation } = validationData;
 
   const [equalsError, setEqualsError] = useState(false);
-
-  const divRef = useRef<HTMLDivElement>(null);
-  const focusDiv = useCallback(() => {
-    console.log('focussing...');
-    debugger;
-    divRef.current?.focus();
-  }, []);
 
   //#region Require Date and Time
 
@@ -310,9 +303,15 @@ export const ValidationDateTime = (props: Props) => {
         if (!validation || !('rule' in validation) || validation.rule === 'None' || !('DateTime' in validation.rule)) {
           return;
         }
-        const newRanges = [...ranges];
-        const current = newRanges[index];
+
+        let current: DateTimeRange;
+        if (index === -1) {
+          current = { DateRange: [null, null] };
+        } else {
+          current = validation.rule.DateTime.ranges[index];
+        }
         if (!('DateRange' in current)) throw new Error('Expected Range in changeRange');
+
         if (type === 'start') {
           // check for error (min > max)
           if (current.DateRange[1] !== null && date && date > current.DateRange[1]) {
@@ -343,9 +342,9 @@ export const ValidationDateTime = (props: Props) => {
           });
         }
 
-        const filteredRanges = newRanges.filter(
-          (r) => 'DateRange' in r && (r.DateRange[0] !== null || r.DateRange[1] !== null)
-        );
+        const filteredRanges = validation.rule.DateTime.ranges.filter((_, i) => i !== index);
+        filteredRanges.push(current);
+
         return {
           ...validation,
           rule: {
@@ -357,7 +356,7 @@ export const ValidationDateTime = (props: Props) => {
         };
       });
     },
-    [setValidation, ranges]
+    [setValidation]
   );
 
   const removeRange = useCallback(
@@ -371,7 +370,7 @@ export const ValidationDateTime = (props: Props) => {
         return {
           ...validation,
           rule: {
-            Number: {
+            DateTime: {
               ...validation.rule.DateTime,
               ranges: newRanges,
             },
@@ -417,9 +416,28 @@ export const ValidationDateTime = (props: Props) => {
     return null;
   }, [noTime]);
 
+  const findRangeIndex = (range: DateTimeRange): number => {
+    if (!validation || !('rule' in validation) || validation.rule === 'None' || !('DateTime' in validation.rule)) {
+      throw new Error('Unexpected in findRangeIndex in ValidationDateTime');
+    }
+
+    // return if we're adding a new range
+    if (!('DateRange' in range) || (range.DateRange[0] === null && range.DateRange[1] === null)) return -1;
+
+    const i = validation.rule.DateTime.ranges.findIndex((r: DateTimeRange) => {
+      if (!('DateRange' in range) || !('DateRange' in r)) return false;
+
+      return r.DateRange[0] === range.DateRange[0] && r.DateRange[1] === range.DateRange[1];
+    });
+    if (i === -1) {
+      throw new Error('Range not found in findRangeIndex in ValidationDateTime');
+    }
+    return i;
+  };
+
   return (
     // tabIndex allows the calendar to close when clicking outside it
-    <div className="flex w-full flex-col gap-5" tabIndex={0} ref={divRef}>
+    <div className="flex w-full flex-col gap-5" tabIndex={0}>
       <ValidationUICheckbox
         label="Allow blank values"
         value={ignoreBlank}
@@ -530,7 +548,8 @@ export const ValidationDateTime = (props: Props) => {
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-1 pt-1">
-            {ranges.map((range, i) => {
+            {ranges.map((range) => {
+              const i = findRangeIndex(range);
               const r = 'DateRange' in range ? range.DateRange : [null, null];
               const start = r[0] ? numberToDate(BigInt(r[0])) : undefined;
               const end = r[1] ? numberToDate(BigInt(r[1])) : undefined;
@@ -576,10 +595,7 @@ export const ValidationDateTime = (props: Props) => {
                         }
                       />
                     </div>
-                    <Button
-                      className={cn('grow-0 px-2', i !== ranges.length - 1 ? '' : 'invisible')}
-                      onClick={() => removeRange(i)}
-                    >
+                    <Button className={cn('grow-0 px-2', i !== -1 ? '' : 'invisible')} onClick={() => removeRange(i)}>
                       <DeleteIcon />
                     </Button>
                   </div>
