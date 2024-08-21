@@ -37,7 +37,8 @@ export function FileDragDrop() {
 
   return (
     <div
-      className="absolute left-0 top-0 z-10 flex h-full w-full flex-col items-center  justify-center bg-white opacity-90"
+      id="file-drag-drop"
+      className="z-15 absolute left-0 top-0 flex h-full w-full flex-col items-center  justify-center bg-white opacity-90"
       onDragEnter={handleDrag}
       onDragLeave={handleDrag}
       onDragOver={handleDrag}

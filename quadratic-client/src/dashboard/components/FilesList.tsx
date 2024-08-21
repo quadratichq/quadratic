@@ -1,4 +1,6 @@
 import { fileDragDropModalAtom } from '@/dashboard/atoms/fileDragDropModalAtom';
+import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
+import { FileDragDrop } from '@/dashboard/components/FileDragDrop';
 import { Action as FilesAction } from '@/routes/api.files.$uuid';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
@@ -7,7 +9,7 @@ import { FilePermission, PublicLinkAccess } from 'quadratic-shared/typesAndSchem
 import { ReactNode, useCallback, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useFetchers, useLocation } from 'react-router-dom';
-import { useSetRecoilState } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { Empty } from './Empty';
 import { FilesListItemExampleFile, FilesListItemUserFile, FilesListItems } from './FilesListItem';
 import { FilesListViewControls } from './FilesListViewControls';
@@ -100,6 +102,7 @@ export function FilesList({
   const filesBeingDeleted = fetchers.filter((fetcher) => (fetcher.json as FilesAction['request'])?.action === 'delete');
   const activeShareMenuFileName = files.find((file) => file.uuid === activeShareMenuFileId)?.name || '';
 
+  const { show: newFileDialogShow } = useRecoilValue(newFileDialogAtom);
   const setFileDragDropState = useSetRecoilState(fileDragDropModalAtom);
   const handleDragEnter = useCallback(() => {
     if (teamUuid === undefined || isPrivate === undefined) return;
@@ -142,6 +145,8 @@ export function FilesList({
           name={activeShareMenuFileName}
         />
       )}
+
+      {!newFileDialogShow && <FileDragDrop />}
     </div>
   );
 }

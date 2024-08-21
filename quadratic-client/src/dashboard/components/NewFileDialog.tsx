@@ -2,7 +2,9 @@ import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
+import { fileDragDropModalAtom } from '@/dashboard/atoms/fileDragDropModalAtom';
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
+import { FileDragDrop } from '@/dashboard/components/FileDragDrop';
 import { useConnectionSchemaBrowserTableQueryActionNewFile } from '@/dashboard/hooks/useConnectionSchemaBrowserTableQueryAction';
 import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
 import { PrivateFileToggle } from '@/shared/components/connections/PrivateFileToggle';
@@ -20,8 +22,9 @@ import {
   RocketIcon,
 } from '@radix-ui/react-icons';
 import { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useSetRecoilState } from 'recoil';
 
 type Props = {
   connections: ConnectionList;
@@ -30,9 +33,9 @@ type Props = {
   isPrivate: boolean;
 };
 
-export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: intialIsPrivate }: Props) {
+export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: initialIsPrivate }: Props) {
   const location = useLocation();
-  const [isPrivate, setIsPrivate] = useState<boolean>(!!intialIsPrivate);
+  const [isPrivate, setIsPrivate] = useState<boolean>(!!initialIsPrivate);
   const [activeConnectionUuid, setActiveConnectionUuid] = useState<string>('');
   const handleFileImport = useFileImport();
 
@@ -53,10 +56,16 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: intia
   // Do an in-memory navigation if we're not in the app
   const reloadDocument = location.pathname.startsWith('/file/');
 
+  const setFileDragDropState = useSetRecoilState(fileDragDropModalAtom);
+  const handleDragEnter = useCallback(
+    () => setFileDragDropState({ show: true, teamUuid, isPrivate }),
+    [isPrivate, setFileDragDropState, teamUuid]
+  );
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
       {/* overflow: visible here fixes a bug with the tooltip being cut off */}
-      <DialogContent className="max-w-xl overflow-visible">
+      <DialogContent className="max-w-xl overflow-visible" onDragEnter={handleDragEnter}>
         <DialogHeader className="relative pl-12">
           <Button
             onClick={() => setActiveConnectionUuid('')}
@@ -182,6 +191,8 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: intia
             </li>
           </ul>
         )}
+
+        <FileDragDrop />
       </DialogContent>
     </Dialog>
   );
