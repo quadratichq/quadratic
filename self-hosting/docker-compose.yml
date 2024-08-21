@@ -55,9 +55,14 @@ services:
 
   quadratic-client:
     image: quadratic_quadratic-client:latest
-    env_file:
-      - ./docker/client/config/.env
     restart: "always"
+    environment:
+      VITE_DEBUG: 1
+      VITE_QUADRATIC_API_URL: http://localhost:8000
+      VITE_QUADRATIC_MULTIPLAYER_URL: ws://localhost:3001/ws
+      VITE_QUADRATIC_CONNECTION_URL: http://localhost:3003
+      VITE_AUTH_TYPE: ory
+      VITE_ORY_HOST: http://localhost:4433
     ports:
       - "3000:80"
     command: >
@@ -79,8 +84,27 @@ services:
 
   quadratic-api:
     image: quadratic_quadratic-api
-    env_file:
-      - ../quadratic-api/.env.docker
+    environment:
+      CORS: "*"
+      DATABASE_URL: "postgresql://postgres:postgres@host.docker.internal:5432/postgres"
+      ENVIRONMENT: docker
+      STRIPE_SECRET_KEY: STRIPE_SECRET_KEY
+      STRIPE_WEBHOOK_SECRET: STRIPE_WEBHOOK_SECRET
+      OPENAI_API_KEY:
+      M2M_AUTH_TOKEN: M2M_AUTH_TOKEN
+
+      # Hex string to be used as the key for enctyption, use npm run key:generate
+      ENCRYPTION_KEY: eb4758047f74bdb2603cce75c4370327ca2c3662c4786867659126da8e64dfcc
+
+      # Auth
+      AUTH_TYPE: ory
+      ORY_JWKS_URI: "http://host.docker.internal:3000/.well-known/jwks.json"
+      ORY_ADMIN_HOST: http://host.docker.internal:4434
+
+      # Storage
+      STORAGE_TYPE: file-system
+      QUADRATIC_FILE_URI: http://host.docker.internal:3002
+      QUADRATIC_FILE_URI_PUBLIC: http://localhost:3002
     restart: "always"
     ports:
       - "8000:8000"
@@ -96,11 +120,23 @@ services:
 
   quadratic-multiplayer:
     image: quadratic-multiplayer
-    env_file:
-      - ../quadratic-multiplayer/.env.docker
-    # override env vars here
     environment:
       RUST_LOG: info
+      HOST: 0.0.0.0
+      PORT: 3001
+      HEARTBEAT_CHECK_S: 3
+      HEARTBEAT_TIMEOUT_S: 600
+      QUADRATIC_API_URI: http://host.docker.internal:8000
+      M2M_AUTH_TOKEN: M2M_AUTH_TOKEN
+      ENVIRONMENT: docker
+
+      PUBSUB_HOST: host.docker.internal
+      PUBSUB_PORT: 6379
+      PUBSUB_PASSWORD:
+      PUBSUB_ACTIVE_CHANNELS: active_channels
+
+      AUTH0_JWKS_URI: http://host.docker.internal:3000/.well-known/jwks.json
+      AUTHENTICATE_JWT: true
     restart: "always"
     ports:
       - "3001:3001"
@@ -121,11 +157,39 @@ services:
 
   quadratic-files:
     image: quadratic-files
-    env_file:
-      - ../quadratic-files/.env.docker
-    # override env vars here
     environment:
       RUST_LOG: info
+      HOST: 0.0.0.0
+      PORT: 3002
+      FILE_CHECK_S: 5
+      FILES_PER_CHECK: 1000
+      TRUNCATE_FILE_CHECK_S: 60
+      TRUNCATE_TRANSACTION_AGE_DAYS: 5 #
+      ENVIRONMENT: docker
+
+      AUTH0_JWKS_URI: http://host.docker.internal:3000/.well-known/jwks.json
+      QUADRATIC_API_URI: http://host.docker.internal:8000
+      M2M_AUTH_TOKEN: M2M_AUTH_TOKEN
+
+      PUBSUB_HOST: host.docker.internal
+      PUBSUB_PORT: 6379
+      PUBSUB_PASSWORD:
+      PUBSUB_ACTIVE_CHANNELS: active_channels
+      PUBSUB_PROCESSED_TRANSACTIONS_CHANNEL: processed_transactions
+
+      # Storage
+      STORAGE_TYPE: file-system # s3 or file-system
+
+      # Storage: s3
+      AWS_S3_REGION:
+      AWS_S3_BUCKET_NAME: quadratic-api-docker
+      AWS_S3_ACCESS_KEY_ID:
+      AWS_S3_SECRET_ACCESS_KEY:
+
+      # Storage: file-system
+      STORAGE_DIR: /file-storage
+      STORAGE_ENCRYPTION_KEYS: eb4758047f74bdb2603cce75c4370327ca2c3662c4786867659126da8e64dfcc
+
     restart: "always"
     ports:
       - "3002:3002"
@@ -148,11 +212,18 @@ services:
 
   quadratic-connection:
     image: quadratic-connection
-    env_file:
-      - ../quadratic-connection/.env.docker
-    # override env vars here
     environment:
       RUST_LOG: info
+      HOST: 0.0.0.0
+      PORT: 3003
+      ENVIRONMENT: docker
+
+      AUTH0_JWKS_URI: http://host.docker.internal:3000/.well-known/jwks.json
+      QUADRATIC_API_URI: http://host.docker.internal:8000
+      M2M_AUTH_TOKEN: M2M_AUTH_TOKEN
+      MAX_RESPONSE_BYTES: 15728640 # 15MB
+      STATIC_IPS: 0.0.0.0,127.0.0.1
+
     restart: "always"
     ports:
       - "3003:3003"
@@ -161,10 +232,6 @@ services:
         condition: service_started
       quadratic-client:
         condition: service_healthy
-    #   postgres:
-    #     condition: service_healthy
-    #   quadratic-api:
-    #     condition: service_started
     profiles:
       - backend
       - connection

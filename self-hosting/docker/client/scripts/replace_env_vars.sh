@@ -1,19 +1,24 @@
 #!/bin/sh
 
-ENV_PATH="/client/config/.env"
-
 escape_for_sed() {
   input="$1"
   printf '%s\n' "$input" | sed -e 's/[\/&]/\\&/g'
 }
 
 replace_env_vars() {
-  ENV_VARS=$(cat $ENV_PATH)
+  vite_vars=""
+
+  for env_var in $(env); do
+    case "$env_var" in
+      VITE_*)
+        vite_vars="$vite_vars $env_var"
+        ;;
+    esac
+  done
 
   find "/usr/share/nginx/html/assets" -type f -name "*.js" | xargs grep -l "VITE_" | while read file; do   
     
-    echo "$ENV_VARS" | while read env_var; do
-      echo "env_var: $env_var"
+    for env_var in $vite_vars; do
       var="$(echo "$env_var" | cut -d'=' -f1)"
       val="$(echo "$env_var" | cut -d'=' -f2-)"
       appended_var="${var}_VAL"
