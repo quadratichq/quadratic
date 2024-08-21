@@ -53,13 +53,10 @@ import {
   CoreClientGetRowsBounds,
   CoreClientGetValidationList,
   CoreClientHasRenderCells,
-  CoreClientImportCsv,
-  CoreClientImportParquet,
   CoreClientLoad,
   CoreClientMessage,
   CoreClientSearch,
   CoreClientSummarizeSelection,
-  CoreClientUpgradeFile,
   CoreClientValidateInput,
 } from './coreClientMessages';
 
@@ -245,22 +242,6 @@ class QuadraticCore {
       };
       if (debugShowFileIO) console.log(`[quadraticCore] loading file ${url}`);
       this.send(message, port.port1);
-    });
-  }
-
-  async upgradeGridFile(grid: Uint8Array, sequenceNumber: number): Promise<{ grid: Uint8Array; version: string }> {
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: CoreClientUpgradeFile) => {
-        resolve({ grid: message.grid, version: message.version });
-      };
-      const message: ClientCoreUpgradeGridFile = {
-        type: 'clientCoreUpgradeGridFile',
-        grid,
-        sequenceNumber,
-        id,
-      };
-      this.send(message);
     });
   }
 
@@ -482,47 +463,61 @@ class QuadraticCore {
     });
   }
 
-  // Imports a CSV and returns a string with an error if not successful
-  async importCsv(sheetId: string, file: File, location: Coordinate): Promise<string | undefined> {
-    const arrayBuffer = await file.arrayBuffer();
+  async upgradeGridFile(
+    grid: ArrayBuffer,
+    sequenceNumber: number
+  ): Promise<{
+    contents?: ArrayBuffer;
+    version?: string;
+    error?: string;
+  }> {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: CoreClientImportCsv) => resolve(message.error);
-      this.send(
-        {
-          type: 'clientCoreImportCsv',
-          sheetId,
-          x: location.x,
-          y: location.y,
-          id,
-          file: arrayBuffer,
-          fileName: file.name,
-        },
-        arrayBuffer
-      );
+      this.waitingForResponse[id] = (message: { contents?: ArrayBuffer; version?: string; error?: string }) => {
+        resolve(message);
+      };
+      const message: ClientCoreUpgradeGridFile = {
+        type: 'clientCoreUpgradeGridFile',
+        grid,
+        sequenceNumber,
+        id,
+      };
+      this.send(message, grid);
     });
   }
 
-  // Imports a Parquet and returns a string with an error if not successful
-  async importParquet(sheetId: string, file: File, location: Coordinate): Promise<string | undefined> {
-    const arrayBuffer = await file.arrayBuffer();
+  importFile = async (
+    file: ArrayBuffer,
+    fileName: string,
+    fileType: 'csv' | 'parquet' | 'excel',
+    sheetId?: string,
+    location?: Coordinate,
+    cursor?: string
+  ): Promise<{
+    contents?: ArrayBuffer;
+    version?: string;
+    error?: string;
+  }> => {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: CoreClientImportParquet) => resolve(message.error);
+      this.waitingForResponse[id] = (message: { contents?: ArrayBuffer; version?: string; error?: string }) => {
+        resolve(message);
+      };
       this.send(
         {
-          type: 'clientCoreImportParquet',
+          type: 'clientCoreImportFile',
+          file,
+          fileName,
+          fileType,
           sheetId,
-          x: location.x,
-          y: location.y,
+          location,
+          cursor,
           id,
-          file: arrayBuffer,
-          fileName: file.name,
         },
-        arrayBuffer
+        file
       );
     });
-  }
+  };
 
   initMultiplayer(port: MessagePort) {
     this.send({ type: 'clientCoreInitMultiplayer' }, port);
@@ -996,32 +991,6 @@ class QuadraticCore {
   sendCancelExecution(language: CodeCellLanguage) {
     this.send({ type: 'clientCoreCancelExecution', language });
   }
-
-  // create a new grid file and import an xlsx file
-  importExcel = async (
-    file: Uint8Array,
-    fileName: string,
-    cursor?: string
-  ): Promise<{
-    contents?: Uint8Array;
-    fileName: string;
-    version?: string;
-    error?: string;
-  }> => {
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: { contents: Uint8Array; fileName: string; version: string }) => {
-        resolve(message);
-      };
-      this.send({
-        type: 'clientCoreImportExcel',
-        file,
-        fileName,
-        cursor,
-        id,
-      });
-    });
-  };
 
   //#endregion
 

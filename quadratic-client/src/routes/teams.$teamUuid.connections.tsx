@@ -1,6 +1,5 @@
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { apiClient } from '@/shared/api/apiClient';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { Connections } from '@/shared/components/connections/Connections';
 import { ROUTES } from '@/shared/constants/routes';
@@ -10,17 +9,15 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
   const { teamUuid } = params;
   if (!teamUuid) throw new Error('No team UUID provided');
 
-  const [connections, staticIps] = await Promise.all([
-    apiClient.connections.list(teamUuid),
-    connectionClient.staticIps.list(),
-  ]);
-  return { connections, teamUuid, staticIps };
+  const [staticIps] = await Promise.all([connectionClient.staticIps.list()]);
+  return { teamUuid, staticIps };
 };
 
 export const Component = () => {
-  const { connections, teamUuid, staticIps } = useLoaderData() as Awaited<ReturnType<typeof loader>>;
+  const { teamUuid, staticIps } = useLoaderData() as Awaited<ReturnType<typeof loader>>;
   const {
     activeTeam: {
+      connections,
       userMakingRequest: { teamPermissions },
     },
   } = useDashboardRouteLoaderData();

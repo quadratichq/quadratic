@@ -1,15 +1,15 @@
 use anyhow::Result;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use super::active_transactions::pending_transaction::PendingTransaction;
+use super::execution::TransactionType;
+use super::operations::operation::Operation;
+use super::GridController;
 use crate::compression::{
     add_header, decompress_and_deserialize, deserialize, remove_header, serialize,
     serialize_and_compress, CompressionFormat, SerializationFormat,
-};
-
-use super::{
-    active_transactions::pending_transaction::PendingTransaction, execution::TransactionType,
-    operations::operation::Operation, GridController,
 };
 
 pub static SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Json;
@@ -48,7 +48,7 @@ impl Transaction {
     }
 
     /// Serializes and compresses the transaction's operations, adding a header with the version
-    pub fn serialize_and_compress<T: Serialize>(operations: &T) -> Result<Vec<u8>> {
+    pub fn serialize_and_compress<T: Serialize>(operations: T) -> Result<Vec<u8>> {
         let version = TransactionVersion {
             version: CURRENT_VERSION.into(),
         };

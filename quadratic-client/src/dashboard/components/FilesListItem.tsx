@@ -194,6 +194,7 @@ export function FilesListItemUserFile({
         <ListItemView viewPreferences={viewPreferences} thumbnail={thumbnail} lazyLoad={lazyLoad}>
           <FilesListItemCore
             key={uuid}
+            creator={file.creator}
             filterValue={filterValue}
             name={displayName}
             description={description}

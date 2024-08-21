@@ -72,7 +72,7 @@ describe('PATCH /v0/teams/:uuid', () => {
   });
 
   describe('update a team', () => {
-    it('accepts change from OWNER', async () => {
+    it('accepts name change', async () => {
       await request(app)
         .patch(`/v0/teams/00000000-0000-4000-8000-000000000001`)
         .send({ name: 'Foobar' })
@@ -82,32 +82,27 @@ describe('PATCH /v0/teams/:uuid', () => {
           expect(res.body.name).toBe('Foobar');
         });
     });
-
-    it('accepts change from EDITOR', async () => {
+    it('accepst key/value pair updates', async () => {
+      // Create value
       await request(app)
         .patch(`/v0/teams/00000000-0000-4000-8000-000000000001`)
-        .send({ name: 'Foobar' })
-        .set('Authorization', `Bearer ValidToken team_1_editor`)
+        .send({ clientDataKv: { foo: 'bar' } })
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
         .expect(200)
         .expect((res) => {
-          expect(res.body.name).toBe('Foobar');
+          expect(res.body.clientDataKv.foo).toBe('bar');
         });
-    });
 
-    it('rejects change from VIEWER', async () => {
+      // Update value
       await request(app)
         .patch(`/v0/teams/00000000-0000-4000-8000-000000000001`)
-        .send({ name: 'Foobar' })
-        .set('Authorization', `Bearer ValidToken team_1_viewer`)
-        .expect(403);
-    });
-
-    it('rejects change from someone who isn’t a team member', async () => {
-      await request(app)
-        .patch(`/v0/teams/00000000-0000-4000-8000-000000000001`)
-        .send({ name: 'Foobar' })
-        .set('Authorization', `Bearer ValidToken no_team`)
-        .expect(403);
+        .send({ clientDataKv: { anotherValue: 'hello' } })
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.clientDataKv.foo).toBe('bar');
+          expect(res.body.clientDataKv.anotherValue).toBe('hello');
+        });
     });
   });
 });

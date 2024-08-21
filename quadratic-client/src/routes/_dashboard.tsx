@@ -1,7 +1,10 @@
 import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
+import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { Empty } from '@/dashboard/components/Empty';
+import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
+import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
@@ -12,7 +15,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { ExclamationTriangleIcon, HamburgerMenuIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Link,
   LoaderFunctionArgs,
@@ -28,17 +31,10 @@ import {
   useRouteLoaderData,
   useSearchParams,
 } from 'react-router-dom';
+import { RecoilRoot, useRecoilState } from 'recoil';
 
 const DRAWER_WIDTH = 264;
 export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
-
-/**
- * Dashboard state & context
- */
-type DashboardState = {};
-const initialDashboardState: DashboardState = {};
-const DashboardContext = createContext(initialDashboardState);
-export const useDashboardContext = () => useContext(DashboardContext);
 
 /**
  * Revalidation
@@ -114,6 +110,13 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
     // If there are search params, keep 'em
     return redirect(ROUTES.TEAM(initialActiveTeamUuid) + url.search);
   }
+  // If it was a shortcut team route, redirect there
+  // e.g. /?team-shortcut=connections
+  const teamShortcut = url.searchParams.get('team-shortcut');
+  if (teamShortcut) {
+    url.searchParams.delete('team-shortcut');
+    return redirect(ROUTES.TEAM_CONNECTIONS(initialActiveTeamUuid) + url.search);
+  }
 
   /**
    * Get data for the active team
@@ -178,13 +181,13 @@ export const Component = () => {
   useCheckForAuthorizationTokenOnWindowFocus();
 
   return (
-    <DashboardContext.Provider value={{}}>
+    <RecoilRoot>
       <div className={`h-full lg:flex lg:flex-row`}>
         <div
           ref={contentPaneRef}
           className={cn(
-            `relative order-2 h-full w-full px-4 pb-10 transition-all sm:pt-0 lg:px-10`,
-            isLoading ? 'overflow-hidden' : 'overflow-scroll',
+            `relative order-2 flex w-full flex-grow flex-col px-4 pb-10 transition-all sm:pt-0 lg:px-10`,
+            isLoading ? 'overflow-hidden' : 'overflow-auto',
             isLoading && 'pointer-events-none opacity-25'
           )}
         >
@@ -210,9 +213,32 @@ export const Component = () => {
         </div>
         {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.EDUCATION && <EducationDialog />}
       </div>
-    </DashboardContext.Provider>
+      <NewFileDialogWrapper />
+      <ImportProgressList />
+    </RecoilRoot>
   );
 };
+
+function NewFileDialogWrapper() {
+  const [newFileDialogState, setNewFileDialogState] = useRecoilState(newFileDialogAtom);
+  const {
+    activeTeam: {
+      connections,
+      team: { uuid: teamUuid },
+    },
+  } = useDashboardRouteLoaderData();
+
+  if (!newFileDialogState.show) return null;
+
+  return (
+    <NewFileDialog
+      connections={connections}
+      teamUuid={teamUuid}
+      onClose={() => setNewFileDialogState((prev) => ({ ...prev, show: false }))}
+      isPrivate={newFileDialogState.isPrivate}
+    />
+  );
+}
 
 export const ErrorBoundary = () => {
   const error = useRouteError();
