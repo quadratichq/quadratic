@@ -5,11 +5,11 @@ dsn: memory
 
 serve:
   public:
-    base_url: https://kratos.localhost/
+    base_url: http://localhost:4433/
     cors:
       enabled: true
       allowed_origins:
-        - https://localhost
+        - http://localhost
         - http://localhost:3000
       allowed_methods:
         - POST
@@ -31,7 +31,8 @@ serve:
 selfservice:
   default_browser_return_url: http://localhost
   allowed_return_urls:
-    - https://kratos-client.localhost
+    - http://localhost
+    - http://localhost:4455
     - http://localhost:3000
     - http://localhost:19006/Callback
     - exp://localhost:8081/--/Callback
@@ -52,36 +53,36 @@ selfservice:
 
   flows:
     error:
-      ui_url: https://kratos-client.localhost/error
+      ui_url: http://localhost:4455/error
 
     settings:
-      ui_url: https://kratos-client.localhost/settings
+      ui_url: http://localhost:4455/settings
       privileged_session_max_age: 15m
       required_aal: highest_available
 
     recovery:
       enabled: true
-      ui_url: https://kratos-client.localhost/recovery
+      ui_url: http://localhost:4455/recovery
       use: code
 
     verification:
       enabled: true
-      ui_url: https://kratos-client.localhost/verification
+      ui_url: http://localhost:4455/verification
       use: code
       after:
         default_browser_return_url: http://localhost
 
     logout:
       after:
-        default_browser_return_url: https://kratos-client.localhost/login
+        default_browser_return_url: http://localhost:4455/login
 
     login:
-      ui_url: https://kratos-client.localhost/login
+      ui_url: http://localhost:4455/login
       lifespan: 10m
 
     registration:
       lifespan: 10m
-      ui_url: https://kratos-client.localhost/registration
+      ui_url: http://localhost:4455/registration
       after:
         password:
           hooks:
@@ -96,7 +97,11 @@ session:
           jwks_url: http://host.docker.internal:3000/.well-known/jwks.json
           # claims_mapper_url: base64://... # A JsonNet template for modifying the claims
           ttl: 24h # 24 hours (defaults to 10 minutes)
-
+cookies:
+  domain: localhost
+  path: /
+  same_site: Lax
+  
 log:
   level: warning
   format: json

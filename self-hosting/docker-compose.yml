@@ -45,6 +45,7 @@ services:
       - "443:443"
     volumes:
       - ./docker/caddy/config/Caddyfile:/etc/caddy/Caddyfile
+      - ./docker/caddy/certs:/data/caddy/pki/authorities/local
       # - ./docker/caddy/quadratic-client/html:/srv
     profiles:
       - caddy
@@ -181,7 +182,7 @@ services:
     volumes:
       - ./docker/ory-auth/config:/etc/config/kratos
     environment:
-      DSN: postgresql://postgres:postgres@host.docker.internal:5432/kratos
+      DSN: postgresql://postgres:postgres@host.docker.internal:5432/kratos?sslmode=disable
       LOG_LEVEL: trace
     restart: unless-stopped
     depends_on:
@@ -198,7 +199,7 @@ services:
     volumes:
       - ./docker/ory-auth/config:/etc/config/kratos
     environment:
-      DSN: postgresql://postgres:postgres@host.docker.internal:5432/kratos
+      DSN: postgresql://postgres:postgres@host.docker.internal:5432/kratos?sslmode=disable
     restart: on-failure
     depends_on:
       - postgres
@@ -213,11 +214,10 @@ services:
       - "4455:4455"
     environment:
       PORT: 4455
-      SECURITY_MODE:
       KRATOS_PUBLIC_URL: http://host.docker.internal:4433/
-      KRATOS_BROWSER_URL: https://kratos.localhost/
+      KRATOS_BROWSER_URL: http://localhost:4433/
       COOKIE_SECRET: changeme
-      CSRF_COOKIE_NAME: ory_csrf_ui
+      CSRF_COOKIE_NAME: __HOST-localhost-x-csrf-token
       CSRF_COOKIE_SECRET: changeme
     restart: on-failure
     profiles:

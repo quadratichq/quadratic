@@ -13,14 +13,17 @@ replace_env_vars() {
   find "/usr/share/nginx/html/assets" -type f -name "*.js" | xargs grep -l "VITE_" | while read file; do   
     
     echo "$ENV_VARS" | while read env_var; do
-      var=$(echo "$env_var" | cut -d'=' -f1)
-      val=$(echo "$env_var" | cut -d'=' -f2-)
+      echo "env_var: $env_var"
+      var="$(echo "$env_var" | cut -d'=' -f1)"
+      val="$(echo "$env_var" | cut -d'=' -f2-)"
+      appended_var="${var}_VAL"
       escaped_val=$(escape_for_sed "$val")
 
-      # echo "Replacing $var with $val in $file"
-      sed -i "s/\($var:\"\)[^\"]*\"/\1$(echo "$escaped_val")\"/g" "$file"
+      echo "Replacing $appended_var with $escaped_val in $file"
+      sed -i "s/${appended_var}/${escaped_val}/g" "$file"
     done
   done
 }
 
 echo "Replacing .env values in $ENV_PATH"
+replace_env_vars

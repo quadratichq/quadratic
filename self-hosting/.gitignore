@@ -1,4 +1,4 @@
-docker/caddy/quadratic-client
+docker/caddy/certs
 docker/file-storage
 docker/localstack/data
 docker/mysql/data
