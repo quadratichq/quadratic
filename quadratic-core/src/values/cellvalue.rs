@@ -1,4 +1,6 @@
-use std::{fmt, str::FromStr};
+use std::fmt;
+use std::hash::Hash;
+use std::str::FromStr;
 
 use anyhow::{bail, Result};
 use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
@@ -364,8 +366,8 @@ impl CellValue {
 
             (CellValue::Number(a), CellValue::Number(b)) => a.cmp(b),
             (CellValue::Text(a), CellValue::Text(b)) => {
-                let a = a.to_ascii_uppercase();
-                let b = b.to_ascii_uppercase();
+                let a = crate::util::case_fold(a);
+                let b = crate::util::case_fold(b);
                 a.cmp(&b)
             }
             (CellValue::Logical(a), CellValue::Logical(b)) => a.cmp(b),
@@ -407,6 +409,7 @@ impl CellValue {
             }
         }
 
+        // Coerce blank to zero.
         let mut lhs = self;
         let mut rhs = other;
         let lhs_cell_value: CellValue;
@@ -425,9 +428,24 @@ impl CellValue {
             .unwrap_or_else(|| type_id(lhs).cmp(&type_id(rhs))))
     }
 
-    /// Returns whether `self == other` using `CellValue::cmp()`.
+    /// Returns whether `self == other` using a case-insensitive and
+    /// blank-coercing comparison.
+    ///
+    /// Returns an error if either argument is [`CellValue::Error`].
     pub fn eq(&self, other: &Self) -> CodeResult<bool> {
-        Ok(self.cmp(other)? == std::cmp::Ordering::Equal)
+        Ok(self.is_blank() && other.eq_blank()
+            || other.is_blank() && self.eq_blank()
+            || self.cmp(other)? == std::cmp::Ordering::Equal)
+    }
+    /// Returns whether blank can coerce to this cell value.
+    fn eq_blank(&self) -> bool {
+        match self {
+            CellValue::Blank => true,
+            CellValue::Text(s) => s.is_empty(),
+            CellValue::Number(n) => n.is_zero(),
+            CellValue::Logical(b) => !b,
+            _ => false,
+        }
     }
     /// Returns whether `self < other` using `CellValue::cmp()`.
     pub fn lt(&self, other: &Self) -> CodeResult<bool> {
@@ -835,5 +853,32 @@ mod test {
         assert!(value.is_image());
         let value = CellValue::Text("test".into());
         assert!(!value.is_image());
+    }
+
+    #[test]
+    #[parallel]
+    fn test_cell_value_equality() {
+        for ([l, r], expected) in [
+            // Reflexivity
+            ([CellValue::Blank, CellValue::Blank], true),
+            (["".into(), "".into()], true),
+            ([0.into(), 0.into()], true),
+            // Blank coercion
+            ([CellValue::Blank, "".into()], true),
+            ([CellValue::Blank, 0.into()], true),
+            // Case-insensitivity
+            (["a".into(), "A".into()], true),
+            // ("ß", "SS", true), // TODO: proper Unicode case folding
+            // Other cases
+            ([0.into(), "".into()], false),
+            (["a".into(), "ab".into()], false),
+            ([CellValue::Blank, 1.into()], false),
+            ([CellValue::Blank, (-1).into()], false),
+            ([CellValue::Blank, "a".into()], false),
+        ] {
+            println!("Comparing {l:?} to {r:?}");
+            assert_eq!(expected, l.eq(&r).unwrap());
+            assert_eq!(expected, r.eq(&l).unwrap());
+        }
     }
 }
