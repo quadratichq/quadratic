@@ -20,7 +20,7 @@ export const ValidationDateRanges = (props: Props) => {
 
   const ranges: DateTimeRange[] = useMemo(() => {
     const ranges: DateTimeRange[] = validationDateTime.ranges.filter((r) => 'DateRange' in r);
-    console.log('original', ranges);
+
     // always add an empty range to the bottom of the list
     if (!ranges.find((r) => 'DateRange' in r && r.DateRange[0] === null && r.DateRange[1] === null)) {
       ranges.push({ DateRange: [null, null] });
@@ -129,7 +129,7 @@ export const ValidationDateRanges = (props: Props) => {
     }
     return i;
   };
-  console.log(ranges);
+
   return (
     <Accordion
       type="single"
