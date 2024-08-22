@@ -122,6 +122,7 @@ export class Multiplayer {
 
       case 'multiplayerClientRefreshJwt':
         await this.addJwtCookie(true);
+        console.log('multiplayerClientRefreshJwt', e.data);
         this.send({ type: 'clientMultiplayerRefreshJwt', id: e.data.id });
         break;
 

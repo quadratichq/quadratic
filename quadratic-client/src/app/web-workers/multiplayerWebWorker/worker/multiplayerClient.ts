@@ -68,6 +68,7 @@ class MultiplayerClient {
           this.waitingForConnection[e.data.id]();
           delete this.waitingForConnection[e.data.id];
         } else {
+          console.log(e.data);
           throw new Error('Expected id to be in waitingForConnection for clientMultiplayerRefreshJwt');
         }
         break;
