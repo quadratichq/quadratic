@@ -28,11 +28,7 @@ export const ValidationDateRanges = (props: Props) => {
     });
 
     // always add an empty range to the bottom of the list
-    const dateRange = ranges.find((r) => 'DateRange' in r);
-    if (
-      !dateRange ||
-      ('DateRange' in dateRange && (dateRange.DateRange[0] !== null || dateRange.DateRange[1] !== null))
-    ) {
+    if (!ranges.find((r) => 'DateRange' in r && r.DateRange[0] === null && r.DateRange[1] === null)) {
       ranges.push({ DateRange: [null, null] });
     }
     return ranges;
@@ -41,7 +37,20 @@ export const ValidationDateRanges = (props: Props) => {
   const [rangeError, setRangeError] = useState<number[]>([]);
   const changeRange = useCallback(
     (index: number, value: string, type: 'start' | 'end') => {
-      const date = userDateToNumber(value) ?? null;
+      let date: bigint | null;
+      if (value.trim() === '') {
+        date = null;
+      } else {
+        date = userDateToNumber(value) ?? null;
+        if (!date) {
+          setRangeError((rangeError) => {
+            const r = rangeError.filter((r) => r !== index);
+            r.push(index);
+            return r;
+          });
+          return;
+        }
+      }
 
       let current: DateTimeRange;
       if (index === -1) {
@@ -62,7 +71,7 @@ export const ValidationDateRanges = (props: Props) => {
           return;
         }
 
-        current.DateRange[0] = date ? BigInt(date) : null;
+        current.DateRange[0] = date ? date : null;
 
         // remove any errors in this range
         setRangeError((rangeError) => {
@@ -146,14 +155,14 @@ export const ValidationDateRanges = (props: Props) => {
           </div>
         </AccordionTrigger>
         <AccordionContent className="px-1 pt-1">
-          {ranges.map((range) => {
+          {ranges.map((range, index) => {
             const i = findRangeIndex(range);
             const r = 'DateRange' in range ? range.DateRange : [null, null];
             const start = r[0] ? numberToDate(BigInt(r[0])) : undefined;
             const end = r[1] ? numberToDate(BigInt(r[1])) : undefined;
             return (
-              <div className="flex w-full flex-col" key={i}>
-                <div className="mb-6 flex w-full items-center gap-2">
+              <div className="flex w-full flex-col" key={index}>
+                <div className="mb-4 flex w-full items-center gap-2">
                   <div className="flex w-full flex-col gap-2">
                     <ValidationInput
                       className="w-full"

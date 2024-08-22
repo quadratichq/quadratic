@@ -4,6 +4,7 @@ import { ValidationsDateEquals } from '@/app/ui/menus/Validations/Validation/Val
 import { ValidationDateRanges } from '@/app/ui/menus/Validations/Validation/ValidationDateTime/ValidationDateRanges';
 import { ValidationDateTimeRequire } from '@/app/ui/menus/Validations/Validation/ValidationDateTime/ValidationDateTimeRequire';
 import { ValidationsTimeEquals } from '@/app/ui/menus/Validations/Validation/ValidationDateTime/ValidationTimeEquals';
+import { ValidationTimeRanges } from '@/app/ui/menus/Validations/Validation/ValidationDateTime/ValidationTimeRanges';
 import { ValidationData } from '../useValidationData';
 import { ValidationMoreOptions, ValidationUICheckbox } from '../ValidationUI';
 
@@ -32,6 +33,7 @@ export const ValidationDateTime = (props: Props) => {
         <ValidationsDateEquals dateTimeData={dateTimeData} onEnter={onEnter} />
         <ValidationDateRanges dateTimeData={dateTimeData} onEnter={onEnter} />
         <ValidationsTimeEquals dateTimeData={dateTimeData} onEnter={onEnter} />
+        <ValidationTimeRanges dateTimeData={dateTimeData} onEnter={onEnter} />
       </div>
 
       <ValidationMoreOptions validationData={validationData} />

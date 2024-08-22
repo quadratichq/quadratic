@@ -1,5 +1,6 @@
 import { getSelectionString } from '@/app/grid/sheet/selection';
 import { Validation } from '@/app/quadratic-core-types';
+import { numberToDate, numberToTime } from '@/app/quadratic-rust-client/quadratic_rust_client';
 
 export const translateValidationError = (validation: Validation): JSX.Element | null => {
   if (validation.rule === 'None') {
@@ -159,6 +160,108 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
         </div>
       );
     }
+  }
+
+  if ('DateTime' in validation.rule && validation.rule.DateTime) {
+    return (
+      <div className="flex flex-col gap-2 whitespace-normal">
+        {validation.rule.DateTime.ranges.map((r, i) => {
+          if ('DateRange' in r) {
+            return (
+              <div key={i}>
+                {r.DateRange[0] !== null && r.DateRange[1] !== null && (
+                  <>
+                    Date {verb} be between{' '}
+                    <span className={listClassName}>
+                      {numberToDate(BigInt(r.DateRange[0]))} and {numberToDate(BigInt(r.DateRange[1]))}
+                    </span>
+                    .
+                  </>
+                )}
+                {r.DateRange[0] !== null && r.DateRange[1] === null && (
+                  <>
+                    Date {verb} be greater than or equal to{' '}
+                    <span className={listClassName}>{numberToDate(BigInt(r.DateRange[0]))}</span>.
+                  </>
+                )}
+                {r.DateRange[0] === null && r.DateRange[1] !== null && (
+                  <>
+                    Date {verb} be less than or equal to{' '}
+                    <span className={listClassName}>{numberToDate(BigInt(r.DateRange[1]))}</span>.
+                  </>
+                )}
+              </div>
+            );
+          }
+
+          if ('DateEqual' in r) {
+            return (
+              <div key={i}>
+                Date {verb} be equal to{' '}
+                <span className={listClassName}>{r.DateEqual.map((n) => numberToDate(BigInt(n))).join(', ')}</span>.
+              </div>
+            );
+          }
+
+          if ('DateNotEqual' in r) {
+            return (
+              <div key={i}>
+                Date {verb} <span className="underline">not</span> be equal to{' '}
+                <span className={listClassName}>{r.DateNotEqual.map((n) => numberToDate(BigInt(n))).join(', ')}</span>.
+              </div>
+            );
+          }
+
+          if ('TimeRange' in r) {
+            return (
+              <div key={i}>
+                {r.TimeRange[0] !== null && r.TimeRange[1] !== null && (
+                  <>
+                    Time {verb} be between{' '}
+                    <span className={listClassName}>
+                      {numberToTime(r.TimeRange[0])} and {numberToTime(r.TimeRange[1])}
+                    </span>
+                    .
+                  </>
+                )}
+                {r.TimeRange[0] !== null && r.TimeRange[1] === null && (
+                  <>
+                    Time {verb} be greater than or equal to{' '}
+                    <span className={listClassName}>{numberToTime(r.TimeRange[0])}</span>.
+                  </>
+                )}
+                {r.TimeRange[0] === null && r.TimeRange[1] !== null && (
+                  <>
+                    Time {verb} be less than or equal to{' '}
+                    <span className={listClassName}>{numberToTime(r.TimeRange[1])}</span>.
+                  </>
+                )}
+              </div>
+            );
+          }
+
+          if ('TimeEqual' in r) {
+            return (
+              <div key={i}>
+                Time {verb} be equal to{' '}
+                <span className={listClassName}>{r.TimeEqual.map((n) => numberToTime(n)).join(', ')}</span>.
+              </div>
+            );
+          }
+
+          if ('TimeNotEqual' in r) {
+            return (
+              <div key={i}>
+                Time {verb} <span className="underline">not</span> be equal to{' '}
+                <span className={listClassName}>{r.TimeNotEqual.map((n) => numberToTime(n)).join(', ')}</span>.
+              </div>
+            );
+          }
+
+          return <div key={i}></div>;
+        })}
+      </div>
+    );
   }
 
   return null;

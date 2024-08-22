@@ -80,7 +80,7 @@ export const ValidationInput = forwardRef((props: InputProps, ref: Ref<HTMLInput
   const [hasFocus, setHasFocus] = useState(false);
 
   const handleOnBlur = useCallback(
-    (e: FocusEvent<HTMLInputElement>) => {
+    (e: FocusEvent<HTMLDivElement>) => {
       // only blur if we're outside the div
       if (e.currentTarget.contains(e.relatedTarget)) {
         return;
@@ -99,16 +99,36 @@ export const ValidationInput = forwardRef((props: InputProps, ref: Ref<HTMLInput
     [onChange]
   );
 
+  const handleOnFocus = useCallback((e: FocusEvent<HTMLDivElement>) => {
+    setHasFocus(true);
+
+    // change the focus from the div to the input on focus
+    const input = parentRef.current?.querySelector('input');
+    if (!input) {
+      throw new Error('Expected input to be present in ValidationInput');
+    }
+    input.focus();
+  }, []);
+
+  // force the value to change when the defaultValue changes (avoids having to
+  // have an onChange handler as well)
+  useEffect(() => {
+    const input = parentRef.current?.querySelector('input');
+    if (!input) {
+      throw new Error('Expected input to be present in ValidationInput');
+    }
+    input.value = value ?? '';
+  }, [value]);
+
   return (
     <div>
       {label && <div className={disabled ? 'opacity-50' : ''}>{label}</div>}
-      <div ref={parentRef} onBlur={handleOnBlur} tabIndex={0}>
+      <div ref={parentRef} onBlur={handleOnBlur} onFocus={handleOnFocus} tabIndex={0}>
         <div className={cn('flex w-full items-center space-x-2', error ? 'border border-red-500' : '')}>
           <Input
             className={className}
             ref={ref}
             defaultValue={value}
-            onFocus={() => setHasFocus(true)}
             onInput={onInput ? (e) => onInput(e.currentTarget.value) : undefined}
             style={{ height }}
             placeholder={placeholder}
@@ -121,6 +141,8 @@ export const ValidationInput = forwardRef((props: InputProps, ref: Ref<HTMLInput
                   onInput?.(e.currentTarget.value);
                   onChange?.(e.currentTarget.value);
                 }
+
+                // timeout is needed to ensure the state updates before the onEnter function is called
                 setTimeout(onEnter, 0);
                 e.preventDefault();
                 e.stopPropagation();
