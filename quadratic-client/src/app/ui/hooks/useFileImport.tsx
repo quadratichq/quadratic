@@ -191,8 +191,8 @@ export function useFileImport() {
             .then(({ file: { uuid } }) => {
               updateCurrentFileState({ step: 'done', progress: 100, uuid, abortController: undefined });
               if (openImportedFile) {
-                navigate(ROUTES.FILE(uuid));
                 setFilesImportProgressListState({ show: false });
+                window.location.replace(ROUTES.FILE(uuid));
               }
             })
             .catch((error) => {
