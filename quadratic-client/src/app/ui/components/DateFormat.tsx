@@ -18,8 +18,8 @@ const DATE_FORMATS = [
 
 // first format is default rendering
 const TIME_FORMATS = [
-  { value: '%I:%M %p', label: '3:14 PM' },
-  { value: '%I:%M:%S %p', label: '3:14:01 PM' },
+  { value: '%-I:%M %p', label: '3:14 PM' },
+  { value: '%-I:%M:%S %p', label: '3:14:01 PM' },
   { value: '%H:%M', label: '15:14' },
   { value: '%H:%M:%S', label: '15:14:01' },
 ];
