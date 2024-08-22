@@ -44,7 +44,7 @@ impl Sheet {
 
                     let pos = Pos { x, y };
 
-                    if !selection.pos_in_selection(pos) {
+                    if !selection.contains_pos(pos) {
                         continue;
                     }
 
@@ -215,7 +215,7 @@ impl Sheet {
                                     x: x - bounds.min.x,
                                     y: y - bounds.min.y,
                                 };
-                                if selection.pos_in_selection(Pos { x, y }) {
+                                if selection.contains_pos(Pos { x, y }) {
                                     if include_in_cells {
                                         cells.set(pos.x as u32, pos.y as u32, value.clone());
                                     }
@@ -250,6 +250,8 @@ impl Sheet {
             }
         }
         let sheet_formats = self.sheet_formats(selection, &clipboard_origin);
+        let validations = self.validations.to_clipboard(selection, &clipboard_origin);
+
         let clipboard = Clipboard {
             cells,
             formats,
@@ -260,6 +262,7 @@ impl Sheet {
             h: sheet_bounds.map_or(0, |b| b.height()),
             origin: clipboard_origin,
             selection: Some(selection.clone()),
+            validations,
         };
 
         html.push_str("</td></tr></tbody></table>");

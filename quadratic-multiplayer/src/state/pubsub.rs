@@ -1,12 +1,10 @@
-use quadratic_core::controller::{
-    operations::operation::Operation, transaction::TransactionServer,
-};
+use quadratic_core::controller::transaction::{Transaction, TransactionServer};
 use quadratic_rust_shared::pubsub::{
     redis_streams::RedisConnection, Config as PubSubConfig, PubSub as PubSubTrait,
 };
 use uuid::Uuid;
 
-use crate::error::Result;
+use crate::error::{MpError, Result};
 
 use super::State;
 
@@ -37,7 +35,7 @@ impl PubSub {
         &mut self,
         id: Uuid,
         file_id: Uuid,
-        operations: Vec<Operation>,
+        operations: Vec<u8>,
         sequence_num: u64,
     ) -> Result<u64> {
         let transaction = TransactionServer {
@@ -46,8 +44,9 @@ impl PubSub {
             operations,
             sequence_num,
         };
+        let transaction_compressed = Transaction::serialize_and_compress(&transaction)
+            .map_err(|e| MpError::Serialization(e.to_string()))?;
 
-        let transaction = serde_json::to_string(&transaction)?;
         let active_channels = match self.config {
             PubSubConfig::RedisStreams(ref config) => config.active_channels.as_str(),
             _ => "active_channels",
@@ -57,7 +56,7 @@ impl PubSub {
             .publish(
                 &file_id.to_string(),
                 &sequence_num.to_string(),
-                &transaction,
+                &transaction_compressed,
                 Some(active_channels),
             )
             .await?;
@@ -103,7 +102,7 @@ impl State {
         &self,
         id: Uuid,
         file_id: Uuid,
-        operations: Vec<Operation>,
+        operations: Vec<u8>,
         sequence_num: u64,
     ) -> Result<u64> {
         self.pubsub
@@ -125,21 +124,31 @@ impl State {
             .connection
             .get_messages_from(&file_id.to_string(), &min_sequence_num.to_string(), false)
             .await?
-            .iter()
-            .flat_map(|(_, message)| serde_json::from_str::<TransactionServer>(message))
+            .into_iter()
+            .flat_map(|(_, message)| Self::decompress_and_deserialize(message))
             .collect::<Vec<TransactionServer>>())
     }
 
     /// Get the last message from the PubSub channel
     /// Returns a tuple of (sequence number, last message)
-    pub(crate) async fn get_last_message_pubsub(&self, file_id: &Uuid) -> Result<(String, String)> {
-        Ok(self
+    pub(crate) async fn get_last_message_pubsub(
+        &self,
+        file_id: &Uuid,
+    ) -> Result<(String, TransactionServer)> {
+        let message = self
             .pubsub
             .lock()
             .await
             .connection
             .last_message(&file_id.to_string(), false)
-            .await?)
+            .await?;
+
+        Ok((message.0, Self::decompress_and_deserialize(message.1)?))
+    }
+
+    fn decompress_and_deserialize(transaction: Vec<u8>) -> Result<TransactionServer> {
+        Transaction::decompress_and_deserialize::<TransactionServer>(&transaction)
+            .map_err(|e| MpError::Serialization(e.to_string()))
     }
 }
 
@@ -156,23 +165,26 @@ mod tests {
         let mut grid = GridController::test();
         let transaction_id_1 = Uuid::new_v4();
         let operations_1 = operation(&mut grid, 0, 0, "1");
-        let transaction_1 = vec![operations_1.clone()];
+        let transaction_1 =
+            Transaction::serialize_and_compress(&vec![operations_1.clone()]).unwrap();
         let transaction_id_2 = Uuid::new_v4();
         let operations_2 = operation(&mut grid, 1, 0, "2");
-        let transaction_2 = vec![operations_2.clone()];
+        let transaction_2 =
+            Transaction::serialize_and_compress(&vec![operations_2.clone()]).unwrap();
 
         state
             .push_pubsub(transaction_id_1, file_id, transaction_1.clone(), 1)
             .await
             .unwrap();
-        let transaction = state.get_messages_from_pubsub(&file_id, 0).await.unwrap();
+        let transactions = state.get_messages_from_pubsub(&file_id, 0).await.unwrap();
         let expected_transaction_1 = TransactionServer {
             id: transaction_id_1,
             file_id,
             operations: transaction_1,
             sequence_num: 1,
         };
-        assert_eq!(transaction[0], expected_transaction_1);
+
+        assert_eq!(transactions[0], expected_transaction_1);
 
         state
             .push_pubsub(transaction_id_2, file_id, transaction_2.clone(), 2)
@@ -192,9 +204,6 @@ mod tests {
 
         let last_transaction = state.get_last_message_pubsub(&file_id).await.unwrap();
         assert_eq!(last_transaction.0, "2".to_string());
-        assert_eq!(
-            last_transaction.1,
-            serde_json::to_string(&expected_transaction_2).unwrap()
-        );
+        assert_eq!(last_transaction.1, expected_transaction_2);
     }
 }

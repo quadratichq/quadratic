@@ -7,7 +7,9 @@ use crate::{
     formulas::replace_internal_cell_references,
     grid::{
         formats::{format::Format, Formats},
-        generate_borders_full, BorderSelection, CellBorders, CodeCellLanguage,
+        generate_borders_full,
+        sheet::validations::validation::Validation,
+        BorderSelection, CellBorders, CodeCellLanguage,
     },
     selection::Selection,
     CellValue, Pos, SheetPos, SheetRect,
@@ -15,6 +17,9 @@ use crate::{
 use anyhow::{Error, Result};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+// todo: break up this file so tests are easier to write
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, ts_rs::TS)]
 pub enum PasteSpecial {
@@ -43,6 +48,11 @@ pub struct ClipboardSheetFormats {
     pub all: Option<Format>,
 }
 
+#[derive(Default, Debug, Serialize, Deserialize)]
+pub struct ClipboardValidations {
+    pub validations: Vec<Validation>,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Clipboard {
     pub w: u32,
@@ -58,6 +68,8 @@ pub struct Clipboard {
 
     pub origin: ClipboardOrigin,
     pub selection: Option<Selection>,
+
+    pub validations: Option<ClipboardValidations>,
 }
 
 impl GridController {
@@ -163,6 +175,31 @@ impl GridController {
             }
         }
         ops
+    }
+
+    /// Gets operations to add validations from clipboard to sheet.
+    fn set_clipboard_validations(
+        &self,
+        validations: &Option<ClipboardValidations>,
+        start_pos: SheetPos,
+    ) -> Vec<Operation> {
+        if let Some(validations) = validations {
+            validations
+                .validations
+                .iter()
+                .map(|validation| {
+                    let mut validation = validation.clone();
+                    validation.id = Uuid::new_v4();
+                    validation.selection.sheet_id = start_pos.sheet_id;
+                    validation
+                        .selection
+                        .translate_in_place(start_pos.x, start_pos.y);
+                    Operation::SetValidation { validation }
+                })
+                .collect()
+        } else {
+            vec![]
+        }
     }
 
     fn set_clipboard_cells(
@@ -304,6 +341,11 @@ impl GridController {
                         });
                     }
                 });
+
+                ops.extend(self.set_clipboard_validations(
+                    &clipboard.validations,
+                    start_pos.to_sheet_pos(sheet.id),
+                ));
             }
         }
 
@@ -420,6 +462,8 @@ mod test {
     use super::*;
     use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::grid::formats::format_update::FormatUpdate;
+    use crate::grid::sheet::validations::validation_rules::ValidationRule;
+    use crate::grid::SheetId;
     use serial_test::parallel;
 
     #[test]
@@ -636,5 +680,37 @@ mod test {
                 ..Default::default()
             }
         );
+    }
+
+    #[test]
+    #[parallel]
+    fn set_clipboard_validations() {
+        let gc = GridController::test();
+        let validations = ClipboardValidations {
+            validations: vec![Validation {
+                id: Uuid::new_v4(),
+                selection: Selection::rect(crate::Rect::new(1, 1, 2, 2), SheetId::test()),
+                rule: ValidationRule::Logical(Default::default()),
+                message: Default::default(),
+                error: Default::default(),
+            }],
+        };
+        let operations = gc.set_clipboard_validations(
+            &Some(validations),
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id: SheetId::test(),
+            },
+        );
+        assert_eq!(operations.len(), 1);
+        if let Operation::SetValidation { validation } = &operations[0] {
+            assert_eq!(
+                validation.selection,
+                Selection::rect(crate::Rect::new(2, 2, 3, 3), SheetId::test())
+            );
+        } else {
+            panic!("Expected SetValidation operation");
+        }
     }
 }

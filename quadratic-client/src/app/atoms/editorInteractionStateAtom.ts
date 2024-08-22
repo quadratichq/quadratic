@@ -11,8 +11,12 @@ export interface EditorInteractionState {
   showConnectionsMenu: boolean;
   showGoToMenu: boolean;
   showFeedbackMenu: boolean;
+  showNewFileMenu: boolean;
   showShareFileMenu: boolean;
   showSearch: boolean | SearchOptions;
+  showValidation: boolean | string;
+  annotationState?: 'dropdown';
+  showContextMenu: boolean;
   permissions: FilePermission[];
   uuid: string;
   selectedCell: Coordinate;
@@ -40,8 +44,11 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   showConnectionsMenu: false,
   showGoToMenu: false,
   showFeedbackMenu: false,
+  showNewFileMenu: false,
   showShareFileMenu: false,
   showSearch: false,
+  showContextMenu: false,
+  showValidation: false,
   permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
   uuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
   selectedCell: { x: 0, y: 0 },
@@ -67,6 +74,7 @@ export const editorInteractionStateAtom = atom({
           oldValue.showConnectionsMenu ||
           oldValue.showGoToMenu ||
           oldValue.showFeedbackMenu ||
+          oldValue.showNewFileMenu ||
           oldValue.showShareFileMenu ||
           oldValue.showSearch;
         const newModelShow =
@@ -76,6 +84,7 @@ export const editorInteractionStateAtom = atom({
           newValue.showConnectionsMenu ||
           newValue.showGoToMenu ||
           newValue.showFeedbackMenu ||
+          newValue.showNewFileMenu ||
           newValue.showShareFileMenu ||
           newValue.showSearch;
         if (oldModalShow && !newModelShow) {

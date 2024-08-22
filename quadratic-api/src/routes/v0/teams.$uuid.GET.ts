@@ -35,6 +35,9 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     },
     include: {
       Connection: {
+        where: {
+          archived: null,
+        },
         orderBy: {
           createdDate: 'desc',
         },
@@ -135,6 +138,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
           updatedDate: file.updatedDate.toISOString(),
           publicLinkAccess: file.publicLinkAccess,
           thumbnail: file.thumbnail,
+          creatorId: file.creatorUserId,
         },
         userMakingRequest: {
           filePermissions: getFilePermissions({
@@ -168,7 +172,18 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
           }),
         },
       })),
+    connections: dbTeam.Connection.map((connection) => ({
+      uuid: connection.uuid,
+      name: connection.name,
+      createdDate: connection.createdDate.toISOString(),
+      type: connection.type,
+    })),
+    clientDataKv: isObject(dbTeam.clientDataKv) ? dbTeam.clientDataKv : {},
   };
 
   return res.status(200).json(response);
+}
+
+function isObject(x: any): x is Record<string, any> {
+  return typeof x === 'object' && !Array.isArray(x) && x !== null;
 }

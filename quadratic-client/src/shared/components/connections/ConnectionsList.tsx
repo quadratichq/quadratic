@@ -5,7 +5,7 @@ import { Type } from '@/shared/components/Type';
 import {
   ConnectionsListConnection,
   NavigateToCreateView,
-  NavigateToEditView,
+  NavigateToView,
 } from '@/shared/components/connections/Connections';
 import { connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -13,7 +13,7 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { cn } from '@/shared/shadcn/utils';
 import { timeAgo } from '@/shared/utils/timeAgo';
-import { Cross2Icon, PlusIcon } from '@radix-ui/react-icons';
+import { Cross2Icon, Pencil1Icon, PlusIcon } from '@radix-ui/react-icons';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 
@@ -21,13 +21,15 @@ type Props = {
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
   handleNavigateToCreateView: NavigateToCreateView;
-  handleNavigateToEditView: NavigateToEditView;
+  hangleNavigateToDetailsView: NavigateToView;
+  handleNavigateToEditView: NavigateToView;
 };
 
 export const ConnectionsList = ({
   connections,
   connectionsAreLoading,
   handleNavigateToCreateView,
+  hangleNavigateToDetailsView,
   handleNavigateToEditView,
 }: Props) => {
   const [filterQuery, setFilterQuery] = useState<string>('');
@@ -89,6 +91,7 @@ export const ConnectionsList = ({
             <ListItems
               filterQuery={filterQuery}
               items={connections}
+              hangleNavigateToDetailsView={hangleNavigateToDetailsView}
               handleNavigateToEditView={handleNavigateToEditView}
             />
           </>
@@ -106,10 +109,12 @@ export const ConnectionsList = ({
 
 function ListItems({
   filterQuery,
+  hangleNavigateToDetailsView,
   handleNavigateToEditView,
   items,
 }: {
   filterQuery: string;
+  hangleNavigateToDetailsView: Props['hangleNavigateToDetailsView'];
   handleNavigateToEditView: Props['handleNavigateToEditView'];
   items: ConnectionsListConnection[];
 }) {
@@ -118,30 +123,44 @@ function ListItems({
     : items;
 
   return filteredItems.length > 0 ? (
-    <div className="-mt-3">
+    <div className="relative -mt-3">
       {filteredItems.map(({ uuid, name, type, createdDate, disabled }, i) => (
-        <button
-          onClick={() => {
-            handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
-          }}
-          disabled={disabled}
-          key={uuid}
-          className={cn(
-            `flex w-full items-center gap-2 px-1 py-2`,
-            disabled ? 'cursor-not-allowed opacity-50' : 'hover:bg-accent'
-            // i < filteredConnections.length - 1 && 'border-b border-border'
+        <div className="group relative flex items-center gap-1" key={uuid}>
+          <button
+            onClick={() => {
+              hangleNavigateToDetailsView({ connectionUuid: uuid, connectionType: type });
+            }}
+            disabled={disabled}
+            key={uuid}
+            className={cn(
+              `flex w-full items-center gap-4 rounded px-1 py-2`,
+              disabled ? 'cursor-not-allowed opacity-50' : 'group-hover:bg-accent'
+              // i < filteredConnections.length - 1 && 'border-b border-border'
+            )}
+          >
+            <div className="flex h-6 w-6 items-center justify-center">
+              <LanguageIcon language={type} fontSize="small" />
+            </div>
+            <div className="flex flex-grow flex-col text-left">
+              <span className="text-sm">{name}</span>
+              <time dateTime={createdDate} className="text-xs text-muted-foreground">
+                Created {timeAgo(createdDate)}
+              </time>
+            </div>
+          </button>
+          {!disabled && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-2 top-2 rounded text-muted-foreground hover:bg-background"
+              onClick={() => {
+                handleNavigateToEditView({ connectionUuid: uuid, connectionType: type });
+              }}
+            >
+              <Pencil1Icon />
+            </Button>
           )}
-        >
-          <div className="flex h-6 w-6 items-center justify-center">
-            <LanguageIcon language={type} fontSize="small" />
-          </div>
-          <div className="flex flex-grow items-center justify-between">
-            <span className="text-sm">{name}</span>
-            <time dateTime={createdDate} className="text-xs text-muted-foreground">
-              Created {timeAgo(createdDate)}
-            </time>
-          </div>
-        </button>
+        </div>
       ))}
     </div>
   ) : (

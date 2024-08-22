@@ -59,9 +59,10 @@ impl CodeRun {
                     Value::Single(v) => v.clone(),
                     Value::Array(a) => a.get(x, y).cloned().unwrap_or(CellValue::Blank),
                     Value::Tuple(_) => CellValue::Error(Box::new(
+                        // should never happen
                         RunErrorMsg::InternalError("tuple saved as code run result".into())
                             .without_span(),
-                    )), // should never happen
+                    )),
                 },
                 CodeRunResult::Err(e) => CellValue::Error(Box::new(e.clone())),
             }

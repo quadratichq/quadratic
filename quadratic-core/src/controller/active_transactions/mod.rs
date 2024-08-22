@@ -85,7 +85,7 @@ impl ActiveTransactions {
         }
     }
 
-    pub fn update_async_transaction(&mut self, pending: &mut PendingTransaction) {
+    pub fn update_async_transaction(&mut self, pending: &PendingTransaction) {
         // Unsaved_operations hold async operations that are not complete. In that case, we need to replace the
         // unsaved operation with the new version.
         self.unsaved_transactions.insert_or_replace(pending, false);

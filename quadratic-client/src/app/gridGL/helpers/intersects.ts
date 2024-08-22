@@ -1,4 +1,6 @@
 import { RectangleLike } from '@/app/grid/sheet/SheetCursor';
+import { Rect } from '@/app/quadratic-core-types';
+import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { Circle, Point, Rectangle } from 'pixi.js';
 
 function left(rectangle: RectangleLike): number {
@@ -86,6 +88,10 @@ export function rectangleIntersection(source: RectangleLike, rectangles: Rectang
   return intersection;
 }
 
+export function rectRect(r1: Rect, r2: Rect): boolean {
+  return rectangleRectangle(rectToRectangle(r1), rectToRectangle(r2));
+}
+
 export const intersects = {
   rectanglePoint,
   circlePoint,
@@ -94,4 +100,5 @@ export const intersects = {
   rectangleUnion,
   rectangleClip,
   rectangleIntersection,
+  rectRect,
 };

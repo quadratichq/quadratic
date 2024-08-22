@@ -5,6 +5,7 @@ use bigdecimal::{BigDecimal, RoundingMode};
 use indexmap::IndexMap;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
+use validations::Validations;
 
 use super::bounds::GridBounds;
 use super::column::Column;
@@ -32,8 +33,8 @@ pub mod search;
 pub mod selection;
 pub mod send_render;
 pub mod sheet_test;
-
 pub mod summarize;
+pub mod validations;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Sheet {
@@ -75,6 +76,9 @@ pub struct Sheet {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub format_all: Option<Format>,
 
+    #[serde(default)]
+    pub validations: Validations,
+
     // bounds for the grid with only data
     pub(super) data_bounds: GridBounds,
 
@@ -107,6 +111,7 @@ impl Sheet {
 
             format_bounds: GridBounds::Empty,
 
+            validations: Validations::default(),
             rows_resize: ResizeMap::default(),
         }
     }
@@ -241,7 +246,21 @@ impl Sheet {
     /// Returns the cell value at a position using both `column.values` and
     /// `code_runs`, for use when a formula references a cell.
     pub fn get_cell_for_formula(&self, pos: Pos) -> CellValue {
-        self.display_value(pos).unwrap_or(CellValue::Blank)
+        let cell_value = self
+            .get_column(pos.x)
+            .and_then(|column| column.values.get(&pos.y));
+
+        if let Some(cell_value) = cell_value {
+            match cell_value {
+                CellValue::Blank | CellValue::Code(_) => match self.code_runs.get(&pos) {
+                    Some(run) => run.get_cell_for_formula(0, 0),
+                    None => CellValue::Blank,
+                },
+                other => other.clone(),
+            }
+        } else {
+            self.get_code_cell_value(pos).unwrap_or(CellValue::Blank)
+        }
     }
 
     /// Returns a formatting property of a cell.

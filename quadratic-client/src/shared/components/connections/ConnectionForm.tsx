@@ -1,6 +1,6 @@
-import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { getCreateConnectionAction, getUpdateConnectionAction } from '@/routes/api.connections';
 import { ConnectionFormActions } from '@/shared/components/connections/ConnectionFormActions';
+import { ConnectionHeader } from '@/shared/components/connections/ConnectionHeader';
 import { ConnectionFormValues, connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { ROUTES } from '@/shared/constants/routes';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
@@ -42,7 +42,9 @@ export function ConnectionFormCreate({
 
   return (
     <>
-      <ConnectionFormHeader type={type}>Create</ConnectionFormHeader>
+      <ConnectionHeader type={type} handleNavigateToListView={handleNavigateToListView}>
+        Create
+      </ConnectionHeader>
       <ConnectionFormWrapper type={type} props={props} />
     </>
   );
@@ -77,7 +79,9 @@ export function ConnectionFormEdit({
 
   return (
     <>
-      <ConnectionFormHeader type={connectionType}>Edit</ConnectionFormHeader>
+      <ConnectionHeader type={connectionType} handleNavigateToListView={handleNavigateToListView}>
+        Edit
+      </ConnectionHeader>
       {fetcher.data?.ok ? (
         <ConnectionFormWrapper
           type={fetcher.data.connection.type}
@@ -112,14 +116,5 @@ function ConnectionFormWrapper({ type, props }: { type: ConnectionType; props: C
         connectionType={type}
       />
     </ConnectionForm>
-  );
-}
-
-function ConnectionFormHeader({ type, children }: { type: ConnectionType; children: React.ReactNode }) {
-  const { name } = connectionsByType[type];
-  return (
-    <h3 className="text-md flex gap-3 py-4">
-      <LanguageIcon language={type} /> {children} {name} connection
-    </h3>
   );
 }

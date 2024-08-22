@@ -20,9 +20,11 @@ import { useEditorCellHighlights } from './useEditorCellHighlights';
 // import { useEditorDiagnostics } from './useEditorDiagnostics';
 // import { Diagnostic } from 'vscode-languageserver-types';
 // import { typescriptLibrary } from '@/web-workers/javascriptWebWorker/worker/javascript/typescriptLibrary';
+import { debug } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import { codeCellIsAConnection, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
+import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
 import { SheetRect } from '@/app/quadratic-core-types';
 import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlaceholder';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
@@ -53,7 +55,7 @@ let registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
 };
 
 export const CodeEditorBody = (props: Props) => {
-  const { editorContent, setEditorContent, closeEditor, evaluationResult, cellLocation } = props;
+  const { editorContent, setEditorContent, closeEditor, evaluationResult, cellsAccessed, cellLocation } = props;
   const {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
@@ -68,7 +70,7 @@ export const CodeEditorBody = (props: Props) => {
   const [isValidRef, setIsValidRef] = useState(false);
   const { editorRef, monacoRef } = useCodeEditor();
 
-  useEditorCellHighlights(isValidRef, editorRef, monacoRef, language);
+  useEditorCellHighlights(isValidRef, editorRef, monacoRef, language, cellsAccessed);
   useEditorOnSelectionChange(isValidRef, editorRef, monacoRef, language);
   useEditorReturn(isValidRef, editorRef, monacoRef, language, evaluationResult);
 
@@ -208,6 +210,13 @@ export const CodeEditorBody = (props: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!debug && matchShortcut('fill_right', e)) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, []);
+
   return (
     <div
       style={{
@@ -215,6 +224,7 @@ export const CodeEditorBody = (props: Props) => {
         minHeight: '2rem',
         flex: '2',
       }}
+      onKeyDown={handleKeyDown}
     >
       <Editor
         height="100%"

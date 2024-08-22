@@ -16,8 +16,8 @@ import '../../styles/floating-dialog.css';
 
 import { colors } from '@/app/theme/colors';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
+import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
-import { GetConnections } from '@/routes/api.connections';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import {
   CommandDialog,
@@ -28,7 +28,6 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/shared/shadcn/ui/command';
-import { useFetcher } from 'react-router-dom';
 
 export interface CellTypeOption {
   name: string;
@@ -82,7 +81,7 @@ let CELL_TYPE_OPTIONS: CellTypeOption[] = [
 export default function CellTypeMenu() {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const setCellTypeMenuOpenedCount = useSetRecoilState(cellTypeMenuOpenedCountAtom);
-  const fetcher = useFetcher<GetConnections>({ key: 'CONNECTIONS_FETCHER_KEY' });
+  const fetcher = useConnectionsFetcher();
 
   const searchLabel = 'Choose a cell type…';
 
