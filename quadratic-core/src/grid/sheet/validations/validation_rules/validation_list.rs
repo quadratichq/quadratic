@@ -48,7 +48,7 @@ impl ValidationList {
         }
         match &self.source {
             ValidationListSource::Selection(selection) => {
-                let values = sheet.selection(selection, None, false, true)?;
+                let values = sheet.selection(selection, None, false, false)?;
                 Some(
                     values
                         .values()
