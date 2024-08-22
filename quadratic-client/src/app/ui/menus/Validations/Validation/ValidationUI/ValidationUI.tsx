@@ -1,13 +1,11 @@
 import { Button } from '@/shared/shadcn/ui/button';
 import { Checkbox } from '@/shared/shadcn/ui/checkbox';
-import { Input } from '@/shared/shadcn/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/shadcn/ui/select';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
-import { cn } from '@/shared/shadcn/utils';
 import { Close } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
-import { FocusEvent, forwardRef, Ref, useCallback, useEffect, useRef, useState } from 'react';
-import { ValidationData } from './useValidationData';
+import { FocusEvent, useCallback, useEffect, useRef } from 'react';
+import { ValidationData } from '../useValidationData';
 
 interface CheckboxProps {
   className?: string;
@@ -30,12 +28,11 @@ export const ValidationUICheckbox = (props: CheckboxProps) => {
   );
 };
 
-interface InputProps {
+interface TextAreaProps {
   className?: string;
 
   label?: string;
   value?: string;
-  error?: string;
   disabled?: boolean;
 
   // used to update whenever the input loses focus
@@ -51,115 +48,11 @@ interface InputProps {
   placeholder?: string;
 
   readOnly?: boolean;
-
-  type?: 'number';
-
-  showOnFocus?: JSX.Element;
 }
 
-export const ValidationInput = forwardRef((props: InputProps, ref: Ref<HTMLInputElement>) => {
-  const {
-    label,
-    value,
-    onChange,
-    onInput,
-    footer,
-    height,
-    placeholder,
-    error,
-    disabled,
-    readOnly,
-    type,
-    onEnter,
-    className,
-    showOnFocus,
-  } = props;
-
-  const parentRef = useRef<HTMLDivElement>(null);
-
-  const [hasFocus, setHasFocus] = useState(false);
-
-  const handleOnBlur = useCallback(
-    (e: FocusEvent<HTMLDivElement>) => {
-      // only blur if we're outside the div
-      if (e.currentTarget.contains(e.relatedTarget)) {
-        return;
-      }
-
-      if (onChange) {
-        const input = parentRef.current?.querySelector('input');
-        if (!input) {
-          throw new Error('Expected input to be present in ValidationInput');
-        }
-        onChange(input.value);
-      }
-
-      setHasFocus(false);
-    },
-    [onChange]
-  );
-
-  const handleOnFocus = useCallback((e: FocusEvent<HTMLDivElement>) => {
-    setHasFocus(true);
-
-    // change the focus from the div to the input on focus
-    const input = parentRef.current?.querySelector('input');
-    if (!input) {
-      throw new Error('Expected input to be present in ValidationInput');
-    }
-    input.focus();
-  }, []);
-
-  // force the value to change when the defaultValue changes (avoids having to
-  // have an onChange handler as well)
-  useEffect(() => {
-    const input = parentRef.current?.querySelector('input');
-    if (!input) {
-      throw new Error('Expected input to be present in ValidationInput');
-    }
-    input.value = value ?? '';
-  }, [value]);
-
-  return (
-    <div>
-      {label && <div className={disabled ? 'opacity-50' : ''}>{label}</div>}
-      <div ref={parentRef} onBlur={handleOnBlur} onFocus={handleOnFocus} tabIndex={0}>
-        <div className={cn('flex w-full items-center space-x-2', error ? 'border border-red-500' : '')}>
-          <Input
-            className={className}
-            ref={ref}
-            defaultValue={value}
-            onInput={onInput ? (e) => onInput(e.currentTarget.value) : undefined}
-            style={{ height }}
-            placeholder={placeholder}
-            disabled={disabled}
-            readOnly={readOnly}
-            type={type}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && onEnter) {
-                if (value !== e.currentTarget.value) {
-                  onInput?.(e.currentTarget.value);
-                  onChange?.(e.currentTarget.value);
-                }
-
-                // timeout is needed to ensure the state updates before the onEnter function is called
-                setTimeout(onEnter, 0);
-                e.preventDefault();
-                e.stopPropagation();
-              }
-            }}
-          />
-        </div>
-        {footer && <div className="text-xs">{footer}</div>}
-        {error && <div className="text-xs text-red-500">{error}</div>}
-        {hasFocus && showOnFocus}
-      </div>
-    </div>
-  );
-});
-
-export const ValidationTextArea = (props: InputProps) => {
-  const { label, value, onChange, onInput, footer, height, placeholder, disabled, readOnly, onEnter } = props;
+export const ValidationTextArea = (props: TextAreaProps) => {
+  const { className, label, value, onChange, onInput, footer, height, placeholder, disabled, readOnly, onEnter } =
+    props;
   const ref = useRef<HTMLTextAreaElement>(null);
 
   const onBlur = useCallback(
@@ -182,6 +75,7 @@ export const ValidationTextArea = (props: InputProps) => {
       {label && <div className={disabled ? 'opacity-50' : ''}>{label}</div>}
       <div>
         <Textarea
+          className={className}
           ref={ref}
           onBlur={onChange ? onBlur : undefined}
           onInput={onInput ? (e) => onInput(e.currentTarget.value) : undefined}

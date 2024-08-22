@@ -1,8 +1,7 @@
 import { DateTimeRange } from '@/app/quadratic-core-types';
 import { numberToDate, userDateToNumber } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { ValidationCalendar } from '@/app/ui/menus/Validations/Validation/ValidationCalendar';
 import { ValidationDateTimeData } from '@/app/ui/menus/Validations/Validation/ValidationDateTime/useValidationDateTime';
-import { ValidationInput } from '@/app/ui/menus/Validations/Validation/ValidationUI';
+import { ValidationDateInput } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationDateInput';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/shared/shadcn/ui/accordion';
 import { useCallback, useMemo, useState } from 'react';
 
@@ -138,24 +137,15 @@ export const ValidationsDateEquals = (props: Props) => {
           <AccordionTrigger disabled={noDate} className={noDate ? 'opacity-50' : ''}>
             <div className="flex">Date equals{noDateHelp}</div>
           </AccordionTrigger>
-          <AccordionContent className="px-1 pt-1">
-            <ValidationInput
-              placeholder="Enter dates separated by commas"
+          <AccordionContent className="w-full px-1 pt-1">
+            <ValidationDateInput
+              multiple
               disabled={readOnly}
               value={equals ? equals.join(', ') : ''}
               onChange={changeEquals}
               readOnly={readOnly}
               error={equalsError ? 'Please enter valid dates separated by commas' : undefined}
               onEnter={onEnter}
-              showOnFocus={
-                <ValidationCalendar
-                  dates={equals?.map((d) => new Date(d))}
-                  setDates={(dates) => {
-                    changeEquals(dates);
-                    return false;
-                  }}
-                />
-              }
             />
           </AccordionContent>
         </AccordionItem>
@@ -180,23 +170,14 @@ export const ValidationsDateEquals = (props: Props) => {
           </AccordionTrigger>
           <AccordionContent className="px-1 pt-1">
             <div className="flex w-full flex-col gap-1">
-              <ValidationInput
-                placeholder="Enter dates separated by commas"
+              <ValidationDateInput
+                multiple
                 disabled={readOnly}
                 value={notEquals ? notEquals.join(', ') : ''}
                 onChange={changeNotEquals}
                 readOnly={readOnly}
                 error={notEqualsError ? 'Please enter valid dates separated by commas' : undefined}
                 onEnter={onEnter}
-                showOnFocus={
-                  <ValidationCalendar
-                    dates={notEquals?.map((d) => new Date(d))}
-                    setDates={(dates) => {
-                      changeNotEquals(dates);
-                      return false;
-                    }}
-                  />
-                }
               />
             </div>
           </AccordionContent>

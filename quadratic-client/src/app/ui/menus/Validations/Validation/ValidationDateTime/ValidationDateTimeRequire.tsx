@@ -1,5 +1,5 @@
 import { ValidationDateTimeData } from '@/app/ui/menus/Validations/Validation/ValidationDateTime/useValidationDateTime';
-import { ValidationDropdown } from '@/app/ui/menus/Validations/Validation/ValidationUI';
+import { ValidationDropdown } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationUI';
 import { useCallback } from 'react';
 
 interface Props {

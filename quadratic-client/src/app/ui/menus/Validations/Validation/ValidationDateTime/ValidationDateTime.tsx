@@ -6,7 +6,7 @@ import { ValidationDateTimeRequire } from '@/app/ui/menus/Validations/Validation
 import { ValidationsTimeEquals } from '@/app/ui/menus/Validations/Validation/ValidationDateTime/ValidationTimeEquals';
 import { ValidationTimeRanges } from '@/app/ui/menus/Validations/Validation/ValidationDateTime/ValidationTimeRanges';
 import { ValidationData } from '../useValidationData';
-import { ValidationMoreOptions, ValidationUICheckbox } from '../ValidationUI';
+import { ValidationMoreOptions, ValidationUICheckbox } from '../ValidationUI/ValidationUI';
 
 interface Props {
   validationData: ValidationData;

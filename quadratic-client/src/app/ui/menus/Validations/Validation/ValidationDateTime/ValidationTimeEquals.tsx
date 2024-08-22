@@ -1,7 +1,7 @@
 import { DateTimeRange } from '@/app/quadratic-core-types';
 import { numberToTime, userTimeToNumber } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { ValidationDateTimeData } from '@/app/ui/menus/Validations/Validation/ValidationDateTime/useValidationDateTime';
-import { ValidationInput } from '@/app/ui/menus/Validations/Validation/ValidationUI';
+import { ValidationInput } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationInput';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/shared/shadcn/ui/accordion';
 import { useCallback, useMemo, useState } from 'react';
 

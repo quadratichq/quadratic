@@ -1,15 +1,14 @@
 import { Calendar } from '@/shared/shadcn/ui/calendar';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 
 interface Props {
   dates?: Date[];
 
-  // allow only a single date to be selected
-  singleDate?: boolean;
+  // allow multiple dates
+  multiple?: boolean;
 
   // returns an array of strings in the format of 'YYYY-MM-DD'
-  // if the setDates returns true, then we hide the calendar
-  setDates: (dates: string) => boolean | undefined;
+  setDates: (dates: string) => undefined;
 
   // use this month to open calendar if props.dates is not set
   fallbackMonth?: Date;
@@ -24,9 +23,7 @@ const dateTimeToDateString = (date: Date) => {
 };
 
 export const ValidationCalendar = (props: Props) => {
-  const { dates, singleDate, setDates, fallbackMonth } = props;
-
-  const [hide, setHide] = useState(false);
+  const { dates, multiple, setDates, fallbackMonth } = props;
 
   const ref = useCallback((node: HTMLDivElement) => {
     if (node) {
@@ -36,25 +33,19 @@ export const ValidationCalendar = (props: Props) => {
 
   const handleOnSelectSingle = (date?: Date) => {
     const newDate = date ? dateTimeToDateString(date) : '';
-    if (setDates(newDate)) {
-      setHide(true);
-    }
+    setDates(newDate);
   };
 
   const handleOnSelectMultiple = (dates?: Date[]) => {
     const newDates = dates ? dates.map((d) => dateTimeToDateString(d)).join(', ') : '';
-    if (setDates(newDates)) {
-      setHide(true);
-    }
+    setDates(newDates);
   };
 
   const defaultMonth = dates?.length ? dates[dates.length - 1] : fallbackMonth;
 
-  if (hide) return null;
-
   return (
     <div ref={ref} className="w-fit border bg-white shadow">
-      {singleDate && (
+      {!multiple && (
         <Calendar
           mode="single"
           selected={dates?.[0]}
@@ -62,7 +53,7 @@ export const ValidationCalendar = (props: Props) => {
           defaultMonth={dates?.[0] ?? defaultMonth}
         />
       )}
-      {!singleDate && (
+      {multiple && (
         <Calendar mode="multiple" selected={dates} onSelect={handleOnSelectMultiple} defaultMonth={defaultMonth} />
       )}
     </div>

@@ -1,7 +1,7 @@
 import { DateTimeRange } from '@/app/quadratic-core-types';
 import { numberToTime, userTimeToNumber } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { ValidationDateTimeData } from '@/app/ui/menus/Validations/Validation/ValidationDateTime/useValidationDateTime';
-import { ValidationInput } from '@/app/ui/menus/Validations/Validation/ValidationUI';
+import { ValidationInput } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationInput';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/shared/shadcn/ui/accordion';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
@@ -26,12 +26,7 @@ export const ValidationTimeRanges = (props: Props) => {
   } = dateTimeData;
 
   const ranges: DateTimeRange[] = useMemo(() => {
-    const ranges: DateTimeRange[] = [];
-    validationDateTime.ranges.forEach((r) => {
-      if ('TimeRange' in r) {
-        ranges.push(r);
-      }
-    });
+    const ranges: DateTimeRange[] = validationDateTime.ranges.filter((r) => 'TimeRange' in r);
 
     // always add an empty range to the bottom of the list
     if (!ranges.find((r) => 'TimeRange' in r && r.TimeRange[0] === null && r.TimeRange[1] === null)) {
@@ -40,21 +35,32 @@ export const ValidationTimeRanges = (props: Props) => {
     return ranges;
   }, [validationDateTime.ranges]);
 
-  //todo: make this also track the type so we can move it under the correct box
-  const [rangeError, setRangeError] = useState<Map<number, string>>(new Map());
+  const [rangeError, setRangeError] = useState<Map<number, { text: string; type: string }>>(new Map());
+
+  const updateRangeError = (index: number, text?: string, type?: string) => {
+    setRangeError((rangeError) => {
+      const newRangeError = new Map(rangeError);
+      if (text && type) {
+        newRangeError.set(index, { text, type });
+      } else {
+        newRangeError.delete(index);
+      }
+      return newRangeError;
+    });
+  };
+
   const changeRange = useCallback(
     (index: number, value: string, type: 'start' | 'end') => {
       let time: number | null;
       if (value.trim() === '') {
+        // if we're in a new range, then we can just return because there's
+        // nothing to update.
+        if (index === -1) return;
         time = null;
       } else {
         time = userTimeToNumber(value) ?? null;
         if (!time) {
-          setRangeError((rangeError) => {
-            const newRangeError = new Map(rangeError);
-            newRangeError.set(index, `Invalid ${type} time`);
-            return newRangeError;
-          });
+          updateRangeError(index, `Invalid ${type} time`, type);
           return;
         }
       }
@@ -70,48 +76,32 @@ export const ValidationTimeRanges = (props: Props) => {
       if (type === 'start') {
         // check for error (min > max)
         if (current.TimeRange[1] !== null && time && time > current.TimeRange[1]) {
-          setRangeError((rangeError) => {
-            const newRangeError = new Map(rangeError);
-            newRangeError.set(index, 'Range start must be before end');
-            return newRangeError;
-          });
+          updateRangeError(index, 'Range start must be before end', type);
           return;
         }
 
         current.TimeRange[0] = time ? time : null;
 
         // remove any errors in this range
-        setRangeError((rangeError) => {
-          const newRangeError = new Map(rangeError);
-          newRangeError.delete(index);
-          return newRangeError;
-        });
+        updateRangeError(index);
       } else {
         // check for error (max < min)
         if (current.TimeRange[0] !== null && time && time < current.TimeRange[0]) {
-          setRangeError((rangeError) => {
-            const newRangeError = new Map(rangeError);
-            newRangeError.set(index, 'Range end must be after start');
-            return newRangeError;
-          });
+          updateRangeError(index, 'Range end must be after start', type);
           return;
         }
         current.TimeRange[1] = time ? time : null;
 
         // remove any errors in this range
-        setRangeError((rangeError) => {
-          const newRangeError = new Map(rangeError);
-          newRangeError.delete(index);
-          return newRangeError;
-        });
+        updateRangeError(index);
       }
 
-      const ranges: DateTimeRange[] = validationDateTime.ranges.filter((_, i) => i !== index);
-      ranges.push(current);
+      const newRanges: DateTimeRange[] = validationDateTime.ranges.filter((_, i) => i !== index);
+      newRanges.push(current);
 
       setValidationDateTime({
         ...validationDateTime,
-        ranges,
+        ranges: newRanges,
       });
     },
     [setValidationDateTime, validationDateTime]
@@ -125,6 +115,7 @@ export const ValidationTimeRanges = (props: Props) => {
         ...validationDateTime,
         ranges,
       });
+      updateRangeError(index);
     },
     [setValidationDateTime, validationDateTime]
   );
@@ -173,7 +164,7 @@ export const ValidationTimeRanges = (props: Props) => {
             const end = r[1] ? numberToTime(r[1]) : undefined;
             return (
               <div className="flex w-full flex-col" key={index}>
-                <div className="mb-2 flex w-full items-center gap-2">
+                <div className="mb-2 flex w-full gap-2">
                   <ValidationInput
                     className="w-full"
                     placeholder="Start Time"
@@ -181,6 +172,8 @@ export const ValidationTimeRanges = (props: Props) => {
                     value={start}
                     onChange={(value) => changeRange(i, value, 'start')}
                     onEnter={onEnter}
+                    clear={rangeError.get(i)?.type === 'start'}
+                    error={rangeError.get(i)?.type === 'start' ? rangeError.get(i)?.text : undefined}
                   />
                   <ValidationInput
                     placeholder="End Time"
@@ -188,16 +181,13 @@ export const ValidationTimeRanges = (props: Props) => {
                     value={end}
                     onChange={(value) => changeRange(i, value, 'end')}
                     onEnter={onEnter}
+                    clear={rangeError.get(i)?.type === 'end'}
+                    error={rangeError.get(i)?.type === 'end' ? rangeError.get(i)?.text : undefined}
                   />
                   <Button className={cn('grow-0 px-2', i !== -1 ? '' : 'invisible')} onClick={() => removeRange(i)}>
                     <DeleteIcon />
                   </Button>
                 </div>
-                {rangeError.has(i) && (
-                  <div style={{ marginTop: '-0.5rem' }} className="mb-2 text-xs text-red-500">
-                    {rangeError.get(i)}
-                  </div>
-                )}
               </div>
             );
           })}

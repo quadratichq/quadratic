@@ -7,7 +7,7 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { Tooltip } from '@mui/material';
 import { CheckIcon } from '@radix-ui/react-icons';
 import { useEffect, useRef, useState } from 'react';
-import { ValidationInput } from '../menus/Validations/Validation/ValidationUI';
+import { ValidationInput } from '../menus/Validations/Validation/ValidationUI/ValidationInput';
 
 // first format is default rendering
 const DATE_FORMATS = [

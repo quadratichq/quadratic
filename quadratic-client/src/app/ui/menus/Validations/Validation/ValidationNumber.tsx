@@ -1,14 +1,15 @@
+import { NumberRange } from '@/app/quadratic-core-types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/shared/shadcn/ui/accordion';
-import { ValidationData } from './useValidationData';
-import { ValidationInput, ValidationMoreOptions, ValidationUICheckbox } from './ValidationUI';
-import { useCallback, useMemo, useState } from 'react';
+import { Button } from '@/shared/shadcn/ui/button';
+import { cn } from '@/shared/shadcn/utils';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { Tooltip } from '@mui/material';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
-import { Button } from '@/shared/shadcn/ui/button';
-import DeleteIcon from '@mui/icons-material/Delete';
+import { useCallback, useMemo, useState } from 'react';
+import { ValidationData } from './useValidationData';
 import { ValidationUndefined } from './validationType';
-import { NumberRange } from '@/app/quadratic-core-types';
-import { cn } from '@/shared/shadcn/utils';
+import { ValidationInput } from './ValidationUI/ValidationInput';
+import { ValidationMoreOptions, ValidationUICheckbox } from './ValidationUI/ValidationUI';
 
 interface Props {
   validationData: ValidationData;

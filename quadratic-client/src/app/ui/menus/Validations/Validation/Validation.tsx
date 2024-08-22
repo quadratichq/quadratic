@@ -15,7 +15,7 @@ import { ValidationNone } from './ValidationNone';
 import { ValidationNumber } from './ValidationNumber';
 import { ValidationText } from './ValidationText';
 import { ValidationRuleSimple } from './validationType';
-import { ValidationDropdown } from './ValidationUI';
+import { ValidationDropdown } from './ValidationUI/ValidationUI';
 
 const CRITERIA_OPTIONS: { value: ValidationRuleSimple; label: string }[] = [
   { value: 'none', label: 'Message only' },

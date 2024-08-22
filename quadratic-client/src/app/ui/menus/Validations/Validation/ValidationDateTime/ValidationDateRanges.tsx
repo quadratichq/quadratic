@@ -1,8 +1,7 @@
 import { DateTimeRange } from '@/app/quadratic-core-types';
 import { numberToDate, userDateToNumber } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { ValidationCalendar } from '@/app/ui/menus/Validations/Validation/ValidationCalendar';
 import { ValidationDateTimeData } from '@/app/ui/menus/Validations/Validation/ValidationDateTime/useValidationDateTime';
-import { ValidationInput } from '@/app/ui/menus/Validations/Validation/ValidationUI';
+import { ValidationDateInput } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationDateInput';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/shared/shadcn/ui/accordion';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
@@ -20,13 +19,8 @@ export const ValidationDateRanges = (props: Props) => {
     dateTimeData;
 
   const ranges: DateTimeRange[] = useMemo(() => {
-    const ranges: DateTimeRange[] = [];
-    validationDateTime.ranges.forEach((r) => {
-      if ('DateRange' in r) {
-        ranges.push(r);
-      }
-    });
-
+    const ranges: DateTimeRange[] = validationDateTime.ranges.filter((r) => 'DateRange' in r);
+    console.log('original', ranges);
     // always add an empty range to the bottom of the list
     if (!ranges.find((r) => 'DateRange' in r && r.DateRange[0] === null && r.DateRange[1] === null)) {
       ranges.push({ DateRange: [null, null] });
@@ -34,20 +28,32 @@ export const ValidationDateRanges = (props: Props) => {
     return ranges;
   }, [validationDateTime.ranges]);
 
-  const [rangeError, setRangeError] = useState<number[]>([]);
+  const [rangeError, setRangeError] = useState<Map<number, { text: string; type: string }>>(new Map());
+
+  const updateRangeError = (index: number, text?: string, type?: string) => {
+    setRangeError((rangeError) => {
+      const newRangeError = new Map(rangeError);
+      if (text && type) {
+        newRangeError.set(index, { text, type });
+      } else {
+        newRangeError.delete(index);
+      }
+      return newRangeError;
+    });
+  };
+
   const changeRange = useCallback(
     (index: number, value: string, type: 'start' | 'end') => {
       let date: bigint | null;
       if (value.trim() === '') {
+        // if we're in a new range, then we can just return because there's
+        // nothing to update.
+        if (index === -1) return;
         date = null;
       } else {
         date = userDateToNumber(value) ?? null;
         if (!date) {
-          setRangeError((rangeError) => {
-            const r = rangeError.filter((r) => r !== index);
-            r.push(index);
-            return r;
-          });
+          updateRangeError(index, `Invalid ${type} date`, type);
           return;
         }
       }
@@ -63,36 +69,24 @@ export const ValidationDateRanges = (props: Props) => {
       if (type === 'start') {
         // check for error (min > max)
         if (current.DateRange[1] !== null && date && date > current.DateRange[1]) {
-          setRangeError((rangeError) => {
-            const r = rangeError.filter((r) => r !== index);
-            r.push(index);
-            return r;
-          });
+          updateRangeError(index, 'Range start must be before end', type);
           return;
         }
 
         current.DateRange[0] = date ? date : null;
 
         // remove any errors in this range
-        setRangeError((rangeError) => {
-          return rangeError.filter((r) => r !== index);
-        });
+        updateRangeError(index);
       } else {
         // check for error (max < min)
         if (current.DateRange[0] !== null && date && date < current.DateRange[0]) {
-          setRangeError((rangeError) => {
-            const r = rangeError.filter((r) => r !== index);
-            r.push(index);
-            return r;
-          });
+          updateRangeError(index, 'Range end must be after start', type);
           return;
         }
         current.DateRange[1] = date ? BigInt(date) : null;
 
         // remove any errors in this range
-        setRangeError((rangeError) => {
-          return rangeError.filter((r) => r !== index);
-        });
+        updateRangeError(index);
       }
 
       const ranges: DateTimeRange[] = validationDateTime.ranges.filter((_, i) => i !== index);
@@ -114,6 +108,7 @@ export const ValidationDateRanges = (props: Props) => {
         ...validationDateTime,
         ranges,
       });
+      updateRangeError(index);
     },
     [setValidationDateTime, validationDateTime]
   );
@@ -134,7 +129,7 @@ export const ValidationDateRanges = (props: Props) => {
     }
     return i;
   };
-
+  console.log(ranges);
   return (
     <Accordion
       type="single"
@@ -164,51 +159,31 @@ export const ValidationDateRanges = (props: Props) => {
               <div className="flex w-full flex-col" key={index}>
                 <div className="mb-4 flex w-full items-center gap-2">
                   <div className="flex w-full flex-col gap-2">
-                    <ValidationInput
-                      className="w-full"
+                    <ValidationDateInput
                       placeholder="Start Date"
                       disabled={readOnly}
                       value={start}
                       onChange={(value) => changeRange(i, value, 'start')}
                       onEnter={onEnter}
-                      showOnFocus={
-                        <ValidationCalendar
-                          singleDate
-                          dates={start ? [new Date(start)] : []}
-                          setDates={(dates) => {
-                            changeRange(i, dates, 'start');
-                            return true;
-                          }}
-                          fallbackMonth={end ? new Date(end) : undefined}
-                        />
-                      }
+                      clear={rangeError.get(i)?.type === 'start'}
+                      error={rangeError.get(i)?.type === 'start' ? rangeError.get(i)?.text : undefined}
                     />
-                    <ValidationInput
+                    <ValidationDateInput
                       placeholder="End Date"
                       disabled={readOnly}
                       value={end}
                       onChange={(value) => changeRange(i, value, 'end')}
                       onEnter={onEnter}
-                      showOnFocus={
-                        <ValidationCalendar
-                          singleDate
-                          dates={end ? [new Date(end)] : undefined}
-                          fallbackMonth={start ? new Date(start) : undefined}
-                          setDates={(dates) => {
-                            changeRange(i, dates, 'end');
-                            return true;
-                          }}
-                        />
-                      }
+                      clear={rangeError.get(i)?.type === 'end'}
+                      error={rangeError.get(i)?.type === 'end' ? rangeError.get(i)?.text : undefined}
                     />
                   </div>
-                  <Button className={cn('grow-0 px-2', i !== -1 ? '' : 'invisible')} onClick={() => removeRange(i)}>
-                    <DeleteIcon />
-                  </Button>
+                  {ranges.length !== 1 && (
+                    <Button className={cn('grow-0 px-2', i !== -1 ? '' : 'invisible')} onClick={() => removeRange(i)}>
+                      <DeleteIcon />
+                    </Button>
+                  )}
                 </div>
-                {rangeError.includes(i) && (
-                  <div className="mb-2 text-xs text-red-500">Range start must be before end</div>
-                )}
               </div>
             );
           })}
