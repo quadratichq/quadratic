@@ -1,5 +1,6 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { DOCUMENTATION_DATE_TIME_FORMATTING } from '@/shared/constants/urls';
 import { Label } from '@/shared/shadcn/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/shared/shadcn/ui/radio-group';
 import { cn } from '@/shared/shadcn/utils';
@@ -45,7 +46,9 @@ const RadioEntry = (props: RadioEntryProps) => {
 const customHelp = (
   <div className="h-full cursor-pointer" onClick={() => console.log('open help for date time formats')}>
     <Tooltip title="Help with custom date and time formats" className="align-super">
-      <HelpOutlineIcon sx={{ width: '0.85rem', height: '0.85rem' }} />
+      <a href={DOCUMENTATION_DATE_TIME_FORMATTING} target="_blank" title="Open help in another tab" rel="noreferrer">
+        <HelpOutlineIcon sx={{ width: '0.85rem', height: '0.85rem' }} />
+      </a>
     </Tooltip>
   </div>
 );
