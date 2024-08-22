@@ -58,11 +58,14 @@ export const ConnectionTypeDetailsMysqlSchema = ConnectionTypeDetailsPostgresSch
  * =============================================================================
  */
 
+export const ConnectionListSchema = z.array(
+  ConnectionSchema.pick({ uuid: true, name: true, createdDate: true, type: true })
+);
+export type ConnectionList = z.infer<typeof ConnectionListSchema>;
+
 export const ApiSchemasConnections = {
   // List connections
-  '/v0/teams/:uuid/connections.GET.response': z.array(
-    ConnectionSchema.pick({ uuid: true, name: true, createdDate: true, type: true })
-  ),
+  '/v0/teams/:uuid/connections.GET.response': ConnectionListSchema,
 
   // Create connection
   '/v0/team/:uuid/connections.POST.request': ConnectionSchema.pick({

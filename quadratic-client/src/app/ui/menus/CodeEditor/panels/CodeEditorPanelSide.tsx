@@ -1,35 +1,23 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
-import { SchemaViewer } from '@/app/ui/components/SchemaViewer';
 import { AiAssistant } from '@/app/ui/menus/CodeEditor/AiAssistant';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { PanelBox, calculatePanelBoxMinimizedSize } from '@/app/ui/menus/CodeEditor/panels/PanelBox';
 import { useCodeEditorContainer } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorContainer';
 import { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRecoilValue } from 'recoil';
-import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { ResizeControl } from './ResizeControl';
 
 interface Props {
   codeEditorPanelData: CodeEditorPanelData;
-  showSchemaViewer: boolean;
+  schemaBrowser: React.ReactNode | undefined;
   showAiAssistant: boolean;
 }
 
-export function CodeEditorPanelSide({ showSchemaViewer, showAiAssistant, codeEditorPanelData }: Props) {
-  const {
-    userMakingRequest: { teamPermissions },
-  } = useFileRouteLoaderData();
+export function CodeEditorPanelSide({ schemaBrowser, showAiAssistant, codeEditorPanelData }: Props) {
   const container = useCodeEditorContainer();
   const minimizedSize = useMemo(() => {
     const minimizedSize = calculatePanelBoxMinimizedSize();
     return minimizedSize;
   }, []);
-
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const isConnection = codeCellIsAConnection(editorInteractionState.mode);
 
   const [containerHeight, setContainerHeight] = useState(0);
   useEffect(() => {
@@ -149,7 +137,7 @@ export function CodeEditorPanelSide({ showSchemaViewer, showAiAssistant, codeEdi
         </>
       )}
 
-      {showSchemaViewer && (
+      {schemaBrowser && (
         <>
           <ResizeControl
             style={{ top: panels[0].height + panels[1].height }}
@@ -168,7 +156,7 @@ export function CodeEditorPanelSide({ showSchemaViewer, showAiAssistant, codeEdi
             toggleOpen={panels[2].toggleOpen}
             height={panels[2].height}
           >
-            <SchemaViewer />
+            {schemaBrowser}
           </PanelBox>
         </>
       )}

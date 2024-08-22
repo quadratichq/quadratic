@@ -469,6 +469,10 @@ class InlineEditorHandler {
     this.hideDiv();
   }
 
+  detach() {
+    this.div = undefined;
+  }
+
   // Returns whether we are editing a formula.
   isEditingFormula() {
     return this.open && this.formula;

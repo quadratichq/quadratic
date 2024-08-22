@@ -1,5 +1,3 @@
-export type DragAndDropFileType = 'csv' | 'excel' | 'parquet';
-
 export function readFileAsArrayBuffer(file: File): Promise<Uint8Array> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -59,3 +57,29 @@ export function isGrid(file: File): boolean {
 export function isParquet(file: File): boolean {
   return file.type === 'application/vnd.apache.parquet' || hasExtensions(file.name, ['parquet', 'parq', 'pqt']);
 }
+
+export const getFileType = (file: File) => {
+  if (isCsv(file)) return 'csv';
+  if (isExcel(file)) return 'excel';
+  if (isParquet(file)) return 'parquet';
+  if (isGrid(file)) return 'grid';
+
+  throw new Error(`Unsupported file type`);
+};
+
+export const uploadFile = async (fileTypes: string[]): Promise<File[]> => {
+  const files = await new Promise<File[]>((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = fileTypes.join(',');
+    input.multiple = true;
+    input.onchange = () => {
+      if (!input.files) return;
+      resolve(Array.from(input.files));
+    };
+    input.click();
+  });
+  return files;
+};
+
+export const supportedFileTypes = ['.grid', '.xlsx', '.xls', '.csv', '.parquet', '.parq', '.pqt'];

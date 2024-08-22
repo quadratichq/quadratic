@@ -52,8 +52,7 @@ impl UnsavedTransactions {
         let reverse = pending.to_undo_transaction();
         match self
             .iter_mut()
-            .enumerate()
-            .find(|(_, unsaved_transaction)| unsaved_transaction.id() == forward.id)
+            .find(|unsaved_transaction| unsaved_transaction.id() == forward.id)
         {
             None => {
                 let transaction = UnsavedTransaction {
@@ -72,7 +71,7 @@ impl UnsavedTransactions {
                 }
                 self.transactions.push(transaction);
             }
-            Some((_, unsaved_transaction)) => {
+            Some(unsaved_transaction) => {
                 unsaved_transaction.forward = forward;
                 unsaved_transaction.reverse = reverse;
                 if cfg!(target_family = "wasm") && send {

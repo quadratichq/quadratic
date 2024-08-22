@@ -1,14 +1,11 @@
 use uuid::Uuid;
 
 use super::GridController;
-use crate::{
-    controller::{
-        active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::Operation,
-    },
-    error_core::Result,
-    grid::{js_types::JsRowHeight, SheetId},
-};
+use crate::controller::active_transactions::pending_transaction::PendingTransaction;
+use crate::controller::operations::operation::Operation;
+use crate::error_core::Result;
+use crate::grid::js_types::JsRowHeight;
+use crate::grid::SheetId;
 
 impl GridController {
     pub fn start_auto_resize_row_heights(
@@ -16,18 +13,18 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         rows: Vec<i64>,
-    ) {
+    ) -> bool {
         if (!cfg!(target_family = "wasm") && !cfg!(test))
             || !transaction.is_user()
             || rows.is_empty()
         {
-            return;
+            return false;
         }
 
         if let Some(sheet) = self.try_sheet(sheet_id) {
             let mut auto_resize_rows = sheet.get_auto_resize_rows(rows);
             if auto_resize_rows.is_empty() {
-                return;
+                return false;
             }
             auto_resize_rows.sort();
             if let Ok(rows_string) = serde_json::to_string(&auto_resize_rows) {
@@ -40,6 +37,7 @@ impl GridController {
                 // as we will not receive renderer callback during tests and the transaction will never complete
                 if !cfg!(test) {
                     self.transactions.add_async_transaction(transaction);
+                    return true;
                 }
             } else {
                 dbgjs!("[control_transactions] start_auto_resize_row_heights: Failed to serialize auto resize rows");
@@ -47,6 +45,7 @@ impl GridController {
         } else {
             dbgjs!("[control_transactions] start_auto_resize_row_heights: Sheet not found");
         }
+        false
     }
 
     pub fn complete_auto_resize_row_heights(
@@ -63,33 +62,32 @@ impl GridController {
             });
         }
         self.start_transaction(&mut transaction);
-        self.finalize_transaction(&mut transaction);
+        self.finalize_transaction(transaction);
         Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        controller::{
-            active_transactions::pending_transaction::PendingTransaction,
-            execution::run_code::get_cells::JsGetCellResponse, operations::operation::Operation,
-            transaction_types::JsCodeResult, GridController,
-        },
-        grid::{
-            formats::{format_update::FormatUpdate, Formats},
-            js_types::JsRowHeight,
-            CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, NumericFormat,
-            NumericFormatKind, RenderSize, SheetId,
-        },
-        selection::Selection,
-        sheet_offsets::resize_transient::TransientResize,
-        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
-        CellValue, Pos, SheetPos, SheetRect,
-    };
-
     use bigdecimal::BigDecimal;
     use serial_test::serial;
+
+    use crate::controller::active_transactions::pending_transaction::PendingTransaction;
+    use crate::controller::execution::run_code::get_cells::JsGetCellResponse;
+    use crate::controller::operations::operation::Operation;
+    use crate::controller::transaction_types::JsCodeResult;
+    use crate::controller::GridController;
+    use crate::grid::formats::format_update::FormatUpdate;
+    use crate::grid::formats::Formats;
+    use crate::grid::js_types::JsRowHeight;
+    use crate::grid::{
+        CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, NumericFormat, NumericFormatKind,
+        RenderSize, SheetId,
+    };
+    use crate::selection::Selection;
+    use crate::sheet_offsets::resize_transient::TransientResize;
+    use crate::wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count};
+    use crate::{CellValue, Pos, SheetPos, SheetRect};
 
     fn mock_auto_resize_row_heights(
         gc: &mut GridController,
@@ -725,6 +723,59 @@ mod tests {
 
         // transaction should be completed
         let async_transaction = gc.transactions.get_async_transaction(transaction_id);
+        assert!(async_transaction.is_err());
+    }
+
+    #[test]
+    #[serial]
+    fn test_transaction_save_when_auto_resize_row_heights_when_not_executed() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos {
+            x: 0,
+            y: 0,
+            sheet_id,
+        };
+        // set wrap
+        gc.set_cell_wrap(sheet_pos.into(), Some(CellWrap::Wrap), None);
+
+        // manually resize row 0
+        gc.commit_offsets_resize(
+            sheet_id,
+            TransientResize {
+                row: Some(0),
+                column: None,
+                old_size: gc.sheet(sheet_id).offsets.row_height(0),
+                new_size: 40.0,
+            },
+            None,
+        );
+
+        let prev_transaction_id = gc.last_transaction().unwrap().id;
+
+        clear_js_calls();
+        // set cell value, should not trigger auto resize row heights because manually resized
+        gc.set_cell_value(
+            sheet_pos,
+            "test_auto_resize_row_heights_on_user_transaction_only".to_string(),
+            None,
+        );
+        // confirm no auto resize row heights call
+        expect_js_call_count("jsRequestRowHeights", 0, true);
+
+        let next_transaction = gc.last_transaction().unwrap();
+
+        // confirm new transaction save
+        assert_ne!(prev_transaction_id, next_transaction.id);
+
+        // confirm new transaction has set cell value operation
+        assert!(matches!(
+            next_transaction.operations[0],
+            Operation::SetCellValues { .. }
+        ));
+
+        // confirm no pending async transaction
+        let async_transaction = gc.transactions.get_async_transaction(next_transaction.id);
         assert!(async_transaction.is_err());
     }
 }

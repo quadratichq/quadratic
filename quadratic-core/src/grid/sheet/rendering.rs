@@ -1096,8 +1096,6 @@ mod tests {
         ];
         let sheet = gc.sheet(sheet_id);
         let expected = sheet.get_render_cells(Rect::new(0, 0, 2, 0));
-        dbg!(&expected);
-        dbg!(&cells);
         assert_eq!(expected.len(), cells.len());
         assert!(expected.iter().all(|cell| cells.contains(cell)));
 

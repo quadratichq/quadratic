@@ -1,3 +1,4 @@
+import { Coordinate } from '@/app/gridGL/types/size';
 import {
   CellAlign,
   CellFormatSummary,
@@ -47,20 +48,6 @@ export interface CoreClientLoad {
   error?: string;
 }
 
-export interface ClientCoreUpgradeGridFile {
-  type: 'clientCoreUpgradeGridFile';
-  grid: Uint8Array;
-  sequenceNumber: number;
-  id: number;
-}
-
-export interface CoreClientUpgradeFile {
-  type: 'coreClientUpgradeGridFile';
-  grid: Uint8Array;
-  version: string;
-  id: number;
-}
-
 export interface ClientCoreInit {
   type: 'clientCoreInit';
   env: ImportMetaEnv;
@@ -101,7 +88,7 @@ export interface ClientCoreExport {
 
 export interface CoreClientExport {
   type: 'coreClientExport';
-  grid: Uint8Array;
+  grid: ArrayBuffer;
   id: number;
 }
 
@@ -418,38 +405,38 @@ export interface ClientCoreSetCommas {
   cursor?: string;
 }
 
-export interface ClientCoreImportCsv {
-  type: 'clientCoreImportCsv';
-  sheetId: string;
-  x: number;
-  y: number;
+export interface ClientCoreUpgradeGridFile {
+  type: 'clientCoreUpgradeGridFile';
+  grid: ArrayBuffer;
+  sequenceNumber: number;
   id: number;
+}
+
+export interface CoreClientUpgradeFile {
+  type: 'coreClientUpgradeGridFile';
+  id: number;
+  contents?: ArrayBuffer;
+  version?: string;
+  error?: string;
+}
+
+export interface ClientCoreImportFile {
+  type: 'clientCoreImportFile';
   file: ArrayBuffer;
   fileName: string;
+  fileType: 'csv' | 'parquet' | 'excel';
+  sheetId?: string;
+  location?: Coordinate;
   cursor?: string;
+  id: number;
 }
 
-export interface CoreClientImportCsv {
-  type: 'coreClientImportCsv';
+export interface CoreClientImportFile {
+  type: 'coreClientImportFile';
   id: number;
-  error: string | undefined;
-}
-
-export interface ClientCoreImportParquet {
-  type: 'clientCoreImportParquet';
-  sheetId: string;
-  x: number;
-  y: number;
-  id: number;
-  file: ArrayBuffer;
-  fileName: string;
-  cursor?: string;
-}
-
-export interface CoreClientImportParquet {
-  type: 'coreClientImportParquet';
-  id: number;
-  error: string | undefined;
+  contents?: ArrayBuffer;
+  version?: string;
+  error?: string;
 }
 
 export interface ClientCoreDeleteCellValues {
@@ -834,22 +821,6 @@ export interface CoreClientUpdateCodeCell {
   renderCodeCell?: JsRenderCodeCell;
 }
 
-export interface ClientCoreImportExcel {
-  type: 'clientCoreImportExcel';
-  file: Uint8Array;
-  fileName: string;
-  cursor?: string;
-  id: number;
-}
-
-export interface CoreClientImportExcel {
-  type: 'coreClientImportExcel';
-  id: number;
-  contents?: Uint8Array;
-  version?: string;
-  error?: string;
-}
-
 export interface ClientCoreCancelExecution {
   type: 'clientCoreCancelExecution';
   language: CodeCellLanguage;
@@ -1022,8 +993,7 @@ export type ClientCoreMessage =
   | ClientCoreClearFormatting
   | ClientCoreGetRenderCell
   | ClientCoreSetCommas
-  | ClientCoreImportCsv
-  | ClientCoreImportParquet
+  | ClientCoreImportFile
   | ClientCoreDeleteCellValues
   | ClientCoreSetCodeCellValue
   | ClientCoreAddSheet
@@ -1055,7 +1025,6 @@ export type ClientCoreMessage =
   | ClientCoreInit
   | ClientCoreInitPython
   | ClientCoreInitJavascript
-  | ClientCoreImportExcel
   | ClientCoreCancelExecution
   | ClientCoreGetJwt
   | ClientCoreMoveCells
@@ -1081,8 +1050,7 @@ export type CoreClientMessage =
   | CoreClientGetCellFormatSummary
   | CoreClientSummarizeSelection
   | CoreClientGetRenderCell
-  | CoreClientImportCsv
-  | CoreClientImportParquet
+  | CoreClientImportFile
   | CoreClientAddSheet
   | CoreClientSheetInfo
   | CoreClientSheetFills
@@ -1113,7 +1081,6 @@ export type CoreClientMessage =
   | CoreClientTransactionStart
   | CoreClientTransactionProgress
   | CoreClientUpdateCodeCell
-  | CoreClientImportExcel
   | CoreClientMultiplayerState
   | CoreClientConnectionState
   | CoreClientOfflineTransactions

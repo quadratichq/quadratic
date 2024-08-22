@@ -3,18 +3,21 @@ import mixpanel from 'mixpanel-browser';
 import { useEffect } from 'react';
 import { useFetcher } from 'react-router-dom';
 
-export type SchemaData = Awaited<ReturnType<typeof connectionClient.schemas.get>>;
+type SchemaData = Awaited<ReturnType<typeof connectionClient.schemas.get>>;
 
 /**
  * Anywhere we want to access the data for the connection schema, we use this hook.
  * It uses the connection UUID as the fetcher key, so the data persists on the
  * fetcher across multiple renders and different connections.
  *
- * @param {Object} arg
- * @param {string} arg.uuid - The connection UUID
- * @param {string} arg.type - The connection type
+ * This is primarily useful when you’re using this inside of the app (for example,
+ * the AI assistant needs to know the connection schema).
+ *
+ * Because it’s used this way, the props can be undefined because in the app
+ * we may be dealing with a cell that is not a connection. Or the connection
+ * no longer exists, even though it's in the file.
  */
-export const useConnectionSchemaFetcher = ({ uuid, type }: { uuid: string | undefined; type: string | undefined }) => {
+export const useConnectionSchemaBrowser = ({ type, uuid }: { uuid: string | undefined; type: string | undefined }) => {
   const fetcher = useFetcher<{ ok: boolean; data: SchemaData }>({
     key: uuid ? `SCHEMA_FOR_CONNECTION_${uuid}` : undefined,
   });
@@ -32,11 +35,15 @@ export const useConnectionSchemaFetcher = ({ uuid, type }: { uuid: string | unde
     }
   }, [fetcher, fetcherUrl]);
 
+  const reloadSchema = () => {
+    mixpanel.track('[Connections].schemaViewer.refresh');
+    fetcher.load(fetcherUrl);
+  };
+
   return {
-    schemaFetcher: fetcher,
-    reloadSchema: () => {
-      mixpanel.track('[Connections].schemaViewer.refresh');
-      fetcher.load(fetcherUrl);
-    },
+    // undefined = hasn't loaded yet, null = error, otherwise the data
+    data: fetcher.data === undefined ? undefined : fetcher.data.ok ? fetcher.data.data : null,
+    isLoading: fetcher.state !== 'idle',
+    reloadSchema,
   };
 };
