@@ -15,11 +15,6 @@ use lexicon_fractional_index::key_between;
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 
 use super::operation::Operation;
-use crate::cell_values::CellValues;
-use crate::controller::GridController;
-use crate::grid::file::sheet_schema::export_sheet;
-use crate::grid::{CodeCellLanguage, Sheet, SheetId};
-use crate::{CellValue, CodeCellValue, Pos, SheetPos};
 
 const IMPORT_LINES_PER_OPERATION: u32 = 10000;
 
@@ -504,7 +499,7 @@ mod test {
 
         let pos = Pos { x: 0, y: 0 };
         let csv = "2024-12-21,13:23:00,2024-12-21 13:23:00\n".to_string();
-        gc.import_csv(sheet_id, csv.as_bytes(), "csv", pos, None)
+        gc.import_csv(sheet_id, csv.as_bytes().to_vec(), "csv", pos, None)
             .unwrap();
 
         assert_eq!(
@@ -652,7 +647,7 @@ mod test {
 
     #[test]
     fn import_excel_date_time() {
-        let mut gc = GridController::test_blank();
+        let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/date_time.xlsx");
         gc.import_excel(file.to_vec(), "excel", None).unwrap();
 

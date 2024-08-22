@@ -88,10 +88,7 @@ mod tests {
     use chrono::{NaiveDate, NaiveDateTime};
     use serial_test::{parallel, serial};
 
-    use crate::grid::{CodeCellLanguage, CodeRunResult};
-    use crate::test_util::{assert_cell_value_row, print_table};
-    use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
-    use crate::{CellValue, Rect, RunErrorMsg};
+    use crate::wasm_bindings::js::expect_js_call_count;
 
     fn read_test_csv_file(file_name: &str) -> Vec<u8> {
         let path = format!("../quadratic-rust-shared/data/csv/{file_name}");
@@ -204,8 +201,7 @@ mod tests {
     #[test]
     #[parallel]
     fn imports_a_simple_excel_file() {
-        let mut gc = GridController::test_blank();
-        let pos = Pos { x: 0, y: 0 };
+        let mut gc = GridController::new_blank();
         let file: Vec<u8> = std::fs::read(EXCEL_FILE).expect("Failed to read file");
         let _ = gc.import_excel(file, "basic.xlsx", None);
         let sheet_id = gc.grid.sheets()[0].id;

@@ -784,8 +784,9 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_date_time_format(Selection::pos(0, 0, sheet_id), Some("%H".to_string()), None)
             .unwrap();
-        let exported = file::export(gc.grid()).unwrap();
-        let imported = file::import(&exported).unwrap();
+        let grid = gc.grid().clone();
+        let exported = file::export(grid).unwrap();
+        let imported = file::import(exported).unwrap();
         assert_eq!(imported, *gc.grid());
     }
 }

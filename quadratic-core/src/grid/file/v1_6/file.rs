@@ -32,9 +32,9 @@ pub fn export_cell_value(cell_value: CellValue) -> current::CellValue {
         CellValue::Logical(logical) => current::CellValue::Logical(logical),
         CellValue::Instant(instant) => current::CellValue::Instant(instant.to_string()),
         CellValue::Duration(duration) => current::CellValue::Duration(duration.to_string()),
-        CellValue::Date(d) => current::CellValue::Date(*d),
-        CellValue::Time(t) => current::CellValue::Time(*t),
-        CellValue::DateTime(dt) => current::CellValue::DateTime(*dt),
+        CellValue::Date(d) => current::CellValue::Date(d),
+        CellValue::Time(t) => current::CellValue::Time(t),
+        CellValue::DateTime(dt) => current::CellValue::DateTime(dt),
         CellValue::Error(error) => {
             current::CellValue::Error(current::RunError::from_grid_run_error(*error))
         }
