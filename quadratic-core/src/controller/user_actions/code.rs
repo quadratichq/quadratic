@@ -35,3 +35,47 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::RunCode);
     }
 }
+
+#[cfg(test)]
+#[serial_test::parallel]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_grid_formula_results() {
+        let mut g = GridController::default();
+
+        let sheet_id = g.sheet_ids()[0];
+
+        g.set_code_cell(
+            pos![A1].to_sheet_pos(sheet_id),
+            CodeCellLanguage::Formula,
+            "=2 / {1;2;0}".to_owned(),
+            None,
+        );
+        g.set_code_cell(
+            pos![B1].to_sheet_pos(sheet_id),
+            CodeCellLanguage::Formula,
+            "=A1:A3".to_owned(),
+            None,
+        );
+        g.set_cell_value(pos![C1].to_sheet_pos(sheet_id), "meow".to_string(), None);
+        g.rerun_all_code_cells(None);
+
+        let sheet = g.try_sheet(sheet_id).unwrap();
+        let get_cell = |pos| {
+            let val = sheet.get_cell_for_formula(pos);
+            println!("{pos} contains {val:?}", pos = pos.a1_string());
+            val
+        };
+
+        assert!(matches!(get_cell(pos![A1]), crate::CellValue::Number(_)));
+        assert!(matches!(get_cell(pos![A2]), crate::CellValue::Number(_)));
+        assert!(matches!(get_cell(pos![A3]), crate::CellValue::Error(_)));
+        assert!(matches!(get_cell(pos![B1]), crate::CellValue::Number(_)));
+        assert!(matches!(get_cell(pos![B2]), crate::CellValue::Number(_)));
+        assert!(matches!(get_cell(pos![B3]), crate::CellValue::Error(_)));
+        assert!(matches!(get_cell(pos![C1]), crate::CellValue::Text(_)));
+        assert!(matches!(get_cell(pos![C2]), crate::CellValue::Blank));
+    }
+}

@@ -16,10 +16,12 @@ import {
   JsRenderFill,
   JsRowHeight,
   JsSheetFill,
+  JsValidationWarning,
   Selection,
   SheetBounds,
   SheetInfo,
   TransactionName,
+  Validation,
 } from '@/app/quadratic-core-types';
 import { coreConnection } from '@/app/web-workers/quadraticCore/worker/coreConnection';
 import { MultiplayerState } from '../../multiplayerWebWorker/multiplayerClientMessages';
@@ -82,7 +84,14 @@ declare var self: WorkerGlobalScope &
     ) => void;
     sendUndoRedo: (undo: boolean, redo: boolean) => void;
     sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
+    sendSheetValidations: (sheetId: string, validations: Validation[]) => void;
     sendResizeRowHeightsClient(sheetId: string, rowHeights: string): void;
+    sendRenderValidationWarnings: (
+      sheetId: string,
+      hashX: number,
+      hashY: number,
+      validationWarnings: JsValidationWarning[]
+    ) => void;
     sendMultiplayerSynced: () => void;
   };
 
@@ -115,13 +124,19 @@ class CoreClient {
     self.sendUpdateCodeCell = coreClient.sendUpdateCodeCell;
     self.sendUndoRedo = coreClient.sendUndoRedo;
     self.sendImage = coreClient.sendImage;
+    self.sendSheetValidations = coreClient.sendSheetValidations;
     self.sendResizeRowHeightsClient = coreClient.sendResizeRowHeights;
+    self.sendRenderValidationWarnings = coreClient.sendRenderValidationWarnings;
     self.sendMultiplayerSynced = coreClient.sendMultiplayerSynced;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
-  private send(message: CoreClientMessage) {
-    self.postMessage(message);
+  private send(message: CoreClientMessage, transfer?: Transferable) {
+    if (transfer) {
+      self.postMessage(message, [transfer]);
+    } else {
+      self.postMessage(message);
+    }
   }
 
   private handleMessage = async (e: MessageEvent<ClientCoreMessage>) => {
@@ -253,36 +268,14 @@ class CoreClient {
         await core.setCurrency(e.data.selection, e.data.symbol, e.data.cursor);
         return;
 
-      case 'clientCoreImportCsv':
-        try {
-          const error = await core.importCsv(
-            e.data.sheetId,
-            e.data.x,
-            e.data.y,
-            e.data.file,
-            e.data.fileName,
-            e.data.cursor
-          );
-          this.send({ type: 'coreClientImportCsv', id: e.data.id, error });
-        } catch (error) {
-          this.send({ type: 'coreClientImportCsv', id: e.data.id, error: error as string });
-        }
+      case 'clientCoreUpgradeGridFile':
+        const gridResult = await core.upgradeGridFile(e.data.grid, e.data.sequenceNumber);
+        this.send({ type: 'coreClientUpgradeGridFile', id: e.data.id, ...gridResult }, gridResult.contents);
         return;
 
-      case 'clientCoreImportParquet':
-        try {
-          const error = await core.importParquet(
-            e.data.sheetId,
-            e.data.x,
-            e.data.y,
-            e.data.file,
-            e.data.fileName,
-            e.data.cursor
-          );
-          this.send({ type: 'coreClientImportParquet', id: e.data.id, error });
-        } catch (error) {
-          this.send({ type: 'coreClientImportParquet', id: e.data.id, error: error as string });
-        }
+      case 'clientCoreImportFile':
+        const fileResult = await core.importFile(e.data);
+        this.send({ type: 'coreClientImportFile', id: e.data.id, ...fileResult }, fileResult.contents);
         return;
 
       case 'clientCoreDeleteCellValues':
@@ -332,13 +325,9 @@ class CoreClient {
         await core.redo(e.data.cursor);
         return;
 
-      case 'clientCoreUpgradeGridFile':
-        const { grid, version } = await core.upgradeGridFile(e.data.grid, e.data.sequenceNumber);
-        this.send({ type: 'coreClientUpgradeGridFile', id: e.data.id, grid, version });
-        return;
-
       case 'clientCoreExport':
-        this.send({ type: 'coreClientExport', id: e.data.id, grid: await core.export() });
+        const exportGrid = await core.export();
+        this.send({ type: 'coreClientExport', id: e.data.id, grid: exportGrid }, exportGrid);
         return;
 
       case 'clientCoreSearch':
@@ -472,10 +461,6 @@ class CoreClient {
         coreJavascript.init(e.ports[0]);
         break;
 
-      case 'clientCoreImportExcel':
-        this.send({ type: 'coreClientImportExcel', id: e.data.id, ...(await core.importExcel(e.data)) });
-        return;
-
       case 'clientCoreClearFormatting':
         core.clearFormatting(e.data.selection, e.data.cursor);
         return;
@@ -515,6 +500,66 @@ class CoreClient {
 
       case 'clientCoreMoveCells':
         core.moveCells(e.data);
+        return;
+
+      case 'clientCoreGetValidation':
+        this.send({
+          type: 'coreClientGetValidation',
+          id: e.data.id,
+          validation: core.getValidation(e.data.sheetId, e.data.validationId),
+        });
+        return;
+
+      case 'clientCoreUpdateValidation':
+        core.updateValidation(e.data.validation, e.data.cursor);
+        return;
+
+      case 'clientCoreGetValidations':
+        this.send({
+          type: 'coreClientGetValidations',
+          id: e.data.id,
+          validations: core.getValidations(e.data.sheetId),
+        });
+        return;
+
+      case 'clientCoreRemoveValidation':
+        core.removeValidation(e.data.sheetId, e.data.validationId, e.data.cursor);
+        return;
+
+      case 'clientCoreRemoveValidations':
+        core.removeValidations(e.data.sheetId, e.data.cursor);
+        return;
+
+      case 'clientCoreGetValidationFromPos':
+        this.send({
+          type: 'coreClientGetValidationFromPos',
+          id: e.data.id,
+          validation: core.getValidationFromPos(e.data.sheetId, e.data.x, e.data.y),
+        });
+        return;
+
+      case 'clientCoreGetValidationList':
+        this.send({
+          type: 'coreClientGetValidationList',
+          id: e.data.id,
+          validations: core.getValidationList(e.data.sheetId, e.data.x, e.data.y),
+        });
+        return;
+
+      case 'clientCoreGetDisplayCell':
+        this.send({
+          type: 'coreClientGetDisplayCell',
+          id: e.data.id,
+          cell: core.getDisplayCell(e.data.sheetId, e.data.x, e.data.y),
+        });
+        return;
+
+      case 'clientCoreValidateInput':
+        this.send({
+          type: 'coreClientValidateInput',
+          id: e.data.id,
+          validationId: core.validateInput(e.data.sheetId, e.data.x, e.data.y, e.data.input),
+        });
         return;
 
       default:
@@ -676,6 +721,10 @@ class CoreClient {
     this.send({ type: 'coreClientImage', sheetId, x, y, image, w, h });
   };
 
+  sendSheetValidations = (sheetId: string, validations: Validation[]) => {
+    this.send({ type: 'coreClientSheetValidations', sheetId, validations });
+  };
+
   sendResizeRowHeights = (sheetId: string, rowHeightsString: string) => {
     try {
       const rowHeights = JSON.parse(rowHeightsString) as JsRowHeight[];
@@ -683,6 +732,15 @@ class CoreClient {
     } catch (e) {
       console.error('[coreClient] sendResizeRowHeights: Error parsing JsRowHeight: ', e);
     }
+  };
+
+  sendRenderValidationWarnings = (
+    sheetId: string,
+    hashX: number | undefined,
+    hashY: number | undefined,
+    validationWarnings: JsValidationWarning[]
+  ) => {
+    this.send({ type: 'coreClientRenderValidationWarnings', sheetId, hashX, hashY, validationWarnings });
   };
 
   sendMultiplayerSynced = () => {

@@ -171,7 +171,7 @@ impl FormulaFunction {
     /// Returns the documentation string after stripping leading spaces. Leading
     /// spaces show up because we define formula docs using `/// stuff` syntax.
     pub fn docs_string(&self) -> String {
-        self.doc.replace("\n ", "\n")
+        self.doc.trim_start().replace("\n ", "\n")
     }
 
     /// Returns the autocomplete snippet for this function.

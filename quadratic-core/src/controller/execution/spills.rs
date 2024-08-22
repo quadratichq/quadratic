@@ -1,13 +1,10 @@
 // Handles all spill checking for the sheet
 
-use crate::{
-    controller::{
-        active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::Operation, GridController,
-    },
-    grid::SheetId,
-    ArraySize, Rect,
-};
+use crate::controller::active_transactions::pending_transaction::PendingTransaction;
+use crate::controller::operations::operation::Operation;
+use crate::controller::GridController;
+use crate::grid::SheetId;
+use crate::{ArraySize, Rect};
 
 impl GridController {
     /// Changes the spill error for a code_cell and adds necessary operations
@@ -17,6 +14,7 @@ impl GridController {
         sheet_id: SheetId,
         index: usize,
         spill_error: bool,
+        send_client: bool,
     ) {
         // change the spill for the first code_cell and then iterate the later code_cells.
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
@@ -33,6 +31,29 @@ impl GridController {
                     code_run: Some(run.to_owned()),
                     index,
                 });
+
+                if (cfg!(target_family = "wasm") || cfg!(test))
+                    && !transaction.is_server()
+                    && send_client
+                {
+                    if let (Some(code_cell), Some(render_code_cell)) = (
+                        sheet.edit_code_value(sheet_pos.into()),
+                        sheet.get_render_code_cell(sheet_pos.into()),
+                    ) {
+                        if let (Ok(code_cell), Ok(render_code_cell)) = (
+                            serde_json::to_string(&code_cell),
+                            serde_json::to_string(&render_code_cell),
+                        ) {
+                            crate::wasm_bindings::js::jsUpdateCodeCell(
+                                sheet_id.to_string(),
+                                sheet_pos.x,
+                                sheet_pos.y,
+                                Some(code_cell),
+                                Some(render_code_cell),
+                            );
+                        }
+                    }
+                }
             }
         }
     }
@@ -68,11 +89,16 @@ impl GridController {
     }
 
     /// Checks all code_runs for changes in spill_errors.
-    pub fn check_all_spills(&mut self, transaction: &mut PendingTransaction, sheet_id: SheetId) {
+    pub fn check_all_spills(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        sheet_id: SheetId,
+        send_client: bool,
+    ) {
         if let Some(sheet) = self.grid.try_sheet(sheet_id) {
             for index in 0..sheet.code_runs.len() {
                 if let Some(spill_error) = self.check_spill(sheet_id, index) {
-                    self.change_spill(transaction, sheet_id, index, spill_error);
+                    self.change_spill(transaction, sheet_id, index, spill_error, send_client);
                 }
             }
         }
@@ -84,18 +110,14 @@ mod tests {
     use std::collections::HashSet;
 
     use chrono::Utc;
+    use serial_test::{parallel, serial};
 
-    use crate::{
-        controller::{
-            active_transactions::pending_transaction::PendingTransaction, GridController,
-        },
-        grid::{
-            js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial},
-            CellAlign, CodeCellLanguage, CodeRun, CodeRunResult,
-        },
-        Array, CellValue, Pos, Rect, SheetPos, Value,
-    };
-    use serial_test::parallel;
+    use crate::controller::active_transactions::pending_transaction::PendingTransaction;
+    use crate::controller::GridController;
+    use crate::grid::js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial};
+    use crate::grid::{CellAlign, CodeCellLanguage, CodeRun, CodeRunResult};
+    use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
+    use crate::{Array, CellValue, Pos, Rect, SheetPos, Value};
 
     fn output_spill_error(x: i64, y: i64) -> Vec<JsRenderCell> {
         vec![JsRenderCell {
@@ -153,14 +175,14 @@ mod tests {
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert!(!sheet.code_runs[0].spill_error);
 
-        gc.check_all_spills(&mut transaction, sheet_id);
+        gc.check_all_spills(&mut transaction, sheet_id, false);
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert!(sheet.code_runs[0].spill_error);
     }
 
     #[test]
-    #[parallel]
+    #[serial]
     fn test_check_all_spills() {
         let mut gc = GridController::test();
         let mut transaction = PendingTransaction::default();
@@ -184,6 +206,8 @@ mod tests {
             None,
         );
 
+        clear_js_calls();
+
         // manually set a cell value and see if the spill error changed
         let sheet = gc.sheet_mut(sheet_id);
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(3.into()));
@@ -191,15 +215,17 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         assert!(!sheet.code_runs[0].spill_error);
 
-        gc.check_all_spills(&mut transaction, sheet_id);
+        gc.check_all_spills(&mut transaction, sheet_id, false);
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.code_runs[0].spill_error);
+        expect_js_call_count("jsUpdateCodeCell", 0, true);
 
         // remove the cell causing the spill error
         let sheet = gc.sheet_mut(sheet_id);
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Blank);
         assert_eq!(sheet.cell_value(Pos { x: 1, y: 1 }), None);
-        gc.check_all_spills(&mut transaction, sheet_id);
+        gc.check_all_spills(&mut transaction, sheet_id, true);
+        expect_js_call_count("jsUpdateCodeCell", 1, true);
         let sheet = gc.sheet(sheet_id);
         assert!(!sheet.code_runs[0].spill_error);
     }
@@ -237,7 +263,7 @@ mod tests {
         sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Text("hello".into()));
 
         let transaction = &mut PendingTransaction::default();
-        gc.check_all_spills(transaction, sheet_id);
+        gc.check_all_spills(transaction, sheet_id, false);
 
         let sheet = gc.sheet(sheet_id);
         let code_run = sheet.code_run(Pos { x: 0, y: 0 }).unwrap();

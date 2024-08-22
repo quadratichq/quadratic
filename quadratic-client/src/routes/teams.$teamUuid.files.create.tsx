@@ -66,7 +66,10 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     const {
       file: { uuid },
     } = await apiClient.files.create({ teamUuid, isPrivate });
-    return redirectDocument(ROUTES.FILE(uuid));
+    // If there's a `state=...` query param, for starting a file in a specific
+    // state, pass that along
+    const state = searchParams.get('state');
+    return redirectDocument(ROUTES.FILE(uuid) + (state ? `?state=${state}` : ''));
   } catch (error) {
     return redirect(getFailUrl(ROUTES.TEAM(teamUuid)));
   }

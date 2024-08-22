@@ -122,7 +122,7 @@ async fn remove_stale_users_in_room(
 
 #[cfg(test)]
 mod tests {
-    use quadratic_core::controller::GridController;
+    use quadratic_core::controller::{transaction::Transaction, GridController};
 
     use crate::test_util::{add_new_user_to_room, new_arc_state, operation};
 
@@ -136,12 +136,13 @@ mod tests {
         let mut grid = GridController::test();
         let transaction_id_1 = Uuid::new_v4();
         let operations_1 = operation(&mut grid, 0, 0, "1");
+        let operations = Transaction::serialize_and_compress(&vec![operations_1]).unwrap();
 
         state
             .pubsub
             .lock()
             .await
-            .push(transaction_id_1, file_id, vec![operations_1.clone()], 1)
+            .push(transaction_id_1, file_id, operations, 1)
             .await
             .unwrap();
 

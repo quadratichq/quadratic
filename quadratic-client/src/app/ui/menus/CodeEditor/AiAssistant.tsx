@@ -6,10 +6,10 @@ import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { AI } from '@/app/ui/icons';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
-import { useConnectionSchemaFetcher } from '@/app/ui/menus/CodeEditor/useConnectionSchemaFetcher';
 import { authClient } from '@/auth';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
+import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Send, Stop } from '@mui/icons-material';
 import { Avatar, CircularProgress, IconButton } from '@mui/material';
@@ -42,11 +42,8 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   const { mode, selectedCell } = useRecoilValue(editorInteractionStateAtom);
   const connection = getConnectionInfo(mode);
 
-  const { schemaFetcher } = useConnectionSchemaFetcher({ uuid: connection?.id, type: connection?.kind });
-  let schemaJsonForAi = '';
-  if (schemaFetcher.data && schemaFetcher.data.ok && schemaFetcher.data.data) {
-    schemaJsonForAi = JSON.stringify(schemaFetcher.data.data);
-  }
+  const { data: schemaData } = useConnectionSchemaBrowser({ uuid: connection?.id, type: connection?.kind });
+  const schemaJsonForAi = schemaData ? JSON.stringify(schemaData) : '';
 
   // TODO: This is only sent with the first message, we should refresh the content with each message.
   const systemMessages = [

@@ -1,3 +1,4 @@
+import { Coordinate } from '@/app/gridGL/types/size';
 import {
   CellAlign,
   CellFormatSummary,
@@ -13,6 +14,7 @@ import {
   JsRenderFill,
   JsRowHeight,
   JsSheetFill,
+  JsValidationWarning,
   MinMax,
   SearchOptions,
   Selection,
@@ -22,6 +24,7 @@ import {
   SheetRect,
   SummarizeSelectionResult,
   TransactionName,
+  Validation,
 } from '@/app/quadratic-core-types';
 import { CodeRun } from '../CodeRun';
 import { MultiplayerState } from '../multiplayerWebWorker/multiplayerClientMessages';
@@ -42,20 +45,6 @@ export interface CoreClientLoad {
   id: number;
   version?: string;
   error?: string;
-}
-
-export interface ClientCoreUpgradeGridFile {
-  type: 'clientCoreUpgradeGridFile';
-  grid: Uint8Array;
-  sequenceNumber: number;
-  id: number;
-}
-
-export interface CoreClientUpgradeFile {
-  type: 'coreClientUpgradeGridFile';
-  grid: Uint8Array;
-  version: string;
-  id: number;
 }
 
 export interface ClientCoreInit {
@@ -98,7 +87,7 @@ export interface ClientCoreExport {
 
 export interface CoreClientExport {
   type: 'coreClientExport';
-  grid: Uint8Array;
+  grid: ArrayBuffer;
   id: number;
 }
 
@@ -415,38 +404,38 @@ export interface ClientCoreSetCommas {
   cursor?: string;
 }
 
-export interface ClientCoreImportCsv {
-  type: 'clientCoreImportCsv';
-  sheetId: string;
-  x: number;
-  y: number;
+export interface ClientCoreUpgradeGridFile {
+  type: 'clientCoreUpgradeGridFile';
+  grid: ArrayBuffer;
+  sequenceNumber: number;
   id: number;
+}
+
+export interface CoreClientUpgradeFile {
+  type: 'coreClientUpgradeGridFile';
+  id: number;
+  contents?: ArrayBuffer;
+  version?: string;
+  error?: string;
+}
+
+export interface ClientCoreImportFile {
+  type: 'clientCoreImportFile';
   file: ArrayBuffer;
   fileName: string;
+  fileType: 'csv' | 'parquet' | 'excel';
+  sheetId?: string;
+  location?: Coordinate;
   cursor?: string;
+  id: number;
 }
 
-export interface CoreClientImportCsv {
-  type: 'coreClientImportCsv';
+export interface CoreClientImportFile {
+  type: 'coreClientImportFile';
   id: number;
-  error: string | undefined;
-}
-
-export interface ClientCoreImportParquet {
-  type: 'clientCoreImportParquet';
-  sheetId: string;
-  x: number;
-  y: number;
-  id: number;
-  file: ArrayBuffer;
-  fileName: string;
-  cursor?: string;
-}
-
-export interface CoreClientImportParquet {
-  type: 'coreClientImportParquet';
-  id: number;
-  error: string | undefined;
+  contents?: ArrayBuffer;
+  version?: string;
+  error?: string;
 }
 
 export interface ClientCoreDeleteCellValues {
@@ -519,6 +508,33 @@ export interface ClientCoreAutocomplete {
   fullX2: number;
   fullY2: number;
   cursor: string;
+}
+
+export interface ClientCoreUpdateValidation {
+  type: 'clientCoreUpdateValidation';
+  validation: Validation;
+  cursor: string;
+}
+
+export interface ClientCoreRemoveValidation {
+  type: 'clientCoreRemoveValidation';
+  sheetId: string;
+  validationId: string;
+  cursor: string;
+}
+
+export interface ClientCoreRemoveValidations {
+  type: 'clientCoreRemoveValidations';
+  sheetId: string;
+  cursor: string;
+}
+
+export interface ClientCoreGetValidationFromPos {
+  type: 'clientCoreGetValidationFromPos';
+  sheetId: string;
+  x: number;
+  y: number;
+  id: number;
 }
 
 //#endregion
@@ -804,22 +820,6 @@ export interface CoreClientUpdateCodeCell {
   renderCodeCell?: JsRenderCodeCell;
 }
 
-export interface ClientCoreImportExcel {
-  type: 'clientCoreImportExcel';
-  file: Uint8Array;
-  fileName: string;
-  cursor?: string;
-  id: number;
-}
-
-export interface CoreClientImportExcel {
-  type: 'coreClientImportExcel';
-  id: number;
-  contents?: Uint8Array;
-  version?: string;
-  error?: string;
-}
-
 export interface ClientCoreCancelExecution {
   type: 'clientCoreCancelExecution';
   language: CodeCellLanguage;
@@ -868,8 +868,96 @@ export interface CoreClientImage {
   h?: string;
 }
 
+export interface ClientCoreGetValidation {
+  type: 'clientCoreGetValidation';
+  id: number;
+  sheetId: string;
+  validationId: string;
+}
+
+export interface CoreClientGetValidation {
+  type: 'coreClientGetValidation';
+  id: number;
+  validation: Validation | undefined;
+}
+
+export interface ClientCoreGetValidations {
+  type: 'clientCoreGetValidations';
+  id: number;
+  sheetId: string;
+}
+
+export interface CoreClientGetValidations {
+  type: 'coreClientGetValidations';
+  id: number;
+  validations: Validation[];
+}
+
+export interface CoreClientSheetValidations {
+  type: 'coreClientSheetValidations';
+  sheetId: string;
+  validations: Validation[];
+}
+
+export interface CoreClientGetValidationFromPos {
+  type: 'coreClientGetValidationFromPos';
+  id: number;
+  validation: Validation | undefined;
+}
+
+export interface ClientCoreGetValidationList {
+  type: 'clientCoreGetValidationList';
+  id: number;
+  sheetId: string;
+  x: number;
+  y: number;
+}
+
+export interface CoreClientGetValidationList {
+  type: 'coreClientGetValidationList';
+  id: number;
+  validations: string[];
+}
+
+export interface ClientCoreGetDisplayCell {
+  type: 'clientCoreGetDisplayCell';
+  sheetId: string;
+  x: number;
+  y: number;
+  id: number;
+}
+
+export interface CoreClientGetDisplayCell {
+  type: 'coreClientGetDisplayCell';
+  cell?: string;
+  id: number;
+}
+
+export interface CoreClientRenderValidationWarnings {
+  type: 'coreClientRenderValidationWarnings';
+  sheetId: string;
+  hashX: number | undefined;
+  hashY: number | undefined;
+  validationWarnings: JsValidationWarning[];
+}
+
 export interface CoreClientMultiplayerSynced {
   type: 'coreClientMultiplayerSynced';
+}
+
+export interface ClientCoreValidateInput {
+  type: 'clientCoreValidateInput';
+  id: number;
+  sheetId: string;
+  x: number;
+  y: number;
+  input: string;
+}
+
+export interface CoreClientValidateInput {
+  type: 'coreClientValidateInput';
+  id: number;
+  validationId: string | undefined;
 }
 
 export type ClientCoreMessage =
@@ -896,8 +984,7 @@ export type ClientCoreMessage =
   | ClientCoreClearFormatting
   | ClientCoreGetRenderCell
   | ClientCoreSetCommas
-  | ClientCoreImportCsv
-  | ClientCoreImportParquet
+  | ClientCoreImportFile
   | ClientCoreDeleteCellValues
   | ClientCoreSetCodeCellValue
   | ClientCoreAddSheet
@@ -929,14 +1016,22 @@ export type ClientCoreMessage =
   | ClientCoreInit
   | ClientCoreInitPython
   | ClientCoreInitJavascript
-  | ClientCoreImportExcel
   | ClientCoreCancelExecution
   | ClientCoreGetJwt
   | ClientCoreMoveCells
   | ClientCoreGetFormatAll
   | ClientCoreGetFormatColumn
   | ClientCoreGetFormatRow
-  | ClientCoreGetFormatCell;
+  | ClientCoreGetFormatCell
+  | ClientCoreGetValidation
+  | ClientCoreGetValidations
+  | ClientCoreUpdateValidation
+  | ClientCoreRemoveValidation
+  | ClientCoreRemoveValidations
+  | ClientCoreGetValidationFromPos
+  | ClientCoreGetValidationList
+  | ClientCoreGetDisplayCell
+  | ClientCoreValidateInput;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -945,8 +1040,7 @@ export type CoreClientMessage =
   | CoreClientGetCellFormatSummary
   | CoreClientSummarizeSelection
   | CoreClientGetRenderCell
-  | CoreClientImportCsv
-  | CoreClientImportParquet
+  | CoreClientImportFile
   | CoreClientAddSheet
   | CoreClientSheetInfo
   | CoreClientSheetFills
@@ -977,7 +1071,6 @@ export type CoreClientMessage =
   | CoreClientTransactionStart
   | CoreClientTransactionProgress
   | CoreClientUpdateCodeCell
-  | CoreClientImportExcel
   | CoreClientMultiplayerState
   | CoreClientConnectionState
   | CoreClientOfflineTransactions
@@ -990,6 +1083,15 @@ export type CoreClientMessage =
   | CoreClientGetFormatCell
   | CoreClientSheetMetaFills
   | CoreClientSetCursorSelection
+  | CoreClientGetValidation
   | CoreClientOfflineTransactionsApplied
+  | CoreClientGetValidations
+  | CoreClientSheetValidations
+  | CoreClientGetValidationFromPos
   | CoreClientResizeRowHeights
-  | CoreClientMultiplayerSynced;
+  | CoreClientGetValidationList
+  | CoreClientGetDisplayCell
+  | CoreClientRenderValidationWarnings
+  | CoreClientResizeRowHeights
+  | CoreClientMultiplayerSynced
+  | CoreClientValidateInput;

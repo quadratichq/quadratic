@@ -1,3 +1,47 @@
+import { describe, expect, it } from 'vitest';
+import { createSelection } from './selection';
+import { Rectangle } from 'pixi.js';
+import { selectionOverlapsSelection } from './sheetCursorUtils';
+
+describe('selectionOverlapsSelection', () => {
+  it('rects-rects', () => {
+    const s1 = createSelection({ rects: [new Rectangle(0, 0, 1, 1)] });
+    const s2 = createSelection({ rects: [new Rectangle(0, 0, 1, 1)] });
+    expect(selectionOverlapsSelection(s1, s2)).toBe(true);
+    expect(selectionOverlapsSelection(s2, s1)).toBe(true);
+    const s3 = createSelection({ rects: [new Rectangle(2, 2, 1, 1)] });
+    expect(selectionOverlapsSelection(s1, s3)).toBe(false);
+    expect(selectionOverlapsSelection(s3, s1)).toBe(false);
+  });
+
+  it('rects-columns', () => {
+    const s1 = createSelection({ rects: [new Rectangle(0, 0, 1, 1)] });
+    const s2 = createSelection({ columns: [0] });
+    expect(selectionOverlapsSelection(s1, s2)).toBe(true);
+    expect(selectionOverlapsSelection(s2, s1)).toBe(true);
+    const s3 = createSelection({ columns: [2] });
+    expect(selectionOverlapsSelection(s1, s3)).toBe(false);
+    expect(selectionOverlapsSelection(s3, s1)).toBe(false);
+  });
+
+  it('rects-rows', () => {
+    const s1 = createSelection({ rects: [new Rectangle(0, 0, 1, 1)] });
+    const s2 = createSelection({ rows: [0] });
+    expect(selectionOverlapsSelection(s1, s2)).toBe(true);
+    expect(selectionOverlapsSelection(s2, s1)).toBe(true);
+    const s3 = createSelection({ rows: [2] });
+    expect(selectionOverlapsSelection(s1, s3)).toBe(false);
+    expect(selectionOverlapsSelection(s3, s1)).toBe(false);
+  });
+
+  it('columns-rows', () => {
+    const s1 = createSelection({ columns: [0] });
+    const s2 = createSelection({ rows: [0] });
+    expect(selectionOverlapsSelection(s1, s2)).toBe(true);
+    expect(selectionOverlapsSelection(s2, s1)).toBe(true);
+  });
+});
+
 /*
 
 There's a problem with importing monaco-editor for the test suite. I couldn't
