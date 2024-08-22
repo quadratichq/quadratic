@@ -41,9 +41,9 @@ pub fn format_date_time(date: &str, format: Option<String>) -> String {
 
 #[wasm_bindgen(js_name = "formatTime")]
 /// Returns a formatted version of the time string. The date is expected to be
-/// in the format of %Y-%m-%d %H:%M:%S.
+/// in the format DEFAULT_DATE_TIME_FORMAT.
 pub fn format_time(date: &str, format: Option<String>) -> String {
-    let date = parse_date_time(date, format.clone());
+    let date = parse_date_time(date, Some(DEFAULT_DATE_TIME_FORMAT.to_string()));
     match date {
         Ok(time) => time_to_time_string(time.time(), format),
         Err(_) => "".to_string(),

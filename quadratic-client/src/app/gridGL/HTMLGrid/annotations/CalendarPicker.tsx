@@ -31,6 +31,7 @@ export const CalendarPicker = () => {
       const value = await quadraticCore.getDisplayCell(sheets.sheet.id, position.x, position.y);
       if (value) {
         const d = new Date(value as string);
+
         // this tests if the Date is valid
         if (isNaN(d as any)) {
           setDate(undefined);
@@ -137,7 +138,7 @@ export const CalendarPicker = () => {
       <Calendar mode="single" selected={date} defaultMonth={date} onSelect={changeDate} />
       {showTime && (
         <div className="flex w-full gap-2 p-3">
-          <ValidationInput value={formatTime(value, dateFormat)} onChange={changeTime} onEnter={finish} />
+          <ValidationInput value={formatTime(value)} onChange={changeTime} onEnter={finish} />
           <Tooltip title="Set current date and time">
             <Button onClick={setCurrentDateTime} className="p-1">
               <AccessTimeIcon />
