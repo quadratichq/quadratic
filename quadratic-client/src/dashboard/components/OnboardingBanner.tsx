@@ -100,7 +100,7 @@ export function OnboardingBanner() {
             </Button>
           </div>
           <p>Or bring your own data:</p>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" asChild>
               <Link
                 to={newApiFileToLink}
