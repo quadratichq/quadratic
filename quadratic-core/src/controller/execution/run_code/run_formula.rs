@@ -415,14 +415,14 @@ mod test {
             y: 0,
             sheet_id,
         };
+        let pos: Pos = sheet_pos.into();
+
         gc.set_code_cell(
             sheet_pos,
             CodeCellLanguage::Formula,
             "this shouldn't work".into(),
             None,
         );
-
-        let pos: Pos = sheet_pos.into();
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.cell_value(pos),
@@ -433,5 +433,24 @@ mod test {
         );
         let result = sheet.code_run(pos).unwrap();
         assert!(!result.spill_error);
+        assert!(result.std_err.is_some());
+
+        gc.set_code_cell(
+            sheet_pos,
+            CodeCellLanguage::Formula,
+            "{0,1/0;2/0,0}".into(),
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.cell_value(pos),
+            Some(CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "{0,1/0;2/0,0}".into(),
+            }))
+        );
+        let result = sheet.code_run(pos).unwrap();
+        assert!(!result.spill_error);
+        assert!(result.std_err.is_some());
     }
 }
