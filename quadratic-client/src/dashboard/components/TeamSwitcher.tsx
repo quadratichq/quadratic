@@ -41,7 +41,10 @@ export function TeamSwitcher({ appIsLoading }: Props) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="flex justify-between px-3 font-semibold">
+        <Button
+          variant="outline"
+          className="flex justify-between px-3 font-semibold shadow-none hover:bg-background data-[state=open]:bg-background"
+        >
           <div className="select-none truncate">{optimisticActiveTeamName}</div>
           <div className="relative">
             <CaretSortIcon />

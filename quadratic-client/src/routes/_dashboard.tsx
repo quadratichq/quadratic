@@ -209,10 +209,7 @@ export const Component = () => {
           </div>
           <Outlet />
         </div>
-        <div
-          className={`order-1 hidden flex-shrink-0 border-r border-r-border lg:block`}
-          style={{ width: DRAWER_WIDTH }}
-        >
+        <div className={`order-1 hidden flex-shrink-0  lg:block`} style={{ width: DRAWER_WIDTH }}>
           {navbar}
         </div>
         {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.EDUCATION && <EducationDialog />}

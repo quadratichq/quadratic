@@ -36,14 +36,14 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
   } = useDashboardRouteLoaderData();
 
   const canEditTeam = teamPermissions.includes('TEAM_EDIT');
-  const classNameIcons = `mx-1 text-muted-foreground`;
+  const classNameIcons = `mx-1 text-muted-foreground group-hover:text-primary`;
 
   return (
-    <nav className={`flex h-full flex-col gap-4 overflow-auto`}>
-      <div className="sticky top-0 z-10 flex flex-col bg-background px-4 pt-4">
+    <nav className={`flex h-full flex-col gap-4 overflow-auto bg-accent`}>
+      <div className="sticky top-0 z-10 flex flex-col bg-accent px-4 pt-4">
         <TeamSwitcher appIsLoading={isLoading} />
       </div>
-      <div className={`flex flex-col px-4`}>
+      <div className={`flex flex-col pl-4`}>
         <Type
           as="h3"
           variant="overline"
@@ -119,7 +119,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           </SidebarNavLink>
         </div>
       </div>
-      <div className="mt-auto flex flex-col gap-1 bg-background px-4 pb-2">
+      <div className="mt-auto flex flex-col gap-1 bg-accent px-4 pb-2">
         {eduStatus === 'ENROLLED' && (
           <SidebarNavLink
             to={`./?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.EDUCATION}`}
@@ -166,7 +166,7 @@ function SidebarNavLinkCreateButton({ children, isPrivate }: { children: ReactNo
           <Button
             variant="ghost"
             size="icon-sm"
-            className="absolute right-2 top-1 ml-auto opacity-30 hover:opacity-100"
+            className="absolute right-6 top-1 ml-auto opacity-30 hover:opacity-100"
             onClick={() => setNewFileDialogState({ show: true, isPrivate })}
           >
             <PlusIcon />
@@ -183,7 +183,6 @@ function SidebarNavLink({
   children,
   className,
   dropTarget,
-  isLogo,
   onClick,
   target,
 }: {
@@ -192,7 +191,6 @@ function SidebarNavLink({
   className?: string;
   // number = assigning to a user, null = assigning to a team
   dropTarget?: number | null;
-  isLogo?: boolean;
   onClick?: (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   target?: string;
 }) {
@@ -239,11 +237,10 @@ function SidebarNavLink({
     : {};
 
   const classes = cn(
-    isActive && !isLogo && 'bg-muted',
-    !isLogo && 'hover:bg-accent',
+    isActive ? 'bg-background text-foregound' : 'text-foreground hover:text-primary',
     isDraggingOver && 'bg-primary text-primary-foreground',
     TYPE.body2,
-    `relative flex items-center gap-2 p-2 no-underline rounded`,
+    `group relative flex items-center gap-2 p-2 no-underline rounded-tl rounded-bl`,
     className
   );
 

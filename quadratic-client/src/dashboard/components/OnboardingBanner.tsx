@@ -68,7 +68,7 @@ export function OnboardingBanner() {
     mixpanel.track('[OnboardingBanner].createConnection');
   };
   const tabContentClassName = 'flex flex-col gap-2';
-  const contentBtnClassName = 'min-w-40';
+  const contentBtnClassName = 'min-w-40 bg-background';
 
   const tabs = [
     {
@@ -101,7 +101,7 @@ export function OnboardingBanner() {
           </div>
           <p>Or bring your own data:</p>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" asChild>
+            <Button variant="outline" className={contentBtnClassName} asChild>
               <Link
                 to={newApiFileToLink}
                 onClick={() => {
@@ -111,7 +111,7 @@ export function OnboardingBanner() {
                 <RocketIcon className="mr-1" /> Fetch data from an API
               </Link>
             </Button>
-            <Button variant="outline" onClick={onClickImport}>
+            <Button variant="outline" onClick={onClickImport} className={contentBtnClassName}>
               <ArrowDownIcon className="mr-1" /> Import CSV, Excel, or Parquet file
             </Button>
           </div>
@@ -180,7 +180,7 @@ export function OnboardingBanner() {
 
   return showBanner ? (
     <>
-      <div className="relative mt-3 hidden rounded-md border border-input px-4 py-3 shadow-sm md:flex md:flex-col">
+      <div className="relative mt-3 hidden rounded-md border border-input bg-accent px-4 py-3 shadow-sm md:flex md:flex-col">
         <Button
           variant="link"
           size="icon"
@@ -231,13 +231,13 @@ export function OnboardingBanner() {
           onValueChange={(newActiveTab) => setActiveTabIndex(newActiveTab)}
           className="grid grid-cols-[14rem_1fr] text-sm"
         >
-          <Tabs.List className="flex flex-col gap-[1px] border-r border-border pr-4 pt-2">
+          <Tabs.List className="flex flex-col gap-[1px] pr-4 pt-2">
             {tabs.map(({ label, completed }, index) => (
               <Tabs.Trigger
                 key={index}
                 value={String(index)}
                 className={cn(
-                  'inline-flex h-9 items-center gap-2 rounded px-2 ring-offset-background transition-all hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-accent',
+                  'inline-flex h-9 items-center gap-2 rounded px-2 ring-offset-background transition-all hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-border',
                   completed && 'text-success'
                 )}
               >
@@ -336,6 +336,7 @@ function InviteForm({ teamUuid }: { teamUuid: string }) {
     <form className="mb-1 max-w-96 gap-2 text-sm" onSubmit={onSubmit}>
       <div className="flex gap-2">
         <Input
+          className="bg-background"
           autoComplete="off"
           spellCheck="false"
           aria-label="Email"
@@ -349,7 +350,7 @@ function InviteForm({ teamUuid }: { teamUuid: string }) {
           }}
           placeholder="your_coworker@company.com"
         />
-        <Button type="submit" variant="outline">
+        <Button type="submit" variant="outline" className="bg-background">
           Invite
         </Button>
       </div>
