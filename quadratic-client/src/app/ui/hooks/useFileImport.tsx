@@ -152,10 +152,10 @@ export function useFileImport() {
             result = await quadraticCore.importFile(arrayBuffer, fileName, fileType, cursor);
             break;
           case 'csv':
-            result = await quadraticCore.importFile(arrayBuffer, fileName, fileType, sheetId, insertAt, cursor);
+            result = await quadraticCore.importFile(arrayBuffer, fileName, fileType, cursor, sheetId, insertAt);
             break;
           case 'parquet':
-            result = await quadraticCore.importFile(arrayBuffer, fileName, fileType, sheetId, insertAt, cursor);
+            result = await quadraticCore.importFile(arrayBuffer, fileName, fileType, cursor, sheetId, insertAt);
             break;
           default:
             throw new Error(`Error importing ${fileName}: Unsupported file type`);

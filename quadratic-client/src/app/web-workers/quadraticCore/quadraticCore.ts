@@ -490,9 +490,9 @@ class QuadraticCore {
     file: ArrayBuffer,
     fileName: string,
     fileType: 'csv' | 'parquet' | 'excel',
+    cursor?: string,
     sheetId?: string,
-    location?: Coordinate,
-    cursor?: string
+    location?: Coordinate
   ): Promise<{
     contents?: ArrayBuffer;
     version?: string;

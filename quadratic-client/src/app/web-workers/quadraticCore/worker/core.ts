@@ -450,7 +450,7 @@ class Core {
     location,
     cursor,
   }: ClientCoreImportFile): Promise<{ contents?: ArrayBuffer; version?: string; error?: string }> {
-    if (cursor === undefined || (fileType !== 'excel' && (sheetId === undefined || location === undefined))) {
+    if (cursor === undefined) {
       try {
         await initCore();
         let gc: GridController;
