@@ -7,7 +7,6 @@
 import { debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Coordinate } from '@/app/gridGL/types/size';
 import {
   BorderSelection,
   BorderStyle,
@@ -39,6 +38,7 @@ import {
   ClientCoreGetEditCell,
   ClientCoreGetRenderCell,
   ClientCoreHasRenderCells,
+  ClientCoreImportFile,
   ClientCoreLoad,
   ClientCoreMessage,
   ClientCoreSummarizeSelection,
@@ -487,12 +487,7 @@ class QuadraticCore {
   }
 
   importFile = async (
-    file: ArrayBuffer,
-    fileName: string,
-    fileType: 'csv' | 'parquet' | 'excel',
-    cursor?: string,
-    sheetId?: string,
-    location?: Coordinate
+    args: Omit<ClientCoreImportFile, 'type' | 'id'>
   ): Promise<{
     contents?: ArrayBuffer;
     version?: string;
@@ -506,15 +501,10 @@ class QuadraticCore {
       this.send(
         {
           type: 'clientCoreImportFile',
-          file,
-          fileName,
-          fileType,
-          sheetId,
-          location,
-          cursor,
           id,
+          ...args,
         },
-        file
+        args.file
       );
     });
   };
