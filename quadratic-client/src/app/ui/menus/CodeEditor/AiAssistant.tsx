@@ -217,34 +217,39 @@ ${QuadraticDocs}`,
               }}
             >
               {message.role === 'user' ? (
-                <Avatar
-                  variant="rounded"
-                  sx={{
-                    bgcolor: colors.quadraticSecondary,
-                    width: 24,
-                    height: 24,
-                    fontSize: '0.8rem',
-                    marginBottom: '0.5rem',
-                  }}
-                  alt={user?.name}
-                  src={user?.picture}
-                ></Avatar>
+                <>
+                  <Avatar
+                    variant="rounded"
+                    sx={{
+                      bgcolor: colors.quadraticSecondary,
+                      width: 24,
+                      height: 24,
+                      fontSize: '0.8rem',
+                      marginBottom: '0.5rem',
+                    }}
+                    alt={user?.name}
+                    src={user?.picture}
+                  />
+                  {message.content}
+                </>
               ) : (
-                <Avatar
-                  variant="rounded"
-                  sx={{
-                    bgcolor: 'white',
-                    width: 24,
-                    height: 24,
-                    fontSize: '0.8rem',
-                    marginBottom: '0.5rem',
-                  }}
-                  alt="AI Assistant"
-                >
-                  <AI sx={{ color: colors.languageAI }}></AI>
-                </Avatar>
+                <>
+                  <Avatar
+                    variant="rounded"
+                    sx={{
+                      bgcolor: 'white',
+                      width: 24,
+                      height: 24,
+                      fontSize: '0.8rem',
+                      marginBottom: '0.5rem',
+                    }}
+                    alt="AI Assistant"
+                  >
+                    <AI sx={{ color: colors.languageAI }} />
+                  </Avatar>
+                  <CodeBlockParser input={message.content} />
+                </>
               )}
-              <CodeBlockParser input={message.content} />
             </div>
           ))}
           <div id="ai-streaming-output-anchor" key="ai-streaming-output-anchor" />
