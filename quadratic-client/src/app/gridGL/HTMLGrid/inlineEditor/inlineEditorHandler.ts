@@ -140,7 +140,6 @@ class InlineEditorHandler {
         this.showDiv();
         window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
         this.updateMonacoCursorPosition();
-        this.keepCursorVisible();
       }
       inlineEditorFormula.cursorMoved();
     } else {
@@ -178,13 +177,12 @@ class InlineEditorHandler {
           value = (await quadraticCore.getEditCell(this.location.sheetId, this.location.x, this.location.y)) || '';
         }
       }
-      const formatSummary = await quadraticCore.getCellFormatSummary(
+      this.formatSummary = await quadraticCore.getCellFormatSummary(
         this.location.sheetId,
         this.location.x,
         this.location.y,
         true
       );
-      this.formatSummary = formatSummary;
       this.temporaryBold = this.formatSummary?.bold || undefined;
       this.temporaryItalic = this.formatSummary?.italic || undefined;
       inlineEditorMonaco.set(value);
@@ -197,8 +195,6 @@ class InlineEditorHandler {
       this.showDiv();
       this.changeToFormula(changeToFormula);
       this.updateMonacoCursorPosition();
-      this.keepCursorVisible();
-      inlineEditorMonaco.focus();
       inlineEditorEvents.emit('status', true, value);
     } else {
       this.close(0, 0, false);
