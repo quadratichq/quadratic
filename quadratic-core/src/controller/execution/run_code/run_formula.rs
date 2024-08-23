@@ -1,4 +1,5 @@
 use chrono::Utc;
+use itertools::Itertools;
 
 use crate::{
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
@@ -19,10 +20,12 @@ impl GridController {
         match parse_formula(&code, sheet_pos.into()) {
             Ok(parsed) => {
                 let output = parsed.eval(&mut ctx).into_non_tuple();
+                let errors = output.inner.errors();
                 transaction.cells_accessed = ctx.cells_accessed;
                 let new_code_run = CodeRun {
                     std_out: None,
-                    std_err: None,
+                    std_err: (!errors.is_empty())
+                        .then(|| errors.into_iter().map(|e| e.to_string()).join("\n")),
                     formatted_code_string: None,
                     spill_error: false,
                     last_modified: Utc::now(),
