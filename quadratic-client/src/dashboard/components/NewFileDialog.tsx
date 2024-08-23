@@ -235,6 +235,7 @@ function SchemaBrowser({
       type={connectionType}
       uuid={connectionUuid}
       TableQueryAction={TableQueryAction}
+      teamUuid={teamUuid}
     />
   );
 }
