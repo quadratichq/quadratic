@@ -105,6 +105,10 @@ services:
       STORAGE_TYPE: file-system
       QUADRATIC_FILE_URI: http://host.docker.internal:3002
       QUADRATIC_FILE_URI_PUBLIC: http://localhost:3002
+
+      # Admin
+      LICENSE_KEY: LICENSE_KEY
+      LICENSE_API_URI: http://localhost:4000
     restart: "always"
     ports:
       - "8000:8000"
@@ -301,6 +305,18 @@ services:
       - "8080:8080"
     profiles:
       - ory
+    networks:
+      - host
+
+  admin:
+    image: stoplight/prism:latest
+    command: "mock -p 4000 -h 0.0.0.0 /tmp/openapi.yaml"
+    ports:
+      - 4000:4000
+    volumes:
+      - ./docker/admin/config/openapi.yaml:/tmp/openapi.yaml:ro
+    profiles:
+      - admin
     networks:
       - host
 

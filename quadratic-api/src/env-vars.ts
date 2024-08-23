@@ -30,7 +30,11 @@ export const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY as string;
 export const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY as string;
 export const STORAGE_TYPE = process.env.STORAGE_TYPE as string;
 export const AUTH_TYPE = process.env.AUTH_TYPE as string;
-['STRIPE_SECRET_KEY', 'ENCRYPTION_KEY', 'STORAGE_TYPE', 'AUTH_TYPE'].forEach(ensureEnvVarExists);
+export const LICENSE_KEY = process.env.LICENSE_KEY as string;
+export const LICENSE_API_URI = process.env.LICENSE_API_URI as string;
+['STRIPE_SECRET_KEY', 'ENCRYPTION_KEY', 'STORAGE_TYPE', 'AUTH_TYPE', 'LICENSE_KEY', 'LICENSE_API_URI'].forEach(
+  ensureEnvVarExists
+);
 
 // Required in prod, optional locally
 export const M2M_AUTH_TOKEN = process.env.M2M_AUTH_TOKEN;

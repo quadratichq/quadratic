@@ -103,6 +103,13 @@ const TeamFilesSchema = z.array(
   })
 );
 
+export const LicenseSchema = z.object({
+  limits: z.object({
+    seats: z.number(),
+  }),
+  status: z.string(),
+});
+
 // Zod schemas for API endpoints
 export const ApiSchemas = {
   /**
@@ -314,6 +321,7 @@ export const ApiSchemas = {
     filesPrivate: TeamFilesSchema,
     users: z.array(TeamUserSchema),
     invites: z.array(z.object({ email: emailSchema, role: UserTeamRoleSchema, id: z.number() })),
+    license: LicenseSchema,
   }),
   '/v0/teams/:uuid.PATCH.request': TeamSchema.pick({ name: true }),
   '/v0/teams/:uuid.PATCH.response': TeamSchema.pick({ name: true }),
