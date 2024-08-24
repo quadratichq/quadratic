@@ -153,12 +153,9 @@ mod tests {
             .unwrap();
         assert_eq!(result, "test".to_string());
         assert_eq!(transaction.cells_accessed.len(), 1);
-        assert_eq!(
-            transaction
-                .cells_accessed
-                .contains(&SheetRect::new(1, 2, 1, 2, sheet_id)),
-            true
-        );
+        assert!(transaction
+            .cells_accessed
+            .contains(&SheetRect::new(1, 2, 1, 2, sheet_id)));
 
         gc.add_sheet(None);
         let sheet_2_id = gc.sheet_ids()[1];
@@ -171,12 +168,9 @@ mod tests {
             .unwrap();
         assert_eq!(result, "test2".to_string());
         assert_eq!(transaction.cells_accessed.len(), 2);
-        assert_eq!(
-            transaction
-                .cells_accessed
-                .contains(&SheetRect::new(1, 2, 1, 2, sheet_2_id)),
-            true
-        );
+        assert!(transaction
+            .cells_accessed
+            .contains(&SheetRect::new(1, 2, 1, 2, sheet_2_id)),);
     }
 
     #[test]
@@ -202,12 +196,9 @@ mod tests {
             .unwrap();
         assert_eq!(result, "test".to_string());
         assert_eq!(transaction.cells_accessed.len(), 1);
-        assert_eq!(
-            transaction
-                .cells_accessed
-                .contains(&SheetRect::new(1, 2, 1, 2, sheet_id)),
-            true
-        );
+        assert!(transaction
+            .cells_accessed
+            .contains(&SheetRect::new(1, 2, 1, 2, sheet_id)));
 
         let code = r#"{{relative:0,1,"Sheet 1" }}"#;
         let result = gc
@@ -215,12 +206,9 @@ mod tests {
             .unwrap();
         assert_eq!(result, "test".to_string());
         assert_eq!(transaction.cells_accessed.len(), 1);
-        assert_eq!(
-            transaction
-                .cells_accessed
-                .contains(&SheetRect::new(1, 2, 1, 2, sheet_id)),
-            true
-        );
+        assert!(transaction
+            .cells_accessed
+            .contains(&SheetRect::new(1, 2, 1, 2, sheet_id)));
     }
 
     #[test]
