@@ -240,4 +240,8 @@ export class SheetCursor {
   overlapsSelection(selection: Selection): boolean {
     return selectionOverlapsSelection(this.getRustSelection(), selection);
   }
+
+  isSingleCellSelection(): boolean {
+    return !this.columnRow && !this.multiCursor;
+  }
 }

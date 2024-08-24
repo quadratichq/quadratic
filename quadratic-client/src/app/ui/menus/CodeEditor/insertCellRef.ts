@@ -68,7 +68,7 @@ export const insertCellRef = (editorInteractionState: EditorInteractionState, re
         }
       }
     }
-  } else if ((language as any) === 'Javascript') {
+  } else if (language === 'Javascript') {
     // any needed until Javascript is properly defined in Javascript branch
     if (cursor.multiCursor) {
       if (cursor.multiCursor.length > 1) {
@@ -100,6 +100,17 @@ export const insertCellRef = (editorInteractionState: EditorInteractionState, re
         } else {
           ref = `cell(${location.x}, ${location.y})`;
         }
+      }
+    }
+  } else if (language === 'Connection') {
+    const location = cursor.cursorPosition;
+    if (sheet) {
+      ref = `{{${location.x},${location.y},'${sheet}'}}`;
+    } else {
+      if (relative) {
+        ref = `{{relative:${location.x - selectedCell.x},${location.y - selectedCell.y}}}`;
+      } else {
+        ref = `{{${location.x},${location.y}}}`;
       }
     }
   }

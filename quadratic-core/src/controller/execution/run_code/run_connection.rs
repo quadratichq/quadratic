@@ -12,12 +12,14 @@ impl GridController {
     fn replace_handlebars(
         &self,
         transaction: &mut PendingTransaction,
+        sheet_pos: SheetPos,
         code: &str,
         default_sheet_id: SheetId,
     ) -> Result<String, String> {
-        let re = Regex::new(r#"\{\{\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*"?([^"]*)"?\s*)?\}\}"#)
-            .map_err(|err| format!("Regex compilation failed: {}", err))?;
-
+        let re = Regex::new(
+            r#"\{\{\s*(?:(relative)\s*:\s*)?(-?\d+)\s*,\s*(-?\d+)\s*(?:,\s*"?([^"]*)"?\s*)?\}\}"#,
+        )
+        .map_err(|err| format!("Regex compilation failed: {}", err))?;
         let mut result = String::new();
         let mut last_match_end = 0;
 
@@ -26,12 +28,21 @@ impl GridController {
             result.push_str(&code[last_match_end..whole_match.start()]);
 
             let replacement: Result<String, String> = (|| {
+                let is_relative = cap.get(1).is_some();
+
                 // Parse x and y coordinates
-                let x: i64 = cap[1].parse().map_err(|_| "Failed to parse x coordinate")?;
-                let y: i64 = cap[2].parse().map_err(|_| "Failed to parse y coordinate")?;
+                let x: i64 = cap[2].parse().map_err(|_| "Failed to parse x coordinate")?;
+                let y: i64 = cap[3].parse().map_err(|_| "Failed to parse y coordinate")?;
+
+                // Adjust coordinates based on whether it's relative
+                let (x, y) = if is_relative {
+                    (x + sheet_pos.x, y + sheet_pos.y)
+                } else {
+                    (x, y)
+                };
 
                 // Get the sheet where the cell is located
-                let sheet = if let Some(sheet_name) = cap.get(3) {
+                let sheet = if let Some(sheet_name) = cap.get(4) {
                     let sheet_name = sheet_name.as_str().trim().to_string();
                     self.grid()
                         .try_sheet_from_name(sheet_name.clone())
@@ -79,7 +90,7 @@ impl GridController {
     ) {
         // send the request to get the sql data via the connector to the host
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            match self.replace_handlebars(transaction, &code, sheet_pos.sheet_id) {
+            match self.replace_handlebars(transaction, sheet_pos, &code, sheet_pos.sheet_id) {
                 Ok(replaced_code) => {
                     crate::wasm_bindings::js::jsConnection(
                         transaction.id.to_string(),
@@ -130,9 +141,15 @@ mod tests {
 
         let mut transaction = PendingTransaction::default();
 
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 1,
+            sheet_id,
+        };
+
         let code = r#"{{ 1, 2 }}"#;
         let result = gc
-            .replace_handlebars(&mut transaction, code, sheet_id)
+            .replace_handlebars(&mut transaction, sheet_pos, code, sheet_id)
             .unwrap();
         assert_eq!(result, "test".to_string());
         assert_eq!(transaction.cells_accessed.len(), 1);
@@ -150,7 +167,7 @@ mod tests {
 
         let code = r#"{{ 1, 2, "Sheet 2" }}"#;
         let result = gc
-            .replace_handlebars(&mut transaction, code, sheet_id)
+            .replace_handlebars(&mut transaction, sheet_pos, code, sheet_id)
             .unwrap();
         assert_eq!(result, "test2".to_string());
         assert_eq!(transaction.cells_accessed.len(), 2);
@@ -159,6 +176,77 @@ mod tests {
                 .cells_accessed
                 .contains(&SheetRect::new(1, 2, 1, 2, sheet_2_id)),
             true
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn replace_handlebars_relative() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.set_cell_value(Pos { x: 1, y: 2 }, "test".to_string());
+
+        let mut transaction = PendingTransaction::default();
+
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 1,
+            sheet_id,
+        };
+
+        let code = r#"{{ relative: 0, 1 }}"#;
+        let result = gc
+            .replace_handlebars(&mut transaction, sheet_pos, code, sheet_id)
+            .unwrap();
+        assert_eq!(result, "test".to_string());
+        assert_eq!(transaction.cells_accessed.len(), 1);
+        assert_eq!(
+            transaction
+                .cells_accessed
+                .contains(&SheetRect::new(1, 2, 1, 2, sheet_id)),
+            true
+        );
+
+        let code = r#"{{relative:0,1,"Sheet 1" }}"#;
+        let result = gc
+            .replace_handlebars(&mut transaction, sheet_pos, code, sheet_id)
+            .unwrap();
+        assert_eq!(result, "test".to_string());
+        assert_eq!(transaction.cells_accessed.len(), 1);
+        assert_eq!(
+            transaction
+                .cells_accessed
+                .contains(&SheetRect::new(1, 2, 1, 2, sheet_id)),
+            true
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn replace_handlebars_actual_case() {
+        let code =
+            "SELECT age FROM 'public'.'test_table' WHERE name='{{ relative: -1, 0 }}' LIMIT 100";
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, "test".to_string());
+
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 0,
+            sheet_id,
+        };
+
+        let mut transaction = PendingTransaction::default();
+        let result = gc
+            .replace_handlebars(&mut transaction, sheet_pos, code, sheet_id)
+            .unwrap();
+        assert_eq!(
+            result,
+            "SELECT age FROM 'public'.'test_table' WHERE name='test' LIMIT 100"
         );
     }
 
@@ -200,5 +288,40 @@ mod tests {
         test_error(&mut gc, r#"{{ 1, 2, Sheet 2 }}"#, sheet_id);
         test_error(&mut gc, r#"{{1,2,Sheet 2}}"#, sheet_id);
         test_error(&mut gc, r#"{{1,2,"Sheet 2"}}"#, sheet_id);
+    }
+
+    #[test]
+    #[parallel]
+    fn run_connection_relative() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.set_cell_value(Pos { x: 1, y: 2 }, "test".to_string());
+
+        let mut transaction = PendingTransaction::default();
+
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 1,
+            sheet_id,
+        };
+
+        gc.run_connection(
+            &mut transaction,
+            sheet_pos,
+            r#"{{ relative: 0, 1 }}"#.to_string(),
+            ConnectionKind::Postgres,
+            "test".to_string(),
+        );
+
+        assert_eq!(
+            transaction.waiting_for_async,
+            Some(CodeCellLanguage::Connection {
+                kind: ConnectionKind::Postgres,
+                id: "test".to_string(),
+            })
+        );
+        assert_eq!(transaction.current_sheet_pos, Some(sheet_pos));
     }
 }

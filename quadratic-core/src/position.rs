@@ -1027,7 +1027,7 @@ mod test {
         let sheet_id = SheetId::new();
         let rect = SheetRect::new(1, 2, 3, 4, sheet_id);
         assert_eq!(rect.min, Pos { x: 1, y: 2 });
-        assert_eq!(rect.max, Pos { x: 3, y: 5 });
+        assert_eq!(rect.max, Pos { x: 3, y: 4 });
         assert_eq!(rect.sheet_id, sheet_id);
     }
 }

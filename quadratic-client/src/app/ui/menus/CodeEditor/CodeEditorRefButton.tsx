@@ -15,6 +15,7 @@ import { CaretDownIcon } from '@radix-ui/react-icons';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { insertCellRef } from './insertCellRef';
+import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
 
 export const CodeEditorRefButton = () => {
   const [relative, setRelative] = useLocalStorage('insertCellRefRelative', false);
@@ -23,19 +24,24 @@ export const CodeEditorRefButton = () => {
   const [disabled, setDisabled] = useState(true);
   useEffect(() => {
     const checkDisabled = () => {
-      // we do not yet support multiple multiCursors for inserting cell references
-      if (
-        (sheets.sheet.cursor.multiCursor && sheets.sheet.cursor.multiCursor.length > 1) ||
-        sheets.sheet.cursor.columnRow !== undefined
-      ) {
-        setDisabled(true);
+      // for connections, we only support one cursor position
+      if (codeCellIsAConnection(editorInteractionState.mode)) {
+        setDisabled(!sheets.sheet.cursor.isSingleCellSelection());
       } else {
-        setDisabled(
-          !sheets.sheet.cursor.multiCursor &&
-            editorInteractionState.selectedCell.x === sheets.sheet.cursor.cursorPosition.x &&
-            editorInteractionState.selectedCell.y === sheets.sheet.cursor.cursorPosition.y &&
-            editorInteractionState.selectedCellSheet === sheets.sheet.id
-        );
+        // we do not yet support multiple multiCursors for inserting cell references in other languages
+        if (
+          (sheets.sheet.cursor.multiCursor && sheets.sheet.cursor.multiCursor.length > 1) ||
+          sheets.sheet.cursor.columnRow !== undefined
+        ) {
+          setDisabled(true);
+        } else {
+          setDisabled(
+            !sheets.sheet.cursor.multiCursor &&
+              editorInteractionState.selectedCell.x === sheets.sheet.cursor.cursorPosition.x &&
+              editorInteractionState.selectedCell.y === sheets.sheet.cursor.cursorPosition.y &&
+              editorInteractionState.selectedCellSheet === sheets.sheet.id
+          );
+        }
       }
     };
     events.on('cursorPosition', checkDisabled);
