@@ -47,26 +47,27 @@ pub(crate) fn time_delta(last: &mut NaiveTime, diff: Duration, reverse: bool) ->
 
 pub(crate) fn find_time_series(options: SeriesOptions) -> Vec<CellValue> {
     // if only one time, copy it
-    if options.series.len() == 1 {
-        return copy_series(options);
-    }
-
-    let Some((first, second)) = unwrap_times(&options.series[0], &options.series[1]) else {
-        return copy_series(options);
-    };
-
-    let diff = time_diff(first, second);
-
-    for i in 2..options.series.len() {
-        let Some((first, second)) = unwrap_times(&options.series[i - 1], &options.series[i]) else {
+    let diff = if options.series.len() == 1 {
+        Duration::hours(1)
+    } else {
+        let Some((first, second)) = unwrap_times(&options.series[0], &options.series[1]) else {
             return copy_series(options);
         };
 
-        if time_diff(first, second) != diff {
-            return copy_series(options);
-        }
-    }
+        let diff = time_diff(first, second);
 
+        for i in 2..options.series.len() {
+            let Some((first, second)) = unwrap_times(&options.series[i - 1], &options.series[i])
+            else {
+                return copy_series(options);
+            };
+
+            if time_diff(first, second) != diff {
+                return copy_series(options);
+            }
+        }
+        diff
+    };
     let last = if options.negative {
         &options.series[0]
     } else {
@@ -243,5 +244,40 @@ mod test {
         let days = time_delta(&mut time, diff, true);
         assert_eq!(time, naked_time(23, 59, 58));
         assert_eq!(days, 0);
+    }
+
+    #[test]
+    #[parallel]
+    fn time_series_one() {
+        let options = SeriesOptions {
+            series: vec![cell_value_time(0, 0, 0)],
+            spaces: 4,
+            negative: false,
+        };
+
+        let results = find_time_series(options.clone());
+        assert_eq!(
+            results,
+            vec![
+                cell_value_time(1, 0, 0),
+                cell_value_time(2, 0, 0),
+                cell_value_time(3, 0, 0),
+                cell_value_time(4, 0, 0),
+            ]
+        );
+
+        let results = find_time_series(SeriesOptions {
+            negative: true,
+            ..options
+        });
+        assert_eq!(
+            results,
+            vec![
+                cell_value_time(20, 0, 0),
+                cell_value_time(21, 0, 0),
+                cell_value_time(22, 0, 0),
+                cell_value_time(23, 0, 0),
+            ]
+        );
     }
 }

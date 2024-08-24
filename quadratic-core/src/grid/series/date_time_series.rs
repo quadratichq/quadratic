@@ -10,34 +10,34 @@ use super::{
 };
 
 pub(crate) fn find_date_time_series(options: SeriesOptions) -> Vec<CellValue> {
-    // if only one date, copy it
-    if options.series.len() == 1 {
-        return copy_series(options);
-    }
-
-    let (CellValue::DateTime(first), CellValue::DateTime(second)) =
-        (&options.series[0], &options.series[1])
-    else {
-        return copy_series(options);
-    };
-
-    let diff_in_date = date_diff(&first.date(), &second.date());
-    let diff_in_time = time_diff(first.time(), second.time());
-
-    for i in 2..options.series.len() {
+    let (diff_in_date, diff_in_time) = if options.series.len() == 1 {
+        ((0, 0, 1), Duration::zero())
+    } else {
         let (CellValue::DateTime(first), CellValue::DateTime(second)) =
-            (&options.series[i - 1], &options.series[i])
+            (&options.series[0], &options.series[1])
         else {
             return copy_series(options);
         };
 
-        if date_diff(&first.date(), &second.date()) != diff_in_date
-            || time_diff(first.time(), second.time()) != diff_in_time
-        {
-            return copy_series(options);
-        }
-    }
+        let diff_in_date = date_diff(&first.date(), &second.date());
+        let diff_in_time = time_diff(first.time(), second.time());
 
+        for i in 2..options.series.len() {
+            let (CellValue::DateTime(first), CellValue::DateTime(second)) =
+                (&options.series[i - 1], &options.series[i])
+            else {
+                return copy_series(options);
+            };
+
+            if date_diff(&first.date(), &second.date()) != diff_in_date
+                || time_diff(first.time(), second.time()) != diff_in_time
+            {
+                return copy_series(options);
+            }
+        }
+
+        (diff_in_date, diff_in_time)
+    };
     let last = if options.negative {
         &options.series[0]
     } else {
@@ -100,7 +100,7 @@ mod tests {
                 date_time(2021, 1, 2, 0, 0, 0),
                 date_time(2021, 1, 3, 0, 0, 0),
             ],
-            spaces: 10,
+            spaces: 4,
             negative: false,
         };
 
@@ -112,12 +112,6 @@ mod tests {
                 date_time(2021, 1, 5, 0, 0, 0),
                 date_time(2021, 1, 6, 0, 0, 0),
                 date_time(2021, 1, 7, 0, 0, 0),
-                date_time(2021, 1, 8, 0, 0, 0),
-                date_time(2021, 1, 9, 0, 0, 0),
-                date_time(2021, 1, 10, 0, 0, 0),
-                date_time(2021, 1, 11, 0, 0, 0),
-                date_time(2021, 1, 12, 0, 0, 0),
-                date_time(2021, 1, 13, 0, 0, 0),
             ]
         );
 
@@ -128,12 +122,6 @@ mod tests {
         assert_eq!(
             results,
             vec![
-                date_time(2020, 12, 22, 0, 0, 0),
-                date_time(2020, 12, 23, 0, 0, 0),
-                date_time(2020, 12, 24, 0, 0, 0),
-                date_time(2020, 12, 25, 0, 0, 0),
-                date_time(2020, 12, 26, 0, 0, 0),
-                date_time(2020, 12, 27, 0, 0, 0),
                 date_time(2020, 12, 28, 0, 0, 0),
                 date_time(2020, 12, 29, 0, 0, 0),
                 date_time(2020, 12, 30, 0, 0, 0),
@@ -151,7 +139,7 @@ mod tests {
                 date_time(2021, 2, 1, 0, 0, 0),
                 date_time(2021, 3, 1, 0, 0, 0),
             ],
-            spaces: 10,
+            spaces: 4,
             negative: false,
         };
 
@@ -163,12 +151,6 @@ mod tests {
                 date_time(2021, 5, 1, 0, 0, 0),
                 date_time(2021, 6, 1, 0, 0, 0),
                 date_time(2021, 7, 1, 0, 0, 0),
-                date_time(2021, 8, 1, 0, 0, 0),
-                date_time(2021, 9, 1, 0, 0, 0),
-                date_time(2021, 10, 1, 0, 0, 0),
-                date_time(2021, 11, 1, 0, 0, 0),
-                date_time(2021, 12, 1, 0, 0, 0),
-                date_time(2022, 1, 1, 0, 0, 0),
             ]
         );
 
@@ -179,12 +161,6 @@ mod tests {
         assert_eq!(
             results,
             vec![
-                date_time(2020, 3, 1, 0, 0, 0),
-                date_time(2020, 4, 1, 0, 0, 0),
-                date_time(2020, 5, 1, 0, 0, 0),
-                date_time(2020, 6, 1, 0, 0, 0),
-                date_time(2020, 7, 1, 0, 0, 0),
-                date_time(2020, 8, 1, 0, 0, 0),
                 date_time(2020, 9, 1, 0, 0, 0),
                 date_time(2020, 10, 1, 0, 0, 0),
                 date_time(2020, 11, 1, 0, 0, 0),
@@ -193,6 +169,194 @@ mod tests {
         );
     }
 
-    // #[test]
-    // #[parallel]
+    #[test]
+    #[parallel]
+    fn date_time_series_years() {
+        let options = SeriesOptions {
+            series: vec![
+                date_time(2021, 1, 1, 0, 0, 0),
+                date_time(2022, 1, 1, 0, 0, 0),
+                date_time(2023, 1, 1, 0, 0, 0),
+            ],
+            spaces: 4,
+            negative: false,
+        };
+
+        let results = find_date_time_series(options.clone());
+        assert_eq!(
+            results,
+            vec![
+                date_time(2024, 1, 1, 0, 0, 0),
+                date_time(2025, 1, 1, 0, 0, 0),
+                date_time(2026, 1, 1, 0, 0, 0),
+                date_time(2027, 1, 1, 0, 0, 0),
+            ]
+        );
+
+        let results = find_date_time_series(SeriesOptions {
+            negative: true,
+            ..options
+        });
+        assert_eq!(
+            results,
+            vec![
+                date_time(2017, 1, 1, 0, 0, 0),
+                date_time(2018, 1, 1, 0, 0, 0),
+                date_time(2019, 1, 1, 0, 0, 0),
+                date_time(2020, 1, 1, 0, 0, 0),
+            ]
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn date_time_series_hours() {
+        let options = SeriesOptions {
+            series: vec![
+                date_time(2021, 1, 1, 1, 0, 0),
+                date_time(2021, 1, 1, 2, 0, 0),
+                date_time(2021, 1, 1, 3, 0, 0),
+            ],
+            spaces: 4,
+            negative: false,
+        };
+
+        let results = find_date_time_series(options.clone());
+        assert_eq!(
+            results,
+            vec![
+                date_time(2021, 1, 1, 4, 0, 0),
+                date_time(2021, 1, 1, 5, 0, 0),
+                date_time(2021, 1, 1, 6, 0, 0),
+                date_time(2021, 1, 1, 7, 0, 0),
+            ]
+        );
+
+        let results = find_date_time_series(SeriesOptions {
+            negative: true,
+            ..options
+        });
+        assert_eq!(
+            results,
+            vec![
+                date_time(2020, 12, 31, 21, 0, 0),
+                date_time(2020, 12, 31, 22, 0, 0),
+                date_time(2020, 12, 31, 23, 0, 0),
+                date_time(2021, 1, 1, 0, 0, 0),
+            ]
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn date_time_series_minutes() {
+        let options = SeriesOptions {
+            series: vec![
+                date_time(2021, 1, 1, 0, 1, 0),
+                date_time(2021, 1, 1, 0, 2, 0),
+                date_time(2021, 1, 1, 0, 3, 0),
+            ],
+            spaces: 4,
+            negative: false,
+        };
+
+        let results = find_date_time_series(options.clone());
+        assert_eq!(
+            results,
+            vec![
+                date_time(2021, 1, 1, 0, 4, 0),
+                date_time(2021, 1, 1, 0, 5, 0),
+                date_time(2021, 1, 1, 0, 6, 0),
+                date_time(2021, 1, 1, 0, 7, 0),
+            ]
+        );
+
+        let results = find_date_time_series(SeriesOptions {
+            negative: true,
+            ..options
+        });
+        assert_eq!(
+            results,
+            vec![
+                date_time(2020, 12, 31, 23, 57, 0),
+                date_time(2020, 12, 31, 23, 58, 0),
+                date_time(2020, 12, 31, 23, 59, 0),
+                date_time(2021, 1, 1, 0, 0, 0),
+            ]
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn date_time_series_seconds() {
+        let options = SeriesOptions {
+            series: vec![
+                date_time(2021, 1, 1, 0, 0, 1),
+                date_time(2021, 1, 1, 0, 0, 2),
+                date_time(2021, 1, 1, 0, 0, 3),
+            ],
+            spaces: 4,
+            negative: false,
+        };
+
+        let results = find_date_time_series(options.clone());
+        assert_eq!(
+            results,
+            vec![
+                date_time(2021, 1, 1, 0, 0, 4),
+                date_time(2021, 1, 1, 0, 0, 5),
+                date_time(2021, 1, 1, 0, 0, 6),
+                date_time(2021, 1, 1, 0, 0, 7),
+            ]
+        );
+
+        let results = find_date_time_series(SeriesOptions {
+            negative: true,
+            ..options
+        });
+        assert_eq!(
+            results,
+            vec![
+                date_time(2020, 12, 31, 23, 59, 57),
+                date_time(2020, 12, 31, 23, 59, 58),
+                date_time(2020, 12, 31, 23, 59, 59),
+                date_time(2021, 1, 1, 0, 0, 0),
+            ]
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn date_time_series_of_one() {
+        let options = SeriesOptions {
+            series: vec![date_time(2021, 1, 1, 0, 1, 0)],
+            spaces: 4,
+            negative: false,
+        };
+
+        let results = find_date_time_series(options.clone());
+        assert_eq!(
+            results,
+            vec![
+                date_time(2021, 1, 2, 0, 1, 0),
+                date_time(2021, 1, 3, 0, 1, 0),
+                date_time(2021, 1, 4, 0, 1, 0),
+                date_time(2021, 1, 5, 0, 1, 0),
+            ]
+        );
+
+        let results = find_date_time_series(SeriesOptions {
+            negative: true,
+            ..options
+        });
+        assert_eq!(
+            results,
+            vec![
+                date_time(2020, 12, 28, 0, 1, 0),
+                date_time(2020, 12, 29, 0, 1, 0),
+                date_time(2020, 12, 30, 0, 1, 0),
+                date_time(2020, 12, 31, 0, 1, 0),
+            ]
+        );
+    }
 }

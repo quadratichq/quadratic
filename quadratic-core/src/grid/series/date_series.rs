@@ -92,11 +92,7 @@ fn days_in_month(year: i32, month: u32) -> u32 {
 pub(crate) fn find_date_series(options: SeriesOptions) -> Vec<CellValue> {
     let diff = if options.series.len() == 1 {
         // if only one date, then apply a one-day delta
-        if options.negative {
-            (0, 0, -1)
-        } else {
-            (0, 0, 1)
-        }
+        (0, 0, 1)
     } else {
         let (CellValue::Date(first), CellValue::Date(second)) =
             (&options.series[0], &options.series[1])
@@ -359,6 +355,40 @@ mod tests {
                 date(2020, 12, 26),
                 date(2020, 12, 28),
                 date(2020, 12, 30),
+            ]
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn find_date_series_one() {
+        let options = SeriesOptions {
+            series: vec![date(2021, 1, 1)],
+            spaces: 4,
+            negative: false,
+        };
+        let results = find_auto_complete(options.clone());
+        assert_eq!(
+            results,
+            vec![
+                date(2021, 1, 2),
+                date(2021, 1, 3),
+                date(2021, 1, 4),
+                date(2021, 1, 5),
+            ]
+        );
+
+        let results = find_auto_complete(SeriesOptions {
+            negative: true,
+            ..options
+        });
+        assert_eq!(
+            results,
+            vec![
+                date(2020, 12, 28),
+                date(2020, 12, 29),
+                date(2020, 12, 30),
+                date(2020, 12, 31),
             ]
         );
     }

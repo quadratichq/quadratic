@@ -13,7 +13,7 @@ pub mod number_series;
 pub mod string_series;
 pub mod time_series;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct SeriesOptions {
     pub series: Vec<CellValue>,
     pub spaces: i32,
