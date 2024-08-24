@@ -83,6 +83,7 @@ export function QuadraticApp() {
     if (multiplayerLoading) {
       const updateMultiplayerLoading = (state: MultiplayerState) => {
         if (state === 'not connected' || state === 'no internet') {
+          setOfflineLoading(false);
           setMultiplayerLoading(false);
         }
       };
