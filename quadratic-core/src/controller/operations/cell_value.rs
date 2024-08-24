@@ -77,11 +77,11 @@ impl GridController {
                 )),
             });
             CellValue::Number(percent)
-        } else if value.starts_with("=") {
+        } else if let Some(code) = value.strip_prefix("=") {
             ops.push(Operation::ComputeCode { sheet_pos });
             CellValue::Code(CodeCellValue {
                 language: CodeCellLanguage::Formula,
-                code: value[1..].to_string(),
+                code: code.to_string(),
             })
         } else {
             CellValue::Text(value.into())
