@@ -31,6 +31,7 @@ impl Grid {
     }
 
     pub fn try_sheet_from_name(&self, name: String) -> Option<&Sheet> {
+        let name = name.trim();
         self.sheets.iter().find(|sheet| sheet.name == name)
     }
 

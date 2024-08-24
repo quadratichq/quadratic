@@ -1,5 +1,5 @@
 use anyhow::Result;
-use regex::{Captures, Regex};
+use regex::Regex;
 
 use crate::{
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
@@ -15,25 +15,28 @@ impl GridController {
         code: &str,
         default_sheet_id: SheetId,
     ) -> Result<String, String> {
-        let re = Regex::new(r#"\{\{\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*"([^"]*)"\s*)?\}\}"#)
+        let re = Regex::new(r#"\{\{\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*"?([^"]*)"?\s*)?\}\}"#)
             .map_err(|err| format!("Regex compilation failed: {}", err))?;
 
-        let result = re.replace_all(code, |caps: &Captures<'_>| {
+        let mut result = String::new();
+        let mut last_match_end = 0;
+
+        for cap in re.captures_iter(code) {
+            let whole_match = cap.get(0).unwrap();
+            result.push_str(&code[last_match_end..whole_match.start()]);
+
             let replacement: Result<String, String> = (|| {
                 // Parse x and y coordinates
-                let x: i64 = caps[1]
-                    .parse()
-                    .map_err(|_| "Failed to parse x coordinate")?;
-                let y: i64 = caps[2]
-                    .parse()
-                    .map_err(|_| "Failed to parse y coordinate")?;
+                let x: i64 = cap[1].parse().map_err(|_| "Failed to parse x coordinate")?;
+                let y: i64 = cap[2].parse().map_err(|_| "Failed to parse y coordinate")?;
 
                 // Get the sheet where the cell is located
-                let sheet = if let Some(sheet_name) = caps.get(3) {
+                let sheet = if let Some(sheet_name) = cap.get(3) {
+                    let sheet_name = sheet_name.as_str().trim().to_string();
                     self.grid()
-                        .try_sheet_from_name(sheet_name.as_str().to_string())
+                        .try_sheet_from_name(sheet_name.clone())
                         .ok_or_else(|| {
-                            format!("Failed to find sheet with name: {}", sheet_name.as_str())
+                            format!("Failed to find sheet with name: '{}'", sheet_name)
                         })?
                 } else {
                     self.try_sheet(default_sheet_id).ok_or_else(|| {
@@ -52,17 +55,18 @@ impl GridController {
                 }
             })();
 
-            // Handle the Result, returning the replacement or the original match on error
             match replacement {
-                Ok(value) => value,
-                Err(err) => {
-                    eprintln!("Error in replacement: {}", err);
-                    caps[0].to_string()
-                }
+                Ok(value) => result.push_str(&value),
+                Err(err) => return Err(err),
             }
-        });
 
-        Ok(result.into_owned())
+            last_match_end = whole_match.end();
+        }
+
+        // Add the remaining part of the string
+        result.push_str(&code[last_match_end..]);
+
+        Ok(result)
     }
 
     pub(crate) fn run_connection(
@@ -92,8 +96,8 @@ impl GridController {
                         span: None,
                         msg: RunErrorMsg::PythonError(msg.to_owned().into()),
                     };
+                    transaction.current_sheet_pos = Some(sheet_pos);
                     let _ = self.code_cell_sheet_error(transaction, &error);
-                    self.start_transaction(transaction);
 
                     // not ideal to clone the transaction, but we need to close it
                     self.finalize_transaction(transaction.clone());
@@ -156,5 +160,45 @@ mod tests {
                 .contains(&SheetRect::new(1, 2, 1, 2, sheet_2_id)),
             true
         );
+    }
+
+    #[test]
+    #[parallel]
+    fn run_connection_sheet_name_error() {
+        fn test_error(gc: &mut GridController, code: &str, sheet_id: SheetId) {
+            gc.set_code_cell(
+                SheetPos {
+                    x: 10,
+                    y: 10,
+                    sheet_id,
+                },
+                CodeCellLanguage::Connection {
+                    kind: ConnectionKind::Postgres,
+                    id: "test".to_string(),
+                },
+                code.to_string(),
+                None,
+            );
+
+            let sheet = gc.sheet(sheet_id);
+            let code_cell = sheet.code_run(Pos { x: 10, y: 10 });
+            assert_eq!(
+                code_cell.unwrap().get_error(),
+                Some(RunError {
+                    msg: RunErrorMsg::PythonError(
+                        "Failed to find sheet with name: 'Sheet 2'".into()
+                    ),
+                    span: None
+                })
+            );
+        }
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        test_error(&mut gc, r#"{{ 1, 2, "Sheet 2" }}"#, sheet_id);
+        test_error(&mut gc, r#"{{ 1, 2, Sheet 2 }}"#, sheet_id);
+        test_error(&mut gc, r#"{{1,2,Sheet 2}}"#, sheet_id);
+        test_error(&mut gc, r#"{{1,2,"Sheet 2"}}"#, sheet_id);
     }
 }

@@ -108,7 +108,7 @@ impl fmt::Display for RunErrorMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::PythonError(s) => {
-                write!(f, "Python error: {s}")
+                write!(f, "{s}")
             }
             Self::Spill => {
                 write!(f, "Spill error")
