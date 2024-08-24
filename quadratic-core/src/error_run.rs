@@ -6,6 +6,7 @@ use crate::{ArraySize, Axis, Span, Spanned, Value};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::fmt;
+use ts_rs::TS;
 
 /// Result of a [`crate::RunError`].
 pub type CodeResult<T = Spanned<Value>> = Result<T, RunError>;
@@ -39,11 +40,10 @@ impl RunError {
 }
 
 /// Information about the type of error that occurred.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 pub enum RunErrorMsg {
+    // todo: this should be changed to a more generic language error type
     PythonError(Cow<'static, str>),
-
     Spill,
 
     // Miscellaneous errors

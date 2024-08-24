@@ -371,6 +371,14 @@ pub struct SheetRect {
 }
 
 impl SheetRect {
+    pub fn new(x0: i64, y0: i64, x1: i64, y1: i64, sheet_id: SheetId) -> SheetRect {
+        SheetRect {
+            min: Pos { x: x0, y: y0 },
+            max: Pos { x: x1, y: y1 },
+            sheet_id,
+        }
+    }
+
     pub fn single_sheet_pos(sheet_pos: SheetPos) -> SheetRect {
         SheetRect {
             min: sheet_pos.into(),
@@ -1011,5 +1019,15 @@ mod test {
         let rect3 = Rect::new(4, 5, 6, 7);
         assert!(rect1.intersection(&rect3).is_none());
         assert_eq!(rect2.intersection(&rect3).unwrap(), Rect::new(4, 5, 4, 5));
+    }
+
+    #[test]
+    #[parallel]
+    fn sheet_rect_new() {
+        let sheet_id = SheetId::new();
+        let rect = SheetRect::new(1, 2, 3, 4, sheet_id);
+        assert_eq!(rect.min, Pos { x: 1, y: 2 });
+        assert_eq!(rect.max, Pos { x: 3, y: 5 });
+        assert_eq!(rect.sheet_id, sheet_id);
     }
 }
