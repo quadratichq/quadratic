@@ -1,4 +1,4 @@
-import { type DialogProps } from '@radix-ui/react-dialog';
+import { DialogOverlay, type DialogProps } from '@radix-ui/react-dialog';
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { Command as CommandPrimitive } from 'cmdk';
 import * as React from 'react';
@@ -25,14 +25,15 @@ interface CommandDialogProps {
   children: React.ReactNode;
   dialogProps: DialogProps;
   commandProps: React.ComponentPropsWithoutRef<typeof Command>;
+  overlayProps?: React.ComponentPropsWithoutRef<typeof DialogOverlay>;
 }
 interface CommandDialogProps extends DialogProps {}
 
-const CommandDialog = ({ children, dialogProps, commandProps }: CommandDialogProps) => {
+const CommandDialog = ({ children, dialogProps, commandProps, overlayProps }: CommandDialogProps) => {
   return (
     <Dialog {...dialogProps}>
       <DialogContent
-        overlayProps={{ className: 'backdrop-blur-none bg-transparent' }}
+        overlayProps={{ className: 'backdrop-blur-none bg-transparent', ...overlayProps }}
         className="max-w-md overflow-hidden p-0"
       >
         <Command
@@ -139,6 +140,5 @@ export {
   CommandItem,
   CommandList,
   CommandSeparator,
-  CommandShortcut
+  CommandShortcut,
 };
-
