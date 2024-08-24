@@ -60,9 +60,7 @@ pub(crate) fn date_delta(last: &mut NaiveDate, diff: (i32, i32, i32), negative: 
     }
 
     // Set the day to the last valid day if it overflows
-    let new_day = last
-        .day()
-        .min(days_in_month(new_year, new_month as u32) as u32);
+    let new_day = last.day().min(days_in_month(new_year, new_month as u32));
 
     let Some(new_last) = NaiveDate::from_ymd_opt(new_year, new_month as u32, new_day) else {
         return;
@@ -70,7 +68,7 @@ pub(crate) fn date_delta(last: &mut NaiveDate, diff: (i32, i32, i32), negative: 
     *last = new_last;
 
     // Adjust the day after setting year and month
-    *last = *last + Duration::days(days as i64);
+    *last += Duration::days(days as i64);
 }
 
 // Helper function to get the number of days in a given month

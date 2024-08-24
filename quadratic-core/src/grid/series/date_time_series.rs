@@ -50,18 +50,21 @@ pub(crate) fn find_date_time_series(options: SeriesOptions) -> Vec<CellValue> {
 
     let mut results = vec![];
     for _ in 0..options.spaces {
-        let mut date = last.date().clone();
-        let mut time = last.time().clone();
+        let mut date = last.date();
+        let mut time = last.time();
         let days = time_delta(&mut time, diff_in_time, options.negative);
+
+        // This is way better looking than the days.cmp match statement
+        #[allow(clippy::comparison_chain)]
         if days < 0 {
-            date = date - Duration::days(days.abs() as i64);
+            date -= Duration::days(days.abs() as i64);
         } else if days > 0 {
-            date = date + Duration::days(days as i64);
+            date += Duration::days(days as i64);
         }
         date_delta(&mut date, diff_in_date, options.negative);
 
         last = NaiveDateTime::new(date, time);
-        results.push(CellValue::DateTime(last.clone()));
+        results.push(CellValue::DateTime(last));
     }
 
     if options.negative {
