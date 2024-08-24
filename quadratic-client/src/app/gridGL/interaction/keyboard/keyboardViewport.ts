@@ -11,7 +11,7 @@ import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../he
 import { pixiApp } from '../../pixiApp/PixiApp';
 
 export function keyboardViewport(options: {
-  event: KeyboardEvent;
+  event: React.KeyboardEvent<HTMLElement>;
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
   presentationMode: boolean;
