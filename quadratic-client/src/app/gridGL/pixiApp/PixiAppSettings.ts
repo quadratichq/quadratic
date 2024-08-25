@@ -66,7 +66,6 @@ class PixiAppSettings {
       this.settings = defaultGridSettings;
     }
     pixiApp.gridLines.dirty = true;
-    // pixiApp.axesLines.dirty = true;
     pixiApp.headings.dirty = true;
 
     if (

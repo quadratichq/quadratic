@@ -18,7 +18,6 @@ import {
 } from '../../grid/actions/clipboard/clipboard';
 import { sheets } from '../../grid/controller/Sheets';
 import { htmlCellsHandler } from '../HTMLGrid/htmlCells/htmlCellsHandler';
-import { AxesLines } from '../UI/AxesLines';
 import { Cursor } from '../UI/Cursor';
 import { GridLines } from '../UI/GridLines';
 import { HtmlPlaceholders } from '../UI/HtmlPlaceholders';
@@ -51,7 +50,6 @@ export class PixiApp {
   canvas!: HTMLCanvasElement;
   viewport!: Viewport;
   gridLines!: GridLines;
-  axesLines!: AxesLines;
   background: Background;
   cursor!: Cursor;
   cellHighlights!: CellHighlights;
@@ -148,7 +146,6 @@ export class PixiApp {
     this.background = this.viewportContents.addChild(this.background);
     this.cellsSheets = this.viewportContents.addChild(this.cellsSheets);
     this.gridLines = this.viewportContents.addChild(new GridLines());
-    // this.axesLines = this.viewportContents.addChild(new AxesLines());
     this.boxCells = this.viewportContents.addChild(new BoxCells());
     this.cellImages = this.viewportContents.addChild(this.cellImages);
     this.multiplayerCursor = this.viewportContents.addChild(new UIMultiPlayerCursor());
@@ -189,7 +186,6 @@ export class PixiApp {
   viewportChanged = (): void => {
     this.viewport.dirty = true;
     this.gridLines.dirty = true;
-    // this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
     this.cellHighlights.dirty = true;
@@ -229,7 +225,6 @@ export class PixiApp {
     this.renderer.resize(width, height);
     this.viewport.resize(width, height);
     this.gridLines.dirty = true;
-    // this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
     this.cellHighlights.dirty = true;
@@ -239,7 +234,6 @@ export class PixiApp {
   // called before and after a render
   prepareForCopying(options?: { gridLines?: boolean; cull?: Rectangle }): Container {
     this.gridLines.visible = options?.gridLines ?? false;
-    // this.axesLines.visible = false;
     this.cursor.visible = false;
     this.cellHighlights.visible = false;
     this.multiplayerCursor.visible = false;
@@ -255,7 +249,6 @@ export class PixiApp {
 
   cleanUpAfterCopying(culled?: boolean): void {
     this.gridLines.visible = true;
-    this.axesLines.visible = true;
     this.cursor.visible = true;
     this.cellHighlights.visible = true;
     this.multiplayerCursor.visible = true;
@@ -288,7 +281,6 @@ export class PixiApp {
     this.paused = true;
     this.viewport.dirty = true;
     this.gridLines.dirty = true;
-    // this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
     this.cellHighlights.dirty = true;

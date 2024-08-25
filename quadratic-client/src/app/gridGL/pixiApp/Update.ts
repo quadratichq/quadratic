@@ -100,7 +100,6 @@ export class Update {
 
     let rendererDirty =
       pixiApp.gridLines.dirty ||
-      // pixiApp.axesLines.dirty ||
       pixiApp.headings.dirty ||
       pixiApp.boxCells.dirty ||
       pixiApp.multiplayerCursor.dirty ||
@@ -114,7 +113,6 @@ export class Update {
     if (rendererDirty && debugShowWhyRendering) {
       console.log(
         `dirty: ${pixiApp.viewport.dirty ? 'viewport ' : ''}${pixiApp.gridLines.dirty ? 'gridLines ' : ''}
-        // ${pixiApp.axesLines.dirty ? 'axesLines ' : ''}
         ${pixiApp.headings.dirty ? 'headings ' : ''}${pixiApp.cursor.dirty ? 'cursor ' : ''}${
           pixiApp.multiplayerCursor.dirty ? 'multiplayer cursor' : pixiApp.cellImages.dirty ? 'uiImageResize' : ''
         }
@@ -125,8 +123,6 @@ export class Update {
     debugTimeReset();
     pixiApp.gridLines.update();
     debugTimeCheck('[Update] gridLines');
-    // pixiApp.axesLines.update();
-    // debugTimeCheck('[Update] axesLines');
     pixiApp.headings.update(pixiApp.viewport.dirty);
     pixiApp.background.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] headings');

@@ -167,9 +167,6 @@ export const QuadraticMenu = () => {
           <MenuItem onClick={() => settings.setShowHeadings(!settings.showHeadings)}>
             <MenuLineItem primary="Show row and column headings" icon={settings.showHeadings && Check} indent />
           </MenuItem>
-          <MenuItem onClick={() => settings.setShowGridAxes(!settings.showGridAxes)}>
-            <MenuLineItem primary="Show grid axis" icon={settings.showGridAxes && Check} indent />
-          </MenuItem>
           <MenuItem onClick={() => settings.setShowGridLines(!settings.showGridLines)}>
             <MenuLineItem primary="Show grid lines" icon={settings.showGridLines && Check} indent />
           </MenuItem>

@@ -11,7 +11,7 @@ export const useTheme = () => {
   const darkModePreference = window.matchMedia('(prefers-color-scheme: dark)');
   const lightModePreference = window.matchMedia('(prefers-color-scheme: light)');
 
-  // User change prefernce via UI preference
+  // User change preference via UI preference
   useEffect(() => {
     if (theme === 'dark' || theme === 'light') {
       changeTheme(theme);
