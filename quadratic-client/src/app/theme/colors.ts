@@ -1,9 +1,7 @@
 import * as muiColors from '@mui/material/colors';
 
 export const colors = {
-  // Pulled from the CSS theme styles
-  // hsla(from var(--border) h s 20% / a) - a is set in pixi
-  gridLines: 0x233143,
+  gridLines: 0xcccccc,
   gridLinesOutOfBounds: 0xfefefe,
   cellFontColor: 0x000000,
   cellColorUserText: 0x8ecb89,
