@@ -4,6 +4,7 @@ export const colors = {
   // Pulled from the CSS theme styles
   // hsla(from var(--border) h s 20% / a) - a is set in pixi
   gridLines: 0x233143,
+  gridLinesOutOfBounds: 0xfefefe,
   cellFontColor: 0x000000,
   cellColorUserText: 0x8ecb89,
   cellColorUserPython: 0x3776ab,
@@ -27,7 +28,7 @@ export const colors = {
 
   independence: 0x5d576b,
   headerBackgroundColor: 0xffffff,
-  headerOutOfBoundsColor: 0xdddddd,
+  outOfBoundsBackgroundColor: 0xeeeeee,
   headerSelectedBackgroundColor: 0xe7f7ff,
   headerSelectedRowColumnBackgroundColor: 0xb6e7ff,
   headerCornerBackgroundColor: 0xffffff,

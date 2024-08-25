@@ -88,7 +88,7 @@ export class GridHeadings extends Container {
 
     this.headingsGraphics.lineStyle(0);
     if (bounds.left < 0) {
-      this.headingsGraphics.beginFill(colors.headerOutOfBoundsColor);
+      this.headingsGraphics.beginFill(colors.outOfBoundsBackgroundColor);
       this.headingsGraphics.drawRect(bounds.left + this.rowWidth, bounds.top, -bounds.left - this.rowWidth, cellHeight);
       this.headingsGraphics.endFill();
     }
@@ -197,7 +197,13 @@ export class GridHeadings extends Container {
     for (let x = leftOffset; x <= rightOffset; x += currentWidth) {
       currentWidth = offsets.getColumnWidth(column);
       if (gridAlpha !== 0) {
-        this.headingsGraphics.lineStyle(1, colors.gridLines, 0.25 * gridAlpha, 0.5, true);
+        this.headingsGraphics.lineStyle(
+          1,
+          x < 0 ? colors.gridLinesOutOfBounds : colors.gridLines,
+          gridAlpha,
+          0.5,
+          true
+        );
         this.headingsGraphics.moveTo(x, bounds.top);
         this.headingsGraphics.lineTo(x, bounds.top + cellHeight);
         this.gridLinesColumns.push({ column: column - 1, x, width: offsets.getColumnWidth(column - 1) });
@@ -272,7 +278,7 @@ export class GridHeadings extends Container {
     this.rowWidth = Math.max(this.rowWidth, CELL_HEIGHT / viewport.scale.x);
 
     if (bounds.top < 0) {
-      this.headingsGraphics.beginFill(colors.headerOutOfBoundsColor);
+      this.headingsGraphics.beginFill(colors.outOfBoundsBackgroundColor);
       this.headingsGraphics.drawRect(bounds.left, bounds.top, this.rowWidth, -bounds.left);
       this.headingsGraphics.endFill();
     }
@@ -381,7 +387,13 @@ export class GridHeadings extends Container {
     for (let y = topOffset; y <= bottomOffset; y += currentHeight) {
       currentHeight = offsets.getRowHeight(row);
       if (gridAlpha !== 0) {
-        this.headingsGraphics.lineStyle(1, colors.gridLines, 0.25 * gridAlpha, 0.5, true);
+        this.headingsGraphics.lineStyle(
+          1,
+          y < 0 ? colors.gridLinesOutOfBounds : colors.gridLines,
+          gridAlpha,
+          0.5,
+          true
+        );
         this.headingsGraphics.moveTo(bounds.left, y);
         this.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
         this.gridLinesRows.push({ row: row - 1, y, height: offsets.getRowHeight(row - 1) });
@@ -447,11 +459,30 @@ export class GridHeadings extends Container {
     const { viewport } = pixiApp;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const bounds = viewport.getVisibleBounds();
-    this.headingsGraphics.lineStyle(1, colors.gridLines, 0.25, 0.5, true);
-    this.headingsGraphics.moveTo(bounds.left + this.rowWidth, viewport.top);
-    this.headingsGraphics.lineTo(bounds.left + this.rowWidth, viewport.bottom);
-    this.headingsGraphics.moveTo(bounds.left, bounds.top + cellHeight);
-    this.headingsGraphics.lineTo(bounds.right, bounds.top + cellHeight);
+
+    // draw horizontal line
+    if (bounds.left < 0) {
+      this.headingsGraphics.lineStyle({ width: 1, color: colors.gridLinesOutOfBounds, alignment: 0.5, native: true });
+      this.headingsGraphics.moveTo(bounds.left, bounds.top + cellHeight);
+      this.headingsGraphics.lineTo(0, bounds.top + cellHeight);
+    }
+    if (bounds.right > 0) {
+      this.headingsGraphics.lineStyle({ width: 1, color: colors.gridLines, alignment: 0.5, native: true });
+      this.headingsGraphics.moveTo(0, bounds.top + cellHeight);
+      this.headingsGraphics.lineTo(bounds.right, bounds.top + cellHeight);
+    }
+
+    // draw vertical line
+    if (bounds.top < 0) {
+      this.headingsGraphics.lineStyle({ width: 1, color: colors.gridLinesOutOfBounds, alignment: 0.5, native: true });
+      this.headingsGraphics.moveTo(bounds.left + this.rowWidth, bounds.top);
+      this.headingsGraphics.lineTo(bounds.left + this.rowWidth, 0);
+    }
+    if (bounds.bottom > 0) {
+      this.headingsGraphics.lineStyle({ width: 1, color: colors.gridLines, alignment: 0.5, native: true });
+      this.headingsGraphics.moveTo(bounds.left + this.rowWidth, 0);
+      this.headingsGraphics.lineTo(bounds.left + this.rowWidth, bounds.bottom);
+    }
   }
 
   update(viewportDirty: boolean) {
