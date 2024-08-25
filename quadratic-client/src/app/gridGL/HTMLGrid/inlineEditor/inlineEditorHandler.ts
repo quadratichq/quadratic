@@ -32,6 +32,8 @@ class InlineEditorHandler {
   private open = false;
   private showing = false;
 
+  private initialValue = '';
+
   x = 0;
   y = 0;
   width = 0;
@@ -65,8 +67,9 @@ class InlineEditorHandler {
   };
 
   // Resets state after editing is complete.
-  reset() {
+  private reset() {
     this.open = false;
+    this.initialValue = '';
     inlineEditorEvents.emit('status', false);
     this.cursorIsMoving = false;
     this.x = this.y = this.width = this.height = 0;
@@ -151,6 +154,13 @@ class InlineEditorHandler {
   // Handler for the changeInput event.
   private changeInput = async (input: boolean, initialValue?: string) => {
     if (!input && !this.open) return;
+
+    if (initialValue) {
+      this.initialValue += initialValue;
+      initialValue = this.initialValue;
+    } else {
+      this.initialValue = '';
+    }
 
     if (!this.div) {
       throw new Error('Expected div and editor to be defined in InlineEditorHandler');
@@ -522,6 +532,7 @@ class InlineEditorHandler {
     }));
     this.location = undefined;
     inlineEditorMonaco.set('');
+    this.initialValue = '';
     this.showing = false;
   };
 
