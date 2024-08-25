@@ -45,10 +45,9 @@ export function loadAssets(): Promise<void> {
     addResourceOnce('formula-fx-icon', '/images/formula-fx-icon.png');
     addResourceOnce('python-icon', '/images/python-icon.png');
     addResourceOnce('javascript-icon', '/images/javascript-icon.png');
-
-    Loader.shared.add('/images/checkbox.png');
-    Loader.shared.add('/images/checkbox-checked.png');
-    Loader.shared.add('/images/dropdown.png');
+    addResourceOnce('checkbox-icon', '/images/checkbox.png');
+    addResourceOnce('checkbox-checked-icon', '/images/checkbox-checked.png');
+    addResourceOnce('dropdown-icon', '/images/dropdown.png');
 
     // Wait until pixi fonts are loaded before resolving
     Loader.shared.load(() => {
