@@ -27,6 +27,7 @@ export const colors = {
 
   independence: 0x5d576b,
   headerBackgroundColor: 0xffffff,
+  headerOutOfBoundsColor: 0xdddddd,
   headerSelectedBackgroundColor: 0xe7f7ff,
   headerSelectedRowColumnBackgroundColor: 0xb6e7ff,
   headerCornerBackgroundColor: 0xffffff,

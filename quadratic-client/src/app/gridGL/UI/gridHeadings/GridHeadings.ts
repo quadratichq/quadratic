@@ -87,8 +87,18 @@ export class GridHeadings extends Container {
     const cursor = sheets.sheet.cursor;
 
     this.headingsGraphics.lineStyle(0);
+    if (bounds.left < 0) {
+      this.headingsGraphics.beginFill(colors.headerOutOfBoundsColor);
+      this.headingsGraphics.drawRect(bounds.left + this.rowWidth, bounds.top, -bounds.left - this.rowWidth, cellHeight);
+      this.headingsGraphics.endFill();
+    }
     this.headingsGraphics.beginFill(colors.headerBackgroundColor);
-    this.columnRect = new Rectangle(bounds.left, bounds.top, bounds.width, cellHeight);
+    this.columnRect = new Rectangle(
+      Math.max(0, bounds.left),
+      bounds.top,
+      bounds.width - (bounds.left < 0 ? bounds.left : 0),
+      cellHeight
+    );
     this.headingsGraphics.drawShape(this.columnRect);
     this.headingsGraphics.endFill();
 
@@ -197,7 +207,7 @@ export class GridHeadings extends Container {
       const selected = Array.isArray(this.selectedColumns) ? this.selectedColumns.includes(column) : false;
 
       // only show the label if selected or mod calculation
-      if (selected || mod === 0 || column % mod === 0) {
+      if (column >= 0 && (selected || mod === 0 || column % mod === 0)) {
         const charactersWidth = (this.characterSize.width * column.toString().length) / scale;
 
         // only show labels that will fit (unless grid lines are hidden)
@@ -261,10 +271,21 @@ export class GridHeadings extends Container {
       (LABEL_PADDING_ROWS / viewport.scale.x) * 2;
     this.rowWidth = Math.max(this.rowWidth, CELL_HEIGHT / viewport.scale.x);
 
+    if (bounds.top < 0) {
+      this.headingsGraphics.beginFill(colors.headerOutOfBoundsColor);
+      this.headingsGraphics.drawRect(bounds.left, bounds.top, this.rowWidth, -bounds.left);
+      this.headingsGraphics.endFill();
+    }
+
     // draw background of vertical bar
     this.headingsGraphics.lineStyle(0);
     this.headingsGraphics.beginFill(colors.headerBackgroundColor);
-    this.columnRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, bounds.height);
+    this.columnRect = new Rectangle(
+      bounds.left,
+      bounds.top + (bounds.top < 0 ? -bounds.top : 0),
+      this.rowWidth,
+      bounds.height + (bounds.top < 0 ? bounds.top : 0)
+    );
     this.headingsGraphics.drawShape(this.columnRect);
     this.headingsGraphics.endFill();
     this.rowRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, bounds.height);
@@ -370,7 +391,7 @@ export class GridHeadings extends Container {
       const selected = Array.isArray(this.selectedRows) ? this.selectedRows.includes(row) : false;
 
       // only show the label if selected or mod calculation
-      if (selected || mod === 0 || row % mod === 0) {
+      if (row >= 0 && (selected || mod === 0 || row % mod === 0)) {
         // only show labels that will fit (unless grid lines are hidden)
         // if (currentHeight > halfCharacterHeight * 2 || pixiApp.gridLines.alpha < 0.25) {
         // don't show numbers if it overlaps with the selected value (eg, hides 0 if selected 1 overlaps it)
