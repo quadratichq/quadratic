@@ -169,6 +169,7 @@ class Sheets {
           offsets: '',
           bounds: { type: 'empty' },
           bounds_without_formatting: { type: 'empty' },
+          visible_bounds: null,
         },
         true
       );

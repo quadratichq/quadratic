@@ -348,6 +348,7 @@ pub fn import_sheet(sheet: current::Sheet) -> Result<Sheet> {
         order: sheet.order.to_owned(),
         offsets: SheetOffsets::import(&sheet.offsets),
         columns: import_column_builder(&sheet.columns)?,
+        visible_bounds: sheet.visible_bounds.to_owned(),
 
         // borders set after sheet is loaded
         // todo: borders need to be refactored
@@ -748,6 +749,7 @@ pub(crate) fn export_sheet(sheet: Sheet) -> current::Sheet {
         name: sheet.name.to_owned(),
         color: sheet.color.to_owned(),
         order: sheet.order.to_owned(),
+        visible_bounds: sheet.visible_bounds.to_owned(),
         offsets: sheet.offsets.export(),
         borders: export_borders_builder(&sheet),
         formats_all: sheet.format_all.as_ref().and_then(export_format),

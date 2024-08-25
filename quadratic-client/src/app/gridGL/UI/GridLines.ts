@@ -8,6 +8,7 @@ import { colors } from '../../theme/colors';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { calculateAlphaForGridLines } from './gridUtils';
+import { outOfBoundsBottom, outOfBoundsRight } from './gridHeadings/outOfBounds';
 
 interface GridLine {
   column?: number;
@@ -71,7 +72,7 @@ export class GridLines extends Graphics {
     const offset = bounds.left - position;
     let size = 0;
 
-    // draw negative space
+    // draw out of bounds (left)
     this.lineStyle({ width: 1, color: colors.gridLinesOutOfBounds, alignment: 0.5, native: true });
     let x = bounds.left;
     while (column < 0) {
@@ -82,10 +83,13 @@ export class GridLines extends Graphics {
       column++;
     }
 
-    // draw positive space
-    while (x < bounds.right + size - 1) {
-      // don't draw grid lines when hidden
+    const oobRight = outOfBoundsRight(bounds.right);
+    const oobBottom = outOfBoundsBottom(bounds.bottom);
+
+    // draw content
+    while (x < (oobRight ?? bounds.right) + size - 1) {
       if (size !== 0) {
+        // todo...need to take into account out of bounds for getLinesInRange
         const lines = gridOverflowLines.getLinesInRange(column, range);
         if (lines) {
           for (const [y0, y1] of lines) {
@@ -96,23 +100,54 @@ export class GridLines extends Graphics {
           }
         } else {
           if (bounds.top < 0) {
+            // draw out of bounds above
             this.lineStyle({ width: 1, color: colors.gridLinesOutOfBounds, alignment: 0.5, native: true });
             this.moveTo(x - offset, bounds.top);
             this.lineTo(x - offset, 0);
+
             this.lineStyle({ width: 1, color: colors.gridLines, alignment: 0.5, native: true });
-            this.lineTo(x - offset, bounds.bottom);
-            this.gridLinesX.push({ column, x: x - offset, y: 0, w: 1, h: bounds.bottom });
+            if (oobBottom !== undefined) {
+              this.lineTo(x - offset, oobBottom);
+              this.gridLinesX.push({ column, x: x - offset, y: 0, w: 1, h: oobBottom });
+
+              // draw out of bounds below
+              this.lineStyle({ width: 1, color: colors.gridLinesOutOfBounds, alignment: 0.5, native: true });
+              this.lineTo(x - offset, bounds.bottom);
+            } else {
+              this.lineTo(x - offset, bounds.bottom);
+              this.gridLinesX.push({ column, x: x - offset, y: 0, w: 1, h: bounds.bottom });
+            }
           } else {
             this.lineStyle({ width: 1, color: colors.gridLines, alignment: 0.5, native: true });
-            this.moveTo(x - offset, bounds.top);
-            this.lineTo(x - offset, bounds.bottom);
-            this.gridLinesX.push({ column, x: x - offset, y: bounds.top, w: 1, h: bounds.bottom - bounds.top });
+            if (oobBottom !== undefined) {
+              this.moveTo(x - offset, bounds.top);
+              this.lineTo(x - offset, oobBottom);
+              this.gridLinesX.push({ column, x: x - offset, y: bounds.top, w: 1, h: oobBottom - bounds.top });
+              this.lineStyle({ width: 1, color: colors.gridLinesOutOfBounds, alignment: 0.5, native: true });
+              this.lineTo(x - offset, bounds.bottom);
+            } else {
+              this.moveTo(x - offset, bounds.top);
+              this.lineTo(x - offset, bounds.bottom);
+              this.gridLinesX.push({ column, x: x - offset, y: bounds.top, w: 1, h: bounds.bottom - bounds.top });
+            }
           }
         }
       }
       size = sheets.sheet.offsets.getColumnWidth(column);
       x += size;
       column++;
+    }
+
+    // draw out of bounds (right)
+    if (oobRight !== undefined) {
+      this.lineStyle({ width: 1, color: colors.gridLinesOutOfBounds, alignment: 0.5, native: true });
+      while (x < bounds.right + size - 1) {
+        this.moveTo(x - offset, bounds.top);
+        this.lineTo(x - offset, bounds.bottom);
+        size = sheets.sheet.offsets.getColumnWidth(column);
+        x += size;
+        column++;
+      }
     }
   }
 
@@ -127,7 +162,10 @@ export class GridLines extends Graphics {
     const offset = bounds.top - position;
     let size = 0;
 
-    // draw negative space
+    const oobRight = outOfBoundsRight(bounds.right);
+    const oobBottom = outOfBoundsBottom(bounds.bottom);
+
+    // draw out of bounds (top)
     this.lineStyle({ width: 1, color: colors.gridLinesOutOfBounds, alignment: 0.5, native: true });
     let y = bounds.top;
     while (row < 0) {
@@ -138,22 +176,50 @@ export class GridLines extends Graphics {
       row++;
     }
 
-    // draw positive space
+    // draw content
     while (y < bounds.bottom + size - 1) {
-      // don't draw grid lines when hidden
       if (size !== 0) {
-        if (bounds.left < 0) {
+        // draw out of bounds (bottom)
+        if (oobBottom && y > oobBottom) {
           this.lineStyle({ width: 1, color: colors.gridLinesOutOfBounds, alignment: 0.5, native: true });
           this.moveTo(bounds.left, y - offset);
-          this.lineTo(0, y - offset);
-          this.lineStyle({ width: 1, color: colors.gridLines, alignment: 0.5, native: true });
           this.lineTo(bounds.right, y - offset);
-          this.gridLinesY.push({ row, x: 0, y: y - offset, w: 1, h: 1 });
         } else {
-          this.lineStyle({ width: 1, color: colors.gridLines, alignment: 0.5, native: true });
-          this.moveTo(bounds.left, y - offset);
-          this.lineTo(bounds.right, y - offset);
-          this.gridLinesY.push({ row, x: bounds.left, y: y - offset, w: bounds.right - bounds.left, h: 1 });
+          if (bounds.left < 0) {
+            // draw out of bounds (left)
+            this.lineStyle({ width: 1, color: colors.gridLinesOutOfBounds, alignment: 0.5, native: true });
+            this.moveTo(bounds.left, y - offset);
+            this.lineTo(0, y - offset);
+
+            this.lineStyle({ width: 1, color: colors.gridLines, alignment: 0.5, native: true });
+            if (oobRight !== undefined) {
+              this.lineTo(oobRight, y - offset);
+              this.gridLinesY.push({ row, x: 0, y: y - offset, w: oobRight, h: 1 });
+
+              // draw out of bounds below
+              this.lineStyle({ width: 1, color: colors.gridLinesOutOfBounds, alignment: 0.5, native: true });
+              this.lineTo(bounds.right, y - offset);
+            } else {
+              this.lineTo(bounds.right, y - offset);
+              this.gridLinesY.push({ row, x: 0, y: y - offset, w: 1, h: 1 });
+            }
+          } else {
+            if (oobRight !== undefined) {
+              this.lineStyle({ width: 1, color: colors.gridLines, alignment: 0.5, native: true });
+              this.moveTo(bounds.left, y - offset);
+              this.lineTo(oobRight, y - offset);
+              this.gridLinesY.push({ row, x: bounds.left, y: y - offset, w: bounds.right - bounds.left, h: 1 });
+
+              // draw out of bounds below
+              this.lineStyle({ width: 1, color: colors.gridLinesOutOfBounds, alignment: 0.5, native: true });
+              this.lineTo(oobRight, y - offset);
+            } else {
+              this.lineStyle({ width: 1, color: colors.gridLines, alignment: 0.5, native: true });
+              this.moveTo(bounds.left, y - offset);
+              this.lineTo(bounds.right, y - offset);
+              this.gridLinesY.push({ row, x: bounds.left, y: y - offset, w: bounds.right - bounds.left, h: 1 });
+            }
+          }
         }
       }
       size = offsets.getRowHeight(row);

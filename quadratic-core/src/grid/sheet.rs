@@ -43,6 +43,11 @@ pub struct Sheet {
     pub color: Option<String>,
     pub order: String,
 
+    // used to track what the visible size of the sheet (everything outside this
+    // area is shown as out of bounds)
+    #[serde(default)]
+    pub visible_bounds: Option<(i64, i64)>,
+
     pub offsets: SheetOffsets,
 
     #[serde(with = "crate::util::btreemap_serde")]
@@ -95,6 +100,7 @@ impl Sheet {
             name,
             color: None,
             order,
+            visible_bounds: None,
 
             offsets: SheetOffsets::default(),
 

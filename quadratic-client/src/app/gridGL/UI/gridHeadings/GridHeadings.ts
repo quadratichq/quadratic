@@ -10,6 +10,7 @@ import { Size } from '../../types/size';
 import { calculateAlphaForGridLines } from '../gridUtils';
 import { GridHeadingsLabels } from './GridHeadingsLabels';
 import { getColumnA1Notation } from './getA1Notation';
+import { outOfBoundsBottom, outOfBoundsRight } from './outOfBounds';
 
 type Selected = 'all' | number[] | undefined;
 
@@ -87,20 +88,37 @@ export class GridHeadings extends Container {
     const cursor = sheets.sheet.cursor;
 
     this.headingsGraphics.lineStyle(0);
+
+    // draw out of bounds to the left
     if (bounds.left < 0) {
       this.headingsGraphics.beginFill(colors.outOfBoundsBackgroundColor);
       this.headingsGraphics.drawRect(bounds.left + this.rowWidth, bounds.top, -bounds.left - this.rowWidth, cellHeight);
       this.headingsGraphics.endFill();
     }
-    this.headingsGraphics.beginFill(colors.headerBackgroundColor);
-    this.columnRect = new Rectangle(
-      Math.max(0, bounds.left),
-      bounds.top,
-      bounds.width - (bounds.left < 0 ? bounds.left : 0),
-      cellHeight
-    );
-    this.headingsGraphics.drawShape(this.columnRect);
-    this.headingsGraphics.endFill();
+
+    const oobRight = outOfBoundsRight(bounds.right);
+
+    // draw content
+    if (oobRight === undefined || bounds.left < oobRight) {
+      this.headingsGraphics.beginFill(colors.headerBackgroundColor);
+      this.columnRect = new Rectangle(
+        Math.max(0, bounds.left),
+        bounds.top,
+        (oobRight !== undefined ? oobRight : bounds.right) - Math.max(0, bounds.left),
+        cellHeight
+      );
+      this.headingsGraphics.drawShape(this.columnRect);
+      this.headingsGraphics.endFill();
+    }
+
+    // draw out of bounds to the right
+    if (oobRight !== undefined) {
+      this.headingsGraphics.beginFill(colors.outOfBoundsBackgroundColor);
+      this.headingsGraphics.drawRect(oobRight, bounds.top, bounds.right - oobRight, cellHeight);
+      this.headingsGraphics.endFill();
+    }
+
+    // todo...
 
     // fill the entire viewport if all cells are selected
     if (cursor.columnRow?.all) {
@@ -194,9 +212,11 @@ export class GridHeadings extends Container {
     // keep track of last label to ensure we don't overlap
     let lastLabel: { left: number; right: number; selected: boolean } | undefined = undefined;
 
-    for (let x = leftOffset; x <= rightOffset; x += currentWidth) {
+    const oobRight = outOfBoundsRight(bounds.right);
+
+    for (let x = leftOffset; x <= (oobRight ? oobRight : rightOffset); x += currentWidth) {
       currentWidth = offsets.getColumnWidth(column);
-      if (gridAlpha !== 0) {
+      if (gridAlpha !== 0 && x > 0) {
         this.headingsGraphics.lineStyle(
           1,
           x < 0 ? colors.gridLinesOutOfBounds : colors.gridLines,
@@ -212,8 +232,14 @@ export class GridHeadings extends Container {
       // show selected numbers
       const selected = Array.isArray(this.selectedColumns) ? this.selectedColumns.includes(column) : false;
 
+      const visibleBounds = sheets.sheet.visibleBounds;
+
       // only show the label if selected or mod calculation
-      if (column >= 0 && (selected || mod === 0 || column % mod === 0)) {
+      if (
+        column >= 0 &&
+        (!visibleBounds || column <= visibleBounds[0]) &&
+        (selected || mod === 0 || column % mod === 0)
+      ) {
         const charactersWidth = (this.characterSize.width * column.toString().length) / scale;
 
         // only show labels that will fit (unless grid lines are hidden)
@@ -277,24 +303,36 @@ export class GridHeadings extends Container {
       (LABEL_PADDING_ROWS / viewport.scale.x) * 2;
     this.rowWidth = Math.max(this.rowWidth, CELL_HEIGHT / viewport.scale.x);
 
+    // draw out of bounds above
     if (bounds.top < 0) {
       this.headingsGraphics.beginFill(colors.outOfBoundsBackgroundColor);
       this.headingsGraphics.drawRect(bounds.left, bounds.top, this.rowWidth, -bounds.left);
       this.headingsGraphics.endFill();
     }
 
-    // draw background of vertical bar
-    this.headingsGraphics.lineStyle(0);
-    this.headingsGraphics.beginFill(colors.headerBackgroundColor);
-    this.columnRect = new Rectangle(
-      bounds.left,
-      bounds.top + (bounds.top < 0 ? -bounds.top : 0),
-      this.rowWidth,
-      bounds.height + (bounds.top < 0 ? bounds.top : 0)
-    );
-    this.headingsGraphics.drawShape(this.columnRect);
-    this.headingsGraphics.endFill();
-    this.rowRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, bounds.height);
+    const oobBottom = outOfBoundsBottom(bounds.bottom);
+
+    // draw content
+    if (oobBottom === undefined || bounds.top < oobBottom) {
+      this.headingsGraphics.lineStyle(0);
+      this.headingsGraphics.beginFill(colors.headerBackgroundColor);
+      this.columnRect = new Rectangle(
+        bounds.left,
+        bounds.top + (bounds.top < 0 ? -bounds.top : 0),
+        this.rowWidth,
+        bounds.height + (bounds.top < 0 ? bounds.top : 0)
+      );
+      this.headingsGraphics.drawShape(this.columnRect);
+      this.headingsGraphics.endFill();
+      this.rowRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, bounds.height);
+    }
+
+    // draw out of bounds below
+    if (oobBottom !== undefined) {
+      this.headingsGraphics.beginFill(colors.outOfBoundsBackgroundColor);
+      this.headingsGraphics.drawRect(bounds.left, oobBottom, this.rowWidth, bounds.bottom - oobBottom);
+      this.headingsGraphics.endFill();
+    }
 
     // fill the entire viewport if all cells are selected
     if (cursor.columnRow?.all) {
@@ -374,6 +412,8 @@ export class GridHeadings extends Container {
       mod = this.findIntervalY(skipNumbers);
     }
 
+    const oobBottom = outOfBoundsBottom(bounds.bottom);
+
     const x = bounds.left + this.rowWidth / 2;
     let row = start.index;
     let currentHeight = 0;
@@ -384,16 +424,10 @@ export class GridHeadings extends Container {
 
     const halfCharacterHeight = this.characterSize.height / scale;
 
-    for (let y = topOffset; y <= bottomOffset; y += currentHeight) {
+    for (let y = topOffset; y <= (oobBottom !== undefined ? oobBottom : bottomOffset); y += currentHeight) {
       currentHeight = offsets.getRowHeight(row);
-      if (gridAlpha !== 0) {
-        this.headingsGraphics.lineStyle(
-          1,
-          y < 0 ? colors.gridLinesOutOfBounds : colors.gridLines,
-          gridAlpha,
-          0.5,
-          true
-        );
+      if (gridAlpha !== 0 && y >= 0) {
+        this.headingsGraphics.lineStyle(1, colors.gridLines, gridAlpha, 0.5, true);
         this.headingsGraphics.moveTo(bounds.left, y);
         this.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
         this.gridLinesRows.push({ row: row - 1, y, height: offsets.getRowHeight(row - 1) });
@@ -402,8 +436,10 @@ export class GridHeadings extends Container {
       // show selected numbers
       const selected = Array.isArray(this.selectedRows) ? this.selectedRows.includes(row) : false;
 
+      const visibleBounds = sheets.sheet.visibleBounds;
+
       // only show the label if selected or mod calculation
-      if (row >= 0 && (selected || mod === 0 || row % mod === 0)) {
+      if (row >= 0 && (!visibleBounds || row <= visibleBounds[1]) && (selected || mod === 0 || row % mod === 0)) {
         // only show labels that will fit (unless grid lines are hidden)
         // if (currentHeight > halfCharacterHeight * 2 || pixiApp.gridLines.alpha < 0.25) {
         // don't show numbers if it overlaps with the selected value (eg, hides 0 if selected 1 overlaps it)
@@ -460,6 +496,9 @@ export class GridHeadings extends Container {
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const bounds = viewport.getVisibleBounds();
 
+    const oobRight = outOfBoundsRight(bounds.right);
+    const oobBottom = outOfBoundsBottom(bounds.bottom);
+
     // draw horizontal line
     if (bounds.left < 0) {
       this.headingsGraphics.lineStyle({ width: 1, color: colors.gridLinesOutOfBounds, alignment: 0.5, native: true });
@@ -469,6 +508,11 @@ export class GridHeadings extends Container {
     if (bounds.right > 0) {
       this.headingsGraphics.lineStyle({ width: 1, color: colors.gridLines, alignment: 0.5, native: true });
       this.headingsGraphics.moveTo(0, bounds.top + cellHeight);
+      this.headingsGraphics.lineTo(oobRight ? oobRight : bounds.right, bounds.top + cellHeight);
+    }
+    if (oobRight) {
+      this.headingsGraphics.lineStyle({ width: 1, color: colors.gridLinesOutOfBounds, alignment: 0.5, native: true });
+      this.headingsGraphics.moveTo(oobRight, bounds.top + cellHeight);
       this.headingsGraphics.lineTo(bounds.right, bounds.top + cellHeight);
     }
 
@@ -481,6 +525,11 @@ export class GridHeadings extends Container {
     if (bounds.bottom > 0) {
       this.headingsGraphics.lineStyle({ width: 1, color: colors.gridLines, alignment: 0.5, native: true });
       this.headingsGraphics.moveTo(bounds.left + this.rowWidth, 0);
+      this.headingsGraphics.lineTo(bounds.left + this.rowWidth, bounds.bottom);
+    }
+    if (oobBottom) {
+      this.headingsGraphics.lineStyle({ width: 1, color: colors.gridLinesOutOfBounds, alignment: 0.5, native: true });
+      this.headingsGraphics.moveTo(bounds.left + this.rowWidth, oobBottom);
       this.headingsGraphics.lineTo(bounds.left + this.rowWidth, bounds.bottom);
     }
   }

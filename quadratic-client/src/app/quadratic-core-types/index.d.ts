@@ -40,7 +40,7 @@ export interface SheetRect { min: Pos, max: Pos, sheet_id: SheetId, }
 export interface Selection { sheet_id: SheetId, x: bigint, y: bigint, rects: Array<Rect> | null, rows: Array<bigint> | null, columns: Array<bigint> | null, all: boolean, }
 export interface Placement { index: number, position: number, size: number, }
 export interface ColumnRow { column: number, row: number, }
-export interface SheetInfo { sheet_id: string, name: string, order: string, color: string | null, offsets: string, bounds: GridBounds, bounds_without_formatting: GridBounds, }
+export interface SheetInfo { sheet_id: string, name: string, order: string, color: string | null, offsets: string, bounds: GridBounds, bounds_without_formatting: GridBounds, visible_bounds: [bigint, bigint] | null, }
 export type PasteSpecial = "None" | "Values" | "Formats";
 export interface Rgba { red: number, green: number, blue: number, alpha: number, }
 export type CellBorderLine = "line1" | "line2" | "line3" | "dotted" | "dashed" | "double";

@@ -112,6 +112,10 @@ pub struct Sheet {
     pub name: String,
     pub color: Option<String>,
     pub order: String,
+
+    #[serde(default)]
+    pub visible_bounds: Option<(i64, i64)>,
+
     pub offsets: Offsets,
     pub columns: Vec<(i64, Column)>,
     pub borders: Borders,
