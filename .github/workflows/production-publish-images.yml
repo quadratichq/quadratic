@@ -28,16 +28,16 @@ jobs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Create ECR Repository if not exists
+    - name: Create Public ECR Repository if not exists
       run: |
-        aws ecr describe-repositories --repository-names quadratic-${{ matrix.service }}-production || \
-        aws ecr create-repository --repository-name quadratic-${{ matrix.service }}-production
+        aws ecr-public describe-repositories --repository-names quadratic-${{ matrix.service }}-production || \
+        aws ecr-public create-repository --repository-name quadratic-${{ matrix.service }}-production
 
-    - name: Build, Tag, and Push Image to Amazon ECR
+    - name: Build, Tag, and Push Image to Amazon ECR Public
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         ECR_REPOSITORY: quadratic-${{ matrix.service }}-production
         IMAGE_TAG: 0.1.0
       run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f quadratic-${{ matrix.service }}/Dockerfile .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker build -t public.ecr.aws/$ECR_REPOSITORY:$IMAGE_TAG -f quadratic-${{ matrix.service }}/Dockerfile .
+        docker push public.ecr.aws/$ECR_REPOSITORY:$IMAGE_TAG
