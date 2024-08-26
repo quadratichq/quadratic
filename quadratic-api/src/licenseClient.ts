@@ -44,7 +44,8 @@ export const licenseClient = {
     // Otherwise, perform the check
     const result = await licenseClient.checkFromServer();
 
-    if (!result) {
+    // don't cache errors or non-active licenses
+    if (!result || result.status !== 'active') {
       return null;
     }
 
