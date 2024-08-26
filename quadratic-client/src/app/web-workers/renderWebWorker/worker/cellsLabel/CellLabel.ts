@@ -8,6 +8,7 @@
  */
 
 import { Bounds } from '@/app/grid/sheet/Bounds';
+import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
 import { CellAlign, CellVerticalAlign, CellWrap, JsNumber, JsRenderCell } from '@/app/quadratic-core-types';
@@ -16,7 +17,6 @@ import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT } from '@/shared/constants/gridConst
 import { removeItems } from '@pixi/utils';
 import { Point, Rectangle } from 'pixi.js';
 import { RenderBitmapChar } from '../../renderBitmapFonts';
-import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { CellsLabels } from './CellsLabels';
 import { LabelMeshEntry } from './LabelMeshEntry';
 import { LabelMeshes } from './LabelMeshes';
@@ -222,10 +222,10 @@ export class CellLabel {
     if (!this.isNumber()) return false;
 
     const clipLeft = Math.max(this.cellClipLeft ?? -Infinity, this.AABB.right - (this.nextLeftWidth ?? Infinity));
-    if (this.actualLeft < clipLeft) return true;
+    if (clipLeft - this.actualLeft > 0.001) return true;
 
     const clipRight = Math.min(this.cellClipRight ?? Infinity, this.AABB.left + (this.nextRightWidth ?? Infinity));
-    if (this.actualRight > clipRight) return true;
+    if (this.actualRight - clipRight > 0.001) return true;
 
     return false;
   };
