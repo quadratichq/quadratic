@@ -2,7 +2,6 @@ import { Avatar } from '@/shared/components/Avatar';
 import { TYPE } from '@/shared/constants/appConstants';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { getAuth0AvatarSrc } from '@/shared/utils/auth0UserImageSrc';
 import { GlobeIcon } from '@radix-ui/react-icons';
 import { ReactNode } from 'react';
 import { Layout, ViewPreferences } from './FilesListViewControlsDropdown';
@@ -53,12 +52,7 @@ export function FilesListItemCore({
         </div>
         {creator && creator.name && (
           <TooltipPopover label={`Created by ${creator.name}`}>
-            <Avatar
-              alt={creator.name}
-              src={getAuth0AvatarSrc(creator.picture)}
-              crossOrigin="anonymous"
-              className="h-6 w-6 text-muted-foreground"
-            >
+            <Avatar alt={creator.name} src={creator.picture}>
               {creator.name[0]}
             </Avatar>
           </TooltipPopover>

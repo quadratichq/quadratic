@@ -12,7 +12,6 @@ import { apiClient } from '@/shared/api/apiClient';
 import { Avatar } from '@/shared/components/Avatar';
 import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
-import { getAuth0AvatarSrc } from '@/shared/utils/auth0UserImageSrc';
 import { Send, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
@@ -220,14 +219,9 @@ ${QuadraticDocs}`,
             >
               {message.role === 'user' ? (
                 <Avatar
-                  src={getAuth0AvatarSrc(user?.picture)}
+                  src={user?.picture}
                   alt={user?.name}
-                  crossOrigin="anonymous"
                   style={{
-                    width: '24px',
-                    height: '24px',
-                    fontSize: '0.8125rem',
-                    borderRadius: '50%',
                     backgroundColor: colors.quadraticSecondary,
                   }}
                 >
@@ -237,10 +231,6 @@ ${QuadraticDocs}`,
                 <Avatar
                   alt="AI Assistant"
                   style={{
-                    width: '24px',
-                    height: '24px',
-                    fontSize: '0.8rem',
-                    borderRadius: '50%',
                     backgroundColor: 'white',
                     marginBottom: '0.5rem',
                   }}

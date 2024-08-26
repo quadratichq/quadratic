@@ -1,12 +1,12 @@
+import { getAuth0AvatarSrc } from '@/shared/utils/auth0UserImageSrc';
 import React, { ImgHTMLAttributes } from 'react';
 
 interface AvatarProps extends ImgHTMLAttributes<HTMLImageElement> {
   size?: 'small' | 'medium' | 'large';
-  fallbackSrc?: string;
   children?: string | React.ReactNode;
 }
 
-export const Avatar: React.FC<AvatarProps> = ({ fallbackSrc, src, alt, size, style, children, ...rest }) => {
+export const Avatar: React.FC<AvatarProps> = ({ src, alt, size, style, children, ...rest }) => {
   const [error, setError] = React.useState(false);
 
   const stylePreset = {
@@ -30,7 +30,8 @@ export const Avatar: React.FC<AvatarProps> = ({ fallbackSrc, src, alt, size, sty
       ) : (
         <img
           alt={alt}
-          src={error ? fallbackSrc : src ?? ''}
+          src={getAuth0AvatarSrc(src)}
+          crossOrigin="anonymous"
           onError={() => setError(true)}
           style={{ ...stylePreset, ...style }}
           {...rest}

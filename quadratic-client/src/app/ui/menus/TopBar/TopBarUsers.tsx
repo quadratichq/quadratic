@@ -28,6 +28,7 @@ export const TopBarUsers = () => {
 
   return (
     <>
+      {/* TODO(ayush): create custom AvatarGroup component */}
       <AvatarGroup
         spacing={16}
         componentsProps={{ additionalAvatar: { sx: sharedAvatarSxProps } }}

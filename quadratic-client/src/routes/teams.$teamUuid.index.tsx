@@ -43,6 +43,7 @@ export const Component = () => {
           <div className={`flex items-center gap-2`}>
             <div className="hidden lg:block">
               <Link to={ROUTES.TEAM_MEMBERS(teamUuid)}>
+                {/* TODO(ayush): create custom AvatarGroup component */}
                 <AvatarGroup
                   max={6}
                   sx={{ cursor: 'pointer', pr: 0 }}

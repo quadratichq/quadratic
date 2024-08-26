@@ -17,7 +17,6 @@ import {
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { getAuth0AvatarSrc } from '@/shared/utils/auth0UserImageSrc';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import {
   Cross2Icon,
@@ -808,7 +807,7 @@ function ListItemUser({
   return (
     <ListItem>
       <div>
-        <Avatar src={getAuth0AvatarSrc(picture)} crossOrigin="anonymous" size="small">
+        <Avatar src={picture} size="small">
           {label}
         </Avatar>
       </div>

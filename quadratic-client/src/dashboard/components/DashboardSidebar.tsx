@@ -14,7 +14,6 @@ import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { getAuth0AvatarSrc } from '@/shared/utils/auth0UserImageSrc';
 import { SchoolOutlined } from '@mui/icons-material';
 import { ExternalLinkIcon, FileIcon, GearIcon, MixIcon, PersonIcon, PlusIcon } from '@radix-ui/react-icons';
 import { ReactNode, useState } from 'react';
@@ -144,14 +143,9 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         )}
         <SidebarNavLink to={ROUTES.ACCOUNT}>
           <Avatar
-            src={getAuth0AvatarSrc(user?.picture)}
+            src={user?.picture}
             alt={user?.name}
-            crossOrigin="anonymous"
             style={{
-              width: '24px',
-              height: '24px',
-              fontSize: '.8125rem',
-              borderRadius: '50%',
               backgroundColor: colors.quadraticSecondary,
             }}
           >
