@@ -106,4 +106,22 @@ impl GridController {
             &self.set_sheet_color(sheet_id, color, cursor),
         )?)
     }
+
+    #[wasm_bindgen(js_name = "setSheetSize")]
+    pub fn js_set_sheet_size(
+        &mut self,
+        sheet_id: String,
+        width: Option<u32>,
+        height: Option<u32>,
+        auto: bool,
+        cursor: Option<String>,
+    ) {
+        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
+            let size = match (width, height) {
+                (Some(width), Some(height)) => Some((width as i64, height as i64)),
+                _ => None,
+            };
+            self.set_sheet_size(sheet_id, size, auto, cursor);
+        }
+    }
 }

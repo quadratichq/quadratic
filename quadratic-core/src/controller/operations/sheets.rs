@@ -3,7 +3,7 @@ use lexicon_fractional_index::key_between;
 
 use crate::{
     controller::GridController,
-    grid::{file::sheet_schema::export_sheet, Sheet, SheetId},
+    grid::{file::sheet_schema::export_sheet, GridBounds, Sheet, SheetId},
     util,
 };
 
@@ -111,6 +111,37 @@ impl GridController {
 
         ops.extend(code_run_ops);
         ops
+    }
+
+    pub fn set_sheet_size_operations(
+        &mut self,
+        sheet_id: SheetId,
+        size: Option<(i64, i64)>,
+        auto: bool,
+    ) -> Vec<Operation> {
+        if auto {
+            let Some(sheet) = self.try_sheet(sheet_id) else {
+                // sheet may have been deleted
+                return vec![];
+            };
+            let bounds = sheet.bounds(false);
+
+            match bounds {
+                GridBounds::NonEmpty(rect) => {
+                    // we no longer support negative bounds
+                    if rect.max.x < 0 || rect.max.y < 0 {
+                        return vec![];
+                    }
+                    vec![Operation::SetSheetSize {
+                        sheet_id,
+                        size: Some((rect.max.x, rect.max.y)),
+                    }]
+                }
+                GridBounds::Empty => vec![],
+            }
+        } else {
+            vec![Operation::SetSheetSize { sheet_id, size }]
+        }
     }
 }
 

@@ -562,6 +562,10 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreSetSheetSize':
+        core.setSheetSize(e.data.sheetId, e.data.width, e.data.height, e.data.auto, e.data.cursor);
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core

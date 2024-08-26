@@ -26,7 +26,7 @@ impl From<&Sheet> for SheetInfo {
             offsets,
             bounds: sheet.bounds(false),
             bounds_without_formatting: sheet.bounds(true),
-            visible_bounds: sheet.visible_bounds,
+            visible_bounds: sheet.sheet_size,
         }
     }
 }
@@ -60,7 +60,7 @@ mod tests {
     fn sheet_info() {
         let mut sheet = Sheet::new(SheetId::test(), "test name".to_string(), "A0".to_string());
         sheet.color = Some("red".to_string());
-        sheet.visible_bounds = Some((10, 10));
+        sheet.sheet_size = Some((10, 10));
         let sheet_info = crate::wasm_bindings::controller::SheetInfo::from(&sheet);
         assert_eq!(sheet_info.sheet_id, SheetId::test().to_string());
         assert_eq!(sheet_info.name, "test name");

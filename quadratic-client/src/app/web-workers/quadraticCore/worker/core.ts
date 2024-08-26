@@ -1031,6 +1031,11 @@ class Core {
       return JSON.parse(validationId);
     }
   }
+
+  setSheetSize(sheetId: string, width: number | undefined, height: number | undefined, auto: boolean, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.setSheetSize(sheetId, width, height, auto, cursor);
+  }
 }
 
 export const core = new Core();

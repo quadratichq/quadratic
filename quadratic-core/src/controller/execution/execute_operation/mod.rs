@@ -56,6 +56,10 @@ impl GridController {
                 Operation::SetValidationWarning { .. } => {
                     self.execute_set_validation_warning(transaction, op);
                 }
+
+                Operation::SetSheetSize { .. } => {
+                    self.execute_set_sheet_size(transaction, op);
+                }
             }
 
             if cfg!(target_family = "wasm") || cfg!(test) {

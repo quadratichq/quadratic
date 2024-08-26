@@ -246,6 +246,29 @@ impl GridController {
             });
         }
     }
+
+    pub fn execute_set_sheet_size(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+        if let Operation::SetSheetSize { sheet_id, size } = op {
+            let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+                // sheet may have been deleted
+                return;
+            };
+            let old_size = sheet.sheet_size;
+            sheet.sheet_size = size;
+
+            transaction
+                .forward_operations
+                .push(Operation::SetSheetSize { sheet_id, size });
+            transaction
+                .reverse_operations
+                .push(Operation::SetSheetSize {
+                    sheet_id,
+                    size: old_size,
+                });
+
+            self.send_sheet_info(sheet_id);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -260,7 +283,7 @@ mod tests {
         CellValue, SheetPos,
     };
     use bigdecimal::BigDecimal;
-    use serial_test::serial;
+    use serial_test::{parallel, serial};
 
     #[test]
     #[serial]
@@ -570,6 +593,31 @@ mod tests {
         expect_js_call(
             "jsAddSheet",
             format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            true,
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn set_sheet_size() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let size = Some((10, 20));
+        gc.set_sheet_size(sheet_id, size, false, None);
+        assert_eq!(gc.grid.sheets()[0].sheet_size, size);
+        let sheet_info = SheetInfo::from(gc.sheet(sheet_id));
+        expect_js_call(
+            "jsSheetInfoUpdate",
+            serde_json::to_string(&sheet_info).unwrap(),
+            true,
+        );
+
+        gc.undo(None);
+        assert_eq!(gc.grid.sheets()[0].sheet_size, None);
+        let sheet_info = SheetInfo::from(gc.sheet(sheet_id));
+        expect_js_call(
+            "jsSheetInfoUpdate",
+            serde_json::to_string(&sheet_info).unwrap(),
             true,
         );
     }

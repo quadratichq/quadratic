@@ -960,6 +960,15 @@ export interface CoreClientValidateInput {
   validationId: string | undefined;
 }
 
+export interface ClientCoreSetSheetSize {
+  type: 'clientCoreSetSheetSize';
+  sheetId: string;
+  width: number | undefined;
+  height: number | undefined;
+  auto: boolean;
+  cursor: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1031,7 +1040,8 @@ export type ClientCoreMessage =
   | ClientCoreGetValidationFromPos
   | ClientCoreGetValidationList
   | ClientCoreGetDisplayCell
-  | ClientCoreValidateInput;
+  | ClientCoreValidateInput
+  | ClientCoreSetSheetSize;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

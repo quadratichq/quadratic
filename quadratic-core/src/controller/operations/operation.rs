@@ -135,6 +135,11 @@ pub enum Operation {
         sheet_pos: SheetPos,
         validation_id: Option<Uuid>,
     },
+
+    SetSheetSize {
+        sheet_id: SheetId,
+        size: Option<(i64, i64)>,
+    },
 }
 
 impl fmt::Display for Operation {
@@ -256,6 +261,13 @@ impl fmt::Display for Operation {
                     fmt,
                     "SetValidationWarning {{ sheet_pos: {:?}, validation_id: {:?} }}",
                     sheet_pos, validation_id
+                )
+            }
+            Operation::SetSheetSize { sheet_id, size } => {
+                write!(
+                    fmt,
+                    "SetSheetSize {{ sheet_id: {}, size: {:?} }}",
+                    sheet_id, size
                 )
             }
         }

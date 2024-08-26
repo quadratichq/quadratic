@@ -716,6 +716,10 @@ class QuadraticCore {
     this.send({ type: 'clientCoreSetSheetColor', sheetId, color, cursor });
   }
 
+  setSheetSize(sheetId: string, width: number | undefined, height: number | undefined, auto: boolean, cursor: string) {
+    this.send({ type: 'clientCoreSetSheetSize', sheetId, width, height, auto, cursor });
+  }
+
   duplicateSheet(sheetId: string, cursor: string) {
     this.send({ type: 'clientCoreDuplicateSheet', sheetId, cursor });
   }

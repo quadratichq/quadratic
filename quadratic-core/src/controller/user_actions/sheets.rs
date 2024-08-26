@@ -33,6 +33,7 @@ impl GridController {
         let ops = self.delete_sheet_operations(sheet_id);
         self.start_user_transaction(ops, cursor, TransactionName::SheetDelete);
     }
+
     pub fn move_sheet(
         &mut self,
         sheet_id: SheetId,
@@ -42,9 +43,21 @@ impl GridController {
         let ops = self.move_sheet_operations(sheet_id, to_before);
         self.start_user_transaction(ops, cursor, TransactionName::SetSheetMetadata);
     }
+
     pub fn duplicate_sheet(&mut self, sheet_id: SheetId, cursor: Option<String>) {
         let ops = self.duplicate_sheet_operations(sheet_id);
         self.start_user_transaction(ops, cursor, TransactionName::DuplicateSheet);
+    }
+
+    pub fn set_sheet_size(
+        &mut self,
+        sheet_id: SheetId,
+        size: Option<(i64, i64)>,
+        auto: bool,
+        cursor: Option<String>,
+    ) {
+        let ops = self.set_sheet_size_operations(sheet_id, size, auto);
+        self.start_user_transaction(ops, cursor, TransactionName::SetSheetMetadata);
     }
 }
 
@@ -456,5 +469,39 @@ mod test {
                 .get_code_cell_value((1, 0).into()),
             Some(CellValue::Number(BigDecimal::from(4)))
         );
+    }
+
+    #[test]
+    #[serial]
+    fn sheet_size() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_sheet_size(sheet_id, Some((10, 10)), false, None);
+        assert_eq!(gc.sheet(sheet_id).sheet_size, Some((10, 10)));
+
+        gc.undo(None);
+        assert_eq!(gc.sheet(sheet_id).sheet_size, None);
+
+        gc.redo(None);
+        assert_eq!(gc.sheet(sheet_id).sheet_size, Some((10, 10)));
+
+        gc.set_sheet_size(sheet_id, None, false, None);
+        assert_eq!(gc.sheet(sheet_id).sheet_size, None);
+
+        gc.set_sheet_size(sheet_id, Some((10, 10)), false, None);
+        assert_eq!(gc.sheet(sheet_id).sheet_size, Some((10, 10)));
+
+        gc.set_cell_values(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            vec![vec!["1"; 10]; 20],
+            None,
+        );
+        gc.set_sheet_size(sheet_id, None, true, None);
+        assert_eq!(gc.sheet(sheet_id).sheet_size, Some((9, 19)));
     }
 }
