@@ -13,7 +13,6 @@ import { Link } from 'react-router-dom';
 
 export const Component = () => {
   const {
-    userMakingRequest: { id: userMakingRequestId },
     activeTeam: {
       team: { uuid: teamUuid },
       files,
@@ -64,7 +63,7 @@ export const Component = () => {
       <FilesList
         files={files.map(({ file, userMakingRequest }) => {
           // Don't include the creator if it's the person logged in
-          const creator = userMakingRequestId !== file.creatorId ? usersById[file.creatorId] : undefined;
+          const creator = usersById[file.creatorId];
           return {
             name: file.name,
             createdDate: file.createdDate,
