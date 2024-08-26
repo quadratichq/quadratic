@@ -1,23 +1,20 @@
 use std::collections::HashMap;
 
-use super::operation::Operation;
-use crate::{
-    cell_values::CellValues,
-    controller::GridController,
-    formulas::replace_internal_cell_references,
-    grid::{
-        formats::{format::Format, Formats},
-        generate_borders_full,
-        sheet::validations::validation::Validation,
-        BorderSelection, CellBorders, CodeCellLanguage,
-    },
-    selection::Selection,
-    CellValue, Pos, SheetPos, SheetRect,
-};
 use anyhow::{Error, Result};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use super::operation::Operation;
+use crate::cell_values::CellValues;
+use crate::controller::GridController;
+use crate::formulas::replace_internal_cell_references;
+use crate::grid::formats::format::Format;
+use crate::grid::formats::Formats;
+use crate::grid::sheet::validations::validation::Validation;
+use crate::grid::{generate_borders_full, BorderSelection, CellBorders, CodeCellLanguage};
+use crate::selection::Selection;
+use crate::{CellValue, Pos, SheetPos, SheetRect};
 
 // todo: break up this file so tests are easier to write
 
@@ -30,7 +27,9 @@ pub enum PasteSpecial {
 
 /// This is used to track the origin of copies from column, row, or all
 /// selection. In order to paste a column, row, or all, we need to know the
-/// origin of the copy. For example, this is used to copy and paste a column
+/// origin of the copy.
+///
+/// For example, this is used to copy and paste a column
 /// on top of another column, or a sheet on top of another sheet.
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct ClipboardOrigin {
@@ -458,13 +457,13 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use super::PasteSpecial;
-    use super::*;
+    use serial_test::parallel;
+
+    use super::{PasteSpecial, *};
     use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::grid::formats::format_update::FormatUpdate;
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
     use crate::grid::SheetId;
-    use serial_test::parallel;
 
     #[test]
     #[parallel]

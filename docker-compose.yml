@@ -285,12 +285,20 @@ services:
       MSSQL_SA_PASSWORD: yourStrong(!)Password
       MSSQL_PID: Express
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P ${MSSQL_SA_PASSWORD} -Q 'SELECT 1' || exit 1"]
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P '${MSSQL_SA_PASSWORD}' -Q 'SELECT 1' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
     volumes:
       - ./docker/mssql-connection/data:/var/opt/mssql
+      - ./docker/mssql-connection/scripts:/docker-entrypoint-initdb.d/
+    command: >
+      bash -c "
+      /opt/mssql/bin/sqlservr &
+      /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -i /docker-entrypoint-initdb.d/create_db.sql -C &&
+      /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -i /docker-entrypoint-initdb.d/seed_db.sql -C &&
+      tail -f /dev/null
+      "
     profiles:
       - additional-databases
       - quadratic-connection
@@ -302,4 +310,4 @@ volumes:
     name: docker
 
 networks:
-  host:
+  host: 
