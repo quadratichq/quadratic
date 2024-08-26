@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import dbClient from '../../dbClient';
+import { licenseClient } from '../../licenseClient';
 import { getFile } from '../../middleware/getFile';
 import { userOptionalMiddleware } from '../../middleware/user';
 import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
@@ -61,6 +62,14 @@ async function handler(
     fileTeamPrivacy = 'PUBLIC_TO_TEAM';
   }
 
+  const license = await licenseClient.check();
+
+  if (license === null) {
+    return res.status(500).json({ error: { message: 'Unable to retrieve license' } });
+  }
+
+  console.log('license', license);
+
   const data = {
     file: {
       uuid,
@@ -83,6 +92,7 @@ async function handler(
       teamRole,
       teamPermissions,
     },
+    license,
   };
 
   return res.status(200).json(data);

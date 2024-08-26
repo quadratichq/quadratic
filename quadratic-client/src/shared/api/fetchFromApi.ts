@@ -61,6 +61,7 @@ export async function fetchFromApi<T>(
 
   // Compare the response to the expected schema
   const result = schema.safeParse(json);
+
   if (!result.success) {
     console.error(`Zod schema validation failed at: ${path}`, JSON.stringify(result.error, null, 2));
 

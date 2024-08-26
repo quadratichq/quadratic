@@ -133,9 +133,7 @@ export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.
           <div>
             <strong className="font-bold">License Revoked!</strong>
           </div>
-          <span className="block sm:inline">
-            Your license has been revoked. Please contact Quadratic Support to increase this.
-          </span>
+          <span className="block sm:inline">Your license has been revoked. Please contact Quadratic Support.</span>
         </div>
       )}
 

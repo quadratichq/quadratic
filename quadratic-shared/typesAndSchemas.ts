@@ -107,7 +107,7 @@ export const LicenseSchema = z.object({
   limits: z.object({
     seats: z.number(),
   }),
-  status: z.string(),
+  status: z.enum(['active', 'exceeded', 'revoked']),
 });
 
 // Zod schemas for API endpoints
@@ -160,6 +160,7 @@ export const ApiSchemas = {
       teamPermissions: z.array(TeamPermissionSchema).optional(),
       teamRole: UserTeamRoleSchema.optional(),
     }),
+    license: LicenseSchema,
   }),
   '/v0/files/:uuid.DELETE.response': z.object({
     message: z.string(),

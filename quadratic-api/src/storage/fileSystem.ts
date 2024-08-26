@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { Request } from 'express';
 import multer from 'multer';
 import stream, { Readable } from 'node:stream';
@@ -33,14 +34,15 @@ export const upload = async (key: string, contents: string | Uint8Array, jwt: st
   }
 
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      body: contents,
-      headers: {
-        'Content-Type': 'text/plain',
-        Authorization: `${jwt}`,
-      },
-    }).then((res) => res.json());
+    const response = await axios
+      .post(url, {
+        body: contents,
+        headers: {
+          'Content-Type': 'text/plain',
+          Authorization: `${jwt}`,
+        },
+      })
+      .then((res) => res.data);
 
     return response;
   } catch (e) {

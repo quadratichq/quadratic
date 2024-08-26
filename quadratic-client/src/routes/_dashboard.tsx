@@ -5,7 +5,7 @@ import { Empty } from '@/dashboard/components/Empty';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
-import { CONTACT_URL } from '@/shared/constants/urls';
+import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { useTheme } from '@/shared/hooks/useTheme';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
@@ -234,7 +234,31 @@ export const ErrorBoundary = () => {
     </div>
   );
 
+  const actionsLicenseRevoked = (
+    <div className="flex justify-center gap-1">
+      <Button asChild variant="outline">
+        <a href={CONTACT_URL} target="_blank" rel="noreferrer">
+          Contact Support
+        </a>
+      </Button>
+      <Button asChild>
+        <a href={SCHEDULE_MEETING} target="_blank" rel="noreferrer">
+          Schedule Meeting
+        </a>
+      </Button>
+    </div>
+  );
+
   if (isRouteErrorResponse(error)) {
+    if (error.status === 402)
+      return (
+        <Empty
+          title="License Revoked"
+          description="Your license has been revoked. Please contact Quadratic Support."
+          Icon={InfoCircledIcon}
+          actions={actionsLicenseRevoked}
+        />
+      );
     if (error.status === 403)
       return (
         <Empty

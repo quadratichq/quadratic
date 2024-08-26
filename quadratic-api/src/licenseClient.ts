@@ -1,21 +1,54 @@
 import axios from 'axios';
 import { LicenseSchema } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
+import dbClient from './dbClient';
 import { LICENSE_API_URI, LICENSE_KEY } from './env-vars';
 
 type LicenseResponse = z.infer<typeof LicenseSchema>;
+// const StatusEnum = LicenseSchema.shape.status;
+// type StatusType = z.infer<typeof StatusEnum>;
+
+let cachedResult: LicenseResponse | null = null;
+let lastCheckedTime: number | null = null;
+// const cacheDuration = 15 * 60 * 1000; // 15 minutes in milliseconds
+const cacheDuration = 0; // TODO(ddimaria): remove
 
 export const licenseClient = {
-  license: {
-    post: async (seats: number): Promise<LicenseResponse | null> => {
-      try {
-        const body = { stats: { seats } };
-        const response = await axios.post(`${LICENSE_API_URI}/api/license/${LICENSE_KEY}`, body);
-        return LicenseSchema.parse(response.data) as LicenseResponse;
-      } catch (err) {
-        console.error('Failed to get the license info from the license service', err);
-        return null;
-      }
-    },
+  post: async (seats: number): Promise<LicenseResponse | null> => {
+    try {
+      const body = { stats: { seats } };
+      const response = await axios.post(`${LICENSE_API_URI}/api/license/${LICENSE_KEY}`, body);
+      return LicenseSchema.parse(response.data) as LicenseResponse;
+    } catch (err) {
+      console.error('Failed to get the license info from the license service', err);
+      return null;
+    }
+  },
+  checkFromServer: async (): Promise<LicenseResponse | null> => {
+    const userCount = await dbClient.user.count();
+    const license = await licenseClient.post(userCount);
+
+    if (!license) {
+      return null;
+    }
+
+    return license;
+  },
+  check: async (): Promise<LicenseResponse | null> => {
+    const currentTime = Date.now();
+
+    if (cachedResult && lastCheckedTime && currentTime - lastCheckedTime < cacheDuration) {
+      // Use cached result if within the cache duration
+      return cachedResult;
+    }
+
+    // Otherwise, perform the check
+    const result = await licenseClient.checkFromServer();
+
+    // Cache the result and update the last checked time
+    cachedResult = result;
+    lastCheckedTime = currentTime;
+
+    return result;
   },
 };

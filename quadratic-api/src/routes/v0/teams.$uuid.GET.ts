@@ -87,15 +87,15 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
   const dbUsers = dbTeam.UserTeamRole ? dbTeam.UserTeamRole : [];
   const dbInvites = dbTeam.TeamInvite ? dbTeam.TeamInvite : [];
 
-  // Get user info from auth0
-  const auth0UsersById = await getUsers(dbUsers.map(({ user }) => user));
+  // Get user info from auth
+  const authUsersById = await getUsers(dbUsers.map(({ user }) => user));
 
   // IDEA: (enhancement) we could put this in /sharing and just return the userCount
   // then require the data for the team share modal to be a seaparte network request
   const users = dbUsers
-    .filter(({ userId: id }) => auth0UsersById[id])
+    .filter(({ userId: id }) => authUsersById[id])
     .map(({ userId: id, role }) => {
-      const { email, name, picture } = auth0UsersById[id];
+      const { email, name, picture } = authUsersById[id];
       return {
         id,
         email,
@@ -105,7 +105,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       };
     });
 
-  const license = await licenseClient.license.post(users.length);
+  const license = await licenseClient.check();
 
   if (!license) {
     return res.status(500).json({ error: { message: 'Unable to retrieve license' } });
