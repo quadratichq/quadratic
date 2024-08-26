@@ -1,0 +1,43 @@
+name: Build and Publish Images to ECR
+
+on:
+  push:
+    branches:
+      - self-hosting-setup 
+
+concurrency:
+  group: production-publish-images
+
+jobs:
+  publish_images:
+    runs-on: ubuntu-latest-8-cores
+    strategy:
+      matrix:
+        service: [multiplayer, files, connection, client, api]
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Create ECR Repository if not exists
+      run: |
+        aws ecr describe-repositories --repository-names quadratic-${{ matrix.service }}-production || \
+        aws ecr create-repository --repository-name quadratic-${{ matrix.service }}-production
+
+    - name: Build, Tag, and Push Image to Amazon ECR
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: quadratic-${{ matrix.service }}-production
+        IMAGE_TAG: 0.1.0
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f quadratic-${{ matrix.service }}/Dockerfile .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
