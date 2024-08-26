@@ -123,7 +123,8 @@ export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.
             <strong className="font-bold">Over the user limit!</strong>
           </div>
           <span className="block sm:inline">
-            You are over your user limit of {license.limits.seats}. Please contact Quadratic Support to increase this.
+            You are over your user limit of {license.limits.seats}. Please contact Quadratic Support to increase your
+            limit.
           </span>
         </div>
       )}
