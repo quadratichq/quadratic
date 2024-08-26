@@ -164,7 +164,7 @@ export const ErrorBoundary = () => {
       description = 'Check the URL and try again.';
     } else if (error.status === 402) {
       title = 'License Revoked';
-      description = 'Your license has been revoked. Please contact Quadratic Support to increase this.';
+      description = 'Your license has been revoked. Please contact Quadratic Support.';
       actions = actionsLicenseRevoked;
     } else if (error.status === 403) {
       title = 'Permission denied';
