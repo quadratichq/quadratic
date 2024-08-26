@@ -420,8 +420,8 @@ export const defaultShortcuts: Shortcuts = [
   {
     action: 'show_cell_type_menu',
     shortcuts: {
-      mac: ['/'],
-      windows: ['/'],
+      mac: ['/', 'Shift + /'],
+      windows: ['/', 'Shift + /'],
     },
   },
 
