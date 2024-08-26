@@ -26,7 +26,7 @@ export type NavigateToView = (props: { connectionUuid: string; connectionType: C
 export type NavigateToCreateView = (type: ConnectionType) => void;
 
 export const Connections = ({ connections, connectionsAreLoading, teamUuid, staticIps }: Props) => {
-  // Allo pre-loading the connection type via url params, e.g. /connections?initial-connection-type=MYSQL
+  // Allow pre-loading the connection type via url params, e.g. /connections?initial-connection-type=MYSQL
   // Delete it from the url after we store it in local state
   const [searchParams] = useSearchParams();
   const initialConnectionType = searchParams.get('initial-connection-type');
@@ -36,7 +36,9 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
     { uuid: string; view: 'edit' | 'details' } | undefined
   >();
   const [activeConnectionType, setActiveConnectionType] = useState<ConnectionType | undefined>(
-    initialConnectionType === 'MYSQL' || initialConnectionType === 'POSTGRES' ? initialConnectionType : undefined
+    initialConnectionType === 'MYSQL' || initialConnectionType === 'POSTGRES' || initialConnectionType === 'MSSQL'
+      ? initialConnectionType
+      : undefined
   );
 
   /**

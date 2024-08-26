@@ -188,7 +188,7 @@ function getTableQuery({ table: { name, schema }, connectionKind }: { table: Tab
     case 'MYSQL':
       return `SELECT * FROM \`${schema}\`.\`${name}\` LIMIT 100`;
     case 'MSSQL':
-      return `SELECT TOP 100 * FROM ${schema}.${name}`;
+      return `SELECT TOP 100 * FROM [${schema}].[${name}]`;
     default:
       return '';
   }
