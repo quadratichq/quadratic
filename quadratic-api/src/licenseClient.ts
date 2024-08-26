@@ -18,21 +18,20 @@ export const licenseClient = {
     try {
       const body = { stats: { seats } };
       const response = await axios.post(`${LICENSE_API_URI}/api/license/${LICENSE_KEY}`, body);
+
       return LicenseSchema.parse(response.data) as LicenseResponse;
     } catch (err) {
-      console.error('Failed to get the license info from the license service', err);
+      if (err instanceof Error) {
+        console.error('Failed to get the license info from the license service', err.message);
+      }
+
       return null;
     }
   },
   checkFromServer: async (): Promise<LicenseResponse | null> => {
     const userCount = await dbClient.user.count();
-    const license = await licenseClient.post(userCount);
 
-    if (!license) {
-      return null;
-    }
-
-    return license;
+    return licenseClient.post(userCount);
   },
   check: async (): Promise<LicenseResponse | null> => {
     const currentTime = Date.now();
@@ -44,6 +43,10 @@ export const licenseClient = {
 
     // Otherwise, perform the check
     const result = await licenseClient.checkFromServer();
+
+    if (!result) {
+      return null;
+    }
 
     // Cache the result and update the last checked time
     cachedResult = result;

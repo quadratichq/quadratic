@@ -14,17 +14,22 @@ export const apiClient = {
       return fetchFromApi(`/v0/teams`, { method: 'GET' }, ApiSchemas['/v0/teams.GET.response']);
     },
     async get(uuid: string) {
-      const response = await fetchFromApi(
-        `/v0/teams/${uuid}`,
-        { method: 'GET' },
-        ApiSchemas['/v0/teams/:uuid.GET.response']
-      );
+      try {
+        const response = await fetchFromApi(
+          `/v0/teams/${uuid}`,
+          { method: 'GET' },
+          ApiSchemas['/v0/teams/:uuid.GET.response']
+        );
 
-      if (response.license.status === 'revoked') {
+        if (response.license.status === 'revoked') {
+          throw new ApiError('License Revoked', 402, undefined);
+        }
+
+        return response;
+      } catch (err) {
+        console.error('Error retrieving license key', err);
         throw new ApiError('License Revoked', 402, undefined);
       }
-
-      return response;
     },
     async update(uuid: string, body: ApiTypes['/v0/teams/:uuid.PATCH.request']) {
       return fetchFromApi(
@@ -101,17 +106,22 @@ export const apiClient = {
       return fetchFromApi(url, { method: 'GET' }, ApiSchemas['/v0/files.GET.response']);
     },
     async get(uuid: string) {
-      let response = await fetchFromApi(
-        `/v0/files/${uuid}`,
-        { method: 'GET' },
-        ApiSchemas['/v0/files/:uuid.GET.response']
-      );
+      try {
+        let response = await fetchFromApi(
+          `/v0/files/${uuid}`,
+          { method: 'GET' },
+          ApiSchemas['/v0/files/:uuid.GET.response']
+        );
 
-      if (response.license.status === 'revoked') {
+        if (response.license.status === 'revoked') {
+          throw new ApiError('License Revoked', 402, undefined);
+        }
+
+        return response;
+      } catch (err) {
+        console.error('Error retrieving license key', err);
         throw new ApiError('License Revoked', 402, undefined);
       }
-
-      return response;
     },
     async create({
       file,
