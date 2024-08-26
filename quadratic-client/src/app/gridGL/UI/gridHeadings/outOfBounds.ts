@@ -4,8 +4,8 @@ import { sheets } from '@/app/grid/controller/Sheets';
 // @right the visible bounds to the right -- skips check if not provided
 export function outOfBoundsRight(right?: number): number | undefined {
   const offsets = sheets.sheet.offsets;
-  const visibleBounds = sheets.sheet.visibleBounds;
-  let outOfBounds = visibleBounds ? offsets.getColumnPlacement(Number(visibleBounds[0]) + 1).position : undefined;
+  const sheetSize = sheets.sheet.sheetSize;
+  let outOfBounds = sheetSize ? offsets.getColumnPlacement(Number(sheetSize[0]) + 1).position : undefined;
   if (right !== undefined && outOfBounds !== undefined && outOfBounds > right) {
     outOfBounds = undefined;
   }
@@ -17,8 +17,8 @@ export function outOfBoundsRight(right?: number): number | undefined {
 // @bottom the visible bounds to the bottom -- skips check if not provided
 export function outOfBoundsBottom(bottom?: number): number | undefined {
   const offsets = sheets.sheet.offsets;
-  const visibleBounds = sheets.sheet.visibleBounds;
-  let outOfBounds = visibleBounds ? offsets.getRowPlacement(Number(visibleBounds[1]) + 1).position : undefined;
+  const sheetSize = sheets.sheet.sheetSize;
+  let outOfBounds = sheetSize ? offsets.getRowPlacement(Number(sheetSize[1]) + 1).position : undefined;
   if (bottom !== undefined && outOfBounds !== undefined && outOfBounds > bottom) {
     outOfBounds = undefined;
   }

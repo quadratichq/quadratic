@@ -69,6 +69,8 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
             }}
           />
         </SubMenu>
+        <MenuItem onClick={handleRename}>Rename</MenuItem>
+
         <SubMenu label="Change size of sheet">
           <MenuItem
             onClick={() => {
@@ -79,6 +81,7 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
             Auto size based on content
           </MenuItem>
           <MenuItem
+            disabled={sheets.sheet.sheetSize === undefined}
             onClick={() => {
               quadraticCore.setSheetSize(sheets.sheet.id, undefined, undefined, false, sheets.getCursorPosition());
               handleClose();
@@ -88,7 +91,6 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
           </MenuItem>
         </SubMenu>
 
-        <MenuItem onClick={handleRename}>Rename</MenuItem>
         <MenuDivider />
         <MenuItem
           disabled={sheets.getFirst().id === contextMenu?.id}

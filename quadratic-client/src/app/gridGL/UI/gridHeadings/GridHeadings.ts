@@ -232,14 +232,10 @@ export class GridHeadings extends Container {
       // show selected numbers
       const selected = Array.isArray(this.selectedColumns) ? this.selectedColumns.includes(column) : false;
 
-      const visibleBounds = sheets.sheet.visibleBounds;
+      const sheetSize = sheets.sheet.sheetSize;
 
       // only show the label if selected or mod calculation
-      if (
-        column >= 0 &&
-        (!visibleBounds || column <= visibleBounds[0]) &&
-        (selected || mod === 0 || column % mod === 0)
-      ) {
+      if (column >= 0 && (!sheetSize || column <= sheetSize[0]) && (selected || mod === 0 || column % mod === 0)) {
         const charactersWidth = (this.characterSize.width * column.toString().length) / scale;
 
         // only show labels that will fit (unless grid lines are hidden)
@@ -436,10 +432,10 @@ export class GridHeadings extends Container {
       // show selected numbers
       const selected = Array.isArray(this.selectedRows) ? this.selectedRows.includes(row) : false;
 
-      const visibleBounds = sheets.sheet.visibleBounds;
+      const sheetSize = sheets.sheet.sheetSize;
 
       // only show the label if selected or mod calculation
-      if (row >= 0 && (!visibleBounds || row <= visibleBounds[1]) && (selected || mod === 0 || row % mod === 0)) {
+      if (row >= 0 && (!sheetSize || row <= sheetSize[1]) && (selected || mod === 0 || row % mod === 0)) {
         // only show labels that will fit (unless grid lines are hidden)
         // if (currentHeight > halfCharacterHeight * 2 || pixiApp.gridLines.alpha < 0.25) {
         // don't show numbers if it overlaps with the selected value (eg, hides 0 if selected 1 overlaps it)

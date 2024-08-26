@@ -1,13 +1,20 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Drag, Viewport as PixiViewport } from 'pixi-viewport';
+import { Decelerate, Drag, Viewport as PixiViewport } from 'pixi-viewport';
 import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
+import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
 
 const MULTIPLAYER_VIEWPORT_EASE_TIME = 100;
 const MINIMUM_VIEWPORT_SCALE = 0.01;
 const MAXIMUM_VIEWPORT_SCALE = 10;
 const WHEEL_ZOOM_PERCENT = 1.5;
+
+// bounce when the viewport is moved beyond the content/sheet size
+const BOUNCE_BACK_HORIZONTAL_CELLS = 1;
+const BOUNCE_BACK_VERTICAL_CELLS = 1;
+const BOUNCE_BACK_TIME = 250;
 
 export class Viewport extends PixiViewport {
   constructor() {
@@ -45,7 +52,32 @@ export class Viewport extends PixiViewport {
 
     // hack to ensure pointermove works outside of canvas
     this.off('pointerout');
+
+    this.on('moved-end', this.movedEnd);
   }
+
+  // handle gracefully bouncing the viewport back to the visible bounds
+  private movedEnd = () => {
+    const sheetBounds = sheets.sheet.getScreenBounds();
+    const visibleBounds = this.getVisibleBounds();
+    let centerX = this.center.x;
+    let centerY = this.center.y;
+    const minX = sheetBounds ? Math.min(sheetBounds.x, 0) : 0;
+    if (visibleBounds.right < minX) {
+      centerX = -visibleBounds.width / 2 + CELL_WIDTH * BOUNCE_BACK_HORIZONTAL_CELLS;
+    }
+    if (visibleBounds.bottom < 0) {
+      centerY = -visibleBounds.height / 2 + CELL_HEIGHT * BOUNCE_BACK_VERTICAL_CELLS;
+    }
+    if (centerX !== this.center.x || centerY !== this.center.y) {
+      this.animate({
+        position: new Point(centerX, centerY),
+        time: BOUNCE_BACK_TIME,
+        removeOnInterrupt: true,
+        ease: 'easeInOutSine',
+      });
+    }
+  };
 
   loadViewport() {
     const lastViewport = sheets.sheet.cursor.viewport;

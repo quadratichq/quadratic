@@ -12,7 +12,7 @@ pub struct SheetInfo {
     pub offsets: String,
     pub bounds: GridBounds,
     pub bounds_without_formatting: GridBounds,
-    pub visible_bounds: Option<(i64, i64)>,
+    pub sheet_size: Option<(i64, i64)>,
 }
 
 impl From<&Sheet> for SheetInfo {
@@ -26,7 +26,7 @@ impl From<&Sheet> for SheetInfo {
             offsets,
             bounds: sheet.bounds(false),
             bounds_without_formatting: sheet.bounds(true),
-            visible_bounds: sheet.sheet_size,
+            sheet_size: sheet.sheet_size,
         }
     }
 }
@@ -72,6 +72,6 @@ mod tests {
             sheet_info.bounds_without_formatting,
             crate::grid::GridBounds::default()
         );
-        assert_eq!(sheet_info.visible_bounds, Some((10, 10)));
+        assert_eq!(sheet_info.sheet_size, Some((10, 10)));
     }
 }

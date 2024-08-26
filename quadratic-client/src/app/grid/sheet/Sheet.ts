@@ -7,6 +7,7 @@ import { Rectangle } from 'pixi.js';
 import { Coordinate } from '../../gridGL/types/size';
 import { sheets } from '../controller/Sheets';
 import { RectangleLike, SheetCursor } from './SheetCursor';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 
 export class Sheet {
   id: string;
@@ -15,7 +16,7 @@ export class Sheet {
   name: string;
   order: string;
   color?: string;
-  visibleBounds?: [bigint, bigint];
+  sheetSize?: [bigint, bigint];
   offsets: SheetOffsets;
   bounds: GridBounds;
   boundsWithoutFormatting: GridBounds;
@@ -35,8 +36,7 @@ export class Sheet {
     this.bounds = info.bounds;
     this.boundsWithoutFormatting = info.bounds_without_formatting;
     this.gridOverflowLines = new GridOverflowLines();
-    // this.visibleBounds = info.visible_bounds ?? undefined;
-    this.visibleBounds = [5n, 10n];
+    this.sheetSize = info.sheet_size ?? undefined;
     events.on('sheetBounds', this.updateBounds);
     events.on('sheetValidations', this.sheetValidations);
   }
@@ -57,7 +57,7 @@ export class Sheet {
         offsets: '',
         bounds: { type: 'empty' },
         bounds_without_formatting: { type: 'empty' },
-        visible_bounds: null,
+        sheet_size: null,
       },
       true
     );
@@ -85,6 +85,11 @@ export class Sheet {
     this.order = info.order;
     this.color = info.color ?? undefined;
     this.offsets = SheetOffsetsWasm.load(info.offsets);
+    if (this.sheetSize !== info.sheet_size) {
+      this.sheetSize = info.sheet_size ?? undefined;
+      pixiApp.gridLines.dirty = true;
+      pixiApp.setViewportDirty();
+    }
   }
 
   //#endregion
@@ -159,5 +164,16 @@ export class Sheet {
 
   getValidationById(id: string): Validation | undefined {
     return this.validations.find((v) => v.id === id);
+  }
+
+  // @returns the screen bounds of the sheet
+  getScreenBounds(): Rectangle | undefined {
+    if (this.bounds.type === 'empty') return;
+    const sheetSize = this.sheetSize;
+    const start = this.getCellOffsets(this.bounds.min.x, this.bounds.min.y);
+    const maxX = sheetSize ? Math.max(Number(sheetSize[0]), Number(this.bounds.max.x)) : Number(this.bounds.max.x);
+    const maxY = sheetSize ? Math.max(Number(sheetSize[1]), Number(this.bounds.max.y)) : Number(this.bounds.max.y);
+    const end = this.getCellOffsets(maxX, maxY);
+    return new Rectangle(start.x, start.y, end.x - start.x, end.y - start.y);
   }
 }

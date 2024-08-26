@@ -114,7 +114,7 @@ pub struct Sheet {
     pub order: String,
 
     #[serde(default)]
-    pub visible_bounds: Option<(i64, i64)>,
+    pub sheet_size: Option<(i64, i64)>,
 
     pub offsets: Offsets,
     pub columns: Vec<(i64, Column)>,

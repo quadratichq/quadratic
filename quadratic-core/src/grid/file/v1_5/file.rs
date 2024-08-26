@@ -373,7 +373,7 @@ fn upgrade_sheet(sheet: &v1_5::Sheet) -> v1_6::Sheet {
         name: sheet.name.clone(),
         color: sheet.color.clone(),
         order: sheet.order.clone(),
-        visible_bounds: None,
+        sheet_size: None,
         offsets: sheet.offsets.clone(),
         columns: upgrade_columns(sheet),
         borders: upgrade_borders(sheet),
