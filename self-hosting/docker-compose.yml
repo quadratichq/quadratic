@@ -107,7 +107,7 @@ services:
       QUADRATIC_FILE_URI_PUBLIC: http://localhost:3002
 
       # Admin
-      LICENSE_KEY: LICENSE_KEY
+      LICENSE_KEY: "LICENSE_KEY"
       LICENSE_API_URI: http://localhost:4000
     restart: "always"
     ports:
