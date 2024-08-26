@@ -62,6 +62,12 @@ export function isColumnVisible(column: number): boolean {
   return true;
 }
 
+export function isCellVisible(
+  coordinate = { x: sheets.sheet.cursor.cursorPosition.x, y: sheets.sheet.cursor.cursorPosition.y }
+): boolean {
+  return isRowVisible(coordinate.y) && isColumnVisible(coordinate.x);
+}
+
 // Makes a cell visible in the viewport
 export function cellVisible(
   coordinate: Coordinate = {

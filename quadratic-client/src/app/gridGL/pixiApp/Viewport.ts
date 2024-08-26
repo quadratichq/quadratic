@@ -6,7 +6,7 @@ import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
 import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { pixiApp } from './PixiApp';
 import debounce from 'lodash.debounce';
-import { cellVisible } from '../interaction/viewportHelper';
+import { isCellVisible } from '../interaction/viewportHelper';
 
 const MULTIPLAYER_VIEWPORT_EASE_TIME = 100;
 const MINIMUM_VIEWPORT_SCALE = 0.01;
@@ -17,7 +17,7 @@ const WHEEL_ZOOM_PERCENT = 1.5;
 const BOUNCE_BACK_HORIZONTAL_CELLS = 1;
 const BOUNCE_BACK_VERTICAL_CELLS = 1;
 const BOUNCE_BACK_TIME = 250;
-const DEBOUNCE_TIME = 250;
+const DEBOUNCE_TIME = 500;
 
 export class Viewport extends PixiViewport {
   constructor() {
@@ -64,7 +64,7 @@ export class Viewport extends PixiViewport {
   private movedEnd = () => {
     // don't do anything if cursor's cell is visible (this allows the user to
     // move the viewport out of view with the cursor)
-    if (cellVisible()) return;
+    if (isCellVisible()) return;
 
     const sheetBounds = sheets.sheet.getScreenBounds();
     const visibleBounds = this.getVisibleBounds();
@@ -94,7 +94,7 @@ export class Viewport extends PixiViewport {
         position: new Point(centerX, centerY),
         time: BOUNCE_BACK_TIME,
         removeOnInterrupt: true,
-        ease: 'easeInOutSine',
+        ease: 'easeInSine',
       });
     }
   };
