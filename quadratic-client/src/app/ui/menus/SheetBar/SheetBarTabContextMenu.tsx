@@ -69,6 +69,24 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
             }}
           />
         </SubMenu>
+        <SubMenu label="Change size of sheet">
+          <MenuItem
+            onClick={() => {
+              quadraticCore.setSheetSize(sheets.sheet.id, undefined, undefined, true, sheets.getCursorPosition());
+              handleClose();
+            }}
+          >
+            Auto size based on content
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              quadraticCore.setSheetSize(sheets.sheet.id, undefined, undefined, false, sheets.getCursorPosition());
+              handleClose();
+            }}
+          >
+            Remove sheet size
+          </MenuItem>
+        </SubMenu>
 
         <MenuItem onClick={handleRename}>Rename</MenuItem>
         <MenuDivider />
