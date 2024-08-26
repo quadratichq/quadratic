@@ -1,11 +1,11 @@
 USE master;
 
 -- Drop existing database
-IF EXISTS (SELECT name FROM sys.databases WHERE name = 'YourAppDB')
+IF EXISTS (SELECT name FROM sys.databases WHERE name = 'AllTypes')
 BEGIN
-    ALTER DATABASE YourAppDB SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-    DROP DATABASE YourAppDB;
+    ALTER DATABASE AllTypes SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE AllTypes;
 END
 
 -- Create a new database
-CREATE DATABASE YourAppDB;
+CREATE DATABASE AllTypes;
