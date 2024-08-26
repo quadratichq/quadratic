@@ -37,6 +37,8 @@ if [ "$LICENSE_KEY" = "$INVALID_LICENSE_KEY" ]; then
   echo $INVALID_LICENSE_KEY
 else
   checkout
-  start
+
   sed -i '' "s/\"LICENSE_KEY\"/\"$LICENSE_KEY\"/g" "docker-compose.yml"
+  
+  start
 fi
