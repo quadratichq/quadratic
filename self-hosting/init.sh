@@ -3,10 +3,11 @@
 REPO="https://github.com/quadratichq/quadratic.git"
 BRANCH="self-hosting-setup"
 DIR="self-hosting"
+SELF_HOSTING_URI="https://selfhost.quadratic-preview.com"
 INVALID_LICENSE_KEY="Invalid license key."
 
 get_license_key() {
-    read -p "Please enter your license key: " user_input
+    read -p "Enter your license key (Get one for free instantly at $SELF_HOSTING_URI): " user_input
     
     if [[ $user_input =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]]; then
       echo $user_input
