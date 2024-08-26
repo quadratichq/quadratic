@@ -245,7 +245,7 @@ export function FilesListItemUserFile({
                             });
                           }}
                         >
-                          Move to private files
+                          Move to my files
                         </DropdownMenuItem>
                       )}
                       {isTeamPrivateFilesRoute && (
