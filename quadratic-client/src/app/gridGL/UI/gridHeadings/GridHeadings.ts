@@ -34,7 +34,7 @@ export class GridHeadings extends Container {
   private selectedRows: number[] = [];
   private gridLinesColumns: { column: number; x: number; width: number }[] = [];
   private gridLinesRows: { row: number; y: number; height: number }[] = [];
-  private rowWidth = 0;
+  rowWidth = 0;
 
   headingSize: Size = { width: 0, height: 0 };
 

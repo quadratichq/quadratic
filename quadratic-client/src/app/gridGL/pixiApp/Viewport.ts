@@ -1,10 +1,11 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Decelerate, Drag, Viewport as PixiViewport } from 'pixi-viewport';
+import { Drag, Viewport as PixiViewport } from 'pixi-viewport';
 import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
 import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
+import { pixiApp } from './PixiApp';
+import debounce from 'lodash.debounce';
 
 const MULTIPLAYER_VIEWPORT_EASE_TIME = 100;
 const MINIMUM_VIEWPORT_SCALE = 0.01;
@@ -15,6 +16,7 @@ const WHEEL_ZOOM_PERCENT = 1.5;
 const BOUNCE_BACK_HORIZONTAL_CELLS = 1;
 const BOUNCE_BACK_VERTICAL_CELLS = 1;
 const BOUNCE_BACK_TIME = 250;
+const DEBOUNCE_TIME = 250;
 
 export class Viewport extends PixiViewport {
   constructor() {
@@ -53,7 +55,8 @@ export class Viewport extends PixiViewport {
     // hack to ensure pointermove works outside of canvas
     this.off('pointerout');
 
-    this.on('moved-end', this.movedEnd);
+    // bounce back the viewport when content is out of view
+    this.on('moved-end', debounce(this.movedEnd, DEBOUNCE_TIME));
   }
 
   // handle gracefully bouncing the viewport back to the visible bounds
@@ -63,11 +66,23 @@ export class Viewport extends PixiViewport {
     let centerX = this.center.x;
     let centerY = this.center.y;
     const minX = sheetBounds ? Math.min(sheetBounds.x, 0) : 0;
+    const maxX = sheetBounds ? sheetBounds.right : undefined;
+    const maxY = sheetBounds ? sheetBounds.bottom : undefined;
+
+    // handle bouncing from the left/right of the screen
     if (visibleBounds.right < minX) {
       centerX = -visibleBounds.width / 2 + CELL_WIDTH * BOUNCE_BACK_HORIZONTAL_CELLS;
+    } else if (maxX !== undefined && visibleBounds.left > maxX) {
+      // we need the minus one to account for the fact that the right edge of the screen is not visible
+      centerX =
+        maxX + visibleBounds.width / 2 - CELL_WIDTH * (BOUNCE_BACK_HORIZONTAL_CELLS - 1) - pixiApp.headings.rowWidth;
     }
+
+    // handle bouncing from the top/bottom of the screen
     if (visibleBounds.bottom < 0) {
       centerY = -visibleBounds.height / 2 + CELL_HEIGHT * BOUNCE_BACK_VERTICAL_CELLS;
+    } else if (maxY !== undefined && visibleBounds.top > maxY) {
+      centerY = maxY + visibleBounds.height / 2 - CELL_HEIGHT * BOUNCE_BACK_VERTICAL_CELLS;
     }
     if (centerX !== this.center.x || centerY !== this.center.y) {
       this.animate({
