@@ -1,11 +1,11 @@
 use AllTypes
 
 -- Drop the table if it exists
-IF OBJECT_ID('dbo.all_sql_server_data_types', 'U') IS NOT NULL
-    DROP TABLE dbo.all_sql_server_data_types;
+IF OBJECT_ID('dbo.all_native_data_types', 'U') IS NOT NULL
+    DROP TABLE dbo.all_native_data_types;
 
 -- Create the table with all SQL Server data types
-CREATE TABLE dbo.all_sql_server_data_types (
+CREATE TABLE dbo.all_native_data_types (
     id INT IDENTITY(1,1) PRIMARY KEY,
     
     -- Exact numerics
@@ -62,7 +62,7 @@ CREATE TABLE dbo.all_sql_server_data_types (
 );
 
 -- Insert sample data
-INSERT INTO dbo.all_sql_server_data_types (
+INSERT INTO dbo.all_native_data_types (
     tinyint_col,
     smallint_col,
     int_col,
@@ -131,12 +131,9 @@ INSERT INTO dbo.all_sql_server_data_types (
     -- CAST('/1/2/3/' AS HIERARCHYID),                                    -- not supported in tiberius
     N'{"key": "value"}',
     -- CAST('SQL Variant' AS SQL_VARIANT),                                -- not supported in tiberius
-    NEWID(),
+    'abcb8303-a0a2-4392-848b-3b32181d224b',
     '<root><element>value</element></root>',
     REPLICATE('A', 8000), -- VARCHAR(MAX)
     REPLICATE(N'A', 8000), -- NVARCHAR(MAX)
     CAST(REPLICATE(CAST('A' AS VARBINARY), 8000) AS VARBINARY(MAX)) -- VARBINARY(MAX)
 );
-
--- Select all data to verify
-SELECT * FROM dbo.all_sql_server_data_types;

@@ -6,6 +6,7 @@ use bigdecimal::BigDecimal;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use futures_util::{StreamExt, TryStreamExt};
 use serde::{Deserialize, Serialize};
+use tiberius::xml::XmlData;
 use tiberius::ColumnData;
 use uuid::Uuid;
 
@@ -255,8 +256,11 @@ ORDER BY
                     ArrowType::TimestampTz(date_time.with_timezone(&Local))
                 }
                 ColumnData::Xml(_) => {
-                    let column_data = column_data.to_owned();
-                    ArrowType::Utf8(convert_mssql_type_owned!(String, column_data))
+                    let xml_string = XmlData::from_sql_owned(column_data.to_owned())
+                        .ok()
+                        .flatten()
+                        .map_or(String::new(), |xml_data| xml_data.into_string());
+                    ArrowType::Utf8(xml_string)
                 }
             },
         )
@@ -283,283 +287,327 @@ macro_rules! convert_mssql_type_owned {
     }};
 }
 
-// #[cfg(test)]
-// mod tests {
+#[cfg(test)]
+mod tests {
 
-//     use std::str::FromStr;
+    use std::str::FromStr;
 
-//     use super::*;
-//     // use std::io::Read;
-//     use bigdecimal::BigDecimal;
-//     use serde_json::json;
-//     use tracing_test::traced_test;
+    use super::*;
+    // use std::io::Read;
+    use bigdecimal::BigDecimal;
+    use tracing_test::traced_test;
 
-//     fn new_mysql_connection() -> MySqlConnection {
-//         MySqlConnection::new(
-//             Some("user".into()),
-//             Some("password".into()),
-//             "0.0.0.0".into(),
-//             Some("3306".into()),
-//             Some("mysql-connection".into()),
-//         )
-//     }
+    fn new_mssql_connection() -> MsSqlConnection {
+        MsSqlConnection::new(
+            Some("sa".into()),
+            Some("yourStrong(!)Password".into()),
+            "0.0.0.0".into(),
+            Some("1433".into()),
+            Some("AllTypes".into()),
+        )
+    }
 
-//     async fn setup() -> (MySqlConnection, Result<sqlx::MySqlConnection>) {
-//         let connection = new_mysql_connection();
-//         let pool = connection.connect().await;
+    async fn setup() -> (MsSqlConnection, Result<Client<Compat<TcpStream>>>) {
+        let connection = new_mssql_connection();
+        let client = connection.connect().await;
 
-//         (connection, pool)
-//     }
+        (connection, client)
+    }
 
-//     #[tokio::test]
-//     #[traced_test]
-//     async fn test_mysql_connection() {
-//         let (_, pool) = setup().await;
+    #[tokio::test]
+    #[traced_test]
+    async fn test_mssql_connection() {
+        let (_, client) = setup().await;
 
-//         assert!(pool.is_ok());
-//     }
+        assert!(client.is_ok());
+    }
 
-//     #[tokio::test]
-//     #[traced_test]
-//     async fn test_mysql_query_to_arrow() {
-//         let (connection, pool) = setup().await;
-//         let (rows, over_the_limit) = connection
-//             .query(
-//                 pool.unwrap(),
-//                 "select * from all_native_data_types order by id limit 1",
-//                 None,
-//             )
-//             .await
-//             .unwrap();
+    #[tokio::test]
+    #[traced_test]
+    async fn test_mssql_query_to_arrow() {
+        let (connection, client) = setup().await;
+        let (rows, over_the_limit) = connection
+            .query(
+                &mut client.unwrap(),
+                "SELECT TOP 1 * FROM [dbo].[all_native_data_types] ORDER BY id",
+                None,
+            )
+            .await
+            .unwrap();
 
-//         // for row in &rows {
-//         //     for (index, col) in row.columns().iter().enumerate() {
-//         //         let value = MySqlConnection::to_arrow(row, col, index);
-//         //         println!("assert_eq!(to_arrow({}), ArrowType::{:?});", index, value);
-//         //     }
-//         // }
+        // for row in &rows {
+        //     for (index, col) in row.columns().iter().enumerate() {
+        //         let value = MsSqlConnection::to_arrow(row, col, index);
+        //         println!("assert_eq!(to_arrow({}), ArrowType::{:?});", index, value);
+        //     }
+        // }
 
-//         let row = &rows[0];
-//         let columns = row.columns();
-//         let to_arrow = |index: usize| MySqlConnection::to_arrow(row, &columns[index], index);
+        let row = &rows[0];
+        let columns = row.columns();
+        let to_arrow = |index: usize| MsSqlConnection::to_arrow(row, &columns[index], index);
 
-//         assert!(!over_the_limit);
+        assert!(!over_the_limit);
 
-//         assert_eq!(to_arrow(0), ArrowType::Int32(1));
-//         assert_eq!(to_arrow(1), ArrowType::Int8(127));
-//         assert_eq!(to_arrow(2), ArrowType::Int16(32767));
-//         assert_eq!(to_arrow(3), ArrowType::Int32(8388607));
-//         assert_eq!(to_arrow(4), ArrowType::Int32(2147483647));
-//         assert_eq!(to_arrow(5), ArrowType::Int64(9223372036854775807));
-//         assert_eq!(
-//             to_arrow(6),
-//             ArrowType::BigDecimal(BigDecimal::from_str("12345.67").unwrap())
-//         );
-//         assert_eq!(to_arrow(7), ArrowType::Float32(123.45));
-//         assert_eq!(to_arrow(8), ArrowType::Float64(123456789.123456));
-//         assert_eq!(to_arrow(9), ArrowType::UInt64(1));
-//         assert_eq!(to_arrow(10), ArrowType::Utf8("char_data".into()));
-//         assert_eq!(to_arrow(11), ArrowType::Utf8("varchar_data".into()));
-//         assert_eq!(to_arrow(12), ArrowType::Unsupported);
-//         assert_eq!(to_arrow(13), ArrowType::Unsupported);
-//         assert_eq!(to_arrow(14), ArrowType::Unsupported);
-//         assert_eq!(to_arrow(15), ArrowType::Unsupported);
-//         assert_eq!(to_arrow(16), ArrowType::Unsupported);
-//         assert_eq!(to_arrow(17), ArrowType::Unsupported);
-//         assert_eq!(to_arrow(18), ArrowType::Utf8("tinytext_data".into()));
-//         assert_eq!(to_arrow(19), ArrowType::Utf8("text_data".into()));
-//         assert_eq!(to_arrow(20), ArrowType::Utf8("mediumtext_data".into()));
-//         assert_eq!(to_arrow(21), ArrowType::Utf8("longtext_data".into()));
-//         assert_eq!(to_arrow(22), ArrowType::Utf8("value1".into()));
-//         assert_eq!(to_arrow(23), ArrowType::Utf8("value1,value2".into()));
-//         assert_eq!(to_arrow(24), ArrowType::Date32(19871));
-//         assert_eq!(
-//             to_arrow(25),
-//             ArrowType::Timestamp(NaiveDateTime::from_str("2024-05-28T12:34:56").unwrap())
-//         );
-//         assert_eq!(
-//             to_arrow(26),
-//             ArrowType::TimestampTz(
-//                 DateTime::<Local>::from_str("2024-05-28T06:34:56-06:00").unwrap()
-//             )
-//         );
-//         assert_eq!(
-//             to_arrow(27),
-//             ArrowType::Time32(NaiveTime::from_str("12:34:56").unwrap())
-//         );
-//         assert_eq!(to_arrow(28), ArrowType::UInt16(2024));
-//         assert_eq!(to_arrow(29), ArrowType::Json(json!({"key": "value"})));
-//     }
+        assert_eq!(to_arrow(0), ArrowType::Int32(1));
+        assert_eq!(to_arrow(1), ArrowType::UInt8(255));
+        assert_eq!(to_arrow(2), ArrowType::Int16(32767));
+        assert_eq!(to_arrow(3), ArrowType::Int32(2147483647));
+        assert_eq!(to_arrow(4), ArrowType::Int64(9223372036854775807));
+        assert_eq!(to_arrow(5), ArrowType::Boolean(true));
+        assert_eq!(
+            to_arrow(6),
+            ArrowType::BigDecimal(BigDecimal::from_str("12345.67").unwrap())
+        );
+        assert_eq!(
+            to_arrow(7),
+            ArrowType::BigDecimal(BigDecimal::from_str("12345.67").unwrap())
+        );
+        assert_eq!(to_arrow(8), ArrowType::Float64(922337203685477.6));
+        assert_eq!(to_arrow(9), ArrowType::Float64(214748.3647));
+        assert_eq!(to_arrow(10), ArrowType::Float64(123456789.123456));
+        assert_eq!(to_arrow(11), ArrowType::Float32(123456.79));
+        assert_eq!(to_arrow(12), ArrowType::Date32(19871));
+        assert_eq!(
+            to_arrow(13),
+            ArrowType::Time32(NaiveTime::from_str("12:34:56.123456700").unwrap())
+        );
+        assert_eq!(
+            to_arrow(14),
+            ArrowType::Timestamp(NaiveDateTime::from_str("2024-05-28T12:34:56.123456700").unwrap())
+        );
+        assert_eq!(
+            to_arrow(15),
+            ArrowType::TimestampTz(
+                DateTime::<Local>::from_str("2024-05-28T16:04:56.123456700+05:30").unwrap()
+            )
+        );
+        assert_eq!(
+            to_arrow(16),
+            ArrowType::Timestamp(NaiveDateTime::from_str("2024-05-28T12:34:56").unwrap())
+        );
+        assert_eq!(
+            to_arrow(17),
+            ArrowType::Timestamp(NaiveDateTime::from_str("2024-05-28T12:34:00").unwrap())
+        );
+        assert_eq!(to_arrow(18), ArrowType::Utf8("CHAR      ".to_string()));
+        assert_eq!(to_arrow(19), ArrowType::Utf8("VARCHAR".to_string()));
+        assert_eq!(to_arrow(20), ArrowType::Utf8("TEXT".to_string()));
+        assert_eq!(to_arrow(21), ArrowType::Utf8("NCHAR     ".to_string()));
+        assert_eq!(to_arrow(22), ArrowType::Utf8("NVARCHAR".to_string()));
+        assert_eq!(to_arrow(23), ArrowType::Utf8("NTEXT".to_string()));
+        assert_eq!(
+            to_arrow(24),
+            ArrowType::Utf8("\u{1}\u{2}\u{3}\u{4}\u{5}\0\0\0\0\0".to_string())
+        );
+        assert_eq!(
+            to_arrow(25),
+            ArrowType::Utf8("\u{1}\u{2}\u{3}\u{4}\u{5}".to_string())
+        );
+        assert_eq!(
+            to_arrow(26),
+            ArrowType::Utf8("\u{1}\u{2}\u{3}\u{4}\u{5}".to_string())
+        );
+        assert_eq!(
+            to_arrow(27),
+            ArrowType::Utf8("{\"key\": \"value\"}".to_string())
+        );
+        assert_eq!(
+            to_arrow(28),
+            ArrowType::Uuid(Uuid::from_str("abcb8303-a0a2-4392-848b-3b32181d224b").unwrap())
+        );
+        assert_eq!(
+            to_arrow(29),
+            ArrowType::Utf8("<root><element>value</element></root>".to_string())
+        );
+        assert_eq!(to_arrow(30), ArrowType::Utf8("A".repeat(8000)));
+        assert_eq!(to_arrow(31), ArrowType::Utf8("A".repeat(4000)));
+        assert_eq!(to_arrow(32), ArrowType::Utf8("A".repeat(8000)));
+    }
 
-//     #[tokio::test]
-//     #[traced_test]
-//     async fn test_mysql_schema() {
-//         let connection = new_mysql_connection();
-//         let pool = connection.connect().await.unwrap();
-//         let schema = connection.schema(pool).await.unwrap();
+    #[tokio::test]
+    #[traced_test]
+    async fn test_mysql_schema() {
+        let connection = new_mssql_connection();
+        let mut client = connection.connect().await.unwrap();
+        let schema = connection.schema(&mut client).await.unwrap();
 
-//         // for (table_name, table) in &_schema.tables {
-//         //     println!("Table: {}", table_name);
-//         //     for column in &table.columns {
-//         //         println!("Column: {} ({})", column.name, column.r#type);
-//         //     }
-//         // }
+        // for (table_name, table) in &schema.tables {
+        //     println!("Table: {}", table_name);
+        //     for column in &table.columns {
+        //         println!("Column: {} ({})", column.name, column.r#type);
+        //     }
+        // }
 
-//         let expected = vec![
-//             SchemaColumn {
-//                 name: "id".into(),
-//                 r#type: "int".into(),
-//                 is_nullable: false,
-//             },
-//             SchemaColumn {
-//                 name: "tinyint_col".into(),
-//                 r#type: "tinyint".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "smallint_col".into(),
-//                 r#type: "smallint".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "mediumint_col".into(),
-//                 r#type: "mediumint".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "int_col".into(),
-//                 r#type: "int".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "bigint_col".into(),
-//                 r#type: "bigint".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "decimal_col".into(),
-//                 r#type: "decimal".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "float_col".into(),
-//                 r#type: "float".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "double_col".into(),
-//                 r#type: "double".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "bit_col".into(),
-//                 r#type: "bit".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "char_col".into(),
-//                 r#type: "char".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "varchar_col".into(),
-//                 r#type: "varchar".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "binary_col".into(),
-//                 r#type: "binary".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "varbinary_col".into(),
-//                 r#type: "varbinary".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "tinyblob_col".into(),
-//                 r#type: "tinyblob".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "blob_col".into(),
-//                 r#type: "blob".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "mediumblob_col".into(),
-//                 r#type: "mediumblob".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "longblob_col".into(),
-//                 r#type: "longblob".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "tinytext_col".into(),
-//                 r#type: "tinytext".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "text_col".into(),
-//                 r#type: "text".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "mediumtext_col".into(),
-//                 r#type: "mediumtext".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "longtext_col".into(),
-//                 r#type: "longtext".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "enum_col".into(),
-//                 r#type: "enum".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "set_col".into(),
-//                 r#type: "set".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "date_col".into(),
-//                 r#type: "date".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "datetime_col".into(),
-//                 r#type: "datetime".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "timestamp_col".into(),
-//                 r#type: "timestamp".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "time_col".into(),
-//                 r#type: "time".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "year_col".into(),
-//                 r#type: "year".into(),
-//                 is_nullable: true,
-//             },
-//             SchemaColumn {
-//                 name: "json_col".into(),
-//                 r#type: "json".into(),
-//                 is_nullable: true,
-//             },
-//         ];
+        let expected = vec![
+            SchemaColumn {
+                name: "id".into(),
+                r#type: "int".into(),
+                is_nullable: false,
+            },
+            SchemaColumn {
+                name: "tinyint_col".into(),
+                r#type: "tinyint".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "smallint_col".into(),
+                r#type: "smallint".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "int_col".into(),
+                r#type: "int".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "bigint_col".into(),
+                r#type: "bigint".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "bit_col".into(),
+                r#type: "bit".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "decimal_col".into(),
+                r#type: "decimal".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "numeric_col".into(),
+                r#type: "numeric".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "money_col".into(),
+                r#type: "money".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "smallmoney_col".into(),
+                r#type: "smallmoney".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "float_col".into(),
+                r#type: "float".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "real_col".into(),
+                r#type: "real".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "date_col".into(),
+                r#type: "date".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "time_col".into(),
+                r#type: "time".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "datetime2_col".into(),
+                r#type: "datetime2".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "datetimeoffset_col".into(),
+                r#type: "datetimeoffset".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "datetime_col".into(),
+                r#type: "datetime".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "smalldatetime_col".into(),
+                r#type: "smalldatetime".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "char_col".into(),
+                r#type: "char".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "varchar_col".into(),
+                r#type: "varchar".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "text_col".into(),
+                r#type: "text".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "nchar_col".into(),
+                r#type: "nchar".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "nvarchar_col".into(),
+                r#type: "nvarchar".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "ntext_col".into(),
+                r#type: "ntext".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "binary_col".into(),
+                r#type: "binary".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "varbinary_col".into(),
+                r#type: "varbinary".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "image_col".into(),
+                r#type: "image".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "json_col".into(),
+                r#type: "nvarchar".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "uniqueidentifier_col".into(),
+                r#type: "uniqueidentifier".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "xml_col".into(),
+                r#type: "xml".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "varchar_max_col".into(),
+                r#type: "varchar".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "nvarchar_max_col".into(),
+                r#type: "nvarchar".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "varbinary_max_col".into(),
+                r#type: "varbinary".into(),
+                is_nullable: true,
+            },
+        ];
 
-//         let columns = &schema.tables.get("all_native_data_types").unwrap().columns;
+        let columns = &schema.tables.get("all_native_data_types").unwrap().columns;
 
-//         assert_eq!(columns, &expected);
-//     }
-// }
+        assert_eq!(columns, &expected);
+    }
+}

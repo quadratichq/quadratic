@@ -265,11 +265,11 @@ mod tests {
 
     fn new_postgres_connection() -> PostgresConnection {
         PostgresConnection::new(
-            Some("postgres".into()),
-            Some("postgres".into()),
-            "0.0.0.0".into(),
-            Some("5432".into()),
-            Some("postgres".into()),
+            Some("user".into()),
+            Some("password".into()),
+            "127.0.0.1".into(),
+            Some("5433".into()),
+            Some("postgres-connection".into()),
         )
     }
 
