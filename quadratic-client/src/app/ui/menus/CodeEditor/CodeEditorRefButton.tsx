@@ -54,6 +54,8 @@ export const CodeEditorRefButton = () => {
 
   const tooltip = !disabled ? (
     <>Insert {relative ? 'relative ' : ''}cell reference</>
+  ) : codeCellIsAConnection(editorInteractionState.mode) ? (
+    <>Select one cell on the grid to insert cell reference.</>
   ) : (
     <>Select cells on the grid to insert cell reference.</>
   );
