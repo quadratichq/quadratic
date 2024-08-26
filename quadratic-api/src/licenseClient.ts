@@ -10,8 +10,8 @@ type LicenseResponse = z.infer<typeof LicenseSchema>;
 
 let cachedResult: LicenseResponse | null = null;
 let lastCheckedTime: number | null = null;
-// const cacheDuration = 15 * 60 * 1000; // 15 minutes in milliseconds
-const cacheDuration = 0; // TODO(ddimaria): remove
+const cacheDuration = 15 * 60 * 1000; // 15 minutes in milliseconds
+// const cacheDuration = 0; // disable the cache for testing
 
 export const licenseClient = {
   post: async (seats: number): Promise<LicenseResponse | null> => {
