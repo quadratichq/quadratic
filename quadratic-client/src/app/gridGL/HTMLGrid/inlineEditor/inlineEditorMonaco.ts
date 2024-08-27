@@ -88,6 +88,7 @@ class InlineEditorMonaco {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in focus');
     }
+    inlineEditorHandler.keepCursorVisible();
     this.editor.focus();
   };
 
@@ -382,7 +383,6 @@ class InlineEditorMonaco {
       inlineEditorKeyboard.keyDown(e.browserEvent);
     });
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.updateMonacoCursorPosition);
-    this.editor.onDidChangeCursorPosition(inlineEditorHandler.keepCursorVisible);
     this.editor.onMouseDown(() => inlineEditorKeyboard.resetKeyboardPosition());
     this.editor.onDidChangeModelContent(() => inlineEditorEvents.emit('valueChanged', this.get()));
   }
