@@ -50,7 +50,10 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: initi
 
   const setFileDragDropState = useSetRecoilState(fileDragDropModalAtom);
   const handleDragEnter = useCallback(
-    () => setFileDragDropState({ show: true, teamUuid, isPrivate }),
+    (e: React.DragEvent<HTMLDivElement>) => {
+      if (!e.dataTransfer.types.includes('Files')) return;
+      setFileDragDropState({ show: true, teamUuid, isPrivate });
+    },
     [isPrivate, setFileDragDropState, teamUuid]
   );
 

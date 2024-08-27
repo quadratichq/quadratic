@@ -53,7 +53,7 @@ export const FileDragDropWrapper = (props: PropsWithChildren) => {
 
       if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
 
-      if (e.type === 'dragenter') {
+      if (e.type === 'dragenter' && e.dataTransfer.types.includes('Files')) {
         setDragActive(true);
       } else if (e.type === 'dragover') {
         const mimeType = e.dataTransfer.items[0].type;
