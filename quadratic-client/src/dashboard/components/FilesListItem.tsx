@@ -18,6 +18,7 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Separator } from '@/shared/shadcn/ui/separator';
 import { cn } from '@/shared/shadcn/utils';
+import { timeAgo } from '@/shared/utils/timeAgo';
 import { DotsVerticalIcon, FileIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { useEffect, useRef, useState } from 'react';
@@ -204,7 +205,16 @@ export function FilesListItemUserFile({
             actions={
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Btn variant="ghost" size="icon" className="flex-shrink-0 hover:bg-background">
+                  <Btn
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      viewPreferences.layout === Layout.Grid
+                        ? 'absolute right-2 top-2 text-muted-foreground'
+                        : 'flex-shrink-0',
+                      'hover:border hover:bg-background hover:text-foreground hover:shadow-sm data-[state=open]:border data-[state=open]:bg-background data-[state=open]:text-foreground data-[state=open]:shadow-sm'
+                    )}
+                  >
                     <DotsVerticalIcon className="h-4 w-4" />
                   </Btn>
                 </DropdownMenuTrigger>
@@ -235,7 +245,7 @@ export function FilesListItemUserFile({
                             });
                           }}
                         >
-                          Move to private files
+                          Move to my files
                         </DropdownMenuItem>
                       )}
                       {isTeamPrivateFilesRoute && (
@@ -383,33 +393,4 @@ function ListItemView({
       <div className="flex-grow">{children}</div>
     </div>
   );
-}
-
-// Vanilla js time formatter. Adapted from:
-// https://blog.webdevsimplified.com/2020-07/relative-time-format/
-const formatter = new Intl.RelativeTimeFormat(undefined, {
-  numeric: 'auto',
-  style: 'narrow',
-});
-const DIVISIONS: { amount: number; name: Intl.RelativeTimeFormatUnit }[] = [
-  { amount: 60, name: 'seconds' },
-  { amount: 60, name: 'minutes' },
-  { amount: 24, name: 'hours' },
-  { amount: 7, name: 'days' },
-  { amount: 4.34524, name: 'weeks' },
-  { amount: 12, name: 'months' },
-  { amount: Number.POSITIVE_INFINITY, name: 'years' },
-];
-export function timeAgo(dateString: string) {
-  const date: Date = new Date(dateString);
-
-  let duration = (date.getTime() - new Date().getTime()) / 1000;
-
-  for (let i = 0; i < DIVISIONS.length; i++) {
-    const division = DIVISIONS[i];
-    if (Math.abs(duration) < division.amount) {
-      return formatter.format(Math.round(duration), division.name);
-    }
-    duration /= division.amount;
-  }
 }
