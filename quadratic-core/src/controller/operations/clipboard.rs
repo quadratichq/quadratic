@@ -395,10 +395,13 @@ impl GridController {
             });
         });
 
-        ops.push(Operation::SetCellValues {
-            sheet_pos: start_pos,
-            values: cell_values,
-        });
+        ops.insert(
+            0,
+            Operation::SetCellValues {
+                sheet_pos: start_pos,
+                values: cell_values,
+            },
+        );
         ops
     }
 
