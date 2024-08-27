@@ -50,6 +50,6 @@ jobs:
         ECR_URL: ${{ steps.create-ecr.outputs.ECR_URL }}
         IMAGE_TAG: 0.1.0
       run: |
-        docker build -t $ECR_URL:$IMAGE_TAG -f quadratic-${{ matrix.service }}/Dockerfile .
+        docker build -t $ECR_URL:$IMAGE_TAG -t $ECR_URL:latest -f quadratic-${{ matrix.service }}/Dockerfile .
         docker push $ECR_URL:$IMAGE_TAG
         docker push $ECR_URL:latest
