@@ -112,7 +112,17 @@ export default function CellTypeMenu() {
   );
 
   return (
-    <CommandDialog dialogProps={{ open: true, onOpenChange: close }} commandProps={{}}>
+    <CommandDialog
+      dialogProps={{ open: true, onOpenChange: close }}
+      commandProps={{}}
+      overlayProps={{
+        onPointerDown: (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          close();
+        },
+      }}
+    >
       <CommandInput placeholder={searchLabel} id="CellTypeMenuInputID" />
       <CommandList id="CellTypeMenuID">
         <CommandEmpty>No results found.</CommandEmpty>

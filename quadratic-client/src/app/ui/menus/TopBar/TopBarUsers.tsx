@@ -4,6 +4,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { useRootRouteLoaderData } from '@/routes/_root';
+import { getAuth0AvatarSrc } from '@/shared/utils/auth0UserImageSrc';
 import { displayInitials, displayName } from '@/shared/utils/userUtil';
 import { Avatar, AvatarGroup, IconButton } from '@mui/material';
 import { EyeOpenIcon } from '@radix-ui/react-icons';
@@ -27,6 +28,7 @@ export const TopBarUsers = () => {
 
   return (
     <>
+      {/* TODO(ayush): create custom AvatarGroup component */}
       <AvatarGroup
         spacing={16}
         componentsProps={{ additionalAvatar: { sx: sharedAvatarSxProps } }}
@@ -92,7 +94,8 @@ function You({
           ...sharedAvatarSxProps,
         }}
         alt={displayName}
-        src={picture}
+        src={getAuth0AvatarSrc(picture)}
+        imgProps={{ crossOrigin: 'anonymous' }}
         style={{
           border: `2px solid ${border}`,
         }}
@@ -138,7 +141,6 @@ function UserAvatar({
       return { ...prev, follow: sessionId };
     });
   };
-
   return (
     <div className="relative">
       <TooltipHint
@@ -156,7 +158,8 @@ function UserAvatar({
                 position: 'relative',
               }}
               alt={displayName}
-              src={picture}
+              src={getAuth0AvatarSrc(picture)}
+              imgProps={{ crossOrigin: 'anonymous' }}
               style={{
                 border: `2px solid ${border}`,
               }}

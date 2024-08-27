@@ -53,5 +53,5 @@ export function AvatarWithLetters(props: Props) {
     ...rest,
   };
 
-  return <Avatar {...modifiedProps} />;
+  return <Avatar {...modifiedProps} imgProps={{ crossOrigin: 'anonymous' }} />;
 }

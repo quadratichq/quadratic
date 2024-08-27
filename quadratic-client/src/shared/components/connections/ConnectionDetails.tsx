@@ -28,6 +28,7 @@ export const ConnectionDetails = ({
       </ConnectionHeader>
 
       <ConnectionSchemaBrowser
+        teamUuid={teamUuid}
         selfContained={true}
         TableQueryAction={TableQueryAction}
         uuid={connectionUuid}
