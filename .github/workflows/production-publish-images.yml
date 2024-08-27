@@ -24,15 +24,24 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
         aws-region: us-east-1
 
-    - name: Login to Amazon ECR
+    - name: Login to Amazon ECR Public
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
+      with:
+        registry-type: public
+
+    - name: Define repository name
+      id: repo-name
+      run: |
+        echo "REPO_NAME=quadratic-${{ matrix.service }}-production" >> $GITHUB_OUTPUT
 
     - name: Create Public ECR Repository if not exists
       id: create-ecr
+      env:
+        REPO_NAME: ${{ steps.repo-name.outputs.REPO_NAME }}
       run: |
-        REPO_INFO=$(aws ecr-public describe-repositories --repository-names quadratic-${{ matrix.service }}-production || \
-        aws ecr-public create-repository --repository-name quadratic-${{ matrix.service }}-production)
+        REPO_INFO=$(aws ecr-public describe-repositories --repository-names $REPO_NAME || \
+        aws ecr-public create-repository --repository-name $REPO_NAME)
         ECR_URL=$(echo $REPO_INFO | jq -r '.repositories[0].repositoryUri')
         echo "ECR_URL=$ECR_URL" >> $GITHUB_OUTPUT
 
