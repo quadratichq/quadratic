@@ -21,8 +21,8 @@ export function QuadraticApp() {
   const { loggedInUser } = useRootRouteLoaderData();
 
   // Loading states
-  const [offlineLoading, setOfflineLoading] = useState(true); // tracks if there are offline unsent transactions
-  const [multiplayerLoading, setMultiplayerLoading] = useState(true); // tracks if multiplayer is syncing
+  const [offlineLoading, setOfflineLoading] = useState(true);
+  const [multiplayerLoading, setMultiplayerLoading] = useState(true);
 
   // Initialize loading of critical assets
   useEffect(() => {
@@ -53,14 +53,12 @@ export function QuadraticApp() {
   // wait for offline sync
   useEffect(() => {
     if (offlineLoading) {
-      const updateOfflineLoading = (transactions: number) => {
-        if (transactions === 0) {
-          setOfflineLoading(false);
-        }
+      const updateOfflineLoading = () => {
+        setOfflineLoading(false);
       };
-      events.on('offlineTransactions', updateOfflineLoading);
+      events.on('offlineTransactionsApplied', updateOfflineLoading);
       return () => {
-        events.off('offlineTransactions', updateOfflineLoading);
+        events.off('offlineTransactionsApplied', updateOfflineLoading);
       };
     }
   }, [offlineLoading]);
@@ -81,7 +79,6 @@ export function QuadraticApp() {
   useEffect(() => {
     if (multiplayerLoading) {
       const updateMultiplayerLoading = (state: MultiplayerState) => {
-        // multiplayer is synced, state is syncing when there are offline unsent transactions
         if (state === 'syncing' || state === 'connected') {
           setMultiplayerLoading(false);
         }
