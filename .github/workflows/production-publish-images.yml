@@ -52,3 +52,4 @@ jobs:
       run: |
         docker build -t $ECR_URL:$IMAGE_TAG -f quadratic-${{ matrix.service }}/Dockerfile .
         docker push $ECR_URL:$IMAGE_TAG
+        docker push $ECR_URL:latest
