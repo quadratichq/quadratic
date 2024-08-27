@@ -19,7 +19,6 @@ class InlineEditorKeyboard {
 
   private handleArrowHorizontal = async (isRight: boolean, e: KeyboardEvent) => {
     const target = isRight ? inlineEditorMonaco.getLastColumn() : 2;
-    const charBeforeCursor = inlineEditorMonaco.getNonWhitespaceCharBeforeCursor();
     if (inlineEditorHandler.isEditingFormula()) {
       if (inlineEditorHandler.cursorIsMoving) {
         e.stopPropagation();
@@ -27,20 +26,16 @@ class InlineEditorKeyboard {
         keyboardPosition(e);
       } else {
         const column = inlineEditorMonaco.getCursorColumn();
-        if (column === target) {
-          e.stopPropagation();
-          e.preventDefault();
-          if (inlineEditorFormula.wantsCellRef()) {
-            if (isRight || charBeforeCursor === '=') {
-              inlineEditorHandler.cursorIsMoving = true;
-              inlineEditorFormula.addInsertingCells(column);
-              keyboardPosition(e);
-            }
-          }
-          // if we're not moving and the formula is valid, close the editor
-          else if (!(await this.handleValidationError())) {
-            inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
-          }
+        e.stopPropagation();
+        e.preventDefault();
+        if (inlineEditorFormula.wantsCellRef()) {
+          inlineEditorHandler.cursorIsMoving = true;
+          inlineEditorFormula.addInsertingCells(column);
+          keyboardPosition(e);
+        }
+        // if we're not moving and the formula is valid, close the editor
+        else if (!(await this.handleValidationError())) {
+          inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
         }
       }
     } else {
