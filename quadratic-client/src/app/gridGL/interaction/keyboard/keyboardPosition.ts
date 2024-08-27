@@ -25,8 +25,9 @@ function setCursorPosition(x: number, y: number) {
 // - if on an empty cell then select to the first cell with a value
 // - if on a filled cell then select to the cell before the next empty cell
 // - if on a filled cell but the next cell is empty then select to the first cell with a value
-// - if there are no more cells then select the next cell over (excel selects to the end of the sheet; we don’t have an end (yet) so right now I select one cell over)
+// - if there are no more cells then select the next cell over or if there is a sheetSize boundary, select to the boundary
 //   the above checks are always made relative to the original cursor position (the highlighted cell)
+// all moves are clamped by the sheetInfo.sheetSize
 async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
   const cursor = sheets.sheet.cursor;
   const sheetId = sheets.sheet.id;
@@ -44,7 +45,24 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
   if (deltaX === 1) {
     let x = keyboardX;
 
-    if (x === sheetSize.right) return;
+    // make sure we don't go beyond the bounds (unless we are already beyond the
+    // bounds, in which case we allow the cursor to move anywhere)
+    if (!isOutOfBounds()) {
+      if (x === sheetSize.right) return;
+      if (x > sheetSize.right) {
+        cursor.changePosition({
+          cursorPosition: { x: sheetSize.right, y: keyboardY },
+          ensureVisible: true,
+        });
+        return;
+      } else if (x < 0) {
+        cursor.changePosition({
+          cursorPosition: { x: 0, y: keyboardY },
+          ensureVisible: true,
+        });
+        return;
+      }
+    }
 
     const y = cursor.keyboardMovePosition.y;
     // always use the original cursor position to search
@@ -106,7 +124,25 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
     }
   } else if (deltaX === -1) {
     let x = keyboardX;
-    if (x === 0) return;
+
+    // make sure we don't go beyond the bounds (unless we are already beyond the
+    // bounds, in which case we allow the cursor to move anywhere)
+    if (!isOutOfBounds()) {
+      if (x === 0) return;
+      if (x < 0) {
+        cursor.changePosition({
+          cursorPosition: { x: 0, y: keyboardY },
+          ensureVisible: true,
+        });
+        return;
+      } else if (x > sheetSize.right) {
+        cursor.changePosition({
+          cursorPosition: { x: sheetSize.right, y: keyboardY },
+          ensureVisible: true,
+        });
+        return;
+      }
+    }
 
     const y = cursor.keyboardMovePosition.y;
     // always use the original cursor position to search
@@ -167,6 +203,26 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
     }
   } else if (deltaY === 1) {
     let y = keyboardY;
+
+    // make sure we don't go beyond the bounds (unless we are already beyond the
+    // bounds, in which case we allow the cursor to move anywhere)
+    if (!isOutOfBounds()) {
+      if (y === sheetSize.bottom) return;
+      if (y > sheetSize.bottom) {
+        cursor.changePosition({
+          cursorPosition: { x: keyboardX, y: sheetSize.bottom },
+          ensureVisible: true,
+        });
+        return;
+      } else if (y < 0) {
+        cursor.changePosition({
+          cursorPosition: { x: keyboardX, y: 0 },
+          ensureVisible: true,
+        });
+        return;
+      }
+    }
+
     const x = cursor.keyboardMovePosition.x;
     // always use the original cursor position to search
     const xCheck = cursor.cursorPosition.x;
@@ -226,6 +282,26 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
     }
   } else if (deltaY === -1) {
     let y = keyboardY;
+
+    // make sure we don't go beyond the bounds (unless we are already beyond the
+    // bounds, in which case we allow the cursor to move anywhere)
+    if (!isOutOfBounds()) {
+      if (y === 0) return;
+      if (y < 0) {
+        cursor.changePosition({
+          cursorPosition: { x: keyboardX, y: 0 },
+          ensureVisible: true,
+        });
+        return;
+      } else if (y > sheetSize.bottom) {
+        cursor.changePosition({
+          cursorPosition: { x: keyboardX, y: sheetSize.bottom },
+          ensureVisible: true,
+        });
+        return;
+      }
+    }
+
     const x = cursor.keyboardMovePosition.x;
     // always use the original cursor position to search
     const xCheck = cursor.cursorPosition.x;
@@ -286,6 +362,28 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
   }
 }
 
+/// whether the cursor is out of bounds
+function isOutOfBounds() {
+  const cursor = sheets.sheet.cursor;
+
+  // we also need to check if any multiCursor are out of bounds
+  if (cursor.multiCursor) {
+    for (const multiCursor of cursor.multiCursor) {
+      if (!intersects.rectangleRectangle(multiCursor, sheets.sheet.getCellSheetSize())) {
+        return true;
+      }
+    }
+  }
+  const cursorPosition = cursor.cursorPosition;
+  const sheetSize = sheets.sheet.getCellSheetSize();
+  return (
+    cursorPosition.x < 0 ||
+    cursorPosition.x > sheetSize.right ||
+    cursorPosition.y < 0 ||
+    cursorPosition.y > sheetSize.bottom
+  );
+}
+
 // use arrow to select when shift key is pressed
 function expandSelection(deltaX: number, deltaY: number) {
   const cursor = sheets.sheet.cursor;
@@ -299,6 +397,17 @@ function expandSelection(deltaX: number, deltaY: number) {
   // the last multiCursor entry, which is what we change with the keyboard
   const lastMultiCursor = multiCursor[multiCursor.length - 1];
 
+  // if out of bounds, allow expansion of selection anywhere; otherwise clamp to sheetSize
+  const sheetSize = sheets.sheet.getCellSheetSize();
+  if (
+    !isOutOfBounds() &&
+    (movePosition.x + deltaX < 0 ||
+      movePosition.x + deltaY > sheetSize.right ||
+      movePosition.y + deltaY < 0 ||
+      movePosition.y + deltaY > sheetSize.bottom)
+  ) {
+    return;
+  }
   const newMovePosition = { x: movePosition.x + deltaX, y: movePosition.y + deltaY };
   lastMultiCursor.x = downPosition.x < newMovePosition.x ? downPosition.x : newMovePosition.x;
   lastMultiCursor.y = downPosition.y < newMovePosition.y ? downPosition.y : newMovePosition.y;
@@ -318,13 +427,39 @@ function expandSelection(deltaX: number, deltaY: number) {
 function moveCursor(deltaX: number, deltaY: number) {
   const cursor = sheets.sheet.cursor;
   const newPos = { x: cursor.cursorPosition.x + deltaX, y: cursor.cursorPosition.y + deltaY };
-  if (intersects.rectanglePoint(sheets.sheet.getCellSheetSize(), newPos)) {
+  if (isOutOfBounds() || intersects.rectanglePoint(sheets.sheet.getCellSheetSize(), newPos)) {
     cursor.changePosition({
       columnRow: null,
       multiCursor: null,
       keyboardMovePosition: newPos,
       cursorPosition: newPos,
     });
+  }
+
+  // handle when cursor is out of bounds
+  else {
+    if (deltaX && cursor.cursorPosition.x + deltaX < 0) {
+      cursor.changePosition({
+        cursorPosition: { x: 0, y: cursor.cursorPosition.y },
+        ensureVisible: true,
+      });
+    } else if (deltaX && cursor.cursorPosition.x + deltaX > sheets.sheet.getCellSheetSize().right) {
+      cursor.changePosition({
+        cursorPosition: { x: sheets.sheet.getCellSheetSize().right, y: cursor.cursorPosition.y },
+        ensureVisible: true,
+      });
+    }
+    if (deltaY && cursor.cursorPosition.y + deltaY < 0) {
+      cursor.changePosition({
+        cursorPosition: { x: cursor.cursorPosition.x, y: 0 },
+        ensureVisible: true,
+      });
+    } else if (deltaY && cursor.cursorPosition.y + deltaY > sheets.sheet.getCellSheetSize().bottom) {
+      cursor.changePosition({
+        cursorPosition: { x: cursor.cursorPosition.x, y: sheets.sheet.getCellSheetSize().bottom },
+        ensureVisible: true,
+      });
+    }
   }
 }
 

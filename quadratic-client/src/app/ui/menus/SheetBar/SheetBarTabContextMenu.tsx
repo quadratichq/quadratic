@@ -1,12 +1,13 @@
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Box } from '@mui/material';
-import { ControlledMenu, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
+import { ControlledMenu, FocusableItem, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
 import mixpanel from 'mixpanel-browser';
 import { ColorResult } from 'react-color';
 import { sheets } from '../../../grid/controller/Sheets';
 import { convertReactColorToString } from '../../../helpers/convertColor';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { QColorPicker } from '../../components/qColorPicker';
+import { SheetSize } from './SheetSize';
 
 interface Props {
   contextMenu?: { x: number; y: number; id: string; name: string };
@@ -71,14 +72,15 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
         </SubMenu>
         <MenuItem onClick={handleRename}>Rename</MenuItem>
 
-        <SubMenu label="Change size of sheet">
+        <SubMenu label="Size of sheet">
+          <FocusableItem>{({ ref }) => <SheetSize ref={ref} close={handleClose} />}</FocusableItem>
           <MenuItem
             onClick={() => {
               quadraticCore.setSheetSize(sheets.sheet.id, undefined, undefined, true, sheets.getCursorPosition());
               handleClose();
             }}
           >
-            Auto size based on content
+            Fit content
           </MenuItem>
           <MenuItem
             disabled={sheets.sheet.sheetSize === undefined}
@@ -87,7 +89,7 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
               handleClose();
             }}
           >
-            Remove sheet size
+            Remove size limits
           </MenuItem>
         </SubMenu>
 

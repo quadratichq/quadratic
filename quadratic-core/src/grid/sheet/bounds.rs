@@ -255,6 +255,7 @@ impl Sheet {
     /// finds the nearest column with or without content
     /// if reverse is true it searches to the left of the start
     /// if with_content is true it searches for a column with content; otherwise it searches for a column without content
+    /// if we reach the start/end of the sheetSize, then we return the sheetSize column
     ///
     /// Returns the found column matching the criteria of with_content
     pub fn find_next_column(
@@ -265,14 +266,26 @@ impl Sheet {
         with_content: bool,
     ) -> Option<i64> {
         let Some(bounds) = self.row_bounds(row, true) else {
+            if !reverse {
+                if let Some(sheet_size) = self.sheet_size {
+                    return Some(sheet_size.0);
+                }
+            } else {
+                return Some(0);
+            }
             return if with_content {
                 None
             } else {
                 Some(column_start)
             };
         };
+
+        // sheet_size bounds
+        let min = 0;
+        let max = self.sheet_size.map_or(i64::MAX, |size| size.0);
+
         let mut x = column_start;
-        while (reverse && x >= bounds.0) || (!reverse && x <= bounds.1) {
+        while (reverse && x >= bounds.0 && x >= min) || (!reverse && x <= bounds.1 && x <= max) {
             let has_content = self.display_value(Pos { x, y: row });
             if has_content.is_some_and(|cell_value| cell_value != CellValue::Blank) {
                 if with_content {
@@ -283,6 +296,15 @@ impl Sheet {
             }
             x += if reverse { -1 } else { 1 };
         }
+
+        // if we've reached the end of the sheetSize then return the sheetSize column
+        if !reverse && self.sheet_size.is_some() {
+            return Some(max);
+        }
+        if x <= min {
+            return Some(min);
+        }
+
         let has_content = self.display_value(Pos { x, y: row });
         if with_content == has_content.is_some() {
             Some(x)
@@ -294,6 +316,7 @@ impl Sheet {
     /// finds the next column with or without content
     /// if reverse is true it searches to the left of the start
     /// if with_content is true it searches for a column with content; otherwise it searches for a column without content
+    /// if we reach the start/end of the sheetSize, then we return the sheetSize row
     ///
     /// Returns the found row matching the criteria of with_content
     pub fn find_next_row(
@@ -304,10 +327,22 @@ impl Sheet {
         with_content: bool,
     ) -> Option<i64> {
         let Some(bounds) = self.column_bounds(column, true) else {
+            if !reverse {
+                if let Some(sheet_size) = self.sheet_size {
+                    return Some(sheet_size.1);
+                }
+            } else {
+                return Some(0);
+            }
             return if with_content { None } else { Some(row_start) };
         };
+
+        // sheet_size bounds
+        let min = 0;
+        let max = self.sheet_size.map_or(i64::MAX, |size| size.1);
+
         let mut y = row_start;
-        while (reverse && y >= bounds.0) || (!reverse && y <= bounds.1) {
+        while (reverse && y >= bounds.0 && y >= min) || (!reverse && y <= bounds.1 && y <= max) {
             let has_content = self.display_value(Pos { x: column, y });
             if has_content.is_some_and(|cell_value| cell_value != CellValue::Blank) {
                 if with_content {
@@ -318,6 +353,15 @@ impl Sheet {
             }
             y += if reverse { -1 } else { 1 };
         }
+
+        // if we've reached the end of the sheetSize then return the sheetSize row
+        if !reverse && self.sheet_size.is_some() {
+            return Some(max);
+        }
+        if y <= min {
+            return Some(min);
+        }
+
         let has_content = self.display_value(Pos { x: column, y });
         if with_content == has_content.is_some() {
             Some(y)
@@ -560,7 +604,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn test_find_next_column() {
+    fn find_next_column() {
         let mut sheet = Sheet::test();
 
         sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text(String::from("test")));
@@ -569,15 +613,14 @@ mod test {
         assert_eq!(sheet.find_next_column(0, 0, false, false), Some(0));
         assert_eq!(sheet.find_next_column(0, 0, false, true), None);
         assert_eq!(sheet.find_next_column(0, 0, true, false), Some(0));
-        assert_eq!(sheet.find_next_column(0, 0, true, true), None);
-        assert_eq!(sheet.find_next_column(-1, 2, false, true), Some(1));
-        assert_eq!(sheet.find_next_column(-1, 2, true, true), None);
+        assert_eq!(sheet.find_next_column(0, 0, true, true), Some(0));
+
         assert_eq!(sheet.find_next_column(3, 2, false, true), None);
         assert_eq!(sheet.find_next_column(3, 2, true, true), Some(1));
         assert_eq!(sheet.find_next_column(2, 2, false, true), None);
         assert_eq!(sheet.find_next_column(2, 2, true, true), Some(1));
         assert_eq!(sheet.find_next_column(0, 2, false, true), Some(1));
-        assert_eq!(sheet.find_next_column(0, 2, true, true), None);
+        assert_eq!(sheet.find_next_column(0, 2, true, true), Some(0));
         assert_eq!(sheet.find_next_column(1, 2, false, false), Some(2));
         assert_eq!(sheet.find_next_column(1, 2, true, false), Some(0));
 
@@ -588,41 +631,52 @@ mod test {
         assert_eq!(sheet.find_next_column(2, 2, false, false), Some(4));
         assert_eq!(sheet.find_next_column(2, 2, true, false), Some(0));
         assert_eq!(sheet.find_next_column(3, 2, true, false), Some(0));
+
+        sheet.sheet_size = Some((20, 20));
+        assert_eq!(sheet.find_next_column(3, 2, false, false), Some(20));
+        assert_eq!(sheet.find_next_column(20, 2, false, false), Some(20));
+        assert_eq!(sheet.find_next_column(5, 3, false, false), Some(20));
+        assert_eq!(sheet.find_next_column(5, 3, false, true), Some(20));
+        assert_eq!(sheet.find_next_column(5, 3, true, true), Some(0));
+
+        assert_eq!(sheet.find_next_column(0, 0, true, false), Some(0));
+        assert_eq!(sheet.find_next_column(0, 0, true, true), Some(0));
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text("test".to_string()));
+        assert_eq!(sheet.find_next_column(0, 0, true, false), Some(0));
+        assert_eq!(sheet.find_next_column(0, 0, true, true), Some(0));
     }
 
     #[test]
     #[parallel]
-    fn test_find_next_column_code() {
+    fn find_next_column_code() {
         let mut sheet = Sheet::test();
         sheet.test_set_code_run_array(0, 0, vec!["1", "2", "3"], false);
 
-        assert_eq!(sheet.find_next_column(-1, 0, false, true), Some(0));
         assert_eq!(sheet.find_next_column(0, 0, false, false), Some(3));
         assert_eq!(sheet.find_next_column(2, 0, false, false), Some(3));
         assert_eq!(sheet.find_next_column(4, 0, true, true), Some(2));
-        assert_eq!(sheet.find_next_column(2, 0, true, false), Some(-1));
+        assert_eq!(sheet.find_next_column(2, 0, true, false), Some(0));
     }
 
     #[test]
     #[parallel]
-    fn test_find_next_row() {
+    fn find_next_row() {
         let mut sheet = Sheet::test();
 
-        let _ = sheet.set_cell_value(Pos { x: 2, y: 1 }, CellValue::Text(String::from("test")));
+        sheet.set_cell_value(Pos { x: 2, y: 1 }, CellValue::Text(String::from("test")));
         sheet.set_cell_value(Pos { x: 10, y: 10 }, CellValue::Text(String::from("test")));
 
         assert_eq!(sheet.find_next_row(0, 0, false, false), Some(0));
         assert_eq!(sheet.find_next_row(0, 0, false, true), None);
         assert_eq!(sheet.find_next_row(0, 0, true, false), Some(0));
-        assert_eq!(sheet.find_next_row(0, 0, true, true), None);
-        assert_eq!(sheet.find_next_row(-1, 2, false, true), Some(1));
-        assert_eq!(sheet.find_next_row(-1, 2, true, true), None);
+        assert_eq!(sheet.find_next_row(0, 0, true, true), Some(0));
+
         assert_eq!(sheet.find_next_row(3, 2, false, true), None);
         assert_eq!(sheet.find_next_row(3, 2, true, true), Some(1));
         assert_eq!(sheet.find_next_row(2, 2, false, true), None);
         assert_eq!(sheet.find_next_row(2, 2, true, true), Some(1));
         assert_eq!(sheet.find_next_row(0, 2, false, true), Some(1));
-        assert_eq!(sheet.find_next_row(0, 2, true, true), None);
+        assert_eq!(sheet.find_next_row(0, 2, true, true), Some(0));
         assert_eq!(sheet.find_next_row(1, 2, false, false), Some(2));
         assert_eq!(sheet.find_next_row(1, 2, true, false), Some(0));
 
@@ -631,20 +685,34 @@ mod test {
 
         assert_eq!(sheet.find_next_row(1, 2, false, false), Some(4));
         assert_eq!(sheet.find_next_row(2, 2, false, false), Some(4));
+        assert_eq!(sheet.find_next_row(2, 2, true, false), Some(0));
         assert_eq!(sheet.find_next_row(3, 2, true, false), Some(0));
+
+        sheet.sheet_size = Some((20, 20));
+        assert_eq!(sheet.find_next_row(3, 2, false, false), Some(20));
+        assert_eq!(sheet.find_next_row(20, 2, false, false), Some(20));
+        assert_eq!(sheet.find_next_row(5, 3, false, false), Some(20));
+        assert_eq!(sheet.find_next_row(5, 3, false, true), Some(20));
+        assert_eq!(sheet.find_next_row(5, 3, true, true), Some(0));
+
+        assert_eq!(sheet.find_next_row(0, 0, true, false), Some(0));
+        assert_eq!(sheet.find_next_row(0, 0, true, true), Some(0));
+
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text("test".to_string()));
+        assert_eq!(sheet.find_next_row(0, 0, true, false), Some(0));
+        assert_eq!(sheet.find_next_row(0, 0, true, true), Some(0));
     }
 
     #[test]
     #[parallel]
-    fn test_find_next_row_code() {
+    fn find_next_row_code() {
         let mut sheet = Sheet::test();
         sheet.test_set_code_run_array(0, 0, vec!["1", "2", "3"], true);
 
-        assert_eq!(sheet.find_next_row(-1, 0, false, true), Some(0));
         assert_eq!(sheet.find_next_row(0, 0, false, false), Some(3));
         assert_eq!(sheet.find_next_row(2, 0, false, false), Some(3));
         assert_eq!(sheet.find_next_row(4, 0, true, true), Some(2));
-        assert_eq!(sheet.find_next_row(2, 0, true, false), Some(-1));
+        assert_eq!(sheet.find_next_row(2, 0, true, false), Some(0));
     }
 
     #[test]
