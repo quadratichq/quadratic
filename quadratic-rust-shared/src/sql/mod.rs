@@ -93,7 +93,7 @@ pub trait Connection {
             .map(|(index, col)| {
                 Field::new(
                     Self::column_name(&col).to_string(),
-                    cols[index].data_type().clone(),
+                    cols[index].data_type().to_owned(),
                     true,
                 )
             })

@@ -18,7 +18,6 @@ use crate::arrow::arrow_type::ArrowType;
 use crate::error::{Result, SharedError, Sql};
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
 use crate::sql::Connection;
-use crate::{convert_mssql_type, convert_mssql_type_owned};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MsSqlConnection {
@@ -189,12 +188,20 @@ ORDER BY
             tables: BTreeMap::new(),
         };
 
-        for row in rows {
-            let schema_name: &str = row.get(1).unwrap_or_default();
-            let table_name: &str = row.get(2).unwrap_or_default();
-            let column_name: &str = row.get(3).unwrap_or_default();
-            let column_type: &str = row.get(4).unwrap_or_default();
-            let is_nullable: &str = row.get(5).unwrap_or_default();
+        for (index, row) in rows.into_iter().enumerate() {
+            let default_schema_name = format!("Unknown Schema - {}", index);
+            let schema_name: &str = row.get(1).unwrap_or(&default_schema_name);
+
+            let default_table_name = format!("Unknown Table - {}", index);
+            let table_name: &str = row.get(2).unwrap_or(&default_table_name);
+
+            let default_column_name = format!("Unknown Column - {}", index);
+            let column_name: &str = row.get(3).unwrap_or(&default_column_name);
+
+            let default_column_type = format!("Unknown Type - {}", index);
+            let column_type: &str = row.get(4).unwrap_or(&default_column_type);
+
+            let is_nullable: &str = row.get(5).unwrap_or("NO");
 
             schema
                 .tables
@@ -216,75 +223,87 @@ ORDER BY
     }
 
     fn to_arrow(row: &tiberius::Row, _: &tiberius::Column, index: usize) -> ArrowType {
-        row.cells().nth(index).map_or(
-            ArrowType::Unsupported,
-            |(_, column_data)| match column_data {
-                ColumnData::Bit(_) => ArrowType::Boolean(convert_mssql_type!(bool, column_data)),
-                ColumnData::U8(_) => ArrowType::UInt8(convert_mssql_type!(u8, column_data)),
-                ColumnData::I16(_) => ArrowType::Int16(convert_mssql_type!(i16, column_data)),
-                ColumnData::I32(_) => ArrowType::Int32(convert_mssql_type!(i32, column_data)),
-                ColumnData::I64(_) => ArrowType::Int64(convert_mssql_type!(i64, column_data)),
-                ColumnData::F32(_) => ArrowType::Float32(convert_mssql_type!(f32, column_data)),
-                ColumnData::F64(_) => ArrowType::Float64(convert_mssql_type!(f64, column_data)),
-                ColumnData::Numeric(_) => {
-                    ArrowType::BigDecimal(convert_mssql_type!(BigDecimal, column_data))
+        if let Some((_, column_data)) = row.cells().nth(index) {
+            match column_data {
+                ColumnData::Bit(_) => {
+                    convert_mssql_type::<bool, _>(column_data, ArrowType::Boolean)
                 }
-                ColumnData::Guid(_) => ArrowType::Uuid(convert_mssql_type!(Uuid, column_data)),
+                ColumnData::U8(_) => convert_mssql_type::<u8, _>(column_data, ArrowType::UInt8),
+                ColumnData::I16(_) => convert_mssql_type::<i16, _>(column_data, ArrowType::Int16),
+                ColumnData::I32(_) => convert_mssql_type::<i32, _>(column_data, ArrowType::Int32),
+                ColumnData::I64(_) => convert_mssql_type::<i64, _>(column_data, ArrowType::Int64),
+                ColumnData::F32(_) => convert_mssql_type::<f32, _>(column_data, ArrowType::Float32),
+                ColumnData::F64(_) => convert_mssql_type::<f64, _>(column_data, ArrowType::Float64),
+                ColumnData::Numeric(_) => {
+                    convert_mssql_type::<BigDecimal, _>(column_data, ArrowType::BigDecimal)
+                }
+                ColumnData::Guid(_) => convert_mssql_type::<Uuid, _>(column_data, ArrowType::Uuid),
                 ColumnData::String(_) => {
-                    let column_data = column_data.to_owned();
-                    ArrowType::Utf8(convert_mssql_type_owned!(String, column_data))
+                    convert_mssql_type_owned::<String, _>(column_data.to_owned(), ArrowType::Utf8)
                 }
                 ColumnData::Binary(_) => {
-                    let column_data = column_data.to_owned();
-                    let bytes = convert_mssql_type_owned!(Vec<u8>, column_data);
-                    ArrowType::Utf8(String::from_utf8(bytes).unwrap_or_default())
+                    convert_mssql_type_owned::<Vec<u8>, _>(column_data.to_owned(), |bytes| {
+                        ArrowType::Utf8(String::from_utf8(bytes).unwrap_or_default())
+                    })
                 }
                 ColumnData::Date(_) => {
-                    let naive_date = convert_mssql_type!(NaiveDate, column_data);
-                    ArrowType::Date32(Date32Type::from_naive_date(naive_date))
+                    convert_mssql_type::<NaiveDate, _>(column_data, |naive_date| {
+                        ArrowType::Date32(Date32Type::from_naive_date(naive_date))
+                    })
                 }
                 ColumnData::Time(_) => {
-                    ArrowType::Time32(convert_mssql_type!(NaiveTime, column_data))
+                    convert_mssql_type::<NaiveTime, _>(column_data, ArrowType::Time32)
                 }
                 ColumnData::SmallDateTime(_)
                 | ColumnData::DateTime(_)
                 | ColumnData::DateTime2(_) => {
-                    ArrowType::Timestamp(convert_mssql_type!(NaiveDateTime, column_data))
+                    convert_mssql_type::<NaiveDateTime, _>(column_data, ArrowType::Timestamp)
                 }
                 ColumnData::DateTimeOffset(_) => {
-                    let date_time = convert_mssql_type!(DateTime<Utc>, column_data);
-                    ArrowType::TimestampTz(date_time.with_timezone(&Local))
+                    convert_mssql_type::<DateTime<Utc>, _>(column_data, |date_time| {
+                        ArrowType::TimestampTz(date_time.with_timezone(&Local))
+                    })
                 }
                 ColumnData::Xml(_) => {
-                    let xml_string = XmlData::from_sql_owned(column_data.to_owned())
-                        .ok()
-                        .flatten()
-                        .map_or(String::new(), |xml_data| xml_data.into_string());
-                    ArrowType::Utf8(xml_string)
+                    convert_mssql_type_owned::<XmlData, _>(column_data.to_owned(), |xml_data| {
+                        ArrowType::Utf8(xml_data.to_string())
+                    })
                 }
-            },
-        )
+            }
+        } else {
+            ArrowType::Unsupported
+        }
     }
 }
 
-#[macro_export]
-macro_rules! convert_mssql_type {
-    ( $kind:ty, $column_data:ident ) => {{
-        <$kind>::from_sql($column_data)
-            .ok()
-            .flatten()
-            .unwrap_or_default()
-    }};
+fn convert_mssql_type<'a, T, F>(
+    column_data: &'a ColumnData<'static>,
+    map_to_arrow_type: F,
+) -> ArrowType
+where
+    T: Sized + 'a + FromSql<'a>,
+    F: Fn(T) -> ArrowType,
+{
+    T::from_sql(column_data)
+        .ok()
+        .flatten()
+        .map(map_to_arrow_type)
+        .unwrap_or(ArrowType::Void)
 }
 
-#[macro_export]
-macro_rules! convert_mssql_type_owned {
-    ( $kind:ty, $column_data:ident ) => {{
-        <$kind>::from_sql_owned($column_data)
-            .ok()
-            .flatten()
-            .unwrap_or_default()
-    }};
+fn convert_mssql_type_owned<'a, T, F>(
+    column_data: ColumnData<'static>,
+    map_to_arrow_type: F,
+) -> ArrowType
+where
+    T: FromSqlOwned,
+    F: Fn(T) -> ArrowType,
+{
+    T::from_sql_owned(column_data)
+        .ok()
+        .flatten()
+        .map(map_to_arrow_type)
+        .unwrap_or(ArrowType::Void)
 }
 
 #[cfg(test)]
