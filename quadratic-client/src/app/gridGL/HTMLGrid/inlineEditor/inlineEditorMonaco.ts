@@ -13,14 +13,6 @@ import DefaultEditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worke
 import TsEditorWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 import { inlineEditorEvents } from './inlineEditorEvents';
 
-const theme: editor.IStandaloneThemeData = {
-  base: 'vs',
-  inherit: true,
-  rules: [],
-  colors: {},
-};
-monaco.editor.defineTheme('inline-editor', theme);
-
 // This is where we globally define worker types for Monaco. See
 // https://github.com/microsoft/monaco-editor/blob/main/docs/integrate-esm.md
 window.MonacoEnvironment = {
@@ -171,8 +163,11 @@ class InlineEditorMonaco {
   }
 
   setBackgroundColor(color: string) {
-    theme.colors['editor.background'] = color;
-    monaco.editor.defineTheme('inline-editor', theme);
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in setBackgroundColor');
+    }
+    const styles = this.editor.getDomNode()?.style;
+    styles?.setProperty('--vscode-editor-background', color);
   }
 
   setFontFamily(fontFamily: string) {
@@ -363,7 +358,6 @@ class InlineEditorMonaco {
         alwaysConsumeMouseWheel: false,
         verticalScrollbarSize: 0,
       },
-      theme: 'inline-editor',
       stickyScroll: { enabled: false },
       language: inlineEditorHandler.formula ? 'formula' : undefined,
     });
