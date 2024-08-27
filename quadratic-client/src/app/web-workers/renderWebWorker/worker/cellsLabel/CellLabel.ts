@@ -269,6 +269,15 @@ export class CellLabel {
       const actualTop = Math.max(this.AABB.top, this.AABB.top + (this.AABB.height - this.textHeight) / 2);
       this.position.y = Math.max(actualTop, this.AABB.top);
     }
+
+    // Adjust the clipping bounds based on the sheetSize. This removes overflow
+    // that happens at the sheet's borders.
+    if (this.overflowRight && this.location.x === this.cellsLabels.sheetSizeClip.right) {
+      this.cellClipRight = this.AABB.right;
+    }
+    if (this.overflowLeft && this.location.x === 0) {
+      this.cellClipLeft = this.AABB.left;
+    }
   };
 
   public updateText = (labelMeshes: LabelMeshes): void => {

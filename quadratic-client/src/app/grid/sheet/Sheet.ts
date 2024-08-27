@@ -167,7 +167,7 @@ export class Sheet {
   }
 
   // @returns the screen bounds of the sheet
-  getScreenBounds(): Rectangle | undefined {
+  getSheetSize(): Rectangle | undefined {
     if (this.bounds.type === 'empty') return;
     const sheetSize = this.sheetSize;
     const start = this.getCellOffsets(this.bounds.min.x, this.bounds.min.y);
@@ -175,5 +175,16 @@ export class Sheet {
     const maxY = sheetSize ? Math.max(Number(sheetSize[1]), Number(this.bounds.max.y)) : Number(this.bounds.max.y);
     const end = this.getCellOffsets(maxX, maxY);
     return new Rectangle(start.x, start.y, end.x - start.x, end.y - start.y);
+  }
+
+  // @returns the cell coordinate bounds of the sheet
+  // note: returns (0,0,Infinity,Infinity) if sheetSize is not set
+  getCellSheetSize(): Rectangle {
+    const sheetSize = this.sheetSize;
+    if (sheetSize) {
+      return new Rectangle(0, 0, Number(sheetSize[0]), Number(sheetSize[1]));
+    } else {
+      return new Rectangle(0, 0, Infinity, Infinity);
+    }
   }
 }

@@ -38,6 +38,8 @@ export class CellsLabels {
   private dirtyRowHeadings: Map<number, number>;
   private rowTransient: boolean;
 
+  sheetSizeClip: Rectangle;
+
   constructor(sheetInfo: SheetInfo, bitmapFonts: RenderBitmapFonts) {
     this.sheetId = sheetInfo.sheet_id;
     const bounds = sheetInfo.bounds_without_formatting;
@@ -57,6 +59,12 @@ export class CellsLabels {
     this.rowTransient = false;
 
     this.createHashes();
+
+    if (sheetInfo.sheet_size) {
+      this.sheetSizeClip = new Rectangle(0, 0, Number(sheetInfo.sheet_size[0]), Number(sheetInfo.sheet_size[1]));
+    } else {
+      this.sheetSizeClip = new Rectangle(0, 0, Infinity, Infinity);
+    }
   }
 
   updateSheetInfo(sheetInfo: SheetInfo) {

@@ -8,6 +8,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
+import { intersects } from '../../helpers/intersects';
 
 function setCursorPosition(x: number, y: number) {
   const newPos = { x, y };
@@ -19,10 +20,6 @@ function setCursorPosition(x: number, y: number) {
     ensureVisible: newPos,
   });
 }
-
-// todo: The QuadraticCore checks should be a single call within Rust instead of
-// having TS handle the logic (this will reduce the number of calls into
-// quadraticCore)
 
 // handle cases for meta/ctrl keys with algorithm:
 // - if on an empty cell then select to the first cell with a value
@@ -42,11 +39,17 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
   const keyboardX = cursor.keyboardMovePosition.x;
   const keyboardY = cursor.keyboardMovePosition.y;
 
+  const sheetSize = sheets.sheet.getCellSheetSize();
+
   if (deltaX === 1) {
     let x = keyboardX;
+
+    if (x === sheetSize.right) return;
+
     const y = cursor.keyboardMovePosition.y;
     // always use the original cursor position to search
     const yCheck = cursor.cursorPosition.y;
+
     // handle case of cell with content
     let nextCol: number | undefined = undefined;
     if (await quadraticCore.cellHasContent(sheetId, x, yCheck)) {
@@ -103,6 +106,8 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
     }
   } else if (deltaX === -1) {
     let x = keyboardX;
+    if (x === 0) return;
+
     const y = cursor.keyboardMovePosition.y;
     // always use the original cursor position to search
     const yCheck = cursor.cursorPosition.y;
@@ -313,12 +318,14 @@ function expandSelection(deltaX: number, deltaY: number) {
 function moveCursor(deltaX: number, deltaY: number) {
   const cursor = sheets.sheet.cursor;
   const newPos = { x: cursor.cursorPosition.x + deltaX, y: cursor.cursorPosition.y + deltaY };
-  cursor.changePosition({
-    columnRow: null,
-    multiCursor: null,
-    keyboardMovePosition: newPos,
-    cursorPosition: newPos,
-  });
+  if (intersects.rectanglePoint(sheets.sheet.getCellSheetSize(), newPos)) {
+    cursor.changePosition({
+      columnRow: null,
+      multiCursor: null,
+      keyboardMovePosition: newPos,
+      cursorPosition: newPos,
+    });
+  }
 }
 
 export function keyboardPosition(event: KeyboardEvent): boolean {

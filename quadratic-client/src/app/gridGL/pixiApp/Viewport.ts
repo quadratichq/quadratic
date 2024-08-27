@@ -66,7 +66,7 @@ export class Viewport extends PixiViewport {
     // move the viewport out of view with the cursor)
     if (isCellVisible()) return;
 
-    const sheetBounds = sheets.sheet.getScreenBounds();
+    const sheetBounds = sheets.sheet.getSheetSize();
     const visibleBounds = this.getVisibleBounds();
     let centerX = this.center.x;
     let centerY = this.center.y;
