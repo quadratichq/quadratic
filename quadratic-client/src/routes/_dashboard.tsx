@@ -5,7 +5,6 @@ import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { Empty } from '@/dashboard/components/Empty';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
 import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
-import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
@@ -13,7 +12,6 @@ import { useTheme } from '@/shared/hooks/useTheme';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
 import { cn } from '@/shared/shadcn/utils';
-import { LiveChatWidget } from '@livechat/widget-react';
 import { ExclamationTriangleIcon, HamburgerMenuIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
@@ -166,7 +164,6 @@ export const Component = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const contentPaneRef = useRef<HTMLDivElement>(null);
   const revalidator = useRevalidator();
-  const { loggedInUser: user } = useRootRouteLoaderData();
 
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
   const navbar = <DashboardSidebar isLoading={isLoading} />;
@@ -185,7 +182,6 @@ export const Component = () => {
 
   return (
     <RecoilRoot>
-      <LiveChatWidget license="14763831" customerEmail={user?.email} customerName={user?.name} />
       <div className={`h-full lg:flex lg:flex-row`}>
         <div
           ref={contentPaneRef}
