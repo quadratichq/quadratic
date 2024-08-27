@@ -6,6 +6,7 @@ import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
+import { FONT_SIZE, LINE_HEIGHT } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import * as monaco from 'monaco-editor';
 import { editor } from 'monaco-editor';
 import DefaultEditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
@@ -348,8 +349,8 @@ class InlineEditorMonaco {
         autoFindInSelection: 'never',
         seedSearchStringFromSelection: 'never',
       },
-      fontSize: 14,
-      lineHeight: 16,
+      fontSize: FONT_SIZE,
+      lineHeight: LINE_HEIGHT,
       fontFamily: 'OpenSans',
       fontWeight: 'normal',
       lineNumbers: 'off',
