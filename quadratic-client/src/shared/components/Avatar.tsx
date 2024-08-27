@@ -30,7 +30,7 @@ export const Avatar: React.FC<AvatarProps> = ({ src, alt, size, style, children,
       ) : (
         <img
           alt={alt}
-          src={getAuth0AvatarSrc(src)}
+          src={getAuth0AvatarSrc(src) ?? ''}
           crossOrigin="anonymous"
           onError={() => setError(true)}
           style={{ ...stylePreset, ...style }}
