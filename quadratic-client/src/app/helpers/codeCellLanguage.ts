@@ -53,7 +53,7 @@ export const getLanguageForMonaco = (language?: CodeCellLanguage): string => {
       case 'MYSQL':
         return 'mysql';
       case 'MSSQL':
-        return 'mssql';
+        return 'sql';
     }
   }
 

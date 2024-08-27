@@ -20,8 +20,8 @@ type FormValues = z.infer<typeof ConnectionFormMssqlSchema>;
 
 const DEFAULTS = {
   PORT: '1433',
-  DATABASE: 'msdb',
-  USERNAME: 'sa',
+  DATABASE: 'master',
+  USERNAME: 'admin',
 };
 
 export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => {

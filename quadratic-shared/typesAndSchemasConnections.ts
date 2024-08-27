@@ -51,7 +51,9 @@ export const ConnectionTypeDetailsPostgresSchema = z.object({
   password: z.string().optional().transform(transformEmptyStringToUndefined),
 });
 export const ConnectionTypeDetailsMysqlSchema = ConnectionTypeDetailsPostgresSchema;
-export const ConnectionTypeDetailsMssqlSchema = ConnectionTypeDetailsPostgresSchema;
+export const ConnectionTypeDetailsMssqlSchema = ConnectionTypeDetailsPostgresSchema.extend({
+  database: z.string().optional(),
+});
 
 /**
  * =============================================================================
