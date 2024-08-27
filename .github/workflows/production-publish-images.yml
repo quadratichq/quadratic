@@ -33,7 +33,7 @@ jobs:
     - name: Define repository name
       id: repo-name
       run: |
-        echo "REPO_NAME=quadratic-${{ matrix.service }}-production" >> $GITHUB_OUTPUT
+        echo "REPO_NAME=quadratic-${{ matrix.service }}-staging" >> $GITHUB_OUTPUT
 
     - name: Create Public ECR Repository if not exists
       id: create-ecr
