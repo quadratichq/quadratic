@@ -4,7 +4,6 @@
 #
 #   Read version from main VERSION file (located at root)
 #   Bump RUST and JAVASCRIPT files (see listing above) according to command line args: major/minor/patch/set
-#     For each file affected, git add $file
 #   Bump the main VERSION file
 #   Commit added files
 #   Create version tag (e.g. v1.0.1)
@@ -94,7 +93,6 @@ for file in ${JAVASCRIPT[@]}; do
   echo "Current $file version is $PACKAGE_JSON_VERSION"
   
   jq --arg new_version "$NEW_VERSION" '.version = $new_version' $file > tmp.json && mv tmp.json $file
-  git add $file
   
   echo "Updated $file version to $NEW_VERSION"
 done
@@ -105,13 +103,11 @@ for file in ${RUST[@]}; do
   echo "Current $file version is $CARGO_TOML_VERSION"
   
   sed -i '' "s/^version = \".*\"/version = \"$NEW_VERSION\"/" $file
-  git add $file
 
   echo "Updated $file version to $NEW_VERSION"
 done
 
 # update the main VERSION file
 echo $NEW_VERSION > VERSION
-git add VERSION
 
 echo "Version bump to $NEW_VERSION complete!"
