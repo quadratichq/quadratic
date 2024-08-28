@@ -32,7 +32,7 @@ This will download the initialization script, which will prompt for a license ke
 
 Additionally, the docker compose network will start (see [Starting](#Starting)).  Please allow several minutes for the docker images to downloaded.
 
-Refer to the [Closing](#Closing) section.
+Refer to the [Stopping](#Stopping) section.
 
 ## Starting
 
@@ -41,3 +41,7 @@ Once the Quadratic is initialized, a single command is needed to start all of th
 ```shell
 ./start.sh
 ```
+
+## Stopping
+
+To stop running docker images, simply press `ctrl + c`

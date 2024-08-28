@@ -108,7 +108,6 @@ services:
 
       # Admin
       LICENSE_KEY: "LICENSE_KEY"
-      LICENSE_API_URI: http://localhost:4000
     restart: "always"
     ports:
       - "8000:8000"
