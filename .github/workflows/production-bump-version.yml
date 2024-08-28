@@ -15,7 +15,6 @@ on:
     types: [opened]
     branches:
       - main
-  push:
 
 jobs:
   bump-version:
