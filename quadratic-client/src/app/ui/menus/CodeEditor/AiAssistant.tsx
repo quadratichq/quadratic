@@ -218,27 +218,32 @@ ${QuadraticDocs}`,
               }}
             >
               {message.role === 'user' ? (
-                <Avatar
-                  src={user?.picture}
-                  alt={user?.name}
-                  style={{
-                    backgroundColor: colors.quadraticSecondary,
-                  }}
-                >
-                  {user?.name}
-                </Avatar>
+                <>
+                  <Avatar
+                    src={user?.picture}
+                    alt={user?.name}
+                    style={{
+                      backgroundColor: colors.quadraticSecondary,
+                    }}
+                  >
+                    {user?.name}
+                  </Avatar>
+                  {message.content}
+                </>
               ) : (
-                <Avatar
-                  alt="AI Assistant"
-                  style={{
-                    backgroundColor: 'white',
-                    marginBottom: '0.5rem',
-                  }}
-                >
-                  <AI sx={{ color: colors.languageAI }}></AI>
-                </Avatar>
+                <>
+                  <Avatar
+                    alt="AI Assistant"
+                    style={{
+                      backgroundColor: 'white',
+                      marginBottom: '0.5rem',
+                    }}
+                  >
+                    <AI sx={{ color: colors.languageAI }}></AI>
+                  </Avatar>
+                  <CodeBlockParser input={message.content} />
+                </>
               )}
-              <CodeBlockParser input={message.content} />
             </div>
           ))}
           <div id="ai-streaming-output-anchor" key="ai-streaming-output-anchor" />
