@@ -79,7 +79,7 @@ export function prepareJavascriptCode(
     '\n })();' +
     'if (results instanceof OffscreenCanvas) results = await results.convertToBlob();' +
     `self.postMessage({ type: "results", results, console: javascriptConsole.output()${
-      withLineNumbers ? `, lineNumber: ${LINE_NUMBER_VAR} - 1` : ''
+      withLineNumbers ? `, lineNumber: Math.max(${LINE_NUMBER_VAR} - 1, 0)` : ''
     } });` +
     `} catch (e) { const error = e.message; const stack = e.stack; self.postMessage({ type: "error", error, stack, console: javascriptConsole.output() }); }` +
     '})();';

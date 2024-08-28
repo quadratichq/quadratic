@@ -357,7 +357,7 @@ impl GridController {
             let error_msg = js_code_result
                 .std_err
                 .clone()
-                .unwrap_or_else(|| "Unknown Python Error".into());
+                .unwrap_or_else(|| "Unknown Error".into());
             let msg = RunErrorMsg::PythonError(error_msg.into());
             let span = js_code_result.line_number.map(|line_number| Span {
                 start: line_number,
