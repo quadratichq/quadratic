@@ -41,10 +41,7 @@ export const router = createBrowserRouter(
           </Route>
         </Route>
 
-        <Route
-          loader={protectedRouteLoaderWrapper(async () => null)}
-          shouldRevalidate={({ currentUrl }) => currentUrl.pathname.startsWith('/files')}
-        >
+        <Route loader={protectedRouteLoaderWrapper(async () => null)}>
           {/* Resource routes: these are accessible via the URL bar, but have no UI
               Putting these outside the nested tree lets you hit them directly without having to load other data */}
           <Route

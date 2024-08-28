@@ -40,8 +40,12 @@ export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
  * Revalidation
  */
 export const shouldRevalidate = ({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) => {
-  // Re-validate if we're going to a teams route, otherwise skip
-  return nextUrl.pathname.startsWith('/teams/');
+  return (
+    currentUrl.pathname === '/' ||
+    currentUrl.pathname.startsWith('/files') ||
+    nextUrl.pathname === '/' ||
+    nextUrl.pathname.startsWith('/teams/')
+  );
 };
 
 /**
@@ -166,8 +170,6 @@ export const Component = () => {
   const revalidator = useRevalidator();
 
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
-  console.log('isLoading', isLoading, revalidator.state, navigation.state);
-  const navbar = <DashboardSidebar isLoading={isLoading} />;
 
   // Trigger the theme in the root of the app
   useTheme();
@@ -200,7 +202,7 @@ export const Component = () => {
                 </Button>
               </SheetTrigger>
               <SheetContent className="p-0" style={{ width: DRAWER_WIDTH }}>
-                {navbar}
+                <DashboardSidebar isLoading={isLoading} />
               </SheetContent>
             </Sheet>
           </div>
@@ -210,7 +212,7 @@ export const Component = () => {
           className={`order-1 hidden flex-shrink-0 border-r border-r-border lg:block`}
           style={{ width: DRAWER_WIDTH }}
         >
-          {navbar}
+          <DashboardSidebar isLoading={isLoading} />
         </div>
         {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.EDUCATION && <EducationDialog />}
       </div>
