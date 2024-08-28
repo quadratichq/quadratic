@@ -136,7 +136,7 @@ services:
 
       PUBSUB_HOST: host.docker.internal
       PUBSUB_PORT: 6379
-      PUBSUB_PASSWORD:
+      PUBSUB_PASSWORD: ""
       PUBSUB_ACTIVE_CHANNELS: active_channels
 
       AUTH0_JWKS_URI: http://host.docker.internal:3000/.well-known/jwks.json
@@ -177,7 +177,7 @@ services:
 
       PUBSUB_HOST: host.docker.internal
       PUBSUB_PORT: 6379
-      PUBSUB_PASSWORD:
+      PUBSUB_PASSWORD: ""
       PUBSUB_ACTIVE_CHANNELS: active_channels
       PUBSUB_PROCESSED_TRANSACTIONS_CHANNEL: processed_transactions
 
