@@ -1,4 +1,4 @@
-name: Bump Version on PR against main
+name: Bump Version on PR against to main
 
 on:
   workflow_dispatch:
@@ -15,6 +15,7 @@ on:
     types: [opened]
     branches:
       - main
+  push:
 
 jobs:
   bump-version:
@@ -32,12 +33,13 @@ jobs:
         run: sudo apt-get install jq
 
       - name: Run bump.sh script
-        run: ./bump.sh patch
+        run: ./bump.sh ${{ github.event.inputs.bump_type || 'patch' }}
 
-      - name: Commit changes
+      - name: Commit and push changes
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add .
-          git commit -m 'Bump version'
-          git push origin ${{ github.head_ref }}
+          git commit -m 'Bump version' || exit 0
+          git pull --rebase
+          git push
