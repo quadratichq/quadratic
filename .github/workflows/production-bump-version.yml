@@ -1,12 +1,20 @@
 name: Bump Version on PR against main
 
 on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Type of version bump'
+        default: patch
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
   pull_request:
     types: [opened]
     branches:
       - main
-      # TODO(@davidkircos) remove qa before shipping
-      - qa 
 
 jobs:
   bump-version:
