@@ -26,6 +26,7 @@ export class CellsImages extends Container<CellsImage> {
     if (this.cellsSheet.sheetId === sheetId) {
       this.children.forEach((sprite) => sprite.reposition());
     }
+    pixiApp.cellImages.dirtyBorders = true;
   };
 
   cheapCull(bounds: Rectangle) {
