@@ -57,11 +57,11 @@ export const debugShowLoadingHashes = debug && false;
 export const debugShowFileIO = debug && false;
 
 // shows messages related to offline transaction
-export const debugOffline = debug && true;
+export const debugOffline = debug && false;
 
 export const debugGridSettings = debug && false;
 
-export const debugShowMultiplayer = debug && true;
+export const debugShowMultiplayer = debug && false;
 
 export const debugSaveURLState = (debug && false) || url.has('state');
 

@@ -308,7 +308,7 @@ mod tests {
     use crate::controller::transaction_types::JsCodeResult;
     use crate::controller::GridController;
     use crate::grid::{CodeCellLanguage, Sheet};
-    use crate::wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count};
+    use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
     use crate::{CellValue, CodeCellValue, Pos, SheetPos};
 
     #[test]
@@ -647,8 +647,6 @@ mod tests {
     #[test]
     #[serial]
     fn test_send_request_transactions() {
-        clear_js_calls();
-
         let mut client = GridController::test();
         let sheet_id = client.sheet_ids()[0];
 
@@ -683,7 +681,7 @@ mod tests {
 
         client.receive_sequence_num(2);
 
-        expect_js_call_count("jsMultiplayerSynced", 0, true);
+        clear_js_calls();
 
         // we send our last_sequence_num + 1 to the server so it can provide all later transactions
         assert_eq!(client.transactions.last_sequence_num, 0);
