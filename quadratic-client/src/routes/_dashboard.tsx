@@ -73,7 +73,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
 
   // 1) Check the URL for a team UUID
   // FYI: if you have a UUID in the URL or localstorage, it doesn’t mean you
-  // have acces to it (maybe you were removed from a team, so it’s a 404)
+  // have access to it (maybe you were removed from a team, so it’s a 404)
   // So we have to ensure we A) have a UUID, and B) it's in the list of teams
   // we have access to from the server.
   if (uuidFromUrl) {
