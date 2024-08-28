@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-rust-client"
-version = "1.0.0"
+version = "0.5.0"
 edition = "2021"
 authors = ["David Figatner <david.figatner@quadratichq.com>"]
 
