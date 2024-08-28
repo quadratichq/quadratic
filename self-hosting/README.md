@@ -1,5 +1,43 @@
 # Quadratic Self-Hosting
 
+Implement the entire Quadratic stack outside of Quadratic.  The use cases we currently support: 
+
+- [x] Localhost
+- [x] EC2 (using your own load balancer)
+- [ ] EC2 (using [Caddy's load balancer](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy))
+- [ ] Multiple Docker instance setup (for any cloud provider)
+- [ ] Kubernetes
+
+## Dependencies
+
+* [Git](https://github.com/git-guides/install-git)
+* [Docker](https://docs.docker.com/engine/install/)
+
+## Requirements
+
+* MacOS or Linux (not tested on Windows)
+* License Key (available at https://selfhost.quadratic-preview.com)
+
+## Installation
+
+> **NOTE:** _Before  installing, please create a license and copy the key at https://selfhost.quadratic-preview.com._ 
+
+Quadratic can be installed via a single command: 
+
 ```shell
-curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic/2b5308771a311b98918d13866a3cb4c5fe651736/self-hosting/init.sh -o init.sh && sh -i init.sh
+curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic/27714636745e6c68e5d0412e2d0eafa16167aa30/self-hosting/init.sh -o init.sh && sh -i init.sh
+```
+
+This will download the initialization script, which will prompt for a license key in order to register Quadratic.  
+
+Additionally, the docker compose network will start (see [Starting](#Starting)).  Please allow several minutes for the docker images to downloaded.
+
+Refer to the [Closing](#Closing) section.
+
+## Starting
+
+Once the Quadratic is initialized, a single command is needed to start all of the images:
+
+```shell
+./start.sh
 ```

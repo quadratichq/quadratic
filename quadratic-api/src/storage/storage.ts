@@ -1,7 +1,19 @@
 import multer from 'multer';
 import { STORAGE_TYPE } from '../env-vars';
-import { getPresignedStorageUrl, getStorageUrl, multerFileSystemStorage, upload } from './fileSystem';
-import { generatePresignedUrl, multerS3Storage, uploadStringAsFileS3 } from './s3';
+
+let { getPresignedStorageUrl, getStorageUrl, multerFileSystemStorage, upload } = {} as any;
+let { generatePresignedUrl, multerS3Storage, uploadStringAsFileS3 } = {} as any;
+
+switch (STORAGE_TYPE) {
+  case 's3':
+    ({ generatePresignedUrl, multerS3Storage, uploadStringAsFileS3 } = require('./s3'));
+    break;
+  case 'file-system':
+    ({ getPresignedStorageUrl, getStorageUrl, multerFileSystemStorage, upload } = require('./fileSystem'));
+    break;
+  default:
+    throw new Error(`Unsupported storage type in storage.ts: ${STORAGE_TYPE}`);
+}
 
 export type UploadFileResponse = {
   bucket: string;
