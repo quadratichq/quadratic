@@ -10,6 +10,7 @@ import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { ParseFormulaReturnType, Span } from '../../../helpers/formulaNotation';
 import { StringId, getKey } from '../../../helpers/getKey';
 import { colors } from '../../../theme/colors';
+import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
 
 export function extractCellsFromParseFormula(
   parsedFormula: ParseFormulaReturnType,
@@ -92,7 +93,7 @@ export const useEditorCellHighlights = (
       const modelValue = editor.getValue();
       let parsed;
 
-      if (language === 'Python' || language === 'Javascript') {
+      if (language === 'Python' || language === 'Javascript' || codeCellIsAConnection(language)) {
         parsed = parseCellsAccessed(cellsAccessed) as ParseFormulaReturnType;
       }
 
