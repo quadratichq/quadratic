@@ -165,31 +165,36 @@ fn set_column_format_render_size(
     }
 }
 
+/// Imports a column from the current schema.
+pub fn import_column(x: i64, column: &current::Column) -> Column {
+    let mut col = Column::new(x);
+    set_column_format_align(&mut col.align, &column.align);
+    set_column_format_vertical_align(&mut col.vertical_align, &column.vertical_align);
+    set_column_format_wrap(&mut col.wrap, &column.wrap);
+    set_column_format_i16(&mut col.numeric_decimals, &column.numeric_decimals);
+    set_column_format_numeric_format(&mut col.numeric_format, &column.numeric_format);
+    set_column_format_bool(&mut col.numeric_commas, &column.numeric_commas);
+    set_column_format_bool(&mut col.bold, &column.bold);
+    set_column_format_bool(&mut col.italic, &column.italic);
+    set_column_format_string(&mut col.text_color, &column.text_color);
+    set_column_format_string(&mut col.fill_color, &column.fill_color);
+    set_column_format_render_size(&mut col.render_size, &column.render_size);
+
+    for (y, value) in column.values.iter() {
+        let cell_value = import_cell_value(value);
+        if let Ok(y) = y.parse::<i64>() {
+            col.values.insert(y, cell_value);
+        }
+    }
+
+    col
+}
+
 fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<i64, Column>> {
     columns
         .iter()
         .map(|(x, column)| {
-            let mut col = Column::new(*x);
-            set_column_format_align(&mut col.align, &column.align);
-            set_column_format_vertical_align(&mut col.vertical_align, &column.vertical_align);
-            set_column_format_wrap(&mut col.wrap, &column.wrap);
-            set_column_format_i16(&mut col.numeric_decimals, &column.numeric_decimals);
-            set_column_format_numeric_format(&mut col.numeric_format, &column.numeric_format);
-            set_column_format_bool(&mut col.numeric_commas, &column.numeric_commas);
-            set_column_format_bool(&mut col.bold, &column.bold);
-            set_column_format_bool(&mut col.italic, &column.italic);
-            set_column_format_string(&mut col.text_color, &column.text_color);
-            set_column_format_string(&mut col.fill_color, &column.fill_color);
-            set_column_format_render_size(&mut col.render_size, &column.render_size);
-
-            // todo: there's probably a better way of doing this
-            for (y, value) in column.values.iter() {
-                let cell_value = import_cell_value(value);
-                if let Ok(y) = y.parse::<i64>() {
-                    col.values.insert(y, cell_value);
-                }
-            }
-
+            let col = import_column(*x, column);
             Ok((*x, col))
         })
         .collect::<Result<BTreeMap<i64, Column>>>()
@@ -547,29 +552,27 @@ fn export_values(values: BTreeMap<i64, CellValue>) -> HashMap<String, current::C
         .collect()
 }
 
+pub fn export_column(column: Column) -> current::Column {
+    current::Column {
+        align: export_column_data_align(column.align),
+        vertical_align: export_column_data_vertical_align(column.vertical_align),
+        wrap: export_column_data_wrap(column.wrap),
+        numeric_decimals: export_column_data_i16(column.numeric_decimals),
+        numeric_format: export_column_data_numeric_format(column.numeric_format),
+        numeric_commas: export_column_data_bool(column.numeric_commas),
+        bold: export_column_data_bool(column.bold),
+        italic: export_column_data_bool(column.italic),
+        text_color: export_column_data_string(column.text_color),
+        fill_color: export_column_data_string(column.fill_color),
+        render_size: export_column_data_render_size(column.render_size),
+        values: export_values(column.values),
+    }
+}
 fn export_column_builder(sheet: Sheet) -> Vec<(i64, current::Column)> {
     sheet
         .columns
         .into_iter()
-        .map(|(x, column)| {
-            (
-                x,
-                current::Column {
-                    align: export_column_data_align(column.align),
-                    vertical_align: export_column_data_vertical_align(column.vertical_align),
-                    wrap: export_column_data_wrap(column.wrap),
-                    numeric_decimals: export_column_data_i16(column.numeric_decimals),
-                    numeric_format: export_column_data_numeric_format(column.numeric_format),
-                    numeric_commas: export_column_data_bool(column.numeric_commas),
-                    bold: export_column_data_bool(column.bold),
-                    italic: export_column_data_bool(column.italic),
-                    text_color: export_column_data_string(column.text_color),
-                    fill_color: export_column_data_string(column.fill_color),
-                    render_size: export_column_data_render_size(column.render_size),
-                    values: export_values(column.values),
-                },
-            )
-        })
+        .map(|(x, column)| (x, export_column(column)))
         .collect()
 }
 

@@ -25,6 +25,7 @@ pub mod cell_array;
 pub mod cell_values;
 pub mod clipboard;
 pub mod code;
+pub mod column;
 pub mod formats;
 pub mod formatting;
 pub mod rendering;

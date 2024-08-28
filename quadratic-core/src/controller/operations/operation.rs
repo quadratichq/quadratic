@@ -135,6 +135,33 @@ pub enum Operation {
         sheet_pos: SheetPos,
         validation_id: Option<Uuid>,
     },
+
+    DeleteColumn {
+        sheet_id: SheetId,
+        column: i64,
+    },
+    DeleteRow {
+        sheet_id: SheetId,
+        row: i64,
+    },
+    InsertColumn {
+        sheet_id: SheetId,
+        column: i64,
+    },
+    InsertRow {
+        sheet_id: SheetId,
+        row: i64,
+    },
+    MoveColumn {
+        sheet_id: SheetId,
+        column: i64,
+        new_column: i64,
+    },
+    MoveRow {
+        sheet_id: SheetId,
+        row: i64,
+        new_row: i64,
+    },
 }
 
 impl fmt::Display for Operation {
@@ -256,6 +283,48 @@ impl fmt::Display for Operation {
                     fmt,
                     "SetValidationWarning {{ sheet_pos: {:?}, validation_id: {:?} }}",
                     sheet_pos, validation_id
+                )
+            }
+            Operation::DeleteColumn { sheet_id, column } => {
+                write!(
+                    fmt,
+                    "DeleteColumn {{ sheet_id: {}, column: {} }}",
+                    sheet_id, column
+                )
+            }
+            Operation::DeleteRow { sheet_id, row } => {
+                write!(fmt, "DeleteRow {{ sheet_id: {}, row: {} }}", sheet_id, row)
+            }
+            Operation::InsertColumn { sheet_id, column } => {
+                write!(
+                    fmt,
+                    "InsertColumn {{ sheet_id: {}, column: {} }}",
+                    sheet_id, column
+                )
+            }
+            Operation::InsertRow { sheet_id, row } => {
+                write!(fmt, "InsertRow {{ sheet_id: {}, row: {} }}", sheet_id, row)
+            }
+            Operation::MoveColumn {
+                sheet_id,
+                column,
+                new_column,
+            } => {
+                write!(
+                    fmt,
+                    "MoveColumn {{ sheet_id: {}, column: {}, new_column: {} }}",
+                    sheet_id, column, new_column
+                )
+            }
+            Operation::MoveRow {
+                sheet_id,
+                row,
+                new_row,
+            } => {
+                write!(
+                    fmt,
+                    "MoveRow {{ sheet_id: {}, row: {}, new_row: {} }}",
+                    sheet_id, row, new_row
                 )
             }
         }
