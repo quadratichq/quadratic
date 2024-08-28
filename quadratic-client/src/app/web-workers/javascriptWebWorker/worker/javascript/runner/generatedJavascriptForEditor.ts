@@ -181,9 +181,9 @@ function convertNullToUndefined(
 
 function lineNumber(): number | undefined {
   try {
-    throw new Error()
+    throw new Error();
   } catch (e: any) {
-    const stackLines = e.stack.split("\\n");
+    const stackLines = e.stack.split('\\n');
     const match = stackLines[3].match(/:(\\d+):(\\d+)/);
     if (match) {
       return match[1];
@@ -313,4 +313,5 @@ export const relCells = (deltaX0: number, deltaY0: number, deltaX1: number, delt
   return getCells(deltaX0 + p.x, deltaY0 + p.y, deltaX1 + p.x, deltaY1 + p.y);
 };
 
-export const rc = relCell;`;
+export const rc = relCell;
+`;

@@ -6,7 +6,7 @@ import '@/app/ui/styles/floating-dialog.css';
 import { CommandDialog, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
 import { ArrowForward } from '@mui/icons-material';
 import { Rectangle } from 'pixi.js';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useRecoilState } from 'recoil';
 import { getCoordinatesFromUserInput } from './getCoordinatesFromUserInput';
 
@@ -15,16 +15,16 @@ export const GoTo = () => {
   const { showGoToMenu } = editorInteractionState;
   const [value, setValue] = React.useState<string>('');
 
-  const closeMenu = () => {
+  const closeMenu = useCallback(() => {
     setEditorInteractionState((state) => ({
       ...state,
       showGoToMenu: false,
     }));
-  };
+  }, [setEditorInteractionState]);
 
   const coordinates = getCoordinatesFromUserInput(value);
 
-  const onSelect = () => {
+  const onSelect = useCallback(() => {
     const [coor1, coor2] = coordinates;
 
     // GoTo Cell
@@ -57,10 +57,20 @@ export const GoTo = () => {
     });
     moveViewport({ topLeft: cursorPosition });
     closeMenu();
-  };
+  }, [closeMenu, coordinates]);
 
   return (
-    <CommandDialog dialogProps={{ open: showGoToMenu, onOpenChange: closeMenu }} commandProps={{ shouldFilter: false }}>
+    <CommandDialog
+      dialogProps={{ open: showGoToMenu, onOpenChange: closeMenu }}
+      commandProps={{ shouldFilter: false }}
+      overlayProps={{
+        onPointerDown: (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          closeMenu();
+        },
+      }}
+    >
       <CommandInput
         value={value}
         onValueChange={(value) => {

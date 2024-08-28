@@ -25,6 +25,8 @@ export const ROUTES = {
   TEAM_CONNECTIONS: (teamUuid: string) => `/teams/${teamUuid}/connections`,
   TEAM_CONNECTION_CREATE: (teamUuid: string, connectionType: ConnectionType) =>
     `/teams/${teamUuid}/connections?initial-connection-type=${connectionType}`,
+  TEAM_CONNECTION: (teamUuid: string, connectionUuid: string, connectionType: ConnectionType) =>
+    `/teams/${teamUuid}/connections?initial-connection-uuid=${connectionUuid}&initial-connection-type=${connectionType}`,
   TEAM_FILES: (teamUuid: string) => `/teams/${teamUuid}`,
   TEAM_FILES_PRIVATE: (teamUuid: string) => `/teams/${teamUuid}/files/private`,
   TEAM_MEMBERS: (teamUuid: string) => `/teams/${teamUuid}/members`,

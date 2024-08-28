@@ -18,6 +18,7 @@ import { CellFormatSummary } from '@/app/quadratic-core-types';
 import { createFormulaStyleHighlights } from '@/app/ui/menus/CodeEditor/useEditorCellHighlights';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import mixpanel from 'mixpanel-browser';
 import { Rectangle } from 'pixi.js';
@@ -31,6 +32,8 @@ class InlineEditorHandler {
 
   private open = false;
   private showing = false;
+
+  private initialValue = '';
 
   x = 0;
   y = 0;
@@ -65,8 +68,9 @@ class InlineEditorHandler {
   };
 
   // Resets state after editing is complete.
-  reset() {
+  private reset() {
     this.open = false;
+    this.initialValue = '';
     inlineEditorEvents.emit('status', false);
     this.cursorIsMoving = false;
     this.x = this.y = this.width = this.height = 0;
@@ -140,7 +144,6 @@ class InlineEditorHandler {
         this.showDiv();
         window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
         this.updateMonacoCursorPosition();
-        this.keepCursorVisible();
       }
       inlineEditorFormula.cursorMoved();
     } else {
@@ -151,6 +154,13 @@ class InlineEditorHandler {
   // Handler for the changeInput event.
   private changeInput = async (input: boolean, initialValue?: string) => {
     if (!input && !this.open) return;
+
+    if (initialValue) {
+      this.initialValue += initialValue;
+      initialValue = this.initialValue;
+    } else {
+      this.initialValue = '';
+    }
 
     if (!this.div) {
       throw new Error('Expected div and editor to be defined in InlineEditorHandler');
@@ -178,13 +188,12 @@ class InlineEditorHandler {
           value = (await quadraticCore.getEditCell(this.location.sheetId, this.location.x, this.location.y)) || '';
         }
       }
-      const formatSummary = await quadraticCore.getCellFormatSummary(
+      this.formatSummary = await quadraticCore.getCellFormatSummary(
         this.location.sheetId,
         this.location.x,
         this.location.y,
         true
       );
-      this.formatSummary = formatSummary;
       this.temporaryBold = this.formatSummary?.bold || undefined;
       this.temporaryItalic = this.formatSummary?.italic || undefined;
       inlineEditorMonaco.set(value);
@@ -197,8 +206,6 @@ class InlineEditorHandler {
       this.showDiv();
       this.changeToFormula(changeToFormula);
       this.updateMonacoCursorPosition();
-      this.keepCursorVisible();
-      inlineEditorMonaco.focus();
       inlineEditorEvents.emit('status', true, value);
     } else {
       this.close(0, 0, false);
@@ -295,7 +302,7 @@ class InlineEditorHandler {
     this.y =
       cellOutlineOffset + (verticalAlign === 'bottom' ? Math.min(y, y + cellContentHeight - inlineEditorHeight) : y);
     this.width = inlineEditorWidth;
-    this.height = inlineEditorHeight;
+    this.height = inlineEditorHeight + OPEN_SANS_FIX.y / 3;
 
     if (!pixiAppSettings.setInlineEditorState) {
       throw new Error('Expected pixiAppSettings.setInlineEditorState to be defined in InlineEditorHandler');
@@ -303,7 +310,7 @@ class InlineEditorHandler {
     pixiAppSettings.setInlineEditorState((prev) => ({
       ...prev,
       left: this.x,
-      top: this.y,
+      top: this.y + OPEN_SANS_FIX.y / 3,
       lineHeight: this.height,
     }));
 
@@ -522,6 +529,7 @@ class InlineEditorHandler {
     }));
     this.location = undefined;
     inlineEditorMonaco.set('');
+    this.initialValue = '';
     this.showing = false;
   };
 
