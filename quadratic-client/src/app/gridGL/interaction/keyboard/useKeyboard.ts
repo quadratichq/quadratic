@@ -5,16 +5,16 @@ import { Size } from '@/app/gridGL/types/size';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { useGridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { keyboardCell } from './keyboardCell';
 import { keyboardClipboard } from './keyboardClipboard';
 import { keyboardCode } from './keyboardCode';
+import { keyboardDropdown } from './keyboardDropdown';
 import { keyboardPosition } from './keyboardPosition';
 import { keyboardSearch } from './keyboardSearch';
 import { keyboardSelect } from './keyboardSelect';
 import { keyboardUndoRedo } from './keyboardUndoRedo';
 import { keyboardViewport } from './keyboardViewport';
-import { keyboardDropdown } from './keyboardDropdown';
 
 export interface IProps {
   editorInteractionState: EditorInteractionState;
@@ -29,32 +29,17 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const { name: fileName } = useFileContext();
 
-  useEffect(() => {
-    const keyDownWindow = (event: KeyboardEvent) => {
-      if (pixiAppSettings.input.show || inlineEditorHandler.isOpen()) return;
-
-      if (
-        keyboardViewport({
-          event,
-          editorInteractionState,
-          setEditorInteractionState,
-          presentationMode,
-          setPresentationMode,
-        }) ||
-        keyboardSearch(event, editorInteractionState, setEditorInteractionState)
-      ) {
-        event.stopPropagation();
-        event.preventDefault();
-      }
-    };
-
-    window.addEventListener('keydown', keyDownWindow);
-    return () => window.removeEventListener('keydown', keyDownWindow);
-  }, [editorInteractionState, presentationMode, setEditorInteractionState, setPresentationMode]);
-
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if (pixiAppSettings.input.show && inlineEditorHandler.isOpen()) return;
     if (
+      keyboardViewport({
+        event,
+        editorInteractionState,
+        setEditorInteractionState,
+        presentationMode,
+        setPresentationMode,
+      }) ||
+      keyboardSearch(event, editorInteractionState, setEditorInteractionState) ||
       keyboardClipboard({
         event,
         addGlobalSnackbar,
