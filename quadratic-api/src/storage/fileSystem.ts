@@ -35,8 +35,7 @@ export const upload = async (key: string, contents: string | Uint8Array, jwt: st
 
   try {
     const response = await axios
-      .post(url, {
-        body: contents,
+      .post(url, contents, {
         headers: {
           'Content-Type': 'text/plain',
           Authorization: `${jwt}`,
