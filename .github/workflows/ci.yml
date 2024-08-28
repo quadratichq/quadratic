@@ -223,3 +223,38 @@ jobs:
           npm run lint:prettier
           npm run lint:eslint
           npm run lint:ts
+
+  check-version-increment:
+    runs-on: ubuntu-latest
+    # If we are merging into main, but not pushed on main
+    # if: github.base_ref == 'main' && github.ref != 'refs/heads/main' TODO(@davidkircos) uncomment this before shipping
+    steps:
+    - name: Checkout current branch
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Get current VERSION
+      id: current_version
+      run: echo "CURRENT_VERSION=$(cat VERSION)" >> $GITHUB_OUTPUT
+
+    - name: Checkout main branch
+      uses: actions/checkout@v3
+      with:
+        ref: main
+        fetch-depth: 1
+
+    - name: Get main VERSION
+      id: main_version
+      run: echo "MAIN_VERSION=$(cat VERSION)" >> $GITHUB_OUTPUT
+
+    - name: Compare versions
+      run: |
+        current_version="${{ steps.current_version.outputs.CURRENT_VERSION }}"
+        main_version="${{ steps.main_version.outputs.MAIN_VERSION }}"
+        if [ "$(printf '%s\n' "$main_version" "$current_version" | sort -V | tail -n1)" != "$current_version" ]; then
+          echo "Error: VERSION in the current branch ($current_version) is not greater than VERSION in main ($main_version)"
+          exit 1
+        else
+          echo "VERSION check passed: Current branch ($current_version) > main ($main_version)"
+        fi

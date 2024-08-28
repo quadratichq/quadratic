@@ -1,0 +1,32 @@
+name: Bump Version on PR against main
+
+on:
+  pull_request:
+    types: [opened]
+    branches:
+      - main
+      # TODO(@davidkircos) remove qa before shipping
+      - qa 
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Install jq
+        run: sudo apt-get install jq
+
+      - name: Run bump.sh script
+        run: ./bump.sh patch
+
+      - name: Commit changes
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add .
+          git commit -m 'Bump version'
+          git push origin ${{ github.head_ref }}
