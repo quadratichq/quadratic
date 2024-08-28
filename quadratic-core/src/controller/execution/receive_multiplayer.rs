@@ -1,17 +1,15 @@
 use std::collections::VecDeque;
 
-use super::TransactionType;
-use crate::controller::{
-    active_transactions::{
-        pending_transaction::PendingTransaction, transaction_name::TransactionName,
-        unsaved_transactions::UnsavedTransaction,
-    },
-    operations::operation::Operation,
-    transaction::{Transaction, TransactionServer},
-    GridController,
-};
 use chrono::{Duration, TimeDelta, Utc};
 use uuid::Uuid;
+
+use super::TransactionType;
+use crate::controller::active_transactions::pending_transaction::PendingTransaction;
+use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::controller::active_transactions::unsaved_transactions::UnsavedTransaction;
+use crate::controller::operations::operation::Operation;
+use crate::controller::transaction::{Transaction, TransactionServer};
+use crate::controller::GridController;
 
 // seconds to wait before requesting wait_for_transactions
 const SECONDS_TO_WAIT_FOR_GET_TRANSACTIONS: i64 = 5;
@@ -118,7 +116,11 @@ impl GridController {
                     );
                 }
             }
-        } else if cfg!(target_family = "wasm") || cfg!(test) {
+        }
+
+        if (cfg!(target_family = "wasm") || cfg!(test))
+            && sequence_num >= self.transactions.last_sequence_num
+        {
             crate::wasm_bindings::js::jsMultiplayerSynced();
         }
     }
@@ -297,16 +299,17 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
-        controller::{transaction::Transaction, transaction_types::JsCodeResult, GridController},
-        grid::{CodeCellLanguage, Sheet},
-        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
-        CellValue, CodeCellValue, Pos, SheetPos,
-    };
     use bigdecimal::BigDecimal;
     use serial_test::{parallel, serial};
     use uuid::Uuid;
+
+    use super::*;
+    use crate::controller::transaction::Transaction;
+    use crate::controller::transaction_types::JsCodeResult;
+    use crate::controller::GridController;
+    use crate::grid::{CodeCellLanguage, Sheet};
+    use crate::wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count};
+    use crate::{CellValue, CodeCellValue, Pos, SheetPos};
 
     #[test]
     #[parallel]
