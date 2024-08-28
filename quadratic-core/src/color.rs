@@ -24,6 +24,15 @@ impl Default for Rgba {
 }
 
 impl Rgba {
+    fn new(red: u8, green: u8, blue: u8, alpha: u8) -> Self {
+        Self {
+            red,
+            green,
+            blue,
+            alpha,
+        }
+    }
+
     pub fn color_from_str(color_str: &str) -> Result<Self, ParseIntError> {
         // TODO(jrice): serde
         assert_eq!(&color_str[0..=0], "#");
@@ -85,6 +94,16 @@ impl Rgba {
 mod tests {
     use super::*;
     use serial_test::parallel;
+
+    #[test]
+    #[parallel]
+    fn new() {
+        let color = Rgba::new(0x22, 0x44, 0x66, 0xff);
+        assert_eq!(color.red, 0x22);
+        assert_eq!(color.green, 0x44);
+        assert_eq!(color.blue, 0x66);
+        assert_eq!(color.alpha, 0xff);
+    }
 
     #[test]
     #[parallel]

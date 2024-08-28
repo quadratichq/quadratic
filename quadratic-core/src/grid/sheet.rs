@@ -20,6 +20,7 @@ use crate::selection::Selection;
 use crate::sheet_offsets::SheetOffsets;
 use crate::{Array, CellValue, Pos, Rect};
 
+pub mod borders_1;
 pub mod bounds;
 pub mod cell_array;
 pub mod cell_values;
