@@ -14,6 +14,7 @@ import { useSetRecoilState } from 'recoil';
 export function useFileImport() {
   const setFilesImportProgressState = useSetRecoilState(filesImportProgressAtom);
   const setFilesImportProgressListState = useSetRecoilState(filesImportProgressListAtom);
+  // const setNewFileDialogState = useSetRecoilState(newFileDialogAtom);
 
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
@@ -192,6 +193,7 @@ export function useFileImport() {
               updateCurrentFileState({ step: 'done', progress: 100, uuid, abortController: undefined });
               if (openImportedFile) {
                 setFilesImportProgressListState({ show: false });
+                // setNewFileDialogState((prev) => ({ ...prev, show: false }));
                 window.location.replace(ROUTES.FILE(uuid));
               }
             })
@@ -234,6 +236,7 @@ export function useFileImport() {
     }
 
     setFilesImportProgressState((prev) => ({ ...prev, importing: false }));
+    // setNewFileDialogState((prev) => ({ ...prev, show: false }));
   };
 
   return handleImport;

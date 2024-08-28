@@ -166,6 +166,7 @@ export const Component = () => {
   const revalidator = useRevalidator();
 
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
+  console.log('isLoading', isLoading, revalidator.state, navigation.state);
   const navbar = <DashboardSidebar isLoading={isLoading} />;
 
   // Trigger the theme in the root of the app
