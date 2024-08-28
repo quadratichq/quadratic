@@ -3,7 +3,7 @@
 # General bump flow:
 #
 #   Read version from main VERSION file (located at root)
-#   Bump RUST and JAVASCRIPT files (see listing above) according to command line args: major/minor/patch/init (init is non-standard, but I added it for just applying the existing VERSION number to all files)
+#   Bump RUST and JAVASCRIPT files (see listing above) according to command line args: major/minor/patch/set
 #     For each file affected, git add $file
 #   Bump the main VERSION file
 #   Commit added files
@@ -17,12 +17,12 @@
 #   major
 #   minor
 #   patch
-#   init (just sets all versions to the current VERSION file version)
+#   set (just sets all versions to the current VERSION file version)
 
 set -e
 
 if [ "$#" -ne 1 ]; then
-  echo "Usage: $0 {major|minor|patch|init}"
+  echo "Usage: $0 {major|minor|patch|set}"
   exit 1
 fi
 
@@ -51,20 +51,20 @@ if [[ -z "$VERSION" ]]; then
   exit 1
 fi
 
-if [[ ! "$TYPE" =~ ^(major|minor|patch|init)$ ]]; then
+if [[ ! "$TYPE" =~ ^(major|minor|patch|set)$ ]]; then
   echo "Invalid bump type: $TYPE"
   exit 1
 fi
 
 
-# bump semver version: major, minor, patch, init
+# bump semver version: major, minor, patch, set
 bump_version() {
   local version=$1
   local type=$2
   local major=$(echo "$version" | cut -d. -f1)
   local minor=$(echo "$version" | cut -d. -f2)
   local patch=$(echo "$version" | cut -d. -f3)
-  local init=$version
+  local set=$version
 
   case $type in
     major)
@@ -79,7 +79,7 @@ bump_version() {
     patch)
       patch=$((patch + 1))
       ;;
-    init)
+    set)
       ;;
   esac
 
@@ -113,11 +113,5 @@ done
 # update the main VERSION file
 echo $NEW_VERSION > VERSION
 git add VERSION
-
-# commit and tag the new version
-git commit -m "Bump version to $NEW_VERSION"
-git tag -a "v$NEW_VERSION" -m "Version $NEW_VERSION"
-git push origin main
-git push origin "v$NEW_VERSION"
 
 echo "Version bump to $NEW_VERSION complete!"
