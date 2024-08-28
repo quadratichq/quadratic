@@ -54,7 +54,7 @@ services:
       - host
 
   quadratic-client:
-    image: quadratic_quadratic-client:latest
+    image: public.ecr.aws/l3i4i9z2/quadratic-client-staging:latest
     restart: "always"
     environment:
       VITE_DEBUG: 1
@@ -83,7 +83,7 @@ services:
       - host
 
   quadratic-api:
-    image: quadratic_quadratic-api
+    image: public.ecr.aws/l3i4i9z2/quadratic-api-staging:latest
     environment:
       CORS: "*"
       DATABASE_URL: "postgresql://postgres:postgres@host.docker.internal:5432/postgres"
@@ -123,7 +123,7 @@ services:
       - host
 
   quadratic-multiplayer:
-    image: quadratic-multiplayer
+    image: public.ecr.aws/l3i4i9z2/quadratic-multiplayer-staging:latest
     environment:
       RUST_LOG: info
       HOST: 0.0.0.0
@@ -160,7 +160,7 @@ services:
       - host
 
   quadratic-files:
-    image: quadratic-files
+    image: public.ecr.aws/l3i4i9z2/quadratic-files-staging:latest
     environment:
       RUST_LOG: info
       HOST: 0.0.0.0
@@ -215,7 +215,7 @@ services:
       - host
 
   quadratic-connection:
-    image: quadratic-connection
+    image: public.ecr.aws/l3i4i9z2/quadratic-connection-staging:latest
     environment:
       RUST_LOG: info
       HOST: 0.0.0.0
