@@ -1,18 +1,6 @@
 import { AUTH_TYPE } from '../env-vars';
-
-let { getUsersFromAuth0, jwtConfigAuth0, lookupUsersFromAuth0ByEmail } = {} as any;
-let { getUsersFromOry, getUsersFromOryByEmail, jwtConfigOry } = {} as any;
-
-switch (AUTH_TYPE) {
-  case 'auth0':
-    ({ getUsersFromAuth0, jwtConfigAuth0, lookupUsersFromAuth0ByEmail } = require('./auth0'));
-    break;
-  case 'ory':
-    ({ getUsersFromOry, getUsersFromOryByEmail, jwtConfigOry } = require('./ory'));
-    break;
-  default:
-    throw new Error(`Unsupported auth type in auth.ts: ${AUTH_TYPE}`);
-}
+import { getUsersFromAuth0, jwtConfigAuth0, lookupUsersFromAuth0ByEmail } from './auth0';
+import { getUsersFromOry, getUsersFromOryByEmail, jwtConfigOry } from './ory';
 
 export type UsersRequest = {
   id: number;

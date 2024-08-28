@@ -13,17 +13,24 @@ import {
 import { UploadFileResponse } from './storage';
 
 const endpoint = AWS_S3_ENDPOINT;
+let s3Client: S3Client;
 
-// Initialize S3 client
-export const s3Client = new S3Client({
-  region: AWS_S3_REGION,
-  credentials: {
-    accessKeyId: AWS_S3_ACCESS_KEY_ID,
-    secretAccessKey: AWS_S3_SECRET_ACCESS_KEY,
-  },
-  endpoint,
-  forcePathStyle: true,
-});
+// Get S3 client slngleton
+const getS3Client = () => {
+  if (!s3Client) {
+    s3Client = new S3Client({
+      region: AWS_S3_REGION,
+      credentials: {
+        accessKeyId: AWS_S3_ACCESS_KEY_ID,
+        secretAccessKey: AWS_S3_SECRET_ACCESS_KEY,
+      },
+      endpoint,
+      forcePathStyle: true,
+    });
+  }
+
+  return s3Client;
+};
 
 // Upload a string as a file to S3
 export const uploadStringAsFileS3 = async (fileKey: string, contents: string): Promise<UploadFileResponse> => {
@@ -34,7 +41,7 @@ export const uploadStringAsFileS3 = async (fileKey: string, contents: string): P
     // Optionally, you can add other configuration like ContentType
     // ContentType: 'text/plain'
   });
-  const response = await s3Client.send(command);
+  const response = await getS3Client().send(command);
 
   // Check if the upload was successful
   if (response && response.$metadata.httpStatusCode === 200) {
@@ -48,19 +55,20 @@ export const uploadStringAsFileS3 = async (fileKey: string, contents: string): P
 };
 
 // Multer storage engine for S3
-export const multerS3Storage: multer.Multer = multer({
-  storage: multerS3({
-    s3: s3Client,
-    bucket: AWS_S3_BUCKET_NAME,
-    metadata: (req: Request, file: Express.Multer.File, cb: (error: Error | null, metadata: any) => void) => {
-      cb(null, { fieldName: file.fieldname });
-    },
-    key: (req: Request, file: Express.Multer.File, cb: (error: Error | null, key: string) => void) => {
-      const fileUuid = req.params.uuid;
-      cb(null, `${fileUuid}-${file.originalname}`);
-    },
-  }) as StorageEngine,
-});
+export const multerS3Storage = (): multer.Multer =>
+  multer({
+    storage: multerS3({
+      s3: getS3Client(),
+      bucket: AWS_S3_BUCKET_NAME,
+      metadata: (req: Request, file: Express.Multer.File, cb: (error: Error | null, metadata: any) => void) => {
+        cb(null, { fieldName: file.fieldname });
+      },
+      key: (req: Request, file: Express.Multer.File, cb: (error: Error | null, key: string) => void) => {
+        const fileUuid = req.params.uuid;
+        cb(null, `${fileUuid}-${file.originalname}`);
+      },
+    }) as StorageEngine,
+  });
 
 // Get the presigned file URL from S3
 export const generatePresignedUrl = async (key: string): Promise<string> => {

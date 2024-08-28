@@ -21,12 +21,20 @@ import { ByEmailUser } from './auth';
 // We need to use account linking to ensure only one account per user
 // https://auth0.com/docs/customize/extensions/account-link-extension
 
-const auth0 = new ManagementClient({
-  domain: AUTH0_DOMAIN,
-  clientId: AUTH0_CLIENT_ID,
-  clientSecret: AUTH0_CLIENT_SECRET,
-  scope: 'read:users',
-});
+let auth0: ManagementClient | undefined;
+
+const getAuth0 = () => {
+  if (!auth0) {
+    auth0 = auth0 = new ManagementClient({
+      domain: AUTH0_DOMAIN,
+      clientId: AUTH0_CLIENT_ID,
+      clientSecret: AUTH0_CLIENT_SECRET,
+      scope: 'read:users',
+    });
+  }
+
+  return auth0;
+};
 
 /**
  * Given a list of users from our system, we lookup their info in Auth0.
@@ -55,7 +63,7 @@ export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]
 
   // Search for users on Auth0
   const auth0Ids = users.map(({ auth0Id }) => auth0Id);
-  const auth0Users = await auth0.getUsers({
+  const auth0Users = await getAuth0().getUsers({
     q: `user_id:(${auth0Ids.join(' OR ')})`,
   });
 
@@ -103,7 +111,7 @@ export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]
 };
 
 export const lookupUsersFromAuth0ByEmail = async (email: string): Promise<ByEmailUser[]> => {
-  const auth0Users = await auth0.getUsersByEmail(email);
+  const auth0Users = await getAuth0().getUsersByEmail(email);
   return auth0Users;
 };
 
