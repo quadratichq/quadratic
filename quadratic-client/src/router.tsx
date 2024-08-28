@@ -41,7 +41,10 @@ export const router = createBrowserRouter(
           </Route>
         </Route>
 
-        <Route loader={protectedRouteLoaderWrapper(async () => null)}>
+        <Route
+          loader={protectedRouteLoaderWrapper(async () => null)}
+          shouldRevalidate={({ currentUrl }) => currentUrl.pathname.startsWith('/files')}
+        >
           {/* Resource routes: these are accessible via the URL bar, but have no UI
               Putting these outside the nested tree lets you hit them directly without having to load other data */}
           <Route
@@ -71,12 +74,7 @@ export const router = createBrowserRouter(
           </Route>
 
           {/* Dashboard UI routes */}
-          <Route
-            path="/"
-            id={ROUTE_LOADER_IDS.DASHBOARD}
-            lazy={() => import('./routes/_dashboard')}
-            shouldRevalidate={({ currentUrl }) => currentUrl.pathname.startsWith('/files')}
-          >
+          <Route path="/" id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>
             <Route
               path={ROUTES.FILES_SHARED_WITH_ME}
               lazy={() => import('./routes/files.shared-with-me')}
