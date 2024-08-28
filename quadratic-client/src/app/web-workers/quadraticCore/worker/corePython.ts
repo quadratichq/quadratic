@@ -37,7 +37,7 @@ class CorePython {
         let output_array: string[][][] | null = null;
         if (results.array_output) {
           // A 1d list was provided. We convert it to a 2d array by changing each entry into an array.
-          if (!Array.isArray(results.array_output[0][0])) {
+          if (!Array.isArray(results.array_output?.[0]?.[0])) {
             output_array = (results.array_output as any).map((row: any) => [row]);
           } else {
             output_array = results.array_output as any as string[][][];
@@ -99,19 +99,23 @@ class CorePython {
     sheet?: string,
     lineNumber?: number
   ) {
-    const cells = core.getCells(transactionId, x, y, w, h, sheet, lineNumber);
     const int32View = new Int32Array(sharedBuffer, 0, 3);
+    try {
+      const cells = core.getCells(transactionId, x, y, w, h, sheet, lineNumber);
 
-    // need to get the bytes of the string (which covers unicode characters)
-    const length = new Blob([cells]).size;
+      // need to get the bytes of the string (which covers unicode characters)
+      const length = new Blob([cells]).size;
 
-    Atomics.store(int32View, 1, length);
-    if (length !== 0) {
-      const id = this.id++;
-      this.getCellsResponses[id] = cells;
-      Atomics.store(int32View, 2, id);
+      Atomics.store(int32View, 1, length);
+      if (length !== 0) {
+        const id = this.id++;
+        this.getCellsResponses[id] = cells;
+        Atomics.store(int32View, 2, id);
+      }
+      Atomics.store(int32View, 0, 1);
+    } catch (e) {
+      console.warn('[corePython] Error getting cells:', e);
     }
-    Atomics.store(int32View, 0, 1);
     Atomics.notify(int32View, 0, 1);
   }
 
