@@ -89,20 +89,28 @@ NEW_VERSION=$(bump_version "$VERSION" "$TYPE")
 
 # bump package.json files
 for file in ${JAVASCRIPT[@]}; do
-  PACKAGE_JSON_VERSION=$(jq -r .version $file)
+  if [ ! -f "$file" ]; then
+    echo "Error: $file not found"
+    exit 1
+  fi
+  PACKAGE_JSON_VERSION=$(jq -r .version "$file")
   echo "Current $file version is $PACKAGE_JSON_VERSION"
   
-  jq --arg new_version "$NEW_VERSION" '.version = $new_version' $file > tmp.json && mv tmp.json $file
+  jq --arg new_version "$NEW_VERSION" '.version = $new_version' "$file" > tmp.json && mv tmp.json "$file"
   
   echo "Updated $file version to $NEW_VERSION"
 done
 
 # bump Cargo.toml files
 for file in ${RUST[@]}; do
-  CARGO_TOML_VERSION=$(grep '^version' $file | sed 's/version = "\(.*\)"/\1/')
+  if [ ! -f "$file" ]; then
+    echo "Error: $file not found"
+    exit 1
+  fi
+  CARGO_TOML_VERSION=$(grep '^version' "$file" | sed 's/version = "\(.*\)"/\1/')
   echo "Current $file version is $CARGO_TOML_VERSION"
   
-  sed -i '' "s/^version = \".*\"/version = \"$NEW_VERSION\"/" $file
+  sed -i.bak "s/^version = \".*\"/version = \"$NEW_VERSION\"/" "$file" && rm "${file}.bak"
 
   echo "Updated $file version to $NEW_VERSION"
 done
