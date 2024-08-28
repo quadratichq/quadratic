@@ -11,6 +11,7 @@ on:
           - major
           - minor
           - patch
+  push:
   pull_request:
     types: [opened]
     branches:
