@@ -6,6 +6,7 @@ import NewFileButton from '@/dashboard/components/NewFileButton';
 import { OnboardingBanner } from '@/dashboard/components/OnboardingBanner';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { ROUTES } from '@/shared/constants/routes';
+import { getAuth0AvatarSrc } from '@/shared/utils/auth0UserImageSrc';
 import { Add } from '@mui/icons-material';
 import { Avatar, AvatarGroup } from '@mui/material';
 import { FileIcon } from '@radix-ui/react-icons';
@@ -13,7 +14,6 @@ import { Link } from 'react-router-dom';
 
 export const Component = () => {
   const {
-    userMakingRequest: { id: userMakingRequestId },
     activeTeam: {
       team: { uuid: teamUuid },
       files,
@@ -42,6 +42,7 @@ export const Component = () => {
           <div className={`flex items-center gap-2`}>
             <div className="hidden lg:block">
               <Link to={ROUTES.TEAM_MEMBERS(teamUuid)}>
+                {/* TODO(ayush): create custom AvatarGroup component */}
                 <AvatarGroup
                   max={6}
                   sx={{ cursor: 'pointer', pr: 0 }}
@@ -51,7 +52,13 @@ export const Component = () => {
                     <Add fontSize="inherit" />
                   </Avatar>
                   {users.map((user, key) => (
-                    <Avatar key={key} alt={user.name} src={user.picture} sx={avatarSxProps} />
+                    <Avatar
+                      key={key}
+                      alt={user.name}
+                      src={getAuth0AvatarSrc(user.picture)}
+                      sx={avatarSxProps}
+                      imgProps={{ crossOrigin: 'anonymous' }}
+                    />
                   ))}
                 </AvatarGroup>
               </Link>
@@ -64,7 +71,7 @@ export const Component = () => {
       <FilesList
         files={files.map(({ file, userMakingRequest }) => {
           // Don't include the creator if it's the person logged in
-          const creator = userMakingRequestId !== file.creatorId ? usersById[file.creatorId] : undefined;
+          const creator = usersById[file.creatorId];
           return {
             name: file.name,
             createdDate: file.createdDate,

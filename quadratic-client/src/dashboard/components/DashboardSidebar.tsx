@@ -1,20 +1,20 @@
+import { colors } from '@/app/theme/colors';
 import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { ConnectionsIcon, PrivateFileIcon, SharedWithMeIcon } from '@/dashboard/components/CustomRadixIcons';
 import { TeamSwitcher } from '@/dashboard/components/TeamSwitcher';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { getActionFileMove } from '@/routes/api.files.$uuid';
+import { Avatar } from '@/shared/components/Avatar';
 import { Type } from '@/shared/components/Type';
 import { TYPE } from '@/shared/constants/appConstants';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
-import { Avatar, AvatarFallback } from '@/shared/shadcn/ui/avatar';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { SchoolOutlined } from '@mui/icons-material';
-import { AvatarImage } from '@radix-ui/react-avatar';
 import { ExternalLinkIcon, FileIcon, GearIcon, MixIcon, PersonIcon, PlusIcon } from '@radix-ui/react-icons';
 import { ReactNode, useState } from 'react';
 import { NavLink, useLocation, useNavigation, useSearchParams, useSubmit } from 'react-router-dom';
@@ -142,9 +142,14 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           </SidebarNavLink>
         )}
         <SidebarNavLink to={ROUTES.ACCOUNT}>
-          <Avatar className="h-6 w-6 bg-muted text-muted-foreground">
-            <AvatarImage src={user?.picture} />
-            <AvatarFallback>{user && user.name ? user.name[0] : '?'}</AvatarFallback>
+          <Avatar
+            src={user?.picture}
+            alt={user?.name}
+            style={{
+              backgroundColor: colors.quadraticSecondary,
+            }}
+          >
+            {user?.name}
           </Avatar>
 
           <div className={`flex flex-col overflow-hidden`}>

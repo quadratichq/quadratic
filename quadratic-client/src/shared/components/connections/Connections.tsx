@@ -30,11 +30,13 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
   // Delete it from the url after we store it in local state
   const [searchParams] = useSearchParams();
   const initialConnectionType = searchParams.get('initial-connection-type');
+  const initialConnectionUuid = searchParams.get('initial-connection-uuid');
   useUpdateQueryStringValueWithoutNavigation('initial-connection-type', null);
+  useUpdateQueryStringValueWithoutNavigation('initial-connection-uuid', null);
 
   const [activeConnectionState, setActiveConnectionState] = useState<
     { uuid: string; view: 'edit' | 'details' } | undefined
-  >();
+  >(initialConnectionUuid ? { uuid: initialConnectionUuid, view: 'edit' } : undefined);
   const [activeConnectionType, setActiveConnectionType] = useState<ConnectionType | undefined>(
     initialConnectionType === 'MYSQL' || initialConnectionType === 'POSTGRES' || initialConnectionType === 'MSSQL'
       ? initialConnectionType
