@@ -79,12 +79,9 @@ export function QuadraticApp() {
   useEffect(() => {
     if (multiplayerLoading) {
       const updateMultiplayerLoading = (state: MultiplayerState) => {
-        if (state === 'syncing' || state === 'connected') {
-          setMultiplayerLoading(false);
-        }
         // don't wait for multiplayer sync if unable to connect
-        else if (state === 'not connected' || state === 'no internet') {
-          setOfflineLoading(false);
+        if (state === 'not connected' || state === 'waiting to reconnect' || state === 'no internet') {
+          // setOfflineLoading(false);
           setMultiplayerLoading(false);
         }
       };
