@@ -1,5 +1,24 @@
 #!/bin/bash
 
+# General bump flow:
+#
+#   Read version from main VERSION file (located at root)
+#   Bump RUST and JAVASCRIPT files (see listing above) according to command line args: major/minor/patch/init (init is non-standard, but I added it for just applying the existing VERSION number to all files)
+#     For each file affected, git add $file
+#   Bump the main VERSION file
+#   Commit added files
+#   Create version tag (e.g. v1.0.1)
+#   Push commit to main
+#   Push tag to main
+#
+# Usage: bump.sh [TYPE]
+#
+# TYPE options:
+#   major
+#   minor
+#   patch
+#   init (just sets all versions to the current VERSION file version)
+
 set -e
 
 if [ "$#" -ne 1 ]; then
