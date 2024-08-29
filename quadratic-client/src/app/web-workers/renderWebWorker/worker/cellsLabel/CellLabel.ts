@@ -11,6 +11,7 @@ import { Bounds } from '@/app/grid/sheet/Bounds';
 import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
+import { isFloatGreaterThan, isFloatLessThan } from '@/app/helpers/float';
 import { CellAlign, CellVerticalAlign, CellWrap, JsNumber, JsRenderCell } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT } from '@/shared/constants/gridConstants';
@@ -222,10 +223,10 @@ export class CellLabel {
     if (!this.isNumber()) return false;
 
     const clipLeft = Math.max(this.cellClipLeft ?? -Infinity, this.AABB.right - (this.nextLeftWidth ?? Infinity));
-    if (clipLeft - this.actualLeft > 0.001) return true;
+    if (isFloatLessThan(this.actualLeft, clipLeft)) return true;
 
     const clipRight = Math.min(this.cellClipRight ?? Infinity, this.AABB.left + (this.nextRightWidth ?? Infinity));
-    if (this.actualRight - clipRight > 0.001) return true;
+    if (isFloatGreaterThan(this.actualRight, clipRight)) return true;
 
     return false;
   };
@@ -364,7 +365,7 @@ export class CellLabel {
       chars.push(charRenderData);
       pos.x += charData.xAdvance + this.letterSpacing;
       prevCharCode = charCode;
-      if (maxWidth !== undefined && pos.x - maxWidth / scale > 0.001) {
+      if (maxWidth !== undefined && isFloatGreaterThan(pos.x, maxWidth / scale)) {
         const start = lastBreakPos === -1 ? i - spacesRemoved : 1 + lastBreakPos - spacesRemoved;
         const count = lastBreakPos === -1 ? 1 : 1 + i - lastBreakPos;
         removeItems(chars, start, count);
