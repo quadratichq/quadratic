@@ -23,7 +23,7 @@ import {
   ShouldRevalidateFunctionArgs,
   isRouteErrorResponse,
   redirect,
-  redirectDocument,
+  replace,
   useLocation,
   useNavigation,
   useRevalidator,
@@ -97,7 +97,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
     // 4) there's no teams in the API, so create one and send the user to it
   } else if (teams.length === 0) {
     const newTeam = await apiClient.teams.create({ name: 'My Team' });
-    return redirectDocument(ROUTES.TEAM(newTeam.uuid));
+    return replace(ROUTES.TEAM(newTeam.uuid));
   }
 
   // This should never happen, but if it does, we'll log it to sentry
