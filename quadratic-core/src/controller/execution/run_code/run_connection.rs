@@ -7,6 +7,15 @@ use crate::{
     Pos, RunError, RunErrorMsg, SheetPos, SheetRect,
 };
 
+use lazy_static::lazy_static;
+
+lazy_static! {
+    static ref HANDLEBARS_REGEX: Regex = Regex::new(
+        r#"\{\{\s*(?:(relative)\s*:\s*)?(-?\d+)\s*,\s*(-?\d+)\s*(?:,\s*"?([^"]*)"?\s*)?\}\}"#
+    )
+    .expect("Failed to compile regex");
+}
+
 impl GridController {
     /// Attempts to replace handlebars with the actual value from the grid
     fn replace_handlebars(
@@ -16,15 +25,14 @@ impl GridController {
         code: &str,
         default_sheet_id: SheetId,
     ) -> Result<String, String> {
-        let re = Regex::new(
-            r#"\{\{\s*(?:(relative)\s*:\s*)?(-?\d+)\s*,\s*(-?\d+)\s*(?:,\s*"?([^"]*)"?\s*)?\}\}"#,
-        )
-        .map_err(|err| format!("Regex compilation failed: {}", err))?;
         let mut result = String::new();
         let mut last_match_end = 0;
 
-        for cap in re.captures_iter(code) {
-            let whole_match = cap.get(0).unwrap();
+        for cap in HANDLEBARS_REGEX.captures_iter(code) {
+            let Some(whole_match) = cap.get(0) else {
+                continue;
+            };
+
             result.push_str(&code[last_match_end..whole_match.start()]);
 
             let replacement: Result<String, String> = (|| {
