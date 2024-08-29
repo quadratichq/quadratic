@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { Response } from 'express';
 import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
@@ -48,10 +49,12 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/example
     // Fetch info about the file
     const {
       file: { name, lastCheckpointDataUrl, lastCheckpointVersion },
-    } = (await fetch(apiUrl).then((res) => res.json())) as ApiTypes['/v0/files/:uuid.GET.response'];
+    } = (await axios.get(apiUrl).then((res) => res.data)) as ApiTypes['/v0/files/:uuid.GET.response'];
 
     // Fetch the contents of the file
-    const fileContents = await fetch(lastCheckpointDataUrl).then((res) => res.arrayBuffer());
+    const fileContents = await axios
+      .get(lastCheckpointDataUrl, { responseType: 'arraybuffer' })
+      .then((res) => res.data);
     const buffer = new Uint8Array(fileContents);
 
     // Create a private file for the user in the requested team

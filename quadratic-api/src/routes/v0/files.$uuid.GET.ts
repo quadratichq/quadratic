@@ -68,8 +68,6 @@ async function handler(
     return res.status(500).json({ error: { message: 'Unable to retrieve license' } });
   }
 
-  console.log('license', license);
-
   const data = {
     file: {
       uuid,

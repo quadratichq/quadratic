@@ -1,5 +1,5 @@
 export function getAuth0AvatarSrc(picture?: string) {
-  if (picture === undefined) return undefined;
+  if (!picture) return undefined;
 
   const url = new URL(picture);
   if (url.hostname.includes('gravatar.com')) {

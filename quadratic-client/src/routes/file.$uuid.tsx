@@ -49,8 +49,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
       `[File API] Received information for file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`
     );
 
-  console.log('data', data);
-
   // initialize all workers
   initWorkers();
 

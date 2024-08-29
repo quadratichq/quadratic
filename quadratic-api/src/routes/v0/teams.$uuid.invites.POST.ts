@@ -151,7 +151,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   // 3.
   // There are 2 or more users in auth0 with that email. This is unexpected
   // so we throw and log the error.
-  throw new ApiError(500, 'Internal server error: user lookup error.');
   Sentry.captureEvent({
     message: 'User has 3 or more accounts in auth0 with the same email.',
     level: 'error',
@@ -159,4 +158,5 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
       auth0Users,
     },
   });
+  throw new ApiError(500, 'Internal server error: user lookup error.');
 }
