@@ -12,19 +12,27 @@ const bigIntReplacer = (_key: string, value: any): any => {
   return typeof value === 'bigint' ? Number(value) : value;
 };
 
-export function rectangleToRect(rectangle: Rectangle | RectangleLike): String {
-  const rect: Rect = {
+export function rectangleToRect(rectangle: Rectangle | RectangleLike): Rect {
+  return {
     min: { x: BigInt(rectangle.x), y: BigInt(rectangle.y) },
     max: { x: BigInt(rectangle.x + rectangle.width), y: BigInt(rectangle.y + rectangle.height) },
   };
+}
+
+export function rectangleToRectStringified(rectangle: Rectangle | RectangleLike): String {
+  const rect = rectangleToRect(rectangle);
   return JSON.stringify(rect, bigIntReplacer);
 }
 
-export function numbersToRect(x: number, y: number, width: number, height: number): string {
-  const rect: Rect = {
+export function numbersToRect(x: number, y: number, width: number, height: number): Rect {
+  return {
     min: { x: BigInt(x), y: BigInt(y) },
     max: { x: BigInt(x + width - 1), y: BigInt(y + height - 1) },
   };
+}
+
+export function numbersToRectStringified(x: number, y: number, width: number, height: number): string {
+  const rect = numbersToRect(x, y, width, height);
   return JSON.stringify(rect, bigIntReplacer);
 }
 
@@ -53,8 +61,8 @@ export function rectToRectangle(rect: Rect): Rectangle {
   return new Rectangle(
     Number(rect.min.x),
     Number(rect.min.y),
-    Number(rect.max.x - rect.min.x),
-    Number(rect.max.y - rect.min.y)
+    Number(rect.max.x - rect.min.x) + 1,
+    Number(rect.max.y - rect.min.y) + 1
   );
 }
 

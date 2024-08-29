@@ -66,7 +66,8 @@ selfservice:
       use: code
 
     verification:
-      enabled: true
+      # we disable verification for self-hosting
+      enabled: false
       ui_url: http://localhost:4455/verification
       use: code
       after:

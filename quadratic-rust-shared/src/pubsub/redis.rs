@@ -94,7 +94,7 @@ impl super::PubSub for RedisConnection {
         &mut self,
         channel: &str,
         _key: &str,
-        value: &str,
+        value: &[u8],
         _active_channel: Option<&str>,
     ) -> Result<()> {
         self.multiplex.publish(channel, value).await?;
@@ -125,7 +125,7 @@ impl super::PubSub for RedisConnection {
         _keys: Option<&str>,
         _max_messages: usize,
         _preserve_sequence: bool,
-    ) -> Result<Vec<(String, String)>> {
+    ) -> Result<Vec<(String, Vec<u8>)>> {
         unimplemented!()
     }
 
@@ -134,7 +134,7 @@ impl super::PubSub for RedisConnection {
         _channel: &str,
         _id: &str,
         _preserve_sequence: bool,
-    ) -> Result<Vec<(String, String)>> {
+    ) -> Result<Vec<(String, Vec<u8>)>> {
         unimplemented!()
     }
 
@@ -143,7 +143,7 @@ impl super::PubSub for RedisConnection {
         _channel: &str,
         _id: &str,
         _preserve_sequence: bool,
-    ) -> Result<Vec<(String, String)>> {
+    ) -> Result<Vec<(String, Vec<u8>)>> {
         unimplemented!()
     }
 
@@ -151,7 +151,7 @@ impl super::PubSub for RedisConnection {
         &mut self,
         _channel: &str,
         _preserve_sequence: bool,
-    ) -> Result<(String, String)> {
+    ) -> Result<(String, Vec<u8>)> {
         unimplemented!()
     }
 
@@ -185,7 +185,7 @@ pub mod tests {
 
     #[tokio::test]
     async fn connect_subscribe_publish_get_message() {
-        let messages = vec!["test 1", "test 2"];
+        let messages = vec!["test 1".as_bytes(), "test 2".as_bytes()];
         let (config, channel) = setup();
 
         let config_clone = config.clone();
@@ -196,7 +196,7 @@ pub mod tests {
             let mut received = vec![];
 
             while let Some(message) = connection.pubsub.on_message().next().await {
-                received.push(message.get_payload::<String>().unwrap());
+                received.push(message.get_payload::<Vec<u8>>().unwrap());
 
                 if received.len() == 2 {
                     break;
@@ -212,7 +212,7 @@ pub mod tests {
 
         for message in messages.iter() {
             connection
-                .publish(&channel, "", message, None)
+                .publish(&channel, "", message.to_owned(), None)
                 .await
                 .unwrap();
         }

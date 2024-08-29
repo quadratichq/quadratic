@@ -1,11 +1,13 @@
 import { CreateConnectionAction, DeleteConnectionAction, UpdateConnectionAction } from '@/routes/api.connections';
+import { ConnectionDetails } from '@/shared/components/connections/ConnectionDetails';
 import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
 import { ConnectionsList } from '@/shared/components/connections/ConnectionsList';
 import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';
+import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
-import { useFetchers } from 'react-router-dom';
+import { useFetchers, useSearchParams } from 'react-router-dom';
 
 export type ConnectionsListConnection = {
   uuid: string;
@@ -20,12 +22,24 @@ type Props = {
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
 };
-export type NavigateToEditView = (props: { connectionUuid: string; connectionType: ConnectionType }) => void;
+export type NavigateToView = (props: { connectionUuid: string; connectionType: ConnectionType }) => void;
 export type NavigateToCreateView = (type: ConnectionType) => void;
 
 export const Connections = ({ connections, connectionsAreLoading, teamUuid, staticIps }: Props) => {
-  const [activeConnectionUuid, setActiveConnectionUuid] = useState<string | undefined>();
-  const [activeConnectionType, setActiveConnectionType] = useState<ConnectionType | undefined>();
+  // Allo pre-loading the connection type via url params, e.g. /connections?initial-connection-type=MYSQL
+  // Delete it from the url after we store it in local state
+  const [searchParams] = useSearchParams();
+  const initialConnectionType = searchParams.get('initial-connection-type');
+  const initialConnectionUuid = searchParams.get('initial-connection-uuid');
+  useUpdateQueryStringValueWithoutNavigation('initial-connection-type', null);
+  useUpdateQueryStringValueWithoutNavigation('initial-connection-uuid', null);
+
+  const [activeConnectionState, setActiveConnectionState] = useState<
+    { uuid: string; view: 'edit' | 'details' } | undefined
+  >(initialConnectionUuid ? { uuid: initialConnectionUuid, view: 'edit' } : undefined);
+  const [activeConnectionType, setActiveConnectionType] = useState<ConnectionType | undefined>(
+    initialConnectionType === 'MYSQL' || initialConnectionType === 'POSTGRES' ? initialConnectionType : undefined
+  );
 
   /**
    * Optimistic UI
@@ -85,27 +99,40 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
    * Navigation
    */
   const handleNavigateToListView = () => {
-    setActiveConnectionUuid(undefined);
+    setActiveConnectionState(undefined);
     setActiveConnectionType(undefined);
   };
   const handleNavigateToCreateView: NavigateToCreateView = (connectionType) => {
     setActiveConnectionType(connectionType);
-    setActiveConnectionUuid(undefined);
+    setActiveConnectionState(undefined);
   };
-  const handleNavigateToEditView: NavigateToEditView = ({ connectionType, connectionUuid }) => {
-    setActiveConnectionUuid(connectionUuid);
+  const handleNavigateToEditView: NavigateToView = ({ connectionType, connectionUuid }) => {
+    setActiveConnectionState({ uuid: connectionUuid, view: 'edit' });
+    setActiveConnectionType(connectionType);
+  };
+  const hangleNavigateToDetailsView: NavigateToView = ({ connectionType, connectionUuid }) => {
+    setActiveConnectionState({ uuid: connectionUuid, view: 'details' });
     setActiveConnectionType(connectionType);
   };
 
   return (
     <div className="flex flex-col gap-8 md:flex-row">
       <div className="flex flex-col gap-2 md:w-2/3">
-        {activeConnectionUuid && activeConnectionType ? (
-          <ConnectionFormEdit
-            connectionUuid={activeConnectionUuid}
-            connectionType={activeConnectionType}
-            handleNavigateToListView={handleNavigateToListView}
-          />
+        {activeConnectionState && activeConnectionType ? (
+          activeConnectionState.view === 'edit' ? (
+            <ConnectionFormEdit
+              connectionUuid={activeConnectionState.uuid}
+              connectionType={activeConnectionType}
+              handleNavigateToListView={handleNavigateToListView}
+            />
+          ) : (
+            <ConnectionDetails
+              connectionUuid={activeConnectionState.uuid}
+              connectionType={activeConnectionType}
+              handleNavigateToListView={handleNavigateToListView}
+              teamUuid={teamUuid}
+            />
+          )
         ) : activeConnectionType ? (
           <ConnectionFormCreate
             teamUuid={teamUuid}
@@ -118,6 +145,7 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
             connectionsAreLoading={connectionsAreLoading}
             handleNavigateToCreateView={handleNavigateToCreateView}
             handleNavigateToEditView={handleNavigateToEditView}
+            hangleNavigateToDetailsView={hangleNavigateToDetailsView}
           />
         )}
       </div>

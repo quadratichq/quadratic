@@ -1,5 +1,6 @@
 import { Action as FileShareAction } from '@/routes/api.files.$uuid.sharing';
 import { TeamAction } from '@/routes/teams.$teamUuid';
+import { Avatar } from '@/shared/components/Avatar';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -17,7 +18,6 @@ import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
-import { Avatar } from '@mui/material';
 import {
   Cross2Icon,
   EnvelopeClosedIcon,
@@ -39,7 +39,6 @@ import {
 } from 'quadratic-shared/typesAndSchemas';
 import React, { Children, FormEvent, ReactNode, useEffect, useRef, useState } from 'react';
 import { FetcherSubmitFunction, useFetcher, useFetchers, useSubmit } from 'react-router-dom';
-import { AvatarWithLetters } from './AvatarWithLetters';
 import { useGlobalSnackbar } from './GlobalSnackbarProvider';
 import { Type } from './Type';
 
@@ -794,7 +793,7 @@ function ListItemInvite({ email, action, error }: { email: string; action: React
   return (
     <ListItem>
       <div>
-        <Avatar sx={{ width: '24px', height: '24px' }}>
+        <Avatar>
           <EnvelopeClosedIcon />
         </Avatar>
       </div>
@@ -830,9 +829,9 @@ function ListItemUser({
   return (
     <ListItem>
       <div>
-        <AvatarWithLetters src={picture} size="small">
+        <Avatar src={picture} size="small">
           {label}
-        </AvatarWithLetters>
+        </Avatar>
       </div>
       <div className={`flex flex-col`}>
         <Type variant="body2">

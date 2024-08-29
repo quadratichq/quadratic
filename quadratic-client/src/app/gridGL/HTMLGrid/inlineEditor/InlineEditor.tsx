@@ -14,7 +14,11 @@ import './inlineEditorStyles.scss';
 
 export const InlineEditor = () => {
   const ref = useCallback((div: HTMLDivElement) => {
-    inlineEditorHandler.attach(div);
+    if (div) {
+      inlineEditorHandler.attach(div);
+    } else {
+      inlineEditorHandler.detach();
+    }
   }, []);
 
   // Note: I switched to using material's Tooltip because radix-ui's Tooltip did

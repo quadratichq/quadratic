@@ -1,11 +1,12 @@
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { ChevronRightIcon } from '@radix-ui/react-icons';
+import { ReactNode } from 'react';
 
 interface Props {
   id: string;
   title: string;
-  children: JSX.Element | JSX.Element[];
+  children: ReactNode;
   open: boolean;
   toggleOpen: () => void;
   height: number;

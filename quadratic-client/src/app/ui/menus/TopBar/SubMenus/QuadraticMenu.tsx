@@ -9,7 +9,7 @@ import '@szhsin/react-menu/dist/index.css';
 import { useEffect } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useParams } from 'react-router';
-import { useNavigate, useSubmit } from 'react-router-dom';
+import { useSubmit } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
 import { authClient } from '../../../../../auth/auth';
 import {
@@ -39,14 +39,12 @@ import { useGridSettings } from './useGridSettings';
 export const QuadraticMenu = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
-  const navigate = useNavigate();
   const submit = useSubmit();
   const { uuid } = useParams() as { uuid: string };
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const { name } = useFileContext();
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
-    team: { uuid: teamUuid },
     userMakingRequest: { fileTeamPrivacy, teamPermissions },
   } = useFileRouteLoaderData();
   const { permissions } = editorInteractionState;
@@ -82,7 +80,11 @@ export const QuadraticMenu = () => {
         {isAuthenticated && (
           <SubMenu label={<MenuLineItem primary="File" />}>
             {createNewFileAction.isAvailable(isAvailableArgs) && (
-              <MenuItem onClick={() => createNewFileAction.run({ navigate, teamUuid })}>
+              <MenuItem
+                onClick={() => {
+                  createNewFileAction.run({ setEditorInteractionState });
+                }}
+              >
                 <MenuLineItem primary={createNewFileAction.label} />
               </MenuItem>
             )}

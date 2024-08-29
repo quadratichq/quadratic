@@ -11,7 +11,7 @@ import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../he
 import { pixiApp } from '../../pixiApp/PixiApp';
 
 export function keyboardViewport(options: {
-  event: KeyboardEvent;
+  event: React.KeyboardEvent<HTMLElement>;
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
   presentationMode: boolean;
@@ -48,6 +48,13 @@ export function keyboardViewport(options: {
       setEditorInteractionState({
         ...editorInteractionState,
         editorEscapePressed: true,
+      });
+      return true;
+    } else if (editorInteractionState.showValidation) {
+      // todo: this should check for changes first!!!
+      setEditorInteractionState({
+        ...editorInteractionState,
+        showValidation: false,
       });
       return true;
     }

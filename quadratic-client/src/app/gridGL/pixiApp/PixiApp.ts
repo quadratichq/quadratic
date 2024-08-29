@@ -23,6 +23,7 @@ import { Cursor } from '../UI/Cursor';
 import { GridLines } from '../UI/GridLines';
 import { HtmlPlaceholders } from '../UI/HtmlPlaceholders';
 import { UIMultiPlayerCursor } from '../UI/UIMultiplayerCursor';
+import { UIValidations } from '../UI/UIValidations';
 import { BoxCells } from '../UI/boxCells';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { CellsSheets } from '../cells/CellsSheets';
@@ -62,6 +63,8 @@ export class PixiApp {
   htmlPlaceholders!: HtmlPlaceholders;
   imagePlaceholders!: Container;
   cellImages!: UICellImages;
+  validations: UIValidations;
+
   renderer!: Renderer;
   stage = new Container();
   loading = true;
@@ -80,6 +83,7 @@ export class PixiApp {
     // This is created first so it can listen to messages from QuadraticCore.
     this.cellsSheets = new CellsSheets();
     this.cellImages = new UICellImages();
+    this.validations = new UIValidations();
     this.viewport = new Viewport();
   }
 
@@ -150,6 +154,7 @@ export class PixiApp {
     this.imagePlaceholders = this.viewportContents.addChild(new Container());
     this.cellHighlights = this.viewportContents.addChild(new CellHighlights());
     this.cellMoving = this.viewportContents.addChild(new UICellMoving());
+    this.validations = this.viewportContents.addChild(this.validations);
     this.headings = this.viewportContents.addChild(new GridHeadings());
 
     this.reset();
@@ -323,6 +328,7 @@ export class PixiApp {
   adjustHeadings(options: { sheetId: string; delta: number; row?: number; column?: number }): void {
     this.cellsSheets.adjustHeadings(options);
     this.cellsSheets.adjustOffsetsBorders(options.sheetId);
+    this.cellsSheets.adjustCellsImages(options.sheetId);
     htmlCellsHandler.updateOffsets([sheets.sheet.id]);
     if (sheets.sheet.id === options.sheetId) {
       this.gridLines.dirty = true;

@@ -8,6 +8,7 @@
  */
 
 import { Bounds } from '@/app/grid/sheet/Bounds';
+import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
 import { CellAlign, CellVerticalAlign, CellWrap, JsNumber, JsRenderCell } from '@/app/quadratic-core-types';
@@ -32,16 +33,16 @@ interface CharRenderData {
 }
 
 // magic numbers to make the WebGL rendering of OpenSans look similar to the HTML version
-const OPEN_SANS_FIX = { x: 1.8, y: -1 };
+export const OPEN_SANS_FIX = { x: 1.8, y: -1.8 };
 const SPILL_ERROR_TEXT = ' #SPILL';
 const RUN_ERROR_TEXT = ' #ERROR';
 const CHART_TEXT = ' CHART';
-const LINE_HEIGHT = 16;
+export const LINE_HEIGHT = 16;
 
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
 
 // todo: make this part of the cell's style data structure
-const fontSize = 14;
+export const FONT_SIZE = 14;
 
 export class CellLabel {
   private cellsLabels: CellsLabels;
@@ -119,9 +120,10 @@ export class CellLabel {
     this.cellsLabels = cellsLabels;
     this.originalText = cell.value;
     this.text = this.getText(cell);
-    this.fontSize = fontSize;
+    this.fontSize = FONT_SIZE;
     this.roundPixels = true;
     this.letterSpacing = 0;
+    const isDropdown = cell.special === 'List';
     const isError = cell?.special === 'SpillError' || cell?.special === 'RunError';
     const isChart = cell?.special === 'Chart';
     if (isError) {
@@ -133,13 +135,18 @@ export class CellLabel {
     } else {
       this.tint = 0;
     }
-    if (cell.special === 'True' || cell.special === 'False') {
-      this.text = cell.special === 'True' ? 'TRUE' : 'FALSE';
+    if (cell.special === 'Logical') {
+      this.text = cell.value === 'true' ? 'TRUE' : 'FALSE';
       cell.align = cell.align ?? 'center';
     }
 
     this.location = { x: Number(cell.x), y: Number(cell.y) };
     this.AABB = screenRectangle;
+
+    // need to adjust the right side of the AABB to account for the dropdown indicator
+    if (isDropdown) {
+      this.AABB.width -= DROPDOWN_SIZE[0] + DROPDOWN_PADDING[0];
+    }
 
     this.actualLeft = this.AABB.left;
     this.actualRight = this.AABB.right;
@@ -342,7 +349,7 @@ export class CellLabel {
       const charData = data.chars[charCode];
       if (!charData) continue;
 
-      const labelMeshId = labelMeshes.add(this.fontName, fontSize, charData.textureUid, !!this.tint);
+      const labelMeshId = labelMeshes.add(this.fontName, this.fontSize, charData.textureUid, !!this.tint);
       if (prevCharCode && charData.kerning[prevCharCode]) {
         pos.x += charData.kerning[prevCharCode];
       }

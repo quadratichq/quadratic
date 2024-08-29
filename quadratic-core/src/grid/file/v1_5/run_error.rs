@@ -82,7 +82,7 @@ pub enum RunErrorMsg {
 // todo: There's probably a better way to do the From/Into between the types.
 
 impl RunError {
-    pub fn from_grid_run_error(error: &crate::RunError) -> Self {
+    pub fn from_grid_run_error(error: crate::RunError) -> Self {
         Self {
             span: error.span.map(|span| Span {
                 start: span.start,

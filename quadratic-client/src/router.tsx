@@ -36,7 +36,7 @@ export const router = createBrowserRouter(
               lazy={() => import('./routes/file.$uuid')}
               // We don't want to revalidate the initial file route because
               // we don't have any 2-way data flow setup for the file contents
-              shouldRevalidate={() => false}
+              shouldRevalidate={({ currentParams, nextParams }) => currentParams.uuid !== nextParams.uuid}
             />
           </Route>
         </Route>

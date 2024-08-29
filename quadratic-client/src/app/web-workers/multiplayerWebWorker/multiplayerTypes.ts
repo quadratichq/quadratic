@@ -90,7 +90,7 @@ export interface ReceiveTransaction {
   type: 'Transaction';
   id: string;
   file_id: string;
-  operations: string;
+  operations: string | Buffer;
   sequence_num: number;
 }
 
@@ -111,7 +111,7 @@ export interface SendGetTransactions {
 
 export interface ReceiveTransactions {
   type: 'Transactions';
-  transactions: string;
+  transactions: ReceiveTransaction[];
 }
 
 export interface Heartbeat {

@@ -13,7 +13,7 @@ export class ApiError extends Error {
     this.name = 'ApiError';
     this.status = status; // Fetch response status code
     this.method = method; // Fetch request method
-    this.details = details; // Details usefule for debugging
+    this.details = details; // Details useful for debugging
   }
 }
 

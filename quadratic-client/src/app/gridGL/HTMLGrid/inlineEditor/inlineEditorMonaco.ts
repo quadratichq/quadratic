@@ -6,18 +6,12 @@ import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
+import { FONT_SIZE, LINE_HEIGHT } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import * as monaco from 'monaco-editor';
 import { editor } from 'monaco-editor';
 import DefaultEditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import TsEditorWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
-
-const theme: editor.IStandaloneThemeData = {
-  base: 'vs',
-  inherit: true,
-  rules: [],
-  colors: {},
-};
-monaco.editor.defineTheme('inline-editor', theme);
+import { inlineEditorEvents } from './inlineEditorEvents';
 
 // This is where we globally define worker types for Monaco. See
 // https://github.com/microsoft/monaco-editor/blob/main/docs/integrate-esm.md
@@ -63,12 +57,19 @@ class InlineEditorMonaco {
   }
 
   // Sets the value of the inline editor and moves the cursor to the end.
-  set(s: string) {
+  set(s: string, selectAll?: boolean) {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in setValue');
     }
     this.editor.setValue(s);
     this.setColumn(s.length + 1);
+    if (selectAll) {
+      const model = this.getModel();
+      const lineCount = model.getLineCount();
+      const maxColumns = model.getLineMaxColumn(lineCount);
+      const range = new monaco.Range(1, 1, lineCount, maxColumns);
+      this.editor.setSelection(range);
+    }
   }
 
   deleteText(position: number, length: number) {
@@ -87,6 +88,7 @@ class InlineEditorMonaco {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in focus');
     }
+    inlineEditorHandler.keepCursorVisible();
     this.editor.focus();
   };
 
@@ -162,8 +164,11 @@ class InlineEditorMonaco {
   }
 
   setBackgroundColor(color: string) {
-    theme.colors['editor.background'] = color;
-    monaco.editor.defineTheme('inline-editor', theme);
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in setBackgroundColor');
+    }
+    const styles = this.editor.getDomNode()?.style;
+    styles?.setProperty('--vscode-editor-background', color);
   }
 
   setFontFamily(fontFamily: string) {
@@ -340,8 +345,8 @@ class InlineEditorMonaco {
         autoFindInSelection: 'never',
         seedSearchStringFromSelection: 'never',
       },
-      fontSize: 14,
-      lineHeight: 16,
+      fontSize: FONT_SIZE,
+      lineHeight: LINE_HEIGHT,
       fontFamily: 'OpenSans',
       fontWeight: 'normal',
       lineNumbers: 'off',
@@ -354,7 +359,6 @@ class InlineEditorMonaco {
         alwaysConsumeMouseWheel: false,
         verticalScrollbarSize: 0,
       },
-      theme: 'inline-editor',
       stickyScroll: { enabled: false },
       language: inlineEditorHandler.formula ? 'formula' : undefined,
     });
@@ -379,8 +383,8 @@ class InlineEditorMonaco {
       inlineEditorKeyboard.keyDown(e.browserEvent);
     });
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.updateMonacoCursorPosition);
-    this.editor.onDidChangeCursorPosition(inlineEditorHandler.keepCursorVisible);
     this.editor.onMouseDown(() => inlineEditorKeyboard.resetKeyboardPosition());
+    this.editor.onDidChangeModelContent(() => inlineEditorEvents.emit('valueChanged', this.get()));
   }
 
   // Sends a keyboard event to the editor (used when returning

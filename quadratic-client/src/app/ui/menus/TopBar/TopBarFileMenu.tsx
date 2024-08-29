@@ -1,7 +1,7 @@
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
@@ -76,7 +76,7 @@ function FileLocation() {
     // My private file
     dashboardLink = (
       <Link to={ROUTES.TEAM_FILES_PRIVATE(team.uuid)} {...linkProps}>
-        Private
+        My files
       </Link>
     );
   } else if (ownerUserId === undefined && teamRole) {
