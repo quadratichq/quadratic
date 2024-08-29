@@ -34,8 +34,6 @@ export const router = createBrowserRouter(
               path=":uuid"
               id={ROUTE_LOADER_IDS.FILE}
               lazy={() => import('./routes/file.$uuid')}
-              // We don't want to revalidate the initial file route because
-              // we don't have any 2-way data flow setup for the file contents
               shouldRevalidate={({ currentParams, nextParams }) => currentParams.uuid !== nextParams.uuid}
             />
           </Route>
@@ -71,7 +69,12 @@ export const router = createBrowserRouter(
           </Route>
 
           {/* Dashboard UI routes */}
-          <Route path="/" id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>
+          <Route
+            path="/"
+            id={ROUTE_LOADER_IDS.DASHBOARD}
+            lazy={() => import('./routes/_dashboard')}
+            shouldRevalidate={() => true}
+          >
             <Route
               path={ROUTES.FILES_SHARED_WITH_ME}
               lazy={() => import('./routes/files.shared-with-me')}
