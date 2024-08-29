@@ -106,7 +106,7 @@ services:
       QUADRATIC_FILE_URI: http://host.docker.internal:3002
       QUADRATIC_FILE_URI_PUBLIC: http://localhost:3002
 
-      # Admin
+      # License UUID: leave "LICENSE_KEY" as this value is replaced during initialization
       LICENSE_KEY: "LICENSE_KEY"
     restart: "always"
     ports:

@@ -17,6 +17,7 @@ Implement the entire Quadratic stack outside of Quadratic.  The use cases we cur
 
 * MacOS or Linux (not tested on Windows)
 * License Key (available at https://selfhost.quadratic-preview.com)
+* The following open ports: 80, 3000, 3001, 3002, 8000
 
 ## Installation
 
@@ -39,9 +40,15 @@ Refer to the [Stopping](#Stopping) section.
 Once the Quadratic is initialized, a single command is needed to start all of the images:
 
 ```shell
-./quadratic/self-hosting/.start.sh
+./quadratic/self-hosting/start.sh
 ```
 
 ## Stopping
 
-To stop running docker images, simply press `ctrl + c`
+To stop running docker images, simply press `ctrl + c` if running in the foreground.
+
+If running in the background, run the `stop.sh` script:
+
+```shell
+./quadratic/self-hosting/stop.sh
+```
