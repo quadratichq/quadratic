@@ -10,6 +10,7 @@
  */
 
 import { debugShowHashUpdates, debugShowLoadingHashes } from '@/app/debugFlags';
+import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { Coordinate } from '@/app/gridGL/types/size';
@@ -19,10 +20,9 @@ import { renderClient } from '../renderClient';
 import { renderCore } from '../renderCore';
 import { CellLabel } from './CellLabel';
 import { CellsLabels } from './CellsLabels';
-import { LabelMeshes } from './LabelMeshes';
-import { CellsTextHashSpecial } from './CellsTextHashSpecial';
-import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { CellsTextHashContent } from './CellsTextHashContent';
+import { CellsTextHashSpecial } from './CellsTextHashSpecial';
+import { LabelMeshes } from './LabelMeshes';
 
 // Draw hashed regions of cell glyphs (the text + text formatting)
 export class CellsTextHash {
@@ -450,7 +450,7 @@ export class CellsTextHash {
 
   getCellsContentMaxWidth = async (column: number): Promise<number> => {
     const columnsMax = await this.getColumnContentMaxWidths();
-    return columnsMax.get(column) ?? this.cellsLabels.getCellOffsets(column, 0).width;
+    return columnsMax.get(column) ?? 0;
   };
 
   getColumnContentMaxWidths = async (): Promise<Map<number, number>> => {
@@ -465,7 +465,7 @@ export class CellsTextHash {
 
   getCellsContentMaxHeight = async (row: number): Promise<number> => {
     const rowsMax = await this.getRowContentMaxHeights();
-    return rowsMax.get(row) ?? this.cellsLabels.getCellOffsets(0, row).height;
+    return rowsMax.get(row) ?? 0;
   };
 
   getRowContentMaxHeights = async (): Promise<Map<number, number>> => {
