@@ -146,21 +146,19 @@ export function useFileImport() {
 
         let result: { contents?: ArrayBuffer; version?: string; error?: string } | undefined = undefined;
 
-        switch (fileType) {
-          case 'grid':
-            result = await quadraticCore.upgradeGridFile(arrayBuffer, 0);
-            break;
-          case 'excel':
-            result = await quadraticCore.importFile(arrayBuffer, fileName, fileType, cursor);
-            break;
-          case 'csv':
-            result = await quadraticCore.importFile(arrayBuffer, fileName, fileType, sheetId, insertAt, cursor);
-            break;
-          case 'parquet':
-            result = await quadraticCore.importFile(arrayBuffer, fileName, fileType, sheetId, insertAt, cursor);
-            break;
-          default:
-            throw new Error(`Error importing ${fileName}: Unsupported file type`);
+        if (fileType === 'grid') {
+          result = await quadraticCore.upgradeGridFile(arrayBuffer, 0);
+        } else if (fileType === 'excel' || fileType === 'csv' || fileType === 'parquet') {
+          result = await quadraticCore.importFile({
+            file: arrayBuffer,
+            fileName,
+            fileType,
+            cursor,
+            sheetId,
+            location: insertAt,
+          });
+        } else {
+          throw new Error(`Error importing ${fileName}: Unsupported file type`);
         }
 
         if (result?.error !== undefined) {

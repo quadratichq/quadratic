@@ -154,6 +154,11 @@ export class CellsSheets extends Container<CellsSheet> {
     cellsSheet?.adjustOffsets();
   }
 
+  adjustCellsImages(sheetId: string): void {
+    const cellsSheet = this.getById(sheetId);
+    cellsSheet?.cellsImages.reposition(sheetId);
+  }
+
   showLabel(x: number, y: number, sheetId: string, show: boolean) {
     const cellsSheet = this.getById(sheetId);
     cellsSheet?.showLabel(x, y, show);
