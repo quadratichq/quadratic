@@ -39,7 +39,7 @@ Refer to the [Stopping](#Stopping) section.
 Once the Quadratic is initialized, a single command is needed to start all of the images:
 
 ```shell
-./start.sh
+./quadratic/self-hosting/.start.sh
 ```
 
 ## Stopping
