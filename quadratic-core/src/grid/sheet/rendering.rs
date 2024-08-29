@@ -13,7 +13,7 @@ use crate::{
         },
         CellAlign, CodeCellLanguage, CodeRun, Column,
     },
-    CellValue, Pos, Rect, RunError, RunErrorMsg,
+    CellValue, Pos, Rect, RunError, RunErrorMsg, Value,
 };
 
 use super::Sheet;
@@ -383,13 +383,15 @@ impl Sheet {
             )
         } else {
             match run.result {
+                CodeRunResult::Err(_) | CodeRunResult::Ok(Value::Single(CellValue::Error(_))) => {
+                    (JsRenderCodeCellState::RunError, 1, 1, None)
+                }
                 CodeRunResult::Ok(_) => (
                     JsRenderCodeCellState::Success,
                     output_size.w.get(),
                     output_size.h.get(),
                     None,
                 ),
-                CodeRunResult::Err(_) => (JsRenderCodeCellState::RunError, 1, 1, None),
             }
         };
         Some(JsRenderCodeCell {

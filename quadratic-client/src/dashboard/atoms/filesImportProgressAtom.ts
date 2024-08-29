@@ -45,10 +45,11 @@ export const filesImportProgressAtom = atom({
             if (prev instanceof DefaultValue) return prev;
             const updatedFiles = prev.files.map((file, index) => {
               if (index !== prev.currentFileIndex) return file;
+              const totalSteps = prev.createNewFile ? 3 : 2;
               const newFile: FileImportProgress = {
                 ...file,
                 step: 'read',
-                progress: Math.round((message.current / message.total) * 100) / 3,
+                progress: Math.round((message.current / message.total) * 100) / totalSteps,
               };
               return newFile;
             });
@@ -65,10 +66,11 @@ export const filesImportProgressAtom = atom({
               if (prev instanceof DefaultValue) return prev;
               const updatedFiles = prev.files.map((file, index) => {
                 if (index !== prev.currentFileIndex) return file;
+                const totalSteps = prev.createNewFile ? 3 : 2;
                 const newFile: FileImportProgress = {
                   ...file,
                   step: 'create',
-                  progress: 100 / 3,
+                  progress: 100 / totalSteps,
                   transactionId: message.transactionId,
                   transactionOps: undefined,
                 } as FileImportProgress;
@@ -87,10 +89,10 @@ export const filesImportProgressAtom = atom({
             if (prev instanceof DefaultValue) return prev;
             const updatedFiles = prev.files.map((file) => {
               if (file.transactionId !== message.transactionId) return file;
-              const transactionOps = Math.max(file.transactionOps ?? 0, message.remainingOperations);
+              const transactionOps = Math.max(file.transactionOps ?? 1, message.remainingOperations + 1);
               const totalSteps = prev.createNewFile ? 3 : 2;
               const progress =
-                (Math.round((1 - message.remainingOperations / transactionOps) * 100) + 100) / totalSteps;
+                (Math.round((1 - (message.remainingOperations + 1) / transactionOps) * 100) + 100) / totalSteps;
               const newFile: FileImportProgress = {
                 ...file,
                 step: 'create',
