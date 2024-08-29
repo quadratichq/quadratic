@@ -39,7 +39,7 @@ export function javascriptAddLineNumberVars(transform: JavascriptTransformedCode
   let s = '';
   for (let i = 0; i < list.length; i++) {
     if (list[i].includes('return')) {
-      s += `try { throw new Error() } catch (e) { const stackLines = e.stack.split("\\n"); const match = stackLines[1].match(/:(\\d+):(\\d+)/); if (match) { ${LINE_NUMBER_VAR} = match[1];} }`;
+      s += `try { throw new Error() } catch (e) { const stackLines = e.stack.split("\\n"); let lineNumber; for (let i = 0; i < stackLines.length; i++) { const match = stackLines[i].match(/:(\\d+):(\\d+)/); if (match) { lineNumber = match[1]; break; } } if (lineNumber) { ${LINE_NUMBER_VAR} = lineNumber; } }`;
     }
     s += list[i] + '\n';
   }
