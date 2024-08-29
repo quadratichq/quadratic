@@ -3,10 +3,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { DOCUMENTATION_DATE_TIME_FORMATTING } from '@/shared/constants/urls';
 import { Label } from '@/shared/shadcn/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/shared/shadcn/ui/radio-group';
-import { cn } from '@/shared/shadcn/utils';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import { Tooltip } from '@mui/material';
-import { CheckIcon } from '@radix-ui/react-icons';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { useEffect, useRef, useState } from 'react';
 import { ValidationInput } from '../menus/Validations/Validation/ValidationUI/ValidationInput';
 
@@ -34,24 +31,14 @@ const RadioEntry = (props: RadioEntryProps) => {
   const { value, label } = props;
 
   return (
-    <div className="flex items-center space-x-2">
-      <RadioGroupItem value={value} id={value} className="border-0" />
-      <Label htmlFor={value}>{label}</Label>
+    <div className="flex items-center">
+      <RadioGroupItem value={value} id={value} />
+      <Label htmlFor={value} className="pl-2 font-normal">
+        {label}
+      </Label>
     </div>
   );
 };
-
-// todo: add link to help page...
-
-const customHelp = (
-  <div className="h-full cursor-pointer" onClick={() => console.log('open help for date time formats')}>
-    <Tooltip title="Help with custom date and time formats" className="align-super">
-      <a href={DOCUMENTATION_DATE_TIME_FORMATTING} target="_blank" title="Open help in another tab" rel="noreferrer">
-        <HelpOutlineIcon sx={{ width: '0.85rem', height: '0.85rem' }} />
-      </a>
-    </Tooltip>
-  </div>
-);
 
 interface DateFormatProps {
   status: boolean;
@@ -140,43 +127,71 @@ export const DateFormat = (props: DateFormatProps) => {
   };
 
   return (
-    <div className="flex flex-col gap-5 px-8 py-4">
-      <div>
-        <RadioGroup value={date} onValueChange={changeDate}>
-          <div className="flex flex-col gap-1">Date Format</div>
-          {DATE_FORMATS.map((format) => (
-            <RadioEntry key={format.value} value={format.value} label={format.label} />
-          ))}
-        </RadioGroup>
-      </div>
-      <div>
-        <RadioGroup value={time} onValueChange={changeTime}>
-          <div>Time Format</div>
-          {TIME_FORMATS.map((format) => (
-            <RadioEntry key={format.value} value={format.value} label={format.label} />
-          ))}
-        </RadioGroup>
-      </div>
-      <div>
-        <div className="mb-1">Custom Time and Date Format</div>
-        <div className="flex items-center">
-          <div
-            className="mr-2 aspect-square h-4 w-4 cursor-pointer rounded-full border shadow focus-visible:ring-1 focus-visible:ring-ring"
-            onClick={customFocus}
-          >
-            <CheckIcon className={(cn('h-3.5 w-3.5 fill-primary'), custom ? '' : 'invisible')} />
-          </div>
+    <Tabs defaultValue={custom ? 'custom' : 'presets'} className="text-sm">
+      <TabsList className="mt-2 w-full border-b border-border">
+        <TabsTrigger
+          value="presets"
+          className="w-1/2"
+          onClick={() => {
+            setCustom(undefined);
+            changeDate(date ?? DATE_FORMATS[0].value);
+            changeTime(time ?? TIME_FORMATS[0].value);
+          }}
+        >
+          Presets
+        </TabsTrigger>
+        <TabsTrigger
+          value="custom"
+          className="w-1/2"
+          onClick={() => {
+            setCustom('%d, %B %Y');
+            customFocus();
+          }}
+        >
+          Custom
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="presets" className="mt-2 grid grid-cols-2">
+        <div>
+          <RadioGroup value={date} onValueChange={changeDate}>
+            <div className="font-semibold">Date</div>
+            {DATE_FORMATS.map((format) => (
+              <RadioEntry key={format.value} value={format.value} label={format.label} />
+            ))}
+          </RadioGroup>
+        </div>
+        <div>
+          <RadioGroup value={time} onValueChange={changeTime}>
+            <div className="font-semibold">Time</div>
+            {TIME_FORMATS.map((format) => (
+              <RadioEntry key={format.value} value={format.value} label={format.label} />
+            ))}
+          </RadioGroup>
+        </div>
+      </TabsContent>
+      <TabsContent value="custom">
+        <div className="flex flex-col gap-1">
           <ValidationInput
             ref={ref}
-            className="h-6"
-            placeholder="Custom"
+            placeholder="%d, %B %Y"
             onChange={changeCustom}
             value={custom ?? ''}
             onEnter={closeMenu}
           />
-          {customHelp}
+          <p className="text-xs text-muted-foreground ">
+            Learn custom date and time formatting{' '}
+            <a
+              href={DOCUMENTATION_DATE_TIME_FORMATTING}
+              target="_blank"
+              className="underline hover:text-primary"
+              title="Open help in another tab"
+              rel="noreferrer"
+            >
+              in the docs
+            </a>
+          </p>
         </div>
-      </div>
-    </div>
+      </TabsContent>
+    </Tabs>
   );
 };

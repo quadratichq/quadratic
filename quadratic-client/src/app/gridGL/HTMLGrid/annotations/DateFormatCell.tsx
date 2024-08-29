@@ -19,8 +19,8 @@ export const DateFormatCell = () => {
   if (editorInteractionState.annotationState !== 'date-format') return null;
   return (
     <div
-      className="pointer-events-auto bg-white shadow"
-      style={{ width: 250 }}
+      className="pointer-events-auto rounded border bg-white p-4 shadow"
+      style={{ width: 340 }}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === 'Escape') {
           close();
@@ -29,9 +29,9 @@ export const DateFormatCell = () => {
         }
       }}
     >
-      <div className="flex justify-between">
-        <div className="pl-3 pt-3">Date and Time Formatting</div>
-        <div className="p-1">
+      <div className="flex">
+        <div className="text-md">Date and time format</div>
+        <div className="absolute right-2 top-1">
           <IconButton sx={{ padding: 0, width: 20, height: 20 }} onClick={close}>
             <Close sx={{ padding: 0, width: 15, height: 15 }} />
           </IconButton>

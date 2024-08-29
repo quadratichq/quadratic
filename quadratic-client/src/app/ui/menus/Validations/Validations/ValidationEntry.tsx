@@ -1,13 +1,13 @@
 import { getSelectionString } from '@/app/grid/sheet/selection';
 import { Validation } from '@/app/quadratic-core-types';
 import { Button } from '@/shared/shadcn/ui/button';
-import { useCallback, useMemo } from 'react';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { useCallback, useMemo } from 'react';
 
-import { ValidationsData } from './useValidationsData';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { useSetRecoilState } from 'recoil';
 import { cn } from '@/shared/shadcn/utils';
+import { useSetRecoilState } from 'recoil';
+import { ValidationsData } from './useValidationsData';
 
 interface Props {
   validation: Validation;
@@ -34,7 +34,7 @@ export const validationText = (validation: Validation) => {
   } else if ('Number' in validation.rule) {
     return 'Number';
   } else if ('DateTime' in validation.rule) {
-    return 'Date and Time';
+    return 'Date and time';
   }
   throw new Error('Unknown validation type');
 };
