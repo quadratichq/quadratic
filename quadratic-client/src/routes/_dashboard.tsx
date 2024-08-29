@@ -40,7 +40,6 @@ export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
  * Revalidation
  */
 export const shouldRevalidate = ({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) => {
-  console.log('currentUrl', currentUrl.pathname, 'nextUrl', nextUrl.pathname);
   return (
     currentUrl.pathname === '/' ||
     currentUrl.pathname.startsWith('/files') ||
@@ -171,9 +170,6 @@ export const Component = () => {
   const revalidator = useRevalidator();
 
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
-  console.log('isLoading', isLoading);
-  console.log('revalidator.state', revalidator.state);
-  console.log('navigation.state', navigation.state);
 
   // Trigger the theme in the root of the app
   useTheme();
