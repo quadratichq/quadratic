@@ -69,12 +69,7 @@ export const router = createBrowserRouter(
           </Route>
 
           {/* Dashboard UI routes */}
-          <Route
-            path="/"
-            id={ROUTE_LOADER_IDS.DASHBOARD}
-            lazy={() => import('./routes/_dashboard')}
-            shouldRevalidate={() => true}
-          >
+          <Route path="/" id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>
             <Route
               path={ROUTES.FILES_SHARED_WITH_ME}
               lazy={() => import('./routes/files.shared-with-me')}

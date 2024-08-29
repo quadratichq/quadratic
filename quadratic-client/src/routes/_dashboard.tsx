@@ -20,6 +20,7 @@ import {
   Link,
   LoaderFunctionArgs,
   Outlet,
+  ShouldRevalidateFunctionArgs,
   isRouteErrorResponse,
   redirect,
   redirectDocument,
@@ -38,15 +39,15 @@ export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
 /**
  * Revalidation
  */
-// export const shouldRevalidate = ({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) => {
-//   console.log('currentUrl', currentUrl.pathname, 'nextUrl', nextUrl.pathname);
-//   return (
-//     currentUrl.pathname === '/' ||
-//     currentUrl.pathname.startsWith('/files') ||
-//     nextUrl.pathname === '/' ||
-//     nextUrl.pathname.startsWith('/teams/')
-//   );
-// };
+export const shouldRevalidate = ({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) => {
+  console.log('currentUrl', currentUrl.pathname, 'nextUrl', nextUrl.pathname);
+  return (
+    currentUrl.pathname === '/' ||
+    currentUrl.pathname.startsWith('/files') ||
+    nextUrl.pathname === '/' ||
+    nextUrl.pathname.startsWith('/teams/')
+  );
+};
 
 /**
  * Loader
