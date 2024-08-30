@@ -26,7 +26,7 @@ Implement the entire Quadratic stack outside of Quadratic.  The use cases we cur
 Quadratic can be installed via a single command: 
 
 ```shell
-curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic/e20a821e40ec867b54fe61def4ca7aeebb7a8187/self-hosting/init.sh -o init.sh && sh -i init.sh
+curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic/2fdb1ede0db8e7d4784792643f32bc773aa0f231/self-hosting/init.sh -o init.sh && sh -i init.sh
 ```
 
 This will download the initialization script, which will prompt for a license key in order to register Quadratic.  
