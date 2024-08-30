@@ -2,6 +2,7 @@
 ///
 pub mod auto_complete;
 pub mod borders;
+pub mod borders_new;
 pub mod cells;
 pub mod clipboard;
 pub mod code;

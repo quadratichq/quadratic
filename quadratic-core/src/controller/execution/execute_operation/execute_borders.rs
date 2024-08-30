@@ -39,4 +39,21 @@ impl GridController {
             _ => unreachable!("Expected Operation::SetBorders"),
         }
     }
+
+    pub fn execute_set_borders_selection(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        match op {
+            Operation::SetBordersSelection { selection, borders } => {
+                let Some(sheet) = self.try_sheet_mut(selection.sheet_id) else {
+                    // sheet may have been deleted
+                    return;
+                };
+                sheet.borders(selection, borders);
+            }
+            _ => unreachable!("Expected Operation::SetBordersSelection"),
+        }
+    }
 }

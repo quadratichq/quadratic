@@ -20,7 +20,7 @@ use crate::selection::Selection;
 use crate::sheet_offsets::SheetOffsets;
 use crate::{Array, CellValue, Pos, Rect};
 
-pub mod borders_1;
+pub mod borders_new;
 pub mod bounds;
 pub mod cell_array;
 pub mod cell_values;
@@ -48,7 +48,7 @@ pub struct Sheet {
 
     #[serde(with = "crate::util::btreemap_serde")]
     pub columns: BTreeMap<i64, Column>,
-    pub(super) borders: SheetBorders,
+    pub borders: SheetBorders,
 
     #[serde(with = "crate::util::indexmap_serde")]
     pub code_runs: IndexMap<Pos, CodeRun>,

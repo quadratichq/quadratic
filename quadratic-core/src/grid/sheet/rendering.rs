@@ -543,6 +543,8 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     use std::collections::HashSet;
 
     use chrono::Utc;
@@ -552,21 +554,16 @@ mod tests {
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
         grid::{
-            formats::{format::Format, format_update::FormatUpdate, Formats},
-            js_types::{
-                JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
-                JsSheetFill,
-            },
+            formats::{format_update::FormatUpdate, Formats},
             sheet::validations::{
                 validation::Validation,
                 validation_rules::{validation_logical::ValidationLogical, ValidationRule},
             },
-            Bold, CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, CodeRun, CodeRunResult,
-            Italic, RenderSize, Sheet,
+            Bold, CellVerticalAlign, CellWrap, Italic, RenderSize,
         },
         selection::Selection,
         wasm_bindings::js::{expect_js_call, expect_js_call_count, hash_test},
-        CellValue, CodeCellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
+        CodeCellValue, SheetPos,
     };
 
     #[test]
