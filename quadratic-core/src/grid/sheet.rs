@@ -2,6 +2,7 @@ use std::collections::{btree_map, BTreeMap, HashSet};
 use std::str::FromStr;
 
 use bigdecimal::{BigDecimal, RoundingMode};
+use borders_new::Borders;
 use indexmap::IndexMap;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -87,6 +88,8 @@ pub struct Sheet {
     pub(super) format_bounds: GridBounds,
 
     pub(super) rows_resize: ResizeMap,
+
+    pub borders_new: Borders,
 }
 impl Sheet {
     /// Constructs a new empty sheet.
@@ -114,6 +117,8 @@ impl Sheet {
 
             validations: Validations::default(),
             rows_resize: ResizeMap::default(),
+
+            borders_new: Borders::default(),
         }
     }
 

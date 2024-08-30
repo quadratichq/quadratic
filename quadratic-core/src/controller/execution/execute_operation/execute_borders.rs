@@ -31,9 +31,11 @@ impl GridController {
                     borders: old_borders,
                 });
 
+                // todo... we need to change how the ^ works
+
                 if (cfg!(test) || cfg!(target_family = "wasm")) && !transaction.is_server() {
-                    self.send_updated_bounds(sheet_rect.sheet_id);
-                    self.send_render_borders(sheet_rect.sheet_id);
+                    // self.send_updated_bounds(sheet_rect.sheet_id);
+                    // self.send_render_borders(sheet_rect.sheet_id);
                 }
             }
             _ => unreachable!("Expected Operation::SetBorders"),
@@ -51,7 +53,17 @@ impl GridController {
                     // sheet may have been deleted
                     return;
                 };
-                sheet.borders(selection, borders);
+                transaction
+                    .reverse_operations
+                    .extend(sheet.borders_new.set_borders(&selection, &borders));
+
+                transaction
+                    .forward_operations
+                    .push(Operation::SetBordersSelection { selection, borders });
+
+                if (cfg!(test) || cfg!(target_family = "wasm")) && !transaction.is_server() {
+                    // self.send_render_borders_new(selection.sheet_id);
+                }
             }
             _ => unreachable!("Expected Operation::SetBordersSelection"),
         }

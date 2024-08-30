@@ -112,9 +112,6 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientSheetRenderCells') {
       events.emit('renderCells', e.data.sheetId, e.data.renderCells);
       return;
-    } else if (e.data.type === 'coreClientSheetBorders') {
-      events.emit('sheetBorders', e.data.sheetId, e.data.borders);
-      return;
     } else if (e.data.type === 'coreClientSheetCodeCellRender') {
       events.emit('renderCodeCells', e.data.sheetId, e.data.codeCells);
       return;
@@ -179,6 +176,12 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientMultiplayerSynced') {
       events.emit('multiplayerSynced');
+      return;
+    } else if (e.data.type === 'coreClientBordersHash') {
+      events.emit('bordersHash', e.data.borders);
+      return;
+    } else if (e.data.type === 'coreClientBordersSheet') {
+      events.emit('bordersSheet', e.data.borders);
       return;
     }
 

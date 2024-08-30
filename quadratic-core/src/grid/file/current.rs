@@ -14,6 +14,7 @@ use crate::grid::file::v1_6::schema::{self as current};
 use crate::grid::formats::format::Format;
 use crate::grid::formatting::RenderSize;
 use crate::grid::resize::{Resize, ResizeMap};
+use crate::grid::sheet::borders_new::Borders;
 use crate::grid::{
     generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
     CellVerticalAlign, CellWrap, CodeRun, CodeRunResult, Column, ColumnData, Grid, GridBounds,
@@ -363,6 +364,9 @@ pub fn import_sheet(sheet: current::Sheet) -> Result<Sheet> {
 
         validations: import_validations(&sheet.validations),
         rows_resize: import_rows_size(&sheet.rows_resize)?,
+
+        // todo...
+        borders_new: Borders::default(),
     };
     new_sheet.recalculate_bounds();
     import_borders_builder(&mut new_sheet, &sheet);

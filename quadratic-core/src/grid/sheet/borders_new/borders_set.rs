@@ -12,8 +12,8 @@ impl Borders {
     /// Sets the borders for a selection.
     pub fn set_borders(
         &mut self,
-        selection: Selection,
-        borders: RunLengthEncoding<BorderStyleCellUpdate>,
+        selection: &Selection,
+        borders: &RunLengthEncoding<BorderStyleCellUpdate>,
     ) -> Vec<Operation> {
         let mut undo_borders = RunLengthEncoding::new();
 
@@ -23,7 +23,7 @@ impl Borders {
             };
             undo_borders.push(self.all.apply_update(border));
             return vec![Operation::SetBordersSelection {
-                selection,
+                selection: selection.clone(),
                 borders: undo_borders,
             }];
         }
@@ -80,13 +80,13 @@ impl Borders {
                         undo.bottom = Some(original);
                     }
                     if let Some(update_left) = border.left {
-                        let left = self.left.entry(pos.y).or_insert_with(ColumnData::new);
-                        let original = left.set(pos.x, update_left);
+                        let left = self.left.entry(pos.x).or_insert_with(ColumnData::new);
+                        let original = left.set(pos.y, update_left);
                         undo.left = Some(original);
                     }
                     if let Some(update_right) = border.right {
-                        let right = self.right.entry(pos.y).or_insert_with(ColumnData::new);
-                        let original = right.set(pos.x, update_right);
+                        let right = self.right.entry(pos.x).or_insert_with(ColumnData::new);
+                        let original = right.set(pos.y, update_right);
                         undo.right = Some(original);
                     }
                     undo_borders.push(undo);
@@ -97,7 +97,7 @@ impl Borders {
 
         if !undo_borders.is_empty() {
             vec![Operation::SetBordersSelection {
-                selection,
+                selection: selection.clone(),
                 borders: undo_borders,
             }]
         } else {

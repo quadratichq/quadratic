@@ -24,7 +24,7 @@ impl Default for Rgba {
 }
 
 impl Rgba {
-    fn new(red: u8, green: u8, blue: u8, alpha: u8) -> Self {
+    pub fn new(red: u8, green: u8, blue: u8, alpha: u8) -> Self {
         Self {
             red,
             green,

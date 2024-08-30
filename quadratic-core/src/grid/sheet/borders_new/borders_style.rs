@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{color::Rgba, small_timestamp::SmallTimestamp};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -36,7 +38,7 @@ pub struct BorderStyle {
     pub line: CellBorderLine,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, TS)]
 pub struct BorderStyleTimestamp {
     pub color: Rgba,
     pub line: CellBorderLine,
@@ -53,7 +55,7 @@ impl From<BorderStyle> for BorderStyleTimestamp {
     }
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, TS)]
 pub struct BorderStyleCell {
     pub top: Option<BorderStyleTimestamp>,
     pub bottom: Option<BorderStyleTimestamp>,
@@ -99,4 +101,46 @@ pub struct BorderStyleCellUpdate {
     pub bottom: Option<Option<BorderStyleTimestamp>>,
     pub left: Option<Option<BorderStyleTimestamp>>,
     pub right: Option<Option<BorderStyleTimestamp>>,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, TS)]
+pub struct JsBorderHorizontal {
+    pub color: Rgba,
+    pub line: CellBorderLine,
+    pub x: i64,
+    pub y: i64,
+    pub width: i64,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, TS)]
+pub struct JsBorderVertical {
+    pub color: Rgba,
+    pub line: CellBorderLine,
+    pub x: i64,
+    pub y: i64,
+    pub height: i64,
+}
+
+#[derive(Default, Serialize, Deserialize, Debug, PartialEq, Eq, TS)]
+pub struct JsBorders {
+    pub hash_x: i64,
+    pub hash_y: i64,
+    pub horizontal: Vec<JsBorderHorizontal>,
+    pub vertical: Vec<JsBorderVertical>,
+}
+
+impl JsBorders {
+    pub fn is_empty(&self) -> bool {
+        self.horizontal.is_empty() && self.vertical.is_empty()
+    }
+}
+
+#[derive(Default, Serialize, Deserialize, Debug, TS)]
+pub struct JsBordersSheet {
+    pub all: BorderStyleCell,
+    pub columns: HashMap<i64, BorderStyleCell>,
+    pub rows: HashMap<i64, BorderStyleCell>,
+
+    // if None is sent, then ignore cells (used when sheet borders changed--we don't need to send all cells again)
+    pub hashes: Option<Vec<JsBorders>>,
 }

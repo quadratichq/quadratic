@@ -6,9 +6,10 @@ import {
   CellWrap,
   CodeCellLanguage,
   Format,
+  JsBorders,
+  JsBordersSheet,
   JsCodeCell,
   JsHtmlOutput,
-  JsRenderBorders,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
@@ -617,17 +618,20 @@ export interface CoreClientSheetOffsets {
   column?: number;
   row?: number;
   size: number;
-  borders: JsRenderBorders;
 }
 
 export interface CoreClientGenerateThumbnail {
   type: 'coreClientGenerateThumbnail';
 }
 
-export interface CoreClientSheetBorders {
-  type: 'coreClientSheetBorders';
-  sheetId: string;
-  borders: JsRenderBorders;
+export interface CoreClientBordersHash {
+  type: 'coreClientBordersHash';
+  borders: JsBorders;
+}
+
+export interface CoreClientBordersSheet {
+  type: 'coreClientBordersSheet';
+  borders: JsBordersSheet;
 }
 
 export interface CoreClientSheetRenderCells {
@@ -1063,7 +1067,6 @@ export type CoreClientMessage =
   | CoreClientFindNextRow
   | CoreClientGenerateThumbnail
   | CoreClientLoad
-  | CoreClientSheetBorders
   | CoreClientSheetRenderCells
   | CoreClientSheetCodeCellRender
   | CoreClientSheetBoundsUpdate
@@ -1094,4 +1097,6 @@ export type CoreClientMessage =
   | CoreClientRenderValidationWarnings
   | CoreClientResizeRowHeights
   | CoreClientMultiplayerSynced
-  | CoreClientValidateInput;
+  | CoreClientValidateInput
+  | CoreClientBordersHash
+  | CoreClientBordersSheet;

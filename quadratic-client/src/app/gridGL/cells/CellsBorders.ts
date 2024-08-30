@@ -1,6 +1,5 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { JsRenderBorders } from '@/app/quadratic-core-types';
 import { Container, Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { CellsSheet } from './CellsSheet';

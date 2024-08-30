@@ -71,7 +71,8 @@ extern "C" {
     pub fn jsClearHtml(sheet_id: String, x: i64, y: i64);
     pub fn jsHtmlOutput(html: String /*Vec<JsHtmlOutput>*/);
     pub fn jsGenerateThumbnail();
-    pub fn jsSheetBorders(sheet_id: String, borders: String);
+    pub fn jsBordersHash(borders: String);
+    pub fn jsBordersSheet(borders: String /* JsBordersSheet */);
     pub fn jsSheetCodeCell(sheet_id: String, code_cells: String);
     pub fn jsSheetBoundsUpdate(bounds: String);
 
@@ -420,13 +421,23 @@ pub fn jsGenerateThumbnail() {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSheetBorders(sheet_id: String, borders: String) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsSheetBorders",
-        format!("{},{}", sheet_id, borders),
-    ));
+pub fn jsBordersHash(borders: String) {
+    TEST_ARRAY
+        .lock()
+        .unwrap()
+        .push(TestFunction::new("jsRenderBordersHash", borders));
 }
 
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsBordersSheet(borders: String /* JsBordersSheet */) {
+    TEST_ARRAY
+        .lock()
+        .unwrap()
+        .push(TestFunction::new("jsRenderBordersSheet", borders));
+}
+
+#[cfg(test)]
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsSheetCodeCell(sheet_id: String, code_cells: String) {

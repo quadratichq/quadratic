@@ -4,10 +4,11 @@ use std::collections::HashMap;
 
 use crate::grid::{block::SameValue, ColumnData};
 
+pub mod borders_render;
 pub mod borders_set;
 pub mod borders_style;
 
-#[derive(Default, Serialize, Deserialize, Debug)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Borders {
     // sheet-wide formatting
     pub(crate) all: BorderStyleCell,

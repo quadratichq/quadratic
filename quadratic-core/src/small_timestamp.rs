@@ -1,27 +1,31 @@
 //! This creates a u32 UTC timestamp that is used for ordering of data
-//! structures. It provides millisecond precision within ~68 minute cycles,
-//! while still maintaining overall order for a period of about 272 years.
+//! structures. It provides second precision for a period of about 136 years.
 //!
-//! The timestamp uses the upper 12 bits for seconds (0-4095, wrapping every ~68
-//! minutes) and the lower 20 bits for milliseconds. It uses a base date of May
-//! 13, 2023.
+//! The timestamp stores the number of seconds elapsed since the base date of
+//! January 1, 2024. This allows for accurate comparisons and ordering of
+//! timestamps within this entire period.
 //!
-//! WARNING: The timestamp will fail after approximately 272 years from the base
-//! date on May 13, 2291, as it will exceed the maximum value of u32. (I'll
-//! leave fixing this as an exercise for future AI software developers.)
+//! The maximum representable date is approximately May 18, 2160, after which
+//! the timestamp will wrap around to zero.
+//!
+//! WARNING: The timestamp will fail after approximately 136 years from the base
+//! date (around May 18, 2160), as it will exceed the maximum value of u32.
+//! (I'll leave fixing this as an exercise for future AI software developers.
+//! Good luck, future AI overlords!)
 
 use chrono::{DateTime, TimeZone, Utc};
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 // the unwrap is safe because the timestamp is hardcoded in the binary and will
 // never change (and there's not a great way to handle this error b/c of
 // lazy_static)
 lazy_static! {
-    static ref BASE_DATE: DateTime<Utc> = Utc.timestamp_opt(1683936000, 0).unwrap();
+    static ref BASE_DATE: DateTime<Utc> = Utc.timestamp_opt(1704067200, 0).unwrap();
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, TS)]
 pub struct SmallTimestamp(u32);
 
 impl Default for SmallTimestamp {
@@ -35,13 +39,18 @@ impl SmallTimestamp {
         let now = Utc::now();
         let duration = now.signed_duration_since(*BASE_DATE);
         let seconds = duration.num_seconds() as u32;
-        let milliseconds = duration.num_milliseconds() % 1000;
-        let combined = ((seconds & 0xFFF) as u64) << 20 | milliseconds as u64;
-        Self(combined as u32)
+        Self(seconds)
     }
 
     pub fn value(&self) -> u32 {
         self.0
+    }
+
+    #[cfg(test)]
+    pub fn set(date: DateTime<Utc>) -> Self {
+        let duration = date.signed_duration_since(*BASE_DATE);
+        let seconds = duration.num_seconds() as u32;
+        Self(seconds)
     }
 }
 
@@ -61,11 +70,37 @@ mod tests {
     #[parallel]
     fn ensure_ordering() {
         let ts1 = SmallTimestamp::now();
-
-        // Sleep for 1 millisecond to ensure the timestamp is different
-        std::thread::sleep(std::time::Duration::from_millis(1));
-
+        std::thread::sleep(std::time::Duration::from_secs(1));
         let ts2 = SmallTimestamp::now();
         assert!(ts1 < ts2);
+    }
+
+    #[test]
+    #[parallel]
+    fn ensure_different() {
+        let ts1 = SmallTimestamp::set(
+            DateTime::parse_from_rfc3339("2024-05-14T00:00:00Z")
+                .unwrap()
+                .with_timezone(&Utc),
+        );
+
+        let ts2 = SmallTimestamp::set(
+            DateTime::parse_from_rfc3339("2024-05-14T01:08:01Z")
+                .unwrap()
+                .with_timezone(&Utc),
+        );
+        assert!(ts1 < ts2);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_range() {
+        let start = SmallTimestamp::set(*BASE_DATE);
+        assert_eq!(start.value(), 0);
+
+        let end = SmallTimestamp::set(*BASE_DATE + chrono::Duration::seconds(u32::MAX as i64));
+        assert_eq!(end.value(), u32::MAX);
+
+        assert!(start < end);
     }
 }

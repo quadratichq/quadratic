@@ -8,9 +8,10 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import {
+  JsBorders,
+  JsBordersSheet,
   JsCodeCell,
   JsHtmlOutput,
-  JsRenderBorders,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
@@ -55,13 +56,13 @@ declare var self: WorkerGlobalScope &
       sheetId: string,
       column: bigint | undefined,
       row: bigint | undefined,
-      size: number,
-      borders: JsRenderBorders
+      size: number
     ) => void;
     sendSheetHtml: (html: JsHtmlOutput[]) => void;
     sendUpdateHtml: (html: JsHtmlOutput) => void;
     sendGenerateThumbnail: () => void;
-    sendSheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
+    sendBordersHash: (borders: JsBorders) => void;
+    sendBordersSheet: (borders: JsBordersSheet) => void;
     sendSheetRenderCells: (sheetId: string, renderCells: JsRenderCell[]) => void;
     sendSheetCodeCell: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
     sendSheetBoundsUpdateClient: (sheetBounds: SheetInfo) => void;
@@ -115,7 +116,8 @@ class CoreClient {
     self.sendSheetHtml = coreClient.sendSheetHtml;
     self.sendUpdateHtml = coreClient.sendUpdateHtml;
     self.sendGenerateThumbnail = coreClient.sendGenerateThumbnail;
-    self.sendSheetBorders = coreClient.sendSheetBorders;
+    self.sendBordersHash = coreClient.sendBordersHash;
+    self.sendBordersSheet = coreClient.sendBordersSheet;
     self.sendSheetRenderCells = coreClient.sendSheetRenderCells;
     self.sendSheetCodeCell = coreClient.sendSheetCodeCell;
     self.sendSheetBoundsUpdateClient = coreClient.sendSheetBoundsUpdate;
@@ -621,20 +623,13 @@ class CoreClient {
     this.send({ type: 'coreClientSetCursorSelection', selection });
   };
 
-  sendSheetOffsets = (
-    sheetId: string,
-    column: bigint | undefined,
-    row: bigint | undefined,
-    size: number,
-    borders: JsRenderBorders
-  ) => {
+  sendSheetOffsets = (sheetId: string, column: bigint | undefined, row: bigint | undefined, size: number) => {
     this.send({
       type: 'coreClientSheetOffsets',
       sheetId,
       column: column === undefined ? undefined : Number(column),
       row: row === undefined ? undefined : Number(row),
       size,
-      borders,
     });
   };
 
@@ -650,8 +645,12 @@ class CoreClient {
     this.send({ type: 'coreClientGenerateThumbnail' });
   };
 
-  sendSheetBorders = (sheetId: string, borders: JsRenderBorders) => {
-    this.send({ type: 'coreClientSheetBorders', sheetId, borders });
+  sendBordersHash = (borders: JsBorders) => {
+    this.send({ type: 'coreClientBordersHash', borders });
+  };
+
+  sendBordersSheet = (borders: JsBordersSheet) => {
+    this.send({ type: 'coreClientBordersSheet', borders });
   };
 
   sendSheetRenderCells = (sheetId: string, renderCells: JsRenderCell[]) => {

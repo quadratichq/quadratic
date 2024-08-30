@@ -51,10 +51,12 @@ impl GridController {
 
                 self.send_add_sheet(sheet_id, transaction);
 
-                self.send_render_borders(sheet_id);
-
                 if let GridBounds::NonEmpty(bounds) = sheet_bounds {
                     self.send_fill_cells(&bounds.to_sheet_rect(sheet_id));
+                }
+
+                if let Some(sheet) = self.try_sheet(sheet_id) {
+                    sheet.borders_new.send_sheet_borders(false);
                 }
 
                 transaction

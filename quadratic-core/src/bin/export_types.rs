@@ -4,17 +4,22 @@ use controller::operations::clipboard::PasteSpecial;
 use grid::{
     formats::format::Format,
     js_types::{JsSheetFill, JsValidationWarning},
-    sheet::validations::{
-        validation::{
-            Validation, ValidationDisplay, ValidationDisplaySheet, ValidationError,
-            ValidationMessage, ValidationStyle,
+    sheet::{
+        borders_new::borders_style::{
+            JsBorderHorizontal, JsBorderVertical, JsBorders, JsBordersSheet,
         },
-        validation_rules::{
-            validation_list::{ValidationList, ValidationListSource},
-            validation_logical::ValidationLogical,
-            validation_number::{NumberRange, ValidationNumber},
-            validation_text::{TextCase, TextMatch, ValidationText},
-            ValidationRule,
+        validations::{
+            validation::{
+                Validation, ValidationDisplay, ValidationDisplaySheet, ValidationError,
+                ValidationMessage, ValidationStyle,
+            },
+            validation_rules::{
+                validation_list::{ValidationList, ValidationListSource},
+                validation_logical::ValidationLogical,
+                validation_number::{NumberRange, ValidationNumber},
+                validation_text::{TextCase, TextMatch, ValidationText},
+                ValidationRule,
+            },
         },
     },
 };
@@ -26,8 +31,8 @@ use quadratic_core::{
     },
     grid::{
         js_types::{
-            JsCodeCell, JsHtmlOutput, JsNumber, JsRenderBorder, JsRenderBorders, JsRenderCell,
-            JsRenderCellSpecial, JsRenderCodeCell, JsRenderCodeCellState,
+            JsCodeCell, JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial,
+            JsRenderCodeCell, JsRenderCodeCellState,
         },
         sheet::search::SearchOptions,
         BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage, ConnectionKind,
@@ -106,8 +111,10 @@ fn main() {
         CellBorderLine,
         BorderSelection,
         BorderStyle,
-        JsRenderBorder,
-        JsRenderBorders,
+        JsBorderHorizontal,
+        JsBorderVertical,
+        JsBorders,
+        JsBordersSheet,
         JsCodeResult,
         MinMax,
         TransientResize,

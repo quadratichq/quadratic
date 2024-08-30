@@ -46,8 +46,10 @@ export interface Rgba { red: number, green: number, blue: number, alpha: number,
 export type CellBorderLine = "line1" | "line2" | "line3" | "dotted" | "dashed" | "double";
 export type BorderSelection = "all" | "inner" | "outer" | "horizontal" | "vertical" | "left" | "top" | "right" | "bottom" | "clear";
 export interface BorderStyle { color: Rgba, line: CellBorderLine, }
-export interface JsRenderBorder { x: bigint, y: bigint, w?: number, h?: number, style: BorderStyle, }
-export interface JsRenderBorders { horizontal: Array<JsRenderBorder>, vertical: Array<JsRenderBorder>, }
+export interface JsBorderHorizontal { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, width: bigint, }
+export interface JsBorderVertical { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, height: bigint, }
+export interface JsBorders { hash_x: bigint, hash_y: bigint, horizontal: Array<JsBorderHorizontal>, vertical: Array<JsBorderVertical>, }
+export interface JsBordersSheet { all: BorderStyleCell, columns: Record<bigint, BorderStyleCell>, rows: Record<bigint, BorderStyleCell>, hashes: Array<JsBorders> | null, }
 export interface JsCodeResult { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: Array<string> | null, output_array: Array<Array<Array<string>>> | null, output_display_type: string | null, cancel_compute: boolean | null, }
 export interface MinMax { min: number, max: number, }
 export interface TransientResize { row: bigint | null, column: bigint | null, old_size: number, new_size: number, }
