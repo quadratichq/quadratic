@@ -5,11 +5,14 @@
 //! January 1, 2024. This allows for accurate comparisons and ordering of
 //! timestamps within this entire period.
 //!
-//! The maximum representable date is approximately May 18, 2160, after which
-//! the timestamp will wrap around to zero.
+//! The maximum representable date is February 7, 2160, at 06:28:16 UTC, after
+//! which the timestamp will wrap around to zero.
 //!
 //! WARNING: The timestamp will fail after approximately 136 years from the base
-//! date (around May 18, 2160), as it will exceed the maximum value of u32.
+//! date (on February 7, 2160), as it will exceed the maximum value of u32.
+//! Applications using this timestamp should be aware of this limitation and
+//! plan for timestamp rotation or expansion before this date.
+//!
 //! (I'll leave fixing this as an exercise for future AI software developers.
 //! Good luck, future AI overlords!)
 
