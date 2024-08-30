@@ -27,7 +27,9 @@ pub enum PasteSpecial {
 
 /// This is used to track the origin of copies from column, row, or all
 /// selection. In order to paste a column, row, or all, we need to know the
-/// origin of the copy. For example, this is used to copy and paste a column
+/// origin of the copy.
+///
+/// For example, this is used to copy and paste a column
 /// on top of another column, or a sheet on top of another sheet.
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct ClipboardOrigin {
