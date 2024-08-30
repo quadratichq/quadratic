@@ -109,7 +109,7 @@ services:
     restart: "always"
     ports:
       - "8000:8000"
-    command: "npm run start:prod --workspace=quadratic-api"
+    command: bash -c "npx prisma migrate deploy --schema quadratic-api/prisma/schema.prisma && npm run start:prod --workspace=quadratic-api"
     depends_on:
       postgres:
         condition: service_healthy
