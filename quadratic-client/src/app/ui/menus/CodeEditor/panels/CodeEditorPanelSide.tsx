@@ -6,6 +6,17 @@ import { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEdi
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ResizeControl } from './ResizeControl';
 
+function debounce<T extends (...args: any[]) => void>(func: T, wait: number): T {
+  let timeout: NodeJS.Timeout | null = null;
+  return ((...args: Parameters<T>) => {
+    if (timeout !== null) {
+      clearTimeout(timeout);
+    }
+    timeout = setTimeout(() => func(...args), wait);
+  }) as T;
+}
+
+
 interface Props {
   codeEditorPanelData: CodeEditorPanelData;
   schemaBrowser: React.ReactNode | undefined;
@@ -20,10 +31,22 @@ export function CodeEditorPanelSide({ schemaBrowser, showAiAssistant, codeEditor
   }, []);
 
   const [containerHeight, setContainerHeight] = useState(0);
+
   useEffect(() => {
-    if (container) {
+    if (!container) return;
+
+    const updateHeight = () => {
       setContainerHeight(container.getBoundingClientRect().height);
-    }
+    };
+
+    // Create a debounced version of updateHeight
+    const debouncedUpdateHeight = debounce(updateHeight, 250);
+
+    updateHeight(); // Initial height set
+
+    window.addEventListener('resize', debouncedUpdateHeight);
+
+    return () => window.removeEventListener('resize', debouncedUpdateHeight);
   }, [container]);
 
   const { panels, leftOverPercentage, adjustedContainerHeight } = useMemo(() => {
