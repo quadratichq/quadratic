@@ -71,7 +71,7 @@ selfservice:
       ui_url: http://localhost:4455/verification
       use: code
       after:
-        default_browser_return_url: http://localhost
+        default_browser_return_url: http://localhost/login-result
 
     logout:
       after:
