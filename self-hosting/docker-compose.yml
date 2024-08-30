@@ -305,18 +305,6 @@ services:
     networks:
       - host
 
-  admin:
-    image: stoplight/prism:latest
-    command: "mock -p 4000 -h 0.0.0.0 /tmp/openapi.yaml"
-    ports:
-      - 4000:4000
-    volumes:
-      - ./docker/admin/config/openapi.yaml:/tmp/openapi.yaml:ro
-    profiles:
-      - admin
-    networks:
-      - host
-
 volumes:
   docker:
     name: docker
