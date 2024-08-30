@@ -1,3 +1,4 @@
+import { Link } from '@/app/gridGL/types/link';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from './renderBitmapFonts';
@@ -32,6 +33,7 @@ export interface RenderClientCellsTextHashClear {
   viewRectangle: { x: number; y: number; width: number; height: number };
   overflowGridLines: Coordinate[];
   content: Uint32Array;
+  links: Link[];
 }
 
 export interface ClientRenderViewport {

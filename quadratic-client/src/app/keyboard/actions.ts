@@ -66,6 +66,7 @@ export const ActionEnum = z.enum([
   'save_inline_editor_move_left',
   'remove_inserted_cells',
   'trigger_cell',
+  'open_link',
 ]);
 
 export type Action = z.infer<typeof ActionEnum>;

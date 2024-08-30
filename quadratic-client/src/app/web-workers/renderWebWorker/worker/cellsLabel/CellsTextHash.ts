@@ -13,6 +13,7 @@ import { debugShowHashUpdates, debugShowLoadingHashes } from '@/app/debugFlags';
 import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { Link } from '@/app/gridGL/types/link';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { JsRenderCell } from '@/app/quadratic-core-types';
 import { Rectangle } from 'pixi.js';
@@ -37,6 +38,9 @@ export class CellsTextHash {
   // tracks which grid lines should not be drawn for this hash
   private overflowGridLines: Coordinate[] = [];
 
+  // tracks which cells have links
+  private links: Link[] = [];
+
   hashX: number;
   hashY: number;
 
@@ -60,12 +64,12 @@ export class CellsTextHash {
   // screen coordinates
   viewRectangle: Rectangle;
 
-  special: CellsTextHashSpecial;
+  private special: CellsTextHashSpecial;
 
-  columnsMaxCache?: Map<number, number>;
-  rowsMaxCache?: Map<number, number>;
+  private columnsMaxCache?: Map<number, number>;
+  private rowsMaxCache?: Map<number, number>;
 
-  content: CellsTextHashContent;
+  private content: CellsTextHashContent;
 
   constructor(cellsLabels: CellsLabels, hashX: number, hashY: number) {
     this.cellsLabels = cellsLabels;
@@ -100,6 +104,7 @@ export class CellsTextHash {
     if (cell.special !== 'Checkbox') {
       const cellLabel = new CellLabel(this.cellsLabels, cell, rectangle);
       this.labels.set(this.getKey(cell), cellLabel);
+      if (cellLabel.link) this.links.push({ location: cellLabel.location, link: cellLabel.text });
     }
     if (cell.special === 'Checkbox') {
       this.special.addCheckbox(
@@ -123,6 +128,7 @@ export class CellsTextHash {
   private createLabels(cells: JsRenderCell[]) {
     this.labels = new Map();
     this.content.clear();
+    this.links = [];
     cells.forEach((cell) => this.createLabel(cell));
     this.loaded = true;
   }
@@ -131,6 +137,8 @@ export class CellsTextHash {
     if (debugShowLoadingHashes) console.log(`[CellsTextHash] Unloading ${this.hashX}, ${this.hashY}`);
     this.loaded = false;
     this.labels.clear();
+    this.content.clear();
+    this.links = [];
     this.labelMeshes.clear();
     this.overflowGridLines = [];
     if (this.clientLoaded) {
@@ -139,14 +147,15 @@ export class CellsTextHash {
     }
   };
 
-  sendViewRectangle = () => {
+  sendCellsTextHashClear = () => {
     renderClient.sendCellsTextHashClear(
       this.cellsLabels.sheetId,
       this.hashX,
       this.hashY,
       this.viewRectangle,
       this.overflowGridLines,
-      this.content.export()
+      this.content.export(),
+      this.links
     );
   };
 
@@ -225,7 +234,7 @@ export class CellsTextHash {
     this.dirtyText = false;
 
     this.labelMeshes.clear();
-    this.labels.forEach((child) => child.updateText(this.labelMeshes));
+    this.labels.forEach((label) => label.updateText(this.labelMeshes));
     this.overflowClip();
 
     const columnsMax = new Map<number, number>();
@@ -328,7 +337,7 @@ export class CellsTextHash {
 
   private updateBuffers = (): void => {
     if (!this.loaded) {
-      this.sendViewRectangle();
+      this.sendCellsTextHashClear();
       return;
     }
     this.dirtyBuffers = false;
@@ -360,14 +369,7 @@ export class CellsTextHash {
     this.special.extendViewRectangle(this.viewRectangle);
 
     // prepares the client's CellsTextHash for new content
-    renderClient.sendCellsTextHashClear(
-      this.cellsLabels.sheetId,
-      this.hashX,
-      this.hashY,
-      this.viewRectangle,
-      this.overflowGridLines,
-      this.content.export()
-    );
+    this.sendCellsTextHashClear();
 
     // completes the rendering for the CellsTextHash
     this.labelMeshes.finalize();

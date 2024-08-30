@@ -44,13 +44,15 @@ export const LINE_HEIGHT = 16;
 // todo: make this part of the cell's style data structure
 export const FONT_SIZE = 14;
 
+const URL_REGEX = /[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/i;
+
 export class CellLabel {
   private cellsLabels: CellsLabels;
   private position = new Point();
 
   visible = true;
 
-  private text: string;
+  text: string;
   private originalText: string;
 
   number?: JsNumber;
@@ -88,6 +90,10 @@ export class CellLabel {
   private bold: boolean;
   private italic: boolean;
 
+  link: boolean;
+  private underline: boolean;
+  private strikeThrough: boolean;
+
   private textWidth = 0;
   textHeight = 0;
   unwrappedTextWidth = 0;
@@ -111,6 +117,7 @@ export class CellLabel {
           this.number = cell.number;
           return convertNumber(cell.value, cell.number).toUpperCase();
         } else {
+          this.number = undefined;
           return cell?.value;
         }
     }
@@ -120,18 +127,21 @@ export class CellLabel {
     this.cellsLabels = cellsLabels;
     this.originalText = cell.value;
     this.text = this.getText(cell);
+    this.link = this.isLink(cell);
     this.fontSize = FONT_SIZE;
     this.roundPixels = true;
     this.letterSpacing = 0;
     const isDropdown = cell.special === 'List';
-    const isError = cell?.special === 'SpillError' || cell?.special === 'RunError';
-    const isChart = cell?.special === 'Chart';
+    const isError = cell.special === 'SpillError' || cell.special === 'RunError';
+    const isChart = cell.special === 'Chart';
     if (isError) {
       this.tint = colors.cellColorError;
     } else if (isChart) {
       this.tint = convertColorStringToTint(colors.languagePython);
     } else if (cell?.textColor) {
       this.tint = convertColorStringToTint(cell.textColor);
+    } else if (this.link) {
+      this.tint = convertColorStringToTint(colors.quadraticPrimary);
     } else {
       this.tint = 0;
     }
@@ -157,6 +167,9 @@ export class CellLabel {
     this.align = cell.align ?? 'left';
     this.verticalAlign = cell.verticalAlign ?? 'top';
     this.wrap = cell.wrap === undefined && this.isNumber() ? 'clip' : cell.wrap ?? 'overflow';
+
+    this.underline = this.link; // todo(ayush): this is only based on if the text is a link, not user configurable right now
+    this.strikeThrough = false; // todo(ayush): implement this
     this.updateCellLimits();
   }
 
@@ -214,11 +227,16 @@ export class CellLabel {
     return false;
   };
 
-  isNumber = (): boolean => {
+  private isNumber = (): boolean => {
     return this.number !== undefined;
   };
 
-  checkNumberClip = (): boolean => {
+  private isLink = (cell: JsRenderCell): boolean => {
+    if (cell.number !== undefined || cell.special !== null) return false;
+    return URL_REGEX.test(cell.value);
+  };
+
+  private checkNumberClip = (): boolean => {
     if (!this.isNumber()) return false;
 
     const clipLeft = Math.max(this.cellClipLeft ?? -Infinity, this.AABB.right - (this.nextLeftWidth ?? Infinity));
@@ -274,7 +292,7 @@ export class CellLabel {
   public updateText = (labelMeshes: LabelMeshes): void => {
     if (!this.visible) return;
 
-    const processedText = this.processText(labelMeshes, this.text);
+    let processedText = this.processText(labelMeshes, this.text);
     if (!processedText) return;
 
     this.chars = processedText.chars;
@@ -287,15 +305,23 @@ export class CellLabel {
 
     if (this.checkNumberClip()) {
       const clippedNumber = this.getClippedNumber(this.originalText, this.text, this.number);
-      const processedNumberText = this.processText(labelMeshes, clippedNumber);
-      if (!processedNumberText) return;
+      const processedText = this.processText(labelMeshes, clippedNumber);
+      if (!processedText) return;
 
-      this.chars = processedNumberText.chars;
-      this.textWidth = processedNumberText.textWidth;
-      this.textHeight = processedNumberText.textHeight;
-      this.horizontalAlignOffsets = processedNumberText.horizontalAlignOffsets;
+      this.chars = processedText.chars;
+      this.textWidth = processedText.textWidth;
+      this.textHeight = processedText.textHeight;
+      this.horizontalAlignOffsets = processedText.horizontalAlignOffsets;
 
       this.calculatePosition();
+    }
+
+    if (this.underline) {
+      this.addLine(labelMeshes, processedText.lineWidths, '_');
+    }
+
+    if (this.strikeThrough) {
+      this.addLine(labelMeshes, processedText.lineWidths, '-');
     }
   };
 
@@ -304,7 +330,7 @@ export class CellLabel {
     if (!this.visible) return;
 
     const data = this.cellsLabels.bitmapFonts[this.fontName];
-    if (!data) throw new Error(`Expected BitmapFont ${this.fontName} to be defined in CellLabel.updateText`);
+    if (!data) throw new Error(`Expected BitmapFont ${this.fontName} to be defined in CellLabel.processText`);
 
     const pos = new Point();
     const chars = [];
@@ -417,12 +443,13 @@ export class CellLabel {
       textHeight: Math.max(textHeight * scale, CELL_HEIGHT),
       displayText,
       horizontalAlignOffsets,
+      lineWidths,
     };
   };
 
   private getUnwrappedTextWidth = (text: string): number => {
     const data = this.cellsLabels.bitmapFonts[this.fontName];
-    if (!data) throw new Error(`Expected BitmapFont ${this.fontName} to be defined in CellLabel.updateText`);
+    if (!data) throw new Error(`Expected BitmapFont ${this.fontName} to be defined in CellLabel.getUnwrappedTextWidth`);
 
     const scale = this.fontSize / data.size;
 
@@ -482,7 +509,7 @@ export class CellLabel {
 
   private getPoundText = () => {
     const data = this.cellsLabels.bitmapFonts[this.fontName];
-    if (!data) throw new Error(`Expected BitmapFont ${this.fontName} to be defined in CellLabel.updateText`);
+    if (!data) throw new Error(`Expected BitmapFont ${this.fontName} to be defined in CellLabel.getPoundText`);
 
     const scale = this.fontSize / data.size;
     const charCode = extractCharCode('#');
@@ -491,6 +518,49 @@ export class CellLabel {
     const count = Math.floor((this.AABB.width - CELL_TEXT_MARGIN_LEFT * 3) / charWidth);
     const text = '#'.repeat(count);
     return text;
+  };
+
+  private addLine = (labelMeshes: LabelMeshes, lineWidths: number[], similarChar: string) => {
+    const data = this.cellsLabels.bitmapFonts[this.fontName];
+    if (!data) {
+      throw new Error(`Expected BitmapFont ${this.fontName} to be defined in CellLabel.addLine`);
+    }
+
+    const similarCharData = data.chars[extractCharCode(similarChar)];
+    if (!similarCharData) {
+      throw new Error(`Expected similar character to be defined in CellLabel.addLine`);
+    }
+
+    const scale = this.fontSize / data.size;
+    let maxHeight = 0;
+
+    lineWidths.forEach((width, line) => {
+      const charData: RenderBitmapChar = {
+        ...similarCharData,
+        xAdvance: width,
+        origWidth: width,
+        xOffset: 0,
+        uvs: similarCharData.uvs,
+        frame: {
+          ...similarCharData.frame,
+          width: width,
+          height: similarCharData.frame.height,
+        },
+      };
+
+      const labelMeshId = labelMeshes.add(this.fontName, this.fontSize, charData.textureUid, !!this.tint);
+      const charRenderData: CharRenderData = {
+        labelMeshId,
+        charData,
+        line,
+        charCode: -1,
+        prevSpaces: 0,
+        position: new Point(0, (LINE_HEIGHT * line) / scale + charData.yOffset),
+      };
+      this.chars.push(charRenderData);
+      maxHeight = Math.max(maxHeight, charRenderData.position.y + charData.textureHeight);
+    });
+    this.textHeight = Math.max(this.textHeight, maxHeight * scale);
   };
 
   private insertBuffers = (options: {

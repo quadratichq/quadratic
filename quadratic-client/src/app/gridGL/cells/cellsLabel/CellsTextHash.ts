@@ -11,15 +11,17 @@
  * The data calculations occur in renderWebWorker::CellsTextHash.ts.
  */
 
+import { Link } from '@/app/gridGL/types/link';
+import { Coordinate } from '@/app/gridGL/types/size';
 import { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
-import { BitmapText, Container, Graphics, Point, Rectangle, Renderer } from 'pixi.js';
-import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
-import { LabelMeshEntry } from './LabelMeshEntry';
+import { CellsTextHashContent } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashContent';
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
+import { BitmapText, Container, Graphics, Point, Rectangle, Renderer } from 'pixi.js';
+import { ErrorMarker, ErrorValidation } from '../CellsSheet';
+import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 import { CellsTextHashSpecial } from './CellsTextHashSpecial';
 import { CellsTextHashValidations } from './CellsTextHashValidations';
-import { ErrorMarker, ErrorValidation } from '../CellsSheet';
-import { CellsTextHashContent } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashContent';
+import { LabelMeshEntry } from './LabelMeshEntry';
 
 // Draw hashed regions of cell glyphs (the text + text formatting)
 export class CellsTextHash extends Container {
@@ -48,6 +50,8 @@ export class CellsTextHash extends Container {
 
   content: CellsTextHashContent;
 
+  links: Link[];
+
   constructor(sheetId: string, hashX: number, hashY: number, viewRectangle?: Rectangle) {
     super();
     this.AABB = new Rectangle(hashX * sheetHashWidth, hashY * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
@@ -60,6 +64,7 @@ export class CellsTextHash extends Container {
     this.warnings = this.addChild(new CellsTextHashValidations(sheetId));
 
     this.content = new CellsTextHashContent();
+    this.links = [];
   }
 
   clear() {
@@ -143,5 +148,9 @@ export class CellsTextHash extends Container {
 
   intersectsErrorMarkerValidation(world: Point): ErrorValidation | undefined {
     return this.warnings.intersectsErrorMarkerValidation(world);
+  }
+
+  intersectsLink(world: Point, cell: Coordinate): Link | undefined {
+    return this.links.find((link) => cell.x === link.location.x && cell.y === link.location.y);
   }
 }

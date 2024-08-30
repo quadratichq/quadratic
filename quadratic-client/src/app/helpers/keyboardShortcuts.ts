@@ -7,7 +7,10 @@ import { isMac } from '@/shared/utils/isMac';
  * @param {KeyboardEvent | React.KeyboardEvent<Element>} event - The keyboard event
  * @returns {boolean} - Whether the keyboard event should trigger the action
  */
-export const matchShortcut = (action: Action, event: KeyboardEvent | React.KeyboardEvent<Element>): boolean => {
+export const matchShortcut = (
+  action: Action,
+  event: KeyboardEvent | React.KeyboardEvent<Element> | PointerEvent
+): boolean => {
   const shortcuts = defaultShortcuts.find((shortcut) => shortcut.action === action)?.shortcuts;
   if (!shortcuts) {
     return false;
@@ -20,7 +23,7 @@ export const matchShortcut = (action: Action, event: KeyboardEvent | React.Keybo
       parsedShortcut.ctrlKey === event.ctrlKey &&
       parsedShortcut.altKey === event.altKey &&
       parsedShortcut.shiftKey === event.shiftKey &&
-      parsedShortcut.key === event.key.toLowerCase()
+      parsedShortcut.key === ('key' in event ? event.key.toLowerCase() : undefined)
     );
   });
 };

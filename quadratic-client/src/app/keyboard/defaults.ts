@@ -475,4 +475,13 @@ export const defaultShortcuts: Shortcuts = [
       windows: ['Space'],
     },
   },
+
+  // PointerLink.ts
+  {
+    action: 'open_link',
+    shortcuts: {
+      mac: ['Cmd'],
+      windows: ['Ctrl'],
+    },
+  },
 ];
