@@ -10,7 +10,7 @@ const transformEmptyStringToUndefined = (val: string | undefined) => (val === ''
  */
 
 export const ConnectionNameSchema = z.string().min(1, { message: 'Required' });
-export const ConnectionTypeSchema = z.enum(['POSTGRES', 'MYSQL']);
+export const ConnectionTypeSchema = z.enum(['POSTGRES', 'MYSQL', 'MSSQL']);
 const ConnectionTypeDetailsSchema = z.record(z.string(), z.any());
 const ConnectionSchema = z.object({
   createdDate: z.string().datetime(),
@@ -51,6 +51,9 @@ export const ConnectionTypeDetailsPostgresSchema = z.object({
   password: z.string().optional().transform(transformEmptyStringToUndefined),
 });
 export const ConnectionTypeDetailsMysqlSchema = ConnectionTypeDetailsPostgresSchema;
+export const ConnectionTypeDetailsMssqlSchema = ConnectionTypeDetailsPostgresSchema.extend({
+  database: z.string().optional(),
+});
 
 /**
  * =============================================================================
