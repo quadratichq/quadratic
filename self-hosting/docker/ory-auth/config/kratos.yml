@@ -89,6 +89,7 @@ selfservice:
           hooks:
             - hook: session
             - hook: show_verification_ui
+        default_browser_return_url: http://localhost/login-result
 
 session:
   whoami:
