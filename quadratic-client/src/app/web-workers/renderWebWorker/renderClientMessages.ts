@@ -34,6 +34,7 @@ export interface RenderClientCellsTextHashClear {
   overflowGridLines: Coordinate[];
   content: Uint32Array;
   links: Link[];
+  horizontalLines: Rectangle[];
 }
 
 export interface ClientRenderViewport {

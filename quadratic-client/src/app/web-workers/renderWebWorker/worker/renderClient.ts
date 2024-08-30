@@ -82,7 +82,8 @@ class RenderClient {
     viewRectangle: { x: number; y: number; width: number; height: number },
     overflowGridLines: Coordinate[],
     content: Uint32Array,
-    links: Link[]
+    links: Link[],
+    horizontalLines: Rectangle[]
   ) {
     const message: RenderClientCellsTextHashClear = {
       type: 'renderClientCellsTextHashClear',
@@ -93,6 +94,7 @@ class RenderClient {
       overflowGridLines,
       content,
       links,
+      horizontalLines,
     };
     this.send(message);
   }

@@ -38,6 +38,8 @@ export class CellsTextHash {
   // tracks which grid lines should not be drawn for this hash
   private overflowGridLines: Coordinate[] = [];
 
+  private horizontalLines: Rectangle[] = [];
+
   // tracks which cells have links
   private links: Link[] = [];
 
@@ -139,6 +141,7 @@ export class CellsTextHash {
     this.labels.clear();
     this.content.clear();
     this.links = [];
+    this.horizontalLines = [];
     this.labelMeshes.clear();
     this.overflowGridLines = [];
     if (this.clientLoaded) {
@@ -155,7 +158,8 @@ export class CellsTextHash {
       this.viewRectangle,
       this.overflowGridLines,
       this.content.export(),
-      this.links
+      this.links,
+      this.horizontalLines
     );
   };
 
@@ -342,6 +346,8 @@ export class CellsTextHash {
     }
     this.dirtyBuffers = false;
 
+    this.horizontalLines = [];
+
     // creates labelMeshes webGL buffers based on size
     this.labelMeshes.prepare();
 
@@ -358,6 +364,7 @@ export class CellsTextHash {
         maxX = Math.max(maxX, bounds.maxX);
         maxY = Math.max(maxY, bounds.maxY);
       }
+      this.horizontalLines.push(...cellLabel.horizontalLines);
     });
     if (minX !== Infinity && minY !== Infinity) {
       this.viewRectangle.x = minX;

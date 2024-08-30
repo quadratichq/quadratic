@@ -11,6 +11,7 @@
  * The data calculations occur in renderWebWorker::CellsTextHash.ts.
  */
 
+import { CellsHorizontalLines } from '@/app/gridGL/cells/cellsLabel/CellsHorizontalLines';
 import { Link } from '@/app/gridGL/types/link';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
@@ -52,6 +53,9 @@ export class CellsTextHash extends Container {
 
   links: Link[];
 
+  newHorizontalLines: Rectangle[];
+  horizontalLines: CellsHorizontalLines;
+
   constructor(sheetId: string, hashX: number, hashY: number, viewRectangle?: Rectangle) {
     super();
     this.AABB = new Rectangle(hashX * sheetHashWidth, hashY * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
@@ -65,11 +69,15 @@ export class CellsTextHash extends Container {
 
     this.content = new CellsTextHashContent();
     this.links = [];
+
+    this.newHorizontalLines = [];
+    this.horizontalLines = this.addChild(new CellsHorizontalLines());
   }
 
   clear() {
     this.entries.removeChildren();
     this.special.clear();
+    this.horizontalLines.clear();
   }
 
   addLabelMeshEntry(message: RenderClientLabelMeshEntry) {
@@ -81,6 +89,8 @@ export class CellsTextHash extends Container {
     this.newChildren.forEach((child) => this.entries.addChild(child));
     this.newChildren = [];
     this.special.update(special);
+    this.horizontalLines.update(this.newHorizontalLines);
+    this.newHorizontalLines = [];
   }
 
   clearMeshEntries(viewRectangle: Rectangle) {

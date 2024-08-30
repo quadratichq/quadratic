@@ -80,6 +80,7 @@ export class CellsLabels extends Container {
     }
     cellsTextHash.content.import(message.content);
     cellsTextHash.links = message.links;
+    cellsTextHash.newHorizontalLines = message.horizontalLines;
   }
 
   // Returns whether the cell has content by checking CellsTextHashContent.

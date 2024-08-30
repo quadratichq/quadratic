@@ -97,9 +97,9 @@ export class Pointer {
       this.pointerImages.pointerDown(world) ||
       this.pointerCellMoving.pointerDown(event) ||
       this.pointerHtmlCells.pointerDown(e) ||
-      this.pointerLink.pointerDown(world, event) ||
       this.pointerHeading.pointerDown(world, event) ||
       this.pointerAutoComplete.pointerDown(world) ||
+      this.pointerLink.pointerDown(world, event) ||
       this.pointerDown.pointerDown(world, event);
 
     this.updateCursor();
@@ -116,9 +116,9 @@ export class Pointer {
       this.pointerImages.pointerMove(world) ||
       this.pointerCellMoving.pointerMove(event, world) ||
       this.pointerHtmlCells.pointerMove(e) ||
-      this.pointerLink.pointerMove(world, event) ||
       this.pointerHeading.pointerMove(world) ||
       this.pointerAutoComplete.pointerMove(world) ||
+      this.pointerLink.pointerMove(world, event) ||
       this.pointerDown.pointerMove(world, event) ||
       this.pointerCursor.pointerMove(world);
 
@@ -131,9 +131,9 @@ export class Pointer {
       this.pointerCellMoving.cursor ??
       this.pointerHtmlCells.cursor ??
       this.pointerImages.cursor ??
-      this.pointerLink.cursor ??
       this.pointerHeading.cursor ??
-      this.pointerAutoComplete.cursor;
+      this.pointerAutoComplete.cursor ??
+      this.pointerLink.cursor;
     pixiApp.canvas.style.cursor = cursor ?? 'unset';
   }
 
