@@ -142,6 +142,11 @@ export function OnboardingBanner() {
                 <LanguageIcon language="POSTGRES" /> Postgres
               </Link>
             </Button>
+            <Button variant="outline" className={contentBtnClassName + ' gap-2'} asChild>
+              <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'MSSQL')} onClick={trackCreateConnection}>
+                <LanguageIcon language="MSSQL" /> MsSQL
+              </Link>
+            </Button>
           </div>
         </>
       ),

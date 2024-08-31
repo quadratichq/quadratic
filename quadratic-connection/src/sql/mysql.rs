@@ -75,8 +75,8 @@ pub(crate) async fn schema(
     claims: Claims,
 ) -> Result<Json<Schema>> {
     let (connection, api_connection) = get_connection(&state, &claims, &id).await?;
-    let pool = connection.connect().await?;
-    let database_schema = connection.schema(pool).await?;
+    let mut pool = connection.connect().await?;
+    let database_schema = connection.schema(&mut pool).await?;
     let schema = Schema {
         id: api_connection.uuid,
         name: api_connection.name,
@@ -101,7 +101,7 @@ mod tests {
     use bytes::Bytes;
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
     use http::StatusCode;
-    use quadratic_rust_shared::sql::{SchemaColumn, SchemaTable};
+    use quadratic_rust_shared::sql::schema::{SchemaColumn, SchemaTable};
     use tracing_test::traced_test;
     use uuid::Uuid;
 
