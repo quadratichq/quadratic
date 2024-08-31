@@ -1,11 +1,13 @@
-use crate::{
-    controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-    grid::SheetId,
-    ArraySize,
-};
+use std::collections::HashSet;
+use std::fmt;
+use std::ops::Range;
+use std::str::FromStr;
+
 use serde::{Deserialize, Serialize};
-use std::{collections::HashSet, ops::Range};
-use std::{fmt, str::FromStr};
+
+use crate::controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
+use crate::grid::SheetId;
+use crate::ArraySize;
 
 /// Cell position {x, y}.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -299,6 +301,23 @@ impl Rect {
         }
         hashes
     }
+
+    /// Finds the intersection of two rectangles.
+    pub fn intersection(&self, other: &Rect) -> Option<Rect> {
+        let x1 = self.min.x.max(other.min.x);
+        let y1 = self.min.y.max(other.min.y);
+        let x2 = self.max.x.min(other.max.x);
+        let y2 = self.max.y.min(other.max.y);
+
+        if x1 <= x2 && y1 <= y2 {
+            Some(Rect {
+                min: Pos { x: x1, y: y1 },
+                max: Pos { x: x2, y: y2 },
+            })
+        } else {
+            None
+        }
+    }
 }
 
 impl From<Pos> for Rect {
@@ -586,12 +605,11 @@ impl SheetPos {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-        grid::SheetId,
-        Pos, Rect, SheetPos, SheetRect,
-    };
     use serial_test::parallel;
+
+    use crate::controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
+    use crate::grid::SheetId;
+    use crate::{Pos, Rect, SheetPos, SheetRect};
 
     #[test]
     #[parallel]
@@ -1005,5 +1023,18 @@ mod test {
         rect.extend_y(5);
         assert_eq!(rect.min, Pos { x: 1, y: 2 });
         assert_eq!(rect.max, Pos { x: 3, y: 5 });
+    }
+
+    #[test]
+    #[parallel]
+    fn rect_intersection() {
+        let rect1 = Rect::new(1, 2, 3, 4);
+        let rect2 = Rect::new(2, 3, 4, 5);
+        let intersection = rect1.intersection(&rect2).unwrap();
+        assert_eq!(intersection, Rect::new(2, 3, 3, 4));
+
+        let rect3 = Rect::new(4, 5, 6, 7);
+        assert!(rect1.intersection(&rect3).is_none());
+        assert_eq!(rect2.intersection(&rect3).unwrap(), Rect::new(4, 5, 4, 5));
     }
 }

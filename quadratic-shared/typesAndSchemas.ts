@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import { ApiSchemasConnections } from './typesAndSchemasConnections';
+import { ApiSchemasConnections, ConnectionListSchema } from './typesAndSchemasConnections';
 
 export const UserFileRoleSchema = z.enum(['EDITOR', 'VIEWER']);
 export type UserFileRole = z.infer<typeof UserFileRoleSchema>;
@@ -87,21 +87,22 @@ const FileSchema = z.object({
   thumbnail: z.string().url().nullable(),
 });
 
-const TeamFilesSchema = z.array(
-  z.object({
-    file: FileSchema.pick({
-      uuid: true,
-      name: true,
-      createdDate: true,
-      updatedDate: true,
-      publicLinkAccess: true,
-      thumbnail: true,
-    }),
-    userMakingRequest: z.object({
-      filePermissions: z.array(FilePermissionSchema),
-    }),
-  })
-);
+const TeamPrivateFileSchema = FileSchema.pick({
+  uuid: true,
+  name: true,
+  createdDate: true,
+  updatedDate: true,
+  publicLinkAccess: true,
+  thumbnail: true,
+});
+const TeamPublicFileSchema = TeamPrivateFileSchema.extend({
+  creatorId: z.number(),
+});
+const TeamUserMakingRequestSchema = z.object({
+  filePermissions: z.array(FilePermissionSchema),
+});
+
+export const TeamClientDataKvSchema = z.record(z.any());
 
 // Zod schemas for API endpoints
 export const ApiSchemas = {
@@ -310,14 +311,31 @@ export const ApiSchemas = {
       status: TeamSubscriptionStatusSchema.optional(),
       currentPeriodEnd: z.string().optional(),
     }),
-    files: TeamFilesSchema,
-    filesPrivate: TeamFilesSchema,
+    files: z.array(
+      z.object({
+        file: TeamPublicFileSchema,
+        userMakingRequest: TeamUserMakingRequestSchema,
+      })
+    ),
+    filesPrivate: z.array(
+      z.object({
+        file: TeamPrivateFileSchema,
+        userMakingRequest: TeamUserMakingRequestSchema,
+      })
+    ),
     users: z.array(TeamUserSchema),
     invites: z.array(z.object({ email: emailSchema, role: UserTeamRoleSchema, id: z.number() })),
+    connections: ConnectionListSchema,
+    clientDataKv: TeamClientDataKvSchema,
   }),
-  '/v0/teams/:uuid.PATCH.request': TeamSchema.pick({ name: true }),
-  '/v0/teams/:uuid.PATCH.response': TeamSchema.pick({ name: true }),
-
+  '/v0/teams/:uuid.PATCH.request': z.object({
+    name: TeamSchema.shape.name.optional(),
+    clientDataKv: TeamClientDataKvSchema.optional(),
+  }),
+  '/v0/teams/:uuid.PATCH.response': z.object({
+    name: TeamSchema.shape.name,
+    clientDataKv: TeamClientDataKvSchema,
+  }),
   '/v0/teams/:uuid/invites.POST.request': TeamUserSchema.pick({ email: true, role: true }),
   '/v0/teams/:uuid/invites.POST.response': z
     .object({

@@ -7,7 +7,7 @@ import { colors } from '@/app/theme/colors';
 import { Container, Graphics } from 'pixi.js';
 import { convertColorStringToTint } from '../../../helpers/convertColor';
 import { CellPosition, ParseFormulaReturnType, Span } from '../../../helpers/formulaNotation';
-import { DASHED } from '../../dashedTextures';
+import { DASHED } from '../../generateTextures';
 import { drawDashedRectangle, drawDashedRectangleMarching } from './cellHighlightsDraw';
 
 // TODO: these files need to be cleaned up and properly typed. Lots of untyped

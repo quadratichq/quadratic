@@ -1,6 +1,10 @@
+import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { CodeEditorProvider } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import ConnectionsMenu from '@/app/ui/menus/ConnectionsMenu';
+import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
+import { UserMessage } from '@/shared/components/UserMessage';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { useEffect } from 'react';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState } from 'recoil';
@@ -10,8 +14,8 @@ import { pixiApp } from '../gridGL/pixiApp/PixiApp';
 import { isEmbed } from '../helpers/isEmbed';
 import { TopBar } from '../ui/menus/TopBar/TopBar';
 import { UpdateAlertVersion } from './UpdateAlertVersion';
+import { FileDragDropWrapper } from './components/FileDragDropWrapper';
 import { useFileContext } from './components/FileProvider';
-import { FileUploadWrapper } from './components/FileUploadWrapper';
 import { Following } from './components/Following';
 import { PermissionOverlay } from './components/PermissionOverlay';
 import PresentationModeHint from './components/PresentationModeHint';
@@ -23,8 +27,13 @@ import GoTo from './menus/GoTo';
 import SheetBar from './menus/SheetBar';
 import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 import { useMultiplayerUsers } from './menus/TopBar/useMultiplayerUsers';
+import { ValidationPanel } from './menus/Validations/ValidationPanel';
 
 export default function QuadraticUI() {
+  const {
+    team: { uuid: teamUuid },
+  } = useFileRouteLoaderData();
+  const connectionsFetcher = useConnectionsFetcher();
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { presentationMode } = useGridSettings();
   const navigation = useNavigation();
@@ -66,11 +75,12 @@ export default function QuadraticUI() {
           position: 'relative',
         }}
       >
-        <FileUploadWrapper>
+        <FileDragDropWrapper>
           <QuadraticGrid />
           {!presentationMode && <SheetBar />}
-        </FileUploadWrapper>
+        </FileDragDropWrapper>
         {editorInteractionState.showCodeEditor && <CodeEditorProvider />}
+        {editorInteractionState.showValidation && <ValidationPanel />}
         <Following follow={follow} />
         <div
           style={{
@@ -98,12 +108,23 @@ export default function QuadraticUI() {
           uuid={uuid}
         />
       )}
+      {editorInteractionState.showNewFileMenu && (
+        <NewFileDialog
+          onClose={() => {
+            setEditorInteractionState((prev) => ({ ...prev, showNewFileMenu: false }));
+          }}
+          isPrivate={true}
+          connections={connectionsFetcher.data ? connectionsFetcher.data.connections : []}
+          teamUuid={teamUuid}
+        />
+      )}
       {presentationMode && <PresentationModeHint />}
 
       <ConnectionsMenu />
       <PermissionOverlay />
       {!isEmbed && <PermissionOverlay />}
       <UpdateAlertVersion />
+      <UserMessage />
     </div>
   );
 }

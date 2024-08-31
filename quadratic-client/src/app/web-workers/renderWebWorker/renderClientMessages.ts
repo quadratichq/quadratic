@@ -1,6 +1,7 @@
 import { Coordinate } from '@/app/gridGL/types/size';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from './renderBitmapFonts';
+import type { RenderSpecial } from './worker/cellsLabel/CellsTextHashSpecial';
 
 export interface ClientRenderInit {
   type: 'clientRenderInit';
@@ -30,6 +31,7 @@ export interface RenderClientCellsTextHashClear {
   hashY: number;
   viewRectangle: { x: number; y: number; width: number; height: number };
   overflowGridLines: Coordinate[];
+  content: Uint32Array;
 }
 
 export interface ClientRenderViewport {
@@ -63,6 +65,7 @@ export interface RenderClientFinalizeCellsTextHash {
   sheetId: string;
   hashX: number;
   hashY: number;
+  special?: RenderSpecial;
 }
 
 export interface ClientRenderShowLabel {

@@ -95,7 +95,7 @@ pub fn get_cell_borders_in_rect(
     for (i, x) in rect.x_range().enumerate() {
         for (j, y) in rect.y_range().enumerate() {
             let pos = Pos { x, y };
-            if selection.is_none() || selection.is_some_and(|s| s.pos_in_selection(pos)) {
+            if selection.is_none() || selection.is_some_and(|s| s.contains_pos(pos)) {
                 let border = id_space_borders.get_cell_border(pos);
                 borders.push((i as i64, j as i64, border));
             }

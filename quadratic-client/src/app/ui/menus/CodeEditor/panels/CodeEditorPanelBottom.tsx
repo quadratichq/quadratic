@@ -1,4 +1,3 @@
-import { SchemaViewer } from '@/app/ui/components/SchemaViewer';
 import { AiAssistant } from '@/app/ui/menus/CodeEditor/AiAssistant';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
@@ -6,19 +5,20 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { cn } from '@/shared/shadcn/utils';
 import { ChevronRightIcon } from '@radix-ui/react-icons';
+import { ReactNode } from 'react';
 import { CodeEditorPanelData } from './useCodeEditorPanelData';
 
 export type PanelTab = 'console' | 'ai-assistant' | 'data-browser';
 
 interface Props {
   codeEditorPanelData: CodeEditorPanelData;
-  showSchemaViewer: boolean;
+  schemaBrowser: ReactNode | undefined;
   showAiAssistant: boolean;
 }
 
 export function CodeEditorPanelBottom({
   codeEditorPanelData: { bottomHidden, setBottomHidden },
-  showSchemaViewer,
+  schemaBrowser,
   showAiAssistant,
 }: Props) {
   const {
@@ -60,7 +60,7 @@ export function CodeEditorPanelBottom({
           >
             Console
           </TabsTrigger>
-          {showSchemaViewer && <TabsTrigger value="data-browser">Schema</TabsTrigger>}
+          {schemaBrowser && <TabsTrigger value="data-browser">Schema</TabsTrigger>}
           {showAiAssistant && <TabsTrigger value="ai-assistant">AI Assistant</TabsTrigger>}
         </TabsList>
       </div>
@@ -79,9 +79,9 @@ export function CodeEditorPanelBottom({
         </TabsContent>
       )}
 
-      {showSchemaViewer && (
+      {schemaBrowser && (
         <TabsContent value="data-browser" className="m-0 grow overflow-hidden">
-          {!bottomHidden && <SchemaViewer bottom />}
+          {bottomHidden ? null : schemaBrowser}
         </TabsContent>
       )}
     </Tabs>

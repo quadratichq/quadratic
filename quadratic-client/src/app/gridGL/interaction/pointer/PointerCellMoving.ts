@@ -192,9 +192,10 @@ export class PointerCellMoving {
     if (this.state === 'move') {
       this.pointerMoveMoving(world);
       return true;
-    } else {
+    } else if (event.buttons === 0) {
       return this.pointerMoveHover(world);
     }
+    return false;
   }
 
   pointerUp(): boolean {

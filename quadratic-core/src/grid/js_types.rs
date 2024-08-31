@@ -1,9 +1,12 @@
 use core::fmt;
 
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
+use uuid::Uuid;
 
 use super::formats::format::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
+use super::sheet::validations::validation::ValidationStyle;
 use super::{CodeCellLanguage, NumericFormat};
 use crate::grid::BorderStyle;
 use crate::{Pos, SheetRect};
@@ -14,8 +17,9 @@ pub enum JsRenderCellSpecial {
     Chart,
     SpillError,
     RunError,
-    True,
-    False,
+    Logical,
+    Checkbox,
+    List,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ts_rs::TS)]
@@ -235,6 +239,16 @@ pub struct JsClipboard {
     pub html: String,
 }
 
+// Used to serialize the checkboxes contained within a sheet.
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
+pub struct JsValidationSheet {
+    // checkboxes that need to be rendered
+    checkboxes: Vec<(Pos, bool)>,
+
+    // validation errors that will be displayed
+    errors: Vec<(Pos, String)>,
+}
+
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
@@ -256,24 +270,32 @@ pub struct JsPos {
     pub x: i64,
     pub y: i64,
 }
-
 impl fmt::Display for JsPos {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "JsPos(x: {}, x: {})", self.x, self.x)
     }
 }
-
 impl From<Pos> for JsPos {
     fn from(pos: Pos) -> Self {
         JsPos { x: pos.x, y: pos.y }
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+pub struct JsValidationWarning {
+    pub x: i64,
+    pub y: i64,
+    pub validation: Option<Uuid>,
+    pub style: Option<ValidationStyle>,
+}
+
 #[cfg(test)]
 mod test {
-    use super::JsNumber;
-    use crate::grid::{formats::format::Format, NumericFormat};
     use serial_test::parallel;
+
+    use super::JsNumber;
+    use crate::grid::formats::format::Format;
+    use crate::grid::NumericFormat;
 
     #[test]
     #[parallel]

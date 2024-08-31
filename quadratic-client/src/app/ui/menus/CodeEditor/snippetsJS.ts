@@ -60,8 +60,8 @@ return my_range;
 // Learn more:
 // https://docs.quadratichq.com/javascript/reference-cells`;
 export const SNIPPET_JS_RETURN = `let out = [];
-for(let i=0; i<50; i++) {
-  out++;
+for(let i=0; i<10; i++) {
+  out.push(i);
 }
 return out; // Use \`return\` to return to the sheet
 

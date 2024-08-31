@@ -1,3 +1,4 @@
+import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
 import { events } from '@/app/events/events';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { ImportProgress } from '@/app/ui/components/ImportProgress';
@@ -37,12 +38,11 @@ export default function QuadraticGrid() {
   }, []);
 
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const [inlineEditorState, setInlineEditorState] = useRecoilState(inlineEditorAtom);
   useEffect(() => {
     pixiAppSettings.updateEditorInteractionState(editorInteractionState, setEditorInteractionState);
-  }, [editorInteractionState, setEditorInteractionState]);
-
-  // Right click menu
-  const [showContextMenu, setShowContextMenu] = useState(false);
+    pixiAppSettings.updateInlineEditorState(inlineEditorState, setInlineEditorState);
+  }, [editorInteractionState, inlineEditorState, setEditorInteractionState, setInlineEditorState]);
 
   const { addGlobalSnackbar } = useGlobalSnackbar();
   useEffect(() => {
@@ -105,16 +105,16 @@ export default function QuadraticGrid() {
       onContextMenu={(event) => {
         event.preventDefault();
         // If it's not already visible, show the context menu
-        if (!showContextMenu) {
-          setShowContextMenu(true);
+        if (!editorInteractionState.showContextMenu) {
+          setEditorInteractionState((state) => ({ ...state, showContextMenu: true }));
         }
       }}
       onMouseDown={onMouseDown}
       onClick={() => {
         // <FloatingContextMenu> prevents events from bubbling up to here, so
         // we always hide the context menu if it's open
-        if (showContextMenu) {
-          setShowContextMenu(false);
+        if (editorInteractionState.showContextMenu) {
+          setEditorInteractionState((state) => ({ ...state, showContextMenu: false }));
         }
       }}
       onKeyDown={(e) => {
@@ -124,7 +124,7 @@ export default function QuadraticGrid() {
       onKeyUp={onKeyUp}
     >
       <HTMLGridContainer parent={container} />
-      <FloatingContextMenu container={container} showContextMenu={showContextMenu} />
+      <FloatingContextMenu container={container} />
       <ImportProgress />
       <Search />
     </div>

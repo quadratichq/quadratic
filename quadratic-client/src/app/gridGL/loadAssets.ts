@@ -1,7 +1,7 @@
 import { debugShowFileIO } from '@/app/debugFlags';
 import FontFaceObserver from 'fontfaceobserver';
 import { BitmapFont, Loader } from 'pixi.js';
-import { createBorderTypes } from './dashedTextures';
+import { createBorderTypes } from './generateTextures';
 
 const intervalToCheckBitmapFonts = 100;
 export const bitmapFonts = ['OpenSans', 'OpenSans-Bold', 'OpenSans-Italic', 'OpenSans-BoldItalic'];
@@ -36,17 +36,28 @@ export function loadAssets(): Promise<void> {
     loadFont('OpenSans-BoldItalic');
 
     // Load PixiJS fonts for canvas
-    Loader.shared.add('OpenSans', '/fonts/opensans/OpenSans.fnt');
-    Loader.shared.add('OpenSans-Bold', '/fonts/opensans/OpenSans-Bold.fnt');
-    Loader.shared.add('OpenSans-Italic', '/fonts/opensans/OpenSans-Italic.fnt');
-    Loader.shared.add('OpenSans-BoldItalic', '/fonts/opensans/OpenSans-BoldItalic.fnt');
+    addResourceOnce('OpenSans', '/fonts/opensans/OpenSans.fnt');
+    addResourceOnce('OpenSans-Bold', '/fonts/opensans/OpenSans-Bold.fnt');
+    addResourceOnce('OpenSans-Italic', '/fonts/opensans/OpenSans-Italic.fnt');
+    addResourceOnce('OpenSans-BoldItalic', '/fonts/opensans/OpenSans-BoldItalic.fnt');
 
     // CellsMarker
-    Loader.shared.add('/images/formula-fx-icon.png');
-    Loader.shared.add('/images/python-icon.png');
-    Loader.shared.add('/images/javascript-icon.png');
+    addResourceOnce('formula-fx-icon', '/images/formula-fx-icon.png');
+    addResourceOnce('python-icon', '/images/python-icon.png');
+    addResourceOnce('javascript-icon', '/images/javascript-icon.png');
+    addResourceOnce('checkbox-icon', '/images/checkbox.png');
+    addResourceOnce('checkbox-checked-icon', '/images/checkbox-checked.png');
+    addResourceOnce('dropdown-icon', '/images/dropdown.png');
 
     // Wait until pixi fonts are loaded before resolving
-    Loader.shared.load(() => ensureBitmapFontLoaded(resolve));
+    Loader.shared.load(() => {
+      ensureBitmapFontLoaded(resolve);
+    });
   });
+}
+
+function addResourceOnce(name: string, url: string) {
+  if (!Loader.shared.resources[name]) {
+    Loader.shared.add(name, url);
+  }
 }

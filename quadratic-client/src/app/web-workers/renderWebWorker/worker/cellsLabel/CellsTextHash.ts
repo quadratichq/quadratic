@@ -10,6 +10,7 @@
  */
 
 import { debugShowHashUpdates, debugShowLoadingHashes } from '@/app/debugFlags';
+import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { Coordinate } from '@/app/gridGL/types/size';
@@ -19,6 +20,8 @@ import { renderClient } from '../renderClient';
 import { renderCore } from '../renderCore';
 import { CellLabel } from './CellLabel';
 import { CellsLabels } from './CellsLabels';
+import { CellsTextHashContent } from './CellsTextHashContent';
+import { CellsTextHashSpecial } from './CellsTextHashSpecial';
 import { LabelMeshes } from './LabelMeshes';
 
 // Draw hashed regions of cell glyphs (the text + text formatting)
@@ -57,8 +60,12 @@ export class CellsTextHash {
   // screen coordinates
   viewRectangle: Rectangle;
 
+  special: CellsTextHashSpecial;
+
   columnsMaxCache?: Map<number, number>;
   rowsMaxCache?: Map<number, number>;
+
+  content: CellsTextHashContent;
 
   constructor(cellsLabels: CellsLabels, hashX: number, hashY: number) {
     this.cellsLabels = cellsLabels;
@@ -75,6 +82,8 @@ export class CellsTextHash {
     this.viewRectangle = new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
     this.hashX = hashX;
     this.hashY = hashY;
+    this.special = new CellsTextHashSpecial();
+    this.content = new CellsTextHashContent();
   }
 
   // key used to find individual cell labels
@@ -88,12 +97,32 @@ export class CellsTextHash {
 
   private createLabel(cell: JsRenderCell) {
     const rectangle = this.cellsLabels.getCellOffsets(Number(cell.x), Number(cell.y));
-    const cellLabel = new CellLabel(this.cellsLabels, cell, rectangle);
-    this.labels.set(this.getKey(cell), cellLabel);
+    if (cell.special !== 'Checkbox') {
+      const cellLabel = new CellLabel(this.cellsLabels, cell, rectangle);
+      this.labels.set(this.getKey(cell), cellLabel);
+    }
+    if (cell.special === 'Checkbox') {
+      this.special.addCheckbox(
+        Number(cell.x),
+        Number(cell.y),
+        rectangle.left + rectangle.width / 2,
+        rectangle.top + rectangle.height / 2,
+        cell.value === 'true'
+      );
+    } else if (cell.special === 'List') {
+      this.special.addDropdown(
+        Number(cell.x),
+        Number(cell.y),
+        rectangle.right + DROPDOWN_SIZE[0] + DROPDOWN_PADDING[0],
+        rectangle.top
+      );
+    }
+    this.content.add(cell.x, cell.y);
   }
 
   private createLabels(cells: JsRenderCell[]) {
     this.labels = new Map();
+    this.content.clear();
     cells.forEach((cell) => this.createLabel(cell));
     this.loaded = true;
   }
@@ -116,7 +145,8 @@ export class CellsTextHash {
       this.hashX,
       this.hashY,
       this.viewRectangle,
-      this.overflowGridLines
+      this.overflowGridLines,
+      this.content.export()
     );
   };
 
@@ -146,7 +176,8 @@ export class CellsTextHash {
         // refetching the cell contents.
         cells = false;
       } else {
-        cells = dirty;
+        cells = dirty as JsRenderCell[];
+        this.special.clear();
       }
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating ${this.hashX}, ${this.hashY}`);
       if (cells) {
@@ -326,20 +357,28 @@ export class CellsTextHash {
       this.viewRectangle.height = maxY - minY;
     }
 
+    this.special.extendViewRectangle(this.viewRectangle);
+
     // prepares the client's CellsTextHash for new content
     renderClient.sendCellsTextHashClear(
       this.cellsLabels.sheetId,
       this.hashX,
       this.hashY,
       this.viewRectangle,
-      this.overflowGridLines
+      this.overflowGridLines,
+      this.content.export()
     );
 
     // completes the rendering for the CellsTextHash
     this.labelMeshes.finalize();
 
     // signals that all updates have been sent to the client
-    renderClient.finalizeCellsTextHash(this.cellsLabels.sheetId, this.hashX, this.hashY);
+    renderClient.finalizeCellsTextHash(
+      this.cellsLabels.sheetId,
+      this.hashX,
+      this.hashY,
+      this.special.isEmpty() ? undefined : this.special.special
+    );
 
     this.clientLoaded = true;
   };
@@ -373,6 +412,7 @@ export class CellsTextHash {
           }
         }
       });
+      this.special.adjustWidth(column, delta);
     } else if (row !== undefined) {
       if (this.AABB.y < 0 && this.AABB.y <= row) {
         this.viewRectangle.y += delta;
@@ -410,7 +450,7 @@ export class CellsTextHash {
 
   getCellsContentMaxWidth = async (column: number): Promise<number> => {
     const columnsMax = await this.getColumnContentMaxWidths();
-    return columnsMax.get(column) ?? this.cellsLabels.getCellOffsets(column, 0).width;
+    return columnsMax.get(column) ?? 0;
   };
 
   getColumnContentMaxWidths = async (): Promise<Map<number, number>> => {
@@ -425,7 +465,7 @@ export class CellsTextHash {
 
   getCellsContentMaxHeight = async (row: number): Promise<number> => {
     const rowsMax = await this.getRowContentMaxHeights();
-    return rowsMax.get(row) ?? this.cellsLabels.getCellOffsets(0, row).height;
+    return rowsMax.get(row) ?? 0;
   };
 
   getRowContentMaxHeights = async (): Promise<Map<number, number>> => {

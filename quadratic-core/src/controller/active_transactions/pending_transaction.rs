@@ -61,6 +61,9 @@ pub struct PendingTransaction {
     // cursor saved for an Undo or Redo
     pub cursor_undo_redo: Option<String>,
 
+    // whether to resend the validations after the transaction completes
+    pub send_validations: HashSet<SheetId>,
+
     pub resize_rows: HashMap<SheetId, HashSet<i64>>,
 
     pub dirty_hashes: HashMap<SheetId, HashSet<Pos>>,
@@ -87,6 +90,7 @@ impl Default for PendingTransaction {
             complete: false,
             generate_thumbnail: false,
             cursor_undo_redo: None,
+            send_validations: HashSet::new(),
             resize_rows: HashMap::new(),
             dirty_hashes: HashMap::new(),
             viewport_buffer: None,
@@ -135,7 +139,8 @@ impl PendingTransaction {
             && !self.is_server()
         {
             let transaction_id = self.id.to_string();
-            match serde_json::to_string(&self.forward_operations) {
+
+            match Transaction::serialize_and_compress(&self.forward_operations) {
                 Ok(ops) => {
                     crate::wasm_bindings::js::jsSendTransaction(transaction_id, ops);
                 }

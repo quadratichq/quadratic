@@ -53,6 +53,10 @@ impl GridController {
         &mut self.grid
     }
 
+    pub fn into_grid(self) -> Grid {
+        self.grid
+    }
+
     // create a new gc for testing purposes in both Rust and TS
     pub fn test() -> Self {
         Self::from_grid(Grid::new(), 0)
@@ -66,7 +70,8 @@ impl GridController {
             .map(|t| &t.forward)
     }
 
-    pub fn test_blank() -> Self {
+    #[cfg(test)]
+    pub fn new_blank() -> Self {
         Self::from_grid(Grid::new_blank(), 0)
     }
 }

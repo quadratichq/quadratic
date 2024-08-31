@@ -18,9 +18,11 @@ import { CellFormatSummary } from '@/app/quadratic-core-types';
 import { createFormulaStyleHighlights } from '@/app/ui/menus/CodeEditor/useEditorCellHighlights';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import mixpanel from 'mixpanel-browser';
 import { Rectangle } from 'pixi.js';
+import { inlineEditorEvents } from './inlineEditorEvents';
 
 // Minimum amount to scroll viewport when cursor is near the edge.
 const MINIMUM_MOVE_VIEWPORT = 50;
@@ -28,11 +30,10 @@ const MINIMUM_MOVE_VIEWPORT = 50;
 class InlineEditorHandler {
   private div?: HTMLDivElement;
 
-  // this is used to display the formula expand button
-  private formulaExpandButton?: HTMLDivElement;
-
   private open = false;
   private showing = false;
+
+  private initialValue = '';
 
   x = 0;
   y = 0;
@@ -54,6 +55,7 @@ class InlineEditorHandler {
     events.on('resizeHeadingColumn', this.sheetOffsets);
     events.on('resizeHeadingRow', this.sheetOffsets);
     events.on('resizeRowHeights', this.sheetOffsets);
+    inlineEditorEvents.on('replaceText', this.replaceText);
     createFormulaStyleHighlights();
   }
 
@@ -68,10 +70,12 @@ class InlineEditorHandler {
   // Resets state after editing is complete.
   private reset() {
     this.open = false;
+    this.initialValue = '';
+    inlineEditorEvents.emit('status', false);
     this.cursorIsMoving = false;
     this.x = this.y = this.width = this.height = 0;
     this.location = undefined;
-    this.formula = false;
+    this.formula = undefined;
     this.formatSummary = undefined;
     this.temporaryBold = undefined;
     this.temporaryItalic = undefined;
@@ -140,8 +144,6 @@ class InlineEditorHandler {
         this.showDiv();
         window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
         this.updateMonacoCursorPosition();
-        this.keepCursorVisible();
-        inlineEditorMonaco.focus();
       }
       inlineEditorFormula.cursorMoved();
     } else {
@@ -152,6 +154,13 @@ class InlineEditorHandler {
   // Handler for the changeInput event.
   private changeInput = async (input: boolean, initialValue?: string) => {
     if (!input && !this.open) return;
+
+    if (initialValue) {
+      this.initialValue += initialValue;
+      initialValue = this.initialValue;
+    } else {
+      this.initialValue = '';
+    }
 
     if (!this.div) {
       throw new Error('Expected div and editor to be defined in InlineEditorHandler');
@@ -179,13 +188,12 @@ class InlineEditorHandler {
           value = (await quadraticCore.getEditCell(this.location.sheetId, this.location.x, this.location.y)) || '';
         }
       }
-      const formatSummary = await quadraticCore.getCellFormatSummary(
+      this.formatSummary = await quadraticCore.getCellFormatSummary(
         this.location.sheetId,
         this.location.x,
         this.location.y,
         true
       );
-      this.formatSummary = formatSummary;
       this.temporaryBold = this.formatSummary?.bold || undefined;
       this.temporaryItalic = this.formatSummary?.italic || undefined;
       inlineEditorMonaco.set(value);
@@ -198,8 +206,7 @@ class InlineEditorHandler {
       this.showDiv();
       this.changeToFormula(changeToFormula);
       this.updateMonacoCursorPosition();
-      this.keepCursorVisible();
-      inlineEditorMonaco.focus();
+      inlineEditorEvents.emit('status', true, value);
     } else {
       this.close(0, 0, false);
     }
@@ -295,13 +302,17 @@ class InlineEditorHandler {
     this.y =
       cellOutlineOffset + (verticalAlign === 'bottom' ? Math.min(y, y + cellContentHeight - inlineEditorHeight) : y);
     this.width = inlineEditorWidth;
-    this.height = inlineEditorHeight;
-    this.div?.style.setProperty('left', this.x + 'px');
-    this.div?.style.setProperty('top', this.y + 'px');
-    if (!this.formulaExpandButton) {
-      throw new Error('Expected formulaExpandDiv to be defined in InlineEditorHandler');
+    this.height = inlineEditorHeight + OPEN_SANS_FIX.y / 3;
+
+    if (!pixiAppSettings.setInlineEditorState) {
+      throw new Error('Expected pixiAppSettings.setInlineEditorState to be defined in InlineEditorHandler');
     }
-    this.formulaExpandButton.style.lineHeight = this.height + 'px';
+    pixiAppSettings.setInlineEditorState((prev) => ({
+      ...prev,
+      left: this.x,
+      top: this.y + OPEN_SANS_FIX.y / 3,
+      lineHeight: this.height,
+    }));
 
     pixiApp.cursor.dirty = true;
   };
@@ -309,8 +320,8 @@ class InlineEditorHandler {
   // Toggle between normal editor and formula editor.
   private changeToFormula = (formula: boolean) => {
     if (this.formula === formula) return;
-    if (!this.formulaExpandButton) {
-      throw new Error('Expected formulaExpandDiv to be defined in InlineEditorHandler');
+    if (!pixiAppSettings.setInlineEditorState) {
+      throw new Error('Expected pixiAppSettings.setInlineEditorState to be defined in InlineEditorHandler');
     }
     this.formula = formula;
     if (formula) {
@@ -322,10 +333,10 @@ class InlineEditorHandler {
       inlineEditorMonaco.setLanguage('plaintext');
     }
 
-    // We need to use visibility instead of display to avoid an annoying warning
-    // with <Tooltip>.
-    this.formulaExpandButton.style.visibility = formula ? 'visible' : 'hidden';
-    this.formulaExpandButton.style.pointerEvents = formula ? 'auto' : 'none';
+    pixiAppSettings.setInlineEditorState((prev) => ({
+      ...prev,
+      formula,
+    }));
 
     if (formula && this.location) {
       inlineEditorFormula.cellHighlights(this.location, inlineEditorMonaco.get().slice(1));
@@ -341,9 +352,23 @@ class InlineEditorHandler {
     }
   }
 
+  validateInput = async (): Promise<string | undefined> => {
+    if (!this.open || !this.location || this.formula) return;
+    const value = inlineEditorMonaco.get();
+    const validationError = await quadraticCore.validateInput(
+      this.location.sheetId,
+      this.location.x,
+      this.location.y,
+      value
+    );
+    return validationError;
+  };
+
   // Close editor. It saves the value if cancel = false. It also moves the
   // cursor by (deltaX, deltaY).
-  close = (deltaX = 0, deltaY = 0, cancel: boolean) => {
+  // @returns whether the editor closed successfully
+  close = async (deltaX = 0, deltaY = 0, cancel: boolean): Promise<boolean> => {
+    if (!this.open) return true;
     if (!this.location) {
       throw new Error('Expected location to be defined in InlineEditorHandler');
     }
@@ -380,13 +405,21 @@ class InlineEditorHandler {
           });
         }
       } else {
-        quadraticCore.setCellValue(
-          this.location.sheetId,
-          this.location.x,
-          this.location.y,
-          value.trim(),
-          sheets.getCursorPosition()
-        );
+        const location = { ...this.location };
+        const validationError = await this.validateInput();
+        if (validationError) {
+          events.emit('hoverCell', { x: this.location.x, y: this.location.y, validationId: validationError, value });
+          return false;
+        } else {
+          quadraticCore.setCellValue(
+            location.sheetId,
+            location.x,
+            location.y,
+            value.trim(),
+            sheets.getCursorPosition()
+          );
+          events.emit('hoverCell');
+        }
       }
     }
 
@@ -409,10 +442,11 @@ class InlineEditorHandler {
 
     // Set focus back to Grid
     focusGrid();
+    return true;
   };
 
   // Handler for the click for the expand code editor button.
-  private openCodeEditor = (e: MouseEvent) => {
+  openCodeEditor = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     e.stopPropagation();
     if (!pixiAppSettings.setEditorInteractionState) {
       throw new Error('Expected setEditorInteractionState to be defined in openCodeEditor');
@@ -439,13 +473,11 @@ class InlineEditorHandler {
     }
     this.div = div;
 
-    const expandButton = div?.childNodes[1] as HTMLDivElement | undefined;
-    if (expandButton) {
-      this.formulaExpandButton = expandButton;
-      this.formulaExpandButton.removeEventListener('click', this.openCodeEditor);
-      this.formulaExpandButton.addEventListener('click', this.openCodeEditor);
-    }
     this.hideDiv();
+  }
+
+  detach() {
+    this.div = undefined;
   }
 
   // Returns whether we are editing a formula.
@@ -464,38 +496,51 @@ class InlineEditorHandler {
     return this.open;
   }
 
-  showDiv() {
+  showDiv = () => {
     if (!this.div) {
       throw new Error('Expected div to be defined in showDiv');
     }
-    // We need to use visibility instead of display to avoid an annoying warning
-    // with <Tooltip>.
-    this.div.style.visibility = 'visible';
-    this.div.style.pointerEvents = 'auto';
+
+    if (!pixiAppSettings.setInlineEditorState) {
+      throw new Error('Expected pixiAppSettings.setInlineEditorState to be defined in InlineEditorHandler');
+    }
+
+    pixiAppSettings.setInlineEditorState((prev) => ({
+      ...prev,
+      visible: true,
+    }));
 
     this.showing = true;
-  }
+  };
 
-  hideDiv() {
-    if (!this.div) return;
-
-    // We need to use visibility instead of display to avoid an annoying warning
-    // with <Tooltip>.
-    this.div.style.visibility = 'hidden';
-    this.div.style.pointerEvents = 'none';
-
-    if (this.formulaExpandButton) {
-      this.formulaExpandButton.style.visibility = 'hidden';
+  hideDiv = () => {
+    if (!this.div) {
+      throw new Error('Expected div to be defined in showDiv');
     }
+
+    if (!pixiAppSettings.setInlineEditorState) {
+      throw new Error('Expected pixiAppSettings.setInlineEditorState to be defined in InlineEditorHandler');
+    }
+
+    pixiAppSettings.setInlineEditorState((prev) => ({
+      ...prev,
+      visible: false,
+      formula: false,
+    }));
+    this.location = undefined;
+    inlineEditorMonaco.set('');
+    this.initialValue = '';
     this.showing = false;
-  }
+  };
 
   // Called when manually changing cell position via clicking on a new cell
-  // (except when editing formula).
-  handleCellPointerDown() {
+  // (except when editing formula). Returns whether the editor can be closed
+  // (ie, if it fails validation with a ValidationStyle::Stop, we do not let it
+  // close)
+  async handleCellPointerDown(): Promise<boolean> {
     if (this.open) {
       if (!this.formula || !inlineEditorFormula.wantsCellRef()) {
-        this.close(0, 0, false);
+        return await this.close(0, 0, false);
       } else {
         if (!this.cursorIsMoving) {
           this.cursorIsMoving = true;
@@ -503,7 +548,13 @@ class InlineEditorHandler {
         }
       }
     }
+    return true;
   }
+
+  private replaceText = (text: string, highlight: boolean) => {
+    if (!this.open) return;
+    inlineEditorMonaco.set(text, highlight);
+  };
 }
 
 export const inlineEditorHandler = new InlineEditorHandler();

@@ -6,8 +6,11 @@ use redis::{
     streams::{StreamId, StreamKey, StreamRangeReply, StreamReadOptions, StreamReadReply},
     AsyncCommands, Client, Value,
 };
-use std::fmt::{self, Debug};
 use std::pin::Pin;
+use std::{
+    fmt::{self, Debug},
+    vec,
+};
 
 use crate::pubsub::Config;
 use crate::{error::Result, SharedError};
@@ -33,7 +36,8 @@ impl Debug for RedisConnection {
     }
 }
 
-type Message = (String, String);
+// A message consists of a key (String) and a value (Bytes).
+type Message = (String, Vec<u8>);
 
 fn client(config: Config) -> Result<Client> {
     if let Config::RedisStreams(RedisStreamsConfig {
@@ -71,22 +75,25 @@ fn from_key(key: &str) -> String {
     key.split_once('-').unwrap_or_default().0.to_string()
 }
 
-fn from_value(value: &Value) -> String {
-    if let Value::Data(bytes) = value {
-        String::from_utf8(bytes.to_owned()).unwrap_or_default()
-    } else {
-        "".into()
+fn value_bytes(value: Value) -> Vec<u8> {
+    match value {
+        Value::Data(bytes) => bytes,
+        _ => vec![],
     }
 }
 
 fn parse_message(id: &StreamId, preserve_sequence: bool) -> Message {
-    let StreamId { mut id, map: value } = id.to_owned();
+    let StreamId {
+        mut id,
+        map: values,
+    } = id.to_owned();
 
     if !preserve_sequence {
         id = from_key(&id);
     }
 
-    let message = from_value(value.iter().next().unwrap().1);
+    let value = values.iter().next().unwrap().1.to_owned();
+    let message = value_bytes(value);
     (id.to_string(), message)
 }
 
@@ -184,7 +191,7 @@ impl super::PubSub for RedisConnection {
         &mut self,
         channel: &str,
         key: &str,
-        value: &str,
+        value: &[u8],
         active_channel: Option<&str>,
     ) -> Result<()> {
         // add the message to the stream
@@ -342,7 +349,7 @@ pub mod tests {
     #[tokio::test]
     async fn stream_connect_subscribe_publish_get_message() {
         let (config, channel) = setup();
-        let messages = ["test 1", "test 2"];
+        let messages = ["test 1".as_bytes(), "test 2".as_bytes()];
         let group = "group 1";
         let consumer = "consumer 1";
 
@@ -428,7 +435,7 @@ pub mod tests {
     #[tokio::test]
     async fn stream_get_last_message() {
         let (config, channel) = setup();
-        let messages = ["test 1", "test 2"];
+        let messages = ["test 1".as_bytes(), "test 2".as_bytes()];
         let group = "group 1";
 
         let mut connection = RedisConnection::new(config).await.unwrap();
@@ -451,7 +458,7 @@ pub mod tests {
     #[tokio::test]
     async fn stream_get_all_channels() {
         let (config, channel) = setup();
-        let messages = ["test 1", "test 2"];
+        let messages = ["test 1".as_bytes(), "test 2".as_bytes()];
         let group = "group 1";
 
         let mut connection = RedisConnection::new(config).await.unwrap();
@@ -474,7 +481,7 @@ pub mod tests {
     #[tokio::test]
     async fn stream_active_channels() {
         let (config, channel) = setup();
-        let messages = ["test 1", "test 2"];
+        let messages = ["test 1".as_bytes(), "test 2".as_bytes()];
         let group = "group 1";
         let mut channels = [Uuid::new_v4().to_string(), Uuid::new_v4().to_string()];
         let active_channels = Uuid::new_v4().to_string();

@@ -1,20 +1,22 @@
 use std::collections::HashMap;
 
-use super::operation::Operation;
-use crate::{
-    cell_values::CellValues,
-    controller::GridController,
-    formulas::replace_internal_cell_references,
-    grid::{
-        formats::{format::Format, Formats},
-        generate_borders_full, BorderSelection, CellBorders, CodeCellLanguage,
-    },
-    selection::Selection,
-    CellValue, Pos, SheetPos, SheetRect,
-};
 use anyhow::{Error, Result};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+use super::operation::Operation;
+use crate::cell_values::CellValues;
+use crate::controller::GridController;
+use crate::formulas::replace_internal_cell_references;
+use crate::grid::formats::format::Format;
+use crate::grid::formats::Formats;
+use crate::grid::sheet::validations::validation::Validation;
+use crate::grid::{generate_borders_full, BorderSelection, CellBorders, CodeCellLanguage};
+use crate::selection::Selection;
+use crate::{CellValue, Pos, SheetPos, SheetRect};
+
+// todo: break up this file so tests are easier to write
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, ts_rs::TS)]
 pub enum PasteSpecial {
@@ -25,7 +27,9 @@ pub enum PasteSpecial {
 
 /// This is used to track the origin of copies from column, row, or all
 /// selection. In order to paste a column, row, or all, we need to know the
-/// origin of the copy. For example, this is used to copy and paste a column
+/// origin of the copy.
+///
+/// For example, this is used to copy and paste a column
 /// on top of another column, or a sheet on top of another sheet.
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct ClipboardOrigin {
@@ -43,6 +47,11 @@ pub struct ClipboardSheetFormats {
     pub all: Option<Format>,
 }
 
+#[derive(Default, Debug, Serialize, Deserialize)]
+pub struct ClipboardValidations {
+    pub validations: Vec<Validation>,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Clipboard {
     pub w: u32,
@@ -58,6 +67,8 @@ pub struct Clipboard {
 
     pub origin: ClipboardOrigin,
     pub selection: Option<Selection>,
+
+    pub validations: Option<ClipboardValidations>,
 }
 
 impl GridController {
@@ -76,18 +87,20 @@ impl GridController {
 
     /// Converts the clipboard to an (Array, Vec<(relative x, relative y) for a CellValue::Code>) tuple.
     fn cell_values_from_clipboard_cells(
-        clipboard: &Clipboard,
+        w: u32,
+        h: u32,
+        cells: CellValues,
+        values: CellValues,
         special: PasteSpecial,
-    ) -> (Option<&CellValues>, Vec<(u32, u32)>) {
-        if clipboard.w == 0 && clipboard.h == 0 {
+    ) -> (Option<CellValues>, Vec<(u32, u32)>) {
+        if w == 0 && h == 0 {
             return (None, vec![]);
         }
 
         match special {
-            PasteSpecial::Values => (Some(&clipboard.values), vec![]),
+            PasteSpecial::Values => (Some(values), vec![]),
             PasteSpecial::None => {
-                let code = clipboard
-                    .cells
+                let code = cells
                     .columns
                     .iter()
                     .enumerate()
@@ -100,7 +113,7 @@ impl GridController {
                             .collect::<Vec<_>>()
                     })
                     .collect::<Vec<_>>();
-                (Some(&clipboard.cells), code)
+                (Some(cells), code)
             }
             _ => (None, vec![]),
         }
@@ -112,10 +125,10 @@ impl GridController {
     fn sheet_formats_operations(
         &mut self,
         selection: &Selection,
-        clipboard: &Clipboard,
+        sheet_formats: ClipboardSheetFormats,
     ) -> Vec<Operation> {
         let mut ops = vec![];
-        if let Some(all) = clipboard.sheet_formats.all.as_ref() {
+        if let Some(all) = sheet_formats.all {
             let formats = Formats::repeat(all.into(), 1);
             ops.push(Operation::SetCellFormatsSelection {
                 selection: Selection {
@@ -123,7 +136,7 @@ impl GridController {
                     all: true,
                     ..Default::default()
                 },
-                formats: formats.clone(),
+                formats,
             });
         } else {
             let mut formats = Formats::new();
@@ -131,10 +144,9 @@ impl GridController {
                 sheet_id: selection.sheet_id,
                 ..Default::default()
             };
-            let columns = clipboard
-                .sheet_formats
+            let columns = sheet_formats
                 .columns
-                .iter()
+                .into_iter()
                 .map(|(column, format)| {
                     formats.push(format.into());
                     column + selection.x
@@ -143,10 +155,9 @@ impl GridController {
             if !columns.is_empty() {
                 new_selection.columns = Some(columns);
             }
-            let rows = clipboard
-                .sheet_formats
+            let rows = sheet_formats
                 .rows
-                .iter()
+                .into_iter()
                 .map(|(row, format)| {
                     formats.push(format.into());
                     row + selection.y
@@ -165,15 +176,36 @@ impl GridController {
         ops
     }
 
+    /// Gets operations to add validations from clipboard to sheet.
+    fn set_clipboard_validations(
+        &self,
+        validations: Option<ClipboardValidations>,
+        start_pos: SheetPos,
+    ) -> Vec<Operation> {
+        if let Some(validations) = validations {
+            validations
+                .validations
+                .into_iter()
+                .map(|mut validation| {
+                    validation.id = Uuid::new_v4();
+                    validation.selection.sheet_id = start_pos.sheet_id;
+                    validation
+                        .selection
+                        .translate_in_place(start_pos.x, start_pos.y);
+                    Operation::SetValidation { validation }
+                })
+                .collect()
+        } else {
+            vec![]
+        }
+    }
+
     fn set_clipboard_cells(
         &mut self,
         selection: &Selection,
         clipboard: Clipboard,
         special: PasteSpecial,
     ) -> Vec<Operation> {
-        let formats = clipboard.formats.clone();
-        let borders = clipboard.borders.clone();
-
         let mut ops = vec![];
 
         let mut start_pos = Pos {
@@ -207,7 +239,6 @@ impl GridController {
         let cursor: Option<Operation> =
             clipboard
                 .selection
-                .as_ref()
                 .map(|clipboard_selection| Operation::SetCursorSelection {
                     selection: clipboard_selection
                         .translate(cursor_translate_x, cursor_translate_y),
@@ -215,12 +246,17 @@ impl GridController {
 
         match special {
             PasteSpecial::None => {
-                let (values, code) =
-                    GridController::cell_values_from_clipboard_cells(&clipboard, special);
+                let (values, code) = GridController::cell_values_from_clipboard_cells(
+                    clipboard.w,
+                    clipboard.h,
+                    clipboard.cells,
+                    clipboard.values,
+                    special,
+                );
                 if let Some(values) = values {
                     ops.push(Operation::SetCellValues {
                         sheet_pos: start_pos.to_sheet_pos(selection.sheet_id),
-                        values: values.clone(),
+                        values,
                     });
                 }
 
@@ -234,12 +270,17 @@ impl GridController {
                 });
             }
             PasteSpecial::Values => {
-                let (values, _) =
-                    GridController::cell_values_from_clipboard_cells(&clipboard, special);
+                let (values, _) = GridController::cell_values_from_clipboard_cells(
+                    clipboard.w,
+                    clipboard.h,
+                    clipboard.cells,
+                    clipboard.values,
+                    special,
+                );
                 if let Some(values) = values {
                     ops.push(Operation::SetCellValues {
                         sheet_pos: start_pos.to_sheet_pos(selection.sheet_id),
-                        values: values.clone(),
+                        values,
                     });
                 }
             }
@@ -258,27 +299,27 @@ impl GridController {
             };
             ops.push(Operation::SetCellFormatsSelection {
                 selection: Selection::sheet_rect(sheet_rect),
-                formats,
+                formats: clipboard.formats,
             });
 
-            ops.extend(self.sheet_formats_operations(selection, &clipboard));
+            ops.extend(self.sheet_formats_operations(selection, clipboard.sheet_formats));
 
             if let Some(sheet) = self.try_sheet(selection.sheet_id) {
                 // add borders to the sheet
-                borders.iter().for_each(|(x, y, cell_borders)| {
+                for (x, y, cell_borders) in clipboard.borders {
                     if let Some(cell_borders) = cell_borders {
                         let mut border_selections = vec![];
                         let mut border_styles = vec![];
                         let sheet_rect: SheetRect = SheetPos {
                             sheet_id: sheet.id,
-                            x: *x + start_pos.x,
-                            y: *y + start_pos.y,
+                            x: x + start_pos.x,
+                            y: y + start_pos.y,
                         }
                         .into();
 
-                        cell_borders.borders.iter().enumerate().for_each(
+                        cell_borders.borders.into_iter().enumerate().for_each(
                             |(index, border_style)| {
-                                if let Some(border_style) = border_style.to_owned() {
+                                if let Some(border_style) = border_style {
                                     let border_selection = match index {
                                         0 => BorderSelection::Left,
                                         1 => BorderSelection::Top,
@@ -303,7 +344,12 @@ impl GridController {
                             borders,
                         });
                     }
-                });
+                }
+
+                ops.extend(self.set_clipboard_validations(
+                    clipboard.validations,
+                    start_pos.to_sheet_pos(sheet.id),
+                ));
             }
         }
 
@@ -351,10 +397,13 @@ impl GridController {
             });
         });
 
-        ops.push(Operation::SetCellValues {
-            sheet_pos: start_pos,
-            values: cell_values,
-        });
+        ops.insert(
+            0,
+            Operation::SetCellValues {
+                sheet_pos: start_pos,
+                values: cell_values,
+            },
+        );
         ops
     }
 
@@ -367,7 +416,7 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let error = |e, msg| Error::msg(format!("Clipboard Paste {:?}: {:?}", msg, e));
 
-        let dest_pos = Pos {
+        let insert_at = Pos {
             x: selection.x,
             y: selection.y,
         };
@@ -379,24 +428,33 @@ impl GridController {
                 let data = re
                     .captures(&html)
                     .ok_or_else(|| error("".into(), "Regex capture error"))?;
-                let result = &data.get(1).map_or("", |m| m.as_str());
+
+                let result = data.get(1).map_or("", |m| m.as_str());
+                drop(data);
 
                 // decode html in attribute
                 let decoded = htmlescape::decode_html(result)
                     .map_err(|_| error("".into(), "Html decode error"))?;
+                drop(html);
 
                 // parse into Clipboard
                 let mut clipboard = serde_json::from_str::<Clipboard>(&decoded)
                     .map_err(|e| error(e.to_string(), "Serialization error"))?;
+                drop(decoded);
 
                 // loop through the clipboard and replace cell references in formulas
-                for col in clipboard.cells.columns.iter_mut() {
-                    for (_y, cell) in col.iter_mut() {
+                for (x, col) in clipboard.cells.columns.iter_mut().enumerate() {
+                    for (&y, cell) in col.iter_mut() {
                         match cell {
                             CellValue::Code(code_cell) => {
                                 if matches!(code_cell.language, CodeCellLanguage::Formula) {
-                                    code_cell.code =
-                                        replace_internal_cell_references(&code_cell.code, dest_pos);
+                                    code_cell.code = replace_internal_cell_references(
+                                        &code_cell.code,
+                                        Pos {
+                                            x: insert_at.x + x as i64,
+                                            y: insert_at.y + y as i64,
+                                        },
+                                    );
                                 }
                             }
                             _ => { /* noop */ }
@@ -416,11 +474,15 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use super::PasteSpecial;
-    use super::*;
+    use bigdecimal::BigDecimal;
+    use serial_test::parallel;
+
+    use super::{PasteSpecial, *};
     use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::grid::formats::format_update::FormatUpdate;
-    use serial_test::parallel;
+    use crate::grid::sheet::validations::validation_rules::ValidationRule;
+    use crate::grid::SheetId;
+    use crate::Rect;
 
     #[test]
     #[parallel]
@@ -635,6 +697,100 @@ mod test {
                 italic: Some(true),
                 ..Default::default()
             }
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn set_clipboard_validations() {
+        let gc = GridController::test();
+        let validations = ClipboardValidations {
+            validations: vec![Validation {
+                id: Uuid::new_v4(),
+                selection: Selection::rect(crate::Rect::new(1, 1, 2, 2), SheetId::test()),
+                rule: ValidationRule::Logical(Default::default()),
+                message: Default::default(),
+                error: Default::default(),
+            }],
+        };
+        let operations = gc.set_clipboard_validations(
+            Some(validations),
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id: SheetId::test(),
+            },
+        );
+        assert_eq!(operations.len(), 1);
+        if let Operation::SetValidation { validation } = &operations[0] {
+            assert_eq!(
+                validation.selection,
+                Selection::rect(crate::Rect::new(2, 2, 3, 3), SheetId::test())
+            );
+        } else {
+            panic!("Expected SetValidation operation");
+        }
+    }
+
+    #[test]
+    #[parallel]
+    fn paste_clipboard_with_formula() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_cell_values(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            vec![vec!["1"], vec!["2"], vec!["3"]],
+            None,
+        );
+
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 4,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "SUM(B1:B3)".to_string(),
+            None,
+        );
+
+        assert_eq!(
+            gc.sheet(sheet_id).get_code_cell_value((1, 4).into()),
+            Some(CellValue::Number(BigDecimal::from(6)))
+        );
+
+        let (_, html) = gc
+            .sheet(sheet_id)
+            .copy_to_clipboard(&Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: Some(vec![Rect::new(0, 0, 2, 5)]),
+                ..Default::default()
+            })
+            .unwrap();
+
+        gc.paste_from_clipboard(
+            Selection {
+                sheet_id,
+                x: 5,
+                y: 5,
+                ..Default::default()
+            },
+            None,
+            Some(html),
+            PasteSpecial::None,
+            None,
+        );
+
+        assert_eq!(
+            gc.sheet(sheet_id).get_code_cell_value((6, 9).into()),
+            Some(CellValue::Number(BigDecimal::from(6)))
         );
     }
 }

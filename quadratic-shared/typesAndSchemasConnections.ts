@@ -10,7 +10,7 @@ const transformEmptyStringToUndefined = (val: string | undefined) => (val === ''
  */
 
 export const ConnectionNameSchema = z.string().min(1, { message: 'Required' });
-export const ConnectionTypeSchema = z.enum(['POSTGRES', 'MYSQL']);
+export const ConnectionTypeSchema = z.enum(['POSTGRES', 'MYSQL', 'MSSQL']);
 const ConnectionTypeDetailsSchema = z.record(z.string(), z.any());
 const ConnectionSchema = z.object({
   createdDate: z.string().datetime(),
@@ -51,6 +51,9 @@ export const ConnectionTypeDetailsPostgresSchema = z.object({
   password: z.string().optional().transform(transformEmptyStringToUndefined),
 });
 export const ConnectionTypeDetailsMysqlSchema = ConnectionTypeDetailsPostgresSchema;
+export const ConnectionTypeDetailsMssqlSchema = ConnectionTypeDetailsPostgresSchema.extend({
+  database: z.string().optional(),
+});
 
 /**
  * =============================================================================
@@ -58,11 +61,14 @@ export const ConnectionTypeDetailsMysqlSchema = ConnectionTypeDetailsPostgresSch
  * =============================================================================
  */
 
+export const ConnectionListSchema = z.array(
+  ConnectionSchema.pick({ uuid: true, name: true, createdDate: true, type: true })
+);
+export type ConnectionList = z.infer<typeof ConnectionListSchema>;
+
 export const ApiSchemasConnections = {
   // List connections
-  '/v0/teams/:uuid/connections.GET.response': z.array(
-    ConnectionSchema.pick({ uuid: true, name: true, createdDate: true, type: true })
-  ),
+  '/v0/teams/:uuid/connections.GET.response': ConnectionListSchema,
 
   // Create connection
   '/v0/team/:uuid/connections.POST.request': ConnectionSchema.pick({

@@ -109,7 +109,8 @@ export class Update {
       pixiApp.cellImages.dirty ||
       pixiApp.cellHighlights.isDirty() ||
       pixiApp.cellMoving.dirty ||
-      pixiApp.cursor.dirty;
+      pixiApp.cursor.dirty ||
+      pixiApp.validations.dirty;
 
     if (rendererDirty && debugShowWhyRendering) {
       console.log(
@@ -143,6 +144,7 @@ export class Update {
     debugTimeCheck('[Update] cellMoving');
     pixiApp.cellsSheets.update();
     debugTimeCheck('[Update] cellsSheets');
+    pixiApp.validations.update(pixiApp.viewport.dirty);
 
     if (pixiApp.viewport.dirty || rendererDirty) {
       debugTimeReset();

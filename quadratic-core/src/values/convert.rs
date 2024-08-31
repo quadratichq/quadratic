@@ -1,9 +1,12 @@
 use bigdecimal::{BigDecimal, ToPrimitive, Zero};
+use itertools::Itertools;
 
 use super::{CellValue, IsBlank, Value};
 use crate::{CodeResult, CodeResultExt, RunErrorMsg, Span, Spanned, Unspan};
 
 const CURRENCY_PREFIXES: &[char] = &['$', '¥', '£', '€'];
+
+const F64_DECIMAL_PRECISION: u64 = 16; // just enough to not lose information
 
 /*
  * CONVERSIONS (specific type -> Value)
@@ -35,11 +38,17 @@ impl From<&str> for CellValue {
         CellValue::Text(value.to_string())
     }
 }
-// todo: this might be wrong for formulas
 impl From<f64> for CellValue {
     fn from(value: f64) -> Self {
-        BigDecimal::try_from(value)
-            .map_or_else(|_| CellValue::Text(value.to_string()), CellValue::Number)
+        match BigDecimal::try_from(value) {
+            Ok(n) => CellValue::Number(if n.digits() > F64_DECIMAL_PRECISION {
+                n.with_prec(F64_DECIMAL_PRECISION)
+            } else {
+                n
+            }),
+            // TODO: add span information
+            Err(_) => CellValue::Error(Box::new(RunErrorMsg::NaN.without_span())),
+        }
     }
 }
 impl From<i64> for CellValue {
@@ -55,6 +64,11 @@ impl From<i32> for CellValue {
 impl From<u32> for CellValue {
     fn from(value: u32) -> Self {
         CellValue::Number(BigDecimal::from(value))
+    }
+}
+impl From<usize> for CellValue {
+    fn from(value: usize) -> Self {
+        CellValue::Number(BigDecimal::from(value as u64))
     }
 }
 impl From<bool> for CellValue {
@@ -236,6 +250,11 @@ where
     for<'a> &'a Self: Into<Span>,
     Self::Unspanned: IsBlank,
 {
+    /// Returns an error if the value contains **any** errors; otherwise,
+    /// returns the value unchanged.
+    ///
+    /// Errors should be preserved whenever possible, so do not call this for
+    /// intermediate results.
     fn into_non_error_value(self) -> CodeResult<Self::Unspanned>;
 
     /// Coerces a value, returning an error if the value has the wrong type.
@@ -244,9 +263,7 @@ where
         Self::Unspanned: TryInto<T, Error = RunErrorMsg>,
     {
         let span = (&self).into();
-
-        // If coercion fails, return an error.
-        self.into_non_error_value()?.try_into().with_span(span)
+        self.without_span().try_into().with_span(span)
     }
 
     /// Coerces a value, returning `None` if the value has the wrong type and
@@ -285,17 +302,27 @@ impl CoerceInto for Spanned<CellValue> {
 
 impl<'a> CoerceInto for Spanned<&'a Value> {
     fn into_non_error_value(self) -> CodeResult<&'a Value> {
-        match &self.inner {
-            Value::Single(CellValue::Error(e)) => Err((**e).clone()),
-            other => Ok(other),
+        let error = match self.inner {
+            Value::Single(v) => v.error(),
+            Value::Array(a) => a.first_error(),
+            Value::Tuple(t) => t.iter().find_map(|a| a.first_error()),
+        };
+        match error {
+            Some(e) => Err(e.clone()),
+            None => Ok(self.inner),
         }
     }
 }
 impl CoerceInto for Spanned<Value> {
     fn into_non_error_value(self) -> CodeResult<Value> {
         match self.inner {
-            Value::Single(CellValue::Error(e)) => Err(*e),
-            other => Ok(other),
+            Value::Single(v) => v.into_non_error_value().map(Value::Single),
+            Value::Array(a) => a.into_non_error_array().map(Value::Array),
+            Value::Tuple(t) => t
+                .into_iter()
+                .map(|a| a.into_non_error_array())
+                .try_collect()
+                .map(Value::Tuple),
         }
     }
 }

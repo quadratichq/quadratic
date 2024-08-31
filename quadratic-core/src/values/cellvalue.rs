@@ -170,6 +170,19 @@ impl CellValue {
                 let use_commas = numeric_commas.is_some_and(|c| c)
                     || (numeric_commas.is_none()
                         && numeric_format.kind == NumericFormatKind::Currency);
+                let numeric_decimals = numeric_decimals.or({
+                    if matches!(
+                        numeric_format,
+                        NumericFormat {
+                            kind: NumericFormatKind::Currency,
+                            ..
+                        }
+                    ) {
+                        Some(2)
+                    } else {
+                        None
+                    }
+                });
                 let result: BigDecimal = if numeric_format.kind == NumericFormatKind::Percentage {
                     n * 100
                 } else {
@@ -321,6 +334,13 @@ impl CellValue {
         match self {
             CellValue::Error(e) => Some(e),
             _ => None,
+        }
+    }
+    /// Converts an error value into an actual error.
+    pub fn into_non_error_value(self) -> CodeResult<Self> {
+        match self {
+            CellValue::Error(e) => Err(*e),
+            other => Ok(other),
         }
     }
 
@@ -536,6 +556,16 @@ impl CellValue {
 
     pub fn is_image(&self) -> bool {
         matches!(self, CellValue::Image(_))
+    }
+
+    /// Returns the contained error, or panics the value is not an error.
+    #[cfg(test)]
+    #[track_caller]
+    pub fn unwrap_err(self) -> RunError {
+        match self {
+            CellValue::Error(e) => *e,
+            other => panic!("expected error value; got {other:?}"),
+        }
     }
 }
 

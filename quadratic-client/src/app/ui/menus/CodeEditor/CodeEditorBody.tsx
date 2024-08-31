@@ -53,7 +53,7 @@ let registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
 };
 
 export const CodeEditorBody = (props: Props) => {
-  const { editorContent, setEditorContent, closeEditor, evaluationResult, cellLocation } = props;
+  const { editorContent, setEditorContent, closeEditor, evaluationResult, cellsAccessed, cellLocation } = props;
   const {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
@@ -68,7 +68,7 @@ export const CodeEditorBody = (props: Props) => {
   const [isValidRef, setIsValidRef] = useState(false);
   const { editorRef, monacoRef } = useCodeEditor();
 
-  useEditorCellHighlights(isValidRef, editorRef, monacoRef, language);
+  useEditorCellHighlights(isValidRef, editorRef, monacoRef, language, cellsAccessed);
   useEditorOnSelectionChange(isValidRef, editorRef, monacoRef, language);
   useEditorReturn(isValidRef, editorRef, monacoRef, language, evaluationResult);
 

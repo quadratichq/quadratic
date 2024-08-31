@@ -203,6 +203,8 @@ macro_rules! formula_fn_eval_inner {
         $ctx.zip_map(
             &args_to_zip_map,
             move |_ctx, zipped_args| -> CodeResult<CellValue> {
+                // If you get a warning that `zipped_args` is unused, make sure
+                // you surrounded your zip-mapped arguments with `[]`
                 formula_fn_args!(@unzip(_ctx, zipped_args); $($params)*);
 
                 if skip_computation {

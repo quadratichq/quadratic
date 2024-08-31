@@ -4,15 +4,15 @@ import { JsHtmlOutput } from '@/app/quadratic-core-types';
 import { HtmlCell } from './HtmlCell';
 
 class HTMLCellsHandler {
+  // used to attach the html-cells to react
+  private div: HTMLDivElement;
+
   private cells: Set<HtmlCell> = new Set();
 
-  // used to attach the html-cells to react
-  private div?: HTMLDivElement;
-
-  // used to hold the data if the div is not yet created
-  private dataWaitingForDiv?: JsHtmlOutput[];
-
   constructor() {
+    this.div = document.createElement('div');
+    this.div.className = 'html-cells';
+
     events.on('htmlOutput', this.htmlOutput);
     events.on('htmlUpdate', this.htmlUpdate);
     events.on('changeSheet', this.changeSheet);
@@ -20,12 +20,18 @@ class HTMLCellsHandler {
     events.on('resizeRowHeights', (sheetId) => this.updateOffsets([sheetId]));
   }
 
-  private htmlOutput = (data: JsHtmlOutput[]) => {
-    if (this.div) {
-      this.updateHtmlCells(data);
-    } else {
-      this.dataWaitingForDiv = data;
-    }
+  attach = (parent: HTMLDivElement) => {
+    parent.appendChild(this.div);
+  };
+
+  detach = () => {
+    this.div.remove();
+    this.div = document.createElement('div');
+    this.div.className = 'html-cells';
+  };
+
+  private htmlOutput = (htmlCells: JsHtmlOutput[]) => {
+    this.prepareCells([...this.cells], htmlCells);
   };
 
   private htmlUpdate = (data: JsHtmlOutput) => {
@@ -49,24 +55,6 @@ class HTMLCellsHandler {
       this.cells.add(cell);
     }
   };
-
-  private attach(parent: HTMLDivElement) {
-    if (this.div) {
-      parent.appendChild(this.div);
-    }
-  }
-
-  init(parent: HTMLDivElement | null) {
-    this.div = this.div ?? document.createElement('div');
-    this.div.className = 'html-cells';
-    if (parent) {
-      this.attach(parent);
-    }
-    if (this.dataWaitingForDiv) {
-      this.updateHtmlCells(this.dataWaitingForDiv);
-      this.dataWaitingForDiv = undefined;
-    }
-  }
 
   private changeSheet = () => {
     this.cells.forEach((cell) => cell.changeSheet(sheets.sheet.id));
@@ -100,10 +88,6 @@ class HTMLCellsHandler {
       parent.removeChild(cell.div);
       this.cells.delete(cell);
     });
-  }
-
-  updateHtmlCells(htmlCells: JsHtmlOutput[]) {
-    this.prepareCells([...this.cells], htmlCells);
   }
 
   clearHighlightEdges() {

@@ -41,7 +41,7 @@ impl Sheet {
         for x in rect.x_range() {
             for y in rect.y_range() {
                 let pos = Pos { x, y };
-                if selection.is_none() || selection.is_some_and(|s| s.pos_in_selection(pos)) {
+                if selection.is_none() || selection.is_some_and(|s| s.contains_pos(pos)) {
                     let format = self.format_cell(x, y, true);
                     formats.push(format.to_replace());
                 } else {

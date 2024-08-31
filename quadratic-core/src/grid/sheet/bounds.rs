@@ -41,6 +41,16 @@ impl Sheet {
             self.data_bounds.add(output_rect.min);
             self.data_bounds.add(output_rect.max);
         });
+
+        self.validations.validations.iter().for_each(|validation| {
+            if validation.render_special().is_some() {
+                if let Some(rect) = validation.selection.largest_rect() {
+                    self.data_bounds.add(rect.min);
+                    self.data_bounds.add(rect.max);
+                }
+            }
+        });
+
         old_data_bounds != self.data_bounds.to_bounds_rect()
             || old_format_bounds != self.format_bounds.to_bounds_rect()
     }
@@ -358,12 +368,21 @@ impl Sheet {
 mod test {
     use crate::{
         controller::GridController,
-        grid::{CellAlign, CellWrap, CodeCellLanguage, GridBounds, Sheet},
+        grid::CellWrap,
+        grid::{
+            sheet::validations::{
+                validation::Validation,
+                validation_rules::{validation_logical::ValidationLogical, ValidationRule},
+            },
+            CellAlign, CodeCellLanguage, GridBounds, Sheet,
+        },
+        selection::Selection,
         CellValue, Pos, Rect, SheetPos, SheetRect,
     };
     use proptest::proptest;
     use serial_test::parallel;
     use std::collections::HashMap;
+    use uuid::Uuid;
 
     #[test]
     #[parallel]
@@ -864,5 +883,30 @@ mod test {
 
         // height should be 0 since there is no data
         assert_eq!(sheet.find_last_data_row(0, 10, 1), 0);
+    }
+
+    #[test]
+    fn recalculate_bounds_validations() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.update_validation(
+            Validation {
+                id: Uuid::new_v4(),
+                rule: ValidationRule::Logical(ValidationLogical {
+                    show_checkbox: true,
+                    ignore_blank: true,
+                }),
+                selection: Selection::pos(0, 0, sheet_id),
+                message: Default::default(),
+                error: Default::default(),
+            },
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.data_bounds,
+            GridBounds::NonEmpty(Rect::new(0, 0, 0, 0))
+        );
     }
 }

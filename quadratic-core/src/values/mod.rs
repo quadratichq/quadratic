@@ -22,7 +22,7 @@ pub use convert::CoerceInto;
 pub use isblank::IsBlank;
 pub use time::{Duration, Instant};
 
-use crate::{CodeResult, CodeResultExt, RunErrorMsg, SpannableIterExt, Spanned};
+use crate::{CodeResult, CodeResultExt, RunError, RunErrorMsg, SpannableIterExt, Spanned};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
@@ -54,6 +54,11 @@ impl<T: Into<CellValue>> From<T> for Value {
 impl From<Array> for Value {
     fn from(array: Array) -> Self {
         Value::Array(array)
+    }
+}
+impl From<RunError> for Value {
+    fn from(value: RunError) -> Self {
+        Value::Single(CellValue::Error(Box::new(value)))
     }
 }
 
@@ -130,7 +135,7 @@ impl Value {
             Value::Tuple(arrays) => match arrays.first() {
                 Some(a) => a.get(x, y),
                 None => Err(RunErrorMsg::Expected {
-                    expected: "value or array".into(),
+                    expected: "single value or array".into(),
                     got: Some("empty tuple".into()),
                 }),
             },
@@ -160,6 +165,25 @@ impl Value {
             w: Array::common_len(Axis::X, values.into_iter().filter_map(|v| v.as_array()))?,
             h: Array::common_len(Axis::Y, values.into_iter().filter_map(|v| v.as_array()))?,
         })
+    }
+
+    /// Returns the contained error, or panics the value is not just a single
+    /// error.
+    #[cfg(test)]
+    #[track_caller]
+    pub fn unwrap_err(self) -> crate::RunError {
+        match self {
+            Value::Single(v) => v.unwrap_err(),
+            other => panic!("expected error value; got {other:?}"),
+        }
+    }
+    /// Returns a list of all errors in the value.
+    pub fn errors(&self) -> Vec<&crate::RunError> {
+        match self {
+            Value::Single(v) => v.error().into_iter().collect(),
+            Value::Array(a) => a.errors().collect(),
+            Value::Tuple(t) => t.iter().flat_map(|a| a.errors()).collect(),
+        }
     }
 }
 impl Spanned<Value> {
@@ -253,17 +277,83 @@ impl Spanned<Value> {
                 .map(|inner| Spanned { span, inner })
         })
     }
+
+    /// Returns the value if is an array or single value, or an error value if
+    /// it is a tuple.
+    pub fn into_non_tuple(self) -> Self {
+        let span = self.span;
+        self.map(|v| {
+            if matches!(v, Value::Tuple(_)) {
+                RunErrorMsg::Expected {
+                    expected: "single value or array".into(),
+                    got: Some("tuple".into()),
+                }
+                .with_span(span)
+                .into()
+            } else {
+                v
+            }
+        })
+    }
+
+    /// Returns the contained error, or panics the value is not just a single
+    /// error.
+    #[cfg(test)]
+    #[track_caller]
+    pub fn unwrap_err(self) -> crate::RunError {
+        self.inner.unwrap_err()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::formulas::tests::*;
+    use crate::Span;
 
     #[test]
     fn test_value_repr() {
         let g = Grid::new();
         for s in ["1", "3.25", "\"hello\"", "\"hello \\\"world\\\"!\""] {
             assert_eq!(s, eval(&g, s).repr());
+        }
+    }
+
+    #[test]
+    fn test_value_into_non_tuple() {
+        let span = Span { start: 10, end: 20 };
+
+        // Test a bunch of things that shouldn't error.
+        for v in [
+            Value::Single("a".into()),
+            Value::Single(1.into()),
+            Value::Single(CellValue::Blank),
+            Value::Array(Array::new_empty(ArraySize::_1X1)),
+            Value::Array(Array::new_empty(ArraySize::new(5, 4).unwrap())),
+        ] {
+            let v = Spanned { span, inner: v };
+            assert_eq!(v.clone(), v.into_non_tuple());
+        }
+
+        // Test with tuples that should error.
+        for v in [
+            Value::Tuple(vec![
+                Array::new_empty(ArraySize::new(5, 4).unwrap()),
+                Array::new_empty(ArraySize::_1X1),
+            ]),
+            Value::Tuple(vec![Array::new_empty(ArraySize::_1X1)]),
+            Value::Tuple(vec![Array::new_empty(ArraySize::new(5, 4).unwrap())]),
+        ] {
+            let v = Spanned { span, inner: v };
+            assert_eq!(
+                Value::Single(CellValue::Error(Box::new(
+                    RunErrorMsg::Expected {
+                        expected: "single value or array".into(),
+                        got: Some("tuple".into()),
+                    }
+                    .with_span(span)
+                ))),
+                v.into_non_tuple().inner,
+            );
         }
     }
 }

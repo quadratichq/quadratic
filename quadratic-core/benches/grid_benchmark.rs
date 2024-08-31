@@ -12,9 +12,10 @@ criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);
 
 fn criterion_benchmark(c: &mut Criterion) {
-    let airports = quadratic_core::grid::file::import(include_bytes!(
-        "../../quadratic-rust-shared/data/grid/v1_4_airports_distance.grid"
-    ))
+    let airports = quadratic_core::grid::file::import(
+        include_bytes!("../../quadratic-rust-shared/data/grid/v1_4_airports_distance.grid")
+            .to_vec(),
+    )
     .unwrap();
 
     let inputs = vec![
@@ -324,7 +325,13 @@ fn criterion_benchmark(c: &mut Criterion) {
             },
             |(mut gc, sheet_id, pos)| {
                 // Test
-                let _ = gc.import_csv(sheet_id, SIMPLE_CSV.as_bytes(), "smallpop.csv", pos, None);
+                let _ = gc.import_csv(
+                    sheet_id,
+                    SIMPLE_CSV.as_bytes().to_vec(),
+                    "smallpop.csv",
+                    pos,
+                    None,
+                );
             },
             criterion::BatchSize::SmallInput,
         )
