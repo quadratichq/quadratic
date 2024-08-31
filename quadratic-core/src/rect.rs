@@ -227,13 +227,24 @@ impl Rect {
         }
     }
 
-    // whether two rects can merge cleanly (ie, overlap the entire width or
-    // height of both rects)
+    // whether two rects can merge without leaving a gap (but allow overlap)
     pub fn can_merge(&self, other: &Rect) -> bool {
-        self.min.x == other.max.x
-            || self.max.x == other.min.x
-            || self.min.y == other.max.y
-            || self.max.y == other.min.y
+        // Check if the rectangles are adjacent or overlapping in either x or y direction
+        let x_merge = self.min.x <= other.max.x && other.min.x <= self.max.x;
+        let y_merge = self.min.y <= other.max.y && other.min.y <= self.max.y;
+
+        // Check if one rectangle fully contains the other
+        let contains = self.contains(other.min) && self.contains(other.max)
+            || other.contains(self.min) && other.contains(self.max);
+
+        // Check if the rectangles have the same height and can merge horizontally
+        let horizontal_merge = self.height() == other.height() && x_merge;
+
+        // Check if the rectangles have the same width and can merge vertically
+        let vertical_merge = self.width() == other.width() && y_merge;
+
+        // The rectangles can merge if they can merge horizontally, vertically, or if one contains the other
+        horizontal_merge || vertical_merge || contains
     }
 }
 
@@ -508,36 +519,12 @@ mod test {
     #[test]
     #[parallel]
     fn can_merge() {
-        let rect1 = Rect::new(1, 1, 3, 3);
-        let rect2 = Rect::new(2, 2, 4, 4);
-        let rect3 = Rect::new(5, 5, 7, 7);
+        let rect = Rect::new(0, 0, 2, 2);
 
-        assert!(
-            !rect1.can_merge(&rect2),
-            "Overlapping rectangles should not merge"
-        );
-        assert!(
-            !rect2.can_merge(&rect1),
-            "Merge operation should be commutative"
-        );
-        assert!(
-            !rect1.can_merge(&rect3),
-            "Non-overlapping rectangles should not merge"
-        );
-
-        let rect4 = Rect::new(3, 1, 5, 3);
-        assert!(rect1.can_merge(&rect4), "Adjacent rectangles should merge");
-
-        let rect5 = Rect::new(1, 3, 3, 5);
-        assert!(
-            rect1.can_merge(&rect5),
-            "Vertically adjacent rectangles should be merge"
-        );
-
-        let rect6 = Rect::new(4, 4, 6, 6);
-        assert!(
-            !rect2.can_merge(&rect6),
-            "Diagonally adjacent rectangles should merge"
-        );
+        assert!(rect.can_merge(&Rect::new(2, 0, 4, 2)));
+        assert!(rect.can_merge(&Rect::new(0, 2, 2, 4)));
+        assert!(!rect.can_merge(&Rect::new(3, 3, 5, 5)));
+        assert!(rect.can_merge(&Rect::new(1, 1, 3, 3)));
+        assert!(rect.can_merge(&Rect::new(0, 0, 4, 4)));
     }
 }

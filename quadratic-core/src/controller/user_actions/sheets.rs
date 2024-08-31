@@ -228,7 +228,7 @@ mod test {
 
     #[test]
     #[serial]
-    fn test_duplicate_sheet() {
+    fn duplicate_sheet() {
         clear_js_calls();
 
         let mut gc = GridController::test();
