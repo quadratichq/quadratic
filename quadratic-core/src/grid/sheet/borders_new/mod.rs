@@ -4,9 +4,13 @@ use std::collections::HashMap;
 
 use crate::grid::{block::SameValue, ColumnData};
 
+pub mod borders_bounds;
 pub mod borders_render;
 pub mod borders_set;
 pub mod borders_style;
+
+#[cfg(test)]
+pub mod borders_test;
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Borders {

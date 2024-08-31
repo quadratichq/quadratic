@@ -331,6 +331,15 @@ impl<B: BlockContent> ColumnData<B> {
                 (start..end).filter_map(|y| Some((y, block.get(y)?)))
             })
     }
+
+    pub fn min(&self) -> Option<i64> {
+        self.0.first_key_value().map(|(y, _)| *y)
+    }
+    pub fn max(&self) -> Option<i64> {
+        self.0
+            .last_key_value()
+            .map(|(y, block)| *y + block.len() as i64 - 1)
+    }
 }
 
 impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq>
@@ -519,5 +528,18 @@ mod test {
         let range = cd.format_range().unwrap();
         assert_eq!(range.start, 0);
         assert_eq!(range.end, 10);
+    }
+
+    #[test]
+    #[parallel]
+    fn min_max() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+
+        cd.set(1, Some(true));
+        cd.set(2, Some(true));
+        cd.set(3, Some(true));
+
+        assert_eq!(cd.min(), Some(1));
+        assert_eq!(cd.max(), Some(3));
     }
 }
