@@ -13,8 +13,7 @@ import { debugShowHashUpdates, debugShowLoadingHashes } from '@/app/debugFlags';
 import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
-import { Link } from '@/app/gridGL/types/link';
-import { Coordinate } from '@/app/gridGL/types/size';
+import { Coordinate, DrawRects } from '@/app/gridGL/types/size';
 import { JsRenderCell } from '@/app/quadratic-core-types';
 import { Rectangle } from 'pixi.js';
 import { renderClient } from '../renderClient';
@@ -38,10 +37,10 @@ export class CellsTextHash {
   // tracks which grid lines should not be drawn for this hash
   private overflowGridLines: Coordinate[] = [];
 
-  private horizontalLines: Rectangle[] = [];
+  private drawRects: DrawRects[] = [];
 
   // tracks which cells have links
-  private links: Link[] = [];
+  private links: Coordinate[] = [];
 
   hashX: number;
   hashY: number;
@@ -106,7 +105,7 @@ export class CellsTextHash {
     if (cell.special !== 'Checkbox') {
       const cellLabel = new CellLabel(this.cellsLabels, cell, rectangle);
       this.labels.set(this.getKey(cell), cellLabel);
-      if (cellLabel.link) this.links.push({ location: cellLabel.location, link: cellLabel.text });
+      if (cellLabel.link) this.links.push(cellLabel.location);
     }
     if (cell.special === 'Checkbox') {
       this.special.addCheckbox(
@@ -141,7 +140,7 @@ export class CellsTextHash {
     this.labels.clear();
     this.content.clear();
     this.links = [];
-    this.horizontalLines = [];
+    this.drawRects = [];
     this.labelMeshes.clear();
     this.overflowGridLines = [];
     if (this.clientLoaded) {
@@ -159,7 +158,7 @@ export class CellsTextHash {
       this.overflowGridLines,
       this.content.export(),
       this.links,
-      this.horizontalLines
+      this.drawRects
     );
   };
 
@@ -346,7 +345,7 @@ export class CellsTextHash {
     }
     this.dirtyBuffers = false;
 
-    this.horizontalLines = [];
+    this.drawRects = [];
 
     // creates labelMeshes webGL buffers based on size
     this.labelMeshes.prepare();
@@ -364,7 +363,7 @@ export class CellsTextHash {
         maxX = Math.max(maxX, bounds.maxX);
         maxY = Math.max(maxY, bounds.maxY);
       }
-      this.horizontalLines.push(...cellLabel.horizontalLines);
+      this.drawRects.push({ rects: cellLabel.horizontalLines, tint: cellLabel.tint });
     });
     if (minX !== Infinity && minY !== Infinity) {
       this.viewRectangle.x = minX;

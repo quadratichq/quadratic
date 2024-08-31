@@ -34,18 +34,21 @@ interface CharRenderData {
 
 // magic numbers to make the WebGL rendering of OpenSans look similar to the HTML version
 export const OPEN_SANS_FIX = { x: 1.8, y: -1.8 };
+
 const SPILL_ERROR_TEXT = ' #SPILL';
 const RUN_ERROR_TEXT = ' #ERROR';
 const CHART_TEXT = ' CHART';
-export const LINE_HEIGHT = 16;
-const HORIZONTAL_LINE_HEIGHT = 1.4;
-const UNDERLINE_OFFSET = 51;
-const STRIKE_THROUGH_OFFSET = 36;
+
+// values based on line position and thickness in monaco editor
+const HORIZONTAL_LINE_THICKNESS = 1;
+const UNDERLINE_OFFSET = 52;
+const STRIKE_THROUGH_OFFSET = 32;
 
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
 
 // todo: make this part of the cell's style data structure
 export const FONT_SIZE = 14;
+export const LINE_HEIGHT = 16;
 
 const URL_REGEX = /[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/i;
 
@@ -64,7 +67,7 @@ export class CellLabel {
   private fontName!: string;
 
   private fontSize: number;
-  private tint?: number;
+  tint: number;
   private maxWidth?: number;
   private roundPixels?: boolean;
   location: Coordinate;
@@ -656,16 +659,16 @@ export class CellLabel {
     this.lineWidths.forEach((lineWidth, line) => {
       const height = LINE_HEIGHT * line + yOffset * scale;
       const yPos = this.position.y + height + OPEN_SANS_FIX.y;
-      if (yPos < clipTop || yPos + HORIZONTAL_LINE_HEIGHT > clipBottom) return;
+      if (yPos < clipTop || yPos + HORIZONTAL_LINE_THICKNESS > clipBottom) return;
 
       let horizontalOffset = this.horizontalAlignOffsets[line];
       if (this.roundPixels) horizontalOffset = Math.round(horizontalOffset);
       const xPos = Math.max(this.position.x + horizontalOffset * scale + OPEN_SANS_FIX.x, clipLeft);
       const width = Math.min(lineWidth * scale, clipRight - xPos);
 
-      const rect = new Rectangle(xPos, yPos, width, HORIZONTAL_LINE_HEIGHT);
+      const rect = new Rectangle(xPos, yPos, width, HORIZONTAL_LINE_THICKNESS);
       this.horizontalLines.push(rect);
-      maxHeight = Math.max(maxHeight, height + HORIZONTAL_LINE_HEIGHT);
+      maxHeight = Math.max(maxHeight, height + HORIZONTAL_LINE_THICKNESS);
     });
     this.textHeight = Math.max(this.textHeight, maxHeight);
   };

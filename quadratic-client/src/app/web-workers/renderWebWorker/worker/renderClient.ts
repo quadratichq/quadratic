@@ -6,8 +6,7 @@
  */
 
 import { debugWebWorkersMessages } from '@/app/debugFlags';
-import { Link } from '@/app/gridGL/types/link';
-import { Coordinate } from '@/app/gridGL/types/size';
+import { Coordinate, DrawRects } from '@/app/gridGL/types/size';
 import { Rectangle } from 'pixi.js';
 import {
   ClientRenderMessage,
@@ -82,8 +81,8 @@ class RenderClient {
     viewRectangle: { x: number; y: number; width: number; height: number },
     overflowGridLines: Coordinate[],
     content: Uint32Array,
-    links: Link[],
-    horizontalLines: Rectangle[]
+    links: Coordinate[],
+    drawRects: DrawRects[]
   ) {
     const message: RenderClientCellsTextHashClear = {
       type: 'renderClientCellsTextHashClear',
@@ -94,7 +93,7 @@ class RenderClient {
       overflowGridLines,
       content,
       links,
-      horizontalLines,
+      drawRects,
     };
     this.send(message);
   }

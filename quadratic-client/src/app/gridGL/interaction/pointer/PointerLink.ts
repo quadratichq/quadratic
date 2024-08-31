@@ -1,20 +1,21 @@
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Link } from '@/app/gridGL/types/link';
+import { Coordinate } from '@/app/gridGL/types/size';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Point } from 'pixi.js';
 
 export class PointerLink {
   cursor: string | undefined;
 
-  private checkHoverLink = (world: Point): Link | undefined => {
-    if (!pixiApp.cellsSheets.current) throw new Error('Expected cellsSheets.current to be defined in PointerLink');
+  private checkHoverLink = (world: Point): Coordinate | undefined => {
+    if (!pixiApp.cellsSheets.current) {
+      throw new Error('Expected cellsSheets.current to be defined in PointerLink');
+    }
     const cellsLabels = pixiApp.cellsSheets.current.cellsLabels;
-    const link = cellsLabels.intersectsLink(world);
-    return link;
+    return cellsLabels.intersectsLink(world);
   };
 
-  private getLinkUrl = (link: Link): string => {
-    const url = link.link;
+  private getLinkUrl = (url: string): string => {
     if (url.match(/^https?:\/\//i)) {
       // URL already starts with http:// or https://
       return url;
@@ -27,14 +28,13 @@ export class PointerLink {
     }
   };
 
-  private openLink = (link: Link) => {
-    const url = this.getLinkUrl(link);
-    window.open(url, '_blank', 'noopener,noreferrer');
+  private openLink = (url: string) => {
+    window.open(this.getLinkUrl(url), '_blank', 'noopener,noreferrer');
   };
 
   pointerMove = (world: Point, event: PointerEvent): boolean => {
-    const link = this.checkHoverLink(world);
-    if (link) {
+    const columnRow = this.checkHoverLink(world);
+    if (columnRow) {
       this.cursor = 'pointer';
       return true;
     }
@@ -45,9 +45,11 @@ export class PointerLink {
   pointerDown = (world: Point, event: PointerEvent): boolean => {
     if (!matchShortcut('open_link', event)) return false;
     this.cursor = undefined;
-    const link = this.checkHoverLink(world);
-    if (link) {
-      this.openLink(link);
+    const cell = this.checkHoverLink(world);
+    if (cell) {
+      quadraticCore.getDisplayCell(pixiApp.cellsSheets.current?.sheetId ?? '', cell.x, cell.y).then((url) => {
+        if (url !== undefined) this.openLink(url);
+      });
       return true;
     }
     return false;

@@ -11,9 +11,8 @@
  * The data calculations occur in renderWebWorker::CellsTextHash.ts.
  */
 
-import { CellsHorizontalLines } from '@/app/gridGL/cells/cellsLabel/CellsHorizontalLines';
-import { Link } from '@/app/gridGL/types/link';
-import { Coordinate } from '@/app/gridGL/types/size';
+import { CellsDrawRects } from '@/app/gridGL/cells/cellsLabel/CellsDrawRects';
+import { Coordinate, DrawRects } from '@/app/gridGL/types/size';
 import { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import { CellsTextHashContent } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashContent';
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
@@ -51,10 +50,10 @@ export class CellsTextHash extends Container {
 
   content: CellsTextHashContent;
 
-  links: Link[];
+  links: Coordinate[];
 
-  newHorizontalLines: Rectangle[];
-  horizontalLines: CellsHorizontalLines;
+  newDrawRects: DrawRects[];
+  drawRects: CellsDrawRects;
 
   constructor(sheetId: string, hashX: number, hashY: number, viewRectangle?: Rectangle) {
     super();
@@ -70,14 +69,14 @@ export class CellsTextHash extends Container {
     this.content = new CellsTextHashContent();
     this.links = [];
 
-    this.newHorizontalLines = [];
-    this.horizontalLines = this.addChild(new CellsHorizontalLines());
+    this.newDrawRects = [];
+    this.drawRects = this.addChild(new CellsDrawRects());
   }
 
   clear() {
     this.entries.removeChildren();
     this.special.clear();
-    this.horizontalLines.clear();
+    this.drawRects.clear();
   }
 
   addLabelMeshEntry(message: RenderClientLabelMeshEntry) {
@@ -89,8 +88,8 @@ export class CellsTextHash extends Container {
     this.newChildren.forEach((child) => this.entries.addChild(child));
     this.newChildren = [];
     this.special.update(special);
-    this.horizontalLines.update(this.newHorizontalLines);
-    this.newHorizontalLines = [];
+    this.drawRects.update(this.newDrawRects);
+    this.newDrawRects = [];
   }
 
   clearMeshEntries(viewRectangle: Rectangle) {
@@ -160,7 +159,7 @@ export class CellsTextHash extends Container {
     return this.warnings.intersectsErrorMarkerValidation(world);
   }
 
-  intersectsLink(world: Point, cell: Coordinate): Link | undefined {
-    return this.links.find((link) => cell.x === link.location.x && cell.y === link.location.y);
+  intersectsLink(cell: Coordinate): boolean {
+    return this.links.some((link) => cell.x === link.x && cell.y === link.y);
   }
 }

@@ -18,6 +18,8 @@ export const matchShortcut = (
   const platformShortcuts = isMac ? shortcuts.mac : shortcuts.windows;
   return platformShortcuts.some((shortcut) => {
     const parsedShortcut = parseCombination(shortcut);
+    parsedShortcut.key =
+      event instanceof PointerEvent && parsedShortcut.key === 'click' ? undefined : parsedShortcut.key;
     return (
       parsedShortcut.metaKey === event.metaKey &&
       parsedShortcut.ctrlKey === event.ctrlKey &&
