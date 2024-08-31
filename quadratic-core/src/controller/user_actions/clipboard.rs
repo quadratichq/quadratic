@@ -125,19 +125,39 @@ mod test {
             Some(true),
             None,
         );
+        set_cell_value(&mut gc, sheet_id, "underline", 5, 3);
+        gc.set_cell_underline(
+            SheetRect {
+                min: Pos { x: 5, y: 3 },
+                max: Pos { x: 5, y: 3 },
+                sheet_id,
+            },
+            Some(true),
+            None,
+        );
+        set_cell_value(&mut gc, sheet_id, "strike through", 7, 4);
+        gc.set_cell_strike_through(
+            SheetRect {
+                min: Pos { x: 7, y: 4 },
+                max: Pos { x: 7, y: 4 },
+                sheet_id,
+            },
+            Some(true),
+            None,
+        );
 
         let rect = Rect {
             min: Pos { x: 1, y: 1 },
-            max: Pos { x: 3, y: 2 },
+            max: Pos { x: 7, y: 4 },
         };
 
         let selection = Selection::rect(rect, sheet_id);
         let sheet = gc.sheet(sheet_id);
         let (plain_text, _) = sheet.copy_to_clipboard(&selection).unwrap();
-        assert_eq!(plain_text, String::from("1, 1\t\t\n\t\t12"));
+        assert_eq!(plain_text, String::from("1, 1\t\t\t\t\t\t\n\t\t12\t\t\t\t\n\t\t\t\tunderline\t\t\n\t\t\t\t\t\tstrike through"));
 
         let selection = Selection::rect(
-            Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 3, y: 3 }),
+            Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 7, y: 5 }),
             sheet_id,
         );
         let clipboard = sheet.copy_to_clipboard(&selection).unwrap();
@@ -210,6 +230,44 @@ mod test {
                 wrap: None,
                 underline: None,
                 strike_through: None
+            }
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 5, y: 3 }),
+            Some(CellValue::Text(String::from("underline")))
+        );
+        assert_eq!(
+            sheet.cell_format_summary(Pos { x: 5, y: 3 }, false),
+            CellFormatSummary {
+                bold: None,
+                italic: None,
+                text_color: None,
+                fill_color: None,
+                commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None,
+                underline: Some(true),
+                strike_through: None
+            }
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 7, y: 4 }),
+            Some(CellValue::Text(String::from("strike through")))
+        );
+        assert_eq!(
+            sheet.cell_format_summary(Pos { x: 7, y: 4 }, false),
+            CellFormatSummary {
+                bold: None,
+                italic: None,
+                text_color: None,
+                fill_color: None,
+                commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None,
+                underline: None,
+                strike_through: Some(true),
             }
         );
     }
