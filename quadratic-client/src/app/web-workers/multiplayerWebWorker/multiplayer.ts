@@ -232,8 +232,10 @@ export class Multiplayer {
     inlineCodeEditor: boolean;
     bold?: boolean;
     italic?: boolean;
+    underline?: boolean;
+    strikeThrough?: boolean;
   }) {
-    const { text, cursor, codeEditor, inlineCodeEditor, bold, italic } = options;
+    const { text, cursor, codeEditor, inlineCodeEditor, bold, italic, underline, strikeThrough } = options;
     this.send({
       type: 'clientMultiplayerCellEdit',
       cellEdit: {
@@ -244,6 +246,8 @@ export class Multiplayer {
         inline_code_editor: inlineCodeEditor,
         bold,
         italic,
+        underline,
+        strikeThrough,
       },
     });
   }

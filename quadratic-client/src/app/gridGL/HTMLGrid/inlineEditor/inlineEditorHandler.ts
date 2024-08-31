@@ -227,6 +227,8 @@ class InlineEditorHandler {
       inlineCodeEditor: !!this.formula,
       bold: this.temporaryBold,
       italic: this.temporaryItalic,
+      underline: this.temporaryUnderline,
+      strikeThrough: this.temporaryStrikeThrough,
     });
   }
 
