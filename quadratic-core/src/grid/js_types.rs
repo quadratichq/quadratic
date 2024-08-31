@@ -65,7 +65,6 @@ pub struct JsRenderCell {
     /// Code language, set only for the top left cell of a code output.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<CodeCellLanguage>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub align: Option<CellAlign>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -78,11 +77,14 @@ pub struct JsRenderCell {
     pub italic: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub text_color: Option<String>,
-
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub special: Option<JsRenderCellSpecial>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub number: Option<JsNumber>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub underline: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub strike_through: Option<bool>,
 }
 
 #[cfg(test)]
@@ -175,6 +177,8 @@ pub struct CellFormatSummary {
     pub align: Option<CellAlign>,
     pub vertical_align: Option<CellVerticalAlign>,
     pub wrap: Option<CellWrap>,
+    pub underline: Option<bool>,
+    pub strike_through: Option<bool>,
 }
 
 #[derive(Serialize, PartialEq, Debug)]
@@ -273,9 +277,11 @@ pub struct JsValidationWarning {
 
 #[cfg(test)]
 mod test {
-    use super::JsNumber;
-    use crate::grid::{formats::format::Format, NumericFormat};
     use serial_test::parallel;
+
+    use super::JsNumber;
+    use crate::grid::formats::format::Format;
+    use crate::grid::NumericFormat;
 
     #[test]
     #[parallel]

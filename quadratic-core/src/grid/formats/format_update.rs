@@ -1,8 +1,9 @@
 //! This is used to update a format. Only the fields that are Some(_) will be updated.
 
+use serde::{Deserialize, Serialize};
+
 use super::format::Format;
 use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat, RenderSize};
-use serde::{Deserialize, Serialize};
 
 /// Used to store changes from a Format to another Format.
 #[derive(Deserialize, Serialize, Default, Debug, Clone, Eq, PartialEq)]
@@ -73,6 +74,18 @@ pub struct FormatUpdate {
         with = "::serde_with::rust::double_option"
     )]
     pub render_size: Option<Option<RenderSize>>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "::serde_with::rust::double_option"
+    )]
+    pub underline: Option<Option<bool>>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "::serde_with::rust::double_option"
+    )]
+    pub strike_through: Option<Option<bool>>,
 }
 
 impl FormatUpdate {
@@ -91,6 +104,8 @@ impl FormatUpdate {
             text_color: Some(None),
             fill_color: Some(None),
             render_size: Some(None),
+            underline: Some(None),
+            strike_through: Some(None),
         }
     }
 
@@ -106,6 +121,8 @@ impl FormatUpdate {
             && self.text_color.is_none()
             && self.fill_color.is_none()
             && self.render_size.is_none()
+            && self.underline.is_none()
+            && self.strike_through.is_none()
     }
 
     /// Whether we need to send a client html update.
@@ -124,6 +141,8 @@ impl FormatUpdate {
             || self.bold.is_some()
             || self.italic.is_some()
             || self.text_color.is_some()
+            || self.underline.is_some()
+            || self.strike_through.is_some()
     }
 
     pub fn fill_changed(&self) -> bool {
@@ -151,6 +170,8 @@ impl FormatUpdate {
             text_color: self.text_color.clone().or(other.text_color.clone()),
             fill_color: self.fill_color.clone().or(other.fill_color.clone()),
             render_size: self.render_size.clone().or(other.render_size.clone()),
+            underline: self.underline.or(other.underline),
+            strike_through: self.strike_through.or(other.strike_through),
         }
     }
 
@@ -190,6 +211,12 @@ impl FormatUpdate {
         if self.render_size.is_some() {
             clear.render_size = Some(None);
         }
+        if self.underline.is_some() {
+            clear.underline = Some(None);
+        }
+        if self.strike_through.is_some() {
+            clear.strike_through = Some(None);
+        }
         clear
     }
 }
@@ -209,15 +236,18 @@ impl From<&FormatUpdate> for Format {
             text_color: update.text_color.clone().unwrap_or(None),
             fill_color: update.fill_color.clone().unwrap_or(None),
             render_size: update.render_size.clone().unwrap_or(None),
+            underline: update.underline.unwrap_or(None),
+            strike_through: update.strike_through.unwrap_or(None),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use serial_test::parallel;
+
     use super::*;
     use crate::grid::NumericFormatKind;
-    use serial_test::parallel;
 
     #[test]
     #[parallel]
@@ -248,7 +278,9 @@ mod tests {
                 italic: Some(None),
                 text_color: Some(None),
                 fill_color: Some(None),
-                render_size: Some(None)
+                render_size: Some(None),
+                underline: Some(None),
+                strike_through: Some(None),
             }
         );
     }
@@ -285,12 +317,6 @@ mod tests {
         assert!(format.render_cells_changed());
 
         let format = FormatUpdate {
-            align: Some(None),
-            ..Default::default()
-        };
-        assert!(format.render_cells_changed());
-
-        let format = FormatUpdate {
             vertical_align: Some(None),
             ..Default::default()
         };
@@ -309,13 +335,43 @@ mod tests {
         assert!(format.render_cells_changed());
 
         let format = FormatUpdate {
+            numeric_decimals: Some(None),
+            ..Default::default()
+        };
+        assert!(format.render_cells_changed());
+
+        let format = FormatUpdate {
             numeric_commas: Some(None),
             ..Default::default()
         };
         assert!(format.render_cells_changed());
 
         let format = FormatUpdate {
+            bold: Some(None),
+            ..Default::default()
+        };
+        assert!(format.render_cells_changed());
+
+        let format = FormatUpdate {
+            italic: Some(None),
+            ..Default::default()
+        };
+        assert!(format.render_cells_changed());
+
+        let format = FormatUpdate {
             text_color: Some(None),
+            ..Default::default()
+        };
+        assert!(format.render_cells_changed());
+
+        let format = FormatUpdate {
+            underline: Some(None),
+            ..Default::default()
+        };
+        assert!(format.render_cells_changed());
+
+        let format = FormatUpdate {
+            strike_through: Some(None),
             ..Default::default()
         };
         assert!(format.render_cells_changed());
@@ -382,9 +438,13 @@ mod tests {
                 w: "1".to_string(),
                 h: "2".to_string(),
             })),
+            underline: Some(Some(true)),
+            strike_through: Some(Some(true)),
         };
 
         let format2 = FormatUpdate {
+            align: Some(Some(CellAlign::Center)),
+            vertical_align: Some(Some(CellVerticalAlign::Middle)),
             wrap: Some(Some(CellWrap::Clip)),
             numeric_format: Some(Some(NumericFormat {
                 kind: NumericFormatKind::Percentage,
@@ -400,7 +460,8 @@ mod tests {
                 w: "3".to_string(),
                 h: "4".to_string(),
             })),
-            ..Default::default()
+            underline: Some(Some(false)),
+            strike_through: Some(Some(false)),
         };
 
         let combined = format1.combine(&format2);
@@ -431,6 +492,8 @@ mod tests {
                 h: "2".to_string()
             }))
         );
+        assert_eq!(combined.underline, Some(Some(true)));
+        assert_eq!(combined.strike_through, Some(Some(true)));
     }
 
     #[test]
@@ -439,6 +502,7 @@ mod tests {
         let format = FormatUpdate {
             align: Some(Some(CellAlign::Center)),
             vertical_align: Some(Some(CellVerticalAlign::Middle)),
+            wrap: Some(Some(CellWrap::Overflow)),
             numeric_format: Some(Some(NumericFormat {
                 kind: NumericFormatKind::Currency,
                 symbol: None,
@@ -453,14 +517,15 @@ mod tests {
                 w: "1".to_string(),
                 h: "2".to_string(),
             })),
-            ..Default::default()
+            underline: Some(Some(true)),
+            strike_through: Some(Some(true)),
         };
 
         let cleared = format.clear_update();
 
         assert_eq!(cleared.align, Some(None));
         assert_eq!(cleared.vertical_align, Some(None));
-        assert_eq!(cleared.wrap, None);
+        assert_eq!(cleared.wrap, Some(None));
         assert_eq!(cleared.numeric_format, Some(None));
         assert_eq!(cleared.numeric_decimals, Some(None));
         assert_eq!(cleared.numeric_commas, Some(None));
@@ -469,6 +534,8 @@ mod tests {
         assert_eq!(cleared.text_color, Some(None));
         assert_eq!(cleared.fill_color, Some(None));
         assert_eq!(cleared.render_size, Some(None));
+        assert_eq!(cleared.underline, Some(None));
+        assert_eq!(cleared.strike_through, Some(None));
     }
 
     #[test]
@@ -492,6 +559,8 @@ mod tests {
                 w: "1".to_string(),
                 h: "2".to_string(),
             })),
+            underline: Some(Some(true)),
+            strike_through: Some(Some(true)),
         };
 
         let format: Format = (&update).into();
@@ -519,6 +588,8 @@ mod tests {
                 h: "2".to_string()
             })
         );
+        assert_eq!(format.underline, Some(true));
+        assert_eq!(format.strike_through, Some(true));
     }
 
     #[test]

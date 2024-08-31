@@ -172,9 +172,8 @@ export class CellLabel {
     this.align = cell.align ?? 'left';
     this.verticalAlign = cell.verticalAlign ?? 'top';
     this.wrap = cell.wrap === undefined && this.isNumber() ? 'clip' : cell.wrap ?? 'overflow';
-
-    this.underline = this.link; // todo(ayush): this is only based on if the text is a link, not user configurable right now
-    this.strikeThrough = true; // todo(ayush): implement this
+    this.underline = cell.underline ?? this.link;
+    this.strikeThrough = !!cell.strikeThrough;
     this.updateCellLimits();
   }
 
@@ -558,6 +557,9 @@ export class CellLabel {
       ) {
         // this removes extra characters from the mesh after a clip
         buffer.reduceSize(6);
+
+        // update line width to the actual width of the text rendered after the clip
+        this.lineWidths[char.line] = Math.min(this.lineWidths[char.line], char.position.x);
       } else {
         this.insertBuffers({ buffer, bounds, xPos, yPos, textureFrame, textureUvs, scale, color });
       }

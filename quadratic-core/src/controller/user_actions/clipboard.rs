@@ -49,19 +49,19 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use crate::{
-        color::Rgba,
-        controller::GridController,
-        grid::{
-            formats::format_update::FormatUpdate, generate_borders, js_types::CellFormatSummary,
-            set_rect_borders, BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage,
-            Sheet, SheetId,
-        },
-        CellValue, CodeCellValue, Pos, Rect, SheetPos, SheetRect,
-    };
     use bigdecimal::BigDecimal;
     use serial_test::parallel;
+
+    use super::*;
+    use crate::color::Rgba;
+    use crate::controller::GridController;
+    use crate::grid::formats::format_update::FormatUpdate;
+    use crate::grid::js_types::CellFormatSummary;
+    use crate::grid::{
+        generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellBorderLine,
+        CodeCellLanguage, Sheet, SheetId,
+    };
+    use crate::{CellValue, CodeCellValue, Pos, Rect, SheetPos, SheetRect};
 
     fn set_borders(sheet: &mut Sheet) {
         let selection = vec![BorderSelection::All];
@@ -188,7 +188,9 @@ mod test {
                 commas: None,
                 align: None,
                 vertical_align: None,
-                wrap: None
+                wrap: None,
+                underline: None,
+                strike_through: None
             }
         );
         assert_eq!(
@@ -205,7 +207,9 @@ mod test {
                 commas: None,
                 align: None,
                 vertical_align: None,
-                wrap: None
+                wrap: None,
+                underline: None,
+                strike_through: None
             }
         );
     }
@@ -729,7 +733,9 @@ mod test {
                 commas: None,
                 align: None,
                 vertical_align: None,
-                wrap: None
+                wrap: None,
+                underline: None,
+                strike_through: None
             }
         );
         assert_eq!(
@@ -742,7 +748,9 @@ mod test {
                 commas: None,
                 align: None,
                 vertical_align: None,
-                wrap: None
+                wrap: None,
+                underline: None,
+                strike_through: None
             }
         );
     }
@@ -887,7 +895,9 @@ mod test {
                 commas: None,
                 align: None,
                 vertical_align: None,
-                wrap: None
+                wrap: None,
+                underline: None,
+                strike_through: None
             }
         );
         assert_eq!(
@@ -900,7 +910,9 @@ mod test {
                 commas: None,
                 align: None,
                 vertical_align: None,
-                wrap: None
+                wrap: None,
+                underline: None,
+                strike_through: None
             }
         );
     }

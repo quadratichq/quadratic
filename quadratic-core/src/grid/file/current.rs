@@ -181,6 +181,8 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
             set_column_format_string(&mut col.text_color, &column.text_color);
             set_column_format_string(&mut col.fill_color, &column.fill_color);
             set_column_format_render_size(&mut col.render_size, &column.render_size);
+            set_column_format_bool(&mut col.underline, &column.underline);
+            set_column_format_bool(&mut col.strike_through, &column.strike_through);
 
             // todo: there's probably a better way of doing this
             for (y, value) in column.values.iter() {
@@ -315,6 +317,8 @@ fn import_format(format: &current::Format) -> Format {
             w: render_size.w.to_owned(),
             h: render_size.h.to_owned(),
         }),
+        underline: format.underline,
+        strike_through: format.strike_through,
     }
 }
 
@@ -566,6 +570,8 @@ fn export_column_builder(sheet: Sheet) -> Vec<(i64, current::Column)> {
                     text_color: export_column_data_string(column.text_color),
                     fill_color: export_column_data_string(column.fill_color),
                     render_size: export_column_data_render_size(column.render_size),
+                    underline: export_column_data_bool(column.underline),
+                    strike_through: export_column_data_bool(column.strike_through),
                     values: export_values(column.values),
                 },
             )
@@ -653,6 +659,8 @@ fn export_format(format: &Format) -> Option<current::Format> {
                     w: render_size.w.to_owned(),
                     h: render_size.h.to_owned(),
                 }),
+            underline: format.underline,
+            strike_through: format.strike_through,
         })
     }
 }

@@ -287,10 +287,14 @@ impl Sheet {
             text_color: column.text_color.get(pos.y),
             fill_color: column.fill_color.get(pos.y),
             numeric_commas: column.numeric_commas.get(pos.y),
+            numeric_decimals: column.numeric_decimals.get(pos.y),
+            numeric_format: column.numeric_format.get(pos.y),
             align: column.align.get(pos.y),
             vertical_align: column.vertical_align.get(pos.y),
             wrap: column.wrap.get(pos.y),
-            ..Default::default()
+            render_size: column.render_size.get(pos.y),
+            underline: column.underline.get(pos.y),
+            strike_through: column.strike_through.get(pos.y),
         });
         let format = if include_sheet_info {
             Format::combine(
@@ -311,6 +315,8 @@ impl Sheet {
             align: format.align,
             vertical_align: format.vertical_align,
             wrap: format.wrap,
+            underline: format.underline,
+            strike_through: format.strike_through,
         }
     }
 
@@ -488,20 +494,19 @@ impl Sheet {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use crate::{
-        controller::GridController,
-        grid::{
-            formats::{format_update::FormatUpdate, Formats},
-            Bold, CodeCellLanguage, Italic, NumericFormat,
-        },
-        selection::Selection,
-        test_util::print_table,
-        CodeCellValue, SheetPos,
-    };
+    use std::str::FromStr;
+
     use bigdecimal::BigDecimal;
     use serial_test::parallel;
-    use std::str::FromStr;
+
+    use super::*;
+    use crate::controller::GridController;
+    use crate::grid::formats::format_update::FormatUpdate;
+    use crate::grid::formats::Formats;
+    use crate::grid::{Bold, CodeCellLanguage, Italic, NumericFormat};
+    use crate::selection::Selection;
+    use crate::test_util::print_table;
+    use crate::{CodeCellValue, SheetPos};
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
         let mut grid_controller = GridController::test();
@@ -823,13 +828,7 @@ mod test {
         let value = sheet.cell_format_summary((2, 1).into(), false);
         let mut cell_format_summary = CellFormatSummary {
             bold: Some(true),
-            italic: None,
-            text_color: None,
-            fill_color: None,
-            commas: None,
-            align: None,
-            vertical_align: None,
-            wrap: None,
+            ..Default::default()
         };
         assert_eq!(value, cell_format_summary);
 

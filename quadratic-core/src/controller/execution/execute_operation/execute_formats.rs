@@ -1,10 +1,8 @@
-use crate::{
-    controller::{
-        active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::Operation, GridController,
-    },
-    grid::{formatting::CellFmtArray, *},
-};
+use crate::controller::active_transactions::pending_transaction::PendingTransaction;
+use crate::controller::operations::operation::Operation;
+use crate::controller::GridController;
+use crate::grid::formatting::CellFmtArray;
+use crate::grid::*;
 
 impl GridController {
     // Supports deprecated SetCellFormats operation.
@@ -50,6 +48,12 @@ impl GridController {
                 ),
                 CellFmtArray::RenderSize(output_size) => CellFmtArray::RenderSize(
                     self.set_cell_formats_for_type::<RenderSize>(&sheet_rect, output_size),
+                ),
+                CellFmtArray::Underline(underline) => CellFmtArray::Underline(
+                    self.set_cell_formats_for_type::<Underline>(&sheet_rect, underline),
+                ),
+                CellFmtArray::StrikeThrough(strike_through) => CellFmtArray::StrikeThrough(
+                    self.set_cell_formats_for_type::<StrikeThrough>(&sheet_rect, strike_through),
                 ),
             };
             if old_attr == attr {
@@ -159,13 +163,14 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use crate::{
-        wasm_bindings::js::expect_js_call, CellValue, CodeCellValue, Pos, SheetRect, Value,
-    };
+    use std::collections::HashSet;
+
     use chrono::Utc;
     use serial_test::serial;
-    use std::collections::HashSet;
+
+    use super::*;
+    use crate::wasm_bindings::js::expect_js_call;
+    use crate::{CellValue, CodeCellValue, Pos, SheetRect, Value};
 
     #[test]
     #[serial]

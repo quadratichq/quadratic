@@ -1,12 +1,12 @@
 use crate::controller::active_transactions::transaction_name::TransactionName;
-use crate::controller::{operations::operation::Operation, GridController};
-use crate::{
-    grid::{
-        formatting::CellFmtArray, Bold, CellAlign, CellFmtAttr, CellVerticalAlign, CellWrap,
-        FillColor, Italic, NumericDecimals, NumericFormat, RenderSize, TextColor,
-    },
-    RunLengthEncoding, SheetPos, SheetRect,
+use crate::controller::operations::operation::Operation;
+use crate::controller::GridController;
+use crate::grid::formatting::CellFmtArray;
+use crate::grid::{
+    Bold, CellAlign, CellFmtAttr, CellVerticalAlign, CellWrap, FillColor, Italic, NumericDecimals,
+    NumericFormat, RenderSize, StrikeThrough, TextColor, Underline,
 };
+use crate::{RunLengthEncoding, SheetPos, SheetRect};
 
 impl GridController {
     pub fn set_cell_formats_for_type<A: CellFmtAttr>(
@@ -102,21 +102,21 @@ impl_set_cell_fmt_method!(set_cell_bold<Bold>(CellFmtArray::Bold));
 impl_set_cell_fmt_method!(set_cell_italic<Italic>(CellFmtArray::Italic));
 impl_set_cell_fmt_method!(set_cell_text_color<TextColor>(CellFmtArray::TextColor));
 impl_set_cell_fmt_method!(set_cell_fill_color<FillColor>(CellFmtArray::FillColor));
+impl_set_cell_fmt_method!(set_cell_underline<Underline>(CellFmtArray::Underline));
+impl_set_cell_fmt_method!(set_cell_strike_through<StrikeThrough>(CellFmtArray::StrikeThrough));
 
 // impl_set_cell_fmt_method!(set_cell_render_size<RenderSize>(CellFmtArray::RenderSize));
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        controller::GridController,
-        grid::{
-            formats::{format::Format, format_update::FormatUpdate},
-            js_types::{JsNumber, JsRenderCell},
-            CellAlign, RenderSize, SheetId, TextColor,
-        },
-        Pos, Rect, SheetPos, SheetRect,
-    };
     use serial_test::parallel;
+
+    use crate::controller::GridController;
+    use crate::grid::formats::format::Format;
+    use crate::grid::formats::format_update::FormatUpdate;
+    use crate::grid::js_types::{JsNumber, JsRenderCell};
+    use crate::grid::{CellAlign, RenderSize, SheetId, TextColor};
+    use crate::{Pos, Rect, SheetPos, SheetRect};
 
     #[test]
     #[parallel]

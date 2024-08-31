@@ -1,14 +1,13 @@
-use crate::grid::file::v1_5::schema as v1_5;
+use std::collections::HashMap;
+use std::fmt::{self, Display};
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashMap,
-    fmt::{self, Display},
-};
 use uuid::Uuid;
+pub use v1_5::RunErrorMsg;
 
 use super::schema_validation::Validations;
-pub use v1_5::RunErrorMsg;
+use crate::grid::file::v1_5::schema as v1_5;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GridSchema {
@@ -104,6 +103,8 @@ pub struct Format {
     pub text_color: Option<String>,
     pub fill_color: Option<String>,
     pub render_size: Option<RenderSize>,
+    pub underline: Option<bool>,
+    pub strike_through: Option<bool>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -199,6 +200,13 @@ pub struct Column {
     pub text_color: HashMap<String, ColumnRepeat<String>>,
     pub fill_color: HashMap<String, ColumnRepeat<String>>,
     pub render_size: HashMap<String, ColumnRepeat<RenderSize>>,
+
+    // Same as comment for `vertical_align`
+    #[serde(skip_serializing_if = "HashMap::is_empty", default)]
+    pub underline: HashMap<String, ColumnRepeat<bool>>,
+    // Same as comment for `vertical_align`
+    #[serde(skip_serializing_if = "HashMap::is_empty", default)]
+    pub strike_through: HashMap<String, ColumnRepeat<bool>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

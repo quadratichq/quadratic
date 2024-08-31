@@ -1,22 +1,15 @@
 use code_run::CodeRunResult;
 
-use crate::{
-    controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-    grid::{
-        borders::{get_render_horizontal_borders, get_render_vertical_borders},
-        code_run,
-        formats::format::Format,
-        js_types::{
-            JsHtmlOutput, JsNumber, JsRenderBorders, JsRenderCell, JsRenderCellSpecial,
-            JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsSheetFill,
-            JsValidationWarning,
-        },
-        CellAlign, CodeCellLanguage, CodeRun, Column,
-    },
-    CellValue, Pos, Rect, RunError, RunErrorMsg, Value,
-};
-
 use super::Sheet;
+use crate::controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
+use crate::grid::borders::{get_render_horizontal_borders, get_render_vertical_borders};
+use crate::grid::formats::format::Format;
+use crate::grid::js_types::{
+    JsHtmlOutput, JsNumber, JsRenderBorders, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
+    JsRenderCodeCellState, JsRenderFill, JsSheetFill, JsValidationWarning,
+};
+use crate::grid::{code_run, CellAlign, CodeCellLanguage, CodeRun, Column};
+use crate::{CellValue, Pos, Rect, RunError, RunErrorMsg, Value};
 
 impl Sheet {
     /// checks columns for any column that has data that might render
@@ -109,6 +102,8 @@ impl Sheet {
                     text_color: format.text_color,
                     special,
                     number,
+                    underline: format.underline,
+                    strike_through: format.strike_through,
                 }
             }
             Some(column) => {
@@ -143,6 +138,8 @@ impl Sheet {
                     vertical_align: format.vertical_align,
                     special,
                     number,
+                    underline: format.underline,
+                    strike_through: format.strike_through,
                 }
             }
         }
@@ -549,25 +546,24 @@ mod tests {
     use serial_test::{parallel, serial};
     use uuid::Uuid;
 
-    use crate::{
-        controller::{transaction_types::JsCodeResult, GridController},
-        grid::{
-            formats::{format::Format, format_update::FormatUpdate, Formats},
-            js_types::{
-                JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
-                JsSheetFill,
-            },
-            sheet::validations::{
-                validation::Validation,
-                validation_rules::{validation_logical::ValidationLogical, ValidationRule},
-            },
-            Bold, CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, CodeRun, CodeRunResult,
-            Italic, RenderSize, Sheet,
-        },
-        selection::Selection,
-        wasm_bindings::js::{expect_js_call, expect_js_call_count, hash_test},
-        CellValue, CodeCellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
+    use crate::controller::transaction_types::JsCodeResult;
+    use crate::controller::GridController;
+    use crate::grid::formats::format::Format;
+    use crate::grid::formats::format_update::FormatUpdate;
+    use crate::grid::formats::Formats;
+    use crate::grid::js_types::{
+        JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell, JsSheetFill,
     };
+    use crate::grid::sheet::validations::validation::Validation;
+    use crate::grid::sheet::validations::validation_rules::validation_logical::ValidationLogical;
+    use crate::grid::sheet::validations::validation_rules::ValidationRule;
+    use crate::grid::{
+        Bold, CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, CodeRun, CodeRunResult,
+        Italic, RenderSize, Sheet,
+    };
+    use crate::selection::Selection;
+    use crate::wasm_bindings::js::{expect_js_call, expect_js_call_count, hash_test};
+    use crate::{CellValue, CodeCellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value};
 
     #[test]
     #[parallel]
