@@ -1,6 +1,7 @@
 //! This handles the keyboard events for the inline editor. In particular, it
 //! handles when the cursorIsMoving outside of the inline formula edit box.
 
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getSingleSelection } from '@/app/grid/sheet/selection';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
@@ -12,7 +13,6 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { keyboardDropdown } from '../../interaction/keyboard/keyboardDropdown';
-import { events } from '@/app/events/events';
 
 class InlineEditorKeyboard {
   escapeBackspacePressed = false;
@@ -258,6 +258,36 @@ class InlineEditorKeyboard {
           inlineEditorHandler.location.y
         );
         quadraticCore.setCellBold(selection, !!inlineEditorHandler.temporaryBold);
+      }
+    }
+
+    // toggle underline
+    else if (matchShortcut('toggle_underline', e)) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (inlineEditorHandler.location) {
+        inlineEditorHandler.toggleUnderline();
+        const selection = getSingleSelection(
+          inlineEditorHandler.location.sheetId,
+          inlineEditorHandler.location.x,
+          inlineEditorHandler.location.y
+        );
+        quadraticCore.setCellUnderline(selection, !!inlineEditorHandler.temporaryUnderline);
+      }
+    }
+
+    // toggle strike-through
+    else if (matchShortcut('toggle_strike_through', e)) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (inlineEditorHandler.location) {
+        inlineEditorHandler.toggleStrikeThrough();
+        const selection = getSingleSelection(
+          inlineEditorHandler.location.sheetId,
+          inlineEditorHandler.location.x,
+          inlineEditorHandler.location.y
+        );
+        quadraticCore.setCellStrikeThrough(selection, !!inlineEditorHandler.temporaryStrikeThrough);
       }
     }
 

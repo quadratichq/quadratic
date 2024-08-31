@@ -17,6 +17,8 @@ export const ActionEnum = z.enum([
   'clear_formatting_borders',
   'toggle_bold',
   'toggle_italic',
+  'toggle_underline',
+  'toggle_strike_through',
   'fill_right',
   'fill_down',
   'cancel_execution',

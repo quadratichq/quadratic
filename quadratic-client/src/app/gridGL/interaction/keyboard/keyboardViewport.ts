@@ -5,7 +5,13 @@ import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javas
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore.js';
 import { hasPermissionToEditFile } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { clearFormattingAndBorders, setBold, setItalic } from '../../../ui/menus/TopBar/SubMenus/formatCells';
+import {
+  clearFormattingAndBorders,
+  setBold,
+  setItalic,
+  setStrikeThrough,
+  setUnderline,
+} from '../../../ui/menus/TopBar/SubMenus/formatCells';
 import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/pythonWebWorker';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../helpers/zoom';
 import { pixiApp } from '../../pixiApp/PixiApp';
@@ -147,6 +153,18 @@ export function keyboardViewport(options: {
   // Toggle italic
   if (matchShortcut('toggle_italic', event)) {
     setItalic();
+    return true;
+  }
+
+  // Toggle underline
+  if (matchShortcut('toggle_underline', event)) {
+    setUnderline();
+    return true;
+  }
+
+  // Toggle strike-through
+  if (matchShortcut('toggle_strike_through', event)) {
+    setStrikeThrough();
     return true;
   }
 

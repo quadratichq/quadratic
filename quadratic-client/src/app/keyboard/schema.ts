@@ -10,7 +10,7 @@ function validateShortcut(
   const keys = shortcut.split('+').map((part) => part.trim());
   const lastKey = keys[keys.length - 1];
 
-  if (!platformKeys.safeParse(lastKey).success) {
+  if (lastKey !== 'Click' && !platformKeys.safeParse(lastKey).success) {
     return false;
   }
 

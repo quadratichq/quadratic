@@ -236,7 +236,7 @@ export class CellLabel {
   };
 
   private isLink = (cell: JsRenderCell): boolean => {
-    if (cell.number !== undefined || cell.special !== null) return false;
+    if (cell.number !== undefined || cell.special !== undefined) return false;
     return URL_REGEX.test(cell.value);
   };
 

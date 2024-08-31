@@ -34,6 +34,8 @@ import {
   TextColorIcon,
   TextNoneIcon,
   TextOverflowIcon,
+  TextStrikethroughIcon,
+  TextUnderlineIcon,
   TextVerticalAlignBottomIcon,
   TextVerticalAlignMiddleIcon,
   TextVerticalAlignTopIcon,
@@ -49,7 +51,9 @@ import {
   setBold,
   setFillColor,
   setItalic,
+  setStrikeThrough,
   setTextColor,
+  setUnderline,
   setVerticalAlign,
   setWrap,
   textFormatDecreaseDecimalPlaces,
@@ -262,6 +266,8 @@ export const FloatingContextMenu = (props: Props) => {
   const [cursorVerticalAlign, setCursorVerticalAlign] = useState<CellVerticalAlign>('top');
   const [cursorWrap, setCursorWrap] = useState<CellWrap>('overflow');
   const [cursorFillColor, setCursorFillColor] = useState('');
+  const [cursorUnderline, setCursorUnderline] = useState(false);
+  const [cursorStrikethrough, setCursorStrikethrough] = useState(false);
 
   // fetch render cell from core and update formatting state at cursor position
   const updateContextMenuState = useCallback(async () => {
@@ -277,6 +283,8 @@ export const FloatingContextMenu = (props: Props) => {
     setCursorWrap(formatSummary.wrap ?? 'overflow');
     const fillColor = formatSummary.fillColor ?? '';
     setCursorFillColor(fillColor === 'blank' ? '' : fillColor);
+    setCursorUnderline(!!formatSummary.underline);
+    setCursorStrikethrough(!!formatSummary.strikeThrough);
   }, [showContextMenu]);
 
   // trigger is used to hide the menu when cellMoving
@@ -369,6 +377,7 @@ export const FloatingContextMenu = (props: Props) => {
             <FontItalicIcon fontSize={iconSize} style={{ color: cursorItalic ? 'black' : 'inherit' }} />
           </IconButton>
         </TooltipHint>
+
         <Menu
           className="color-picker-submenu"
           instanceRef={textColorRef}
@@ -397,6 +406,34 @@ export const FloatingContextMenu = (props: Props) => {
             }}
           />
         </Menu>
+
+        <MenuDividerVertical />
+
+        <TooltipHint title="Underline" shortcut={KeyboardSymbols.Command + 'U'}>
+          <IconButton
+            size="small"
+            onClick={async () => {
+              await setUnderline();
+              updateContextMenuState();
+            }}
+            sx={iconBtnSx}
+          >
+            <TextUnderlineIcon fontSize={iconSize} style={{ color: cursorUnderline ? 'black' : 'inherit' }} />
+          </IconButton>
+        </TooltipHint>
+
+        <TooltipHint title="Strikethrough" shortcut={KeyboardSymbols.Command + '5'}>
+          <IconButton
+            size="small"
+            onClick={async () => {
+              await setStrikeThrough();
+              updateContextMenuState();
+            }}
+            sx={iconBtnSx}
+          >
+            <TextStrikethroughIcon fontSize={iconSize} style={{ color: cursorStrikethrough ? 'black' : 'inherit' }} />
+          </IconButton>
+        </TooltipHint>
 
         <MenuDividerVertical />
 

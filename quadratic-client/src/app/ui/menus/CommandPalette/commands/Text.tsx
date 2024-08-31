@@ -6,6 +6,8 @@ import {
   TextAlignRightIcon,
   TextClipIcon,
   TextOverflowIcon,
+  TextStrikethroughIcon,
+  TextUnderlineIcon,
   TextVerticalAlignBottomIcon,
   TextVerticalAlignMiddleIcon,
   TextVerticalAlignTopIcon,
@@ -13,7 +15,15 @@ import {
 } from '@/app/ui/icons';
 import { isAvailableBecauseCanEditFile } from '../../../../actions';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { setAlign, setBold, setItalic, setVerticalAlign, setWrap } from '../../TopBar/SubMenus/formatCells';
+import {
+  setAlign,
+  setBold,
+  setItalic,
+  setStrikeThrough,
+  setUnderline,
+  setVerticalAlign,
+  setWrap,
+} from '../../TopBar/SubMenus/formatCells';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
 const commands: CommandGroup = {
@@ -49,6 +59,20 @@ const commands: CommandGroup = {
             shortcutModifiers={KeyboardSymbols.Command}
           />
         );
+      },
+    },
+    {
+      label: 'Underline',
+      isAvailable: isAvailableBecauseCanEditFile,
+      Component: (props) => {
+        return <CommandPaletteListItem {...props} icon={<TextUnderlineIcon />} action={() => setUnderline()} />;
+      },
+    },
+    {
+      label: 'Strike-through',
+      isAvailable: isAvailableBecauseCanEditFile,
+      Component: (props) => {
+        return <CommandPaletteListItem {...props} icon={<TextStrikethroughIcon />} action={() => setStrikeThrough()} />;
       },
     },
     {

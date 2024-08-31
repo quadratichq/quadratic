@@ -30,7 +30,9 @@ import {
   setBold,
   setFillColor,
   setItalic,
+  setStrikeThrough,
   setTextColor,
+  setUnderline,
   setVerticalAlign,
   setWrap,
 } from '../formatCells';
@@ -67,6 +69,14 @@ export const FormatMenu = () => {
       >
         <QColorPicker onChangeComplete={setTextColor} onClear={() => setTextColor()} />
       </SubMenu>
+
+      <MenuDivider />
+      <MenuItem onClick={() => setUnderline()}>
+        <MenuLineItem primary="Underline" secondary={KeyboardSymbols.Command + 'U'} icon={FontBoldIcon} />
+      </MenuItem>
+      <MenuItem onClick={() => setStrikeThrough()}>
+        <MenuLineItem primary="Strike-through" secondary={KeyboardSymbols.Command + '5'} icon={FontItalicIcon} />
+      </MenuItem>
 
       <MenuDivider />
       <MenuItem onClick={() => setAlign('left')}>

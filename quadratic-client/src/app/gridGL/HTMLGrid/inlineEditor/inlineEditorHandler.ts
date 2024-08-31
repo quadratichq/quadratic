@@ -47,6 +47,8 @@ class InlineEditorHandler {
   private formatSummary?: CellFormatSummary;
   temporaryBold: boolean | undefined;
   temporaryItalic: boolean | undefined;
+  temporaryUnderline: boolean | undefined;
+  temporaryStrikeThrough: boolean | undefined;
 
   constructor() {
     events.on('changeInput', this.changeInput);
@@ -79,6 +81,8 @@ class InlineEditorHandler {
     this.formatSummary = undefined;
     this.temporaryBold = undefined;
     this.temporaryItalic = undefined;
+    this.temporaryUnderline = undefined;
+    this.temporaryStrikeThrough = undefined;
     this.changeToFormula(false);
     inlineEditorKeyboard.resetKeyboardPosition();
     inlineEditorFormula.clearDecorations();
@@ -196,6 +200,8 @@ class InlineEditorHandler {
       );
       this.temporaryBold = this.formatSummary?.bold || undefined;
       this.temporaryItalic = this.formatSummary?.italic || undefined;
+      this.temporaryUnderline = this.formatSummary?.underline || undefined;
+      this.temporaryStrikeThrough = this.formatSummary?.strikeThrough || undefined;
       inlineEditorMonaco.set(value);
       inlineEditorMonaco.setBackgroundColor(
         this.formatSummary.fillColor ? convertColorStringToHex(this.formatSummary.fillColor) : '#ffffff'
@@ -241,6 +247,26 @@ class InlineEditorHandler {
       this.temporaryBold = !this.temporaryBold;
     }
     this.updateFont();
+    this.sendMultiplayerUpdate();
+  }
+
+  toggleUnderline() {
+    if (this.temporaryUnderline === undefined) {
+      this.temporaryUnderline = !this.formatSummary?.underline;
+    } else {
+      this.temporaryUnderline = !this.temporaryUnderline;
+    }
+    inlineEditorMonaco.setUnderline(this.temporaryUnderline);
+    this.sendMultiplayerUpdate();
+  }
+
+  toggleStrikeThrough() {
+    if (this.temporaryStrikeThrough === undefined) {
+      this.temporaryStrikeThrough = !this.formatSummary?.strikeThrough;
+    } else {
+      this.temporaryStrikeThrough = !this.temporaryStrikeThrough;
+    }
+    inlineEditorMonaco.setStrikeThrough(this.temporaryStrikeThrough);
     this.sendMultiplayerUpdate();
   }
 
@@ -290,12 +316,16 @@ class InlineEditorHandler {
     const align = this.formatSummary?.align ?? 'left';
     const verticalAlign = this.formatSummary?.verticalAlign ?? 'top';
     const wrap = this.formatSummary?.wrap ?? 'overflow';
+    const underline = this.formatSummary?.underline ?? false;
+    const strikeThrough = this.formatSummary?.strikeThrough ?? false;
     const { width: inlineEditorWidth, height: inlineEditorHeight } = inlineEditorMonaco.updateTextLayout(
       cellContentWidth,
       cellContentHeight,
       align,
       verticalAlign,
-      wrap
+      wrap,
+      underline,
+      strikeThrough
     );
 
     this.x = cellOutlineOffset + (align === 'right' ? Math.min(x, x + cellContentWidth - inlineEditorWidth) : x);

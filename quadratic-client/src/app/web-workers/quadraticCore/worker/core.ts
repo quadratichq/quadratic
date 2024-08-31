@@ -384,6 +384,26 @@ class Core {
     });
   }
 
+  setCellUnderline(selection: Selection, underline: boolean, cursor?: string) {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        this.gridController.setCellUnderline(JSON.stringify(selection, bigIntReplacer), underline, cursor);
+        resolve(undefined);
+      });
+    });
+  }
+
+  setCellStrikeThrough(selection: Selection, strikeThrough: boolean, cursor?: string) {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        this.gridController.setCellStrikeThrough(JSON.stringify(selection, bigIntReplacer), strikeThrough, cursor);
+        resolve(undefined);
+      });
+    });
+  }
+
   setCellFillColor(selection: Selection, fillColor?: string, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {

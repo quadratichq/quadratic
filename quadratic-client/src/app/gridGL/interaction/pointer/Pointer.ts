@@ -98,8 +98,8 @@ export class Pointer {
       this.pointerCellMoving.pointerDown(event) ||
       this.pointerHtmlCells.pointerDown(e) ||
       this.pointerHeading.pointerDown(world, event) ||
-      this.pointerAutoComplete.pointerDown(world) ||
       this.pointerLink.pointerDown(world, event) ||
+      this.pointerAutoComplete.pointerDown(world) ||
       this.pointerDown.pointerDown(world, event);
 
     this.updateCursor();
@@ -118,9 +118,9 @@ export class Pointer {
       this.pointerHtmlCells.pointerMove(e) ||
       this.pointerHeading.pointerMove(world) ||
       this.pointerAutoComplete.pointerMove(world) ||
-      this.pointerLink.pointerMove(world, event) ||
       this.pointerDown.pointerMove(world, event) ||
-      this.pointerCursor.pointerMove(world);
+      this.pointerCursor.pointerMove(world) ||
+      this.pointerLink.pointerMove(world, event);
 
     this.updateCursor();
   };

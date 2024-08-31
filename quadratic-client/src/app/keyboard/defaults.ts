@@ -117,6 +117,20 @@ export const defaultShortcuts: Shortcuts = [
     },
   },
   {
+    action: 'toggle_underline',
+    shortcuts: {
+      mac: ['Cmd + U'],
+      windows: ['Ctrl + U'],
+    },
+  },
+  {
+    action: 'toggle_strike_through',
+    shortcuts: {
+      mac: ['Cmd + 5'],
+      windows: ['Ctrl + 5'],
+    },
+  },
+  {
     action: 'fill_right',
     shortcuts: {
       mac: ['Cmd + R'],
@@ -480,8 +494,8 @@ export const defaultShortcuts: Shortcuts = [
   {
     action: 'open_link',
     shortcuts: {
-      mac: ['Cmd'],
-      windows: ['Ctrl'],
+      mac: ['Cmd + Click'],
+      windows: ['Ctrl + Click'],
     },
   },
 ];
