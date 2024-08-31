@@ -41,7 +41,7 @@ export function FileDragDrop() {
   return (
     <div
       id="file-drag-drop"
-      className="absolute left-0 top-0 z-20 flex h-full w-full flex-col items-center justify-center bg-white opacity-90"
+      className="fixed left-0 top-0 z-20 flex h-full w-full flex-col items-center justify-center bg-white opacity-90 lg:left-[264px] lg:w-[calc(100%-264px)]"
       onDragEnter={handleDrag}
       onDragLeave={handleDrag}
       onDragOver={handleDrag}

@@ -189,7 +189,7 @@ export const Component = () => {
         <div
           ref={contentPaneRef}
           className={cn(
-            `relative order-2 flex w-full flex-grow flex-col px-4 pb-10 transition-all sm:pt-0 lg:px-10`,
+            `relative order-2 flex h-full w-full flex-grow flex-col px-4 pb-10 transition-all sm:pt-0 lg:px-10`,
             isLoading ? 'overflow-hidden' : 'overflow-auto',
             isLoading && 'pointer-events-none opacity-25'
           )}
