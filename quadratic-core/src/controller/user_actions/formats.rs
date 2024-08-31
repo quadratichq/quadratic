@@ -294,9 +294,9 @@ mod test {
     use serial_test::parallel;
 
     use crate::controller::GridController;
-    use crate::grid::CellWrap;
+    use crate::grid::{CellWrap, StrikeThrough, Underline};
     use crate::selection::Selection;
-    use crate::Rect;
+    use crate::{Pos, Rect};
 
     #[test]
     #[parallel]
@@ -669,7 +669,10 @@ mod test {
         .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.columns.get(&0).unwrap().underline.get(0), Some(true));
+        assert_eq!(
+            sheet.get_formatting_value::<Underline>(Pos { x: 0, y: 0 }),
+            Some(true)
+        );
     }
 
     #[test]
@@ -694,7 +697,7 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.columns.get(&0).unwrap().strike_through.get(0),
+            sheet.get_formatting_value::<StrikeThrough>(Pos { x: 0, y: 0 }),
             Some(true)
         );
     }

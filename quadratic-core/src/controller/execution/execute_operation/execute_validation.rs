@@ -2,14 +2,13 @@ use std::collections::HashMap;
 
 use uuid::Uuid;
 
-use crate::{
-    controller::{
-        active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::Operation, GridController,
-    },
-    grid::{js_types::JsValidationWarning, sheet::validations::validation::Validation, SheetId},
-    Pos, SheetRect,
-};
+use crate::controller::active_transactions::pending_transaction::PendingTransaction;
+use crate::controller::operations::operation::Operation;
+use crate::controller::GridController;
+use crate::grid::js_types::JsValidationWarning;
+use crate::grid::sheet::validations::validation::Validation;
+use crate::grid::SheetId;
+use crate::{Pos, SheetRect};
 
 impl GridController {
     // Remove old warnings from the validation. Adds to client_warnings as necessary.
@@ -227,14 +226,11 @@ impl GridController {
 mod tests {
     use serial_test::serial;
 
-    use crate::{
-        grid::sheet::validations::validation_rules::ValidationRule,
-        selection::Selection,
-        wasm_bindings::js::{expect_js_call, expect_js_call_count},
-        CellValue,
-    };
-
     use super::*;
+    use crate::grid::sheet::validations::validation_rules::ValidationRule;
+    use crate::selection::Selection;
+    use crate::wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count};
+    use crate::CellValue;
 
     #[test]
     #[serial]
@@ -277,6 +273,8 @@ mod tests {
     #[test]
     #[serial]
     fn execute_remove_validation() {
+        clear_js_calls();
+
         let mut gc = GridController::default();
         let mut transaction = PendingTransaction::default();
         let sheet_id = gc.sheet_ids()[0];
