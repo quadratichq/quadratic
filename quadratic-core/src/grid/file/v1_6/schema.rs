@@ -204,6 +204,7 @@ pub struct Column {
     // Same as comment for `vertical_align`
     #[serde(skip_serializing_if = "HashMap::is_empty", default)]
     pub underline: HashMap<String, ColumnRepeat<bool>>,
+
     // Same as comment for `vertical_align`
     #[serde(skip_serializing_if = "HashMap::is_empty", default)]
     pub strike_through: HashMap<String, ColumnRepeat<bool>>,

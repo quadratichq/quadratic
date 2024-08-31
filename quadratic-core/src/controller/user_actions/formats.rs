@@ -650,6 +650,57 @@ mod test {
 
     #[test]
     #[parallel]
+    fn set_underline_selection() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_underline_selection(
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+                rows: None,
+                columns: None,
+                all: false,
+            },
+            true,
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.columns.get(&0).unwrap().underline.get(0), Some(true));
+    }
+
+    #[test]
+    #[parallel]
+    fn set_strike_through_selection() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_strike_through_selection(
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+                rows: None,
+                columns: None,
+                all: false,
+            },
+            true,
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.columns.get(&0).unwrap().strike_through.get(0),
+            Some(true)
+        );
+    }
+
+    #[test]
+    #[parallel]
     fn clear_format() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
