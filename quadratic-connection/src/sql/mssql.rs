@@ -1,7 +1,7 @@
 use axum::{extract::Path, response::IntoResponse, Extension, Json};
 use quadratic_rust_shared::{
     quadratic_api::Connection as ApiConnection,
-    sql::{postgres_connection::PostgresConnection, Connection},
+    sql::{mssql_connection::MsSqlConnection, Connection},
 };
 use uuid::Uuid;
 
@@ -16,16 +16,16 @@ use crate::{
 use super::{query_generic, Schema};
 
 /// Test the connection to the database.
-pub(crate) async fn test(Json(connection): Json<PostgresConnection>) -> Json<TestResponse> {
+pub(crate) async fn test(Json(connection): Json<MsSqlConnection>) -> Json<TestResponse> {
     test_connection(connection).await
 }
 
-/// Get the connection details from the API and create a PostgresConnection.
+/// Get the connection details from the API and create a MySqlConnection.
 async fn get_connection(
     state: &State,
     claims: &Claims,
     connection_id: &Uuid,
-) -> Result<(PostgresConnection, ApiConnection)> {
+) -> Result<(MsSqlConnection, ApiConnection)> {
     let connection = if cfg!(not(test)) {
         get_api_connection(state, "", &claims.sub, connection_id).await?
     } else {
@@ -37,15 +37,15 @@ async fn get_connection(
             updated_date: "".into(),
             type_details: quadratic_rust_shared::quadratic_api::TypeDetails {
                 host: "0.0.0.0".into(),
-                port: Some("5433".into()),
-                username: Some("user".into()),
-                password: Some("password".into()),
-                database: "postgres-connection".into(),
+                port: Some("1433".into()),
+                username: Some("sa".into()),
+                password: Some("yourStrong(!)Password".into()),
+                database: "AllTypes".into(),
             },
         }
     };
 
-    let pg_connection = PostgresConnection::new(
+    let pg_connection = MsSqlConnection::new(
         connection.type_details.username.to_owned(),
         connection.type_details.password.to_owned(),
         connection.type_details.host.to_owned(),
@@ -65,7 +65,7 @@ pub(crate) async fn query(
     let connection = get_connection(&state, &claims, &sql_query.connection_id)
         .await?
         .0;
-    query_generic::<PostgresConnection>(connection, state, sql_query).await
+    query_generic::<MsSqlConnection>(connection, state, sql_query).await
 }
 
 /// Get the schema of the database
@@ -90,6 +90,9 @@ pub(crate) async fn schema(
 
 #[cfg(test)]
 mod tests {
+
+    use std::str::FromStr;
+
     use super::*;
     use crate::{
         num_vec, test_connection,
@@ -98,7 +101,7 @@ mod tests {
     use arrow::datatypes::Date32Type;
     use arrow_schema::{DataType, TimeUnit};
     use bytes::Bytes;
-    use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
+    use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
     use http::StatusCode;
     use quadratic_rust_shared::sql::schema::{SchemaColumn, SchemaTable};
     use tracing_test::traced_test;
@@ -106,13 +109,13 @@ mod tests {
 
     #[tokio::test]
     #[traced_test]
-    async fn postgres_test_connection() {
+    async fn mssql_test_connection() {
         test_connection!(get_connection);
     }
 
     #[tokio::test]
     #[traced_test]
-    async fn postgres_schema() {
+    async fn mssql_schema() {
         let connection_id = Uuid::new_v4();
         let state = Extension(new_state().await);
         let response = schema(Path(connection_id), state, get_claims())
@@ -123,34 +126,44 @@ mod tests {
             id: response.0.id,
             name: "".into(),
             r#type: "".into(),
-            database: "postgres-connection".into(),
+            database: "AllTypes".into(),
             tables: vec![SchemaTable {
                 name: "all_native_data_types".into(),
-                schema: "public".into(),
+                schema: "dbo".into(),
                 columns: vec![
                     SchemaColumn {
                         name: "id".into(),
-                        r#type: "int4".into(),
+                        r#type: "int".into(),
                         is_nullable: false,
                     },
                     SchemaColumn {
-                        name: "smallint_col".into(),
-                        r#type: "int2".into(),
+                        name: "tinyint_col".into(),
+                        r#type: "tinyint".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "integer_col".into(),
-                        r#type: "int4".into(),
+                        name: "smallint_col".into(),
+                        r#type: "smallint".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "int_col".into(),
+                        r#type: "int".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
                         name: "bigint_col".into(),
-                        r#type: "int8".into(),
+                        r#type: "bigint".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "bit_col".into(),
+                        r#type: "bit".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
                         name: "decimal_col".into(),
-                        r#type: "numeric".into(),
+                        r#type: "decimal".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
@@ -159,58 +172,23 @@ mod tests {
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "real_col".into(),
-                        r#type: "float4".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "double_col".into(),
-                        r#type: "float8".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "serial_col".into(),
-                        r#type: "int4".into(),
-                        is_nullable: false,
-                    },
-                    SchemaColumn {
-                        name: "bigserial_col".into(),
-                        r#type: "int8".into(),
-                        is_nullable: false,
-                    },
-                    SchemaColumn {
                         name: "money_col".into(),
                         r#type: "money".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "char_col".into(),
-                        r#type: "bpchar".into(),
+                        name: "smallmoney_col".into(),
+                        r#type: "smallmoney".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "varchar_col".into(),
-                        r#type: "varchar".into(),
+                        name: "float_col".into(),
+                        r#type: "float".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "text_col".into(),
-                        r#type: "text".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "bytea_col".into(),
-                        r#type: "bytea".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "timestamp_col".into(),
-                        r#type: "timestamp".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "timestamptz_col".into(),
-                        r#type: "timestamptz".into(),
+                        name: "real_col".into(),
+                        r#type: "real".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
@@ -224,88 +202,78 @@ mod tests {
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "timetz_col".into(),
-                        r#type: "timetz".into(),
+                        name: "datetime2_col".into(),
+                        r#type: "datetime2".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "interval_col".into(),
-                        r#type: "interval".into(),
+                        name: "datetimeoffset_col".into(),
+                        r#type: "datetimeoffset".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "boolean_col".into(),
-                        r#type: "bool".into(),
+                        name: "datetime_col".into(),
+                        r#type: "datetime".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "enum_col".into(),
+                        name: "smalldatetime_col".into(),
+                        r#type: "smalldatetime".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "char_col".into(),
+                        r#type: "char".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "varchar_col".into(),
                         r#type: "varchar".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "point_col".into(),
-                        r#type: "point".into(),
+                        name: "text_col".into(),
+                        r#type: "text".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "line_col".into(),
-                        r#type: "line".into(),
+                        name: "nchar_col".into(),
+                        r#type: "nchar".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "lseg_col".into(),
-                        r#type: "lseg".into(),
+                        name: "nvarchar_col".into(),
+                        r#type: "nvarchar".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "box_col".into(),
-                        r#type: "box".into(),
+                        name: "ntext_col".into(),
+                        r#type: "ntext".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "path_col".into(),
-                        r#type: "path".into(),
+                        name: "binary_col".into(),
+                        r#type: "binary".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "polygon_col".into(),
-                        r#type: "polygon".into(),
+                        name: "varbinary_col".into(),
+                        r#type: "varbinary".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "circle_col".into(),
-                        r#type: "circle".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "cidr_col".into(),
-                        r#type: "cidr".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "inet_col".into(),
-                        r#type: "inet".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "macaddr_col".into(),
-                        r#type: "macaddr".into(),
+                        name: "image_col".into(),
+                        r#type: "image".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
                         name: "json_col".into(),
-                        r#type: "json".into(),
+                        r#type: "nvarchar".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "jsonb_col".into(),
-                        r#type: "jsonb".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "uuid_col".into(),
-                        r#type: "uuid".into(),
+                        name: "uniqueidentifier_col".into(),
+                        r#type: "uniqueidentifier".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
@@ -314,22 +282,33 @@ mod tests {
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "array_col".into(),
-                        r#type: "_int4".into(),
+                        name: "varchar_max_col".into(),
+                        r#type: "varchar".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "nvarchar_max_col".into(),
+                        r#type: "nvarchar".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "varbinary_max_col".into(),
+                        r#type: "varbinary".into(),
                         is_nullable: true,
                     },
                 ],
             }],
         };
-        assert_eq!(response.0, expected)
+
+        assert_eq!(response.0, expected);
     }
 
     #[tokio::test]
     #[traced_test]
-    async fn postgres_query_all_data_types() {
+    async fn mssql_query_all_data_types() {
         let connection_id = Uuid::new_v4();
         let sql_query = SqlQuery {
-            query: "select * from all_native_data_types order by id limit 1".into(),
+            query: "SELECT TOP 1 * FROM [dbo].[all_native_data_types] ORDER BY id".into(),
             connection_id,
         };
         let state = Extension(new_state().await);
@@ -338,78 +317,82 @@ mod tests {
 
         let expected = vec![
             (DataType::Int32, num_vec!(1_i32)),
+            (DataType::UInt8, num_vec!(255_u8)),
             (DataType::Int16, num_vec!(32767_i16)),
             (DataType::Int32, num_vec!(2147483647_i32)),
             (DataType::Int64, num_vec!(9223372036854775807_i64)),
+            (DataType::Boolean, num_vec!(1_u8)),
             (DataType::Float64, num_vec!(12345.67_f64)),
             (DataType::Float64, num_vec!(12345.67_f64)),
-            (DataType::Float32, num_vec!(123.45_f32)),
+            (DataType::Float64, num_vec!(922337203685477.6_f64)),
+            (DataType::Float64, num_vec!(214748.3647_f64)),
             (DataType::Float64, num_vec!(123456789.123456_f64)),
-            (DataType::Int32, num_vec!(1_i32)),
-            (DataType::Int64, num_vec!(1_i64)),
-            (DataType::Utf8, vec![]), // unsupported
-            (DataType::Utf8, str_vec("char_data ")),
-            (DataType::Utf8, str_vec("varchar_data")),
-            (DataType::Utf8, str_vec("text_data")),
-            (DataType::Utf8, vec![]), // unsupported
-            (
-                DataType::Timestamp(TimeUnit::Millisecond, None),
-                num_vec!(
-                    NaiveDateTime::parse_from_str("2024-05-20 12:34:56", "%Y-%m-%d %H:%M:%S")
-                        .unwrap()
-                        .and_utc()
-                        .timestamp_millis()
-                ),
-            ), // unsupported
-            (
-                DataType::Timestamp(TimeUnit::Millisecond, None),
-                num_vec!(NaiveDateTime::parse_from_str(
-                    "2024-05-20 06:34:56+00",
-                    "%Y-%m-%d %H:%M:%S%#z"
-                )
-                .unwrap()
-                .and_utc()
-                .timestamp_millis()),
-            ),
+            (DataType::Float32, num_vec!(123456.79_f32)),
             (
                 DataType::Date32,
                 num_vec!(Date32Type::from_naive_date(
-                    NaiveDate::parse_from_str("2024-05-20", "%Y-%m-%d").unwrap(),
+                    NaiveDate::parse_from_str("2024-05-28", "%Y-%m-%d").unwrap(),
                 )),
             ),
             (
                 DataType::Time32(TimeUnit::Second),
-                num_vec!(NaiveTime::parse_from_str("12:34:56", "%H:%M:%S")
+                num_vec!(NaiveTime::from_str("12:34:56.123456700")
                     .unwrap()
                     .num_seconds_from_midnight()),
             ),
             (
-                DataType::Time32(TimeUnit::Second),
-                num_vec!(NaiveTime::parse_from_str("12:34:56+09:30", "%H:%M:%S%z")
+                DataType::Timestamp(TimeUnit::Millisecond, None),
+                num_vec!(NaiveDateTime::from_str("2024-05-28T12:34:56.123456700")
                     .unwrap()
-                    .num_seconds_from_midnight()),
+                    .and_utc()
+                    .timestamp_millis()),
             ),
-            (DataType::Utf8, vec![]), // unsupported
-            (DataType::Boolean, vec![1]),
-            (DataType::Utf8, str_vec("value1")),
-            (DataType::Utf8, vec![]), // unsupported
-            (DataType::Utf8, vec![]), // unsupported
-            (DataType::Utf8, vec![]), // unsupported
-            (DataType::Utf8, vec![]), // unsupported
-            (DataType::Utf8, vec![]), // unsupported
-            (DataType::Utf8, vec![]), // unsupported
-            (DataType::Utf8, vec![]), // unsupported
-            (DataType::Utf8, vec![]), // unsupported
-            (DataType::Utf8, vec![]), // unsupported
-            (DataType::Utf8, vec![]), // unsupported
-            (DataType::Utf8, str_vec(r#"{"key":"value"}"#)),
-            (DataType::Utf8, str_vec(r#"{"key":"value"}"#)),
+            (
+                DataType::Timestamp(TimeUnit::Millisecond, None),
+                num_vec!(
+                    DateTime::<Local>::from_str("2024-05-28T16:04:56.123456700+05:30")
+                        .unwrap()
+                        .timestamp_millis()
+                ),
+            ),
+            (
+                DataType::Timestamp(TimeUnit::Millisecond, None),
+                num_vec!(NaiveDateTime::from_str("2024-05-28T12:34:56")
+                    .unwrap()
+                    .and_utc()
+                    .timestamp_millis()),
+            ),
+            (
+                DataType::Timestamp(TimeUnit::Millisecond, None),
+                num_vec!(NaiveDateTime::from_str("2024-05-28T12:34:00")
+                    .unwrap()
+                    .and_utc()
+                    .timestamp_millis()),
+            ),
+            (DataType::Utf8, str_vec("CHAR      ")),
+            (DataType::Utf8, str_vec("VARCHAR")),
+            (DataType::Utf8, str_vec("TEXT")),
+            (DataType::Utf8, str_vec("NCHAR     ")),
+            (DataType::Utf8, str_vec("NVARCHAR")),
+            (DataType::Utf8, str_vec("NTEXT")),
             (
                 DataType::Utf8,
-                str_vec("123e4567-e89b-12d3-a456-426614174000"),
+                str_vec("\u{1}\u{2}\u{3}\u{4}\u{5}\0\0\0\0\0"),
             ),
-            (DataType::Utf8, vec![]), // unsupported
-            (DataType::Utf8, vec![]), // unsupported
+            (DataType::Utf8, str_vec("\u{1}\u{2}\u{3}\u{4}\u{5}")),
+            (DataType::Utf8, str_vec("\u{1}\u{2}\u{3}\u{4}\u{5}")),
+            (DataType::Utf8, str_vec("{\"key\": \"value\"}")),
+            (
+                DataType::Utf8,
+                str_vec("abcb8303-a0a2-4392-848b-3b32181d224b"),
+            ),
+            (
+                DataType::Utf8,
+                str_vec("<root><element>value</element></root>"),
+            ),
+            (DataType::Utf8, str_vec("A".repeat(8000).as_str())),
+            (DataType::Utf8, str_vec("A".repeat(4000).as_str())),
+            (DataType::Utf8, str_vec("A".repeat(8000).as_str())),
         ];
 
         validate_parquet(response, expected).await;
@@ -418,10 +401,10 @@ mod tests {
 
     #[tokio::test]
     #[traced_test]
-    async fn postgres_query_max_response_bytes() {
+    async fn mssql_query_max_response_bytes() {
         let connection_id = Uuid::new_v4();
         let sql_query = SqlQuery {
-            query: "select * from all_native_data_types order by id limit 1".into(),
+            query: "SELECT TOP 1 * FROM [dbo].[all_native_data_types] ORDER BY id".into(),
             connection_id,
         };
         let mut state = Extension(new_state().await);

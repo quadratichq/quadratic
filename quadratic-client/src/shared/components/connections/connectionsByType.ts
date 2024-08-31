@@ -1,8 +1,10 @@
+import * as Mssql from '@/shared/components/connections/ConnectionFormMssql';
 import * as Mysql from '@/shared/components/connections/ConnectionFormMysql';
 import * as Postgres from '@/shared/components/connections/ConnectionFormPostgres';
 import { Connection, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { ReactNode } from 'react';
 import { UseFormReturn } from 'react-hook-form';
+import MssqlLogo from './logo-mssql.svg?react';
 import MysqlLogo from './logo-mysql.svg?react';
 import PostgresLogo from './logo-postgres.svg?react';
 
@@ -10,7 +12,7 @@ export type ConnectionFormValues = {
   name: string;
   type: ConnectionType;
   // This represents the `typeDetails` and varies from one form to the next
-  // depeinding on the connection type.
+  // depending on the connection type.
   [key: string]: any;
 };
 
@@ -48,5 +50,11 @@ export const connectionsByType: Record<ConnectionType, ConnectionTypeData<any>> 
     Logo: MysqlLogo,
     ConnectionForm: Mysql.ConnectionForm,
     useConnectionForm: Mysql.useConnectionForm,
+  },
+  MSSQL: {
+    name: 'MsSQL',
+    Logo: MssqlLogo,
+    ConnectionForm: Mssql.ConnectionForm,
+    useConnectionForm: Mssql.useConnectionForm,
   },
 };
