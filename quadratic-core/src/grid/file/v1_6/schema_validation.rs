@@ -98,12 +98,34 @@ pub struct ValidationText {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum DateTimeRange {
+    DateRange(Option<i64>, Option<i64>),
+    DateEqual(Vec<i64>),
+    DateNotEqual(Vec<i64>),
+
+    TimeRange(Option<i32>, Option<i32>),
+    TimeEqual(Vec<i32>),
+    TimeNotEqual(Vec<i32>),
+}
+
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct ValidationDateTime {
+    pub ignore_blank: bool,
+    pub require_date: bool,
+    pub require_time: bool,
+    pub prohibit_date: bool,
+    pub prohibit_time: bool,
+    pub ranges: Vec<DateTimeRange>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum ValidationRule {
     None,
     List(ValidationList),
     Logical(ValidationLogical),
     Text(ValidationText),
     Number(ValidationNumber),
+    DateTime(ValidationDateTime),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

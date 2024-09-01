@@ -10,6 +10,7 @@ import {
   Format,
   JsBorders,
   JsBordersSheet,
+  JsCellValue,
   JsCodeCell,
   JsHtmlOutput,
   JsRenderCell,
@@ -872,19 +873,6 @@ export interface CoreClientImage {
   h?: string;
 }
 
-export interface ClientCoreGetValidation {
-  type: 'clientCoreGetValidation';
-  id: number;
-  sheetId: string;
-  validationId: string;
-}
-
-export interface CoreClientGetValidation {
-  type: 'coreClientGetValidation';
-  id: number;
-  validation: Validation | undefined;
-}
-
 export interface ClientCoreGetValidations {
   type: 'clientCoreGetValidations';
   id: number;
@@ -949,6 +937,13 @@ export interface CoreClientMultiplayerSynced {
   type: 'coreClientMultiplayerSynced';
 }
 
+export interface ClientCoreSetDateTimeFormat {
+  type: 'clientCoreSetDateTimeFormat';
+  selection: Selection;
+  format: string;
+  cursor: string;
+}
+
 export interface ClientCoreValidateInput {
   type: 'clientCoreValidateInput';
   id: number;
@@ -962,6 +957,20 @@ export interface CoreClientValidateInput {
   type: 'coreClientValidateInput';
   id: number;
   validationId: string | undefined;
+}
+
+export interface ClientCoreGetCellValue {
+  type: 'clientCoreGetCellValue';
+  id: number;
+  sheetId: string;
+  x: number;
+  y: number;
+}
+
+export interface CoreClientGetCellValue {
+  type: 'coreClientGetCellValue';
+  id: number;
+  value: JsCellValue | undefined;
 }
 
 export type ClientCoreMessage =
@@ -1027,7 +1036,7 @@ export type ClientCoreMessage =
   | ClientCoreGetFormatColumn
   | ClientCoreGetFormatRow
   | ClientCoreGetFormatCell
-  | ClientCoreGetValidation
+  | ClientCoreSetDateTimeFormat
   | ClientCoreGetValidations
   | ClientCoreUpdateValidation
   | ClientCoreRemoveValidation
@@ -1035,7 +1044,8 @@ export type ClientCoreMessage =
   | ClientCoreGetValidationFromPos
   | ClientCoreGetValidationList
   | ClientCoreGetDisplayCell
-  | ClientCoreValidateInput;
+  | ClientCoreValidateInput
+  | ClientCoreGetCellValue;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1086,7 +1096,6 @@ export type CoreClientMessage =
   | CoreClientGetFormatCell
   | CoreClientSheetMetaFills
   | CoreClientSetCursorSelection
-  | CoreClientGetValidation
   | CoreClientOfflineTransactionsApplied
   | CoreClientGetValidations
   | CoreClientSheetValidations
@@ -1099,4 +1108,5 @@ export type CoreClientMessage =
   | CoreClientMultiplayerSynced
   | CoreClientValidateInput
   | CoreClientBordersHash
-  | CoreClientBordersSheet;
+  | CoreClientBordersSheet
+  | CoreClientGetCellValue;

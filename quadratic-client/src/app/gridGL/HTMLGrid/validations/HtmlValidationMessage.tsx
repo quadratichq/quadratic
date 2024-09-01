@@ -123,6 +123,7 @@ export const HtmlValidationMessage = (props: Props) => {
       message = <span>{validation.message.message}</span>;
     }
   }
+
   if (hide || !offsets || (!title && !message)) return null;
 
   const wrapStyle = {

@@ -1472,6 +1472,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e8566979429cf69b49a5c740c60791108e86440e8be149bbea4fe54d2c32d6e2"
 
 [[package]]
+name = "dateparser"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2ef451feee09ae5ecd8a02e738bd9adee9266b8fa9b44e22d3ce968d8694238"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "lazy_static",
+ "regex",
+]
+
+[[package]]
 name = "der"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3129,6 +3141,7 @@ dependencies = [
  "console_error_panic_hook",
  "criterion",
  "csv",
+ "dateparser",
  "flate2",
  "futures",
  "getrandom 0.2.15",
@@ -3234,6 +3247,7 @@ dependencies = [
 name = "quadratic-rust-client"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "console_error_panic_hook",
  "js-sys",
  "quadratic-core",

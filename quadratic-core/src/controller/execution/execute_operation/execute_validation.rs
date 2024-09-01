@@ -62,9 +62,8 @@ impl GridController {
     ) {
         if let Some(sheet) = self.try_sheet_mut(sheet_id) {
             let mut warnings = vec![];
-            if let Some(values) = sheet.selection(&validation.selection, None, false) {
-                let positions = values.iter().map(|(pos, _)| pos);
-                positions.for_each(|pos| {
+            if let Some(values) = sheet.selection(&validation.selection, None, false, true) {
+                values.iter().for_each(|(pos, _)| {
                     if let Some(validation) = sheet.validations.validate(sheet, *pos) {
                         warnings.push((*pos, validation.id));
                     }

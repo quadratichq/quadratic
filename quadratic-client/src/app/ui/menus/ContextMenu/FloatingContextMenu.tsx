@@ -725,7 +725,16 @@ export const FloatingContextMenu = (props: Props) => {
             <MenuLineItem
               primary={downloadSelectionAsCsvAction.label}
               secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'E'}
-            ></MenuLineItem>
+            />
+          </MenuItem>
+          <MenuDivider />
+          <MenuItem
+            onClick={() => {
+              setEditorInteractionState((state) => ({ ...state, annotationState: 'date-format' }));
+              moreMenuToggle();
+            }}
+          >
+            <MenuLineItem primary="Date and Time Formatting" />
           </MenuItem>
         </ControlledMenu>
       </Toolbar>

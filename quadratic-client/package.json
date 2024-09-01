@@ -63,6 +63,7 @@
     "react": "^18.2.0",
     "react-avatar-editor": "^14.0.0-beta.5",
     "react-color": "^2.19.3",
+    "react-day-picker": "^8.10.1",
     "react-device-detect": "^2.2.2",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.48.2",

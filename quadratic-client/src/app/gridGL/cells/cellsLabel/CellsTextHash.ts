@@ -11,16 +11,17 @@
  * The data calculations occur in renderWebWorker::CellsTextHash.ts.
  */
 
+import { Bounds } from '@/app/grid/sheet/Bounds';
 import { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
-import { BitmapText, Container, Graphics, Point, Rectangle, Renderer } from 'pixi.js';
-import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
-import { LabelMeshEntry } from './LabelMeshEntry';
+import { CellsTextHashContent } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashContent';
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
+import { BitmapText, Container, Graphics, Point, Rectangle, Renderer } from 'pixi.js';
+import { ErrorMarker, ErrorValidation } from '../CellsSheet';
+import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 import { CellsTextHashSpecial } from './CellsTextHashSpecial';
 import { CellsTextHashValidations } from './CellsTextHashValidations';
-import { ErrorMarker, ErrorValidation } from '../CellsSheet';
-import { CellsTextHashContent } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashContent';
 import { CellsHashBorders } from './CellsHashBorders';
+import { LabelMeshEntry } from './LabelMeshEntry';
 
 // Draw hashed regions of cell glyphs (the text + text formatting)
 export class CellsTextHash extends Container {
@@ -46,7 +47,8 @@ export class CellsTextHash extends Container {
   AABB: Rectangle;
 
   // received from render web worker and used for culling
-  viewRectangle: Rectangle;
+  bounds: Bounds;
+  textBounds: Rectangle;
 
   // color to use for drawDebugBox
   debugColor = Math.floor(Math.random() * 0xffffff);
@@ -57,16 +59,20 @@ export class CellsTextHash extends Container {
     super();
     this.sheetId = sheetId;
     this.AABB = new Rectangle(hashX * sheetHashWidth, hashY * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
-    this.viewRectangle = viewRectangle || this.AABB;
+    this.textBounds = viewRectangle || this.AABB;
     this.hashX = hashX;
     this.hashY = hashY;
 
     this.entries = this.addChild(new Container<LabelMeshEntry>());
     this.special = this.addChild(new CellsTextHashSpecial());
-    this.warnings = this.addChild(new CellsTextHashValidations(sheetId));
+    this.warnings = this.addChild(new CellsTextHashValidations(this, sheetId));
     this.borders = this.addChild(new CellsHashBorders(this));
 
     this.content = new CellsTextHashContent();
+
+    // we track the bounds of both the text and validations
+    this.bounds = new Bounds();
+    this.updateHashBounds();
   }
 
   clear() {
@@ -87,10 +93,17 @@ export class CellsTextHash extends Container {
     this.special.update(special);
   }
 
+  updateHashBounds() {
+    this.bounds.clear();
+    this.bounds.addRectangle(this.textBounds);
+    this.bounds.mergeInto(this.warnings.bounds);
+  }
+
   clearMeshEntries(viewRectangle: Rectangle) {
-    this.viewRectangle = viewRectangle;
+    this.textBounds = viewRectangle;
     this.x = 0;
     this.y = 0;
+    this.updateHashBounds();
   }
 
   show(): void {
@@ -116,7 +129,7 @@ export class CellsTextHash extends Container {
   }
 
   drawDebugBox(g: Graphics, c: Container) {
-    const screen = this.viewRectangle;
+    const screen = this.textBounds;
     g.beginFill(this.debugColor, 0.25);
     g.drawShape(screen);
     g.endFill();
@@ -129,21 +142,22 @@ export class CellsTextHash extends Container {
     if (hashX !== undefined) {
       if (hashX < 0 && this.hashX < hashX) {
         this.x -= delta;
-        this.viewRectangle.x -= delta;
+        this.textBounds.x -= delta;
       } else if (hashX >= 0 && this.hashX > hashX) {
         this.x += delta;
-        this.viewRectangle.x += delta;
+        this.textBounds.x += delta;
       }
     }
     if (hashY !== undefined) {
       if (hashY < 0 && this.hashY < hashY) {
         this.y -= delta;
-        this.viewRectangle.y -= delta;
+        this.textBounds.y -= delta;
       } else if (hashY >= 0 && this.hashY > hashY) {
         this.y += delta;
-        this.viewRectangle.y += delta;
+        this.textBounds.y += delta;
       }
     }
+    this.updateHashBounds();
   }
 
   getErrorMarker(x: number, y: number): ErrorMarker | undefined {

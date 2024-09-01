@@ -33,8 +33,10 @@ export const validationText = (validation: Validation) => {
     return 'Text';
   } else if ('Number' in validation.rule) {
     return 'Number';
+  } else if ('DateTime' in validation.rule) {
+    return 'Date and Time';
   }
-  return 'Unknown';
+  throw new Error('Unknown validation type');
 };
 
 export const ValidationEntry = (props: Props) => {

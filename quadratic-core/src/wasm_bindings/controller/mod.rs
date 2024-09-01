@@ -83,6 +83,9 @@ impl GridController {
 
                             // sends all validations to the client
                             sheet.send_all_validations();
+
+                            // sends all validation warnings to the client
+                            sheet.send_all_validation_warnings();
                         }
                     });
                 }

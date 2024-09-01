@@ -495,12 +495,8 @@ class CoreClient {
         core.moveCells(e.data);
         return;
 
-      case 'clientCoreGetValidation':
-        this.send({
-          type: 'coreClientGetValidation',
-          id: e.data.id,
-          validation: core.getValidation(e.data.sheetId, e.data.validationId),
-        });
+      case 'clientCoreSetDateTimeFormat':
+        core.setDateTimeFormat(e.data.selection, e.data.format, e.data.cursor);
         return;
 
       case 'clientCoreUpdateValidation':
@@ -552,6 +548,14 @@ class CoreClient {
           type: 'coreClientValidateInput',
           id: e.data.id,
           validationId: core.validateInput(e.data.sheetId, e.data.x, e.data.y, e.data.input),
+        });
+        return;
+
+      case 'clientCoreGetCellValue':
+        this.send({
+          type: 'coreClientGetCellValue',
+          id: e.data.id,
+          value: core.getCellValue(e.data.sheetId, e.data.x, e.data.y),
         });
         return;
 
