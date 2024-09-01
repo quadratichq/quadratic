@@ -185,9 +185,30 @@ pub fn parse_time(value: &str) -> Option<NaiveTime> {
 /// Parses a date string using a list of possible formats.
 pub fn parse_date(value: &str) -> Option<NaiveDate> {
     let formats = vec![
-        "%Y-%m-%d", "%m-%d-%Y", "%d-%m-%Y", "%Y/%m/%d", "%m/%d/%Y", "%d/%m/%Y", "%Y.%m.%d",
-        "%m.%d.%Y", "%d.%m.%Y", "%Y %m %d", "%m %d %Y", "%d %m %Y", "%Y %b %d", "%b %d %Y",
-        "%d %b %Y", "%Y %B %d", "%B %d %Y", "%d %B %Y",
+        "%Y-%m-%d",
+        "%m-%d-%Y",
+        "%d-%m-%Y",
+        "%Y/%m/%d",
+        "%m/%d/%Y",
+        "%d/%m/%Y",
+        "%Y.%m.%d",
+        "%m.%d.%Y",
+        "%d.%m.%Y",
+        "%Y %m %d",
+        "%m %d %Y",
+        "%d %m %Y",
+        "%Y %b %d",
+        "%b %d %Y",
+        "%d %b %Y",
+        "%Y %B %d",
+        "%B %d %Y",
+        "%d %B %Y",
+        "%b %d, %Y",
+        "%B %d, %Y", // Added to support "December 23, 2024"
+        "%d %b",     // Day and abbreviated month name (assumes current year)
+        "%d %B",     // Day and full month name (assumes current year)
+        "%b %d",     // Abbreviated month name and day (assumes current year)
+        "%B %d",     // Full month name and day (assumes current year)
     ];
 
     for &format in formats.iter() {
@@ -233,9 +254,12 @@ pub fn i64_to_naive_date(timestamp: i64) -> Option<NaiveDate> {
 
 #[cfg(test)]
 mod tests {
+    use serial_test::parallel;
+
     use super::*;
 
     #[test]
+    #[parallel]
     fn time() {
         let date_time = "12/23/2024 4:45 PM".to_string();
         let format = "%m/%d/%Y %-I:%M %p".to_string();
@@ -248,6 +272,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn naive_time_i32() {
         let time = NaiveTime::from_hms_opt(12, 34, 56);
         assert_eq!(naive_time_to_i32(time.unwrap()), 45296);
@@ -255,6 +280,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn naive_date_i64() {
         let date = NaiveDate::from_ymd_opt(2024, 12, 23);
         assert_eq!(naive_date_to_i64(date.unwrap()), Some(1734912000));
@@ -262,15 +288,39 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_parse_date() {
         let date = "12/23/2024".to_string();
         let parsed_date = parse_date(&date).unwrap();
         assert_eq!(parsed_date, NaiveDate::from_ymd_opt(2024, 12, 23).unwrap());
-
-        // more test functions are in validation_date_time.rs
+        assert_eq!(
+            parse_date(&"12/23/2024".to_string()),
+            NaiveDate::from_ymd_opt(2024, 12, 23)
+        );
+        assert_eq!(
+            parse_date(&"2024-12-23".to_string()),
+            NaiveDate::from_ymd_opt(2024, 12, 23)
+        );
+        assert_eq!(
+            parse_date(&"23 Dec 2024".to_string()),
+            NaiveDate::from_ymd_opt(2024, 12, 23)
+        );
+        assert_eq!(
+            parse_date(&"December 23, 2024".to_string()),
+            NaiveDate::from_ymd_opt(2024, 12, 23)
+        );
+        assert_eq!(
+            parse_date(&"2024/12/23".to_string()),
+            NaiveDate::from_ymd_opt(2024, 12, 23)
+        );
+        assert_eq!(
+            parse_date(&"jan 1,2024".to_string()),
+            NaiveDate::from_ymd_opt(2024, 1, 1)
+        );
     }
 
     #[test]
+    #[parallel]
     fn test_parse_time() {
         let time = "4:45 PM".to_string();
         let parsed_time = parse_time(&time).unwrap();
@@ -280,6 +330,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn parse_simple_times() {
         let time = "4pm".to_string();
         let parsed_time = parse_time(&time).unwrap();
