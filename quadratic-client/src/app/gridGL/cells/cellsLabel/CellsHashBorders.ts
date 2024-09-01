@@ -1,7 +1,7 @@
-import { Container, Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
+import { Container, Sprite, Texture, TilingSprite } from 'pixi.js';
 import { CellsTextHash } from './CellsTextHash';
 import { JsBorderHorizontal, JsBorders, JsBorderVertical } from '@/app/quadratic-core-types';
-import { BorderCull, setBorderTexture } from '../drawBorders';
+import { setBorderTexture } from '../drawBorders';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Bounds } from '@/app/grid/sheet/Bounds';
 import { convertRgbaToTint } from '@/app/helpers/convertColor';
@@ -9,7 +9,6 @@ import { Sheet } from '@/app/grid/sheet/Sheet';
 
 export class CellsHashBorders extends Container {
   private cellsTextHash: CellsTextHash;
-  private sprites: BorderCull[] = [];
 
   private horizontal?: JsBorderHorizontal[];
   private vertical?: JsBorderVertical[];
@@ -23,87 +22,56 @@ export class CellsHashBorders extends Container {
     this.bounds = new Bounds();
   }
 
-  private drawHorizontalBorder(border: JsBorderHorizontal, sheet: Sheet) {
+  private drawBorder(border: JsBorderHorizontal | JsBorderVertical, sheet: Sheet) {
+    const isHorizontal = (border as JsBorderHorizontal).width !== undefined;
+
     const borderType = border.line;
     const lineWidth = borderType === 'line2' ? 2 : borderType === 'line3' ? 3 : 1;
     const tiling = borderType === 'dashed' || borderType === 'dotted';
     const doubleDistance = borderType === 'double' ? lineWidth * 2 : 0;
 
-    const top = this.getSprite(tiling);
-    setBorderTexture(top, true, borderType);
+    const sprite = this.getSprite(tiling);
+    setBorderTexture(sprite, isHorizontal, borderType);
     const { tint, alpha } = convertRgbaToTint(border.color);
-    top.tint = tint;
-    top.alpha = alpha ?? 1;
+    sprite.tint = tint;
+    sprite.alpha = alpha ?? 1;
     const start = sheet.getCellOffsets(border.x, border.y);
-    const end = sheet.getCellOffsets(Number(border.x + border.width) - 1, border.y);
 
-    // +1 because we want the border to extend 1 pixel beyond the cell
-    // (avoids a gap in the bottom-right corner of the last cell)
-    top.width = end.x + end.width - start.x + 1;
-
-    top.height = lineWidth;
-    top.position.set(start.x - lineWidth / 2, start.y - lineWidth / 2);
-    this.sprites.push({
-      sprite: top,
-      rectangle: new Rectangle(top.x, top.y, top.width, top.height),
-    });
-    if (doubleDistance) {
-      const top = this.getSprite(tiling);
-      setBorderTexture(top, true, borderType);
-      top.tint = tint;
-      top.width = start.width + lineWidth + 1; // todo - ((options.left ? 1 : 0) + (options.right ? 1 : 0)) * doubleDistance;
-      top.height = lineWidth;
-      top.position.set(
-        start.x - lineWidth / 2, // todo + (options.left ? doubleDistance : 0),
-        start.y + doubleDistance - lineWidth / 2
-      );
-      this.sprites.push({
-        sprite: top,
-        rectangle: new Rectangle(top.x, top.y, top.width, top.height),
-      });
+    if (isHorizontal) {
+      const borderHorizontal = border as JsBorderHorizontal;
+      const end = sheet.getCellOffsets(Number(borderHorizontal.x + borderHorizontal.width) - 1, borderHorizontal.y);
+      sprite.width = end.x + end.width - start.x + 1;
+      sprite.height = lineWidth;
+      sprite.position.set(start.x - lineWidth / 2, start.y - lineWidth / 2);
+    } else {
+      const borderVertical = border as JsBorderVertical;
+      const end = sheet.getCellOffsets(borderVertical.x, Number(borderVertical.y + borderVertical.height) - 1);
+      sprite.width = lineWidth;
+      sprite.height = end.y + end.height - start.y + 1;
+      sprite.position.set(start.x - lineWidth / 2, start.y - lineWidth / 2);
     }
-  }
 
-  private drawVerticalBorder(border: JsBorderVertical, sheet: Sheet) {
-    const borderType = border.line;
-    const lineWidth = borderType === 'line2' ? 2 : borderType === 'line3' ? 3 : 1;
-    const tiling = borderType === 'dashed' || borderType === 'dotted';
-    const doubleDistance = borderType === 'double' ? lineWidth * 2 : 0;
+    this.addChild(sprite);
+    this.bounds.addRectanglePoints(sprite.x, sprite.y, sprite.width, sprite.height);
 
-    const left = this.getSprite(tiling);
-    setBorderTexture(left, false, borderType);
-    const { tint, alpha } = convertRgbaToTint(border.color);
-    left.tint = tint;
-    left.alpha = alpha ?? 1;
-    const start = sheet.getCellOffsets(border.x, border.y);
-    const end = sheet.getCellOffsets(border.x, Number(border.y + border.height) - 1);
-
-    left.width = lineWidth;
-
-    // +1 because we want the border to extend 1 pixel beyond the cell
-    // (avoids a gap in the bottom-right corner of the last cell)
-    left.height = end.y + end.height - start.y + 1;
-
-    left.position.set(start.x - lineWidth / 2, start.y - lineWidth / 2);
-    this.sprites.push({
-      sprite: left,
-      rectangle: new Rectangle(left.x, left.y, left.width, left.height),
-    });
-
+    // Creates a double border
     if (doubleDistance) {
-      const left = this.getSprite(tiling);
-      setBorderTexture(left, false, borderType);
-      left.tint = tint;
-      left.width = lineWidth;
-      left.height = start.height + lineWidth + 1; // todo - ((options.top ? 1 : 0) + (options.bottom ? 1 : 0)) * doubleDistance;
-      left.position.set(
-        start.x - lineWidth / 2 + doubleDistance,
-        start.y - lineWidth / 2 // todo + (options.top ? doubleDistance : 0)
-      );
-      this.sprites.push({
-        sprite: left,
-        rectangle: new Rectangle(left.x, left.y, left.width, left.height),
-      });
+      const doubleSprite = this.getSprite(tiling);
+      setBorderTexture(doubleSprite, isHorizontal, borderType);
+      doubleSprite.tint = tint;
+      doubleSprite.alpha = alpha ?? 1;
+
+      if (isHorizontal) {
+        doubleSprite.width = start.width + lineWidth + 1;
+        doubleSprite.height = lineWidth;
+        doubleSprite.position.set(start.x - lineWidth / 2, start.y + doubleDistance - lineWidth / 2);
+      } else {
+        doubleSprite.width = lineWidth;
+        doubleSprite.height = start.height + lineWidth + 1;
+        doubleSprite.position.set(start.x - lineWidth / 2 + doubleDistance, start.y - lineWidth / 2);
+      }
+      this.addChild(doubleSprite);
+      this.bounds.addRectanglePoints(doubleSprite.x, doubleSprite.y, doubleSprite.width, doubleSprite.height);
     }
   }
 
@@ -119,27 +87,13 @@ export class CellsHashBorders extends Container {
     const sheet = sheets.getById(this.cellsTextHash.sheetId);
     if (!sheet) return;
 
-    this.horizontal?.forEach((border) => {
-      this.drawHorizontalBorder(border, sheet);
-    });
+    this.horizontal?.forEach((border) => this.drawBorder(border, sheet));
+    this.vertical?.forEach((border) => this.drawBorder(border, sheet));
 
-    this.vertical?.forEach((border) => {
-      this.drawVerticalBorder(border, sheet);
-    });
-
-    this.sprites.forEach((sprite) => {
-      this.addChild(sprite.sprite);
-      this.bounds.addRectangle(sprite.rectangle);
-    });
     this.cellsTextHash.updateHashBounds();
   }
 
-  // get sprites
   private getSprite = (tiling?: boolean): Sprite | TilingSprite => {
-    if (tiling) {
-      return this.addChild(new TilingSprite(Texture.WHITE));
-    } else {
-      return this.addChild(new Sprite(Texture.WHITE));
-    }
+    return this.addChild(tiling ? new TilingSprite(Texture.WHITE) : new Sprite(Texture.WHITE));
   };
 }
