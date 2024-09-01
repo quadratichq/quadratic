@@ -1,9 +1,7 @@
-import { CellBorderLine, JsBorderHorizontal, Rgba } from '@/app/quadratic-core-types';
+import { CellBorderLine, Rgba } from '@/app/quadratic-core-types';
 import { Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
 import { colors } from '../../theme/colors';
 import { generatedTextures } from '../generateTextures';
-import { convertRgbaToTint } from '@/app/helpers/convertColor';
-import { Sheet } from '@/app/grid/sheet/Sheet';
 
 export interface BorderCull {
   sprite: Sprite | TilingSprite;
@@ -12,7 +10,11 @@ export interface BorderCull {
 
 export const borderLineWidth = 1;
 
-function setTexture(sprite: Sprite | TilingSprite, horizontal: boolean, borderLine?: CellBorderLine): void {
+export function setBorderTexture(
+  sprite: Sprite | TilingSprite,
+  horizontal: boolean,
+  borderLine?: CellBorderLine
+): void {
   if (borderLine === 'dashed') {
     sprite.texture = horizontal ? generatedTextures.dashedHorizontal : generatedTextures.dashedVertical;
   } else if (borderLine === 'dotted') {
@@ -45,7 +47,7 @@ export function drawBorder(options: {
 
   if (options.top) {
     const top = options.getSprite(tiling);
-    setTexture(top, true, borderType);
+    setBorderTexture(top, true, borderType);
     top.tint = options.tint;
     top.alpha = options.alpha;
     top.width = options.width + lineWidth;
@@ -54,7 +56,7 @@ export function drawBorder(options: {
 
     if (doubleDistance) {
       const top = options.getSprite(tiling);
-      setTexture(top, true, borderType);
+      setBorderTexture(top, true, borderType);
       top.tint = options.tint;
       top.alpha = options.alpha;
       top.width = options.width + lineWidth - ((options.left ? 1 : 0) + (options.right ? 1 : 0)) * doubleDistance;
@@ -68,7 +70,7 @@ export function drawBorder(options: {
 
   if (options.bottom) {
     const bottom = options.getSprite(tiling);
-    setTexture(bottom, true, borderType);
+    setBorderTexture(bottom, true, borderType);
     bottom.tint = options.tint;
     bottom.alpha = options.alpha;
     const width = options.width + (options.right ? 0 : lineWidth);
@@ -82,7 +84,7 @@ export function drawBorder(options: {
 
     if (doubleDistance) {
       const bottom = options.getSprite(tiling);
-      setTexture(bottom, true, borderType);
+      setBorderTexture(bottom, true, borderType);
       bottom.tint = options.tint;
       bottom.alpha = options.alpha;
       const width = options.width + lineWidth - ((options.left ? 1 : 0) + (options.right ? 1 : 0)) * doubleDistance;
@@ -101,7 +103,7 @@ export function drawBorder(options: {
 
   if (options.left) {
     const left = options.getSprite(tiling);
-    setTexture(left, false, borderType);
+    setBorderTexture(left, false, borderType);
     left.tint = options.tint;
     left.alpha = options.alpha;
     left.width = lineWidth;
@@ -114,7 +116,7 @@ export function drawBorder(options: {
     });
     if (doubleDistance) {
       const left = options.getSprite(tiling);
-      setTexture(left, false, borderType);
+      setBorderTexture(left, false, borderType);
       left.tint = options.tint;
       left.alpha = options.alpha;
       left.width = lineWidth;
@@ -133,7 +135,7 @@ export function drawBorder(options: {
 
   if (options.right) {
     const right = options.getSprite(tiling);
-    setTexture(right, false, borderType);
+    setBorderTexture(right, false, borderType);
     right.tint = options.tint;
     right.alpha = options.alpha;
     right.width = lineWidth;
@@ -150,7 +152,7 @@ export function drawBorder(options: {
 
     if (doubleDistance) {
       const right = options.getSprite(tiling);
-      setTexture(right, false, borderType);
+      setBorderTexture(right, false, borderType);
       right.tint = options.tint;
       right.alpha = options.alpha;
       right.width = lineWidth;
@@ -209,7 +211,7 @@ export function drawCellBorder(options: {
     const doubleDistance = borderType === 'double' ? lineWidth * 2 : 0;
 
     const top = getSprite(tiling);
-    setTexture(top, true, borderType);
+    setBorderTexture(top, true, borderType);
     const color = horizontal.color ? convertColor(horizontal.color) : colors.defaultBorderColor;
     top.tint = color;
     top.alpha = horizontal.color ? horizontal.color.alpha : 1;
@@ -222,7 +224,7 @@ export function drawCellBorder(options: {
     });
     if (doubleDistance) {
       const top = getSprite(tiling);
-      setTexture(top, true, borderType);
+      setBorderTexture(top, true, borderType);
       top.tint = color;
       top.width = position.width + lineWidth; // todo - ((options.left ? 1 : 0) + (options.right ? 1 : 0)) * doubleDistance;
       top.height = lineWidth;
@@ -244,7 +246,7 @@ export function drawCellBorder(options: {
     const doubleDistance = borderType === 'double' ? lineWidth * 2 : 0;
 
     const left = options.getSprite(tiling);
-    setTexture(left, false, borderType);
+    setBorderTexture(left, false, borderType);
     const color = vertical.color ? convertColor(vertical.color) : colors.defaultBorderColor;
     left.tint = color;
     left.alpha = vertical.color ? vertical.color.alpha : 1;
@@ -258,7 +260,7 @@ export function drawCellBorder(options: {
 
     if (doubleDistance) {
       const left = options.getSprite(tiling);
-      setTexture(left, false, borderType);
+      setBorderTexture(left, false, borderType);
       left.tint = color;
       left.width = lineWidth;
       left.height = position.height + lineWidth; // todo - ((options.top ? 1 : 0) + (options.bottom ? 1 : 0)) * doubleDistance;
@@ -273,48 +275,4 @@ export function drawCellBorder(options: {
     }
   }
   return borderCull;
-}
-
-// Adds sprites to the sprites array.
-export function drawHorizontalBorder(
-  border: JsBorderHorizontal,
-  getSprite: (tiling?: boolean) => Sprite | TilingSprite,
-  sprites: BorderCull[],
-  sheet: Sheet
-) {
-  const borderType = border.line;
-  const lineWidth = borderType === 'line2' ? 2 : borderType === 'line3' ? 3 : 1;
-  const tiling = borderType === 'dashed' || borderType === 'dotted';
-  const doubleDistance = borderType === 'double' ? lineWidth * 2 : 0;
-
-  const top = getSprite(tiling);
-  setTexture(top, true, borderType);
-  const { tint, alpha } = convertRgbaToTint(border.color);
-  top.tint = tint;
-  top.alpha = alpha ?? 1;
-  const start = sheet.getCellOffsets(border.x, border.y);
-  const end = sheet.getCellOffsets(border.x + border.width - 1n, border.y);
-
-  top.width = end.x + end.width - start.x;
-  top.height = lineWidth;
-  top.position.set(start.x - lineWidth / 2, start.y - lineWidth / 2);
-  sprites.push({
-    sprite: top,
-    rectangle: new Rectangle(top.x, top.y, top.width, top.height),
-  });
-  if (doubleDistance) {
-    const top = getSprite(tiling);
-    setTexture(top, true, borderType);
-    top.tint = tint;
-    top.width = start.width + lineWidth; // todo - ((options.left ? 1 : 0) + (options.right ? 1 : 0)) * doubleDistance;
-    top.height = lineWidth;
-    top.position.set(
-      start.x - lineWidth / 2, // todo + (options.left ? doubleDistance : 0),
-      start.y + doubleDistance - lineWidth / 2
-    );
-    sprites.push({
-      sprite: top,
-      rectangle: new Rectangle(top.x, top.y, top.width, top.height),
-    });
-  }
 }

@@ -244,13 +244,13 @@ export class CellsLabels extends Container {
     }
   }
 
+  // Handle bordersHash events and create new CellsTextHash if necessary
   private bordersHash = (sheetId: string, borders: JsBorders) => {
     if (sheetId !== this.sheetId) return;
     const key = `${borders.hash_x},${borders.hash_y}`;
-    let cellsTextHash = this.cellsTextHash.get(key);
-    if (!cellsTextHash) {
-      cellsTextHash = this.createCellsTextHash(Number(borders.hash_x), Number(borders.hash_y));
-    }
+    const cellsTextHash =
+      this.cellsTextHash.get(key) ?? this.createCellsTextHash(Number(borders.hash_x), Number(borders.hash_y));
+
     cellsTextHash.borders.update(borders);
   };
 }

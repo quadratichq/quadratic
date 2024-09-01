@@ -79,7 +79,7 @@ export class CellsTextHash extends Container {
     this.entries.removeChildren();
     this.special.clear();
 
-    // we leave borders loaded so we don't have to re-create them
+    // we do not clear borders so we don't have to re-create them
   }
 
   addLabelMeshEntry(message: RenderClientLabelMeshEntry) {
@@ -97,6 +97,7 @@ export class CellsTextHash extends Container {
     this.bounds.clear();
     this.bounds.addRectangle(this.textBounds);
     this.bounds.mergeInto(this.warnings.bounds);
+    this.bounds.mergeInto(this.borders.bounds);
   }
 
   clearMeshEntries(viewRectangle: Rectangle) {
