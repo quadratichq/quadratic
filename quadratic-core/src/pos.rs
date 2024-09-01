@@ -1,6 +1,6 @@
 use crate::{
-    controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     grid::SheetId,
+    renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
 };
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
@@ -127,7 +127,7 @@ impl SheetPos {
 #[cfg(test)]
 mod test {
     use crate::{
-        controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
+        renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
         grid::SheetId,
         Pos, SheetPos, SheetRect,
     };

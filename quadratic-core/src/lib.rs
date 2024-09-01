@@ -14,6 +14,7 @@ pub mod formulas;
 pub mod grid;
 mod pos;
 mod rect;
+pub mod renderer_constants;
 mod rle;
 pub mod selection;
 pub mod sheet_offsets;

@@ -1,7 +1,6 @@
 use code_run::CodeRunResult;
 
 use crate::{
-    controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     grid::{
         borders::{get_render_horizontal_borders, get_render_vertical_borders},
         code_run,
@@ -13,6 +12,7 @@ use crate::{
         },
         CellAlign, CodeCellLanguage, CodeRun, Column,
     },
+    renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     CellValue, Pos, Rect, RunError, RunErrorMsg, Value,
 };
 

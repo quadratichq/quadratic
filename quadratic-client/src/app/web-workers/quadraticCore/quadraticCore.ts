@@ -28,7 +28,6 @@ import {
   Validation,
 } from '@/app/quadratic-core-types';
 import { authClient } from '@/auth';
-import { Rectangle } from 'pixi.js';
 import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
 import {
   ClientCoreCellHasContent,
@@ -178,10 +177,10 @@ class QuadraticCore {
       events.emit('multiplayerSynced');
       return;
     } else if (e.data.type === 'coreClientBordersHash') {
-      events.emit('bordersHash', e.data.borders);
+      events.emit('bordersHash', e.data.sheetId, e.data.borders);
       return;
     } else if (e.data.type === 'coreClientBordersSheet') {
-      events.emit('bordersSheet', e.data.borders);
+      events.emit('bordersSheet', e.data.sheetId, e.data.borders);
       return;
     }
 
@@ -776,16 +775,12 @@ class QuadraticCore {
 
   //#region Borders
 
-  setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle) {
+  setBorders(selection: Selection, borderSelection: BorderSelection, style?: BorderStyle) {
     this.send({
-      type: 'clientCoreSetRegionBorders',
-      sheetId,
-      x: rectangle.x,
-      y: rectangle.y,
-      width: rectangle.width,
-      height: rectangle.height,
-      selection: JSON.stringify(selection),
-      style: style ? JSON.stringify(style) : undefined,
+      type: 'clientCoreSetBorders',
+      selection,
+      borderSelection,
+      style,
       cursor: sheets.getCursorPosition(),
     });
   }

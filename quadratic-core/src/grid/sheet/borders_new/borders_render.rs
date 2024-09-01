@@ -1,6 +1,8 @@
 use crate::{
-    controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     grid::SheetId,
+    renderer_constants::hashes_in_rects,
+    renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
+    selection::Selection,
     Rect,
 };
 
@@ -186,7 +188,6 @@ impl Borders {
                 Some(vec![])
             }
         };
-
         serde_json::to_string(&JsBordersSheet {
             all: self.all.clone(),
             columns: self.columns.clone(),
@@ -199,6 +200,19 @@ impl Borders {
     pub fn send_sheet_borders(&self, sheet_id: SheetId, skip_hashes: bool) {
         if let Ok(borders_json) = self.all(skip_hashes) {
             crate::wasm_bindings::js::jsBordersSheet(sheet_id.to_string(), borders_json);
+        }
+    }
+
+    /// Sends updated borders for a selection.
+    pub fn send_updated_borders(&self, selection: Selection) {
+        if selection.has_sheet_selection() {
+            self.send_sheet_borders(selection.sheet_id, true);
+        }
+        if let Some(rects) = selection.rects.as_ref() {
+            let hashes = hashes_in_rects(rects);
+            for hash in hashes {
+                self.send_borders_in_hash(selection.sheet_id, hash.0, hash.1);
+            }
         }
     }
 }

@@ -21,7 +21,7 @@ import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 import { CellsTextHash } from './CellsTextHash';
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
 import { events } from '@/app/events/events';
-import { JsValidationWarning } from '@/app/quadratic-core-types';
+import { JsBorders, JsValidationWarning } from '@/app/quadratic-core-types';
 
 export class CellsLabels extends Container {
   private cellsSheet: CellsSheet;
@@ -45,6 +45,7 @@ export class CellsLabels extends Container {
     this.cellsTextHashDebug = this.addChild(new Container());
 
     events.on('clickedToCell', this.clickedToCell);
+    events.on('bordersHash', this.bordersHash);
   }
 
   get sheetId(): string {
@@ -240,4 +241,14 @@ export class CellsLabels extends Container {
       return hash.intersectsErrorMarkerValidation(world);
     }
   }
+
+  private bordersHash = (sheetId: string, borders: JsBorders) => {
+    if (sheetId !== this.sheetId) return;
+    const key = `${borders.hash_x},${borders.hash_y}`;
+    let cellsTextHash = this.cellsTextHash.get(key);
+    if (!cellsTextHash) {
+      cellsTextHash = this.createCellsTextHash(Number(borders.hash_x), Number(borders.hash_y));
+    }
+    cellsTextHash.borders.update(borders);
+  };
 }

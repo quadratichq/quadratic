@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/react';
 import Color from 'color';
 import { ColorResult } from 'react-color';
 import { colors } from '../theme/colors';
+import { Rgba } from '../quadratic-core-types';
 
 export function convertReactColorToString(color: ColorResult): string {
   const rgb = color.rgb;
@@ -17,7 +18,7 @@ export function convertColorStringToTint(color: string): number {
   } catch (e: any) {
     console.error('Error converting color string to tint', e);
     Sentry.captureException(e, { data: color });
-    return 0xaaaaaa;
+    return Color('gray').rgbNumber(); // Consistent use of 'gray'
   }
 }
 
@@ -27,7 +28,7 @@ export function convertTintToString(color: number): string {
   } catch (e: any) {
     console.error('Error converting color tint to string', e);
     Sentry.captureException(e, { data: color });
-    return 'gray';
+    return 'gray'; // Already using 'gray'
   }
 }
 
@@ -37,7 +38,7 @@ export function convertTintToHex(color: number): string {
   } catch (e: any) {
     console.error('Error converting color tint to hex', e);
     Sentry.captureException(e, { data: color });
-    return 'gray';
+    return Color('gray').hex(); // Consistent use of 'gray'
   }
 }
 
@@ -47,9 +48,9 @@ export function convertTintToArray(color: number): [number, number, number, numb
     s = '0' + s;
   }
   return [
-    parseInt(s.substring(0, 2), 16) / 256,
-    parseInt(s.substring(2, 4), 16) / 256,
-    parseInt(s.substring(4, 6), 16) / 256,
+    parseInt(s.substring(0, 2), 16) / 255,
+    parseInt(s.substring(2, 4), 16) / 255,
+    parseInt(s.substring(4, 6), 16) / 255,
     1,
   ];
 }
@@ -63,6 +64,11 @@ export function convertColorStringToHex(color: string): string {
   } catch (e: any) {
     console.error('Error converting color string to hex', e);
     Sentry.captureException(e, { data: color });
-    return 'gray';
+    return Color('gray').hex(); // Consistent use of 'gray'
   }
+}
+
+export function convertRgbaToTint(rgba: Rgba): { tint: number; alpha: number } {
+  const rgb = { r: rgba.red, g: rgba.green, b: rgba.blue };
+  return { tint: Color(rgb).rgbNumber(), alpha: rgba.alpha };
 }

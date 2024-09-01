@@ -1,5 +1,7 @@
 import { Coordinate } from '@/app/gridGL/types/size';
 import {
+  BorderSelection,
+  BorderStyle,
   CellAlign,
   CellFormatSummary,
   CellVerticalAlign,
@@ -475,15 +477,11 @@ export interface ClientCoreRerunCodeCells {
   cursor: string;
 }
 
-export interface ClientCoreSetRegionBorders {
-  type: 'clientCoreSetRegionBorders';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  selection: string;
-  style?: string;
+export interface ClientCoreSetBorders {
+  type: 'clientCoreSetBorders';
+  selection: Selection;
+  borderSelection: BorderSelection;
+  style?: BorderStyle;
   cursor: string;
 }
 
@@ -626,11 +624,13 @@ export interface CoreClientGenerateThumbnail {
 
 export interface CoreClientBordersHash {
   type: 'coreClientBordersHash';
+  sheetId: string;
   borders: JsBorders;
 }
 
 export interface CoreClientBordersSheet {
   type: 'coreClientBordersSheet';
+  sheetId: string;
   borders: JsBordersSheet;
 }
 
@@ -1007,7 +1007,7 @@ export type ClientCoreMessage =
   | ClientCoreCopyToClipboard
   | ClientCoreCutToClipboard
   | ClientCorePasteFromClipboard
-  | ClientCoreSetRegionBorders
+  | ClientCoreSetBorders
   | ClientCoreSetCellRenderResize
   | ClientCoreAutocomplete
   | ClientCoreExportCsvSelection

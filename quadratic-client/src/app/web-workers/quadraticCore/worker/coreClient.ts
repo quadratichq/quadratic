@@ -61,8 +61,8 @@ declare var self: WorkerGlobalScope &
     sendSheetHtml: (html: JsHtmlOutput[]) => void;
     sendUpdateHtml: (html: JsHtmlOutput) => void;
     sendGenerateThumbnail: () => void;
-    sendBordersHash: (borders: JsBorders) => void;
-    sendBordersSheet: (borders: JsBordersSheet) => void;
+    sendBordersHash: (sheetId: string, borders: JsBorders) => void;
+    sendBordersSheet: (sheetId: string, borders: JsBordersSheet) => void;
     sendSheetRenderCells: (sheetId: string, renderCells: JsRenderCell[]) => void;
     sendSheetCodeCell: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
     sendSheetBoundsUpdateClient: (sheetBounds: SheetInfo) => void;
@@ -374,17 +374,8 @@ class CoreClient {
         await core.pasteFromClipboard(e.data.selection, e.data.plainText, e.data.html, e.data.special, e.data.cursor);
         return;
 
-      case 'clientCoreSetRegionBorders':
-        await core.setRegionBorders(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.selection,
-          e.data.style,
-          e.data.cursor
-        );
+      case 'clientCoreSetBorders':
+        await core.setBorders(e.data.selection, e.data.borderSelection, e.data.style, e.data.cursor);
         return;
 
       case 'clientCoreSetCellRenderResize':
@@ -645,12 +636,12 @@ class CoreClient {
     this.send({ type: 'coreClientGenerateThumbnail' });
   };
 
-  sendBordersHash = (borders: JsBorders) => {
-    this.send({ type: 'coreClientBordersHash', borders });
+  sendBordersHash = (sheetId: string, borders: JsBorders) => {
+    this.send({ type: 'coreClientBordersHash', sheetId, borders });
   };
 
-  sendBordersSheet = (borders: JsBordersSheet) => {
-    this.send({ type: 'coreClientBordersSheet', borders });
+  sendBordersSheet = (sheetId: string, borders: JsBordersSheet) => {
+    this.send({ type: 'coreClientBordersSheet', sheetId, borders });
   };
 
   sendSheetRenderCells = (sheetId: string, renderCells: JsRenderCell[]) => {

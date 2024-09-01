@@ -4,7 +4,6 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
 import { BorderSelection, BorderStyle, CellBorderLine } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Rectangle } from 'pixi.js';
 import { useEffect, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 
@@ -32,10 +31,6 @@ export const useBorders = (): UseBordersResults => {
       if (cursor.multiCursor && cursor.multiCursor.length > 1) {
         console.log('TODO: implement multiCursor border support');
       } else {
-        const rectangle = cursor.multiCursor
-          ? cursor.multiCursor[0]
-          : new Rectangle(cursor.cursorPosition.x, cursor.cursorPosition.y, 1, 1);
-        const sheet = sheets.sheet;
         const colorTint = convertColorStringToTint(color);
         const colorArray = convertTintToArray(colorTint);
         const style: BorderStyle = {
@@ -47,13 +42,14 @@ export const useBorders = (): UseBordersResults => {
           },
           line,
         };
+        const rustSelection = sheets.getRustSelection();
         if (options.selection) {
-          quadraticCore.setRegionBorders(sheet.id, rectangle, options.selection, style);
+          quadraticCore.setBorders(rustSelection, options.selection, style);
         } else if (
           prev.selection &&
           ((!!options.color && options.color !== prev.color) || (!!options.line && options.line !== prev.line))
         ) {
-          quadraticCore.setRegionBorders(sheet.id, rectangle, prev.selection, style);
+          quadraticCore.setBorders(rustSelection, prev.selection, style);
         }
       }
       return { selection, color, line };
@@ -66,10 +62,7 @@ export const useBorders = (): UseBordersResults => {
       console.log('TODO: implement multiCursor border support');
       return;
     }
-    const rectangle = cursor.multiCursor
-      ? cursor.multiCursor[0]
-      : new Rectangle(cursor.cursorPosition.x, cursor.cursorPosition.y, 1, 1);
-    quadraticCore.setRegionBorders(sheets.sheet.id, rectangle, 'clear');
+    quadraticCore.setBorders(sheets.getRustSelection(), 'clear');
   };
 
   const [disabled, setDisabled] = useState(false);

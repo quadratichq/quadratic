@@ -35,6 +35,8 @@ export class CellsTextHash extends Container {
 
   warnings: CellsTextHashValidations;
 
+  sheetId: string;
+
   borders: CellsHashBorders;
 
   hashX: number;
@@ -53,6 +55,7 @@ export class CellsTextHash extends Container {
 
   constructor(sheetId: string, hashX: number, hashY: number, viewRectangle?: Rectangle) {
     super();
+    this.sheetId = sheetId;
     this.AABB = new Rectangle(hashX * sheetHashWidth, hashY * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
     this.viewRectangle = viewRectangle || this.AABB;
     this.hashX = hashX;
@@ -61,7 +64,7 @@ export class CellsTextHash extends Container {
     this.entries = this.addChild(new Container<LabelMeshEntry>());
     this.special = this.addChild(new CellsTextHashSpecial());
     this.warnings = this.addChild(new CellsTextHashValidations(sheetId));
-    this.borders = this.addChild(new CellsHashBorders(sheetId, hashX, hashY));
+    this.borders = this.addChild(new CellsHashBorders(this));
 
     this.content = new CellsTextHashContent();
   }
@@ -69,6 +72,8 @@ export class CellsTextHash extends Container {
   clear() {
     this.entries.removeChildren();
     this.special.clear();
+
+    // we leave borders loaded so we don't have to re-create them
   }
 
   addLabelMeshEntry(message: RenderClientLabelMeshEntry) {

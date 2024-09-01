@@ -2,16 +2,13 @@ use std::collections::HashSet;
 
 use crate::{
     grid::{js_types::JsRenderFill, RenderSize, SheetId},
+    renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     selection::Selection,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
     CellValue, Pos, Rect, SheetPos, SheetRect,
 };
 
-use super::{
-    active_transactions::pending_transaction::PendingTransaction,
-    transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-    GridController,
-};
+use super::{active_transactions::pending_transaction::PendingTransaction, GridController};
 
 impl GridController {
     fn send_render_cells_from_hash(&self, sheet_id: SheetId, modified: HashSet<Pos>) {

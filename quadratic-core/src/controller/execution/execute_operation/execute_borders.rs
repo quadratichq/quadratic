@@ -59,10 +59,15 @@ impl GridController {
 
                 transaction
                     .forward_operations
-                    .push(Operation::SetBordersSelection { selection, borders });
+                    .push(Operation::SetBordersSelection {
+                        selection: selection.clone(),
+                        borders,
+                    });
 
                 if (cfg!(test) || cfg!(target_family = "wasm")) && !transaction.is_server() {
-                    // self.send_render_borders_new(selection.sheet_id);
+                    if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+                        sheet.borders_new.send_updated_borders(selection);
+                    }
                 }
             }
             _ => unreachable!("Expected Operation::SetBordersSelection"),

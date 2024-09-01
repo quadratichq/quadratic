@@ -1,7 +1,9 @@
-import { CellBorderLine, Rgba } from '@/app/quadratic-core-types';
+import { CellBorderLine, JsBorderHorizontal, Rgba } from '@/app/quadratic-core-types';
 import { Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
 import { colors } from '../../theme/colors';
 import { generatedTextures } from '../generateTextures';
+import { convertRgbaToTint } from '@/app/helpers/convertColor';
+import { Sheet } from '@/app/grid/sheet/Sheet';
 
 export interface BorderCull {
   sprite: Sprite | TilingSprite;
@@ -271,4 +273,48 @@ export function drawCellBorder(options: {
     }
   }
   return borderCull;
+}
+
+// Adds sprites to the sprites array.
+export function drawHorizontalBorder(
+  border: JsBorderHorizontal,
+  getSprite: (tiling?: boolean) => Sprite | TilingSprite,
+  sprites: BorderCull[],
+  sheet: Sheet
+) {
+  const borderType = border.line;
+  const lineWidth = borderType === 'line2' ? 2 : borderType === 'line3' ? 3 : 1;
+  const tiling = borderType === 'dashed' || borderType === 'dotted';
+  const doubleDistance = borderType === 'double' ? lineWidth * 2 : 0;
+
+  const top = getSprite(tiling);
+  setTexture(top, true, borderType);
+  const { tint, alpha } = convertRgbaToTint(border.color);
+  top.tint = tint;
+  top.alpha = alpha ?? 1;
+  const start = sheet.getCellOffsets(border.x, border.y);
+  const end = sheet.getCellOffsets(border.x + border.width - 1n, border.y);
+
+  top.width = end.x + end.width - start.x;
+  top.height = lineWidth;
+  top.position.set(start.x - lineWidth / 2, start.y - lineWidth / 2);
+  sprites.push({
+    sprite: top,
+    rectangle: new Rectangle(top.x, top.y, top.width, top.height),
+  });
+  if (doubleDistance) {
+    const top = getSprite(tiling);
+    setTexture(top, true, borderType);
+    top.tint = tint;
+    top.width = start.width + lineWidth; // todo - ((options.left ? 1 : 0) + (options.right ? 1 : 0)) * doubleDistance;
+    top.height = lineWidth;
+    top.position.set(
+      start.x - lineWidth / 2, // todo + (options.left ? doubleDistance : 0),
+      start.y + doubleDistance - lineWidth / 2
+    );
+    sprites.push({
+      sprite: top,
+      rectangle: new Rectangle(top.x, top.y, top.width, top.height),
+    });
+  }
 }
