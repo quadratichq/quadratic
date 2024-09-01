@@ -3,19 +3,9 @@ import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { PanelBox, calculatePanelBoxMinimizedSize } from '@/app/ui/menus/CodeEditor/panels/PanelBox';
 import { useCodeEditorContainer } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorContainer';
 import { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import { useDebounce } from '@/shared/hooks/useDebounce';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ResizeControl } from './ResizeControl';
-
-function debounce<T extends (...args: any[]) => void>(func: T, wait: number): T {
-  let timeout: NodeJS.Timeout | null = null;
-  return ((...args: Parameters<T>) => {
-    if (timeout !== null) {
-      clearTimeout(timeout);
-    }
-    timeout = setTimeout(() => func(...args), wait);
-  }) as T;
-}
-
 
 interface Props {
   codeEditorPanelData: CodeEditorPanelData;
@@ -31,6 +21,7 @@ export function CodeEditorPanelSide({ schemaBrowser, showAiAssistant, codeEditor
   }, []);
 
   const [containerHeight, setContainerHeight] = useState(0);
+  const debouncedContainerHeight = useDebounce(containerHeight, 250);
 
   useEffect(() => {
     if (!container) return;
@@ -39,23 +30,20 @@ export function CodeEditorPanelSide({ schemaBrowser, showAiAssistant, codeEditor
       setContainerHeight(container.getBoundingClientRect().height);
     };
 
-    // Create a debounced version of updateHeight
-    const debouncedUpdateHeight = debounce(updateHeight, 250);
-
     updateHeight(); // Initial height set
 
-    window.addEventListener('resize', debouncedUpdateHeight);
+    window.addEventListener('resize', updateHeight);
 
-    return () => window.removeEventListener('resize', debouncedUpdateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
   }, [container]);
 
   const { panels, leftOverPercentage, adjustedContainerHeight } = useMemo(() => {
     let leftOverPercentage = 0;
-    let adjustedContainerHeight = containerHeight;
+    let adjustedContainerHeight = debouncedContainerHeight;
 
     // ensure containerHeight has a value > 0 to avoid division by zero
     // (sometimes happens when starting with ?state)
-    const minimizedPercentage = minimizedSize / (containerHeight ? containerHeight : 1);
+    const minimizedPercentage = minimizedSize / (debouncedContainerHeight || 1);
     for (let i = 0; i < codeEditorPanelData.panelHidden.length; i++) {
       if (codeEditorPanelData.panelHidden[i]) {
         leftOverPercentage += codeEditorPanelData.panelHeightPercentages[i] / 100 - minimizedPercentage;
@@ -75,14 +63,14 @@ export function CodeEditorPanelSide({ schemaBrowser, showAiAssistant, codeEditor
           height =
             (codeEditorPanelData.panelHeightPercentages[i] / 100 +
               (visiblePanels ? leftOverPercentage / visiblePanels : 0)) *
-            containerHeight;
+            debouncedContainerHeight;
         }
         return { open: !hidden, toggleOpen, height };
       }),
       leftOverPercentage,
       adjustedContainerHeight,
     };
-  }, [containerHeight, codeEditorPanelData, minimizedSize]);
+  }, [debouncedContainerHeight, codeEditorPanelData, minimizedSize]);
 
   // changes resize bar when dragging
   const changeResizeBar = useCallback(
