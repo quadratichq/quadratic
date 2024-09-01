@@ -37,7 +37,10 @@ export class CellsHashBorders extends Container {
     const start = sheet.getCellOffsets(border.x, border.y);
     const end = sheet.getCellOffsets(Number(border.x + border.width) - 1, border.y);
 
-    top.width = end.x + end.width - start.x;
+    // +1 because we want the border to extend 1 pixel beyond the cell
+    // (avoids a gap in the bottom-right corner of the last cell)
+    top.width = end.x + end.width - start.x + 1;
+
     top.height = lineWidth;
     top.position.set(start.x - lineWidth / 2, start.y - lineWidth / 2);
     this.sprites.push({
@@ -48,7 +51,7 @@ export class CellsHashBorders extends Container {
       const top = this.getSprite(tiling);
       setBorderTexture(top, true, borderType);
       top.tint = tint;
-      top.width = start.width + lineWidth; // todo - ((options.left ? 1 : 0) + (options.right ? 1 : 0)) * doubleDistance;
+      top.width = start.width + lineWidth + 1; // todo - ((options.left ? 1 : 0) + (options.right ? 1 : 0)) * doubleDistance;
       top.height = lineWidth;
       top.position.set(
         start.x - lineWidth / 2, // todo + (options.left ? doubleDistance : 0),
@@ -76,7 +79,11 @@ export class CellsHashBorders extends Container {
     const end = sheet.getCellOffsets(border.x, Number(border.y + border.height) - 1);
 
     left.width = lineWidth;
-    left.height = end.y + end.height - start.y;
+
+    // +1 because we want the border to extend 1 pixel beyond the cell
+    // (avoids a gap in the bottom-right corner of the last cell)
+    left.height = end.y + end.height - start.y + 1;
+
     left.position.set(start.x - lineWidth / 2, start.y - lineWidth / 2);
     this.sprites.push({
       sprite: left,
@@ -88,7 +95,7 @@ export class CellsHashBorders extends Container {
       setBorderTexture(left, false, borderType);
       left.tint = tint;
       left.width = lineWidth;
-      left.height = start.height + lineWidth; // todo - ((options.top ? 1 : 0) + (options.bottom ? 1 : 0)) * doubleDistance;
+      left.height = start.height + lineWidth + 1; // todo - ((options.top ? 1 : 0) + (options.bottom ? 1 : 0)) * doubleDistance;
       left.position.set(
         start.x - lineWidth / 2 + doubleDistance,
         start.y - lineWidth / 2 // todo + (options.top ? doubleDistance : 0)
