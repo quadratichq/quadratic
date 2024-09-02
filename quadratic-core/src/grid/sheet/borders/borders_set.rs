@@ -1,12 +1,12 @@
 use crate::{
-    controller::operations::operation::Operation, grid::ColumnData, selection::Selection,
+    border_style::{BorderStyleCell, BorderStyleCellUpdate},
+    controller::operations::operation::Operation,
+    grid::ColumnData,
+    selection::Selection,
     RunLengthEncoding,
 };
 
-use super::{
-    borders_style::{BorderStyleCell, BorderStyleCellUpdate},
-    Borders,
-};
+use super::Borders;
 
 impl Borders {
     /// Sets the borders for a selection.

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::grid::borders::style::CellBorderLine;
+use crate::border_style::CellBorderLine;
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct LegacyCellBorders {

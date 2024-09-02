@@ -1,5 +1,5 @@
 import { events } from '@/app/events/events';
-import { JsValidationWarning } from '@/app/quadratic-core-types';
+import { JsBordersSheet, JsValidationWarning } from '@/app/quadratic-core-types';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { Container, Rectangle, Sprite } from 'pixi.js';
 import { pixiApp } from '../pixiApp/PixiApp';
@@ -51,6 +51,7 @@ export class CellsSheet extends Container {
     this.visible = false;
 
     events.on('renderValidationWarnings', this.renderValidations);
+    events.on('bordersSheet', this.updateBorders);
   }
 
   // used to render all cellsTextHashes to warm up the GPU
@@ -124,4 +125,16 @@ export class CellsSheet extends Container {
   getErrorMarkerValidation(x: number, y: number): boolean {
     return this.cellsLabels.getErrorMarker(x, y) !== undefined;
   }
+
+  private updateBorders = (sheetId: string, borders: JsBordersSheet) => {
+    // todo: handle drawing of all, rows, and columns borders
+
+    if (sheetId === this.sheetId) {
+      if (borders.hashes) {
+        borders.hashes.forEach((border) => {
+          this.cellsLabels.bordersHash(sheetId, border);
+        });
+      }
+    }
+  };
 }

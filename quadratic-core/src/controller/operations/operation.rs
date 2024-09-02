@@ -3,16 +3,12 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
+    border_style::BorderStyleCellUpdate,
     cell_values::CellValues,
     grid::{
-        file::sheet_schema::SheetSchema,
-        formats::Formats,
-        formatting::CellFmtArray,
-        js_types::JsRowHeight,
-        sheet::{
-            borders_new::borders_style::BorderStyleCellUpdate, validations::validation::Validation,
-        },
-        CodeRun, Sheet, SheetBorders, SheetId,
+        file::sheet_schema::SheetSchema, formats::Formats, formatting::CellFmtArray,
+        js_types::JsRowHeight, sheet::validations::validation::Validation, CodeRun, Sheet,
+        SheetBorders, SheetId,
     },
     selection::Selection,
     RunLengthEncoding, SheetPos, SheetRect,

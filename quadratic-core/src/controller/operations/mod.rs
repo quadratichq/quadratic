@@ -4,7 +4,6 @@ pub mod autocomplete;
 /// Only execute_operations should change the Grid.
 ///
 pub mod borders;
-pub mod borders_new;
 pub mod cell_value;
 pub mod clipboard;
 pub mod code_cell;

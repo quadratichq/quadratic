@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::grid::borders::style::BorderStyle;
+use crate::border_style::BorderStyle;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]

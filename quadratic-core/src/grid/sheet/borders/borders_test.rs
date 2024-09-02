@@ -1,11 +1,8 @@
 //! Functionality to print borders for debugging.
 
+use super::Borders;
+use crate::border_style::{JsBorderHorizontal, JsBorderVertical};
 use crate::Rect;
-
-use super::{
-    borders_style::{JsBorderHorizontal, JsBorderVertical},
-    Borders,
-};
 
 const HORIZONTAL: char = '\u{203E}';
 const VERTICAL: char = '\u{23D0}';
@@ -86,8 +83,8 @@ impl Borders {
 #[cfg(test)]
 mod tests {
     use crate::{
+        border_style::{BorderSelection, BorderStyle},
         controller::GridController,
-        grid::sheet::borders_new::borders_style::{BorderSelection, BorderStyle},
         selection::Selection,
         SheetRect,
     };
@@ -103,6 +100,6 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        sheet.borders_new.print_borders();
+        sheet.borders.print_borders();
     }
 }

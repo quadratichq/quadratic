@@ -2,13 +2,11 @@ use code_run::CodeRunResult;
 
 use crate::{
     grid::{
-        borders::{get_render_horizontal_borders, get_render_vertical_borders},
         code_run,
         formats::format::Format,
         js_types::{
-            JsHtmlOutput, JsNumber, JsRenderBorders, JsRenderCell, JsRenderCellSpecial,
-            JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsSheetFill,
-            JsValidationWarning,
+            JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
+            JsRenderCodeCellState, JsRenderFill, JsSheetFill, JsValidationWarning,
         },
         CellAlign, CodeCellLanguage, CodeRun, Column,
     },
@@ -464,14 +462,6 @@ impl Sheet {
                 }
             })
             .collect()
-    }
-
-    /// Returns borders to render in a sheet.
-    pub fn render_borders(&self) -> JsRenderBorders {
-        JsRenderBorders {
-            horizontal: get_render_horizontal_borders(self),
-            vertical: get_render_vertical_borders(self),
-        }
     }
 
     /// Send images in this sheet to the client. Note: we only have images

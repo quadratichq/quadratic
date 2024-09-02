@@ -423,7 +423,7 @@ pub fn jsGenerateThumbnail() {
 #[allow(non_snake_case)]
 pub fn jsBordersHash(sheet_id: String, borders: String) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsRenderBordersHash",
+        "jsBordersHash",
         format!("{},{}", sheet_id, borders),
     ));
 }
@@ -432,7 +432,7 @@ pub fn jsBordersHash(sheet_id: String, borders: String) {
 #[allow(non_snake_case)]
 pub fn jsBordersSheet(sheet_id: String, borders: String /* JsBordersSheet */) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsRenderBordersSheet",
+        "jsBordersSheet",
         format!("{},{}", sheet_id, borders),
     ));
 }

@@ -56,7 +56,7 @@ impl GridController {
                 }
 
                 if let Some(sheet) = self.try_sheet(sheet_id) {
-                    sheet.borders_new.send_sheet_borders(sheet.id, false);
+                    sheet.borders.send_sheet_borders(sheet.id, false);
                 }
 
                 transaction

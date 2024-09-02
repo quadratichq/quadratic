@@ -1,4 +1,4 @@
-use borders_style::{BorderStyleCell, BorderStyleTimestamp};
+use crate::border_style::{BorderStyleCell, BorderStyleTimestamp};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -7,7 +7,6 @@ use crate::grid::{block::SameValue, ColumnData};
 pub mod borders_bounds;
 pub mod borders_render;
 pub mod borders_set;
-pub mod borders_style;
 
 #[cfg(test)]
 pub mod borders_test;

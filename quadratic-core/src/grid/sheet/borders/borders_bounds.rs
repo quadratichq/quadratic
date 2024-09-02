@@ -64,9 +64,9 @@ mod tests {
     use serial_test::parallel;
 
     use crate::{
+        border_style::{BorderSelection, BorderStyle, CellBorderLine},
         color::Rgba,
         controller::GridController,
-        grid::sheet::borders_new::borders_style::{BorderSelection, BorderStyle, CellBorderLine},
         selection::Selection,
         SheetRect,
     };
@@ -79,7 +79,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet(sheet_id);
-        let bounds = sheet.borders_new.bounds();
+        let bounds = sheet.borders.bounds();
         assert_eq!(bounds, None);
 
         gc.set_borders_selection(
@@ -92,7 +92,7 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        let bounds = sheet.borders_new.bounds();
+        let bounds = sheet.borders.bounds();
         assert_eq!(bounds, Some(Rect::new(0, 0, 11, 11)));
     }
 
@@ -113,7 +113,7 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.borders_new.bounds(), Some(Rect::new(0, 0, 5, 5)));
+        assert_eq!(sheet.borders.bounds(), Some(Rect::new(0, 0, 5, 5)));
     }
 
     #[test]
@@ -133,7 +133,7 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.borders_new.bounds(), Some(Rect::new(0, 0, 5, 0)));
+        assert_eq!(sheet.borders.bounds(), Some(Rect::new(0, 0, 5, 0)));
     }
 
     #[test]
@@ -153,7 +153,7 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.borders_new.bounds(), Some(Rect::new(6, 0, 6, 5)));
+        assert_eq!(sheet.borders.bounds(), Some(Rect::new(6, 0, 6, 5)));
     }
 
     #[test]
@@ -173,7 +173,7 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.borders_new.bounds(), Some(Rect::new(0, 0, 0, 5)));
+        assert_eq!(sheet.borders.bounds(), Some(Rect::new(0, 0, 0, 5)));
     }
 
     #[test]
@@ -193,8 +193,8 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        sheet.borders_new.print_borders();
-        assert_eq!(sheet.borders_new.bounds(), Some(Rect::new(0, 6, 5, 6)));
+        sheet.borders.print_borders();
+        assert_eq!(sheet.borders.bounds(), Some(Rect::new(0, 6, 5, 6)));
     }
 
     #[test]
@@ -214,7 +214,7 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.borders_new.bounds(), Some(Rect::new(0, 1, 5, 5)));
+        assert_eq!(sheet.borders.bounds(), Some(Rect::new(0, 1, 5, 5)));
     }
 
     #[test]
@@ -234,6 +234,6 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.borders_new.bounds(), Some(Rect::new(1, 0, 5, 5)));
+        assert_eq!(sheet.borders.bounds(), Some(Rect::new(1, 0, 5, 5)));
     }
 }

@@ -1,10 +1,13 @@
 use std::collections::HashMap;
 
-use crate::{color::Rgba, small_timestamp::SmallTimestamp};
+#[cfg(feature = "js")]
+use crate::color::Rgba;
+use crate::small_timestamp::SmallTimestamp;
 use serde::{Deserialize, Serialize};
+use strum_macros::{Display, EnumString};
 use ts_rs::TS;
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, TS)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
 #[serde(rename_all = "lowercase")]
 pub enum BorderSelection {
     All,
@@ -19,8 +22,24 @@ pub enum BorderSelection {
     Clear,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, TS)]
+#[derive(
+    Default,
+    Serialize,
+    Deserialize,
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Display,
+    EnumString,
+    TS,
+)]
 #[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
 pub enum CellBorderLine {
     #[default]
     Line1,
@@ -31,8 +50,20 @@ pub enum CellBorderLine {
     Double,
 }
 
-// Client passes this when setting borders (timestamp will be added)
-#[derive(Default, Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, TS)]
+impl CellBorderLine {
+    pub fn as_css_string(&self) -> &'static str {
+        match self {
+            CellBorderLine::Line1 => "1px solid",
+            CellBorderLine::Line2 => "2px solid",
+            CellBorderLine::Line3 => "3px solid",
+            CellBorderLine::Dotted => "1px dashed",
+            CellBorderLine::Dashed => "1px dotted",
+            CellBorderLine::Double => "3px double",
+        }
+    }
+}
+
+#[derive(Default, Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
 pub struct BorderStyle {
     pub color: Rgba,
     pub line: CellBorderLine,
@@ -101,6 +132,17 @@ pub struct BorderStyleCellUpdate {
     pub bottom: Option<Option<BorderStyleTimestamp>>,
     pub left: Option<Option<BorderStyleTimestamp>>,
     pub right: Option<Option<BorderStyleTimestamp>>,
+}
+
+impl BorderStyleCellUpdate {
+    pub fn clear() -> Self {
+        BorderStyleCellUpdate {
+            top: Some(None),
+            bottom: Some(None),
+            left: Some(None),
+            right: Some(None),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, TS)]

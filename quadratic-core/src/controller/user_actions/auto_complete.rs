@@ -30,11 +30,12 @@ mod tests {
     use crate::{
         array,
         grid::CodeCellLanguage,
+        selection::Selection,
         test_util::{
             assert_cell_format_bold_row, assert_cell_format_cell_fill_color_row,
             assert_cell_value_row, assert_code_cell_value, assert_display_cell_value, print_table,
         },
-        CodeCellValue, Pos, SheetPos, SheetRect,
+        CodeCellValue, Pos, SheetPos,
     };
     use serial_test::parallel;
 
@@ -82,13 +83,17 @@ mod tests {
 
                 if let Some(is_bold) = bolds.get(count) {
                     if *is_bold {
-                        grid_controller.set_cell_bold(sheet_pos.into(), Some(true), None);
+                        grid_controller.set_bold_selection(
+                            Selection::sheet_pos(sheet_pos),
+                            true,
+                            None,
+                        );
                     }
                 }
 
                 if let Some(fill_color) = fill_colors.get(count) {
-                    grid_controller.set_cell_fill_color(
-                        SheetRect::single_sheet_pos(sheet_pos),
+                    grid_controller.set_fill_color_selection(
+                        Selection::sheet_pos(sheet_pos),
                         Some(fill_color.to_lowercase()),
                         None,
                     );

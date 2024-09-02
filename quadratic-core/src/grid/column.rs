@@ -1,3 +1,6 @@
+//! Stores column data, including formatting. This file is a bit confusing and
+//! should be refactored.
+
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
@@ -32,6 +35,7 @@ pub struct Column {
     #[serde(default)]
     pub date_time: ColumnData<SameValue<String>>,
 }
+
 impl Column {
     pub fn new(x: i64) -> Self {
         Self {
@@ -164,7 +168,6 @@ impl<B: BlockContent> ColumnData<B> {
     }
 
     /// Adds blocks w/o regard to whether they overlap with existing blocks.
-    /// This is temporary and for use with column.values only!
     pub fn add_blocks(&mut self, blocks: impl IntoIterator<Item = Block<B>>) {
         for block in blocks {
             self.add_block(block);
@@ -381,6 +384,12 @@ impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq>
         }
         replaced
     }
+
+    /// Sets a block at a specific y value without merging. This is used by serialize functions.
+    pub fn insert_block(&mut self, y: i64, len: usize, value: T) {
+        debug_assert!(self.0.get(&y).is_none());
+        self.set_range(y..y + len as i64, value);
+    }
 }
 
 #[cfg(test)]
@@ -548,5 +557,16 @@ mod test {
 
         assert_eq!(cd.min(), Some(1));
         assert_eq!(cd.max(), Some(3));
+    }
+
+    #[test]
+    #[parallel]
+    fn insert_block() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+
+        cd.insert_block(3, 2, true);
+        assert_eq!(cd.get(3), Some(true));
+        assert_eq!(cd.get(4), Some(true));
+        assert_eq!(cd.get(5), None);
     }
 }

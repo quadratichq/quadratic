@@ -12,7 +12,7 @@ use crate::formulas::replace_internal_cell_references;
 use crate::grid::formats::format::Format;
 use crate::grid::formats::Formats;
 use crate::grid::sheet::validations::validation::Validation;
-use crate::grid::{generate_borders_full, BorderSelection, CellBorders, CodeCellLanguage};
+use crate::grid::{CellBorders, CodeCellLanguage};
 use crate::selection::Selection;
 use crate::{CellValue, Pos, SheetPos, SheetRect};
 
@@ -63,6 +63,8 @@ pub struct Clipboard {
 
     pub formats: Formats,
     pub sheet_formats: ClipboardSheetFormats,
+
+    // todo...
     pub borders: Vec<(i64, i64, Option<CellBorders>)>,
 
     pub origin: ClipboardOrigin,
@@ -305,46 +307,47 @@ impl GridController {
             ops.extend(self.sheet_formats_operations(selection, clipboard.sheet_formats));
 
             if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-                // add borders to the sheet
-                for (x, y, cell_borders) in clipboard.borders {
-                    if let Some(cell_borders) = cell_borders {
-                        let mut border_selections = vec![];
-                        let mut border_styles = vec![];
-                        let sheet_rect: SheetRect = SheetPos {
-                            sheet_id: sheet.id,
-                            x: x + start_pos.x,
-                            y: y + start_pos.y,
-                        }
-                        .into();
+                // todo...
+                //     // add borders to the sheet
+                //     for (x, y, cell_borders) in clipboard.borders {
+                //         if let Some(cell_borders) = cell_borders {
+                //             let mut border_selections = vec![];
+                //             let mut border_styles = vec![];
+                //             let sheet_rect: SheetRect = SheetPos {
+                //                 sheet_id: sheet.id,
+                //                 x: x + start_pos.x,
+                //                 y: y + start_pos.y,
+                //             }
+                //             .into();
 
-                        cell_borders.borders.into_iter().enumerate().for_each(
-                            |(index, border_style)| {
-                                if let Some(border_style) = border_style {
-                                    let border_selection = match index {
-                                        0 => BorderSelection::Left,
-                                        1 => BorderSelection::Top,
-                                        2 => BorderSelection::Right,
-                                        3 => BorderSelection::Bottom,
-                                        _ => BorderSelection::Clear,
-                                    };
-                                    border_selections.push(border_selection);
-                                    border_styles.push(Some(border_style));
-                                }
-                            },
-                        );
+                //             cell_borders.borders.into_iter().enumerate().for_each(
+                //                 |(index, border_style)| {
+                //                     if let Some(border_style) = border_style {
+                //                         let border_selection = match index {
+                //                             0 => BorderSelection::Left,
+                //                             1 => BorderSelection::Top,
+                //                             2 => BorderSelection::Right,
+                //                             3 => BorderSelection::Bottom,
+                //                             _ => BorderSelection::Clear,
+                //                         };
+                //                         border_selections.push(border_selection);
+                //                         border_styles.push(Some(border_style));
+                //                     }
+                //                 },
+                //             );
 
-                        let borders = generate_borders_full(
-                            sheet,
-                            &sheet_rect.into(),
-                            border_selections,
-                            border_styles,
-                        );
-                        ops.push(Operation::SetBorders {
-                            sheet_rect,
-                            borders,
-                        });
-                    }
-                }
+                //             let borders = generate_borders_full(
+                //                 sheet,
+                //                 &sheet_rect.into(),
+                //                 border_selections,
+                //                 border_styles,
+                //             );
+                //             ops.push(Operation::SetBorders {
+                //                 sheet_rect,
+                //                 borders,
+                //             });
+                //         }
+                //     }
 
                 ops.extend(self.set_clipboard_validations(
                     clipboard.validations,

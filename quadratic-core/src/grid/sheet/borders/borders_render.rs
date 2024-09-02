@@ -1,14 +1,11 @@
+use super::Borders;
+use crate::border_style::{JsBorderHorizontal, JsBorderVertical, JsBorders, JsBordersSheet};
 use crate::{
     grid::SheetId,
     renderer_constants::hashes_in_rects,
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     selection::Selection,
     Rect,
-};
-
-use super::{
-    borders_style::{JsBorderHorizontal, JsBorderVertical, JsBorders, JsBordersSheet},
-    Borders,
 };
 
 impl Borders {
@@ -173,20 +170,18 @@ impl Borders {
         let hashes = if skip_hashes {
             None
         } else {
+            let mut hashes = vec![];
             if let Some(bounds) = self.bounds() {
-                let mut hashes = vec![];
-                for hash_x in bounds.min.x..=bounds.max.x {
-                    for hash_y in bounds.min.y..=bounds.max.y {
-                        let borders_hash = self.borders_in_hash(hash_x, hash_y);
+                hashes_in_rects(&vec![bounds])
+                    .iter()
+                    .for_each(|(hash_x, hash_y)| {
+                        let borders_hash = self.borders_in_hash(*hash_x, *hash_y);
                         if !borders_hash.is_empty() {
                             hashes.push(borders_hash);
                         }
-                    }
-                }
-                Some(hashes)
-            } else {
-                Some(vec![])
+                    });
             }
+            Some(hashes)
         };
         serde_json::to_string(&JsBordersSheet {
             all: self.all.clone(),
@@ -221,14 +216,12 @@ impl Borders {
 mod tests {
     use std::collections::HashMap;
 
-    use serial_test::parallel;
+    use serial_test::{parallel, serial};
 
     use crate::{
+        border_style::{BorderSelection, BorderStyle, BorderStyleCell, CellBorderLine},
         color::Rgba,
         controller::GridController,
-        grid::sheet::borders_new::borders_style::{
-            BorderSelection, BorderStyle, BorderStyleCell, CellBorderLine,
-        },
         selection::Selection,
         SheetRect,
     };
@@ -248,9 +241,8 @@ mod tests {
         );
         let sheet = gc.sheet(sheet_id);
         let horizontal = sheet
-            .borders_new
+            .borders
             .horizontal_borders_in_rect(Rect::new(0, 0, 10, 10));
-        dbg!(&horizontal);
         assert_eq!(horizontal.len(), 7);
     }
 
@@ -260,7 +252,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet(sheet_id);
-        let borders = sheet.borders_new.borders_in_hash(0, 0);
+        let borders = sheet.borders.borders_in_hash(0, 0);
         assert!(borders.is_empty());
 
         let color = Rgba::new(255, 0, 0, 255);
@@ -273,7 +265,7 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        let borders = sheet.borders_new.borders_in_hash(0, 0);
+        let borders = sheet.borders.borders_in_hash(0, 0);
         assert_eq!(
             borders,
             JsBorders {
@@ -323,12 +315,12 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
 
         // skip_hashes == true: hashes == null
-        let borders = sheet.borders_new.all(true).unwrap();
+        let borders = sheet.borders.all(true).unwrap();
         let results = serde_json::to_string(&JsBordersSheet::default()).unwrap();
         assert_eq!(borders, results);
 
         // skip_hashes == false: hashes == []
-        let borders_json = sheet.borders_new.all(false).unwrap();
+        let borders_json = sheet.borders.all(false).unwrap();
         let borders: JsBordersSheet = serde_json::from_str(&borders_json).unwrap();
         assert_eq!(borders.hashes, Some(vec![]));
     }
@@ -349,7 +341,7 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let borders = sheet.borders_new.all(false).unwrap();
+        let borders = sheet.borders.all(false).unwrap();
         let expected = JsBordersSheet {
             all: BorderStyleCell::default(),
             columns: HashMap::new(),
@@ -389,6 +381,41 @@ mod tests {
                         line,
                     },
                 ],
+            }]),
+        };
+        assert_eq!(borders, serde_json::to_string(&expected).unwrap());
+    }
+
+    #[test]
+    #[serial]
+    fn all_single() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::single_pos((2, 2).into(), sheet_id)),
+            BorderSelection::Top,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let borders = sheet.borders.all(false).unwrap();
+        let expected = JsBordersSheet {
+            all: BorderStyleCell::default(),
+            columns: HashMap::new(),
+            rows: HashMap::new(),
+            hashes: Some(vec![JsBorders {
+                hash_x: 0,
+                hash_y: 0,
+                horizontal: vec![JsBorderHorizontal {
+                    x: 2,
+                    y: 2,
+                    width: 1,
+                    color: Rgba::default(),
+                    line: CellBorderLine::default(),
+                }],
+                vertical: vec![],
             }]),
         };
         assert_eq!(borders, serde_json::to_string(&expected).unwrap());

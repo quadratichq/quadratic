@@ -2,9 +2,9 @@ use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 use std::fmt::Write;
 use std::num::ParseIntError;
+use ts_rs::TS;
 
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Serialize, Deserialize, TS)]
 pub struct Rgba {
     pub red: u8,
     pub green: u8,

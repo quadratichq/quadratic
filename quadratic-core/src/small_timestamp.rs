@@ -38,6 +38,10 @@ impl Default for SmallTimestamp {
 }
 
 impl SmallTimestamp {
+    pub fn new(value: u32) -> Self {
+        Self(value)
+    }
+
     pub fn now() -> Self {
         let now = Utc::now();
         let duration = now.signed_duration_since(*BASE_DATE);

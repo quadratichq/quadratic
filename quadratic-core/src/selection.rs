@@ -33,6 +33,19 @@ impl Selection {
         }
     }
 
+    /// Creates a selection via a single sheet position
+    pub fn sheet_pos(sheet_pos: SheetPos) -> Self {
+        Selection {
+            sheet_id: sheet_pos.sheet_id,
+            x: sheet_pos.x,
+            y: sheet_pos.y,
+            rects: Some(vec![Rect::from_numbers(sheet_pos.x, sheet_pos.y, 1, 1)]),
+            rows: None,
+            columns: None,
+            all: false,
+        }
+    }
+
     /// Creates an all selection
     pub fn all(sheet_id: SheetId) -> Self {
         Selection {
@@ -888,5 +901,28 @@ mod test {
             all: false,
         };
         assert_eq!(selection_empty.count_parts(), (0, 0));
+    }
+
+    #[test]
+    #[parallel]
+    fn selection_sheet_pos() {
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 2,
+            sheet_id: SheetId::test(),
+        };
+        let selection = Selection::sheet_pos(sheet_pos);
+        assert_eq!(
+            selection,
+            Selection {
+                sheet_id: sheet_pos.sheet_id,
+                x: sheet_pos.x,
+                y: sheet_pos.y,
+                rects: Some(vec![Rect::from_numbers(sheet_pos.x, sheet_pos.y, 1, 1)]),
+                rows: None,
+                columns: None,
+                all: false,
+            }
+        );
     }
 }

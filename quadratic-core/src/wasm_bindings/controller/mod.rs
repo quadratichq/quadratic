@@ -64,7 +64,7 @@ impl GridController {
                             crate::wasm_bindings::js::jsSheetFills(sheet_id.to_string(), fills);
                         }
                         if let Some(sheet) = grid.try_sheet(*sheet_id) {
-                            sheet.borders_new.send_sheet_borders(*sheet_id, false);
+                            sheet.borders.send_sheet_borders(*sheet_id, false);
 
                             let code = sheet.get_all_render_code_cells();
                             if !code.is_empty() {
@@ -86,6 +86,9 @@ impl GridController {
 
                             // sends all validation warnings to the client
                             sheet.send_all_validation_warnings();
+
+                            // sends all borders to the client
+                            sheet.borders.send_sheet_borders(*sheet_id, false);
                         }
                     });
                 }
