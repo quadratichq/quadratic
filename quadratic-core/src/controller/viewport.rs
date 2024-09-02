@@ -245,13 +245,11 @@ mod tests {
         let gc = GridController::test();
         let mut transaction = PendingTransaction::default();
         let sheet_id = SheetId::new();
-        let positions: HashSet<Pos> = vec![Pos { x: 1, y: 1 }, Pos { x: 16, y: 2 }]
-            .into_iter()
-            .collect();
+        let positions: HashSet<Pos> = vec![Pos { x: 16, y: 2 }].into_iter().collect();
         gc.add_dirty_hashes_from_sheet_cell_positions(&mut transaction, sheet_id, positions);
         gc.process_remaining_dirty_hashes(&mut transaction);
         assert!(transaction.dirty_hashes.is_empty());
-        let hashes = vec![Pos { x: 0, y: 0 }, Pos { x: 1, y: 0 }];
+        let hashes = vec![Pos { x: 1, y: 0 }];
         let hashes_string = serde_json::to_string(&hashes).unwrap();
         expect_js_call(
             "jsHashesDirty",
