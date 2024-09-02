@@ -1,10 +1,15 @@
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
+import { cn } from '@/shared/shadcn/utils';
 import { DragEvent, useCallback } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 import { fileDragDropModalAtom } from '../atoms/fileDragDropModalAtom';
 
-export function FileDragDrop() {
+interface FileDragDropProps {
+  className?: string;
+}
+
+export function FileDragDrop({ className }: FileDragDropProps) {
   const [fileDragDropModal, setFileDragDropModal] = useRecoilState(fileDragDropModalAtom);
   const setNewFileDialogState = useSetRecoilState(newFileDialogAtom);
   const handleFileImport = useFileImport();
@@ -41,7 +46,10 @@ export function FileDragDrop() {
   return (
     <div
       id="file-drag-drop"
-      className="fixed left-0 top-0 z-20 flex h-full w-full flex-col items-center justify-center bg-white opacity-90 lg:left-[264px] lg:w-[calc(100%-264px)]"
+      className={cn(
+        'fixed left-0 top-0 z-20 flex h-full w-full flex-col items-center justify-center bg-white opacity-90',
+        className
+      )}
       onDragEnter={handleDrag}
       onDragLeave={handleDrag}
       onDragOver={handleDrag}
@@ -49,6 +57,7 @@ export function FileDragDrop() {
       <div
         className="relative z-10 h-[90%] w-[90%] select-none rounded-lg border-4 border-dashed border-border bg-white opacity-90"
         onDrop={handleDrop}
+        onDragLeave={handleDrag}
       >
         <div className="pointer-events-none flex h-full w-full flex-col items-center justify-center gap-4">
           <span className="text-2xl font-bold text-[#020817]">Drop file here</span>
