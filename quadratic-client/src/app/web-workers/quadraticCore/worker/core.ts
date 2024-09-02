@@ -297,7 +297,7 @@ class Core {
           data.operations = Buffer.from(data.operations, 'base64');
         }
 
-        this.gridController.multiplayerTransaction(data.id, data.sequence_num, data.operations);
+        this.gridController.multiplayerTransaction(data.id, data.sequence_num, new Uint8Array(data.operations));
         offline.markTransactionSent(data.id);
         if (await offline.unsentTransactionsCount()) {
           coreClient.sendMultiplayerState('syncing');
@@ -320,7 +320,7 @@ class Core {
             data.operations = Buffer.from(data.operations, 'base64');
           }
 
-          this.gridController.multiplayerTransaction(data.id, data.sequence_num, data.operations);
+          this.gridController.multiplayerTransaction(data.id, data.sequence_num, new Uint8Array(data.operations));
         }
 
         // TODO(ddimaria): re-enable 5 - 7 days after we roll out the compressed
@@ -451,7 +451,7 @@ class Core {
     location,
     cursor,
   }: ClientCoreImportFile): Promise<{ contents?: ArrayBuffer; version?: string; error?: string }> {
-    if (cursor === undefined || (fileType !== 'excel' && (sheetId === undefined || location === undefined))) {
+    if (cursor === undefined) {
       try {
         await initCore();
         let gc: GridController;

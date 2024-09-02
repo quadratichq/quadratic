@@ -104,10 +104,13 @@ export function FilesList({
 
   const { show: newFileDialogShow } = useRecoilValue(newFileDialogAtom);
   const setFileDragDropState = useSetRecoilState(fileDragDropModalAtom);
-  const handleDragEnter = useCallback(() => {
-    if (teamUuid === undefined || isPrivate === undefined) return;
-    setFileDragDropState({ show: true, teamUuid, isPrivate });
-  }, [isPrivate, setFileDragDropState, teamUuid]);
+  const handleDragEnter = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      if (teamUuid === undefined || isPrivate === undefined || !e.dataTransfer.types.includes('Files')) return;
+      setFileDragDropState({ show: true, teamUuid, isPrivate });
+    },
+    [isPrivate, setFileDragDropState, teamUuid]
+  );
 
   return (
     <div className="flex flex-grow flex-col" onDragEnter={handleDragEnter}>

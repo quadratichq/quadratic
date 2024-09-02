@@ -179,6 +179,14 @@ impl Value {
             other => panic!("expected error value; got {other:?}"),
         }
     }
+    /// Returns a list of all errors in the value.
+    pub fn errors(&self) -> Vec<&crate::RunError> {
+        match self {
+            Value::Single(v) => v.error().into_iter().collect(),
+            Value::Array(a) => a.errors().collect(),
+            Value::Tuple(t) => t.iter().flat_map(|a| a.errors()).collect(),
+        }
+    }
 }
 impl Spanned<Value> {
     pub fn cell_value(&self) -> CodeResult<Spanned<&CellValue>> {

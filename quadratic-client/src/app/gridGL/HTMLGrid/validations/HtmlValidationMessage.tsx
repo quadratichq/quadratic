@@ -56,12 +56,10 @@ export const HtmlValidationMessage = (props: Props) => {
 
   const showValidation = useCallback(() => {
     if (validation) {
-      setEditorInteractionState((old) => {
-        return {
-          ...old,
-          showValidation: validation?.id,
-        };
-      });
+      setEditorInteractionState((old) => ({
+        ...old,
+        showValidation: validation?.id,
+      }));
     }
   }, [setEditorInteractionState, validation]);
 
@@ -128,13 +126,18 @@ export const HtmlValidationMessage = (props: Props) => {
 
   if (hide || !offsets || (!title && !message)) return null;
 
+  const wrapStyle = {
+    overflowWrap: 'break-word',
+    wordWrap: 'break-word',
+    wordBreak: 'break-word',
+    hyphens: 'auto',
+  } as const;
+
   // if hover error, we have to remove the wrapper as HoverCell handles that.
   if (hoverError !== undefined) {
     return (
-      <div className="leading-2 whitespace-nowrap">
-        <div className="flex items-center justify-between gap-2">
-          {<div className="margin-bottom: 0.5rem">{title}</div>}
-        </div>
+      <div className="leading-2 max-w-xs whitespace-normal" style={wrapStyle}>
+        <div className="flex items-center justify-between gap-2">{<div className="mb-2">{title}</div>}</div>
         {message && <div className="pb-1 pt-2 text-xs">{message}</div>}
       </div>
     );
@@ -143,12 +146,12 @@ export const HtmlValidationMessage = (props: Props) => {
   return (
     <div
       ref={ref}
-      className="border.gray-300 pointer-events-none absolute w-64 rounded-md border bg-popover bg-white p-4 text-popover-foreground shadow-md outline-none"
+      className="pointer-events-none absolute w-64 max-w-xs rounded-md border border-gray-300 bg-popover bg-white p-4 text-popover-foreground shadow-md outline-none"
       style={{ top, left }}
     >
-      <div className="leading-2 whitespace-nowrap">
+      <div className="leading-2 whitespace-normal" style={wrapStyle}>
         <div className="flex items-start justify-between gap-2">
-          {<div className="margin-bottom: 0.5rem">{title}</div>}
+          {<div className="mb-2">{title}</div>}
           {
             <IconButton
               sx={{ padding: 0.5 }}

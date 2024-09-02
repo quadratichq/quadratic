@@ -39,7 +39,7 @@ export function javascriptAddLineNumberVars(transform: JavascriptTransformedCode
   let s = '';
   for (let i = 0; i < list.length; i++) {
     if (list[i].includes('return')) {
-      s += `try { throw new Error() } catch (e) { const stackLines = e.stack.split("\\n"); const match = stackLines[1].match(/:(\\d+):(\\d+)/); if (match) { ${LINE_NUMBER_VAR} = match[1];} }`;
+      s += `try { throw new Error() } catch (e) { const stackLines = e.stack.split("\\n"); let lineNumber; for (let i = 0; i < stackLines.length; i++) { const match = stackLines[i].match(/:(\\d+):(\\d+)/); if (match) { lineNumber = match[1]; break; } } if (lineNumber) { ${LINE_NUMBER_VAR} = lineNumber; } }`;
     }
     s += list[i] + '\n';
   }
@@ -79,7 +79,7 @@ export function prepareJavascriptCode(
     '\n })();' +
     'if (results instanceof OffscreenCanvas) results = await results.convertToBlob();' +
     `self.postMessage({ type: "results", results, console: javascriptConsole.output()${
-      withLineNumbers ? `, lineNumber: ${LINE_NUMBER_VAR} - 1` : ''
+      withLineNumbers ? `, lineNumber: Math.max(${LINE_NUMBER_VAR} - 1, 0)` : ''
     } });` +
     `} catch (e) { const error = e.message; const stack = e.stack; self.postMessage({ type: "error", error, stack, console: javascriptConsole.output() }); }` +
     '})();';
