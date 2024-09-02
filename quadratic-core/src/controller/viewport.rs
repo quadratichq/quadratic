@@ -158,7 +158,7 @@ impl GridController {
     }
 
     pub fn process_remaining_dirty_hashes(&self, transaction: &mut PendingTransaction) {
-        if !cfg!(target_family = "wasm") || transaction.dirty_hashes.is_empty() {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.dirty_hashes.is_empty() {
             return;
         }
 
@@ -170,7 +170,7 @@ impl GridController {
     }
 
     pub fn flag_hashes_dirty(&self, sheet_id: SheetId, dirty_hashes: &HashSet<Pos>) {
-        if !cfg!(target_family = "wasm") && !cfg!(test) || dirty_hashes.is_empty() {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || dirty_hashes.is_empty() {
             return;
         }
 
@@ -182,5 +182,81 @@ impl GridController {
         if let Ok(hashes_string) = serde_json::to_string(&hashes) {
             crate::wasm_bindings::js::jsHashesDirty(sheet_id.to_string(), hashes_string);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
+    use serial_test::{parallel, serial};
+
+    #[test]
+    #[parallel]
+    fn test_add_dirty_hashes_from_sheet_rect() {
+        let gc = GridController::test();
+        let mut transaction = PendingTransaction::default();
+        let sheet_rect = SheetRect::single_pos(Pos { x: 0, y: 0 }, SheetId::new());
+        gc.add_dirty_hashes_from_sheet_rect(&mut transaction, sheet_rect);
+        assert_eq!(transaction.dirty_hashes.len(), 1);
+        assert_eq!(
+            transaction
+                .dirty_hashes
+                .get(&sheet_rect.sheet_id)
+                .unwrap()
+                .len(),
+            1
+        );
+        assert!(transaction
+            .dirty_hashes
+            .get(&sheet_rect.sheet_id)
+            .unwrap()
+            .contains(&Pos { x: 0, y: 0 }),);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_add_dirty_hashes_from_sheet_cell_positions() {
+        let gc = GridController::test();
+        let mut transaction = PendingTransaction::default();
+        let sheet_id = SheetId::new();
+        let positions: HashSet<Pos> = vec![Pos { x: 1, y: 1 }, Pos { x: 16, y: 2 }]
+            .into_iter()
+            .collect();
+        gc.add_dirty_hashes_from_sheet_cell_positions(&mut transaction, sheet_id, positions);
+        assert_eq!(transaction.dirty_hashes.len(), 1);
+        assert_eq!(transaction.dirty_hashes.get(&sheet_id).unwrap().len(), 2);
+        assert!(transaction
+            .dirty_hashes
+            .get(&sheet_id)
+            .unwrap()
+            .contains(&Pos { x: 0, y: 0 }));
+        assert!(transaction
+            .dirty_hashes
+            .get(&sheet_id)
+            .unwrap()
+            .contains(&Pos { x: 1, y: 0 }));
+    }
+
+    #[test]
+    #[serial]
+    fn test_process_remaining_dirty_hashes() {
+        clear_js_calls();
+        let gc = GridController::test();
+        let mut transaction = PendingTransaction::default();
+        let sheet_id = SheetId::new();
+        let positions: HashSet<Pos> = vec![Pos { x: 1, y: 1 }, Pos { x: 16, y: 2 }]
+            .into_iter()
+            .collect();
+        gc.add_dirty_hashes_from_sheet_cell_positions(&mut transaction, sheet_id, positions);
+        gc.process_remaining_dirty_hashes(&mut transaction);
+        assert!(transaction.dirty_hashes.is_empty());
+        let hashes = vec![Pos { x: 0, y: 0 }, Pos { x: 1, y: 0 }];
+        let hashes_string = serde_json::to_string(&hashes).unwrap();
+        expect_js_call(
+            "jsHashesDirty",
+            format!("{},{}", sheet_id, hashes_string),
+            true,
+        )
     }
 }
