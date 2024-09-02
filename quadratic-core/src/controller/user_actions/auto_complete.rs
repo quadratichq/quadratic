@@ -83,20 +83,20 @@ mod tests {
 
                 if let Some(is_bold) = bolds.get(count) {
                     if *is_bold {
-                        grid_controller.set_bold_selection(
-                            Selection::sheet_pos(sheet_pos),
-                            true,
-                            None,
-                        );
+                        grid_controller
+                            .set_bold_selection(Selection::sheet_pos(sheet_pos), true, None)
+                            .unwrap();
                     }
                 }
 
                 if let Some(fill_color) = fill_colors.get(count) {
-                    grid_controller.set_fill_color_selection(
-                        Selection::sheet_pos(sheet_pos),
-                        Some(fill_color.to_lowercase()),
-                        None,
-                    );
+                    grid_controller
+                        .set_fill_color_selection(
+                            Selection::sheet_pos(sheet_pos),
+                            Some(fill_color.to_lowercase()),
+                            None,
+                        )
+                        .unwrap();
                 }
 
                 if let Some(code_cell) = code_cells.get(count) {

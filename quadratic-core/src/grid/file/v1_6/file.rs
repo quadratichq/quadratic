@@ -1,13 +1,19 @@
-use std::collections::HashMap;
-
 use anyhow::Result;
 
 use super::schema::{self as current};
-use crate::grid::file::v1_7::schema::{
-    self as v1_7, BorderStyleTimestampSchema, CellBorderSchema, ColumnRepeatSchema,
+use crate::{
+    border_style::{BorderStyle, CellBorderLine},
+    color::Rgba,
+    grid::{
+        file::{
+            serialize::borders::export_borders,
+            v1_7::schema::{self as v1_7},
+        },
+        sheet::borders::Borders,
+    },
 };
 
-// used to index for upgrade_borders
+// index for old borders enum
 // enum CellSide {
 //     Left = 0,
 //     Top = 1,
@@ -15,68 +21,43 @@ use crate::grid::file::v1_7::schema::{
 //     Bottom = 3,
 // }
 
-fn upgrade_borders(_borders: current::Borders) -> Result<v1_7::BordersSchema> {
-    // let mut left: HashMap<i64, ColumnRepeatSchema<BorderStyleTimestampSchema>> = HashMap::new();
-    // let mut right: HashMap<i64, ColumnRepeatSchema<BorderStyleTimestampSchema>> = HashMap::new();
-    // let mut top: HashMap<i64, ColumnRepeatSchema<BorderStyleTimestampSchema>> = HashMap::new();
-    // let mut bottom: HashMap<i64, ColumnRepeatSchema<BorderStyleTimestampSchema>> = HashMap::new();
+fn upgrade_borders(borders: current::Borders) -> Result<v1_7::BordersSchema> {
+    fn convert_border_style(border_style: &current::CellBorder) -> Result<BorderStyle> {
+        let color = Rgba::color_from_str(&border_style.color)?;
+        let line = serde_json::from_str::<CellBorderLine>(&border_style.line)?;
+        Ok(BorderStyle { color, line })
+    }
+    let mut borders_new = Borders::default();
 
-    // for (col_id, sheet_borders) in borders {
-    //     let col: i64 = col_id
-    //         .parse::<i64>()
-    //         .expect("Failed to parse col_id as i64");
-    //     for (row, row_borders) in sheet_borders {
-    //         if let Some(left_old) = row_borders[0].as_ref() {
-    //             left.entry(col)
-    //                 .or_insert_with(|| ColumnRepeatSchema {
-    //                     value: BorderStyleTimestampSchema::default(),
-    //                     len: 0,
-    //                 })
-    //                 .value
-    //                 .push((row, left_old.clone()));
-    //         }
-    //         if let Some(right_old) = row_borders[2].as_ref() {
-    //             right
-    //                 .entry(col)
-    //                 .or_insert_with(|| ColumnRepeatSchema {
-    //                     value: BorderStyleTimestampSchema::default(),
-    //                     len: 0,
-    //                 })
-    //                 .value
-    //                 .push((row, right_old.clone()));
-    //         }
-    //         if let Some(top_old) = row_borders[1].as_ref() {
-    //             top.entry(row)
-    //                 .or_insert_with(|| ColumnRepeatSchema {
-    //                     value: BorderStyleTimestampSchema::default(),
-    //                     len: 0,
-    //                 })
-    //                 .value
-    //                 .push((col, top_old.clone()));
-    //         }
-    //         if let Some(bottom_old) = row_borders[3].as_ref() {
-    //             bottom
-    //                 .entry(row)
-    //                 .or_insert_with(|| ColumnRepeatSchema {
-    //                     value: BorderStyleTimestampSchema::default(),
-    //                     len: 0,
-    //                 })
-    //                 .value
-    //                 .push((col, bottom_old.clone()));
-    //         }
-    //     }
-    // }
+    for (col_id, sheet_borders) in borders {
+        let col: i64 = col_id
+            .parse::<i64>()
+            .expect("Failed to parse col_id as i64");
+        for (row, row_borders) in sheet_borders {
+            if let Some(left_old) = row_borders[0].as_ref() {
+                if let Ok(style) = convert_border_style(left_old) {
+                    borders_new.set(col, row, None, None, Some(style), None);
+                }
+            }
+            if let Some(right_old) = row_borders[2].as_ref() {
+                if let Ok(style) = convert_border_style(right_old) {
+                    borders_new.set(col, row, None, None, None, Some(style));
+                }
+            }
+            if let Some(top_old) = row_borders[1].as_ref() {
+                if let Ok(style) = convert_border_style(top_old) {
+                    borders_new.set(col, row, Some(style), None, None, None);
+                }
+            }
+            if let Some(bottom_old) = row_borders[3].as_ref() {
+                if let Ok(style) = convert_border_style(bottom_old) {
+                    borders_new.set(col, row, None, Some(style), None, None);
+                }
+            }
+        }
+    }
 
-    let borders = v1_7::BordersSchema {
-        all: v1_7::BorderStyleCellSchema::default(),
-        columns: HashMap::new(),
-        rows: HashMap::new(),
-
-        left: HashMap::new(),
-        right: HashMap::new(),
-        top: HashMap::new(),
-        bottom: HashMap::new(),
-    };
+    let borders = export_borders(&borders_new);
     Ok(borders)
 }
 

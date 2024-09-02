@@ -251,7 +251,8 @@ mod test {
             }),
             Some("red".to_string()),
             None,
-        );
+        )
+        .unwrap();
 
         gc.set_borders_selection(
             Selection::sheet_rect(SheetRect::single_pos((2, 2).into(), sheet_id)),

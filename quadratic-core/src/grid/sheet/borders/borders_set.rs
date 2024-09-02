@@ -1,5 +1,5 @@
 use crate::{
-    border_style::{BorderStyleCell, BorderStyleCellUpdate},
+    border_style::{BorderStyle, BorderStyleCell, BorderStyleCellUpdate},
     controller::operations::operation::Operation,
     grid::ColumnData,
     selection::Selection,
@@ -103,5 +103,67 @@ impl Borders {
         } else {
             vec![]
         }
+    }
+
+    /// Sets the border for a cell. This is used in the upgrade_border for going
+    /// from v1_6 to v1_7.
+    pub fn set(
+        &mut self,
+        x: i64,
+        y: i64,
+        top: Option<BorderStyle>,
+        bottom: Option<BorderStyle>,
+        left: Option<BorderStyle>,
+        right: Option<BorderStyle>,
+    ) {
+        if let Some(top) = top {
+            self.top
+                .entry(y)
+                .or_insert_with(ColumnData::new)
+                .set(x, Some(top.into()));
+        }
+        if let Some(bottom) = bottom {
+            self.bottom
+                .entry(y)
+                .or_insert_with(ColumnData::new)
+                .set(x, Some(bottom.into()));
+        }
+        if let Some(left) = left {
+            self.left
+                .entry(x)
+                .or_insert_with(ColumnData::new)
+                .set(y, Some(left.into()));
+        }
+        if let Some(right) = right {
+            self.right
+                .entry(x)
+                .or_insert_with(ColumnData::new)
+                .set(y, Some(right.into()));
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serial_test::parallel;
+
+    use crate::{border_style::CellBorderLine, grid::SheetId, SheetRect};
+
+    use super::*;
+
+    #[test]
+    #[parallel]
+    fn set_borders() {
+        let sheet_id = SheetId::test();
+        let mut borders = Borders::default();
+        let selection = Selection::sheet_rect(SheetRect::new(0, 0, 9, 9, sheet_id));
+        let value = RunLengthEncoding::repeat(BorderStyleCellUpdate::default(), 10 * 10);
+        borders.set_borders(&selection, &value);
+
+        let border = borders.get(0, 0);
+        assert_eq!(border.top.unwrap().line, CellBorderLine::default());
+        assert_eq!(border.bottom.unwrap().line, CellBorderLine::default());
+        assert_eq!(border.left.unwrap().line, CellBorderLine::default());
+        assert_eq!(border.right.unwrap().line, CellBorderLine::default());
     }
 }

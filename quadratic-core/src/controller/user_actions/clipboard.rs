@@ -51,28 +51,27 @@ impl GridController {
 mod test {
     use super::*;
     use crate::{
-        color::Rgba,
         controller::GridController,
         grid::{
-            formats::format_update::FormatUpdate, js_types::CellFormatSummary, BorderSelection,
-            BorderStyle, CellBorderLine, CodeCellLanguage, SheetId,
+            formats::format_update::FormatUpdate, js_types::CellFormatSummary, CodeCellLanguage,
+            SheetId,
         },
         CellValue, CodeCellValue, Pos, Rect, SheetPos, SheetRect,
     };
     use bigdecimal::BigDecimal;
     use serial_test::parallel;
 
-    fn set_borders(gc: &mut GridController, sheet_id: SheetId) {
-        gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::single_pos(Pos { x: 0, y: 0 }, sheet_id)),
-            BorderSelection::All,
-            Some(BorderStyle {
-                color: Rgba::color_from_str("#000000").unwrap(),
-                line: CellBorderLine::Line1,
-            }),
-            None,
-        );
-    }
+    // fn set_borders(gc: &mut GridController, sheet_id: SheetId) {
+    //     gc.set_borders_selection(
+    //         Selection::sheet_rect(SheetRect::single_pos(Pos { x: 0, y: 0 }, sheet_id)),
+    //         BorderSelection::All,
+    //         Some(BorderStyle {
+    //             color: Rgba::color_from_str("#000000").unwrap(),
+    //             line: CellBorderLine::Line1,
+    //         }),
+    //         None,
+    //     );
+    // }
 
     fn set_cell_value(gc: &mut GridController, sheet_id: SheetId, value: &str, x: i64, y: i64) {
         gc.set_cell_value(SheetPos { x, y, sheet_id }, value.into(), None);
@@ -114,7 +113,8 @@ mod test {
             }),
             true,
             None,
-        );
+        )
+        .unwrap();
         set_cell_value(&mut gc, sheet_id, "12", 3, 2);
         gc.set_italic_selection(
             Selection::sheet_rect(SheetRect {
@@ -124,7 +124,8 @@ mod test {
             }),
             true,
             None,
-        );
+        )
+        .unwrap();
 
         let rect = Rect {
             min: Pos { x: 1, y: 1 },
@@ -505,7 +506,8 @@ mod test {
             }),
             true,
             None,
-        );
+        )
+        .unwrap();
         set_cell_value(&mut gc, sheet_id, "12", 3, 2);
         gc.set_italic_selection(
             Selection::sheet_rect(SheetRect {
@@ -515,7 +517,8 @@ mod test {
             }),
             true,
             None,
-        );
+        )
+        .unwrap();
 
         let rect = Rect {
             min: Pos { x: 1, y: 1 },
@@ -675,7 +678,8 @@ mod test {
             }),
             true,
             None,
-        );
+        )
+        .unwrap();
 
         set_cell_value(&mut gc, sheet_id, "12", 2, 2);
         gc.set_italic_selection(
@@ -686,7 +690,8 @@ mod test {
             }),
             true,
             None,
-        );
+        )
+        .unwrap();
 
         let selection = Selection::rect(
             Rect {
