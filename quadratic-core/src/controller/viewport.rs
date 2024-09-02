@@ -245,6 +245,6 @@ mod tests {
             "jsHashesDirty",
             format!("{},{}", sheet_id, hashes_string),
             true,
-        )
+        );
     }
 }
