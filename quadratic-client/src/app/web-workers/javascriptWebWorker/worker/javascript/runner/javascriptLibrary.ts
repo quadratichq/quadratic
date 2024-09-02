@@ -187,9 +187,9 @@ function convertNullToUndefined(
 
 function lineNumber(): number | undefined {
   try {
-    throw new Error()
+    throw new Error();
   } catch (e: any) {
-    const stackLines = e.stack.split("\\n");
+    const stackLines = e.stack.split('\\n');
     const match = stackLines[3].match(/:(\\d+):(\\d+)/);
     if (match) {
       return match[1];

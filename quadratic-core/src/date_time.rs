@@ -294,27 +294,27 @@ mod tests {
         let parsed_date = parse_date(&date).unwrap();
         assert_eq!(parsed_date, NaiveDate::from_ymd_opt(2024, 12, 23).unwrap());
         assert_eq!(
-            parse_date(&"12/23/2024".to_string()),
+            parse_date("12/23/2024"),
             NaiveDate::from_ymd_opt(2024, 12, 23)
         );
         assert_eq!(
-            parse_date(&"2024-12-23".to_string()),
+            parse_date("2024-12-23"),
             NaiveDate::from_ymd_opt(2024, 12, 23)
         );
         assert_eq!(
-            parse_date(&"23 Dec 2024".to_string()),
+            parse_date("23 Dec 2024"),
             NaiveDate::from_ymd_opt(2024, 12, 23)
         );
         assert_eq!(
-            parse_date(&"December 23, 2024".to_string()),
+            parse_date("December 23, 2024"),
             NaiveDate::from_ymd_opt(2024, 12, 23)
         );
         assert_eq!(
-            parse_date(&"2024/12/23".to_string()),
+            parse_date("2024/12/23"),
             NaiveDate::from_ymd_opt(2024, 12, 23)
         );
         assert_eq!(
-            parse_date(&"jan 1,2024".to_string()),
+            parse_date("jan 1,2024"),
             NaiveDate::from_ymd_opt(2024, 1, 1)
         );
     }

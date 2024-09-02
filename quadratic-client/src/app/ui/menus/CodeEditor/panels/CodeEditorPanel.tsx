@@ -23,6 +23,7 @@ export const CodeEditorPanel = memo((props: Props) => {
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
     userMakingRequest: { teamPermissions },
+    team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
   const { editorRef } = useCodeEditor();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
@@ -42,6 +43,7 @@ export const CodeEditorPanel = memo((props: Props) => {
   const schemaBrowser =
     isAuthenticated && connectionInfo !== undefined && teamPermissions?.includes('TEAM_EDIT') ? (
       <ConnectionSchemaBrowser
+        teamUuid={teamUuid}
         type={connectionInfo.kind}
         uuid={connectionInfo.id}
         TableQueryAction={TableQueryAction}
