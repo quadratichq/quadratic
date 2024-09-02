@@ -17,7 +17,7 @@ impl Sheet {
         &mut self,
         rects: &[Rect],
         formats: &Formats,
-    ) -> (Vec<Operation>, HashSet<Pos>, Vec<i64>) {
+    ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>) {
         let mut formats_iter = formats.iter_values();
 
         // tracks which hashes than need to be updated
@@ -60,7 +60,7 @@ impl Sheet {
         });
 
         if old_formats == *formats {
-            return (vec![], HashSet::new(), vec![]);
+            return (vec![], HashSet::new(), HashSet::new());
         }
 
         self.send_html_output(&html);
@@ -76,7 +76,7 @@ impl Sheet {
                 formats: old_formats,
             }],
             dirty_hashes,
-            resize_rows.into_iter().collect(),
+            resize_rows,
         )
     }
 }

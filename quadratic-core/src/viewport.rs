@@ -28,6 +28,8 @@ impl PartialEq for ViewportBuffer {
     }
 }
 
+unsafe impl Send for ViewportBuffer {}
+
 impl ViewportBuffer {
     pub fn get_buffer(&self) -> SharedArrayBuffer {
         self.buffer.clone()

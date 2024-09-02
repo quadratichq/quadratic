@@ -64,13 +64,13 @@ impl Sheet {
         &mut self,
         selection: &Selection,
         formats: &Formats,
-    ) -> (Vec<Operation>, HashSet<Pos>, Vec<i64>) {
+    ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>) {
         if selection.all {
             self.set_format_all(formats)
         } else {
             let mut ops = vec![];
             let mut dirty_hashes = HashSet::new();
-            let mut resize = vec![];
+            let mut resize = HashSet::new();
             if let Some(columns) = selection.columns.as_ref() {
                 let (operations, hashes, resize_rows) = self.set_formats_columns(columns, formats);
                 ops.extend(operations);

@@ -40,7 +40,7 @@ impl Sheet {
         &mut self,
         rows: &[i64],
         formats: &Formats,
-    ) -> (Vec<Operation>, HashSet<Pos>, Vec<i64>) {
+    ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>) {
         let mut old_formats = Formats::default();
         let mut formats_iter = formats.iter_values();
 
@@ -125,7 +125,7 @@ impl Sheet {
         });
 
         if old_formats == *formats {
-            return (vec![], HashSet::new(), vec![]);
+            return (vec![], HashSet::new(), HashSet::new());
         }
 
         // adds operations to revert changes to the columns
@@ -169,7 +169,7 @@ impl Sheet {
             self.send_fills(&render_fills);
         }
 
-        (ops, dirty_hashes, resize_rows.into_iter().collect())
+        (ops, dirty_hashes, resize_rows)
     }
 }
 

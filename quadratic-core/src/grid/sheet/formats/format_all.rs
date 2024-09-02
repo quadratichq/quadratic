@@ -80,7 +80,7 @@ impl Sheet {
     pub(crate) fn set_format_all(
         &mut self,
         update: &Formats,
-    ) -> (Vec<Operation>, HashSet<Pos>, Vec<i64>) {
+    ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>) {
         let mut old = Formats::default();
         let mut format_all = self.format_all();
         let old_wrap = format_all.wrap;
@@ -102,7 +102,7 @@ impl Sheet {
             // if there are no changes to the format_all, then we don't need to
             // do anything
             if format_update.is_default() {
-                return (vec![], dirty_hashes, vec![]);
+                return (vec![], dirty_hashes, resize_rows);
             }
 
             if matches!(old_wrap, Some(CellWrap::Wrap))
@@ -223,10 +223,10 @@ impl Sheet {
                 }
             }
 
-            (ops, dirty_hashes, resize_rows.into_iter().collect())
+            (ops, dirty_hashes, resize_rows)
         } else {
             // there are no updates, so nothing more to do
-            (vec![], HashSet::new(), vec![])
+            (vec![], HashSet::new(), HashSet::new())
         }
     }
 }
