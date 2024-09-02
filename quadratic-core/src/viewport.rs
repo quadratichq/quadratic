@@ -1,16 +1,22 @@
-use js_sys::{Int32Array, SharedArrayBuffer, Uint8Array};
-use wasm_bindgen::prelude::*;
-
 use crate::{grid::SheetId, Pos};
 
+#[cfg(not(test))]
+use js_sys::{Int32Array, SharedArrayBuffer, Uint8Array};
+
+#[cfg(not(test))]
 use std::str::FromStr;
+
+#[cfg(not(test))]
+use wasm_bindgen::prelude::*;
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
+#[cfg(not(test))]
 pub struct ViewportBuffer {
     buffer: SharedArrayBuffer,
 }
 
+#[cfg(not(test))]
 impl Default for ViewportBuffer {
     fn default() -> Self {
         // 5 int32 + 36 uint8
@@ -22,14 +28,17 @@ impl Default for ViewportBuffer {
     }
 }
 
+#[cfg(not(test))]
 impl PartialEq for ViewportBuffer {
     fn eq(&self, _: &Self) -> bool {
         true
     }
 }
 
+#[cfg(not(test))]
 unsafe impl Send for ViewportBuffer {}
 
+#[cfg(not(test))]
 impl ViewportBuffer {
     pub fn get_buffer(&self) -> SharedArrayBuffer {
         self.buffer.clone()
@@ -70,5 +79,29 @@ impl ViewportBuffer {
                 None
             }
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+#[cfg(test)]
+pub struct ViewportBuffer {
+    buffer: [u8; 56],
+}
+
+#[cfg(test)]
+impl Default for ViewportBuffer {
+    fn default() -> Self {
+        ViewportBuffer { buffer: [0u8; 56] }
+    }
+}
+
+#[cfg(test)]
+impl ViewportBuffer {
+    pub fn get_buffer(&self) -> [u8; 56] {
+        self.buffer
+    }
+
+    pub fn get_viewport(&self) -> Option<(Pos, Pos, SheetId)> {
+        Some((Pos { x: 0, y: 0 }, Pos { x: 10, y: 10 }, SheetId::test()))
     }
 }

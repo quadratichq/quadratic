@@ -446,7 +446,7 @@ mod test {
     #[serial]
     fn send_render_cells_from_rects() {
         let mut gc = GridController::test();
-        let sheet_id = SheetId::new();
+        let sheet_id = SheetId::test();
         gc.sheet_mut(gc.sheet_ids()[0]).id = sheet_id;
 
         gc.set_cell_value((0, 0, sheet_id).into(), "test 1".to_string(), None);

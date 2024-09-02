@@ -1,5 +1,6 @@
 use super::*;
 
+#[cfg(not(test))]
 use js_sys::SharedArrayBuffer;
 
 #[wasm_bindgen]
@@ -641,7 +642,7 @@ pub fn jsHashesDirty(sheet_id: String, hashes: String /*Vec<JsPos>*/) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSendViewportBuffer(transaction_id: String, buffer: SharedArrayBuffer) {
+pub fn jsSendViewportBuffer(transaction_id: String, buffer: [u8; 56]) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsSendViewportBuffer",
         format!("{:?},{:?}", transaction_id, buffer),

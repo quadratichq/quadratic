@@ -57,9 +57,13 @@ impl GridController {
         self.grid
     }
 
+    pub fn new() -> Self {
+        Self::from_grid(Grid::new(), 0)
+    }
+
     // create a new gc for testing purposes in both Rust and TS
     pub fn test() -> Self {
-        Self::from_grid(Grid::new(), 0)
+        Self::from_grid(Grid::test(), 0)
     }
 
     // get the last active transaction for testing purposes

@@ -12,7 +12,7 @@ use super::{active_transactions::pending_transaction::PendingTransaction, GridCo
 
 impl GridController {
     pub fn send_viewport_buffer(&self, transaction: &mut PendingTransaction) {
-        if !cfg!(target_family = "wasm") || transaction.is_server() {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
             return;
         }
 
@@ -25,7 +25,7 @@ impl GridController {
     }
 
     pub fn clear_viewport_buffer(&self, transaction: &mut PendingTransaction) {
-        if !cfg!(target_family = "wasm") || transaction.is_server() {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
             return;
         }
 
@@ -74,17 +74,7 @@ impl GridController {
     }
 
     pub fn process_visible_dirty_hashes(&self, transaction: &mut PendingTransaction) {
-        // during tests, send all dirty hashes to the client
-        if cfg!(test) {
-            for (sheet_id, hashes) in transaction.dirty_hashes.iter() {
-                if let Some(sheet) = self.try_sheet(sheet_id.to_owned()) {
-                    sheet.send_render_cells_in_hashes(hashes.to_owned());
-                }
-            }
-            return;
-        }
-
-        if !cfg!(target_family = "wasm")
+        if (!cfg!(target_family = "wasm") && !cfg!(test))
             || transaction.dirty_hashes.is_empty()
             || transaction.is_server()
         {
@@ -131,7 +121,7 @@ impl GridController {
         dirty_hashes: Vec<Pos>,
         viewport_buffer: &ViewportBuffer,
     ) -> HashSet<Pos> {
-        if !cfg!(target_family = "wasm") || dirty_hashes.is_empty() {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || dirty_hashes.is_empty() {
             return HashSet::new();
         }
 
