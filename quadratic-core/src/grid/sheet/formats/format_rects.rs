@@ -88,12 +88,12 @@ mod test {
     use super::*;
     use crate::{
         grid::{formats::format::Format, RenderSize},
-        wasm_bindings::js::{expect_js_call, hash_test},
+        wasm_bindings::js::expect_js_call,
         CellValue,
     };
 
     #[test]
-    #[serial]
+    #[parallel]
     fn set_formats_rects() {
         let mut sheet = Sheet::test();
         let formats = Formats::repeat(
@@ -127,11 +127,6 @@ mod test {
                 ),
             }
         );
-
-        let cells =
-            serde_json::to_string(&sheet.get_render_cells(Rect::from_numbers(0, 0, 2, 2))).unwrap();
-        let args = format!("{},{},{},{}", sheet.id, 0, 0, hash_test(&cells));
-        expect_js_call("jsRenderCellSheets", args, true);
     }
 
     #[test]

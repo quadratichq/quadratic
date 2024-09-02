@@ -38,7 +38,7 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_rect: SheetRect,
     ) {
-        if !cfg!(target_family = "wasm") || transaction.is_server() {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
             return;
         }
 
@@ -56,7 +56,7 @@ impl GridController {
         sheet_id: SheetId,
         positions: HashSet<Pos>,
     ) {
-        if !cfg!(target_family = "wasm") || transaction.is_server() {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
             return;
         }
 
@@ -77,9 +77,9 @@ impl GridController {
         // during tests, send all dirty hashes to the client
         if cfg!(test) {
             for (sheet_id, hashes) in transaction.dirty_hashes.iter() {
-                self.try_sheet(sheet_id.to_owned())
-                    .unwrap()
-                    .send_render_cells_in_hashes(hashes.to_owned());
+                if let Some(sheet) = self.try_sheet(sheet_id.to_owned()) {
+                    sheet.send_render_cells_in_hashes(hashes.to_owned());
+                }
             }
             return;
         }
