@@ -23,13 +23,28 @@ use crate::{
 
 fn upgrade_borders(borders: current::Borders) -> Result<v1_7::BordersSchema> {
     fn convert_border_style(border_style: &current::CellBorder) -> Result<BorderStyle> {
-        let color = Rgba::color_from_str(&border_style.color)?;
-        let line = serde_json::from_str::<CellBorderLine>(&border_style.line)?;
+        let mut color = Rgba::color_from_str(&border_style.color)?;
+
+        // the alpha was set incorrectly to 1; should be 255
+        color.alpha = 255;
+
+        let line = match border_style.line.as_ref() {
+            "line1" => CellBorderLine::Line1,
+            "line2" => CellBorderLine::Line2,
+            "line3" => CellBorderLine::Line3,
+            "dotted" => CellBorderLine::Dotted,
+            "dashed" => CellBorderLine::Dashed,
+            "double" => CellBorderLine::Double,
+            _ => return Err(anyhow::anyhow!("Invalid border line style")),
+        };
         Ok(BorderStyle { color, line })
     }
-    let mut borders_new = Borders::default();
 
+    let mut borders_new = Borders::default();
     for (col_id, sheet_borders) in borders {
+        if sheet_borders.is_empty() {
+            continue;
+        }
         let col: i64 = col_id
             .parse::<i64>()
             .expect("Failed to parse col_id as i64");
@@ -95,7 +110,12 @@ pub fn upgrade(grid: current::GridSchema) -> Result<v1_7::GridSchema> {
 mod tests {
     use serial_test::parallel;
 
-    use crate::grid::file::{export, import};
+    use super::*;
+
+    use crate::{
+        controller::GridController,
+        grid::file::{export, import},
+    };
 
     const V1_5_FILE: &[u8] =
         include_bytes!("../../../../../quadratic-rust-shared/data/grid/v1_5_simple.grid");
@@ -118,5 +138,17 @@ mod tests {
         let exported = export(imported.clone()).unwrap();
         let imported_copy = import(exported).unwrap();
         assert_eq!(imported_copy, imported);
+
+        let gc = GridController::from_grid(imported, 0);
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet(sheet_id);
+
+        let border_0_0 = sheet.borders.get(0, 0);
+        assert_eq!(border_0_0.top.unwrap().line, CellBorderLine::Line1);
+        assert_eq!(border_0_0.top.unwrap().color, Rgba::new(0, 0, 0, 255));
+        assert_eq!(border_0_0.left.unwrap().line, CellBorderLine::Line1);
+        assert_eq!(border_0_0.left.unwrap().color, Rgba::new(0, 0, 0, 255));
+        assert_eq!(border_0_0.bottom, None);
+        assert_eq!(border_0_0.right, None);
     }
 }
