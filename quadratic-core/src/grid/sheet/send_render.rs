@@ -24,23 +24,41 @@ impl Sheet {
         });
 
         // send the modified cells to the render web worker
-        modified.iter().for_each(|modified| {
-            let rect = Rect::from_numbers(
-                modified.x * CELL_SHEET_WIDTH as i64,
-                modified.y * CELL_SHEET_HEIGHT as i64,
-                CELL_SHEET_WIDTH as i64,
-                CELL_SHEET_HEIGHT as i64,
-            );
-            let render_cells = self.get_render_cells(rect);
-            if let Ok(cells) = serde_json::to_string(&render_cells) {
-                crate::wasm_bindings::js::jsRenderCellSheets(
-                    self.id.to_string(),
-                    modified.x,
-                    modified.y,
-                    cells,
-                );
-            }
+        self.send_render_cells_in_hashes(modified);
+    }
+
+    /// Sends the modified cells in hash to the render web worker
+    pub fn send_render_cells_in_hashes(&self, hashes: HashSet<Pos>) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+
+        hashes.into_iter().for_each(|hash| {
+            self.send_render_cells_in_hash(hash);
         });
+    }
+
+    /// Sends the modified cells in hash to the render web worker
+    pub fn send_render_cells_in_hash(&self, hash: Pos) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+
+        let rect = Rect::from_numbers(
+            hash.x * CELL_SHEET_WIDTH as i64,
+            hash.y * CELL_SHEET_HEIGHT as i64,
+            CELL_SHEET_WIDTH as i64,
+            CELL_SHEET_HEIGHT as i64,
+        );
+        let render_cells = self.get_render_cells(rect);
+        if let Ok(cells) = serde_json::to_string(&render_cells) {
+            crate::wasm_bindings::js::jsRenderCellSheets(
+                self.id.to_string(),
+                hash.x,
+                hash.y,
+                cells,
+            );
+        }
     }
 
     /// Sends all render cells to the render web worker

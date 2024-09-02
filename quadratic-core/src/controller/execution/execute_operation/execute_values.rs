@@ -44,7 +44,7 @@ impl GridController {
                             y: min.y - 1 + values.h as i64,
                         },
                     };
-                    if transaction.is_user() || transaction.is_undo_redo() {
+                    if transaction.is_user_undo_redo() {
                         transaction
                             .forward_operations
                             .push(Operation::SetCellValues { sheet_pos, values });

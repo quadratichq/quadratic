@@ -3,10 +3,9 @@ use std::collections::HashSet;
 use itertools::Itertools;
 
 use crate::{
-    controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     grid::{js_types::JsPos, SheetId},
     viewport::ViewportBuffer,
-    Pos, Rect, SheetRect,
+    Pos, SheetRect,
 };
 
 use super::{active_transactions::pending_transaction::PendingTransaction, GridController};
@@ -75,6 +74,16 @@ impl GridController {
     }
 
     pub fn process_visible_dirty_hashes(&self, transaction: &mut PendingTransaction) {
+        // during tests, send all dirty hashes to the client
+        if cfg!(test) {
+            for (sheet_id, hashes) in transaction.dirty_hashes.iter() {
+                self.try_sheet(sheet_id.to_owned())
+                    .unwrap()
+                    .send_render_cells_in_hashes(hashes.to_owned());
+            }
+            return;
+        }
+
         if !cfg!(target_family = "wasm")
             || transaction.dirty_hashes.is_empty()
             || transaction.is_server()
@@ -87,7 +96,7 @@ impl GridController {
                 viewport_buffer.get_viewport()
             {
                 if let Some(dirty_hashes_in_viewport) =
-                    transaction.dirty_hashes.get(&viewport_sheet_id)
+                    transaction.dirty_hashes.remove(&viewport_sheet_id)
                 {
                     let center = Pos {
                         x: (top_left.x + bottom_right.x) / 2,
@@ -128,7 +137,7 @@ impl GridController {
 
         let mut remaining_hashes = HashSet::new();
         if let Some(sheet) = self.try_sheet(sheet_id) {
-            for pos in dirty_hashes.iter() {
+            for pos in dirty_hashes.into_iter() {
                 if let Some((top_left, bottom_right, viewport_sheet_id)) =
                     viewport_buffer.get_viewport()
                 {
@@ -138,24 +147,9 @@ impl GridController {
                         && pos.y >= top_left.y
                         && pos.y <= bottom_right.y
                     {
-                        let rect = Rect::from_numbers(
-                            pos.x * CELL_SHEET_WIDTH as i64,
-                            pos.y * CELL_SHEET_HEIGHT as i64,
-                            CELL_SHEET_WIDTH as i64,
-                            CELL_SHEET_HEIGHT as i64,
-                        );
-                        let render_cells = sheet.get_render_cells(rect);
-                        if let Ok(cells) = serde_json::to_string(&render_cells) {
-                            crate::wasm_bindings::js::jsRenderCellSheets(
-                                sheet_id.to_string(),
-                                pos.x,
-                                pos.y,
-                                cells,
-                            );
-                        }
-                        dbgjs!(format!("Sending render cells for {:?}", pos));
+                        sheet.send_render_cells_in_hash(pos);
                     } else {
-                        remaining_hashes.insert(pos.to_owned());
+                        remaining_hashes.insert(pos);
                     }
                 }
             }
