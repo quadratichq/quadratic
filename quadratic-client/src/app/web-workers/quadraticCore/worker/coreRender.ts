@@ -66,7 +66,7 @@ class CoreRender {
     this.coreRenderPort.postMessage(message);
   }
 
-  async getRenderCells(data: RenderCoreRequestRenderCells) {
+  private async getRenderCells(data: RenderCoreRequestRenderCells) {
     const cells = await core.getRenderCells(data);
     this.send({ type: 'coreRenderRenderCells', cells, id: data.id });
   }
