@@ -1,7 +1,7 @@
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { BUG_REPORT_URL, DISCORD, TWITTER } from '@/shared/constants/urls';
+import { CONTACT_URL } from '@/shared/constants/urls';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
@@ -66,19 +66,12 @@ export const FeedbackMenu = () => {
         <DialogHeader>
           <DialogTitle>Provide feedback</DialogTitle>
           <DialogDescription>
-            Or reach out to us on{' '}
-            <a href={BUG_REPORT_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
-              GitHub
+            Or{' '}
+            <a href={CONTACT_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
+              contact us by some other form
             </a>
-            ,{' '}
-            <a href={TWITTER} target="_blank" rel="noreferrer" className="underline hover:text-primary">
-              Twitter
-            </a>
-            , or{' '}
-            <a href={DISCORD} target="_blank" rel="noreferrer" className="underline hover:text-primary">
-              Discord
-            </a>
-            .
+            {', '}
+            we would love to hear from you!
           </DialogDescription>
         </DialogHeader>
         <form
