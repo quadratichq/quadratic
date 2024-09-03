@@ -11,7 +11,6 @@ export const DOCUMENTATION_CONNECTIONS_IP_LIST_URL = `${DOCUMENTATION_CONNECTION
 export const DOCUMENTATION_BROWSER_COMPATIBILITY_URL = `${DOCUMENTATION_URL}/spreadsheet/browser-compatibility`;
 export const TRUST_CENTER = 'https://trust.quadratichq.com';
 export const BUG_REPORT_URL = 'https://github.com/quadratichq/quadratic/issues';
-export const DISCORD = 'https://discord.gg/quadratic';
 export const TWITTER = 'https://twitter.com/quadratichq';
 export const CONTACT_URL = 'https://quadratichq.com/contact';
 export const WEBSITE_CONNECTIONS = 'https://www.quadratichq.com/connections';

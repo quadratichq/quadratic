@@ -239,6 +239,8 @@ mod tests {
     #[test]
     #[serial]
     fn execute_set_validation() {
+        clear_js_calls();
+
         let mut gc = GridController::default();
         let mut transaction = PendingTransaction::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -278,6 +280,7 @@ mod tests {
     #[serial]
     fn execute_remove_validation() {
         clear_js_calls();
+
         let mut gc = GridController::default();
         let mut transaction = PendingTransaction::default();
         let sheet_id = gc.sheet_ids()[0];
