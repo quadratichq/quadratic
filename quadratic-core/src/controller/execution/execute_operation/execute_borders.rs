@@ -79,3 +79,27 @@ impl GridController {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use serial_test::parallel;
+    use uuid::Uuid;
+
+    use crate::controller::active_transactions::unsaved_transactions::UnsavedTransaction;
+
+    use super::*;
+
+    #[test]
+    #[parallel]
+    fn test_old_borders_operation() {
+        let transaction_id = "9a365b4b-ab55-4ade-aa80-662936462272".to_string();
+        let transaction = r#"{\"forward\":{\"id\":\"9a365b4b-ab55-4ade-aa80-662936462272\",\"sequence_num\":null,\"operations\":[{\"SetBorders\":{\"sheet_rect\":{\"min\":{\"x\":2,\"y\":3},\"max\":{\"x\":3,\"y\":4},\"sheet_id\":{\"id\":\"f2a3a6d2-6601-4a69-8868-19d565408e9b\"}},\"borders\":{\"per_cell\":{\"2\":{\"2\":{\"y\":2,\"content\":{\"value\":{\"borders\":[null,null,null,{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"}]},\"len\":1}},\"3\":{\"y\":3,\"content\":{\"value\":{\"borders\":[{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"},{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"},{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"},{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"}]},\"len\":1}},\"4\":{\"y\":4,\"content\":{\"value\":{\"borders\":[{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"},{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"},{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"},{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"}]},\"len\":1}},\"5\":{\"y\":5,\"content\":{\"value\":{\"borders\":[null,{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"},null,null]},\"len\":1}}},\"4\":{\"3\":{\"y\":3,\"content\":{\"value\":{\"borders\":[{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"},null,null,null]},\"len\":2}}},\"1\":{\"3\":{\"y\":3,\"content\":{\"value\":{\"borders\":[null,null,{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"},null]},\"len\":2}}},\"3\":{\"2\":{\"y\":2,\"content\":{\"value\":{\"borders\":[null,null,null,{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"}]},\"len\":1}},\"3\":{\"y\":3,\"content\":{\"value\":{\"borders\":[{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"},{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"},{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"},{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"}]},\"len\":1}},\"4\":{\"y\":4,\"content\":{\"value\":{\"borders\":[{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"},{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"},{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"},{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"}]},\"len\":1}},\"5\":{\"y\":5,\"content\":{\"value\":{\"borders\":[null,{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"},null,null]},\"len\":1}}}},\"render_lookup\":{\"vertical\":{\"2\":{\"3\":{\"y\":3,\"content\":{\"value\":{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"},\"len\":2}}},\"3\":{\"3\":{\"y\":3,\"content\":{\"value\":{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"},\"len\":2}}},\"4\":{\"3\":{\"y\":3,\"content\":{\"value\":{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"},\"len\":2}}}},\"horizontal\":{\"3\":{\"2\":{\"y\":2,\"content\":{\"value\":{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"},\"len\":2}}},\"4\":{\"2\":{\"y\":2,\"content\":{\"value\":{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"},\"len\":2}}},\"5\":{\"2\":{\"y\":2,\"content\":{\"value\":{\"color\":{\"red\":0,\"green\":0,\"blue\":0,\"alpha\":1},\"line\":\"line1\"},\"len\":2}}}}}}}}],\"cursor\":null},\"reverse\":{\"id\":\"9a365b4b-ab55-4ade-aa80-662936462272\",\"sequence_num\":null,\"operations\":[{\"SetBorders\":{\"sheet_rect\":{\"min\":{\"x\":2,\"y\":3},\"max\":{\"x\":3,\"y\":4},\"sheet_id\":{\"id\":\"f2a3a6d2-6601-4a69-8868-19d565408e9b\"}},\"borders\":{\"per_cell\":{\"3\":{},\"2\":{}},\"render_lookup\":{\"vertical\":{\"2\":{},\"3\":{},\"4\":{}},\"horizontal\":{\"3\":{},\"4\":{},\"5\":{}}}}}}],\"cursor\":\"{\\\"sheetId\\\":\\\"f2a3a6d2-6601-4a69-8868-19d565408e9b\\\",\\\"keyboardMovePosition\\\":{\\\"x\\\":3,\\\"y\\\":4},\\\"cursorPosition\\\":{\\\"x\\\":2,\\\"y\\\":3},\\\"multiCursor\\\":[{\\\"x\\\":2,\\\"y\\\":3,\\\"width\\\":2,\\\"height\\\":2}]}\"}"#.to_string();
+
+        let mut gc = GridController::test();
+
+        // copied from js_apply_offline_unsaved_transaction (can't run wasm ops in tests)
+        let transaction_id = Uuid::parse_str(&transaction_id).unwrap();
+        let unsaved_transaction = serde_json::from_str::<UnsavedTransaction>(&transaction).unwrap();
+        gc.apply_offline_unsaved_transaction(transaction_id, unsaved_transaction);
+    }
+}
