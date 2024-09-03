@@ -67,7 +67,7 @@ services:
       sh -c "/client/scripts/replace_env_vars.sh &&
             nginx -g \"daemon off;\""
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:3000/ || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://0.0.0.0:3000/ || exit 1"]
       interval: 10s
       timeout: 5s
     volumes:
@@ -84,7 +84,7 @@ services:
     image: public.ecr.aws/l3i4i9z2/quadratic-api-staging:latest
     environment:
       CORS: "*"
-      DATABASE_URL: "postgresql://postgres:postgres@127.0.0.1:5432/postgres"
+      DATABASE_URL: "postgresql://postgres:postgres@0.0.0.0:5432/postgres"
       ENVIRONMENT: docker
       STRIPE_SECRET_KEY: STRIPE_SECRET_KEY
       STRIPE_WEBHOOK_SECRET: STRIPE_WEBHOOK_SECRET
@@ -96,12 +96,12 @@ services:
 
       # Auth
       AUTH_TYPE: ory
-      ORY_JWKS_URI: "http://127.0.0.1:3000/.well-known/jwks.json"
-      ORY_ADMIN_HOST: http://127.0.0.1:4434
+      ORY_JWKS_URI: "http://0.0.0.0:3000/.well-known/jwks.json"
+      ORY_ADMIN_HOST: http://0.0.0.0:4434
 
       # Storage
       STORAGE_TYPE: file-system
-      QUADRATIC_FILE_URI: http://127.0.0.1:3002
+      QUADRATIC_FILE_URI: http://0.0.0.0:3002
       QUADRATIC_FILE_URI_PUBLIC: http://localhost:3002
 
       # License UUID: leave "LICENSE_KEY" as this value is replaced during initialization
@@ -127,16 +127,16 @@ services:
       PORT: 3001
       HEARTBEAT_CHECK_S: 3
       HEARTBEAT_TIMEOUT_S: 600
-      QUADRATIC_API_URI: http://127.0.0.1:8000
+      QUADRATIC_API_URI: http://0.0.0.0:8000
       M2M_AUTH_TOKEN: M2M_AUTH_TOKEN
       ENVIRONMENT: docker
 
-      PUBSUB_HOST: 127.0.0.1
+      PUBSUB_HOST: 0.0.0.0
       PUBSUB_PORT: 6379
       PUBSUB_PASSWORD: ""
       PUBSUB_ACTIVE_CHANNELS: active_channels
 
-      AUTH0_JWKS_URI: http://127.0.0.1:3000/.well-known/jwks.json
+      AUTH0_JWKS_URI: http://0.0.0.0:3000/.well-known/jwks.json
       AUTHENTICATE_JWT: true
     restart: "always"
     ports:
@@ -168,11 +168,11 @@ services:
       TRUNCATE_TRANSACTION_AGE_DAYS: 5 #
       ENVIRONMENT: docker
 
-      AUTH0_JWKS_URI: http://127.0.0.1:3000/.well-known/jwks.json
-      QUADRATIC_API_URI: http://127.0.0.1:8000
+      AUTH0_JWKS_URI: http://0.0.0.0:3000/.well-known/jwks.json
+      QUADRATIC_API_URI: http://0.0.0.0:8000
       M2M_AUTH_TOKEN: M2M_AUTH_TOKEN
 
-      PUBSUB_HOST: 127.0.0.1
+      PUBSUB_HOST: 0.0.0.0
       PUBSUB_PORT: 6379
       PUBSUB_PASSWORD: ""
       PUBSUB_ACTIVE_CHANNELS: active_channels
@@ -219,8 +219,8 @@ services:
       PORT: 3003
       ENVIRONMENT: docker
 
-      AUTH0_JWKS_URI: http://127.0.0.1:3000/.well-known/jwks.json
-      QUADRATIC_API_URI: http://127.0.0.1:8000
+      AUTH0_JWKS_URI: http://0.0.0.0:3000/.well-known/jwks.json
+      QUADRATIC_API_URI: http://0.0.0.0:8000
       M2M_AUTH_TOKEN: M2M_AUTH_TOKEN
       MAX_RESPONSE_BYTES: 15728640 # 15MB
       STATIC_IPS: 0.0.0.0,127.0.0.1
@@ -250,7 +250,7 @@ services:
     volumes:
       - ./docker/ory-auth/config:/etc/config/kratos
     environment:
-      DSN: postgresql://postgres:postgres@127.0.0.1:5432/kratos?sslmode=disable
+      DSN: postgresql://postgres:postgres@0.0.0.0:5432/kratos?sslmode=disable
       LOG_LEVEL: trace
     restart: unless-stopped
     depends_on:
@@ -267,7 +267,7 @@ services:
     volumes:
       - ./docker/ory-auth/config:/etc/config/kratos
     environment:
-      DSN: postgresql://postgres:postgres@127.0.0.1:5432/kratos?sslmode=disable
+      DSN: postgresql://postgres:postgres@0.0.0.0:5432/kratos?sslmode=disable
     restart: on-failure
     depends_on:
       - postgres
@@ -282,7 +282,7 @@ services:
       - "4455:4455"
     environment:
       PORT: 4455
-      KRATOS_PUBLIC_URL: http://127.0.0.1:4433/
+      KRATOS_PUBLIC_URL: http://0.0.0.0:4433/
       KRATOS_BROWSER_URL: http://localhost:4433/
       COOKIE_SECRET: changeme
       CSRF_COOKIE_NAME: __HOST-localhost-x-csrf-token
