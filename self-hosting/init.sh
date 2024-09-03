@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 REPO="https://github.com/quadratichq/quadratic.git"
 BRANCH="self-hosting-setup"
