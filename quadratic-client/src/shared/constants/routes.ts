@@ -21,6 +21,7 @@ export const ROUTES = {
     (state ? `&state=${btoa(JSON.stringify({ insertAndRunCodeInNewSheet: state }))}` : ''),
   TEAMS: `/teams`,
   TEAMS_CREATE: `/teams/create`,
+  TEAM_ONBOARDING: `/team-onboarding`,
   TEAM: (teamUuid: string) => `/teams/${teamUuid}`,
   TEAM_CONNECTIONS: (teamUuid: string) => `/teams/${teamUuid}/connections`,
   TEAM_CONNECTION_CREATE: (teamUuid: string, connectionType: ConnectionType) =>

@@ -70,6 +70,9 @@ export const router = createBrowserRouter(
             />
           </Route>
 
+          {/* Routes accessible outside the root dashboard */}
+          <Route path={ROUTES.TEAM_ONBOARDING} lazy={() => import('./routes/team-onboarding')} />
+
           {/* Dashboard UI routes */}
           <Route path="/" id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>
             <Route
@@ -88,15 +91,13 @@ export const router = createBrowserRouter(
               shouldRevalidate={dontRevalidateDialogs}
             />
 
-            <Route path="teams">
-              <Route path="create" lazy={() => import('./routes/teams.create')} />
-              <Route path=":teamUuid" lazy={() => import('./routes/teams.$teamUuid')}>
-                <Route index lazy={() => import('./routes/teams.$teamUuid.index')} />
-                <Route path="files/private" lazy={() => import('./routes/teams.$teamUuid.files.private')} />
-                <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />
-                <Route path="settings" lazy={() => import('./routes/teams.$teamUuid.settings')} />
-                <Route path="connections" lazy={() => import('./routes/teams.$teamUuid.connections')} />
-              </Route>
+            <Route path={ROUTES.TEAMS_CREATE} lazy={() => import('./routes/teams.create')} />
+            <Route path="teams/:teamUuid" lazy={() => import('./routes/teams.$teamUuid')}>
+              <Route index lazy={() => import('./routes/teams.$teamUuid.index')} />
+              <Route path="files/private" lazy={() => import('./routes/teams.$teamUuid.files.private')} />
+              <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />
+              <Route path="settings" lazy={() => import('./routes/teams.$teamUuid.settings')} />
+              <Route path="connections" lazy={() => import('./routes/teams.$teamUuid.connections')} />
             </Route>
           </Route>
         </Route>
