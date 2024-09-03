@@ -18,7 +18,7 @@ export function convertColorStringToTint(color: string): number {
   } catch (e: any) {
     console.error('Error converting color string to tint', e);
     Sentry.captureException(e, { data: color });
-    return Color('gray').rgbNumber(); // Consistent use of 'gray'
+    return Color('gray').rgbNumber();
   }
 }
 
@@ -28,7 +28,7 @@ export function convertTintToString(color: number): string {
   } catch (e: any) {
     console.error('Error converting color tint to string', e);
     Sentry.captureException(e, { data: color });
-    return 'gray'; // Already using 'gray'
+    return 'gray';
   }
 }
 
@@ -38,7 +38,7 @@ export function convertTintToHex(color: number): string {
   } catch (e: any) {
     console.error('Error converting color tint to hex', e);
     Sentry.captureException(e, { data: color });
-    return Color('gray').hex(); // Consistent use of 'gray'
+    return Color('gray').hex();
   }
 }
 
@@ -64,7 +64,7 @@ export function convertColorStringToHex(color: string): string {
   } catch (e: any) {
     console.error('Error converting color string to hex', e);
     Sentry.captureException(e, { data: color });
-    return Color('gray').hex(); // Consistent use of 'gray'
+    return Color('gray').hex();
   }
 }
 

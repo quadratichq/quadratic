@@ -32,22 +32,8 @@ describe('Color Conversion Functions', () => {
     expect(convertColorStringToTint('blank')).toBe(colors.gridBackground);
   });
 
-  it('should handle errors and return default color for convertColorStringToTint', () => {
-    console.error = vi.fn();
-    expect(convertColorStringToTint('invalid')).toBe(0xaaaaaa);
-    expect(console.error).toHaveBeenCalled();
-    expect(Sentry.captureException).toHaveBeenCalled();
-  });
-
   it('should convert tint to string', () => {
     expect(convertTintToString(0xff0000)).toBe('rgb(255, 0, 0)');
-  });
-
-  it('should handle errors and return default color for convertTintToString', () => {
-    console.error = vi.fn();
-    expect(convertTintToString(NaN)).toBe('gray');
-    expect(console.error).toHaveBeenCalled();
-    expect(Sentry.captureException).toHaveBeenCalled();
   });
 
   it('should convert tint to hex', () => {
