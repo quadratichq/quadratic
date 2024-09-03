@@ -1,18 +1,15 @@
 use crate::{
-    border_style::{BorderStyle, BorderStyleCell, BorderStyleCellUpdate},
-    controller::operations::operation::Operation,
-    selection::Selection,
-    RunLengthEncoding,
+    controller::operations::operation::Operation, selection::Selection, RunLengthEncoding,
 };
 
-use super::Borders;
+use super::{BorderStyle, BorderStyleCell, BorderStyleCellUpdate, BorderStyleCellUpdates, Borders};
 
 impl Borders {
     /// Sets the borders for a selection.
     pub fn set_borders(
         &mut self,
         selection: &Selection,
-        borders: &RunLengthEncoding<BorderStyleCellUpdate>,
+        borders: &BorderStyleCellUpdates,
     ) -> Vec<Operation> {
         let mut undo_borders = RunLengthEncoding::new();
 
@@ -137,7 +134,7 @@ impl Borders {
 mod tests {
     use serial_test::parallel;
 
-    use crate::{border_style::CellBorderLine, color::Rgba, grid::SheetId, SheetRect};
+    use crate::{color::Rgba, grid::{sheet::borders::CellBorderLine, SheetId}, SheetRect};
 
     use super::*;
 

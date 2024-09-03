@@ -1,8 +1,10 @@
 use super::operation::Operation;
 use crate::{
-    border_style::BorderStyleCellUpdate,
     controller::GridController,
-    grid::formats::{format_update::FormatUpdate, Formats},
+    grid::{
+        formats::{format_update::FormatUpdate, Formats},
+        sheet::borders::BorderStyleCellUpdate,
+    },
     selection::Selection,
     RunLengthEncoding,
 };

@@ -1,6 +1,8 @@
 use std::fs::create_dir_all;
 
-use crate::border_style::{JsBorderHorizontal, JsBorderVertical, JsBorders, JsBordersSheet};
+use crate::grid::sheet::borders::{
+    JsBorderHorizontal, JsBorderVertical, JsBorders, JsBordersSheet,
+};
 use controller::operations::clipboard::PasteSpecial;
 use grid::{
     formats::format::Format,

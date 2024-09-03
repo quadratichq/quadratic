@@ -1,8 +1,10 @@
 use crate::{
-    border_style::{BorderSelection, BorderStyle, BorderStyleCellUpdate},
     controller::GridController,
+    grid::sheet::borders::{
+        BorderSelection, BorderStyle, BorderStyleCellUpdate, BorderStyleCellUpdates,
+    },
     selection::Selection,
-    Rect, RunLengthEncoding,
+    Rect,
 };
 
 use super::operation::Operation;
@@ -12,7 +14,7 @@ impl GridController {
     fn border_style_sheet(
         border_selection: BorderSelection,
         style: Option<BorderStyle>,
-        borders: &mut RunLengthEncoding<BorderStyleCellUpdate>,
+        borders: &mut BorderStyleCellUpdates,
     ) {
         let style = style.map_or(Some(None), |s| Some(Some(s.into())));
         let mut border_style = BorderStyleCellUpdate::default();
@@ -59,7 +61,7 @@ impl GridController {
         border_selection: BorderSelection,
         style: Option<BorderStyle>,
         rect: &Rect,
-        borders: &mut RunLengthEncoding<BorderStyleCellUpdate>,
+        borders: &mut BorderStyleCellUpdates,
     ) {
         let style = style.map_or(Some(None), |s| Some(Some(s.into())));
         rect.iter().for_each(|pos| {
@@ -140,7 +142,7 @@ impl GridController {
         border_selection: BorderSelection,
         style: Option<BorderStyle>,
     ) -> Option<Vec<Operation>> {
-        let mut borders = RunLengthEncoding::new();
+        let mut borders = BorderStyleCellUpdates::default();
 
         if selection.all {
             Self::border_style_sheet(border_selection, style, &mut borders);

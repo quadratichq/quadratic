@@ -52,7 +52,8 @@ impl GridController {
 mod test {
     use crate::{
         controller::GridController,
-        grid::{BorderSelection, BorderStyle, CodeCellLanguage, SheetId},
+        grid::sheet::borders::{BorderSelection, BorderStyle},
+        grid::{CodeCellLanguage, SheetId},
         selection::Selection,
         wasm_bindings::{
             controller::sheet_info::SheetInfo,

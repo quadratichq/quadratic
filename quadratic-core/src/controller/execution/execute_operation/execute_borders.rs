@@ -1,11 +1,10 @@
 use crate::{
-    border_style::BorderStyleCellUpdate,
     color::Rgba,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    grid::BorderStyle,
+    grid::sheet::borders::{BorderStyle, BorderStyleCellUpdate},
     selection::Selection,
     Pos, RunLengthEncoding,
 };
@@ -105,7 +104,7 @@ mod tests {
     use crate::{
         color::Rgba,
         controller::active_transactions::unsaved_transactions::UnsavedTransaction,
-        grid::{CellBorderLine, SheetId},
+        grid::{sheet::borders::CellBorderLine, SheetId},
         Rect,
     };
 

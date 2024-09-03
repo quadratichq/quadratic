@@ -5,7 +5,6 @@
 pub mod util;
 #[macro_use]
 mod error_run;
-pub mod border_style;
 pub mod color;
 pub mod compression;
 pub mod controller;

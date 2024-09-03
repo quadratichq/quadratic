@@ -1,5 +1,4 @@
-use super::Borders;
-use crate::border_style::{JsBorderHorizontal, JsBorderVertical, JsBorders, JsBordersSheet};
+use super::{Borders, JsBorderHorizontal, JsBorderVertical, JsBorders, JsBordersSheet};
 use crate::{
     grid::SheetId,
     renderer_constants::hashes_in_rects,
@@ -215,13 +214,13 @@ impl Borders {
     /// for actual use since it handles overlapping top/bottom and left/right
     /// properly.
     #[cfg(test)]
-    pub fn get(&self, x: i64, y: i64) -> crate::border_style::BorderStyleCell {
+    pub fn get(&self, x: i64, y: i64) -> super::BorderStyleCell {
         let top = self.top.get(&x).and_then(|row| row.get(y));
         let bottom = self.bottom.get(&(y)).and_then(|row| row.get(x));
         let left = self.left.get(&y).and_then(|row| row.get(x));
         let right = self.right.get(&(y)).and_then(|row| row.get(x));
 
-        crate::border_style::BorderStyleCell {
+        super::BorderStyleCell {
             top,
             bottom,
             left,
@@ -237,9 +236,9 @@ mod tests {
     use serial_test::{parallel, serial};
 
     use crate::{
-        border_style::{BorderSelection, BorderStyle, BorderStyleCell, CellBorderLine},
         color::Rgba,
         controller::GridController,
+        grid::sheet::borders::{BorderSelection, BorderStyle, BorderStyleCell, CellBorderLine},
         selection::Selection,
         SheetRect,
     };

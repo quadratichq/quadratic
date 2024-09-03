@@ -63,15 +63,15 @@ impl Borders {
 mod tests {
     use serial_test::parallel;
 
+    use super::*;
+
     use crate::{
-        border_style::{BorderSelection, BorderStyle, CellBorderLine},
         color::Rgba,
         controller::GridController,
+        grid::sheet::borders::{BorderSelection, BorderStyle, CellBorderLine},
         selection::Selection,
         SheetRect,
     };
-
-    use super::*;
 
     #[test]
     #[parallel]

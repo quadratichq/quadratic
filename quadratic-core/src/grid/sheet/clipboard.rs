@@ -224,15 +224,10 @@ impl Sheet {
                 });
         }
 
-        let (formats, borders) = if let Some(bounds) = sheet_bounds {
-            (
-                self.override_cell_formats(bounds, Some(selection)),
-                vec![],
-                // todo....
-                // get_cell_borders_in_rect(self, bounds, Some(selection)),
-            )
+        let formats = if let Some(bounds) = sheet_bounds {
+            self.override_cell_formats(bounds, Some(selection))
         } else {
-            (Formats::default(), vec![])
+            Formats::default()
         };
 
         if selection.all {
@@ -248,6 +243,7 @@ impl Sheet {
                 clipboard_origin.column = sheet_bounds.map(|b| b.min.x);
             }
         }
+        let borders = self.borders.to_clipboard(selection, &clipboard_origin);
         let sheet_formats = self.sheet_formats(selection, &clipboard_origin);
         let validations = self.validations.to_clipboard(selection, &clipboard_origin);
 
@@ -255,7 +251,11 @@ impl Sheet {
             cells,
             formats,
             sheet_formats,
-            borders,
+            borders: if let Some(borders) = borders {
+                Some((selection.clone(), borders))
+            } else {
+                None
+            },
             values,
             w: sheet_bounds.map_or(0, |b| b.width()),
             h: sheet_bounds.map_or(0, |b| b.height()),

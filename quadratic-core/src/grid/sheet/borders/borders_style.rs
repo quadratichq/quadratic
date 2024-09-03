@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 #[cfg(feature = "js")]
 use crate::color::Rgba;
-use crate::small_timestamp::SmallTimestamp;
+use crate::{small_timestamp::SmallTimestamp, RunLengthEncoding};
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 use ts_rs::TS;
@@ -76,6 +76,16 @@ pub struct BorderStyleTimestamp {
     pub timestamp: SmallTimestamp,
 }
 
+impl BorderStyleTimestamp {
+    pub fn new(color: Rgba, line: CellBorderLine) -> Self {
+        BorderStyleTimestamp {
+            color,
+            line,
+            timestamp: SmallTimestamp::now(),
+        }
+    }
+}
+
 impl From<BorderStyle> for BorderStyleTimestamp {
     fn from(border_style: BorderStyle) -> Self {
         BorderStyleTimestamp {
@@ -106,6 +116,19 @@ impl From<BorderStyleCell> for BorderStyleCellUpdate {
 }
 
 impl BorderStyleCell {
+    /// Overrides the border style of the cell with the new border style or
+    /// clears the border if the new border style is None.
+    pub fn override_border(self, cell: &BorderStyleCell) -> BorderStyleCellUpdate {
+        BorderStyleCellUpdate {
+            top: cell.top.map(Some).or(Some(None)),
+            bottom: cell.bottom.map(Some).or(Some(None)),
+            left: cell.left.map(Some).or(Some(None)),
+            right: cell.right.map(Some).or(Some(None)),
+        }
+    }
+}
+
+impl BorderStyleCell {
     /// Apply an update to the cell.
     /// Returns the original cell so it can be used for undo.
     pub fn apply_update(&mut self, update: &BorderStyleCellUpdate) -> BorderStyleCellUpdate {
@@ -125,6 +148,8 @@ impl BorderStyleCell {
         original
     }
 }
+
+pub type BorderStyleCellUpdates = RunLengthEncoding<BorderStyleCellUpdate>;
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BorderStyleCellUpdate {
@@ -196,4 +221,33 @@ pub struct JsBordersSheet {
 
     // if None is sent, then ignore cells (used when sheet borders changed--we don't need to send all cells again)
     pub hashes: Option<Vec<JsBorders>>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn override_border() {
+        let cell = BorderStyleCell {
+            top: Some(BorderStyleTimestamp::default()),
+            bottom: None,
+            left: Some(BorderStyleTimestamp::default()),
+            right: None,
+        };
+        let update = BorderStyleCell {
+            top: Some(BorderStyleTimestamp::new(
+                Rgba::default(),
+                CellBorderLine::Line2,
+            )),
+            bottom: None,
+            left: None,
+            right: Some(BorderStyleTimestamp::default()),
+        };
+        let updated = cell.override_border(&update);
+        assert_eq!(updated.top.unwrap().unwrap().line, CellBorderLine::Line2);
+        assert_eq!(updated.bottom, Some(None));
+        assert_eq!(updated.left, Some(None));
+        assert_eq!(updated.right.unwrap().unwrap().line, CellBorderLine::Line1);
+    }
 }

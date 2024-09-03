@@ -3,9 +3,12 @@ use std::collections::HashMap;
 use super::current;
 
 use crate::{
-    border_style::{BorderStyleCell, BorderStyleTimestamp},
     color::Rgba,
-    grid::{block::SameValue, sheet::borders::Borders, CellBorderLine, ColumnData},
+    grid::{
+        block::SameValue,
+        sheet::borders::{BorderStyleCell, BorderStyleTimestamp, Borders},
+        CellBorderLine, ColumnData,
+    },
     small_timestamp::SmallTimestamp,
 };
 

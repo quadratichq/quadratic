@@ -1,4 +1,4 @@
-pub use crate::border_style::{BorderSelection, BorderStyle, CellBorderLine};
+pub use crate::grid::sheet::borders::{BorderSelection, BorderStyle, CellBorderLine};
 pub use cell::{CellBorders, CellSide};
 pub use sheet::{IdSpaceBorders, SheetBorders};
 

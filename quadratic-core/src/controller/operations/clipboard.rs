@@ -11,8 +11,9 @@ use crate::controller::GridController;
 use crate::formulas::replace_internal_cell_references;
 use crate::grid::formats::format::Format;
 use crate::grid::formats::Formats;
+use crate::grid::sheet::borders::BorderStyleCellUpdates;
 use crate::grid::sheet::validations::validation::Validation;
-use crate::grid::{CellBorders, CodeCellLanguage};
+use crate::grid::CodeCellLanguage;
 use crate::selection::Selection;
 use crate::{CellValue, Pos, SheetPos, SheetRect};
 
@@ -64,8 +65,7 @@ pub struct Clipboard {
     pub formats: Formats,
     pub sheet_formats: ClipboardSheetFormats,
 
-    // todo...
-    pub borders: Vec<(i64, i64, Option<CellBorders>)>,
+    pub borders: Option<(Selection, BorderStyleCellUpdates)>,
 
     pub origin: ClipboardOrigin,
     pub selection: Option<Selection>,

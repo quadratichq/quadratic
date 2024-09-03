@@ -1,6 +1,6 @@
 use crate::{
-    border_style::{BorderSelection, BorderStyle},
     controller::{active_transactions::transaction_name::TransactionName, GridController},
+    grid::sheet::borders::{BorderSelection, BorderStyle},
     selection::Selection,
 };
 

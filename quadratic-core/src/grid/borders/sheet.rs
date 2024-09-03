@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::border_style::BorderStyle;
 use crate::grid::block::SameValue;
 use crate::grid::borders::cell::{CellBorders, CellSide};
+use crate::grid::sheet::borders::BorderStyle;
 use crate::grid::ColumnData;
 use crate::Pos;
 

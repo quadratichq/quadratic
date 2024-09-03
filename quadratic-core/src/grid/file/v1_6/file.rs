@@ -2,14 +2,13 @@ use anyhow::Result;
 
 use super::schema::{self as current};
 use crate::{
-    border_style::{BorderStyle, CellBorderLine},
     color::Rgba,
     grid::{
         file::{
             serialize::borders::export_borders,
             v1_7::schema::{self as v1_7},
         },
-        sheet::borders::Borders,
+        sheet::borders::{Borders, BorderStyle, CellBorderLine},
     },
 };
 

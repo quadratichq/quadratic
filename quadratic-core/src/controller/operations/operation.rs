@@ -3,15 +3,14 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    border_style::BorderStyleCellUpdate,
     cell_values::CellValues,
     grid::{
         file::sheet_schema::SheetSchema, formats::Formats, formatting::CellFmtArray,
-        js_types::JsRowHeight, sheet::validations::validation::Validation, CodeRun, Sheet,
-        SheetBorders, SheetId,
+        js_types::JsRowHeight, sheet::borders::BorderStyleCellUpdates,
+        sheet::validations::validation::Validation, CodeRun, Sheet, SheetBorders, SheetId,
     },
     selection::Selection,
-    RunLengthEncoding, SheetPos, SheetRect,
+    SheetPos, SheetRect,
 };
 
 /// It might be better to Box the SheetSchema to avoid the large enum variant.
@@ -53,7 +52,7 @@ pub enum Operation {
 
     SetBordersSelection {
         selection: Selection,
-        borders: RunLengthEncoding<BorderStyleCellUpdate>,
+        borders: BorderStyleCellUpdates,
     },
 
     // Sheet metadata operations

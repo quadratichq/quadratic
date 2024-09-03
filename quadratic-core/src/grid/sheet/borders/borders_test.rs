@@ -1,7 +1,6 @@
 //! Functionality to print borders for debugging.
 
-use super::Borders;
-use crate::border_style::{JsBorderHorizontal, JsBorderVertical};
+use super::{Borders, JsBorderHorizontal, JsBorderVertical};
 use crate::Rect;
 
 const HORIZONTAL: char = '\u{203E}';
@@ -83,8 +82,8 @@ impl Borders {
 #[cfg(test)]
 mod tests {
     use crate::{
-        border_style::{BorderSelection, BorderStyle},
         controller::GridController,
+        grid::sheet::borders::{BorderSelection, BorderStyle},
         selection::Selection,
         SheetRect,
     };
