@@ -27,11 +27,6 @@ impl CellBorders {
         Self { borders: as_array }
     }
 
-    #[cfg(test)]
-    pub(super) fn contains(&self, side: &CellSide) -> bool {
-        self.borders[*side as usize].is_some()
-    }
-
     pub(super) fn combine(
         maybe_existing: Option<Self>,
         side: CellSide,
