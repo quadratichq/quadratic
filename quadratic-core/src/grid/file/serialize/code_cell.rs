@@ -79,9 +79,7 @@ pub(crate) fn export_rows_code_runs(
                             },
                             values: array
                                 .rows()
-                                .flat_map(|row| {
-                                    row.iter().map(|cell_value| export_cell_value(cell_value))
-                                })
+                                .flat_map(|row| row.iter().map(export_cell_value))
                                 .collect(),
                         }),
                     ),

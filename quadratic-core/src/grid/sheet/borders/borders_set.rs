@@ -1,7 +1,6 @@
 use crate::{
     border_style::{BorderStyle, BorderStyleCell, BorderStyleCellUpdate},
     controller::operations::operation::Operation,
-    grid::ColumnData,
     selection::Selection,
     RunLengthEncoding,
 };
@@ -35,7 +34,7 @@ impl Borders {
                 let Some(border) = borders.get_at(index) else {
                     panic!("Expected a border style for column {column}");
                 };
-                if let Some(column_border) = self.columns.get_mut(&column) {
+                if let Some(column_border) = self.columns.get_mut(column) {
                     undo_borders.push(column_border.apply_update(border));
                 } else {
                     let mut new_border = BorderStyleCell::default();
@@ -51,7 +50,7 @@ impl Borders {
                 let Some(border) = borders.get_at(index) else {
                     panic!("Expected a border style for row {row}");
                 };
-                if let Some(row_border) = self.rows.get_mut(&row) {
+                if let Some(row_border) = self.rows.get_mut(row) {
                     undo_borders.push(row_border.apply_update(border));
                 } else {
                     let mut new_border = BorderStyleCell::default();
@@ -70,28 +69,28 @@ impl Borders {
                     };
                     let mut undo = BorderStyleCellUpdate::default();
                     if let Some(update_top) = border.top {
-                        let top = self.top.entry(pos.y).or_insert_with(ColumnData::new);
+                        let top = self.top.entry(pos.y).or_default();
                         let original = top.set(pos.x, update_top);
                         undo.top = Some(original);
                     }
                     if let Some(update_bottom) = border.bottom {
-                        let bottom = self.bottom.entry(pos.y).or_insert_with(ColumnData::new);
+                        let bottom = self.bottom.entry(pos.y).or_default();
                         let original = bottom.set(pos.x, update_bottom);
                         undo.bottom = Some(original);
                     }
                     if let Some(update_left) = border.left {
-                        let left = self.left.entry(pos.x).or_insert_with(ColumnData::new);
+                        let left = self.left.entry(pos.x).or_default();
                         let original = left.set(pos.y, update_left);
                         undo.left = Some(original);
                     }
                     if let Some(update_right) = border.right {
-                        let right = self.right.entry(pos.x).or_insert_with(ColumnData::new);
+                        let right = self.right.entry(pos.x).or_default();
                         let original = right.set(pos.y, update_right);
                         undo.right = Some(original);
                     }
                     undo_borders.push(undo);
                     index += 1;
-                })
+                });
             }
         }
 
@@ -117,28 +116,19 @@ impl Borders {
         right: Option<BorderStyle>,
     ) {
         if let Some(top) = top {
-            self.top
-                .entry(y)
-                .or_insert_with(ColumnData::new)
-                .set(x, Some(top.into()));
+            self.top.entry(y).or_default().set(x, Some(top.into()));
         }
         if let Some(bottom) = bottom {
             self.bottom
                 .entry(y)
-                .or_insert_with(ColumnData::new)
+                .or_default()
                 .set(x, Some(bottom.into()));
         }
         if let Some(left) = left {
-            self.left
-                .entry(x)
-                .or_insert_with(ColumnData::new)
-                .set(y, Some(left.into()));
+            self.left.entry(x).or_default().set(y, Some(left.into()));
         }
         if let Some(right) = right {
-            self.right
-                .entry(x)
-                .or_insert_with(ColumnData::new)
-                .set(y, Some(right.into()));
+            self.right.entry(x).or_default().set(y, Some(right.into()));
         }
     }
 }

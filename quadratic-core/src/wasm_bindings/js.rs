@@ -438,7 +438,6 @@ pub fn jsBordersSheet(sheet_id: String, borders: String /* JsBordersSheet */) {
 }
 
 #[cfg(test)]
-#[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsSheetCodeCell(sheet_id: String, code_cells: String) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(

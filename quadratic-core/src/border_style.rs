@@ -109,7 +109,7 @@ impl BorderStyleCell {
     /// Apply an update to the cell.
     /// Returns the original cell so it can be used for undo.
     pub fn apply_update(&mut self, update: &BorderStyleCellUpdate) -> BorderStyleCellUpdate {
-        let original = self.clone().into();
+        let original = (*self).into();
         if let Some(top) = update.top {
             self.top = top;
         }

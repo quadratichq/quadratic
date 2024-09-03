@@ -14,6 +14,11 @@ use crate::{
     RunLengthEncoding, SheetPos, SheetRect,
 };
 
+/// It might be better to Box the SheetSchema to avoid the large enum variant.
+/// But that requires versioning, which isn't worth the change in serialization.
+/// The difference in bytes per operation is around 500 bytes, so not the end of
+/// the world. Something to fix down the road.
+#[allow(clippy::large_enum_variant)]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Operation {
     SetCellValues {

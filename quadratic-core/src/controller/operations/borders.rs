@@ -288,7 +288,7 @@ mod tests {
     #[parallel]
     fn borders_operations_columns() {
         let sheet_id = SheetId::test();
-        let selection = Selection::columns(&vec![0, 1], sheet_id);
+        let selection = Selection::columns(&[0, 1], sheet_id);
         let ops = GridController::set_borders_selection_operations(
             selection.clone(),
             BorderSelection::All,
@@ -361,7 +361,7 @@ mod tests {
     #[parallel]
     fn borders_operations_rows() {
         let sheet_id = SheetId::test();
-        let selection = Selection::rows(&vec![0, 1], sheet_id);
+        let selection = Selection::rows(&[0, 1], sheet_id);
         let ops = GridController::set_borders_selection_operations(
             selection.clone(),
             BorderSelection::All,

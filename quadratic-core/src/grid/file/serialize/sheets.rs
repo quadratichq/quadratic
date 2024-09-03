@@ -54,10 +54,7 @@ pub(crate) fn export_sheet(sheet: Sheet) -> current::SheetSchema {
         color: sheet.color.to_owned(),
         order: sheet.order.to_owned(),
         offsets: sheet.offsets.export(),
-        formats_all: sheet
-            .format_all
-            .as_ref()
-            .and_then(|format| export_format(format)),
+        formats_all: sheet.format_all.as_ref().and_then(export_format),
         formats_columns: export_formats(&sheet.formats_columns),
         formats_rows: export_formats(&sheet.formats_rows),
         validations: export_validations(&sheet.validations),

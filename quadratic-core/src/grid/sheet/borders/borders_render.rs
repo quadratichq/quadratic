@@ -184,7 +184,7 @@ impl Borders {
             Some(hashes)
         };
         serde_json::to_string(&JsBordersSheet {
-            all: self.all.clone(),
+            all: self.all,
             columns: self.columns.clone(),
             rows: self.rows.clone(),
             hashes,

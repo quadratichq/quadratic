@@ -5,6 +5,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 /// Used to serialize a Sheet for use in Operation::AddSheetSchema.
+#[allow(clippy::large_enum_variant)]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum SheetSchema {
     V1_7(v1_7::schema::SheetSchema),

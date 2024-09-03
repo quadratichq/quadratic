@@ -387,7 +387,7 @@ impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq>
 
     /// Sets a block at a specific y value without merging. This is used by serialize functions.
     pub fn insert_block(&mut self, y: i64, len: usize, value: T) {
-        debug_assert!(self.0.get(&y).is_none());
+        debug_assert!(!self.0.contains_key(&y));
         self.set_range(y..y + len as i64, value);
     }
 }

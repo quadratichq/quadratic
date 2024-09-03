@@ -100,7 +100,7 @@ pub fn upgrade(grid: current::GridSchema) -> Result<v1_7::GridSchema> {
         sheets: grid
             .sheets
             .iter()
-            .map(|sheet| upgrade_sheet(sheet))
+            .map(upgrade_sheet)
             .collect::<Result<_, _>>()?,
     };
     Ok(new_grid)
