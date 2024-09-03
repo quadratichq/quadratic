@@ -224,9 +224,9 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use serial_test::serial;
 
-    use super::*;
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
     use crate::selection::Selection;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count};
@@ -275,6 +275,8 @@ mod tests {
     #[test]
     #[serial]
     fn execute_remove_validation() {
+        clear_js_calls();
+
         let mut gc = GridController::default();
         let mut transaction = PendingTransaction::default();
         let sheet_id = gc.sheet_ids()[0];
