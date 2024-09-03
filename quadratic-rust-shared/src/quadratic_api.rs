@@ -72,8 +72,8 @@ pub async fn get_file_perms(
     tracing::info!("Requesting file perms from quadratic API: {url} {jwt}");
     let response = client.send().await?;
     tracing::info!(
-        "Response from file perms from quadratic API:",
-        response.to_string()
+        "Response from file perms from quadratic API: {:?}",
+        response
     );
 
     handle_response(&response)?;
