@@ -230,7 +230,7 @@ mod tests {
     use crate::{
         grid::sheet::validations::validation_rules::ValidationRule,
         selection::Selection,
-        wasm_bindings::js::{expect_js_call, expect_js_call_count},
+        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
         CellValue,
     };
 
@@ -239,6 +239,8 @@ mod tests {
     #[test]
     #[serial]
     fn execute_set_validation() {
+        clear_js_calls();
+
         let mut gc = GridController::default();
         let mut transaction = PendingTransaction::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -277,6 +279,8 @@ mod tests {
     #[test]
     #[serial]
     fn execute_remove_validation() {
+        clear_js_calls();
+
         let mut gc = GridController::default();
         let mut transaction = PendingTransaction::default();
         let sheet_id = gc.sheet_ids()[0];
