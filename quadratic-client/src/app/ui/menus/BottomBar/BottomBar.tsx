@@ -3,14 +3,13 @@ import { FeedbackIcon } from '@/app/ui/icons';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Commit } from '@mui/icons-material';
-import { Stack, useMediaQuery, useTheme } from '@mui/material';
+import { useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { provideFeedbackAction } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { debugShowFPS } from '../../../debugFlags';
 import { sheets } from '../../../grid/controller/Sheets';
-import { colors } from '../../../theme/colors';
 import BottomBarItem from './BottomBarItem';
 import { KernelMenu } from './KernelMenu';
 import { SelectionSummary } from './SelectionSummary';
@@ -66,20 +65,9 @@ export const BottomBar = () => {
         // Disable right-click
         event.preventDefault();
       }}
-      style={{
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        borderTop: `1px solid ${theme.palette.divider}`,
-        color: colors.darkGray,
-        bottom: 0,
-        width: '100%',
-        backdropFilter: 'blur(1px)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        userSelect: 'none',
-        zIndex: 1,
-      }}
+      className="flex h-6 w-full flex-shrink-0 select-none justify-between border-t border-border bg-background text-xs text-muted-foreground"
     >
-      <Stack direction="row">
+      <div className="flex items-center">
         {showOnDesktop && <BottomBarItem onClick={handleShowGoToMenu}>Cursor: {cursorPositionString}</BottomBarItem>}
         {showOnDesktop && sheets.sheet.cursor.multiCursor && (
           <BottomBarItem>Selection: {multiCursorPositionString}</BottomBarItem>
@@ -107,8 +95,8 @@ export const BottomBar = () => {
             <span className="debug-show-FPS">--</span> FPS
           </BottomBarItem>
         )}
-      </Stack>
-      <Stack direction="row">
+      </div>
+      <div className="flex items-center">
         <SelectionSummary />
         <SyncState />
         <KernelMenu />
@@ -128,7 +116,7 @@ export const BottomBar = () => {
             Quadratic {import.meta.env.VITE_VERSION?.slice(0, 7)} (BETA)
           </BottomBarItem>
         )}
-      </Stack>
+      </div>
     </div>
   );
 };

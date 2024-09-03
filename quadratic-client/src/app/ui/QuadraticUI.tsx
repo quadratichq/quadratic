@@ -1,6 +1,7 @@
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { CodeEditorProvider } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import ConnectionsMenu from '@/app/ui/menus/ConnectionsMenu';
+import Toolbar from '@/app/ui/menus/Toolbar';
 import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
@@ -13,6 +14,7 @@ import QuadraticGrid from '../gridGL/QuadraticGrid';
 import { pixiApp } from '../gridGL/pixiApp/PixiApp';
 import { isEmbed } from '../helpers/isEmbed';
 import { TopBar } from '../ui/menus/TopBar/TopBar';
+import { QuadraticSidebar } from './QuadraticSidebar';
 import { UpdateAlertVersion } from './UpdateAlertVersion';
 import { FileDragDropWrapper } from './components/FileDragDropWrapper';
 import { useFileContext } from './components/FileProvider';
@@ -55,46 +57,49 @@ export default function QuadraticUI() {
         width: '100%',
         height: '100%',
         display: 'flex',
-        flexDirection: 'column',
+        // flexDirection: 'column',
         transition: '.3s ease opacity',
         opacity: 1,
         ...(navigation.state !== 'idle' ? { opacity: '.5', pointerEvents: 'none' } : {}),
       }}
     >
-      {editorInteractionState.showCellTypeMenu && <CellTypeMenu />}
-      {!presentationMode && <TopBar />}
-      {editorInteractionState.showCommandPalette && <CommandPalette />}
-      {editorInteractionState.showGoToMenu && <GoTo />}
+      <QuadraticSidebar />
+      <div className="flex flex-col">
+        {!presentationMode && <TopBar />}
+        {!presentationMode && <Toolbar />}
 
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          overflow: 'hidden',
-          position: 'relative',
-        }}
-      >
-        <FileDragDropWrapper>
-          <QuadraticGrid />
-          {!presentationMode && <SheetBar />}
-        </FileDragDropWrapper>
-        {editorInteractionState.showCodeEditor && <CodeEditorProvider />}
-        {editorInteractionState.showValidation && <ValidationPanel />}
-        <Following follow={follow} />
         <div
           style={{
             width: '100%',
             height: '100%',
+            display: 'flex',
             overflow: 'hidden',
-            position: 'absolute',
-            border: follow ? `3px solid ${follow.colorString}` : '',
-            pointerEvents: 'none',
+            position: 'relative',
           }}
-        ></div>
+        >
+          <FileDragDropWrapper>
+            <QuadraticGrid />
+            {!presentationMode && <SheetBar />}
+          </FileDragDropWrapper>
+          {editorInteractionState.showCodeEditor && <CodeEditorProvider />}
+          {editorInteractionState.showValidation && <ValidationPanel />}
+          <Following follow={follow} />
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              overflow: 'hidden',
+              position: 'absolute',
+              border: follow ? `3px solid ${follow.colorString}` : '',
+              pointerEvents: 'none',
+            }}
+          ></div>
+        </div>
+
+        {!presentationMode && !isEmbed && <BottomBar />}
       </div>
 
-      {!presentationMode && !isEmbed && <BottomBar />}
+      {/* Global overlay menus */}
       {editorInteractionState.showFeedbackMenu && <FeedbackMenu />}
       {editorInteractionState.showShareFileMenu && (
         <ShareFileDialog
@@ -119,7 +124,9 @@ export default function QuadraticUI() {
         />
       )}
       {presentationMode && <PresentationModeHint />}
-
+      {editorInteractionState.showCellTypeMenu && <CellTypeMenu />}
+      {editorInteractionState.showCommandPalette && <CommandPalette />}
+      {editorInteractionState.showGoToMenu && <GoTo />}
       <ConnectionsMenu />
       <PermissionOverlay />
       {!isEmbed && <PermissionOverlay />}
