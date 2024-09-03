@@ -287,11 +287,7 @@ mod test {
         let borders = gc.sheet(duplicated_sheet_id).borders.all(false).unwrap();
         expect_js_call(
             "jsBordersSheet",
-            format!(
-                "{},{}",
-                duplicated_sheet_id,
-                serde_json::to_string(&borders).unwrap()
-            ),
+            format!("{},{}", duplicated_sheet_id, borders),
             false,
         );
         // code cells should rerun and send updated code cell
@@ -312,7 +308,7 @@ mod test {
             "jsUpdateCodeCell",
             format!(
                 "{},{},{},{:?},{:?}",
-                sheet_id,
+                duplicated_sheet_id,
                 sheet_pos.x,
                 sheet_pos.y,
                 Some(serde_json::to_string(&code_cell).unwrap()),
