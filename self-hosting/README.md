@@ -26,7 +26,7 @@ Implement the entire Quadratic stack outside of Quadratic.  The use cases we cur
 Quadratic can be installed via a single command: 
 
 ```shell
-curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic/6c4c62b58ae55251cb16d95b0076af47ed209cc8/self-hosting/init.sh -o init.sh && sh -i init.sh
+curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic/6c4c62b58ae55251cb16d95b0076af47ed209cc8/self-hosting/init.sh -o init.sh && bash -i init.sh
 ```
 
 This will download the initialization script, which will prompt for a license key in order to register Quadratic.  
@@ -51,4 +51,22 @@ If running in the background, run the `stop.sh` script:
 
 ```shell
 ./quadratic/self-hosting/stop.sh
+```
+
+## Installing on Ubuntu
+
+```shell
+sudo apt-get update
+sudo apt-get install apt-transport-https ca-certificates curl software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+sudo apt-get -y install docker-ce docker-ce-cli containerd.io
+sudo docker --version
+sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+sudo chown $USER /var/run/docker.sock
+sudo systemctl enable docker
+sudo systemctl start docker
+curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic/6c4c62b58ae55251cb16d95b0076af47ed209cc8/self-hosting/init.sh -o init.sh && bash -i init.sh
 ```
