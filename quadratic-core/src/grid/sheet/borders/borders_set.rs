@@ -147,7 +147,7 @@ impl Borders {
 mod tests {
     use serial_test::parallel;
 
-    use crate::{border_style::CellBorderLine, grid::SheetId, SheetRect};
+    use crate::{border_style::CellBorderLine, color::Rgba, grid::SheetId, SheetRect};
 
     use super::*;
 
@@ -157,13 +157,17 @@ mod tests {
         let sheet_id = SheetId::test();
         let mut borders = Borders::default();
         let selection = Selection::sheet_rect(SheetRect::new(0, 0, 9, 9, sheet_id));
-        let value = RunLengthEncoding::repeat(BorderStyleCellUpdate::default(), 10 * 10);
+        let value = RunLengthEncoding::repeat(BorderStyleCellUpdate::all(), 10 * 10);
         borders.set_borders(&selection, &value);
 
         let border = borders.get(0, 0);
         assert_eq!(border.top.unwrap().line, CellBorderLine::default());
+        assert_eq!(border.top.unwrap().color, Rgba::default());
         assert_eq!(border.bottom.unwrap().line, CellBorderLine::default());
+        assert_eq!(border.bottom.unwrap().color, Rgba::default());
         assert_eq!(border.left.unwrap().line, CellBorderLine::default());
+        assert_eq!(border.left.unwrap().color, Rgba::default());
         assert_eq!(border.right.unwrap().line, CellBorderLine::default());
+        assert_eq!(border.right.unwrap().color, Rgba::default());
     }
 }

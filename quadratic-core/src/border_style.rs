@@ -143,6 +143,17 @@ impl BorderStyleCellUpdate {
             right: Some(None),
         }
     }
+
+    /// Create a cell with a complete border on all sides.
+    #[cfg(test)]
+    pub fn all() -> Self {
+        BorderStyleCellUpdate {
+            top: Some(Some(BorderStyleTimestamp::default())),
+            bottom: Some(Some(BorderStyleTimestamp::default())),
+            left: Some(Some(BorderStyleTimestamp::default())),
+            right: Some(Some(BorderStyleTimestamp::default())),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, TS)]
