@@ -1,12 +1,12 @@
 import { getAuth0AvatarSrc } from '@/shared/utils/auth0UserImageSrc';
-import React, { ImgHTMLAttributes } from 'react';
+import React, { ImgHTMLAttributes, forwardRef } from 'react';
 
 interface AvatarProps extends ImgHTMLAttributes<HTMLImageElement> {
   size?: 'small' | 'medium' | 'large';
   children?: string | React.ReactNode;
 }
 
-export const Avatar: React.FC<AvatarProps> = ({ src, alt, size, style, children, ...rest }) => {
+export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(({ src, alt, size, style, children, ...rest }, ref) => {
   const [error, setError] = React.useState(false);
 
   const stylePreset = {
@@ -24,12 +24,13 @@ export const Avatar: React.FC<AvatarProps> = ({ src, alt, size, style, children,
   return (
     <>
       {error ? (
-        <span style={{ ...stylePreset, ...style }}>
+        <span ref={ref} style={{ ...stylePreset, ...style }}>
           {typeof children === 'string' ? getLettersFromString(children) : children}
         </span>
       ) : (
         <img
           alt={alt}
+          ref={ref}
           src={getAuth0AvatarSrc(src) ?? ''}
           crossOrigin="anonymous"
           onError={() => setError(true)}
@@ -39,7 +40,7 @@ export const Avatar: React.FC<AvatarProps> = ({ src, alt, size, style, children,
       )}
     </>
   );
-};
+});
 
 function getLettersFromString(str: string) {
   let [first, last] = str.split(' ');

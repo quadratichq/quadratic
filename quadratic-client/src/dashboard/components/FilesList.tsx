@@ -149,7 +149,7 @@ export function FilesList({
         />
       )}
 
-      {!newFileDialogShow && <FileDragDrop />}
+      {!newFileDialogShow && <FileDragDrop className="lg:left-[264px] lg:w-[calc(100%-264px)]" />}
     </div>
   );
 }

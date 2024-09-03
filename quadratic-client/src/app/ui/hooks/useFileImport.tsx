@@ -3,6 +3,7 @@ import { getFileType, stripExtension, supportedFileTypes, uploadFile } from '@/a
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { FileImportProgress, filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
 import { filesImportProgressListAtom } from '@/dashboard/atoms/filesImportProgressListAtom';
+import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { apiClient } from '@/shared/api/apiClient';
 import { ApiError } from '@/shared/api/fetchFromApi';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -14,6 +15,7 @@ import { useSetRecoilState } from 'recoil';
 export function useFileImport() {
   const setFilesImportProgressState = useSetRecoilState(filesImportProgressAtom);
   const setFilesImportProgressListState = useSetRecoilState(filesImportProgressListAtom);
+  const setNewFileDialogState = useSetRecoilState(newFileDialogAtom);
 
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
@@ -190,6 +192,7 @@ export function useFileImport() {
               updateCurrentFileState({ step: 'done', progress: 100, uuid, abortController: undefined });
               if (openImportedFile) {
                 setFilesImportProgressListState({ show: false });
+                setNewFileDialogState((prev) => ({ ...prev, show: false }));
                 window.location.replace(ROUTES.FILE(uuid));
               }
             })
@@ -232,6 +235,7 @@ export function useFileImport() {
     }
 
     setFilesImportProgressState((prev) => ({ ...prev, importing: false }));
+    setNewFileDialogState((prev) => ({ ...prev, show: false }));
   };
 
   return handleImport;
