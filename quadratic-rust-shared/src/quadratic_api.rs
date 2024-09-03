@@ -69,7 +69,12 @@ pub async fn get_file_perms(
 ) -> Result<(Vec<FilePermRole>, u64)> {
     let url = format!("{base_url}/v0/files/{file_id}");
     let client = get_client(&url, &jwt);
+    tracing::info!("Requesting file perms from quadratic API: {url} {jwt}");
     let response = client.send().await?;
+    tracing::info!(
+        "Response from file perms from quadratic API:",
+        response.to_string()
+    );
 
     handle_response(&response)?;
 
