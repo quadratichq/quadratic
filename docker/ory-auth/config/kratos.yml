@@ -62,12 +62,13 @@ selfservice:
     recovery:
       enabled: true
       ui_url: http://localhost:4455/recovery
-      use: code
+      use: link
 
     verification:
-      enabled: true
+      # we disable verification for self-hosting
+      enabled: false
       ui_url: http://localhost:4455/verification
-      use: code
+      use: link
       after:
         default_browser_return_url: http://localhost:3000
 

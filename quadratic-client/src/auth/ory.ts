@@ -79,8 +79,8 @@ export const oryClient: OryAuthClient = {
    * If `isSignupFlow` is true, the user will be redirected to the registration flow.
    */
   async login(redirectTo: string, isSignupFlow: boolean = false) {
-    const sdkUrl = isSignupFlow ? await sdk.createBrowserRegistrationFlow() : await sdk.createBrowserLoginFlow();
-    const url = new URL(sdkUrl.data.ui.action);
+    const urlSegment = isSignupFlow ? 'registration' : 'login';
+    const url = new URL(`${ORY_HOST}/self-service/${urlSegment}/browser`);
     url.searchParams.set('return_to', redirectTo);
 
     // redirect to the login/signup flow
