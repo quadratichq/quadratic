@@ -1,6 +1,6 @@
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
-import { ActionFunctionArgs, redirectDocument } from 'react-router-dom';
+import { ActionFunctionArgs, replace } from 'react-router-dom';
 
 export const loader = async () => null;
 
@@ -51,7 +51,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
     try {
       const { redirect, isPrivate } = json as Action['request.duplicate'];
       const { uuid: newFileUuid } = await apiClient.files.duplicate(uuid, isPrivate);
-      return redirect ? redirectDocument(ROUTES.FILE(newFileUuid)) : { ok: true };
+      return redirect ? replace(ROUTES.FILE(newFileUuid)) : { ok: true };
     } catch (error) {
       return { ok: false };
     }
