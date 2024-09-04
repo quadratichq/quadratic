@@ -1,3 +1,5 @@
+import { GenericAction } from '@/app/actions/actionTypes';
+import { zoomIn } from '@/app/actions/view';
 import { events } from '@/app/events/events';
 import { ArrowDropDownIcon } from '@/shared/components/Icons';
 import {
@@ -43,14 +45,8 @@ export const ZoomMenu = () => {
           focusGrid();
         }}
       >
-        <DropdownMenuItem
-          onClick={() => {
-            mixpanel.track('[ZoomDropdown].zoomIn');
-            setZoomState(zoom * 2);
-          }}
-        >
-          Zoom in <DropdownMenuShortcut>{KeyboardSymbols.Command + '+'}</DropdownMenuShortcut>
-        </DropdownMenuItem>
+        {/* Prototype for the new approach to centralized actions */}
+        <DropdownMenuItemFromAction mixpanelEvent="[ZoomDropdown].zoomIn" action={zoomIn} />
         <DropdownMenuItem
           onClick={() => {
             mixpanel.track('[ZoomDropdown].zoomOut');
@@ -106,3 +102,22 @@ export const ZoomMenu = () => {
     </DropdownMenu>
   );
 };
+
+function DropdownMenuItemFromAction({ action, mixpanelEvent }: { action: GenericAction; mixpanelEvent: string }) {
+  const shortcutDisplay = keyboardShortcutEnumToDisplay(action.keyboardShortcut);
+  return (
+    <DropdownMenuItem
+      onClick={() => {
+        mixpanel.track(mixpanelEvent);
+        action.run();
+      }}
+    >
+      {action.label} {shortcutDisplay && <DropdownMenuShortcut>{KeyboardSymbols.Command + '+'}</DropdownMenuShortcut>}
+    </DropdownMenuItem>
+  );
+}
+
+// TODO: this would be moved somewhere that maps Ayush's keyboard shortcuts to a displayable version
+function keyboardShortcutEnumToDisplay(shortcut?: string) {
+  return 'TODO';
+}
