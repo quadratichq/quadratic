@@ -107,6 +107,7 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: initi
                 to={isPrivate ? ROUTES.CREATE_FILE_PRIVATE(teamUuid) : ROUTES.CREATE_FILE(teamUuid)}
                 className={cn(gridItemClassName, gridItemInteractiveClassName, 'border-primary text-muted-foreground')}
                 onClick={onClose}
+                reloadDocument={true}
               >
                 <ItemIcon>
                   <PlusIcon />

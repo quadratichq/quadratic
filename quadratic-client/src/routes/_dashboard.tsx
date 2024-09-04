@@ -41,7 +41,7 @@ export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
 export const shouldRevalidate = ({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) => {
   return (
     currentUrl.pathname === '/' ||
-    currentUrl.pathname.startsWith('/files/') ||
+    currentUrl.pathname.startsWith('/file/') ||
     nextUrl.pathname === '/' ||
     nextUrl.pathname.startsWith('/teams/')
   );

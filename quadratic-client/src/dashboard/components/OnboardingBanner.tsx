@@ -84,6 +84,7 @@ export function OnboardingBanner() {
                 onClick={() => {
                   mixpanel.track('[OnboardingBanner].newFileBlank');
                 }}
+                reloadDocument={true}
               >
                 <PlusIcon className="mr-1" /> Create blank file
               </Link>
