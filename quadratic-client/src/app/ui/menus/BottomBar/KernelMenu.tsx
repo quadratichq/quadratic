@@ -4,7 +4,6 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
-import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { LanguageState } from '@/app/web-workers/languageTypes';
@@ -16,16 +15,15 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider } from '@/shared/shadcn/ui/tooltip';
-import MemoryIcon from '@mui/icons-material/Memory';
 import StopIcon from '@mui/icons-material/Stop';
 import { TooltipTrigger } from '@radix-ui/react-tooltip';
-import { useEffect, useState } from 'react';
-import BottomBarItem from './BottomBarItem';
+import { ReactNode, useEffect, useState } from 'react';
 
-export const KernelMenu = () => {
+export const KernelMenu = ({ children }: { children: ReactNode }) => {
   const [disableRunCodeCell, setDisableRunCodeCell] = useState(true);
   useEffect(() => {
     const checkRunCodeCell = () => setDisableRunCodeCell(!pixiApp.isCursorOnCodeCell());
@@ -81,27 +79,22 @@ export const KernelMenu = () => {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <BottomBarItem title="Kernel Menu" open={open} icon={<MemoryIcon fontSize="inherit" />} onClick={() => {}}>
-          <div className="text-xs">Kernel</div>
+        <div className="relative">
+          {children}
           {running > 0 && (
-            <div
-              className="absolute left-0 top-0 rounded-full px-1 text-white"
-              style={{ background: colors.darkGray, fontSize: '0.5rem' }}
-            >
+            <div className="pointer-events-none absolute right-2 top-2 rounded-full bg-warning px-1 text-[10px] text-background">
               {running}
             </div>
           )}
-        </BottomBarItem>
+        </div>
       </DropdownMenuTrigger>
-      <DropdownMenuContent>
+      <DropdownMenuContent side="right">
         <DropdownMenuLabel>
           Status: {pythonCodeRunning || javascriptCodeRunning || connectionCodeRunning ? 'running' : 'idle'}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuLabel>
-          <MenuLineItem
-            primary={pythonState.pythonState === 'loading' ? 'Python loading...' : 'all code languages are ready'}
-          />
+          {pythonState.pythonState === 'loading' ? 'Python loading...' : 'All code languages are ready'}
         </DropdownMenuLabel>
         {pythonCodeRunning && (
           <>
@@ -190,25 +183,28 @@ export const KernelMenu = () => {
             )
           }
         >
-          <MenuLineItem primary="Run current code cell" secondary={KeyboardSymbols.Command + KeyboardSymbols.Enter} />
+          Run current code cell
+          <DropdownMenuShortcut className="pl-4">
+            {KeyboardSymbols.Command + KeyboardSymbols.Enter}
+          </DropdownMenuShortcut>
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() =>
             quadraticCore.rerunCodeCells(sheets.sheet.id, undefined, undefined, sheets.getCursorPosition())
           }
         >
-          <MenuLineItem
-            primary="Run all code cells in sheet"
-            secondary={KeyboardSymbols.Shift + KeyboardSymbols.Command + KeyboardSymbols.Enter}
-          />
+          Run all code cells in sheet
+          <DropdownMenuShortcut className="pl-4">
+            {KeyboardSymbols.Shift + KeyboardSymbols.Command + KeyboardSymbols.Enter}
+          </DropdownMenuShortcut>
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => quadraticCore.rerunCodeCells(undefined, undefined, undefined, sheets.getCursorPosition())}
         >
-          <MenuLineItem
-            primary="Run all code cells in file"
-            secondary={KeyboardSymbols.Shift + KeyboardSymbols.Command + KeyboardSymbols.Alt + KeyboardSymbols.Enter}
-          />
+          Run all code cells in file
+          <DropdownMenuShortcut className="pl-4">
+            {KeyboardSymbols.Shift + KeyboardSymbols.Command + KeyboardSymbols.Alt + KeyboardSymbols.Enter}
+          </DropdownMenuShortcut>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

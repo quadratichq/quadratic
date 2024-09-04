@@ -37,6 +37,14 @@ export const ArrowDropDownIcon = (props: IconProps) => {
   return <Icon {...props}>arrow_drop_down</Icon>;
 };
 
+export const ArrowDropDownCircleIcon = (props: IconProps) => {
+  return <Icon {...props}>arrow_drop_down_circle</Icon>;
+};
+
+export const CheckBoxIcon = (props: IconProps) => {
+  return <Icon {...props}>check_box</Icon>;
+};
+
 export const CheckSmallIcon = (props: IconProps) => {
   return <Icon {...props}>check_small</Icon>;
 };
@@ -57,6 +65,14 @@ export const CopyIcon = (props: IconProps) => {
   return <Icon {...props}>content_copy</Icon>;
 };
 
+export const CopyAsPng = (props: IconProps) => {
+  return <Icon {...props}>image</Icon>;
+};
+
+export const CopyAsCsv = (props: IconProps) => {
+  return <Icon {...props}>csv</Icon>;
+};
+
 export const CutIcon = (props: IconProps) => {
   return <Icon {...props}>content_cut</Icon>;
 };
@@ -67,6 +83,26 @@ export const CropFreeIcon = (props: IconProps) => {
 
 export const DatabaseIcon = (props: IconProps) => {
   return <Icon {...props}>database</Icon>;
+};
+
+export const DataObjectIcon = (props: IconProps) => {
+  return <Icon {...props}>data_object</Icon>;
+};
+
+export const CurrencyIcon = (props: IconProps) => {
+  return <Icon {...props}>attach_money</Icon>;
+};
+
+export const DecimalDecreaseIcon = (props: IconProps) => {
+  return <Icon {...props}>decimal_decrease</Icon>;
+};
+
+export const DecimalIncreaseIcon = (props: IconProps) => {
+  return <Icon {...props}>decimal_increase</Icon>;
+};
+
+export const DeleteIcon = (props: IconProps) => {
+  return <Icon {...props}>delete</Icon>;
 };
 
 export const DownloadIcon = (props: IconProps) => {
@@ -81,6 +117,30 @@ export const EditIcon = (props: IconProps) => {
   return <Icon {...props}>edit</Icon>;
 };
 
+export const FormatAlignCenterIcon = (props: IconProps) => {
+  return <Icon {...props}>format_align_center</Icon>;
+};
+
+export const FormatAlignLeftIcon = (props: IconProps) => {
+  return <Icon {...props}>format_align_left</Icon>;
+};
+
+export const FormatAlignRightIcon = (props: IconProps) => {
+  return <Icon {...props}>format_align_right</Icon>;
+};
+
+export const FormatBoldIcon = (props: IconProps) => {
+  return <Icon {...props}>format_bold</Icon>;
+};
+
+export const FormatItalicIcon = (props: IconProps) => {
+  return <Icon {...props}>format_italic</Icon>;
+};
+
+export const FileCopyIcon = (props: IconProps) => {
+  return <Icon {...props}>file_copy</Icon>;
+};
+
 export const FunctionIcon = (props: IconProps) => {
   return <Icon {...props}>function</Icon>;
 };
@@ -89,12 +149,24 @@ export const FeedbackIcon = (props: IconProps) => {
   return <Icon {...props}>feedback</Icon>;
 };
 
+export const ImportIcon = (props: IconProps) => {
+  return <Icon {...props}>login</Icon>;
+};
+
+export const InsertChartIcon = (props: IconProps) => {
+  return <Icon {...props}>insert_chart</Icon>;
+};
+
 export const HelpIcon = (props: IconProps) => {
   return <Icon {...props}>help</Icon>;
 };
 
 export const ManageSearch = (props: IconProps) => {
   return <Icon {...props}>manage_search</Icon>;
+};
+
+export const MemoryIcon = (props: IconProps) => {
+  return <Icon {...props}>memory</Icon>;
 };
 
 export const MenuBookIcon = (props: IconProps) => {
@@ -109,8 +181,36 @@ export const PasteIcon = (props: IconProps) => {
   return <Icon {...props}>content_paste</Icon>;
 };
 
+export const PercentIcon = (props: IconProps) => {
+  return <Icon {...props}>percent</Icon>;
+};
+
+export const PersonAddIcon = (props: IconProps) => {
+  return <Icon {...props}>person_add</Icon>;
+};
+
 export const RedoIcon = (props: IconProps) => {
   return <Icon {...props}>redo</Icon>;
+};
+
+export const ScientificIcon = (props: IconProps) => {
+  return <Icon {...props}>functions</Icon>;
+};
+
+export const SheetNewIcon = (props: IconProps) => {
+  return <Icon {...props}>tab</Icon>;
+};
+
+export const VerticalAlignBottomIcon = (props: IconProps) => {
+  return <Icon {...props}>vertical_align_bottom</Icon>;
+};
+
+export const VerticalAlignMiddleIcon = (props: IconProps) => {
+  return <Icon {...props}>vertical_align_center</Icon>;
+};
+
+export const VerticalAlignTopIcon = (props: IconProps) => {
+  return <Icon {...props}>vertical_align_top</Icon>;
 };
 
 export const UndoIcon = (props: IconProps) => {

@@ -1,19 +1,14 @@
-import { TopBarMenu } from '@/app/ui/menus/TopBar/TopBarMenu';
+import { TopBarFileMenu } from '@/app/ui/menus/TopBar/TopBarFileMenu';
 import { isElectron } from '@/shared/utils/isElectron';
-import { useMediaQuery, useTheme } from '@mui/material';
-import { useRecoilValue } from 'recoil';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { isEmbed } from '../../../helpers/isEmbed';
-import { TopBarFileMenu } from './TopBarFileMenu';
+import { TopBarFileNameAndLocationMenu } from './TopBarFileNameAndLocationMenu';
 import { TopBarShareButton } from './TopBarShareButton';
 import { TopBarUsers } from './TopBarUsers';
 
 export const TopBar = () => {
-  const theme = useTheme();
-  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const { permissions } = editorInteractionState;
+  // const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  // const { permissions } = editorInteractionState;
 
   return (
     <div
@@ -21,7 +16,7 @@ export const TopBar = () => {
         // Disable right-click
         event.preventDefault();
       }}
-      className="relative flex h-12 w-full flex-shrink-0 select-none justify-between gap-2 border-b border-border bg-background px-2"
+      className="relative flex h-12 w-full flex-shrink-0 select-none justify-between gap-2 border-b border-border bg-background pl-2 pr-4"
       style={
         isElectron()
           ? {
@@ -44,7 +39,7 @@ export const TopBar = () => {
           WebkitAppRegion: 'no-drag',
         }}
       >
-        <TopBarMenu />
+        <TopBarFileMenu />
         {/*
         TODO: (jimniels) delete these components & apply permissions above
         <QuadraticMenu />
@@ -57,7 +52,7 @@ export const TopBar = () => {
         )}*/}
       </div>
 
-      <TopBarFileMenu />
+      <TopBarFileNameAndLocationMenu />
 
       <div
         className="flex items-center justify-end gap-3 lg:basis-1/3"
@@ -66,7 +61,7 @@ export const TopBar = () => {
           WebkitAppRegion: 'no-drag',
         }}
       >
-        {isDesktop && !isEmbed && (
+        {!isEmbed && (
           <>
             <TopBarUsers />
             <TopBarShareButton />

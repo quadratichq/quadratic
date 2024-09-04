@@ -1,16 +1,23 @@
+import { provideFeedbackAction } from '@/app/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
 import { useGridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import {
   CodeCellOutlineOff,
   CodeCellOutlineOn,
   CodeIcon,
+  DatabaseIcon,
   FeedbackIcon,
   HelpIcon,
   ManageSearch,
+  MemoryIcon,
   MenuBookIcon,
 } from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
+import { DOCUMENTATION_URL } from '@/shared/constants/urls';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { TooltipProvider } from '@radix-ui/react-tooltip';
@@ -19,12 +26,23 @@ import { Link } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
 
 export const QuadraticSidebar = () => {
-  const [, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const gridSettings = useGridSettings();
+  const { isAuthenticated } = useRootRouteLoaderData();
+  const {
+    userMakingRequest: { fileTeamPrivacy, teamPermissions },
+  } = useFileRouteLoaderData();
+
+  const isAvailableArgs = {
+    filePermissions: editorInteractionState.permissions,
+    fileTeamPrivacy,
+    isAuthenticated,
+    teamPermissions,
+  };
 
   return (
     <TooltipProvider>
-      <nav className="flex h-full w-12 flex-shrink-0 flex-col border-r border-border bg-accent">
+      <nav className="hidden h-full w-12 flex-shrink-0 flex-col border-r border-border bg-accent lg:flex">
         <SidebarTooltip label="Back to dashboard">
           <Link
             to="/"
@@ -45,6 +63,20 @@ export const QuadraticSidebar = () => {
               {gridSettings.showCellTypeOutlines ? <CodeCellOutlineOn /> : <CodeCellOutlineOff />}
             </SidebarButton>
           </SidebarTooltip>
+          <SidebarTooltip label="Connections">
+            <SidebarButton
+              onClick={() => setEditorInteractionState((prev) => ({ ...prev, showConnectionsMenu: true }))}
+            >
+              <DatabaseIcon />
+            </SidebarButton>
+          </SidebarTooltip>
+          <KernelMenu>
+            <SidebarTooltip label="Kernel">
+              <SidebarButton onClick={() => {}}>
+                <MemoryIcon />
+              </SidebarButton>
+            </SidebarTooltip>
+          </KernelMenu>
           <SidebarTooltip label="Command palette" shortcut={KeyboardSymbols.Command + 'P'}>
             <SidebarButton onClick={() => setEditorInteractionState((prev) => ({ ...prev, showCommandPalette: true }))}>
               <ManageSearch />
@@ -52,19 +84,23 @@ export const QuadraticSidebar = () => {
           </SidebarTooltip>
         </div>
         <div className="mt-auto">
+          {provideFeedbackAction.isAvailable(isAvailableArgs) && (
+            <SidebarTooltip label={provideFeedbackAction.label}>
+              <SidebarButton onClick={() => setEditorInteractionState((prev) => ({ ...prev, showFeedbackMenu: true }))}>
+                <FeedbackIcon />
+              </SidebarButton>
+            </SidebarTooltip>
+          )}
           <SidebarTooltip label="Help">
             <SidebarButton onClick={() => {}}>
               <HelpIcon />
             </SidebarButton>
           </SidebarTooltip>
           <SidebarTooltip label="Documentation">
-            <SidebarButton onClick={() => setEditorInteractionState((prev) => ({ ...prev, showFeedbackMenu: true }))}>
-              <MenuBookIcon />
-            </SidebarButton>
-          </SidebarTooltip>
-          <SidebarTooltip label="Feedback">
-            <SidebarButton onClick={() => setEditorInteractionState((prev) => ({ ...prev, showFeedbackMenu: true }))}>
-              <FeedbackIcon />
+            <SidebarButton>
+              <Link to={DOCUMENTATION_URL} target="_blank" rel="noreferrer">
+                <MenuBookIcon />
+              </Link>
             </SidebarButton>
           </SidebarTooltip>
         </div>

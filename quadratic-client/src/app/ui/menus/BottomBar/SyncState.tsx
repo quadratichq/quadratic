@@ -2,7 +2,9 @@ import { events } from '@/app/events/events';
 import { pluralize } from '@/app/helpers/pluralize';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { DOCUMENTATION_OFFLINE } from '@/shared/constants/urls';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,19 +13,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { timeAgo } from '@/shared/utils/timeAgo';
-import { Check, ErrorOutline } from '@mui/icons-material';
-import { CircularProgress, Tooltip, useTheme } from '@mui/material';
+import { CircularProgress } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import BottomBarItem from './BottomBarItem';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { DOCUMENTATION_OFFLINE } from '@/shared/constants/urls';
 
 const TIMEOUT_TO_SHOW_DISCONNECT_MESSAGE = 1000;
 
 export default function SyncState() {
-  const theme = useTheme();
-
   const [syncState, setSyncState] = useState<MultiplayerState>(multiplayer.state);
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
@@ -110,48 +108,51 @@ export default function SyncState() {
   const [open, setOpen] = useState(false);
 
   let tooltip: string;
-  let icon: JSX.Element;
-  let message: string | JSX.Element;
+  let message: string;
+  let icon = null;
+  let className = '';
+
+  const loadingIcon = <CircularProgress size="0.5rem" />;
+  const errorClassName = 'bg-destructive text-background';
 
   if (['waiting to reconnect', 'connecting'].includes(syncState) && multiplayer.brokenConnection) {
-    icon = <CircularProgress size="0.5rem" />;
-    message = <span style={{ color: theme.palette.error.main }}>Reconnecting…</span>;
-    tooltip =
-      'Attempting to connect to the Quadratic server after losing connection. Your changes may only be saved locally…';
+    className = errorClassName;
+    message = 'Reconnecting…';
+    tooltip = 'Your changes may only be saved locally…';
   } else if (['not connected', 'connecting', 'waiting to reconnect', 'startup'].includes(syncState)) {
-    icon = <CircularProgress size="0.5rem" />;
-    message = <span>Connecting…</span>;
-    tooltip = 'Connecting to the Quadratic server…';
+    message = 'Connecting…';
+    tooltip = 'Attempting to connect…';
+    icon = loadingIcon;
   } else if (syncState === 'syncing') {
-    icon = <CircularProgress size="0.5rem" />;
-    message = <span>Syncing...</span>;
-    tooltip = 'Syncing changes to the Quadratic server. Your recent changes are saved locally.';
+    message = 'Syncing...';
+    tooltip = 'Your recent changes are saved locally.';
+    icon = loadingIcon;
   } else if (syncState === 'connected') {
-    icon = <Check fontSize="inherit" />;
-    message = <span>Connected</span>;
-    tooltip = 'Connected to the Quadratic server. Your changes are saved.';
+    message = 'Connected';
+    tooltip = 'Your changes are saved.';
   } else if (syncState === 'no internet') {
-    icon = <ErrorOutline fontSize="inherit" style={{ color: theme.palette.error.main }} />;
-    message = <span style={{ color: theme.palette.error.main }}>Offline</span>;
-    tooltip = 'Your internet connection appears not to be working. Your changes are only saved locally.';
+    className = errorClassName;
+    message = 'Offline';
+    tooltip = 'Connection down. Your changes are only saved locally.';
   } else {
-    icon = <ErrorOutline fontSize="inherit" style={{ color: theme.palette.error.main }} />;
-    tooltip =
-      "Connection to the Quadratic server was lost. We'll continue trying to reconnect. Your changes are only saved locally.";
-    message = <span style={{ color: theme.palette.error.main }}>Offline</span>;
+    className = errorClassName;
+    message = 'Offline';
+    tooltip = 'Connection lost. Your changes are only saved locally.';
   }
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <BottomBarItem icon={icon} onClick={() => {}}>
-          <Tooltip title={tooltip}>{message}</Tooltip>
+        <BottomBarItem className={className} icon={icon} onClick={() => {}}>
+          <TooltipPopover label={tooltip}>
+            <div>{message}</div>
+          </TooltipPopover>
         </BottomBarItem>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuLabel className={`flexz zw-full zjustify-between`}>Status</DropdownMenuLabel>
+        <DropdownMenuLabel>Status</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className={`flexz zw-full zjustify-between`}>
+        <DropdownMenuItem>
           {unsavedTransactions === 0
             ? 'Nothing waiting to sync'
             : `Syncing ${unsavedTransactions} ${pluralize('item', unsavedTransactions)}.`}
