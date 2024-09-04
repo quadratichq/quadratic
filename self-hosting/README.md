@@ -26,7 +26,7 @@ Implement the entire Quadratic stack outside of Quadratic.  The use cases we cur
 Quadratic can be installed via a single command: 
 
 ```shell
-curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic/7a8b99cc0154baada8a8bd535584e2e3c369e71a/self-hosting/init.sh -o init.sh && bash -i init.sh
+curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic/21057a2d3b9e7e43e08ca239f3a6c14da2b9f8f9/self-hosting/init.sh -o init.sh && bash -i init.sh
 ```
 
 This will download the initialization script, which will prompt for a license key in order to register Quadratic.  
@@ -59,6 +59,7 @@ If running in the background, run the `stop.sh` script:
 * Select the Ubuntu option
 * The minium size should be a t2.xlarge
 * Either create a new security group with `Allow HTTPS traffic from the internet` or `Allow HTTP traffic from the internet` (not using certs) OR select an existing security group with this setting enabled
+  * Open ports 80, 443, 3001, 3002, 3003, 4433, 4455, and 8000 for TCP traffic with 0.0.0.0/0 source
 * Configure storage to 30GiB
 * Click on the "Launch Instance" button
 
@@ -77,5 +78,5 @@ sudo chmod +x /usr/local/bin/docker-compose
 sudo chown $USER /var/run/docker.sock
 sudo systemctl enable docker
 sudo systemctl start docker
-curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic/7a8b99cc0154baada8a8bd535584e2e3c369e71a/self-hosting/init.sh -o init.sh && bash -i init.sh
+curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic/21057a2d3b9e7e43e08ca239f3a6c14da2b9f8f9/self-hosting/init.sh -o init.sh && bash -i init.sh
 ```
