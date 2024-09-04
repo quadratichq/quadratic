@@ -32,7 +32,7 @@ import {
 } from 'react-router-dom';
 import { RecoilRoot, useRecoilState } from 'recoil';
 
-const DRAWER_WIDTH = 264;
+export const DRAWER_WIDTH = 264;
 export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
 
 /**
@@ -181,6 +181,17 @@ export const Component = () => {
 
   // Ensure long-running browser sessions still have a token
   useCheckForAuthorizationTokenOnWindowFocus();
+
+  // Revalidate when arriving on this page after reload document followed by back button
+  useEffect(() => {
+    const handlePageShow = (e: PageTransitionEvent) => {
+      revalidator.revalidate();
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => {
+      window.removeEventListener('pageshow', handlePageShow);
+    };
+  }, [revalidator]);
 
   return (
     <RecoilRoot>

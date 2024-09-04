@@ -1,6 +1,7 @@
 import { fileDragDropModalAtom } from '@/dashboard/atoms/fileDragDropModalAtom';
 import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { FileDragDrop } from '@/dashboard/components/FileDragDrop';
+import { DRAWER_WIDTH } from '@/routes/_dashboard';
 import { Action as FilesAction } from '@/routes/api.files.$uuid';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
@@ -149,7 +150,9 @@ export function FilesList({
         />
       )}
 
-      {!newFileDialogShow && <FileDragDrop className="lg:left-[264px] lg:w-[calc(100%-264px)]" />}
+      {!newFileDialogShow && (
+        <FileDragDrop className={`lg:left-[${DRAWER_WIDTH}px] lg:w-[calc(100%-${DRAWER_WIDTH}px)]`} />
+      )}
     </div>
   );
 }
