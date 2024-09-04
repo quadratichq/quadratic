@@ -46,6 +46,19 @@ impl Selection {
         }
     }
 
+    /// Creates a new selection with a single sheet position
+    pub fn new_sheet_pos(x: i64, y: i64, sheet_id: SheetId) -> Self {
+        Selection {
+            sheet_id,
+            x,
+            y,
+            all: false,
+            rects: Some(vec![Rect::from_numbers(x, y, 1, 1)]),
+            rows: None,
+            columns: None,
+        }
+    }
+
     /// Creates an all selection
     pub fn all(sheet_id: SheetId) -> Self {
         Selection {
@@ -922,6 +935,23 @@ mod test {
                 rows: None,
                 columns: None,
                 all: false,
+            }
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn new_sheet_pos() {
+        let sheet_id = SheetId::test();
+        let selection = Selection::new_sheet_pos(1, 1, sheet_id);
+        assert_eq!(
+            selection,
+            Selection {
+                sheet_id,
+                x: 1,
+                y: 1,
+                rects: Some(vec![Rect::new(1, 1, 1, 1)]),
+                ..Default::default()
             }
         );
     }

@@ -108,3 +108,30 @@ impl GridController {
         self.transactions.mark_transaction_sent(transaction_id);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use serial_test::parallel;
+
+    use crate::{
+        grid::{sheet::borders::BorderStyleCellUpdate, SheetId},
+        selection::Selection,
+        RunLengthEncoding,
+    };
+
+    use super::*;
+
+    #[test]
+    #[parallel]
+    fn serialize_and_compress_borders_selection() {
+        let operations = vec![Operation::SetBordersSelection {
+            selection: Selection::new_sheet_pos(1, 1, SheetId::test()),
+            borders: RunLengthEncoding::repeat(BorderStyleCellUpdate::clear(), 1),
+        }];
+
+        let compressed = Transaction::serialize_and_compress(operations.clone()).unwrap();
+        let decompressed =
+            Transaction::decompress_and_deserialize::<Vec<Operation>>(&compressed).unwrap();
+        assert_eq!(operations, decompressed);
+    }
+}

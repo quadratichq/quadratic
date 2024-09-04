@@ -176,5 +176,14 @@ mod tests {
             Some(border),
             Some(BorderStyleCell::all())
         ));
+
+        let value = RunLengthEncoding::repeat(BorderStyleCellUpdate::erase(), 1);
+        borders.set_borders(&selection, &value);
+
+        let border = borders.get(1, 1);
+        assert!(BorderStyleCell::is_equal_ignore_timestamp(
+            Some(border),
+            Some(BorderStyleCell::default())
+        ));
     }
 }
