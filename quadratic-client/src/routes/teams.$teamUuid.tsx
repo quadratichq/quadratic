@@ -5,7 +5,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { ActionFunctionArgs, Link, Outlet, replace } from 'react-router-dom';
+import { ActionFunctionArgs, Link, Outlet, redirectDocument } from 'react-router-dom';
 
 export type TeamAction = {
   'request.update-team': ReturnType<typeof getActionUpdateTeam>;
@@ -99,7 +99,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
       // and redirect to home
       if (res.redirect) {
         localStorage.setItem(ACTIVE_TEAM_UUID_KEY, '');
-        return replace('/');
+        return redirectDocument('/');
       }
       return { ok: true };
     } catch (e) {
