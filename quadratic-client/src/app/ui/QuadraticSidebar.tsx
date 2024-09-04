@@ -24,10 +24,11 @@ export const QuadraticSidebar = () => {
 
   return (
     <TooltipProvider>
-      <nav className="flex h-full w-12 flex-col border-r border-border bg-accent">
+      <nav className="flex h-full w-12 flex-shrink-0 flex-col border-r border-border bg-accent">
         <SidebarTooltip label="Back to dashboard">
           <Link
             to="/"
+            reloadDocument
             className="hover flex h-12 items-center justify-center border-b border-border text-muted-foreground"
           >
             <QuadraticLogo />

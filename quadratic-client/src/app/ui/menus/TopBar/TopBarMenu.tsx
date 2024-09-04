@@ -171,11 +171,3 @@ export const TopBarMenu = () => {
     </Menubar>
   );
 };
-
-// const actions = {
-//   presentationMode: {
-//     label: 'Presentation mode',
-//     shortcuts: [KeyboardSymbols.Command + '.'],
-
-//   }
-// }
