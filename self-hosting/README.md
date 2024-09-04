@@ -26,7 +26,7 @@ Implement the entire Quadratic stack outside of Quadratic.  The use cases we cur
 Quadratic can be installed via a single command: 
 
 ```shell
-curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic/2b9f2eaecac7eb7e990c3de5f364fa20fe907a3a/self-hosting/init.sh -o init.sh && bash -i init.sh
+curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic/7a8b99cc0154baada8a8bd535584e2e3c369e71a/self-hosting/init.sh -o init.sh && bash -i init.sh
 ```
 
 This will download the initialization script, which will prompt for a license key in order to register Quadratic.  
@@ -68,5 +68,5 @@ sudo chmod +x /usr/local/bin/docker-compose
 sudo chown $USER /var/run/docker.sock
 sudo systemctl enable docker
 sudo systemctl start docker
-curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic/2b9f2eaecac7eb7e990c3de5f364fa20fe907a3a/self-hosting/init.sh -o init.sh && bash -i init.sh
+curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic/7a8b99cc0154baada8a8bd535584e2e3c369e71a/self-hosting/init.sh -o init.sh && bash -i init.sh
 ```
