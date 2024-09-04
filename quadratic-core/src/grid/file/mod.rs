@@ -60,7 +60,6 @@ enum GridFile {
 
 impl GridFile {
     fn into_latest(self) -> Result<v1_7::schema::GridSchema> {
-        dbgjs!(&self);
         match self {
             GridFile::V1_7 { grid } => Ok(grid),
             GridFile::V1_6 { grid } => v1_6::file::upgrade(grid),

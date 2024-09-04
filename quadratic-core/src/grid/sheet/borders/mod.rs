@@ -6,6 +6,7 @@ pub use borders_style::*;
 
 pub mod borders_bounds;
 pub mod borders_clipboard;
+pub mod borders_get;
 pub mod borders_render;
 pub mod borders_set;
 pub mod borders_style;

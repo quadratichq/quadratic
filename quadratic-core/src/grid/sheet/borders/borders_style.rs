@@ -84,6 +84,18 @@ impl BorderStyleTimestamp {
             timestamp: SmallTimestamp::now(),
         }
     }
+
+    #[cfg(test)]
+    pub fn is_equal_ignore_timestamp(
+        b1: Option<BorderStyleTimestamp>,
+        b2: Option<BorderStyleTimestamp>,
+    ) -> bool {
+        match (b1, b2) {
+            (None, None) => true,
+            (Some(b1), Some(b2)) => b1.color == b2.color && b1.line == b2.line,
+            _ => false,
+        }
+    }
 }
 
 impl From<BorderStyle> for BorderStyleTimestamp {
@@ -118,12 +130,31 @@ impl From<BorderStyleCell> for BorderStyleCellUpdate {
 impl BorderStyleCell {
     /// Overrides the border style of the cell with the new border style or
     /// clears the border if the new border style is None.
-    pub fn override_border(self, cell: &BorderStyleCell) -> BorderStyleCellUpdate {
+    pub fn override_border(&self) -> BorderStyleCellUpdate {
         BorderStyleCellUpdate {
-            top: cell.top.map(Some).or(Some(None)),
-            bottom: cell.bottom.map(Some).or(Some(None)),
-            left: cell.left.map(Some).or(Some(None)),
-            right: cell.right.map(Some).or(Some(None)),
+            top: self.top.map(Some).or(Some(None)),
+            bottom: self.bottom.map(Some).or(Some(None)),
+            left: self.left.map(Some).or(Some(None)),
+            right: self.right.map(Some).or(Some(None)),
+        }
+    }
+
+    pub fn clear() -> BorderStyleCellUpdate {
+        BorderStyleCellUpdate {
+            top: Some(None),
+            bottom: Some(None),
+            left: Some(None),
+            right: Some(None),
+        }
+    }
+
+    #[cfg(test)]
+    pub fn all() -> BorderStyleCell {
+        BorderStyleCell {
+            top: Some(BorderStyleTimestamp::default()),
+            bottom: Some(BorderStyleTimestamp::default()),
+            left: Some(BorderStyleTimestamp::default()),
+            right: Some(BorderStyleTimestamp::default()),
         }
     }
 }
@@ -146,6 +177,23 @@ impl BorderStyleCell {
             self.right = right;
         }
         original
+    }
+
+    #[cfg(test)]
+    pub fn is_equal_ignore_timestamp(
+        b1: Option<BorderStyleCell>,
+        b2: Option<BorderStyleCell>,
+    ) -> bool {
+        match (b1, b2) {
+            (None, None) => true,
+            (Some(b1), Some(b2)) => {
+                BorderStyleTimestamp::is_equal_ignore_timestamp(b1.top, b2.top)
+                    && BorderStyleTimestamp::is_equal_ignore_timestamp(b1.bottom, b2.bottom)
+                    && BorderStyleTimestamp::is_equal_ignore_timestamp(b1.left, b2.left)
+                    && BorderStyleTimestamp::is_equal_ignore_timestamp(b1.right, b2.right)
+            }
+            _ => false,
+        }
     }
 }
 
@@ -225,16 +273,23 @@ pub struct JsBordersSheet {
 
 #[cfg(test)]
 mod tests {
+    use serial_test::parallel;
+
     use super::*;
 
     #[test]
+    #[parallel]
+    fn apply_update() {
+        let mut cell = BorderStyleCell::default();
+        let update = BorderStyleCellUpdate::all();
+        let original = cell.apply_update(&update);
+        assert_eq!(cell, BorderStyleCell::all());
+        assert_eq!(original, BorderStyleCellUpdate::clear());
+    }
+
+    #[test]
+    #[parallel]
     fn override_border() {
-        let cell = BorderStyleCell {
-            top: Some(BorderStyleTimestamp::default()),
-            bottom: None,
-            left: Some(BorderStyleTimestamp::default()),
-            right: None,
-        };
         let update = BorderStyleCell {
             top: Some(BorderStyleTimestamp::new(
                 Rgba::default(),
@@ -244,10 +299,80 @@ mod tests {
             left: None,
             right: Some(BorderStyleTimestamp::default()),
         };
-        let updated = cell.override_border(&update);
+        let updated = update.override_border();
         assert_eq!(updated.top.unwrap().unwrap().line, CellBorderLine::Line2);
         assert_eq!(updated.bottom, Some(None));
         assert_eq!(updated.left, Some(None));
         assert_eq!(updated.right.unwrap().unwrap().line, CellBorderLine::Line1);
+    }
+
+    #[test]
+    #[parallel]
+    fn clear() {
+        let cleared = BorderStyleCell::clear();
+        assert_eq!(cleared.top, Some(None));
+        assert_eq!(cleared.bottom, Some(None));
+        assert_eq!(cleared.left, Some(None));
+        assert_eq!(cleared.right, Some(None));
+    }
+
+    #[test]
+    #[parallel]
+    fn timestamp_is_equal_ignore_timestamp() {
+        assert!(BorderStyleTimestamp::is_equal_ignore_timestamp(
+            Some(BorderStyleTimestamp::default()),
+            Some(BorderStyleTimestamp {
+                timestamp: SmallTimestamp::new(0),
+                ..BorderStyleTimestamp::default()
+            }),
+        ));
+        assert!(!BorderStyleTimestamp::is_equal_ignore_timestamp(
+            Some(BorderStyleTimestamp::default()),
+            Some(BorderStyleTimestamp::new(
+                Rgba::default(),
+                CellBorderLine::Line2
+            )),
+        ));
+    }
+
+    #[test]
+    #[parallel]
+    fn cell_is_equal_ignore_timestamp() {
+        let b1 = Some(BorderStyleCell::all());
+        let b2 = Some(BorderStyleCell {
+            top: Some(BorderStyleTimestamp {
+                timestamp: SmallTimestamp::new(1),
+                ..BorderStyleTimestamp::default()
+            }),
+            bottom: Some(BorderStyleTimestamp {
+                timestamp: SmallTimestamp::new(1),
+                ..BorderStyleTimestamp::default()
+            }),
+            left: Some(BorderStyleTimestamp {
+                timestamp: SmallTimestamp::new(1),
+                ..BorderStyleTimestamp::default()
+            }),
+            right: Some(BorderStyleTimestamp {
+                timestamp: SmallTimestamp::new(1),
+                ..BorderStyleTimestamp::default()
+            }),
+        });
+        assert!(BorderStyleCell::is_equal_ignore_timestamp(b1, b2));
+
+        let b1 = Some(BorderStyleCell {
+            top: Some(BorderStyleTimestamp::new(
+                Rgba::default(),
+                CellBorderLine::Line1,
+            )),
+            ..BorderStyleCell::default()
+        });
+        let b2 = Some(BorderStyleCell {
+            top: Some(BorderStyleTimestamp::new(
+                Rgba::default(),
+                CellBorderLine::Line2,
+            )),
+            ..BorderStyleCell::default()
+        });
+        assert!(!BorderStyleCell::is_equal_ignore_timestamp(b1, b2));
     }
 }

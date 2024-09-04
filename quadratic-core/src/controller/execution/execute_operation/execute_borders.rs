@@ -74,6 +74,7 @@ impl GridController {
                     // sheet may have been deleted
                     return;
                 };
+                dbgjs!("SetBordersSelection");
                 transaction
                     .reverse_operations
                     .extend(sheet.borders.set_borders(&selection, &borders));

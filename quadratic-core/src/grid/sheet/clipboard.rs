@@ -243,16 +243,19 @@ impl Sheet {
                 clipboard_origin.column = sheet_bounds.map(|b| b.min.x);
             }
         }
-        let borders = self.borders.to_clipboard(selection, &clipboard_origin);
         let sheet_formats = self.sheet_formats(selection, &clipboard_origin);
         let validations = self.validations.to_clipboard(selection, &clipboard_origin);
+        let borders = self.borders.to_clipboard(selection);
 
         let clipboard = Clipboard {
             cells,
             formats,
             sheet_formats,
             borders: if let Some(borders) = borders {
-                Some((selection.clone(), borders))
+                Some((
+                    selection.translate(-clipboard_origin.x, -clipboard_origin.y),
+                    borders,
+                ))
             } else {
                 None
             },

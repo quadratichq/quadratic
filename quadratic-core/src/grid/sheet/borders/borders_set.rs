@@ -15,7 +15,7 @@ impl Borders {
 
         if selection.all {
             let Some(border) = borders.get_at(0) else {
-                panic!("Expected 1 border style for all");
+                panic!("Expected border style for all");
             };
             undo_borders.push(self.all.apply_update(border));
             return vec![Operation::SetBordersSelection {
@@ -134,7 +134,11 @@ impl Borders {
 mod tests {
     use serial_test::parallel;
 
-    use crate::{color::Rgba, grid::{sheet::borders::CellBorderLine, SheetId}, SheetRect};
+    use crate::{
+        color::Rgba,
+        grid::{sheet::borders::CellBorderLine, SheetId},
+        SheetRect,
+    };
 
     use super::*;
 

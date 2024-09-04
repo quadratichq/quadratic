@@ -19,7 +19,7 @@ export const debugShowFPS = (debug && true) || url.has('fps');
 // show results of runComputation() in console (for TS related computations)
 export const debugShowRunComputation = debug && false;
 
-export const debugShowOfflineTransactions = debug && true;
+export const debugShowOfflineTransactions = debug && false;
 
 // ----------
 // Rendering

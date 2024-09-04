@@ -209,24 +209,6 @@ impl Borders {
             }
         }
     }
-
-    /// Gets the border style for a cell used in tests. Use the rect fns above
-    /// for actual use since it handles overlapping top/bottom and left/right
-    /// properly.
-    #[cfg(test)]
-    pub fn get(&self, x: i64, y: i64) -> super::BorderStyleCell {
-        let top = self.top.get(&x).and_then(|row| row.get(y));
-        let bottom = self.bottom.get(&(y)).and_then(|row| row.get(x));
-        let left = self.left.get(&y).and_then(|row| row.get(x));
-        let right = self.right.get(&(y)).and_then(|row| row.get(x));
-
-        super::BorderStyleCell {
-            top,
-            bottom,
-            left,
-            right,
-        }
-    }
 }
 
 #[cfg(test)]
@@ -436,29 +418,5 @@ mod tests {
             }]),
         };
         assert_eq!(borders, serde_json::to_string(&expected).unwrap());
-    }
-
-    #[test]
-    #[parallel]
-    fn get() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
-            BorderSelection::All,
-            Some(BorderStyle::default()),
-            None,
-        );
-
-        let sheet = gc.sheet(sheet_id);
-        let cell = sheet.borders.get(1, 1);
-        assert_eq!(cell.top.unwrap().line, CellBorderLine::default());
-        assert_eq!(cell.bottom.unwrap().line, CellBorderLine::default());
-        assert_eq!(cell.left.unwrap().line, CellBorderLine::default());
-        assert_eq!(cell.right.unwrap().line, CellBorderLine::default());
-        assert_eq!(cell.top.unwrap().color, Rgba::default());
-        assert_eq!(cell.bottom.unwrap().color, Rgba::default());
-        assert_eq!(cell.left.unwrap().color, Rgba::default());
-        assert_eq!(cell.right.unwrap().color, Rgba::default());
     }
 }
