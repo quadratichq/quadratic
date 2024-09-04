@@ -97,7 +97,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     const {
       file: { uuid },
     } = await apiClient.files.create({ file: { name, contents, version }, teamUuid, isPrivate });
-    return replace(ROUTES.FILE(uuid));
+    return redirect(ROUTES.FILE(uuid));
   } catch (error) {
     return redirect(getFailUrl());
   }
