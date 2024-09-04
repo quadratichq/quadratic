@@ -193,7 +193,7 @@ export function useFileImport() {
               if (openImportedFile) {
                 setFilesImportProgressListState({ show: false });
                 setNewFileDialogState((prev) => ({ ...prev, show: false }));
-                window.location.replace(ROUTES.FILE(uuid));
+                window.location.href = ROUTES.FILE(uuid);
               }
             })
             .catch((error) => {
