@@ -161,4 +161,20 @@ mod tests {
         assert_eq!(border.right.unwrap().line, CellBorderLine::default());
         assert_eq!(border.right.unwrap().color, Rgba::default());
     }
+
+    #[test]
+    #[parallel]
+    fn set_borders_erase() {
+        let sheet_id = SheetId::test();
+        let mut borders = Borders::default();
+        let selection = Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id));
+        let value = RunLengthEncoding::repeat(BorderStyleCellUpdate::all(), 1);
+        borders.set_borders(&selection, &value);
+
+        let border = borders.get(1, 1);
+        assert!(BorderStyleCell::is_equal_ignore_timestamp(
+            Some(border),
+            Some(BorderStyleCell::all())
+        ));
+    }
 }
