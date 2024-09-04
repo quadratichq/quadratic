@@ -59,7 +59,7 @@ services:
     environment:
       VITE_DEBUG: 1
       VITE_QUADRATIC_API_URL: http://#HOST#:8000
-      VITE_QUADRATIC_MULTIPLAYER_URL: ws://localhost:3001/ws
+      VITE_QUADRATIC_MULTIPLAYER_URL: ws://#HOST#:3001/ws
       VITE_QUADRATIC_CONNECTION_URL: http://#HOST#:3003
       VITE_AUTH_TYPE: ory
       VITE_ORY_HOST: http://#HOST#:4433
@@ -301,7 +301,7 @@ services:
       KRATOS_PUBLIC_URL: http://host.docker.internal:4433/
       KRATOS_BROWSER_URL: http://#HOST#:4433/
       COOKIE_SECRET: changeme
-      CSRF_COOKIE_NAME: __HOST-localhost-x-csrf-token
+      CSRF_COOKIE_NAME: __HOST-#HOST#-x-csrf-token
       CSRF_COOKIE_SECRET: changeme
     restart: on-failure
     profiles:

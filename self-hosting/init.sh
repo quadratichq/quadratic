@@ -63,9 +63,13 @@ if ! [ -f "quadratic/LICENSE" ]; then
     rm ../init.sh
     rm init.sh
 
+    # adding .bak for compatibility with both GNU (Linux) and BSD (MacOS) sed
     sed -i.bak "s/#LICENSE_KEY#/$LICENSE_KEY/g" "docker-compose.yml"
     sed -i.bak "s/#HOST#/$HOST/g" "docker-compose.yml"
     sed -i.bak "s/#HOST#/$HOST/g" "docker/ory-auth/config/kratos.yml"
+
+    rm docker-compose.yml.bak
+    rm docker/ory-auth/config/kratos.yml.bak
 
     cd quadratic
   fi
