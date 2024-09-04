@@ -9,7 +9,7 @@ import { debugShowLoadingHashes } from '@/app/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { isFloatEqual } from '@/app/helpers/float';
-import { JsPos, JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import { ColumnRow, JsPos, JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
@@ -230,22 +230,30 @@ export class CellsLabels {
   }
 
   getViewportNeighborBounds(): Rectangle | undefined {
-    const bounds = renderText.viewport;
-    if (!bounds) return undefined;
+    const viewportBounds = renderText.viewport;
+    if (!viewportBounds) return undefined;
+
     return new Rectangle(
-      bounds.x - bounds.width * NEIGHBORS * (renderText.scale ?? 1),
-      bounds.y - bounds.height * 2 * NEIGHBORS * (renderText.scale ?? 1),
-      bounds.width * (1 + 2 * NEIGHBORS * (renderText.scale ?? 1)),
-      bounds.height * (1 + 4 * NEIGHBORS * (renderText.scale ?? 1))
+      viewportBounds.x - viewportBounds.width * NEIGHBORS * (renderText.scale ?? 1),
+      viewportBounds.y - viewportBounds.height * 4 * NEIGHBORS * (renderText.scale ?? 1),
+      viewportBounds.width * (1 + 2 * NEIGHBORS * (renderText.scale ?? 1)),
+      viewportBounds.height * (1 + 8 * NEIGHBORS * (renderText.scale ?? 1))
     );
   }
 
-  getCornerHashesInBound = (bounds: Rectangle): number[] => {
-    const top_left_x = Math.floor(bounds.x / sheetHashWidth);
-    const top_left_y = Math.floor(bounds.y / sheetHashHeight);
-    const bottom_right_x = Math.floor((bounds.x + bounds.width) / sheetHashWidth);
-    const bottom_right_y = Math.floor((bounds.y + bounds.height) / sheetHashHeight);
-    return [top_left_x, top_left_y, bottom_right_x, bottom_right_y];
+  getCornerHashesInBound = (screenRect: Rectangle): number[] => {
+    const topLeftCell: ColumnRow = JSON.parse(this.sheetOffsets.getColumnRowFromScreen(screenRect.x, screenRect.y));
+    const { x: topLeftHashX, y: topLeftHashY } = CellsLabels.getHash(topLeftCell.column, topLeftCell.row);
+
+    const bottomRightCell: ColumnRow = JSON.parse(
+      this.sheetOffsets.getColumnRowFromScreen(screenRect.x + screenRect.width, screenRect.y + screenRect.height)
+    );
+    const { x: bottomRightHashX, y: bottomRightHashY } = CellsLabels.getHash(
+      bottomRightCell.column,
+      bottomRightCell.row
+    );
+
+    return [topLeftHashX, topLeftHashY, bottomRightHashX, bottomRightHashY];
   };
 
   // distance from viewport center to hash center
