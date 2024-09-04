@@ -59,6 +59,7 @@ const getOrCreateUser = async (auth0Id: string) => {
       auth0Id,
     },
   });
+
   if (user) {
     return user;
   }

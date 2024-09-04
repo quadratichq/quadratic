@@ -86,6 +86,7 @@ selfservice:
       ui_url: http://#HOST#:4455/registration
       after:
         password:
+          default_browser_return_url: http://#HOST#/login-result
           hooks:
             - hook: session
             - hook: show_verification_ui
