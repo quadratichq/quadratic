@@ -43,7 +43,7 @@ export interface ColumnRow { column: number, row: number, }
 export interface SheetInfo { sheet_id: string, name: string, order: string, color: string | null, offsets: string, bounds: GridBounds, bounds_without_formatting: GridBounds, }
 export type PasteSpecial = "None" | "Values" | "Formats";
 export interface Rgba { red: number, green: number, blue: number, alpha: number, }
-export type CellBorderLine = "line1" | "line2" | "line3" | "dotted" | "dashed" | "double";
+export type CellBorderLine = "line1" | "line2" | "line3" | "dotted" | "dashed" | "double" | "clear";
 export type BorderSelection = "all" | "inner" | "outer" | "horizontal" | "vertical" | "left" | "top" | "right" | "bottom" | "clear";
 export interface BorderStyle { color: Rgba, line: CellBorderLine, }
 export interface JsBorderHorizontal { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, width: bigint, }

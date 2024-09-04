@@ -48,6 +48,10 @@ pub enum CellBorderLine {
     Dotted,
     Dashed,
     Double,
+
+    // this is needed to ensure that the border is cleared when compared to
+    // neighbors or all, columns, rows
+    Clear,
 }
 
 impl CellBorderLine {
@@ -59,6 +63,7 @@ impl CellBorderLine {
             CellBorderLine::Dotted => "1px dashed",
             CellBorderLine::Dashed => "1px dotted",
             CellBorderLine::Double => "3px double",
+            CellBorderLine::Clear => "0px solid",
         }
     }
 }
@@ -81,6 +86,14 @@ impl BorderStyleTimestamp {
         BorderStyleTimestamp {
             color,
             line,
+            timestamp: SmallTimestamp::now(),
+        }
+    }
+
+    pub fn clear() -> Self {
+        BorderStyleTimestamp {
+            color: Rgba::default(),
+            line: CellBorderLine::Clear,
             timestamp: SmallTimestamp::now(),
         }
     }

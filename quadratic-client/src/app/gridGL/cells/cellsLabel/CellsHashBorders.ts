@@ -23,6 +23,12 @@ export class CellsHashBorders extends Container {
   }
 
   private drawBorder(border: JsBorderHorizontal | JsBorderVertical, sheet: Sheet) {
+    // We don't draw clear borders, but we do mark it as a border so it
+    // overrides the all, columns, and rows borders.
+    if (border.line === 'clear') {
+      return;
+    }
+
     const isHorizontal = (border as JsBorderHorizontal).width !== undefined;
 
     const borderType = border.line;

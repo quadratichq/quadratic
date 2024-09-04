@@ -2,6 +2,7 @@ use crate::{
     controller::GridController,
     grid::sheet::borders::{
         BorderSelection, BorderStyle, BorderStyleCellUpdate, BorderStyleCellUpdates,
+        BorderStyleTimestamp,
     },
     selection::Selection,
     Rect,
@@ -126,10 +127,10 @@ impl GridController {
                     }
                 }
                 BorderSelection::Clear => {
-                    border_style.top = Some(None);
-                    border_style.bottom = Some(None);
-                    border_style.left = Some(None);
-                    border_style.right = Some(None);
+                    border_style.top = Some(Some(BorderStyleTimestamp::clear()));
+                    border_style.bottom = Some(Some(BorderStyleTimestamp::clear()));
+                    border_style.left = Some(Some(BorderStyleTimestamp::clear()));
+                    border_style.right = Some(Some(BorderStyleTimestamp::clear()));
                 }
             }
             borders.push(border_style);

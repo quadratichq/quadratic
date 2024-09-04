@@ -75,6 +75,7 @@ pub enum CellBorderLineSchema {
     Dotted,
     Dashed,
     Double,
+    Clear,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]

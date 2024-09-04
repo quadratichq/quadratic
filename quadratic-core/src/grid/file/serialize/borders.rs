@@ -29,6 +29,7 @@ fn export_border_line(line: &CellBorderLine) -> current::CellBorderLineSchema {
         CellBorderLine::Dotted => current::CellBorderLineSchema::Dotted,
         CellBorderLine::Dashed => current::CellBorderLineSchema::Dashed,
         CellBorderLine::Double => current::CellBorderLineSchema::Double,
+        CellBorderLine::Clear => current::CellBorderLineSchema::Clear,
     }
 }
 
@@ -114,6 +115,7 @@ fn import_border_line(schema: &current::CellBorderLineSchema) -> CellBorderLine 
         current::CellBorderLineSchema::Dotted => CellBorderLine::Dotted,
         current::CellBorderLineSchema::Dashed => CellBorderLine::Dashed,
         current::CellBorderLineSchema::Double => CellBorderLine::Double,
+        current::CellBorderLineSchema::Clear => CellBorderLine::Clear,
     }
 }
 
