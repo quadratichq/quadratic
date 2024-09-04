@@ -17,7 +17,7 @@ Implement the entire Quadratic stack outside of Quadratic.  The use cases we cur
 
 * MacOS or Linux (not tested on Windows)
 * License Key (available at https://selfhost.quadratic-preview.com)
-* The following open ports: 80, 3000, 3001, 3002, 8000
+* The following open ports: 80, 443, 3001, 3002, 3003, 4433, 4455, and 8000
 
 ## Installation
 
