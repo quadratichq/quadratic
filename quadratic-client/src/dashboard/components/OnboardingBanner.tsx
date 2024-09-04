@@ -81,10 +81,10 @@ export function OnboardingBanner() {
             <Button variant="outline" className={contentBtnClassName} asChild>
               <Link
                 to={ROUTES.CREATE_FILE(teamUuid)}
+                reloadDocument
                 onClick={() => {
                   mixpanel.track('[OnboardingBanner].newFileBlank');
                 }}
-                reloadDocument={true}
               >
                 <PlusIcon className="mr-1" /> Create blank file
               </Link>

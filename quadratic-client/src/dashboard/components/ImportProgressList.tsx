@@ -5,7 +5,6 @@ import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Progress } from '@/shared/shadcn/ui/progress';
 import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
 
 export const ImportProgressList = () => {
@@ -65,14 +64,12 @@ const ImportProgressItem = ({
   importing: boolean;
   onOpen: () => void;
 }) => {
-  const navigate = useNavigate();
-
   const handleOpen = useCallback(() => {
     onOpen();
     if (file.uuid !== undefined) {
-      navigate(ROUTES.FILE(file.uuid));
+      window.location.replace(ROUTES.FILE(file.uuid));
     }
-  }, [file.uuid, onOpen, navigate]);
+  }, [file.uuid, onOpen]);
 
   const fileName = stripExtension(file.name);
   const extension = getExtension(file.name);
