@@ -39,7 +39,6 @@ export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
  * Revalidation
  */
 export const shouldRevalidate = ({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) => {
-  console.log(currentUrl.pathname, nextUrl.pathname);
   return (
     currentUrl.pathname === '/' ||
     currentUrl.pathname.startsWith('/file/') ||
@@ -60,7 +59,6 @@ type LoaderData = {
 };
 
 export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<LoaderData | Response> => {
-  console.log('loader', request.url);
   /**
    * Get the initial data
    */
@@ -166,7 +164,6 @@ export const Component = () => {
   const [searchParams] = useSearchParams();
   const navigation = useNavigation();
   const location = useLocation();
-  console.log('location', location.pathname);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const contentPaneRef = useRef<HTMLDivElement>(null);
   const revalidator = useRevalidator();

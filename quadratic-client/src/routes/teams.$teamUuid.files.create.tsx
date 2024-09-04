@@ -5,7 +5,7 @@ import { ROUTES } from '@/shared/constants/routes';
 import { initMixpanelAnalytics } from '@/shared/utils/analytics';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
-import { ActionFunctionArgs, LoaderFunctionArgs, redirect, replace } from 'react-router-dom';
+import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from 'react-router-dom';
 
 const getFailUrl = (path: string = '/') => {
   let params = new URLSearchParams();
@@ -44,7 +44,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
         isPrivate,
       });
       mixpanel.track('[Files].newExampleFile', { fileName: name });
-      return replace(ROUTES.FILE(uuid));
+      return redirect(ROUTES.FILE(uuid));
     } catch (error) {
       Sentry.captureEvent({
         message: 'Client failed to load the selected example file.',
@@ -69,7 +69,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     // If there's a `state=...` query param, for starting a file in a specific
     // state, pass that along
     const state = searchParams.get('state');
-    return replace(ROUTES.FILE(uuid) + (state ? `?state=${state}` : ''));
+    return redirect(ROUTES.FILE(uuid) + (state ? `?state=${state}` : ''));
   } catch (error) {
     return redirect(getFailUrl(ROUTES.TEAM(teamUuid)));
   }
