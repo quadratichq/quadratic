@@ -17,6 +17,13 @@ get_license_key() {
     fi
 }
 
+get_host() {
+    read -p "What public host name or public IP address are you using for this setup (e.g. localhost, app.quadratic.com, or other): " user_input
+    
+    # TODO: validate host
+    echo $user_input
+}
+
 checkout() {
   git clone -b $BRANCH --filter=blob:none --no-checkout --depth 1 --sparse $REPO
   cd quadratic
@@ -26,6 +33,7 @@ checkout() {
 }
 
 LICENSE_KEY=""
+HOST=""
 
 # check if LICENSE file exists
 if ! [ -f "quadratic/LICENSE" ]; then
@@ -34,25 +42,37 @@ if ! [ -f "quadratic/LICENSE" ]; then
   if [ "$LICENSE_KEY" = "$INVALID_LICENSE_KEY" ]; then
     echo $INVALID_LICENSE_KEY
   else
+
+    if ! [ -f "quadratic/HOST" ]; then
+      HOST=$(get_host)
+    fi
+
     # retrieve the code from github
     checkout
     
     # write license key to LICENSE file
     touch LICENSE
     echo $LICENSE_KEY > LICENSE
+    
+    # write host to HOST file
+    touch HOST
+    echo $HOST > HOST
 
     cp -a self-hosting/. .
     rm -rf self-hosting
     rm ../init.sh
     rm init.sh
 
-    sed -i.bak "s/\"LICENSE_KEY\"/\"$LICENSE_KEY\"/g" "docker-compose.yml"
+    sed -i.bak "s/#LICENSE_KEY#/$LICENSE_KEY/g" "docker-compose.yml"
+    sed -i.bak "s/#HOST#/$HOST/g" "docker-compose.yml"
+    sed -i.bak "s/#HOST#/$HOST/g" "docker/ory-auth/config/kratos.yml"
 
     cd quadratic
   fi
 else
   cd quadratic
   LICENSE_KEY=$(<LICENSE)
+  HOST=$(<HOST)
 fi
 
 sh start.sh

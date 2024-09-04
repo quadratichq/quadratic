@@ -58,11 +58,11 @@ services:
     restart: "always"
     environment:
       VITE_DEBUG: 1
-      VITE_QUADRATIC_API_URL: http://localhost:8000
+      VITE_QUADRATIC_API_URL: http://#HOST#:8000
       VITE_QUADRATIC_MULTIPLAYER_URL: ws://localhost:3001/ws
-      VITE_QUADRATIC_CONNECTION_URL: http://localhost:3003
+      VITE_QUADRATIC_CONNECTION_URL: http://#HOST#:3003
       VITE_AUTH_TYPE: ory
-      VITE_ORY_HOST: http://localhost:4433
+      VITE_ORY_HOST: http://#HOST#:4433
     ports:
       - "3000:80"
     command: >
@@ -106,10 +106,10 @@ services:
       # Storage
       STORAGE_TYPE: file-system
       QUADRATIC_FILE_URI: http://host.docker.internal:3002
-      QUADRATIC_FILE_URI_PUBLIC: http://localhost:3002
+      QUADRATIC_FILE_URI_PUBLIC: http://#HOST#:3002
 
-      # License UUID: leave "LICENSE_KEY" as this value is replaced during initialization
-      LICENSE_KEY: "LICENSE_KEY"
+      # License UUID: leave "#LICENSE_KEY#" as this value is replaced during initialization
+      LICENSE_KEY: "#LICENSE_KEY#"
     restart: "always"
     ports:
       - "8000:8000"
@@ -299,7 +299,7 @@ services:
     environment:
       PORT: 4455
       KRATOS_PUBLIC_URL: http://host.docker.internal:4433/
-      KRATOS_BROWSER_URL: http://localhost:4433/
+      KRATOS_BROWSER_URL: http://#HOST#:4433/
       COOKIE_SECRET: changeme
       CSRF_COOKIE_NAME: __HOST-localhost-x-csrf-token
       CSRF_COOKIE_SECRET: changeme
