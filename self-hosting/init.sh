@@ -46,7 +46,7 @@ if ! [ -f "quadratic/LICENSE" ]; then
     rm ../init.sh
     rm init.sh
 
-    sed -i '' "s/\"LICENSE_KEY\"/\"$LICENSE_KEY\"/g" "docker-compose.yml"
+    sed -i.bak "s/\"LICENSE_KEY\"/\"$LICENSE_KEY\"/g" "docker-compose.yml"
 
     cd quadratic
   fi
