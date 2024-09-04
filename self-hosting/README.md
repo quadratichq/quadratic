@@ -53,6 +53,15 @@ If running in the background, run the `stop.sh` script:
 ./quadratic/self-hosting/stop.sh
 ```
 
+## Creating an EC2 Instance
+
+* Click on Launch and Instance from the main EC2 screen
+* Select the Ubuntu option
+* The minium size should be a t2.xlarge
+* Either create a new security group with `Allow HTTPS traffic from the internet` or `Allow HTTP traffic from the internet` (not using certs) OR select an existing security group with this setting enabled
+* Configure storage to 30GiB
+* Click on the "Launch Instance" button
+
 ## Installing on Ubuntu
 
 ```shell
