@@ -126,7 +126,7 @@ mod tests {
     fn serialize_and_compress_borders_selection() {
         let operations = vec![Operation::SetBordersSelection {
             selection: Selection::new_sheet_pos(1, 1, SheetId::test()),
-            borders: RunLengthEncoding::repeat(BorderStyleCellUpdate::clear(), 1),
+            borders: RunLengthEncoding::repeat(BorderStyleCellUpdate::clear(false), 1),
         }];
 
         let compressed = Transaction::serialize_and_compress(operations.clone()).unwrap();

@@ -10,12 +10,12 @@ impl Borders {
         let mut updates = BorderStyleCellUpdates::default();
 
         if selection.all {
-            updates.push(self.all.override_border());
+            updates.push(self.all.override_border(false));
         }
         if let Some(column) = selection.columns.as_ref() {
             for col in column {
                 if let Some(border_col) = self.columns.get(&col) {
-                    updates.push(border_col.override_border());
+                    updates.push(border_col.override_border(false));
                 } else {
                     updates.push(BorderStyleCell::clear());
                 }
@@ -24,7 +24,7 @@ impl Borders {
         if let Some(row) = selection.rows.as_ref() {
             for row in row {
                 if let Some(border_row) = self.rows.get(&row) {
-                    updates.push(border_row.override_border());
+                    updates.push(border_row.override_border(false));
                 } else {
                     updates.push(BorderStyleCell::clear());
                 }
@@ -76,7 +76,7 @@ mod tests {
             )))
             .unwrap();
 
-        let entry = clipboard.get_at(4).unwrap();
+        let entry = clipboard.get_at(6).unwrap();
         assert_eq!(entry.top.unwrap().unwrap().line, CellBorderLine::default());
         assert_eq!(entry.top.unwrap().unwrap().color, Rgba::default());
         assert_eq!(entry.left.unwrap().unwrap().line, CellBorderLine::default());

@@ -142,22 +142,29 @@ impl From<BorderStyleCell> for BorderStyleCellUpdate {
 
 impl BorderStyleCell {
     /// Overrides the border style of the cell with the new border style or
-    /// clears the border if the new border style is None.
-    pub fn override_border(&self) -> BorderStyleCellUpdate {
+    /// clears the border if the new border style is None. If force_clear is
+    /// true, then the border is set to BorderLineStyle::Clear, otherwise the
+    /// border is set to Some(None) (ie, removed).
+    pub fn override_border(&self, force_clear: bool) -> BorderStyleCellUpdate {
+        let clear = if force_clear {
+            Some(Some(BorderStyleTimestamp::clear()))
+        } else {
+            Some(None)
+        };
         BorderStyleCellUpdate {
-            top: self.top.map(Some).or(Some(None)),
-            bottom: self.bottom.map(Some).or(Some(None)),
-            left: self.left.map(Some).or(Some(None)),
-            right: self.right.map(Some).or(Some(None)),
+            top: self.top.map(Some).or(clear.clone()),
+            bottom: self.bottom.map(Some).or(clear.clone()),
+            left: self.left.map(Some).or(clear.clone()),
+            right: self.right.map(Some).or(clear),
         }
     }
 
     pub fn clear() -> BorderStyleCellUpdate {
         BorderStyleCellUpdate {
-            top: Some(None),
-            bottom: Some(None),
-            left: Some(None),
-            right: Some(None),
+            top: Some(Some(BorderStyleTimestamp::clear())),
+            bottom: Some(Some(BorderStyleTimestamp::clear())),
+            left: Some(Some(BorderStyleTimestamp::clear())),
+            right: Some(Some(BorderStyleTimestamp::clear())),
         }
     }
 
@@ -176,7 +183,7 @@ impl BorderStyleCell {
     /// Apply an update to the cell.
     /// Returns the original cell so it can be used for undo.
     pub fn apply_update(&mut self, update: &BorderStyleCellUpdate) -> BorderStyleCellUpdate {
-        let original = (*self).into();
+        let original = (*self).override_border(false);
         if let Some(top) = update.top {
             self.top = top;
         }
@@ -244,12 +251,24 @@ pub struct BorderStyleCellUpdate {
 }
 
 impl BorderStyleCellUpdate {
-    pub fn clear() -> Self {
-        BorderStyleCellUpdate {
-            top: Some(None),
-            bottom: Some(None),
-            left: Some(None),
-            right: Some(None),
+    /// Create a update that will clear the border. If force_clear is true, then
+    /// the border is set to BorderLineStyle::Clear, otherwise the border is set
+    /// to None (ie, removed).
+    pub fn clear(force_clear: bool) -> Self {
+        if force_clear {
+            BorderStyleCellUpdate {
+                top: Some(Some(BorderStyleTimestamp::clear())),
+                bottom: Some(Some(BorderStyleTimestamp::clear())),
+                left: Some(Some(BorderStyleTimestamp::clear())),
+                right: Some(Some(BorderStyleTimestamp::clear())),
+            }
+        } else {
+            BorderStyleCellUpdate {
+                top: Some(None),
+                bottom: Some(None),
+                left: Some(None),
+                right: Some(None),
+            }
         }
     }
 
@@ -265,12 +284,28 @@ impl BorderStyleCellUpdate {
     }
 
     #[cfg(test)]
-    pub fn erase() -> Self {
-        BorderStyleCellUpdate {
-            top: Some(None),
-            bottom: Some(None),
-            left: Some(None),
-            right: Some(None),
+    pub fn is_equal_ignore_timestamp(
+        b1: Option<BorderStyleCellUpdate>,
+        b2: Option<BorderStyleCellUpdate>,
+    ) -> bool {
+        match (b1, b2) {
+            (None, None) => true,
+            (Some(b1), Some(b2)) => {
+                BorderStyleTimestamp::is_equal_ignore_timestamp(b1.top.flatten(), b2.top.flatten())
+                    && BorderStyleTimestamp::is_equal_ignore_timestamp(
+                        b1.bottom.flatten(),
+                        b2.bottom.flatten(),
+                    )
+                    && BorderStyleTimestamp::is_equal_ignore_timestamp(
+                        b1.left.flatten(),
+                        b2.left.flatten(),
+                    )
+                    && BorderStyleTimestamp::is_equal_ignore_timestamp(
+                        b1.right.flatten(),
+                        b2.right.flatten(),
+                    )
+            }
+            _ => false,
         }
     }
 }
@@ -330,7 +365,10 @@ mod tests {
         let update = BorderStyleCellUpdate::all();
         let original = cell.apply_update(&update);
         assert_eq!(cell, BorderStyleCell::all());
-        assert_eq!(original, BorderStyleCellUpdate::clear());
+        assert!(BorderStyleCellUpdate::is_equal_ignore_timestamp(
+            Some(original),
+            Some(BorderStyleCellUpdate::clear(false))
+        ));
     }
 
     #[test]
@@ -345,10 +383,16 @@ mod tests {
             left: None,
             right: Some(BorderStyleTimestamp::default()),
         };
-        let updated = update.override_border();
+        let updated = update.override_border(false);
         assert_eq!(updated.top.unwrap().unwrap().line, CellBorderLine::Line2);
         assert_eq!(updated.bottom, Some(None));
         assert_eq!(updated.left, Some(None));
+        assert_eq!(updated.right.unwrap().unwrap().line, CellBorderLine::Line1);
+
+        let updated = update.override_border(true);
+        assert_eq!(updated.top.unwrap().unwrap().line, CellBorderLine::Line2);
+        assert_eq!(updated.bottom, Some(Some(BorderStyleTimestamp::clear())));
+        assert_eq!(updated.left, Some(Some(BorderStyleTimestamp::clear())));
         assert_eq!(updated.right.unwrap().unwrap().line, CellBorderLine::Line1);
     }
 
@@ -356,10 +400,10 @@ mod tests {
     #[parallel]
     fn clear() {
         let cleared = BorderStyleCell::clear();
-        assert_eq!(cleared.top, Some(None));
-        assert_eq!(cleared.bottom, Some(None));
-        assert_eq!(cleared.left, Some(None));
-        assert_eq!(cleared.right, Some(None));
+        assert_eq!(cleared.top, Some(Some(BorderStyleTimestamp::clear())));
+        assert_eq!(cleared.bottom, Some(Some(BorderStyleTimestamp::clear())));
+        assert_eq!(cleared.left, Some(Some(BorderStyleTimestamp::clear())));
+        assert_eq!(cleared.right, Some(Some(BorderStyleTimestamp::clear())));
     }
 
     #[test]

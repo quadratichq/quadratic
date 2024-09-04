@@ -2,7 +2,7 @@ use super::{BorderStyleCell, BorderStyleCellUpdate, Borders};
 
 impl Borders {
     /// Gets a BorderStyleCellUpdate for a cell that will override the current
-    /// cell.
+    /// cell. This is called by the clipboard.
     pub fn get_update_override(&self, x: i64, y: i64) -> BorderStyleCellUpdate {
         let mut cell = self.get(x, y);
 
@@ -49,7 +49,7 @@ impl Borders {
             }
         }
 
-        cell.override_border()
+        cell.override_border(false)
     }
 
     /// Gets the border style for a cell used in tests.

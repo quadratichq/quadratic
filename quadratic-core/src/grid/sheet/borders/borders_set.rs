@@ -177,7 +177,7 @@ mod tests {
             Some(BorderStyleCell::all())
         ));
 
-        let value = RunLengthEncoding::repeat(BorderStyleCellUpdate::erase(), 1);
+        let value = RunLengthEncoding::repeat(BorderStyleCellUpdate::clear(false), 1);
         borders.set_borders(&selection, &value);
 
         let border = borders.get(1, 1);
