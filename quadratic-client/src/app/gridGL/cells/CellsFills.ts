@@ -56,25 +56,37 @@ export class CellsFills extends Container {
         }
       }
     });
-    events.on('sheetOffsets', (sheetId) => {
-      if (sheetId === this.cellsSheet.sheetId) {
-        this.drawCells();
-      }
-    });
+    events.on('sheetOffsets', this.drawSheetCells);
     events.on('cursorPosition', this.setDirty);
+    events.on('resizeHeadingColumn', this.drawCells);
+    events.on('resizeHeadingRow', this.drawCells);
+    events.on('resizeRowHeights', this.drawSheetCells);
     pixiApp.viewport.on('zoomed', this.setDirty);
     pixiApp.viewport.on('moved', this.setDirty);
+  }
+
+  destroy() {
+    events.off('sheetFills', this.drawCells);
+    events.off('sheetMetaFills', this.drawMeta);
+    events.off('sheetOffsets', this.drawSheetCells);
+    events.off('cursorPosition', this.setDirty);
+    events.off('resizeHeadingColumn', this.drawCells);
+    events.off('resizeHeadingRow', this.drawCells);
+    events.off('resizeRowHeights', this.drawSheetCells);
+    pixiApp.viewport.off('zoomed', this.setDirty);
+    pixiApp.viewport.off('moved', this.setDirty);
+    super.destroy();
   }
 
   setDirty = () => {
     this.dirty = true;
   };
 
-  cheapCull(viewBounds: Rectangle) {
+  cheapCull = (viewBounds: Rectangle) => {
     this.cellsContainer.children.forEach(
       (sprite) => (sprite.visible = intersects.rectangleRectangle(viewBounds, (sprite as SpriteBounds).viewBounds))
     );
-  }
+  };
 
   private getColor(color: string): number {
     if (color === 'blank') {
@@ -94,7 +106,7 @@ export class CellsFills extends Container {
     return sheet;
   }
 
-  private drawCells() {
+  private drawCells = () => {
     this.cellsContainer.removeChildren();
     this.cells.forEach((fill) => {
       const sprite = this.cellsContainer.addChild(new Sprite(Texture.WHITE)) as SpriteBounds;
@@ -106,14 +118,20 @@ export class CellsFills extends Container {
       sprite.viewBounds = new Rectangle(screen.x, screen.y, screen.width + 1, screen.height + 1);
     });
     pixiApp.setViewportDirty();
-  }
+  };
 
-  update() {
+  private drawSheetCells = (sheetId: string) => {
+    if (sheetId === this.cellsSheet.sheetId) {
+      this.drawCells();
+    }
+  };
+
+  update = () => {
     if (this.dirty) {
       this.dirty = false;
       this.drawMeta();
     }
-  }
+  };
 
   private drawMeta = () => {
     if (this.metaFill) {

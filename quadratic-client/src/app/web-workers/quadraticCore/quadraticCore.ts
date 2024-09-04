@@ -7,12 +7,13 @@
 import { debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Coordinate } from '@/app/gridGL/types/size';
 import {
   BorderSelection,
   BorderStyle,
   CellAlign,
   CellFormatSummary,
+  CellVerticalAlign,
+  CellWrap,
   CodeCellLanguage,
   Format,
   JsCodeCell,
@@ -24,6 +25,7 @@ import {
   SheetPos,
   SheetRect,
   SummarizeSelectionResult,
+  Validation,
 } from '@/app/quadratic-core-types';
 import { authClient } from '@/auth';
 import { Rectangle } from 'pixi.js';
@@ -32,9 +34,11 @@ import {
   ClientCoreCellHasContent,
   ClientCoreGetCellFormatSummary,
   ClientCoreGetCodeCell,
+  ClientCoreGetDisplayCell,
   ClientCoreGetEditCell,
   ClientCoreGetRenderCell,
   ClientCoreHasRenderCells,
+  ClientCoreImportFile,
   ClientCoreLoad,
   ClientCoreMessage,
   ClientCoreSummarizeSelection,
@@ -42,18 +46,18 @@ import {
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
   CoreClientGetColumnsBounds,
+  CoreClientGetDisplayCell,
   CoreClientGetEditCell,
   CoreClientGetJwt,
   CoreClientGetRenderCell,
   CoreClientGetRowsBounds,
+  CoreClientGetValidationList,
   CoreClientHasRenderCells,
-  CoreClientImportCsv,
-  CoreClientImportParquet,
   CoreClientLoad,
   CoreClientMessage,
   CoreClientSearch,
   CoreClientSummarizeSelection,
-  CoreClientUpgradeFile,
+  CoreClientValidateInput,
 } from './coreClientMessages';
 
 class QuadraticCore {
@@ -105,8 +109,8 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientGenerateThumbnail') {
       events.emit('generateThumbnail');
       return;
-    } else if (e.data.type === 'coreClientRenderCodeCells') {
-      events.emit('renderCodeCells', e.data.sheetId, e.data.codeCells);
+    } else if (e.data.type === 'coreClientSheetRenderCells') {
+      events.emit('renderCells', e.data.sheetId, e.data.renderCells);
       return;
     } else if (e.data.type === 'coreClientSheetBorders') {
       events.emit('sheetBorders', e.data.sheetId, e.data.borders);
@@ -144,6 +148,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientOfflineTransactionStats') {
       events.emit('offlineTransactions', e.data.transactions, e.data.operations);
       return;
+    } else if (e.data.type === 'coreClientOfflineTransactionsApplied') {
+      events.emit('offlineTransactionsApplied', e.data.timestamps);
+      return;
     } else if (e.data.type === 'coreClientUndoRedo') {
       events.emit('undoRedo', e.data.undo, e.data.redo);
       return;
@@ -160,6 +167,18 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientSetCursorSelection') {
       events.emit('setCursor', undefined, e.data.selection);
+      return;
+    } else if (e.data.type === 'coreClientSheetValidations') {
+      events.emit('sheetValidations', e.data.sheetId, e.data.validations);
+      return;
+    } else if (e.data.type === 'coreClientResizeRowHeights') {
+      events.emit('resizeRowHeights', e.data.sheetId, e.data.rowHeights);
+      return;
+    } else if (e.data.type === 'coreClientRenderValidationWarnings') {
+      events.emit('renderValidationWarnings', e.data.sheetId, e.data.hashX, e.data.hashY, e.data.validationWarnings);
+      return;
+    } else if (e.data.type === 'coreClientMultiplayerSynced') {
+      events.emit('multiplayerSynced');
       return;
     }
 
@@ -183,9 +202,8 @@ class QuadraticCore {
   };
 
   private send(message: ClientCoreMessage, extra?: MessagePort | Transferable) {
-    if (!this.worker) {
-      throw new Error('Expected worker to be initialized in quadraticCore.send');
-    }
+    // worker may not be defined during hmr
+    if (!this.worker) return;
 
     if (extra) {
       this.worker.postMessage(message, [extra]);
@@ -227,26 +245,10 @@ class QuadraticCore {
     });
   }
 
-  async upgradeGridFile(grid: string, sequenceNumber: number): Promise<{ grid: string; version: string }> {
+  async export(): Promise<Uint8Array> {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: CoreClientUpgradeFile) => {
-        resolve({ grid: message.grid, version: message.version });
-      };
-      const message: ClientCoreUpgradeGridFile = {
-        type: 'clientCoreUpgradeGridFile',
-        grid,
-        sequenceNumber,
-        id,
-      };
-      this.send(message);
-    });
-  }
-
-  async export(): Promise<string> {
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: { grid: string }) => {
+      this.waitingForResponse[id] = (message: { grid: Uint8Array }) => {
         resolve(message.grid);
       };
       this.send({ type: 'clientCoreExport', id });
@@ -316,6 +318,23 @@ class QuadraticCore {
         id,
       };
       this.waitingForResponse[id] = (message: CoreClientGetEditCell) => {
+        resolve(message.cell);
+      };
+      this.send(message);
+    });
+  }
+
+  getDisplayCell(sheetId: string, x: number, y: number): Promise<string | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      const message: ClientCoreGetDisplayCell = {
+        type: 'clientCoreGetDisplayCell',
+        sheetId,
+        x,
+        y,
+        id,
+      };
+      this.waitingForResponse[id] = (message: CoreClientGetDisplayCell) => {
         resolve(message.cell);
       };
       this.send(message);
@@ -444,47 +463,51 @@ class QuadraticCore {
     });
   }
 
-  // Imports a CSV and returns a string with an error if not successful
-  async importCsv(sheetId: string, file: File, location: Coordinate): Promise<string | undefined> {
-    const arrayBuffer = await file.arrayBuffer();
+  async upgradeGridFile(
+    grid: ArrayBuffer,
+    sequenceNumber: number
+  ): Promise<{
+    contents?: ArrayBuffer;
+    version?: string;
+    error?: string;
+  }> {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: CoreClientImportCsv) => resolve(message.error);
-      this.send(
-        {
-          type: 'clientCoreImportCsv',
-          sheetId,
-          x: location.x,
-          y: location.y,
-          id,
-          file: arrayBuffer,
-          fileName: file.name,
-        },
-        arrayBuffer
-      );
+      this.waitingForResponse[id] = (message: { contents?: ArrayBuffer; version?: string; error?: string }) => {
+        resolve(message);
+      };
+      const message: ClientCoreUpgradeGridFile = {
+        type: 'clientCoreUpgradeGridFile',
+        grid,
+        sequenceNumber,
+        id,
+      };
+      this.send(message, grid);
     });
   }
 
-  // Imports a Parquet and returns a string with an error if not successful
-  async importParquet(sheetId: string, file: File, location: Coordinate): Promise<string | undefined> {
-    const arrayBuffer = await file.arrayBuffer();
+  importFile = async (
+    args: Omit<ClientCoreImportFile, 'type' | 'id'>
+  ): Promise<{
+    contents?: ArrayBuffer;
+    version?: string;
+    error?: string;
+  }> => {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: CoreClientImportParquet) => resolve(message.error);
+      this.waitingForResponse[id] = (message: { contents?: ArrayBuffer; version?: string; error?: string }) => {
+        resolve(message);
+      };
       this.send(
         {
-          type: 'clientCoreImportParquet',
-          sheetId,
-          x: location.x,
-          y: location.y,
+          type: 'clientCoreImportFile',
           id,
-          file: arrayBuffer,
-          fileName: file.name,
+          ...args,
         },
-        arrayBuffer
+        args.file
       );
     });
-  }
+  };
 
   initMultiplayer(port: MessagePort) {
     this.send({ type: 'clientCoreInitMultiplayer' }, port);
@@ -547,6 +570,24 @@ class QuadraticCore {
       type: 'clientCoreSetCellAlign',
       selection,
       align,
+      cursor,
+    });
+  }
+
+  setCellVerticalAlign(selection: Selection, verticalAlign: CellVerticalAlign, cursor?: string) {
+    this.send({
+      type: 'clientCoreSetCellVerticalAlign',
+      selection,
+      verticalAlign,
+      cursor,
+    });
+  }
+
+  setCellWrap(selection: Selection, wrap: CellWrap, cursor?: string) {
+    this.send({
+      type: 'clientCoreSetCellWrap',
+      selection,
+      wrap,
       cursor,
     });
   }
@@ -857,11 +898,11 @@ class QuadraticCore {
     row: number;
     reverse: boolean;
     withContent: boolean;
-  }): Promise<number> {
+  }): Promise<number | undefined> {
     const { sheetId, columnStart, row, reverse, withContent } = options;
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { column: number }) => {
+      this.waitingForResponse[id] = (message: { column: number | number }) => {
         resolve(message.column);
       };
       this.send({
@@ -882,11 +923,11 @@ class QuadraticCore {
     rowStart: number;
     reverse: boolean;
     withContent: boolean;
-  }): Promise<number> {
+  }): Promise<number | undefined> {
     const { sheetId, column, rowStart, reverse, withContent } = options;
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { row: number }) => {
+      this.waitingForResponse[id] = (message: { row: number | undefined }) => {
         resolve(message.row);
       };
       this.send({
@@ -941,26 +982,112 @@ class QuadraticCore {
     this.send({ type: 'clientCoreCancelExecution', language });
   }
 
-  // create a new grid file and import an xlsx file
-  importExcel = async (
-    file: File
-  ): Promise<{
-    contents?: string;
-    version?: string;
-    error?: string;
-  }> => {
+  //#endregion
+
+  //#region Data Validation
+
+  getValidation(sheetId: string, validationId: string): Promise<Validation | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { contents: string; version: string }) => {
-        resolve(message);
+      this.waitingForResponse[id] = (message: { validation: Validation | undefined }) => {
+        resolve(message.validation);
       };
       this.send({
-        type: 'clientCoreImportExcel',
-        file,
+        type: 'clientCoreGetValidation',
         id,
+        sheetId,
+        validationId,
       });
     });
-  };
+  }
+
+  getValidationFromPos(sheetId: string, x: number, y: number): Promise<Validation | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { validation: Validation | undefined }) => {
+        resolve(message.validation);
+      };
+      this.send({
+        type: 'clientCoreGetValidationFromPos',
+        id,
+        sheetId,
+        x,
+        y,
+      });
+    });
+  }
+
+  getValidations(sheetId: string): Promise<Validation[]> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { validations: Validation[] }) => {
+        resolve(message.validations);
+      };
+      this.send({
+        type: 'clientCoreGetValidations',
+        id,
+        sheetId,
+      });
+    });
+  }
+
+  updateValidation(validation: Validation, cursor: string) {
+    this.send({
+      type: 'clientCoreUpdateValidation',
+      validation,
+      cursor,
+    });
+  }
+
+  removeValidation(sheetId: string, validationId: string, cursor: string) {
+    this.send({
+      type: 'clientCoreRemoveValidation',
+      sheetId,
+      validationId,
+      cursor,
+    });
+  }
+
+  removeValidations(sheetId: string) {
+    this.send({
+      type: 'clientCoreRemoveValidations',
+      sheetId,
+      cursor: sheets.getCursorPosition(),
+    });
+  }
+
+  getValidationList(sheetId: string, x: number, y: number): Promise<string[] | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientGetValidationList) => {
+        resolve(message.validations);
+      };
+      this.send({
+        type: 'clientCoreGetValidationList',
+        id,
+        sheetId,
+        x,
+        y,
+      });
+    });
+  }
+
+  validateInput(sheetId: string, x: number, y: number, input: string): Promise<string | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientValidateInput) => {
+        resolve(message.validationId);
+      };
+      this.send({
+        type: 'clientCoreValidateInput',
+        id,
+        sheetId,
+        x,
+        y,
+        input,
+      });
+    });
+  }
 
   //#endregion
 }

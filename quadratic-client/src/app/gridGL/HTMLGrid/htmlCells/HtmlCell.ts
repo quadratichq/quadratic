@@ -29,7 +29,7 @@ export class HtmlCell {
   div: HTMLDivElement;
 
   constructor(htmlCell: JsHtmlOutput) {
-    if (!htmlCell.html) throw new Error('Expected html to be defined in HtmlCell constructor');
+    if (htmlCell.html === null) throw new Error('Expected html to be defined in HtmlCell constructor');
     this.htmlCell = htmlCell;
     const sheet = sheets.getById(htmlCell.sheet_id)!;
     if (!sheet) {
@@ -183,20 +183,21 @@ export class HtmlCell {
     return sheetId === this.htmlCell.sheet_id;
   }
 
-  hover(e: InteractionEvent, top: number): 'right' | 'bottom' | 'corner' | undefined {
-    const side = this.intersects(e, top);
-    if (side) {
-      this.hoverSide = side;
+  hover(e: InteractionEvent): 'right' | 'bottom' | 'corner' | 'body' | undefined {
+    const target = this.intersects(e);
+    if (target === 'right' || target === 'bottom' || target === 'corner') {
+      this.hoverSide = target;
       this.highlightEdge();
-      return side;
     } else if (this.hoverSide) {
       this.hoverSide = undefined;
       this.clearHighlightEdges();
     }
+    return target;
   }
 
-  intersects(e: InteractionEvent, top: number): 'right' | 'bottom' | 'corner' | undefined {
+  private intersects(e: InteractionEvent): 'right' | 'bottom' | 'corner' | 'body' | undefined {
     const rect = this.div.getBoundingClientRect();
+    const top = pixiApp.canvas.getBoundingClientRect().top;
     const viewport = pixiApp.viewport;
     const toleranceScaled = tolerance * viewport.scale.x;
     const right = e.data.global.x - rect.right < toleranceScaled && e.data.global.x - rect.right > 0;
@@ -209,6 +210,14 @@ export class HtmlCell {
     }
     if (bottom && e.data.global.x > rect.left && e.data.global.x < rect.right) {
       return 'bottom';
+    }
+    if (
+      e.data.global.x > rect.left &&
+      e.data.global.x < rect.right &&
+      e.data.global.y + top > rect.top &&
+      e.data.global.y + top < rect.bottom
+    ) {
+      return 'body';
     }
   }
 

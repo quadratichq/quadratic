@@ -52,7 +52,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 // Ignore error values.
                 numbers
                     .filter(|x| matches!(x, Ok(CellValue::Number(_))))
-                    .count() as f64
+                    .count()
             }
         ),
         formula_fn!(
@@ -65,7 +65,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[examples("COUNTA(A1:A10)")]
             fn COUNTA(range: (Iter<CellValue>)) {
                 // Count error values.
-                range.filter_ok(|v| !v.is_blank()).count() as f64
+                range.filter_ok(|v| !v.is_blank()).count()
             }
         ),
         formula_fn!(
@@ -81,8 +81,38 @@ fn get_functions() -> Vec<FormulaFunction> {
             fn COUNTIF(range: (Spanned<Array>), [criteria]: (Spanned<CellValue>)) {
                 let criteria = Criterion::try_from(*criteria)?;
                 // Ignore error values.
+                // The `let` binding is necessary to avoid a lifetime error.
+                #[allow(clippy::let_and_return)]
                 let count = criteria.iter_matching(range, None)?.count();
-                count as f64
+                count
+            }
+        ),
+        formula_fn!(
+            /// Evaluates multiple values on they're respective criteria, and
+            /// then counts how many sets of values met all their criteria.
+            #[doc = see_docs_for_more_about_criteria!()]
+            #[examples(
+                "COUNTIFS(\"<>INVALID\", B1:B10)",
+                "COUNTIFS(\"<>INVALID\", B1:B10, \"<=0\", C1:C10)"
+            )]
+            fn COUNTIFS(
+                ctx: Ctx,
+                eval_range1: (Spanned<Array>),
+                criteria1: (Spanned<Value>),
+                more_eval_ranges_and_criteria: FormulaFnArgs,
+            ) {
+                ctx.zip_map_eval_ranges_and_criteria_from_args(
+                    eval_range1,
+                    criteria1,
+                    more_eval_ranges_and_criteria,
+                    |_ctx, eval_ranges_and_criteria| {
+                        // Same as `COUNTIF`
+                        let count =
+                            Criterion::iter_matching_multi(&eval_ranges_and_criteria, None)?
+                                .count();
+                        Ok((count as f64).into())
+                    },
+                )?
             }
         ),
         formula_fn!(
@@ -98,7 +128,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 range
                     .filter_map(|v| v.ok())
                     .filter(|v| v.is_blank_or_empty_string())
-                    .count() as f64
+                    .count()
             }
         ),
         formula_fn!(
@@ -122,9 +152,13 @@ fn get_functions() -> Vec<FormulaFunction> {
 
 #[cfg(test)]
 mod tests {
+    use itertools::Itertools;
+
     use crate::{formulas::tests::*, Pos};
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_formula_average() {
         let form = parse_formula("AVERAGE(3, B1:D3)", pos![nAn1]).unwrap();
 
@@ -138,10 +172,7 @@ mod tests {
         let sheet_id = sheet.id;
 
         let mut ctx = Ctx::new(&g, pos![nAn1].to_sheet_pos(sheet_id));
-        assert_eq!(
-            "7.5".to_string(),
-            form.eval(&mut ctx, false).unwrap().to_string(),
-        );
+        assert_eq!("7.5".to_string(), form.eval(&mut ctx).to_string());
 
         assert_eq!(
             "17",
@@ -157,6 +188,7 @@ mod tests {
         assert_eq!("0", eval_to_string(&g, "AVERAGE(,)"));
 
         // Test with no arguments
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
             RunErrorMsg::MissingRequiredArgument {
                 func_name: "AVERAGE".into(),
@@ -164,16 +196,14 @@ mod tests {
             },
             parse_formula("AVERAGE()", Pos::ORIGIN)
                 .unwrap()
-                .eval(
-                    &mut Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id)),
-                    false
-                )
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
     }
 
     #[test]
+    #[parallel]
     fn test_averageif() {
         let g = Grid::new();
 
@@ -222,8 +252,10 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_count() {
         let g = Grid::new();
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
             RunErrorMsg::MissingRequiredArgument {
                 func_name: "COUNT".into(),
@@ -231,10 +263,7 @@ mod tests {
             },
             parse_formula("COUNT()", Pos::ORIGIN)
                 .unwrap()
-                .eval(
-                    &mut Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id)),
-                    false
-                )
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -251,8 +280,10 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_counta() {
         let g = Grid::new();
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
             RunErrorMsg::MissingRequiredArgument {
                 func_name: "COUNTA".into(),
@@ -260,10 +291,7 @@ mod tests {
             },
             parse_formula("COUNTA()", Pos::ORIGIN)
                 .unwrap()
-                .eval(
-                    &mut Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id)),
-                    false
-                )
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -281,6 +309,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_countif() {
         let g = Grid::new();
         assert_eq!("6", eval_to_string(&g, "COUNTIF(0..10, \"<=5\")"));
@@ -296,6 +325,67 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
+    fn test_countifs() {
+        let g = Grid::new();
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "COUNTIFS".into(),
+                arg_name: "eval_range1".into(),
+            },
+            eval_to_err(&g, "COUNTIFS()").msg,
+        );
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "COUNTIFS".into(),
+                arg_name: "criteria1".into(),
+            },
+            eval_to_err(&g, "COUNTIFS(0..10)").msg,
+        );
+
+        let make_countifs =
+            |conditions: &[&str]| format!("COUNTIFS({})", conditions.iter().join(", "));
+
+        // vertical; first 6 elements match
+        let cond1 = "0..10, \"<=5\"";
+        assert_eq!("6", eval_to_string(&g, &make_countifs(&[cond1])));
+
+        // vertical; alternating elements match
+        let cond2 = "MOD(5..15, 2), 1";
+        assert_eq!("6", eval_to_string(&g, &make_countifs(&[cond2])));
+        assert_eq!("3", eval_to_string(&g, &make_countifs(&[cond1, cond2])));
+
+        // horizontal; last 3 elements match
+        let cond3 = "{1,2,3,4,5,6,7,8,9,10,11}, \">8\"";
+        assert_eq!("3", eval_to_string(&g, &make_countifs(&[cond3])));
+        assert_eq!(
+            RunErrorMsg::ExactArraySizeMismatch {
+                expected: ArraySize::new(11, 1).unwrap(),
+                got: ArraySize::new(1, 11).unwrap(),
+            },
+            eval_to_err(&g, &make_countifs(&[cond1, cond3])).msg,
+        );
+        assert_eq!(
+            RunErrorMsg::ExactArraySizeMismatch {
+                expected: ArraySize::new(11, 1).unwrap(),
+                got: ArraySize::new(1, 11).unwrap(),
+            },
+            eval_to_err(&g, &make_countifs(&[cond1, cond2, cond3])).msg,
+        );
+
+        // vertical; last 3 elements match
+        let cond4 = "1..11, \">8\"";
+        assert_eq!("3", eval_to_string(&g, &make_countifs(&[cond4])));
+        assert_eq!("0", eval_to_string(&g, &make_countifs(&[cond1, cond4])));
+        assert_eq!("2", eval_to_string(&g, &make_countifs(&[cond2, cond4])));
+        assert_eq!(
+            "0",
+            eval_to_string(&g, &make_countifs(&[cond1, cond2, cond4])),
+        );
+    }
+
+    #[test]
+    #[parallel]
     fn test_countblank() {
         let g = Grid::new();
         assert_eq!("1", eval_to_string(&g, "COUNTBLANK(\"\")"));
@@ -309,12 +399,14 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_min() {
         let g = Grid::new();
         assert_eq!("1", eval_to_string(&g, "MIN(1, 3, 2)"));
     }
 
     #[test]
+    #[parallel]
     fn test_max() {
         let g = Grid::new();
         assert_eq!("3", eval_to_string(&g, "MAX(1, 3, 2)"));

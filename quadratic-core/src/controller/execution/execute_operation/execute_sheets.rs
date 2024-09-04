@@ -3,7 +3,7 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    grid::{file::sheet_schema::export_sheet, Sheet, SheetId},
+    grid::{file::sheet_schema::export_sheet, GridBounds, Sheet, SheetId},
 };
 use lexicon_fractional_index::key_between;
 
@@ -26,11 +26,11 @@ impl GridController {
             transaction
                 .forward_operations
                 .push(Operation::AddSheetSchema {
-                    schema: export_sheet(&sheet),
+                    schema: export_sheet(sheet),
                 });
             transaction
                 .reverse_operations
-                .insert(0, Operation::DeleteSheet { sheet_id });
+                .push(Operation::DeleteSheet { sheet_id });
         }
     }
 
@@ -40,22 +40,29 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::AddSheetSchema { schema } = op {
-            if let Ok(sheet) = schema.into_latest() {
+            if let Ok(sheet) = schema.clone().into_latest() {
                 if self.grid.try_sheet(sheet.id).is_some() {
                     // sheet already exists (unlikely but possible if this operation is run twice)
                     return;
                 }
                 let sheet_id = sheet.id;
+                let sheet_bounds = sheet.bounds(false);
                 self.grid.add_sheet(Some(sheet));
 
                 self.send_add_sheet(sheet_id, transaction);
+
+                self.send_render_borders(sheet_id);
+
+                if let GridBounds::NonEmpty(bounds) = sheet_bounds {
+                    self.send_fill_cells(&bounds.to_sheet_rect(sheet_id));
+                }
 
                 transaction
                     .forward_operations
                     .push(Operation::AddSheetSchema { schema });
                 transaction
                     .reverse_operations
-                    .insert(0, Operation::DeleteSheet { sheet_id });
+                    .push(Operation::DeleteSheet { sheet_id });
             }
         }
     }
@@ -66,10 +73,26 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::DeleteSheet { sheet_id } = op {
+            // get code run operations for the sheet
+            let code_run_ops = self.rerun_sheet_code_cells_operations(sheet_id);
+
             let Some(deleted_sheet) = self.grid.remove_sheet(sheet_id) else {
                 // sheet was already deleted
                 return;
             };
+
+            transaction
+                .forward_operations
+                .push(Operation::DeleteSheet { sheet_id });
+
+            for op in code_run_ops {
+                transaction.reverse_operations.push(op);
+            }
+            transaction
+                .reverse_operations
+                .push(Operation::AddSheetSchema {
+                    schema: export_sheet(deleted_sheet),
+                });
 
             // create a sheet if we deleted the last one (only for user actions)
             if transaction.is_user() && self.sheet_ids().is_empty() {
@@ -78,40 +101,18 @@ impl GridController {
                 let order = self.grid.end_order();
                 let new_first_sheet = Sheet::new(new_first_sheet_id, name, order);
                 self.grid.add_sheet(Some(new_first_sheet.clone()));
-                transaction
-                    .forward_operations
-                    .push(Operation::DeleteSheet { sheet_id });
+
                 transaction.forward_operations.push(Operation::AddSheet {
                     sheet: new_first_sheet,
                 });
-                transaction.reverse_operations.insert(
-                    0,
-                    Operation::AddSheetSchema {
-                        schema: export_sheet(&deleted_sheet),
-                    },
-                );
-                transaction.reverse_operations.insert(
-                    0,
-                    Operation::DeleteSheet {
-                        sheet_id: new_first_sheet_id,
-                    },
-                );
+                transaction.reverse_operations.push(Operation::DeleteSheet {
+                    sheet_id: new_first_sheet_id,
+                });
 
                 // if that's the last sheet, then we created a new one and we have to let the workers know
                 self.send_add_sheet(new_first_sheet_id, transaction);
-            } else {
-                transaction
-                    .forward_operations
-                    .push(Operation::DeleteSheet { sheet_id });
-                transaction.reverse_operations.insert(
-                    0,
-                    Operation::AddSheetSchema {
-                        schema: export_sheet(&deleted_sheet),
-                    },
-                );
-
-                // otherwise we need to send the deleted sheet information to the workers
             }
+            // send the delete sheet information to the workers
             self.send_delete_sheet(sheet_id, transaction);
         }
     }
@@ -137,13 +138,12 @@ impl GridController {
             transaction
                 .forward_operations
                 .push(Operation::ReorderSheet { target, order });
-            transaction.reverse_operations.insert(
-                0,
-                Operation::ReorderSheet {
+            transaction
+                .reverse_operations
+                .push(Operation::ReorderSheet {
                     target,
                     order: original_order,
-                },
-            );
+                });
 
             self.send_sheet_info(target);
         }
@@ -165,13 +165,12 @@ impl GridController {
             transaction
                 .forward_operations
                 .push(Operation::SetSheetName { sheet_id, name });
-            transaction.reverse_operations.insert(
-                0,
-                Operation::SetSheetName {
+            transaction
+                .reverse_operations
+                .push(Operation::SetSheetName {
                     sheet_id,
                     name: old_name,
-                },
-            );
+                });
 
             self.send_sheet_info(sheet_id);
         }
@@ -193,13 +192,12 @@ impl GridController {
             transaction
                 .forward_operations
                 .push(Operation::SetSheetColor { sheet_id, color });
-            transaction.reverse_operations.insert(
-                0,
-                Operation::SetSheetColor {
+            transaction
+                .reverse_operations
+                .push(Operation::SetSheetColor {
                     sheet_id,
                     color: old_color,
-                },
-            );
+                });
 
             self.send_sheet_info(sheet_id);
         }
@@ -243,12 +241,9 @@ impl GridController {
                     sheet_id,
                     new_sheet_id,
                 });
-            transaction.reverse_operations.insert(
-                0,
-                Operation::DeleteSheet {
-                    sheet_id: new_sheet_id,
-                },
-            );
+            transaction.reverse_operations.push(Operation::DeleteSheet {
+                sheet_id: new_sheet_id,
+            });
         }
     }
 }
@@ -256,11 +251,15 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
-        controller::GridController,
-        grid::CodeCellLanguage,
+        controller::{
+            active_transactions::transaction_name::TransactionName,
+            operations::operation::Operation, GridController,
+        },
+        grid::{CodeCellLanguage, SheetId},
         wasm_bindings::{controller::sheet_info::SheetInfo, js::expect_js_call},
-        SheetPos,
+        CellValue, SheetPos,
     };
+    use bigdecimal::BigDecimal;
     use serial_test::serial;
 
     #[test]
@@ -305,6 +304,76 @@ mod tests {
             false,
         );
         expect_js_call("jsDeleteSheet", format!("{},{}", new_sheet_id, true), true);
+    }
+
+    #[test]
+    #[serial]
+    fn test_undo_delete_sheet_code_rerun() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            SheetPos {
+                sheet_id,
+                x: 0,
+                y: 0,
+            },
+            "1".to_string(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                sheet_id,
+                x: 0,
+                y: 1,
+            },
+            "1".to_string(),
+            None,
+        );
+        let sheet_pos = SheetPos {
+            sheet_id,
+            x: 1,
+            y: 0,
+        };
+        gc.set_code_cell(
+            sheet_pos,
+            CodeCellLanguage::Formula,
+            "A0 + A1".to_string(),
+            None,
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).get_code_cell_value((1, 0).into()),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+        gc.delete_sheet(sheet_id, None);
+        assert_eq!(gc.grid.sheets().len(), 1);
+        expect_js_call("jsDeleteSheet", format!("{},{}", sheet_id, true), true);
+
+        gc.undo(None);
+        assert_eq!(gc.grid.sheets().len(), 1);
+        assert_eq!(gc.grid.sheets()[0].id, sheet_id);
+        let sheet = gc.sheet(sheet_id);
+        let sheet_info = SheetInfo::from(sheet);
+        expect_js_call(
+            "jsAddSheet",
+            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            false,
+        );
+
+        // code cells should rerun and send updated code cell
+        let code_cell = sheet.edit_code_value(sheet_pos.into()).unwrap();
+        let render_code_cell = sheet.get_render_code_cell(sheet_pos.into()).unwrap();
+        expect_js_call(
+            "jsUpdateCodeCell",
+            format!(
+                "{},{},{},{:?},{:?}",
+                sheet_id,
+                sheet_pos.x,
+                sheet_pos.y,
+                Some(serde_json::to_string(&code_cell).unwrap()),
+                Some(serde_json::to_string(&render_code_cell).unwrap())
+            ),
+            true,
+        );
     }
 
     #[test]
@@ -432,7 +501,11 @@ mod tests {
             None,
         );
 
-        gc.duplicate_sheet(sheet_id, None);
+        let op = vec![Operation::DuplicateSheet {
+            sheet_id,
+            new_sheet_id: SheetId::new(),
+        }];
+        gc.start_user_transaction(op, None, TransactionName::DuplicateSheet);
         assert_eq!(gc.grid.sheets().len(), 2);
         assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy");
         let duplicated_sheet_id = gc.grid.sheets()[1].id;
@@ -451,7 +524,11 @@ mod tests {
             true,
         );
 
-        gc.duplicate_sheet(sheet_id, None);
+        let op = vec![Operation::DuplicateSheet {
+            sheet_id,
+            new_sheet_id: SheetId::new(),
+        }];
+        gc.start_user_transaction(op, None, TransactionName::DuplicateSheet);
         assert_eq!(gc.grid.sheets().len(), 2);
         let duplicated_sheet_id2 = gc.grid.sheets()[1].id;
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id2));
@@ -461,7 +538,11 @@ mod tests {
             true,
         );
 
-        gc.duplicate_sheet(sheet_id, None);
+        let op = vec![Operation::DuplicateSheet {
+            sheet_id,
+            new_sheet_id: SheetId::new(),
+        }];
+        gc.start_user_transaction(op, None, TransactionName::DuplicateSheet);
         assert_eq!(gc.grid.sheets().len(), 3);
         assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy 1");
         assert_eq!(gc.grid.sheets()[2].name, "Sheet 1 Copy");

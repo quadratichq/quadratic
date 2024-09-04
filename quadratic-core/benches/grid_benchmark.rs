@@ -1,7 +1,9 @@
 use criterion::{criterion_group, criterion_main, Bencher, Criterion};
 use quadratic_core::controller::operations::clipboard::PasteSpecial;
 use quadratic_core::controller::GridController;
-use quadratic_core::grid::Grid;
+use quadratic_core::grid::formats::format_update::FormatUpdate;
+use quadratic_core::grid::formats::Formats;
+use quadratic_core::grid::{CellAlign, Grid};
 use quadratic_core::selection::Selection;
 use quadratic_core::{Pos, Rect, SheetRect};
 use std::time::Duration;
@@ -10,9 +12,10 @@ criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);
 
 fn criterion_benchmark(c: &mut Criterion) {
-    let airports = quadratic_core::grid::file::import(include_str!(
-        "../../quadratic-rust-shared/data/grid/v1_4_airports_distance.grid"
-    ))
+    let airports = quadratic_core::grid::file::import(
+        include_bytes!("../../quadratic-rust-shared/data/grid/v1_4_airports_distance.grid")
+            .to_vec(),
+    )
     .unwrap();
 
     let inputs = vec![
@@ -209,6 +212,18 @@ fn criterion_benchmark(c: &mut Criterion) {
         // add some data
         let sheet = gc.try_sheet_mut(sheet_id).unwrap();
         sheet.random_numbers(&small_selection);
+        let formats = Formats::repeat(
+            FormatUpdate {
+                bold: Some(Some(true)),
+                italic: Some(Some(true)),
+                text_color: Some(Some("blue".to_string())),
+                align: Some(Some(CellAlign::Center)),
+                fill_color: Some(Some("red".to_string())),
+                ..Default::default()
+            },
+            small_selection.len() as usize,
+        );
+        sheet.set_formats_rects(&[small_selection], &formats);
 
         let expand_to = Rect {
             min: Pos { x: 0, y: 0 },
@@ -310,7 +325,13 @@ fn criterion_benchmark(c: &mut Criterion) {
             },
             |(mut gc, sheet_id, pos)| {
                 // Test
-                let _ = gc.import_csv(sheet_id, SIMPLE_CSV.as_bytes(), "smallpop.csv", pos, None);
+                let _ = gc.import_csv(
+                    sheet_id,
+                    SIMPLE_CSV.as_bytes().to_vec(),
+                    "smallpop.csv",
+                    pos,
+                    None,
+                );
             },
             criterion::BatchSize::SmallInput,
         )

@@ -59,8 +59,8 @@ model File {
     // a user, or a user to a team.
     ownerUser   User? @relation(name: "OwnerRelation", fields: [ownerUserId], references: [id])
     ownerUserId Int?
-    ownerTeam   Team? @relation(fields: [ownerTeamId], references: [id])
-    ownerTeamId Int?  @map("owner_team_id")
+    ownerTeam   Team  @relation(fields: [ownerTeamId], references: [id])
+    ownerTeamId Int   @map("owner_team_id")
 
     publicLinkAccess LinkPermission   @default(NOT_SHARED) @map("public_link_access")
     times_updated    Int              @default(1) // unused to delete
@@ -111,17 +111,17 @@ model Team {
     File         File[]
     Connection   Connection[]
 
-    // TODO: (team-schema) remove this once the migration is complete and this
-    // is no longer relevant to any teams.
-    // Unactivated teams have never completed billing and have never been used
-    activated Boolean @default(false)
-
     // Billing
     stripeCustomerId              String?             @unique @map("stripe_customer_id")
     stripeSubscriptionId          String?             @unique @map("stripe_subscription_id")
     stripeSubscriptionStatus      SubscriptionStatus? @map("stripe_subscription_status")
     stripeCurrentPeriodEnd        DateTime?           @map("stripe_current_period_end")
     stripeSubscriptionLastUpdated DateTime?           @map("stripe_subscription_last_updated")
+
+    // Key/value storage used by Quadratic client on the Team.
+    // It remembers things like closing the onboarding banner.
+    // Use for client-specific data that is not useful to the server or other services
+    clientDataKv Json @default("{}") @map("client_data_kv")
 
     @@index([uuid])
 }
@@ -135,6 +135,7 @@ enum TeamRole {
 enum ConnectionType {
     POSTGRES
     MYSQL
+    MSSQL
 }
 
 model Connection {

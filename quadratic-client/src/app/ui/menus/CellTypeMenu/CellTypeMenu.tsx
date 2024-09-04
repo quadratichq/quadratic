@@ -1,6 +1,5 @@
 import { cellTypeMenuOpenedCountAtom } from '@/app/atoms/cellTypeMenuOpenedCountAtom';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { focusGrid } from '@/app/helpers/focusGrid';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { LinkNewTab } from '@/app/ui/components/LinkNewTab';
 import { JavaScript } from '@/app/ui/icons';
@@ -17,8 +16,8 @@ import '../../styles/floating-dialog.css';
 
 import { colors } from '@/app/theme/colors';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
+import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
-import { GetConnections } from '@/routes/api.connections';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import {
   CommandDialog,
@@ -29,7 +28,6 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/shared/shadcn/ui/command';
-import { useFetcher } from 'react-router-dom';
 
 export interface CellTypeOption {
   name: string;
@@ -83,7 +81,7 @@ let CELL_TYPE_OPTIONS: CellTypeOption[] = [
 export default function CellTypeMenu() {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const setCellTypeMenuOpenedCount = useSetRecoilState(cellTypeMenuOpenedCountAtom);
-  const fetcher = useFetcher<GetConnections>({ key: 'CONNECTIONS_FETCHER_KEY' });
+  const fetcher = useConnectionsFetcher();
 
   const searchLabel = 'Choose a cell type…';
 
@@ -98,7 +96,6 @@ export default function CellTypeMenu() {
       ...editorInteractionState,
       showCellTypeMenu: false,
     });
-    focusGrid();
   }, [editorInteractionState, setEditorInteractionState]);
 
   const openEditor = useCallback(
@@ -115,7 +112,17 @@ export default function CellTypeMenu() {
   );
 
   return (
-    <CommandDialog dialogProps={{ open: true, onOpenChange: close }} commandProps={{}}>
+    <CommandDialog
+      dialogProps={{ open: true, onOpenChange: close }}
+      commandProps={{}}
+      overlayProps={{
+        onPointerDown: (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          close();
+        },
+      }}
+    >
       <CommandInput placeholder={searchLabel} id="CellTypeMenuInputID" />
       <CommandList id="CellTypeMenuID">
         <CommandEmpty>No results found.</CommandEmpty>
@@ -187,7 +194,15 @@ function CommandItemWrapper({
   uuid?: string;
 }) {
   return (
-    <CommandItem disabled={disabled} onSelect={onSelect} value={name + (uuid ? uuid : '')}>
+    <CommandItem
+      disabled={disabled}
+      onSelect={onSelect}
+      value={name + (uuid ? uuid : '')}
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+    >
       <div className="mr-4">{icon}</div>
       <div className="flex flex-col">
         <span className="flex items-center">

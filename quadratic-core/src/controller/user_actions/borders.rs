@@ -18,15 +18,21 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
+    use serial_test::serial;
+
     use crate::{
         color::Rgba,
         grid::{CellBorderLine, SheetId},
+        selection::Selection,
+        wasm_bindings::js::expect_js_call,
         Pos,
     };
 
     use super::*;
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_set_borders() {
         let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
@@ -146,6 +152,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_set_borders_sheet_id_not_found() {
         let mut grid_controller = GridController::test();
         let sheet_rect = SheetRect::single_pos(Pos { x: 0, y: 0 }, SheetId::new());
@@ -155,5 +162,48 @@ mod tests {
             line: CellBorderLine::Line1,
         });
         grid_controller.set_borders(sheet_rect, selections, style, None);
+    }
+
+    #[test]
+    #[serial]
+    fn clear_borders() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_rect = SheetRect::single_pos(Pos { x: 0, y: 0 }, sheet_id);
+        let selections = vec![BorderSelection::Top, BorderSelection::Left];
+        let style = Some(BorderStyle {
+            color: Rgba::default(),
+            line: CellBorderLine::Line1,
+        });
+        gc.set_borders(sheet_rect, selections, style, None);
+
+        let sheet = gc.sheet(sheet_id);
+        let borders = sheet.render_borders();
+        assert!(!borders.horizontal.is_empty());
+        assert!(!borders.vertical.is_empty());
+        expect_js_call(
+            "jsSheetBorders",
+            format!("{},{}", sheet.id, serde_json::to_string(&borders).unwrap()),
+            true,
+        );
+
+        gc.clear_format(
+            Selection {
+                sheet_id: sheet_rect.sheet_id,
+                rects: Some(vec![sheet_rect.into()]),
+                ..Default::default()
+            },
+            None,
+        )
+        .unwrap();
+        let sheet = gc.sheet(sheet_id);
+        let borders = sheet.render_borders();
+        assert!(borders.horizontal.is_empty());
+        assert!(borders.vertical.is_empty());
+        expect_js_call(
+            "jsSheetBorders",
+            format!("{},{}", sheet.id, serde_json::to_string(&borders).unwrap()),
+            true,
+        );
     }
 }

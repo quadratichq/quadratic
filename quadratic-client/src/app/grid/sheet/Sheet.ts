@@ -1,5 +1,6 @@
 import { events } from '@/app/events/events';
-import { ColumnRow, GridBounds, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import { GridOverflowLines } from '@/app/grid/sheet/GridOverflowLines';
+import { ColumnRow, GridBounds, SheetBounds, SheetInfo, Validation } from '@/app/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
@@ -19,6 +20,11 @@ export class Sheet {
   bounds: GridBounds;
   boundsWithoutFormatting: GridBounds;
 
+  // tracks which Grid lines should not be drawn b/c of overflow
+  gridOverflowLines: GridOverflowLines;
+
+  validations: Validation[] = [];
+
   constructor(info: SheetInfo, testSkipOffsetsLoad = false) {
     this.id = info.sheet_id;
     this.name = info.name;
@@ -28,8 +34,16 @@ export class Sheet {
     this.cursor = new SheetCursor(this);
     this.bounds = info.bounds;
     this.boundsWithoutFormatting = info.bounds_without_formatting;
+    this.gridOverflowLines = new GridOverflowLines();
     events.on('sheetBounds', this.updateBounds);
+    events.on('sheetValidations', this.sheetValidations);
   }
+
+  private sheetValidations = (sheetId: string, validations: Validation[]) => {
+    if (sheetId === this.id) {
+      this.validations = validations;
+    }
+  };
 
   static testSheet(): Sheet {
     return new Sheet(
@@ -96,8 +110,11 @@ export class Sheet {
   //#region Offsets
 
   // @returns screen position of a cell
-  getCellOffsets(column: number, row: number): Rectangle {
-    const screenRectStringified = this.offsets.getCellOffsets(column, row);
+  getCellOffsets(column: number | BigInt, row: number | BigInt): Rectangle {
+    // this check is needed b/c offsets may be in a weird state during hmr
+    if (!this.offsets.getCellOffsets) return new Rectangle();
+
+    const screenRectStringified = this.offsets.getCellOffsets(Number(column), Number(row));
     const screenRect = JSON.parse(screenRectStringified);
     return new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
   }
@@ -136,4 +153,8 @@ export class Sheet {
   }
 
   //#endregion
+
+  getValidationById(id: string): Validation | undefined {
+    return this.validations.find((v) => v.id === id);
+  }
 }

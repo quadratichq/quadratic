@@ -2,10 +2,12 @@
 //!
 //! Use CoreError for runtime errors outside of code (eg, Python, Formulas).
 
-use crate::{ArraySize, Axis, Span, Spanned, Value};
-use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::fmt;
+
+use serde::{Deserialize, Serialize};
+
+use crate::{ArraySize, Axis, Span, Spanned, Value};
 
 /// Result of a [`crate::RunError`].
 pub type CodeResult<T = Spanned<Value>> = Result<T, RunError>;
@@ -42,6 +44,7 @@ impl RunError {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum RunErrorMsg {
+    // TODO(ayush): rename to CodeRunError in next file version
     PythonError(Cow<'static, str>),
 
     Spill,
@@ -69,6 +72,8 @@ pub enum RunErrorMsg {
     BadFunctionName,
     BadCellReference,
     BadNumber,
+    /// NaN or ±Infinity
+    NaN,
 
     // Array size errors
     ExactArraySizeMismatch {
@@ -106,7 +111,7 @@ impl fmt::Display for RunErrorMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::PythonError(s) => {
-                write!(f, "Python error: {s}")
+                write!(f, "{s}")
             }
             Self::Spill => {
                 write!(f, "Spill error")
@@ -157,6 +162,9 @@ impl fmt::Display for RunErrorMsg {
             }
             Self::BadNumber => {
                 write!(f, "Bad numeric literal")
+            }
+            Self::NaN => {
+                write!(f, "NaN")
             }
 
             Self::ExactArraySizeMismatch { expected, got } => {

@@ -1,6 +1,6 @@
 import { events } from '@/app/events/events';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { Selection, SheetInfo } from '@/app/quadratic-core-types';
+import { JsRowHeight, Selection, SheetInfo } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
@@ -26,6 +26,7 @@ class Sheets {
     events.on('sheetInfoUpdate', this.updateSheet);
     events.on('setCursor', this.setCursor);
     events.on('sheetOffsets', this.updateOffsets);
+    events.on('resizeRowHeights', this.resizeRowHeights);
   }
 
   private create = (sheetInfo: SheetInfo[]) => {
@@ -98,6 +99,18 @@ class Sheets {
     pixiApp.multiplayerCursor.dirty = true;
   };
 
+  private resizeRowHeights = (sheetId: string, rowHeights: JsRowHeight[]) => {
+    const sheet = this.getById(sheetId);
+    if (!sheet) return;
+    rowHeights.forEach(({ row, height }) => {
+      sheet.updateSheetOffsets(undefined, Number(row), height);
+    });
+    pixiApp.headings.dirty = true;
+    pixiApp.gridLines.dirty = true;
+    pixiApp.cursor.dirty = true;
+    pixiApp.multiplayerCursor.dirty = true;
+  };
+
   private setCursor = (cursorStringified?: string, selection?: Selection) => {
     if (selection !== undefined) {
       this.sheet.cursor.loadFromSelection(selection);
@@ -146,7 +159,22 @@ class Sheets {
   get sheet(): Sheet {
     const sheet = this.sheets.find((sheet) => sheet.id === this.current);
     if (!sheet) {
-      throw new Error('Expected to find sheet based on id');
+      // these lines remove some console errors during hmr loading.
+      const sheet = new Sheet(
+        {
+          sheet_id: 'error',
+          name: 'Error',
+          order: 'A0',
+          color: 'red',
+          offsets: '',
+          bounds: { type: 'empty' },
+          bounds_without_formatting: { type: 'empty' },
+        },
+        true
+      );
+      this.sheets.push(sheet);
+      this._current = sheet.id;
+      return sheet;
     }
     return sheet;
   }
@@ -222,7 +250,7 @@ class Sheets {
     return sheets[index - 1];
   }
 
-  private getNext(order?: string): Sheet | undefined {
+  getNext(order?: string): Sheet | undefined {
     if (!order) {
       return this.getLast();
     }

@@ -1,29 +1,13 @@
 import { downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
-import { generateKeyBetween } from '@/shared/utils/fractionalIndexing';
+import { xhrFromApi } from '@/shared/api/xhrFromApi';
 import * as Sentry from '@sentry/react';
+import { Buffer } from 'buffer';
 import mixpanel from 'mixpanel-browser';
 import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { v4 as uuid } from 'uuid';
 import { fetchFromApi } from './fetchFromApi';
 
-const DEFAULT_FILE: any = {
-  sheets: [
-    {
-      name: 'Sheet 1',
-      id: { id: uuid() },
-      order: generateKeyBetween(null, null),
-      cells: [],
-      code_cells: [],
-      formats: [],
-      columns: [],
-      rows: [],
-      offsets: [[], []],
-      borders: {},
-    },
-  ],
-  // TODO(ddimaria): make this dynamic
-  version: '1.4',
-};
+// TODO(ddimaria): make this dynamic
+const CURRENT_FILE_VERSION = '1.6';
 
 export const apiClient = {
   teams: {
@@ -75,7 +59,6 @@ export const apiClient = {
         );
       },
       async delete(uuid: string, inviteId: string) {
-        console.log(`DELETE to /v0/teams/${uuid}/invites/${inviteId}`);
         return fetchFromApi(
           `/v0/teams/${uuid}/invites/${inviteId}`,
           {
@@ -115,21 +98,31 @@ export const apiClient = {
       file,
       teamUuid,
       isPrivate,
+      abortController,
+      onUploadProgress,
     }: {
-      file?: Pick<ApiTypes['/v0/files.POST.request'], 'name' | 'contents' | 'version'>;
+      // TODO(ddimaria): remove Partial and "contents" once we duplicate directly on S3
+      file?: Partial<Pick<ApiTypes['/v0/files.POST.request'], 'name' | 'contents' | 'version'>>;
       teamUuid: ApiTypes['/v0/files.POST.request']['teamUuid'];
       isPrivate: ApiTypes['/v0/files.POST.request']['isPrivate'];
+      abortController?: AbortController;
+      onUploadProgress?: (uploadProgress: number) => void;
     }) {
       if (file === undefined) {
         file = {
           name: 'Untitled',
-          contents: JSON.stringify(DEFAULT_FILE),
-          version: DEFAULT_FILE.version,
+          version: CURRENT_FILE_VERSION,
         };
       }
-      return fetchFromApi(
+
+      return xhrFromApi(
         `/v0/files`,
-        { method: 'POST', body: JSON.stringify({ ...file, teamUuid, isPrivate }) },
+        {
+          method: 'POST',
+          data: { ...file, teamUuid, isPrivate },
+          abortController,
+          onUploadProgress,
+        },
         ApiSchemas['/v0/files.POST.response']
       );
     },
@@ -141,8 +134,8 @@ export const apiClient = {
       mixpanel.track('[Files].downloadFile', { id: uuid });
       const { file } = await this.get(uuid);
       const checkpointUrl = file.lastCheckpointDataUrl;
-      const checkpointData = await fetch(checkpointUrl).then((res) => res.text());
-      downloadQuadraticFile(file.name, checkpointData);
+      const checkpointData = await fetch(checkpointUrl).then((res) => res.arrayBuffer());
+      downloadQuadraticFile(file.name, new Uint8Array(checkpointData));
     },
     async duplicate(uuid: string, isPrivate?: boolean) {
       mixpanel.track('[Files].duplicateFile', { id: uuid });
@@ -153,7 +146,9 @@ export const apiClient = {
       } = await apiClient.files.get(uuid);
 
       // Get the most recent checkpoint for the file
-      const lastCheckpointContents = await fetch(lastCheckpointDataUrl).then((res) => res.text());
+      const lastCheckpointContents = await fetch(lastCheckpointDataUrl).then((res) => res.arrayBuffer());
+      const buffer = new Uint8Array(lastCheckpointContents);
+      const contents = Buffer.from(new Uint8Array(buffer)).toString('base64');
 
       // Create it on the server
       const {
@@ -162,7 +157,7 @@ export const apiClient = {
         file: {
           name: name + ' (Copy)',
           version: lastCheckpointVersion,
-          contents: lastCheckpointContents,
+          contents,
         },
         teamUuid: team.uuid,
         isPrivate,

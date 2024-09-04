@@ -7,17 +7,22 @@
  * populates the buffers for the relevant LabelMeshes based on this data.
  */
 
+import { Bounds } from '@/app/grid/sheet/Bounds';
+import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
-import { CellAlign, JsRenderCell } from '@/app/quadratic-core-types';
-import { CellAlignment } from '@/app/schemas';
+import { isFloatGreaterThan, isFloatLessThan } from '@/app/helpers/float';
+import { CellAlign, CellVerticalAlign, CellWrap, JsNumber, JsRenderCell } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
+import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT } from '@/shared/constants/gridConstants';
 import { removeItems } from '@pixi/utils';
 import { Point, Rectangle } from 'pixi.js';
 import { RenderBitmapChar } from '../../renderBitmapFonts';
 import { CellsLabels } from './CellsLabels';
+import { LabelMeshEntry } from './LabelMeshEntry';
 import { LabelMeshes } from './LabelMeshes';
 import { extractCharCode, splitTextToCharacters } from './bitmapTextUtils';
+import { convertNumber, reduceDecimals } from './convertNumber';
 
 interface CharRenderData {
   charData: RenderBitmapChar;
@@ -29,54 +34,70 @@ interface CharRenderData {
 }
 
 // magic numbers to make the WebGL rendering of OpenSans look similar to the HTML version
-const OPEN_SANS_FIX = { x: 1.8, y: -1 };
+export const OPEN_SANS_FIX = { x: 1.8, y: -1.8 };
 const SPILL_ERROR_TEXT = ' #SPILL';
 const RUN_ERROR_TEXT = ' #ERROR';
 const CHART_TEXT = ' CHART';
+export const LINE_HEIGHT = 16;
 
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
 
 // todo: make this part of the cell's style data structure
-const fontSize = 14;
+export const FONT_SIZE = 14;
 
 export class CellLabel {
   private cellsLabels: CellsLabels;
-  position = new Point();
+  private position = new Point();
 
   visible = true;
 
-  text: string;
+  private text: string;
+  private originalText: string;
+
+  number?: JsNumber;
 
   // created in updateFontName()
-  fontName!: string;
+  private fontName!: string;
 
-  fontSize: number;
-  tint?: number;
-  maxWidth: number;
-  roundPixels?: boolean;
+  private fontSize: number;
+  private tint?: number;
+  private maxWidth?: number;
+  private roundPixels?: boolean;
   location: Coordinate;
   AABB: Rectangle;
 
-  clipLeft: number | undefined;
-  clipRight: number | undefined;
+  clipLeft?: number;
+  clipRight?: number;
+
+  private cellClipLeft?: number;
+  private cellClipRight?: number;
+  private cellClipTop?: number;
+  private cellClipBottom?: number;
+
+  private nextLeftWidth?: number;
+  private nextRightWidth?: number;
 
   // used by ContainerBitmapText rendering
-  chars: CharRenderData[] = [];
-  lineAlignOffsets: number[] = [];
-  align?: 'left' | 'right' | 'justify' | 'center';
-  letterSpacing: number;
-  bold: boolean;
-  italic: boolean;
+  private chars: CharRenderData[] = [];
+  private horizontalAlignOffsets: number[] = [];
 
-  textWidth = 0;
+  private align: CellAlign | 'justify';
+  private verticalAlign: CellVerticalAlign;
+  private wrap: CellWrap;
+
+  private letterSpacing: number;
+  private bold: boolean;
+  private italic: boolean;
+
+  private textWidth = 0;
   textHeight = 0;
+  unwrappedTextWidth = 0;
 
-  overflowRight?: number;
-  overflowLeft?: number;
+  overflowRight = 0;
+  overflowLeft = 0;
 
-  alignment: CellAlignment;
-
-  dirty = true;
+  private actualLeft: number;
+  private actualRight: number;
 
   private getText(cell: JsRenderCell) {
     switch (cell?.special) {
@@ -86,19 +107,24 @@ export class CellLabel {
         return RUN_ERROR_TEXT;
       case 'Chart':
         return CHART_TEXT;
+      default:
+        if (cell.value !== undefined && cell.number) {
+          this.number = cell.number;
+          return convertNumber(cell.value, cell.number).toUpperCase();
+        } else {
+          return cell?.value;
+        }
     }
-
-    // strip any line breaks
-    return cell.value.replace(/\n/g, ' ');
   }
 
   constructor(cellsLabels: CellsLabels, cell: JsRenderCell, screenRectangle: Rectangle) {
     this.cellsLabels = cellsLabels;
+    this.originalText = cell.value;
     this.text = this.getText(cell);
-    this.fontSize = fontSize;
+    this.fontSize = FONT_SIZE;
     this.roundPixels = true;
-    this.maxWidth = 0;
     this.letterSpacing = 0;
+    const isDropdown = cell.special === 'List';
     const isError = cell?.special === 'SpillError' || cell?.special === 'RunError';
     const isChart = cell?.special === 'Chart';
     if (isError) {
@@ -110,132 +136,193 @@ export class CellLabel {
     } else {
       this.tint = 0;
     }
-    if (cell.special === 'True' || cell.special === 'False') {
-      this.text = cell.special === 'True' ? 'TRUE' : 'FALSE';
+    if (cell.special === 'Logical') {
+      this.text = cell.value === 'true' ? 'TRUE' : 'FALSE';
       cell.align = cell.align ?? 'center';
     }
 
     this.location = { x: Number(cell.x), y: Number(cell.y) };
     this.AABB = screenRectangle;
 
+    // need to adjust the right side of the AABB to account for the dropdown indicator
+    if (isDropdown) {
+      this.AABB.width -= DROPDOWN_SIZE[0] + DROPDOWN_PADDING[0];
+    }
+
+    this.actualLeft = this.AABB.left;
+    this.actualRight = this.AABB.right;
+
     this.bold = !!cell?.bold;
     this.italic = !!cell?.italic || isError || isChart;
     this.updateFontName();
-    this.alignment = cell.align;
+    this.align = cell.align ?? 'left';
+    this.verticalAlign = cell.verticalAlign ?? 'top';
+    this.wrap = cell.wrap === undefined && this.isNumber() ? 'clip' : cell.wrap ?? 'overflow';
+    this.updateCellLimits();
   }
 
-  updateFontName() {
+  private updateFontName = () => {
     const bold = this.bold ? 'Bold' : '';
     const italic = this.italic ? 'Italic' : '';
     this.fontName = `OpenSans${bold || italic ? '-' : ''}${bold}${italic}`;
-  }
+  };
 
-  changeBold(bold?: boolean) {
-    this.bold = !!bold;
-    this.updateFontName();
-    this.dirty = true;
-  }
+  private updateCellLimits = () => {
+    this.cellClipLeft = this.wrap === 'clip' && this.align !== 'left' ? this.AABB.left : undefined;
+    this.cellClipRight = this.wrap === 'clip' && this.align !== 'right' ? this.AABB.right : undefined;
+    this.cellClipTop = this.AABB.top;
+    this.cellClipBottom = this.AABB.bottom;
+    this.maxWidth = this.wrap === 'wrap' ? this.AABB.width - CELL_TEXT_MARGIN_LEFT * 3 : undefined;
+  };
 
-  changeItalic(italic?: boolean) {
-    this.italic = !!italic;
-    this.updateFontName();
-    this.dirty = true;
-  }
-
-  changeAlign(align?: CellAlign) {
-    this.alignment = align ?? 'left';
-    this.calculatePosition();
-  }
-
-  changeTextColor(color?: string) {
-    this.tint = color ? convertColorStringToTint(color) : undefined;
-    this.dirty = true;
-  }
-
-  checkLeftClip(nextRight: number): boolean | 'same' {
-    if (this.overflowLeft && this.AABB.left - this.overflowLeft < nextRight) {
-      if (this.clipLeft !== nextRight) {
-        this.clipLeft = nextRight;
-        return true;
-      } else {
-        return 'same';
-      }
-    } else {
-      if (this.clipLeft !== undefined) {
-        this.clipLeft = undefined;
+  checkLeftClip = (nextLeft: number, labelMeshes: LabelMeshes): boolean => {
+    if (this.AABB.left - this.overflowLeft < nextLeft) {
+      const nextLeftWidth = this.AABB.right - nextLeft;
+      if (this.nextLeftWidth !== nextLeftWidth) {
+        this.nextLeftWidth = nextLeftWidth;
+        if (this.isNumber()) {
+          this.updateText(labelMeshes);
+        }
         return true;
       }
+    } else if (this.nextLeftWidth !== undefined) {
+      this.nextLeftWidth = undefined;
+      if (this.checkNumberClip()) {
+        this.updateText(labelMeshes);
+      }
+      return true;
     }
     return false;
-  }
+  };
 
-  checkRightClip(nextLeft: number): boolean | 'same' {
-    if (this.overflowRight && this.AABB.right + this.overflowRight > nextLeft) {
-      if (this.clipRight !== nextLeft) {
-        this.clipRight = nextLeft;
-        return true;
-      } else {
-        return 'same';
-      }
-    } else {
-      if (this.clipRight !== undefined) {
-        this.clipRight = undefined;
+  checkRightClip = (nextRight: number, labelMeshes: LabelMeshes): boolean => {
+    if (this.AABB.right + this.overflowRight > nextRight) {
+      const nextRightWidth = nextRight - this.AABB.left;
+      if (this.nextRightWidth !== nextRightWidth) {
+        this.nextRightWidth = nextRightWidth;
+        if (this.isNumber()) {
+          this.updateText(labelMeshes);
+        }
         return true;
       }
+    } else if (this.nextRightWidth !== undefined) {
+      this.nextRightWidth = undefined;
+      if (this.checkNumberClip()) {
+        this.updateText(labelMeshes);
+      }
+      return true;
     }
     return false;
-  }
+  };
 
-  private calculatePosition(): void {
+  isNumber = (): boolean => {
+    return this.number !== undefined;
+  };
+
+  checkNumberClip = (): boolean => {
+    if (!this.isNumber()) return false;
+
+    const clipLeft = Math.max(this.cellClipLeft ?? -Infinity, this.AABB.right - (this.nextLeftWidth ?? Infinity));
+    if (isFloatLessThan(this.actualLeft, clipLeft)) return true;
+
+    const clipRight = Math.min(this.cellClipRight ?? Infinity, this.AABB.left + (this.nextRightWidth ?? Infinity));
+    if (isFloatGreaterThan(this.actualRight, clipRight)) return true;
+
+    return false;
+  };
+
+  private calculatePosition = (): void => {
+    this.updateCellLimits();
+
     this.overflowLeft = 0;
     this.overflowRight = 0;
-    let alignment = this.alignment ?? 'left';
+    let alignment = this.align ?? 'left';
     if (alignment === 'right') {
-      const actualLeft = this.AABB.x + this.AABB.width - this.textWidth - OPEN_SANS_FIX.x * 2;
-      if (actualLeft < this.AABB.x) {
-        this.overflowLeft = this.AABB.x - actualLeft;
+      this.actualLeft = this.AABB.right - this.textWidth;
+      this.actualRight = this.actualLeft + this.textWidth;
+      if (this.actualLeft < this.AABB.left) {
+        this.overflowLeft = this.AABB.left - this.actualLeft;
       }
-      this.position = new Point(actualLeft, this.AABB.y);
+      this.position = new Point(this.actualLeft, this.AABB.top);
     } else if (alignment === 'center') {
-      const actualLeft = this.AABB.x + this.AABB.width / 2 - this.textWidth / 2 - OPEN_SANS_FIX.x;
-      const actualRight = actualLeft + this.textWidth;
-      if (actualLeft < this.AABB.x) {
-        this.overflowLeft = this.AABB.x - actualLeft;
+      this.actualLeft = this.AABB.left + (this.AABB.width - this.textWidth) / 2;
+      this.actualRight = this.actualLeft + this.textWidth;
+      if (this.actualLeft < this.AABB.left) {
+        this.overflowLeft = this.AABB.left - this.actualLeft;
       }
-      if (actualRight > this.AABB.right) {
-        this.overflowRight = actualRight - this.AABB.right;
+      if (this.actualRight > this.AABB.right) {
+        this.overflowRight = this.actualRight - this.AABB.right;
       }
-      this.position = new Point(actualLeft, this.AABB.y);
+      this.position = new Point(this.actualLeft, this.AABB.top);
     } else if (alignment === 'left') {
-      const actualRight = this.AABB.x + this.textWidth;
-      if (actualRight > this.AABB.right) {
-        this.overflowRight = actualRight - this.AABB.right;
+      this.actualLeft = this.AABB.left;
+      this.actualRight = this.AABB.left + this.textWidth;
+      if (this.actualRight > this.AABB.right) {
+        this.overflowRight = this.actualRight - this.AABB.right;
       }
-      this.position = new Point(this.AABB.x, this.AABB.y);
+      this.position = new Point(this.AABB.left, this.AABB.top);
     }
-  }
+
+    if (this.verticalAlign === 'bottom') {
+      const actualTop = this.AABB.bottom - this.textHeight;
+      this.position.y = actualTop;
+    } else if (this.verticalAlign === 'middle') {
+      const actualTop = Math.max(this.AABB.top, this.AABB.top + (this.AABB.height - this.textHeight) / 2);
+      this.position.y = Math.max(actualTop, this.AABB.top);
+    }
+  };
+
+  public updateText = (labelMeshes: LabelMeshes): void => {
+    if (!this.visible) return;
+
+    const processedText = this.processText(labelMeshes, this.text);
+    if (!processedText) return;
+
+    this.chars = processedText.chars;
+    this.textWidth = processedText.textWidth;
+    this.textHeight = processedText.textHeight;
+    this.horizontalAlignOffsets = processedText.horizontalAlignOffsets;
+    this.unwrappedTextWidth = this.getUnwrappedTextWidth(this.text);
+
+    this.calculatePosition();
+
+    if (this.checkNumberClip()) {
+      const clippedNumber = this.getClippedNumber(this.originalText, this.text, this.number);
+      const processedNumberText = this.processText(labelMeshes, clippedNumber);
+      if (!processedNumberText) return;
+
+      this.chars = processedNumberText.chars;
+      this.textWidth = processedNumberText.textWidth;
+      this.textHeight = processedNumberText.textHeight;
+      this.horizontalAlignOffsets = processedNumberText.horizontalAlignOffsets;
+
+      this.calculatePosition();
+    }
+  };
 
   /** Calculates the text glyphs and positions */
-  public updateText(labelMeshes: LabelMeshes): void {
+  public processText = (labelMeshes: LabelMeshes, originalText: string) => {
     if (!this.visible) return;
 
     const data = this.cellsLabels.bitmapFonts[this.fontName];
     if (!data) throw new Error(`Expected BitmapFont ${this.fontName} to be defined in CellLabel.updateText`);
+
     const pos = new Point();
-    this.chars = [];
-    const lineWidths = [];
-    const lineSpaces = [];
-    const text = this.text.replace(/(?:\r\n|\r)/g, '\n') || ' ';
-    const charsInput = splitTextToCharacters(text);
-    const maxWidth = (this.maxWidth * data.size) / this.fontSize;
+    const chars = [];
+    const lineWidths: number[] = [];
+    const lineSpaces: number[] = [];
+    const displayText = originalText.replace(/(?:\r\n|\r)/g, '\n') || ' ';
+    const charsInput = splitTextToCharacters(displayText);
+    const scale = this.fontSize / data.size;
+    const maxWidth = this.maxWidth;
     let prevCharCode = null;
     let lastLineWidth = 0;
     let maxLineWidth = 0;
+    let textHeight = 0;
     let line = 0;
     let lastBreakPos = -1;
     let lastBreakWidth = 0;
     let spacesRemoved = 0;
-    let maxLineHeight = 0;
     let spaceCount = 0;
     let i: number;
     for (i = 0; i < charsInput.length; i++) {
@@ -247,13 +334,15 @@ export class CellLabel {
         spaceCount++;
       }
       if (char === '\r' || char === '\n') {
+        spacesRemoved++;
+        lastBreakPos = -1;
         lineWidths.push(lastLineWidth);
         lineSpaces.push(-1);
         maxLineWidth = Math.max(maxLineWidth, lastLineWidth);
-        ++line;
-        ++spacesRemoved;
+
+        line++;
         pos.x = 0;
-        pos.y += data.lineHeight;
+        pos.y += LINE_HEIGHT / scale; // data.lineHeight;
         prevCharCode = null;
         spaceCount = 0;
         continue;
@@ -261,48 +350,56 @@ export class CellLabel {
       const charData = data.chars[charCode];
       if (!charData) continue;
 
-      const labelMeshId = labelMeshes.add(this.fontName, fontSize, charData.textureUid, !!this.tint);
+      const labelMeshId = labelMeshes.add(this.fontName, this.fontSize, charData.textureUid, !!this.tint);
       if (prevCharCode && charData.kerning[prevCharCode]) {
         pos.x += charData.kerning[prevCharCode];
       }
       const charRenderData: CharRenderData = {
         labelMeshId,
         charData,
-        line: line,
+        line,
         charCode: charCode,
         prevSpaces: spaceCount,
         position: new Point(pos.x + charData.xOffset + this.letterSpacing / 2, pos.y + charData.yOffset),
       };
-      this.chars.push(charRenderData);
-      lastLineWidth = charRenderData.position.x + Math.max(charData.xAdvance, charData.origWidth);
+      chars.push(charRenderData);
       pos.x += charData.xAdvance + this.letterSpacing;
-      maxLineHeight = Math.max(maxLineHeight, charData.yOffset + charData.textureHeight);
       prevCharCode = charCode;
-      if (lastBreakPos !== -1 && maxWidth > 0 && pos.x > maxWidth) {
-        ++spacesRemoved;
-        removeItems(this.chars, 1 + lastBreakPos - spacesRemoved, 1 + i - lastBreakPos);
-        i = lastBreakPos;
-        lastBreakPos = -1;
+      if (maxWidth !== undefined && isFloatGreaterThan(pos.x, maxWidth / scale)) {
+        const start = lastBreakPos === -1 ? i - spacesRemoved : 1 + lastBreakPos - spacesRemoved;
+        const count = lastBreakPos === -1 ? 1 : 1 + i - lastBreakPos;
+        removeItems(chars, start, count);
+
+        lastBreakWidth = lastBreakPos === -1 ? lastLineWidth : lastBreakWidth;
         lineWidths.push(lastBreakWidth);
-        lineSpaces.push(this.chars.length > 0 ? this.chars[this.chars.length - 1].prevSpaces : 0);
+        lineSpaces.push(chars.length > 0 ? chars[chars.length - 1].prevSpaces : 0);
         maxLineWidth = Math.max(maxLineWidth, lastBreakWidth);
+
+        i = lastBreakPos === -1 ? i - 1 : lastBreakPos;
+        lastBreakPos = -1;
+
         line++;
         pos.x = 0;
-        pos.y += data.lineHeight;
+        pos.y += LINE_HEIGHT / scale; //data.lineHeight;
         prevCharCode = null;
         spaceCount = 0;
+      } else {
+        lastLineWidth = charRenderData.position.x + Math.max(charData.xAdvance, charData.frame.width);
+        textHeight = Math.max(textHeight, charRenderData.position.y + charData.textureHeight);
       }
     }
+
     const lastChar = charsInput[i];
     if (lastChar !== '\r' && lastChar !== '\n') {
       if (/(?:\s)/.test(lastChar)) {
         lastLineWidth = lastBreakWidth;
       }
       lineWidths.push(lastLineWidth);
-      maxLineWidth = Math.max(maxLineWidth, lastLineWidth);
       lineSpaces.push(-1);
+      maxLineWidth = Math.max(maxLineWidth, lastLineWidth);
     }
-    this.lineAlignOffsets = [];
+
+    const horizontalAlignOffsets = [];
     for (let i = 0; i <= line; i++) {
       let alignOffset = 0;
       if (this.align === 'right') {
@@ -312,137 +409,225 @@ export class CellLabel {
       } else if (this.align === 'justify') {
         alignOffset = lineSpaces[i] < 0 ? 0 : (maxLineWidth - lineWidths[i]) / lineSpaces[i];
       }
-      this.lineAlignOffsets.push(alignOffset);
+      horizontalAlignOffsets.push(alignOffset);
     }
 
-    const scale = this.fontSize / data.size;
-    this.textWidth = maxLineWidth * scale;
-    this.textHeight = (pos.y + data.lineHeight) * scale;
+    return {
+      chars,
+      textWidth: maxLineWidth * scale + OPEN_SANS_FIX.x * 2,
+      textHeight: Math.max(textHeight * scale, CELL_HEIGHT),
+      displayText,
+      horizontalAlignOffsets,
+    };
+  };
 
-    this.calculatePosition();
-  }
+  private getUnwrappedTextWidth = (text: string): number => {
+    const data = this.cellsLabels.bitmapFonts[this.fontName];
+    if (!data) throw new Error(`Expected BitmapFont ${this.fontName} to be defined in CellLabel.updateText`);
+
+    const scale = this.fontSize / data.size;
+
+    const charsInput = splitTextToCharacters(text);
+    let prevCharCode = null;
+    // calculate the unwrapped text width, content can be multi-line due to \n or \r
+    let curUnwrappedTextWidth = 0;
+    let maxUnwrappedTextWidth = 0;
+    for (let i = 0; i < charsInput.length; i++) {
+      const char = charsInput[i];
+      if (char === '\r' || char === '\n') {
+        maxUnwrappedTextWidth = Math.max(maxUnwrappedTextWidth, curUnwrappedTextWidth);
+        curUnwrappedTextWidth = 0;
+        continue;
+      }
+      const charCode = extractCharCode(char);
+      const charData = data.chars[charCode];
+      if (!charData) continue;
+      if (prevCharCode && charData.kerning[prevCharCode]) {
+        curUnwrappedTextWidth += charData.kerning[prevCharCode];
+      }
+      curUnwrappedTextWidth += Math.max(charData.xAdvance, charData.frame.width) + this.letterSpacing;
+      maxUnwrappedTextWidth = Math.max(maxUnwrappedTextWidth, curUnwrappedTextWidth);
+      prevCharCode = charCode;
+    }
+    const unwrappedTextWidth = (maxUnwrappedTextWidth + 3 * CELL_TEXT_MARGIN_LEFT) * scale;
+    return unwrappedTextWidth;
+  };
+
+  // This attempts to reduce the decimal precision to ensure the number fits
+  // within the cell. If it doesn't, it shows the pounds
+  private getClippedNumber = (originalText: string, text: string, number: JsNumber | undefined): string => {
+    if (number === undefined) return text;
+
+    let digits: number | undefined = undefined;
+    let infinityProtection = 0;
+    let textWidth = this.getUnwrappedTextWidth(text);
+    do {
+      const result = reduceDecimals(originalText, text, number, digits);
+      // we cannot reduce decimals anymore, so we show pound characters
+      if (!result) {
+        return this.getPoundText();
+      }
+
+      digits = result.currentFractionDigits - 1;
+      text = result.number;
+      textWidth = this.getUnwrappedTextWidth(text);
+    } while (textWidth > this.AABB.width && digits >= 0 && infinityProtection++ < 1000);
+
+    // we were not able to reduce the number to fit the cell, so we show pound characters
+    if (digits < 0) {
+      return this.getPoundText();
+    }
+
+    return text.toUpperCase();
+  };
+
+  private getPoundText = () => {
+    const data = this.cellsLabels.bitmapFonts[this.fontName];
+    if (!data) throw new Error(`Expected BitmapFont ${this.fontName} to be defined in CellLabel.updateText`);
+
+    const scale = this.fontSize / data.size;
+    const charCode = extractCharCode('#');
+    const charData = data.chars[charCode];
+    const charWidth = Math.max(charData.xAdvance, charData.frame.width) * scale + this.letterSpacing;
+    const count = Math.floor((this.AABB.width - CELL_TEXT_MARGIN_LEFT * 3) / charWidth);
+    const text = '#'.repeat(count);
+    return text;
+  };
+
+  private insertBuffers = (options: {
+    buffer: LabelMeshEntry;
+    xPos: number;
+    yPos: number;
+    textureFrame: any;
+    textureUvs: any;
+    scale: number;
+    color?: number[];
+    bounds: Bounds;
+  }) => {
+    const { buffer, xPos, yPos, textureFrame, textureUvs, scale, color, bounds } = options;
+
+    const index = buffer.index;
+    const buffers = buffer;
+
+    buffers.indices![index * 6 + 0] = 0 + index * 4;
+    buffers.indices![index * 6 + 1] = 1 + index * 4;
+    buffers.indices![index * 6 + 2] = 2 + index * 4;
+    buffers.indices![index * 6 + 3] = 0 + index * 4;
+    buffers.indices![index * 6 + 4] = 2 + index * 4;
+    buffers.indices![index * 6 + 5] = 3 + index * 4;
+
+    buffers.vertices![index * 8 + 0] = xPos;
+    buffers.vertices![index * 8 + 1] = yPos;
+    const right = xPos + textureFrame.width * scale;
+    buffers.vertices![index * 8 + 2] = right;
+    buffers.vertices![index * 8 + 3] = yPos;
+    buffers.vertices![index * 8 + 4] = right;
+    const bottom = yPos + textureFrame.height * scale;
+    buffers.vertices![index * 8 + 5] = bottom;
+    buffers.vertices![index * 8 + 6] = xPos;
+    buffers.vertices![index * 8 + 7] = bottom;
+
+    bounds.add(xPos, yPos);
+    bounds.add(right, bottom);
+
+    buffers.uvs![index * 8 + 0] = textureUvs[0];
+    buffers.uvs![index * 8 + 1] = textureUvs[1];
+    buffers.uvs![index * 8 + 2] = textureUvs[2];
+    buffers.uvs![index * 8 + 3] = textureUvs[3];
+    buffers.uvs![index * 8 + 4] = textureUvs[4];
+    buffers.uvs![index * 8 + 5] = textureUvs[5];
+    buffers.uvs![index * 8 + 6] = textureUvs[6];
+    buffers.uvs![index * 8 + 7] = textureUvs[7];
+
+    if (color) {
+      buffers.colors![index * 16 + 0] = color[0];
+      buffers.colors![index * 16 + 1] = color[1];
+      buffers.colors![index * 16 + 2] = color[2];
+      buffers.colors![index * 16 + 3] = color[3];
+      buffers.colors![index * 16 + 4] = color[0];
+      buffers.colors![index * 16 + 5] = color[1];
+      buffers.colors![index * 16 + 6] = color[2];
+      buffers.colors![index * 16 + 7] = color[3];
+      buffers.colors![index * 16 + 8] = color[0];
+      buffers.colors![index * 16 + 9] = color[1];
+      buffers.colors![index * 16 + 10] = color[2];
+      buffers.colors![index * 16 + 11] = color[3];
+      buffers.colors![index * 16 + 12] = color[0];
+      buffers.colors![index * 16 + 13] = color[1];
+      buffers.colors![index * 16 + 14] = color[2];
+      buffers.colors![index * 16 + 15] = color[3];
+    }
+    buffer.index++;
+  };
 
   /** Adds the glyphs to the CellsLabels */
-  updateLabelMesh(labelMeshes: LabelMeshes): { minX: number; minY: number; maxX: number; maxY: number } | undefined {
+  updateLabelMesh = (labelMeshes: LabelMeshes): Bounds | undefined => {
     if (!this.visible) return;
 
     const data = this.cellsLabels.bitmapFonts[this.fontName];
     if (!data) throw new Error('Expected BitmapFont to be defined in CellLabel.updateLabelMesh');
+
     const scale = this.fontSize / data.size;
     const color = this.tint ? convertTintToArray(this.tint) : undefined;
 
-    // keep track of the min/max x/y values for the viewRectangle
-    let minX = Infinity,
-      minY = Infinity,
-      maxX = -Infinity,
-      maxY = -Infinity;
-
+    const bounds = new Bounds();
     for (let i = 0; i < this.chars.length; i++) {
       const char = this.chars[i];
-      let offset =
-        char.position.x + this.lineAlignOffsets[char.line] * (this.align === 'justify' ? char.prevSpaces : 1);
+      let horizontalOffset =
+        char.position.x + this.horizontalAlignOffsets[char.line] * (this.align === 'justify' ? char.prevSpaces : 1);
       if (this.roundPixels) {
-        offset = Math.round(offset);
+        horizontalOffset = Math.round(horizontalOffset);
       }
-      const xPos = this.position.x + offset * scale + OPEN_SANS_FIX.x;
+      const xPos = this.position.x + horizontalOffset * scale + OPEN_SANS_FIX.x;
       const yPos = this.position.y + char.position.y * scale + OPEN_SANS_FIX.y;
       const labelMesh = labelMeshes.get(char.labelMeshId);
       const textureFrame = char.charData.frame;
       const textureUvs = char.charData.uvs;
       const buffer = labelMesh.getBuffer();
+      const clipLeft = Math.max(this.cellClipLeft ?? -Infinity, this.AABB.right - (this.nextLeftWidth ?? Infinity));
+      const clipRight = Math.min(this.cellClipRight ?? Infinity, this.AABB.left + (this.nextRightWidth ?? Infinity));
 
       // remove letters that are outside the clipping bounds
       if (
-        (this.clipRight !== undefined && xPos + textureFrame.width * scale >= this.clipRight) ||
-        (this.clipLeft !== undefined && xPos <= this.clipLeft)
+        xPos <= clipLeft ||
+        xPos + textureFrame.width * scale >= clipRight ||
+        (this.cellClipTop !== undefined && yPos <= this.cellClipTop) ||
+        (this.cellClipBottom !== undefined && yPos + textureFrame.height * scale >= this.cellClipBottom)
       ) {
         // this removes extra characters from the mesh after a clip
         buffer.reduceSize(6);
       } else {
-        const index = buffer.index;
-        const buffers = buffer;
-
-        buffers.indices![index * 6 + 0] = 0 + index * 4;
-        buffers.indices![index * 6 + 1] = 1 + index * 4;
-        buffers.indices![index * 6 + 2] = 2 + index * 4;
-        buffers.indices![index * 6 + 3] = 0 + index * 4;
-        buffers.indices![index * 6 + 4] = 2 + index * 4;
-        buffers.indices![index * 6 + 5] = 3 + index * 4;
-
-        buffers.vertices![index * 8 + 0] = xPos;
-        buffers.vertices![index * 8 + 1] = yPos;
-        const right = xPos + textureFrame.width * scale;
-        buffers.vertices![index * 8 + 2] = right;
-        buffers.vertices![index * 8 + 3] = yPos;
-        buffers.vertices![index * 8 + 4] = right;
-        const bottom = yPos + textureFrame.height * scale;
-        buffers.vertices![index * 8 + 5] = bottom;
-        buffers.vertices![index * 8 + 6] = xPos;
-        buffers.vertices![index * 8 + 7] = bottom;
-
-        minX = Math.min(minX, xPos);
-        minY = Math.min(minY, yPos);
-        maxX = Math.max(maxX, right);
-        maxY = Math.max(maxY, bottom);
-
-        buffers.uvs![index * 8 + 0] = textureUvs[0];
-        buffers.uvs![index * 8 + 1] = textureUvs[1];
-        buffers.uvs![index * 8 + 2] = textureUvs[2];
-        buffers.uvs![index * 8 + 3] = textureUvs[3];
-        buffers.uvs![index * 8 + 4] = textureUvs[4];
-        buffers.uvs![index * 8 + 5] = textureUvs[5];
-        buffers.uvs![index * 8 + 6] = textureUvs[6];
-        buffers.uvs![index * 8 + 7] = textureUvs[7];
-
-        if (color) {
-          buffers.colors![index * 16 + 0] = color[0];
-          buffers.colors![index * 16 + 1] = color[1];
-          buffers.colors![index * 16 + 2] = color[2];
-          buffers.colors![index * 16 + 3] = color[3];
-          buffers.colors![index * 16 + 4] = color[0];
-          buffers.colors![index * 16 + 5] = color[1];
-          buffers.colors![index * 16 + 6] = color[2];
-          buffers.colors![index * 16 + 7] = color[3];
-          buffers.colors![index * 16 + 8] = color[0];
-          buffers.colors![index * 16 + 9] = color[1];
-          buffers.colors![index * 16 + 10] = color[2];
-          buffers.colors![index * 16 + 11] = color[3];
-          buffers.colors![index * 16 + 12] = color[0];
-          buffers.colors![index * 16 + 13] = color[1];
-          buffers.colors![index * 16 + 14] = color[2];
-          buffers.colors![index * 16 + 15] = color[3];
-        }
-        buffer.index++;
+        this.insertBuffers({ buffer, bounds, xPos, yPos, textureFrame, textureUvs, scale, color });
       }
     }
-    return { minX, minY, maxX, maxY };
-  }
+    return bounds;
+  };
 
   // these are used to adjust column/row sizes without regenerating glyphs
 
-  adjustX(delta: number): void {
+  adjustX = (delta: number): void => {
     this.AABB.x += delta;
     this.calculatePosition();
-  }
+  };
 
-  adjustY(delta: number): void {
+  adjustY = (delta: number): void => {
     this.AABB.y += delta;
     this.calculatePosition();
-  }
+  };
 
-  adjustWidth(delta: number, negativeX: boolean) {
+  adjustWidth = (delta: number, negativeX: boolean) => {
     this.AABB.width -= delta;
     if (negativeX) {
       this.AABB.x += delta;
     }
     this.calculatePosition();
-  }
+  };
 
-  adjustHeight(delta: number, negativeY: boolean): void {
+  adjustHeight = (delta: number, negativeY: boolean): void => {
     this.AABB.height -= delta;
     if (negativeY) {
       this.AABB.y += delta;
     }
     this.calculatePosition();
-  }
+  };
 }

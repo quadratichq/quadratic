@@ -1,7 +1,7 @@
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { useFileRouteLoaderData } from '@/routes/file.$uuid';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { isMac } from '@/shared/utils/isMac';
 import { Check } from '@mui/icons-material';
 import { Menu, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
@@ -9,7 +9,7 @@ import '@szhsin/react-menu/dist/index.css';
 import { useEffect } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useParams } from 'react-router';
-import { useNavigate, useSubmit } from 'react-router-dom';
+import { useSubmit } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
 import { authClient } from '../../../../../auth';
 import {
@@ -39,14 +39,12 @@ import { useGridSettings } from './useGridSettings';
 export const QuadraticMenu = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
-  const navigate = useNavigate();
   const submit = useSubmit();
   const { uuid } = useParams() as { uuid: string };
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const { name } = useFileContext();
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
-    team: { uuid: teamUuid },
     userMakingRequest: { fileTeamPrivacy, teamPermissions },
   } = useFileRouteLoaderData();
   const { permissions } = editorInteractionState;
@@ -82,7 +80,11 @@ export const QuadraticMenu = () => {
         {isAuthenticated && (
           <SubMenu label={<MenuLineItem primary="File" />}>
             {createNewFileAction.isAvailable(isAvailableArgs) && (
-              <MenuItem onClick={() => createNewFileAction.run({ navigate, teamUuid })}>
+              <MenuItem
+                onClick={() => {
+                  createNewFileAction.run({ setEditorInteractionState });
+                }}
+              >
                 <MenuLineItem primary={createNewFileAction.label} />
               </MenuItem>
             )}

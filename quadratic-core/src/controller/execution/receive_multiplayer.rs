@@ -1,16 +1,15 @@
 use std::collections::VecDeque;
 
-use super::TransactionType;
-use crate::controller::{
-    active_transactions::{
-        pending_transaction::PendingTransaction, unsaved_transactions::UnsavedTransaction,
-    },
-    operations::operation::Operation,
-    transaction::TransactionServer,
-    GridController,
-};
 use chrono::{Duration, TimeDelta, Utc};
 use uuid::Uuid;
+
+use super::TransactionType;
+use crate::controller::active_transactions::pending_transaction::PendingTransaction;
+use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::controller::active_transactions::unsaved_transactions::UnsavedTransaction;
+use crate::controller::operations::operation::Operation;
+use crate::controller::transaction::{Transaction, TransactionServer};
+use crate::controller::GridController;
 
 // seconds to wait before requesting wait_for_transactions
 const SECONDS_TO_WAIT_FOR_GET_TRANSACTIONS: i64 = 5;
@@ -29,7 +28,7 @@ impl GridController {
             ..Default::default()
         };
         self.client_apply_transaction(&mut transaction, sequence_num);
-        self.finalize_transaction(&mut transaction);
+        self.finalize_transaction(transaction);
     }
 
     /// Rolls back unsaved transactions to apply earlier transactions received from the server.
@@ -79,10 +78,15 @@ impl GridController {
 
     /// Used by the server to apply transactions. Since the server owns the sequence_num,
     /// there's no need to check or alter the execution order.
-    pub fn server_apply_transaction(&mut self, operations: Vec<Operation>) {
+    pub fn server_apply_transaction(
+        &mut self,
+        operations: Vec<Operation>,
+        transaction_name: Option<TransactionName>,
+    ) {
         let mut transaction = PendingTransaction {
             transaction_type: TransactionType::Server,
             operations: operations.into(),
+            transaction_name: transaction_name.unwrap_or(TransactionName::Unknown),
             ..Default::default()
         };
         self.start_transaction(&mut transaction);
@@ -112,6 +116,12 @@ impl GridController {
                     );
                 }
             }
+        }
+
+        if (cfg!(target_family = "wasm") || cfg!(test))
+            && sequence_num >= self.transactions.last_sequence_num
+        {
+            crate::wasm_bindings::js::jsMultiplayerSynced();
         }
     }
 
@@ -153,8 +163,6 @@ impl GridController {
     }
 
     /// Used by the client to ensure transactions are applied in order
-    ///
-    /// Returns a [`TransactionSummary`] that will be rendered by the client.
     fn client_apply_transaction(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -202,12 +210,15 @@ impl GridController {
             // We could apply these transactions as they come in, but only if multiplayer also sent all undo
             // operations w/each Transaction. I don't think this would be worth the cost.
             // We ignore any transactions that we already applied (ie, sequence_num <= self.last_sequence_num).
+            let default_sequence_number = self.transactions.out_of_order_transactions.len();
             let index = self
                 .transactions
                 .out_of_order_transactions
                 .iter()
-                .position(|t| t.sequence_num.unwrap() < sequence_num)
-                .unwrap_or(self.transactions.out_of_order_transactions.len());
+                .position(|t| {
+                    t.sequence_num.unwrap_or(default_sequence_number as u64) < sequence_num
+                })
+                .unwrap_or(default_sequence_number);
             self.transactions
                 .out_of_order_transactions
                 .insert(index, transaction.to_transaction(Some(sequence_num)));
@@ -217,7 +228,7 @@ impl GridController {
     /// Received transactions from the server
     pub fn received_transactions(&mut self, transactions: &[TransactionServer]) {
         // used to track client changes when combining transactions
-        let mut results = PendingTransaction {
+        let results = PendingTransaction {
             transaction_type: TransactionType::Multiplayer,
             ..Default::default()
         };
@@ -225,22 +236,30 @@ impl GridController {
 
         // combine all transaction into one transaction
         transactions.iter().for_each(|t| {
-            let mut transaction = PendingTransaction {
-                id: t.id,
-                transaction_type: TransactionType::Multiplayer,
-                operations: t.operations.clone().into(),
-                cursor: None,
-                ..Default::default()
-            };
-            self.client_apply_transaction(&mut transaction, t.sequence_num);
+            let operations =
+                Transaction::decompress_and_deserialize::<Vec<Operation>>(&t.operations);
+
+            if let Ok(operations) = operations {
+                let mut transaction = PendingTransaction {
+                    id: t.id,
+                    transaction_type: TransactionType::Multiplayer,
+                    operations: operations.into(),
+                    cursor: None,
+                    ..Default::default()
+                };
+
+                self.client_apply_transaction(&mut transaction, t.sequence_num);
+            } else {
+                dbgjs!(
+                    "Unable to decompress and deserialize operations in received_transactions()"
+                );
+            }
         });
         self.reapply_unsaved_transactions();
-        self.finalize_transaction(&mut results);
+        self.finalize_transaction(results);
     }
 
     /// Called by TS for each offline transaction it has in its offline queue.
-    ///
-    /// Returns a [`TransactionSummary`] that will be rendered by the client.
     pub fn apply_offline_unsaved_transaction(
         &mut self,
         transaction_id: Uuid,
@@ -250,59 +269,50 @@ impl GridController {
         if let Some(transaction) = self.transactions.unsaved_transactions.find(transaction_id) {
             // send it to the server if we've not successfully sent it to the server
             if cfg!(target_family = "wasm") && !transaction.sent_to_server {
-                if let Ok(operations) =
-                    serde_json::to_string(&unsaved_transaction.forward.operations)
-                {
+                let compressed_ops =
+                    Transaction::serialize_and_compress(&unsaved_transaction.forward.operations);
+
+                if let Ok(compressed_ops) = compressed_ops {
                     crate::wasm_bindings::js::jsSendTransaction(
                         transaction_id.to_string(),
-                        operations,
+                        compressed_ops,
                     );
+                } else {
+                    dbgjs!("Unable to serialize and compress operations in apply_offline_unsaved_transaction()");
                 }
             }
         } else {
-            let transaction = &mut PendingTransaction {
-                transaction_type: TransactionType::Multiplayer,
+            let mut transaction = PendingTransaction {
+                id: transaction_id,
+                transaction_type: TransactionType::Unsaved,
                 ..Default::default()
             };
             transaction
                 .operations
                 .extend(unsaved_transaction.forward.operations.clone());
 
-            // apply unsaved transaction
-            self.rollback_unsaved_transactions();
-            self.start_transaction(transaction);
-            self.reapply_unsaved_transactions();
-
-            self.transactions
-                .unsaved_transactions
-                .push(unsaved_transaction.clone());
-            if cfg!(target_family = "wasm") {
-                if let Ok(operations) =
-                    serde_json::to_string(&unsaved_transaction.forward.operations)
-                {
-                    crate::wasm_bindings::js::jsSendTransaction(
-                        transaction_id.to_string(),
-                        operations,
-                    );
-                }
-            }
-            transaction.send_transaction();
+            self.start_transaction(&mut transaction);
+            self.finalize_transaction(transaction);
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
-        controller::{transaction_types::JsCodeResult, GridController},
-        grid::{CodeCellLanguage, Sheet},
-        CellValue, CodeCellValue, Pos, SheetPos,
-    };
     use bigdecimal::BigDecimal;
+    use serial_test::{parallel, serial};
     use uuid::Uuid;
 
+    use super::*;
+    use crate::controller::transaction::Transaction;
+    use crate::controller::transaction_types::JsCodeResult;
+    use crate::controller::GridController;
+    use crate::grid::{CodeCellLanguage, Sheet};
+    use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
+    use crate::{CellValue, CodeCellValue, Pos, SheetPos};
+
     #[test]
+    #[parallel]
     fn test_multiplayer_hello_world() {
         let mut gc1 = GridController::test();
         let sheet_id = gc1.sheet_ids()[0];
@@ -346,6 +356,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_apply_multiplayer_before_unsaved_transaction() {
         let mut gc1 = GridController::test();
         let sheet_id = gc1.sheet_ids()[0];
@@ -397,6 +408,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_server_apply_transaction() {
         let mut client = GridController::test();
         let sheet_id = client.sheet_ids()[0];
@@ -420,7 +432,7 @@ mod tests {
 
         let mut server = GridController::test();
         server.grid.try_sheet_mut(server.sheet_ids()[0]).unwrap().id = sheet_id;
-        server.server_apply_transaction(operations);
+        server.server_apply_transaction(operations, None);
         let sheet = server.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.display_value(Pos { x: 0, y: 0 }),
@@ -429,6 +441,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_handle_receipt_of_earlier_transactions() {
         // client is where the multiplayer transactions are applied from other
         let mut client = GridController::test();
@@ -483,6 +496,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_handle_receipt_of_out_of_order_transactions() {
         // client is where the multiplayer transactions are applied from other
         let mut client = GridController::test();
@@ -544,6 +558,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_handle_receipt_of_earlier_transactions_and_out_of_order_transactions() {
         let mut client = GridController::test();
         let sheet_id = client.sheet_ids()[0];
@@ -630,6 +645,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_send_request_transactions() {
         let mut client = GridController::test();
         let sheet_id = client.sheet_ids()[0];
@@ -647,6 +663,9 @@ mod tests {
             None,
         );
         let other_1_operations = other.last_transaction().unwrap().operations.clone();
+        let other_1_operations_compressed =
+            Transaction::serialize_and_compress(&other_1_operations).unwrap();
+
         other.set_cell_value(
             SheetPos {
                 x: 1,
@@ -657,8 +676,12 @@ mod tests {
             None,
         );
         let other_2_operations = other.last_transaction().unwrap().operations.clone();
+        let other_2_operations_compressed =
+            Transaction::serialize_and_compress(&other_2_operations).unwrap();
 
         client.receive_sequence_num(2);
+
+        clear_js_calls();
 
         // we send our last_sequence_num + 1 to the server so it can provide all later transactions
         assert_eq!(client.transactions.last_sequence_num, 0);
@@ -671,13 +694,13 @@ mod tests {
                 file_id: Uuid::new_v4(),
                 id: Uuid::new_v4(),
                 sequence_num: 1,
-                operations: other_1_operations,
+                operations: other_1_operations_compressed,
             },
             TransactionServer {
                 file_id: Uuid::new_v4(),
                 id: Uuid::new_v4(),
                 sequence_num: 2,
-                operations: other_2_operations,
+                operations: other_2_operations_compressed,
             },
         ]);
         assert_eq!(client.transactions.last_sequence_num, 2);
@@ -696,9 +719,14 @@ mod tests {
                 .display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text("This is sequence_num = 2".to_string()))
         );
+
+        client.receive_sequence_num(2);
+
+        expect_js_call("jsMultiplayerSynced", "".into(), true);
     }
 
     #[test]
+    #[parallel]
     fn test_receive_multiplayer_while_waiting_for_async() {
         let mut client = GridController::test();
         let sheet_id = client.sheet_ids()[0];
@@ -716,6 +744,8 @@ mod tests {
             None,
         );
         let other_operations = other.last_transaction().unwrap().operations.clone();
+        let other_operations_compressed =
+            Transaction::serialize_and_compress(&other_operations).unwrap();
 
         client.set_code_cell(
             SheetPos {
@@ -742,7 +772,7 @@ mod tests {
             file_id: Uuid::new_v4(),
             id: Uuid::new_v4(),
             sequence_num: 1,
-            operations: other_operations,
+            operations: other_operations_compressed,
         }]);
 
         assert_eq!(
@@ -784,6 +814,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_receive_overlapping_multiplayer_while_waiting_for_async() {
         // Unlike previous test, we receive a multiplayer transaction that will be underneath the async code_cell.
         // We expect the async code_cell to overwrite it when it completes.
@@ -804,6 +835,8 @@ mod tests {
             None,
         );
         let other_operations = other.last_transaction().unwrap().operations.clone();
+        let other_operations_compressed =
+            Transaction::serialize_and_compress(&other_operations).unwrap();
 
         client.set_code_cell(
             SheetPos {
@@ -836,7 +869,7 @@ mod tests {
             file_id: Uuid::new_v4(),
             id: Uuid::new_v4(),
             sequence_num: 1,
-            operations: other_operations,
+            operations: other_operations_compressed,
         }]);
 
         // expect this to be None since the async client.set_code_cell overwrites the other's multiplayer transaction
@@ -970,6 +1003,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn python_multiple_calculations_receive_back_afterwards() {
         let mut gc = GridController::test();
         let (transaction_id_0, operations_0) = create_multiple_calculations_0(&mut gc);
@@ -1006,6 +1040,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_python_multiple_calculations_receive_back_between() {
         let mut gc = GridController::test();
         let (transaction_id_0, operations_0) = create_multiple_calculations_0(&mut gc);
@@ -1033,6 +1068,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_receive_offline_unsaved_transaction() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -1066,6 +1102,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn ensure_code_run_ordering_is_maintained_for_undo() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -1143,6 +1180,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn receive_our_transactions_out_of_order() {
         let mut gc = GridController::test();
         let (transaction_id_0, operations_0) = create_multiple_calculations_0(&mut gc);

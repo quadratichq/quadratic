@@ -52,7 +52,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Name</FormLabel>
+              <FormLabel>Connection name</FormLabel>
               <FormControl>
                 <Input autoComplete="off" {...field} autoFocus />
               </FormControl>
@@ -66,7 +66,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
             name="host"
             render={({ field }) => (
               <FormItem className="col-span-2">
-                <FormLabel>Host</FormLabel>
+                <FormLabel>Hostname (IP or domain)</FormLabel>
                 <FormControl>
                   <Input autoComplete="off" {...field} />
                 </FormControl>
@@ -79,9 +79,9 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
             name="port"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Port</FormLabel>
+                <FormLabel>Port number</FormLabel>
                 <FormControl>
-                  <Input autoComplete="off" placeholder={DEFAULTS.PORT} {...field} />
+                  <Input autoComplete="off" placeholder={`e.g. ${DEFAULTS.PORT}`} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -93,9 +93,9 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
           name="database"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Database</FormLabel>
+              <FormLabel>Database name</FormLabel>
               <FormControl>
-                <Input autoComplete="off" placeholder={DEFAULTS.DATABASE} {...field} />
+                <Input autoComplete="off" placeholder={`e.g. ${DEFAULTS.DATABASE}`} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -110,7 +110,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
               <FormItem>
                 <FormLabel>Username</FormLabel>
                 <FormControl>
-                  <Input autoComplete="off" placeholder={DEFAULTS.USERNAME} {...field} />
+                  <Input autoComplete="off" placeholder={`e.g. ${DEFAULTS.USERNAME}`} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

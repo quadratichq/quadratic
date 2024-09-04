@@ -14,7 +14,7 @@ futures = "0.3.29"
 futures-util = { version = "0.3.29", default-features = false, features = ["sink", "std"] }
 headers = "0.4.0"
 jsonwebtoken = "9.2.0"
-openssl = { version = "0.10.62", features = ["vendored"] }
+openssl = { version = "0.10.66", features = ["vendored"] }
 quadratic-core = { path = "../quadratic-core", features = ["multiplayer"] }
 quadratic-rust-shared = { path = "../quadratic-rust-shared" }
 rayon = "1.8.0"

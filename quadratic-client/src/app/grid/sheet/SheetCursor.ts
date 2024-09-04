@@ -10,6 +10,7 @@ import { Rectangle } from 'pixi.js';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
 import { Sheet } from './Sheet';
+import { selectionOverlapsSelection } from './sheetCursorUtils';
 
 // Select column and/or row for the entire sheet.
 export interface ColumnRowCursor {
@@ -84,7 +85,7 @@ export class SheetCursor {
     pixiApp.cursor.dirty = true;
   }
 
-  loadFromSelection(selection: Selection) {
+  loadFromSelection(selection: Selection, skipMultiplayer = false) {
     this.cursorPosition = { x: Number(selection.x), y: Number(selection.y) };
 
     if (
@@ -116,7 +117,9 @@ export class SheetCursor {
       };
     }
 
-    multiplayer.sendSelection(this.getMultiplayerSelection());
+    if (!skipMultiplayer) {
+      multiplayer.sendSelection(this.getMultiplayerSelection());
+    }
     pixiApp.cursor.dirty = true;
   }
 
@@ -128,7 +131,7 @@ export class SheetCursor {
       columnRow?: ColumnRowCursor | null;
       cursorPosition?: Coordinate;
       keyboardMovePosition?: Coordinate;
-      ensureVisible?: boolean;
+      ensureVisible?: boolean | Coordinate;
     },
     test?: boolean
   ) {
@@ -151,7 +154,7 @@ export class SheetCursor {
       this.keyboardMovePosition = options.keyboardMovePosition;
     }
     if (!test) {
-      pixiApp.updateCursorPosition({ ensureVisible: options.ensureVisible ?? true });
+      pixiApp.updateCursorPosition(options.ensureVisible ?? true);
       if (!inlineEditorHandler.cursorIsMoving) {
         multiplayer.sendSelection(this.getMultiplayerSelection());
       }
@@ -232,5 +235,9 @@ export class SheetCursor {
       bottom = Math.max(bottom, rect.y + rect.height);
     });
     return new Rectangle(left, top, right - left, bottom - top);
+  }
+
+  overlapsSelection(selection: Selection): boolean {
+    return selectionOverlapsSelection(this.getRustSelection(), selection);
   }
 }

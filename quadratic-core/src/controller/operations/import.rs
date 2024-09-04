@@ -1,19 +1,17 @@
 use std::io::Cursor;
 
 use anyhow::{anyhow, bail, Result};
-use lexicon_fractional_index::key_between;
-
-use crate::{
-    cell_values::CellValues,
-    controller::GridController,
-    grid::{file::sheet_schema::export_sheet, CodeCellLanguage, Sheet, SheetId},
-    CellValue, CodeCellValue, Pos, SheetPos,
-};
 use bytes::Bytes;
 use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
+use lexicon_fractional_index::key_between;
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 
 use super::operation::Operation;
+use crate::cell_values::CellValues;
+use crate::controller::GridController;
+use crate::grid::file::sheet_schema::export_sheet;
+use crate::grid::{CodeCellLanguage, Sheet, SheetId};
+use crate::{CellValue, CodeCellValue, Pos, SheetPos};
 
 const IMPORT_LINES_PER_OPERATION: u32 = 10000;
 
@@ -22,23 +20,23 @@ impl GridController {
     pub fn import_csv_operations(
         &mut self,
         sheet_id: SheetId,
-        file: &[u8],
+        file: Vec<u8>,
         file_name: &str,
         insert_at: Pos,
     ) -> Result<Vec<Operation>> {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
-        let file = match String::from_utf8_lossy(file) {
-            std::borrow::Cow::Borrowed(_) => file,
+        let file: &[u8] = match String::from_utf8_lossy(&file) {
+            std::borrow::Cow::Borrowed(_) => &file,
             std::borrow::Cow::Owned(_) => {
-                if let Some(utf) = read_utf16(file) {
+                if let Some(utf) = read_utf16(&file) {
                     return self.import_csv_operations(
                         sheet_id,
-                        utf.as_bytes(),
+                        utf.as_bytes().to_vec(),
                         file_name,
                         insert_at,
                     );
                 }
-                file
+                &file
             }
         };
 
@@ -97,7 +95,7 @@ impl GridController {
                 cell_values = CellValues::new(width, h);
 
                 // update the progress bar every time there's a new operation
-                if cfg!(target_family = "wasm") {
+                if cfg!(target_family = "wasm") || cfg!(test) {
                     crate::wasm_bindings::js::jsImportProgress(
                         file_name,
                         current_y,
@@ -136,6 +134,12 @@ impl GridController {
         let mut workbook: Xlsx<_> = ExcelReader::new(cursor).map_err(error)?;
         let sheets = workbook.sheet_names().to_owned();
 
+        let existing_sheet_names = self.sheet_names();
+        for sheet_name in sheets.iter() {
+            if existing_sheet_names.contains(&sheet_name.as_str()) {
+                bail!("Sheet with name {} already exists", sheet_name);
+            }
+        }
         // first cell in excel is A1, but first cell in quadratic is A0
         // so we need to offset rows by 1, so that values are inserted in the original A1 notations cell
         // this is required so that cell references (A1 notations) in formulas are correct
@@ -143,6 +147,18 @@ impl GridController {
             x: col as i64,
             y: row as i64 + 1,
         };
+
+        // total rows for calculating import progress
+        let total_rows = sheets
+            .iter()
+            .try_fold(0, |acc, sheet_name| {
+                let range = workbook.worksheet_range(sheet_name)?;
+                // counted twice because we have to read values and formulas
+                Ok(acc + 2 * range.rows().count())
+            })
+            .map_err(error)?;
+        let mut current_y_values = 0;
+        let mut current_y_formula = 0;
 
         let mut order = key_between(&None, &None).unwrap_or("A0".to_string());
         for sheet_name in sheets {
@@ -194,6 +210,23 @@ impl GridController {
                         cell_value,
                     );
                 }
+
+                // send progress to the client, every IMPORT_LINES_PER_OPERATION
+                if (cfg!(target_family = "wasm") || cfg!(test))
+                    && current_y_values % IMPORT_LINES_PER_OPERATION == 0
+                {
+                    let width = row.len() as u32;
+                    crate::wasm_bindings::js::jsImportProgress(
+                        file_name,
+                        current_y_values + current_y_formula,
+                        total_rows as u32,
+                        0,
+                        1,
+                        width,
+                        total_rows as u32,
+                    );
+                }
+                current_y_values += 1;
             }
 
             // formulas
@@ -218,10 +251,27 @@ impl GridController {
                         });
                     }
                 }
+
+                // send progress to the client, every IMPORT_LINES_PER_OPERATION
+                if (cfg!(target_family = "wasm") || cfg!(test))
+                    && current_y_formula % IMPORT_LINES_PER_OPERATION == 0
+                {
+                    let width = row.len() as u32;
+                    crate::wasm_bindings::js::jsImportProgress(
+                        file_name,
+                        current_y_values + current_y_formula,
+                        total_rows as u32,
+                        0,
+                        1,
+                        width,
+                        total_rows as u32,
+                    );
+                }
+                current_y_formula += 1;
             }
             // add new sheets
             ops.push(Operation::AddSheetSchema {
-                schema: export_sheet(&sheet),
+                schema: export_sheet(sheet),
             });
             ops.extend(formula_compute_ops);
         }
@@ -283,7 +333,7 @@ impl GridController {
                 ops.push(operations);
 
                 // update the progress bar every time there's a new operation
-                if cfg!(target_family = "wasm") {
+                if cfg!(target_family = "wasm") || cfg!(test) {
                     crate::wasm_bindings::js::jsImportProgress(
                         file_name,
                         current_size as u32,
@@ -328,20 +378,23 @@ fn read_utf16(bytes: &[u8]) -> Option<String> {
 
 #[cfg(test)]
 mod test {
-    use super::read_utf16;
-    use super::*;
+    use serial_test::parallel;
+
+    use super::{read_utf16, *};
     use crate::CellValue;
 
     const INVALID_ENCODING_FILE: &[u8] =
         include_bytes!("../../../../quadratic-rust-shared/data/csv/encoding_issue.csv");
 
     #[test]
+    #[parallel]
     fn transmute_u8_to_u16() {
         let result = read_utf16(INVALID_ENCODING_FILE).unwrap();
         assert_eq!("issue, test, value\r\n0, 1, Invalid\r\n0, 2, Valid", result);
     }
 
     #[test]
+    #[parallel]
     fn imports_a_simple_csv() {
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
@@ -350,7 +403,12 @@ mod test {
         const SIMPLE_CSV: &str =
             "city,region,country,population\nSouthborough,MA,United States,a lot of people";
 
-        let ops = gc.import_csv_operations(sheet_id, SIMPLE_CSV.as_bytes(), "smallpop.csv", pos);
+        let ops = gc.import_csv_operations(
+            sheet_id,
+            SIMPLE_CSV.as_bytes().to_vec(),
+            "smallpop.csv",
+            pos,
+        );
         assert_eq!(ops.as_ref().unwrap().len(), 1);
         assert_eq!(
             ops.unwrap()[0],
@@ -371,6 +429,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn imports_a_long_csv() {
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
@@ -381,8 +440,9 @@ mod test {
             csv.push_str(&format!("city{},MA,United States,{}\n", i, i * 1000));
         }
 
-        let ops = gc.import_csv_operations(sheet_id, csv.as_bytes(), "long.csv", pos);
+        let ops = gc.import_csv_operations(sheet_id, csv.as_bytes().to_vec(), "long.csv", pos);
         assert_eq!(ops.as_ref().unwrap().len(), 3);
+
         let first_pos = match ops.as_ref().unwrap()[0] {
             Operation::SetCellValues { sheet_pos, .. } => sheet_pos,
             _ => panic!("Expected SetCellValues operation"),
@@ -413,10 +473,11 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn import_excel() {
-        let mut gc = GridController::test_blank();
+        let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/simple.xlsx");
-        gc.import_excel(file.to_vec(), "simple.xlsx").unwrap();
+        gc.import_excel(file.to_vec(), "simple.xlsx", None).unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;
         let sheet = gc.sheet(sheet_id);
@@ -441,10 +502,11 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn import_excel_invalid() {
-        let mut gc = GridController::test_blank();
+        let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/invalid.xlsx");
-        let result = gc.import_excel(file.to_vec(), "invalid.xlsx");
+        let result = gc.import_excel(file.to_vec(), "invalid.xlsx", None);
         assert!(result.is_err());
     }
 }

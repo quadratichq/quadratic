@@ -1,81 +1,22 @@
-import { cellTypeMenuOpenedCountAtom } from '@/app/atoms/cellTypeMenuOpenedCountAtom';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { events } from '@/app/events/events';
+import { showCodeHintState } from '@/app/atoms/codeHintAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
 
 export const CodeHint = () => {
-  const [cellHasValue, setCellHasValue] = useState(false);
-  const cellTypeMenuOpenedCount = useRecoilValue(cellTypeMenuOpenedCountAtom);
-  const { showCodeEditor, permissions } = useRecoilValue(editorInteractionStateAtom);
-  const { x: initialX, y: initialY } = sheets.sheet.cursor.cursorPosition;
-  const [offsets, setOffsets] = useState(sheets.sheet.getCellOffsets(initialX, initialY));
-  const [hide, setHide] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const [multipleSelection, setMultipleSelection] = useState(false);
+  const sheetNotEmpty = sheets.sheet.bounds.type === 'nonEmpty';
+  const showCodeHint = useRecoilValue(showCodeHintState);
 
-  useEffect(() => {
-    const updateCursor = async () => {
-      const { x, y } = sheets.sheet.cursor.cursorPosition;
-      const newCellHasValue = await quadraticCore.hasRenderCells(sheets.sheet.id, x, y, 1, 1);
-      setHide(true);
-      setCellHasValue(newCellHasValue);
+  if (isMobile || sheetNotEmpty || !showCodeHint) return null;
 
-      const offsets = sheets.sheet.getCellOffsets(x, y);
-      if (ref.current && ref.current.offsetWidth < offsets.width - CURSOR_THICKNESS * 2) {
-        setOffsets(offsets);
-        setHide(false);
-      } else {
-        setHide(true);
-      }
-      setOffsets(sheets.sheet.getCellOffsets(x, y));
-      setMultipleSelection(
-        sheets.sheet.cursor.multiCursor !== undefined || sheets.sheet.cursor.columnRow !== undefined
-      );
-    };
-    updateCursor();
-    events.on('setCursor', updateCursor);
-    events.on('cursorPosition', updateCursor);
-    events.on('changeSheet', updateCursor);
-    events.on('cursorPosition', updateCursor);
-    events.on('changeSheet', updateCursor);
-    events.on('sheetOffsets', updateCursor);
-    events.on('resizeHeadingColumn', updateCursor);
-
-    return () => {
-      events.off('setCursor', updateCursor);
-      events.off('cursorPosition', updateCursor);
-      events.off('changeSheet', updateCursor);
-      events.off('cursorPosition', updateCursor);
-      events.off('changeSheet', updateCursor);
-      events.off('sheetOffsets', updateCursor);
-      events.off('resizeHeadingColumn', updateCursor);
-    };
-  }, []);
-
-  if (
-    cellHasValue ||
-    cellTypeMenuOpenedCount >= 2 ||
-    showCodeEditor ||
-    !permissions.includes('FILE_EDIT') ||
-    isMobile ||
-    multipleSelection
-  ) {
-    return null;
-  }
-
+  const offset = sheets.sheet.getCellOffsets(0, 0);
   return (
     <div
-      ref={ref}
       className="center pointer-events-none absolute ml-1 whitespace-nowrap pr-0.5 text-xs leading-3 text-muted-foreground"
       style={{
-        left: offsets.x + CURSOR_THICKNESS,
-        top: offsets.y + CURSOR_THICKNESS * 2,
-        visibility: hide ? 'hidden' : 'visible',
+        left: offset.x + CURSOR_THICKNESS,
+        top: offset.y + CURSOR_THICKNESS * 2,
       }}
     >
       Press / to code

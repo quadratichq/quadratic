@@ -9,7 +9,7 @@ import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { ApiTypes, FilePermission, FilePermissionSchema, TeamPermission } from 'quadratic-shared/typesAndSchemas';
-import { NavigateFunction, SubmitFunction } from 'react-router-dom';
+import { SubmitFunction } from 'react-router-dom';
 import { SetterOrUpdater } from 'recoil';
 const { FILE_EDIT, FILE_DELETE } = FilePermissionSchema.enum;
 
@@ -70,10 +70,10 @@ export const isAvailableBecauseFileLocationIsAccessibleAndWriteable = ({
 }: IsAvailableArgs) => Boolean(fileTeamPrivacy) && Boolean(teamPermissions?.includes('TEAM_EDIT'));
 
 export const createNewFileAction = {
-  label: 'Create',
+  label: 'New',
   isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
-  run({ navigate, teamUuid }: { navigate: NavigateFunction; teamUuid: string }) {
-    navigate(ROUTES.CREATE_FILE_PRIVATE(teamUuid));
+  run({ setEditorInteractionState }: { setEditorInteractionState: SetterOrUpdater<EditorInteractionState> }) {
+    setEditorInteractionState((prevState) => ({ ...prevState, showNewFileMenu: true }));
   },
 };
 
@@ -186,6 +186,11 @@ export const downloadSelectionAsCsvAction = {
   },
 };
 
+export const dataValidations = {
+  label: 'Data Validations',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
 export const findInSheet = {
   label: 'Find in current sheet',
 };
@@ -195,5 +200,10 @@ export const findInSheets = {
 
 export const resizeColumnAction = {
   label: 'Resize column to fit data',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const validationAction = {
+  label: 'Data Validations',
   isAvailable: isAvailableBecauseCanEditFile,
 };

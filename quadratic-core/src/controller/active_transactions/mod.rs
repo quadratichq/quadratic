@@ -45,7 +45,7 @@ impl ActiveTransactions {
     pub fn get_async_transaction_index(&self, transaction_id: Uuid) -> Result<usize> {
         self.async_transactions
             .iter()
-            .position(|p| p.id == transaction_id && p.waiting_for_async.is_some())
+            .position(|p| p.id == transaction_id && p.has_async > 0)
             .ok_or_else(|| {
                 CoreError::TransactionNotFound(
                     "async transaction not found in get_async_transaction".into(),
@@ -63,15 +63,38 @@ impl ActiveTransactions {
     /// Removes and returns the mutable awaiting_async transaction based on its transaction_id
     pub fn remove_awaiting_async(&mut self, transaction_id: Uuid) -> Result<PendingTransaction> {
         let index = self.get_async_transaction_index(transaction_id)?;
-
-        Ok(self.async_transactions.remove(index))
+        let transaction = &mut self.async_transactions[index];
+        transaction.has_async -= 1;
+        if transaction.has_async > 0 {
+            self.get_async_transaction(transaction_id)
+        } else {
+            Ok(self.async_transactions.remove(index))
+        }
     }
 
-    pub fn add_async_transaction(&mut self, pending: &PendingTransaction) {
+    pub fn add_async_transaction(&mut self, pending: &mut PendingTransaction) {
         // Unsaved_operations hold async operations that are not complete. In that case, we need to replace the
         // unsaved operation with the new version.
         self.unsaved_transactions.insert_or_replace(pending, false);
-        self.async_transactions.push(pending.clone());
+        pending.has_async += 1;
+        let transaction = pending.clone();
+        if let Ok(index) = self.get_async_transaction_index(pending.id) {
+            self.async_transactions[index] = transaction;
+        } else {
+            self.async_transactions.push(transaction);
+        }
+    }
+
+    pub fn update_async_transaction(&mut self, pending: &PendingTransaction) {
+        // Unsaved_operations hold async operations that are not complete. In that case, we need to replace the
+        // unsaved operation with the new version.
+        self.unsaved_transactions.insert_or_replace(pending, false);
+        let transaction = pending.clone();
+        if let Ok(index) = self.get_async_transaction_index(pending.id) {
+            self.async_transactions[index] = transaction;
+        } else {
+            dbgjs!("[active_transactions] update_async_transaction: Async transaction not found");
+        }
     }
 
     pub fn mark_transaction_sent(&mut self, transaction_id: Uuid) {

@@ -6,6 +6,7 @@
  */
 
 import { debugWebWorkersMessages } from '@/app/debugFlags';
+import { Coordinate } from '@/app/gridGL/types/size';
 import { Rectangle } from 'pixi.js';
 import {
   ClientRenderMessage,
@@ -15,6 +16,7 @@ import {
 } from '../renderClientMessages';
 import { renderCore } from './renderCore';
 import { renderText } from './renderText';
+import { RenderSpecial } from './cellsLabel/CellsTextHashSpecial';
 
 declare var self: WorkerGlobalScope & typeof globalThis;
 
@@ -55,7 +57,11 @@ class RenderClient {
         return;
 
       case 'clientRenderColumnMaxWidth':
-        this.sendColumnMaxWidth(e.data.id, renderText.columnMaxWidth(e.data.sheetId, e.data.column));
+        this.sendColumnMaxWidth(e.data.id, e.data.sheetId, e.data.column);
+        return;
+
+      case 'clientRenderRowMaxHeight':
+        this.sendRowMaxHeight(e.data.id, e.data.sheetId, e.data.row);
         return;
 
       default:
@@ -72,7 +78,9 @@ class RenderClient {
     sheetId: string,
     hashX: number,
     hashY: number,
-    viewRectangle: { x: number; y: number; width: number; height: number }
+    viewRectangle: { x: number; y: number; width: number; height: number },
+    overflowGridLines: Coordinate[],
+    content: Uint32Array
   ) {
     const message: RenderClientCellsTextHashClear = {
       type: 'renderClientCellsTextHashClear',
@@ -80,6 +88,8 @@ class RenderClient {
       hashX,
       hashY,
       viewRectangle,
+      overflowGridLines,
+      content,
     };
     this.send(message);
   }
@@ -97,12 +107,18 @@ class RenderClient {
     this.send({ type: 'renderClientUnload', sheetId, hashX, hashY });
   }
 
-  finalizeCellsTextHash(sheetId: string, hashX: number, hashY: number) {
-    this.send({ type: 'renderClientFinalizeCellsTextHash', sheetId, hashX, hashY });
+  finalizeCellsTextHash(sheetId: string, hashX: number, hashY: number, special?: RenderSpecial) {
+    this.send({ type: 'renderClientFinalizeCellsTextHash', sheetId, hashX, hashY, special });
   }
 
-  sendColumnMaxWidth(id: number, maxWidth: number) {
+  async sendColumnMaxWidth(id: number, sheetId: string, column: number) {
+    const maxWidth = await renderText.columnMaxWidth(sheetId, column);
     this.send({ type: 'renderClientColumnMaxWidth', maxWidth, id });
+  }
+
+  async sendRowMaxHeight(id: number, sheetId: string, row: number) {
+    const maxHeight = await renderText.rowMaxHeight(sheetId, row);
+    this.send({ type: 'renderClientRowMaxHeight', maxHeight, id });
   }
 }
 

@@ -5,6 +5,7 @@ pub enum TransactionName {
     Unknown,
     ResizeColumn,
     ResizeRow,
+    ResizeRows,
     Autocomplete,
     SetBorders,
     SetCells,
@@ -19,4 +20,5 @@ pub enum TransactionName {
     SheetDelete,
     DuplicateSheet,
     MoveCells,
+    Validation,
 }

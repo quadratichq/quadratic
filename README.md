@@ -47,7 +47,7 @@ _Quadratic is in Beta._
 - [x] Charts and graphs
 - [x] Teams support
 - [x] JavaScript support
-- [ ] SQL database support
+- [x] SQL database support (Postgres, MySQL)
 - [ ] Data warehouse support (Snowflake, DataBricks, etc)
 - [ ] Self-host on your infrastructure
 

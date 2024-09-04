@@ -3,6 +3,7 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
+    grid::js_types::JsRowHeight,
     SheetPos,
 };
 
@@ -19,37 +20,34 @@ impl GridController {
                 // sheet may have been deleted
                 return;
             };
+
+            let old_size = sheet.offsets.set_column_width(column, new_size);
+            if old_size == new_size {
+                return;
+            }
+
             transaction
                 .forward_operations
                 .push(Operation::ResizeColumn {
                     sheet_id,
                     column,
                     new_size,
-                    client_resized: false,
+                    client_resized,
                 });
 
-            let old_size = sheet.offsets.set_column_width(column, new_size);
-
-            transaction.reverse_operations.insert(
-                0,
-                Operation::ResizeColumn {
+            transaction
+                .reverse_operations
+                .push(Operation::ResizeColumn {
                     sheet_id,
                     column,
                     new_size: old_size,
                     client_resized: false,
-                },
-            );
-
-            if transaction.is_user() {
-                transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
-                    x: column,
-                    y: 0,
-                    sheet_id,
                 });
-            }
+
             if (cfg!(target_family = "wasm") || cfg!(test))
-                && !client_resized
-                && !transaction.is_server()
+                && (transaction.is_undo_redo()
+                    || transaction.is_multiplayer()
+                    || (!client_resized && transaction.is_user()))
             {
                 crate::wasm_bindings::js::jsOffsetsModified(
                     sheet_id.to_string(),
@@ -57,6 +55,22 @@ impl GridController {
                     None,
                     new_size,
                 );
+            }
+
+            if transaction.is_user() {
+                let rows = sheet.get_rows_with_wrap_in_column(column);
+                if !rows.is_empty() {
+                    let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
+                    resize_rows.extend(rows);
+                }
+            }
+
+            if !transaction.is_server() {
+                transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
+                    x: column,
+                    y: 0,
+                    sheet_id,
+                });
             }
         }
     }
@@ -73,44 +87,106 @@ impl GridController {
                 // sheet may have been deleted
                 return;
             };
+
+            let old_size = sheet.offsets.set_row_height(row, new_size);
+            let old_client_resize = sheet.update_row_resize(row, client_resized);
+            if old_size == new_size && old_client_resize == client_resized {
+                return;
+            }
+
             transaction.forward_operations.push(Operation::ResizeRow {
                 sheet_id,
                 row,
                 new_size,
-                client_resized: false,
+                client_resized,
             });
-            let old_size = sheet.offsets.set_row_height(row, new_size);
 
-            transaction.reverse_operations.insert(
-                0,
-                Operation::ResizeRow {
-                    sheet_id,
-                    row,
-                    new_size: old_size,
-                    client_resized: false,
-                },
-            );
+            transaction.reverse_operations.push(Operation::ResizeRow {
+                sheet_id,
+                row,
+                new_size: old_size,
+                client_resized: old_client_resize,
+            });
 
-            if transaction.is_user_undo_redo() {
+            if (cfg!(target_family = "wasm") || cfg!(test))
+                && (transaction.is_undo_redo()
+                    || transaction.is_multiplayer()
+                    || (!client_resized && transaction.is_user()))
+            {
+                crate::wasm_bindings::js::jsOffsetsModified(
+                    sheet_id.to_string(),
+                    None,
+                    Some(row),
+                    new_size,
+                );
+            }
+
+            if !transaction.is_server() {
                 transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
                     x: 0,
                     y: row,
                     sheet_id,
                 });
             }
+        }
+    }
 
-            if (cfg!(target_family = "wasm") || cfg!(test))
-                && !client_resized
-                && !transaction.is_server()
-            {
-                if let Some(sheet) = self.try_sheet(sheet_id) {
-                    crate::wasm_bindings::js::jsOffsetsModified(
-                        sheet.id.to_string(),
-                        None,
-                        Some(row),
-                        new_size,
+    pub fn execute_resize_rows(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+        if let Operation::ResizeRows {
+            sheet_id,
+            row_heights,
+        } = op
+        {
+            if row_heights.is_empty() {
+                return;
+            }
+            let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+                // sheet may have been deleted
+                return;
+            };
+            transaction.forward_operations.push(Operation::ResizeRows {
+                sheet_id,
+                row_heights: row_heights.clone(),
+            });
+
+            let old_row_heights: Vec<JsRowHeight> = row_heights
+                .iter()
+                .map(|JsRowHeight { row, height }| {
+                    let old_size = sheet.offsets.set_row_height(*row, *height);
+                    JsRowHeight {
+                        row: *row,
+                        height: old_size,
+                    }
+                })
+                .collect();
+
+            if old_row_heights == row_heights {
+                return;
+            }
+
+            transaction.reverse_operations.push(Operation::ResizeRows {
+                sheet_id,
+                row_heights: old_row_heights,
+            });
+
+            if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+                if let Ok(row_heights_string) = serde_json::to_string(&row_heights) {
+                    crate::wasm_bindings::js::jsResizeRowHeights(
+                        sheet_id.to_string(),
+                        row_heights_string,
                     );
                 }
+            }
+
+            if !transaction.is_server() {
+                row_heights.iter().any(|JsRowHeight { row, .. }| {
+                    transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
+                        x: 0,
+                        y: *row,
+                        sheet_id,
+                    });
+                    transaction.generate_thumbnail
+                });
             }
         }
     }
@@ -129,7 +205,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let column = 0;
-        let new_size = 100.0;
+        let new_size = 120.0;
         gc.commit_single_resize(sheet_id, Some(column), None, new_size, None);
         let column_width = gc
             .grid

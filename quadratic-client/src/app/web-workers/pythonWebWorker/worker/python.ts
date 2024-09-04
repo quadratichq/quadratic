@@ -30,26 +30,18 @@ class Python {
     this.init();
   }
 
-  private getCells = async (
+  private getCells = (
     x0: number,
     y0: number,
     x1: number,
     y1: number,
     sheet?: string,
     lineNumber?: number
-  ): Promise<JsGetCellResponse[] | undefined> => {
+  ): JsGetCellResponse[] | undefined => {
     if (!this.transactionId) {
       throw new Error('No transactionId in getCells');
     }
-    const cells = await pythonCore.sendGetCells(
-      this.transactionId,
-      x0,
-      y0,
-      x1 - x0 + 1,
-      y1 - y0 + 1,
-      sheet,
-      lineNumber
-    );
+    const cells = pythonCore.getCells(this.transactionId, x0, y0, x1 - x0 + 1, y1 - y0 + 1, sheet, lineNumber);
     if (!cells) {
       // we reload pyodide if there is an error getting cells
       this.init();
@@ -108,6 +100,7 @@ class Python {
         'micropip',
         'pyodide-http',
         'pandas',
+        'requests',
         `${IS_TEST ? 'public' : ''}/quadratic_py-0.1.0-py3-none-any.whl`,
       ],
     });
@@ -116,6 +109,9 @@ class Python {
 
     // patch requests https://github.com/koenvo/pyodide-http
     await this.pyodide.runPythonAsync('import pyodide_http; pyodide_http.patch_all();');
+
+    // disable urllib3 warnings
+    await this.pyodide.runPythonAsync(`import requests; requests.packages.urllib3.disable_warnings();`);
 
     try {
       // make run_python easier to call later

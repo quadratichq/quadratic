@@ -25,6 +25,8 @@ export class Update {
   private lastScreenWidth = 0;
   private lastScreenHeight = 0;
 
+  private lastSheetId = '';
+
   constructor() {
     if (debugShowFPS) {
       this.fps = new FPS();
@@ -69,6 +71,10 @@ export class Update {
       this.lastScreenHeight = viewport.screenHeight;
       dirty = true;
     }
+    if (this.lastSheetId !== sheets.sheet.id) {
+      this.lastSheetId = sheets.sheet.id;
+      dirty = true;
+    }
     if (dirty) {
       pixiApp.viewportChanged();
       this.sendRenderViewport();
@@ -102,7 +108,8 @@ export class Update {
       pixiApp.cellImages.dirty ||
       pixiApp.cellHighlights.isDirty() ||
       pixiApp.cellMoving.dirty ||
-      pixiApp.cursor.dirty;
+      pixiApp.cursor.dirty ||
+      pixiApp.validations.dirty;
 
     if (rendererDirty && debugShowWhyRendering) {
       console.log(
@@ -136,6 +143,7 @@ export class Update {
     debugTimeCheck('[Update] cellMoving');
     pixiApp.cellsSheets.update();
     debugTimeCheck('[Update] cellsSheets');
+    pixiApp.validations.update(pixiApp.viewport.dirty);
 
     if (pixiApp.viewport.dirty || rendererDirty) {
       debugTimeReset();

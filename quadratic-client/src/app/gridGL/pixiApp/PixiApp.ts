@@ -3,6 +3,8 @@ import { UICellImages } from '@/app/gridGL/UI/UICellImages';
 import { UICellMoving } from '@/app/gridGL/UI/UICellMoving';
 import { CellHighlights } from '@/app/gridGL/UI/cellHighlights/CellHighlights';
 import { CellsImages } from '@/app/gridGL/cells/cellsImages/CellsImages';
+import { ensureVisible } from '@/app/gridGL/interaction/viewportHelper';
+import { Coordinate } from '@/app/gridGL/types/size';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
@@ -21,11 +23,11 @@ import { Cursor } from '../UI/Cursor';
 import { GridLines } from '../UI/GridLines';
 import { HtmlPlaceholders } from '../UI/HtmlPlaceholders';
 import { UIMultiPlayerCursor } from '../UI/UIMultiplayerCursor';
+import { UIValidations } from '../UI/UIValidations';
 import { BoxCells } from '../UI/boxCells';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { CellsSheets } from '../cells/CellsSheets';
 import { Pointer } from '../interaction/pointer/Pointer';
-import { ensureVisible } from '../interaction/viewportHelper';
 import { pixiAppSettings } from './PixiAppSettings';
 import { Update } from './Update';
 import { Viewport } from './Viewport';
@@ -61,6 +63,8 @@ export class PixiApp {
   htmlPlaceholders!: HtmlPlaceholders;
   imagePlaceholders!: Container;
   cellImages!: UICellImages;
+  validations: UIValidations;
+
   renderer!: Renderer;
   stage = new Container();
   loading = true;
@@ -79,6 +83,7 @@ export class PixiApp {
     // This is created first so it can listen to messages from QuadraticCore.
     this.cellsSheets = new CellsSheets();
     this.cellImages = new UICellImages();
+    this.validations = new UIValidations();
     this.viewport = new Viewport();
   }
 
@@ -149,6 +154,7 @@ export class PixiApp {
     this.imagePlaceholders = this.viewportContents.addChild(new Container());
     this.cellHighlights = this.viewportContents.addChild(new CellHighlights());
     this.cellMoving = this.viewportContents.addChild(new UICellMoving());
+    this.validations = this.viewportContents.addChild(this.validations);
     this.headings = this.viewportContents.addChild(new GridHeadings());
 
     this.reset();
@@ -190,6 +196,8 @@ export class PixiApp {
   };
 
   attach(parent: HTMLDivElement): void {
+    if (!this.canvas) return;
+
     this.parent = parent;
     parent.appendChild(this.canvas);
     this.resize();
@@ -268,11 +276,8 @@ export class PixiApp {
 
   reset(): void {
     this.viewport.scale.set(1);
-    if (pixiAppSettings.showHeadings) {
-      this.viewport.position.set(HEADING_SIZE, HEADING_SIZE);
-    } else {
-      this.viewport.position.set(0, 0);
-    }
+    const { x, y } = this.getStartingViewport();
+    this.viewport.position.set(x, y);
     pixiAppSettings.setEditorInteractionState?.(editorInteractionStateDefault);
   }
 
@@ -293,9 +298,9 @@ export class PixiApp {
 
   getStartingViewport(): { x: number; y: number } {
     if (pixiAppSettings.showHeadings) {
-      return { x: HEADING_SIZE, y: HEADING_SIZE };
+      return { x: HEADING_SIZE + 1, y: HEADING_SIZE + 1 };
     } else {
-      return { x: 0, y: 0 };
+      return { x: 1, y: 1 };
     }
   }
 
@@ -309,24 +314,21 @@ export class PixiApp {
     });
   }
 
-  updateCursorPosition(
-    options = {
-      ensureVisible: true,
-    }
-  ): void {
+  updateCursorPosition(visible: boolean | Coordinate = true) {
     this.cursor.dirty = true;
     this.cellHighlights.dirty = true;
     this.headings.dirty = true;
     if (!pixiAppSettings.showCellTypeOutlines) {
       this.cellsSheets.updateCellsArray();
     }
-    if (options.ensureVisible) ensureVisible();
+    if (visible) ensureVisible(visible !== true ? visible : undefined);
     events.emit('cursorPosition');
   }
 
   adjustHeadings(options: { sheetId: string; delta: number; row?: number; column?: number }): void {
     this.cellsSheets.adjustHeadings(options);
     this.cellsSheets.adjustOffsetsBorders(options.sheetId);
+    this.cellsSheets.adjustCellsImages(options.sheetId);
     htmlCellsHandler.updateOffsets([sheets.sheet.id]);
     if (sheets.sheet.id === options.sheetId) {
       this.gridLines.dirty = true;

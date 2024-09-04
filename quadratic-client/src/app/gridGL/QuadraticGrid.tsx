@@ -1,4 +1,6 @@
+import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
 import { events } from '@/app/events/events';
+import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { ImportProgress } from '@/app/ui/components/ImportProgress';
 import { Search } from '@/app/ui/components/Search';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -36,12 +38,11 @@ export default function QuadraticGrid() {
   }, []);
 
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const [inlineEditorState, setInlineEditorState] = useRecoilState(inlineEditorAtom);
   useEffect(() => {
     pixiAppSettings.updateEditorInteractionState(editorInteractionState, setEditorInteractionState);
-  }, [editorInteractionState, setEditorInteractionState]);
-
-  // Right click menu
-  const [showContextMenu, setShowContextMenu] = useState(false);
+    pixiAppSettings.updateInlineEditorState(inlineEditorState, setInlineEditorState);
+  }, [editorInteractionState, inlineEditorState, setEditorInteractionState, setInlineEditorState]);
 
   const { addGlobalSnackbar } = useGlobalSnackbar();
   useEffect(() => {
@@ -68,7 +69,7 @@ export default function QuadraticGrid() {
     window.addEventListener('mouseup', onMouseUp);
   };
   const onKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
-    if (e.key === ' ') {
+    if (matchShortcut('grid_pan_mode', e)) {
       spaceIsDown = true;
       if (panMode === PanMode.Disabled) {
         pixiAppSettings.changePanMode(PanMode.Enabled);
@@ -76,7 +77,7 @@ export default function QuadraticGrid() {
     }
   };
   const onKeyUp = (e: React.KeyboardEvent<HTMLElement>) => {
-    if (e.key === ' ') {
+    if (matchShortcut('grid_pan_mode', e)) {
       spaceIsDown = false;
       if (panMode !== PanMode.Disabled && !mouseIsDown) {
         pixiAppSettings.changePanMode(PanMode.Disabled);
@@ -104,16 +105,16 @@ export default function QuadraticGrid() {
       onContextMenu={(event) => {
         event.preventDefault();
         // If it's not already visible, show the context menu
-        if (!showContextMenu) {
-          setShowContextMenu(true);
+        if (!editorInteractionState.showContextMenu) {
+          setEditorInteractionState((state) => ({ ...state, showContextMenu: true }));
         }
       }}
       onMouseDown={onMouseDown}
       onClick={() => {
         // <FloatingContextMenu> prevents events from bubbling up to here, so
         // we always hide the context menu if it's open
-        if (showContextMenu) {
-          setShowContextMenu(false);
+        if (editorInteractionState.showContextMenu) {
+          setEditorInteractionState((state) => ({ ...state, showContextMenu: false }));
         }
       }}
       onKeyDown={(e) => {
@@ -123,7 +124,7 @@ export default function QuadraticGrid() {
       onKeyUp={onKeyUp}
     >
       <HTMLGridContainer parent={container} />
-      <FloatingContextMenu container={container} showContextMenu={showContextMenu} />
+      <FloatingContextMenu container={container} />
       <ImportProgress />
       <Search />
     </div>

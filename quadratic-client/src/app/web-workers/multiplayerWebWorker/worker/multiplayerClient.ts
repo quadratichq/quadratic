@@ -11,6 +11,10 @@ import { cellEditDefault, multiplayerServer } from './multiplayerServer';
 declare var self: WorkerGlobalScope & typeof globalThis;
 
 class MultiplayerClient {
+  // messages pending a reconnect
+  private waitingForConnection: Record<number, Function> = {};
+  private id = 0;
+
   constructor() {
     self.onmessage = this.handleMessage;
   }
@@ -59,6 +63,15 @@ class MultiplayerClient {
         multiplayerServer.userUpdate.follow = e.data.follow;
         break;
 
+      case 'clientMultiplayerRefreshJwt':
+        if (e.data.id in this.waitingForConnection) {
+          this.waitingForConnection[e.data.id]();
+          delete this.waitingForConnection[e.data.id];
+        } else {
+          throw new Error('Expected id to be in waitingForConnection for clientMultiplayerRefreshJwt');
+        }
+        break;
+
       default:
         console.warn('[multiplayerClient] Unhandled message type', e.data);
     }
@@ -90,6 +103,17 @@ class MultiplayerClient {
   reload() {
     this.send({
       type: 'multiplayerClientReload',
+    });
+  }
+
+  sendRefreshJwt(): Promise<void> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForConnection[id] = resolve;
+      this.send({
+        type: 'multiplayerClientRefreshJwt',
+        id,
+      });
     });
   }
 }

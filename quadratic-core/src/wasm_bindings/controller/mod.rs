@@ -1,6 +1,7 @@
 use super::*;
 use crate::grid::js_types::*;
 use crate::wasm_bindings::controller::sheet_info::SheetInfo;
+use js_sys::{ArrayBuffer, Uint8Array};
 use std::str::FromStr;
 
 pub mod auto_complete;
@@ -19,6 +20,7 @@ pub mod sheet_offsets;
 pub mod sheets;
 pub mod summarize;
 pub mod transactions;
+pub mod validation;
 pub mod worker;
 
 #[wasm_bindgen]
@@ -26,11 +28,11 @@ impl GridController {
     /// Imports a [`GridController`] from a JSON string.
     #[wasm_bindgen(js_name = "newFromFile")]
     pub fn js_new_from_file(
-        file: &str,
+        file: Vec<u8>,
         last_sequence_num: u32,
         initialize: bool,
     ) -> Result<GridController, JsValue> {
-        match file::import(file) {
+        match file::import(file).map_err(|e| e.to_string()) {
             Ok(file) => {
                 let grid = GridController::from_grid(file, last_sequence_num as u64);
 
@@ -83,12 +85,15 @@ impl GridController {
 
                             // sends all images to the client
                             sheet.send_all_images();
+
+                            // sends all validations to the client
+                            sheet.send_all_validations();
                         }
                     });
                 }
                 Ok(grid)
             }
-            Err(e) => Err(JsValue::from_str(&e.to_string())),
+            Err(e) => Err(JsValue::from_str(&format!("Failed to import grid: {}", e))),
         }
     }
 
@@ -99,8 +104,11 @@ impl GridController {
 
     /// Exports a [`GridController`] to a file. Returns a `String`.
     #[wasm_bindgen(js_name = "exportToFile")]
-    pub fn js_export_to_file(&mut self) -> Result<String, JsValue> {
-        Ok(file::export(self.grid_mut()).map_err(|e| e.to_string())?)
+    pub fn js_export_to_file(self) -> Result<ArrayBuffer, JsValue> {
+        match file::export(self.into_grid()) {
+            Ok(file) => Ok(Uint8Array::from(&file[..]).buffer()),
+            Err(e) => Err(JsValue::from_str(&e.to_string())),
+        }
     }
 
     /// Exports a [`string`]

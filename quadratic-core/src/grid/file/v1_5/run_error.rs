@@ -45,6 +45,7 @@ pub enum RunErrorMsg {
     BadFunctionName,
     BadCellReference,
     BadNumber,
+    NaN,
 
     // Array size errors
     ExactArraySizeMismatch {
@@ -81,7 +82,7 @@ pub enum RunErrorMsg {
 // todo: There's probably a better way to do the From/Into between the types.
 
 impl RunError {
-    pub fn from_grid_run_error(error: &crate::RunError) -> Self {
+    pub fn from_grid_run_error(error: crate::RunError) -> Self {
         Self {
             span: error.span.map(|span| Span {
                 start: span.start,
@@ -117,6 +118,7 @@ impl RunError {
                 crate::RunErrorMsg::BadFunctionName => RunErrorMsg::BadFunctionName,
                 crate::RunErrorMsg::BadCellReference => RunErrorMsg::BadCellReference,
                 crate::RunErrorMsg::BadNumber => RunErrorMsg::BadNumber,
+                crate::RunErrorMsg::NaN => RunErrorMsg::NaN,
 
                 // Array size errors
                 crate::RunErrorMsg::ExactArraySizeMismatch { expected, got } => {
@@ -211,6 +213,7 @@ impl From<RunError> for crate::RunError {
                 RunErrorMsg::BadFunctionName => crate::RunErrorMsg::BadFunctionName,
                 RunErrorMsg::BadCellReference => crate::RunErrorMsg::BadCellReference,
                 RunErrorMsg::BadNumber => crate::RunErrorMsg::BadNumber,
+                RunErrorMsg::NaN => crate::RunErrorMsg::NaN,
 
                 // Array size errors
                 RunErrorMsg::ExactArraySizeMismatch { expected, got } => {

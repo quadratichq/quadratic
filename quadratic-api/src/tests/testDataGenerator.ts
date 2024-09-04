@@ -137,7 +137,36 @@ function getDefaultConnectionTypeDetails(type: ConnectionType) {
         username: 'root',
         password: 'password',
       };
+    case 'MSSQL':
+      return {
+        host: 'localhost',
+        port: '1433',
+        database: 'msdb',
+        username: 'sa',
+        password: 'yourStrong(!)Password',
+      };
     default:
       throw new Error(`No default connection data for type ${type}`);
   }
+}
+
+/**
+ *
+ * Single function for clearing the database. Not every test will use all these
+ * tables, but it's easier to clear everything in one reusable function and
+ * ensure things are deleted in the proper order.
+ *
+ */
+export async function clearDb() {
+  await dbClient.$transaction([
+    dbClient.fileCheckpoint.deleteMany(),
+    dbClient.fileInvite.deleteMany(),
+    dbClient.userFileRole.deleteMany(),
+    dbClient.file.deleteMany(),
+    dbClient.connection.deleteMany(),
+    dbClient.userTeamRole.deleteMany(),
+    dbClient.teamInvite.deleteMany(),
+    dbClient.team.deleteMany(),
+    dbClient.user.deleteMany(),
+  ]);
 }

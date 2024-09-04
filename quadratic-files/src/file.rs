@@ -1,13 +1,16 @@
+use serde::de::DeserializeOwned;
 use std::sync::Arc;
 use tokio::time::Instant;
 use uuid::Uuid;
 
 use quadratic_core::{
     controller::{
-        operations::operation::Operation, transaction::TransactionServer, GridController,
+        operations::operation::Operation,
+        transaction::{Transaction, TransactionServer},
+        GridController,
     },
     grid::{
-        file::{export_vec, import, CURRENT_VERSION},
+        file::{export, import, CURRENT_VERSION},
         Grid,
     },
 };
@@ -29,18 +32,18 @@ use crate::{
 pub static GROUP_NAME: &str = "quadratic-file-service-1";
 
 /// Load a .grid file
-pub(crate) fn load_file(key: &str, file: &str) -> Result<Grid> {
+pub(crate) fn load_file(key: &str, file: Vec<u8>) -> Result<Grid> {
     import(file).map_err(|e| FilesError::ImportFile(key.into(), e.to_string()))
 }
 
 /// Exports a .grid file
-pub(crate) fn export_file(key: &str, grid: &mut Grid) -> Result<Vec<u8>> {
-    export_vec(grid).map_err(|e| FilesError::ExportFile(key.into(), e.to_string()))
+pub(crate) fn export_file(key: &str, grid: Grid) -> Result<Vec<u8>> {
+    export(grid).map_err(|e| FilesError::ExportFile(key.into(), e.to_string()))
 }
 
 /// Apply a vec of operations to the grid
 pub(crate) fn apply_transaction(grid: &mut GridController, operations: Vec<Operation>) {
-    grid.server_apply_transaction(operations)
+    grid.server_apply_transaction(operations, None)
 }
 
 /// Exports a .grid file
@@ -57,9 +60,7 @@ pub(crate) async fn get_and_load_object(
         .await
         .map_err(|e| FilesError::LoadFile(key.into(), bucket.to_string(), e.to_string()))?
         .into_bytes();
-    let body = std::str::from_utf8(&body)
-        .map_err(|e| FilesError::LoadFile(key.into(), bucket.to_string(), e.to_string()))?;
-    let grid = load_file(key, body)?;
+    let grid = load_file(key, body.to_vec())?;
 
     Ok(GridController::from_grid(grid, sequence_num))
 }
@@ -88,7 +89,7 @@ pub(crate) async fn process_transactions(
     let key = key(file_id, final_sequence_num);
 
     apply_transaction(&mut grid, operations);
-    let body = export_file(&key, grid.grid_mut())?;
+    let body = export_file(&key, grid.into_grid())?;
 
     upload_object(client, bucket, &key, &body).await?;
 
@@ -129,8 +130,8 @@ pub(crate) async fn process_queue_for_room(
         .connection
         .get_messages_from(channel, &checkpoint_sequence_num.to_string(), false)
         .await?
-        .iter()
-        .flat_map(|(_, message)| serde_json::from_str::<TransactionServer>(message))
+        .into_iter()
+        .flat_map(|(_, message)| decompress_and_deserialize::<TransactionServer>(message))
         .collect::<Vec<TransactionServer>>();
 
     tracing::trace!(
@@ -166,9 +167,9 @@ pub(crate) async fn process_queue_for_room(
             //     transaction.id,
             //     transaction.sequence_num
             // );
-
-            transaction.operations
+            decompress_and_deserialize::<Vec<Operation>>(transaction.operations)
         })
+        .flatten()
         .collect::<Vec<Operation>>();
 
     // process the transactions and save the file to S3
@@ -260,6 +261,11 @@ pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result
     Ok(())
 }
 
+fn decompress_and_deserialize<T: DeserializeOwned>(data: Vec<u8>) -> Result<T> {
+    Transaction::decompress_and_deserialize::<T>(&data)
+        .map_err(|e| FilesError::Serialization(e.to_string()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -270,9 +276,9 @@ mod tests {
         let key = "test";
 
         // load the file
-        let mut file = load_file(
+        let file = load_file(
             key,
-            include_str!("../../quadratic-rust-shared/data/grid/v1_4_simple.grid"),
+            include_bytes!("../../quadratic-rust-shared/data/grid/v1_4_simple.grid").to_vec(),
         )
         .unwrap();
 
@@ -305,7 +311,7 @@ mod tests {
             Some(CellValue::Text("hello".to_string()))
         );
 
-        let grid = export_file(key, &mut file);
+        let grid = export_file(key, file);
         assert!(grid.is_ok());
     }
 

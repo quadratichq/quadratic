@@ -1,7 +1,8 @@
+use itertools::Itertools;
 use regex::Regex;
 use smallvec::smallvec;
 
-use crate::ArraySize;
+use crate::{ArraySize, CodeResultExt};
 
 use super::*;
 
@@ -20,9 +21,12 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[examples("INDIRECT(\"Cn7\")", "INDIRECT(\"F\" & B0)")]
             #[zip_map]
             fn INDIRECT(ctx: Ctx, [cellref_string]: (Spanned<String>)) {
-                let pos = CellRef::parse_a1(&cellref_string.inner, ctx.sheet_pos.into())
-                    .ok_or(RunErrorMsg::BadCellReference.with_span(cellref_string.span))?;
-                ctx.get_cell(&pos, cellref_string.span)?.inner
+                let span = cellref_string.span;
+                // TODO: support array references
+                let cell_ref = CellRef::parse_a1(&cellref_string.inner, ctx.sheet_pos.into())
+                    .ok_or(RunErrorMsg::BadCellReference.with_span(span))?;
+                let pos = ctx.resolve_ref(&cell_ref, span)?.inner;
+                ctx.get_cell(pos, span).inner
             }
         ),
         formula_fn!(
@@ -69,7 +73,6 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// Searches for a value in the first horizontal row of a range and
             /// return the corresponding cell in another horizontal row, or an
             /// error if no match is found.
-            ///
             ///
             /// If `is_sorted` is `TRUE`, this function uses a [binary search
             /// algorithm](https://en.wikipedia.org/wiki/Binary_search_algorithm),
@@ -274,10 +277,178 @@ fn get_functions() -> Vec<FormulaFunction> {
                 Array::new_row_major(result_size, final_output_array)?
             }
         ),
+        formula_fn!(
+            /// Searches for a value in a range and returns the index of the
+            /// first match, starting from 1.
+            ///
+            /// If `match_mode` is `1` (the default), then the index of the
+            /// _greatest value less than_ `search_key` will be returned. In
+            /// this mode, `search_range` must be sorted in ascending order,
+            /// with smaller values at the top or left and larger values at the
+            /// bottom or right; otherwise the result of this function will be
+            /// meaningless.
+            ///
+            /// If `match_mode` is `-1`, then the index of the _smallest value
+            /// greater than_ `search_key` will be returned. In this mode,
+            /// `search_range` must be sorted in ascending order, with larger
+            /// values at the top or left and smaller values at the bottom or
+            /// right; otherwise the result of this function will be
+            /// meaningless.
+            ///
+            /// If `match_mode` is `0`, then the index of the first value
+            /// _equal_ to `search_key` will be returned. In this mode,
+            /// `search_range` may be in any order. `search_key` may also be a
+            /// wildcard.
+            ///
+            #[doc = see_docs_for_more_about_wildcards!()]
+            #[examples(
+                "MATCH(12, {10, 20, 30})",
+                "MATCH(19, {10, 20, 30}, -1)",
+                "MATCH(\"A\", {\"a\"; \"b\"; \"c\"}, 0)"
+            )]
+            #[zip_map]
+            fn MATCH(
+                [search_key]: CellValue,
+                search_range: (Spanned<Array>),
+                match_mode: (Option<f64>),
+            ) {
+                let match_mode = match_mode.unwrap_or(1.0);
+                let (match_mode, search_mode) = if match_mode > 0.0 {
+                    (
+                        LookupMatchMode::NextSmaller,
+                        LookupSearchMode::BinaryAscending,
+                    )
+                } else if match_mode < 0.0 {
+                    (
+                        LookupMatchMode::NextLarger,
+                        LookupSearchMode::BinaryDescending,
+                    )
+                } else {
+                    (LookupMatchMode::Wildcard, LookupSearchMode::LinearForward)
+                };
+                let needle = search_key;
+                let haystack = search_range.try_as_linear_array()?;
+                let index = lookup(needle, haystack, match_mode, search_mode)?
+                    .ok_or(RunErrorMsg::NoMatch)?;
+                index as i64 + 1 // 1-indexed
+            }
+        ),
+        formula_fn!(
+            /// Returns the element in `range` at a given `row` and `column`. If
+            /// the array is a single row, then `row` may be omitted; otherwise
+            /// it is required. If the array is a single column, then `column`
+            /// may be omitted; otherwise it is required.
+            ///
+            /// If `range` is a group of multiple range references, then the
+            /// extra parameter `range_num` indicates which range to index from.
+            ///
+            /// When `range` is a range references or a group of range
+            /// references, `INDEX` may be used as part of a new range
+            /// reference.
+            #[examples(
+                "INDEX({1, 2, 3; 4, 5, 6}, 1, 3)",
+                "INDEX(A1:A100, 42)",
+                "INDEX(A6:Q6, 12)",
+                "INDEX((A1:B6, C1:D6, D1:D100), 1, 5, C6)",
+                "E1:INDEX((A1:B6, C1:D6, D1:D100), 1, 5, C6)",
+                "INDEX((A1:B6, C1:D6, D1:D100), 1, 5, C6):E1",
+                "INDEX(A3:Q3, A2):INDEX(A6:Q6, A2)"
+            )]
+            fn INDEX(
+                span: Span,
+                range: (Spanned<Vec<Array>>),
+                row: (Option<Spanned<i64>>),
+                column: (Option<Spanned<i64>>),
+                range_num: (Option<Spanned<i64>>),
+            ) {
+                let args = IndexFunctionArgs::from_values(
+                    |i| Some(range.inner.get(i)?.size()),
+                    row,
+                    column,
+                    range_num,
+                )?;
+                range
+                    .inner
+                    .get(args.tuple_index)
+                    .ok_or(RunErrorMsg::IndexOutOfBounds.with_span(span))?
+                    .get(args.x, args.y)
+                    .cloned()
+                    .with_span(span)?
+                    .inner
+            }
+        ),
     ]
 }
 
-/// Performs a `LOOKUP` and returns the index of the best match.
+/// Arguments to the `INDEX` function.
+#[derive(Debug, Copy, Clone)]
+pub struct IndexFunctionArgs {
+    /// Which range (0-indexed) to return from.
+    pub tuple_index: usize,
+    /// X coordinate (0-indexed) within the range.
+    pub x: u32,
+    /// Y coordinate (0-indexed) within the range.
+    pub y: u32,
+}
+impl IndexFunctionArgs {
+    pub fn from_values(
+        get_array_size: impl FnOnce(usize) -> Option<ArraySize>,
+        mut row: Option<Spanned<i64>>,
+        mut column: Option<Spanned<i64>>,
+        range_num: Option<Spanned<i64>>,
+    ) -> CodeResult<Self> {
+        let (tuple_index, array_size) = match range_num {
+            // IIFE to mimic try_block
+            Some(v) => (|| {
+                let i = v.inner.saturating_sub(1).try_into().ok()?;
+                Some((i, get_array_size(i)?))
+            })()
+            .ok_or_else(|| RunErrorMsg::IndexOutOfBounds.with_span(v.span))?,
+            None => {
+                let array_size = get_array_size(0).ok_or(RunErrorMsg::InternalError(
+                    "get_array_size(0) returned None".into(),
+                ))?;
+                (0, array_size)
+            }
+        };
+
+        let w = array_size.w.get() as i64;
+        let h = array_size.h.get() as i64;
+        if h == 1 && column.is_none() {
+            std::mem::swap(&mut row, &mut column);
+        }
+
+        let x;
+        match column {
+            Some(column) => {
+                x = column.inner.saturating_sub(1);
+                if !(0 <= x && x < w) {
+                    return Err(RunErrorMsg::IndexOutOfBounds.with_span(column));
+                }
+            }
+            None => x = 0,
+        }
+
+        let y;
+        match row {
+            Some(row) => {
+                y = row.inner.saturating_sub(1);
+                if !(0 <= y && y < h) {
+                    return Err(RunErrorMsg::IndexOutOfBounds.with_span(row));
+                }
+            }
+            None => y = 0,
+        }
+
+        Ok(Self {
+            tuple_index,
+            x: x as u32,
+            y: y as u32,
+        })
+    }
+}
+
+/// Performs a `LOOKUP` and returns the index of the best match (0-indexed).
 fn lookup<V: ToString + AsRef<CellValue>>(
     needle: &CellValue,
     haystack: &[V],
@@ -433,6 +604,7 @@ enum LookupSearchMode {
 }
 impl LookupSearchMode {
     fn from_is_sorted(is_sorted: Option<bool>) -> Self {
+        // TODO: the default behavior here may be incorrect.
         match is_sorted {
             Some(false) | None => LookupSearchMode::LinearForward,
             Some(true) => LookupSearchMode::BinaryAscending,
@@ -464,6 +636,7 @@ mod tests {
     use smallvec::smallvec;
 
     use crate::{formulas::tests::*, Pos};
+    use serial_test::parallel;
 
     lazy_static! {
         static ref NUMBERS_LOOKUP_ARRAY: Array = array![
@@ -494,6 +667,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_formula_indirect() {
         let form = parse_formula("INDIRECT(\"D5\")", pos![B2]).unwrap();
 
@@ -505,7 +679,7 @@ mod tests {
         let mut ctx = Ctx::new(&g, pos![D5].to_sheet_pos(sheet_id));
         assert_eq!(
             RunErrorMsg::CircularReference,
-            form.eval(&mut ctx, false).unwrap_err().msg,
+            form.eval(&mut ctx).unwrap_err().msg,
         );
 
         assert_eq!("35".to_string(), eval_to_string(&g, "INDIRECT(\"D5\")"));
@@ -513,6 +687,7 @@ mod tests {
 
     /// Test VLOOKUP error conditions.
     #[test]
+    #[parallel]
     fn test_vlookup_errors() {
         // Test using numbers ...
         let array = &*NUMBERS_LOOKUP_ARRAY;
@@ -559,6 +734,7 @@ mod tests {
 
     /// Test VLOOKUP.
     #[test]
+    #[parallel]
     fn test_vlookup() {
         // Test exact match (unsorted)
         let array = &*MIXED_LOOKUP_ARRAY;
@@ -595,8 +771,18 @@ mod tests {
         }
     }
 
+    /// Test that VLOOKUP ignores error values.
+    #[test]
+    #[parallel]
+    fn test_vlookup_ignore_errors() {
+        let g = Grid::from_array(pos![A1], &array!["a", 10; 1.0 / 0.0, 20; "b", 30]);
+        assert_eq!("10", eval_to_string(&g, "VLOOKUP(\"a\", A1:B3, 2)"));
+        assert_eq!("30", eval_to_string(&g, "VLOOKUP(\"b\", A1:B3, 2)"));
+    }
+
     /// Test HLOOKUP error conditions.
     #[test]
+    #[parallel]
     fn test_hlookup_errors() {
         // Test using numbers ...
         let transposed_array = &*NUMBERS_LOOKUP_ARRAY;
@@ -645,6 +831,7 @@ mod tests {
 
     /// Test HLOOKUP.
     #[test]
+    #[parallel]
     fn test_hlookup() {
         // Test exact match (unsorted)
         let transposed_array = &*MIXED_LOOKUP_ARRAY;
@@ -685,6 +872,7 @@ mod tests {
 
     /// Test XLOOKUP input validation
     #[test]
+    #[parallel]
     fn test_xlookup_validation() {
         let array = &*NUMBERS_LOOKUP_ARRAY;
         let g = Grid::from_array(pos![A1], array);
@@ -765,6 +953,7 @@ mod tests {
 
     /// Test XLOOKUP's various search modes.
     #[test]
+    #[parallel]
     fn test_xlookup_search_modes() {
         fn test_exact_xlookup_with_array(
             array: &Array,
@@ -827,7 +1016,7 @@ mod tests {
                         let h_result = eval(&grid_hlookup, &h_formula);
                         let results = [&v_result, &h_result]
                             .into_iter()
-                            .flat_map(|a| a.cell_values_slice());
+                            .flat_map(|a| a.cell_values_slice().unwrap());
 
                         if if_not_found.is_blank() {
                             for v in results {
@@ -897,6 +1086,7 @@ mod tests {
 
     /// Tests XLOOKUP's various match modes.
     #[test]
+    #[parallel]
     fn test_xlookup_match_modes() {
         let numbers_grid = Grid::from_array(pos![A1], &NUMBERS_LOOKUP_ARRAY);
         let rev_numbers_grid = Grid::from_array(pos![A1], &NUMBERS_LOOKUP_ARRAY.flip_vertically());
@@ -983,6 +1173,7 @@ mod tests {
     /// Test XLOOKUP's zip mapping, which is completely orthogonal to its search
     /// modes.
     #[test]
+    #[parallel]
     fn test_xlookup_zip_map() {
         let array = &*NUMBERS_LOOKUP_ARRAY;
         let g = Grid::from_array(pos![A1], array);
@@ -991,25 +1182,26 @@ mod tests {
         assert_eq!(
             "{1, two, c; \
               a, fifty, ale}",
-            eval_to_string(&g, formula,),
+            eval_to_string(&g, formula),
         );
 
         let formula = "XLOOKUP({1; 4}, A1:A4, A1:C4, {'a', 'b', 'c'})";
         assert_eq!(
             "{1, one, wan; \
               a, b, c}",
-            eval_to_string(&g, formula,),
+            eval_to_string(&g, formula),
         );
 
         let formula = "XLOOKUP({1; 4}, A1:A4, A1:C4, 'a')";
         assert_eq!(
             "{1, one, wan; \
               a, a, a}",
-            eval_to_string(&g, formula,),
+            eval_to_string(&g, formula),
         );
     }
 
     #[test]
+    #[parallel]
     fn test_xlookup() {
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
@@ -1025,5 +1217,176 @@ mod tests {
                 eval_to_string(&g, &format!("XLOOKUP({i}, A1:A6, B1:B6)")),
             );
         }
+    }
+
+    #[test]
+    fn test_match() {
+        let mut g = Grid::new();
+        let sheet = &mut g.sheets_mut()[0];
+
+        // Produce the following grid:
+        // 11 21 31 41 51 61
+        // 12 22 32 42 52 62
+        // 13 23 33 43 53 63
+        // 14 24 34 44 54 64
+        // 15 25 35 45 55 65
+        // 16 26 36 46 56 66
+        for x in 1..=6 {
+            for y in 1..=6 {
+                let _ = sheet.set_cell_value(Pos { x, y }, x * 10 + y);
+            }
+        }
+
+        // next smaller (horizontal)
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, "MATCH(10, B1:B6)").msg
+        );
+        assert_eq!("1", eval_to_string(&g, "MATCH(11, B1:B6)"));
+        assert_eq!("2", eval_to_string(&g, "MATCH(12.9, B1:B6)"));
+        assert_eq!("6", eval_to_string(&g, "MATCH(99999, B1:B6)"));
+
+        // next smaller (vertical)
+        assert_eq!("1", eval_to_string(&g, "MATCH(11, B1:G1)"));
+        assert_eq!("4", eval_to_string(&g, "MATCH(50, B1:G1)"));
+        assert_eq!("6", eval_to_string(&g, "MATCH(99999, B1:G1)"));
+
+        // single cell range
+        assert_eq!(RunErrorMsg::NoMatch, eval_to_err(&g, "MATCH(10, B1)").msg);
+        assert_eq!("1", eval_to_string(&g, "MATCH(11, B1)"));
+        assert_eq!("1", eval_to_string(&g, "MATCH(12, B1)"));
+
+        // error on bad range
+        assert_eq!(
+            RunErrorMsg::NonLinearArray,
+            eval_to_err(&g, "MATCH(99999, B1:G6)").msg,
+        );
+
+        // next larger
+        let make_match_formula_str =
+            |search_key| format!("MATCH({search_key}, {{16, 15, 14, 13, 12, 11}}, -1)");
+        assert_eq!("6", eval_to_string(&g, &make_match_formula_str(-999999.0)));
+        assert_eq!("4", eval_to_string(&g, &make_match_formula_str(12.9)));
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, &make_match_formula_str(999999.0)).msg,
+        );
+
+        // equal
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, "MATCH(0, C3:C5, 0)").msg,
+        );
+        assert_eq!("1", eval_to_string(&g, "MATCH(23, C3:C5, 0)"));
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, "MATCH(24.5, C3:C5, 0)").msg,
+        );
+        assert_eq!("3", eval_to_string(&g, "MATCH(25, C3:C5, 0)"));
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, "MATCH(99999, C3:C5, 0)").msg,
+        );
+
+        // wildcard
+        let make_match_formula_str =
+            |search_key| format!("MATCH(\"{search_key}\", {{\"lipu\", \"nanpa\", \"suli\"}}, 0)");
+        assert_eq!(
+            RunErrorMsg::NoMatch,
+            eval_to_err(&g, &make_match_formula_str("U*")).msg,
+        );
+        assert_eq!("1", eval_to_string(&g, &make_match_formula_str("*U")));
+        assert_eq!("2", eval_to_string(&g, &make_match_formula_str("Na?pa")));
+    }
+
+    #[test]
+    fn test_index() {
+        let mut g = Grid::new();
+
+        let s = "INDEX({1, 2, 3; 4, 5, 6}, 1, 3)";
+        assert_check_syntax_succeeds(&g, s);
+        assert_eq!("3", eval_to_string(&g, s));
+
+        g.sheets_mut()[0].set_cell_value(pos![A42], "funny number");
+        let s = "INDEX(A1:A100, 42)";
+        assert_check_syntax_succeeds(&g, s);
+        assert_eq!("funny number", eval_to_string(&g, s));
+
+        g.sheets_mut()[0].set_cell_value(pos![L6], "twelfth");
+        let s = "INDEX((A6:Q6), 12)"; // parens are ok
+        assert_check_syntax_succeeds(&g, s);
+        assert_eq!("twelfth", eval_to_string(&g, s));
+        let s = "INDEX(L6, 1)"; // single cells are ok
+        assert_check_syntax_succeeds(&g, s);
+        assert_eq!("twelfth", eval_to_string(&g, s));
+        let s = "INDEX(6, 1)"; // single values are ok
+        assert_check_syntax_succeeds(&g, s);
+        assert_eq!("6", eval_to_string(&g, s));
+        let s = "INDEX(3+3, 1)"; // expressions are ok
+        assert_check_syntax_succeeds(&g, s);
+        assert_eq!("6", eval_to_string(&g, s));
+
+        let s = "INDEX((A1:B6, C1:D6, D1:D100), 5, 1, C6)";
+        assert_check_syntax_succeeds(&g, s);
+        g.sheets_mut()[0].set_cell_value(pos![A5], "aaa");
+        g.sheets_mut()[0].set_cell_value(pos![C5], "ccc");
+        g.sheets_mut()[0].set_cell_value(pos![D5], "ddd");
+        g.sheets_mut()[0].set_cell_value(pos![C6], 1);
+        assert_eq!("aaa", eval_to_string(&g, s));
+        g.sheets_mut()[0].set_cell_value(pos![C6], 2);
+        assert_eq!("ccc", eval_to_string(&g, s));
+        g.sheets_mut()[0].set_cell_value(pos![C6], 3);
+        assert_eq!("ddd", eval_to_string(&g, s));
+        g.sheets_mut()[0].set_cell_value(pos![C6], 4);
+        assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
+        g.sheets_mut()[0].set_cell_value(pos![C6], -1);
+        assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
+        g.sheets_mut()[0].set_cell_value(pos![C6], i64::MAX);
+        assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
+        g.sheets_mut()[0].set_cell_value(pos![C6], i64::MIN);
+        assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
+
+        let s = "INDEX(A3:Q3, A2):INDEX(A6:Q6, A2)";
+        assert_check_syntax_succeeds(&g, s);
+        g.sheets_mut()[0].set_cell_value(pos![A2], 12);
+        g.sheets_mut()[0].set_cell_value(pos![L3], "l3");
+        g.sheets_mut()[0].set_cell_value(pos![L4], "l4");
+        g.sheets_mut()[0].set_cell_value(pos![L5], "l5");
+        g.sheets_mut()[0].set_cell_value(pos![L6], "l6");
+        assert_eq!("{l3; l4; l5; l6}", eval_to_string(&g, s));
+
+        let s = "E1:INDEX((A1:B6, C1:D6, D1:D100), 1, 5, C6)";
+        assert_check_syntax_succeeds(&g, s);
+        g.sheets_mut()[0].set_cell_value(pos![C6], "2");
+        assert_eq!(RunErrorMsg::IndexOutOfBounds, eval_to_err(&g, s).msg);
+
+        let s = "E1:INDEX((A1:B6, C1:D6, D1:D100), 5, 1, C6)";
+        assert_check_syntax_succeeds(&g, s);
+        let array_size = eval(&g, s).into_array().unwrap().size();
+        assert_eq!(array_size.w.get(), 3);
+        assert_eq!(array_size.h.get(), 5);
+
+        let s = "INDEX((A1:B6, C1:D6, D1:D100), 5, 1, C6):E1";
+        assert_check_syntax_succeeds(&g, s);
+        let array_size = eval(&g, s).into_array().unwrap().size();
+        assert_eq!(array_size.w.get(), 3);
+        assert_eq!(array_size.h.get(), 5);
+
+        // values are not ok when we expect a cell reference
+        let s = "INDEX(6, 1):E1";
+        assert_eq!(
+            RunErrorMsg::Expected {
+                expected: "cell range reference".into(),
+                got: Some("numeric literal".into()),
+            },
+            eval_to_err(&g, s).msg,
+        );
+        assert_eq!(
+            RunErrorMsg::Expected {
+                expected: "cell range reference".into(),
+                got: Some("numeric literal".into()),
+            },
+            check_syntax_to_err(&g, s).msg,
+        );
     }
 }

@@ -6,29 +6,34 @@
  */
 
 import { debugWebWorkers } from '@/app/debugFlags';
-import { readFileAsArrayBuffer } from '@/app/helpers/files';
 import {
   CellAlign,
   CellFormatSummary,
+  CellVerticalAlign,
+  CellWrap,
   CodeCellLanguage,
   Format,
   JsCodeCell,
   JsCodeResult,
-  JsGetCellResponse,
   JsRenderCell,
   MinMax,
   SearchOptions,
   Selection,
   SheetPos,
   SummarizeSelectionResult,
+  Validation,
 } from '@/app/quadratic-core-types';
 import initCore, { GridController } from '@/app/quadratic-core/quadratic_core';
-import { MultiplayerCoreReceiveTransaction } from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
+import {
+  MultiplayerCoreReceiveTransaction,
+  MultiplayerCoreReceiveTransactions,
+} from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
 import * as Sentry from '@sentry/react';
+import { Buffer } from 'buffer';
 import {
   ClientCoreFindNextColumn,
   ClientCoreFindNextRow,
-  ClientCoreImportExcel,
+  ClientCoreImportFile,
   ClientCoreLoad,
   ClientCoreMoveCells,
   ClientCoreSummarizeSelection,
@@ -36,7 +41,7 @@ import {
 import { coreClient } from './coreClient';
 import { coreRender } from './coreRender';
 import { offline } from './offline';
-import { numbersToRect, pointsToRect, posToPos, posToRect } from './rustConversions';
+import { numbersToRectStringified, pointsToRect, posToPos, posToRect } from './rustConversions';
 
 // Used to coerce bigints to numbers for JSON.stringify; see
 // https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-2064279949.
@@ -51,9 +56,9 @@ class Core {
   private clientQueue: Function[] = [];
   private renderQueue: Function[] = [];
 
-  private async loadGridFile(file: string): Promise<string> {
+  private async loadGridFile(file: string): Promise<Uint8Array> {
     const res = await fetch(file);
-    return await res.text();
+    return new Uint8Array(await res.arrayBuffer());
   }
 
   constructor() {
@@ -74,7 +79,7 @@ class Core {
     this.next();
   };
 
-  // Creates a Grid form a file. Initializes bother coreClient and coreRender w/metadata.
+  // Creates a Grid from a file. Initializes bother coreClient and coreRender w/metadata.
   async loadFile(message: ClientCoreLoad, renderPort: MessagePort): Promise<{ version: string } | { error: string }> {
     coreRender.init(renderPort);
     const results = await Promise.all([this.loadGridFile(message.url), initCore()]);
@@ -152,7 +157,7 @@ class Core {
         if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getGridBounds');
         const cells = this.gridController.getRenderCells(
           data.sheetId,
-          numbersToRect(data.x, data.y, data.width, data.height)
+          numbersToRectStringified(data.x, data.y, data.width, data.height)
         );
         resolve(JSON.parse(cells));
       });
@@ -286,7 +291,12 @@ class Core {
       this.clientQueue.push(async () => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
         const data = message.transaction;
-        this.gridController.multiplayerTransaction(data.id, data.sequence_num, data.operations);
+
+        if (typeof data.operations === 'string') {
+          data.operations = Buffer.from(data.operations, 'base64');
+        }
+
+        this.gridController.multiplayerTransaction(data.id, data.sequence_num, new Uint8Array(data.operations));
         offline.markTransactionSent(data.id);
         if (await offline.unsentTransactionsCount()) {
           coreClient.sendMultiplayerState('syncing');
@@ -298,11 +308,25 @@ class Core {
     });
   }
 
-  receiveTransactions(transactions: string) {
+  receiveTransactions(receive_transactions: MultiplayerCoreReceiveTransactions) {
     return new Promise((resolve) => {
       this.clientQueue.push(async () => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.receiveMultiplayerTransactions(transactions);
+
+        for (let data of receive_transactions.transactions) {
+          // convert the base64 encoded string of operations into buffers
+          if (typeof data.operations === 'string') {
+            data.operations = Buffer.from(data.operations, 'base64');
+          }
+
+          this.gridController.multiplayerTransaction(data.id, data.sequence_num, new Uint8Array(data.operations));
+        }
+
+        // TODO(ddimaria): re-enable 5 - 7 days after we roll out the compressed
+        // transactions PR, so that we'll know all transactions are of the same version.
+        //
+        // const transactionsBuffer = JSON.stringify(receive_transactions.transactions);
+        // this.gridController.receiveMultiplayerTransactions(transactionsBuffer);
         if (await offline.unsentTransactionsCount()) {
           coreClient.sendMultiplayerState('syncing');
         } else {
@@ -400,55 +424,106 @@ class Core {
     });
   }
 
-  importCsv(
-    sheetId: string,
-    x: number,
-    y: number,
+  async upgradeGridFile(
     file: ArrayBuffer,
-    fileName: string,
-    cursor?: string
-  ): Promise<string | undefined> {
-    return new Promise((resolve) => {
-      this.clientQueue.push(() => {
-        if (!this.gridController) throw new Error('Expected gridController to be defined');
-        try {
-          this.gridController.importCsv(sheetId, new Uint8Array(file), fileName, posToPos(x, y), cursor);
-          resolve(undefined);
-        } catch (error) {
-          // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
-          // type in the UI.
-          console.error(error);
-          reportError(error);
-          Sentry.captureException(error);
-          resolve(error as string);
-        }
-      });
-    });
+    sequenceNum: number
+  ): Promise<{ contents?: ArrayBuffer; version?: string; error?: string }> {
+    try {
+      await initCore();
+      const gc = GridController.newFromFile(new Uint8Array(file), sequenceNum, false);
+      const version = gc.getVersion();
+      const contents = gc.exportToFile();
+      return { contents, version };
+    } catch (error: unknown) {
+      console.error(error);
+      reportError(error);
+      Sentry.captureException(error);
+      return { error: error as string };
+    }
   }
 
-  importParquet(
-    sheetId: string,
-    x: number,
-    y: number,
-    file: ArrayBuffer,
-    fileName: string,
-    cursor?: string
-  ): Promise<string | undefined> {
-    return new Promise((resolve) => {
-      this.clientQueue.push(() => {
-        if (!this.gridController) throw new Error('Expected gridController to be defined');
-        try {
-          this.gridController.importParquet(sheetId, new Uint8Array(file), fileName, posToPos(x, y), cursor);
-          resolve(undefined);
-        } catch (error) {
-          // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
-          // type in the UI.
-          reportError(error);
-          Sentry.captureException(error);
-          resolve(error as string);
+  async importFile({
+    file,
+    fileName,
+    fileType,
+    sheetId,
+    location,
+    cursor,
+  }: ClientCoreImportFile): Promise<{ contents?: ArrayBuffer; version?: string; error?: string }> {
+    if (cursor === undefined) {
+      try {
+        await initCore();
+        let gc: GridController;
+        switch (fileType) {
+          case 'excel':
+            gc = GridController.importExcel(new Uint8Array(file), fileName);
+            break;
+          case 'csv':
+            gc = GridController.importCsv(new Uint8Array(file), fileName);
+            break;
+          case 'parquet':
+            gc = GridController.importParquet(new Uint8Array(file), fileName);
+            break;
+          default:
+            throw new Error('Unsupported file type');
         }
+        const version = gc.getVersion();
+        const contents = gc.exportToFile();
+        return { contents, version };
+      } catch (error: unknown) {
+        console.error(error);
+        reportError(error);
+        Sentry.captureException(error);
+        return { error: error as string };
+      }
+    } else {
+      return new Promise((resolve) => {
+        this.clientQueue.push(() => {
+          if (!this.gridController) throw new Error('Expected gridController to be defined');
+          try {
+            switch (fileType) {
+              case 'excel':
+                this.gridController.importExcelIntoExistingFile(new Uint8Array(file), fileName, cursor);
+                break;
+              case 'csv':
+                if (sheetId === undefined || location === undefined) {
+                  throw new Error('Expected sheetId and location to be defined');
+                }
+                this.gridController.importCsvIntoExistingFile(
+                  new Uint8Array(file),
+                  fileName,
+                  sheetId,
+                  posToPos(location.x, location.y),
+                  cursor
+                );
+                break;
+              case 'parquet':
+                if (sheetId === undefined || location === undefined) {
+                  throw new Error('Expected sheetId and location to be defined');
+                }
+                this.gridController.importParquetIntoExistingFile(
+                  new Uint8Array(file),
+                  fileName,
+                  sheetId,
+                  posToPos(location.x, location.y),
+                  cursor
+                );
+                break;
+              default:
+                throw new Error('Unsupported file type');
+            }
+            resolve({});
+          } catch (error: unknown) {
+            // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
+            // type in the UI.
+            console.error(error);
+            reportError(error);
+            Sentry.captureException(error);
+            resolve({ error: error as string });
+          }
+        });
       });
-    });
+    }
   }
 
   deleteCellValues(selection: Selection, cursor?: string) {
@@ -558,15 +633,7 @@ class Core {
     });
   }
 
-  async upgradeGridFile(file: string, sequenceNum: number): Promise<{ grid: string; version: string }> {
-    await initCore();
-    const gc = GridController.newFromFile(file, sequenceNum, false);
-    const grid = gc.exportToFile();
-    const version = gc.getVersion();
-    return { grid, version };
-  }
-
-  export(): Promise<string> {
+  export(): Promise<ArrayBuffer> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -588,7 +655,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        resolve(this.gridController.hasRenderCells(sheetId, numbersToRect(x, y, width, height)));
+        resolve(this.gridController.hasRenderCells(sheetId, numbersToRectStringified(x, y, width, height)));
       });
     });
   }
@@ -598,6 +665,26 @@ class Core {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
         this.gridController.setCellAlign(JSON.stringify(selection, bigIntReplacer), align, cursor);
+        resolve(undefined);
+      });
+    });
+  }
+
+  setCellVerticalAlign(selection: Selection, verticalAlign: CellVerticalAlign, cursor?: string) {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        this.gridController.setCellVerticalAlign(JSON.stringify(selection, bigIntReplacer), verticalAlign, cursor);
+        resolve(undefined);
+      });
+    });
+  }
+
+  setCellWrap(selection: Selection, wrap: CellWrap, cursor?: string) {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        this.gridController.setCellWrap(JSON.stringify(selection, bigIntReplacer), wrap, cursor);
         resolve(undefined);
       });
     });
@@ -652,14 +739,20 @@ class Core {
     y: number,
     width: number,
     height: number,
-    border: string,
+    selection: string,
     style: string | undefined,
     cursor: string
   ) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setRegionBorders(sheetId, numbersToRect(x, y, width, height), border, style, cursor);
+        this.gridController.setRegionBorders(
+          sheetId,
+          numbersToRectStringified(x, y, width, height),
+          selection,
+          style,
+          cursor
+        );
         resolve(undefined);
       });
     });
@@ -671,7 +764,7 @@ class Core {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
         this.gridController.setCellRenderSize(
           sheetId,
-          numbersToRect(x, y, 1, 1),
+          numbersToRectStringified(x, y, 1, 1),
           width.toString(),
           height.toString(),
           cursor
@@ -743,7 +836,7 @@ class Core {
     });
   }
 
-  findNextColumn(data: ClientCoreFindNextColumn): Promise<number> {
+  findNextColumn(data: ClientCoreFindNextColumn): Promise<number | undefined> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -754,7 +847,7 @@ class Core {
     });
   }
 
-  findNextRow(data: ClientCoreFindNextRow): Promise<number> {
+  findNextRow(data: ClientCoreFindNextRow): Promise<number | undefined> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -771,6 +864,7 @@ class Core {
       this.gridController.commitOffsetsResize(sheetId, transientResize, cursor);
     });
   }
+
   commitSingleResize(
     sheetId: string,
     column: number | undefined,
@@ -791,43 +885,12 @@ class Core {
 
   connectionComplete(transactionId: string, data: ArrayBuffer, std_out?: string, std_err?: string, extra?: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-
     this.gridController.connectionComplete(transactionId, data as Uint8Array, std_out, std_err, extra);
   }
 
-  getCells(
-    transactionId: string,
-    x: number,
-    y: number,
-    w: number,
-    h?: number,
-    sheet?: string,
-    lineNumber?: number
-  ): JsGetCellResponse[] | undefined {
+  getCells(transactionId: string, x: number, y: number, w: number, h?: number, sheet?: string, lineNumber?: number) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    try {
-      const cellsStringified = this.gridController.calculationGetCells(transactionId, x, y, w, h, sheet, lineNumber);
-      return cellsStringified ? (JSON.parse(cellsStringified) as JsGetCellResponse[]) : undefined;
-    } catch (e) {
-      // there was an error getting the cells (likely, an unknown sheet name)
-    }
-  }
-
-  async importExcel(message: ClientCoreImportExcel): Promise<{ contents?: string; version?: string; error?: string }> {
-    await initCore();
-    try {
-      const fileBytes = await readFileAsArrayBuffer(message.file);
-      const gc = GridController.importExcel(fileBytes, message.file.name);
-      const contents = gc.exportToFile();
-      return { contents: contents, version: gc.getVersion() };
-    } catch (error: unknown) {
-      // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
-      // type in the UI.
-      console.error(error);
-      reportError(error);
-      Sentry.captureException(error);
-      return { error: error as string };
-    }
+    return this.gridController.calculationGetCells(transactionId, x, y, w, h, sheet, lineNumber);
   }
 
   // Returns true if the transaction was applied successfully.
@@ -906,6 +969,67 @@ class Core {
       JSON.stringify(dest, bigIntReplacer),
       message.cursor
     );
+  }
+
+  getValidation(sheetId: string, validationId: string): Validation | undefined {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const validation = this.gridController.getValidation(sheetId, validationId);
+    if (validation) {
+      return JSON.parse(validation);
+    }
+  }
+
+  getValidations(sheetId: string): Validation[] {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const validations = this.gridController.getValidations(sheetId);
+    return JSON.parse(validations);
+  }
+
+  updateValidation(validation: Validation, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.updateValidation(JSON.stringify(validation, bigIntReplacer), cursor);
+  }
+
+  removeValidation(sheetId: string, validationId: string, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.removeValidation(sheetId, validationId, cursor);
+  }
+
+  removeValidations(sheetId: string, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.removeValidations(sheetId, cursor);
+  }
+
+  getValidationFromPos(sheetId: string, x: number, y: number) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const validation = this.gridController.getValidationFromPos(sheetId, posToPos(x, y));
+    if (validation) {
+      return JSON.parse(validation);
+    }
+  }
+
+  receiveRowHeights(transactionId: string, sheetId: string, rowHeights: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.receiveRowHeights(transactionId, sheetId, rowHeights);
+  }
+
+  getValidationList(sheetId: string, x: number, y: number) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const list = this.gridController.getValidationList(sheetId, BigInt(x), BigInt(y));
+    return JSON.parse(list);
+  }
+
+  getDisplayCell(sheetId: string, x: number, y: number) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    return this.gridController.getDisplayValue(sheetId, posToPos(x, y));
+  }
+
+  validateInput(sheetId: string, x: number, y: number, input: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const validationId = this.gridController.validateInput(sheetId, posToPos(x, y), input);
+    if (validationId) {
+      return JSON.parse(validationId);
+    }
   }
 }
 

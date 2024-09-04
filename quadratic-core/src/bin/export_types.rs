@@ -1,7 +1,23 @@
 use std::fs::create_dir_all;
 
 use controller::operations::clipboard::PasteSpecial;
-use grid::{formats::format::Format, js_types::JsSheetFill};
+use grid::{
+    formats::format::Format,
+    js_types::{JsSheetFill, JsValidationWarning},
+    sheet::validations::{
+        validation::{
+            Validation, ValidationDisplay, ValidationDisplaySheet, ValidationError,
+            ValidationMessage, ValidationStyle,
+        },
+        validation_rules::{
+            validation_list::{ValidationList, ValidationListSource},
+            validation_logical::ValidationLogical,
+            validation_number::{NumberRange, ValidationNumber},
+            validation_text::{TextCase, TextMatch, ValidationText},
+            ValidationRule,
+        },
+    },
+};
 use quadratic_core::{
     color::Rgba,
     controller::{
@@ -10,7 +26,7 @@ use quadratic_core::{
     },
     grid::{
         js_types::{
-            JsCodeCell, JsHtmlOutput, JsRenderBorder, JsRenderBorders, JsRenderCell,
+            JsCodeCell, JsHtmlOutput, JsNumber, JsRenderBorder, JsRenderBorders, JsRenderCell,
             JsRenderCellSpecial, JsRenderCodeCell, JsRenderCodeCellState,
         },
         sheet::search::SearchOptions,
@@ -53,11 +69,13 @@ fn main() {
         JsRenderCodeCellState,
         JsRenderCellSpecial,
         JsRenderCell,
+        JsNumber,
         formulas::RangeRef,
         formulas::CellRef,
         formulas::CellRefCoord,
         grid::GridBounds,
         grid::CellAlign,
+        grid::CellVerticalAlign,
         grid::CellWrap,
         grid::NumericFormat,
         grid::NumericFormatKind,
@@ -66,6 +84,7 @@ fn main() {
         grid::js_types::JsRenderFill,
         grid::js_types::CellFormatSummary,
         grid::js_types::JsClipboard,
+        grid::js_types::JsRowHeight,
         ArraySize,
         Axis,
         Instant,
@@ -99,6 +118,22 @@ fn main() {
         Format,
         JsSheetFill,
         ColumnRow,
+        Validation,
+        ValidationRule,
+        ValidationError,
+        ValidationMessage,
+        ValidationLogical,
+        ValidationList,
+        ValidationListSource,
+        ValidationStyle,
+        ValidationDisplay,
+        ValidationDisplaySheet,
+        ValidationNumber,
+        NumberRange,
+        TextCase,
+        TextMatch,
+        ValidationText,
+        JsValidationWarning
     );
 
     if create_dir_all("../quadratic-client/src/app/quadratic-core-types").is_ok() {

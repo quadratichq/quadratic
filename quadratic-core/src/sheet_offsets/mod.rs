@@ -243,7 +243,10 @@ impl SheetOffsets {
 
 #[cfg(test)]
 mod test {
+    use serial_test::parallel;
+
     #[test]
+    #[parallel]
     fn screen_rect_cell_offsets() {
         let sheet = super::SheetOffsets::default();
         let rect = super::Rect::from_numbers(0, 0, 1, 1);
@@ -251,17 +254,18 @@ mod test {
         assert_eq!(screen_rect.x, 0.0);
         assert_eq!(screen_rect.y, 0.0);
         assert_eq!(screen_rect.w, 100.0);
-        assert_eq!(screen_rect.h, 20.0);
+        assert_eq!(screen_rect.h, 21.0);
 
         let rect = super::Rect::from_numbers(0, 0, 2, 2);
         let screen_rect = sheet.screen_rect_cell_offsets(rect);
         assert_eq!(screen_rect.x, 0.0);
         assert_eq!(screen_rect.y, 0.0);
         assert_eq!(screen_rect.w, 100.0 * 2.0);
-        assert_eq!(screen_rect.h, 20.0 * 2.0);
+        assert_eq!(screen_rect.h, 21.0 * 2.0);
     }
 
     #[test]
+    #[parallel]
     fn rect_cell_offsets() {
         let sheet = super::SheetOffsets::default();
         let rect = super::Rect::from_numbers(0, 0, 1, 1);
@@ -269,13 +273,13 @@ mod test {
         assert_eq!(rect.min.x, 0);
         assert_eq!(rect.min.y, 0);
         assert_eq!(rect.max.x, 100);
-        assert_eq!(rect.max.y, 20);
+        assert_eq!(rect.max.y, 21);
 
         let rect = super::Rect::from_numbers(0, 0, 2, 2);
         let rect = sheet.rect_cell_offsets(rect);
         assert_eq!(rect.min.x, 0);
         assert_eq!(rect.min.y, 0);
         assert_eq!(rect.max.x, 200);
-        assert_eq!(rect.max.y, 40);
+        assert_eq!(rect.max.y, 42);
     }
 }

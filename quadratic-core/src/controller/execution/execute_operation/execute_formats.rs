@@ -3,8 +3,7 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    grid::formatting::CellFmtArray,
-    grid::*,
+    grid::{formatting::CellFmtArray, *},
 };
 
 impl GridController {
@@ -18,6 +17,12 @@ impl GridController {
             let old_attr = match attr.clone() {
                 CellFmtArray::Align(align) => CellFmtArray::Align(
                     self.set_cell_formats_for_type::<CellAlign>(&sheet_rect, align),
+                ),
+                CellFmtArray::VerticalAlign(vertical_align) => CellFmtArray::VerticalAlign(
+                    self.set_cell_formats_for_type::<CellVerticalAlign>(
+                        &sheet_rect,
+                        vertical_align,
+                    ),
                 ),
                 CellFmtArray::Wrap(wrap) => CellFmtArray::Wrap(
                     self.set_cell_formats_for_type::<CellWrap>(&sheet_rect, wrap),
@@ -47,6 +52,9 @@ impl GridController {
                     self.set_cell_formats_for_type::<RenderSize>(&sheet_rect, output_size),
                 ),
             };
+            if old_attr == attr {
+                return;
+            }
 
             if !transaction.is_server() {
                 match &attr {
@@ -71,6 +79,27 @@ impl GridController {
                     _ => {
                         self.send_updated_bounds_rect(&sheet_rect, true);
                         self.send_render_cells(&sheet_rect);
+                        if matches!(
+                            attr,
+                            CellFmtArray::Wrap(_)
+                                | CellFmtArray::NumericFormat(_)
+                                | CellFmtArray::NumericDecimals(_)
+                                | CellFmtArray::NumericCommas(_)
+                                | CellFmtArray::Bold(_)
+                                | CellFmtArray::Italic(_)
+                        ) && transaction.is_user()
+                        {
+                            if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
+                                let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into());
+                                if !rows.is_empty() {
+                                    let resize_rows = transaction
+                                        .resize_rows
+                                        .entry(sheet_rect.sheet_id)
+                                        .or_default();
+                                    resize_rows.extend(rows);
+                                }
+                            }
+                        }
                     }
                 };
             }
@@ -81,13 +110,12 @@ impl GridController {
                 .forward_operations
                 .push(Operation::SetCellFormats { sheet_rect, attr });
 
-            transaction.reverse_operations.insert(
-                0,
-                Operation::SetCellFormats {
+            transaction
+                .reverse_operations
+                .push(Operation::SetCellFormats {
                     sheet_rect,
                     attr: old_attr,
-                },
-            );
+                });
         }
     }
 
@@ -99,10 +127,20 @@ impl GridController {
     ) {
         if let Operation::SetCellFormatsSelection { selection, formats } = op {
             if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
-                let reverse_operations = sheet.set_formats_selection(&selection, &formats);
+                let (reverse_operations, rows) = sheet.set_formats_selection(&selection, &formats);
+                if reverse_operations.is_empty() {
+                    return;
+                }
 
                 if !transaction.is_server() {
                     self.send_updated_bounds_selection(&selection, true);
+                    if !rows.is_empty() && transaction.is_user() {
+                        let resize_rows = transaction
+                            .resize_rows
+                            .entry(selection.sheet_id)
+                            .or_default();
+                        resize_rows.extend(rows);
+                    }
                 }
 
                 transaction.generate_thumbnail |= self.thumbnail_dirty_selection(&selection);
@@ -113,7 +151,7 @@ impl GridController {
 
                 transaction
                     .reverse_operations
-                    .splice(0..0, reverse_operations.iter().cloned());
+                    .extend(reverse_operations.iter().cloned());
             }
         }
     }

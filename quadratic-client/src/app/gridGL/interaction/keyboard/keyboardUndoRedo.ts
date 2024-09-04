@@ -1,20 +1,15 @@
+import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { isMac } from '@/shared/utils/isMac';
 
 export function keyboardUndoRedo(event: React.KeyboardEvent<HTMLElement>): boolean {
   // Redo
-  if (
-    ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'z') ||
-    ((event.metaKey || event.ctrlKey) && event.key === 'y' && !isMac)
-  ) {
-    event.preventDefault();
+  if (matchShortcut('redo', event)) {
     quadraticCore.redo();
     return true;
   }
 
   // Undo
-  if ((event.metaKey || event.ctrlKey) && event.key === 'z') {
-    event.preventDefault();
+  if (matchShortcut('undo', event)) {
     quadraticCore.undo();
     return true;
   }

@@ -37,8 +37,8 @@ pub fn generate_borders_full(
     };
 
     for style in styles.iter() {
-        let horizontal = compute_indices::horizontal(rect, selections.clone());
-        let vertical = compute_indices::vertical(rect, selections.clone());
+        let horizontal = compute_indices::horizontal(rect, &selections);
+        let vertical = compute_indices::vertical(rect, &selections);
 
         for &horizontal_border_index in &horizontal {
             let above_index = horizontal_border_index - 1;
@@ -95,7 +95,7 @@ pub fn get_cell_borders_in_rect(
     for (i, x) in rect.x_range().enumerate() {
         for (j, y) in rect.y_range().enumerate() {
             let pos = Pos { x, y };
-            if selection.is_none() || selection.is_some_and(|s| s.pos_in_selection(pos)) {
+            if selection.is_none() || selection.is_some_and(|s| s.contains_pos(pos)) {
                 let border = id_space_borders.get_cell_border(pos);
                 borders.push((i as i64, j as i64, border));
             }
@@ -442,6 +442,7 @@ mod tests {
     use crate::{Pos, Rect};
 
     use super::*;
+    use serial_test::parallel;
 
     /// Convenience for asserting expected borders more tersely
     macro_rules! assert_borders {
@@ -470,6 +471,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn all_borders() {
         let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
         let rect = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 6, y: 15 });
@@ -530,6 +532,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn outer_borders() {
         let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
         let rect = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 5, y: 12 });
@@ -561,6 +564,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn remove_subset_of_existing_borders() {
         let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
 
@@ -616,6 +620,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn remove_and_validate_previous_borders() {
         let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
 
@@ -655,6 +660,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn change_style_for_subset_of_existing_borders() {
         let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
 
@@ -728,6 +734,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn change_style_and_validate_previous_borders() {
         let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
 

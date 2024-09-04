@@ -74,9 +74,7 @@ async function handler(
       thumbnail: thumbnailSignedUrl,
       ownerUserId: ownerUserId ? ownerUserId : undefined,
     },
-    // TODO: (team-schema) these should be guaranteed after shipping the new schema
-    // @ts-expect-error
-    team: { uuid: ownerTeam.uuid, name: ownerTeam.name },
+    team: { uuid: (ownerTeam as any).uuid, name: (ownerTeam as any).name },
     userMakingRequest: {
       id: userId,
       filePermissions,
@@ -86,5 +84,6 @@ async function handler(
       teamPermissions,
     },
   };
+
   return res.status(200).json(data);
 }

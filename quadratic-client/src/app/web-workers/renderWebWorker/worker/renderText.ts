@@ -7,7 +7,7 @@
  */
 
 import { debugShowCellHashesInfo } from '@/app/debugFlags';
-import { SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import { JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 import init from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../renderBitmapFonts';
@@ -108,10 +108,10 @@ class RenderText {
   };
 
   // Called before first render when all text visible in the viewport has been rendered and sent to the client
-  completeRenderCells(message: { sheetId: string; hashX: number; hashY: number; cells: string }) {
+  completeRenderCells(message: { sheetId: string; hashX: number; hashY: number; renderCells: JsRenderCell[] }) {
     const cellsLabels = this.cellsLabels.get(message.sheetId);
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.completeRenderCells');
-    cellsLabels.completeRenderCells(message.hashX, message.hashY, message.cells);
+    cellsLabels.completeRenderCells(message.hashX, message.hashY, message.renderCells);
   }
 
   addSheet(sheetInfo: SheetInfo) {
@@ -125,7 +125,7 @@ class RenderText {
 
   sheetOffsetsDelta(sheetId: string, column: number | undefined, row: number | undefined, delta: number) {
     const cellsLabels = this.cellsLabels.get(sheetId);
-    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.sheetOffsets');
+    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.sheetOffsetsDelta');
     cellsLabels.setOffsetsDelta(column, row, delta);
   }
 
@@ -153,10 +153,28 @@ class RenderText {
     cellsLabels.showLabel(x, y, show);
   }
 
-  columnMaxWidth(sheetId: string, column: number): number {
+  columnMaxWidth(sheetId: string, column: number): Promise<number> {
     const cellsLabels = this.cellsLabels.get(sheetId);
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.columnMaxWidth');
     return cellsLabels.columnMaxWidth(column);
+  }
+
+  rowMaxHeight(sheetId: string, row: number): Promise<number> {
+    const cellsLabels = this.cellsLabels.get(sheetId);
+    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.rowMaxHeight');
+    return cellsLabels.rowMaxHeight(row);
+  }
+
+  getRowHeights(sheetId: string, rows: bigint[]): Promise<JsRowHeight[]> {
+    const cellsLabels = this.cellsLabels.get(sheetId);
+    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.getRowHeights');
+    return cellsLabels.getRowHeights(rows);
+  }
+
+  resizeRowHeights(sheetId: string, rowHeights: JsRowHeight[]) {
+    const cellsLabels = this.cellsLabels.get(sheetId);
+    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.resizeRowHeights');
+    cellsLabels.resizeRowHeights(rowHeights);
   }
 }
 

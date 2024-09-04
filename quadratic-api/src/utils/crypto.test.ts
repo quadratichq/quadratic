@@ -43,7 +43,7 @@ describe('Encryption and Decryption', () => {
 
   it('should fail to decrypt with a tampered encrypted text', () => {
     const encryptedText = encrypt(key, text);
-    const tamperedText = encryptedText.slice(0, -1) + '0'; // change the last character
+    const tamperedText = encryptedText + 'abc123';
 
     expect(() => decrypt(key, tamperedText)).toThrow();
   });

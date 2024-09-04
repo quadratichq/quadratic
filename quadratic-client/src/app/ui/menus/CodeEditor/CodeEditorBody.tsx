@@ -1,3 +1,4 @@
+import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import Editor, { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
@@ -7,7 +8,6 @@ import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { pyrightWorker, uri } from '../../../web-workers/pythonLanguageServer/worker';
 import { useCodeEditor } from './CodeEditorContext';
-import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
 import {
   provideCompletionItems as provideCompletionItemsPython,
@@ -24,11 +24,13 @@ import { events } from '@/app/events/events';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import { codeCellIsAConnection, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
 import { SheetRect } from '@/app/quadratic-core-types';
+import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlaceholder';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { javascriptLibraryForEditor } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generatedJavascriptForEditor';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
-import { useFileRouteLoaderData } from '@/routes/file.$uuid';
 import useEventListener from '@/shared/hooks/useEventListener';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { CircularProgress } from '@mui/material';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
 import { useEditorReturn } from './useEditorReturn';
 
@@ -44,10 +46,14 @@ interface Props {
 }
 
 // need to track globally since monaco is a singleton
-let registered = false;
+let registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
+  Formula: false,
+  Python: false,
+  Javascript: false,
+};
 
 export const CodeEditorBody = (props: Props) => {
-  const { editorContent, setEditorContent, closeEditor, evaluationResult, cellLocation } = props;
+  const { editorContent, setEditorContent, closeEditor, evaluationResult, cellsAccessed, cellLocation } = props;
   const {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
@@ -62,7 +68,7 @@ export const CodeEditorBody = (props: Props) => {
   const [isValidRef, setIsValidRef] = useState(false);
   const { editorRef, monacoRef } = useCodeEditor();
 
-  useEditorCellHighlights(isValidRef, editorRef, monacoRef, language);
+  useEditorCellHighlights(isValidRef, editorRef, monacoRef, language, cellsAccessed);
   useEditorOnSelectionChange(isValidRef, editorRef, monacoRef, language);
   useEditorReturn(isValidRef, editorRef, monacoRef, language, evaluationResult);
 
@@ -141,19 +147,18 @@ export const CodeEditorBody = (props: Props) => {
       setDidMount(true);
 
       // Only register language once
-      if (registered) return;
-
-      if (monacoLanguage === 'formula') {
-        monaco.languages.register({ id: 'Formula' });
-        monaco.languages.setLanguageConfiguration('Formula', FormulaLanguageConfig);
-        monaco.languages.setMonarchTokensProvider('Formula', FormulaTokenizerConfig);
-        monaco.languages.registerCompletionItemProvider('Formula', {
+      if (monacoLanguage === 'formula' && !registered.Formula) {
+        monaco.languages.register({ id: 'formula' });
+        monaco.languages.setLanguageConfiguration('formula', FormulaLanguageConfig);
+        monaco.languages.setMonarchTokensProvider('formula', FormulaTokenizerConfig);
+        monaco.languages.registerCompletionItemProvider('formula', {
           provideCompletionItems,
         });
-        monaco.languages.registerHoverProvider('Formula', { provideHover });
+        monaco.languages.registerHoverProvider('formula', { provideHover });
+        registered.Formula = true;
       }
 
-      if (monacoLanguage === 'python') {
+      if (monacoLanguage === 'python' && !registered.Python) {
         monaco.languages.register({ id: 'python' });
         monaco.languages.registerCompletionItemProvider('python', {
           provideCompletionItems: provideCompletionItemsPython,
@@ -169,16 +174,16 @@ export const CodeEditorBody = (props: Props) => {
         pyrightWorker?.openDocument({
           textDocument: { text: editorRef.current?.getValue() ?? '', uri, languageId: 'python' },
         });
+        registered.Python = true;
       }
 
-      if (monacoLanguage === 'javascript') {
+      if (monacoLanguage === 'javascript' && !registered.Javascript) {
         monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
           diagnosticCodesToIgnore: [1108, 1375, 1378],
         });
         monaco.editor.createModel(javascriptLibraryForEditor, 'javascript');
+        registered.Javascript = true;
       }
-
-      registered = true;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [setDidMount]
@@ -207,7 +212,7 @@ export const CodeEditorBody = (props: Props) => {
     <div
       style={{
         position: 'relative',
-        minHeight: '100px',
+        minHeight: '2rem',
         flex: '2',
       }}
     >
@@ -218,6 +223,7 @@ export const CodeEditorBody = (props: Props) => {
         value={editorContent}
         onChange={setEditorContent}
         onMount={onMount}
+        loading={<CircularProgress style={{ width: '18px', height: '18px' }} />}
         options={{
           theme: 'light',
           readOnly: !canEdit,
@@ -234,7 +240,7 @@ export const CodeEditorBody = (props: Props) => {
           showUnused: language === 'Javascript' ? false : true,
         }}
       />
-      <CodeEditorPlaceholder editorContent={editorContent} setEditorContent={setEditorContent} />
+      <CodeEditorPlaceholder />
     </div>
   );
 };

@@ -4,26 +4,34 @@ import { JsHtmlOutput } from '@/app/quadratic-core-types';
 import { HtmlCell } from './HtmlCell';
 
 class HTMLCellsHandler {
+  // used to attach the html-cells to react
+  private div: HTMLDivElement;
+
   private cells: Set<HtmlCell> = new Set();
 
-  // used to attach the html-cells to react
-  private div?: HTMLDivElement;
-
-  // used to hold the data if the div is not yet created
-  private dataWaitingForDiv?: JsHtmlOutput[];
-
   constructor() {
+    this.div = document.createElement('div');
+    this.div.className = 'html-cells';
+
     events.on('htmlOutput', this.htmlOutput);
     events.on('htmlUpdate', this.htmlUpdate);
     events.on('changeSheet', this.changeSheet);
+    events.on('sheetOffsets', (sheetId) => this.updateOffsets([sheetId]));
+    events.on('resizeRowHeights', (sheetId) => this.updateOffsets([sheetId]));
   }
 
-  private htmlOutput = (data: JsHtmlOutput[]) => {
-    if (this.div) {
-      this.updateHtmlCells(data);
-    } else {
-      this.dataWaitingForDiv = data;
-    }
+  attach = (parent: HTMLDivElement) => {
+    parent.appendChild(this.div);
+  };
+
+  detach = () => {
+    this.div.remove();
+    this.div = document.createElement('div');
+    this.div.className = 'html-cells';
+  };
+
+  private htmlOutput = (htmlCells: JsHtmlOutput[]) => {
+    this.prepareCells([...this.cells], htmlCells);
   };
 
   private htmlUpdate = (data: JsHtmlOutput) => {
@@ -47,24 +55,6 @@ class HTMLCellsHandler {
       this.cells.add(cell);
     }
   };
-
-  attach(parent: HTMLDivElement) {
-    if (this.div) {
-      parent.appendChild(this.div);
-    }
-  }
-
-  init(parent: HTMLDivElement | null) {
-    this.div = this.div ?? document.createElement('div');
-    this.div.className = 'html-cells';
-    if (parent) {
-      this.attach(parent);
-    }
-    if (this.dataWaitingForDiv) {
-      this.updateHtmlCells(this.dataWaitingForDiv);
-      this.dataWaitingForDiv = undefined;
-    }
-  }
 
   private changeSheet = () => {
     this.cells.forEach((cell) => cell.changeSheet(sheets.sheet.id));
@@ -100,16 +90,14 @@ class HTMLCellsHandler {
     });
   }
 
-  updateHtmlCells(htmlCells: JsHtmlOutput[]) {
-    this.prepareCells([...this.cells], htmlCells);
-  }
-
   clearHighlightEdges() {
     this.cells.forEach((cell) => cell.clearHighlightEdges());
   }
 
+  // cells are store in back to front order
+  // return cells in front to back order
   getCells(): HtmlCell[] {
-    return Array.from(this.cells.values());
+    return Array.from(this.cells.values()).reverse();
   }
 
   // handle changes to offsets
@@ -117,6 +105,20 @@ class HTMLCellsHandler {
     this.cells.forEach((cell) => {
       if (sheetIds.includes(cell.sheet.id)) cell.updateOffsets();
     });
+  }
+
+  // moves the chart to top
+  // updates the z-index and the order of the cells
+  movetoTop(cell: HtmlCell) {
+    const cells = this.getCells();
+    if (cells.length < 2) return;
+    const topCell = cells[0];
+    if (topCell === cell) return;
+    const topCellZIndex = parseInt(topCell.div.style.zIndex || '0');
+    cell.div.style.zIndex = (topCellZIndex + 1).toString();
+    // remove and add cell to the set to update the order
+    this.cells.delete(cell);
+    this.cells.add(cell);
   }
 }
 

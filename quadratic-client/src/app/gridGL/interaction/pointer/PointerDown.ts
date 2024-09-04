@@ -7,6 +7,8 @@ import { pixiApp } from '../../pixiApp/PixiApp';
 import { PanMode, pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
+import { events } from '@/app/events/events';
+import { inlineEditorMonaco } from '../../HTMLGrid/inlineEditor/inlineEditorMonaco';
 
 const MINIMUM_MOVE_POSITION = 5;
 
@@ -21,6 +23,24 @@ export class PointerDown {
 
   // flag that ensures that if pointerUp triggers during setTimeout, pointerUp is still called (see below)
   private afterShowInput?: boolean;
+
+  // Determines whether the input is valid (ie, whether it is open and has a value that does not fail validation)
+  private async isInputValid(): Promise<boolean> {
+    const location = inlineEditorHandler.location;
+    if (!location || !inlineEditorHandler.isOpen()) return true;
+    const validationError = await inlineEditorHandler.validateInput();
+    if (validationError) {
+      events.emit('hoverCell', {
+        x: location.x,
+        y: location.y,
+        validationId: validationError,
+        value: inlineEditorMonaco.get(),
+      });
+      inlineEditorMonaco.focus();
+      return false;
+    }
+    return true;
+  }
 
   async pointerDown(world: Point, event: PointerEvent) {
     if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || event.button === 1) return;
@@ -49,6 +69,8 @@ export class PointerDown {
     if (this.doubleClickTimeout) {
       window.clearTimeout(this.doubleClickTimeout);
       this.doubleClickTimeout = undefined;
+      if (!(await this.isInputValid())) return;
+
       if (this.previousPosition && column === this.previousPosition.x && row === this.previousPosition.y) {
         // ignore right click
         if (rightClick) {
@@ -70,6 +92,9 @@ export class PointerDown {
     // Select cells between pressed and cursor position. Uses last multiCursor
     // or creates a multiCursor.
     if (event.shiftKey) {
+      // do nothing if we have text is invalid in the input
+      if (!(await this.isInputValid())) return;
+
       const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
       const cursorPosition = cursor.cursorPosition;
       if (column !== cursorPosition.x || row !== cursorPosition.y) {
@@ -87,11 +112,13 @@ export class PointerDown {
             columnRow: event.metaKey || event.ctrlKey ? undefined : null,
             keyboardMovePosition: { x: column, y: row },
             multiCursor,
+            ensureVisible: false,
           });
         } else {
           cursor.changePosition({
             keyboardMovePosition: { x: column, y: row },
             multiCursor: [newRectangle],
+            ensureVisible: false,
           });
         }
       }
@@ -104,6 +131,8 @@ export class PointerDown {
 
     // select another multiCursor range
     if (!this.active && (event.metaKey || event.ctrlKey)) {
+      if (!(await this.isInputValid())) return;
+
       const cursorPosition = cursor.cursorPosition;
       if (cursor.multiCursor || column !== cursorPosition.x || row !== cursorPosition.y) {
         event.stopPropagation();
@@ -112,6 +141,7 @@ export class PointerDown {
         cursor.changePosition({
           cursorPosition: { x: column, y: row },
           multiCursor,
+          ensureVisible: false,
         });
         this.active = true;
         this.position = new Point(column, row);
@@ -132,16 +162,23 @@ export class PointerDown {
 
     // Move cursor to mouse down position
     // For single click, hide multiCursor
-    inlineEditorHandler.handleCellPointerDown();
-    cursor.changePosition({
-      keyboardMovePosition: { x: column, y: row },
-      cursorPosition: { x: column, y: row },
-      multiCursor:
-        (event.metaKey || event.ctrlKey) && cursor.multiCursor
-          ? cursor.multiCursor.slice(0, cursor.multiCursor.length - 1)
-          : null,
-      columnRow: event.metaKey || event.ctrlKey ? cursor.columnRow : null,
-    });
+
+    // If the input is rejected, we cannot move the cursor
+    if (await inlineEditorHandler.handleCellPointerDown()) {
+      cursor.changePosition({
+        keyboardMovePosition: { x: column, y: row },
+        cursorPosition: { x: column, y: row },
+        multiCursor:
+          (event.metaKey || event.ctrlKey) && cursor.multiCursor
+            ? cursor.multiCursor.slice(0, cursor.multiCursor.length - 1)
+            : null,
+        columnRow: event.metaKey || event.ctrlKey ? cursor.columnRow : null,
+        ensureVisible: false,
+      });
+    } else {
+      inlineEditorMonaco.focus();
+    }
+    events.emit('clickedToCell', column, row, world);
     this.pointerMoved = false;
   }
 
@@ -183,6 +220,7 @@ export class PointerDown {
           columnRow,
           keyboardMovePosition: { x: this.position.x, y: this.position.y },
           cursorPosition: { x: this.position.x, y: this.position.y },
+          ensureVisible: false,
         });
       }
       this.previousPosition = new Point(this.position.x, this.position.y);
@@ -212,6 +250,7 @@ export class PointerDown {
           keyboardMovePosition: { x: column, y: row },
           cursorPosition: { x: this.position.x, y: this.position.y },
           multiCursor,
+          ensureVisible: false,
         });
         if (inlineEditorHandler.isOpen() && !inlineEditorHandler.isEditingFormula()) {
           pixiAppSettings.changeInput(false);

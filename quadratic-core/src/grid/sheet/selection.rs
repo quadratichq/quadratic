@@ -4,6 +4,8 @@
 
 use std::collections::HashMap;
 
+use indexmap::IndexMap;
+
 use crate::{
     grid::{formats::format::Format, CodeRunResult, GridBounds},
     selection::Selection,
@@ -19,6 +21,7 @@ impl Sheet {
     /// 2. Columns
     /// 3. Rows
     /// 4. Rects
+    ///
     /// If the selection is empty or the count > max_count then it returns None.
     /// It ignores CellValue::Blank, and CellValue::Code (since it uses the CodeRun instead).
     ///
@@ -28,9 +31,11 @@ impl Sheet {
         selection: &Selection,
         max_count: Option<i64>,
         skip_code_runs: bool,
-    ) -> Option<HashMap<Pos, &CellValue>> {
+    ) -> Option<IndexMap<Pos, &CellValue>> {
         let mut count = 0;
-        let mut cells = HashMap::new();
+
+        // we use a IndexMap to maintain the order of the cells
+        let mut cells = IndexMap::new();
 
         // This checks whether we should skip a CellValue::Code. We skip the
         // code cell if `skip_code_runs`` is true. For example, when running
@@ -86,6 +91,7 @@ impl Sheet {
                                     }
                                 }
                             }
+                            Value::Tuple(_) => {} // Tuples are not spilled onto the grid
                         },
                         CodeRunResult::Err(_) => {}
                     }
@@ -123,7 +129,7 @@ impl Sheet {
                             if columns.contains(&x) {
                                 for y in rect.min.y..=rect.max.y {
                                     if let Some(entry) = code_run
-                                        .cell_value_ref((x - pos.x) as u32, (y - pos.y) as u32)
+                                        .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
                                     {
                                         if !matches!(entry, &CellValue::Blank) {
                                             count += 1;
@@ -160,8 +166,8 @@ impl Sheet {
                     for y in rect.min.y..=rect.max.y {
                         if rows.contains(&y) {
                             for x in rect.min.x..=rect.max.x {
-                                if let Some(entry) =
-                                    code_run.cell_value_ref((x - pos.x) as u32, (y - pos.y) as u32)
+                                if let Some(entry) = code_run
+                                    .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
                                 {
                                     if !matches!(entry, &CellValue::Blank) {
                                         count += 1;
@@ -200,8 +206,8 @@ impl Sheet {
                     for x in rect.min.x..=rect.max.x {
                         for y in rect.min.y..=rect.max.y {
                             if rects.iter().any(|rect| rect.contains(Pos { x, y })) {
-                                if let Some(entry) =
-                                    code_run.cell_value_ref((x - pos.x) as u32, (y - pos.y) as u32)
+                                if let Some(entry) = code_run
+                                    .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
                                 {
                                     if !matches!(entry, &CellValue::Blank) {
                                         count += 1;
@@ -409,14 +415,16 @@ mod tests {
         CodeCellValue, Rect,
     };
     use bigdecimal::BigDecimal;
+    use serial_test::parallel;
     use std::str::FromStr;
 
     /// Used to test whether the results of a selection has a position and value.
-    fn assert_results_has_value(results: &HashMap<Pos, &CellValue>, pos: Pos, value: CellValue) {
+    fn assert_results_has_value(results: &IndexMap<Pos, &CellValue>, pos: Pos, value: CellValue) {
         assert!(results.iter().any(|(p, v)| *p == pos && **v == value));
     }
 
     #[test]
+    #[parallel]
     fn selection_all() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(
@@ -449,6 +457,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn selection_columns() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(
@@ -493,6 +502,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn selection_rows() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(
@@ -525,6 +535,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn selection_rects_values() {
         let mut sheet = Sheet::test();
         // create a 3x3 array at 0,0
@@ -579,6 +590,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn selection_rects_code() {
         let mut sheet = Sheet::test();
 
@@ -649,6 +661,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn selection() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(
@@ -682,6 +695,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn selection_bounds() {
         let mut sheet = Sheet::test();
         let sheet_id = sheet.id;
@@ -744,6 +758,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn format_selection() {
         let mut sheet = Sheet::test();
         let sheet_id = sheet.id;
@@ -816,6 +831,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn test_selection_rects_values() {
         let mut sheet = Sheet::test();
         let sheet_id = sheet.id;

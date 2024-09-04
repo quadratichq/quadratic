@@ -16,11 +16,24 @@ const DIVISIONS: { amount: number; name: Intl.RelativeTimeFormatUnit }[] = [
   { amount: Number.POSITIVE_INFINITY, name: 'years' },
 ];
 
-export function timeAgo(dateString: string) {
-  const date: Date = new Date(dateString);
+export function timeAgo(dateString: string | number, force = false) {
+  const date = new Date(dateString);
+  const now = new Date();
 
-  let duration = (date.getTime() - new Date().getTime()) / 1000;
+  // Calculate the duration in seconds
+  let duration = (date.getTime() - now.getTime()) / 1000;
 
+  // If the difference is more than 24 hours, return the formatted date
+  // (e.g. "Jan 1, 2024")
+  if (!force && Math.abs(duration) > 86400) {
+    return date.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  }
+
+  // Otherwise, return the relative time
   for (let i = 0; i < DIVISIONS.length; i++) {
     const division = DIVISIONS[i];
     if (Math.abs(duration) < division.amount) {

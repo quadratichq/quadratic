@@ -2,55 +2,40 @@ import { User } from 'auth0';
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
+import { clearDb, createFile, createTeam, createUser } from '../../tests/testDataGenerator';
 
 beforeEach(async () => {
-  // Create some users & team
-  const user_1 = await dbClient.user.create({
-    data: {
-      auth0Id: 'team_1_owner',
-    },
-  });
-  const user_2 = await dbClient.user.create({
-    data: {
-      auth0Id: 'team_1_editor',
-    },
-  });
-  const user_3 = await dbClient.user.create({
-    data: {
-      auth0Id: 'team_1_viewer',
-    },
-  });
-  await dbClient.user.create({
-    data: {
-      auth0Id: 'user_without_team',
-    },
-  });
-  await dbClient.team.create({
-    data: {
+  const user_1 = await createUser({ auth0Id: 'team_1_owner' });
+  const user_2 = await createUser({ auth0Id: 'team_1_editor' });
+  const user_3 = await createUser({ auth0Id: 'team_1_viewer' });
+  await createUser({ auth0Id: 'user_without_team' });
+
+  const team = await createTeam({
+    team: {
       name: 'Test Team 1',
       uuid: '00000000-0000-4000-8000-000000000001',
-      UserTeamRole: {
-        create: [
-          {
-            userId: user_1.id,
-            role: 'OWNER',
-          },
-          { userId: user_2.id, role: 'EDITOR' },
-          { userId: user_3.id, role: 'VIEWER' },
-        ],
+    },
+    users: [
+      {
+        userId: user_1.id,
+        role: 'OWNER',
       },
+      { userId: user_2.id, role: 'EDITOR' },
+      { userId: user_3.id, role: 'VIEWER' },
+    ],
+    connections: [{ type: 'POSTGRES' }],
+  });
+
+  await createFile({
+    data: {
+      name: 'Test File 1',
+      ownerTeamId: team.id,
+      creatorUserId: user_1.id,
     },
   });
 });
 
-afterEach(async () => {
-  const deleteTeamInvites = dbClient.teamInvite.deleteMany();
-  const deleteTeamUsers = dbClient.userTeamRole.deleteMany();
-  const deleteUsers = dbClient.user.deleteMany();
-  const deleteTeams = dbClient.team.deleteMany();
-
-  await dbClient.$transaction([deleteTeamInvites, deleteTeamUsers, deleteUsers, deleteTeams]);
-});
+afterEach(clearDb);
 
 jest.mock('auth0', () => {
   return {
@@ -101,14 +86,6 @@ jest.mock('auth0', () => {
 });
 
 describe('GET /v0/teams/:uuid', () => {
-  // TODO the auth/team middleware should handle all this...?
-  describe('sending a bad request', () => {
-    it.todo('responds with a 401 without authentication');
-    it.todo('responds with a 404 for requesting a team that doesn’t exist');
-    it.todo('responds with a 400 for failing schema validation on the team UUID');
-    it.todo('responds with a 400 for failing schema validation on the payload');
-  });
-
   describe('get a team you belong to', () => {
     // TODO different responses for OWNER, EDITOR, VIEWER?
     it('responds with a team', async () => {
@@ -119,7 +96,11 @@ describe('GET /v0/teams/:uuid', () => {
         .expect((res) => {
           expect(res.body).toHaveProperty('team');
           expect(res.body.team.uuid).toBe('00000000-0000-4000-8000-000000000001');
-          expect(res.body.team.name).toBe('Test Team 1');
+
+          expect(res.body.clientDataKv).toStrictEqual({});
+          expect(res.body.connections).toHaveLength(1);
+          expect(res.body.files).toHaveLength(1);
+          expect(typeof res.body.files[0].file.creatorId).toBe('number');
 
           expect(res.body.users[0].email).toBe('team_1_owner@example.com');
           expect(res.body.users[0].role).toBe('OWNER');
@@ -132,6 +113,28 @@ describe('GET /v0/teams/:uuid', () => {
           expect(res.body.users[2].email).toBe('team_1_viewer@example.com');
           expect(res.body.users[2].role).toBe('VIEWER');
           expect(res.body.users[2].name).toBe('Test User 3');
+        });
+    });
+
+    it('does not return archived connections', async () => {
+      // delete all connections in a team
+      const team = await dbClient.team.findUniqueOrThrow({
+        where: {
+          uuid: '00000000-0000-4000-8000-000000000001',
+        },
+      });
+      await dbClient.connection.deleteMany({
+        where: {
+          teamId: team.id,
+        },
+      });
+
+      await request(app)
+        .get(`/v0/teams/00000000-0000-4000-8000-000000000001`)
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.connections).toHaveLength(0);
         });
     });
   });

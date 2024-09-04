@@ -4,7 +4,7 @@ use crate::{
     controller::operations::operation::Operation,
     grid::{
         formats::{format_update::FormatUpdate, Formats},
-        Sheet,
+        CellWrap, Sheet,
     },
     selection::Selection,
     Pos, Rect,
@@ -13,13 +13,18 @@ use crate::{
 impl Sheet {
     /// Sets the Formats for Vec<Rect> and returns operations to reverse the change.
     // (crate)
-    pub fn set_formats_rects(&mut self, rects: &[Rect], formats: &Formats) -> Vec<Operation> {
+    pub fn set_formats_rects(
+        &mut self,
+        rects: &[Rect],
+        formats: &Formats,
+    ) -> (Vec<Operation>, Vec<i64>) {
         let mut formats_iter = formats.iter_values();
 
         // tracks client changes
         let mut renders = HashSet::new();
         let mut html = HashSet::new();
         let mut fills = HashSet::new();
+        let mut resize_rows = HashSet::new();
 
         let mut old_formats = Formats::default();
         rects.iter().for_each(|rect| {
@@ -28,6 +33,7 @@ impl Sheet {
                     let pos = Pos { x, y };
                     if let Some(format_update) = formats_iter.next() {
                         let old = self.set_format_cell(pos, format_update, false);
+                        let old_wrap = old.wrap;
                         old_formats.push(old);
 
                         if format_update.render_cells_changed() {
@@ -39,6 +45,12 @@ impl Sheet {
                         if format_update.fill_changed() {
                             fills.insert(pos);
                         }
+                        if matches!(old_wrap, Some(Some(CellWrap::Wrap)))
+                            || matches!(format_update.wrap, Some(Some(CellWrap::Wrap)))
+                            || (format_update.need_to_rewrap() && self.check_if_wrap_in_cell(x, y))
+                        {
+                            resize_rows.insert(pos.y);
+                        }
                     } else {
                         old_formats.push(FormatUpdate::default());
                     }
@@ -46,24 +58,31 @@ impl Sheet {
             }
         });
 
+        if old_formats == *formats {
+            return (vec![], vec![]);
+        }
+
         self.send_render_cells(&renders);
         self.send_html_output(&html);
         self.send_fills(&fills);
 
-        vec![Operation::SetCellFormatsSelection {
-            selection: Selection {
-                sheet_id: self.id,
-                rects: Some(rects.to_vec()),
-                ..Default::default()
-            },
-            formats: old_formats,
-        }]
+        (
+            vec![Operation::SetCellFormatsSelection {
+                selection: Selection {
+                    sheet_id: self.id,
+                    rects: Some(rects.to_vec()),
+                    ..Default::default()
+                },
+                formats: old_formats,
+            }],
+            resize_rows.into_iter().collect(),
+        )
     }
 }
 
 #[cfg(test)]
 mod test {
-    use serial_test::serial;
+    use serial_test::{parallel, serial};
 
     use super::*;
     use crate::{
@@ -84,7 +103,7 @@ mod test {
             4,
         );
         let rect = Rect::from_numbers(0, 0, 2, 2);
-        let reverse = sheet.set_formats_rects(&[rect], &formats);
+        let reverse = sheet.set_formats_rects(&[rect], &formats).0;
         assert_eq!(sheet.format_cell(0, 0, false).bold, Some(true));
         assert_eq!(sheet.format_cell(1, 1, false).bold, Some(true));
         assert_eq!(sheet.format_cell(2, 2, false).bold, None);
@@ -114,8 +133,8 @@ mod test {
         expect_js_call("jsRenderCellSheets", args, true);
     }
 
-    #[serial]
     #[test]
+    #[serial]
     fn set_formats_selection_rect_html() {
         let mut sheet = Sheet::test();
         let pos = Pos { x: 1, y: 1 };
@@ -140,6 +159,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn set_format_rects_none() {
         let mut sheet = Sheet::test();
         let formats = Formats::repeat(
@@ -150,7 +170,7 @@ mod test {
             4,
         );
         let rect = Rect::from_numbers(0, 0, 2, 2);
-        let reverse = sheet.set_formats_rects(&[rect], &formats);
+        let reverse = sheet.set_formats_rects(&[rect], &formats).0;
         assert_eq!(
             sheet.format_cell(0, 0, false),
             Format {

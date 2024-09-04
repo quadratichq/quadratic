@@ -81,32 +81,89 @@ fn get_functions() -> Vec<FormulaFunction> {
                 if condition { t } else { f }.clone()
             }
         ),
+        formula_fn!(
+            /// Returns `fallback` if there was an error computing `value`;
+            /// otherwise returns `value`.
+            #[examples(
+                "IFERROR(1/A6, \"error: division by zero!\")",
+                "IFERROR(A7, \"Something went wrong\")"
+            )]
+            #[zip_map]
+            fn IFERROR([value]: CellValue, [fallback]: CellValue) {
+                // This is slightly inconsistent with Excel; Excel does a weird
+                // sort of zip-map here that doesn't require `value` and
+                // `fallback` to have the same size, and also has special
+                // handling if `value` is size=1 along an axis. This is
+                // something we could try to fix later, but it's probably not
+                // worth it.
+                value
+                    .clone()
+                    .into_non_error_value()
+                    .unwrap_or(fallback.clone())
+            }
+        ),
     ]
 }
 
 #[cfg(test)]
 mod tests {
     use crate::{formulas::tests::*, Pos};
+    use serial_test::parallel;
 
     #[test]
+    #[parallel]
     fn test_formula_if() {
-        let form = parse_formula("IF(A1='q', 'yep', 'nope')", pos![A0]).unwrap();
-
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
-        let _ = sheet.set_cell_value(Pos { x: 0, y: 1 }, "q");
-        let _ = sheet.set_cell_value(Pos { x: 1, y: 1 }, "w");
+        sheet.set_cell_value(Pos { x: 0, y: 1 }, "q");
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, "w");
         let sheet_id = sheet.id;
 
-        let mut ctx = Ctx::new(&g, pos![A0].to_sheet_pos(sheet_id));
+        let s = "IF(A1='q', 'yep', 'nope')";
+        let pos = pos![A0].to_sheet_pos(sheet_id);
+        assert_eq!("yep", eval_to_string_at(&g, pos, s));
+        let pos = pos![B0].to_sheet_pos(sheet_id);
+        assert_eq!("nope", eval_to_string_at(&g, pos, s));
+
+        // Test short-circuiting
+        assert_eq!("ok", eval_to_string(&g, "IF(TRUE,\"ok\",1/0)"));
+        // Test error passthrough
         assert_eq!(
-            "yep".to_string(),
-            form.eval(&mut ctx, false).unwrap().to_string()
+            RunErrorMsg::DivideByZero,
+            eval_to_err(&g, "IF(FALSE,\"ok\",1/0)").msg,
         );
-        let mut ctx = Ctx::new(&g, pos![B0].to_sheet_pos(sheet_id));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_formula_iferror() {
+        let mut g = Grid::new();
+
+        assert_eq!("ok", eval_to_string(&g, "IFERROR(\"ok\", 42)"));
+        assert_eq!("ok", eval_to_string(&g, "IFERROR(\"ok\", 0/0)"));
+        assert_eq!("42", eval_to_string(&g, "IFERROR(0/0, 42)"));
         assert_eq!(
-            "nope".to_string(),
-            form.eval(&mut ctx, false).unwrap().to_string()
+            RunErrorMsg::DivideByZero,
+            eval_to_err(&g, "IFERROR(0/0, 0/0)").msg,
+        );
+
+        assert_eq!(
+            "complex!",
+            eval_to_string(&g, "IFERROR(SQRT(-1), \"complex!\")"),
+        );
+
+        g.sheets_mut()[0].set_cell_value(pos![A6], "happy");
+        assert_eq!("happy", eval_to_string(&g, "IFERROR(A6, 42)"));
+        assert_eq!("happy", eval_to_string(&g, "IFERROR(A6, 0/0)"));
+
+        g.sheets_mut()[0].set_cell_value(
+            pos![A6],
+            CellValue::Error(Box::new(RunErrorMsg::Infinity.without_span())),
+        );
+        assert_eq!("42", eval_to_string(&g, "IFERROR(A6, 42)"));
+        assert_eq!(
+            RunErrorMsg::DivideByZero,
+            eval_to_err(&g, "IFERROR(A6, 0/0)").msg,
         );
     }
 }

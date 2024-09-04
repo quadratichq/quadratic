@@ -1,15 +1,16 @@
 import { createNewFileAction, deleteFile, downloadFileAction, duplicateFileAction } from '@/app/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import {
   FileDeleteIcon,
-  FileDowndloadIcon,
+  FileDownloadIcon,
   FileDuplicateIcon,
   // FileDeleteIcon, FileDownloadIcon, FileDuplicateIcon,
   FileIcon,
 } from '@/app/ui/icons';
-import { useFileRouteLoaderData } from '@/routes/file.$uuid';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { useNavigate, useParams, useSubmit } from 'react-router-dom';
+import { useParams, useSubmit } from 'react-router-dom';
+import { useSetRecoilState } from 'recoil';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
 const commands: CommandGroup = {
@@ -20,11 +21,8 @@ const commands: CommandGroup = {
       keywords: ['New file', 'Create file'],
       isAvailable: createNewFileAction.isAvailable,
       Component: (props) => {
-        const {
-          team: { uuid: teamUuid },
-        } = useFileRouteLoaderData();
-        const navigate = useNavigate();
-        const action = () => createNewFileAction.run({ navigate, teamUuid });
+        const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+        const action = () => createNewFileAction.run({ setEditorInteractionState });
         return <CommandPaletteListItem {...props} icon={<FileIcon />} action={action} />;
       },
     },
@@ -50,7 +48,7 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             action={() => downloadFileAction.run({ name })}
-            icon={<FileDowndloadIcon />}
+            icon={<FileDownloadIcon />}
           />
         );
       },

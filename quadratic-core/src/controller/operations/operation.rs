@@ -1,11 +1,13 @@
 use core::fmt;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::{
     cell_values::CellValues,
     grid::{
-        file::sheet_schema::SheetSchema, formats::Formats, formatting::CellFmtArray, CodeRun,
-        Sheet, SheetBorders, SheetId,
+        file::sheet_schema::SheetSchema, formats::Formats, formatting::CellFmtArray,
+        js_types::JsRowHeight, sheet::validations::validation::Validation, CodeRun, Sheet,
+        SheetBorders, SheetId,
     },
     selection::Selection,
     SheetPos, SheetRect,
@@ -84,7 +86,7 @@ pub enum Operation {
         column: i64,
         new_size: f64,
 
-        // `client_resized`` is used to indicate whether the client needs to be
+        // `client_resized` is used to indicate whether the client needs to be
         // notified of the resize. For manual resizing, the original client is
         // updated as the user drags the column/row so they don't need to be
         // notified again.
@@ -101,6 +103,11 @@ pub enum Operation {
         client_resized: bool,
     },
 
+    ResizeRows {
+        sheet_id: SheetId,
+        row_heights: Vec<JsRowHeight>,
+    },
+
     // Deprecated in favor of SetCursorSelection. This operation remains to
     // support offline operations for now.
     SetCursor {
@@ -115,6 +122,18 @@ pub enum Operation {
     MoveCells {
         source: SheetRect,
         dest: SheetPos,
+    },
+
+    SetValidation {
+        validation: Validation,
+    },
+    RemoveValidation {
+        sheet_id: SheetId,
+        validation_id: Uuid,
+    },
+    SetValidationWarning {
+        sheet_pos: SheetPos,
+        validation_id: Option<Uuid>,
     },
 }
 
@@ -185,6 +204,14 @@ impl fmt::Display for Operation {
                 "ResizeRow {{ sheet_id: {}, row: {}, new_size: {}, client_resized: {} }}",
                 sheet_id, row, new_size, client_resized
             ),
+            Operation::ResizeRows {
+                sheet_id,
+                row_heights,
+            } => write!(
+                fmt,
+                "ResizeRow {{ sheet_id: {}, row_heights: {:?} }}",
+                sheet_id, row_heights
+            ),
             Operation::SetBorders { .. } => write!(fmt, "SetBorders {{ todo }}"),
             Operation::SetCursor { sheet_rect } => {
                 write!(fmt, "SetCursor {{ sheet_rect: {} }}", sheet_rect)
@@ -207,6 +234,29 @@ impl fmt::Display for Operation {
             }
             Operation::AddSheetSchema { schema } => {
                 write!(fmt, "AddSheetSchema {{ schema: {:?} }}", schema)
+            }
+            Operation::SetValidation { validation } => {
+                write!(fmt, "SetValidation {{ validation: {:?} }}", validation)
+            }
+            Operation::RemoveValidation {
+                sheet_id,
+                validation_id,
+            } => {
+                write!(
+                    fmt,
+                    "RemoveValidation {{ sheet_id: {}, validation_id: {} }}",
+                    sheet_id, validation_id
+                )
+            }
+            Operation::SetValidationWarning {
+                sheet_pos,
+                validation_id,
+            } => {
+                write!(
+                    fmt,
+                    "SetValidationWarning {{ sheet_pos: {:?}, validation_id: {:?} }}",
+                    sheet_pos, validation_id
+                )
             }
         }
     }

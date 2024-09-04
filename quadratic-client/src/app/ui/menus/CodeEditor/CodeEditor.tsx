@@ -14,7 +14,9 @@ import { useConnectionState } from '@/app/atoms/useConnectionState';
 import { useJavascriptState } from '@/app/atoms/useJavascriptState';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
+import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { CodeEditorEmptyState } from '@/app/ui/menus/CodeEditor/CodeEditorEmptyState';
 import { CodeEditorPanel } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanel';
 import { CodeEditorPanels } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelsResize';
 import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
@@ -24,7 +26,6 @@ import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
-import { focusGrid } from '../../../helpers/focusGrid';
 import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/pythonWebWorker';
 import './CodeEditor.css';
 import { CodeEditorBody } from './CodeEditorBody';
@@ -46,7 +47,7 @@ export const CodeEditor = () => {
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
   const mode = getLanguage(editorMode);
   const {
-    consoleOutput: [out, setOut],
+    consoleOutput: [, setOut],
     spillError: [, setSpillError],
     codeString: [codeString, setCodeString],
     editorContent: [editorContent, setEditorContent],
@@ -68,13 +69,13 @@ export const CodeEditor = () => {
   // Trigger vanilla changes to code editor
   useEffect(() => {
     events.emit('codeEditor');
-    setPanelBottomActiveTab('console');
+    setPanelBottomActiveTab(mode === 'Connection' ? 'data-browser' : 'console');
     setAiMessages([]);
   }, [
     showCodeEditor,
     editorInteractionState.selectedCell.x,
     editorInteractionState.selectedCell.y,
-    editorInteractionState.mode,
+    mode,
     setPanelBottomActiveTab,
     setAiMessages,
   ]);
@@ -224,7 +225,6 @@ export const CodeEditor = () => {
           initialCode: undefined,
         }));
         pixiApp.cellHighlights.clear();
-        focusGrid();
         multiplayer.sendEndCellEdit();
       }
     },
@@ -293,41 +293,41 @@ export const CodeEditor = () => {
     }
 
     // Command + S
-    if ((event.metaKey || event.ctrlKey) && event.key === 's') {
+    if (matchShortcut('save', event)) {
       event.preventDefault();
       saveAndRunCell();
     }
 
     // Command + Enter
-    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+    if (matchShortcut('execute_code', event)) {
       event.preventDefault();
       event.stopPropagation();
       saveAndRunCell();
     }
 
     // Command + Escape
-    if ((event.metaKey || event.ctrlKey) && event.key === 'Escape') {
+    if (matchShortcut('cancel_execution', event)) {
       event.preventDefault();
       event.stopPropagation();
       cancelRun();
     }
 
     // Command + Plus
-    if ((event.metaKey || event.ctrlKey) && event.key === '=') {
+    if (matchShortcut('zoom_in', event)) {
       event.preventDefault();
       event.stopPropagation();
       dispatchEditorAction('editor.action.fontZoomIn');
     }
 
     // Command + Minus
-    if ((event.metaKey || event.ctrlKey) && event.key === '-') {
+    if (matchShortcut('zoom_out', event)) {
       event.preventDefault();
       event.stopPropagation();
       dispatchEditorAction('editor.action.fontZoomOut');
     }
 
     // Command + 0
-    if ((event.metaKey || event.ctrlKey) && event.key === '0') {
+    if (matchShortcut('zoom_to_100', event)) {
       event.preventDefault();
       event.stopPropagation();
       dispatchEditorAction('editor.action.fontZoomReset');
@@ -360,7 +360,6 @@ export const CodeEditor = () => {
   };
 
   const codeEditorPanelData = useCodeEditorPanelData();
-  const showReturnType = Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved);
 
   if (!showCodeEditor) {
     return null;
@@ -435,11 +434,12 @@ export const CodeEditor = () => {
           cellsAccessed={!unsaved ? cellsAccessed : []}
           cellLocation={cellLocation}
         />
-        {editorInteractionState.mode !== 'Formula' && showReturnType && (
+        <CodeEditorEmptyState />
+        {editorInteractionState.mode !== 'Formula' && editorContent && (
           <ReturnTypeInspector
             language={editorInteractionState.mode}
             evaluationResult={evaluationResult}
-            show={showReturnType}
+            unsaved={unsaved}
           />
         )}
       </div>

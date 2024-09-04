@@ -1,6 +1,8 @@
+import { events } from '@/app/events/events';
 import { useUndo } from '@/app/events/useUndo';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
+import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { useEffect, useRef, useState } from 'react';
@@ -13,12 +15,14 @@ import { pixiApp } from '../gridGL/pixiApp/PixiApp';
 import QuadraticUIContext from './QuadraticUIContext';
 import { QuadraticLoading } from './loading/QuadraticLoading';
 
-export default function QuadraticApp() {
+export function QuadraticApp() {
+  const didMount = useRef<boolean>(false);
+  const { permissions, uuid } = useRecoilValue(editorInteractionStateAtom);
   const { loggedInUser } = useRootRouteLoaderData();
 
-  const [loading, setLoading] = useState(true);
-  const { permissions, uuid } = useRecoilValue(editorInteractionStateAtom);
-  const didMount = useRef<boolean>(false);
+  // Loading states
+  const [offlineLoading, setOfflineLoading] = useState(true);
+  const [multiplayerLoading, setMultiplayerLoading] = useState(true);
 
   // Initialize loading of critical assets
   useEffect(() => {
@@ -42,14 +46,56 @@ export default function QuadraticApp() {
         } else {
           multiplayer.init(uuid, loggedInUser, false);
         }
-        setLoading(false);
       });
     }
   }, [uuid, loggedInUser]);
 
+  // wait for offline sync
+  useEffect(() => {
+    if (offlineLoading) {
+      const updateOfflineLoading = () => {
+        setOfflineLoading(false);
+      };
+      events.on('offlineTransactionsApplied', updateOfflineLoading);
+      return () => {
+        events.off('offlineTransactionsApplied', updateOfflineLoading);
+      };
+    }
+  }, [offlineLoading]);
+
+  // wait for multiplayer sync
+  useEffect(() => {
+    if (multiplayerLoading) {
+      const updateMultiplayerLoading = () => {
+        setMultiplayerLoading(false);
+      };
+      events.on('multiplayerSynced', updateMultiplayerLoading);
+      return () => {
+        events.off('multiplayerSynced', updateMultiplayerLoading);
+      };
+    }
+  }, [multiplayerLoading]);
+
+  useEffect(() => {
+    if (multiplayerLoading) {
+      const updateMultiplayerLoading = (state: MultiplayerState) => {
+        // don't wait for multiplayer sync if unable to connect
+        if (state === 'waiting to reconnect' || state === 'not connected' || state === 'no internet') {
+          setOfflineLoading(false);
+          setMultiplayerLoading(false);
+        }
+      };
+      events.on('multiplayerState', updateMultiplayerLoading);
+      return () => {
+        events.off('multiplayerState', updateMultiplayerLoading);
+      };
+    }
+  }, [multiplayerLoading]);
+
   useUndo();
 
-  if (loading) {
+  // Show loading screen until everything is loaded
+  if (offlineLoading || multiplayerLoading) {
     return <QuadraticLoading />;
   }
   return <QuadraticUIContext />;

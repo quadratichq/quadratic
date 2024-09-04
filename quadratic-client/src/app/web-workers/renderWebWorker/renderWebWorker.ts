@@ -8,6 +8,7 @@ import {
   ClientRenderViewport,
   RenderClientColumnMaxWidth,
   RenderClientMessage,
+  RenderClientRowMaxHeight,
 } from './renderClientMessages';
 
 class RenderWebWorker {
@@ -127,6 +128,19 @@ class RenderWebWorker {
         id,
         sheetId,
         column,
+      });
+    });
+  }
+
+  getCellsRowMaxHeight(sheetId: string, row: number): Promise<number> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: RenderClientRowMaxHeight) => resolve(message.maxHeight);
+      this.send({
+        type: 'clientRenderRowMaxHeight',
+        id,
+        sheetId,
+        row,
       });
     });
   }

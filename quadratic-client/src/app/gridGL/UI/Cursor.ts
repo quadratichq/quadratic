@@ -1,13 +1,14 @@
 //! Draws the cursor, code cursor, and selection to the screen.
 
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { Graphics, Rectangle } from 'pixi.js';
+import { Container, Graphics, Rectangle, Sprite } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../actions';
 import { sheets } from '../../grid/controller/Sheets';
 import { colors } from '../../theme/colors';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { drawColumnRowCursor, drawMultiCursor } from './drawCursor';
+import { Coordinate } from '../types/size';
 
 export const CURSOR_THICKNESS = 2;
 export const FILL_ALPHA = 0.1;
@@ -19,13 +20,10 @@ const HIDE_INDICATORS_BELOW_SCALE = 0.1;
 export type CursorCell = { x: number; y: number; width: number; height: number };
 const CURSOR_CELL_DEFAULT_VALUE: CursorCell = { x: 0, y: 0, width: 0, height: 0 };
 
-// adds a bit of padding when editing a cell w/CellInput
-export const CELL_INPUT_PADDING = CURSOR_THICKNESS * 2;
-
 // outside border when editing the cell
 const CURSOR_INPUT_ALPHA = 0.333;
 
-export class Cursor extends Graphics {
+export class Cursor extends Container {
   indicator: Rectangle;
   dirty = true;
 
@@ -34,13 +32,39 @@ export class Cursor extends Graphics {
 
   cursorRectangle?: Rectangle;
 
+  graphics: Graphics;
+
   constructor() {
     super();
+    this.graphics = this.addChild(new Graphics());
     this.indicator = new Rectangle();
 
     this.startCell = CURSOR_CELL_DEFAULT_VALUE;
     this.endCell = CURSOR_CELL_DEFAULT_VALUE;
     this.cursorRectangle = new Rectangle();
+  }
+
+  // redraws corners if there is an error
+  private drawError(cell: Coordinate, x: number, y: number, width: number, height: number) {
+    const error = pixiApp.cellsSheets.current?.getErrorMarker(cell.x, cell.y);
+    if (error) {
+      if (error.triangle) {
+        const triangle = this.addChild(new Sprite(error.triangle.texture));
+        triangle.position.copyFrom(error.triangle.position);
+        triangle.scale.set(error.triangle.scale.x, error.triangle.scale.y);
+        triangle.tint = error.triangle.tint;
+        triangle.rotation = error.triangle.rotation;
+        triangle.anchor.set(error.triangle.anchor.x, error.triangle.anchor.y);
+      }
+      if (error.symbol) {
+        const symbol = this.addChild(new Sprite(error.symbol.texture));
+        symbol.position.set(error.symbol.position.x, error.symbol.position.y);
+        symbol.width = error.symbol.width;
+        symbol.height = error.symbol.height;
+        symbol.tint = error.symbol.tint;
+        symbol.anchor.set(error.symbol.anchor.x, error.symbol.anchor.y);
+      }
+    }
   }
 
   // draws cursor for current user
@@ -68,11 +92,13 @@ export class Cursor extends Graphics {
     const indicatorPadding = Math.max(INDICATOR_PADDING / viewport.scale.x, 1);
     let indicatorOffset = 0;
 
-    // showInput changes after cellEdit is removed from DOM
-    const cellEdit = document.querySelector('#cell-edit') as HTMLDivElement;
+    const inlineShowing = inlineEditorHandler.getShowing();
     if (showInput) {
-      if (cellEdit && cellEdit.offsetWidth + CELL_INPUT_PADDING > width) {
-        width = Math.max(cellEdit.offsetWidth + CELL_INPUT_PADDING, width);
+      if (inlineShowing) {
+        x = inlineEditorHandler.x - CURSOR_THICKNESS;
+        y = inlineEditorHandler.y - CURSOR_THICKNESS;
+        width = inlineEditorHandler.width + CURSOR_THICKNESS * 2;
+        height = inlineEditorHandler.height + CURSOR_THICKNESS * 2;
       } else {
         // we have to wait until react renders #cell-edit to properly calculate the width
         setTimeout(() => (this.dirty = true), 0);
@@ -94,28 +120,29 @@ export class Cursor extends Graphics {
     }
 
     // draw cursor
-    this.lineStyle({
+    this.graphics.lineStyle({
       width: CURSOR_THICKNESS,
       color,
       alignment: 0,
     });
-    this.moveTo(x, y);
-    this.lineTo(x + width, y);
-    this.lineTo(x + width, y + height - indicatorOffset);
-    this.moveTo(x + width - indicatorOffset, y + height);
-    this.lineTo(x, y + height);
-    this.lineTo(x, y);
+    this.graphics.moveTo(x, y);
+    this.graphics.lineTo(x + width, y);
+    this.graphics.lineTo(x + width, y + height - indicatorOffset);
+    this.graphics.moveTo(x + width - indicatorOffset, y + height);
+    this.graphics.lineTo(x, y + height);
+    this.graphics.lineTo(x, y);
 
-    if (showInput && cellEdit) {
-      this.lineStyle({
+    if (showInput && inlineShowing) {
+      this.graphics.lineStyle({
         width: CURSOR_THICKNESS * 1.5,
         color,
         alpha: CURSOR_INPUT_ALPHA,
         alignment: 1,
       });
-      this.drawRect(x, y, width, height);
+      this.graphics.drawRect(x, y, width, height);
       this.cursorRectangle = undefined;
     } else {
+      this.drawError(cell, x, y, width, height);
       this.cursorRectangle = new Rectangle(x, y, width, height);
     }
   }
@@ -126,7 +153,7 @@ export class Cursor extends Graphics {
 
     this.startCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
     if (cursor.multiCursor) {
-      drawMultiCursor(this, colors.cursorCell, FILL_ALPHA, cursor.multiCursor);
+      drawMultiCursor(this.graphics, colors.cursorCell, FILL_ALPHA, cursor.multiCursor);
 
       // endCell is only interesting for one multiCursor since we use it to draw
       // the indicator, which is only active for one multiCursor
@@ -165,7 +192,7 @@ export class Cursor extends Graphics {
       const y = this.endCell.y + this.endCell.height;
       this.indicator.x = x - indicatorSize / 2;
       this.indicator.y = y - indicatorSize / 2;
-      this.lineStyle(0);
+      this.graphics.lineStyle(0);
       // have cursor color match code editor mode
       let color = colors.cursorCell;
       if (
@@ -175,7 +202,7 @@ export class Cursor extends Graphics {
           editor_selected_cell.y === cell.y)
       )
         color = colors.cursorCell;
-      this.beginFill(color).drawShape(this.indicator).endFill();
+      this.graphics.beginFill(color).drawShape(this.indicator).endFill();
     }
   }
 
@@ -185,7 +212,10 @@ export class Cursor extends Graphics {
     if (inlineEditorHandler.formula && inlineShowing && sheets.sheet.id === inlineShowing.sheetId) {
       color = colors.cellColorUserFormula;
       offsets = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y);
-      offsets.width = inlineEditorHandler.width + CURSOR_THICKNESS * 2;
+      offsets.x = inlineEditorHandler.x - CURSOR_THICKNESS * 0.5;
+      offsets.y = inlineEditorHandler.y - CURSOR_THICKNESS * 0.5;
+      offsets.width = inlineEditorHandler.width + CURSOR_THICKNESS;
+      offsets.height = inlineEditorHandler.height + CURSOR_THICKNESS;
     } else {
       const { editorInteractionState } = pixiAppSettings;
       const cell = editorInteractionState.selectedCell;
@@ -203,12 +233,12 @@ export class Cursor extends Graphics {
           : colors.independence;
     }
     if (!color || !offsets) return;
-    this.lineStyle({
+    this.graphics.lineStyle({
       width: CURSOR_THICKNESS * 1,
       color,
       alignment: 0.5,
     });
-    this.drawRect(offsets.x, offsets.y, offsets.width, offsets.height);
+    this.graphics.drawRect(offsets.x, offsets.y, offsets.width, offsets.height);
   }
 
   // Besides the dirty flag, we also need to update the cursor when the viewport
@@ -219,7 +249,10 @@ export class Cursor extends Graphics {
     const multiCursor = sheets.sheet.cursor.multiCursor;
     if (this.dirty || (viewportDirty && columnRow)) {
       this.dirty = false;
-      this.clear();
+      this.graphics.clear();
+      while (this.children.length > 1) {
+        this.removeChildAt(1);
+      }
       if (!columnRow && !inlineEditorHandler.isEditingFormula()) {
         this.drawCursor();
       }
@@ -230,7 +263,7 @@ export class Cursor extends Graphics {
         const columnRow = sheets.sheet.cursor.columnRow;
         if (columnRow) {
           drawColumnRowCursor({
-            g: this,
+            g: this.graphics,
             columnRow,
             color: colors.cursorCell,
             alpha: FILL_ALPHA,

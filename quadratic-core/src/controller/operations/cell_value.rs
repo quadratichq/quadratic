@@ -1,13 +1,14 @@
-use super::operation::Operation;
-use crate::{
-    cell_values::CellValues,
-    controller::GridController,
-    grid::{formatting::CellFmtArray, NumericDecimals, NumericFormat, NumericFormatKind},
-    selection::Selection,
-    CellValue, RunLengthEncoding, SheetPos, SheetRect,
-};
-use bigdecimal::BigDecimal;
 use std::str::FromStr;
+
+use bigdecimal::BigDecimal;
+
+use super::operation::Operation;
+use crate::cell_values::CellValues;
+use crate::controller::GridController;
+use crate::grid::formatting::CellFmtArray;
+use crate::grid::{CodeCellLanguage, NumericFormat, NumericFormatKind};
+use crate::selection::Selection;
+use crate::{CellValue, CodeCellValue, RunLengthEncoding, SheetPos, SheetRect};
 
 // when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
 // there is an unmerged alternative that might be interesting: https://github.com/declanvk/bigdecimal-rs/commit/b0a2ea3a403ddeeeaeef1ddfc41ff2ae4a4252d6
@@ -43,18 +44,11 @@ impl GridController {
                     attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(Some(true), 1)),
                 });
             }
-            // only change decimal places if decimals have not been set
-            if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
-                if sheet
-                    .get_formatting_value::<NumericDecimals>(sheet_pos.into())
-                    .is_none()
-                {
-                    ops.push(Operation::SetCellFormats {
-                        sheet_rect,
-                        attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
-                    });
-                }
-            }
+
+            // We no longer automatically set numeric decimals for
+            // currency; instead, we handle changes in currency decimal
+            // length by using 2 if currency is set by default.
+
             CellValue::Number(number)
         } else if let Some(bool) = CellValue::unpack_boolean(value) {
             bool
@@ -83,6 +77,12 @@ impl GridController {
                 )),
             });
             CellValue::Number(percent)
+        } else if let Some(code) = value.strip_prefix("=") {
+            ops.push(Operation::ComputeCode { sheet_pos });
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: code.to_string(),
+            })
         } else {
             CellValue::Text(value.into())
         };
@@ -144,16 +144,17 @@ mod test {
     use std::str::FromStr;
 
     use bigdecimal::BigDecimal;
+    use serial_test::parallel;
 
-    use crate::{
-        cell_values::CellValues,
-        controller::{operations::operation::Operation, GridController},
-        grid::{CodeCellLanguage, SheetId},
-        selection::Selection,
-        CellValue, Rect, SheetPos,
-    };
+    use crate::cell_values::CellValues;
+    use crate::controller::operations::operation::Operation;
+    use crate::controller::GridController;
+    use crate::grid::{CodeCellLanguage, SheetId};
+    use crate::selection::Selection;
+    use crate::{CellValue, CodeCellValue, Rect, SheetPos};
 
     #[test]
+    #[parallel]
     fn test() {
         let mut client = GridController::test();
         let sheet_id = SheetId::test();
@@ -184,6 +185,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn boolean_to_cell_value() {
         let mut gc = GridController::test();
         let sheet_pos = SheetPos {
@@ -217,6 +219,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn number_to_cell_value() {
         let mut gc = GridController::test();
         let sheet_pos = SheetPos {
@@ -251,6 +254,48 @@ mod test {
     }
 
     #[test]
+    #[parallel]
+    fn formula_to_cell_value() {
+        let mut gc = GridController::test();
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 2,
+            sheet_id: SheetId::test(),
+        };
+
+        let (ops, value) = gc.string_to_cell_value(sheet_pos, "=1+1");
+        assert_eq!(ops.len(), 1);
+        assert_eq!(
+            value,
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "1+1".to_string(),
+            })
+        );
+
+        let (ops, value) = gc.string_to_cell_value(sheet_pos, "=1/0");
+        assert_eq!(ops.len(), 1);
+        assert_eq!(
+            value,
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "1/0".to_string(),
+            })
+        );
+
+        let (ops, value) = gc.string_to_cell_value(sheet_pos, "=A1+A2");
+        assert_eq!(ops.len(), 1);
+        assert_eq!(
+            value,
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "A1+A2".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    #[parallel]
     fn problematic_number() {
         let mut gc = GridController::test();
         let value = "980E92207901934";
@@ -266,6 +311,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn delete_cells_operations() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -304,6 +350,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn delete_columns() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

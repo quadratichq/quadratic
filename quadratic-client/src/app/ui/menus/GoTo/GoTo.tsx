@@ -2,12 +2,11 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 import { sheets } from '@/app/grid/controller/Sheets';
 import { moveViewport } from '@/app/gridGL/interaction/viewportHelper';
 import { Coordinate } from '@/app/gridGL/types/size';
-import { focusGrid } from '@/app/helpers/focusGrid';
 import '@/app/ui/styles/floating-dialog.css';
 import { CommandDialog, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
 import { ArrowForward } from '@mui/icons-material';
 import { Rectangle } from 'pixi.js';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useRecoilState } from 'recoil';
 import { getCoordinatesFromUserInput } from './getCoordinatesFromUserInput';
 
@@ -16,16 +15,16 @@ export const GoTo = () => {
   const { showGoToMenu } = editorInteractionState;
   const [value, setValue] = React.useState<string>('');
 
-  const closeMenu = () => {
+  const closeMenu = useCallback(() => {
     setEditorInteractionState((state) => ({
       ...state,
       showGoToMenu: false,
     }));
-  };
+  }, [setEditorInteractionState]);
 
   const coordinates = getCoordinatesFromUserInput(value);
 
-  const onSelect = () => {
+  const onSelect = useCallback(() => {
     const [coor1, coor2] = coordinates;
 
     // GoTo Cell
@@ -58,11 +57,20 @@ export const GoTo = () => {
     });
     moveViewport({ topLeft: cursorPosition });
     closeMenu();
-    focusGrid();
-  };
+  }, [closeMenu, coordinates]);
 
   return (
-    <CommandDialog dialogProps={{ open: showGoToMenu, onOpenChange: closeMenu }} commandProps={{ shouldFilter: false }}>
+    <CommandDialog
+      dialogProps={{ open: showGoToMenu, onOpenChange: closeMenu }}
+      commandProps={{ shouldFilter: false }}
+      overlayProps={{
+        onPointerDown: (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          closeMenu();
+        },
+      }}
+    >
       <CommandInput
         value={value}
         onValueChange={(value) => {
@@ -72,7 +80,14 @@ export const GoTo = () => {
         omitIcon={true}
       />
       <CommandList className="p-2">
-        <CommandItem onSelect={onSelect} className="flex items-center justify-between">
+        <CommandItem
+          onSelect={onSelect}
+          className="flex items-center justify-between"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
           Go to {coordinates.length === 1 ? 'cell' : 'range'}:{' '}
           {coordinates.map(({ x, y }) => `(${x}, ${y})`).join(', ')}
           <ArrowForward className="text-muted-foreground" />

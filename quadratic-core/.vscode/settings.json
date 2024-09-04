@@ -3,7 +3,10 @@
     "bigdecimal",
     "dbgjs",
     "htmlescape",
-    "Rects"
+    "indexmap",
+    "Itertools",
+    "Rects",
+    "undoable"
   ],
   "lldb.displayFormat": "auto",
   "lldb.showDisassembly": "never",

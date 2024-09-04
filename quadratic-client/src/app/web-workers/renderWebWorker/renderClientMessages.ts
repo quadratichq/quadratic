@@ -1,5 +1,7 @@
+import { Coordinate } from '@/app/gridGL/types/size';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from './renderBitmapFonts';
+import type { RenderSpecial } from './worker/cellsLabel/CellsTextHashSpecial';
 
 export interface ClientRenderInit {
   type: 'clientRenderInit';
@@ -28,6 +30,8 @@ export interface RenderClientCellsTextHashClear {
   hashX: number;
   hashY: number;
   viewRectangle: { x: number; y: number; width: number; height: number };
+  overflowGridLines: Coordinate[];
+  content: Uint32Array;
 }
 
 export interface ClientRenderViewport {
@@ -60,6 +64,7 @@ export interface RenderClientFinalizeCellsTextHash {
   sheetId: string;
   hashX: number;
   hashY: number;
+  special?: RenderSpecial;
 }
 
 export interface ClientRenderShowLabel {
@@ -77,10 +82,23 @@ export interface ClientRenderColumnMaxWidth {
   column: number;
 }
 
+export interface ClientRenderRowMaxHeight {
+  type: 'clientRenderRowMaxHeight';
+  id: number;
+  sheetId: string;
+  row: number;
+}
+
 export interface RenderClientColumnMaxWidth {
   type: 'renderClientColumnMaxWidth';
   id: number;
   maxWidth: number;
+}
+
+export interface RenderClientRowMaxHeight {
+  type: 'renderClientRowMaxHeight';
+  id: number;
+  maxHeight: number;
 }
 
 export type RenderClientMessage =
@@ -89,11 +107,13 @@ export type RenderClientMessage =
   | RenderClientFirstRenderComplete
   | RenderClientUnload
   | RenderClientFinalizeCellsTextHash
-  | RenderClientColumnMaxWidth;
+  | RenderClientColumnMaxWidth
+  | RenderClientRowMaxHeight;
 
 export type ClientRenderMessage =
   | ClientRenderInit
   | ClientRenderViewport
   | ClientRenderSheetOffsetsTransient
   | ClientRenderShowLabel
-  | ClientRenderColumnMaxWidth;
+  | ClientRenderColumnMaxWidth
+  | ClientRenderRowMaxHeight;

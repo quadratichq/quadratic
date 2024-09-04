@@ -9,6 +9,7 @@ pub mod execute_formats;
 pub mod execute_move_cells;
 pub mod execute_offsets;
 pub mod execute_sheets;
+pub mod execute_validation;
 pub mod execute_values;
 
 impl GridController {
@@ -41,14 +42,23 @@ impl GridController {
 
                 Operation::ResizeColumn { .. } => self.execute_resize_column(transaction, op),
                 Operation::ResizeRow { .. } => self.execute_resize_row(transaction, op),
+                Operation::ResizeRows { .. } => self.execute_resize_rows(transaction, op),
 
                 Operation::SetCursor { .. } => self.execute_set_cursor(transaction, op),
                 Operation::SetCursorSelection { .. } => {
                     self.execute_set_cursor_selection(transaction, op);
                 }
+
+                Operation::SetValidation { .. } => self.execute_set_validation(transaction, op),
+                Operation::RemoveValidation { .. } => {
+                    self.execute_remove_validation(transaction, op);
+                }
+                Operation::SetValidationWarning { .. } => {
+                    self.execute_set_validation_warning(transaction, op);
+                }
             }
 
-            if cfg!(target_family = "wasm") && !transaction.is_server() {
+            if cfg!(target_family = "wasm") || cfg!(test) {
                 crate::wasm_bindings::js::jsTransactionProgress(
                     transaction.id.to_string(),
                     transaction.operations.len() as i32,

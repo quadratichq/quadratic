@@ -59,7 +59,7 @@ impl<R: fmt::Display> fmt::Display for Surround<R> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{}, surrounded by {} and {}",
+            "{} surrounded by {} and {}",
             self.inner, self.start, self.end,
         )
     }
@@ -101,12 +101,14 @@ pub struct List<R> {
     pub(super) sep_name: &'static str,
     /// Whether to allow a trailing separator.
     pub(super) allow_trailing_sep: bool,
+    /// Whether to allow an empty list.
+    pub(super) allow_empty: bool,
 }
 impl<R: fmt::Display> fmt::Display for List<R> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{}-separated list of {}, surrounded by {} and {}",
+            "{}-separated list of {} surrounded by {} and {}",
             self.sep_name, self.inner, self.start, self.end,
         )
     }
@@ -123,7 +125,12 @@ impl<R: Copy + SyntaxRule> SyntaxRule for List<R> {
         let mut items = vec![];
         p.parse(self.start)?;
         loop {
-            let result = if self.allow_trailing_sep || items.is_empty() {
+            let may_end_list = match items.is_empty() {
+                true => self.allow_empty,
+                false => self.allow_trailing_sep,
+            };
+
+            let result = if may_end_list {
                 // End the list or consume an item.
                 parse_one_of!(p, [self.end.map(|_| None), self.inner.map(Some)])?
             } else {

@@ -1,11 +1,10 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { focusGrid } from '@/app/helpers/focusGrid';
-import { useFileRouteLoaderData } from '@/routes/file.$uuid';
+import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { Connections } from '@/shared/components/connections/Connections';
 import { ROUTES } from '@/shared/constants/routes';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { useEffect } from 'react';
-import { useFetcher } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
 
 export function ConnectionsMenu() {
@@ -14,9 +13,7 @@ export function ConnectionsMenu() {
     team: { uuid: teamUuid },
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
-  // FYI: this data is also accessed in the cell type menu and revalidated as
-  // data changes based on user interactions.
-  const fetcher = useFetcher({ key: 'CONNECTIONS_FETCHER_KEY' });
+  const fetcher = useConnectionsFetcher();
 
   // Fetch when this component mounts but only if the user has permission in the current team
   useEffect(() => {
@@ -31,7 +28,6 @@ export function ConnectionsMenu() {
       open={editorInteractionState.showConnectionsMenu}
       onOpenChange={() => {
         setEditorInteractionState((prev) => ({ ...prev, showConnectionsMenu: false }));
-        focusGrid();
       }}
     >
       <DialogContent
