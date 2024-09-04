@@ -89,15 +89,22 @@ export function waitForAuthClientToRedirect() {
  * Utility function parse the domain from a url
  */
 export function parseDomain(url: string): string {
-  // check for classic URLs
-  let matches = url.match(/([^.]*\.[^.]{2,3}(?:\.[^.]{2,3})?$)/);
+  // remove the port if present
+  const [hostname] = url.split(':');
 
-  if (matches) {
-    return '.' + matches[0];
-  } else {
-    // check for IP addresses or localhost (ignore ports) or just return the url
-    return url.match(/(?:(?!:).)*/)![0] ?? url;
+  // check if the hostname is an IP address
+  const isIpAddress = /^[\d.]+$/.test(hostname);
+
+  if (isIpAddress) return hostname;
+
+  const parts = hostname.split('.');
+
+  // remove subdomain
+  if (parts.length > 2) {
+    return parts.slice(-2).join('.');
   }
+
+  return hostname;
 }
 
 /**
