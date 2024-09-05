@@ -8,7 +8,6 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import {
-  JsBorders,
   JsBordersSheet,
   JsCodeCell,
   JsHtmlOutput,
@@ -61,7 +60,6 @@ declare var self: WorkerGlobalScope &
     sendSheetHtml: (html: JsHtmlOutput[]) => void;
     sendUpdateHtml: (html: JsHtmlOutput) => void;
     sendGenerateThumbnail: () => void;
-    sendBordersHash: (sheetId: string, borders: JsBorders) => void;
     sendBordersSheet: (sheetId: string, borders: JsBordersSheet) => void;
     sendSheetRenderCells: (sheetId: string, renderCells: JsRenderCell[]) => void;
     sendSheetCodeCell: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
@@ -116,7 +114,6 @@ class CoreClient {
     self.sendSheetHtml = coreClient.sendSheetHtml;
     self.sendUpdateHtml = coreClient.sendUpdateHtml;
     self.sendGenerateThumbnail = coreClient.sendGenerateThumbnail;
-    self.sendBordersHash = coreClient.sendBordersHash;
     self.sendBordersSheet = coreClient.sendBordersSheet;
     self.sendSheetRenderCells = coreClient.sendSheetRenderCells;
     self.sendSheetCodeCell = coreClient.sendSheetCodeCell;
@@ -638,10 +635,6 @@ class CoreClient {
 
   sendGenerateThumbnail = () => {
     this.send({ type: 'coreClientGenerateThumbnail' });
-  };
-
-  sendBordersHash = (sheetId: string, borders: JsBorders) => {
-    this.send({ type: 'coreClientBordersHash', sheetId, borders });
   };
 
   sendBordersSheet = (sheetId: string, borders: JsBordersSheet) => {

@@ -1,14 +1,134 @@
-use super::{Borders, JsBorderHorizontal, JsBorderVertical, JsBorders, JsBordersSheet};
+//! Functionality to prepare borders to send to client for rendering. All sheet
+//! borders are sent in one call any time they are updated.
+//!
+//! Rationale: This was a design choice (in lieu of sending them via hashes) to
+//! take advantage of long line rendering--ie, it's cheaper to render a very
+//! long line than lots of short lines.
+//!
+//! This means every time the rect borders change, we need to rerender all
+//! borders on the sheet. Since this is a one-time cost, (I think) it'll still
+//! be performant.
+
+use super::{BorderStyleTimestamp, Borders, JsBorderHorizontal, JsBorderVertical, JsBordersSheet};
 use crate::{
-    grid::SheetId,
-    renderer_constants::hashes_in_rects,
-    renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-    selection::Selection,
+    controller::operations::borders::BorderSide, grid::SheetId, wasm_bindings::js::jsBordersSheet,
     Rect,
 };
 
 impl Borders {
-    pub(crate) fn horizontal_borders_in_rect(&self, rect: Rect) -> Vec<JsBorderHorizontal> {
+    /// Checks whether the sheet border styles will override the cell's border
+    /// style. If so, it returns None, otherwise it returns the border style.
+    /// This is in lieu of removing all borders from the sheet when overridden
+    /// by relevant all, columns, or rows.
+    fn does_sheet_override(
+        &self,
+        x: i64,
+        y: i64,
+        entry: BorderStyleTimestamp,
+        side: BorderSide,
+    ) -> Option<BorderStyleTimestamp> {
+        match side {
+            BorderSide::Top => {
+                if self.all.top.is_some_and(|t| t.timestamp > entry.timestamp)
+                    || self
+                        .all
+                        .bottom
+                        .is_some_and(|b| b.timestamp > entry.timestamp)
+                    || self.columns.get(&x).is_some_and(|c| {
+                        c.top.is_some_and(|t| t.timestamp > entry.timestamp)
+                            || c.bottom.is_some_and(|b| b.timestamp > entry.timestamp)
+                    })
+                    || self
+                        .rows
+                        .get(&y)
+                        .is_some_and(|r| r.top.is_some_and(|t| t.timestamp > entry.timestamp))
+                    || self
+                        .rows
+                        .get(&(y - 1))
+                        .is_some_and(|r| r.bottom.is_some_and(|b| b.timestamp > entry.timestamp))
+                {
+                    None
+                } else {
+                    Some(entry)
+                }
+            }
+            BorderSide::Bottom => {
+                if self
+                    .all
+                    .bottom
+                    .is_some_and(|b| b.timestamp > entry.timestamp)
+                    || self.all.top.is_some_and(|t| t.timestamp > entry.timestamp)
+                    || self.columns.get(&x).is_some_and(|c| {
+                        c.bottom.is_some_and(|b| b.timestamp > entry.timestamp)
+                            || c.top.is_some_and(|t| t.timestamp > entry.timestamp)
+                    })
+                    || self
+                        .rows
+                        .get(&y)
+                        .is_some_and(|r| r.bottom.is_some_and(|b| b.timestamp > entry.timestamp))
+                    || self
+                        .rows
+                        .get(&(y + 1))
+                        .is_some_and(|r| r.top.is_some_and(|t| t.timestamp > entry.timestamp))
+                {
+                    None
+                } else {
+                    Some(entry)
+                }
+            }
+            BorderSide::Left => {
+                if self.all.left.is_some_and(|t| t.timestamp > entry.timestamp)
+                    || self
+                        .all
+                        .right
+                        .is_some_and(|b| b.timestamp > entry.timestamp)
+                    || self.rows.get(&y).is_some_and(|r| {
+                        r.left.is_some_and(|t| t.timestamp > entry.timestamp)
+                            || r.right.is_some_and(|b| b.timestamp > entry.timestamp)
+                    })
+                    || self
+                        .columns
+                        .get(&x)
+                        .is_some_and(|c| c.left.is_some_and(|t| t.timestamp > entry.timestamp))
+                    || self
+                        .columns
+                        .get(&(x - 1))
+                        .is_some_and(|c| c.right.is_some_and(|b| b.timestamp > entry.timestamp))
+                {
+                    None
+                } else {
+                    Some(entry)
+                }
+            }
+            BorderSide::Right => {
+                if self
+                    .all
+                    .right
+                    .is_some_and(|t| t.timestamp > entry.timestamp)
+                    || self.all.left.is_some_and(|b| b.timestamp > entry.timestamp)
+                    || self.rows.get(&y).is_some_and(|r| {
+                        r.right.is_some_and(|b| b.timestamp > entry.timestamp)
+                            || r.left.is_some_and(|b| b.timestamp > entry.timestamp)
+                    })
+                    || self
+                        .columns
+                        .get(&x)
+                        .is_some_and(|c| c.right.is_some_and(|b| b.timestamp > entry.timestamp))
+                    || self
+                        .columns
+                        .get(&(x + 1))
+                        .is_some_and(|c| c.left.is_some_and(|b| b.timestamp > entry.timestamp))
+                {
+                    None
+                } else {
+                    Some(entry)
+                }
+            }
+        }
+    }
+
+    /// Returns horizontal borders in a rect
+    pub(crate) fn horizontal_borders_in_rect(&self, rect: Rect) -> Option<Vec<JsBorderHorizontal>> {
         let mut horizontal = vec![];
         // Generate horizontal borders
         for y in rect.min.y..=rect.max.y {
@@ -20,13 +140,15 @@ impl Borders {
                 let border = match (top_border, bottom_border) {
                     (Some(top), Some(bottom)) => {
                         if top.timestamp > bottom.timestamp {
-                            Some(top)
+                            self.does_sheet_override(x, y, top, BorderSide::Top)
                         } else {
-                            Some(bottom)
+                            self.does_sheet_override(x, y - 1, bottom, BorderSide::Bottom)
                         }
                     }
-                    (Some(top), None) => Some(top),
-                    (None, Some(bottom)) => Some(bottom),
+                    (Some(top), None) => self.does_sheet_override(x, y, top, BorderSide::Top),
+                    (None, Some(bottom)) => {
+                        self.does_sheet_override(x, y - 1, bottom, BorderSide::Bottom)
+                    }
                     (None, None) => None,
                 };
 
@@ -39,13 +161,25 @@ impl Borders {
                         let next_border = match (next_top, next_bottom) {
                             (Some(top), Some(bottom)) => {
                                 if top.timestamp > bottom.timestamp {
-                                    Some(top)
+                                    self.does_sheet_override(x + width, y, top, BorderSide::Top)
                                 } else {
-                                    Some(bottom)
+                                    self.does_sheet_override(
+                                        x + width,
+                                        y - 1,
+                                        bottom,
+                                        BorderSide::Bottom,
+                                    )
                                 }
                             }
-                            (Some(top), None) => Some(top),
-                            (None, Some(bottom)) => Some(bottom),
+                            (Some(top), None) => {
+                                self.does_sheet_override(x + width, y, top, BorderSide::Top)
+                            }
+                            (None, Some(bottom)) => self.does_sheet_override(
+                                x + width,
+                                y - 1,
+                                bottom,
+                                BorderSide::Bottom,
+                            ),
                             (None, None) => None,
                         };
                         if next_border != Some(border) {
@@ -66,15 +200,20 @@ impl Borders {
                 }
             }
         }
-        horizontal
+        if horizontal.is_empty() {
+            None
+        } else {
+            Some(horizontal)
+        }
     }
 
-    pub(crate) fn vertical_borders_in_rect(&self, rect: Rect) -> Vec<JsBorderVertical> {
+    pub(crate) fn vertical_borders_in_rect(&self, rect: Rect) -> Option<Vec<JsBorderVertical>> {
         let mut vertical = vec![];
 
         // Generate vertical borders
         for x in rect.min.x..=rect.max.x {
             let mut y = rect.min.y;
+
             while y <= rect.max.y {
                 let left_border = self.left.get(&x).and_then(|row| row.get(y));
                 let right_border = self.right.get(&(x - 1)).and_then(|row| row.get(y));
@@ -82,13 +221,15 @@ impl Borders {
                 let border = match (left_border, right_border) {
                     (Some(left), Some(right)) => {
                         if left.timestamp > right.timestamp {
-                            Some(left)
+                            self.does_sheet_override(x, y, left, BorderSide::Left)
                         } else {
-                            Some(right)
+                            self.does_sheet_override(x - 1, y, right, BorderSide::Right)
                         }
                     }
-                    (Some(left), None) => Some(left),
-                    (None, Some(right)) => Some(right),
+                    (Some(left), None) => self.does_sheet_override(x, y, left, BorderSide::Left),
+                    (None, Some(right)) => {
+                        self.does_sheet_override(x - 1, y, right, BorderSide::Right)
+                    }
                     (None, None) => None,
                 };
 
@@ -101,13 +242,25 @@ impl Borders {
                         let next_border = match (next_left, next_right) {
                             (Some(left), Some(right)) => {
                                 if left.timestamp > right.timestamp {
-                                    Some(left)
+                                    self.does_sheet_override(x, y + height, left, BorderSide::Left)
                                 } else {
-                                    Some(right)
+                                    self.does_sheet_override(
+                                        x - 1,
+                                        y + height,
+                                        right,
+                                        BorderSide::Right,
+                                    )
                                 }
                             }
-                            (Some(left), None) => Some(left),
-                            (None, Some(right)) => Some(right),
+                            (Some(left), None) => {
+                                self.does_sheet_override(x, y + height, left, BorderSide::Left)
+                            }
+                            (None, Some(right)) => self.does_sheet_override(
+                                x - 1,
+                                y + height,
+                                right,
+                                BorderSide::Right,
+                            ),
                             (None, None) => None,
                         };
                         if next_border != Some(border) {
@@ -128,85 +281,75 @@ impl Borders {
                 }
             }
         }
-        vertical
-    }
-
-    /// Returns borders for a rect
-    pub(crate) fn borders_in_rect(&self, rect: Rect) -> JsBorders {
-        JsBorders {
-            hash_x: 0,
-            hash_y: 0,
-            horizontal: self.horizontal_borders_in_rect(rect),
-            vertical: self.vertical_borders_in_rect(rect),
-        }
-    }
-
-    /// Sends the borders within a hash. Note: the result does not contain
-    /// borders for the right or bottom of the hash. That is rendered by the
-    /// next hash.
-    fn borders_in_hash(&self, hash_x: i64, hash_y: i64) -> JsBorders {
-        let rect = Rect::new(
-            hash_x * CELL_SHEET_WIDTH as i64,
-            hash_y * CELL_SHEET_HEIGHT as i64,
-            CELL_SHEET_WIDTH as i64,
-            CELL_SHEET_HEIGHT as i64,
-        );
-
-        self.borders_in_rect(rect)
-    }
-
-    /// Sends the borders within a hash to the client.
-    pub fn send_borders_in_hash(&self, sheet_id: SheetId, hash_x: i64, hash_y: i64) {
-        let borders = self.borders_in_hash(hash_x, hash_y);
-        if let Ok(borders_json) = serde_json::to_string(&borders) {
-            crate::wasm_bindings::js::jsBordersHash(sheet_id.to_string(), borders_json);
+        if vertical.is_empty() {
+            None
+        } else {
+            Some(vertical)
         }
     }
 
     /// Gets packaged borders to send to the client.
-    pub(crate) fn all(&self, skip_hashes: bool) -> Result<String, serde_json::Error> /*JsBordersSheet*/
-    {
-        let hashes = if skip_hashes {
+    pub(crate) fn borders_in_sheet(&self) -> Option<JsBordersSheet> {
+        let (horizontal, vertical) = if let Some(bounds) = self.bounds() {
+            (
+                self.horizontal_borders_in_rect(bounds),
+                self.vertical_borders_in_rect(bounds),
+            )
+        } else {
+            (None, None)
+        };
+        if self.all.is_empty()
+            && self.columns.is_empty()
+            && self.rows.is_empty()
+            && horizontal.is_none()
+            && vertical.is_none()
+        {
             None
         } else {
-            let mut hashes = vec![];
-            if let Some(bounds) = self.bounds() {
-                hashes_in_rects(&vec![bounds])
-                    .iter()
-                    .for_each(|(hash_x, hash_y)| {
-                        let borders_hash = self.borders_in_hash(*hash_x, *hash_y);
-                        if !borders_hash.is_empty() {
-                            hashes.push(borders_hash);
-                        }
-                    });
-            }
-            Some(hashes)
-        };
-        serde_json::to_string(&JsBordersSheet {
-            all: self.all,
-            columns: self.columns.clone(),
-            rows: self.rows.clone(),
-            hashes,
-        })
+            Some(JsBordersSheet {
+                all: if self.all.is_empty() {
+                    None
+                } else {
+                    Some(self.all.clone())
+                },
+                columns: if self.columns.is_empty() {
+                    None
+                } else {
+                    Some(
+                        self.columns
+                            .iter()
+                            .map(|(k, v)| (k.to_string(), v.clone()))
+                            .collect(),
+                    )
+                },
+                rows: if self.rows.is_empty() {
+                    None
+                } else {
+                    Some(
+                        self.rows
+                            .iter()
+                            .map(|(k, v)| (k.to_string(), v.clone()))
+                            .collect(),
+                    )
+                },
+
+                horizontal,
+                vertical,
+            })
+        }
     }
 
     /// Sends the borders for the sheet to the client.
-    pub fn send_sheet_borders(&self, sheet_id: SheetId, skip_hashes: bool) {
-        if let Ok(borders_json) = self.all(skip_hashes) {
-            crate::wasm_bindings::js::jsBordersSheet(sheet_id.to_string(), borders_json);
-        }
-    }
-
-    /// Sends updated borders for a selection.
-    pub fn send_updated_borders(&self, selection: Selection) {
-        if selection.has_sheet_selection() {
-            self.send_sheet_borders(selection.sheet_id, true);
-        }
-        if let Some(rects) = selection.rects.as_ref() {
-            let hashes = hashes_in_rects(rects);
-            for hash in hashes {
-                self.send_borders_in_hash(selection.sheet_id, hash.0, hash.1);
+    pub fn send_sheet_borders(&self, sheet_id: SheetId) {
+        match self.borders_in_sheet() {
+            Some(b) => {
+                if let Ok(borders) = serde_json::to_string(&b) {
+                    jsBordersSheet(sheet_id.to_string(), borders);
+                } else {
+                    dbgjs!("Unable to serialize borders in send_sheet_borders");
+                }
             }
+            None => jsBordersSheet(sheet_id.to_string(), String::new()),
         }
     }
 }
@@ -215,7 +358,7 @@ impl Borders {
 mod tests {
     use std::collections::HashMap;
 
-    use serial_test::{parallel, serial};
+    use serial_test::parallel;
 
     use crate::{
         color::Rgba,
@@ -232,6 +375,12 @@ mod tests {
     fn horizontal_borders_in_rect() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet(sheet_id);
+        let horizontal = sheet
+            .borders
+            .horizontal_borders_in_rect(Rect::new(0, 0, 10, 10));
+        assert_eq!(horizontal, None);
+
         gc.set_borders_selection(
             Selection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
             BorderSelection::All,
@@ -241,92 +390,39 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let horizontal = sheet
             .borders
-            .horizontal_borders_in_rect(Rect::new(0, 0, 10, 10));
+            .horizontal_borders_in_rect(Rect::new(0, 0, 10, 10))
+            .unwrap();
         assert_eq!(horizontal.len(), 7);
     }
 
     #[test]
     #[parallel]
-    fn borders_in_hash() {
+    fn vertical_borders_in_rect() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet(sheet_id);
-        let borders = sheet.borders.borders_in_hash(0, 0);
-        assert!(borders.is_empty());
-
-        let color = Rgba::new(255, 0, 0, 255);
-        let line = CellBorderLine::Dotted;
+        let vertical = sheet
+            .borders
+            .vertical_borders_in_rect(Rect::new(0, 0, 10, 10));
+        assert_eq!(vertical, None);
 
         gc.set_borders_selection(
             Selection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
-            BorderSelection::Outer,
-            Some(BorderStyle { color, line }),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        let borders = sheet.borders.borders_in_hash(0, 0);
-        assert_eq!(
-            borders,
-            JsBorders {
-                hash_x: 0,
-                hash_y: 0,
-                horizontal: vec![
-                    JsBorderHorizontal {
-                        x: 0,
-                        y: 0,
-                        width: 6,
-                        color,
-                        line
-                    },
-                    JsBorderHorizontal {
-                        x: 0,
-                        y: 6,
-                        width: 6,
-                        color,
-                        line
-                    }
-                ],
-                vertical: vec![
-                    JsBorderVertical {
-                        x: 0,
-                        y: 0,
-                        height: 6,
-                        color,
-                        line
-                    },
-                    JsBorderVertical {
-                        x: 6,
-                        y: 0,
-                        height: 6,
-                        color,
-                        line
-                    }
-                ],
-            }
-        );
+        let vertical = sheet
+            .borders
+            .vertical_borders_in_rect(Rect::new(0, 0, 10, 10))
+            .unwrap();
+        assert_eq!(vertical.len(), 7);
     }
 
     #[test]
     #[parallel]
-    fn all_empty() {
-        let gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet(sheet_id);
-
-        // skip_hashes == true: hashes == null
-        let borders = sheet.borders.all(true).unwrap();
-        let results = serde_json::to_string(&JsBordersSheet::default()).unwrap();
-        assert_eq!(borders, results);
-
-        // skip_hashes == false: hashes == []
-        let borders_json = sheet.borders.all(false).unwrap();
-        let borders: JsBordersSheet = serde_json::from_str(&borders_json).unwrap();
-        assert_eq!(borders.hashes, Some(vec![]));
-    }
-
-    #[test]
-    #[parallel]
-    fn all() {
+    fn horizontal_vertical() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
@@ -340,53 +436,51 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let borders = sheet.borders.all(false).unwrap();
+        let borders = sheet.borders.borders_in_sheet().unwrap();
+
         let expected = JsBordersSheet {
-            all: BorderStyleCell::default(),
-            columns: HashMap::new(),
-            rows: HashMap::new(),
-            hashes: Some(vec![JsBorders {
-                hash_x: 0,
-                hash_y: 0,
-                horizontal: vec![
-                    JsBorderHorizontal {
-                        x: 0,
-                        y: 0,
-                        width: 6,
-                        color,
-                        line,
-                    },
-                    JsBorderHorizontal {
-                        x: 0,
-                        y: 6,
-                        width: 6,
-                        color,
-                        line,
-                    },
-                ],
-                vertical: vec![
-                    JsBorderVertical {
-                        x: 0,
-                        y: 0,
-                        height: 6,
-                        color,
-                        line,
-                    },
-                    JsBorderVertical {
-                        x: 6,
-                        y: 0,
-                        height: 6,
-                        color,
-                        line,
-                    },
-                ],
-            }]),
+            all: None,
+            columns: None,
+            rows: None,
+
+            horizontal: Some(vec![
+                JsBorderHorizontal {
+                    x: 0,
+                    y: 0,
+                    width: 6,
+                    color,
+                    line,
+                },
+                JsBorderHorizontal {
+                    x: 0,
+                    y: 6,
+                    width: 6,
+                    color,
+                    line,
+                },
+            ]),
+            vertical: Some(vec![
+                JsBorderVertical {
+                    x: 0,
+                    y: 0,
+                    height: 6,
+                    color,
+                    line,
+                },
+                JsBorderVertical {
+                    x: 6,
+                    y: 0,
+                    height: 6,
+                    color,
+                    line,
+                },
+            ]),
         };
-        assert_eq!(borders, serde_json::to_string(&expected).unwrap());
+        assert_eq!(borders, expected);
     }
 
     #[test]
-    #[serial]
+    #[parallel]
     fn all_single() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -399,24 +493,110 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let borders = sheet.borders.all(false).unwrap();
+        let borders = sheet.borders.borders_in_sheet().unwrap();
         let expected = JsBordersSheet {
-            all: BorderStyleCell::default(),
-            columns: HashMap::new(),
-            rows: HashMap::new(),
-            hashes: Some(vec![JsBorders {
-                hash_x: 0,
-                hash_y: 0,
-                horizontal: vec![JsBorderHorizontal {
-                    x: 2,
-                    y: 2,
-                    width: 1,
-                    color: Rgba::default(),
-                    line: CellBorderLine::default(),
-                }],
-                vertical: vec![],
+            all: None,
+            columns: None,
+            rows: None,
+
+            horizontal: Some(vec![JsBorderHorizontal {
+                x: 2,
+                y: 2,
+                width: 1,
+                color: Rgba::default(),
+                line: CellBorderLine::default(),
             }]),
+            vertical: None,
         };
-        assert_eq!(borders, serde_json::to_string(&expected).unwrap());
+        assert_eq!(borders, expected);
+    }
+
+    #[test]
+    #[parallel]
+    fn all() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_borders_selection(
+            Selection::all(sheet_id),
+            BorderSelection::Top,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let borders = sheet.borders.borders_in_sheet().unwrap();
+        let expected = JsBordersSheet {
+            all: None,
+            columns: None,
+            rows: None,
+
+            horizontal: None,
+            vertical: None,
+        };
+        assert_eq!(borders, expected);
+    }
+
+    #[test]
+    #[parallel]
+    fn columns() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_borders_selection(
+            Selection::columns(&[1, 2, 3], sheet_id),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let borders = sheet.borders.borders_in_sheet().unwrap();
+        let columns = HashMap::from([
+            (1i64.to_string(), BorderStyleCell::all()),
+            (2i64.to_string(), BorderStyleCell::all()),
+            (3i64.to_string(), BorderStyleCell::all()),
+        ]);
+        let expected = JsBordersSheet {
+            all: None,
+            columns: Some(columns),
+            rows: None,
+
+            horizontal: None,
+            vertical: None,
+        };
+        assert_eq!(borders, expected);
+    }
+
+    #[test]
+    #[parallel]
+    fn rows() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_borders_selection(
+            Selection::rows(&[1, 2, 3], sheet_id),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let borders = sheet.borders.borders_in_sheet().unwrap();
+        let rows = HashMap::from([
+            (1i64.to_string(), BorderStyleCell::all()),
+            (2i64.to_string(), BorderStyleCell::all()),
+            (3i64.to_string(), BorderStyleCell::all()),
+        ]);
+        let expected = JsBordersSheet {
+            all: None,
+            columns: None,
+            rows: Some(rows),
+
+            horizontal: None,
+
+            vertical: None,
+        };
+        assert_eq!(borders, expected);
     }
 }

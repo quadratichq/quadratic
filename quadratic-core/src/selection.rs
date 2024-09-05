@@ -20,6 +20,18 @@ pub struct Selection {
 }
 
 impl Selection {
+    pub fn new(sheet_id: SheetId) -> Self {
+        Selection {
+            all: false,
+            sheet_id,
+            x: 0,
+            y: 0,
+            rects: None,
+            rows: None,
+            columns: None,
+        }
+    }
+
     /// Creates a selection via a single sheet rect
     pub fn sheet_rect(sheet_rect: SheetRect) -> Self {
         Selection {
@@ -951,6 +963,19 @@ mod test {
                 x: 1,
                 y: 1,
                 rects: Some(vec![Rect::new(1, 1, 1, 1)]),
+                ..Default::default()
+            }
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn new() {
+        let selection = Selection::new(SheetId::test());
+        assert_eq!(
+            selection,
+            Selection {
+                sheet_id: SheetId::test(),
                 ..Default::default()
             }
         );

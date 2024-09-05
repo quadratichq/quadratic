@@ -1,24 +1,25 @@
 use std::fs::create_dir_all;
 
-use crate::grid::sheet::borders::{
-    JsBorderHorizontal, JsBorderVertical, JsBorders, JsBordersSheet,
-};
+use crate::grid::sheet::borders::{JsBorderHorizontal, JsBorderVertical, JsBordersSheet};
 use controller::operations::clipboard::PasteSpecial;
 use grid::{
     formats::format::Format,
     js_types::{JsCellValue, JsSheetFill, JsValidationWarning},
-    sheet::validations::{
-        validation::{
-            Validation, ValidationDisplay, ValidationDisplaySheet, ValidationError,
-            ValidationMessage, ValidationStyle,
-        },
-        validation_rules::{
-            validation_date_time::{DateTimeRange, ValidationDateTime},
-            validation_list::{ValidationList, ValidationListSource},
-            validation_logical::ValidationLogical,
-            validation_number::{NumberRange, ValidationNumber},
-            validation_text::{TextCase, TextMatch, ValidationText},
-            ValidationRule,
+    sheet::{
+        borders::{BorderStyleCell, BorderStyleTimestamp},
+        validations::{
+            validation::{
+                Validation, ValidationDisplay, ValidationDisplaySheet, ValidationError,
+                ValidationMessage, ValidationStyle,
+            },
+            validation_rules::{
+                validation_date_time::{DateTimeRange, ValidationDateTime},
+                validation_list::{ValidationList, ValidationListSource},
+                validation_logical::ValidationLogical,
+                validation_number::{NumberRange, ValidationNumber},
+                validation_text::{TextCase, TextMatch, ValidationText},
+                ValidationRule,
+            },
         },
     },
 };
@@ -110,9 +111,10 @@ fn main() {
         CellBorderLine,
         BorderSelection,
         BorderStyle,
+        BorderStyleCell,
+        BorderStyleTimestamp,
         JsBorderHorizontal,
         JsBorderVertical,
-        JsBorders,
         JsBordersSheet,
         JsCodeResult,
         MinMax,

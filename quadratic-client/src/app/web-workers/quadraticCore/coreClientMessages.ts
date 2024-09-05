@@ -8,7 +8,6 @@ import {
   CellWrap,
   CodeCellLanguage,
   Format,
-  JsBorders,
   JsBordersSheet,
   JsCellValue,
   JsCodeCell,
@@ -623,12 +622,6 @@ export interface CoreClientGenerateThumbnail {
   type: 'coreClientGenerateThumbnail';
 }
 
-export interface CoreClientBordersHash {
-  type: 'coreClientBordersHash';
-  sheetId: string;
-  borders: JsBorders;
-}
-
 export interface CoreClientBordersSheet {
   type: 'coreClientBordersSheet';
   sheetId: string;
@@ -1107,6 +1100,5 @@ export type CoreClientMessage =
   | CoreClientResizeRowHeights
   | CoreClientMultiplayerSynced
   | CoreClientValidateInput
-  | CoreClientBordersHash
   | CoreClientBordersSheet
   | CoreClientGetCellValue;

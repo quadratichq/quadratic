@@ -98,6 +98,19 @@ impl BorderStyleTimestamp {
         }
     }
 
+    /// If the style is clear, then returns None, otherwise returns the style.
+    pub fn remove_clear(style: Option<BorderStyleTimestamp>) -> Option<BorderStyleTimestamp> {
+        if let Some(style) = style {
+            if style.line == CellBorderLine::Clear {
+                None
+            } else {
+                Some(style)
+            }
+        } else {
+            None
+        }
+    }
+
     #[cfg(test)]
     pub fn is_equal_ignore_timestamp(
         b1: Option<BorderStyleTimestamp>,
@@ -168,6 +181,10 @@ impl BorderStyleCell {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.top.is_none() && self.bottom.is_none() && self.left.is_none() && self.right.is_none()
+    }
+
     #[cfg(test)]
     pub fn all() -> BorderStyleCell {
         BorderStyleCell {
@@ -181,6 +198,7 @@ impl BorderStyleCell {
 
 impl BorderStyleCell {
     /// Apply an update to the cell.
+    ///
     /// Returns the original cell so it can be used for undo.
     pub fn apply_update(&mut self, update: &BorderStyleCellUpdate) -> BorderStyleCellUpdate {
         let original = (*self).override_border(false);
@@ -199,6 +217,7 @@ impl BorderStyleCell {
         original
     }
 
+    /// Used to test equality for unit tests by ignoring the timestamp.
     #[cfg(test)]
     pub fn is_equal_ignore_timestamp(
         b1: Option<BorderStyleCell>,
@@ -283,6 +302,7 @@ impl BorderStyleCellUpdate {
         }
     }
 
+    /// Used to test equality for unit tests by ignoring the timestamps.
     #[cfg(test)]
     pub fn is_equal_ignore_timestamp(
         b1: Option<BorderStyleCellUpdate>,
@@ -329,27 +349,16 @@ pub struct JsBorderVertical {
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, PartialEq, Eq, TS)]
-pub struct JsBorders {
-    pub hash_x: i64,
-    pub hash_y: i64,
-    pub horizontal: Vec<JsBorderHorizontal>,
-    pub vertical: Vec<JsBorderVertical>,
-}
-
-impl JsBorders {
-    pub fn is_empty(&self) -> bool {
-        self.horizontal.is_empty() && self.vertical.is_empty()
-    }
-}
-
-#[derive(Default, Serialize, Deserialize, Debug, TS)]
 pub struct JsBordersSheet {
-    pub all: BorderStyleCell,
-    pub columns: HashMap<i64, BorderStyleCell>,
-    pub rows: HashMap<i64, BorderStyleCell>,
+    pub all: Option<BorderStyleCell>,
 
-    // if None is sent, then ignore cells (used when sheet borders changed--we don't need to send all cells again)
-    pub hashes: Option<Vec<JsBorders>>,
+    // regrettably, we need to use String instead of i64 since js can't handle a
+    // Record<BigInt, ...>
+    pub columns: Option<HashMap<String, BorderStyleCell>>,
+    pub rows: Option<HashMap<String, BorderStyleCell>>,
+
+    pub horizontal: Option<Vec<JsBorderHorizontal>>,
+    pub vertical: Option<Vec<JsBorderVertical>>,
 }
 
 #[cfg(test)]
@@ -464,5 +473,52 @@ mod tests {
             ..BorderStyleCell::default()
         });
         assert!(!BorderStyleCell::is_equal_ignore_timestamp(b1, b2));
+    }
+
+    #[test]
+    #[parallel]
+    fn remove_clear() {
+        assert_eq!(
+            BorderStyleTimestamp::remove_clear(Some(BorderStyleTimestamp::clear())),
+            None
+        );
+        assert_eq!(
+            BorderStyleTimestamp::remove_clear(Some(BorderStyleTimestamp::default())),
+            Some(BorderStyleTimestamp::default())
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn is_empty() {
+        let cell = BorderStyleCell::default();
+        assert!(cell.is_empty());
+
+        let cell = BorderStyleCell {
+            top: Some(BorderStyleTimestamp::default()),
+            ..BorderStyleCell::default()
+        };
+        assert!(!cell.is_empty());
+
+        let cell = BorderStyleCell {
+            top: Some(BorderStyleTimestamp::clear()),
+            ..BorderStyleCell::default()
+        };
+        assert!(cell.is_empty());
+
+        let cell = BorderStyleCell {
+            top: Some(BorderStyleTimestamp::default()),
+            bottom: Some(BorderStyleTimestamp::clear()),
+            ..BorderStyleCell::default()
+        };
+        assert!(!cell.is_empty());
+
+        let cell = BorderStyleCell {
+            top: Some(BorderStyleTimestamp::clear()),
+            bottom: Some(BorderStyleTimestamp::clear()),
+            left: Some(BorderStyleTimestamp::clear()),
+            right: Some(BorderStyleTimestamp::clear()),
+        };
+        assert!(cell.is_empty());
     }
 }

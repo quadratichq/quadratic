@@ -41,7 +41,6 @@ export const BordersHook = (): CommandGroup => {
               action={() => {
                 borders.clearBorders();
               }}
-              disabled={borders.disabled}
             />
           );
         },
@@ -76,7 +75,6 @@ function generateListItem(
             borders.changeBorders(changeBordersArgs);
           }}
           {...(icon ? { icon } : {})}
-          disabled={borders.disabled}
         />
       );
     },

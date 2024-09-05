@@ -177,9 +177,6 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientMultiplayerSynced') {
       events.emit('multiplayerSynced');
       return;
-    } else if (e.data.type === 'coreClientBordersHash') {
-      events.emit('bordersHash', e.data.sheetId, e.data.borders);
-      return;
     } else if (e.data.type === 'coreClientBordersSheet') {
       events.emit('bordersSheet', e.data.sheetId, e.data.borders);
       return;

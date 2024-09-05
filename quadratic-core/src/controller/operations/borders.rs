@@ -1,14 +1,24 @@
 use crate::{
     controller::GridController,
-    grid::sheet::borders::{
-        BorderSelection, BorderStyle, BorderStyleCellUpdate, BorderStyleCellUpdates,
-        BorderStyleTimestamp,
+    grid::{
+        sheet::borders::{
+            BorderSelection, BorderStyle, BorderStyleCellUpdate, BorderStyleCellUpdates,
+            BorderStyleTimestamp,
+        },
+        Sheet, SheetId,
     },
     selection::Selection,
     Rect,
 };
 
 use super::operation::Operation;
+
+pub enum BorderSide {
+    Top,
+    Bottom,
+    Left,
+    Right,
+}
 
 impl GridController {
     // gets a border style for Selection.all, rows, or columns
@@ -47,23 +57,144 @@ impl GridController {
             BorderSelection::Bottom => {
                 border_style.bottom = style;
             }
+
+            // For simplicity, we always set the border to clear and let the
+            // timestamp comparison handle conflicts. We use the more
+            // complicated logic for rects so we don't end up with too many
+            // BorderLineStyle::Clear scattered throughout the sheet (see
+            // check_sheet--the logic here would be even more complicated).
             BorderSelection::Clear => {
-                border_style.top = Some(None);
-                border_style.bottom = Some(None);
-                border_style.left = Some(None);
-                border_style.right = Some(None);
+                border_style.top = Some(Some(BorderStyleTimestamp::clear()));
+                border_style.bottom = Some(Some(BorderStyleTimestamp::clear()));
+                border_style.left = Some(Some(BorderStyleTimestamp::clear()));
+                border_style.right = Some(Some(BorderStyleTimestamp::clear()));
             }
         }
         borders.push(border_style);
     }
 
+    /// We need to determine how to clear the border based on the sheet's border
+    /// settings, and any neighboring borders. We either clear the border, or we
+    /// set it to BorderLineStyle::Clear.
+    fn check_sheet(
+        sheet: &Sheet,
+        x: i64,
+        y: i64,
+        side: BorderSide,
+    ) -> Option<Option<BorderStyleTimestamp>> {
+        match side {
+            BorderSide::Top => {
+                if sheet.borders.all.top.is_some()
+                    || sheet.borders.all.bottom.is_some()
+                    || sheet
+                        .borders
+                        .columns
+                        .get(&x)
+                        .is_some_and(|c| c.top.is_some() || c.bottom.is_some())
+                    || sheet.borders.rows.get(&y).is_some_and(|r| r.top.is_some())
+                    || sheet
+                        .borders
+                        .rows
+                        .get(&(y - 1))
+                        .is_some_and(|r| r.bottom.is_some())
+                    || sheet.borders.get(x, y - 1).bottom.is_some()
+                {
+                    Some(Some(BorderStyleTimestamp::clear()))
+                } else {
+                    Some(None)
+                }
+            }
+            BorderSide::Bottom => {
+                if sheet.borders.all.bottom.is_some()
+                    || sheet.borders.all.top.is_some()
+                    || sheet
+                        .borders
+                        .columns
+                        .get(&x)
+                        .is_some_and(|c| c.bottom.is_some() || c.top.is_some())
+                    || sheet
+                        .borders
+                        .rows
+                        .get(&y)
+                        .is_some_and(|r| r.bottom.is_some())
+                    || sheet
+                        .borders
+                        .rows
+                        .get(&(y + 1))
+                        .is_some_and(|r| r.top.is_some())
+                    || sheet.borders.get(x, y + 1).top.is_some()
+                {
+                    Some(Some(BorderStyleTimestamp::clear()))
+                } else {
+                    Some(None)
+                }
+            }
+            BorderSide::Left => {
+                if sheet.borders.all.left.is_some()
+                    || sheet.borders.all.right.is_some()
+                    || sheet
+                        .borders
+                        .rows
+                        .get(&y)
+                        .is_some_and(|r| r.left.is_some() || r.right.is_some())
+                    || sheet
+                        .borders
+                        .columns
+                        .get(&x)
+                        .is_some_and(|c| c.left.is_some())
+                    || sheet
+                        .borders
+                        .columns
+                        .get(&(x - 1))
+                        .is_some_and(|c| c.right.is_some())
+                    || sheet.borders.get(x - 1, y).right.is_some()
+                {
+                    Some(Some(BorderStyleTimestamp::clear()))
+                } else {
+                    Some(None)
+                }
+            }
+            BorderSide::Right => {
+                if sheet.borders.all.right.is_some()
+                    || sheet.borders.all.left.is_some()
+                    || sheet
+                        .borders
+                        .rows
+                        .get(&y)
+                        .is_some_and(|r| r.right.is_some() || r.left.is_some())
+                    || sheet
+                        .borders
+                        .columns
+                        .get(&x)
+                        .is_some_and(|c| c.right.is_some())
+                    || sheet
+                        .borders
+                        .columns
+                        .get(&(x + 1))
+                        .is_some_and(|c| c.left.is_some())
+                    || sheet.borders.get(x + 1, y).left.is_some()
+                {
+                    Some(Some(BorderStyleTimestamp::clear()))
+                } else {
+                    Some(None)
+                }
+            }
+        }
+    }
+
     /// Gets a border style for a rect
     fn border_style_rect(
+        &self,
+        sheet_id: SheetId,
         border_selection: BorderSelection,
         style: Option<BorderStyle>,
         rect: &Rect,
         borders: &mut BorderStyleCellUpdates,
     ) {
+        let Some(sheet) = self.try_sheet(sheet_id) else {
+            return;
+        };
+
         let style = style.map_or(Some(None), |s| Some(Some(s.into())));
         rect.iter().for_each(|pos| {
             let mut border_style = BorderStyleCellUpdate::default();
@@ -126,11 +257,15 @@ impl GridController {
                         border_style.bottom = style;
                     }
                 }
+
+                // For clear, we need to do a bit more work to check whether we
+                // can clear the border or if we have to use
+                // BorderCellLine::Clear (which will override neighboring borders).
                 BorderSelection::Clear => {
-                    border_style.top = Some(Some(BorderStyleTimestamp::clear()));
-                    border_style.bottom = Some(Some(BorderStyleTimestamp::clear()));
-                    border_style.left = Some(Some(BorderStyleTimestamp::clear()));
-                    border_style.right = Some(Some(BorderStyleTimestamp::clear()));
+                    border_style.top = Self::check_sheet(sheet, pos.x, pos.y, BorderSide::Top);
+                    border_style.bottom = Self::check_sheet(sheet, pos.x, pos.y, BorderSide::Bottom);
+                    border_style.left = Self::check_sheet(sheet, pos.x, pos.y, BorderSide::Left);
+                    border_style.right = Self::check_sheet(sheet, pos.x, pos.y, BorderSide::Right);
                 }
             }
             borders.push(border_style);
@@ -139,6 +274,7 @@ impl GridController {
 
     /// Creates border operations. Returns None if selection is empty.
     pub fn set_borders_selection_operations(
+        &self,
         selection: Selection,
         border_selection: BorderSelection,
         style: Option<BorderStyle>,
@@ -160,7 +296,13 @@ impl GridController {
         }
         if let Some(rects) = selection.rects.as_ref() {
             for rect in rects {
-                Self::border_style_rect(border_selection, style, rect, &mut borders);
+                self.border_style_rect(
+                    selection.sheet_id,
+                    border_selection,
+                    style,
+                    rect,
+                    &mut borders,
+                );
             }
         }
         if !borders.is_empty() {
@@ -175,9 +317,9 @@ impl GridController {
 mod tests {
     use serial_test::parallel;
 
-    use super::*;
+    use crate::grid::sheet::borders::BorderStyleCell;
 
-    use crate::grid::SheetId;
+    use super::*;
 
     fn test_border(
         update: &BorderStyleCellUpdate,
@@ -220,14 +362,16 @@ mod tests {
     #[test]
     #[parallel]
     fn borders_operations_all() {
-        let sheet_id = SheetId::test();
+        let gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
         let selection = Selection::all(sheet_id);
-        let ops = GridController::set_borders_selection_operations(
-            selection.clone(),
-            BorderSelection::All,
-            Some(BorderStyle::default()),
-        )
-        .unwrap();
+        let ops = gc
+            .set_borders_selection_operations(
+                selection.clone(),
+                BorderSelection::All,
+                Some(BorderStyle::default()),
+            )
+            .unwrap();
         assert_eq!(ops.len(), 1);
         let Operation::SetBordersSelection {
             selection: selection_op,
@@ -248,12 +392,13 @@ mod tests {
             Some(expected)
         ));
 
-        let ops = GridController::set_borders_selection_operations(
-            selection.clone(),
-            BorderSelection::Left,
-            Some(BorderStyle::default()),
-        )
-        .unwrap();
+        let ops = gc
+            .set_borders_selection_operations(
+                selection.clone(),
+                BorderSelection::Left,
+                Some(BorderStyle::default()),
+            )
+            .unwrap();
         assert_eq!(ops.len(), 1);
         let Operation::SetBordersSelection {
             selection: selection_op,
@@ -266,38 +411,21 @@ mod tests {
         assert_eq!(borders.size(), 1);
         let border = borders.get_at(0).unwrap();
         assert!(test_border(border, None, None, Some(expected), None));
-
-        let ops = GridController::set_borders_selection_operations(
-            selection.clone(),
-            BorderSelection::Clear,
-            Some(BorderStyle::default()),
-        )
-        .unwrap();
-        assert_eq!(ops.len(), 1);
-        let Operation::SetBordersSelection {
-            selection: selection_op,
-            borders,
-        } = ops[0].clone()
-        else {
-            panic!("Expected SetBordersSelection")
-        };
-        assert_eq!(selection_op, selection);
-        assert_eq!(borders.size(), 1);
-        let border = borders.get_at(0).unwrap();
-        assert!(test_border(border, None, None, None, None));
     }
 
     #[test]
     #[parallel]
     fn borders_operations_columns() {
-        let sheet_id = SheetId::test();
+        let gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
         let selection = Selection::columns(&[0, 1], sheet_id);
-        let ops = GridController::set_borders_selection_operations(
-            selection.clone(),
-            BorderSelection::All,
-            Some(BorderStyle::default()),
-        )
-        .unwrap();
+        let ops = gc
+            .set_borders_selection_operations(
+                selection.clone(),
+                BorderSelection::All,
+                Some(BorderStyle::default()),
+            )
+            .unwrap();
         assert_eq!(ops.len(), 1);
         let Operation::SetBordersSelection {
             selection: selection_op,
@@ -326,12 +454,13 @@ mod tests {
             Some(expected)
         ));
 
-        let ops = GridController::set_borders_selection_operations(
-            selection.clone(),
-            BorderSelection::Vertical,
-            Some(BorderStyle::default()),
-        )
-        .unwrap();
+        let ops = gc
+            .set_borders_selection_operations(
+                selection.clone(),
+                BorderSelection::Vertical,
+                Some(BorderStyle::default()),
+            )
+            .unwrap();
         assert_eq!(ops.len(), 1);
         let Operation::SetBordersSelection {
             selection: selection_op,
@@ -363,14 +492,16 @@ mod tests {
     #[test]
     #[parallel]
     fn borders_operations_rows() {
-        let sheet_id = SheetId::test();
+        let gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
         let selection = Selection::rows(&[0, 1], sheet_id);
-        let ops = GridController::set_borders_selection_operations(
-            selection.clone(),
-            BorderSelection::All,
-            Some(BorderStyle::default()),
-        )
-        .unwrap();
+        let ops = gc
+            .set_borders_selection_operations(
+                selection.clone(),
+                BorderSelection::All,
+                Some(BorderStyle::default()),
+            )
+            .unwrap();
         assert_eq!(ops.len(), 1);
         let Operation::SetBordersSelection {
             selection: selection_op,
@@ -399,12 +530,13 @@ mod tests {
             Some(expected)
         ));
 
-        let ops = GridController::set_borders_selection_operations(
-            selection.clone(),
-            BorderSelection::Horizontal,
-            Some(BorderStyle::default()),
-        )
-        .unwrap();
+        let ops = gc
+            .set_borders_selection_operations(
+                selection.clone(),
+                BorderSelection::Horizontal,
+                Some(BorderStyle::default()),
+            )
+            .unwrap();
         assert_eq!(ops.len(), 1);
         let Operation::SetBordersSelection {
             selection: selection_op,
@@ -436,18 +568,20 @@ mod tests {
     #[test]
     #[parallel]
     fn borders_operations_rects() {
-        let sheet_id = SheetId::test();
+        let gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
         let rect = Rect::from_numbers(0, 0, 2, 2);
         let selection = Selection::rect(rect, sheet_id);
         let expected = BorderStyle::default();
 
         // Test BorderSelection::All
-        let ops = GridController::set_borders_selection_operations(
-            selection.clone(),
-            BorderSelection::All,
-            Some(expected),
-        )
-        .unwrap();
+        let ops = gc
+            .set_borders_selection_operations(
+                selection.clone(),
+                BorderSelection::All,
+                Some(expected),
+            )
+            .unwrap();
         assert_eq!(ops.len(), 1);
         let Operation::SetBordersSelection {
             selection: selection_op,
@@ -470,12 +604,13 @@ mod tests {
         }
 
         // Test BorderSelection::Outer
-        let ops = GridController::set_borders_selection_operations(
-            selection.clone(),
-            BorderSelection::Outer,
-            Some(expected),
-        )
-        .unwrap();
+        let ops = gc
+            .set_borders_selection_operations(
+                selection.clone(),
+                BorderSelection::Outer,
+                Some(expected),
+            )
+            .unwrap();
         assert_eq!(ops.len(), 1);
         let Operation::SetBordersSelection {
             selection: selection_op,
@@ -520,12 +655,13 @@ mod tests {
         ));
 
         // Test BorderSelection::Inner
-        let ops = GridController::set_borders_selection_operations(
-            selection.clone(),
-            BorderSelection::Inner,
-            Some(expected),
-        )
-        .unwrap();
+        let ops = gc
+            .set_borders_selection_operations(
+                selection.clone(),
+                BorderSelection::Inner,
+                Some(expected),
+            )
+            .unwrap();
         assert_eq!(ops.len(), 1);
         let Operation::SetBordersSelection {
             selection: selection_op,
@@ -568,5 +704,82 @@ mod tests {
             Some(expected),
             None
         ));
+    }
+
+    #[test]
+    #[parallel]
+    fn check_sheet() {
+        let mut sheet = Sheet::test();
+
+        // Test for Top border
+        assert_eq!(
+            GridController::check_sheet(&sheet, 0, 0, BorderSide::Top),
+            Some(None)
+        );
+        sheet.borders.all.top = Some(BorderStyleTimestamp::default());
+        assert_eq!(
+            GridController::check_sheet(&sheet, 0, 0, BorderSide::Top),
+            Some(Some(BorderStyleTimestamp::clear()))
+        );
+
+        // Test for Bottom border
+        let mut sheet = Sheet::test();
+        assert_eq!(
+            GridController::check_sheet(&sheet, 0, 0, BorderSide::Bottom),
+            Some(None)
+        );
+        sheet.borders.all.bottom = Some(BorderStyleTimestamp::default());
+        assert_eq!(
+            GridController::check_sheet(&sheet, 0, 0, BorderSide::Bottom),
+            Some(Some(BorderStyleTimestamp::clear()))
+        );
+
+        // Test for Left border
+        let mut sheet = Sheet::test();
+        assert_eq!(
+            GridController::check_sheet(&sheet, 0, 0, BorderSide::Left),
+            Some(None)
+        );
+        sheet.borders.all.left = Some(BorderStyleTimestamp::default());
+        assert_eq!(
+            GridController::check_sheet(&sheet, 0, 0, BorderSide::Left),
+            Some(Some(BorderStyleTimestamp::clear()))
+        );
+
+        // Test for Right border
+        let mut sheet = Sheet::test();
+        assert_eq!(
+            GridController::check_sheet(&sheet, 0, 0, BorderSide::Right),
+            Some(None)
+        );
+        sheet.borders.all.right = Some(BorderStyleTimestamp::default());
+        assert_eq!(
+            GridController::check_sheet(&sheet, 0, 0, BorderSide::Right),
+            Some(Some(BorderStyleTimestamp::clear()))
+        );
+
+        // Test for column-specific borders
+        let mut sheet = Sheet::test();
+        assert_eq!(
+            GridController::check_sheet(&sheet, 0, 0, BorderSide::Top),
+            Some(None)
+        );
+        sheet.borders.columns.insert(0, BorderStyleCell::all());
+        assert_eq!(
+            GridController::check_sheet(&sheet, 0, 0, BorderSide::Top),
+            Some(Some(BorderStyleTimestamp::clear()))
+        );
+
+        // Test for row-specific borders
+        let mut sheet = Sheet::test();
+        assert_eq!(
+            GridController::check_sheet(&sheet, 0, 0, BorderSide::Bottom),
+            Some(None)
+        );
+        sheet.borders.rows.insert(0, BorderStyleCell::all());
+        assert_eq!(
+            GridController::check_sheet(&sheet, 0, 0, BorderSide::Top),
+            Some(Some(BorderStyleTimestamp::clear()))
+        );
     }
 }

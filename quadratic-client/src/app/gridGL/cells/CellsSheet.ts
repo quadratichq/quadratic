@@ -1,10 +1,10 @@
 import { events } from '@/app/events/events';
-import { JsBordersSheet, JsValidationWarning } from '@/app/quadratic-core-types';
+import { JsValidationWarning } from '@/app/quadratic-core-types';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { Container, Rectangle, Sprite } from 'pixi.js';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsArray } from './CellsArray';
-import { CellsBorders } from './CellsBorders';
+import { Borders } from './borders/Borders';
 import { CellsFills } from './CellsFills';
 import { CellsImage } from './cellsImages/CellsImage';
 import { CellsImages } from './cellsImages/CellsImages';
@@ -26,7 +26,7 @@ export interface ErrorValidation {
 
 export class CellsSheet extends Container {
   private cellsFills: CellsFills;
-  private cellsBorders: CellsBorders;
+  private borders: Borders;
   cellsArray: CellsArray;
   cellsImages: CellsImages;
 
@@ -45,13 +45,12 @@ export class CellsSheet extends Container {
 
     this.cellsLabels = this.addChild(new CellsLabels(this));
     this.cellsArray = this.addChild(new CellsArray(this));
-    this.cellsBorders = this.addChild(new CellsBorders(this));
+    this.borders = this.addChild(new Borders(this));
     this.cellsMarkers = this.addChild(new CellsMarkers());
     this.cellsImages = new CellsImages(this);
     this.visible = false;
 
     events.on('renderValidationWarnings', this.renderValidations);
-    events.on('bordersSheet', this.updateBorders);
   }
 
   // used to render all cellsTextHashes to warm up the GPU
@@ -88,7 +87,7 @@ export class CellsSheet extends Container {
   }
 
   adjustOffsets() {
-    this.cellsBorders.draw();
+    this.borders.setDirty();
   }
 
   updateCellsArray() {
@@ -101,6 +100,7 @@ export class CellsSheet extends Container {
 
   update() {
     this.cellsFills.update();
+    this.borders.update();
   }
 
   private renderValidations = (
@@ -125,16 +125,4 @@ export class CellsSheet extends Container {
   getErrorMarkerValidation(x: number, y: number): boolean {
     return this.cellsLabels.getErrorMarker(x, y) !== undefined;
   }
-
-  private updateBorders = (sheetId: string, borders: JsBordersSheet) => {
-    // todo: handle drawing of all, rows, and columns borders
-
-    if (sheetId === this.sheetId) {
-      if (borders.hashes) {
-        borders.hashes.forEach((border) => {
-          this.cellsLabels.bordersHash(sheetId, border);
-        });
-      }
-    }
-  };
 }

@@ -20,7 +20,6 @@ import { ErrorMarker, ErrorValidation } from '../CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 import { CellsTextHashSpecial } from './CellsTextHashSpecial';
 import { CellsTextHashValidations } from './CellsTextHashValidations';
-import { CellsHashBorders } from './CellsHashBorders';
 import { LabelMeshEntry } from './LabelMeshEntry';
 
 // Draw hashed regions of cell glyphs (the text + text formatting)
@@ -37,8 +36,6 @@ export class CellsTextHash extends Container {
   warnings: CellsTextHashValidations;
 
   sheetId: string;
-
-  borders: CellsHashBorders;
 
   hashX: number;
   hashY: number;
@@ -66,7 +63,6 @@ export class CellsTextHash extends Container {
     this.entries = this.addChild(new Container<LabelMeshEntry>());
     this.special = this.addChild(new CellsTextHashSpecial());
     this.warnings = this.addChild(new CellsTextHashValidations(this, sheetId));
-    this.borders = this.addChild(new CellsHashBorders(this));
 
     this.content = new CellsTextHashContent();
 
@@ -78,8 +74,6 @@ export class CellsTextHash extends Container {
   clear() {
     this.entries.removeChildren();
     this.special.clear();
-
-    // we do not clear borders so we don't have to re-create them
   }
 
   addLabelMeshEntry(message: RenderClientLabelMeshEntry) {
@@ -97,7 +91,6 @@ export class CellsTextHash extends Container {
     this.bounds.clear();
     this.bounds.addRectangle(this.textBounds);
     this.bounds.mergeInto(this.warnings.bounds);
-    this.bounds.mergeInto(this.borders.bounds);
   }
 
   clearMeshEntries(viewRectangle: Rectangle) {

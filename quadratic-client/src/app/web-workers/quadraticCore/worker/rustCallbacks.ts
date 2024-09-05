@@ -2,7 +2,6 @@
 
 import {
   ConnectionKind,
-  JsBorders,
   JsBordersSheet,
   JsCodeCell,
   JsHtmlOutput,
@@ -38,8 +37,7 @@ declare var self: WorkerGlobalScope &
     sendSheetInfoRender: (sheets: SheetInfo[]) => void;
     sendSheetFills: (sheetId: string, fill: JsRenderFill[]) => void;
     sendSheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
-    sendBordersHash: (sheetId: string, borders: JsBorders) => void;
-    sendBordersSheet: (sheetId: string, borders: JsBordersSheet) => void;
+    sendBordersSheet: (sheetId: string, borders?: JsBordersSheet) => void;
     sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
     sendSheetInfoUpdateRender: (sheetInfo: SheetInfo) => void;
     sendAddSheetRender: (sheetInfo: SheetInfo) => void;
@@ -195,14 +193,13 @@ export const jsGenerateThumbnail = () => {
   self.sendGenerateThumbnail();
 };
 
-export const jsBordersHash = (sheetId: string, bordersStringified: string) => {
-  const borders = JSON.parse(bordersStringified) as JsBorders;
-  self.sendBordersHash(sheetId, borders);
-};
-
 export const jsBordersSheet = (sheetId: string, bordersStringified: string) => {
-  const borders = JSON.parse(bordersStringified) as JsBordersSheet;
-  self.sendBordersSheet(sheetId, borders);
+  if (bordersStringified) {
+    const borders = JSON.parse(bordersStringified) as JsBordersSheet;
+    self.sendBordersSheet(sheetId, borders);
+  } else {
+    self.sendBordersSheet(sheetId, undefined);
+  }
 };
 
 export const jsSheetCodeCell = (sheetId: string, codeCellsStringified: string) => {

@@ -12,8 +12,7 @@ impl GridController {
         style: Option<BorderStyle>,
         cursor: Option<String>,
     ) {
-        if let Some(ops) =
-            GridController::set_borders_selection_operations(selection, border_selection, style)
+        if let Some(ops) = self.set_borders_selection_operations(selection, border_selection, style)
         {
             self.start_user_transaction(ops, cursor, TransactionName::SetBorders);
         }

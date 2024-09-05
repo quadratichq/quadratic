@@ -1,10 +1,8 @@
 import { borderMenuAtom } from '@/app/atoms/borderMenuAtom';
-import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
 import { BorderSelection, BorderStyle, CellBorderLine } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { useEffect, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 
 export interface ChangeBorder {
@@ -16,7 +14,6 @@ export interface ChangeBorder {
 export interface UseBordersResults {
   changeBorders: (options: ChangeBorder) => void;
   clearBorders: (args?: { create_transaction?: boolean }) => void;
-  disabled: boolean;
 }
 
 export const useBorders = (): UseBordersResults => {
@@ -65,27 +62,8 @@ export const useBorders = (): UseBordersResults => {
     quadraticCore.setBorders(sheets.getRustSelection(), 'clear');
   };
 
-  const [disabled, setDisabled] = useState(false);
-  useEffect(() => {
-    const cursorPosition = () => {
-      if (
-        (sheets.sheet.cursor.multiCursor && sheets.sheet.cursor.multiCursor.length > 1) ||
-        sheets.sheet.cursor.columnRow !== undefined
-      ) {
-        setDisabled(true);
-      } else {
-        setDisabled(false);
-      }
-    };
-    events.on('cursorPosition', cursorPosition);
-    return () => {
-      events.off('cursorPosition', cursorPosition);
-    };
-  }, []);
-
   return {
     changeBorders,
     clearBorders,
-    disabled,
   };
 };

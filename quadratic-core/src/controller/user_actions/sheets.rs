@@ -285,10 +285,15 @@ mod test {
             false,
         );
         // should send borders for the duplicated sheet
-        let borders = gc.sheet(duplicated_sheet_id).borders.all(false).unwrap();
+        let borders = gc
+            .sheet(duplicated_sheet_id)
+            .borders
+            .borders_in_sheet()
+            .unwrap();
+        let borders_str = serde_json::to_string(&borders).unwrap();
         expect_js_call(
             "jsBordersSheet",
-            format!("{},{}", duplicated_sheet_id, borders),
+            format!("{},{}", duplicated_sheet_id, borders_str),
             false,
         );
         // code cells should rerun and send updated code cell

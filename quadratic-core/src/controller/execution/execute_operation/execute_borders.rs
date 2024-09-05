@@ -87,9 +87,7 @@ impl GridController {
                     });
 
                 if (cfg!(test) || cfg!(target_family = "wasm")) && !transaction.is_server() {
-                    if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-                        sheet.borders.send_updated_borders(selection);
-                    }
+                    sheet.borders.send_sheet_borders(selection.sheet_id);
                 }
             }
             _ => unreachable!("Expected Operation::SetBordersSelection"),
@@ -106,7 +104,6 @@ mod tests {
         color::Rgba,
         controller::active_transactions::unsaved_transactions::UnsavedTransaction,
         grid::{sheet::borders::CellBorderLine, SheetId},
-        Rect,
     };
 
     use super::*;
@@ -131,17 +128,19 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
 
-        let js_borders = sheet.borders.borders_in_rect(Rect::new(1, 2, 4, 5));
+        let js_borders = sheet.borders.borders_in_sheet().unwrap();
+        let horizontal = js_borders.horizontal.unwrap();
+        let vertical = js_borders.vertical.unwrap();
 
-        assert_eq!(js_borders.vertical.len(), 3);
-        assert_eq!(js_borders.horizontal.len(), 3);
+        assert_eq!(vertical.len(), 3);
+        assert_eq!(horizontal.len(), 3);
 
-        assert_eq!(js_borders.vertical[0].x, 2);
-        assert_eq!(js_borders.vertical[0].y, 3);
-        assert_eq!(js_borders.vertical[0].height, 2);
-        assert_eq!(js_borders.vertical[0].line, CellBorderLine::Line1);
+        assert_eq!(vertical[0].x, 2);
+        assert_eq!(vertical[0].y, 3);
+        assert_eq!(vertical[0].height, 2);
+        assert_eq!(vertical[0].line, CellBorderLine::Line1);
         assert_eq!(
-            js_borders.vertical[0].color,
+            vertical[0].color,
             Rgba {
                 red: 0,
                 green: 0,
@@ -150,12 +149,12 @@ mod tests {
             }
         );
 
-        assert_eq!(js_borders.horizontal[0].x, 2);
-        assert_eq!(js_borders.horizontal[0].y, 3);
-        assert_eq!(js_borders.horizontal[0].width, 2);
-        assert_eq!(js_borders.horizontal[0].line, CellBorderLine::Line1);
+        assert_eq!(horizontal[0].x, 2);
+        assert_eq!(horizontal[0].y, 3);
+        assert_eq!(horizontal[0].width, 2);
+        assert_eq!(horizontal[0].line, CellBorderLine::Line1);
         assert_eq!(
-            js_borders.horizontal[0].color,
+            horizontal[0].color,
             Rgba {
                 red: 0,
                 green: 0,
