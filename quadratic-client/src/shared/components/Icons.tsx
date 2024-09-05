@@ -137,6 +137,18 @@ export const FormatItalicIcon = (props: IconProps) => {
   return <Icon {...props}>format_italic</Icon>;
 };
 
+export const FormatTextClipIcon = (props: IconProps) => {
+  return <Icon {...props}>format_text_clip</Icon>;
+};
+
+export const FormatTextOverflowIcon = (props: IconProps) => {
+  return <Icon {...props}>format_text_overflow</Icon>;
+};
+
+export const FormatTextWrapIcon = (props: IconProps) => {
+  return <Icon {...props}>format_text_wrap</Icon>;
+};
+
 export const FileCopyIcon = (props: IconProps) => {
   return <Icon {...props}>file_copy</Icon>;
 };
