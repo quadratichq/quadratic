@@ -1,6 +1,7 @@
-import { GenericAction } from '@/app/actions/actionTypes';
-import { zoomIn } from '@/app/actions/view';
+import { Action } from '@/app/actions/actions';
+import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { events } from '@/app/events/events';
+import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { ArrowDropDownIcon } from '@/shared/components/Icons';
 import {
   DropdownMenu,
@@ -46,7 +47,7 @@ export const ZoomMenu = () => {
         }}
       >
         {/* Prototype for the new approach to centralized actions */}
-        <DropdownMenuItemFromAction mixpanelEvent="[ZoomDropdown].zoomIn" action={zoomIn} />
+        <DropdownMenuItemFromAction mixpanelEvent="[ZoomDropdown].zoomIn" action={Action.ZoomIn} />
         <DropdownMenuItem
           onClick={() => {
             mixpanel.track('[ZoomDropdown].zoomOut');
@@ -103,21 +104,21 @@ export const ZoomMenu = () => {
   );
 };
 
-function DropdownMenuItemFromAction({ action, mixpanelEvent }: { action: GenericAction; mixpanelEvent: string }) {
-  const shortcutDisplay = keyboardShortcutEnumToDisplay(action.keyboardShortcut);
+function DropdownMenuItemFromAction({ action, mixpanelEvent }: { action: Action; mixpanelEvent: string }) {
+  const actionSpec = defaultActionSpec[action];
+  if (actionSpec === undefined) {
+    throw new Error(`No action spec found for action: ${action}`);
+  }
+
+  const shortcutDisplay = keyboardShortcutEnumToDisplay(action);
   return (
     <DropdownMenuItem
       onClick={() => {
         mixpanel.track(mixpanelEvent);
-        action.run();
+        actionSpec.run();
       }}
     >
-      {action.label} {shortcutDisplay && <DropdownMenuShortcut>{KeyboardSymbols.Command + '+'}</DropdownMenuShortcut>}
+      {actionSpec.label} {shortcutDisplay && <DropdownMenuShortcut>{shortcutDisplay}</DropdownMenuShortcut>}
     </DropdownMenuItem>
   );
-}
-
-// TODO: this would be moved somewhere that maps Ayush's keyboard shortcuts to a displayable version
-function keyboardShortcutEnumToDisplay(shortcut?: string) {
-  return 'TODO';
 }

@@ -36,8 +36,14 @@ export const defaultShortcuts: ActionShortcut = {
     ],
   },
   [Action.ZoomIn]: {
-    mac: [[MacModifiers.Cmd, Keys.Equals]],
-    windows: [[WindowsModifiers.Ctrl, Keys.Equals]],
+    mac: [
+      [MacModifiers.Cmd, Keys.Plus],
+      [MacModifiers.Cmd, Keys.Equals],
+    ],
+    windows: [
+      [WindowsModifiers.Ctrl, Keys.Plus],
+      [WindowsModifiers.Ctrl, Keys.Equals],
+    ],
   },
   [Action.ZoomOut]: {
     mac: [[MacModifiers.Cmd, Keys.Minus]],

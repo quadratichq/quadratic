@@ -1,53 +1,37 @@
 import { Action } from '@/app/actions/actions';
 import { matchShortcut, processShortcut } from '@/app/helpers/keyboardShortcuts';
 import { defaultShortcuts } from '@/app/keyboard/defaults';
+import { Keys, MacModifiers, WindowsModifiers } from '@/app/keyboard/keys';
 import * as isMacModule from '@/shared/utils/isMac';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-// import { matchShortcut, parseCombination } from './keyboardShortcuts';
 
 describe('shortcut utility functions', () => {
-  // describe('validate shortcuts', () => {
-  //   it('parse zod schema', () => {
-  //     ShortcutsSchema.parse(defaultShortcuts);
-  //   });
-  // });
+  describe('processShortcut', () => {
+    it('should process a simple shortcut', () => {
+      const result = processShortcut([MacModifiers.Cmd, Keys.A]);
+      expect(result).toEqual({ metaKey: true, ctrlKey: false, altKey: false, shiftKey: false, key: 'A' });
+    });
 
-  // describe('parseCombination', () => {
-  //   beforeEach(() => {
-  //     vi.resetModules();
-  //   });
+    it('should process a shortcut with multiple modifiers', () => {
+      const result = processShortcut([MacModifiers.Cmd, MacModifiers.Shift, MacModifiers.Alt, Keys.B]);
+      expect(result).toEqual({ metaKey: true, ctrlKey: false, altKey: true, shiftKey: true, key: 'B' });
+    });
 
-  //   it('should parse a simple combination', () => {
-  //     const result = parseCombination('Ctrl+A');
-  //     expect(result).toEqual({ metaKey: false, ctrlKey: true, altKey: false, shiftKey: false, key: 'a' });
-  //   });
+    it('should handle Windows modifiers', () => {
+      const result = processShortcut([WindowsModifiers.Ctrl, WindowsModifiers.Alt, Keys.C]);
+      expect(result).toEqual({ metaKey: false, ctrlKey: true, altKey: true, shiftKey: false, key: 'C' });
+    });
 
-  //   it('should parse a combination with multiple modifier keys', () => {
-  //     const result = parseCombination('Ctrl+Shift+Alt+X');
-  //     expect(result).toEqual({ metaKey: false, ctrlKey: true, altKey: true, shiftKey: true, key: 'x' });
-  //   });
+    it('should handle special keys', () => {
+      const result = processShortcut([MacModifiers.Cmd, Keys.Enter]);
+      expect(result).toEqual({ metaKey: true, ctrlKey: false, altKey: false, shiftKey: false, key: 'Enter' });
+    });
 
-  //   it('should handle the Cmd key on Mac', () => {
-  //     vi.spyOn(isMacModule, 'isMac', 'get').mockReturnValue(true);
-  //     const result = parseCombination('Cmd+B');
-  //     expect(result).toEqual({ metaKey: true, ctrlKey: false, altKey: false, shiftKey: false, key: 'b' });
-  //   });
-
-  //   it('should handle the Space key', () => {
-  //     const result = parseCombination('Space');
-  //     expect(result).toEqual({ metaKey: false, ctrlKey: false, altKey: false, shiftKey: false, key: ' ' });
-  //   });
-
-  //   it('should be case-insensitive', () => {
-  //     const result = parseCombination('CTRL+shift+ALT+x');
-  //     expect(result).toEqual({ metaKey: false, ctrlKey: true, altKey: true, shiftKey: true, key: 'x' });
-  //   });
-
-  //   it('should handle combinations with spaces', () => {
-  //     const result = parseCombination('Ctrl + Shift + X');
-  //     expect(result).toEqual({ metaKey: false, ctrlKey: true, altKey: false, shiftKey: true, key: 'x' });
-  //   });
-  // });
+    it('should handle shortcuts with only modifiers', () => {
+      const result = processShortcut([MacModifiers.Cmd, MacModifiers.Shift]);
+      expect(result).toEqual({ metaKey: true, ctrlKey: false, altKey: false, shiftKey: true, key: undefined });
+    });
+  });
 
   describe('matchShortcut', () => {
     beforeEach(() => {
@@ -84,6 +68,11 @@ describe('shortcut utility functions', () => {
       const event2 = new KeyboardEvent('keydown', { key: 'y', metaKey: true });
       expect(matchShortcut(Action.Redo, event1)).toBe(true);
       expect(matchShortcut(Action.Redo, event2)).toBe(true);
+    });
+
+    it('should not match when an extra modifier key is pressed', () => {
+      const event = new KeyboardEvent('keydown', { key: 'p', metaKey: true, altKey: true });
+      expect(matchShortcut(Action.ShowCommandPalette, event)).toBe(false);
     });
   });
 
