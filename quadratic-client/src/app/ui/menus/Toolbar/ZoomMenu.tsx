@@ -13,9 +13,7 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useState } from 'react';
-import { zoomInOut, zoomToFit, zoomToSelection } from '../../../gridGL/helpers/zoom';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 
 export const ZoomMenu = () => {
   const [zoom, setZoom] = useState(1);
@@ -27,11 +25,6 @@ export const ZoomMenu = () => {
       events.off('zoom', handleZoom);
     };
   }, [handleZoom]);
-
-  const setZoomState = useCallback((value: number) => {
-    zoomInOut(value);
-    focusGrid();
-  }, []);
 
   return (
     <DropdownMenu>
@@ -46,59 +39,14 @@ export const ZoomMenu = () => {
           focusGrid();
         }}
       >
-        {/* Prototype for the new approach to centralized actions */}
         <DropdownMenuItemFromAction mixpanelEvent="[ZoomDropdown].zoomIn" action={Action.ZoomIn} />
-        <DropdownMenuItem
-          onClick={() => {
-            mixpanel.track('[ZoomDropdown].zoomOut');
-            setZoomState(zoom * 0.5);
-          }}
-        >
-          Zoom out <DropdownMenuShortcut>{KeyboardSymbols.Command + '−'}</DropdownMenuShortcut>
-        </DropdownMenuItem>
+        <DropdownMenuItemFromAction mixpanelEvent="[ZoomDropdown].zoomOut" action={Action.ZoomOut} />
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={() => {
-            mixpanel.track('[ZoomDropdown].zoomToSelection');
-            zoomToSelection();
-          }}
-        >
-          Zoom to selection <DropdownMenuShortcut>{KeyboardSymbols.Command + '8'}</DropdownMenuShortcut>
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => {
-            mixpanel.track('[ZoomDropdown].zoomToFit');
-            zoomToFit();
-          }}
-        >
-          Zoom to fit <DropdownMenuShortcut>{KeyboardSymbols.Command + '9'}</DropdownMenuShortcut>
-        </DropdownMenuItem>
-
-        <DropdownMenuItem
-          onClick={() => {
-            mixpanel.track('[ZoomDropdown].zoom50%');
-            setZoomState(0.5);
-          }}
-        >
-          Zoom to 50%
-        </DropdownMenuItem>
-
-        <DropdownMenuItem
-          onClick={() => {
-            mixpanel.track('[ZoomDropdown].zoom100%');
-            setZoomState(1);
-          }}
-        >
-          Zoom to 100% <DropdownMenuShortcut>{KeyboardSymbols.Command + '0'}</DropdownMenuShortcut>
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => {
-            mixpanel.track('[ZoomDropdown].zoom200%');
-            setZoomState(2);
-          }}
-        >
-          Zoom to 200% <DropdownMenuShortcut></DropdownMenuShortcut>
-        </DropdownMenuItem>
+        <DropdownMenuItemFromAction mixpanelEvent="[ZoomDropdown].zoomToSelection" action={Action.ZoomToSelection} />
+        <DropdownMenuItemFromAction mixpanelEvent="[ZoomDropdown].zoomToFit" action={Action.ZoomToFit} />
+        <DropdownMenuItemFromAction mixpanelEvent="[ZoomDropdown].zoomTo50%" action={Action.ZoomTo50} />
+        <DropdownMenuItemFromAction mixpanelEvent="[ZoomDropdown].zoomTo100%" action={Action.ZoomTo100} />
+        <DropdownMenuItemFromAction mixpanelEvent="[ZoomDropdown].zoomTo200%" action={Action.ZoomTo200} />
       </DropdownMenuContent>
     </DropdownMenu>
   );

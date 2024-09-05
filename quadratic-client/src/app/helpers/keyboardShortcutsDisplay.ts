@@ -8,7 +8,7 @@ export function keyboardShortcutEnumToDisplay(action: Action) {
   const platformShortcuts = isMac ? defaultShortcuts[action].mac : defaultShortcuts[action].windows;
   let display = '';
 
-  platformShortcuts[0].forEach((key) => {
+  platformShortcuts[0]?.forEach((key) => {
     switch (key) {
       case MacModifiers.Cmd:
         display += KeyboardSymbols.Command;
