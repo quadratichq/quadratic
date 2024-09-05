@@ -1,6 +1,6 @@
-import { Action } from '../actions/actions';
-import { Keys, MacModifiers, WindowsModifiers } from './keys';
-import { ActionShortcut } from './shortcut';
+import { Action } from '@/app/actions/actions';
+import { Keys, MacModifiers, WindowsModifiers } from '@/app/keyboard/keys';
+import { ActionShortcut } from '@/app/keyboard/shortcut';
 
 export const defaultShortcuts: ActionShortcut = {
   [Action.GridPanMode]: {
