@@ -2,7 +2,7 @@ import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 
 export function keyboardSearch(
-  event: KeyboardEvent,
+  event: React.KeyboardEvent<HTMLElement>,
   editorInteractionState: EditorInteractionState,
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>
 ): boolean {

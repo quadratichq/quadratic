@@ -6,6 +6,7 @@ import NewFileButton from '@/dashboard/components/NewFileButton';
 import { OnboardingBanner } from '@/dashboard/components/OnboardingBanner';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { ROUTES } from '@/shared/constants/routes';
+import { getAuth0AvatarSrc } from '@/shared/utils/auth0UserImageSrc';
 import { Add } from '@mui/icons-material';
 import { Avatar, AvatarGroup } from '@mui/material';
 import { FileIcon } from '@radix-ui/react-icons';
@@ -41,6 +42,7 @@ export const Component = () => {
           <div className={`flex items-center gap-2`}>
             <div className="hidden lg:block">
               <Link to={ROUTES.TEAM_MEMBERS(teamUuid)}>
+                {/* TODO(ayush): create custom AvatarGroup component */}
                 <AvatarGroup
                   max={6}
                   sx={{ cursor: 'pointer', pr: 0 }}
@@ -50,7 +52,13 @@ export const Component = () => {
                     <Add fontSize="inherit" />
                   </Avatar>
                   {users.map((user, key) => (
-                    <Avatar key={key} alt={user.name} src={user.picture} sx={avatarSxProps} />
+                    <Avatar
+                      key={key}
+                      alt={user.name}
+                      src={getAuth0AvatarSrc(user.picture)}
+                      sx={avatarSxProps}
+                      imgProps={{ crossOrigin: 'anonymous' }}
+                    />
                   ))}
                 </AvatarGroup>
               </Link>
