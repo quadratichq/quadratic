@@ -41,6 +41,10 @@ export const ArrowDropDownCircleIcon = (props: IconProps) => {
   return <Icon {...props}>arrow_drop_down_circle</Icon>;
 };
 
+export const BorderAllIcon = (props: IconProps) => {
+  return <Icon {...props}>border_all</Icon>;
+};
+
 export const CheckBoxIcon = (props: IconProps) => {
   return <Icon {...props}>check_box</Icon>;
 };
@@ -73,6 +77,10 @@ export const CopyAsCsv = (props: IconProps) => {
   return <Icon {...props}>csv</Icon>;
 };
 
+export const CurrencyIcon = (props: IconProps) => {
+  return <Icon {...props}>attach_money</Icon>;
+};
+
 export const CutIcon = (props: IconProps) => {
   return <Icon {...props}>content_cut</Icon>;
 };
@@ -89,8 +97,8 @@ export const DataObjectIcon = (props: IconProps) => {
   return <Icon {...props}>data_object</Icon>;
 };
 
-export const CurrencyIcon = (props: IconProps) => {
-  return <Icon {...props}>attach_money</Icon>;
+export const DocumentationIcon = (props: IconProps) => {
+  return <Icon {...props}>menu_book</Icon>;
 };
 
 export const DecimalDecreaseIcon = (props: IconProps) => {
@@ -127,6 +135,18 @@ export const FormatAlignLeftIcon = (props: IconProps) => {
 
 export const FormatAlignRightIcon = (props: IconProps) => {
   return <Icon {...props}>format_align_right</Icon>;
+};
+
+export const FormatClearIcon = (props: IconProps) => {
+  return <Icon {...props}>format_clear</Icon>;
+};
+
+export const FormatColorFillIcon = (props: IconProps) => {
+  return <Icon {...props}>format_color_fill</Icon>;
+};
+
+export const FormatColorTextIcon = (props: IconProps) => {
+  return <Icon {...props}>format_color_text</Icon>;
 };
 
 export const FormatBoldIcon = (props: IconProps) => {
@@ -173,6 +193,10 @@ export const HelpIcon = (props: IconProps) => {
   return <Icon {...props}>help</Icon>;
 };
 
+export const MailIcon = (props: IconProps) => {
+  return <Icon {...props}>mail</Icon>;
+};
+
 export const ManageSearch = (props: IconProps) => {
   return <Icon {...props}>manage_search</Icon>;
 };
@@ -181,8 +205,8 @@ export const MemoryIcon = (props: IconProps) => {
   return <Icon {...props}>memory</Icon>;
 };
 
-export const MenuBookIcon = (props: IconProps) => {
-  return <Icon {...props}>menu_book</Icon>;
+export const Number123Icon = (props: IconProps) => {
+  return <Icon {...props}>123</Icon>;
 };
 
 export const PageViewIcon = (props: IconProps) => {

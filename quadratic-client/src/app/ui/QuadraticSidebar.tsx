@@ -9,11 +9,10 @@ import {
   CodeCellOutlineOn,
   CodeIcon,
   DatabaseIcon,
+  DocumentationIcon,
   FeedbackIcon,
-  HelpIcon,
   ManageSearch,
   MemoryIcon,
-  MenuBookIcon,
 } from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { DOCUMENTATION_URL } from '@/shared/constants/urls';
@@ -91,15 +90,10 @@ export const QuadraticSidebar = () => {
               </SidebarButton>
             </SidebarTooltip>
           )}
-          <SidebarTooltip label="Help">
-            <SidebarButton onClick={() => {}}>
-              <HelpIcon />
-            </SidebarButton>
-          </SidebarTooltip>
           <SidebarTooltip label="Documentation">
             <SidebarButton>
               <Link to={DOCUMENTATION_URL} target="_blank" rel="noreferrer">
-                <MenuBookIcon />
+                <DocumentationIcon />
               </Link>
             </SidebarButton>
           </SidebarTooltip>

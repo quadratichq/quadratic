@@ -1,10 +1,20 @@
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { QColorPicker } from '@/app/ui/components/qColorPicker';
+import { setTextColor } from '@/app/ui/menus/TopBar/SubMenus/formatCells';
 import {
-  CodeIcon,
+  BorderAllIcon,
   FormatAlignCenterIcon,
   FormatAlignLeftIcon,
   FormatAlignRightIcon,
   FormatBoldIcon,
+  FormatClearIcon,
+  FormatColorFillIcon,
+  FormatColorTextIcon,
   FormatItalicIcon,
+  FormatTextClipIcon,
+  FormatTextOverflowIcon,
+  FormatTextWrapIcon,
+  Number123Icon,
   VerticalAlignBottomIcon,
   VerticalAlignMiddleIcon,
   VerticalAlignTopIcon,
@@ -28,7 +38,7 @@ export const FormatMenubarMenu = () => {
       <MenubarContent>
         <MenubarSub>
           <MenubarSubTrigger>
-            <CodeIcon /> Number
+            <Number123Icon /> Number
           </MenubarSubTrigger>
           <MenubarSubContent>
             <MenubarItem>Automatic</MenubarItem>
@@ -100,14 +110,64 @@ export const FormatMenubarMenu = () => {
         </MenubarSub>
         <MenubarSub>
           <MenubarSubTrigger>
-            <CodeIcon /> Wrapping
+            <FormatTextWrapIcon /> Wrapping
           </MenubarSubTrigger>
           <MenubarSubContent>
-            <MenubarItem>Overflow</MenubarItem>
-            <MenubarItem>Wrap</MenubarItem>
-            <MenubarItem>Clip</MenubarItem>
+            <MenubarItem>
+              <FormatTextOverflowIcon />
+              Overflow
+            </MenubarItem>
+            <MenubarItem>
+              <FormatTextWrapIcon />
+              Wrap
+            </MenubarItem>
+            <MenubarItem>
+              <FormatTextClipIcon />
+              Clip
+            </MenubarItem>
           </MenubarSubContent>
         </MenubarSub>
+        <MenubarSeparator />
+        <MenubarSub>
+          <MenubarSubTrigger>
+            <FormatColorTextIcon /> Text color
+          </MenubarSubTrigger>
+          <MenubarSubContent>
+            <MenubarItem className="hover:bg-background">
+              {/* TODO: (jimniels) style the color picker */}
+              <QColorPicker
+                onChangeComplete={(color) => {
+                  setTextColor(color);
+                  // focusGrid();
+                }}
+                onClear={() => {
+                  setTextColor(undefined);
+                  // focusGrid();
+                }}
+              />
+            </MenubarItem>
+          </MenubarSubContent>
+        </MenubarSub>
+        <MenubarSub>
+          <MenubarSubTrigger>
+            <FormatColorFillIcon /> Fill color
+          </MenubarSubTrigger>
+          <MenubarSubContent>
+            <MenubarItem>TODO</MenubarItem>
+          </MenubarSubContent>
+        </MenubarSub>
+        <MenubarSub>
+          <MenubarSubTrigger>
+            <BorderAllIcon /> Border
+          </MenubarSubTrigger>
+          <MenubarSubContent>
+            <MenubarItem>TODO</MenubarItem>
+          </MenubarSubContent>
+        </MenubarSub>
+        <MenubarSeparator />
+        <MenubarItem>
+          <FormatClearIcon /> Clear <MenubarShortcut>{KeyboardSymbols.Command + '\\'}</MenubarShortcut>
+        </MenubarItem>
       </MenubarContent>
     </MenubarMenu>
   );
