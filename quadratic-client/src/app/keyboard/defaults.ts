@@ -1,478 +1,310 @@
-import { Shortcuts } from './schema';
+import { Action } from '../actions/actions';
+import { Keys, MacModifiers, WindowsModifiers } from './keys';
+import { ActionShortcut } from './shortcut';
 
-export const defaultShortcuts: Shortcuts = [
-  // QuadraticGrid.tsx
-  {
-    action: 'grid_pan_mode',
-    shortcuts: {
-      mac: ['Space'],
-      windows: ['Space'],
-    },
-  },
-
-  // keyboardViewport.ts
-  {
-    action: 'show_command_palette',
-    shortcuts: {
-      mac: ['Cmd + P', 'Cmd + /'],
-      windows: ['Ctrl + P', 'Ctrl + /'],
-    },
-  },
-  {
-    action: 'toggle_presentation_mode',
-    shortcuts: {
-      mac: ['Cmd + .'],
-      windows: ['Ctrl + .'],
-    },
-  },
-  {
-    action: 'close_overlay',
-    shortcuts: {
-      mac: ['Escape'],
-      windows: ['Escape'],
-    },
-  },
-  {
-    action: 'show_go_to_menu',
-    shortcuts: {
-      mac: ['Cmd + G', 'Cmd + J'],
-      windows: ['Ctrl + G', 'Ctrl + J'],
-    },
-  },
-  {
-    action: 'zoom_in',
-    shortcuts: {
-      mac: ['Cmd + ='],
-      windows: ['Ctrl + ='],
-    },
-  },
-  {
-    action: 'zoom_out',
-    shortcuts: {
-      mac: ['Cmd + -'],
-      windows: ['Ctrl + -'],
-    },
-  },
-  {
-    action: 'zoom_to_selection',
-    shortcuts: {
-      mac: ['Cmd + 8'],
-      windows: ['Ctrl + 8'],
-    },
-  },
-  {
-    action: 'zoom_to_fit',
-    shortcuts: {
-      mac: ['Cmd + 9'],
-      windows: ['Ctrl + 9'],
-    },
-  },
-  {
-    action: 'zoom_to_100',
-    shortcuts: {
-      mac: ['Cmd + 0'],
-      windows: ['Ctrl + 0'],
-    },
-  },
-  {
-    action: 'save',
-    shortcuts: {
-      mac: ['Cmd + S'],
-      windows: ['Ctrl + S'],
-    },
-  },
-  {
-    action: 'switch_sheet_next',
-    shortcuts: {
-      mac: ['Cmd + Shift + PageUp', 'Cmd + Alt + PageUp', 'Alt + ArrowUp', 'Alt + ArrowRight'],
-      windows: ['Ctrl + Shift + PageUp', 'Ctrl + Alt + PageUp', 'Alt + ArrowUp', 'Alt + ArrowRight'],
-    },
-  },
-  {
-    action: 'switch_sheet_previous',
-    shortcuts: {
-      mac: ['Cmd + Shift + PageDown', 'Cmd + Alt + PageDown', 'Alt + ArrowDown', 'Alt + ArrowLeft'],
-      windows: ['Ctrl + Shift + PageDown', 'Ctrl + Alt + PageDown', 'Alt + ArrowDown', 'Alt + ArrowLeft'],
-    },
-  },
-  {
-    action: 'clear_formatting_borders',
-    shortcuts: {
-      mac: ['Cmd + \\'],
-      windows: ['Ctrl + \\'],
-    },
-  },
-  {
-    action: 'toggle_bold',
-    shortcuts: {
-      mac: ['Cmd + B'],
-      windows: ['Ctrl + B'],
-    },
-  },
-  {
-    action: 'toggle_italic',
-    shortcuts: {
-      mac: ['Cmd + I'],
-      windows: ['Ctrl + I'],
-    },
-  },
-  {
-    action: 'fill_right',
-    shortcuts: {
-      mac: ['Cmd + R'],
-      windows: ['Ctrl + R'],
-    },
-  },
-  {
-    action: 'fill_down',
-    shortcuts: {
-      mac: ['Cmd + D'],
-      windows: ['Ctrl + D'],
-    },
-  },
-  {
-    action: 'cancel_execution',
-    shortcuts: {
-      mac: ['Cmd + Escape'],
-      windows: ['Ctrl + Escape'],
-    },
-  },
-
-  // keyboardSearch.ts
-  {
-    action: 'show_search',
-    shortcuts: {
-      mac: ['Cmd + F'],
-      windows: ['Ctrl + F'],
-    },
-  },
-
-  // keyboardClipboard.ts
-  {
-    action: 'copy_as_png',
-    shortcuts: {
-      mac: ['Cmd + Shift + C'],
-      windows: ['Ctrl + Shift + C'],
-    },
-  },
-  {
-    action: 'download_as_csv',
-    shortcuts: {
-      mac: ['Cmd + Shift + E'],
-      windows: ['Ctrl + Shift + E'],
-    },
-  },
-
-  // keyboardUndoRedo.ts
-  {
-    action: 'undo',
-    shortcuts: {
-      mac: ['Cmd + Z'],
-      windows: ['Ctrl + Z'],
-    },
-  },
-  {
-    action: 'redo',
-    shortcuts: {
-      mac: ['Cmd + Shift + Z', 'Cmd + Y'],
-      windows: ['Ctrl + Shift + Z', 'Ctrl + Y'],
-    },
-  },
-
-  // keyboardSelect.ts
-  {
-    action: 'select_all',
-    shortcuts: {
-      mac: ['Cmd + A', 'Cmd + Shift + Space'],
-      windows: ['Ctrl + A', 'Ctrl + Shift + Space'],
-    },
-  },
-  {
-    action: 'select_column',
-    shortcuts: {
-      mac: ['Cmd + Space'],
-      windows: ['Ctrl + Space'],
-    },
-  },
-  {
-    action: 'select_row',
-    shortcuts: {
-      mac: ['Shift + Space'],
-      windows: ['Shift + Space'],
-    },
-  },
-
-  // keyboardCode.ts
-  {
-    action: 'execute_code',
-    shortcuts: {
-      mac: ['Cmd + Enter'],
-      windows: ['Ctrl + Enter'],
-    },
-  },
-  {
-    action: 'rerun_sheet_code',
-    shortcuts: {
-      mac: ['Cmd + Shift + Alt + Enter'],
-      windows: ['Ctrl + Shift + Alt + Enter'],
-    },
-  },
-  {
-    action: 'rerun_all_code',
-    shortcuts: {
-      mac: ['Cmd + Shift + Enter'],
-      windows: ['Ctrl + Shift + Enter'],
-    },
-  },
-  {
-    action: 'insert_cell_reference',
-    shortcuts: {
-      mac: ['Cmd + L'],
-      windows: ['Ctrl + L'],
-    },
-  },
-
-  // keyboardPosition.ts
-  {
-    action: 'move_cursor_up',
-    shortcuts: {
-      mac: ['ArrowUp'],
-      windows: ['ArrowUp'],
-    },
-  },
-  {
-    action: 'jump_cursor_content_top',
-    shortcuts: {
-      mac: ['Cmd + ArrowUp'],
-      windows: ['Ctrl + ArrowUp'],
-    },
-  },
-  {
-    action: 'expand_selection_up',
-    shortcuts: {
-      mac: ['Shift + ArrowUp'],
-      windows: ['Shift + ArrowUp'],
-    },
-  },
-  {
-    action: 'expand_selection_content_top',
-    shortcuts: {
-      mac: ['Cmd + Shift + ArrowUp'],
-      windows: ['Ctrl + Shift + ArrowUp'],
-    },
-  },
-  {
-    action: 'move_cursor_down',
-    shortcuts: {
-      mac: ['ArrowDown'],
-      windows: ['ArrowDown'],
-    },
-  },
-  {
-    action: 'jump_cursor_content_bottom',
-    shortcuts: {
-      mac: ['Cmd + ArrowDown'],
-      windows: ['Ctrl + ArrowDown'],
-    },
-  },
-  {
-    action: 'expand_selection_down',
-    shortcuts: {
-      mac: ['Shift + ArrowDown'],
-      windows: ['Shift + ArrowDown'],
-    },
-  },
-  {
-    action: 'expand_selection_content_bottom',
-    shortcuts: {
-      mac: ['Cmd + Shift + ArrowDown'],
-      windows: ['Ctrl + Shift + ArrowDown'],
-    },
-  },
-  {
-    action: 'move_cursor_left',
-    shortcuts: {
-      mac: ['ArrowLeft'],
-      windows: ['ArrowLeft'],
-    },
-  },
-  {
-    action: 'jump_cursor_content_left',
-    shortcuts: {
-      mac: ['Cmd + ArrowLeft'],
-      windows: ['Ctrl + ArrowLeft'],
-    },
-  },
-  {
-    action: 'expand_selection_left',
-    shortcuts: {
-      mac: ['Shift + ArrowLeft'],
-      windows: ['Shift + ArrowLeft'],
-    },
-  },
-  {
-    action: 'expand_selection_content_left',
-    shortcuts: {
-      mac: ['Cmd + Shift + ArrowLeft'],
-      windows: ['Ctrl + Shift + ArrowLeft'],
-    },
-  },
-  {
-    action: 'move_cursor_right',
-    shortcuts: {
-      mac: ['ArrowRight'],
-      windows: ['ArrowRight'],
-    },
-  },
-  {
-    action: 'jump_cursor_content_right',
-    shortcuts: {
-      mac: ['Cmd + ArrowRight'],
-      windows: ['Ctrl + ArrowRight'],
-    },
-  },
-  {
-    action: 'expand_selection_right',
-    shortcuts: {
-      mac: ['Shift + ArrowRight'],
-      windows: ['Shift + ArrowRight'],
-    },
-  },
-  {
-    action: 'expand_selection_content_right',
-    shortcuts: {
-      mac: ['Cmd + Shift + ArrowRight'],
-      windows: ['Ctrl + Shift + ArrowRight'],
-    },
-  },
-  {
-    action: 'goto_A0',
-    shortcuts: {
-      mac: ['Cmd + Home'],
-      windows: ['Ctrl + Home'],
-    },
-  },
-  {
-    action: 'goto_bottom_right',
-    shortcuts: {
-      mac: ['Cmd + End'],
-      windows: ['Ctrl + End'],
-    },
-  },
-  {
-    action: 'goto_row_start',
-    shortcuts: {
-      mac: ['Home'],
-      windows: ['Home'],
-    },
-  },
-  {
-    action: 'goto_row_end',
-    shortcuts: {
-      mac: ['End'],
-      windows: ['End'],
-    },
-  },
-  {
-    action: 'page_up',
-    shortcuts: {
-      mac: ['PageUp'],
-      windows: ['PageUp'],
-    },
-  },
-  {
-    action: 'page_down',
-    shortcuts: {
-      mac: ['PageDown'],
-      windows: ['PageDown'],
-    },
-  },
-
-  // keyboardCell.ts
-  {
-    action: 'move_cursor_right_with_selection',
-    shortcuts: {
-      mac: ['Tab'],
-      windows: ['Tab'],
-    },
-  },
-  {
-    action: 'move_cursor_left_with_selection',
-    shortcuts: {
-      mac: ['Shift + Tab'],
-      windows: ['Shift + Tab'],
-    },
-  },
-  {
-    action: 'edit_cell',
-    shortcuts: {
-      mac: ['Enter', 'Shift + Enter', 'F2'],
-      windows: ['Enter', 'Shift + Enter', 'F2'],
-    },
-  },
-  {
-    action: 'delete_cell',
-    shortcuts: {
-      mac: ['Backspace', 'Delete'],
-      windows: ['Backspace', 'Delete'],
-    },
-  },
-  {
-    action: 'show_cell_type_menu',
-    shortcuts: {
-      mac: ['/', 'Shift + /'],
-      windows: ['/', 'Shift + /'],
-    },
-  },
-
-  // InlineEditorKeyboard.ts
-  {
-    action: 'close_inline_editor',
-    shortcuts: {
-      mac: ['Escape'],
-      windows: ['Escape'],
-    },
-  },
-  {
-    action: 'save_inline_editor',
-    shortcuts: {
-      mac: ['Enter', 'Cmd + Enter'],
-      windows: ['Enter', 'Ctrl + Enter'],
-    },
-  },
-  {
-    action: 'save_inline_editor_move_up',
-    shortcuts: {
-      mac: ['Shift + Enter'],
-      windows: ['Shift + Enter'],
-    },
-  },
-  {
-    action: 'save_inline_editor_move_right',
-    shortcuts: {
-      mac: ['Tab'],
-      windows: ['Tab'],
-    },
-  },
-  {
-    action: 'save_inline_editor_move_left',
-    shortcuts: {
-      mac: ['Shift + Tab'],
-      windows: ['Shift + Tab'],
-    },
-  },
-  {
-    action: 'remove_inserted_cells',
-    shortcuts: {
-      mac: ['Backspace'],
-      windows: ['Backspace'],
-    },
-  },
-  {
-    action: 'trigger_cell',
-    shortcuts: {
-      mac: ['Space'],
-      windows: ['Space'],
-    },
-  },
-];
+export const defaultShortcuts: ActionShortcut = {
+  [Action.GridPanMode]: {
+    mac: [[Keys.Space]],
+    windows: [[Keys.Space]],
+  },
+  [Action.ShowCommandPalette]: {
+    mac: [
+      [MacModifiers.Cmd, Keys.P],
+      [MacModifiers.Cmd, Keys.Slash],
+    ],
+    windows: [
+      [WindowsModifiers.Ctrl, Keys.P],
+      [WindowsModifiers.Ctrl, Keys.Slash],
+    ],
+  },
+  [Action.TogglePresentationMode]: {
+    mac: [[MacModifiers.Cmd, Keys.Period]],
+    windows: [[WindowsModifiers.Ctrl, Keys.Period]],
+  },
+  [Action.CloseOverlay]: {
+    mac: [[Keys.Escape]],
+    windows: [[Keys.Escape]],
+  },
+  [Action.ShowGoToMenu]: {
+    mac: [
+      [MacModifiers.Cmd, Keys.G],
+      [MacModifiers.Cmd, Keys.J],
+    ],
+    windows: [
+      [WindowsModifiers.Ctrl, Keys.G],
+      [WindowsModifiers.Ctrl, Keys.J],
+    ],
+  },
+  [Action.ZoomIn]: {
+    mac: [[MacModifiers.Cmd, Keys.Equals]],
+    windows: [[WindowsModifiers.Ctrl, Keys.Equals]],
+  },
+  [Action.ZoomOut]: {
+    mac: [[MacModifiers.Cmd, Keys.Minus]],
+    windows: [[WindowsModifiers.Ctrl, Keys.Minus]],
+  },
+  [Action.ZoomToSelection]: {
+    mac: [[MacModifiers.Cmd, Keys.Eight]],
+    windows: [[WindowsModifiers.Ctrl, Keys.Eight]],
+  },
+  [Action.ZoomToFit]: {
+    mac: [[MacModifiers.Cmd, Keys.Nine]],
+    windows: [[WindowsModifiers.Ctrl, Keys.Nine]],
+  },
+  [Action.ZoomTo100]: {
+    mac: [[MacModifiers.Cmd, Keys.Zero]],
+    windows: [[WindowsModifiers.Ctrl, Keys.Zero]],
+  },
+  [Action.Save]: {
+    mac: [[MacModifiers.Cmd, Keys.S]],
+    windows: [[WindowsModifiers.Ctrl, Keys.S]],
+  },
+  [Action.SwitchSheetNext]: {
+    mac: [
+      [MacModifiers.Cmd, MacModifiers.Shift, Keys.PageUp],
+      [MacModifiers.Cmd, MacModifiers.Alt, Keys.PageUp],
+      [MacModifiers.Alt, Keys.ArrowUp],
+      [MacModifiers.Alt, Keys.ArrowRight],
+    ],
+    windows: [
+      [WindowsModifiers.Ctrl, WindowsModifiers.Shift, Keys.PageUp],
+      [WindowsModifiers.Ctrl, WindowsModifiers.Alt, Keys.PageUp],
+      [WindowsModifiers.Alt, Keys.ArrowUp],
+      [WindowsModifiers.Alt, Keys.ArrowRight],
+    ],
+  },
+  [Action.SwitchSheetPrevious]: {
+    mac: [
+      [MacModifiers.Cmd, MacModifiers.Shift, Keys.PageDown],
+      [MacModifiers.Cmd, MacModifiers.Alt, Keys.PageDown],
+      [MacModifiers.Alt, Keys.ArrowDown],
+      [MacModifiers.Alt, Keys.ArrowLeft],
+    ],
+    windows: [
+      [WindowsModifiers.Ctrl, WindowsModifiers.Shift, Keys.PageDown],
+      [WindowsModifiers.Ctrl, WindowsModifiers.Alt, Keys.PageDown],
+      [WindowsModifiers.Alt, Keys.ArrowDown],
+      [WindowsModifiers.Alt, Keys.ArrowLeft],
+    ],
+  },
+  [Action.ClearFormattingBorders]: {
+    mac: [[MacModifiers.Cmd, Keys.Backslash]],
+    windows: [[WindowsModifiers.Ctrl, Keys.Backslash]],
+  },
+  [Action.ToggleBold]: {
+    mac: [[MacModifiers.Cmd, Keys.B]],
+    windows: [[WindowsModifiers.Ctrl, Keys.B]],
+  },
+  [Action.ToggleItalic]: {
+    mac: [[MacModifiers.Cmd, Keys.I]],
+    windows: [[WindowsModifiers.Ctrl, Keys.I]],
+  },
+  [Action.FillRight]: {
+    mac: [[MacModifiers.Cmd, Keys.R]],
+    windows: [[WindowsModifiers.Ctrl, Keys.R]],
+  },
+  [Action.FillDown]: {
+    mac: [[MacModifiers.Cmd, Keys.D]],
+    windows: [[WindowsModifiers.Ctrl, Keys.D]],
+  },
+  [Action.CancelExecution]: {
+    mac: [[MacModifiers.Cmd, Keys.Escape]],
+    windows: [[WindowsModifiers.Ctrl, Keys.Escape]],
+  },
+  [Action.ShowSearch]: {
+    mac: [[MacModifiers.Cmd, Keys.F]],
+    windows: [[WindowsModifiers.Ctrl, Keys.F]],
+  },
+  [Action.CopyAsPng]: {
+    mac: [[MacModifiers.Cmd, MacModifiers.Shift, Keys.C]],
+    windows: [[WindowsModifiers.Ctrl, WindowsModifiers.Shift, Keys.C]],
+  },
+  [Action.DownloadAsCsv]: {
+    mac: [[MacModifiers.Cmd, MacModifiers.Shift, Keys.E]],
+    windows: [[WindowsModifiers.Ctrl, WindowsModifiers.Shift, Keys.E]],
+  },
+  [Action.Undo]: {
+    mac: [[MacModifiers.Cmd, Keys.Z]],
+    windows: [[WindowsModifiers.Ctrl, Keys.Z]],
+  },
+  [Action.Redo]: {
+    mac: [
+      [MacModifiers.Cmd, MacModifiers.Shift, Keys.Z],
+      [MacModifiers.Cmd, Keys.Y],
+    ],
+    windows: [
+      [WindowsModifiers.Ctrl, WindowsModifiers.Shift, Keys.Z],
+      [WindowsModifiers.Ctrl, Keys.Y],
+    ],
+  },
+  [Action.SelectAll]: {
+    mac: [
+      [MacModifiers.Cmd, Keys.A],
+      [MacModifiers.Cmd, MacModifiers.Shift, Keys.Space],
+    ],
+    windows: [
+      [WindowsModifiers.Ctrl, Keys.A],
+      [WindowsModifiers.Ctrl, WindowsModifiers.Shift, Keys.Space],
+    ],
+  },
+  [Action.SelectColumn]: {
+    mac: [[MacModifiers.Cmd, Keys.Space]],
+    windows: [[WindowsModifiers.Ctrl, Keys.Space]],
+  },
+  [Action.SelectRow]: {
+    mac: [[MacModifiers.Shift, Keys.Space]],
+    windows: [[WindowsModifiers.Shift, Keys.Space]],
+  },
+  [Action.ExecuteCode]: {
+    mac: [[MacModifiers.Cmd, Keys.Enter]],
+    windows: [[WindowsModifiers.Ctrl, Keys.Enter]],
+  },
+  [Action.RerunSheetCode]: {
+    mac: [[MacModifiers.Cmd, MacModifiers.Shift, MacModifiers.Alt, Keys.Enter]],
+    windows: [[WindowsModifiers.Ctrl, WindowsModifiers.Shift, WindowsModifiers.Alt, Keys.Enter]],
+  },
+  [Action.RerunAllCode]: {
+    mac: [[MacModifiers.Cmd, MacModifiers.Shift, Keys.Enter]],
+    windows: [[WindowsModifiers.Ctrl, WindowsModifiers.Shift, Keys.Enter]],
+  },
+  [Action.InsertCellReference]: {
+    mac: [[MacModifiers.Cmd, Keys.L]],
+    windows: [[WindowsModifiers.Ctrl, Keys.L]],
+  },
+  [Action.MoveCursorUp]: {
+    mac: [[Keys.ArrowUp]],
+    windows: [[Keys.ArrowUp]],
+  },
+  [Action.JumpCursorContentTop]: {
+    mac: [[MacModifiers.Cmd, Keys.ArrowUp]],
+    windows: [[WindowsModifiers.Ctrl, Keys.ArrowUp]],
+  },
+  [Action.ExpandSelectionUp]: {
+    mac: [[MacModifiers.Shift, Keys.ArrowUp]],
+    windows: [[WindowsModifiers.Shift, Keys.ArrowUp]],
+  },
+  [Action.ExpandSelectionContentTop]: {
+    mac: [[MacModifiers.Cmd, MacModifiers.Shift, Keys.ArrowUp]],
+    windows: [[WindowsModifiers.Ctrl, WindowsModifiers.Shift, Keys.ArrowUp]],
+  },
+  [Action.MoveCursorDown]: {
+    mac: [[Keys.ArrowDown]],
+    windows: [[Keys.ArrowDown]],
+  },
+  [Action.JumpCursorContentBottom]: {
+    mac: [[MacModifiers.Cmd, Keys.ArrowDown]],
+    windows: [[WindowsModifiers.Ctrl, Keys.ArrowDown]],
+  },
+  [Action.ExpandSelectionDown]: {
+    mac: [[MacModifiers.Shift, Keys.ArrowDown]],
+    windows: [[WindowsModifiers.Shift, Keys.ArrowDown]],
+  },
+  [Action.ExpandSelectionContentBottom]: {
+    mac: [[MacModifiers.Cmd, MacModifiers.Shift, Keys.ArrowDown]],
+    windows: [[WindowsModifiers.Ctrl, WindowsModifiers.Shift, Keys.ArrowDown]],
+  },
+  [Action.MoveCursorLeft]: {
+    mac: [[Keys.ArrowLeft]],
+    windows: [[Keys.ArrowLeft]],
+  },
+  [Action.JumpCursorContentLeft]: {
+    mac: [[MacModifiers.Cmd, Keys.ArrowLeft]],
+    windows: [[WindowsModifiers.Ctrl, Keys.ArrowLeft]],
+  },
+  [Action.ExpandSelectionLeft]: {
+    mac: [[MacModifiers.Shift, Keys.ArrowLeft]],
+    windows: [[WindowsModifiers.Shift, Keys.ArrowLeft]],
+  },
+  [Action.ExpandSelectionContentLeft]: {
+    mac: [[MacModifiers.Cmd, MacModifiers.Shift, Keys.ArrowLeft]],
+    windows: [[WindowsModifiers.Ctrl, WindowsModifiers.Shift, Keys.ArrowLeft]],
+  },
+  [Action.MoveCursorRight]: {
+    mac: [[Keys.ArrowRight]],
+    windows: [[Keys.ArrowRight]],
+  },
+  [Action.JumpCursorContentRight]: {
+    mac: [[MacModifiers.Cmd, Keys.ArrowRight]],
+    windows: [[WindowsModifiers.Ctrl, Keys.ArrowRight]],
+  },
+  [Action.ExpandSelectionRight]: {
+    mac: [[MacModifiers.Shift, Keys.ArrowRight]],
+    windows: [[WindowsModifiers.Shift, Keys.ArrowRight]],
+  },
+  [Action.ExpandSelectionContentRight]: {
+    mac: [[MacModifiers.Cmd, MacModifiers.Shift, Keys.ArrowRight]],
+    windows: [[WindowsModifiers.Ctrl, WindowsModifiers.Shift, Keys.ArrowRight]],
+  },
+  [Action.GotoA0]: {
+    mac: [[MacModifiers.Cmd, Keys.Home]],
+    windows: [[WindowsModifiers.Ctrl, Keys.Home]],
+  },
+  [Action.GotoBottomRight]: {
+    mac: [[MacModifiers.Cmd, Keys.End]],
+    windows: [[WindowsModifiers.Ctrl, Keys.End]],
+  },
+  [Action.GotoRowStart]: {
+    mac: [[Keys.Home]],
+    windows: [[Keys.Home]],
+  },
+  [Action.GotoRowEnd]: {
+    mac: [[Keys.End]],
+    windows: [[Keys.End]],
+  },
+  [Action.PageUp]: {
+    mac: [[Keys.PageUp]],
+    windows: [[Keys.PageUp]],
+  },
+  [Action.PageDown]: {
+    mac: [[Keys.PageDown]],
+    windows: [[Keys.PageDown]],
+  },
+  [Action.MoveCursorRightWithSelection]: {
+    mac: [[Keys.Tab]],
+    windows: [[Keys.Tab]],
+  },
+  [Action.MoveCursorLeftWithSelection]: {
+    mac: [[MacModifiers.Shift, Keys.Tab]],
+    windows: [[WindowsModifiers.Shift, Keys.Tab]],
+  },
+  [Action.EditCell]: {
+    mac: [[Keys.Enter], [MacModifiers.Shift, Keys.Enter], [Keys.F2]],
+    windows: [[Keys.Enter], [WindowsModifiers.Shift, Keys.Enter], [Keys.F2]],
+  },
+  [Action.DeleteCell]: {
+    mac: [[Keys.Backspace], [Keys.Delete]],
+    windows: [[Keys.Backspace], [Keys.Delete]],
+  },
+  [Action.ShowCellTypeMenu]: {
+    mac: [[Keys.Slash], [MacModifiers.Shift, Keys.Slash]],
+    windows: [[Keys.Slash], [WindowsModifiers.Shift, Keys.Slash]],
+  },
+  [Action.CloseInlineEditor]: {
+    mac: [[Keys.Escape]],
+    windows: [[Keys.Escape]],
+  },
+  [Action.SaveInlineEditor]: {
+    mac: [[Keys.Enter], [MacModifiers.Cmd, Keys.Enter]],
+    windows: [[Keys.Enter], [WindowsModifiers.Ctrl, Keys.Enter]],
+  },
+  [Action.SaveInlineEditorMoveUp]: {
+    mac: [[MacModifiers.Shift, Keys.Enter]],
+    windows: [[WindowsModifiers.Shift, Keys.Enter]],
+  },
+  [Action.SaveInlineEditorMoveRight]: {
+    mac: [[Keys.Tab]],
+    windows: [[Keys.Tab]],
+  },
+  [Action.SaveInlineEditorMoveLeft]: {
+    mac: [[MacModifiers.Shift, Keys.Tab]],
+    windows: [[WindowsModifiers.Shift, Keys.Tab]],
+  },
+  [Action.RemoveInsertedCells]: {
+    mac: [[Keys.Backspace]],
+    windows: [[Keys.Backspace]],
+  },
+  [Action.TriggerCell]: {
+    mac: [[Keys.Space]],
+    windows: [[Keys.Space]],
+  },
+};
