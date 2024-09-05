@@ -39,13 +39,16 @@ pub enum CellValue {
     Number(BigDecimal),
     /// Logical value.
     Logical(bool),
-    /// Instant in time.
+    /// Instant in time. TODO: remove
     #[cfg_attr(test, proptest(skip))]
     Instant(Instant),
+    // Date + time.
     #[cfg_attr(test, proptest(skip))]
     DateTime(NaiveDateTime),
+    // Date.
     #[cfg_attr(test, proptest(skip))]
     Date(NaiveDate),
+    // Time.
     #[cfg_attr(test, proptest(skip))]
     Time(NaiveTime),
     /// Duration of time.
@@ -494,7 +497,12 @@ impl CellValue {
     /// Generic conversion from &str to CellValue
     /// This would normally be an implementation of FromStr, but we are holding
     /// off as we want formatting to happen with conversions in most places
-    pub fn to_cell_value(value: &str) -> CellValue {
+    pub fn parse_from_str(value: &str) -> CellValue {
+        // check for duration
+        if let Ok(duration) = value.parse() {
+            return CellValue::Duration(duration);
+        }
+
         // check for number
         let parsed = CellValue::strip_percentage(CellValue::strip_currency(value)).trim();
         let without_commas = CellValue::strip_commas(parsed);
