@@ -3,6 +3,9 @@ import { QColorPicker } from '@/app/ui/components/qColorPicker';
 import { setTextColor } from '@/app/ui/menus/TopBar/SubMenus/formatCells';
 import {
   BorderAllIcon,
+  CurrencyIcon,
+  DecimalDecreaseIcon,
+  DecimalIncreaseIcon,
   FormatAlignCenterIcon,
   FormatAlignLeftIcon,
   FormatAlignRightIcon,
@@ -15,6 +18,8 @@ import {
   FormatTextOverflowIcon,
   FormatTextWrapIcon,
   Number123Icon,
+  PercentIcon,
+  ScientificIcon,
   VerticalAlignBottomIcon,
   VerticalAlignMiddleIcon,
   VerticalAlignTopIcon,
@@ -38,26 +43,31 @@ export const FormatMenubarMenu = () => {
       <MenubarContent>
         <MenubarSub>
           <MenubarSubTrigger>
-            <Number123Icon /> Number
+            <Number123Icon className="relative left-[-4px] top-[-4px] !text-[28px]" /> Number
           </MenubarSubTrigger>
           <MenubarSubContent>
             <MenubarItem>Automatic</MenubarItem>
             <MenubarItem>
+              <CurrencyIcon />
               Currency <MenubarShortcut>$1,000.12</MenubarShortcut>
             </MenubarItem>
             <MenubarItem>
+              <PercentIcon />
               Percent <MenubarShortcut>10.12%</MenubarShortcut>
             </MenubarItem>
             <MenubarItem>
+              <ScientificIcon />
               Scientific <MenubarShortcut>1.01E+03</MenubarShortcut>
             </MenubarItem>
             <MenubarItem>
               Toggle commas <MenubarShortcut>1,000.12</MenubarShortcut>
             </MenubarItem>
             <MenubarItem>
+              <DecimalIncreaseIcon />
               Increase decimal <MenubarShortcut>.0000</MenubarShortcut>
             </MenubarItem>
             <MenubarItem>
+              <DecimalDecreaseIcon />
               Decrease decimal <MenubarShortcut>.0</MenubarShortcut>
             </MenubarItem>
           </MenubarSubContent>
