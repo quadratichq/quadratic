@@ -6,6 +6,7 @@
  */
 
 import { debugWebWorkers } from '@/app/debugFlags';
+import { Coordinate } from '@/app/gridGL/types/size';
 import {
   CellAlign,
   CellFormatSummary,
@@ -206,6 +207,49 @@ class Core {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
         this.gridController.setCellValue(sheetId, x, y, value, cursor);
+        resolve(undefined);
+      });
+    });
+  }
+
+  setCodeCellValue(
+    sheetId: string,
+    x: number,
+    y: number,
+    language: CodeCellLanguage,
+    codeString: string,
+    cursor?: string
+  ) {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        this.gridController.setCellCode(sheetId, posToPos(x, y), language, codeString, cursor);
+        resolve(undefined);
+      });
+    });
+  }
+
+  setAIAssistResponse(sheetId: string, insertAt: Coordinate, response: string, cursor?: string): Promise<string> {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        const transactionId = this.gridController.setAIAssistResponse(
+          sheetId,
+          insertAt.x,
+          insertAt.y,
+          response,
+          cursor
+        );
+        resolve(transactionId);
+      });
+    });
+  }
+
+  confirmAIAssistResponse(transactionId: string, accept: boolean) {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        this.gridController.confirmAIAssistResponse(transactionId, accept);
         resolve(undefined);
       });
     });
@@ -531,23 +575,6 @@ class Core {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
         this.gridController.deleteCellValues(JSON.stringify(selection, bigIntReplacer), cursor);
-        resolve(undefined);
-      });
-    });
-  }
-
-  setCodeCellValue(
-    sheetId: string,
-    x: number,
-    y: number,
-    language: CodeCellLanguage,
-    codeString: string,
-    cursor?: string
-  ) {
-    return new Promise((resolve) => {
-      this.clientQueue.push(() => {
-        if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setCellCode(sheetId, posToPos(x, y), language, codeString, cursor);
         resolve(undefined);
       });
     });

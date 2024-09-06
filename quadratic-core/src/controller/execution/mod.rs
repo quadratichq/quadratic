@@ -1,3 +1,4 @@
+pub mod ai_assist;
 pub mod auto_resize_row_heights;
 pub mod control_transaction;
 pub mod execute_operation;

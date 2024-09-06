@@ -180,6 +180,34 @@ class CoreClient {
         await core.setCellValue(e.data.sheetId, e.data.x, e.data.y, e.data.value, e.data.cursor);
         return;
 
+      case 'clientCoreSetCodeCellValue':
+        await core.setCodeCellValue(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.language,
+          e.data.codeString,
+          e.data.cursor
+        );
+        return;
+
+      case 'clientCoreSetAIAssistResponse':
+        this.send({
+          type: 'coreClientSetAIAssistTransactionId',
+          id: e.data.id,
+          transactionId: await core.setAIAssistResponse(
+            e.data.sheetId,
+            e.data.insertAt,
+            e.data.response,
+            e.data.cursor
+          ),
+        });
+        return;
+
+      case 'clientCoreConfirmAIAssistResponse':
+        core.confirmAIAssistResponse(e.data.transactionId, e.data.accept);
+        return;
+
       case 'clientCoreGetEditCell':
         this.send({
           type: 'coreClientGetEditCell',
@@ -280,17 +308,6 @@ class CoreClient {
 
       case 'clientCoreDeleteCellValues':
         await core.deleteCellValues(e.data.selection, e.data.cursor);
-        return;
-
-      case 'clientCoreSetCodeCellValue':
-        await core.setCodeCellValue(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.language,
-          e.data.codeString,
-          e.data.cursor
-        );
         return;
 
       case 'clientCoreAddSheet':

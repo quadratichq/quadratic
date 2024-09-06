@@ -2,12 +2,12 @@ import * as React from 'react';
 
 import { cn } from '@/shared/shadcn/utils';
 
-export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+export interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   autoHeight?: boolean;
   maxHeight?: string;
 }
 
-const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
   ({ className, autoHeight, maxHeight, onChange, onKeyDown, ...props }, ref) => {
     const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
@@ -50,6 +50,6 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     );
   }
 );
-Textarea.displayName = 'Textarea';
+TextArea.displayName = 'TextArea';
 
-export { Textarea };
+export { TextArea };

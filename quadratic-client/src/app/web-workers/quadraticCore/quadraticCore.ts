@@ -7,6 +7,7 @@
 import { debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { Coordinate } from '@/app/gridGL/types/size';
 import {
   BorderSelection,
   BorderStyle,
@@ -41,6 +42,7 @@ import {
   ClientCoreImportFile,
   ClientCoreLoad,
   ClientCoreMessage,
+  ClientCoreSetAIAssistResponse,
   ClientCoreSummarizeSelection,
   ClientCoreUpgradeGridFile,
   CoreClientGetCellFormatSummary,
@@ -56,6 +58,7 @@ import {
   CoreClientLoad,
   CoreClientMessage,
   CoreClientSearch,
+  CoreClientSetAIAssistTransactionId,
   CoreClientSummarizeSelection,
   CoreClientValidateInput,
 } from './coreClientMessages';
@@ -382,6 +385,32 @@ class QuadraticCore {
     this.send({
       type: 'clientCoreSetCodeCellValue',
       ...options,
+    });
+  }
+
+  setAIAssistResponse(sheetId: string, insertAt: Coordinate, response: string, cursor?: string): Promise<string> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      const message: ClientCoreSetAIAssistResponse = {
+        type: 'clientCoreSetAIAssistResponse',
+        id,
+        sheetId,
+        insertAt,
+        response,
+        cursor,
+      };
+      this.waitingForResponse[id] = (message: CoreClientSetAIAssistTransactionId) => {
+        resolve(message.transactionId);
+      };
+      this.send(message);
+    });
+  }
+
+  confirmAIAssistResponse(transactionId: string, accept: boolean) {
+    this.send({
+      type: 'clientCoreConfirmAIAssistResponse',
+      transactionId,
+      accept,
     });
   }
 

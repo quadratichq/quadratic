@@ -1,3 +1,4 @@
+import { AIAssist } from '@/app/ui/components/AIAssist';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { CodeEditorProvider } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import ConnectionsMenu from '@/app/ui/menus/ConnectionsMenu';
@@ -78,6 +79,7 @@ export default function QuadraticUI() {
         <FileDragDropWrapper>
           <QuadraticGrid />
           {!presentationMode && <SheetBar />}
+          <AIAssist />
         </FileDragDropWrapper>
         {editorInteractionState.showCodeEditor && <CodeEditorProvider />}
         {editorInteractionState.showValidation && <ValidationPanel />}

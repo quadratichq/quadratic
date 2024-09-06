@@ -55,11 +55,11 @@
     "multer": "^1.4.5-lts.1",
     "multer-s3": "^3.0.1",
     "newrelic": "^11.17.0",
-    "openai": "^3.2.1",
+    "openai": "^4.58.0",
     "pg": "^8.11.3",
     "stripe": "^14.16.0",
     "supertest": "^6.3.3",
-    "zod": "^3.22.4"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@aws-sdk/types": "^3.449.0",

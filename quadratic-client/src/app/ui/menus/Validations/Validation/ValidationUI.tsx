@@ -1,11 +1,11 @@
-import { Checkbox } from '@/shared/shadcn/ui/checkbox';
-import { ValidationData } from './useValidationData';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Checkbox } from '@/shared/shadcn/ui/checkbox';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/shadcn/ui/select';
-import { FocusEvent, useCallback, useEffect, useRef } from 'react';
-import { Textarea } from '@/shared/shadcn/ui/textarea';
+import { TextArea } from '@/shared/shadcn/ui/textarea';
 import { cn } from '@/shared/shadcn/utils';
+import { FocusEvent, useCallback, useEffect, useRef } from 'react';
+import { ValidationData } from './useValidationData';
 
 interface CheckboxProps {
   className?: string;
@@ -126,7 +126,7 @@ export const ValidationTextArea = (props: InputProps) => {
     <div>
       {label && <div className={disabled ? 'opacity-50' : ''}>{label}</div>}
       <div>
-        <Textarea
+        <TextArea
           ref={ref}
           onBlur={onChange ? onBlur : undefined}
           onInput={onInput ? (e) => onInput(e.currentTarget.value) : undefined}
