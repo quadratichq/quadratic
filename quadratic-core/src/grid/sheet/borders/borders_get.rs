@@ -1,4 +1,4 @@
-use super::{BorderStyleCell, BorderStyleCellUpdate, Borders};
+use super::{BorderSide, BorderStyleCell, BorderStyleCellUpdate, Borders};
 
 impl Borders {
     /// Gets a BorderStyleCellUpdate for a cell that will override the current

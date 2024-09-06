@@ -9,11 +9,10 @@
 //! borders on the sheet. Since this is a one-time cost, (I think) it'll still
 //! be performant.
 
-use super::{BorderStyleTimestamp, Borders, JsBorderHorizontal, JsBorderVertical, JsBordersSheet};
-use crate::{
-    controller::operations::borders::BorderSide, grid::SheetId, wasm_bindings::js::jsBordersSheet,
-    Rect,
+use super::{
+    BorderSide, BorderStyleTimestamp, Borders, JsBorderHorizontal, JsBorderVertical, JsBordersSheet,
 };
+use crate::{grid::SheetId, wasm_bindings::js::jsBordersSheet, Rect};
 
 impl Borders {
     /// Checks whether the sheet border styles will override the cell's border

@@ -2,8 +2,8 @@ use crate::{
     controller::GridController,
     grid::{
         sheet::borders::{
-            BorderSelection, BorderStyle, BorderStyleCellUpdate, BorderStyleCellUpdates,
-            BorderStyleTimestamp,
+            BorderSelection, BorderSide, BorderStyle, BorderStyleCellUpdate,
+            BorderStyleCellUpdates, BorderStyleTimestamp,
         },
         Sheet, SheetId,
     },
@@ -12,14 +12,6 @@ use crate::{
 };
 
 use super::operation::Operation;
-
-pub enum BorderSide {
-    Top,
-    Bottom,
-    Left,
-    Right,
-}
-
 impl GridController {
     // gets a border style for Selection.all, rows, or columns
     fn border_style_sheet(
@@ -263,7 +255,8 @@ impl GridController {
                 // BorderCellLine::Clear (which will override neighboring borders).
                 BorderSelection::Clear => {
                     border_style.top = Self::check_sheet(sheet, pos.x, pos.y, BorderSide::Top);
-                    border_style.bottom = Self::check_sheet(sheet, pos.x, pos.y, BorderSide::Bottom);
+                    border_style.bottom =
+                        Self::check_sheet(sheet, pos.x, pos.y, BorderSide::Bottom);
                     border_style.left = Self::check_sheet(sheet, pos.x, pos.y, BorderSide::Left);
                     border_style.right = Self::check_sheet(sheet, pos.x, pos.y, BorderSide::Right);
                 }

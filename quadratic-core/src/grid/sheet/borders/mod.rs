@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use crate::grid::{block::SameValue, ColumnData};
 pub use borders_style::*;
 
+pub mod border_clear;
 pub mod borders_bounds;
 pub mod borders_clipboard;
 pub mod borders_get;
@@ -21,12 +22,11 @@ pub struct Borders {
     pub(crate) columns: HashMap<i64, BorderStyleCell>,
     pub(crate) rows: HashMap<i64, BorderStyleCell>,
 
-    // cell-specific formatting (vertical)
+    // cell-specific formatting (vertical) first key = x-coordinate; column-data key is y-coordinate
     pub(crate) left: HashMap<i64, ColumnData<SameValue<BorderStyleTimestamp>>>,
     pub(crate) right: HashMap<i64, ColumnData<SameValue<BorderStyleTimestamp>>>,
 
-    // cell-specific formatting (horizontal); note: this ColumnData is
-    // actually row-based data
+    // cell-specific formatting (horizontal); first key = y-coordinate; column-data key is x-coordinate
     pub(crate) top: HashMap<i64, ColumnData<SameValue<BorderStyleTimestamp>>>,
     pub(crate) bottom: HashMap<i64, ColumnData<SameValue<BorderStyleTimestamp>>>,
 }

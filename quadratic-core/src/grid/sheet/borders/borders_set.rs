@@ -38,6 +38,7 @@ impl Borders {
                     undo_borders.push(new_border.apply_update(border));
                     self.columns.insert(*column, new_border);
                 }
+
                 index += 1;
             }
         }

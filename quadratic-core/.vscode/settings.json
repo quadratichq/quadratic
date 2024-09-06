@@ -11,6 +11,7 @@
     "indexmap",
     "Itertools",
     "milli",
+    "minmax",
     "Rects",
     "rposition",
     "Strftime",

@@ -1,8 +1,38 @@
+use itertools::Itertools;
+
 use crate::Rect;
 
 use super::Borders;
 
 impl Borders {
+    pub(crate) fn bounds_column(&self, column: i64) -> Option<Rect> {
+        let mut x_min: Option<i64> = None;
+        let mut x_max: Option<i64> = None;
+        let mut y_min: Option<i64> = None;
+        let mut y_max: Option<i64> = None;
+
+        self.left.keys().for_each(|x| {
+            if *x == column || *x == column + 1 {
+                x_min = x_min.min(Some(*x));
+            }
+        });
+        self.right.keys().for_each(|x| {
+            if *x == column || *x == column - 1 {
+                x_max = x_max.max(Some(*x));
+            }
+        });
+        let x_top = self
+            .top
+            .iter()
+            .filter_map(|(y, entry)| entry.get(column).map(|_| y))
+            .minmax();
+        let x_bottom = self
+            .bottom
+            .iter()
+            .filter_map(|(y, entry)| entry.get(column).map(|_| y))
+            .minmax();
+    }
+
     /// Returns the bounds of the borders. It needs to offset right and bottom by 1
     /// because the borders are rendered by the next cell/row.
     pub(crate) fn bounds(&self) -> Option<Rect> {
@@ -235,5 +265,22 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.borders.bounds(), Some(Rect::new(1, 0, 5, 5)));
+    }
+
+    #[test]
+    #[parallel]
+    fn bounds_column() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.borders.bounds_column(1), Some(Rect::new(1, 1, 1, 5)));
     }
 }

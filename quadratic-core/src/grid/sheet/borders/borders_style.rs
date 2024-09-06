@@ -68,6 +68,14 @@ impl CellBorderLine {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum BorderSide {
+    Top,
+    Bottom,
+    Left,
+    Right,
+}
+
 #[derive(Default, Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
 pub struct BorderStyle {
     pub color: Rgba,
