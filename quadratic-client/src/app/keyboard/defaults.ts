@@ -57,17 +57,9 @@ export const defaultShortcuts: ActionShortcut = {
     mac: [[MacModifiers.Cmd, Keys.Nine]],
     windows: [[WindowsModifiers.Ctrl, Keys.Nine]],
   },
-  [Action.ZoomTo50]: {
-    mac: [],
-    windows: [],
-  },
   [Action.ZoomTo100]: {
     mac: [[MacModifiers.Cmd, Keys.Zero]],
     windows: [[WindowsModifiers.Ctrl, Keys.Zero]],
-  },
-  [Action.ZoomTo200]: {
-    mac: [],
-    windows: [],
   },
   [Action.Save]: {
     mac: [[MacModifiers.Cmd, Keys.S]],
