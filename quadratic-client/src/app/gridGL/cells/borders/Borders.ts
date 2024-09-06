@@ -8,11 +8,10 @@ import { Container, Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { CellsSheet } from '../CellsSheet';
 import { BorderCull, drawCellBorder } from '../drawBorders';
-import { CellBorderLine, JsBordersSheet, Rgba } from '@/app/quadratic-core-types';
+import { BorderStyleCell, BorderStyleTimestamp, JsBordersSheet } from '@/app/quadratic-core-types';
 import { pixiApp } from '../../pixiApp/PixiApp';
-import { Placement } from '@/app/quadratic-core/quadratic_core';
 import { intersects } from '../../helpers/intersects';
-import { divideLine } from './bordersUtil';
+import { divideLine, findPerpendicularHorizontalLines, findPerpendicularVerticalLines } from './bordersUtil';
 
 export class Borders extends Container {
   private cellsSheet: CellsSheet;
@@ -48,18 +47,24 @@ export class Borders extends Container {
 
   // Draws a vertical line on the screen. This line may need to be split up if
   // there are borders already drawn.
-  private drawScreenVerticalLine(rowStart: number, rowEnd: number, column: number, line: CellBorderLine, color: Rgba) {
+  private drawScreenVerticalLine(
+    rowStart: number,
+    rowEnd: number,
+    column: number,
+    border: BorderStyleTimestamp,
+    rows: Record<string, BorderStyleCell> | null
+  ) {
     // break up the line if it overlaps with vertical lines
     const lines: [number, number][] = [];
     if (this.borders?.vertical) {
       // filter the line and only include the ones that are visible
-      const overlaps = this.borders.vertical
-        .filter(
-          (vertical) =>
-            Number(vertical.x) === column &&
-            intersects.lineLineOneDimension(Number(vertical.y), Number(vertical.y + vertical.height), rowStart, rowEnd)
-        )
-        .sort((a, b) => Number(b.y) - Number(a.y));
+      const overlaps = this.borders.vertical.filter(
+        (vertical) =>
+          Number(vertical.x) === column &&
+          intersects.lineLineOneDimension(Number(vertical.y), Number(vertical.y + vertical.height), rowStart, rowEnd)
+      );
+      overlaps.push(...findPerpendicularVerticalLines(rowStart, rowEnd, border.timestamp, rows));
+      overlaps.sort((a, b) => Number(b.y) - Number(a.y));
       let current: number | undefined;
       while (overlaps.length) {
         const overlap = overlaps.pop();
@@ -79,7 +84,7 @@ export class Borders extends Container {
       const yEnd = this.sheet.getRowY(end);
       drawCellBorder({
         position: new Rectangle(x, yStart, 0, yEnd - yStart),
-        vertical: { type: line, color },
+        vertical: { type: border.line, color: border.color },
         getSprite: this.getSpriteSheet,
       });
     });
@@ -88,18 +93,50 @@ export class Borders extends Container {
   // Draws a horizontal line on the screen. This line may need to be split up if
   // there are borders already drawn.
   private drawScreenHorizontalLine(
-    columnStart: Placement,
-    columnEnd: Placement,
-    y: number,
-    line: CellBorderLine,
-    color: Rgba
+    columnStart: number,
+    columnEnd: number,
+    row: number,
+    border: BorderStyleTimestamp,
+    columns: Record<string, BorderStyleCell> | null
   ) {
-    const start = this.sheet.getCellOffsets(columnStart.index - 1, y);
-    const end = this.sheet.getCellOffsets(columnEnd.index + 1, y);
-    drawCellBorder({
-      position: new Rectangle(start.x, start.y, end.x - start.x, end.y - start.y),
-      horizontal: { type: line, color },
-      getSprite: this.getSpriteSheet,
+    // break up the line if it overlaps with horizontal lines
+    const lines: [number, number][] = [];
+    if (this.borders?.horizontal) {
+      // filter the line and only include the ones that are visible
+      const overlaps = this.borders.horizontal.filter(
+        (horizontal) =>
+          Number(horizontal.y) === row &&
+          intersects.lineLineOneDimension(
+            Number(horizontal.x),
+            Number(horizontal.x + horizontal.width),
+            columnStart,
+            columnEnd
+          )
+      );
+      overlaps.push(...findPerpendicularHorizontalLines(columnStart, columnEnd, border.timestamp, columns));
+      overlaps.sort((a, b) => Number(b.x) - Number(a.x));
+      let current: number | undefined;
+      while (overlaps.length) {
+        const overlap = overlaps.pop();
+        if (overlap) {
+          current = divideLine(lines, current, columnStart, columnEnd, Number(overlap.x), Number(overlap.width));
+        }
+      }
+      if (current === undefined) {
+        lines.push([columnStart, columnEnd]);
+      } else if (current < columnEnd) {
+        lines.push([current, columnEnd]);
+      }
+    }
+    const y = this.sheet.getRowY(row);
+    lines.forEach(([start, end]) => {
+      const xStart = this.sheet.getColumnX(start);
+      const xEnd = this.sheet.getColumnX(end);
+      drawCellBorder({
+        position: new Rectangle(xStart, y, xEnd - xStart, 0),
+        horizontal: { type: border.line, color: border.color },
+        getSprite: this.getSpriteSheet,
+      });
     });
   }
 
@@ -132,7 +169,7 @@ export class Borders extends Container {
               // need to ensure there's no right entry in x - 1
               const right = borders.columns[(xNumber - 1).toString()]?.right;
               if (!right || left.timestamp > right.timestamp) {
-                this.drawScreenVerticalLine(rowStart.index, rowEnd.index + 1, xNumber, left.line, left.color);
+                this.drawScreenVerticalLine(rowStart.index, rowEnd.index + 1, xNumber, left, borders.rows);
               }
             }
             const right = column.right;
@@ -140,7 +177,7 @@ export class Borders extends Container {
               // need to ensure there's no left entry in x + 1
               const left = borders.columns[(xNumber + 1).toString()]?.left;
               if (!left || right.timestamp > left.timestamp) {
-                this.drawScreenVerticalLine(rowStart.index, rowEnd.index + 1, xNumber + 1, right.line, right.color);
+                this.drawScreenVerticalLine(rowStart.index, rowEnd.index + 1, xNumber + 1, right, borders.rows);
               }
             }
             const top = column.top;
@@ -167,7 +204,7 @@ export class Borders extends Container {
               // need to ensure there's no bottom entry in y - 1
               const bottom = borders.rows[(yNumber - 1).toString()]?.bottom;
               if (!bottom || top.timestamp > bottom.timestamp) {
-                this.drawScreenHorizontalLine(columnStart, columnEnd, yNumber, top.line, top.color);
+                this.drawScreenHorizontalLine(columnStart.index, columnEnd.index, yNumber, top, borders.columns);
               }
             }
             const bottom = row.bottom;
@@ -175,7 +212,7 @@ export class Borders extends Container {
               // need to ensure there's no top entry in y + 1
               const top = borders.rows[(yNumber + 1).toString()]?.top;
               if (!top || bottom.timestamp > top.timestamp) {
-                this.drawScreenHorizontalLine(columnStart, columnEnd, yNumber + 1, bottom.line, bottom.color);
+                this.drawScreenHorizontalLine(columnStart.index, columnEnd.index, yNumber + 1, bottom, borders.columns);
               }
             }
           }
