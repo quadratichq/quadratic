@@ -1,143 +1,145 @@
 import SvgIcon, { SvgIconProps } from '@mui/material/SvgIcon';
 
 import {
-  BorderAll as BorderAllIcon,
-  BorderBottom as BorderBottomIcon,
-  BorderColor as BorderColorIcon,
-  BorderHorizontal as BorderHorizontalIcon,
-  BorderInner as BorderInnerIcon,
-  BorderLeft as BorderLeftIcon,
-  BorderClear as BorderNoneIcon,
-  BorderOuter as BorderOuterIcon,
-  BorderRight as BorderRightIcon,
-  BorderStyle as BorderStyleIcon,
-  BorderTop as BorderTopIcon,
-  BorderVertical as BorderVerticalIcon,
-  ContentPasteOutlined as ClipboardIcon,
-  ManageSearchOutlined as CommandPaletteIcon,
-  ContentCopyOutlined as CopyIcon,
-  DataObject as DataIcon,
-  AttachMoney as DollarIcon,
-  MoreHorizRounded as DotsHorizontalIcon,
-  ExpandMore as ExpandMoreIcon,
-  OpenInNew as ExternalLinkIcon,
-  ChatBubbleOutline as FeedbackIcon,
-  InsertDriveFileOutlined as FileIcon,
-  FormatBold as FontBoldIcon,
-  FormatItalic as FontItalicIcon,
-  Functions as FunctionIcon,
-  AutoFixHigh as MagicWandIcon,
-  Search as MagnifyingGlassIcon,
-  FormatColorFill as PaintBucketIcon,
+  AttachMoney,
+  AutoFixHigh,
+  BorderAll,
+  BorderBottom,
+  BorderClear,
+  BorderColor,
+  BorderHorizontal,
+  BorderInner,
+  BorderLeft,
+  BorderOuter,
+  BorderRight,
+  BorderStyle,
+  BorderTop,
+  BorderVertical,
+  ChatBubbleOutline,
+  ContentCopyOutlined,
+  ContentCutOutlined,
+  ContentPasteOutlined,
+  DataObject,
+  ExpandMore,
+  FormatAlignCenter,
+  FormatAlignLeft,
+  FormatAlignRight,
+  FormatBold,
+  FormatClear,
+  FormatColorFill,
+  FormatColorText,
+  FormatItalic,
+  FormatQuote,
+  Functions,
+  InsertDriveFileOutlined,
+  ManageSearchOutlined,
+  MoreHorizRounded,
+  OpenInNew,
   PaletteOutlined,
-  Percent as PercentIcon,
-  FormatQuote as QuoteIcon,
-  RedoOutlined as RedoIcon,
-  ContentCutOutlined as ScissorsIcon,
-  FormatAlignCenter as TextAlignCenterIcon,
-  FormatAlignLeft as TextAlignLeftIcon,
-  FormatAlignRight as TextAlignRightIcon,
-  FormatColorText as TextColorIcon,
-  FormatClear as TextNoneIcon,
-  VerticalAlignBottom as TextVerticalAlignBottomIcon,
-  VerticalAlignCenter as TextVerticalAlignMiddleIcon,
-  VerticalAlignTop as TextVerticalAlignTopIcon,
-  UndoOutlined as UndoIcon,
-  WrapText as WrapTextIcon,
-  ZoomInOutlined as ZoomInIcon,
-  ZoomOutOutlined as ZoomOutIcon,
+  Percent,
+  RedoOutlined,
+  Search,
+  UndoOutlined,
+  VerticalAlignBottom,
+  VerticalAlignCenter,
+  VerticalAlignTop,
+  WrapText,
+  ZoomInOutlined,
+  ZoomOutOutlined,
 } from '@mui/icons-material';
 
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { BorderAllIcon };
+export const BorderAllIcon = BorderAll;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { BorderBottomIcon };
+export const BorderBottomIcon = BorderBottom;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { BorderColorIcon };
+export const BorderColorIcon = BorderColor;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { BorderHorizontalIcon };
+export const BorderHorizontalIcon = BorderHorizontal;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { BorderInnerIcon };
+export const BorderInnerIcon = BorderInner;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { BorderLeftIcon };
+export const BorderLeftIcon = BorderLeft;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { BorderNoneIcon };
+export const BorderNoneIcon = BorderClear;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { BorderOuterIcon };
+export const BorderOuterIcon = BorderOuter;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { BorderRightIcon };
+export const BorderRightIcon = BorderRight;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { BorderStyleIcon };
+export const BorderStyleIcon = BorderStyle;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { BorderTopIcon };
+export const BorderTopIcon = BorderTop;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { BorderVerticalIcon };
+export const BorderVerticalIcon = BorderVertical;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { ClipboardIcon };
+export const ClipboardIcon = ContentPasteOutlined;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { CommandPaletteIcon };
+export const CommandPaletteIcon = ManageSearchOutlined;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { CopyIcon };
+export const CopyIcon = ContentCopyOutlined;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { DataIcon };
+export const DataIcon = DataObject;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { DollarIcon };
+export const DollarIcon = AttachMoney;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { DotsHorizontalIcon };
+export const DotsHorizontalIcon = MoreHorizRounded;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { ExpandMoreIcon };
+export const ExpandMoreIcon = ExpandMore;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { ExternalLinkIcon };
+export const ExternalLinkIcon = OpenInNew;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { FeedbackIcon };
+export const FeedbackIcon = ChatBubbleOutline;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { FileIcon };
+export const FileIcon = InsertDriveFileOutlined;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { FontBoldIcon };
+export const FontBoldIcon = FormatBold;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { FontItalicIcon };
+export const FontItalicIcon = FormatItalic;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { FunctionIcon };
+export const FunctionIcon = Functions;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { MagicWandIcon };
+export const MagicWandIcon = AutoFixHigh;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { MagnifyingGlassIcon };
+export const MagnifyingGlassIcon = Search;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { PaintBucketIcon };
+export const PaintBucketIcon = FormatColorFill;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { PaletteOutlined };
+export const PaletteOutlinedIcon = PaletteOutlined;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { PercentIcon };
+export const PercentIcon = Percent;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { QuoteIcon };
+export const QuoteIcon = FormatQuote;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { RedoIcon };
+export const RedoIcon = RedoOutlined;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { ScissorsIcon };
+export const ScissorsIcon = ContentCutOutlined;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { TextAlignCenterIcon };
+export const TextAlignCenterIcon = FormatAlignCenter;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { TextAlignLeftIcon };
+export const TextAlignLeftIcon = FormatAlignLeft;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { TextAlignRightIcon };
+export const TextAlignRightIcon = FormatAlignRight;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { TextColorIcon };
+export const TextColorIcon = FormatColorText;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { TextNoneIcon };
+export const TextNoneIcon = FormatClear;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { TextVerticalAlignBottomIcon };
+export const TextVerticalAlignBottomIcon = VerticalAlignBottom;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { TextVerticalAlignMiddleIcon };
+export const TextVerticalAlignMiddleIcon = VerticalAlignCenter;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { TextVerticalAlignTopIcon };
+export const TextVerticalAlignTopIcon = VerticalAlignTop;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { UndoIcon };
+export const UndoIcon = UndoOutlined;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { WrapTextIcon };
+export const WrapTextIcon = WrapText;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { ZoomInIcon };
+export const ZoomInIcon = ZoomInOutlined;
 /** @deprecated Use `@/shared/components/Icons.tsx` instead. */
-export { ZoomOutIcon };
+export const ZoomOutIcon = ZoomOutOutlined;
+
+// ... rest of the file remains unchanged
 
 // Built on doc guidance from material UI:
 // https://mui.com/material-ui/icons/
