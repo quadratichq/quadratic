@@ -24,6 +24,10 @@ import { pixiApp } from '../../pixiApp/PixiApp';
 import { intersects } from '../../helpers/intersects';
 import { divideLine, findPerpendicularHorizontalLines, findPerpendicularVerticalLines } from './bordersUtil';
 
+// todo: probably want to centralize this with UIValidations
+const MINIMUM_SCALE_TO_SHOW = 0.25;
+const FADE_SCALE = 0.1;
+
 export class Borders extends Container {
   private cellsSheet: CellsSheet;
   private cellLines: Container;
@@ -46,9 +50,7 @@ export class Borders extends Container {
     events.on('resizeRowHeights', this.setDirty);
   }
 
-  setDirty = () => {
-    this.dirty = true;
-  };
+  setDirty = () => (this.dirty = true);
 
   private get sheet(): Sheet {
     const sheet = sheets.getById(this.cellsSheet.sheetId);
@@ -67,13 +69,20 @@ export class Borders extends Container {
   ) {
     // break up the line if it overlaps with vertical lines
     const lines: [number, number][] = [];
-    if (this.borders?.vertical) {
+    if (this.borders?.vertical || rows) {
       // filter the line and only include the ones that are visible
-      const overlaps = this.borders.vertical.filter(
-        (vertical) =>
-          Number(vertical.x) === column &&
-          intersects.lineLineOneDimension(Number(vertical.y), Number(vertical.y + vertical.height), rowStart, rowEnd)
-      );
+      const overlaps = this.borders?.vertical
+        ? this.borders.vertical.filter(
+            (vertical) =>
+              Number(vertical.x) === column &&
+              intersects.lineLineOneDimension(
+                Number(vertical.y),
+                Number(vertical.y + vertical.height),
+                rowStart,
+                rowEnd
+              )
+          )
+        : [];
       overlaps.push(...findPerpendicularVerticalLines(rowStart, rowEnd, border.timestamp, rows));
       overlaps.sort((a, b) => Number(b.y) - Number(a.y));
       let current: number | undefined;
@@ -88,6 +97,8 @@ export class Borders extends Container {
       } else if (current < rowEnd) {
         lines.push([current, rowEnd]);
       }
+    } else {
+      lines.push([rowStart, rowEnd]);
     }
     const x = this.sheet.getColumnX(column);
     lines.forEach(([start, end]) => {
@@ -112,18 +123,20 @@ export class Borders extends Container {
   ) {
     // break up the line if it overlaps with horizontal lines
     const lines: [number, number][] = [];
-    if (this.borders?.horizontal) {
+    if (this.borders?.horizontal || columns) {
       // filter the line and only include the ones that are visible
-      const overlaps = this.borders.horizontal.filter(
-        (horizontal) =>
-          Number(horizontal.y) === row &&
-          intersects.lineLineOneDimension(
-            Number(horizontal.x),
-            Number(horizontal.x + horizontal.width),
-            columnStart,
-            columnEnd
+      const overlaps = this.borders?.horizontal
+        ? this.borders.horizontal.filter(
+            (horizontal) =>
+              Number(horizontal.y) === row &&
+              intersects.lineLineOneDimension(
+                Number(horizontal.x),
+                Number(horizontal.x + horizontal.width),
+                columnStart,
+                columnEnd
+              )
           )
-      );
+        : [];
       overlaps.push(...findPerpendicularHorizontalLines(columnStart, columnEnd, border.timestamp, columns));
       overlaps.sort((a, b) => Number(b.x) - Number(a.x));
       let current: number | undefined;
@@ -138,6 +151,8 @@ export class Borders extends Container {
       } else if (current < columnEnd) {
         lines.push([current, columnEnd]);
       }
+    } else {
+      lines.push([columnStart, columnEnd]);
     }
     const y = this.sheet.getRowY(row);
     lines.forEach(([start, end]) => {
@@ -167,8 +182,6 @@ export class Borders extends Container {
     const rowStart = offsets.getYPlacement(bounds.top);
     const rowEnd = offsets.getYPlacement(bounds.bottom);
 
-    // let borderColumns
-
     if (borders.columns) {
       for (let x in borders.columns) {
         const xNumber = Number(BigInt(x));
@@ -193,11 +206,15 @@ export class Borders extends Container {
             }
             const top = column.top;
             if (top && top.line !== 'clear') {
-              // todo...
+              for (let y = rowStart.index; y <= rowEnd.index + 1; y++) {
+                this.drawScreenHorizontalLine(xNumber, xNumber + 1, y, top, null);
+              }
             }
             const bottom = column.bottom;
             if (bottom && bottom.line !== 'clear') {
-              // todo...
+              for (let y = rowStart.index; y <= rowEnd.index + 1; y++) {
+                this.drawScreenHorizontalLine(xNumber, xNumber + 1, y, bottom, null);
+              }
             }
           }
         }
@@ -215,7 +232,7 @@ export class Borders extends Container {
               // need to ensure there's no bottom entry in y - 1
               const bottom = borders.rows[(yNumber - 1).toString()]?.bottom;
               if (!bottom || top.timestamp > bottom.timestamp) {
-                this.drawScreenHorizontalLine(columnStart.index, columnEnd.index, yNumber, top, borders.columns);
+                this.drawScreenHorizontalLine(columnStart.index, columnEnd.index + 1, yNumber, top, borders.columns);
               }
             }
             const bottom = row.bottom;
@@ -223,7 +240,25 @@ export class Borders extends Container {
               // need to ensure there's no top entry in y + 1
               const top = borders.rows[(yNumber + 1).toString()]?.top;
               if (!top || bottom.timestamp > top.timestamp) {
-                this.drawScreenHorizontalLine(columnStart.index, columnEnd.index, yNumber + 1, bottom, borders.columns);
+                this.drawScreenHorizontalLine(
+                  columnStart.index,
+                  columnEnd.index + 1,
+                  yNumber + 1,
+                  bottom,
+                  borders.columns
+                );
+              }
+            }
+            const left = row.left;
+            if (left && left.line !== 'clear') {
+              for (let x = columnStart.index; x <= columnEnd.index + 1; x++) {
+                this.drawScreenVerticalLine(yNumber, yNumber + 1, x, left, null);
+              }
+            }
+            const right = row.right;
+            if (right && right.line !== 'clear') {
+              for (let x = columnStart.index; x <= columnEnd.index + 1; x++) {
+                this.drawScreenVerticalLine(yNumber, yNumber + 1, x, right, null);
               }
             }
           }
@@ -290,6 +325,16 @@ export class Borders extends Container {
   update() {
     const viewportDirty = pixiApp.viewport.dirty;
     if (!this.dirty && !viewportDirty) return;
+    if (pixiApp.viewport.scale.x < MINIMUM_SCALE_TO_SHOW) {
+      this.visible = false;
+      return;
+    }
+    if (pixiApp.viewport.scale.x < MINIMUM_SCALE_TO_SHOW + FADE_SCALE) {
+      this.alpha = (pixiApp.viewport.scale.x - MINIMUM_SCALE_TO_SHOW) / FADE_SCALE;
+    } else {
+      this.alpha = 1;
+    }
+    this.visible = true;
     this.dirty = false;
     this.cull();
     this.drawSheetBorders();

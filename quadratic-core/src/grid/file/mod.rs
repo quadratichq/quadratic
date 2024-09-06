@@ -145,14 +145,7 @@ pub fn export(grid: Grid) -> Result<Vec<u8>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        color::Rgba,
-        grid::{
-            generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellBorderLine,
-            CodeCellLanguage,
-        },
-        ArraySize, CellValue, CodeCellValue, Pos, Rect,
-    };
+    use crate::{grid::CodeCellLanguage, ArraySize, CellValue, CodeCellValue, Pos};
     use serial_test::parallel;
 
     const V1_3_FILE: &[u8] =
