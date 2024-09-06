@@ -41,6 +41,10 @@ export const ArrowDropDownCircleIcon = (props: IconProps) => {
   return <Icon {...props}>arrow_drop_down_circle</Icon>;
 };
 
+export const BorderAllIcon = (props: IconProps) => {
+  return <Icon {...props}>border_all</Icon>;
+};
+
 export const CheckBoxIcon = (props: IconProps) => {
   return <Icon {...props}>check_box</Icon>;
 };
@@ -73,6 +77,10 @@ export const CopyAsCsv = (props: IconProps) => {
   return <Icon {...props}>csv</Icon>;
 };
 
+export const CurrencyIcon = (props: IconProps) => {
+  return <Icon {...props}>attach_money</Icon>;
+};
+
 export const CutIcon = (props: IconProps) => {
   return <Icon {...props}>content_cut</Icon>;
 };
@@ -89,8 +97,8 @@ export const DataObjectIcon = (props: IconProps) => {
   return <Icon {...props}>data_object</Icon>;
 };
 
-export const CurrencyIcon = (props: IconProps) => {
-  return <Icon {...props}>attach_money</Icon>;
+export const DocumentationIcon = (props: IconProps) => {
+  return <Icon {...props}>menu_book</Icon>;
 };
 
 export const DecimalDecreaseIcon = (props: IconProps) => {
@@ -129,12 +137,44 @@ export const FormatAlignRightIcon = (props: IconProps) => {
   return <Icon {...props}>format_align_right</Icon>;
 };
 
+export const FormatClearIcon = (props: IconProps) => {
+  return <Icon {...props}>format_clear</Icon>;
+};
+
+export const FormatColorFillIcon = (props: IconProps) => {
+  return <Icon {...props}>format_color_fill</Icon>;
+};
+
+export const FormatColorTextIcon = (props: IconProps) => {
+  return <Icon {...props}>format_color_text</Icon>;
+};
+
 export const FormatBoldIcon = (props: IconProps) => {
   return <Icon {...props}>format_bold</Icon>;
 };
 
 export const FormatItalicIcon = (props: IconProps) => {
   return <Icon {...props}>format_italic</Icon>;
+};
+
+export const FormatNumberAutomaticIcon = (props: IconProps) => {
+  return <Icon {...props}>award_star</Icon>;
+};
+
+export const FormatTextClipIcon = (props: IconProps) => {
+  return <Icon {...props}>format_text_clip</Icon>;
+};
+
+export const FormatTextOverflowIcon = (props: IconProps) => {
+  return <Icon {...props}>format_text_overflow</Icon>;
+};
+
+export const FormatTextWrapIcon = (props: IconProps) => {
+  return <Icon {...props}>format_text_wrap</Icon>;
+};
+
+export const FormatToggleCommasIcon = (props: IconProps) => {
+  return <Icon {...props}>format_quote</Icon>;
 };
 
 export const FileCopyIcon = (props: IconProps) => {
@@ -161,6 +201,10 @@ export const HelpIcon = (props: IconProps) => {
   return <Icon {...props}>help</Icon>;
 };
 
+export const MailIcon = (props: IconProps) => {
+  return <Icon {...props}>mail</Icon>;
+};
+
 export const ManageSearch = (props: IconProps) => {
   return <Icon {...props}>manage_search</Icon>;
 };
@@ -169,8 +213,16 @@ export const MemoryIcon = (props: IconProps) => {
   return <Icon {...props}>memory</Icon>;
 };
 
-export const MenuBookIcon = (props: IconProps) => {
-  return <Icon {...props}>menu_book</Icon>;
+export const Number123Icon = (props: IconProps) => {
+  // TODO: (jimniels) merge classNames here
+  // TODO: (jimniels) if we support sizing, you'll have to adjust this for each size
+  // This icon is just too small, so we make it more readable within its container
+  // by increasing its size and adjusting its position
+  return (
+    <Icon {...props} className="relative left-[-4px] top-[-4px] !text-[28px]">
+      123
+    </Icon>
+  );
 };
 
 export const PageViewIcon = (props: IconProps) => {

@@ -1,4 +1,4 @@
-import { TopBarFileMenu } from '@/app/ui/menus/TopBar/TopBarFileMenu';
+import TopBarFileMenubar from '@/app/ui/menus/TopBar/TopBarFileMenubar';
 import { isElectron } from '@/shared/utils/isElectron';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { isEmbed } from '../../../helpers/isEmbed';
@@ -39,7 +39,7 @@ export const TopBar = () => {
           WebkitAppRegion: 'no-drag',
         }}
       >
-        <TopBarFileMenu />
+        <TopBarFileMenubar />
         {/*
         TODO: (jimniels) delete these components & apply permissions above
         <QuadraticMenu />

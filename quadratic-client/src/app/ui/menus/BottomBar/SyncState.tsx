@@ -116,7 +116,7 @@ export default function SyncState() {
   const errorClassName = 'bg-destructive text-background';
 
   if (['waiting to reconnect', 'connecting'].includes(syncState) && multiplayer.brokenConnection) {
-    className = errorClassName;
+    className = 'bg-warning text-background';
     message = 'Reconnecting…';
     tooltip = 'Your changes may only be saved locally…';
   } else if (['not connected', 'connecting', 'waiting to reconnect', 'startup'].includes(syncState)) {

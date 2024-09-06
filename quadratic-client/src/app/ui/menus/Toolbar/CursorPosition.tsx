@@ -34,7 +34,7 @@ export const CursorPosition = () => {
 
   return (
     <button
-      className="flex h-full w-44 items-center justify-between pl-2 pr-1 text-sm"
+      className="flex h-full w-full items-center justify-between pl-2 pr-1 text-sm hover:bg-accent"
       onClick={() => setEditorInteractionState((prev) => ({ ...prev, showGoToMenu: true }))}
     >
       <span className="truncate">{multiCursorPositionString ? multiCursorPositionString : cursorPositionString}</span>
