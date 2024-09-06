@@ -48,53 +48,96 @@ import {
   ZoomOutOutlined as ZoomOutIcon,
 } from '@mui/icons-material';
 
-export {
-  BorderAllIcon,
-  BorderBottomIcon,
-  BorderColorIcon,
-  BorderHorizontalIcon,
-  BorderInnerIcon,
-  BorderLeftIcon,
-  BorderNoneIcon,
-  BorderOuterIcon,
-  BorderRightIcon,
-  BorderStyleIcon,
-  BorderTopIcon,
-  BorderVerticalIcon,
-  ClipboardIcon,
-  CommandPaletteIcon,
-  CopyIcon,
-  DataIcon,
-  DollarIcon,
-  DotsHorizontalIcon,
-  ExpandMoreIcon,
-  ExternalLinkIcon,
-  FeedbackIcon,
-  FileIcon,
-  FontBoldIcon,
-  FontItalicIcon,
-  FunctionIcon,
-  MagicWandIcon,
-  MagnifyingGlassIcon,
-  PaintBucketIcon,
-  PaletteOutlined,
-  PercentIcon,
-  QuoteIcon,
-  RedoIcon,
-  ScissorsIcon,
-  TextAlignCenterIcon,
-  TextAlignLeftIcon,
-  TextAlignRightIcon,
-  TextColorIcon,
-  TextNoneIcon,
-  TextVerticalAlignBottomIcon,
-  TextVerticalAlignMiddleIcon,
-  TextVerticalAlignTopIcon,
-  UndoIcon,
-  WrapTextIcon,
-  ZoomInIcon,
-  ZoomOutIcon,
-};
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { BorderAllIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { BorderBottomIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { BorderColorIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { BorderHorizontalIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { BorderInnerIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { BorderLeftIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { BorderNoneIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { BorderOuterIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { BorderRightIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { BorderStyleIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { BorderTopIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { BorderVerticalIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { ClipboardIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { CommandPaletteIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { CopyIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { DataIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { DollarIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { DotsHorizontalIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { ExpandMoreIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { ExternalLinkIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { FeedbackIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { FileIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { FontBoldIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { FontItalicIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { FunctionIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { MagicWandIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { MagnifyingGlassIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { PaintBucketIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { PaletteOutlined };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { PercentIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { QuoteIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { RedoIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { ScissorsIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { TextAlignCenterIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { TextAlignLeftIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { TextAlignRightIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { TextColorIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { TextNoneIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { TextVerticalAlignBottomIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { TextVerticalAlignMiddleIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { TextVerticalAlignTopIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { UndoIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { WrapTextIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { ZoomInIcon };
+/** @deprecated Use `@/shared/components/Icons.tsx` instead. */
+export { ZoomOutIcon };
 
 // Built on doc guidance from material UI:
 // https://mui.com/material-ui/icons/

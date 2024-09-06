@@ -1,31 +1,15 @@
-import { editRedo, editUndo } from '@/app/actions/edit';
-import {
-  formatAlignHorizontalCenter,
-  formatAlignHorizontalLeft,
-  formatAlignHorizontalRight,
-  formatAlignVerticalBottom,
-  formatAlignVerticalMiddle,
-  formatAlignVerticalTop,
-  formatBold,
-  formatClear,
-  formatItalic,
-  formatNumberAutomatic,
-  formatNumberCurrency,
-  formatNumberDecimalDecrease,
-  formatNumberDecimalIncrease,
-  formatNumberPercent,
-  formatNumberScientific,
-  formatNumberToggleCommas,
-  formatTextWrappingClip,
-  formatTextWrappingOverflow,
-  formatTextWrappingWrap,
-} from '@/app/actions/format';
+import { Action } from '@/app/actions/actions';
+import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
+import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import {
   ArrowDropDownIcon,
   BorderAllIcon,
+  FormatAlignLeftIcon,
   FormatColorFillIcon,
   FormatColorTextIcon,
+  FormatTextWrapIcon,
   Number123Icon,
+  VerticalAlignTopIcon,
 } from '@/shared/components/Icons';
 import {
   DropdownMenu,
@@ -34,29 +18,28 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import mixpanel from 'mixpanel-browser';
 import { ReactNode } from 'react';
 
 export const FormattingBar = () => {
   return (
     <TooltipProvider>
-      <div className="flex flex-grow items-stretch justify-center text-sm">
-        <FormatButton action={editUndo} />
-        <FormatButton action={editRedo} />
-        <Separator />
-        <FormatButton action={formatNumberCurrency} />
-        <FormatButton action={formatNumberPercent} />
-        <FormatButton action={formatNumberDecimalDecrease} />
-        <FormatButton action={formatNumberDecimalIncrease} />
+      <div className="flex text-sm">
+        <FormatButton action={Action.FormatNumberCurrency} />
+        <FormatButton action={Action.FormatNumberPercent} />
         <FormatButtonDropdown showDropdownArrow tooltipLabel="More number formats" Icon={Number123Icon}>
-          <FormatButtonDropdownActions
-            actions={[formatNumberAutomatic, formatNumberScientific, formatNumberToggleCommas]}
-          />
+          <FormatButtonDropdownActions actions={[Action.FormatNumberAutomatic, Action.FormatNumberScientific]} />
         </FormatButtonDropdown>
+        <Separator />
+        <FormatButton action={Action.FormatNumberToggleCommas} />
+        <FormatButton action={Action.FormatNumberDecimalDecrease} />
+        <FormatButton action={Action.FormatNumberDecimalIncrease} />
 
         <Separator />
 
-        <FormatButton action={formatBold} />
-        <FormatButton action={formatItalic} />
+        <FormatButton action={Action.ToggleBold} />
+        <FormatButton action={Action.ToggleItalic} />
+
         <FormatButtonDropdown tooltipLabel="Text color" Icon={FormatColorTextIcon}>
           <DropdownMenuItem>TODO color picker</DropdownMenuItem>
         </FormatButtonDropdown>
@@ -73,25 +56,33 @@ export const FormattingBar = () => {
         <Separator />
 
         {/* TODO: (jimniels) make these icons match the current selection */}
-        <FormatButtonDropdown showDropdownArrow tooltipLabel="Horizontal align" Icon={formatAlignHorizontalLeft.Icon}>
+        <FormatButtonDropdown showDropdownArrow tooltipLabel="Horizontal align" Icon={FormatAlignLeftIcon}>
           <FormatButtonDropdownActions
-            actions={[formatAlignHorizontalLeft, formatAlignHorizontalCenter, formatAlignHorizontalRight]}
+            actions={[
+              Action.FormatAlignHorizontalLeft,
+              Action.FormatAlignHorizontalCenter,
+              Action.FormatAlignHorizontalRight,
+            ]}
           />
         </FormatButtonDropdown>
-        <FormatButtonDropdown showDropdownArrow tooltipLabel="Vertical align" Icon={formatAlignVerticalTop.Icon}>
+        <FormatButtonDropdown showDropdownArrow tooltipLabel="Vertical align" Icon={VerticalAlignTopIcon}>
           <FormatButtonDropdownActions
-            actions={[formatAlignVerticalTop, formatAlignVerticalMiddle, formatAlignVerticalBottom]}
+            actions={[
+              Action.FormatAlignVerticalTop,
+              Action.FormatAlignVerticalMiddle,
+              Action.FormatAlignVerticalBottom,
+            ]}
           />
         </FormatButtonDropdown>
-        <FormatButtonDropdown showDropdownArrow tooltipLabel="Text wrap" Icon={formatTextWrappingWrap.Icon}>
+        <FormatButtonDropdown showDropdownArrow tooltipLabel="Text wrap" Icon={FormatTextWrapIcon}>
           <FormatButtonDropdownActions
-            actions={[formatTextWrappingWrap, formatTextWrappingOverflow, formatTextWrappingClip]}
+            actions={[Action.FormatTextWrapWrap, Action.FormatTextWrapOverflow, Action.FormatTextWrapClip]}
           />
         </FormatButtonDropdown>
 
         <Separator />
 
-        <FormatButton action={formatClear} />
+        <FormatButton action={Action.ClearFormattingBorders} />
       </div>
     </TooltipProvider>
   );
@@ -114,9 +105,9 @@ function FormatButtonDropdown({
 }) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="data-[state=open]:bg-accent">
+      <DropdownMenuTrigger className="text-muted-foreground hover:text-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground">
         <Tooltip>
-          <TooltipTrigger className="flex h-full items-center px-2 hover:bg-accent">
+          <TooltipTrigger className="flex h-full items-center px-2  hover:bg-accent ">
             <Icon />
             {showDropdownArrow && <ArrowDropDownIcon className="-ml-1 -mr-2" />}
           </TooltipTrigger>
@@ -130,23 +121,47 @@ function FormatButtonDropdown({
   );
 }
 
-function FormatButtonDropdownActions({ actions }: { actions: any[] }) {
-  return actions.map(({ Icon, label, labelVerbose, run }) => (
-    <DropdownMenuItem onClick={run}>
-      <Icon className="mr-2" />
-      {labelVerbose ? labelVerbose : label}
-    </DropdownMenuItem>
-  ));
+function FormatButtonDropdownActions({ actions }: { actions: Action[] }) {
+  return actions.map((action) => {
+    const actionSpec = defaultActionSpec[action];
+    if (!actionSpec) {
+      throw new Error(`Action ${action} not found in defaultActionSpec`);
+    }
+    const { Icon, label, labelVerbose, run } = actionSpec;
+    return (
+      <DropdownMenuItem
+        onClick={() => {
+          mixpanel.track('[FormattingBar].button', { label });
+          run();
+        }}
+      >
+        {Icon && <Icon className="mr-2" />}
+        {labelVerbose ? labelVerbose : label}
+      </DropdownMenuItem>
+    );
+  });
 }
 
-function FormatButton({ action }: { action: any }) {
-  const { label, labelVerbose, Icon, keyboardShortcut } = action;
+function FormatButton({ action }: { action: Action }) {
+  const actionSpec = defaultActionSpec[action];
+  if (!actionSpec) {
+    throw new Error(`Action ${action} not found in defaultActionSpec`);
+  }
+
+  const { Icon, label, labelVerbose, run } = actionSpec;
+  const keyboardShortcut = keyboardShortcutEnumToDisplay(action);
 
   // TODO: (jimniels) make a style, like primary color, when the format is applied
   return (
     <Tooltip>
-      <TooltipTrigger className="flex h-full items-center px-2 hover:bg-accent data-[state=open]:bg-accent">
-        <Icon />
+      <TooltipTrigger
+        className="flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground data-[state=open]:bg-accent"
+        onClick={() => {
+          mixpanel.track('[FormattingBar].button', { label });
+          run();
+        }}
+      >
+        {Icon && <Icon />}
       </TooltipTrigger>
       <TooltipContent side="bottom">
         <TooltipLabel label={labelVerbose ? labelVerbose : label} keyboardShortcut={keyboardShortcut} />

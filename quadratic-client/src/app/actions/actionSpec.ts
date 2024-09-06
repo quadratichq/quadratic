@@ -1,5 +1,6 @@
 // Note: this is a new pattern that should replace the old `actions.ts` file
 import { Action } from '@/app/actions/actions';
+import { IconComponent } from '@/shared/components/Icons';
 import { ApiTypes, FilePermission, TeamPermission } from 'quadratic-shared/typesAndSchemas';
 
 /**
@@ -26,8 +27,8 @@ export type ActionSpec = {
   label: string;
   run: (args?: any) => void;
 
-  // We may need an optional `label[Context]` key ro provide a different label
-  // depending on the context in which the action is being used.
+  // Used for contexts where we want to show a longer label
+  labelVerbose?: string;
 
   // We make this a reference to a component, so it must be called where it's used
   // allow us to pass additional props depending on context, e.g.
@@ -36,8 +37,7 @@ export type ActionSpec = {
   // const { Icon } = action;
   // return `<Icon className="custom-style-class" />`
   // ```
-  // define this type as a component
-  Icon?: React.FC;
+  Icon?: IconComponent;
   isAvailable?: (args: ActionAvailabilityArgs) => boolean;
 };
 

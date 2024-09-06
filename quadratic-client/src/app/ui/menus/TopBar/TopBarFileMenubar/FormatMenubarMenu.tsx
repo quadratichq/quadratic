@@ -1,24 +1,4 @@
-import {
-  formatAlignHorizontalCenter,
-  formatAlignHorizontalLeft,
-  formatAlignHorizontalRight,
-  formatAlignVerticalBottom,
-  formatAlignVerticalMiddle,
-  formatAlignVerticalTop,
-  formatBold,
-  formatClear,
-  formatItalic,
-  formatNumberAutomatic,
-  formatNumberCurrency,
-  formatNumberDecimalDecrease,
-  formatNumberDecimalIncrease,
-  formatNumberPercent,
-  formatNumberScientific,
-  formatNumberToggleCommas,
-  formatTextWrappingClip,
-  formatTextWrappingOverflow,
-  formatTextWrappingWrap,
-} from '@/app/actions/format';
+import { Action } from '@/app/actions/actions';
 import { QColorPicker } from '@/app/ui/components/qColorPicker';
 import { setTextColor } from '@/app/ui/menus/TopBar/SubMenus/formatCells';
 import {
@@ -52,13 +32,16 @@ export const FormatMenubarMenu = () => {
             <Number123Icon /> Number
           </MenubarSubTrigger>
           <MenubarSubContent>
-            <MenuItemAction action={formatNumberAutomatic} />
-            <MenuItemAction action={{ ...formatNumberCurrency, keyboardShortcut: '$1,000.12' }} />
-            <MenuItemAction action={{ ...formatNumberPercent, keyboardShortcut: '10.12%' }} />
-            <MenuItemAction action={{ ...formatNumberScientific, keyboardShortcut: '1.01E+03' }} />
-            <MenuItemAction action={{ ...formatNumberToggleCommas, keyboardShortcut: '1,000.12' }} />
-            <MenuItemAction action={{ ...formatNumberDecimalIncrease, keyboardShortcut: '.0000' }} />
-            <MenuItemAction action={{ ...formatNumberDecimalDecrease, keyboardShortcut: '.0' }} />
+            <MenuItemAction action={Action.FormatNumberAutomatic} />
+            <MenuItemAction action={Action.FormatNumberCurrency} shortcutOverride="$1,000.12" />
+            <MenuItemAction action={Action.FormatNumberPercent} shortcutOverride="10.12%" />
+            <MenuItemAction action={Action.FormatNumberScientific} shortcutOverride="1.01E+03" />
+
+            <MenubarSeparator />
+
+            <MenuItemAction action={Action.FormatNumberToggleCommas} shortcutOverride="1,000.12" />
+            <MenuItemAction action={Action.FormatNumberDecimalIncrease} shortcutOverride=".0000" />
+            <MenuItemAction action={Action.FormatNumberDecimalDecrease} shortcutOverride=".0" />
           </MenubarSubContent>
         </MenubarSub>
         <MenubarSub>
@@ -67,8 +50,8 @@ export const FormatMenubarMenu = () => {
             Text
           </MenubarSubTrigger>
           <MenubarSubContent>
-            <MenuItemAction action={formatBold} />
-            <MenuItemAction action={formatItalic} />
+            <MenuItemAction action={Action.ToggleBold} />
+            <MenuItemAction action={Action.ToggleItalic} />
           </MenubarSubContent>
         </MenubarSub>
         <MenubarSub>
@@ -77,13 +60,15 @@ export const FormatMenubarMenu = () => {
             Alignment
           </MenubarSubTrigger>
           <MenubarSubContent>
-            <MenuItemAction action={formatAlignHorizontalLeft} />
-            <MenuItemAction action={formatAlignHorizontalCenter} />
-            <MenuItemAction action={formatAlignHorizontalRight} />
+            <MenuItemAction action={Action.FormatAlignHorizontalLeft} />
+            <MenuItemAction action={Action.FormatAlignHorizontalCenter} />
+            <MenuItemAction action={Action.FormatAlignHorizontalRight} />
+
             <MenubarSeparator />
-            <MenuItemAction action={formatAlignVerticalTop} />
-            <MenuItemAction action={formatAlignVerticalMiddle} />
-            <MenuItemAction action={formatAlignVerticalBottom} />
+
+            <MenuItemAction action={Action.FormatAlignVerticalTop} />
+            <MenuItemAction action={Action.FormatAlignVerticalMiddle} />
+            <MenuItemAction action={Action.FormatAlignVerticalBottom} />
           </MenubarSubContent>
         </MenubarSub>
         <MenubarSub>
@@ -91,19 +76,20 @@ export const FormatMenubarMenu = () => {
             <FormatTextWrapIcon /> Wrapping
           </MenubarSubTrigger>
           <MenubarSubContent>
-            <MenuItemAction action={formatTextWrappingWrap} />
-            <MenuItemAction action={formatTextWrappingOverflow} />
-            <MenuItemAction action={formatTextWrappingClip} />
+            <MenuItemAction action={Action.FormatTextWrapWrap} />
+            <MenuItemAction action={Action.FormatTextWrapOverflow} />
+            <MenuItemAction action={Action.FormatTextWrapClip} />
           </MenubarSubContent>
         </MenubarSub>
+
         <MenubarSeparator />
+
         <MenubarSub>
           <MenubarSubTrigger>
             <FormatColorTextIcon /> Text color
           </MenubarSubTrigger>
           <MenubarSubContent>
             <MenubarItem className="hover:bg-background">
-              {/* TODO: (jimniels) style the color picker */}
               <QColorPicker
                 onChangeComplete={(color) => {
                   setTextColor(color);
@@ -127,14 +113,17 @@ export const FormatMenubarMenu = () => {
         </MenubarSub>
         <MenubarSub>
           <MenubarSubTrigger>
-            <BorderAllIcon /> Border
+            <BorderAllIcon />
+            Border
           </MenubarSubTrigger>
           <MenubarSubContent>
             <MenubarItem>TODO</MenubarItem>
           </MenubarSubContent>
         </MenubarSub>
+
         <MenubarSeparator />
-        <MenuItemAction action={formatClear} />
+
+        <MenuItemAction action={Action.ClearFormattingBorders} />
       </MenubarContent>
     </MenubarMenu>
   );

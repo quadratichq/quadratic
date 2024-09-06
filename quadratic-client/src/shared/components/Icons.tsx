@@ -28,192 +28,193 @@ const Icon = (props: BaseIconProps) => {
  * Individual icons from Material Symbols font.
  */
 type IconProps = Omit<BaseIconProps, 'children'>;
+export type IconComponent = React.FC<IconProps>;
 
-export const ArrowTopRightIcon = (props: IconProps) => {
+export const ArrowTopRightIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_top_right</Icon>;
 };
 
-export const ArrowDropDownIcon = (props: IconProps) => {
+export const ArrowDropDownIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_drop_down</Icon>;
 };
 
-export const ArrowDropDownCircleIcon = (props: IconProps) => {
+export const ArrowDropDownCircleIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_drop_down_circle</Icon>;
 };
 
-export const BorderAllIcon = (props: IconProps) => {
+export const BorderAllIcon: IconComponent = (props) => {
   return <Icon {...props}>border_all</Icon>;
 };
 
-export const CheckBoxIcon = (props: IconProps) => {
+export const CheckBoxIcon: IconComponent = (props) => {
   return <Icon {...props}>check_box</Icon>;
 };
 
-export const CheckSmallIcon = (props: IconProps) => {
+export const CheckSmallIcon: IconComponent = (props) => {
   return <Icon {...props}>check_small</Icon>;
 };
 
-export const CodeCellOutlineOn = (props: IconProps) => {
+export const CodeCellOutlineOn: IconComponent = (props) => {
   return <Icon {...props}>select</Icon>;
 };
 
-export const CodeCellOutlineOff = (props: IconProps) => {
+export const CodeCellOutlineOff: IconComponent = (props) => {
   return <Icon {...props}>remove_selection</Icon>;
 };
 
-export const CodeIcon = (props: IconProps) => {
+export const CodeIcon: IconComponent = (props) => {
   return <Icon {...props}>code</Icon>;
 };
 
-export const CopyIcon = (props: IconProps) => {
+export const CopyIcon: IconComponent = (props) => {
   return <Icon {...props}>content_copy</Icon>;
 };
 
-export const CopyAsPng = (props: IconProps) => {
+export const CopyAsPng: IconComponent = (props) => {
   return <Icon {...props}>image</Icon>;
 };
 
-export const CopyAsCsv = (props: IconProps) => {
+export const CopyAsCsv: IconComponent = (props) => {
   return <Icon {...props}>csv</Icon>;
 };
 
-export const CurrencyIcon = (props: IconProps) => {
+export const CurrencyIcon: IconComponent = (props) => {
   return <Icon {...props}>attach_money</Icon>;
 };
 
-export const CutIcon = (props: IconProps) => {
+export const CutIcon: IconComponent = (props) => {
   return <Icon {...props}>content_cut</Icon>;
 };
 
-export const CropFreeIcon = (props: IconProps) => {
+export const CropFreeIcon: IconComponent = (props) => {
   return <Icon {...props}>crop_free</Icon>;
 };
 
-export const DatabaseIcon = (props: IconProps) => {
+export const DatabaseIcon: IconComponent = (props) => {
   return <Icon {...props}>database</Icon>;
 };
 
-export const DataObjectIcon = (props: IconProps) => {
+export const DataObjectIcon: IconComponent = (props) => {
   return <Icon {...props}>data_object</Icon>;
 };
 
-export const DocumentationIcon = (props: IconProps) => {
+export const DocumentationIcon: IconComponent = (props) => {
   return <Icon {...props}>menu_book</Icon>;
 };
 
-export const DecimalDecreaseIcon = (props: IconProps) => {
+export const DecimalDecreaseIcon: IconComponent = (props) => {
   return <Icon {...props}>decimal_decrease</Icon>;
 };
 
-export const DecimalIncreaseIcon = (props: IconProps) => {
+export const DecimalIncreaseIcon: IconComponent = (props) => {
   return <Icon {...props}>decimal_increase</Icon>;
 };
 
-export const DeleteIcon = (props: IconProps) => {
+export const DeleteIcon: IconComponent = (props) => {
   return <Icon {...props}>delete</Icon>;
 };
 
-export const DownloadIcon = (props: IconProps) => {
+export const DownloadIcon: IconComponent = (props) => {
   return <Icon {...props}>download</Icon>;
 };
 
-export const DraftIcon = (props: IconProps) => {
+export const DraftIcon: IconComponent = (props) => {
   return <Icon {...props}>draft</Icon>;
 };
 
-export const EditIcon = (props: IconProps) => {
+export const EditIcon: IconComponent = (props) => {
   return <Icon {...props}>edit</Icon>;
 };
 
-export const FormatAlignCenterIcon = (props: IconProps) => {
+export const FormatAlignCenterIcon: IconComponent = (props) => {
   return <Icon {...props}>format_align_center</Icon>;
 };
 
-export const FormatAlignLeftIcon = (props: IconProps) => {
+export const FormatAlignLeftIcon: IconComponent = (props) => {
   return <Icon {...props}>format_align_left</Icon>;
 };
 
-export const FormatAlignRightIcon = (props: IconProps) => {
+export const FormatAlignRightIcon: IconComponent = (props) => {
   return <Icon {...props}>format_align_right</Icon>;
 };
 
-export const FormatClearIcon = (props: IconProps) => {
+export const FormatClearIcon: IconComponent = (props) => {
   return <Icon {...props}>format_clear</Icon>;
 };
 
-export const FormatColorFillIcon = (props: IconProps) => {
+export const FormatColorFillIcon: IconComponent = (props) => {
   return <Icon {...props}>format_color_fill</Icon>;
 };
 
-export const FormatColorTextIcon = (props: IconProps) => {
+export const FormatColorTextIcon: IconComponent = (props) => {
   return <Icon {...props}>format_color_text</Icon>;
 };
 
-export const FormatBoldIcon = (props: IconProps) => {
+export const FormatBoldIcon: IconComponent = (props) => {
   return <Icon {...props}>format_bold</Icon>;
 };
 
-export const FormatItalicIcon = (props: IconProps) => {
+export const FormatItalicIcon: IconComponent = (props) => {
   return <Icon {...props}>format_italic</Icon>;
 };
 
-export const FormatNumberAutomaticIcon = (props: IconProps) => {
+export const FormatNumberAutomaticIcon: IconComponent = (props) => {
   return <Icon {...props}>award_star</Icon>;
 };
 
-export const FormatTextClipIcon = (props: IconProps) => {
+export const FormatTextClipIcon: IconComponent = (props) => {
   return <Icon {...props}>format_text_clip</Icon>;
 };
 
-export const FormatTextOverflowIcon = (props: IconProps) => {
+export const FormatTextOverflowIcon: IconComponent = (props) => {
   return <Icon {...props}>format_text_overflow</Icon>;
 };
 
-export const FormatTextWrapIcon = (props: IconProps) => {
+export const FormatTextWrapIcon: IconComponent = (props) => {
   return <Icon {...props}>format_text_wrap</Icon>;
 };
 
-export const FormatToggleCommasIcon = (props: IconProps) => {
+export const FormatToggleCommasIcon: IconComponent = (props) => {
   return <Icon {...props}>format_quote</Icon>;
 };
 
-export const FileCopyIcon = (props: IconProps) => {
+export const FileCopyIcon: IconComponent = (props) => {
   return <Icon {...props}>file_copy</Icon>;
 };
 
-export const FunctionIcon = (props: IconProps) => {
+export const FunctionIcon: IconComponent = (props) => {
   return <Icon {...props}>function</Icon>;
 };
 
-export const FeedbackIcon = (props: IconProps) => {
+export const FeedbackIcon: IconComponent = (props) => {
   return <Icon {...props}>feedback</Icon>;
 };
 
-export const ImportIcon = (props: IconProps) => {
+export const ImportIcon: IconComponent = (props) => {
   return <Icon {...props}>login</Icon>;
 };
 
-export const InsertChartIcon = (props: IconProps) => {
+export const InsertChartIcon: IconComponent = (props) => {
   return <Icon {...props}>insert_chart</Icon>;
 };
 
-export const HelpIcon = (props: IconProps) => {
+export const HelpIcon: IconComponent = (props) => {
   return <Icon {...props}>help</Icon>;
 };
 
-export const MailIcon = (props: IconProps) => {
+export const MailIcon: IconComponent = (props) => {
   return <Icon {...props}>mail</Icon>;
 };
 
-export const ManageSearch = (props: IconProps) => {
+export const ManageSearch: IconComponent = (props) => {
   return <Icon {...props}>manage_search</Icon>;
 };
 
-export const MemoryIcon = (props: IconProps) => {
+export const MemoryIcon: IconComponent = (props) => {
   return <Icon {...props}>memory</Icon>;
 };
 
-export const Number123Icon = (props: IconProps) => {
+export const Number123Icon: IconComponent = (props) => {
   // TODO: (jimniels) merge classNames here
   // TODO: (jimniels) if we support sizing, you'll have to adjust this for each size
   // This icon is just too small, so we make it more readable within its container
@@ -225,50 +226,50 @@ export const Number123Icon = (props: IconProps) => {
   );
 };
 
-export const PageViewIcon = (props: IconProps) => {
+export const PageViewIcon: IconComponent = (props) => {
   return <Icon {...props}>pageview</Icon>;
 };
 
-export const PasteIcon = (props: IconProps) => {
+export const PasteIcon: IconComponent = (props) => {
   return <Icon {...props}>content_paste</Icon>;
 };
 
-export const PercentIcon = (props: IconProps) => {
+export const PercentIcon: IconComponent = (props) => {
   return <Icon {...props}>percent</Icon>;
 };
 
-export const PersonAddIcon = (props: IconProps) => {
+export const PersonAddIcon: IconComponent = (props) => {
   return <Icon {...props}>person_add</Icon>;
 };
 
-export const RedoIcon = (props: IconProps) => {
+export const RedoIcon: IconComponent = (props) => {
   return <Icon {...props}>redo</Icon>;
 };
 
-export const ScientificIcon = (props: IconProps) => {
+export const ScientificIcon: IconComponent = (props) => {
   return <Icon {...props}>functions</Icon>;
 };
 
-export const SheetNewIcon = (props: IconProps) => {
+export const SheetNewIcon: IconComponent = (props) => {
   return <Icon {...props}>tab</Icon>;
 };
 
-export const VerticalAlignBottomIcon = (props: IconProps) => {
+export const VerticalAlignBottomIcon: IconComponent = (props) => {
   return <Icon {...props}>vertical_align_bottom</Icon>;
 };
 
-export const VerticalAlignMiddleIcon = (props: IconProps) => {
+export const VerticalAlignMiddleIcon: IconComponent = (props) => {
   return <Icon {...props}>vertical_align_center</Icon>;
 };
 
-export const VerticalAlignTopIcon = (props: IconProps) => {
+export const VerticalAlignTopIcon: IconComponent = (props) => {
   return <Icon {...props}>vertical_align_top</Icon>;
 };
 
-export const UndoIcon = (props: IconProps) => {
+export const UndoIcon: IconComponent = (props) => {
   return <Icon {...props}>undo</Icon>;
 };
 
-export const ZoomInIcon = (props: IconProps) => {
+export const ZoomInIcon: IconComponent = (props) => {
   return <Icon {...props}>zoom_in</Icon>;
 };
