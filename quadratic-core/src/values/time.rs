@@ -135,7 +135,7 @@ impl fmt::Display for Duration {
             units_to_display.insert(0, (self.months as f64, TimeUnit::Month));
         }
         if self.years != 0 {
-            units_to_display.insert(0, (self.years as f64, TimeUnit::Year))
+            units_to_display.insert(0, (self.years as f64, TimeUnit::Year));
         }
 
         let mut is_first = true;
@@ -187,7 +187,7 @@ impl FromStr for Duration {
         for segments in TIME_UNIT_REGEX.captures_iter(s.trim()) {
             any_segment = true;
 
-            let count = segments[1].trim();
+            let count_str = segments[1].trim();
 
             let unit_str = &segments[2].trim();
             let unit: TimeUnit = unit_str
@@ -206,14 +206,14 @@ impl FromStr for Duration {
 
             let additional_duration = if unit.allows_float() {
                 Duration::from(unit)
-                    * count
+                    * count_str
                         .parse::<f64>()
-                        .map_err(|e| ParseDurationError::BadFloat(e))?
+                        .map_err(ParseDurationError::BadFloat)?
             } else {
                 Duration::from(unit)
-                    * count
+                    * count_str
                         .parse::<i32>()
-                        .map_err(|e| ParseDurationError::BadInteger(e))?
+                        .map_err(ParseDurationError::BadInteger)?
             };
 
             sum = sum + additional_duration;
