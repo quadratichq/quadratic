@@ -11,7 +11,7 @@ import { isMac } from '@/shared/utils/isMac';
  * @returns {boolean} Whether the keyboard event should trigger the action
  */
 export const matchShortcut = (action: Action, event: KeyboardEvent | React.KeyboardEvent<Element>): boolean => {
-  const shortcuts = isMac ? defaultShortcuts[action].mac : defaultShortcuts[action].windows;
+  const shortcuts = isMac ? defaultShortcuts[action]?.mac : defaultShortcuts[action]?.windows;
   if (!shortcuts) {
     return false;
   }

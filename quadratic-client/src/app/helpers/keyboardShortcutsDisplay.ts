@@ -5,8 +5,12 @@ import { Keys, MacModifiers, WindowsModifiers } from '@/app/keyboard/keys';
 import { isMac } from '@/shared/utils/isMac';
 
 export function keyboardShortcutEnumToDisplay(action: Action) {
-  const platformShortcuts = isMac ? defaultShortcuts[action].mac : defaultShortcuts[action].windows;
+  const platformShortcuts = isMac ? defaultShortcuts[action]?.mac : defaultShortcuts[action]?.windows;
   let display = '';
+
+  if (!platformShortcuts) {
+    return display;
+  }
 
   platformShortcuts[0]?.forEach((key) => {
     switch (key) {

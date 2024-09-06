@@ -6,9 +6,9 @@ type WindowsShortcut = (WindowsModifiers | Keys)[];
 
 export type Shortcut = MacShortcut | WindowsShortcut;
 
-export type ActionShortcut = {
+export type ActionShortcut = Partial<{
   [key in Action]: {
     mac: MacShortcut[];
     windows: WindowsShortcut[];
   };
-};
+}>;
