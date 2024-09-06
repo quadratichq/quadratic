@@ -5,7 +5,7 @@ import { ROUTES } from '@/shared/constants/routes';
 import { initMixpanelAnalytics } from '@/shared/utils/analytics';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
-import { ActionFunctionArgs, LoaderFunctionArgs, redirect, replace } from 'react-router-dom';
+import { ActionFunctionArgs, LoaderFunctionArgs, replace } from 'react-router-dom';
 
 const getFailUrl = (path: string = '/') => {
   let params = new URLSearchParams();
@@ -25,7 +25,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // Get the team we're creating the file in
   const teamUuid = params.teamUuid;
   if (!teamUuid) {
-    return redirect(getFailUrl());
+    return replace(getFailUrl());
   }
 
   // Determine what kind of file creation we're doing:
@@ -53,7 +53,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
           publicFileUrlInProduction: exampleUrl,
         },
       });
-      return redirect(getFailUrl(ROUTES.EXAMPLES));
+      return replace(getFailUrl(ROUTES.EXAMPLES));
     }
   }
 
@@ -71,7 +71,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     const state = searchParams.get('state');
     return replace(ROUTES.FILE(uuid) + (state ? `?state=${state}` : ''));
   } catch (error) {
-    return redirect(getFailUrl(ROUTES.TEAM(teamUuid)));
+    return replace(getFailUrl(ROUTES.TEAM(teamUuid)));
   }
 };
 
@@ -87,7 +87,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 
   const { teamUuid } = params;
   if (!teamUuid) {
-    return redirect(getFailUrl());
+    return replace(getFailUrl());
   }
 
   const { name, contents, version }: CreateActionRequest = await request.json();
@@ -99,6 +99,6 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     } = await apiClient.files.create({ file: { name, contents, version }, teamUuid, isPrivate });
     return replace(ROUTES.FILE(uuid));
   } catch (error) {
-    return redirect(getFailUrl());
+    return replace(getFailUrl());
   }
 };
