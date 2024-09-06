@@ -1,6 +1,17 @@
 //! Draws both cell-based borders and sheet-based borders. The cell-based
 //! borders are saved and culled during the update loop. The sheet-based borders
 //! are always redrawn whenever the viewport changes.
+//!
+//! The logic in this is rather complicated as we need to remove overlapping
+//! borders based on timestamps. For example, if you have a column with a left
+//! border, before drawing that left border, you need to check if there are any
+//! existing, visible cell-based, either left in that column, or right in the
+//! previous column. You also need to check if there are any row-based borders
+//! that have a left or right that would overlap the vertical line (and have a
+//! later timestamp).
+//!
+//! Regrettably, you can't just draw over the border as they may be different
+//! widths and this would remove any transparent background.
 
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
