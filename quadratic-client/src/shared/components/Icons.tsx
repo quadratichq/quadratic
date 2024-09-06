@@ -157,6 +157,10 @@ export const FormatItalicIcon = (props: IconProps) => {
   return <Icon {...props}>format_italic</Icon>;
 };
 
+export const FormatNumberAutomaticIcon = (props: IconProps) => {
+  return <Icon {...props}>award_star</Icon>;
+};
+
 export const FormatTextClipIcon = (props: IconProps) => {
   return <Icon {...props}>format_text_clip</Icon>;
 };
@@ -167,6 +171,10 @@ export const FormatTextOverflowIcon = (props: IconProps) => {
 
 export const FormatTextWrapIcon = (props: IconProps) => {
   return <Icon {...props}>format_text_wrap</Icon>;
+};
+
+export const FormatToggleCommasIcon = (props: IconProps) => {
+  return <Icon {...props}>format_quote</Icon>;
 };
 
 export const FileCopyIcon = (props: IconProps) => {
@@ -206,7 +214,15 @@ export const MemoryIcon = (props: IconProps) => {
 };
 
 export const Number123Icon = (props: IconProps) => {
-  return <Icon {...props}>123</Icon>;
+  // TODO: (jimniels) merge classNames here
+  // TODO: (jimniels) if we support sizing, you'll have to adjust this for each size
+  // This icon is just too small, so we make it more readable within its container
+  // by increasing its size and adjusting its position
+  return (
+    <Icon {...props} className="relative left-[-4px] top-[-4px] !text-[28px]">
+      123
+    </Icon>
+  );
 };
 
 export const PageViewIcon = (props: IconProps) => {
