@@ -1,17 +1,18 @@
+import { Action } from '@/app/actions/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
 import { events } from '@/app/events/events';
+import { HTMLGridContainer } from '@/app/gridGL/HTMLGrid/HTMLGridContainer';
+import { useKeyboard } from '@/app/gridGL/interaction/keyboard/useKeyboard';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { PanMode, pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { ImportProgress } from '@/app/ui/components/ImportProgress';
 import { Search } from '@/app/ui/components/Search';
+import { FloatingContextMenu } from '@/app/ui/menus/ContextMenu/FloatingContextMenu';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { MouseEvent, useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
-import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
-import { HTMLGridContainer } from './HTMLGrid/HTMLGridContainer';
-import { useKeyboard } from './interaction/keyboard/useKeyboard';
-import { pixiApp } from './pixiApp/PixiApp';
-import { PanMode, pixiAppSettings } from './pixiApp/PixiAppSettings';
 
 // Keep track of state of mouse/space for panning mode
 let mouseIsDown = false;
@@ -69,20 +70,24 @@ export default function QuadraticGrid() {
     window.addEventListener('mouseup', onMouseUp);
   };
   const onKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
-    if (matchShortcut('grid_pan_mode', e)) {
+    if (matchShortcut(Action.GridPanMode, e)) {
       spaceIsDown = true;
       if (panMode === PanMode.Disabled) {
         pixiAppSettings.changePanMode(PanMode.Enabled);
       }
+      return true;
     }
+    return false;
   };
   const onKeyUp = (e: React.KeyboardEvent<HTMLElement>) => {
-    if (matchShortcut('grid_pan_mode', e)) {
+    if (matchShortcut(Action.GridPanMode, e)) {
       spaceIsDown = false;
       if (panMode !== PanMode.Disabled && !mouseIsDown) {
         pixiAppSettings.changePanMode(PanMode.Disabled);
       }
+      return true;
     }
+    return false;
   };
 
   const { onKeyDown: onKeyDownFromUseKeyboard } = useKeyboard({
@@ -118,8 +123,7 @@ export default function QuadraticGrid() {
         }
       }}
       onKeyDown={(e) => {
-        onKeyDown(e);
-        onKeyDownFromUseKeyboard(e);
+        onKeyDown(e) || onKeyDownFromUseKeyboard(e);
       }}
       onKeyUp={onKeyUp}
     >

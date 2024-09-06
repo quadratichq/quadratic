@@ -1,4 +1,5 @@
 // Note: this is a new pattern that should replace the old `actions.ts` file
+import { Action } from '@/app/actions/actions';
 import { ApiTypes, FilePermission, TeamPermission } from 'quadratic-shared/typesAndSchemas';
 
 /**
@@ -21,7 +22,7 @@ type ActionAvailabilityArgs = {
  * Shared types for actions in the app that can be used across multiple locations,
  * e.g. the sidebar, command palette, file menu, and formatting bar.
  */
-export type GenericAction = {
+export type ActionSpec = {
   label: string;
   run: (args?: any) => void;
 
@@ -38,5 +39,6 @@ export type GenericAction = {
   // define this type as a component
   Icon?: React.FC;
   isAvailable?: (args: ActionAvailabilityArgs) => boolean;
-  keyboardShortcut?: string;
 };
+
+export type ActionSpecRecord = Partial<{ [key in Action]: ActionSpec }>;

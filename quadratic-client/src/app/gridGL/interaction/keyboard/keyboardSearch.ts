@@ -1,3 +1,4 @@
+import { Action } from '@/app/actions/actions';
 import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 
@@ -7,7 +8,7 @@ export function keyboardSearch(
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>
 ): boolean {
   // Show search
-  if (matchShortcut('show_search', event)) {
+  if (matchShortcut(Action.ShowSearch, event)) {
     event.preventDefault();
     if (editorInteractionState.showSearch) {
       const search = document.getElementById('search-input');
