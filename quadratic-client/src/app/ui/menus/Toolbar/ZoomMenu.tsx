@@ -28,9 +28,9 @@ export const ZoomMenu = () => {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex h-full w-24 items-center justify-between border-l border-border px-2 text-sm hover:bg-accent">
+      <DropdownMenuTrigger className="group flex h-full w-24 items-center justify-between border-l border-border px-2 text-sm hover:bg-accent">
         {zoom === Infinity ? 100 : Math.round(zoom * 100)}%
-        <ArrowDropDownIcon />
+        <ArrowDropDownIcon className="text-muted-foreground group-hover:text-foreground" />
       </DropdownMenuTrigger>
       <DropdownMenuContent
         className="w-48"

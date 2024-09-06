@@ -1,6 +1,8 @@
+import { Action } from '@/app/actions/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { DocumentationIcon, FeedbackIcon, MailIcon } from '@/shared/components/Icons';
-import { CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
+import { MenuItemAction } from '@/app/ui/menus/TopBar/TopBarFileMenubar/MenubarItemAction';
+import { DocumentationIcon, FeedbackIcon } from '@/shared/components/Icons';
+import { DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { MenubarContent, MenubarItem, MenubarMenu, MenubarTrigger } from '@/shared/shadcn/ui/menubar';
 import { Link } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
@@ -20,11 +22,7 @@ export const HelpMenubarMenu = () => {
         <MenubarItem onClick={() => setEditorInteractionState((prev) => ({ ...prev, showFeedbackMenu: true }))}>
           <FeedbackIcon /> Feedback
         </MenubarItem>
-        <MenubarItem asChild>
-          <Link to={CONTACT_URL} target="_blank" rel="noopener noreferrer">
-            <MailIcon /> Contact us
-          </Link>
-        </MenubarItem>
+        <MenuItemAction action={Action.HelpContactUs} />
       </MenubarContent>
     </MenubarMenu>
   );

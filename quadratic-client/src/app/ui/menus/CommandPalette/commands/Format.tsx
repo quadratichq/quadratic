@@ -1,13 +1,13 @@
 import {
+  CurrencyIcon,
   DecimalDecreaseIcon,
   DecimalIncreaseIcon,
-  DollarIcon,
-  FunctionIcon,
-  MagicWandIcon,
+  FormatClearIcon,
+  FormatNumberAutomaticIcon,
+  FormatToggleCommasIcon,
   PercentIcon,
-  QuoteIcon,
-  TextNoneIcon,
-} from '@/app/ui/icons';
+  ScientificIcon,
+} from '@/shared/components/Icons';
 import { isAvailableBecauseCanEditFile } from '../../../../actions';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import {
@@ -32,7 +32,7 @@ const commands: CommandGroup = {
         return (
           <CommandPaletteListItem
             {...props}
-            icon={<TextNoneIcon />}
+            icon={<FormatClearIcon />}
             action={clearFormattingAndBorders}
             shortcut="\"
             shortcutModifiers={KeyboardSymbols.Command}
@@ -44,14 +44,16 @@ const commands: CommandGroup = {
       label: 'Automatic',
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} action={removeCellNumericFormat} icon={<MagicWandIcon />} />;
+        return (
+          <CommandPaletteListItem {...props} action={removeCellNumericFormat} icon={<FormatNumberAutomaticIcon />} />
+        );
       },
     },
     {
       label: 'Currency',
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} action={textFormatSetCurrency} icon={<DollarIcon />} />;
+        return <CommandPaletteListItem {...props} action={textFormatSetCurrency} icon={<CurrencyIcon />} />;
       },
     },
     {
@@ -65,14 +67,14 @@ const commands: CommandGroup = {
       label: 'Scientific',
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} action={textFormatSetExponential} icon={<FunctionIcon />} />;
+        return <CommandPaletteListItem {...props} action={textFormatSetExponential} icon={<ScientificIcon />} />;
       },
     },
     {
       label: 'Toggle commas',
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} action={setCellCommas} icon={<QuoteIcon />} />;
+        return <CommandPaletteListItem {...props} action={setCellCommas} icon={<FormatToggleCommasIcon />} />;
       },
     },
     {

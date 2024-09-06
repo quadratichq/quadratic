@@ -4,7 +4,7 @@ import {
   CodeIcon,
   DataObjectIcon,
   InsertChartIcon,
-  SheetNewIcon,
+  SheetIcon,
 } from '@/shared/components/Icons';
 import {
   MenubarContent,
@@ -69,7 +69,7 @@ export const InsertMenubarMenu = () => {
         </MenubarItem>
         <MenubarSeparator />
         <MenubarItem>
-          <SheetNewIcon />
+          <SheetIcon />
           Sheet
         </MenubarItem>
       </MenubarContent>

@@ -1,4 +1,7 @@
 export enum Action {
+  HelpContactUs = 'help_contact_us',
+  HelpDocs = 'help_docs',
+  HelpFeedback = 'help_feedback',
   FormatAlignHorizontalCenter = 'format_align_horizontal_center',
   FormatAlignHorizontalLeft = 'format_align_horizontal_left',
   FormatAlignHorizontalRight = 'format_align_horizontal_right',

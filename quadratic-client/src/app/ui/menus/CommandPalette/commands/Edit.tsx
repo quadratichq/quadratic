@@ -2,6 +2,8 @@ import {
   copyAction,
   cutAction,
   downloadSelectionAsCsvAction,
+  findInSheet,
+  findInSheets,
   pasteAction,
   pasteActionFormats,
   pasteActionValues,
@@ -16,13 +18,23 @@ import {
   fullClipboardSupport,
   pasteFromClipboard,
 } from '@/app/grid/actions/clipboard/clipboard';
-import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { useFileContext } from '@/app/ui/components/FileProvider';
-import { ClipboardIcon, CopyIcon, RedoIcon, ScissorsIcon, UndoIcon } from '@/app/ui/icons';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import {
+  CopyAsCsv,
+  CopyAsPng,
+  CutIcon,
+  FileCopyIcon,
+  FindInFileIcon,
+  GoToIcon,
+  PasteIcon,
+  RedoIcon,
+  UndoIcon,
+} from '@/shared/components/Icons';
 import { isMac } from '@/shared/utils/isMac';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useSetRecoilState } from 'recoil';
+import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
 const data: CommandGroup = {
@@ -66,7 +78,7 @@ const data: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             action={cutToClipboard}
-            icon={<ScissorsIcon />}
+            icon={<CutIcon />}
             label={cutAction.label}
             shortcut={KeyboardSymbols.Command + 'X'}
           />
@@ -81,7 +93,7 @@ const data: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             action={copyToClipboard}
-            icon={<CopyIcon />}
+            icon={<FileCopyIcon />}
             shortcut={KeyboardSymbols.Command + 'C'}
           />
         );
@@ -96,7 +108,7 @@ const data: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             action={pasteFromClipboard}
-            icon={<ClipboardIcon />}
+            icon={<PasteIcon />}
             shortcut={KeyboardSymbols.Command + 'V'}
           />
         );
@@ -111,6 +123,7 @@ const data: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             action={() => pasteFromClipboard('Values')}
+            icon={<PasteIcon />}
             shortcut="V"
             shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}
           />
@@ -121,7 +134,55 @@ const data: CommandGroup = {
       label: pasteActionFormats.label,
       isAvailable: pasteActionFormats.isAvailable,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} action={() => pasteFromClipboard('Formats')} />;
+        return <CommandPaletteListItem {...props} icon={<PasteIcon />} action={() => pasteFromClipboard('Formats')} />;
+      },
+    },
+    {
+      label: 'Go to cell',
+      Component: (props) => {
+        const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+        return (
+          <CommandPaletteListItem
+            {...props}
+            action={() =>
+              setEditorInteractionState({ ...editorInteractionState, showCommandPalette: false, showGoToMenu: true })
+            }
+            icon={<GoToIcon />}
+            shortcut={KeyboardSymbols.Command + 'G'}
+          />
+        );
+      },
+    },
+    {
+      label: findInSheet.label,
+      keywords: ['search'],
+      Component: (props) => {
+        const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+        return (
+          <CommandPaletteListItem
+            {...props}
+            action={() => setEditorInteractionState((state) => ({ ...state, showSearch: true }))}
+            icon={<FindInFileIcon />}
+            shortcut="F"
+            shortcutModifiers={KeyboardSymbols.Command}
+          />
+        );
+      },
+    },
+    {
+      label: findInSheets.label,
+      keywords: ['search'],
+      Component: (props) => {
+        const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+        return (
+          <CommandPaletteListItem
+            {...props}
+            action={() => setEditorInteractionState((state) => ({ ...state, showSearch: { sheet_id: undefined } }))}
+            icon={<FindInFileIcon />}
+            shortcut="F"
+            shortcutModifiers={[KeyboardSymbols.Shift, KeyboardSymbols.Command]}
+          />
+        );
       },
     },
     {
@@ -133,7 +194,7 @@ const data: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             action={() => copySelectionToPNG(addGlobalSnackbar)}
-            // icon={<ImageIcon />}
+            icon={<CopyAsPng />}
             shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}
             shortcut="C"
           />
@@ -150,24 +211,9 @@ const data: CommandGroup = {
             action={() => {
               downloadSelectionAsCsvAction.run({ fileName });
             }}
+            icon={<CopyAsCsv />}
             shortcut="E"
             shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}
-          />
-        );
-      },
-    },
-    {
-      label: 'Go to cell',
-      Component: (props) => {
-        const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-        return (
-          <CommandPaletteListItem
-            {...props}
-            action={() =>
-              setEditorInteractionState({ ...editorInteractionState, showCommandPalette: false, showGoToMenu: true })
-            }
-            // icon={<ThickArrowRightIcon />}
-            shortcut={KeyboardSymbols.Command + 'G'}
           />
         );
       },

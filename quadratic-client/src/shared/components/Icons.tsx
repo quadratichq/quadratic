@@ -30,10 +30,6 @@ const Icon = (props: BaseIconProps) => {
 type IconProps = Omit<BaseIconProps, 'children'>;
 export type IconComponent = React.FC<IconProps>;
 
-export const ArrowTopRightIcon: IconComponent = (props) => {
-  return <Icon {...props}>arrow_top_right</Icon>;
-};
-
 export const ArrowDropDownIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_drop_down</Icon>;
 };
@@ -190,6 +186,10 @@ export const FeedbackIcon: IconComponent = (props) => {
   return <Icon {...props}>feedback</Icon>;
 };
 
+export const GoToIcon: IconComponent = (props) => {
+  return <Icon {...props}>arrow_top_right</Icon>;
+};
+
 export const ImportIcon: IconComponent = (props) => {
   return <Icon {...props}>login</Icon>;
 };
@@ -226,7 +226,7 @@ export const Number123Icon: IconComponent = (props) => {
   );
 };
 
-export const PageViewIcon: IconComponent = (props) => {
+export const FindInFileIcon: IconComponent = (props) => {
   return <Icon {...props}>pageview</Icon>;
 };
 
@@ -250,7 +250,7 @@ export const ScientificIcon: IconComponent = (props) => {
   return <Icon {...props}>functions</Icon>;
 };
 
-export const SheetNewIcon: IconComponent = (props) => {
+export const SheetIcon: IconComponent = (props) => {
   return <Icon {...props}>tab</Icon>;
 };
 
@@ -272,4 +272,8 @@ export const UndoIcon: IconComponent = (props) => {
 
 export const ZoomInIcon: IconComponent = (props) => {
   return <Icon {...props}>zoom_in</Icon>;
+};
+
+export const ZoomOutIcon: IconComponent = (props) => {
+  return <Icon {...props}>zoom_out</Icon>;
 };

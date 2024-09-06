@@ -1,11 +1,11 @@
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import {
-  ArrowTopRightIcon,
   CopyAsCsv,
   CopyAsPng,
   CopyIcon,
   CutIcon,
-  PageViewIcon,
+  FindInFileIcon,
+  GoToIcon,
   PasteIcon,
   RedoIcon,
   UndoIcon,
@@ -61,15 +61,15 @@ export const EditMenubarMenu = () => {
         </MenubarItem>
         <MenubarSeparator />
         <MenubarItem>
-          <ArrowTopRightIcon />
+          <GoToIcon />
           Go to
         </MenubarItem>
         <MenubarItem>
-          <PageViewIcon />
+          <FindInFileIcon />
           Find in current sheet
         </MenubarItem>
         <MenubarItem>
-          <PageViewIcon />
+          <FindInFileIcon />
           Find in all sheets
         </MenubarItem>
         <MenubarSeparator />

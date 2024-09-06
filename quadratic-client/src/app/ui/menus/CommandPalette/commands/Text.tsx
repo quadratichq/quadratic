@@ -1,16 +1,16 @@
 import {
-  FontBoldIcon,
-  FontItalicIcon,
-  TextAlignCenterIcon,
-  TextAlignLeftIcon,
-  TextAlignRightIcon,
-  TextClipIcon,
-  TextOverflowIcon,
-  TextVerticalAlignBottomIcon,
-  TextVerticalAlignMiddleIcon,
-  TextVerticalAlignTopIcon,
-  WrapTextIcon,
-} from '@/app/ui/icons';
+  FormatAlignCenterIcon,
+  FormatAlignLeftIcon,
+  FormatAlignRightIcon,
+  FormatBoldIcon,
+  FormatItalicIcon,
+  FormatTextClipIcon,
+  FormatTextOverflowIcon,
+  FormatTextWrapIcon,
+  VerticalAlignBottomIcon,
+  VerticalAlignMiddleIcon,
+  VerticalAlignTopIcon,
+} from '@/shared/components/Icons';
 import { isAvailableBecauseCanEditFile } from '../../../../actions';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { setAlign, setBold, setItalic, setVerticalAlign, setWrap } from '../../TopBar/SubMenus/formatCells';
@@ -26,7 +26,7 @@ const commands: CommandGroup = {
         return (
           <CommandPaletteListItem
             {...props}
-            icon={<FontBoldIcon />}
+            icon={<FormatBoldIcon />}
             action={async () => {
               setBold();
             }}
@@ -43,7 +43,7 @@ const commands: CommandGroup = {
         return (
           <CommandPaletteListItem
             {...props}
-            icon={<FontItalicIcon />}
+            icon={<FormatItalicIcon />}
             action={async () => setItalic()}
             shortcut="I"
             shortcutModifiers={KeyboardSymbols.Command}
@@ -55,21 +55,21 @@ const commands: CommandGroup = {
       label: 'Left align',
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} icon={<TextAlignLeftIcon />} action={() => setAlign('left')} />;
+        return <CommandPaletteListItem {...props} icon={<FormatAlignLeftIcon />} action={() => setAlign('left')} />;
       },
     },
     {
       label: 'Center align',
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} icon={<TextAlignCenterIcon />} action={() => setAlign('center')} />;
+        return <CommandPaletteListItem {...props} icon={<FormatAlignCenterIcon />} action={() => setAlign('center')} />;
       },
     },
     {
       label: 'Right align',
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} icon={<TextAlignRightIcon />} action={() => setAlign('right')} />;
+        return <CommandPaletteListItem {...props} icon={<FormatAlignRightIcon />} action={() => setAlign('right')} />;
       },
     },
     {
@@ -77,11 +77,7 @@ const commands: CommandGroup = {
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return (
-          <CommandPaletteListItem
-            {...props}
-            icon={<TextVerticalAlignTopIcon />}
-            action={() => setVerticalAlign('top')}
-          />
+          <CommandPaletteListItem {...props} icon={<VerticalAlignTopIcon />} action={() => setVerticalAlign('top')} />
         );
       },
     },
@@ -92,7 +88,7 @@ const commands: CommandGroup = {
         return (
           <CommandPaletteListItem
             {...props}
-            icon={<TextVerticalAlignMiddleIcon />}
+            icon={<VerticalAlignMiddleIcon />}
             action={() => setVerticalAlign('middle')}
           />
         );
@@ -105,7 +101,7 @@ const commands: CommandGroup = {
         return (
           <CommandPaletteListItem
             {...props}
-            icon={<TextVerticalAlignBottomIcon />}
+            icon={<VerticalAlignBottomIcon />}
             action={() => setVerticalAlign('bottom')}
           />
         );
@@ -115,21 +111,23 @@ const commands: CommandGroup = {
       label: 'Text overflow',
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} icon={<TextOverflowIcon />} action={() => setWrap('overflow')} />;
+        return (
+          <CommandPaletteListItem {...props} icon={<FormatTextOverflowIcon />} action={() => setWrap('overflow')} />
+        );
       },
     },
     {
       label: 'Text wrap',
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} icon={<WrapTextIcon />} action={() => setWrap('wrap')} />;
+        return <CommandPaletteListItem {...props} icon={<FormatTextWrapIcon />} action={() => setWrap('wrap')} />;
       },
     },
     {
       label: 'Text clip',
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} icon={<TextClipIcon />} action={() => setWrap('clip')} />;
+        return <CommandPaletteListItem {...props} icon={<FormatTextClipIcon />} action={() => setWrap('clip')} />;
       },
     },
   ],

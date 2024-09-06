@@ -1,14 +1,8 @@
 import { createNewFileAction, deleteFile, downloadFileAction, duplicateFileAction } from '@/app/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useFileContext } from '@/app/ui/components/FileProvider';
-import {
-  FileDeleteIcon,
-  FileDownloadIcon,
-  FileDuplicateIcon,
-  // FileDeleteIcon, FileDownloadIcon, FileDuplicateIcon,
-  FileIcon,
-} from '@/app/ui/icons';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { DeleteIcon, DownloadIcon, DraftIcon, FileCopyIcon } from '@/shared/components/Icons';
 import { useParams, useSubmit } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
@@ -23,7 +17,7 @@ const commands: CommandGroup = {
       Component: (props) => {
         const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
         const action = () => createNewFileAction.run({ setEditorInteractionState });
-        return <CommandPaletteListItem {...props} icon={<FileIcon />} action={action} />;
+        return <CommandPaletteListItem {...props} icon={<DraftIcon />} action={action} />;
       },
     },
 
@@ -36,7 +30,7 @@ const commands: CommandGroup = {
         const action = () => {
           duplicateFileAction.run({ uuid, submit });
         };
-        return <CommandPaletteListItem {...props} action={action} icon={<FileDuplicateIcon />} />;
+        return <CommandPaletteListItem {...props} action={action} icon={<FileCopyIcon />} />;
       },
     },
     {
@@ -45,11 +39,7 @@ const commands: CommandGroup = {
       Component: (props) => {
         const { name } = useFileContext();
         return (
-          <CommandPaletteListItem
-            {...props}
-            action={() => downloadFileAction.run({ name })}
-            icon={<FileDownloadIcon />}
-          />
+          <CommandPaletteListItem {...props} action={() => downloadFileAction.run({ name })} icon={<DownloadIcon />} />
         );
       },
     },
@@ -60,7 +50,7 @@ const commands: CommandGroup = {
         const { uuid } = useParams() as { uuid: string };
         const { addGlobalSnackbar } = useGlobalSnackbar();
         const action = () => deleteFile.run({ uuid, addGlobalSnackbar });
-        return <CommandPaletteListItem {...props} action={action} icon={<FileDeleteIcon />} />;
+        return <CommandPaletteListItem {...props} action={action} icon={<DeleteIcon />} />;
       },
     },
   ],

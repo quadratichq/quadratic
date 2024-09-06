@@ -1,4 +1,4 @@
-import { ExternalLinkIcon, FeedbackIcon } from '@/app/ui/icons';
+import { DocumentationIcon, FeedbackIcon, MailIcon } from '@/shared/components/Icons';
 import { useSetRecoilState } from 'recoil';
 import { provideFeedbackAction, viewDocsAction } from '../../../../actions';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
@@ -12,7 +12,7 @@ const commands: CommandGroup = {
       Component: (props) => (
         <CommandPaletteListItem
           {...props}
-          icon={<ExternalLinkIcon />}
+          icon={<DocumentationIcon />}
           action={() => {
             viewDocsAction.run();
           }}
@@ -34,6 +34,19 @@ const commands: CommandGroup = {
           />
         );
       },
+    },
+    {
+      label: 'Contact us',
+      Component: (props) => (
+        <CommandPaletteListItem
+          {...props}
+          icon={<MailIcon />}
+          action={() => {
+            // TODO: (jimniels) implement
+            // actionSpecContactUs.run();
+          }}
+        />
+      ),
     },
   ],
 };

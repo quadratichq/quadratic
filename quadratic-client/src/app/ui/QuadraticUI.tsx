@@ -63,7 +63,7 @@ export default function QuadraticUI() {
         ...(navigation.state !== 'idle' ? { opacity: '.5', pointerEvents: 'none' } : {}),
       }}
     >
-      <QuadraticSidebar />
+      {!presentationMode && <QuadraticSidebar />}
       <div className="flex flex-col">
         {!presentationMode && <TopBar />}
         {!presentationMode && <Toolbar />}
