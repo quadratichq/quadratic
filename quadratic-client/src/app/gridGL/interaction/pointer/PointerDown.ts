@@ -183,6 +183,8 @@ export class PointerDown {
   }
 
   pointerMove(world: Point, event: PointerEvent): void {
+    this.clearDoubleClick();
+
     if (pixiAppSettings.panMode !== PanMode.Disabled) return;
 
     if (!this.active) return;
