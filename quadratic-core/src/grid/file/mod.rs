@@ -146,10 +146,12 @@ pub fn export(grid: Grid) -> Result<Vec<u8>> {
 mod tests {
     use super::*;
     use crate::{
-        //     color::Rgba,
-        //     grid::{BorderSelection, BorderStyle, CellBorderLine},
-        Pos,
-        // Rect,
+        color::Rgba,
+        grid::{
+            generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellBorderLine,
+            CodeCellLanguage,
+        },
+        ArraySize, CellValue, CodeCellValue, Pos, Rect,
     };
     use serial_test::parallel;
 
@@ -173,10 +175,12 @@ mod tests {
         include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_5_simple.grid");
     const V1_6_FILE: &[u8] =
         include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_6_simple.grid");
-    const QAWOLF_TEST_FILE: &[u8] =
-        include_bytes!("../../../../quadratic-rust-shared/data/grid/(Main) QAWolf test v1_5.grid");
-    const UPGRADE_CODE_RUNS: &[u8] =
-        include_bytes!("../../../../quadratic-rust-shared/data/grid/upgrade_code_runs_v1_5.grid");
+    const V1_5_QAWOLF_TEST_FILE: &[u8] =
+        include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_5_(Main)_QAWolf_test.grid");
+    const V1_5_UPGRADE_CODE_RUNS: &[u8] =
+        include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_5_upgrade_code_runs.grid");
+    const V1_5_JAVASCRIPT_GETTING_STARTED_EXAMPLE: &[u8] =
+        include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_5_JavaScript_getting_started_(example).grid");
 
     #[test]
     fn process_a_number_v1_3_file() {
@@ -339,8 +343,8 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn imports_and_exports_qawolf_test_file() {
-        let imported = import(QAWOLF_TEST_FILE.to_vec()).unwrap();
+    fn imports_and_exports_v1_5_qawolf_test_file() {
+        let imported = import(V1_5_QAWOLF_TEST_FILE.to_vec()).unwrap();
         let exported = export(imported.clone()).unwrap();
         let imported_copy = import(exported).unwrap();
         assert_eq!(imported_copy, imported);
@@ -348,10 +352,52 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn imports_and_exports_update_code_runs_file() {
-        let imported = import(UPGRADE_CODE_RUNS.to_vec()).unwrap();
+    fn imports_and_exports_v1_5_update_code_runs_file() {
+        let imported = import(V1_5_UPGRADE_CODE_RUNS.to_vec()).unwrap();
         let exported = export(imported.clone()).unwrap();
         let imported_copy = import(exported).unwrap();
         assert_eq!(imported_copy, imported);
+    }
+
+    #[test]
+    #[parallel]
+    fn imports_and_exports_v1_5_javascript_getting_started_example() {
+        let imported = import(V1_5_JAVASCRIPT_GETTING_STARTED_EXAMPLE.to_vec()).unwrap();
+        let exported = export(imported.clone()).unwrap();
+        let imported_copy = import(exported).unwrap();
+        assert_eq!(imported_copy, imported);
+
+        let sheet = &imported.sheets[0];
+        assert_eq!(
+            sheet.cell_value(Pos { x: 0, y: 0 }).unwrap(),
+            CellValue::Text("JavaScript examples".into())
+        );
+        assert_eq!(
+            sheet.cell_value(Pos { x: 0, y: 3 }).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Javascript,
+                code: "let result = [];\nfor (let i = 0; i < 500; i++) {\n    result.push(2 ** i);\n}\nreturn result;".to_string(),
+            })
+        );
+        assert_eq!(
+            sheet
+                .code_runs
+                .get(&Pos { x: 0, y: 3 })
+                .unwrap()
+                .output_size(),
+            ArraySize::new(1, 500).unwrap()
+        );
+        assert_eq!(
+            sheet.cell_value(Pos { x: 2, y: 6 }).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Javascript,
+                code: "// fix by putting a let statement in front of x \nx = 5; ".to_string(),
+            })
+        );
+        assert_eq!(sheet.code_runs.len(), 10);
+        assert_eq!(
+            sheet.code_runs.get(&Pos { x: 2, y: 6 }).unwrap().std_err,
+            Some("x is not defined".into())
+        );
     }
 }

@@ -23,7 +23,6 @@ import {
   ShouldRevalidateFunctionArgs,
   isRouteErrorResponse,
   redirect,
-  redirectDocument,
   useLocation,
   useNavigation,
   useRevalidator,
@@ -33,15 +32,19 @@ import {
 } from 'react-router-dom';
 import { RecoilRoot, useRecoilState } from 'recoil';
 
-const DRAWER_WIDTH = 264;
+export const DRAWER_WIDTH = 264;
 export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
 
 /**
  * Revalidation
  */
 export const shouldRevalidate = ({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) => {
-  // Re-validate if we're going to a teams route, otherwise skip
-  return nextUrl.pathname.startsWith('/teams/');
+  return (
+    currentUrl.pathname === '/' ||
+    currentUrl.pathname.startsWith('/file/') ||
+    nextUrl.pathname === '/' ||
+    nextUrl.pathname.startsWith('/teams/')
+  );
 };
 
 /**
@@ -73,7 +76,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
 
   // 1) Check the URL for a team UUID
   // FYI: if you have a UUID in the URL or localstorage, it doesn’t mean you
-  // have acces to it (maybe you were removed from a team, so it’s a 404)
+  // have access to it (maybe you were removed from a team, so it’s a 404)
   // So we have to ensure we A) have a UUID, and B) it's in the list of teams
   // we have access to from the server.
   if (uuidFromUrl) {
@@ -92,7 +95,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
     // 4) there's no teams in the API, so create one and send the user to it
   } else if (teams.length === 0) {
     const newTeam = await apiClient.teams.create({ name: 'My Team' });
-    return redirectDocument(ROUTES.TEAM(newTeam.uuid));
+    return redirect(ROUTES.TEAM(newTeam.uuid));
   }
 
   // This should never happen, but if it does, we'll log it to sentry
@@ -166,7 +169,6 @@ export const Component = () => {
   const revalidator = useRevalidator();
 
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
-  const navbar = <DashboardSidebar isLoading={isLoading} />;
 
   // Trigger the theme in the root of the app
   useTheme();
@@ -180,13 +182,24 @@ export const Component = () => {
   // Ensure long-running browser sessions still have a token
   useCheckForAuthorizationTokenOnWindowFocus();
 
+  // Revalidate when arriving on this page after reload document followed by back button
+  useEffect(() => {
+    const handlePageShow = (e: PageTransitionEvent) => {
+      revalidator.revalidate();
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => {
+      window.removeEventListener('pageshow', handlePageShow);
+    };
+  }, [revalidator]);
+
   return (
     <RecoilRoot>
       <div className={`h-full lg:flex lg:flex-row`}>
         <div
           ref={contentPaneRef}
           className={cn(
-            `relative order-2 flex w-full flex-grow flex-col px-4 pb-10 transition-all sm:pt-0 lg:px-10`,
+            `relative order-2 flex h-full w-full flex-grow flex-col px-4 pb-10 transition-all sm:pt-0 lg:px-10`,
             isLoading ? 'overflow-hidden' : 'overflow-auto',
             isLoading && 'pointer-events-none opacity-25'
           )}
@@ -199,7 +212,7 @@ export const Component = () => {
                 </Button>
               </SheetTrigger>
               <SheetContent className="p-0" style={{ width: DRAWER_WIDTH }}>
-                {navbar}
+                <DashboardSidebar isLoading={isLoading} />
               </SheetContent>
             </Sheet>
           </div>
@@ -209,7 +222,7 @@ export const Component = () => {
           className={`order-1 hidden flex-shrink-0 border-r border-r-border lg:block`}
           style={{ width: DRAWER_WIDTH }}
         >
-          {navbar}
+          <DashboardSidebar isLoading={isLoading} />
         </div>
         {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.EDUCATION && <EducationDialog />}
       </div>
