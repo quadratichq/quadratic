@@ -74,11 +74,14 @@ I understand the code in the cell is:
 \`\`\`${getConnectionKind(mode)}
 ${editorContent}
 \`\`\`
+\n
 I understand the console output is:
 \`\`\`
 ${JSON.stringify(consoleOutput)}
 \`\`\`
-I will strictly adhere to the cell context.
+\n
+I will strictly adhere to the cell context.\n
+I will strictly follow all your instructions, and do my best to answer your questions.\n
 How can I help you?
 `,
     }),
