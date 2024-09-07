@@ -1,36 +1,71 @@
-use itertools::Itertools;
-
 use crate::Rect;
 
 use super::Borders;
 
 impl Borders {
+    /// Finds the rect that contains borders that would be overwritten by the column.
     pub(crate) fn bounds_column(&self, column: i64) -> Option<Rect> {
         let mut x_min: Option<i64> = None;
         let mut x_max: Option<i64> = None;
         let mut y_min: Option<i64> = None;
         let mut y_max: Option<i64> = None;
 
-        self.left.keys().for_each(|x| {
+        self.left.iter().for_each(|(x, data)| {
             if *x == column || *x == column + 1 {
-                x_min = x_min.min(Some(*x));
+                y_min = Some(
+                    y_min
+                        .unwrap_or(i64::MAX)
+                        .min(data.min().unwrap_or(i64::MAX)),
+                );
+                y_max = Some(
+                    y_max
+                        .unwrap_or(i64::MIN)
+                        .max(data.max().unwrap_or(i64::MIN)),
+                );
+                let c = if *x == column { column - 1 } else { column };
+                x_min = Some(x_min.unwrap_or(c).min(c));
+                x_max = Some(x_max.unwrap_or(c).max(c));
             }
         });
-        self.right.keys().for_each(|x| {
+        self.right.iter().for_each(|(x, data)| {
             if *x == column || *x == column - 1 {
-                x_max = x_max.max(Some(*x));
+                y_min = Some(
+                    y_min
+                        .unwrap_or(i64::MAX)
+                        .min(data.min().unwrap_or(i64::MAX)),
+                );
+                y_max = Some(
+                    y_max
+                        .unwrap_or(i64::MIN)
+                        .max(data.max().unwrap_or(i64::MIN)),
+                );
+                let c = if *x == column { column - 1 } else { column };
+                x_min = Some(x_min.unwrap_or(c).min(c));
+                x_max = Some(x_max.unwrap_or(c).max(c));
             }
         });
-        let x_top = self
-            .top
-            .iter()
-            .filter_map(|(y, entry)| entry.get(column).map(|_| y))
-            .minmax();
-        let x_bottom = self
-            .bottom
-            .iter()
-            .filter_map(|(y, entry)| entry.get(column).map(|_| y))
-            .minmax();
+        self.top.iter().for_each(|(y, data)| {
+            if data.get(column).is_some() {
+                y_min = Some(y_min.unwrap_or(i64::MAX).min(*y));
+                y_max = Some(y_max.unwrap_or(i64::MIN).max(*y));
+                x_min = Some(x_min.unwrap_or(column).min(column));
+                x_max = Some(x_max.unwrap_or(column).max(column));
+            }
+        });
+        self.bottom.iter().for_each(|(y, data)| {
+            if data.get(column).is_some() {
+                y_min = Some(y_min.unwrap_or(i64::MAX).min(*y));
+                y_max = Some(y_max.unwrap_or(i64::MIN).max(*y));
+                x_min = Some(x_min.unwrap_or(column).min(column));
+                x_max = Some(x_max.unwrap_or(column).max(column));
+            }
+        });
+
+        if let (Some(x_min), Some(x_max), Some(y_min), Some(y_max)) = (x_min, x_max, y_min, y_max) {
+            Some(Rect::new(x_min, y_min, x_max, y_max))
+        } else {
+            None
+        }
     }
 
     /// Returns the bounds of the borders. It needs to offset right and bottom by 1
@@ -269,7 +304,7 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn bounds_column() {
+    fn bounds_column_all() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
@@ -281,6 +316,67 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.borders.bounds_column(10), None);
+        assert_eq!(sheet.borders.bounds_column(1), Some(Rect::new(1, 1, 2, 5)));
+        assert_eq!(sheet.borders.bounds_column(0), Some(Rect::new(0, 1, 1, 5)));
+    }
+
+    #[test]
+    #[parallel]
+    fn bounds_column_left() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
+            BorderSelection::Left,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.borders.bounds_column(0), Some(Rect::new(0, 1, 1, 5)));
         assert_eq!(sheet.borders.bounds_column(1), Some(Rect::new(1, 1, 1, 5)));
+        assert_eq!(sheet.borders.bounds_column(2), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn bounds_column_right() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::new(1, 1, 1, 5, sheet_id)),
+            BorderSelection::Right,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        gc.sheet(sheet_id).borders.print_borders();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.borders.bounds_column(0), None);
+        assert_eq!(sheet.borders.bounds_column(1), Some(Rect::new(1, 1, 1, 5)));
+        assert_eq!(sheet.borders.bounds_column(2), Some(Rect::new(1, 1, 2, 5)));
+    }
+
+    #[test]
+    #[parallel]
+    fn bounds_column_top() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
+            BorderSelection::Top,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.borders.bounds_column(0), None);
+        assert_eq!(sheet.borders.bounds_column(1), Some(Rect::new(1, 1, 1, 1)));
+        assert_eq!(sheet.borders.bounds_column(2), Some(Rect::new(2, 1, 2, 1)));
     }
 }
