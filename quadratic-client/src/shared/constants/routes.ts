@@ -1,4 +1,5 @@
 import { UrlParamsDevState } from '@/app/gridGL/pixiApp/urlParams/UrlParamsDev';
+import { apiClient } from '@/shared/api/apiClient';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
 // Any routes referenced outside of the root router are stored here
@@ -58,4 +59,10 @@ export const SEARCH_PARAMS = {
   DIALOG: { KEY: 'dialog', VALUES: { EDUCATION: 'education' } },
   SNACKBAR_MSG: { KEY: 'snackbar-msg' }, // VALUE can be any message you want to display
   SNACKBAR_SEVERITY: { KEY: 'snackbar-severity', VALUE: { ERROR: 'error' } },
+};
+
+export const AI = {
+  CHAT: `${apiClient.getApiUrl()}/ai/chat`,
+  STREAM: `${apiClient.getApiUrl()}/ai/chat/stream`,
+  ASSIST: `${apiClient.getApiUrl()}/ai/chat/assist`,
 };

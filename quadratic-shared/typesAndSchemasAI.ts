@@ -7,11 +7,13 @@ export const AIMessageSchema = z.object({
 });
 export type AIMessage = z.infer<typeof AIMessageSchema>;
 
+export const AIModelSchema = z.enum(['gpt-4o', 'gpt-4o-2024-08-06']).default('gpt-4o');
+export type AIModel = z.infer<typeof AIModelSchema>;
+
 export const AIAutoCompleteRequestBodySchema = z.object({
   messages: z.array(AIMessageSchema),
-  model: z.enum(['gpt-4o', 'gpt-4o-2024-08-06']).default('gpt-4o'),
+  model: AIModelSchema,
 });
-
 export type AIAutoCompleteRequestBody = z.infer<typeof AIAutoCompleteRequestBodySchema>;
 
 const CellValueSchema = z.object({

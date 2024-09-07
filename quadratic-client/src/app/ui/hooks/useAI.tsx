@@ -1,31 +1,32 @@
 import { authClient } from '@/auth';
-import { apiClient } from '@/shared/api/apiClient';
-import { AIMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { AI } from '@/shared/constants/routes';
+import { AIMessage, AIModel } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
-type HandleAIStreamProps = {
-  model?: string;
+type HandleAIPromptProps = {
+  type: 'stream' | 'assist';
+  model?: AIModel;
   systemMessages: AIMessage[];
   messages: AIMessage[];
   setMessages: (value: React.SetStateAction<AIMessage[]>) => void;
   signal: AbortSignal;
 };
 
-type HandleAIAssistProps = {
-  model?: string;
-  systemMessages: AIMessage[];
-  messages: AIMessage[];
-  signal: AbortSignal;
-};
-
 export function useAI() {
   const handleAIStream = useCallback(
-    async ({ model, systemMessages, messages, setMessages, signal }: HandleAIStreamProps) => {
+    async ({
+      type,
+      model,
+      systemMessages,
+      messages,
+      setMessages,
+      signal,
+    }: HandleAIPromptProps): Promise<{ error?: boolean; content: string }> => {
       let responseMessage: AIMessage = { role: 'assistant', content: '' };
-
       try {
         const token = await authClient.getTokenOrRedirect();
-        const response = await fetch(`${apiClient.getApiUrl()}/ai/chat/stream`, {
+        const url = type === 'assist' ? AI.ASSIST : AI.STREAM;
+        const response = await fetch(url, {
           method: 'POST',
           signal,
           headers: {
@@ -39,15 +40,15 @@ export function useAI() {
         });
 
         if (!response.ok) {
-          const errorMessage =
+          const error =
             response.status === 429
               ? 'You have exceeded the maximum number of requests. Please try again later.'
               : `Looks like there was a problem. Status Code: ${response.status}`;
-          setMessages((prev) => [...prev, { role: 'assistant', content: errorMessage }]);
+          setMessages((prev) => [...prev, { role: 'assistant', content: error }]);
           if (response.status !== 429) {
             console.error(`Error retrieving data from AI API: ${response.status}`);
           }
-          return;
+          return { error: true, content: error };
         }
 
         setMessages((prev) => [...prev, responseMessage]);
@@ -78,56 +79,13 @@ export function useAI() {
             }
           }
         }
-      } catch (err: any) {
-        if (err.name !== 'AbortError') {
-          console.error('Error in AI prompt handling:', err);
-          if (responseMessage) {
-            responseMessage.content += '\n\nAn error occurred while processing the response.';
-            setMessages((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
-          }
-        }
-      }
-    },
-    []
-  );
-
-  const handleAIAssist = useCallback(
-    async ({
-      model,
-      systemMessages,
-      messages,
-      signal,
-    }: HandleAIAssistProps): Promise<{ error?: boolean; content: string }> => {
-      try {
-        const token = await authClient.getTokenOrRedirect();
-        const response = await fetch(`${apiClient.getApiUrl()}/ai/chat/assist`, {
-          method: 'POST',
-          signal,
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model,
-            messages: [...systemMessages, ...messages],
-          }),
-        });
-        if (!response.ok) {
-          const error =
-            response.status === 429
-              ? 'You have exceeded the maximum number of requests. Please try again later.'
-              : `Looks like there was a problem. Status Code: ${response.status}`;
-          if (response.status !== 429) {
-            console.error(`Error retrieving data from AI API: ${response.status}`);
-          }
-          return { error: true, content: error };
-        }
-        const content = await response.json();
-        return { content };
+        return { content: responseMessage.content };
       } catch (err: any) {
         if (err.name === 'AbortError') {
           return { error: false, content: 'Aborted by user' };
         } else {
+          responseMessage.content += '\n\nAn error occurred while processing the response.';
+          setMessages((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
           console.error('Error in AI prompt handling:', err);
           return { error: true, content: 'An error occurred while processing the response.' };
         }
@@ -136,5 +94,5 @@ export function useAI() {
     []
   );
 
-  return { handleAIStream, handleAIAssist };
+  return handleAIStream;
 }

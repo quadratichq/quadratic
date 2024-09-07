@@ -39,10 +39,11 @@ export function AIAssist() {
     []
   );
 
-  const { handleAIAssist } = useAI();
+  const handleAIPrompt = useAI();
   const handleSubmit = useCallback(async () => {
     if (loading) return;
     setLoading(true);
+    abortController.current = new AbortController();
 
     const updatedMessages: AIMessage[] = [...messages, { role: 'user', content: prompt }];
     setMessages(updatedMessages);
@@ -50,16 +51,16 @@ export function AIAssist() {
 
     const cursorPosition = sheets.sheet.cursor.cursorPosition;
 
-    abortController.current = new AbortController();
-    const { error, content } = await handleAIAssist({
+    const { content, error } = await handleAIPrompt({
+      type: 'assist',
       model: 'gpt-4o-2024-08-06',
       systemMessages: getSystemMessages(cursorPosition),
       messages: updatedMessages,
+      setMessages,
       signal: abortController.current.signal,
     });
-    const responseMessage: AIMessage = { role: 'assistant', content };
-    setMessages((prev) => [...prev, responseMessage]);
     setLoading(false);
+
     if (error) {
       console.warn(content);
       return;
@@ -72,7 +73,7 @@ export function AIAssist() {
       sheets.getCursorPosition()
     );
     setTransactionId(transactionId);
-  }, [getSystemMessages, handleAIAssist, loading, messages, prompt]);
+  }, [getSystemMessages, handleAIPrompt, loading, messages, prompt]);
 
   const handleConfirm = useCallback(
     (accept: boolean) => {

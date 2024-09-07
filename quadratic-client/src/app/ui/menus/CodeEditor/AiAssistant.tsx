@@ -93,23 +93,25 @@ ${QuadraticDocs}`,
     setLoading(false);
   };
 
-  const { handleAIStream } = useAI();
+  const handleAIStream = useAI();
   const submitPrompt = useCallback(async () => {
     if (loading) return;
+    setLoading(true);
+    controllerRef.current = new AbortController();
 
     const updatedMessages: AIMessage[] = [...messages, { role: 'user', content: prompt }];
     setMessages(updatedMessages);
     setPrompt('');
 
-    setLoading(true);
-    controllerRef.current = new AbortController();
     await handleAIStream({
+      type: 'stream',
       model: 'gpt-4o',
       systemMessages,
       messages: updatedMessages,
       setMessages,
       signal: controllerRef.current.signal,
     });
+
     setLoading(false);
   }, [controllerRef, handleAIStream, loading, messages, prompt, setLoading, setMessages, setPrompt, systemMessages]);
 

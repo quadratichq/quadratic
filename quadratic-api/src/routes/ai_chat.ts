@@ -25,10 +25,10 @@ const ai_rate_limiter = rateLimit({
 
 ai_chat_router.post('/chat', validateAccessToken, ai_rate_limiter, async (request, response) => {
   try {
-    const json = AIAutoCompleteRequestBodySchema.parse(request.body);
+    const { model, messages } = AIAutoCompleteRequestBodySchema.parse(request.body);
     const result = await openai.chat.completions.create({
-      model: json.model,
-      messages: json.messages,
+      model,
+      messages,
     });
     response.json(result.choices[0].message);
   } catch (error: any) {
@@ -42,15 +42,15 @@ ai_chat_router.post('/chat', validateAccessToken, ai_rate_limiter, async (reques
 
 ai_chat_router.post('/chat/stream', validateAccessToken, ai_rate_limiter, async (request: Request, response) => {
   try {
-    const json = AIAutoCompleteRequestBodySchema.parse(request.body);
+    const { model, messages } = AIAutoCompleteRequestBodySchema.parse(request.body);
 
     response.setHeader('Content-Type', 'text/event-stream');
     response.setHeader('Cache-Control', 'no-cache');
     response.setHeader('Connection', 'keep-alive');
 
     const completion = await openai.chat.completions.create({
-      model: json.model,
-      messages: json.messages,
+      model,
+      messages,
       stream: true,
     });
 
@@ -73,18 +73,32 @@ ai_chat_router.post('/chat/stream', validateAccessToken, ai_rate_limiter, async 
 
 ai_chat_router.post('/chat/assist', validateAccessToken, ai_rate_limiter, async (request, response) => {
   try {
-    const json = AIAutoCompleteRequestBodySchema.parse(request.body);
-    const result = await openai.chat.completions.create({
-      model: json.model,
-      messages: json.messages,
+    const { model, messages } = AIAutoCompleteRequestBodySchema.parse(request.body);
+
+    response.setHeader('Content-Type', 'text/event-stream');
+    response.setHeader('Cache-Control', 'no-cache');
+    response.setHeader('Connection', 'keep-alive');
+
+    const completion = await openai.chat.completions.create({
+      model,
+      messages,
+      stream: true,
       response_format: zodResponseFormat(SetValuesSchema, 'setValues'),
     });
-    response.json(result.choices[0].message.content);
+
+    for await (const chunk of completion) {
+      response.write(`data: ${JSON.stringify(chunk)}\n\n`);
+    }
+
+    response.write('data: [DONE]\n\n');
+    response.end();
   } catch (error: any) {
     if (error.response) {
       response.status(error.response.status).json(error.response.data);
+      console.log(error.response.status, error.response.data);
     } else {
       response.status(400).json(error.message);
+      console.log(error.message);
     }
   }
 });
