@@ -3,6 +3,7 @@ import { events } from '@/app/events/events';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { SetterOrUpdater } from 'recoil';
 import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../grid/controller/Sheets';
 import { defaultGridSettings, GridSettings } from '../../ui/menus/TopBar/SubMenus/useGridSettings';
@@ -36,7 +37,7 @@ class PixiAppSettings {
 
   temporarilyHideCellTypeOutlines = false;
   editorInteractionState = editorInteractionStateDefault;
-  setEditorInteractionState?: (value: EditorInteractionState) => void;
+  setEditorInteractionState?: SetterOrUpdater<EditorInteractionState>;
   addGlobalSnackbar?: (message: string, options?: { severity?: 'error' | 'warning' }) => void;
   inlineEditorState = defaultInlineEditor;
   setInlineEditorState?: (fn: (prev: InlineEditorState) => InlineEditorState) => void;
@@ -85,7 +86,7 @@ class PixiAppSettings {
 
   updateEditorInteractionState(
     editorInteractionState: EditorInteractionState,
-    setEditorInteractionState: (value: EditorInteractionState) => void
+    setEditorInteractionState: SetterOrUpdater<EditorInteractionState>
   ): void {
     this.editorInteractionState = editorInteractionState;
     this.setEditorInteractionState = setEditorInteractionState;

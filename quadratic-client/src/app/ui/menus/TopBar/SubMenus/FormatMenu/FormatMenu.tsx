@@ -3,7 +3,7 @@ import {
   FontBoldIcon,
   FontItalicIcon,
   PaintBucketIcon,
-  PaletteOutlined,
+  PaletteOutlinedIcon,
   TextAlignCenterIcon,
   TextAlignLeftIcon,
   TextAlignRightIcon,
@@ -50,7 +50,7 @@ export const FormatMenu = () => {
       onMenuChange={onMenuChange}
       menuButton={({ open }) => (
         <TopBarMenuItem title="Cell format" open={open}>
-          <PaletteOutlined fontSize="small" />
+          <PaletteOutlinedIcon fontSize="small" />
         </TopBarMenuItem>
       )}
     >
