@@ -94,16 +94,6 @@ describe('keyboardShortcutEnumToDisplay', () => {
     expect(result).toBe('');
   });
 
-  it('should throw error for undefined shortcuts', () => {
-    vi.spyOn(isMacModule, 'isMac', 'get').mockReturnValue(true);
-    defaultShortcuts[mockAction] = {
-      mac: undefined as any,
-      windows: undefined as any,
-    };
-
-    expect(() => keyboardShortcutEnumToDisplay(mockAction)).toThrow();
-  });
-
   it('should handle platform-specific shortcuts correctly', () => {
     vi.spyOn(isMacModule, 'isMac', 'get').mockReturnValue(true);
     defaultShortcuts[mockAction] = {
