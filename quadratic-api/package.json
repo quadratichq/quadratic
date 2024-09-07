@@ -9,7 +9,7 @@
     "start:prod": "dotenv -e .env -- node dist/src/server.js --max-old-space-size=8192",
     "postinstall": "prisma generate",
     "prebuild": "rm -rf dist",
-    "build": "tsc --project tsconfig.production.json && tsc ../quadratic-shared/*.ts",
+    "build": "tsc --project tsconfig.production.json && tsc --project ../quadratic-shared/tsconfig.json",
     "postbuild": "npm run copy:grid-files",
     "build:prod": "npm run prebuild && NODE_ENV=production npm run build",
     "copy:grid-files": "cp ./src/data/*.grid ./dist/src/data/",

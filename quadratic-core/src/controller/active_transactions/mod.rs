@@ -65,6 +65,7 @@ impl ActiveTransactions {
         let index = self.get_async_transaction_index(transaction_id)?;
         let transaction = &mut self.async_transactions[index];
         transaction.has_async -= 1;
+        self.unsaved_transactions.delete(&transaction_id);
         if transaction.has_async > 0 {
             self.get_async_transaction(transaction_id)
         } else {

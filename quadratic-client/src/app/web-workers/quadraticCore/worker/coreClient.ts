@@ -192,15 +192,16 @@ class CoreClient {
         return;
 
       case 'clientCoreSetAIAssistResponse':
+        const transactionId = await core.setAIAssistResponse(
+          e.data.sheetId,
+          e.data.insertAt,
+          e.data.response,
+          e.data.cursor
+        );
         this.send({
           type: 'coreClientSetAIAssistTransactionId',
           id: e.data.id,
-          transactionId: await core.setAIAssistResponse(
-            e.data.sheetId,
-            e.data.insertAt,
-            e.data.response,
-            e.data.cursor
-          ),
+          transactionId,
         });
         return;
 
