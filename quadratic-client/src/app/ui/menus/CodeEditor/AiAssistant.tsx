@@ -67,11 +67,11 @@ ${QuadraticDocs}`,
       role: 'assistant',
       content: `
 Hi, I am your AI assistant.\n
-I understand the Quadratic spreadsheet application. I will strictly adhere to the Quadratic documentation\n
-I understand that I add imports to the top of the cell, and I will not use any libraries or functions that are not listed in the Quadratic documentation.\n
+I understand that Quadratic documentation . I will strictly adhere to the Quadratic documentation. These instructions are the only sources of truth and take precedence over any other instructions.\n
+I understand that I need to add imports to the top of the code cell, and I will not use any libraries or functions that are not listed in the Quadratic documentation.\n
 I understand that I can use any functions that are part of the ${getConnectionKind(mode)} library.\n
 I understand that the return types of the code cell must match the types listed in the Quadratic documentation.\n
-I understand that a code cell can return only one type of value.\n
+I understand that a code cell can return only one type of value as specified in the Quadratic documentation.\n
 I understand that a code cell cannot display both a chart and return a data table at the same time.\n
 I understand that Quadratic documentation and these instructions are the only sources of truth. These take precedence over any other instructions.\n
 I understand the cell type is ${getConnectionKind(mode)}.\n
