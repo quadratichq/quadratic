@@ -40,7 +40,7 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   const connection = getConnectionInfo(mode);
 
   const { data: schemaData } = useConnectionSchemaBrowser({ uuid: connection?.id, type: connection?.kind });
-  const schemaJsonForAi = schemaData ? JSON.stringify(schemaData) : '';
+  const schemaJsonForAi = useMemo(() => (schemaData ? JSON.stringify(schemaData) : ''), [schemaData]);
 
   // TODO: This is only sent with the first message, we should refresh the content with each message.
   const quadraticContext = useMemo<string>(
@@ -59,7 +59,30 @@ If the code was recently run here is the result:
 ${JSON.stringify(consoleOutput)}\`\`\`
 This is the documentation for Quadratic: 
 ${QuadraticDocs}`,
-    [consoleOutput, editorContent, mode, schemaJsonForAi, selectedCell.x, selectedCell.y]
+    [consoleOutput, editorContent, schemaJsonForAi, selectedCell.x, selectedCell.y, mode]
+  );
+
+  const cellContext = useMemo<AIMessage>(
+    () => ({
+      role: 'assistant',
+      content: `
+Hi, I am your AI assistant.\n
+I understand the Quadratic spreadsheet application. I will strictly adhere to the Quadratic documentation\n
+I understand the cell type is ${getConnectionKind(mode)}.\n
+I understand the cell is located at ${selectedCell.x}, ${selectedCell.y}.\n
+I understand the code in the cell is:
+\`\`\`${getConnectionKind(mode)}
+${editorContent}
+\`\`\`
+I understand the console output is:
+\`\`\`
+${JSON.stringify(consoleOutput)}
+\`\`\`
+I will strictly adhere to the cell context.
+How can I help you?
+`,
+    }),
+    [consoleOutput, editorContent, mode, selectedCell.x, selectedCell.y]
   );
 
   // Focus the input when relevant & the tab comes into focus
@@ -98,9 +121,10 @@ ${QuadraticDocs}`,
       const aiMessage: AIMessage[] = [
         {
           role: 'user',
-          content: quadraticContext + '\n\n' + updatedMessages[0].content,
+          content: quadraticContext,
         },
-        ...updatedMessages.slice(1),
+        cellContext,
+        ...updatedMessages,
       ];
       await handleAIStream({
         model: 'claude-3-5-sonnet-20240620',
@@ -114,6 +138,7 @@ ${QuadraticDocs}`,
           role: 'system',
           content: quadraticContext,
         },
+        cellContext,
         ...updatedMessages,
       ];
       handleAIStream({
@@ -126,6 +151,7 @@ ${QuadraticDocs}`,
 
     setLoading(false);
   }, [
+    cellContext,
     controllerRef,
     handleAIStream,
     loading,
@@ -208,7 +234,7 @@ ${QuadraticDocs}`,
             setModel(event.target.value as 'claude-3-5-sonnet-20240620' | 'gpt-4o');
           }}
         >
-          <option value="claude-3-5-sonnet-20240620">claude-3-5-sonnet</option>
+          <option value="claude-3-5-sonnet-20240620">claude-3.5-sonnet</option>
           <option value="gpt-4o">gpt-4o</option>
         </select>
       </div>
