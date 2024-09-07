@@ -4,22 +4,23 @@ import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
+import { useAI } from '@/app/ui/hooks/useAI';
 import { AI } from '@/app/ui/icons';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
-import { authClient } from '@/auth';
+import { QuadraticDocs } from '@/app/ui/menus/CodeEditor/QuadraticDocs';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { apiClient } from '@/shared/api/apiClient';
 import { Avatar } from '@/shared/components/Avatar';
 import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Send, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
-import { useEffect, useRef } from 'react';
+import { AIMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
-import { CodeBlockParser } from './AICodeBlockParser';
+
+import { CodeBlockParser } from '@/app/ui/menus/CodeEditor/AICodeBlockParser';
 import './AiAssistant.css';
-import { QuadraticDocs } from './QuadraticDocs';
 
 export type AiMessage = {
   role: 'user' | 'system' | 'assistant';
@@ -47,10 +48,11 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   const schemaJsonForAi = schemaData ? JSON.stringify(schemaData) : '';
 
   // TODO: This is only sent with the first message, we should refresh the content with each message.
-  const systemMessages = [
-    {
-      role: 'system',
-      content: `
+  const systemMessages = useMemo<AIMessage[]>(
+    () => [
+      {
+        role: 'system',
+        content: `
 You are a helpful assistant inside of a spreadsheet application called Quadratic. 
 Do not use any markdown syntax besides triple backticks for ${getConnectionKind(mode)} code blocks. 
 Do not reply with plain text code blocks.
@@ -65,8 +67,10 @@ If the code was recently run here is the result:
 ${JSON.stringify(consoleOutput)}\`\`\`
 This is the documentation for Quadratic: 
 ${QuadraticDocs}`,
-    },
-  ] as AiMessage[];
+      },
+    ],
+    [consoleOutput, editorContent, mode, schemaJsonForAi, selectedCell.x, selectedCell.y]
+  );
 
   // Focus the input when relevant & the tab comes into focus
   useEffect(() => {
@@ -90,103 +94,26 @@ ${QuadraticDocs}`,
     setLoading(false);
   };
 
-  const submitPrompt = async () => {
+  const handleAIStream = useAI();
+  const submitPrompt = useCallback(async () => {
     if (loading) return;
-    controllerRef.current = new AbortController();
     setLoading(true);
-    const token = await authClient.getTokenOrRedirect();
-    const updatedMessages = [...messages, { role: 'user', content: prompt }] as AiMessage[];
-    const request_body = {
-      model: 'gpt-4o',
-      messages: [...systemMessages, ...updatedMessages],
-    };
+    controllerRef.current = new AbortController();
+
+    const updatedMessages: AIMessage[] = [...messages, { role: 'user', content: prompt }];
     setMessages(updatedMessages);
     setPrompt('');
 
-    await fetch(`${apiClient.getApiUrl()}/ai/chat/stream`, {
-      method: 'POST',
+    await handleAIStream({
+      model: 'gpt-4o',
+      systemMessages,
+      messages: updatedMessages,
+      setMessages,
       signal: controllerRef.current.signal,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request_body),
-    })
-      .then((response) => {
-        if (response.status !== 200) {
-          if (response.status === 429) {
-            setMessages((old) => [
-              ...old,
-              {
-                role: 'assistant',
-                content: 'You have exceeded the maximum number of requests. Please try again later.',
-              },
-            ]);
-          } else {
-            setMessages((old) => [
-              ...old,
-              {
-                role: 'assistant',
-                content: 'Looks like there was a problem. Status Code: ' + response.status,
-              },
-            ]);
-            console.error(`error retrieving data from AI API: ${response.status}`);
-          }
-          return;
-        }
-
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-
-        let responseMessage = {
-          role: 'assistant',
-          content: '',
-        } as AiMessage;
-        setMessages((old) => [...old, responseMessage]);
-
-        return reader?.read().then(function processResult(result): any {
-          buffer += decoder.decode(result.value || new Uint8Array(), { stream: !result.done });
-          const parts = buffer.split('\n');
-          buffer = parts.pop() || '';
-          for (const part of parts) {
-            const message = part.replace(/^data: /, '');
-            try {
-              const data = JSON.parse(message);
-
-              // Do something with the JSON data here
-              if (data.choices[0].delta.content !== undefined) {
-                responseMessage.content += data.choices[0].delta.content;
-                setMessages((old) => {
-                  old.pop();
-                  old.push(responseMessage);
-                  return [...old];
-                });
-              }
-            } catch (err) {
-              // Not JSON, nothing to do.
-            }
-          }
-          if (result.done) {
-            // stream complete
-            return;
-          }
-          return reader.read().then(processResult);
-        });
-      })
-      .catch((err) => {
-        // not sure what would cause this to happen
-        if (err.name !== 'AbortError') {
-          console.log(err);
-          return;
-        }
-      });
-    // eslint-disable-next-line no-unreachable
+    });
 
     setLoading(false);
-  };
-
-  const displayMessages = messages.filter((message, index) => message.role !== 'system');
+  }, [controllerRef, handleAIStream, loading, messages, prompt, setLoading, setMessages, setPrompt, systemMessages]);
 
   // Designed to live in a box that takes up the full height of its container
   return (
@@ -208,7 +135,7 @@ ${QuadraticDocs}`,
         data-enable-grammarly="false"
       >
         <div id="ai-streaming-output" className="pb-2">
-          {displayMessages.map((message, index) => (
+          {messages.map((message, index) => (
             <div
               key={index}
               style={{
