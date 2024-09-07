@@ -200,6 +200,7 @@ How can I help you?
                     alt={user?.name}
                     style={{
                       backgroundColor: colors.quadraticSecondary,
+                      marginBottom: '0.5rem',
                     }}
                   >
                     {user?.name}
