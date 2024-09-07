@@ -1,17 +1,31 @@
 import { z } from 'zod';
 
-export const AIMessageSchema = z.object({
+export const OpenAIMessageSchema = z.object({
   role: z.enum(['system', 'user', 'assistant']),
   content: z.string(),
-  stream: z.boolean().optional(),
+});
+export type OpenAIMessage = z.infer<typeof OpenAIMessageSchema>;
+
+export const OpenAIModelSchema = z.enum(['gpt-4o', 'gpt-4o-2024-08-06']).default('gpt-4o');
+export type OpenAIModel = z.infer<typeof OpenAIModelSchema>;
+
+export const OpenAIAutoCompleteRequestBodySchema = z.object({
+  messages: z.array(OpenAIMessageSchema),
+  model: OpenAIModelSchema,
+});
+export type OpenAIAutoCompleteRequestBody = z.infer<typeof OpenAIAutoCompleteRequestBodySchema>;
+
+export const AIMessageSchema = z.object({
+  role: z.enum(['user', 'assistant']),
+  content: z.string(),
 });
 export type AIMessage = z.infer<typeof AIMessageSchema>;
 
-export const AIModelSchema = z.enum(['gpt-4o', 'gpt-4o-2024-08-06']).default('gpt-4o');
-export type AIModel = z.infer<typeof AIModelSchema>;
+export const AnthropicModelSchema = z.enum(['claude-3-5-sonnet-20240620']).default('claude-3-5-sonnet-20240620');
+export type AnthropicModel = z.infer<typeof AnthropicModelSchema>;
 
-export const AIAutoCompleteRequestBodySchema = z.object({
+export const AnthropicAutoCompleteRequestBodySchema = z.object({
   messages: z.array(AIMessageSchema),
-  model: AIModelSchema,
+  model: AnthropicModelSchema,
 });
-export type AIAutoCompleteRequestBody = z.infer<typeof AIAutoCompleteRequestBodySchema>;
+export type AnthropicAutoCompleteRequestBody = z.infer<typeof AnthropicAutoCompleteRequestBodySchema>;

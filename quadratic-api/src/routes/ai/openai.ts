@@ -1,12 +1,12 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import OpenAI from 'openai';
-import { AIAutoCompleteRequestBodySchema } from 'quadratic-shared/typesAndSchemasAI';
-import { OPENAI_API_KEY, RATE_LIMIT_AI_REQUESTS_MAX, RATE_LIMIT_AI_WINDOW_MS } from '../env-vars';
-import { validateAccessToken } from '../middleware/validateAccessToken';
-import { Request } from '../types/Request';
+import { OpenAIAutoCompleteRequestBodySchema } from 'quadratic-shared/typesAndSchemasAI';
+import { OPENAI_API_KEY, RATE_LIMIT_AI_REQUESTS_MAX, RATE_LIMIT_AI_WINDOW_MS } from '../../env-vars';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
+import { Request } from '../../types/Request';
 
-const ai_chat_router = express.Router();
+const openai_router = express.Router();
 
 const openai = new OpenAI({
   apiKey: OPENAI_API_KEY || '',
@@ -22,12 +22,13 @@ const ai_rate_limiter = rateLimit({
   },
 });
 
-ai_chat_router.post('/chat', validateAccessToken, ai_rate_limiter, async (request, response) => {
+openai_router.post('/openai/chat', validateAccessToken, ai_rate_limiter, async (request, response) => {
   try {
-    const { model, messages } = AIAutoCompleteRequestBodySchema.parse(request.body);
+    const { model, messages } = OpenAIAutoCompleteRequestBodySchema.parse(request.body);
     const result = await openai.chat.completions.create({
       model,
       messages,
+      temperature: 0,
     });
     response.json(result.choices[0].message);
   } catch (error: any) {
@@ -39,9 +40,9 @@ ai_chat_router.post('/chat', validateAccessToken, ai_rate_limiter, async (reques
   }
 });
 
-ai_chat_router.post('/chat/stream', validateAccessToken, ai_rate_limiter, async (request: Request, response) => {
+openai_router.post('/openai/chat/stream', validateAccessToken, ai_rate_limiter, async (request: Request, response) => {
   try {
-    const { model, messages } = AIAutoCompleteRequestBodySchema.parse(request.body);
+    const { model, messages } = OpenAIAutoCompleteRequestBodySchema.parse(request.body);
 
     response.setHeader('Content-Type', 'text/event-stream');
     response.setHeader('Cache-Control', 'no-cache');
@@ -50,6 +51,7 @@ ai_chat_router.post('/chat/stream', validateAccessToken, ai_rate_limiter, async 
     const completion = await openai.chat.completions.create({
       model,
       messages,
+      temperature: 0,
       stream: true,
     });
 
@@ -57,7 +59,7 @@ ai_chat_router.post('/chat/stream', validateAccessToken, ai_rate_limiter, async 
       response.write(`data: ${JSON.stringify(chunk)}\n\n`);
     }
 
-    response.write('data: [DONE]\n\n');
+    response.write('[DONE]\n\n');
     response.end();
   } catch (error: any) {
     if (error.response) {
@@ -70,4 +72,4 @@ ai_chat_router.post('/chat/stream', validateAccessToken, ai_rate_limiter, async 
   }
 });
 
-export default ai_chat_router;
+export default openai_router;

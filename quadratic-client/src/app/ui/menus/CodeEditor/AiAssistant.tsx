@@ -6,6 +6,7 @@ import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { useAI } from '@/app/ui/hooks/useAI';
 import { AI } from '@/app/ui/icons';
+import { CodeBlockParser } from '@/app/ui/menus/CodeEditor/AICodeBlockParser';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { QuadraticDocs } from '@/app/ui/menus/CodeEditor/QuadraticDocs';
 import { useRootRouteLoaderData } from '@/routes/_root';
@@ -15,27 +16,21 @@ import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Send, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
-import { AIMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { AIMessage, AnthropicModelSchema, OpenAIMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
-
-import { CodeBlockParser } from '@/app/ui/menus/CodeEditor/AICodeBlockParser';
 import './AiAssistant.css';
-
-export type AiMessage = {
-  role: 'user' | 'system' | 'assistant';
-  content: string;
-};
 
 export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const aiResponseRef = useRef<HTMLDivElement>(null);
   const {
     aiAssistant: {
-      prompt: [prompt, setPrompt],
+      controllerRef,
       loading: [loading, setLoading],
       messages: [messages, setMessages],
-      controllerRef,
+      prompt: [prompt, setPrompt],
+      model: [model, setModel],
     },
     consoleOutput: [consoleOutput],
     editorContent: [editorContent],
@@ -48,11 +43,8 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   const schemaJsonForAi = schemaData ? JSON.stringify(schemaData) : '';
 
   // TODO: This is only sent with the first message, we should refresh the content with each message.
-  const systemMessages = useMemo<AIMessage[]>(
-    () => [
-      {
-        role: 'system',
-        content: `
+  const quadraticContext = useMemo<string>(
+    () => `
 You are a helpful assistant inside of a spreadsheet application called Quadratic. 
 Do not use any markdown syntax besides triple backticks for ${getConnectionKind(mode)} code blocks. 
 Do not reply with plain text code blocks.
@@ -67,8 +59,6 @@ If the code was recently run here is the result:
 ${JSON.stringify(consoleOutput)}\`\`\`
 This is the documentation for Quadratic: 
 ${QuadraticDocs}`,
-      },
-    ],
     [consoleOutput, editorContent, mode, schemaJsonForAi, selectedCell.x, selectedCell.y]
   );
 
@@ -94,7 +84,7 @@ ${QuadraticDocs}`,
     setLoading(false);
   };
 
-  const handleAIStream = useAI();
+  const { handleAIStream } = useAI();
   const submitPrompt = useCallback(async () => {
     if (loading) return;
     setLoading(true);
@@ -104,16 +94,49 @@ ${QuadraticDocs}`,
     setMessages(updatedMessages);
     setPrompt('');
 
-    await handleAIStream({
-      model: 'gpt-4o',
-      systemMessages,
-      messages: updatedMessages,
-      setMessages,
-      signal: controllerRef.current.signal,
-    });
+    if (AnthropicModelSchema.safeParse(model).success) {
+      const aiMessage: AIMessage[] = [
+        {
+          role: 'user',
+          content: quadraticContext + '\n\n' + updatedMessages[0].content,
+        },
+        ...updatedMessages.slice(1),
+      ];
+      await handleAIStream({
+        model: 'claude-3-5-sonnet-20240620',
+        messages: aiMessage,
+        setMessages,
+        signal: controllerRef.current.signal,
+      });
+    } else {
+      const aiMessage: OpenAIMessage[] = [
+        {
+          role: 'system',
+          content: quadraticContext,
+        },
+        ...updatedMessages,
+      ];
+      handleAIStream({
+        model: 'gpt-4o',
+        messages: aiMessage,
+        setMessages,
+        signal: controllerRef.current.signal,
+      });
+    }
 
     setLoading(false);
-  }, [controllerRef, handleAIStream, loading, messages, prompt, setLoading, setMessages, setPrompt, systemMessages]);
+  }, [
+    controllerRef,
+    handleAIStream,
+    loading,
+    messages,
+    model,
+    prompt,
+    quadraticContext,
+    setLoading,
+    setMessages,
+    setPrompt,
+  ]);
 
   // Designed to live in a box that takes up the full height of its container
   return (
@@ -176,6 +199,20 @@ ${QuadraticDocs}`,
           <div id="ai-streaming-output-anchor" key="ai-streaming-output-anchor" />
         </div>
       </div>
+
+      <div className="flex flex-col items-end gap-2 px-3 pb-2">
+        <select
+          className="appearance-none rounded-md border border-gray-300 bg-white px-4 py-2 text-xs text-gray-700 shadow-sm transition duration-150 ease-in-out focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
+          value={model}
+          onChange={(event) => {
+            setModel(event.target.value as 'claude-3-5-sonnet-20240620' | 'gpt-4o');
+          }}
+        >
+          <option value="claude-3-5-sonnet-20240620">claude-3-5-sonnet</option>
+          <option value="gpt-4o">gpt-4o</option>
+        </select>
+      </div>
+
       <form
         className="z-10 flex gap-2 px-3 pb-2"
         onSubmit={(e) => {
