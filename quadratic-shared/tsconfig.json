@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
     "strict": true,
-    "module": "ESNext",
+    "module": "commonjs",
     "esModuleInterop": true,
-    "target": "ESNext",
+    "target": "es6",
     "noImplicitAny": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "Node",
+    "moduleResolution": "node",
     "skipLibCheck": true
   },
   "include": ["./*.ts"]
