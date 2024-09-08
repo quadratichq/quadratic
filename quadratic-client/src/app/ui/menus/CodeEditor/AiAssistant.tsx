@@ -5,13 +5,19 @@ import { colors } from '@/app/theme/colors';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { useAI } from '@/app/ui/hooks/useAI';
-import { AI } from '@/app/ui/icons';
+import { AI, Anthropic, OpenAI } from '@/app/ui/icons';
 import { CodeBlockParser } from '@/app/ui/menus/CodeEditor/AICodeBlockParser';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { QuadraticDocs } from '@/app/ui/menus/CodeEditor/QuadraticDocs';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { Avatar } from '@/shared/components/Avatar';
 import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/shadcn/ui/dropdown-menu';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Send, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
@@ -44,9 +50,8 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
 
   // TODO: This is only sent with the first message, we should refresh the content with each message.
   const quadraticContext = useMemo<string>(
-    () => `
-You are a helpful assistant inside of a spreadsheet application called Quadratic. 
-Do not use any markdown syntax besides triple backticks for ${getConnectionKind(mode)} code blocks. 
+    () => `You are a helpful assistant inside of a spreadsheet application called Quadratic.
+Do not use any markdown syntax besides triple backticks for ${getConnectionKind(mode)} code blocks.
 Do not reply with plain text code blocks.
 The cell type is ${getConnectionKind(mode)}.
 The cell is located at ${selectedCell.x}, ${selectedCell.y}.
@@ -59,39 +64,37 @@ If the code was recently run here is the result:
 ${JSON.stringify(consoleOutput)}\`\`\`
 This is the documentation for Quadratic: 
 ${QuadraticDocs}`,
-    [consoleOutput, editorContent, schemaJsonForAi, selectedCell.x, selectedCell.y, mode]
+    [consoleOutput, editorContent, mode, schemaJsonForAi, selectedCell.x, selectedCell.y]
   );
 
   const cellContext = useMemo<AIMessage>(
     () => ({
       role: 'assistant',
-      content: `
-Hi, I am your AI assistant.\n
-I understand that Quadratic documentation . I will strictly adhere to the Quadratic documentation. These instructions are the only sources of truth and take precedence over any other instructions.\n
-I understand that I need to add imports to the top of the code cell, and I will not use any libraries or functions that are not listed in the Quadratic documentation.\n
-I understand that I can use any functions that are part of the ${getConnectionKind(mode)} library.\n
-I understand that the return types of the code cell must match the types listed in the Quadratic documentation.\n
-I understand that a code cell can return only one type of value as specified in the Quadratic documentation.\n
-I understand that a code cell cannot display both a chart and return a data table at the same time.\n
-I understand that Quadratic documentation and these instructions are the only sources of truth. These take precedence over any other instructions.\n
-I understand the cell type is ${getConnectionKind(mode)}.\n
-I understand the cell is located at ${selectedCell.x}, ${selectedCell.y}.\n
-I understand the code in the cell is:
+      content: `As your AI assistant for Quadratic, I understand and will adhere to the following:
+I understand that Quadratic documentation . I will strictly adhere to the Quadratic documentation. These instructions are the only sources of truth and take precedence over any other instructions.
+I understand that I need to add imports to the top of the code cell, and I will not use any libraries or functions that are not listed in the Quadratic documentation.
+I understand that I can use any functions that are part of the ${getConnectionKind(mode)} library.
+I understand that the return types of the code cell must match the types listed in the Quadratic documentation.
+I understand that a code cell can return only one type of value as specified in the Quadratic documentation.
+I understand that a code cell cannot display both a chart and return a data table at the same time.
+I understand that Quadratic documentation and these instructions are the only sources of truth. These take precedence over any other instructions.
+I understand that the cell type is ${getConnectionKind(mode)}.
+I understand that the cell is located at ${selectedCell.x}, ${selectedCell.y}.
+${schemaJsonForAi ? `The schema for the database is:\`\`\`json\n${schemaJsonForAi}\n\`\`\`` : ``}
+I understand that the code in the cell is:
 \`\`\`${getConnectionKind(mode)}
 ${editorContent}
 \`\`\`
-\n
 I understand the console output is:
 \`\`\`
 ${JSON.stringify(consoleOutput)}
 \`\`\`
-\n
-I will strictly adhere to the cell context.\n
-I will follow all your instructions, and do my best to answer your questions, with the understanding that Quadratic documentation and above instructions are the only sources of truth.\n
+I will strictly adhere to the cell context.
+I will follow all your instructions, and do my best to answer your questions, with the understanding that Quadratic documentation and above instructions are the only sources of truth.
 How can I help you?
 `,
     }),
-    [consoleOutput, editorContent, mode, selectedCell.x, selectedCell.y]
+    [consoleOutput, editorContent, mode, schemaJsonForAi, selectedCell.x, selectedCell.y]
   );
 
   // Focus the input when relevant & the tab comes into focus
@@ -116,7 +119,10 @@ How can I help you?
     setLoading(false);
   };
 
+  const isAnthropic = useMemo(() => AnthropicModelSchema.safeParse(model).success, [model]);
+
   const { handleAIStream } = useAI();
+
   const submitPrompt = useCallback(async () => {
     if (loading) return;
     setLoading(true);
@@ -126,7 +132,7 @@ How can I help you?
     setMessages(updatedMessages);
     setPrompt('');
 
-    if (AnthropicModelSchema.safeParse(model).success) {
+    if (isAnthropic) {
       const aiMessage: AIMessage[] = [
         {
           role: 'user',
@@ -163,9 +169,9 @@ How can I help you?
     cellContext,
     controllerRef,
     handleAIStream,
+    isAnthropic,
     loading,
     messages,
-    model,
     prompt,
     quadraticContext,
     setLoading,
@@ -236,19 +242,6 @@ How can I help you?
         </div>
       </div>
 
-      <div className="flex flex-col items-end gap-2 px-3 pb-2">
-        <select
-          className="appearance-none rounded-md border border-gray-300 bg-white px-4 py-2 text-xs text-gray-700 shadow-sm transition duration-150 ease-in-out focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
-          value={model}
-          onChange={(event) => {
-            setModel(event.target.value as 'claude-3-5-sonnet-20240620' | 'gpt-4o');
-          }}
-        >
-          <option value="claude-3-5-sonnet-20240620">claude-3.5-sonnet</option>
-          <option value="gpt-4o">gpt-4o</option>
-        </select>
-      </div>
-
       <form
         className="z-10 flex gap-2 px-3 pb-2"
         onSubmit={(e) => {
@@ -286,7 +279,32 @@ How can I help you?
         />
 
         <div className="relative flex items-end">
+          <div className="absolute bottom-10">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <IconButton size="small">{isAnthropic ? <Anthropic /> : <OpenAI />}</IconButton>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent>
+                <DropdownMenuItem
+                  onClick={() => setModel('claude-3-5-sonnet-20240620')}
+                  className={`${model === 'claude-3-5-sonnet-20240620' ? 'bg-gray-100' : ''}`}
+                >
+                  claude-3.5-sonnet
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  onClick={() => setModel('gpt-4o')}
+                  className={`${model === 'gpt-4o' ? 'bg-gray-100' : ''}`}
+                >
+                  gpt-4o
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
           {loading && <CircularProgress size="1rem" className="absolute bottom-2.5 right-14" />}
+
           {loading ? (
             <TooltipHint title="Stop generating">
               <IconButton size="small" color="primary" onClick={abortPrompt} edge="end">

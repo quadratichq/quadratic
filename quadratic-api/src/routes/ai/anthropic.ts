@@ -64,7 +64,6 @@ anthropic_router.post(
         response.write(`data: ${JSON.stringify(chunk)}\n\n`);
       }
 
-      response.write('[DONE]\n\n');
       response.end();
     } catch (error: any) {
       if (error.response) {
