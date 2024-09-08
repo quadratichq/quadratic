@@ -56,6 +56,11 @@ impl Borders {
                 let Some(border) = borders.get_at(index) else {
                     panic!("Expected a border style for row {row}");
                 };
+                undo.extend(self.clear_row_cells(
+                    selection.sheet_id,
+                    *row,
+                    border.convert_to_clear(),
+                ));
                 if let Some(row_border) = self.rows.get_mut(row) {
                     undo_borders.push(row_border.apply_update(border));
                 } else {

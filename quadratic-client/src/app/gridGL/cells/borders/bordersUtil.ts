@@ -36,7 +36,6 @@ export function divideLine(
 export function findPerpendicularHorizontalLines(
   start: number,
   end: number,
-  timestamp: number,
   entries: Record<string, BorderStyleCell> | null
 ): JsBorderHorizontal[] {
   const lines: JsBorderHorizontal[] = [];
@@ -46,15 +45,15 @@ export function findPerpendicularHorizontalLines(
     // finds perpendicular intersecting lines using top/left
     const current = entries[i.toString()];
     if (current) {
-      if (current.top && current.top.timestamp > timestamp) {
+      if (current.top) {
         lines.push({ color: current.top.color, line: current.top.line, x: BigInt(i), y: 0n, width: 1n });
       }
     } else {
       // finds perpendicular intersecting lines using the previous bottom/right
       const next = entries[(i - 1).toString()];
       if (next) {
-        if (next.bottom && next.bottom.timestamp > timestamp) {
-          lines.push({ color: next.bottom.color, line: next.bottom.line, x: BigInt(i), y: 0n, width: 1n });
+        if (next.bottom) {
+          lines.push({ color: next.bottom.color, line: next.bottom.line, x: BigInt(i - 1), y: 0n, width: 1n });
         }
       }
     }
@@ -66,7 +65,6 @@ export function findPerpendicularHorizontalLines(
 export function findPerpendicularVerticalLines(
   start: number,
   end: number,
-  timestamp: number,
   entries: Record<string, BorderStyleCell> | null
 ): JsBorderVertical[] {
   const lines: JsBorderVertical[] = [];
@@ -76,15 +74,15 @@ export function findPerpendicularVerticalLines(
     // finds perpendicular intersecting lines using left/top
     const current = entries[i.toString()];
     if (current) {
-      if (current.left && current.left.timestamp > timestamp) {
+      if (current.left) {
         lines.push({ color: current.left.color, line: current.left.line, x: 0n, y: BigInt(i), height: 1n });
       }
     } else {
       // finds perpendicular intersecting lines using the previous right/bottom
       const next = entries[(i - 1).toString()];
       if (next) {
-        if (next.right && next.right.timestamp > timestamp) {
-          lines.push({ color: next.right.color, line: next.right.line, x: 0n, y: BigInt(i), height: 1n });
+        if (next.right) {
+          lines.push({ color: next.right.color, line: next.right.line, x: 0n, y: BigInt(i - 1), height: 1n });
         }
       }
     }

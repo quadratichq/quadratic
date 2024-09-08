@@ -4,14 +4,19 @@ use super::Borders;
 
 impl Borders {
     /// Finds the rect that contains borders that would be overwritten by the column.
-    pub(crate) fn bounds_column(&self, column: i64) -> Option<Rect> {
+    pub(crate) fn bounds_column(
+        &self,
+        column: i64,
+        left_update: bool,
+        right_update: bool,
+    ) -> Option<Rect> {
         let mut x_min: Option<i64> = None;
         let mut x_max: Option<i64> = None;
         let mut y_min: Option<i64> = None;
         let mut y_max: Option<i64> = None;
 
         self.left.iter().for_each(|(x, data)| {
-            if *x == column || *x == column + 1 {
+            if *x == column || (right_update && *x == column + 1) {
                 y_min = Some(
                     y_min
                         .unwrap_or(i64::MAX)
@@ -28,7 +33,7 @@ impl Borders {
             }
         });
         self.right.iter().for_each(|(x, data)| {
-            if *x == column || *x == column - 1 {
+            if *x == column || (left_update && *x == column - 1) {
                 y_min = Some(
                     y_min
                         .unwrap_or(i64::MAX)
@@ -58,6 +63,76 @@ impl Borders {
                 y_max = Some(y_max.unwrap_or(i64::MIN).max(*y));
                 x_min = Some(x_min.unwrap_or(column).min(column));
                 x_max = Some(x_max.unwrap_or(column).max(column));
+            }
+        });
+
+        if let (Some(x_min), Some(x_max), Some(y_min), Some(y_max)) = (x_min, x_max, y_min, y_max) {
+            Some(Rect::new(x_min, y_min, x_max, y_max))
+        } else {
+            None
+        }
+    }
+
+    /// Finds the rect that contains row that would be overwritten by the row.
+    pub(crate) fn bounds_row(
+        &self,
+        row: i64,
+        top_update: bool,
+        bottom_update: bool,
+    ) -> Option<Rect> {
+        let mut x_min: Option<i64> = None;
+        let mut x_max: Option<i64> = None;
+        let mut y_min: Option<i64> = None;
+        let mut y_max: Option<i64> = None;
+
+        self.top.iter().for_each(|(y, data)| {
+            if *y == row || (top_update && *y == row + 1) {
+                x_min = Some(
+                    x_min
+                        .unwrap_or(i64::MAX)
+                        .min(data.min().unwrap_or(i64::MAX)),
+                );
+                x_max = Some(
+                    x_max
+                        .unwrap_or(i64::MIN)
+                        .max(data.max().unwrap_or(i64::MIN)),
+                );
+                let c = if *y == row { row } else { row + 1 };
+                y_min = Some(y_min.unwrap_or(c).min(c));
+                y_max = Some(y_max.unwrap_or(c).max(c));
+            }
+        });
+        self.bottom.iter().for_each(|(y, data)| {
+            if *y == row || (bottom_update && *y == row - 1) {
+                x_min = Some(
+                    x_min
+                        .unwrap_or(i64::MAX)
+                        .min(data.min().unwrap_or(i64::MAX)),
+                );
+                x_max = Some(
+                    x_max
+                        .unwrap_or(i64::MIN)
+                        .max(data.max().unwrap_or(i64::MIN)),
+                );
+                let c = if *y == row { row } else { row - 1 };
+                y_min = Some(y_min.unwrap_or(c).min(c));
+                y_max = Some(y_max.unwrap_or(c).max(c));
+            }
+        });
+        self.left.iter().for_each(|(x, data)| {
+            if data.get(row).is_some() {
+                x_min = Some(x_min.unwrap_or(i64::MAX).min(*x));
+                x_max = Some(x_max.unwrap_or(i64::MIN).max(*x));
+                y_min = Some(y_min.unwrap_or(row).min(row));
+                y_max = Some(y_max.unwrap_or(row).max(row));
+            }
+        });
+        self.right.iter().for_each(|(x, data)| {
+            if data.get(row).is_some() {
+                x_min = Some(x_min.unwrap_or(i64::MAX).min(*x));
+                x_max = Some(x_max.unwrap_or(i64::MIN).max(*x));
+                y_min = Some(y_min.unwrap_or(row).min(row));
+                y_max = Some(y_max.unwrap_or(row).max(row));
             }
         });
 
@@ -317,9 +392,15 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
 
-        assert_eq!(sheet.borders.bounds_column(10), None);
-        assert_eq!(sheet.borders.bounds_column(1), Some(Rect::new(1, 1, 2, 5)));
-        assert_eq!(sheet.borders.bounds_column(0), Some(Rect::new(1, 1, 1, 5)));
+        assert_eq!(sheet.borders.bounds_column(10, true, true), None);
+        assert_eq!(
+            sheet.borders.bounds_column(1, true, true),
+            Some(Rect::new(1, 1, 2, 5))
+        );
+        assert_eq!(
+            sheet.borders.bounds_column(0, true, true),
+            Some(Rect::new(1, 1, 1, 5))
+        );
     }
 
     #[test]
@@ -336,9 +417,15 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.borders.bounds_column(0), Some(Rect::new(1, 1, 1, 5)));
-        assert_eq!(sheet.borders.bounds_column(1), Some(Rect::new(1, 1, 1, 5)));
-        assert_eq!(sheet.borders.bounds_column(2), None);
+        assert_eq!(
+            sheet.borders.bounds_column(0, true, true),
+            Some(Rect::new(1, 1, 1, 5))
+        );
+        assert_eq!(
+            sheet.borders.bounds_column(1, true, true),
+            Some(Rect::new(1, 1, 1, 5))
+        );
+        assert_eq!(sheet.borders.bounds_column(2, true, true), None);
     }
 
     #[test]
@@ -355,9 +442,15 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.borders.bounds_column(0), None);
-        assert_eq!(sheet.borders.bounds_column(1), Some(Rect::new(1, 1, 1, 5)));
-        assert_eq!(sheet.borders.bounds_column(2), Some(Rect::new(1, 1, 1, 5)));
+        assert_eq!(sheet.borders.bounds_column(0, true, true), None);
+        assert_eq!(
+            sheet.borders.bounds_column(1, true, true),
+            Some(Rect::new(1, 1, 1, 5))
+        );
+        assert_eq!(
+            sheet.borders.bounds_column(2, true, true),
+            Some(Rect::new(1, 1, 1, 5))
+        );
     }
 
     #[test]
@@ -374,9 +467,15 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.borders.bounds_column(0), None);
-        assert_eq!(sheet.borders.bounds_column(1), Some(Rect::new(1, 1, 1, 1)));
-        assert_eq!(sheet.borders.bounds_column(2), Some(Rect::new(2, 1, 2, 1)));
+        assert_eq!(sheet.borders.bounds_column(0, true, true), None);
+        assert_eq!(
+            sheet.borders.bounds_column(1, true, true),
+            Some(Rect::new(1, 1, 1, 1))
+        );
+        assert_eq!(
+            sheet.borders.bounds_column(2, true, true),
+            Some(Rect::new(2, 1, 2, 1))
+        );
     }
 
     #[test]
@@ -393,9 +492,75 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.borders.bounds_column(0), None);
-        assert_eq!(sheet.borders.bounds_column(1), Some(Rect::new(1, 5, 1, 5)));
-        assert_eq!(sheet.borders.bounds_column(5), Some(Rect::new(5, 5, 5, 5)));
-        assert_eq!(sheet.borders.bounds_column(6), None);
+        assert_eq!(sheet.borders.bounds_column(0, true, true), None);
+        assert_eq!(
+            sheet.borders.bounds_column(1, true, true),
+            Some(Rect::new(1, 5, 1, 5))
+        );
+        assert_eq!(
+            sheet.borders.bounds_column(5, true, true),
+            Some(Rect::new(5, 5, 5, 5))
+        );
+        assert_eq!(sheet.borders.bounds_column(6, true, true), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn bounds_row_left() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
+            BorderSelection::Left,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.borders.bounds_row(0, true, true), None);
+        assert_eq!(
+            sheet.borders.bounds_row(1, true, true),
+            Some(Rect::new(1, 1, 1, 1))
+        );
+        assert_eq!(
+            sheet.borders.bounds_row(2, true, true),
+            Some(Rect::new(1, 2, 1, 2))
+        );
+        assert_eq!(
+            sheet.borders.bounds_row(5, true, true),
+            Some(Rect::new(1, 5, 1, 5))
+        );
+        assert_eq!(sheet.borders.bounds_row(6, true, true), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn bounds_row_right() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
+            BorderSelection::Right,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.borders.bounds_row(0, true, true), None);
+        assert_eq!(
+            sheet.borders.bounds_row(1, true, true),
+            Some(Rect::new(5, 1, 5, 1))
+        );
+        assert_eq!(
+            sheet.borders.bounds_row(3, true, true),
+            Some(Rect::new(5, 3, 5, 3))
+        );
+        assert_eq!(
+            sheet.borders.bounds_row(5, true, true),
+            Some(Rect::new(5, 5, 5, 5))
+        );
+        assert_eq!(sheet.borders.bounds_row(6, true, true), None);
     }
 }

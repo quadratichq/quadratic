@@ -24,8 +24,8 @@ import { pixiApp } from '../../pixiApp/PixiApp';
 import { intersects } from '../../helpers/intersects';
 import { divideLine, findPerpendicularHorizontalLines, findPerpendicularVerticalLines } from './bordersUtil';
 
-// todo: probably want to centralize this with UIValidations
-const MINIMUM_SCALE_TO_SHOW = 0.25;
+// this sets when to fade the sheet borders when (for performance reasons)
+const SCALE_TO_SHOW_SHEET_BORDERS = 0.15;
 const FADE_SCALE = 0.1;
 
 export class Borders extends Container {
@@ -83,8 +83,8 @@ export class Borders extends Container {
               )
           )
         : [];
-      overlaps.push(...findPerpendicularVerticalLines(rowStart, rowEnd, border.timestamp, rows));
-      overlaps.sort((a, b) => Number(b.y) - Number(a.y));
+      overlaps.push(...findPerpendicularVerticalLines(rowStart, rowEnd, rows));
+      overlaps.sort((a, b) => Number(a.y) - Number(b.y));
       let current: number | undefined;
       while (overlaps.length) {
         const overlap = overlaps.pop();
@@ -137,8 +137,8 @@ export class Borders extends Container {
               )
           )
         : [];
-      overlaps.push(...findPerpendicularHorizontalLines(columnStart, columnEnd, border.timestamp, columns));
-      overlaps.sort((a, b) => Number(b.x) - Number(a.x));
+      overlaps.push(...findPerpendicularHorizontalLines(columnStart, columnEnd, columns));
+      overlaps.sort((a, b) => Number(a.x) - Number(b.x));
       let current: number | undefined;
       while (overlaps.length) {
         const overlap = overlaps.pop();
@@ -193,7 +193,7 @@ export class Borders extends Container {
               // need to ensure there's no right entry in x - 1
               const right = borders.columns[(xNumber - 1).toString()]?.right;
               if (!right || left.timestamp > right.timestamp) {
-                this.drawScreenVerticalLine(rowStart.index, rowEnd.index + 1, xNumber, left, borders.rows);
+                this.drawScreenVerticalLine(rowStart.index, rowEnd.index, xNumber, left, borders.rows);
               }
             }
             const right = column.right;
@@ -201,7 +201,7 @@ export class Borders extends Container {
               // need to ensure there's no left entry in x + 1
               const left = borders.columns[(xNumber + 1).toString()]?.left;
               if (!left || right.timestamp > left.timestamp) {
-                this.drawScreenVerticalLine(rowStart.index, rowEnd.index + 1, xNumber + 1, right, borders.rows);
+                this.drawScreenVerticalLine(rowStart.index, rowEnd.index, xNumber + 1, right, borders.rows);
               }
             }
             const top = column.top;
@@ -265,12 +265,6 @@ export class Borders extends Container {
         }
       }
     }
-
-    for (let row in borders.rows) {
-      const rowNumber = Number(row);
-      if (rowNumber >= rowStart.index && rowNumber <= rowEnd.index) {
-      }
-    }
   }
 
   private drawHorizontal() {
@@ -325,19 +319,19 @@ export class Borders extends Container {
   update() {
     const viewportDirty = pixiApp.viewport.dirty;
     if (!this.dirty && !viewportDirty) return;
-    if (pixiApp.viewport.scale.x < MINIMUM_SCALE_TO_SHOW) {
-      this.visible = false;
-      return;
-    }
-    if (pixiApp.viewport.scale.x < MINIMUM_SCALE_TO_SHOW + FADE_SCALE) {
-      this.alpha = (pixiApp.viewport.scale.x - MINIMUM_SCALE_TO_SHOW) / FADE_SCALE;
+    if (pixiApp.viewport.scale.x < SCALE_TO_SHOW_SHEET_BORDERS) {
+      this.sheetLines.visible = false;
     } else {
-      this.alpha = 1;
+      this.sheetLines.visible = true;
+      this.drawSheetBorders();
+      if (pixiApp.viewport.scale.x < SCALE_TO_SHOW_SHEET_BORDERS + FADE_SCALE) {
+        this.sheetLines.alpha = (pixiApp.viewport.scale.x - SCALE_TO_SHOW_SHEET_BORDERS) / FADE_SCALE;
+      } else {
+        this.sheetLines.alpha = 1;
+      }
     }
-    this.visible = true;
     this.dirty = false;
     this.cull();
-    this.drawSheetBorders();
   }
 
   private getSpriteSheet = (tiling?: boolean): Sprite | TilingSprite => {

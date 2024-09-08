@@ -83,25 +83,12 @@ describe('should find perpendicular lines', () => {
         right: null,
       },
     };
-    const lines = findPerpendicularHorizontalLines(1, 3, 0, entries);
+    const lines = findPerpendicularHorizontalLines(1, 3, entries);
     expect(lines.length).toEqual(1);
     const line1 = lines[0];
     expect(line1.x).toEqual(1n);
     expect(line1.y).toEqual(0n);
     expect(line1.width).toEqual(1n);
-  });
-
-  it('finds horizontal lines at the start (but timestamp is too old)', () => {
-    const entries: Record<string, BorderStyleCell> = {
-      '1': {
-        top: { timestamp: 1, color, line: 'line1' },
-        bottom: null,
-        left: null,
-        right: null,
-      },
-    };
-    const lines = findPerpendicularHorizontalLines(1, 3, 2, entries);
-    expect(lines).toEqual([]);
   });
 
   it('finds horizontal lines in the start (but bottom)', () => {
@@ -113,7 +100,7 @@ describe('should find perpendicular lines', () => {
         right: null,
       },
     };
-    const lines = findPerpendicularHorizontalLines(1, 3, 0, entries);
+    const lines = findPerpendicularHorizontalLines(1, 3, entries);
     expect(lines.length).toEqual(1);
     const line1 = lines[0];
     expect(line1.x).toEqual(1n);
@@ -130,7 +117,7 @@ describe('should find perpendicular lines', () => {
         right: null,
       },
     };
-    const lines = findPerpendicularHorizontalLines(1, 3, 0, entries);
+    const lines = findPerpendicularHorizontalLines(1, 3, entries);
     expect(lines.length).toEqual(1);
     const line1 = lines[0];
     expect(line1.x).toEqual(2n);
@@ -147,7 +134,7 @@ describe('should find perpendicular lines', () => {
         right: null,
       },
     };
-    const lines = findPerpendicularHorizontalLines(1, 3, 0, entries);
+    const lines = findPerpendicularHorizontalLines(1, 3, entries);
     expect(lines.length).toEqual(1);
     const line1 = lines[0];
     expect(line1.x).toEqual(2n);
@@ -164,7 +151,7 @@ describe('should find perpendicular lines', () => {
         right: null,
       },
     };
-    const lines = findPerpendicularHorizontalLines(1, 3, 0, entries);
+    const lines = findPerpendicularHorizontalLines(1, 3, entries);
     expect(lines.length).toEqual(1);
     const line1 = lines[0];
     expect(line1.x).toEqual(2n);
@@ -181,7 +168,7 @@ describe('should find perpendicular lines', () => {
         right: null,
       },
     };
-    const lines = findPerpendicularHorizontalLines(1, 3, 0, entries);
+    const lines = findPerpendicularHorizontalLines(1, 3, entries);
     expect(lines.length).toEqual(1);
     const line1 = lines[0];
     expect(line1.x).toEqual(2n);
@@ -202,7 +189,7 @@ describe('should find perpendicular vertical lines', () => {
         right: null,
       },
     };
-    const lines = findPerpendicularVerticalLines(1, 3, 0, entries);
+    const lines = findPerpendicularVerticalLines(1, 3, entries);
     expect(lines.length).toEqual(1);
     const line1 = lines[0];
     expect(line1.x).toEqual(0n);
@@ -219,7 +206,7 @@ describe('should find perpendicular vertical lines', () => {
         right: null,
       },
     };
-    const lines = findPerpendicularVerticalLines(1, 3, 0, entries);
+    const lines = findPerpendicularVerticalLines(1, 3, entries);
     expect(lines.length).toEqual(1);
     const line1 = lines[0];
     expect(line1.x).toEqual(0n);
@@ -236,7 +223,7 @@ describe('should find perpendicular vertical lines', () => {
         right: null,
       },
     };
-    const lines = findPerpendicularVerticalLines(1, 3, 0, entries);
+    const lines = findPerpendicularVerticalLines(1, 3, entries);
     expect(lines.length).toEqual(1);
     const line1 = lines[0];
     expect(line1.x).toEqual(0n);
@@ -253,24 +240,11 @@ describe('should find perpendicular vertical lines', () => {
         right: { timestamp: 1, color, line: 'line1' },
       },
     };
-    const lines = findPerpendicularVerticalLines(1, 3, 0, entries);
+    const lines = findPerpendicularVerticalLines(1, 3, entries);
     expect(lines.length).toEqual(1);
     const line1 = lines[0];
     expect(line1.x).toEqual(0n);
     expect(line1.y).toEqual(2n);
     expect(line1.height).toEqual(1n);
-  });
-
-  it('does not find lines with older timestamp', () => {
-    const entries: Record<string, BorderStyleCell> = {
-      '2': {
-        top: null,
-        bottom: null,
-        left: { timestamp: 0, color, line: 'line1' },
-        right: null,
-      },
-    };
-    const lines = findPerpendicularVerticalLines(1, 3, 1, entries);
-    expect(lines.length).toEqual(0);
   });
 });
