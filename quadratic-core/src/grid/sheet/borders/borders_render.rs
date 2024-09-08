@@ -9,123 +9,10 @@
 //! borders on the sheet. Since this is a one-time cost, (I think) it'll still
 //! be performant.
 
-use super::{
-    BorderSide, BorderStyleTimestamp, Borders, JsBorderHorizontal, JsBorderVertical, JsBordersSheet,
-};
+use super::{Borders, JsBorderHorizontal, JsBorderVertical, JsBordersSheet};
 use crate::{grid::SheetId, wasm_bindings::js::jsBordersSheet, Rect};
 
 impl Borders {
-    /// Checks whether the sheet border styles will override the cell's border
-    /// style. If so, it returns None, otherwise it returns the border style.
-    /// This is in lieu of removing all borders from the sheet when overridden
-    /// by relevant all, columns, or rows.
-    fn does_sheet_override(
-        &self,
-        x: i64,
-        y: i64,
-        entry: BorderStyleTimestamp,
-        side: BorderSide,
-    ) -> Option<BorderStyleTimestamp> {
-        match side {
-            BorderSide::Top => {
-                if self.all.top.is_some_and(|t| t.timestamp > entry.timestamp)
-                    || self
-                        .all
-                        .bottom
-                        .is_some_and(|b| b.timestamp > entry.timestamp)
-                    || self.columns.get(&x).is_some_and(|c| {
-                        c.top.is_some_and(|t| t.timestamp > entry.timestamp)
-                            || c.bottom.is_some_and(|b| b.timestamp > entry.timestamp)
-                    })
-                    || self
-                        .rows
-                        .get(&y)
-                        .is_some_and(|r| r.top.is_some_and(|t| t.timestamp > entry.timestamp))
-                    || self
-                        .rows
-                        .get(&(y - 1))
-                        .is_some_and(|r| r.bottom.is_some_and(|b| b.timestamp > entry.timestamp))
-                {
-                    None
-                } else {
-                    Some(entry)
-                }
-            }
-            BorderSide::Bottom => {
-                if self
-                    .all
-                    .bottom
-                    .is_some_and(|b| b.timestamp > entry.timestamp)
-                    || self.all.top.is_some_and(|t| t.timestamp > entry.timestamp)
-                    || self.columns.get(&x).is_some_and(|c| {
-                        c.bottom.is_some_and(|b| b.timestamp > entry.timestamp)
-                            || c.top.is_some_and(|t| t.timestamp > entry.timestamp)
-                    })
-                    || self
-                        .rows
-                        .get(&y)
-                        .is_some_and(|r| r.bottom.is_some_and(|b| b.timestamp > entry.timestamp))
-                    || self
-                        .rows
-                        .get(&(y + 1))
-                        .is_some_and(|r| r.top.is_some_and(|t| t.timestamp > entry.timestamp))
-                {
-                    None
-                } else {
-                    Some(entry)
-                }
-            }
-            BorderSide::Left => {
-                if self.all.left.is_some_and(|t| t.timestamp > entry.timestamp)
-                    || self
-                        .all
-                        .right
-                        .is_some_and(|b| b.timestamp > entry.timestamp)
-                    || self.rows.get(&y).is_some_and(|r| {
-                        r.left.is_some_and(|t| t.timestamp > entry.timestamp)
-                            || r.right.is_some_and(|b| b.timestamp > entry.timestamp)
-                    })
-                    || self
-                        .columns
-                        .get(&x)
-                        .is_some_and(|c| c.left.is_some_and(|t| t.timestamp > entry.timestamp))
-                    || self
-                        .columns
-                        .get(&(x - 1))
-                        .is_some_and(|c| c.right.is_some_and(|b| b.timestamp > entry.timestamp))
-                {
-                    None
-                } else {
-                    Some(entry)
-                }
-            }
-            BorderSide::Right => {
-                if self
-                    .all
-                    .right
-                    .is_some_and(|t| t.timestamp > entry.timestamp)
-                    || self.all.left.is_some_and(|b| b.timestamp > entry.timestamp)
-                    || self.rows.get(&y).is_some_and(|r| {
-                        r.right.is_some_and(|b| b.timestamp > entry.timestamp)
-                            || r.left.is_some_and(|b| b.timestamp > entry.timestamp)
-                    })
-                    || self
-                        .columns
-                        .get(&x)
-                        .is_some_and(|c| c.right.is_some_and(|b| b.timestamp > entry.timestamp))
-                    || self
-                        .columns
-                        .get(&(x + 1))
-                        .is_some_and(|c| c.left.is_some_and(|b| b.timestamp > entry.timestamp))
-                {
-                    None
-                } else {
-                    Some(entry)
-                }
-            }
-        }
-    }
-
     /// Returns horizontal borders in a rect
     pub(crate) fn horizontal_borders_in_rect(&self, rect: Rect) -> Option<Vec<JsBorderHorizontal>> {
         let mut horizontal = vec![];
@@ -139,46 +26,32 @@ impl Borders {
                 let border = match (top_border, bottom_border) {
                     (Some(top), Some(bottom)) => {
                         if top.timestamp > bottom.timestamp {
-                            self.does_sheet_override(x, y, top, BorderSide::Top)
+                            Some(top)
                         } else {
-                            self.does_sheet_override(x, y - 1, bottom, BorderSide::Bottom)
+                            Some(bottom)
                         }
                     }
-                    (Some(top), None) => self.does_sheet_override(x, y, top, BorderSide::Top),
-                    (None, Some(bottom)) => {
-                        self.does_sheet_override(x, y - 1, bottom, BorderSide::Bottom)
-                    }
+                    (Some(top), None) => Some(top),
+                    (None, Some(bottom)) => Some(bottom),
                     (None, None) => None,
                 };
 
                 if let Some(border) = border {
                     let mut width = 1;
-                    while x + width < rect.max.x {
+                    while x + width <= rect.max.x {
                         let next_top = self.top.get(&y).and_then(|row| row.get(x + width));
                         let next_bottom =
                             self.bottom.get(&(y - 1)).and_then(|row| row.get(x + width));
                         let next_border = match (next_top, next_bottom) {
                             (Some(top), Some(bottom)) => {
                                 if top.timestamp > bottom.timestamp {
-                                    self.does_sheet_override(x + width, y, top, BorderSide::Top)
+                                    Some(top)
                                 } else {
-                                    self.does_sheet_override(
-                                        x + width,
-                                        y - 1,
-                                        bottom,
-                                        BorderSide::Bottom,
-                                    )
+                                    Some(bottom)
                                 }
                             }
-                            (Some(top), None) => {
-                                self.does_sheet_override(x + width, y, top, BorderSide::Top)
-                            }
-                            (None, Some(bottom)) => self.does_sheet_override(
-                                x + width,
-                                y - 1,
-                                bottom,
-                                BorderSide::Bottom,
-                            ),
+                            (Some(top), None) => Some(top),
+                            (None, Some(bottom)) => Some(bottom),
                             (None, None) => None,
                         };
                         if next_border != Some(border) {
@@ -220,46 +93,32 @@ impl Borders {
                 let border = match (left_border, right_border) {
                     (Some(left), Some(right)) => {
                         if left.timestamp > right.timestamp {
-                            self.does_sheet_override(x, y, left, BorderSide::Left)
+                            Some(left)
                         } else {
-                            self.does_sheet_override(x - 1, y, right, BorderSide::Right)
+                            Some(right)
                         }
                     }
-                    (Some(left), None) => self.does_sheet_override(x, y, left, BorderSide::Left),
-                    (None, Some(right)) => {
-                        self.does_sheet_override(x - 1, y, right, BorderSide::Right)
-                    }
+                    (Some(left), None) => Some(left),
+                    (None, Some(right)) => Some(right),
                     (None, None) => None,
                 };
 
                 if let Some(border) = border {
                     let mut height = 1;
-                    while y + height < rect.max.y {
+                    while y + height <= rect.max.y {
                         let next_left = self.left.get(&x).and_then(|row| row.get(y + height));
                         let next_right =
                             self.right.get(&(x - 1)).and_then(|row| row.get(y + height));
                         let next_border = match (next_left, next_right) {
                             (Some(left), Some(right)) => {
                                 if left.timestamp > right.timestamp {
-                                    self.does_sheet_override(x, y + height, left, BorderSide::Left)
+                                    Some(left)
                                 } else {
-                                    self.does_sheet_override(
-                                        x - 1,
-                                        y + height,
-                                        right,
-                                        BorderSide::Right,
-                                    )
+                                    Some(right)
                                 }
                             }
-                            (Some(left), None) => {
-                                self.does_sheet_override(x, y + height, left, BorderSide::Left)
-                            }
-                            (None, Some(right)) => self.does_sheet_override(
-                                x - 1,
-                                y + height,
-                                right,
-                                BorderSide::Right,
-                            ),
+                            (Some(left), None) => Some(left),
+                            (None, Some(right)) => Some(right),
                             (None, None) => None,
                         };
                         if next_border != Some(border) {
@@ -512,7 +371,7 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn all() {
+    fn top() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
@@ -525,15 +384,14 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         let borders = sheet.borders.borders_in_sheet().unwrap();
-        let expected = JsBordersSheet {
-            all: None,
-            columns: None,
-            rows: None,
-
-            horizontal: None,
-            vertical: None,
-        };
-        assert_eq!(borders, expected);
+        assert!(borders.all.unwrap().top.is_some());
+        assert!(borders.all.unwrap().bottom.is_none());
+        assert!(borders.all.unwrap().left.is_none());
+        assert!(borders.all.unwrap().right.is_none());
+        assert_eq!(borders.horizontal, None);
+        assert_eq!(borders.vertical, None);
+        assert_eq!(borders.columns, None);
+        assert_eq!(borders.rows, None);
     }
 
     #[test]
@@ -595,6 +453,38 @@ mod tests {
             horizontal: None,
 
             vertical: None,
+        };
+        assert_eq!(borders, expected);
+    }
+
+    #[test]
+    #[parallel]
+    fn right() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
+            BorderSelection::Right,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let borders = sheet.borders.borders_in_sheet().unwrap();
+        let expected = JsBordersSheet {
+            all: None,
+            columns: None,
+            rows: None,
+
+            horizontal: None,
+            vertical: Some(vec![JsBorderVertical {
+                x: 6,
+                y: 0,
+                height: 6,
+                color: Rgba::default(),
+                line: CellBorderLine::default(),
+            }]),
         };
         assert_eq!(borders, expected);
     }

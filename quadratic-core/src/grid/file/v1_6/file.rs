@@ -8,7 +8,7 @@ use crate::{
             serialize::borders::export_borders,
             v1_7::schema::{self as v1_7},
         },
-        sheet::borders::{Borders, BorderStyle, CellBorderLine},
+        sheet::borders::{BorderStyle, Borders, CellBorderLine},
     },
 };
 

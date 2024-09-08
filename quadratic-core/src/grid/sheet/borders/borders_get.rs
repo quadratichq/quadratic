@@ -1,4 +1,4 @@
-use super::{BorderSide, BorderStyleCell, BorderStyleCellUpdate, Borders};
+use super::{BorderStyleCell, BorderStyleCellUpdate, Borders};
 
 impl Borders {
     /// Gets a BorderStyleCellUpdate for a cell that will override the current
@@ -52,18 +52,32 @@ impl Borders {
         cell.override_border(false)
     }
 
-    /// Gets the border style for a cell used in tests.
+    /// Gets the border style for a cell.
     pub fn get(&self, x: i64, y: i64) -> BorderStyleCell {
         let top = self.top.get(&x).and_then(|row| row.get(y));
         let bottom = self.bottom.get(&(y)).and_then(|row| row.get(x));
         let left = self.left.get(&y).and_then(|row| row.get(x));
         let right = self.right.get(&(y)).and_then(|row| row.get(x));
 
-        super::BorderStyleCell {
+        BorderStyleCell {
             top,
             bottom,
             left,
             right,
+        }
+    }
+
+    /// Gets an update to undo the border to its current state.
+    pub fn try_get(&self, x: i64, y: i64) -> Option<BorderStyleCellUpdate> {
+        let cell = self.get(x, y);
+        if cell.top.is_some()
+            || cell.bottom.is_some()
+            || cell.left.is_some()
+            || cell.right.is_some()
+        {
+            Some(cell.override_border(false))
+        } else {
+            None
         }
     }
 }
@@ -128,5 +142,25 @@ mod tests {
         assert_eq!(updated_cell.bottom, Some(None));
         assert_eq!(updated_cell.left, Some(None));
         assert_eq!(updated_cell.right, Some(None));
+    }
+
+    #[test]
+    #[parallel]
+    fn try_get() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_borders_selection(
+            Selection::sheet_rect(crate::SheetRect::new(0, 0, 0, 0, sheet_id)),
+            BorderSelection::Top,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let cell = sheet.borders.get(0, 0);
+        assert_eq!(cell.top.unwrap().line, CellBorderLine::default());
+        assert_eq!(cell.bottom, None);
+        assert_eq!(cell.left, None);
+        assert_eq!(cell.right, None);
     }
 }

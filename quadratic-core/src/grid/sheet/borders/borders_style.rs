@@ -1,3 +1,5 @@
+//! Data structures for borders.
+
 use std::collections::HashMap;
 
 #[cfg(feature = "js")]
@@ -142,6 +144,15 @@ impl From<BorderStyle> for BorderStyleTimestamp {
     }
 }
 
+impl From<BorderStyleTimestamp> for BorderStyle {
+    fn from(border_style: BorderStyleTimestamp) -> Self {
+        BorderStyle {
+            color: border_style.color,
+            line: border_style.line,
+        }
+    }
+}
+
 #[derive(Default, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, TS)]
 pub struct BorderStyleCell {
     pub top: Option<BorderStyleTimestamp>,
@@ -209,20 +220,24 @@ impl BorderStyleCell {
     ///
     /// Returns the original cell so it can be used for undo.
     pub fn apply_update(&mut self, update: &BorderStyleCellUpdate) -> BorderStyleCellUpdate {
-        let original = (*self).override_border(false);
+        let mut undo = BorderStyleCellUpdate::default();
         if let Some(top) = update.top {
+            undo.top = self.top.map_or(Some(None), |ts| Some(ts.into()));
             self.top = top;
         }
         if let Some(bottom) = update.bottom {
+            undo.bottom = self.bottom.map_or(Some(None), |ts| Some(ts.into()));
             self.bottom = bottom;
         }
         if let Some(left) = update.left {
+            undo.left = self.left.map_or(Some(None), |ts| Some(ts.into()));
             self.left = left;
         }
         if let Some(right) = update.right {
+            undo.right = self.right.map_or(Some(None), |ts| Some(ts.into()));
             self.right = right;
         }
-        original
+        undo
     }
 
     /// Used to test equality for unit tests by ignoring the timestamp.
@@ -278,6 +293,29 @@ pub struct BorderStyleCellUpdate {
 }
 
 impl BorderStyleCellUpdate {
+    /// Converts the update to a clear update (ie, if a border value is set,
+    /// then turns it into Some(None); otherwise None).
+    pub fn convert_to_clear(&self) -> BorderStyleCellUpdate {
+        BorderStyleCellUpdate {
+            top: if self.top.is_some() { Some(None) } else { None },
+            bottom: if self.bottom.is_some() {
+                Some(None)
+            } else {
+                None
+            },
+            left: if self.left.is_some() {
+                Some(None)
+            } else {
+                None
+            },
+            right: if self.right.is_some() {
+                Some(None)
+            } else {
+                None
+            },
+        }
+    }
+
     /// Create a update that will clear the border. If force_clear is true, then
     /// the border is set to BorderLineStyle::Clear, otherwise the border is set
     /// to None (ie, removed).
@@ -347,6 +385,18 @@ pub struct JsBorderHorizontal {
     pub width: i64,
 }
 
+impl JsBorderHorizontal {
+    #[cfg(test)]
+    pub fn new_test(x: i64, y: i64, width: i64) -> Self {
+        JsBorderHorizontal {
+            color: Rgba::default(),
+            line: CellBorderLine::Line1,
+            x,
+            y,
+            width,
+        }
+    }
+}
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, TS)]
 pub struct JsBorderVertical {
     pub color: Rgba,
@@ -354,6 +404,19 @@ pub struct JsBorderVertical {
     pub x: i64,
     pub y: i64,
     pub height: i64,
+}
+
+impl JsBorderVertical {
+    #[cfg(test)]
+    pub fn new_test(x: i64, y: i64, height: i64) -> Self {
+        JsBorderVertical {
+            color: Rgba::default(),
+            line: CellBorderLine::Line1,
+            x,
+            y,
+            height,
+        }
+    }
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, PartialEq, Eq, TS)]
@@ -507,26 +570,39 @@ mod tests {
             ..BorderStyleCell::default()
         };
         assert!(!cell.is_empty());
+    }
 
-        let cell = BorderStyleCell {
-            top: Some(BorderStyleTimestamp::clear()),
-            ..BorderStyleCell::default()
-        };
-        assert!(cell.is_empty());
+    #[test]
+    #[parallel]
+    fn js_border_horizontal_new() {
+        let border = JsBorderHorizontal::new_test(1, 1, 1);
+        assert_eq!(border.x, 1);
+        assert_eq!(border.y, 1);
+        assert_eq!(border.width, 1);
+    }
 
-        let cell = BorderStyleCell {
-            top: Some(BorderStyleTimestamp::default()),
-            bottom: Some(BorderStyleTimestamp::clear()),
-            ..BorderStyleCell::default()
-        };
-        assert!(!cell.is_empty());
+    #[test]
+    #[parallel]
+    fn js_border_vertical_new() {
+        let border = JsBorderVertical::new_test(1, 1, 1);
+        assert_eq!(border.x, 1);
+        assert_eq!(border.y, 1);
+        assert_eq!(border.height, 1);
+    }
 
-        let cell = BorderStyleCell {
-            top: Some(BorderStyleTimestamp::clear()),
-            bottom: Some(BorderStyleTimestamp::clear()),
-            left: Some(BorderStyleTimestamp::clear()),
-            right: Some(BorderStyleTimestamp::clear()),
+    #[test]
+    #[parallel]
+    fn convert_to_clear() {
+        let update = BorderStyleCellUpdate {
+            top: Some(Some(BorderStyleTimestamp::default())),
+            bottom: Some(Some(BorderStyleTimestamp::default())),
+            left: None,
+            right: Some(Some(BorderStyleTimestamp::default())),
         };
-        assert!(cell.is_empty());
+        let clear = update.convert_to_clear();
+        assert_eq!(clear.top, Some(None));
+        assert_eq!(clear.bottom, Some(None));
+        assert_eq!(clear.left, None);
+        assert_eq!(clear.right, Some(None));
     }
 }

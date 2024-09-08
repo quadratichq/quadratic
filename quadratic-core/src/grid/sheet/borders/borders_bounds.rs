@@ -22,7 +22,7 @@ impl Borders {
                         .unwrap_or(i64::MIN)
                         .max(data.max().unwrap_or(i64::MIN)),
                 );
-                let c = if *x == column { column - 1 } else { column };
+                let c = if *x == column { column } else { column + 1 };
                 x_min = Some(x_min.unwrap_or(c).min(c));
                 x_max = Some(x_max.unwrap_or(c).max(c));
             }
@@ -39,7 +39,7 @@ impl Borders {
                         .unwrap_or(i64::MIN)
                         .max(data.max().unwrap_or(i64::MIN)),
                 );
-                let c = if *x == column { column - 1 } else { column };
+                let c = if *x == column { column } else { column - 1 };
                 x_min = Some(x_min.unwrap_or(c).min(c));
                 x_max = Some(x_max.unwrap_or(c).max(c));
             }
@@ -316,9 +316,10 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
+
         assert_eq!(sheet.borders.bounds_column(10), None);
         assert_eq!(sheet.borders.bounds_column(1), Some(Rect::new(1, 1, 2, 5)));
-        assert_eq!(sheet.borders.bounds_column(0), Some(Rect::new(0, 1, 1, 5)));
+        assert_eq!(sheet.borders.bounds_column(0), Some(Rect::new(1, 1, 1, 5)));
     }
 
     #[test]
@@ -335,7 +336,7 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.borders.bounds_column(0), Some(Rect::new(0, 1, 1, 5)));
+        assert_eq!(sheet.borders.bounds_column(0), Some(Rect::new(1, 1, 1, 5)));
         assert_eq!(sheet.borders.bounds_column(1), Some(Rect::new(1, 1, 1, 5)));
         assert_eq!(sheet.borders.bounds_column(2), None);
     }
@@ -353,12 +354,10 @@ mod tests {
             None,
         );
 
-        gc.sheet(sheet_id).borders.print_borders();
-
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.borders.bounds_column(0), None);
         assert_eq!(sheet.borders.bounds_column(1), Some(Rect::new(1, 1, 1, 5)));
-        assert_eq!(sheet.borders.bounds_column(2), Some(Rect::new(1, 1, 2, 5)));
+        assert_eq!(sheet.borders.bounds_column(2), Some(Rect::new(1, 1, 1, 5)));
     }
 
     #[test]
@@ -378,5 +377,25 @@ mod tests {
         assert_eq!(sheet.borders.bounds_column(0), None);
         assert_eq!(sheet.borders.bounds_column(1), Some(Rect::new(1, 1, 1, 1)));
         assert_eq!(sheet.borders.bounds_column(2), Some(Rect::new(2, 1, 2, 1)));
+    }
+
+    #[test]
+    #[parallel]
+    fn bounds_column_bottom() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
+            BorderSelection::Bottom,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.borders.bounds_column(0), None);
+        assert_eq!(sheet.borders.bounds_column(1), Some(Rect::new(1, 5, 1, 5)));
+        assert_eq!(sheet.borders.bounds_column(5), Some(Rect::new(5, 5, 5, 5)));
+        assert_eq!(sheet.borders.bounds_column(6), None);
     }
 }

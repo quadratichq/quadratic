@@ -1,3 +1,5 @@
+//! Functionality to set borders on a selection.
+
 use crate::{
     controller::operations::operation::Operation, selection::Selection, RunLengthEncoding,
 };
@@ -11,6 +13,7 @@ impl Borders {
         selection: &Selection,
         borders: &BorderStyleCellUpdates,
     ) -> Vec<Operation> {
+        let mut undo = vec![];
         let mut undo_borders = RunLengthEncoding::new();
 
         if selection.all {
@@ -31,6 +34,11 @@ impl Borders {
                 let Some(border) = borders.get_at(index) else {
                     panic!("Expected a border style for column {column}");
                 };
+                undo.extend(self.clear_column_cells(
+                    selection.sheet_id,
+                    *column,
+                    border.convert_to_clear(),
+                ));
                 if let Some(column_border) = self.columns.get_mut(column) {
                     undo_borders.push(column_border.apply_update(border));
                 } else {
@@ -93,13 +101,13 @@ impl Borders {
         }
 
         if !undo_borders.is_empty() {
-            vec![Operation::SetBordersSelection {
+            undo.push(Operation::SetBordersSelection {
                 selection: selection.clone(),
                 borders: undo_borders,
-            }]
-        } else {
-            vec![]
+            });
         }
+
+        undo
     }
 
     /// Sets the border for a cell. This is used in the upgrade_border for going
@@ -128,6 +136,28 @@ impl Borders {
         if let Some(right) = right {
             self.right.entry(x).or_default().set(y, Some(right.into()));
         }
+    }
+
+    pub fn apply_update(
+        &mut self,
+        x: i64,
+        y: i64,
+        update: BorderStyleCellUpdate,
+    ) -> BorderStyleCellUpdate {
+        let current = self.get(x, y);
+        if let Some(top) = update.top {
+            self.top.entry(y).or_default().set(x, top);
+        }
+        if let Some(bottom) = update.bottom {
+            self.bottom.entry(y).or_default().set(x, bottom);
+        }
+        if let Some(left) = update.left {
+            self.left.entry(x).or_default().set(y, left);
+        }
+        if let Some(right) = update.right {
+            self.right.entry(x).or_default().set(y, right);
+        }
+        current.override_border(false)
     }
 }
 
