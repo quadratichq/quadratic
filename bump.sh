@@ -17,11 +17,12 @@
 #   minor
 #   patch
 #   set (just sets all versions to the current VERSION file version)
+#   verify (checks if all versions match)
 
 set -e
 
 if [ "$#" -ne 1 ]; then
-  echo "Usage: $0 {major|minor|patch|set}"
+  echo "Usage: $0 {major|minor|patch|set|verify}"
   exit 1
 fi
 
@@ -50,11 +51,11 @@ if [[ -z "$VERSION" ]]; then
   exit 1
 fi
 
-if [[ ! "$TYPE" =~ ^(major|minor|patch|set)$ ]]; then
+if [[ ! "$TYPE" =~ ^(major|minor|patch|set|verify)$ ]]; then
   echo "Invalid bump type: $TYPE"
+  echo "Usage: $0 {major|minor|patch|set|verify}"
   exit 1
 fi
-
 
 # bump semver version: major, minor, patch, set
 bump_version() {
@@ -84,6 +85,48 @@ bump_version() {
 
   echo "$major.$minor.$patch" 
 }
+
+verify_versions() {
+  local expected_version=$(cat VERSION)
+  local mismatch=false
+
+  for file in ${JAVASCRIPT[@]}; do
+    if [ ! -f "$file" ]; then
+      echo "Error: $file not found"
+      exit 1
+    fi
+    local version=$(jq -r .version "$file")
+    if [ "$version" != "$expected_version" ]; then
+      echo "Version mismatch in $file: Expected $expected_version, found $version"
+      mismatch=true
+    fi
+  done
+
+  for file in ${RUST[@]}; do
+    if [ ! -f "$file" ]; then
+      echo "Error: $file not found"
+      exit 1
+    fi
+    local version=$(grep '^version' "$file" | sed 's/version = "\(.*\)"/\1/')
+    if [ "$version" != "$expected_version" ]; then
+      echo "Version mismatch in $file: Expected $expected_version, found $version"
+      mismatch=true
+    fi
+  done
+
+  if [ "$mismatch" = false ]; then
+    echo "All versions match: $expected_version"
+  else
+    echo "Version mismatch detected. Please review the above output."
+    exit 1
+  fi
+}
+
+if [ "$TYPE" = "verify" ]; then
+  verify_versions
+  exit 0
+fi
+
 
 NEW_VERSION=$(bump_version "$VERSION" "$TYPE")
 
@@ -117,5 +160,8 @@ done
 
 # update the main VERSION file
 echo $NEW_VERSION > VERSION
+
+# After updating all versions
+verify_versions
 
 echo "Version bump to $NEW_VERSION complete!"

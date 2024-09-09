@@ -248,7 +248,7 @@ jobs:
       id: main_version
       run: echo "MAIN_VERSION=$(cat VERSION)" >> $GITHUB_OUTPUT
 
-    - name: Compare versions
+    - name: Compare versions to main, verify this version is higher
       run: |
         current_version="${{ steps.current_version.outputs.CURRENT_VERSION }}"
         main_version="${{ steps.main_version.outputs.MAIN_VERSION }}"
@@ -258,3 +258,15 @@ jobs:
         else
           echo "VERSION check passed: Current branch ($current_version) > main ($main_version)"
         fi
+
+  check-versions-match:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout current branch
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Verify that all versions match
+      run: ./bump.sh verify
