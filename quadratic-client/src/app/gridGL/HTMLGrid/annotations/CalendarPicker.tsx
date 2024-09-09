@@ -66,6 +66,20 @@ export const CalendarPicker = () => {
     };
   });
 
+  useEffect(() => {
+    const changeStatus = (opened: boolean) => {
+      if (!opened) {
+        setDate(undefined);
+        setDateFormat(undefined);
+        setValue(undefined);
+      }
+    };
+    inlineEditorEvents.on('status', changeStatus);
+    return () => {
+      inlineEditorEvents.off('status', changeStatus);
+    };
+  });
+
   const dateToDateString = (date: Date): string => {
     return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   };

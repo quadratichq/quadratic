@@ -6,6 +6,7 @@ import { RadioGroup, RadioGroupItem } from '@/shared/shadcn/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { useEffect, useRef, useState } from 'react';
 import { ValidationInput } from '../menus/Validations/Validation/ValidationUI/ValidationInput';
+import { Button } from '@/shared/shadcn/ui/button';
 
 // first format is default rendering
 const DATE_FORMATS = [
@@ -53,6 +54,8 @@ export const DateFormat = (props: DateFormatProps) => {
   const [date, setDate] = useState<string | undefined>(DATE_FORMATS[0].value);
   const [custom, setCustom] = useState<string | undefined>();
 
+  const [tab, setTab] = useState<'presets' | 'custom'>('presets');
+
   useEffect(() => {
     const findCurrent = async () => {
       const cursorPosition = sheets.sheet.cursor.cursorPosition;
@@ -82,15 +85,18 @@ export const DateFormat = (props: DateFormatProps) => {
           setTime(updatedTime);
           setDate(updatedDate);
           setCustom(undefined);
+          setTab('presets');
         } else {
           setCustom(summary.dateTime);
           setDate(undefined);
           setTime(undefined);
+          setTab('custom');
         }
       } else {
         setDate(updatedDate);
         setTime(updatedTime);
         setCustom(undefined);
+        setTab('presets');
       }
     };
 
@@ -127,71 +133,68 @@ export const DateFormat = (props: DateFormatProps) => {
   };
 
   return (
-    <Tabs defaultValue={custom ? 'custom' : 'presets'} className="text-sm">
-      <TabsList className="mt-2 w-full border-b border-border">
-        <TabsTrigger
-          value="presets"
-          className="w-1/2"
-          onClick={() => {
-            setCustom(undefined);
-            changeDate(date ?? DATE_FORMATS[0].value);
-            changeTime(time ?? TIME_FORMATS[0].value);
-          }}
-        >
-          Presets
-        </TabsTrigger>
-        <TabsTrigger
-          value="custom"
-          className="w-1/2"
-          onClick={() => {
-            setCustom('%d, %B %Y');
-            customFocus();
-          }}
-        >
-          Custom
-        </TabsTrigger>
-      </TabsList>
-      <TabsContent value="presets" className="mt-2 grid grid-cols-2">
-        <div>
-          <RadioGroup value={date} onValueChange={changeDate}>
-            <div className="font-semibold">Date</div>
-            {DATE_FORMATS.map((format) => (
-              <RadioEntry key={format.value} value={format.value} label={format.label} />
-            ))}
-          </RadioGroup>
-        </div>
-        <div>
-          <RadioGroup value={time} onValueChange={changeTime}>
-            <div className="font-semibold">Time</div>
-            {TIME_FORMATS.map((format) => (
-              <RadioEntry key={format.value} value={format.value} label={format.label} />
-            ))}
-          </RadioGroup>
-        </div>
-      </TabsContent>
-      <TabsContent value="custom">
-        <div className="flex flex-col gap-1">
-          <ValidationInput
-            ref={ref}
-            placeholder="%d, %B %Y"
-            onChange={changeCustom}
-            value={custom ?? ''}
-            onEnter={closeMenu}
-          />
-          <p className="text-xs text-muted-foreground ">
-            Learn custom date and time formatting{' '}
-            <a
-              href={DOCUMENTATION_DATE_TIME_FORMATTING}
-              target="_blank"
-              className="underline hover:text-primary"
-              title="Open help in another tab"
-              rel="noreferrer"
-            >
-              in the docs
-            </a>
-          </p>
-        </div>
-      </TabsContent>
-    </Tabs>
+    <>
+      <Tabs className="text-sm" value={tab}>
+        <TabsList className="mt-2 w-full border-b border-border">
+          <TabsTrigger value="presets" className="w-1/2" onClick={() => setTab('presets')}>
+            Presets
+          </TabsTrigger>
+          <TabsTrigger
+            value="custom"
+            className="w-1/2"
+            onClick={() => {
+              setTab('custom');
+              customFocus();
+            }}
+          >
+            Custom
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="presets" className="mt-2 grid grid-cols-2">
+          <div>
+            <RadioGroup value={date} onValueChange={changeDate}>
+              <div className="font-semibold">Date</div>
+              {DATE_FORMATS.map((format) => (
+                <RadioEntry key={format.value} value={format.value} label={format.label} />
+              ))}
+            </RadioGroup>
+          </div>
+          <div>
+            <RadioGroup value={time} onValueChange={changeTime}>
+              <div className="font-semibold">Time</div>
+              {TIME_FORMATS.map((format) => (
+                <RadioEntry key={format.value} value={format.value} label={format.label} />
+              ))}
+            </RadioGroup>
+          </div>
+        </TabsContent>
+        <TabsContent value="custom">
+          <div className="flex flex-col gap-1">
+            <ValidationInput
+              ref={ref}
+              placeholder="%d, %B %Y"
+              onChange={changeCustom}
+              value={custom ?? ''}
+              onEnter={closeMenu}
+            />
+            <p className="text-xs text-muted-foreground ">
+              Learn custom date and time formatting{' '}
+              <a
+                href={DOCUMENTATION_DATE_TIME_FORMATTING}
+                target="_blank"
+                className="underline hover:text-primary"
+                title="Open help in another tab"
+                rel="noreferrer"
+              >
+                in the docs
+              </a>
+            </p>
+          </div>
+        </TabsContent>
+      </Tabs>
+      <div className="flex justify-end gap-2 pt-3">
+        <Button onClick={closeMenu}>Ok</Button>
+      </div>
+    </>
   );
 };

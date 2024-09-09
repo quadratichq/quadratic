@@ -682,7 +682,7 @@ export const FloatingContextMenu = (props: Props) => {
               moreMenuToggle();
             }}
           >
-            <MenuLineItem primary="Data Validation" />
+            <MenuLineItem primary="Data validation" />
           </MenuItem>
           <MenuDivider />
           <MenuItem

@@ -25,8 +25,8 @@ export const DateFormatCell = () => {
         if (e.key === 'Enter' || e.key === 'Escape') {
           close();
           e.preventDefault();
-          e.stopPropagation();
         }
+        e.stopPropagation();
       }}
     >
       <div className="flex">
