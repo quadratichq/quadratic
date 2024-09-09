@@ -14,7 +14,7 @@ impl Borders {
         }
         if let Some(column) = selection.columns.as_ref() {
             for col in column {
-                if let Some(border_col) = self.columns.get(&col) {
+                if let Some(border_col) = self.columns.get(col) {
                     updates.push(border_col.override_border(false));
                 } else {
                     updates.push(BorderStyleCell::clear());
@@ -23,7 +23,7 @@ impl Borders {
         }
         if let Some(row) = selection.rows.as_ref() {
             for row in row {
-                if let Some(border_row) = self.rows.get(&row) {
+                if let Some(border_row) = self.rows.get(row) {
                     updates.push(border_row.override_border(false));
                 } else {
                     updates.push(BorderStyleCell::clear());

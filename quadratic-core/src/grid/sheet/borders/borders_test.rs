@@ -26,8 +26,8 @@ impl Borders {
             // extend the borders to include the last column and row
             rect.max.x += 1;
             rect.max.y += 1;
-            let horizontal = self.horizontal_borders_in_rect(rect).unwrap_or(vec![]);
-            let vertical = self.vertical_borders_in_rect(rect).unwrap_or(vec![]);
+            let horizontal = self.horizontal_borders_in_rect(rect).unwrap_or_default();
+            let vertical = self.vertical_borders_in_rect(rect).unwrap_or_default();
 
             // Print x-axis coordinates
             print!("   ");

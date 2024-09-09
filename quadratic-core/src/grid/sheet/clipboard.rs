@@ -251,14 +251,12 @@ impl Sheet {
             cells,
             formats,
             sheet_formats,
-            borders: if let Some(borders) = borders {
-                Some((
+            borders: borders.map(|borders| {
+                (
                     selection.translate(-clipboard_origin.x, -clipboard_origin.y),
                     borders,
-                ))
-            } else {
-                None
-            },
+                )
+            }),
             values,
             w: sheet_bounds.map_or(0, |b| b.width()),
             h: sheet_bounds.map_or(0, |b| b.height()),

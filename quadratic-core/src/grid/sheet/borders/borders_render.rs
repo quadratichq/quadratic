@@ -168,7 +168,7 @@ impl Borders {
                 all: if self.all.is_empty() {
                     None
                 } else {
-                    Some(self.all.clone())
+                    Some(self.all)
                 },
                 columns: if self.columns.is_empty() {
                     None
@@ -176,19 +176,14 @@ impl Borders {
                     Some(
                         self.columns
                             .iter()
-                            .map(|(k, v)| (k.to_string(), v.clone()))
+                            .map(|(k, v)| (k.to_string(), *v))
                             .collect(),
                     )
                 },
                 rows: if self.rows.is_empty() {
                     None
                 } else {
-                    Some(
-                        self.rows
-                            .iter()
-                            .map(|(k, v)| (k.to_string(), v.clone()))
-                            .collect(),
-                    )
+                    Some(self.rows.iter().map(|(k, v)| (k.to_string(), *v)).collect())
                 },
 
                 horizontal,

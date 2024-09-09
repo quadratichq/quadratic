@@ -21,7 +21,7 @@ impl Borders {
                 panic!("Expected border style for all");
             };
             undo.extend(self.clear_all_cells(selection.sheet_id, border.replace_clear_with_none()));
-            undo_borders.push(self.all.apply_update(&border.convert_to_clear()));
+            undo_borders.push(self.all.apply_update(border));
             return vec![Operation::SetBordersSelection {
                 selection: selection.clone(),
                 borders: undo_borders,

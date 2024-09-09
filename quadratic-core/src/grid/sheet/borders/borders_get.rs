@@ -6,46 +6,46 @@ impl Borders {
     pub fn get_update_override(&self, x: i64, y: i64) -> BorderStyleCellUpdate {
         let mut cell = self.get(x, y);
 
-        if !cell.top.is_some() && self.all.top.is_some() {
-            cell.top = self.all.top.into();
+        if cell.top.is_none() && self.all.top.is_some() {
+            cell.top = self.all.top;
         }
-        if !cell.bottom.is_some() && self.all.bottom.is_some() {
-            cell.bottom = self.all.bottom.into();
+        if cell.bottom.is_none() && self.all.bottom.is_some() {
+            cell.bottom = self.all.bottom;
         }
-        if !cell.left.is_some() && self.all.left.is_some() {
-            cell.left = self.all.left.into();
+        if cell.left.is_none() && self.all.left.is_some() {
+            cell.left = self.all.left;
         }
-        if !cell.right.is_some() && self.all.right.is_some() {
-            cell.right = self.all.right.into();
+        if cell.right.is_none() && self.all.right.is_some() {
+            cell.right = self.all.right;
         }
 
         if let Some(column) = self.columns.get(&x) {
-            if !cell.top.is_some() && column.top.is_some() {
-                cell.top = column.top.into();
+            if cell.top.is_none() && column.top.is_some() {
+                cell.top = column.top;
             }
-            if !cell.bottom.is_some() && column.bottom.is_some() {
-                cell.bottom = column.bottom.into();
+            if cell.bottom.is_none() && column.bottom.is_some() {
+                cell.bottom = column.bottom;
             }
-            if !cell.left.is_some() && column.left.is_some() {
-                cell.left = column.left.into();
+            if cell.left.is_none() && column.left.is_some() {
+                cell.left = column.left;
             }
-            if !cell.right.is_some() && column.right.is_some() {
-                cell.right = column.right.into();
+            if cell.right.is_none() && column.right.is_some() {
+                cell.right = column.right;
             }
         }
 
         if let Some(row) = self.rows.get(&y) {
-            if !cell.top.is_some() && row.top.is_some() {
-                cell.top = row.top.into();
+            if cell.top.is_none() && row.top.is_some() {
+                cell.top = row.top;
             }
-            if !cell.bottom.is_some() && row.bottom.is_some() {
-                cell.bottom = row.bottom.into();
+            if cell.bottom.is_none() && row.bottom.is_some() {
+                cell.bottom = row.bottom;
             }
-            if !cell.left.is_some() && row.left.is_some() {
-                cell.left = row.left.into();
+            if cell.left.is_none() && row.left.is_some() {
+                cell.left = row.left;
             }
-            if !cell.right.is_some() && row.right.is_some() {
-                cell.right = row.right.into();
+            if cell.right.is_none() && row.right.is_some() {
+                cell.right = row.right;
             }
         }
 
