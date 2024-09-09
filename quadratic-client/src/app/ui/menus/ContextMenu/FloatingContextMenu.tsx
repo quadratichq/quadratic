@@ -734,7 +734,7 @@ export const FloatingContextMenu = (props: Props) => {
               moreMenuToggle();
             }}
           >
-            <MenuLineItem primary="Date and Time Formatting" />
+            <MenuLineItem primary="Date and time formatting" />
           </MenuItem>
         </ControlledMenu>
       </Toolbar>

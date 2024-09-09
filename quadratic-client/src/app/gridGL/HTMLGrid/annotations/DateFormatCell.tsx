@@ -30,7 +30,7 @@ export const DateFormatCell = () => {
       }}
     >
       <div className="flex justify-between">
-        <div className="pl-3 pt-3">Date and Time Formatting</div>
+        <div className="pl-3 pt-3">Date and time formatting</div>
         <div className="p-1">
           <IconButton sx={{ padding: 0, width: 20, height: 20 }} onClick={close}>
             <Close sx={{ padding: 0, width: 15, height: 15 }} />
