@@ -1,6 +1,7 @@
 //! This handles the keyboard events for the inline editor. In particular, it
 //! handles when the cursorIsMoving outside of the inline formula edit box.
 
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getSingleSelection } from '@/app/grid/sheet/selection';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
@@ -12,13 +13,12 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { keyboardDropdown } from '../../interaction/keyboard/keyboardDropdown';
-import { events } from '@/app/events/events';
 
 class InlineEditorKeyboard {
   escapeBackspacePressed = false;
 
   private handleArrowHorizontal = async (isRight: boolean, e: KeyboardEvent) => {
-    const target = isRight ? inlineEditorMonaco.getLastColumn() : 1;
+    const target = isRight ? inlineEditorMonaco.getLastColumn() : 2;
     if (inlineEditorHandler.isEditingFormula()) {
       if (inlineEditorHandler.cursorIsMoving) {
         e.stopPropagation();
@@ -26,21 +26,16 @@ class InlineEditorKeyboard {
         keyboardPosition(e);
       } else {
         const column = inlineEditorMonaco.getCursorColumn();
-        if (column === target) {
-          // if we're not moving and the formula is valid, close the editor
-          e.stopPropagation();
-          e.preventDefault();
-          if (inlineEditorFormula.wantsCellRef()) {
-            if (isRight) {
-              inlineEditorHandler.cursorIsMoving = true;
-              inlineEditorFormula.addInsertingCells(column);
-              keyboardPosition(e);
-            }
-          } else {
-            if (!(await this.handleValidationError())) {
-              inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
-            }
-          }
+        e.stopPropagation();
+        e.preventDefault();
+        if (inlineEditorFormula.wantsCellRef()) {
+          inlineEditorHandler.cursorIsMoving = true;
+          inlineEditorFormula.addInsertingCells(column);
+          keyboardPosition(e);
+        }
+        // if we're not moving and the formula is valid, close the editor
+        else if (!(await this.handleValidationError())) {
+          inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
         }
       }
     } else {
