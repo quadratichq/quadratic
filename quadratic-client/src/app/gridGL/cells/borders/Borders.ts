@@ -197,7 +197,7 @@ export class Borders extends Container {
               // need to ensure there's no right entry in x - 1
               const right = borders.columns[(xNumber - 1).toString()]?.right;
               if (!right || left.timestamp > right.timestamp) {
-                this.drawScreenVerticalLine(rowStart.index, rowEnd.index, xNumber, left, borders.rows);
+                this.drawScreenVerticalLine(rowStart.index, rowEnd.index + 1, xNumber, left, borders.rows);
               }
             }
             const right = column.right;
@@ -205,7 +205,7 @@ export class Borders extends Container {
               // need to ensure there's no left entry in x + 1
               const left = borders.columns[(xNumber + 1).toString()]?.left;
               if (!left || right.timestamp > left.timestamp) {
-                this.drawScreenVerticalLine(rowStart.index, rowEnd.index, xNumber + 1, right, borders.rows);
+                this.drawScreenVerticalLine(rowStart.index, rowEnd.index + 1, xNumber + 1, right, borders.rows);
               }
             }
             const top = column.top;
