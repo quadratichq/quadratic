@@ -9,10 +9,11 @@ import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { authClient } from '@/auth';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
+import { Avatar } from '@/shared/components/Avatar';
 import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Send, Stop } from '@mui/icons-material';
-import { Avatar, CircularProgress, IconButton } from '@mui/material';
+import { CircularProgress, IconButton } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
 import { useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -217,34 +218,32 @@ ${QuadraticDocs}`,
               }}
             >
               {message.role === 'user' ? (
-                <Avatar
-                  variant="rounded"
-                  sx={{
-                    bgcolor: colors.quadraticSecondary,
-                    width: 24,
-                    height: 24,
-                    fontSize: '0.8rem',
-                    marginBottom: '0.5rem',
-                  }}
-                  alt={user?.name}
-                  src={user?.picture}
-                ></Avatar>
+                <>
+                  <Avatar
+                    src={user?.picture}
+                    alt={user?.name}
+                    style={{
+                      backgroundColor: colors.quadraticSecondary,
+                    }}
+                  >
+                    {user?.name}
+                  </Avatar>
+                  {message.content}
+                </>
               ) : (
-                <Avatar
-                  variant="rounded"
-                  sx={{
-                    bgcolor: 'white',
-                    width: 24,
-                    height: 24,
-                    fontSize: '0.8rem',
-                    marginBottom: '0.5rem',
-                  }}
-                  alt="AI Assistant"
-                >
-                  <AI sx={{ color: colors.languageAI }}></AI>
-                </Avatar>
+                <>
+                  <Avatar
+                    alt="AI Assistant"
+                    style={{
+                      backgroundColor: 'white',
+                      marginBottom: '0.5rem',
+                    }}
+                  >
+                    <AI sx={{ color: colors.languageAI }}></AI>
+                  </Avatar>
+                  <CodeBlockParser input={message.content} />
+                </>
               )}
-              <CodeBlockParser input={message.content} />
             </div>
           ))}
           <div id="ai-streaming-output-anchor" key="ai-streaming-output-anchor" />
