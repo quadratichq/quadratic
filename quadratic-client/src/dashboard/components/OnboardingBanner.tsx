@@ -81,6 +81,7 @@ export function OnboardingBanner() {
             <Button variant="outline" className={contentBtnClassName} asChild>
               <Link
                 to={ROUTES.CREATE_FILE(teamUuid)}
+                reloadDocument
                 onClick={() => {
                   mixpanel.track('[OnboardingBanner].newFileBlank');
                 }}
