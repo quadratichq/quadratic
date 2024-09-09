@@ -171,7 +171,11 @@ export class Borders extends Container {
   private drawSheetBorders() {
     this.sheetLines.removeChildren();
     const borders = this.borders;
-    if (!borders || (!borders.all && !borders.columns && !borders.rows)) return;
+    if (!borders) return;
+
+    if (!borders.all && !borders.columns && !borders.rows) return;
+
+    this.drawAll();
 
     const bounds = pixiApp.viewport.getVisibleBounds();
     const offsets = sheets.sheet.offsets;
@@ -270,6 +274,7 @@ export class Borders extends Container {
   private drawHorizontal() {
     if (!this.borders?.horizontal) return;
     for (const border of this.borders.horizontal) {
+      if (border.line === 'clear') continue;
       const start = this.sheet.getCellOffsets(Number(border.x), Number(border.y));
       const end = this.sheet.getCellOffsets(Number(border.x + border.width), Number(border.y));
       const color = border.color;
@@ -286,6 +291,7 @@ export class Borders extends Container {
   private drawVertical() {
     if (!this.borders?.vertical) return;
     for (const border of this.borders.vertical) {
+      if (border.line === 'clear') continue;
       const start = this.sheet.getCellOffsets(Number(border.x), Number(border.y));
       const end = this.sheet.getCellOffsets(Number(border.x), Number(border.y + border.height));
       const color = border.color;
@@ -299,8 +305,53 @@ export class Borders extends Container {
     }
   }
 
+  private drawAll() {
+    if (!this.borders) return;
+    const all = this.borders?.all;
+    if (!all) return;
+    const bounds = pixiApp.viewport.getVisibleBounds();
+    const offsets = sheets.sheet.offsets;
+    const columnStart = offsets.getXPlacement(bounds.left);
+    const columnEnd = offsets.getXPlacement(bounds.right);
+    const rowStart = offsets.getYPlacement(bounds.top);
+    const rowEnd = offsets.getYPlacement(bounds.bottom);
+
+    // draw horizontal lines
+    let horizontal: BorderStyleTimestamp | undefined;
+    if (all.top && all.bottom) {
+      horizontal = all.top.timestamp > all.bottom.timestamp ? all.top : all.bottom;
+    } else if (all.top) {
+      horizontal = all.top;
+    } else if (all.bottom) {
+      horizontal = all.bottom;
+    }
+    if (horizontal) {
+      for (let y = rowStart.index; y <= rowEnd.index; y++) {
+        // todo: need to check if there's a column-based border that would overwrite this
+        this.drawScreenHorizontalLine(columnStart.index, columnEnd.index + 1, y, horizontal, this.borders.rows);
+      }
+    }
+
+    // draw vertical lines
+    let vertical: BorderStyleTimestamp | undefined;
+    if (all.left && all.right) {
+      vertical = all.left.timestamp > all.right.timestamp ? all.left : all.right;
+    } else if (all.left) {
+      vertical = all.left;
+    } else if (all.right) {
+      vertical = all.right;
+    }
+    if (vertical) {
+      for (let x = columnStart.index; x <= columnEnd.index; x++) {
+        // todo: need to check if there's a row-based border that would overwrite this
+        this.drawScreenVerticalLine(rowStart.index, rowEnd.index + 1, x, vertical, this.borders.columns);
+      }
+    }
+  }
+
   drawSheetCells = (sheetId: string, borders?: JsBordersSheet): void => {
     if (sheetId === this.cellsSheet.sheetId) {
+      console.log(borders);
       this.borders = borders;
       this.cellLines.removeChildren();
       this.drawHorizontal();

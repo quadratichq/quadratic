@@ -74,7 +74,7 @@ impl Borders {
                 }
             }
 
-            // push any undo operations
+            // push undo operations
             undo_ops.push(Operation::SetBordersSelection {
                 selection: Selection::sheet_rect(bounds.to_sheet_rect(sheet_id)),
                 borders,
@@ -150,12 +150,64 @@ impl Borders {
                 }
             }
 
-            // push any undo operations
+            // push undo operations
             undo_ops.push(Operation::SetBordersSelection {
                 selection: Selection::sheet_rect(bounds.to_sheet_rect(sheet_id)),
                 borders,
             });
         }
+        undo_ops
+    }
+
+    // Clears any cell borders for a row change.
+    //
+    // This is used whenever borders are set on a row. Any cells with borders
+    // in that row that overlap this setting need to be cleared.
+    //
+    // Returns the undo operations.
+    pub fn clear_all_cells(
+        &mut self,
+        sheet_id: SheetId,
+        update: BorderStyleCellUpdate,
+    ) -> Vec<Operation> {
+        let mut undo_ops = Vec::new();
+        let mut undo_selection = Selection::default();
+        let mut borders = BorderStyleCellUpdates::default();
+
+        if !self.columns.is_empty() {
+            undo_selection.columns = Some(self.columns.keys().cloned().collect::<Vec<_>>());
+            self.columns
+                .iter()
+                .for_each(|(_, cell)| borders.push(cell.override_border(false)));
+            self.columns.clear();
+        }
+
+        if !self.rows.is_empty() {
+            undo_selection.rows = Some(self.rows.keys().cloned().collect::<Vec<_>>());
+            self.rows
+                .iter()
+                .for_each(|(_, cell)| borders.push(cell.override_border(false)));
+            self.rows.clear();
+        }
+
+        if let Some(bounds) = self.bounds() {
+            undo_selection.rects = Some(vec![bounds]);
+            for c in bounds.min.x..=bounds.max.x {
+                for r in bounds.min.y..=bounds.max.y {
+                    if let Some(border) = self.try_get(c, r) {
+                        self.apply_update(c, r, update);
+                        borders.push(border);
+                    }
+                }
+            }
+
+            // push undo operations
+            undo_ops.push(Operation::SetBordersSelection {
+                selection: Selection::sheet_rect(bounds.to_sheet_rect(sheet_id)),
+                borders,
+            });
+        }
+
         undo_ops
     }
 }
@@ -452,5 +504,31 @@ mod tests {
                 JsBorderVertical::new_test(3, 2, 1)
             ])
         );
+    }
+
+    #[test]
+    #[parallel]
+    fn clear_all_cells() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::new(1, 1, 2, 2, sheet_id)),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet_mut(sheet_id);
+        let reverse = sheet
+            .borders
+            .clear_all_cells(sheet_id, BorderStyleCellUpdate::clear(false));
+        assert_eq!(reverse.len(), 1);
+
+        let sheet = gc.sheet(sheet_id);
+        let bounds = sheet.borders.bounds().unwrap();
+        let horizontal = sheet.borders.horizontal_borders_in_rect(bounds);
+        let vertical = sheet.borders.vertical_borders_in_rect(bounds);
+        assert_eq!(horizontal, None);
+        assert_eq!(vertical, None);
     }
 }

@@ -70,6 +70,10 @@ impl GridController {
     ) {
         match op {
             Operation::SetBordersSelection { selection, borders } => {
+                if self.thumbnail_dirty_selection(&selection) {
+                    transaction.generate_thumbnail = true;
+                }
+
                 let Some(sheet) = self.try_sheet_mut(selection.sheet_id) else {
                     // sheet may have been deleted
                     return;
