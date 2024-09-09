@@ -66,7 +66,12 @@ class CoreJavascript {
     sheet?: string,
     lineNumber?: number
   ) => {
-    const cellsString = core.getCells(transactionId, x, y, w, h, sheet, lineNumber);
+    let cellsString = '';
+    try {
+      cellsString = core.getCells(transactionId, x, y, w, h, sheet, lineNumber);
+    } catch (e) {
+      console.warn('[coreJavascript] Error getting cells:', e);
+    }
     const cells = cellsString.length > 0 ? (JSON.parse(cellsString) as JsGetCellResponse[]) : undefined;
     this.send({
       type: 'coreJavascriptGetCells',

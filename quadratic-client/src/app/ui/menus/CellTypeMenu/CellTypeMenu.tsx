@@ -112,7 +112,17 @@ export default function CellTypeMenu() {
   );
 
   return (
-    <CommandDialog dialogProps={{ open: true, onOpenChange: close }} commandProps={{}}>
+    <CommandDialog
+      dialogProps={{ open: true, onOpenChange: close }}
+      commandProps={{}}
+      overlayProps={{
+        onPointerDown: (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          close();
+        },
+      }}
+    >
       <CommandInput placeholder={searchLabel} id="CellTypeMenuInputID" />
       <CommandList id="CellTypeMenuID">
         <CommandEmpty>No results found.</CommandEmpty>
@@ -184,7 +194,15 @@ function CommandItemWrapper({
   uuid?: string;
 }) {
   return (
-    <CommandItem disabled={disabled} onSelect={onSelect} value={name + (uuid ? uuid : '')}>
+    <CommandItem
+      disabled={disabled}
+      onSelect={onSelect}
+      value={name + (uuid ? uuid : '')}
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+    >
       <div className="mr-4">{icon}</div>
       <div className="flex flex-col">
         <span className="flex items-center">

@@ -23,6 +23,7 @@ interface OfflineEntry {
 interface OfflineStats {
   transactions: number;
   operations: number;
+  timestamps: number[];
 }
 
 class Offline {
@@ -33,7 +34,7 @@ class Offline {
   // The `stats.operations` are not particularly interesting right now because
   // we send the entire operations batched together; we'll need to send partial
   // messages with separate operations to get good progress information.
-  stats: OfflineStats = { transactions: 0, operations: 0 };
+  stats: OfflineStats = { transactions: 0, operations: 0, timestamps: [] };
 
   // Creates a connection to the indexedDb database
   init(fileId: string): Promise<undefined> {
@@ -99,10 +100,9 @@ class Offline {
         this.stats = {
           transactions: results.length,
           operations: results.reduce((acc, r) => acc + r.operations, 0),
+          timestamps: results.flatMap((r) => (r.timestamp ? [r.timestamp] : [])).sort((a, b) => a - b),
         };
         coreClient.sendOfflineTransactionStats();
-        const timestamps = results.flatMap((r) => (r.timestamp ? [r.timestamp] : [])).sort((a, b) => a - b);
-        coreClient.sendOfflineTransactionsApplied(timestamps);
         resolve(results);
       };
     });
@@ -186,6 +186,8 @@ class Offline {
         }
       });
     }
+
+    coreClient.sendOfflineTransactionsApplied(this.stats.timestamps);
   }
 
   // Used by tests to clear all entries from the indexedDb for this fileId
