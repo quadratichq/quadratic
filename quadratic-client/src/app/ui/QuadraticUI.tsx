@@ -65,7 +65,7 @@ export default function QuadraticUI() {
       }}
     >
       {!presentationMode && <QuadraticSidebar />}
-      <div className="flex flex-col">
+      <div className="flex w-full flex-col">
         {!presentationMode && <TopBar />}
         {!presentationMode && <Toolbar />}
 
