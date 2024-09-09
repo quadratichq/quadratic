@@ -1,6 +1,9 @@
 export enum Action {
   FileShare = 'file_share',
   FileRename = 'file_rename',
+  InsertCodePython = 'insert_code_python',
+  InsertCodeJavascript = 'insert_code_javascript',
+  InsertCodeFormula = 'insert_code_formula',
   Copy = 'copy',
   Cut = 'cut',
   Paste = 'paste',

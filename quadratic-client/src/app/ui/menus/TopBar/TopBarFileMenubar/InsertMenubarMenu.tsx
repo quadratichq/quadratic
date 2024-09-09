@@ -1,3 +1,5 @@
+import { Action } from '@/app/actions/actions';
+import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarFileMenubar/MenubarItemAction';
 import {
   ArrowDropDownCircleIcon,
   CheckBoxIcon,
@@ -21,15 +23,15 @@ export const InsertMenubarMenu = () => {
   return (
     <MenubarMenu>
       <MenubarTrigger>Insert</MenubarTrigger>
-      <MenubarContent>
+      <MenubarContent onCloseAutoFocus={(e) => e.preventDefault()}>
         <MenubarSub>
           <MenubarSubTrigger>
             <CodeIcon /> Code
           </MenubarSubTrigger>
           <MenubarSubContent>
-            <MenubarItem>Formula</MenubarItem>
-            <MenubarItem>Python</MenubarItem>
-            <MenubarItem>JavaScript</MenubarItem>
+            <MenubarItemAction action={Action.InsertCodePython} />
+            <MenubarItemAction action={Action.InsertCodeJavascript} />
+            <MenubarItemAction action={Action.InsertCodeFormula} />
           </MenubarSubContent>
         </MenubarSub>
         <MenubarSub>
@@ -48,14 +50,14 @@ export const InsertMenubarMenu = () => {
             Data
           </MenubarSubTrigger>
           <MenubarSubContent>
-            <MenubarItem>CSV file</MenubarItem>
-            <MenubarItem>Excel file</MenubarItem>
-            <MenubarItem>Parquet file</MenubarItem>
+            <MenubarItem>From CSV file</MenubarItem>
+            <MenubarItem>From Excel file</MenubarItem>
+            <MenubarItem>From Parquet file</MenubarItem>
             <MenubarSeparator />
-            <MenubarItem>Python API request</MenubarItem>
-            <MenubarItem>JavaScript API request</MenubarItem>
+            <MenubarItem>From Python API request</MenubarItem>
+            <MenubarItem>From JavaScript API request</MenubarItem>
             <MenubarSeparator />
-            <MenubarItem>Connection</MenubarItem>
+            <MenubarItem>From connection…</MenubarItem>
           </MenubarSubContent>
         </MenubarSub>
 
