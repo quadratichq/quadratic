@@ -30,7 +30,6 @@ export const DateFormatCell = () => {
       }}
     >
       <div className="flex">
-        <div className="text-md">Date and time format</div>
         <div className="absolute right-2 top-1">
           <IconButton sx={{ padding: 0, width: 20, height: 20 }} onClick={close}>
             <Close sx={{ padding: 0, width: 15, height: 15 }} />
