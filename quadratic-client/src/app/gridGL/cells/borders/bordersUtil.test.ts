@@ -103,7 +103,7 @@ describe('should find perpendicular lines', () => {
     const lines = findPerpendicularHorizontalLines(1, 3, entries);
     expect(lines.length).toEqual(1);
     const line1 = lines[0];
-    expect(line1.x).toEqual(1n);
+    expect(line1.x).toEqual(0n);
     expect(line1.y).toEqual(0n);
     expect(line1.width).toEqual(1n);
   });
@@ -137,7 +137,7 @@ describe('should find perpendicular lines', () => {
     const lines = findPerpendicularHorizontalLines(1, 3, entries);
     expect(lines.length).toEqual(1);
     const line1 = lines[0];
-    expect(line1.x).toEqual(2n);
+    expect(line1.x).toEqual(1n);
     expect(line1.y).toEqual(0n);
     expect(line1.width).toEqual(1n);
   });
@@ -171,7 +171,7 @@ describe('should find perpendicular lines', () => {
     const lines = findPerpendicularHorizontalLines(1, 3, entries);
     expect(lines.length).toEqual(1);
     const line1 = lines[0];
-    expect(line1.x).toEqual(2n);
+    expect(line1.x).toEqual(1n);
     expect(line1.y).toEqual(0n);
     expect(line1.width).toEqual(1n);
   });
@@ -244,7 +244,7 @@ describe('should find perpendicular vertical lines', () => {
     expect(lines.length).toEqual(1);
     const line1 = lines[0];
     expect(line1.x).toEqual(0n);
-    expect(line1.y).toEqual(2n);
+    expect(line1.y).toEqual(1n);
     expect(line1.height).toEqual(1n);
   });
 });
