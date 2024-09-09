@@ -1,6 +1,6 @@
 import { Action } from '@/app/actions/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { MenuItemAction } from '@/app/ui/menus/TopBar/TopBarFileMenubar/MenubarItemAction';
+import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarFileMenubar/MenubarItemAction';
 import { DocumentationIcon, FeedbackIcon } from '@/shared/components/Icons';
 import { DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { MenubarContent, MenubarItem, MenubarMenu, MenubarTrigger } from '@/shared/shadcn/ui/menubar';
@@ -22,7 +22,7 @@ export const HelpMenubarMenu = () => {
         <MenubarItem onClick={() => setEditorInteractionState((prev) => ({ ...prev, showFeedbackMenu: true }))}>
           <FeedbackIcon /> Feedback
         </MenubarItem>
-        <MenuItemAction action={Action.HelpContactUs} />
+        <MenubarItemAction action={Action.HelpContactUs} />
       </MenubarContent>
     </MenubarMenu>
   );

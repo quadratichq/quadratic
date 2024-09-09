@@ -3,6 +3,30 @@ import { Keys, MacModifiers, WindowsModifiers } from '@/app/keyboard/keys';
 import { ActionShortcut } from '@/app/keyboard/shortcut';
 
 export const defaultShortcuts: ActionShortcut = {
+  [Action.Copy]: {
+    mac: [[MacModifiers.Cmd, Keys.C]],
+    windows: [[WindowsModifiers.Ctrl, Keys.C]],
+  },
+  [Action.Cut]: {
+    mac: [[MacModifiers.Cmd, Keys.X]],
+    windows: [[WindowsModifiers.Ctrl, Keys.X]],
+  },
+  [Action.Paste]: {
+    mac: [[MacModifiers.Cmd, Keys.V]],
+    windows: [[WindowsModifiers.Ctrl, Keys.V]],
+  },
+  [Action.PasteValuesOnly]: {
+    mac: [[MacModifiers.Cmd, MacModifiers.Shift, Keys.V]],
+    windows: [[WindowsModifiers.Ctrl, WindowsModifiers.Shift, Keys.V]],
+  },
+  [Action.FindInCurrentSheet]: {
+    mac: [[MacModifiers.Cmd, Keys.F]],
+    windows: [[WindowsModifiers.Ctrl, Keys.F]],
+  },
+  [Action.FindInAllSheets]: {
+    mac: [[MacModifiers.Cmd, MacModifiers.Shift, Keys.F]],
+    windows: [[WindowsModifiers.Ctrl, WindowsModifiers.Shift, Keys.F]],
+  },
   [Action.GridPanMode]: {
     mac: [[Keys.Space]],
     windows: [[Keys.Space]],
@@ -116,10 +140,6 @@ export const defaultShortcuts: ActionShortcut = {
   [Action.CancelExecution]: {
     mac: [[MacModifiers.Cmd, Keys.Escape]],
     windows: [[WindowsModifiers.Ctrl, Keys.Escape]],
-  },
-  [Action.ShowSearch]: {
-    mac: [[MacModifiers.Cmd, Keys.F]],
-    windows: [[WindowsModifiers.Ctrl, Keys.F]],
   },
   [Action.CopyAsPng]: {
     mac: [[MacModifiers.Cmd, MacModifiers.Shift, Keys.C]],

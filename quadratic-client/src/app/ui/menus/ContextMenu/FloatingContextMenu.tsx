@@ -1,4 +1,4 @@
-import { downloadSelectionAsCsvAction, hasPermissionToEditFile } from '@/app/actions';
+import { hasPermissionToEditFile } from '@/app/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { copySelectionToPNG, fullClipboardSupport, pasteFromClipboard } from '@/app/grid/actions/clipboard/clipboard';
@@ -11,7 +11,6 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
-import { useFileContext } from '@/app/ui/components/FileProvider';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { QColorPicker } from '@/app/ui/components/qColorPicker';
 import {
@@ -85,7 +84,6 @@ export const FloatingContextMenu = (props: Props) => {
   const menuDiv = useRef<HTMLDivElement>(null);
   const moreMenuButtonRef = useRef(null);
   const borders = useGetBorderMenu();
-  const { name: fileName } = useFileContext();
 
   const textColorRef = useRef<MenuInstance>(null);
   const fillColorRef = useRef<MenuInstance>(null);
@@ -714,17 +712,6 @@ export const FloatingContextMenu = (props: Props) => {
             <MenuLineItem
               primary="Copy selection as PNG"
               secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'C'}
-            ></MenuLineItem>
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              downloadSelectionAsCsvAction.run({ fileName });
-              moreMenuToggle();
-            }}
-          >
-            <MenuLineItem
-              primary={downloadSelectionAsCsvAction.label}
-              secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'E'}
             ></MenuLineItem>
           </MenuItem>
         </ControlledMenu>

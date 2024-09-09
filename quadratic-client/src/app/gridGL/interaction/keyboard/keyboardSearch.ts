@@ -8,7 +8,7 @@ export function keyboardSearch(
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>
 ): boolean {
   // Show search
-  if (matchShortcut(Action.ShowSearch, event)) {
+  if (matchShortcut(Action.FindInCurrentSheet, event) || matchShortcut(Action.FindInAllSheets, event)) {
     event.preventDefault();
     if (editorInteractionState.showSearch) {
       const search = document.getElementById('search-input');

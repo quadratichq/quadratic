@@ -70,7 +70,7 @@ export const CopyAsPng: IconComponent = (props) => {
   return <Icon {...props}>image</Icon>;
 };
 
-export const CopyAsCsv: IconComponent = (props) => {
+export const CsvIcon: IconComponent = (props) => {
   return <Icon {...props}>csv</Icon>;
 };
 

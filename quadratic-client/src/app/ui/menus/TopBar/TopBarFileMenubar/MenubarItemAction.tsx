@@ -5,7 +5,7 @@ import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDi
 import { MenubarItem, MenubarShortcut } from '@/shared/shadcn/ui/menubar';
 
 // TODO: (jimniels) implement types based on ayush's PR
-export const MenuItemAction = ({ action, shortcutOverride }: { action: Action; shortcutOverride?: string }) => {
+export const MenubarItemAction = ({ action, shortcutOverride }: { action: Action; shortcutOverride?: string }) => {
   const actionSpec = defaultActionSpec[action];
   if (!actionSpec) {
     throw new Error(`Action ${action} not found in defaultActionSpec`);

@@ -1,7 +1,6 @@
 import {
   copyAction,
   cutAction,
-  downloadSelectionAsCsvAction,
   findInSheet,
   findInSheets,
   pasteAction,
@@ -10,6 +9,9 @@ import {
   redoAction,
   undoAction,
 } from '@/app/actions';
+import { Action } from '@/app/actions/actions';
+import { ActionSpec } from '@/app/actions/actionSpec';
+import { editActionsSpec } from '@/app/actions/editActionsSpec';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import {
   copySelectionToPNG,
@@ -18,11 +20,10 @@ import {
   fullClipboardSupport,
   pasteFromClipboard,
 } from '@/app/grid/actions/clipboard/clipboard';
-import { useFileContext } from '@/app/ui/components/FileProvider';
+import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import {
-  CopyAsCsv,
   CopyAsPng,
   CutIcon,
   FileCopyIcon,
@@ -36,6 +37,9 @@ import { isMac } from '@/shared/utils/isMac';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
+
+// TODO: Make this more type safe
+const downloadSelectionAsCsvAction = editActionsSpec[Action.DownloadAsCsv] as ActionSpec;
 
 const data: CommandGroup = {
   heading: 'Edit',
@@ -204,16 +208,14 @@ const data: CommandGroup = {
     {
       label: downloadSelectionAsCsvAction.label,
       Component: (props) => {
-        const { name: fileName } = useFileContext();
         return (
           <CommandPaletteListItem
             {...props}
             action={() => {
-              downloadSelectionAsCsvAction.run({ fileName });
+              downloadSelectionAsCsvAction.run();
             }}
-            icon={<CopyAsCsv />}
-            shortcut="E"
-            shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}
+            icon={downloadSelectionAsCsvAction.Icon && <downloadSelectionAsCsvAction.Icon />}
+            shortcut={keyboardShortcutEnumToDisplay(Action.DownloadAsCsv)}
           />
         );
       },

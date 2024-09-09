@@ -20,7 +20,7 @@ import {
   MenubarSubTrigger,
   MenubarTrigger,
 } from '@/shared/shadcn/ui/menubar';
-import { MenuItemAction } from './MenubarItemAction';
+import { MenubarItemAction } from './MenubarItemAction';
 
 export const FormatMenubarMenu = () => {
   return (
@@ -32,16 +32,16 @@ export const FormatMenubarMenu = () => {
             <Number123Icon /> Number
           </MenubarSubTrigger>
           <MenubarSubContent>
-            <MenuItemAction action={Action.FormatNumberAutomatic} />
-            <MenuItemAction action={Action.FormatNumberCurrency} shortcutOverride="$1,000.12" />
-            <MenuItemAction action={Action.FormatNumberPercent} shortcutOverride="10.12%" />
-            <MenuItemAction action={Action.FormatNumberScientific} shortcutOverride="1.01E+03" />
+            <MenubarItemAction action={Action.FormatNumberAutomatic} />
+            <MenubarItemAction action={Action.FormatNumberCurrency} shortcutOverride="$1,000.12" />
+            <MenubarItemAction action={Action.FormatNumberPercent} shortcutOverride="10.12%" />
+            <MenubarItemAction action={Action.FormatNumberScientific} shortcutOverride="1.01E+03" />
 
             <MenubarSeparator />
 
-            <MenuItemAction action={Action.FormatNumberToggleCommas} shortcutOverride="1,000.12" />
-            <MenuItemAction action={Action.FormatNumberDecimalIncrease} shortcutOverride=".0000" />
-            <MenuItemAction action={Action.FormatNumberDecimalDecrease} shortcutOverride=".0" />
+            <MenubarItemAction action={Action.FormatNumberToggleCommas} shortcutOverride="1,000.12" />
+            <MenubarItemAction action={Action.FormatNumberDecimalIncrease} shortcutOverride=".0000" />
+            <MenubarItemAction action={Action.FormatNumberDecimalDecrease} shortcutOverride=".0" />
           </MenubarSubContent>
         </MenubarSub>
         <MenubarSub>
@@ -50,8 +50,8 @@ export const FormatMenubarMenu = () => {
             Text
           </MenubarSubTrigger>
           <MenubarSubContent>
-            <MenuItemAction action={Action.ToggleBold} />
-            <MenuItemAction action={Action.ToggleItalic} />
+            <MenubarItemAction action={Action.ToggleBold} />
+            <MenubarItemAction action={Action.ToggleItalic} />
           </MenubarSubContent>
         </MenubarSub>
         <MenubarSub>
@@ -60,15 +60,15 @@ export const FormatMenubarMenu = () => {
             Alignment
           </MenubarSubTrigger>
           <MenubarSubContent>
-            <MenuItemAction action={Action.FormatAlignHorizontalLeft} />
-            <MenuItemAction action={Action.FormatAlignHorizontalCenter} />
-            <MenuItemAction action={Action.FormatAlignHorizontalRight} />
+            <MenubarItemAction action={Action.FormatAlignHorizontalLeft} />
+            <MenubarItemAction action={Action.FormatAlignHorizontalCenter} />
+            <MenubarItemAction action={Action.FormatAlignHorizontalRight} />
 
             <MenubarSeparator />
 
-            <MenuItemAction action={Action.FormatAlignVerticalTop} />
-            <MenuItemAction action={Action.FormatAlignVerticalMiddle} />
-            <MenuItemAction action={Action.FormatAlignVerticalBottom} />
+            <MenubarItemAction action={Action.FormatAlignVerticalTop} />
+            <MenubarItemAction action={Action.FormatAlignVerticalMiddle} />
+            <MenubarItemAction action={Action.FormatAlignVerticalBottom} />
           </MenubarSubContent>
         </MenubarSub>
         <MenubarSub>
@@ -76,9 +76,9 @@ export const FormatMenubarMenu = () => {
             <FormatTextWrapIcon /> Wrapping
           </MenubarSubTrigger>
           <MenubarSubContent>
-            <MenuItemAction action={Action.FormatTextWrapWrap} />
-            <MenuItemAction action={Action.FormatTextWrapOverflow} />
-            <MenuItemAction action={Action.FormatTextWrapClip} />
+            <MenubarItemAction action={Action.FormatTextWrapWrap} />
+            <MenubarItemAction action={Action.FormatTextWrapOverflow} />
+            <MenubarItemAction action={Action.FormatTextWrapClip} />
           </MenubarSubContent>
         </MenubarSub>
 
@@ -123,7 +123,7 @@ export const FormatMenubarMenu = () => {
 
         <MenubarSeparator />
 
-        <MenuItemAction action={Action.ClearFormattingBorders} />
+        <MenubarItemAction action={Action.ClearFormattingBorders} />
       </MenubarContent>
     </MenubarMenu>
   );
