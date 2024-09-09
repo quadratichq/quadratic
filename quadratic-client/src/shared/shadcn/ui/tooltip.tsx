@@ -38,9 +38,11 @@ const TooltipPopover = ({ label, children }: { label: string; children: React.Re
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>{children}</TooltipTrigger>
-        <TooltipContent>
-          <p>{label}</p>
-        </TooltipContent>
+        <TooltipPrimitive.Portal>
+          <TooltipContent>
+            <p>{label}</p>
+          </TooltipContent>
+        </TooltipPrimitive.Portal>
       </Tooltip>
     </TooltipProvider>
   );

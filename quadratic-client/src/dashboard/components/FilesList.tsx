@@ -1,6 +1,7 @@
 import { fileDragDropModalAtom } from '@/dashboard/atoms/fileDragDropModalAtom';
 import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { FileDragDrop } from '@/dashboard/components/FileDragDrop';
+import { DRAWER_WIDTH } from '@/routes/_dashboard';
 import { Action as FilesAction } from '@/routes/api.files.$uuid';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
@@ -104,10 +105,13 @@ export function FilesList({
 
   const { show: newFileDialogShow } = useRecoilValue(newFileDialogAtom);
   const setFileDragDropState = useSetRecoilState(fileDragDropModalAtom);
-  const handleDragEnter = useCallback(() => {
-    if (teamUuid === undefined || isPrivate === undefined) return;
-    setFileDragDropState({ show: true, teamUuid, isPrivate });
-  }, [isPrivate, setFileDragDropState, teamUuid]);
+  const handleDragEnter = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      if (teamUuid === undefined || isPrivate === undefined || !e.dataTransfer.types.includes('Files')) return;
+      setFileDragDropState({ show: true, teamUuid, isPrivate });
+    },
+    [isPrivate, setFileDragDropState, teamUuid]
+  );
 
   return (
     <div className="flex flex-grow flex-col" onDragEnter={handleDragEnter}>
@@ -146,7 +150,9 @@ export function FilesList({
         />
       )}
 
-      {!newFileDialogShow && <FileDragDrop />}
+      {!newFileDialogShow && (
+        <FileDragDrop className={`lg:left-[${DRAWER_WIDTH}px] lg:w-[calc(100%-${DRAWER_WIDTH}px)]`} />
+      )}
     </div>
   );
 }

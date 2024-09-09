@@ -50,7 +50,10 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: initi
 
   const setFileDragDropState = useSetRecoilState(fileDragDropModalAtom);
   const handleDragEnter = useCallback(
-    () => setFileDragDropState({ show: true, teamUuid, isPrivate }),
+    (e: React.DragEvent<HTMLDivElement>) => {
+      if (!e.dataTransfer.types.includes('Files')) return;
+      setFileDragDropState({ show: true, teamUuid, isPrivate });
+    },
     [isPrivate, setFileDragDropState, teamUuid]
   );
 
@@ -102,7 +105,9 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: initi
             <li className={`col-span-1`}>
               <Link
                 to={isPrivate ? ROUTES.CREATE_FILE_PRIVATE(teamUuid) : ROUTES.CREATE_FILE(teamUuid)}
+                reloadDocument
                 className={cn(gridItemClassName, gridItemInteractiveClassName, 'border-primary text-muted-foreground')}
+                onClick={onClose}
               >
                 <ItemIcon>
                   <PlusIcon />
@@ -132,6 +137,7 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: initi
               <Link
                 to={newFileApiHref}
                 className={cn('text-muted-foreground', gridItemClassName, gridItemInteractiveClassName)}
+                onClick={onClose}
               >
                 <ItemIcon>
                   <RocketIcon />
@@ -235,6 +241,7 @@ function SchemaBrowser({
       type={connectionType}
       uuid={connectionUuid}
       TableQueryAction={TableQueryAction}
+      teamUuid={teamUuid}
     />
   );
 }

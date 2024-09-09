@@ -31,7 +31,7 @@ fn upgrade_column(x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
                                             v1_6::CodeCellLanguage::Formula
                                         }
                                         v1_5::CodeCellLanguage::Javascript => {
-                                            v1_6::CodeCellLanguage::Python
+                                            v1_6::CodeCellLanguage::Javascript
                                         }
                                         v1_5::CodeCellLanguage::Connection { kind, ref id } => {
                                             v1_6::CodeCellLanguage::Connection {
@@ -58,7 +58,7 @@ fn upgrade_column(x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
                             v1_5::CellValue::Instant(value) => {
                                 v1_6::CellValue::Instant(value.clone())
                             }
-                            v1_5::CellValue::Image(value) => v1_6::CellValue::Text(value.clone()),
+                            v1_5::CellValue::Image(value) => v1_6::CellValue::Image(value.clone()),
                         },
                     )
                 })

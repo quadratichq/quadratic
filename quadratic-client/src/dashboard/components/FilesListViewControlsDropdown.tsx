@@ -32,7 +32,7 @@ export enum Order {
 }
 
 const sortLabelsByValue = {
-  [Sort.Updated]: 'Last updated',
+  [Sort.Updated]: 'Last modified',
   [Sort.Created]: 'Date created',
   [Sort.Alphabetical]: 'Alphabetical',
 };

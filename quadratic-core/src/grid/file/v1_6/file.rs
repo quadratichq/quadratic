@@ -23,6 +23,7 @@ pub fn export_cell_value(cell_value: CellValue) -> current::CellValue {
                         kind: match kind {
                             ConnectionKind::Postgres => current::ConnectionKind::Postgres,
                             ConnectionKind::Mysql => current::ConnectionKind::Mysql,
+                            ConnectionKind::Mssql => current::ConnectionKind::Mssql,
                         },
                         id,
                     }
@@ -71,6 +72,7 @@ pub fn import_cell_value(value: &current::CellValue) -> CellValue {
                         kind: match kind {
                             current::ConnectionKind::Postgres => ConnectionKind::Postgres,
                             current::ConnectionKind::Mysql => ConnectionKind::Mysql,
+                            current::ConnectionKind::Mssql => ConnectionKind::Mssql,
                         },
                         id: id.clone(),
                     }

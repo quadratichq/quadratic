@@ -15,10 +15,12 @@ import { Link } from 'react-router-dom';
 export const ConnectionSchemaBrowser = ({
   TableQueryAction,
   selfContained,
+  teamUuid,
   type,
   uuid,
 }: {
   TableQueryAction: React.FC<{ query: string }>;
+  teamUuid: string;
   selfContained?: boolean;
   type?: ConnectionType;
   uuid?: string;
@@ -75,8 +77,9 @@ export const ConnectionSchemaBrowser = ({
             </button>
             . If that doesn’t work,{' '}
             <Link
-              // Enhancement: do the logic to know when to do an in-memory navigation or redirect the document entirely
-              to={ROUTES.TEAM_SHORTCUT.CONNECTIONS}
+              to={ROUTES.TEAM_CONNECTION(teamUuid, uuid, type)}
+              // This has to be hard-reload because we don't use URLs and we don't know the context:
+              // of whether this is in the app or in the dashboard
               reloadDocument={true}
               className="underline hover:text-primary"
             >
@@ -187,6 +190,8 @@ function getTableQuery({ table: { name, schema }, connectionKind }: { table: Tab
       return `SELECT * FROM "${schema}"."${name}" LIMIT 100`;
     case 'MYSQL':
       return `SELECT * FROM \`${schema}\`.\`${name}\` LIMIT 100`;
+    case 'MSSQL':
+      return `SELECT TOP 100 * FROM [${schema}].[${name}]`;
     default:
       return '';
   }

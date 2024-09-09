@@ -8,15 +8,16 @@
  */
 
 import { Bounds } from '@/app/grid/sheet/Bounds';
+import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
+import { isFloatGreaterThan, isFloatLessThan } from '@/app/helpers/float';
 import { CellAlign, CellVerticalAlign, CellWrap, JsNumber, JsRenderCell } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT } from '@/shared/constants/gridConstants';
 import { removeItems } from '@pixi/utils';
 import { Point, Rectangle } from 'pixi.js';
 import { RenderBitmapChar } from '../../renderBitmapFonts';
-import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { CellsLabels } from './CellsLabels';
 import { LabelMeshEntry } from './LabelMeshEntry';
 import { LabelMeshes } from './LabelMeshes';
@@ -33,16 +34,16 @@ interface CharRenderData {
 }
 
 // magic numbers to make the WebGL rendering of OpenSans look similar to the HTML version
-const OPEN_SANS_FIX = { x: 1.8, y: -1 };
+export const OPEN_SANS_FIX = { x: 1.8, y: -1.8 };
 const SPILL_ERROR_TEXT = ' #SPILL';
 const RUN_ERROR_TEXT = ' #ERROR';
 const CHART_TEXT = ' CHART';
-const LINE_HEIGHT = 16;
+export const LINE_HEIGHT = 16;
 
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
 
 // todo: make this part of the cell's style data structure
-const fontSize = 14;
+export const FONT_SIZE = 14;
 
 export class CellLabel {
   private cellsLabels: CellsLabels;
@@ -120,7 +121,7 @@ export class CellLabel {
     this.cellsLabels = cellsLabels;
     this.originalText = cell.value;
     this.text = this.getText(cell);
-    this.fontSize = fontSize;
+    this.fontSize = FONT_SIZE;
     this.roundPixels = true;
     this.letterSpacing = 0;
     const isDropdown = cell.special === 'List';
@@ -222,10 +223,10 @@ export class CellLabel {
     if (!this.isNumber()) return false;
 
     const clipLeft = Math.max(this.cellClipLeft ?? -Infinity, this.AABB.right - (this.nextLeftWidth ?? Infinity));
-    if (this.actualLeft < clipLeft) return true;
+    if (isFloatLessThan(this.actualLeft, clipLeft)) return true;
 
     const clipRight = Math.min(this.cellClipRight ?? Infinity, this.AABB.left + (this.nextRightWidth ?? Infinity));
-    if (this.actualRight > clipRight) return true;
+    if (isFloatGreaterThan(this.actualRight, clipRight)) return true;
 
     return false;
   };
@@ -349,7 +350,7 @@ export class CellLabel {
       const charData = data.chars[charCode];
       if (!charData) continue;
 
-      const labelMeshId = labelMeshes.add(this.fontName, fontSize, charData.textureUid, !!this.tint);
+      const labelMeshId = labelMeshes.add(this.fontName, this.fontSize, charData.textureUid, !!this.tint);
       if (prevCharCode && charData.kerning[prevCharCode]) {
         pos.x += charData.kerning[prevCharCode];
       }
@@ -364,7 +365,7 @@ export class CellLabel {
       chars.push(charRenderData);
       pos.x += charData.xAdvance + this.letterSpacing;
       prevCharCode = charCode;
-      if (maxWidth !== undefined && pos.x - maxWidth / scale > 0.001) {
+      if (maxWidth !== undefined && isFloatGreaterThan(pos.x, maxWidth / scale)) {
         const start = lastBreakPos === -1 ? i - spacesRemoved : 1 + lastBreakPos - spacesRemoved;
         const count = lastBreakPos === -1 ? 1 : 1 + i - lastBreakPos;
         removeItems(chars, start, count);

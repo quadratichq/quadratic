@@ -50,6 +50,7 @@ export function TeamLogoInput({ onChange }: { onChange: (logo: string) => void }
         // addGlobalSnackbar('Image must be at least 400×400 pixels', { severity: 'error' });
       }
     };
+    img.crossOrigin = 'anonymous';
     img.src = fileAsDataURL;
   };
   return <input type="file" hidden accept="image/png, image/jpeg" onChange={handleOnChange} />;
