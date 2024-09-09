@@ -337,6 +337,48 @@ impl BorderStyleCellUpdate {
         }
     }
 
+    /// Converts all line == Clear to None in a BorderStyleCellUpdate.
+    pub fn replace_clear_with_none(&self) -> BorderStyleCellUpdate {
+        BorderStyleCellUpdate {
+            top: self.top.map(|border| {
+                border.and_then(|b| {
+                    if b.line == CellBorderLine::Clear {
+                        None
+                    } else {
+                        Some(b)
+                    }
+                })
+            }),
+            bottom: self.bottom.map(|border| {
+                border.and_then(|b| {
+                    if b.line == CellBorderLine::Clear {
+                        None
+                    } else {
+                        Some(b)
+                    }
+                })
+            }),
+            left: self.left.map(|border| {
+                border.and_then(|b| {
+                    if b.line == CellBorderLine::Clear {
+                        None
+                    } else {
+                        Some(b)
+                    }
+                })
+            }),
+            right: self.right.map(|border| {
+                border.and_then(|b| {
+                    if b.line == CellBorderLine::Clear {
+                        None
+                    } else {
+                        Some(b)
+                    }
+                })
+            }),
+        }
+    }
+
     /// Create a cell with a complete border on all sides.
     #[cfg(test)]
     pub fn all() -> Self {
@@ -604,5 +646,21 @@ mod tests {
         assert_eq!(clear.bottom, Some(None));
         assert_eq!(clear.left, None);
         assert_eq!(clear.right, Some(None));
+    }
+
+    #[test]
+    #[parallel]
+    fn replace_clear_with_none() {
+        let update = BorderStyleCellUpdate {
+            top: Some(Some(BorderStyleTimestamp::default())),
+            bottom: Some(Some(BorderStyleTimestamp::clear())),
+            left: Some(Some(BorderStyleTimestamp::default())),
+            right: Some(Some(BorderStyleTimestamp::default())),
+        };
+        let updated = update.replace_clear_with_none();
+        assert!(updated.top.unwrap().is_some());
+        assert!(updated.bottom.unwrap().is_none());
+        assert!(updated.left.unwrap().is_some());
+        assert!(updated.right.unwrap().is_some());
     }
 }
