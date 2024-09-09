@@ -44,6 +44,7 @@ export const ZoomMenu = () => {
         <DropdownMenuSeparator />
         <DropdownMenuItemFromAction mixpanelEvent="[ZoomDropdown].zoomToSelection" action={Action.ZoomToSelection} />
         <DropdownMenuItemFromAction mixpanelEvent="[ZoomDropdown].zoomToFit" action={Action.ZoomToFit} />
+        <DropdownMenuSeparator />
         <DropdownMenuItemFromAction mixpanelEvent="[ZoomDropdown].zoomTo50%" action={Action.ZoomTo50} />
         <DropdownMenuItemFromAction mixpanelEvent="[ZoomDropdown].zoomTo100%" action={Action.ZoomTo100} />
         <DropdownMenuItemFromAction mixpanelEvent="[ZoomDropdown].zoomTo200%" action={Action.ZoomTo200} />

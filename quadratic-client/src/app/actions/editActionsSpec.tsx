@@ -102,9 +102,8 @@ export const editActionsSpec: ActionSpecRecord = {
     label: 'Copy as PNG',
     Icon: CopyAsPng,
     run: () => {
-      // TODO: (jimniels) pass the correct args
-      // @ts-expect-error
-      copySelectionToPNG();
+      if (!pixiAppSettings.addGlobalSnackbar) return;
+      copySelectionToPNG(pixiAppSettings.addGlobalSnackbar);
     },
   },
   [Action.DownloadAsCsv]: {

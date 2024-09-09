@@ -41,6 +41,7 @@ export const TopBar = () => {
       >
         <TopBarFileMenubar />
         {/*
+        TODO: what about embedable view? should we show the file menu?
         TODO: (jimniels) delete these components & apply permissions above
         <QuadraticMenu />
         hasPermissionToEditFile(permissions) && isDesktop && (

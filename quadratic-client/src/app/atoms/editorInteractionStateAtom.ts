@@ -12,6 +12,7 @@ export interface EditorInteractionState {
   showGoToMenu: boolean;
   showFeedbackMenu: boolean;
   showNewFileMenu: boolean;
+  showRenameFileMenu: boolean;
   showShareFileMenu: boolean;
   showSearch: boolean | SearchOptions;
   showValidation: boolean | string;
@@ -45,6 +46,7 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   showGoToMenu: false,
   showFeedbackMenu: false,
   showNewFileMenu: false,
+  showRenameFileMenu: false,
   showShareFileMenu: false,
   showSearch: false,
   showContextMenu: false,
@@ -75,6 +77,7 @@ export const editorInteractionStateAtom = atom({
           oldValue.showGoToMenu ||
           oldValue.showFeedbackMenu ||
           oldValue.showNewFileMenu ||
+          oldValue.showRenameFileMenu ||
           oldValue.showShareFileMenu ||
           oldValue.showSearch;
         const newModelShow =
@@ -85,6 +88,7 @@ export const editorInteractionStateAtom = atom({
           newValue.showGoToMenu ||
           newValue.showFeedbackMenu ||
           newValue.showNewFileMenu ||
+          newValue.showRenameFileMenu ||
           newValue.showShareFileMenu ||
           newValue.showSearch;
         if (oldModalShow && !newModelShow) {

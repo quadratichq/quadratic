@@ -1,4 +1,7 @@
+import { Action } from '@/app/actions/actions';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { useGridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
+import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarFileMenubar/MenubarItemAction';
 import { CheckSmallIcon, CropFreeIcon, ZoomInIcon } from '@/shared/components/Icons';
 import {
   MenubarContent,
@@ -6,56 +9,60 @@ import {
   MenubarMenu,
   MenubarSeparator,
   MenubarShortcut,
+  MenubarSub,
+  MenubarSubContent,
+  MenubarSubTrigger,
   MenubarTrigger,
 } from '@/shared/shadcn/ui/menubar';
 
+const MenubarItemCheckbox = ({ checked }: { checked: boolean }) => {
+  return <CheckSmallIcon className={checked ? 'visible opacity-100' : 'invisible opacity-0'} />;
+};
+
+// TODO: (enhancement) move these into `viewActionsSpec` by making the `.run()`
+// function of each accessible from outside of react (e.g. without `useGridSettings`)
 export const ViewMenubarMenu = () => {
+  const settings = useGridSettings();
   return (
     <MenubarMenu>
       <MenubarTrigger>View</MenubarTrigger>
       <MenubarContent>
-        {/* <MenuItem onClick={() => settings.setShowHeadings(!settings.showHeadings)}>
-            <MenuLineItem primary="Show row and column headings" icon={settings.showHeadings && Check} indent />
-          </MenuItem>
-          <MenuItem onClick={() => settings.setShowGridAxes(!settings.showGridAxes)}>
-            <MenuLineItem primary="Show grid axis" icon={settings.showGridAxes && Check} indent />
-          </MenuItem>
-          <MenuItem onClick={() => settings.setShowGridLines(!settings.showGridLines)}>
-            <MenuLineItem primary="Show grid lines" icon={settings.showGridLines && Check} indent />
-          </MenuItem>
-          <MenuItem onClick={() => settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines)}>
-            <MenuLineItem primary="Show code cell outlines" icon={settings.showCellTypeOutlines && Check} indent />
-          </MenuItem>
-          <MenuItem onClick={() => settings.setShowCodePeek(!settings.showCodePeek)}>
-            <MenuLineItem primary="Show code peek" icon={settings.showCodePeek && Check} indent />
-          </MenuItem>
-          <MenuDivider />
-          <MenuItem onClick={() => settings.setPresentationMode(!settings.presentationMode)}>
-            <MenuLineItem primary="Presentation mode" icon={settings.presentationMode && Check} indent />
-          </MenuItem> */}
-        <MenubarItem>
-          <CheckSmallIcon /> Show row and column headings
+        <MenubarItem onClick={() => settings.setShowHeadings(!settings.showHeadings)}>
+          <MenubarItemCheckbox checked={settings.showHeadings} /> Show row and column headings
         </MenubarItem>
-        <MenubarItem>
-          <CheckSmallIcon /> Show grid axis
+        <MenubarItem onClick={() => settings.setShowGridAxes(!settings.showGridAxes)}>
+          <MenubarItemCheckbox checked={settings.showGridAxes} /> Show grid axis
         </MenubarItem>
-        <MenubarItem>
-          <CheckSmallIcon />
+        <MenubarItem onClick={() => settings.setShowGridLines(!settings.showGridLines)}>
+          <MenubarItemCheckbox checked={settings.showGridLines} />
           Show grid lines
         </MenubarItem>
-        <MenubarItem>
-          <CheckSmallIcon />
+        <MenubarItem onClick={() => settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines)}>
+          <MenubarItemCheckbox checked={settings.showCellTypeOutlines} />
           Show code cell outlines
         </MenubarItem>
-        <MenubarItem>
-          <CheckSmallIcon />
+        <MenubarItem onClick={() => settings.setShowCodePeek(!settings.showCodePeek)}>
+          <MenubarItemCheckbox checked={settings.showCodePeek} />
           Show code peek
         </MenubarItem>
         <MenubarSeparator />
-        <MenubarItem>
-          <ZoomInIcon /> Zoom
-        </MenubarItem>
-        <MenubarItem>
+        <MenubarSub>
+          <MenubarSubTrigger>
+            <ZoomInIcon /> Zoom
+          </MenubarSubTrigger>
+          <MenubarSubContent>
+            <MenubarItemAction action={Action.ZoomIn} />
+            <MenubarItemAction action={Action.ZoomOut} />
+            <MenubarSeparator />
+            <MenubarItemAction action={Action.ZoomToSelection} />
+            <MenubarItemAction action={Action.ZoomToFit} />
+            <MenubarSeparator />
+            <MenubarItemAction action={Action.ZoomTo50} />
+            <MenubarItemAction action={Action.ZoomTo100} />
+            <MenubarItemAction action={Action.ZoomTo200} />
+          </MenubarSubContent>
+        </MenubarSub>
+        <MenubarItem onClick={() => settings.setPresentationMode(!settings.presentationMode)}>
           <CropFreeIcon />
           Presentation mode
           <MenubarShortcut>{KeyboardSymbols.Command + '.'}</MenubarShortcut>

@@ -178,6 +178,10 @@ export const FileCopyIcon: IconComponent = (props) => {
   return <Icon {...props}>file_copy</Icon>;
 };
 
+export const FileRenameIcon: IconComponent = (props) => {
+  return <Icon {...props}>text_select_start</Icon>;
+};
+
 export const FunctionIcon: IconComponent = (props) => {
   return <Icon {...props}>function</Icon>;
 };

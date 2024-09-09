@@ -1,4 +1,6 @@
 export enum Action {
+  FileShare = 'file_share',
+  FileRename = 'file_rename',
   Copy = 'copy',
   Cut = 'cut',
   Paste = 'paste',

@@ -2,6 +2,7 @@ import { defaultInlineEditor, InlineEditorState } from '@/app/atoms/inlineEditor
 import { events } from '@/app/events/events';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
+import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { SetterOrUpdater } from 'recoil';
 import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
@@ -38,7 +39,7 @@ class PixiAppSettings {
   temporarilyHideCellTypeOutlines = false;
   editorInteractionState = editorInteractionStateDefault;
   setEditorInteractionState?: SetterOrUpdater<EditorInteractionState>;
-  addGlobalSnackbar?: (message: string, options?: { severity?: 'error' | 'warning' }) => void;
+  addGlobalSnackbar?: GlobalSnackbar['addGlobalSnackbar'];
   inlineEditorState = defaultInlineEditor;
   setInlineEditorState?: (fn: (prev: InlineEditorState) => InlineEditorState) => void;
 

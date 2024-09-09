@@ -3,6 +3,7 @@ import { CodeEditorProvider } from '@/app/ui/menus/CodeEditor/CodeEditorContext'
 import ConnectionsMenu from '@/app/ui/menus/ConnectionsMenu';
 import Toolbar from '@/app/ui/menus/Toolbar';
 import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
+import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
@@ -40,7 +41,7 @@ export default function QuadraticUI() {
   const { presentationMode } = useGridSettings();
   const navigation = useNavigation();
   const { uuid } = useParams() as { uuid: string };
-  const { name } = useFileContext();
+  const { name, renameFile } = useFileContext();
   const { users } = useMultiplayerUsers();
   const follow = editorInteractionState.follow
     ? users.find((user) => user.session_id === editorInteractionState.follow)
@@ -127,6 +128,14 @@ export default function QuadraticUI() {
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu />}
       {editorInteractionState.showCommandPalette && <CommandPalette />}
       {editorInteractionState.showGoToMenu && <GoTo />}
+      {editorInteractionState.showRenameFileMenu && (
+        <DialogRenameItem
+          itemLabel="file"
+          onClose={() => setEditorInteractionState((prev) => ({ ...prev, showRenameFileMenu: false }))}
+          onSave={(newValue) => renameFile(newValue)}
+          value={name}
+        />
+      )}
       <ConnectionsMenu />
       <PermissionOverlay />
       {!isEmbed && <PermissionOverlay />}

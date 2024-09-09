@@ -1,4 +1,13 @@
-import { createNewFileAction, deleteFile, downloadFileAction, duplicateFileAction } from '@/app/actions';
+import {
+  createNewFileAction,
+  deleteFile,
+  downloadFileAction,
+  duplicateFileAction,
+  isAvailableBecauseCanEditFile,
+} from '@/app/actions';
+import { Action } from '@/app/actions/actions';
+import { ActionSpec } from '@/app/actions/actionSpec';
+import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -6,6 +15,9 @@ import { DeleteIcon, DownloadIcon, DraftIcon, FileCopyIcon } from '@/shared/comp
 import { useParams, useSubmit } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
+
+// TODO: make the types better here so it knows whether this exists
+const renameFileActionSpec = defaultActionSpec[Action.FileRename] as ActionSpec;
 
 const commands: CommandGroup = {
   heading: 'File',
@@ -20,7 +32,6 @@ const commands: CommandGroup = {
         return <CommandPaletteListItem {...props} icon={<DraftIcon />} action={action} />;
       },
     },
-
     {
       label: duplicateFileAction.label,
       isAvailable: duplicateFileAction.isAvailable,
@@ -40,6 +51,19 @@ const commands: CommandGroup = {
         const { name } = useFileContext();
         return (
           <CommandPaletteListItem {...props} action={() => downloadFileAction.run({ name })} icon={<DownloadIcon />} />
+        );
+      },
+    },
+    {
+      label: renameFileActionSpec.label,
+      isAvailable: isAvailableBecauseCanEditFile,
+      Component: (props) => {
+        return (
+          <CommandPaletteListItem
+            {...props}
+            action={() => renameFileActionSpec.run()}
+            icon={renameFileActionSpec.Icon && <renameFileActionSpec.Icon />}
+          />
         );
       },
     },

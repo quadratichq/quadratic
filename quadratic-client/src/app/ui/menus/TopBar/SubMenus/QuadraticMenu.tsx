@@ -17,7 +17,6 @@ import {
   createNewFileAction,
   cutAction,
   deleteFile,
-  downloadFileAction,
   duplicateFileAction,
   findInSheet,
   findInSheets,
@@ -31,7 +30,6 @@ import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionS
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
 import { pixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { useFileContext } from '../../../components/FileProvider';
 import { MenuLineItem } from '../MenuLineItem';
 import { TopBarMenuItem } from '../TopBarMenuItem';
 import { useGridSettings } from './useGridSettings';
@@ -42,7 +40,7 @@ export const QuadraticMenu = () => {
   const submit = useSubmit();
   const { uuid } = useParams() as { uuid: string };
   const { addGlobalSnackbar } = useGlobalSnackbar();
-  const { name } = useFileContext();
+
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
     userMakingRequest: { fileTeamPrivacy, teamPermissions },
@@ -93,15 +91,7 @@ export const QuadraticMenu = () => {
                 <MenuLineItem primary={duplicateFileAction.label} />
               </MenuItem>
             )}
-            {downloadFileAction.isAvailable(isAvailableArgs) && (
-              <MenuItem
-                onClick={() => {
-                  downloadFileAction.run({ name });
-                }}
-              >
-                <MenuLineItem primary={downloadFileAction.label} />
-              </MenuItem>
-            )}
+
             {deleteFile.isAvailable(isAvailableArgs) && (
               <>
                 <MenuDivider />

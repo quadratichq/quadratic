@@ -8,14 +8,12 @@ import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 import { Dispatch, SetStateAction } from 'react';
 import { useParams, useSubmit } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { deleteFile, downloadFileAction, duplicateFileAction, renameFileAction } from '../../../actions';
+import { deleteFile, duplicateFileAction, renameFileAction } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { useFileContext } from '../../components/FileProvider';
 import { MenuLineItem } from './MenuLineItem';
 
 export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispatch<SetStateAction<boolean>> }) {
   const theme = useTheme();
-  const { name } = useFileContext();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { uuid } = useParams() as { uuid: string };
   const submit = useSubmit();
@@ -77,15 +75,7 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
           <MenuLineItem primary={duplicateFileAction.label} />
         </MenuItem>
       )}
-      {downloadFileAction.isAvailable(isAvailableArgs) && (
-        <MenuItem
-          onClick={() => {
-            downloadFileAction.run({ name });
-          }}
-        >
-          <MenuLineItem primary={downloadFileAction.label} />
-        </MenuItem>
-      )}
+
       {deleteFile.isAvailable(isAvailableArgs) && (
         <>
           <MenuDivider />

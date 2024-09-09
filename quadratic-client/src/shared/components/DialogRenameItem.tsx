@@ -25,7 +25,6 @@ export function DialogRenameItem({
   const [localValue, setLocalValue] = useState<string>(value);
 
   const count = localValue.length;
-  // TODO: one day set a max length on file/team name
   const disabled = count === 0;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -67,9 +66,6 @@ export function DialogRenameItem({
         </DialogHeader>
         <form onSubmit={handleSubmit} id={formId}>
           <Input id={inputId} value={localValue} autoComplete="off" onChange={handleInputChange} />
-          {/* <p className={`text-right text-sm ${disabled ? 'text-destructive' : 'text-muted-foreground'}`}>
-            {count} / {FILE_AND_TEAM_NAME_MAX_LENGTH}
-          </p> */}
         </form>
         <DialogFooter>
           <DialogClose asChild>
