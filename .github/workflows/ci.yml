@@ -227,7 +227,7 @@ jobs:
   check-version-increment:
     runs-on: ubuntu-latest
     # If we are merging into main, but not pushed on main
-    # if: github.base_ref == 'main' && github.ref != 'refs/heads/main' TODO(@davidkircos) uncomment this before shipping
+    if: github.base_ref == 'main' && github.ref != 'refs/heads/main'
     steps:
     - name: Checkout current branch
       uses: actions/checkout@v3
