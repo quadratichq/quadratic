@@ -243,10 +243,10 @@ export const DateFormat = (props: DateFormatProps) => {
         </TabsContent>
       </Tabs>
       <div className="flex justify-end gap-2 pt-5">
-        <Button onClick={apply}>Apply</Button>
         <Button variant="secondary" onClick={closeMenu}>
           Cancel
         </Button>
+        <Button onClick={apply}>Apply</Button>
       </div>
     </div>
   );
