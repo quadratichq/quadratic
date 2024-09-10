@@ -1,8 +1,8 @@
 import { Action } from '@/app/actions/actions';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { SNIPPET_JS_CHART } from '@/app/ui/menus/CodeEditor/snippetsJS';
-import { SNIPPET_PY_CHART } from '@/app/ui/menus/CodeEditor/snippetsPY';
+import { SNIPPET_JS_API, SNIPPET_JS_CHART } from '@/app/ui/menus/CodeEditor/snippetsJS';
+import { SNIPPET_PY_API, SNIPPET_PY_CHART } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { SheetIcon } from '@/shared/components/Icons';
 
 export const insertActionsSpec = {
@@ -83,7 +83,38 @@ export const insertActionsSpec = {
       }));
     },
   },
-
+  [Action.InsertApiRequestJavascript]: {
+    label: 'From JavaScript API request',
+    labelVerbose: 'Insert JavaScript API request',
+    run: () => {
+      if (!pixiAppSettings.setEditorInteractionState) return;
+      const cursor = sheets.sheet.cursor.getCursor();
+      pixiAppSettings.setEditorInteractionState((prev) => ({
+        ...prev,
+        showCodeEditor: true,
+        mode: 'Javascript',
+        selectedCell: { x: cursor.x, y: cursor.y },
+        selectedCellSheet: sheets.sheet.id,
+        initialCode: SNIPPET_JS_API,
+      }));
+    },
+  },
+  [Action.InsertApiRequestPython]: {
+    label: 'From Python API request',
+    labelVerbose: 'Insert Python API request',
+    run: () => {
+      if (!pixiAppSettings.setEditorInteractionState) return;
+      const cursor = sheets.sheet.cursor.getCursor();
+      pixiAppSettings.setEditorInteractionState((prev) => ({
+        ...prev,
+        showCodeEditor: true,
+        mode: 'Python',
+        selectedCell: { x: cursor.x, y: cursor.y },
+        selectedCellSheet: sheets.sheet.id,
+        initialCode: SNIPPET_PY_API,
+      }));
+    },
+  },
   [Action.InsertSheet]: {
     label: 'Sheet',
     labelVerbose: 'Insert Sheet',
