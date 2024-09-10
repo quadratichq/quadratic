@@ -1,6 +1,9 @@
 import { Action } from '@/app/actions/actions';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { SNIPPET_JS_CHART } from '@/app/ui/menus/CodeEditor/snippetsJS';
+import { SNIPPET_PY_CHART } from '@/app/ui/menus/CodeEditor/snippetsPY';
+import { SheetIcon } from '@/shared/components/Icons';
 
 export const insertActionsSpec = {
   [Action.InsertCodePython]: {
@@ -37,19 +40,56 @@ export const insertActionsSpec = {
     label: 'Formula',
     labelVerbose: 'Insert Formula',
     run: () => {
-      // if (!pixiAppSettings.setInlineEditorState) return;
-      // pixiAppSettings.setInlineEditorState((prev) => ({
-      //   ...prev,
-      //   visible: true,
-      //   formula: true,
-      // }));
-      // quadraticCore.setCellValue(
-      //   sheets.sheet.id,
-      //   sheets.sheet.cursor.cursorPosition.x,
-      //   sheets.sheet.cursor.cursorPosition.y,
-      //   '=',
-      //   sheets.getCursorPosition()
-      // );
+      if (!pixiAppSettings.setEditorInteractionState) return;
+      const cursor = sheets.sheet.cursor.getCursor();
+      pixiAppSettings.setEditorInteractionState((prev) => ({
+        ...prev,
+        showCodeEditor: true,
+        mode: 'Formula',
+        selectedCell: { x: cursor.x, y: cursor.y },
+        selectedCellSheet: sheets.sheet.id,
+      }));
+    },
+  },
+  [Action.InsertChartPython]: {
+    label: 'Python (Plotly)',
+    labelVerbose: 'Insert Python chart (Plotly)',
+    run: () => {
+      if (!pixiAppSettings.setEditorInteractionState) return;
+      const cursor = sheets.sheet.cursor.getCursor();
+      pixiAppSettings.setEditorInteractionState((prev) => ({
+        ...prev,
+        showCodeEditor: true,
+        mode: 'Python',
+        selectedCell: { x: cursor.x, y: cursor.y },
+        selectedCellSheet: sheets.sheet.id,
+        initialCode: SNIPPET_PY_CHART,
+      }));
+    },
+  },
+  [Action.InsertChartJavascript]: {
+    label: 'JavaScript (Chart.js)',
+    labelVerbose: 'Insert JavaScript chart (Chart.js)',
+    run: () => {
+      if (!pixiAppSettings.setEditorInteractionState) return;
+      const cursor = sheets.sheet.cursor.getCursor();
+      pixiAppSettings.setEditorInteractionState((prev) => ({
+        ...prev,
+        showCodeEditor: true,
+        mode: 'Javascript',
+        selectedCell: { x: cursor.x, y: cursor.y },
+        selectedCellSheet: sheets.sheet.id,
+        initialCode: SNIPPET_JS_CHART,
+      }));
+    },
+  },
+
+  [Action.InsertSheet]: {
+    label: 'Sheet',
+    labelVerbose: 'Insert Sheet',
+    Icon: SheetIcon,
+    run: () => {
+      sheets.userAddSheet();
     },
   },
 };
