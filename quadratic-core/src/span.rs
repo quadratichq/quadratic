@@ -127,3 +127,12 @@ impl<T> Spanned<T> {
         }
     }
 }
+impl<T: Clone> Spanned<&T> {
+    /// Clones the inner `T`.
+    pub fn cloned(self) -> Spanned<T> {
+        Spanned {
+            span: self.span,
+            inner: self.inner.clone(),
+        }
+    }
+}

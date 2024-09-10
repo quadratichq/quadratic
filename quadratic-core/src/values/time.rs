@@ -1,8 +1,9 @@
 use std::fmt::{self, Display};
+use std::ops::{Add, Mul, Neg, Sub};
 use std::str::FromStr;
 
 use anyhow::{bail, Result};
-use chrono::{DateTime, MappedLocalTime, NaiveDateTime, Utc};
+use chrono::{DateTime, MappedLocalTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use strum::VariantArray;
@@ -73,8 +74,9 @@ impl Ord for Instant {
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct Duration {
-    pub years: i32,
     pub months: i32,
+
+    // `chrono::TimeDelta` would make sense here but it gives some serde error?
     #[cfg_attr(test, proptest(strategy = "(i32::MIN as f64)..(i32::MAX as f64)"))]
     pub seconds: f64,
 }
@@ -82,7 +84,6 @@ pub struct Duration {
 impl Default for Duration {
     fn default() -> Self {
         Self {
-            years: 0,
             months: 0,
             seconds: 0.0,
         }
@@ -92,7 +93,7 @@ impl Default for Duration {
 impl fmt::Display for Duration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Handle zero and sub-second durations separately.
-        if self.years == 0 && self.months == 0 && self.seconds.abs() < 1.0 {
+        if self.months == 0 && self.seconds.abs() < 1.0 {
             // Display only one unit.
             let mut unit = TimeUnit::Second;
             let mut quantity = self.seconds;
@@ -103,7 +104,12 @@ impl fmt::Display for Duration {
             return write!(f, "{quantity}{unit}");
         }
 
-        // Split into days, hours, minutes, and seconds.
+        // Split months into years and months.
+        let mut months = self.months;
+        let years = months / 12;
+        months -= years * 12;
+
+        // Split seconds into days, hours, minutes, and seconds.
         let mut seconds = self.seconds;
         let mut minutes = (seconds / 60.0).trunc();
         seconds -= minutes * 60.0;
@@ -120,7 +126,7 @@ impl fmt::Display for Duration {
         ];
 
         // Only display zeros if they're between nonzero units.
-        if self.years == 0 && self.months == 0 {
+        if self.months == 0 {
             while units_to_display.first().is_some_and(|&(n, _)| n == 0.0) {
                 units_to_display.remove(0);
             }
@@ -131,11 +137,11 @@ impl fmt::Display for Duration {
 
         // Display months and years whenever they are present, regardless of
         // seconds-based units.
-        if self.months != 0 {
-            units_to_display.insert(0, (self.months as f64, TimeUnit::Month));
+        if months != 0 {
+            units_to_display.insert(0, (months as f64, TimeUnit::Month));
         }
-        if self.years != 0 {
-            units_to_display.insert(0, (self.years as f64, TimeUnit::Year));
+        if years != 0 {
+            units_to_display.insert(0, (years as f64, TimeUnit::Year));
         }
 
         let mut is_first = true;
@@ -229,9 +235,7 @@ impl FromStr for Duration {
 
 impl PartialEq for Duration {
     fn eq(&self, other: &Self) -> bool {
-        self.years == other.years
-            && self.months == other.months
-            && f64::total_cmp(&self.seconds, &other.seconds).is_eq()
+        self.months == other.months && f64::total_cmp(&self.seconds, &other.seconds).is_eq()
     }
 }
 impl Eq for Duration {}
@@ -244,10 +248,7 @@ impl Ord for Duration {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         // We have to implement this ourself since we want to use
         // `f32::total_cmp()`
-        let mut ret = self.years.cmp(&other.years);
-        if ret.is_eq() {
-            ret = self.months.cmp(&other.months);
-        }
+        let mut ret = self.months.cmp(&other.months);
         if ret.is_eq() {
             ret = f64::total_cmp(&self.seconds, &other.seconds);
         }
@@ -255,61 +256,56 @@ impl Ord for Duration {
     }
 }
 
-impl std::ops::Add for Duration {
+impl Add for Duration {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
         // TODO: this should always be checked addition
         Self {
-            years: self.years + rhs.years,
             months: self.months + rhs.months,
             seconds: self.seconds + rhs.seconds,
         }
     }
 }
-impl std::ops::Neg for Duration {
+impl Neg for Duration {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
         // TODO: this should always be checked negation
         Self {
-            years: -self.years,
             months: -self.months,
             seconds: -self.seconds,
         }
     }
 }
-impl std::ops::Sub for Duration {
+impl Sub for Duration {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
         // TODO: this should always be checked subtraction
         Self {
-            years: self.years - rhs.years,
             months: self.months - rhs.months,
             seconds: self.seconds - rhs.seconds,
         }
     }
 }
-impl std::ops::Mul<i32> for Duration {
+impl Mul<i32> for Duration {
     type Output = Self;
 
     fn mul(self, rhs: i32) -> Self::Output {
         // TODO: this should always be checked multiplication
         Self {
-            years: self.years * rhs,
             months: self.months * rhs,
             seconds: self.seconds * rhs as f64,
         }
     }
 }
-impl std::ops::Mul<f64> for Duration {
+impl Mul<f64> for Duration {
     type Output = Self;
 
     fn mul(self, rhs: f64) -> Self::Output {
         // TODO: this should always be checked multiplication
         Self {
-            years: self.years * rhs.round() as i32,   // ick
             months: self.months * rhs.round() as i32, // ick
             seconds: self.seconds * rhs,
         }
@@ -319,7 +315,6 @@ impl std::ops::Mul<f64> for Duration {
 impl Duration {
     /// Zero duration.
     pub const ZERO: Self = Self {
-        years: 0,
         months: 0,
         seconds: 0.0,
     };
@@ -340,10 +335,7 @@ impl Duration {
 
     /// Constructs a duration lasting some number of years.
     pub const fn from_years(years: i32) -> Self {
-        Self {
-            years,
-            ..Self::ZERO
-        }
+        Self::from_months(years * 12)
     }
 
     /// Constructs a duration lasting some number of months.
@@ -403,11 +395,6 @@ impl Duration {
     }
 
     pub fn abs(self) -> Self {
-        match self.years.cmp(&0) {
-            std::cmp::Ordering::Less => return -self,
-            std::cmp::Ordering::Greater => return self,
-            std::cmp::Ordering::Equal => (),
-        };
         match self.months.cmp(&0) {
             std::cmp::Ordering::Less => return -self,
             std::cmp::Ordering::Greater => return self,
@@ -422,7 +409,12 @@ impl Duration {
 
     /// Returns whether the duration represents zero time.
     fn is_zero(self) -> bool {
-        self.years == 0 && self.months == 0 && self.seconds == 0.0
+        self == Self::ZERO
+    }
+
+    /// Returns whether the duration represents an integer number of days.
+    pub fn is_integer_days(self) -> bool {
+        (self.seconds / Self::DAY.seconds).fract() == 0.0
     }
 
     /// Returns the largest unit that is still smaller than this duration, or
@@ -438,6 +430,12 @@ impl Duration {
                 .find(|&unit| Duration::from(unit) < self.abs())
                 .unwrap_or(TimeUnit::Attosecond)
         })
+    }
+
+    /// Returns the number of seconds as a `chrono::TimeDelta`, ignoring months.
+    fn to_chrono_timedelta(self) -> chrono::TimeDelta {
+        chrono::TimeDelta::seconds(self.seconds.trunc() as i64)
+            + chrono::TimeDelta::nanoseconds((self.seconds.fract() * 1_000_000_000.0) as i64)
     }
 }
 
@@ -550,6 +548,26 @@ impl TimeUnit {
             TimeUnit::Month => "mo",
             TimeUnit::Year => "y",
         }
+    }
+}
+
+pub fn add_to_datetime(datetime: NaiveDateTime, duration: Duration) -> NaiveDateTime {
+    add_months(datetime, duration.months) + duration.to_chrono_timedelta()
+}
+pub fn add_to_date(date: NaiveDate, duration: Duration) -> NaiveDate {
+    add_months(date, duration.months) + duration.to_chrono_timedelta()
+}
+pub fn add_to_time(time: NaiveTime, duration: Duration) -> NaiveTime {
+    time + duration.to_chrono_timedelta()
+}
+pub fn add_months<T: Add<chrono::Months, Output = T> + Sub<chrono::Months, Output = T>>(
+    t: T,
+    months: i32,
+) -> T {
+    if months < 0 {
+        t - chrono::Months::new(-months as u32)
+    } else {
+        t + chrono::Months::new(months as u32)
     }
 }
 

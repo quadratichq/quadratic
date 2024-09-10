@@ -45,6 +45,12 @@ pub enum RunErrorMsg {
     BadFunctionName,
     BadCellReference,
     BadNumber,
+    BadDateTimeOp {
+        op: Cow<'static, str>,
+        ty1: Cow<'static, str>,
+        ty2: Option<Cow<'static, str>>,
+        use_duration_instead: bool,
+    },
     NaN,
 
     // Array size errors
@@ -118,6 +124,17 @@ impl RunError {
                 crate::RunErrorMsg::BadFunctionName => RunErrorMsg::BadFunctionName,
                 crate::RunErrorMsg::BadCellReference => RunErrorMsg::BadCellReference,
                 crate::RunErrorMsg::BadNumber => RunErrorMsg::BadNumber,
+                crate::RunErrorMsg::BadDateTimeOp {
+                    op,
+                    ty1,
+                    ty2,
+                    use_duration_instead,
+                } => RunErrorMsg::BadDateTimeOp {
+                    op,
+                    ty1,
+                    ty2,
+                    use_duration_instead,
+                },
                 crate::RunErrorMsg::NaN => RunErrorMsg::NaN,
 
                 // Array size errors
@@ -213,6 +230,17 @@ impl From<RunError> for crate::RunError {
                 RunErrorMsg::BadFunctionName => crate::RunErrorMsg::BadFunctionName,
                 RunErrorMsg::BadCellReference => crate::RunErrorMsg::BadCellReference,
                 RunErrorMsg::BadNumber => crate::RunErrorMsg::BadNumber,
+                RunErrorMsg::BadDateTimeOp {
+                    op,
+                    ty1,
+                    ty2,
+                    use_duration_instead,
+                } => crate::RunErrorMsg::BadDateTimeOp {
+                    op,
+                    ty1,
+                    ty2,
+                    use_duration_instead,
+                },
                 RunErrorMsg::NaN => crate::RunErrorMsg::NaN,
 
                 // Array size errors

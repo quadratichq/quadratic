@@ -9,7 +9,7 @@ use super::{Duration, Instant, IsBlank};
 use crate::{
     date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
     grid::{CodeCellLanguage, NumericFormat, NumericFormatKind},
-    CodeResult, RunError,
+    CodeResult, RunError, RunErrorMsg, Span, Spanned,
 };
 
 // todo: fill this out
@@ -535,6 +535,107 @@ impl CellValue {
             CellValue::Error(e) => *e,
             other => panic!("expected error value; got {other:?}"),
         }
+    }
+
+    fn to_numeric(self) -> CodeResult<CellValue> {
+        match self {
+            CellValue::Blank => Ok(CellValue::Number(0.into())),
+            CellValue::Text(s) => Ok(CellValue::parse_from_str(&s)),
+            CellValue::Logical(false) => Ok(CellValue::Number(0.into())),
+            CellValue::Logical(true) => Ok(CellValue::Number(1.into())),
+            CellValue::Error(e) => Err(*e),
+            _ => Ok(self),
+        }
+    }
+
+    /// Adds two values, casting them as needed.
+    pub fn add(
+        span: Span,
+        lhs: Spanned<CellValue>,
+        rhs: Spanned<CellValue>,
+    ) -> CodeResult<Spanned<CellValue>> {
+        let a = lhs.inner.to_numeric()?;
+        let b = rhs.inner.to_numeric()?;
+
+        let v = match (&a, &b) {
+            // number + number
+            (CellValue::Number(a), CellValue::Number(b)) => CellValue::Number(a + b),
+
+            // datetime + number(days)
+            (CellValue::Number(n), CellValue::DateTime(dt))
+            | (CellValue::DateTime(dt), CellValue::Number(n)) => CellValue::DateTime(
+                super::time::add_to_datetime(*dt, Duration::from_days(n.to_f64().unwrap_or(0.0))),
+            ),
+
+            // date + number(days)
+            (CellValue::Number(n), CellValue::Date(d))
+            | (CellValue::Date(d), CellValue::Number(n)) => CellValue::Date(
+                super::time::add_to_date(*d, Duration::from_days(n.to_f64().unwrap_or(0.0)))),
+
+            // time + number(hours)
+            (CellValue::Number(n), CellValue::Time(t))
+            | (CellValue::Time(t), CellValue::Number(n)) => {
+                CellValue::Time(super::time::add_to_time(*t, Duration::from_hours(n.to_f64().unwrap_or(0.0))))
+            }
+
+            // duration + number(days)
+            (CellValue::Duration(dur), CellValue::Number(n))
+            | (CellValue::Number(n), CellValue::Duration(dur)) => {
+                CellValue::Duration(*dur + Duration::from_days(n.to_f64().unwrap_or(0.0)))
+            }
+
+            // date + time
+            (CellValue::Date(date), CellValue::Time(time))
+            | (CellValue::Time(time), CellValue::Date(date)) => {
+                CellValue::DateTime(date.and_time(*time))
+            }
+
+            // datetime + duration
+            (CellValue::Duration(dur), CellValue::DateTime(dt))
+            | (CellValue::DateTime(dt), CellValue::Duration(dur)) => {
+                CellValue::DateTime(super::time::add_to_datetime(*dt, *dur))
+            }
+
+            // date + duration
+            (CellValue::Duration(dur), CellValue::Date(d))
+            | (CellValue::Date(d), CellValue::Duration(dur)) => {
+                if dur.is_integer_days() {
+                    CellValue::Date(super::time::add_to_date(*d, *dur))
+                } else {
+                    CellValue::DateTime(super::time::add_to_datetime(NaiveDateTime::from(*d), *dur))
+                }
+            }
+
+            // time + duration
+            (CellValue::Duration(dur), CellValue::Time(t))
+            | (CellValue::Time(t), CellValue::Duration(dur)) => {
+                CellValue::Time(super::time::add_to_time(*t, *dur))
+            }
+
+            // duration + duration
+            (CellValue::Duration(dur), CellValue::Duration(dur2)) => {
+                CellValue::Duration(*dur + *dur2)
+            }
+
+            // other operation involving dates and times
+            (
+                CellValue::Date(_) | CellValue::Time(_) | CellValue::DateTime(_),
+                CellValue::Date(_) | CellValue::Time(_) | CellValue::DateTime(_),
+            ) => {
+                return Err(RunErrorMsg::BadDateTimeOp {
+                    op: "add".into(),
+                    ty1: a.type_name().into(),
+                    ty2: Some(b.type_name().into()),
+                    use_duration_instead: true,
+                }
+                .with_span(span))
+            }
+
+            // other operation
+            _ => todo!(),
+        };
+
+        Ok(Spanned { span, inner: v })
     }
 }
 

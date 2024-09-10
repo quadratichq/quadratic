@@ -1,7 +1,7 @@
 use bigdecimal::{BigDecimal, ToPrimitive, Zero};
 use itertools::Itertools;
 
-use super::{CellValue, IsBlank, Value};
+use super::{CellValue, IsBlank, Value, Duration};
 use crate::{CodeResult, CodeResultExt, RunErrorMsg, Span, Spanned, Unspan};
 
 const CURRENCY_PREFIXES: &[char] = &['$', '¥', '£', '€'];
@@ -74,6 +74,26 @@ impl From<usize> for CellValue {
 impl From<bool> for CellValue {
     fn from(value: bool) -> Self {
         CellValue::Logical(value)
+    }
+}
+impl From<chrono::NaiveDateTime> for CellValue {
+    fn from(value: chrono::NaiveDateTime) -> Self {
+        CellValue::DateTime(value)
+    }
+}
+impl From<chrono::NaiveDate> for CellValue {
+    fn from(value: chrono::NaiveDate) -> Self {
+        CellValue::Date(value)
+    }
+}
+impl From<chrono::NaiveTime> for CellValue {
+    fn from(value: chrono::NaiveTime) -> Self {
+        CellValue::Time(value)
+    }
+}
+impl From<Duration> for CellValue {
+    fn from(value: Duration) -> Self {
+        CellValue::Duration(value)
     }
 }
 impl<T> From<CodeResult<T>> for CellValue

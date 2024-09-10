@@ -72,6 +72,12 @@ pub enum RunErrorMsg {
     BadFunctionName,
     BadCellReference,
     BadNumber,
+    BadDateTimeOp {
+        op: Cow<'static, str>,
+        ty1: Cow<'static, str>,
+        ty2: Option<Cow<'static, str>>,
+        use_duration_instead: bool,
+    },
     /// NaN or ±Infinity
     NaN,
 
@@ -162,6 +168,21 @@ impl fmt::Display for RunErrorMsg {
             }
             Self::BadNumber => {
                 write!(f, "Bad numeric literal")
+            }
+            Self::BadDateTimeOp {
+                op,
+                ty1,
+                ty2,
+                use_duration_instead,
+            } => {
+                write!(f, "Cannot {op} {ty1}")?;
+                if let Some(ty2) = ty2 {
+                    write!(f, " and {ty2}")?;
+                }
+                if *use_duration_instead {
+                    write!(f, "; use a Duration such as '1y 5d 12h 30m' instead")?;
+                }
+                Ok(())
             }
             Self::NaN => {
                 write!(f, "NaN")

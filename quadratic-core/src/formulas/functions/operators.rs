@@ -25,8 +25,16 @@ fn get_functions() -> Vec<FormulaFunction> {
         formula_fn!(
             #[operator]
             #[zip_map]
-            fn "+"([a]: f64, [b]: (Option<f64>)) {
-                a + b.unwrap_or(0.0)
+            fn "+"(span: Span, [a]: (Spanned<CellValue>), [b]: (Option<Spanned<CellValue>>)) {
+                let a = a.cloned();
+                let b = match b {
+                    Some(v) => v.cloned(),
+                    None => Spanned {
+                        span: *span,
+                        inner: 0.into(),
+                    },
+                };
+                CellValue::add(*span, a, b)?.inner
             }
         ),
         formula_fn!(
@@ -140,5 +148,11 @@ mod tests {
 
         // Test string concatenation
         assert_eq!("apple", eval_to_string(&g, "C6 & \"apple\" & D6"));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_formula_datetime_operators() {
+        todo!("test datetime addition, subtraction, multiplication, division, modulo, etc.");
     }
 }
