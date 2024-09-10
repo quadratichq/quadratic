@@ -7,7 +7,9 @@ export const fileActionsSpec = {
   [Action.FileShare]: {
     label: 'Share',
     Icon: PersonAddIcon,
-    isAvailable: () => isEmbed,
+    // TODO: (jimniels) implement types based on ayush's PR
+    // @ts-expect-error
+    isAvailable: ({ isAuthenticated }) => !isEmbed && isAuthenticated,
     run: () => {
       if (!pixiAppSettings.setEditorInteractionState) return;
       pixiAppSettings.setEditorInteractionState((prev) => ({ ...prev, showShareFileMenu: true }));
