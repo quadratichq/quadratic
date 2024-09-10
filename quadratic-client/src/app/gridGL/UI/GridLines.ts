@@ -56,6 +56,11 @@ export class GridLines extends Graphics {
       this.lineStyle({ width: 1, color: colors.gridLines, alignment: 0.5, native: true });
       this.gridLinesX = [];
       this.gridLinesY = [];
+
+      bounds.width += bounds.x < 0 ? -bounds.x : 0;
+      bounds.height += bounds.y < 0 ? -bounds.y : 0;
+      bounds.x = Math.min(bounds.x, 0);
+      bounds.y = Math.min(bounds.y, 0);
       const range = this.drawHorizontalLines(bounds);
       this.drawVerticalLines(bounds, range);
     }
@@ -75,9 +80,10 @@ export class GridLines extends Graphics {
     // draw out of bounds (left)
     this.lineStyle({ width: 1, color: colors.gridLinesOutOfBounds, alignment: 0.5, native: true });
     let x = bounds.left;
+    // this can be optimized to start at the first column that is not out of bounds
     while (column < 0) {
-      this.moveTo(x - offset, bounds.top);
-      this.lineTo(x - offset, bounds.bottom);
+      // this.moveTo(x - offset, bounds.top);
+      // this.lineTo(x - offset, bounds.bottom);
       size = sheets.sheet.offsets.getColumnWidth(column);
       x += size;
       column++;
@@ -102,8 +108,8 @@ export class GridLines extends Graphics {
           if (bounds.top < 0) {
             // draw out of bounds above
             this.lineStyle({ width: 1, color: colors.gridLinesOutOfBounds, alignment: 0.5, native: true });
-            this.moveTo(x - offset, bounds.top);
-            this.lineTo(x - offset, 0);
+            // this.moveTo(x - offset, bounds.top);
+            this.moveTo(x - offset, Math.max(0, bounds.top));
 
             this.lineStyle({ width: 1, color: colors.gridLines, alignment: 0.5, native: true });
             if (oobBottom !== undefined) {
@@ -168,9 +174,10 @@ export class GridLines extends Graphics {
     // draw out of bounds (top)
     this.lineStyle({ width: 1, color: colors.gridLinesOutOfBounds, alignment: 0.5, native: true });
     let y = bounds.top;
+    // this can be optimized to start at the first row that is not out of bounds
     while (row < 0) {
-      this.moveTo(bounds.left, y - offset);
-      this.lineTo(bounds.right, y - offset);
+      // this.moveTo(bounds.left, y - offset);
+      // this.lineTo(bounds.right, y - offset);
       size = offsets.getRowHeight(row);
       y += size;
       row++;
@@ -188,8 +195,8 @@ export class GridLines extends Graphics {
           if (bounds.left < 0) {
             // draw out of bounds (left)
             this.lineStyle({ width: 1, color: colors.gridLinesOutOfBounds, alignment: 0.5, native: true });
-            this.moveTo(bounds.left, y - offset);
-            this.lineTo(0, y - offset);
+            // this.moveTo(bounds.left, y - offset);
+            this.moveTo(Math.max(bounds.left, 0), y - offset);
 
             this.lineStyle({ width: 1, color: colors.gridLines, alignment: 0.5, native: true });
             if (oobRight !== undefined) {
