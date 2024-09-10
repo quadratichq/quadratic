@@ -180,7 +180,7 @@ export const DateFormat = (props: DateFormatProps) => {
   return (
     <div className="h-58">
       {formattedDate && (
-        <div className="mt-3 flex items-center justify-center bg-gray-50 p-2 text-sm">{formattedDate}</div>
+        <div className="mt-3 flex items-center justify-center bg-accent p-2 text-sm">{formattedDate}</div>
       )}
       <Tabs className="text-sm" value={tab}>
         <TabsList className="mt-2 w-full border-b border-border">
