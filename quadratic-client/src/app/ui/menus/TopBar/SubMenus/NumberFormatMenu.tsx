@@ -91,7 +91,11 @@ export const NumberFormatMenu = () => {
 
       <SubMenu
         label={
-          <MenuLineItem primary="Date and Time Format" secondary="3/4/2024" icon={CalendarMonthIcon}></MenuLineItem>
+          <MenuLineItem
+            primary="Date and Time Format"
+            secondary={`3/4/${new Date().getFullYear()}`}
+            icon={CalendarMonthIcon}
+          ></MenuLineItem>
         }
         onMenuChange={(e) => setOpenDateFormatMenu(e.open)}
       >
