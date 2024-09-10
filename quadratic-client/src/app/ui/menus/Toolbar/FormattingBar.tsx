@@ -1,12 +1,12 @@
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
+import { QColorPicker } from '@/app/ui/components/qColorPicker';
 import {
   ArrowDropDownIcon,
   BorderAllIcon,
   FormatAlignLeftIcon,
-  FormatColorFillIcon,
-  FormatColorTextIcon,
   FormatTextWrapIcon,
   Number123Icon,
   VerticalAlignTopIcon,
@@ -40,15 +40,11 @@ export const FormattingBar = () => {
         <FormatButton action={Action.ToggleBold} />
         <FormatButton action={Action.ToggleItalic} />
 
-        <FormatButtonDropdown tooltipLabel="Text color" Icon={FormatColorTextIcon}>
-          <DropdownMenuItem>TODO color picker</DropdownMenuItem>
-        </FormatButtonDropdown>
+        <FormatColorPickerButton action={Action.FormatTextColor} />
 
         <Separator />
 
-        <FormatButtonDropdown tooltipLabel="Fill color" Icon={FormatColorFillIcon}>
-          <DropdownMenuItem>TODO color picker</DropdownMenuItem>
-        </FormatButtonDropdown>
+        <FormatColorPickerButton action={Action.FormatFillColor} />
         <FormatButtonDropdown tooltipLabel="Borders" Icon={BorderAllIcon}>
           <DropdownMenuItem>TODO border picker</DropdownMenuItem>
         </FormatButtonDropdown>
@@ -171,6 +167,33 @@ function FormatButton({ action }: { action: keyof typeof defaultActionSpec }) {
         <TooltipLabel label={labelToDisplay} keyboardShortcut={keyboardShortcut} />
       </TooltipContent>
     </Tooltip>
+  );
+}
+
+function FormatColorPickerButton({ action }: { action: keyof typeof defaultActionSpec }) {
+  const actionSpec = defaultActionSpec[action];
+  if (!actionSpec) {
+    throw new Error(`Action ${action} not found in defaultActionSpec`);
+  }
+  const { label, run } = actionSpec;
+  const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
+  const labelToDisplay = 'labelVerbose' in actionSpec ? actionSpec.labelVerbose ?? label : label;
+
+  return (
+    <FormatButtonDropdown tooltipLabel={labelToDisplay} Icon={Icon}>
+      <DropdownMenuItem>
+        <QColorPicker
+          onChangeComplete={(color) => {
+            run(color);
+            focusGrid();
+          }}
+          onClear={() => {
+            run(undefined);
+            focusGrid();
+          }}
+        />
+      </DropdownMenuItem>
+    </FormatButtonDropdown>
   );
 }
 

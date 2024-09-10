@@ -1,12 +1,9 @@
 import { Action } from '@/app/actions/actions';
-import { QColorPicker } from '@/app/ui/components/qColorPicker';
-import { setTextColor } from '@/app/ui/menus/TopBar/SubMenus/formatCells';
+import { MenubarColorPickerItemAction } from '@/app/ui/menus/TopBar/TopBarFileMenubar/MenubarColorPickerItemAction';
 import {
   BorderAllIcon,
   FormatAlignLeftIcon,
   FormatBoldIcon,
-  FormatColorFillIcon,
-  FormatColorTextIcon,
   FormatTextWrapIcon,
   Number123Icon,
 } from '@/shared/components/Icons';
@@ -84,33 +81,9 @@ export const FormatMenubarMenu = () => {
 
         <MenubarSeparator />
 
-        <MenubarSub>
-          <MenubarSubTrigger>
-            <FormatColorTextIcon /> Text color
-          </MenubarSubTrigger>
-          <MenubarSubContent>
-            <MenubarItem className="hover:bg-background">
-              <QColorPicker
-                onChangeComplete={(color) => {
-                  setTextColor(color);
-                  // focusGrid();
-                }}
-                onClear={() => {
-                  setTextColor(undefined);
-                  // focusGrid();
-                }}
-              />
-            </MenubarItem>
-          </MenubarSubContent>
-        </MenubarSub>
-        <MenubarSub>
-          <MenubarSubTrigger>
-            <FormatColorFillIcon /> Fill color
-          </MenubarSubTrigger>
-          <MenubarSubContent>
-            <MenubarItem>TODO</MenubarItem>
-          </MenubarSubContent>
-        </MenubarSub>
+        <MenubarColorPickerItemAction action={Action.FormatTextColor} />
+        <MenubarColorPickerItemAction action={Action.FormatFillColor} />
+
         <MenubarSub>
           <MenubarSubTrigger>
             <BorderAllIcon />

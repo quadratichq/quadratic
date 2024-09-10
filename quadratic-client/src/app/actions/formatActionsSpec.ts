@@ -4,7 +4,9 @@ import {
   setAlign,
   setBold,
   setCellCommas,
+  setFillColor,
   setItalic,
+  setTextColor,
   setVerticalAlign,
   setWrap,
   textFormatDecreaseDecimalPlaces,
@@ -22,6 +24,8 @@ import {
   FormatAlignRightIcon,
   FormatBoldIcon,
   FormatClearIcon,
+  FormatColorFillIcon,
+  FormatColorTextIcon,
   FormatItalicIcon,
   FormatNumberAutomaticIcon,
   FormatTextClipIcon,
@@ -34,6 +38,7 @@ import {
   VerticalAlignMiddleIcon,
   VerticalAlignTopIcon,
 } from '@/shared/components/Icons';
+import { ColorResult } from 'react-color';
 import { Action } from './actions';
 
 // TODO: (jimniels) add isAvailable check for these (when you do command palette)
@@ -170,6 +175,20 @@ export const formatActionsSpec = {
     Icon: FormatTextWrapIcon,
     run: () => {
       setWrap('wrap');
+    },
+  },
+  [Action.FormatTextColor]: {
+    label: 'Text color',
+    Icon: FormatColorTextIcon,
+    run: (color?: ColorResult) => {
+      setTextColor(color);
+    },
+  },
+  [Action.FormatFillColor]: {
+    label: 'Fill color',
+    Icon: FormatColorFillIcon,
+    run: (color?: ColorResult) => {
+      setFillColor(color);
     },
   },
 };
