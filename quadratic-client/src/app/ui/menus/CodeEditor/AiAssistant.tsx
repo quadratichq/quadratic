@@ -312,13 +312,16 @@ How can I help you?
               </TooltipHint>
             </div>
           ) : (
-            <div className="flex items-center gap-3 text-[10px] text-slate-500">
-              <span>{KeyboardSymbols.Shift}↵ new line</span>
-              <span>↵ submit</span>
+            <div className="flex items-center gap-3 text-xs text-slate-500">
+              <span>
+                {KeyboardSymbols.Shift}
+                {KeyboardSymbols.Enter} new line
+              </span>
+              <span>{KeyboardSymbols.Enter} submit</span>
               <ConditionalWrapper
                 condition={prompt.length !== 0}
                 Wrapper={({ children }) => (
-                  <TooltipHint title="Submit" shortcut={`↵`}>
+                  <TooltipHint title="Submit" shortcut={`${KeyboardSymbols.Enter}`}>
                     {children as React.ReactElement}
                   </TooltipHint>
                 )}
@@ -352,27 +355,22 @@ function SelectAIModelDropdownMenu({
 }) {
   return (
     <DropdownMenu>
-      <ConditionalWrapper
-        condition={!loading}
-        Wrapper={({ children }) => <TooltipHint title="Select AI model">{children as React.ReactElement}</TooltipHint>}
-      >
-        <DropdownMenuTrigger asChild disabled={loading}>
-          <div className={`flex items-center text-xs ${loading ? 'opacity-60' : ''}`}>
-            {isAnthropic ? (
-              <>
-                <Anthropic fontSize="inherit" />
-                <span className="pl-2 pr-1">Anthropic: claude-3.5-sonnet</span>
-              </>
-            ) : (
-              <>
-                <OpenAI fontSize="inherit" />
-                <span className="pl-2 pr-1">OpenAI: gpt-4o</span>
-              </>
-            )}
-            <CaretDownIcon />
-          </div>
-        </DropdownMenuTrigger>
-      </ConditionalWrapper>
+      <DropdownMenuTrigger asChild disabled={loading}>
+        <div className={`flex items-center text-xs ${loading ? 'opacity-60' : ''}`}>
+          {isAnthropic ? (
+            <>
+              <Anthropic fontSize="inherit" />
+              <span className="pl-2 pr-1">Anthropic: claude-3.5-sonnet</span>
+            </>
+          ) : (
+            <>
+              <OpenAI fontSize="inherit" />
+              <span className="pl-2 pr-1">OpenAI: gpt-4o</span>
+            </>
+          )}
+          <CaretDownIcon />
+        </div>
+      </DropdownMenuTrigger>
 
       <DropdownMenuContent align="start" alignOffset={-4}>
         <DropdownMenuCheckboxItem checked={isAnthropic} onCheckedChange={() => setModel('claude-3-5-sonnet-20240620')}>
