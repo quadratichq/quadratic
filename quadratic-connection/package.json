@@ -1,7 +1,6 @@
 {
   "name": "quadratic-connection",
   "description": "Quadratic Database Connector",
-  "version": "0.1.0",
   "dependencies": {},
   "devDependencies": {},
   "scripts": {
