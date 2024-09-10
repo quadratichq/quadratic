@@ -121,13 +121,15 @@ function FormatButtonDropdown({
   );
 }
 
-function FormatButtonDropdownActions({ actions }: { actions: Action[] }) {
+function FormatButtonDropdownActions({ actions }: { actions: (keyof typeof defaultActionSpec)[] }) {
   return actions.map((action) => {
     const actionSpec = defaultActionSpec[action];
     if (!actionSpec) {
       throw new Error(`Action ${action} not found in defaultActionSpec`);
     }
-    const { Icon, label, labelVerbose, run } = actionSpec;
+    const { label, run } = actionSpec;
+    const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
+    const labelToDisplay = 'labelVerbose' in actionSpec ? actionSpec.labelVerbose ?? label : label;
     return (
       <DropdownMenuItem
         onClick={() => {
@@ -136,19 +138,21 @@ function FormatButtonDropdownActions({ actions }: { actions: Action[] }) {
         }}
       >
         {Icon && <Icon className="mr-2" />}
-        {labelVerbose ? labelVerbose : label}
+        {labelToDisplay}
       </DropdownMenuItem>
     );
   });
 }
 
-function FormatButton({ action }: { action: Action }) {
+function FormatButton({ action }: { action: keyof typeof defaultActionSpec }) {
   const actionSpec = defaultActionSpec[action];
   if (!actionSpec) {
     throw new Error(`Action ${action} not found in defaultActionSpec`);
   }
 
-  const { Icon, label, labelVerbose, run } = actionSpec;
+  const { label, run } = actionSpec;
+  const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
+  const labelToDisplay = 'labelVerbose' in actionSpec ? actionSpec.labelVerbose ?? label : label;
   const keyboardShortcut = keyboardShortcutEnumToDisplay(action);
 
   // TODO: (jimniels) make a style, like primary color, when the format is applied
@@ -164,7 +168,7 @@ function FormatButton({ action }: { action: Action }) {
         {Icon && <Icon />}
       </TooltipTrigger>
       <TooltipContent side="bottom">
-        <TooltipLabel label={labelVerbose ? labelVerbose : label} keyboardShortcut={keyboardShortcut} />
+        <TooltipLabel label={labelToDisplay} keyboardShortcut={keyboardShortcut} />
       </TooltipContent>
     </Tooltip>
   );

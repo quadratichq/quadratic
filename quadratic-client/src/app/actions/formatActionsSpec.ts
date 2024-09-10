@@ -34,12 +34,11 @@ import {
   VerticalAlignMiddleIcon,
   VerticalAlignTopIcon,
 } from '@/shared/components/Icons';
-import { ActionSpecRecord } from './actionSpec';
 import { Action } from './actions';
 
 // TODO: (jimniels) add isAvailable check for these (when you do command palette)
 
-export const formatActionsSpec: ActionSpecRecord = {
+export const formatActionsSpec = {
   [Action.FormatAlignHorizontalCenter]: {
     label: 'Center',
     Icon: FormatAlignCenterIcon,

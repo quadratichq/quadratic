@@ -53,7 +53,13 @@ export const ZoomMenu = () => {
   );
 };
 
-function DropdownMenuItemFromAction({ action, mixpanelEvent }: { action: Action; mixpanelEvent: string }) {
+function DropdownMenuItemFromAction({
+  action,
+  mixpanelEvent,
+}: {
+  action: keyof typeof defaultActionSpec;
+  mixpanelEvent: string;
+}) {
   const actionSpec = defaultActionSpec[action];
   if (actionSpec === undefined) {
     throw new Error(`No action spec found for action: ${action}`);

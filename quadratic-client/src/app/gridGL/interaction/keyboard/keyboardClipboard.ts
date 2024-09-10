@@ -1,5 +1,5 @@
 import { Action } from '@/app/actions/actions';
-import { editActionsSpec } from '@/app/actions/editActionsSpec';
+import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { copySelectionToPNG, fullClipboardSupport } from '@/app/grid/actions/clipboard/clipboard';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -18,7 +18,7 @@ export function keyboardClipboard(props: {
 
   // Download as CSV
   if (matchShortcut(Action.DownloadAsCsv, event)) {
-    editActionsSpec[Action.DownloadAsCsv]?.run();
+    defaultActionSpec[Action.DownloadAsCsv]?.run();
     return true;
   }
 

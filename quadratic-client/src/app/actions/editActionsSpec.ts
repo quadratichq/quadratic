@@ -19,10 +19,9 @@ import {
   RedoIcon,
   UndoIcon,
 } from '@/shared/components/Icons';
-import { ActionSpecRecord } from './actionSpec';
 import { Action } from './actions';
 
-export const editActionsSpec: ActionSpecRecord = {
+export const editActionsSpec = {
   [Action.Undo]: {
     label: 'Undo',
     Icon: UndoIcon,

@@ -1,8 +1,7 @@
 import { Action } from '@/app/actions/actions';
-import { ActionSpecRecord } from '@/app/actions/actionSpec';
 import { zoomIn, zoomInOut, zoomOut, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
 
-export const viewActionsSpec: ActionSpecRecord = {
+export const viewActionsSpec = {
   [Action.ZoomIn]: {
     label: 'Zoom in',
     run: () => {

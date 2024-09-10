@@ -1,9 +1,8 @@
 import { Action } from '@/app/actions/actions';
-import { ActionSpecRecord } from '@/app/actions/actionSpec';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 
-export const insertActionsSpec: ActionSpecRecord = {
+export const insertActionsSpec = {
   [Action.InsertCodePython]: {
     label: 'Python',
     labelVerbose: 'Insert Python code',

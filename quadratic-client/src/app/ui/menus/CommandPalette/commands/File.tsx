@@ -6,7 +6,6 @@ import {
   isAvailableBecauseCanEditFile,
 } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
-import { ActionSpec } from '@/app/actions/actionSpec';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useFileContext } from '@/app/ui/components/FileProvider';
@@ -17,7 +16,7 @@ import { useSetRecoilState } from 'recoil';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
 // TODO: make the types better here so it knows whether this exists
-const renameFileActionSpec = defaultActionSpec[Action.FileRename] as ActionSpec;
+const renameFileActionSpec = defaultActionSpec[Action.FileRename];
 
 const commands: CommandGroup = {
   heading: 'File',
