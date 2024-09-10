@@ -266,9 +266,12 @@ impl CellValue {
             CellValue::Logical(true) => "true".to_string(),
             CellValue::Logical(false) => "false".to_string(),
             CellValue::Instant(_) => todo!("repr of Instant"),
+
+            // todo: these formats should be a user-definable format (we'll need it for localization)
             CellValue::Date(d) => d.format("%m/%d/%Y").to_string(),
             CellValue::Time(t) => t.format("%-I:%M %p").to_string(),
             CellValue::DateTime(t) => t.format("%m/%d/%Y %-I:%M %p").to_string(),
+
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
 
