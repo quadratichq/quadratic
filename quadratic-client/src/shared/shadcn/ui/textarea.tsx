@@ -8,7 +8,7 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
 }
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, autoHeight, maxHeight, onChange, onKeyDown, ...props }, ref) => {
+  ({ className, autoHeight, maxHeight, onChange, onKeyDown, style, ...props }, ref) => {
     const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
     React.useImperativeHandle(ref, () => textareaRef.current!);
@@ -32,6 +32,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         )}
         style={{
           maxHeight,
+          ...style,
         }}
         onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => {
           onChange?.(event);
