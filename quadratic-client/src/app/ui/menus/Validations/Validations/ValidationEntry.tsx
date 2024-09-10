@@ -8,6 +8,7 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 import { cn } from '@/shared/shadcn/utils';
 import { useSetRecoilState } from 'recoil';
 import { ValidationsData } from './useValidationsData';
+import { validationRuleSimple } from '../Validation/validationType';
 
 interface Props {
   validation: Validation;
@@ -36,7 +37,7 @@ export const validationText = (validation: Validation) => {
   } else if ('DateTime' in validation.rule) {
     return 'Date and time';
   }
-  throw new Error('Unknown validation type');
+  throw new Error(`Unknown validation type: ${validationRuleSimple(validation)}`);
 };
 
 export const ValidationEntry = (props: Props) => {
