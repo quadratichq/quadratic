@@ -7,6 +7,8 @@ export enum Action {
   InsertSheet = 'insert_sheet',
   InsertChartPython = 'insert_chart_python',
   InsertChartJavascript = 'insert_chart_javascript',
+  InsertApiRequestJavascript = 'insert_api_request_javascript',
+  InsertApiRequestPython = 'insert_api_request_python',
   Copy = 'copy',
   Cut = 'cut',
   Paste = 'paste',

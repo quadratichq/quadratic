@@ -1,6 +1,7 @@
 import { Action } from '@/app/actions/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarFileMenubar/MenubarItemAction';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import {
   ArrowDropDownCircleIcon,
   CheckBoxIcon,
@@ -8,6 +9,7 @@ import {
   DataObjectIcon,
   InsertChartIcon,
 } from '@/shared/components/Icons';
+import { IMPORT_MESSAGE } from '@/shared/constants/appConstants';
 import {
   MenubarContent,
   MenubarItem,
@@ -22,6 +24,7 @@ import { useSetRecoilState } from 'recoil';
 
 export const InsertMenubarMenu = () => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const { addGlobalSnackbar } = useGlobalSnackbar();
   return (
     <MenubarMenu>
       <MenubarTrigger>Insert</MenubarTrigger>
@@ -52,10 +55,12 @@ export const InsertMenubarMenu = () => {
             Data
           </MenubarSubTrigger>
           <MenubarSubContent>
-            <MenubarItem>From file (CSV, Excel, or Parquet)</MenubarItem>
+            <MenubarItem onClick={() => addGlobalSnackbar(IMPORT_MESSAGE)}>
+              From file (CSV, Excel, or Parquet)
+            </MenubarItem>
             <MenubarSeparator />
-            <MenubarItem>From Python API request</MenubarItem>
-            <MenubarItem>From JavaScript API request</MenubarItem>
+            <MenubarItemAction action={Action.InsertApiRequestJavascript} />
+            <MenubarItemAction action={Action.InsertApiRequestPython} />
             <MenubarSeparator />
             <MenubarItem onClick={() => setEditorInteractionState((prev) => ({ ...prev, showCellTypeMenu: true }))}>
               From connection…
