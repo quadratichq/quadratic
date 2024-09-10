@@ -1,12 +1,12 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { MULTIPLAYER_COLORS } from '@/app/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { useRootRouteLoaderData } from '@/routes/_root';
+import { Tooltip, TooltipContent, TooltipPortal, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { getAuth0AvatarSrc } from '@/shared/utils/auth0UserImageSrc';
 import { displayInitials, displayName } from '@/shared/utils/userUtil';
-import { Avatar, AvatarGroup, IconButton } from '@mui/material';
+import { Avatar, AvatarGroup } from '@mui/material';
 import { EyeOpenIcon } from '@radix-ui/react-icons';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { colors } from '../../../theme/colors';
@@ -28,21 +28,22 @@ export const TopBarUsers = () => {
 
   return (
     <>
-      {/* TODO(ayush): create custom AvatarGroup component */}
-      <AvatarGroup
-        spacing={16}
-        componentsProps={{ additionalAvatar: { sx: sharedAvatarSxProps } }}
-        sx={{
-          alignSelf: 'center',
-          alignItems: 'center',
-          flexDirection: 'row',
-          // Styles for the "+2" avatar
-          '& > .MuiAvatar-root': { marginRight: '.25rem', backgroundColor: '#aaa', border: `2px solid #aaa` },
-        }}
-        max={5}
-      >
-        {
-          <div className={`ml-2`}>
+      <TooltipProvider>
+        {/* TODO(ayush): create custom AvatarGroup component */}
+        <AvatarGroup
+          spacing={16}
+          componentsProps={{ additionalAvatar: { sx: sharedAvatarSxProps } }}
+          className="gap-3"
+          sx={{
+            alignSelf: 'center',
+            alignItems: 'center',
+            flexDirection: 'row',
+            // Styles for the "+2" avatar
+            '& > .MuiAvatar-root': { marginRight: '.25rem', backgroundColor: '#aaa', border: `2px solid #aaa` },
+          }}
+          max={5}
+        >
+          {
             <You
               displayName={displayName(user ?? anonymous, true)}
               initial={displayInitials(user ?? anonymous)}
@@ -50,25 +51,25 @@ export const TopBarUsers = () => {
               border={multiplayer.colorString ?? 'black'}
               bgColor={multiplayer.colorString}
             />
-          </div>
-        }
-        {users.map((user) => {
-          return (
-            <UserAvatar
-              key={user.session_id}
-              displayName={displayName(user, false)}
-              initial={displayInitials(user)}
-              picture={user.image}
-              border={user.colorString}
-              sessionId={user.session_id}
-              follow={editorInteractionState.follow === user.session_id}
-              follower={followers.includes(user.session_id)}
-              viewport={user.viewport}
-              bgColor={user.colorString}
-            />
-          );
-        })}
-      </AvatarGroup>
+          }
+          {users.map((user) => {
+            return (
+              <UserAvatar
+                key={user.session_id}
+                displayName={displayName(user, false)}
+                initial={displayInitials(user)}
+                picture={user.image}
+                border={user.colorString}
+                sessionId={user.session_id}
+                follow={editorInteractionState.follow === user.session_id}
+                follower={followers.includes(user.session_id)}
+                viewport={user.viewport}
+                bgColor={user.colorString}
+              />
+            );
+          })}
+        </AvatarGroup>
+      </TooltipProvider>
     </>
   );
 };
@@ -87,22 +88,29 @@ function You({
   bgColor?: string;
 }) {
   return (
-    <TooltipHint title={displayName}>
-      <Avatar
-        sx={{
-          bgcolor: bgColor ?? colors.quadraticSecondary,
-          ...sharedAvatarSxProps,
-        }}
-        alt={displayName}
-        src={getAuth0AvatarSrc(picture)}
-        imgProps={{ crossOrigin: 'anonymous' }}
-        style={{
-          border: `2px solid ${border}`,
-        }}
-      >
-        {initial}
-      </Avatar>
-    </TooltipHint>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Avatar
+          sx={{
+            bgcolor: bgColor ?? colors.quadraticSecondary,
+            ...sharedAvatarSxProps,
+          }}
+          alt={displayName}
+          src={getAuth0AvatarSrc(picture)}
+          imgProps={{ crossOrigin: 'anonymous' }}
+          style={{
+            border: `2px solid ${border}`,
+          }}
+        >
+          {initial}
+        </Avatar>
+      </TooltipTrigger>
+      <TooltipPortal>
+        <TooltipContent>
+          <p>{displayName}</p>
+        </TooltipContent>
+      </TooltipPortal>
+    </Tooltip>
   );
 }
 
@@ -143,32 +151,41 @@ function UserAvatar({
   };
   return (
     <div className="relative">
-      <TooltipHint
-        title={displayName}
-        shortcut={follower ? 'following you' : `Click to ${follow ? 'unfollow' : 'follow'}`}
-      >
-        <IconButton sx={{ borderRadius: 0, px: '.25rem' }} onClick={handleFollow}>
-          <div>
-            <Avatar
-              sx={{
-                bgcolor: bgColor ?? colors.quadraticSecondary,
-                ...sharedAvatarSxProps,
-                pointerEvents: 'auto',
-                cursor: 'pointer',
-                position: 'relative',
-              }}
-              alt={displayName}
-              src={getAuth0AvatarSrc(picture)}
-              imgProps={{ crossOrigin: 'anonymous' }}
-              style={{
-                border: `2px solid ${border}`,
-              }}
-            >
-              {initial}
-            </Avatar>
-          </div>
-        </IconButton>
-      </TooltipHint>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button onClick={handleFollow}>
+            <div>
+              <Avatar
+                sx={{
+                  bgcolor: bgColor ?? colors.quadraticSecondary,
+                  ...sharedAvatarSxProps,
+                  pointerEvents: 'auto',
+                  cursor: 'pointer',
+                  position: 'relative',
+                }}
+                alt={displayName}
+                src={getAuth0AvatarSrc(picture)}
+                imgProps={{ crossOrigin: 'anonymous' }}
+                style={{
+                  border: `2px solid ${border}`,
+                }}
+              >
+                {initial}
+              </Avatar>
+            </div>
+          </button>
+        </TooltipTrigger>
+        <TooltipPortal>
+          <TooltipContent>
+            <p>
+              {displayName}{' '}
+              <span className="opacity-70">
+                ({follower ? 'following you' : `Click to ${follow ? 'unfollow' : 'follow'}`})
+              </span>
+            </p>
+          </TooltipContent>
+        </TooltipPortal>
+      </Tooltip>
       {follow && (
         <div className="pointer-events-none absolute bottom-1 left-1/2 flex h-5  w-5 items-center justify-center rounded-full bg-white">
           <EyeOpenIcon />
