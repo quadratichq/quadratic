@@ -52,7 +52,9 @@ type MenubarItemActionProps = {
     | Action.ZoomToFit
     | Action.ZoomTo50
     | Action.ZoomTo100
-    | Action.ZoomTo200;
+    | Action.ZoomTo200
+    | Action.InsertApiRequestJavascript
+    | Action.InsertApiRequestPython;
   shortcutOverride?: string;
 };
 
