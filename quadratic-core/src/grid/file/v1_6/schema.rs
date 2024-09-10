@@ -254,6 +254,7 @@ pub enum CodeCellLanguage {
 pub enum ConnectionKind {
     Postgres,
     Mysql,
+    Mssql,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

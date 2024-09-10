@@ -8,6 +8,7 @@
 import { debugShowLoadingHashes } from '@/app/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { isFloatEqual } from '@/app/helpers/float';
 import { JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Rectangle } from 'pixi.js';
@@ -475,7 +476,7 @@ export class CellsLabels {
       return { row, height };
     });
     const changesRowHeights: JsRowHeight[] = jsRowHeights.filter(
-      ({ row, height }) => Math.abs(height - this.sheetOffsets.getRowHeight(Number(row))) > 0.001
+      ({ row, height }) => !isFloatEqual(height, this.sheetOffsets.getRowHeight(Number(row)))
     );
     return changesRowHeights;
   }
