@@ -53,19 +53,7 @@ export const ZoomMenu = () => {
   );
 };
 
-type DropdownMenuItemFromActionProps = {
-  action:
-    | Action.ZoomIn
-    | Action.ZoomOut
-    | Action.ZoomToSelection
-    | Action.ZoomToFit
-    | Action.ZoomTo50
-    | Action.ZoomTo100
-    | Action.ZoomTo200;
-  mixpanelEvent: string;
-};
-
-function DropdownMenuItemFromAction({ action, mixpanelEvent }: DropdownMenuItemFromActionProps) {
+function DropdownMenuItemFromAction({ action, mixpanelEvent }: { action: Action; mixpanelEvent: string }) {
   const actionSpec = defaultActionSpec[action];
   if (actionSpec === undefined) {
     throw new Error(`No action spec found for action: ${action}`);

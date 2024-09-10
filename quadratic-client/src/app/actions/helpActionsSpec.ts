@@ -1,9 +1,10 @@
 import { Action } from '@/app/actions/actions';
+import { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { DocumentationIcon, FeedbackIcon, MailIcon } from '@/shared/components/Icons';
 import { CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
 
-export const helpActionsSpec = {
+export const helpActionsSpec: Partial<ActionSpecRecord> = {
   [Action.HelpContactUs]: {
     label: 'Contact us',
     Icon: MailIcon,

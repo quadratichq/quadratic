@@ -1,3 +1,4 @@
+import { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { editActionsSpec } from '@/app/actions/editActionsSpec';
 import { fileActionsSpec } from '@/app/actions/fileActionsSpec';
 import { formatActionsSpec } from '@/app/actions/formatActionsSpec';
@@ -5,7 +6,7 @@ import { helpActionsSpec } from '@/app/actions/helpActionsSpec';
 import { insertActionsSpec } from '@/app/actions/insertActionsSpec';
 import { viewActionsSpec } from '@/app/actions/viewActionsSpec';
 
-export const defaultActionSpec = {
+export const defaultActionSpec: Partial<ActionSpecRecord> = {
   ...fileActionsSpec,
   ...editActionsSpec,
   ...viewActionsSpec,

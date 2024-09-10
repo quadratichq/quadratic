@@ -10,6 +10,7 @@ import {
   undoAction,
 } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
+import { ActionSpec } from '@/app/actions/actionsSpec';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import {
@@ -38,7 +39,7 @@ import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
 // TODO: Make this more type safe
-const downloadSelectionAsCsvAction = defaultActionSpec[Action.DownloadAsCsv];
+const downloadSelectionAsCsvAction = defaultActionSpec[Action.DownloadAsCsv] as ActionSpec<void>;
 
 const data: CommandGroup = {
   heading: 'Edit',

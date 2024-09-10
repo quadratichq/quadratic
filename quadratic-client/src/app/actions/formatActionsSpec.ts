@@ -1,3 +1,4 @@
+import { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import {
   clearFormattingAndBorders,
   removeCellNumericFormat,
@@ -43,7 +44,12 @@ import { Action } from './actions';
 
 // TODO: (jimniels) add isAvailable check for these (when you do command palette)
 
-export const formatActionsSpec = {
+export type FormatActionArgs = {
+  [Action.FormatTextColor]: ColorResult | undefined;
+  [Action.FormatFillColor]: ColorResult | undefined;
+};
+
+export const formatActionsSpec: Partial<ActionSpecRecord> = {
   [Action.FormatAlignHorizontalCenter]: {
     label: 'Center',
     Icon: FormatAlignCenterIcon,
@@ -180,15 +186,15 @@ export const formatActionsSpec = {
   [Action.FormatTextColor]: {
     label: 'Text color',
     Icon: FormatColorTextIcon,
-    run: (color?: ColorResult) => {
-      setTextColor(color);
+    run: (args: FormatActionArgs[Action.FormatTextColor]) => {
+      setTextColor(args);
     },
   },
   [Action.FormatFillColor]: {
     label: 'Fill color',
     Icon: FormatColorFillIcon,
-    run: (color?: ColorResult) => {
-      setFillColor(color);
+    run: (args: FormatActionArgs[Action.FormatFillColor]) => {
+      setFillColor(args);
     },
   },
 };

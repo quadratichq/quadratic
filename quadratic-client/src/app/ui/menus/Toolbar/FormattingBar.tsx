@@ -134,23 +134,7 @@ function FormatButtonDropdown({
   );
 }
 
-type FormatButtonDropdownProps = {
-  actions: (
-    | Action.FormatNumberAutomatic
-    | Action.FormatNumberScientific
-    | Action.FormatAlignHorizontalLeft
-    | Action.FormatAlignHorizontalCenter
-    | Action.FormatAlignHorizontalRight
-    | Action.FormatAlignVerticalTop
-    | Action.FormatAlignVerticalMiddle
-    | Action.FormatAlignVerticalBottom
-    | Action.FormatTextWrapWrap
-    | Action.FormatTextWrapOverflow
-    | Action.FormatTextWrapClip
-  )[];
-};
-
-function FormatButtonDropdownActions({ actions }: FormatButtonDropdownProps) {
+function FormatButtonDropdownActions({ actions }: { actions: Action[] }) {
   return actions.map((action, key) => {
     const actionSpec = defaultActionSpec[action];
     if (!actionSpec) {
@@ -173,19 +157,7 @@ function FormatButtonDropdownActions({ actions }: FormatButtonDropdownProps) {
   });
 }
 
-type FormatButtonProps = {
-  action:
-    | Action.FormatNumberCurrency
-    | Action.FormatNumberPercent
-    | Action.FormatNumberToggleCommas
-    | Action.FormatNumberDecimalDecrease
-    | Action.FormatNumberDecimalIncrease
-    | Action.ToggleBold
-    | Action.ToggleItalic
-    | Action.ClearFormattingBorders;
-};
-
-function FormatButton({ action }: FormatButtonProps) {
+function FormatButton({ action }: { action: Action }) {
   const actionSpec = defaultActionSpec[action];
   if (!actionSpec) {
     throw new Error(`Action ${action} not found in defaultActionSpec`);

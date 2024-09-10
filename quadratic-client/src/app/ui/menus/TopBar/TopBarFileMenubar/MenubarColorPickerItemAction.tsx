@@ -5,12 +5,12 @@ import { QColorPicker } from '@/app/ui/components/qColorPicker';
 
 import { MenubarItem, MenubarSub, MenubarSubContent, MenubarSubTrigger } from '@/shared/shadcn/ui/menubar';
 
-type MenubarColorPickerItemActionProps = {
-  action: Action.FormatTextColor | Action.FormatFillColor;
-};
-
 // TODO: (jimniels) implement types based on ayush's PR
-export const MenubarColorPickerItemAction = ({ action }: MenubarColorPickerItemActionProps) => {
+export const MenubarColorPickerItemAction = ({
+  action,
+}: {
+  action: Action.FormatTextColor | Action.FormatFillColor;
+}) => {
   const actionSpec = defaultActionSpec[action];
   if (!actionSpec) {
     throw new Error(`Action ${action} not found in defaultActionSpec`);
