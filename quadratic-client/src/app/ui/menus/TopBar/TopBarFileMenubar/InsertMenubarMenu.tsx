@@ -1,4 +1,5 @@
 import { Action } from '@/app/actions/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarFileMenubar/MenubarItemAction';
 import {
   ArrowDropDownCircleIcon,
@@ -6,7 +7,6 @@ import {
   CodeIcon,
   DataObjectIcon,
   InsertChartIcon,
-  SheetIcon,
 } from '@/shared/components/Icons';
 import {
   MenubarContent,
@@ -18,8 +18,10 @@ import {
   MenubarSubTrigger,
   MenubarTrigger,
 } from '@/shared/shadcn/ui/menubar';
+import { useSetRecoilState } from 'recoil';
 
 export const InsertMenubarMenu = () => {
+  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   return (
     <MenubarMenu>
       <MenubarTrigger>Insert</MenubarTrigger>
@@ -40,8 +42,8 @@ export const InsertMenubarMenu = () => {
             Chart
           </MenubarSubTrigger>
           <MenubarSubContent>
-            <MenubarItem>Python (Plotly)</MenubarItem>
-            <MenubarItem>JavaScript (Chart.js))</MenubarItem>
+            <MenubarItemAction action={Action.InsertChartPython} />
+            <MenubarItemAction action={Action.InsertChartJavascript} />
           </MenubarSubContent>
         </MenubarSub>
         <MenubarSub>
@@ -50,14 +52,14 @@ export const InsertMenubarMenu = () => {
             Data
           </MenubarSubTrigger>
           <MenubarSubContent>
-            <MenubarItem>From CSV file</MenubarItem>
-            <MenubarItem>From Excel file</MenubarItem>
-            <MenubarItem>From Parquet file</MenubarItem>
+            <MenubarItem>From file (CSV, Excel, or Parquet)</MenubarItem>
             <MenubarSeparator />
             <MenubarItem>From Python API request</MenubarItem>
             <MenubarItem>From JavaScript API request</MenubarItem>
             <MenubarSeparator />
-            <MenubarItem>From connection…</MenubarItem>
+            <MenubarItem onClick={() => setEditorInteractionState((prev) => ({ ...prev, showCellTypeMenu: true }))}>
+              From connection…
+            </MenubarItem>
           </MenubarSubContent>
         </MenubarSub>
 
@@ -70,10 +72,7 @@ export const InsertMenubarMenu = () => {
           Dropdown
         </MenubarItem>
         <MenubarSeparator />
-        <MenubarItem>
-          <SheetIcon />
-          Sheet
-        </MenubarItem>
+        <MenubarItemAction action={Action.InsertSheet} />
       </MenubarContent>
     </MenubarMenu>
   );

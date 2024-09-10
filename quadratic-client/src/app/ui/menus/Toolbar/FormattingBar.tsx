@@ -18,13 +18,21 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import mixpanel from 'mixpanel-browser';
 import { ReactNode } from 'react';
 
 export const FormattingBar = () => {
   return (
     <TooltipProvider>
-      <div className="flex text-sm">
+      <ToggleGroup.Root
+        type="multiple"
+        className="flex text-sm"
+        onValueChange={() => {
+          console.log('fired value change');
+          focusGrid();
+        }}
+      >
         <FormatButton action={Action.FormatNumberCurrency} />
         <FormatButton action={Action.FormatNumberPercent} />
         <FormatButtonDropdown showDropdownArrow tooltipLabel="More number formats" Icon={Number123Icon}>
@@ -79,7 +87,7 @@ export const FormattingBar = () => {
         <Separator />
 
         <FormatButton action={Action.ClearFormattingBorders} />
-      </div>
+      </ToggleGroup.Root>
     </TooltipProvider>
   );
 };
@@ -101,24 +109,33 @@ function FormatButtonDropdown({
 }) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="text-muted-foreground hover:text-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground">
-        <Tooltip>
-          <TooltipTrigger className="flex h-full items-center px-2  hover:bg-accent ">
-            <Icon />
-            {showDropdownArrow && <ArrowDropDownIcon className="-ml-1 -mr-2" />}
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            <TooltipLabel label={tooltipLabel} />
-          </TooltipContent>
-        </Tooltip>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>{children}</DropdownMenuContent>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <ToggleGroup.Item value={tooltipLabel} asChild aria-label={tooltipLabel}>
+            <DropdownMenuTrigger className="flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground">
+              <Icon />
+              {showDropdownArrow && <ArrowDropDownIcon className="-ml-1 -mr-2" />}
+            </DropdownMenuTrigger>
+          </ToggleGroup.Item>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          <TooltipLabel label={tooltipLabel} />
+        </TooltipContent>
+      </Tooltip>
+      <DropdownMenuContent
+        onCloseAutoFocus={(e) => {
+          e.preventDefault();
+          focusGrid();
+        }}
+      >
+        {children}
+      </DropdownMenuContent>
     </DropdownMenu>
   );
 }
 
 function FormatButtonDropdownActions({ actions }: { actions: (keyof typeof defaultActionSpec)[] }) {
-  return actions.map((action) => {
+  return actions.map((action, key) => {
     const actionSpec = defaultActionSpec[action];
     if (!actionSpec) {
       throw new Error(`Action ${action} not found in defaultActionSpec`);
@@ -128,6 +145,7 @@ function FormatButtonDropdownActions({ actions }: { actions: (keyof typeof defau
     const labelToDisplay = 'labelVerbose' in actionSpec ? actionSpec.labelVerbose ?? label : label;
     return (
       <DropdownMenuItem
+        key={key}
         onClick={() => {
           mixpanel.track('[FormattingBar].button', { label });
           run();
@@ -154,14 +172,18 @@ function FormatButton({ action }: { action: keyof typeof defaultActionSpec }) {
   // TODO: (jimniels) make a style, like primary color, when the format is applied
   return (
     <Tooltip>
-      <TooltipTrigger
-        className="flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground data-[state=open]:bg-accent"
-        onClick={() => {
-          mixpanel.track('[FormattingBar].button', { label });
-          run();
-        }}
-      >
-        {Icon && <Icon />}
+      <TooltipTrigger asChild>
+        <ToggleGroup.Item
+          aria-label={label}
+          value={label}
+          className="flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none"
+          onClick={() => {
+            mixpanel.track('[FormattingBar].button', { label });
+            run();
+          }}
+        >
+          {Icon && <Icon />}
+        </ToggleGroup.Item>
       </TooltipTrigger>
       <TooltipContent side="bottom">
         <TooltipLabel label={labelToDisplay} keyboardShortcut={keyboardShortcut} />
