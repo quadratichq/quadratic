@@ -117,7 +117,23 @@ function FormatButtonDropdown({
   );
 }
 
-function FormatButtonDropdownActions({ actions }: { actions: (keyof typeof defaultActionSpec)[] }) {
+type FormatButtonDropdownProps = {
+  actions: (
+    | Action.FormatNumberAutomatic
+    | Action.FormatNumberScientific
+    | Action.FormatAlignHorizontalLeft
+    | Action.FormatAlignHorizontalCenter
+    | Action.FormatAlignHorizontalRight
+    | Action.FormatAlignVerticalTop
+    | Action.FormatAlignVerticalMiddle
+    | Action.FormatAlignVerticalBottom
+    | Action.FormatTextWrapWrap
+    | Action.FormatTextWrapOverflow
+    | Action.FormatTextWrapClip
+  )[];
+};
+
+function FormatButtonDropdownActions({ actions }: FormatButtonDropdownProps) {
   return actions.map((action) => {
     const actionSpec = defaultActionSpec[action];
     if (!actionSpec) {
@@ -125,7 +141,6 @@ function FormatButtonDropdownActions({ actions }: { actions: (keyof typeof defau
     }
     const { label, run } = actionSpec;
     const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
-    const labelToDisplay = 'labelVerbose' in actionSpec ? actionSpec.labelVerbose ?? label : label;
     return (
       <DropdownMenuItem
         onClick={() => {
@@ -134,13 +149,25 @@ function FormatButtonDropdownActions({ actions }: { actions: (keyof typeof defau
         }}
       >
         {Icon && <Icon className="mr-2" />}
-        {labelToDisplay}
+        {label}
       </DropdownMenuItem>
     );
   });
 }
 
-function FormatButton({ action }: { action: keyof typeof defaultActionSpec }) {
+type FormatButtonProps = {
+  action:
+    | Action.FormatNumberCurrency
+    | Action.FormatNumberPercent
+    | Action.FormatNumberToggleCommas
+    | Action.FormatNumberDecimalDecrease
+    | Action.FormatNumberDecimalIncrease
+    | Action.ToggleBold
+    | Action.ToggleItalic
+    | Action.ClearFormattingBorders;
+};
+
+function FormatButton({ action }: FormatButtonProps) {
   const actionSpec = defaultActionSpec[action];
   if (!actionSpec) {
     throw new Error(`Action ${action} not found in defaultActionSpec`);
@@ -148,7 +175,6 @@ function FormatButton({ action }: { action: keyof typeof defaultActionSpec }) {
 
   const { label, run } = actionSpec;
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
-  const labelToDisplay = 'labelVerbose' in actionSpec ? actionSpec.labelVerbose ?? label : label;
   const keyboardShortcut = keyboardShortcutEnumToDisplay(action);
 
   // TODO: (jimniels) make a style, like primary color, when the format is applied
@@ -164,23 +190,26 @@ function FormatButton({ action }: { action: keyof typeof defaultActionSpec }) {
         {Icon && <Icon />}
       </TooltipTrigger>
       <TooltipContent side="bottom">
-        <TooltipLabel label={labelToDisplay} keyboardShortcut={keyboardShortcut} />
+        <TooltipLabel label={label} keyboardShortcut={keyboardShortcut} />
       </TooltipContent>
     </Tooltip>
   );
 }
 
-function FormatColorPickerButton({ action }: { action: keyof typeof defaultActionSpec }) {
+type FormatColorPickerButtonProps = {
+  action: Action.FormatTextColor | Action.FormatFillColor;
+};
+
+function FormatColorPickerButton({ action }: FormatColorPickerButtonProps) {
   const actionSpec = defaultActionSpec[action];
   if (!actionSpec) {
     throw new Error(`Action ${action} not found in defaultActionSpec`);
   }
   const { label, run } = actionSpec;
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
-  const labelToDisplay = 'labelVerbose' in actionSpec ? actionSpec.labelVerbose ?? label : label;
 
   return (
-    <FormatButtonDropdown tooltipLabel={labelToDisplay} Icon={Icon}>
+    <FormatButtonDropdown tooltipLabel={label} Icon={Icon}>
       <DropdownMenuItem>
         <QColorPicker
           onChangeComplete={(color) => {
