@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ValidationInput } from '../menus/Validations/Validation/ValidationUI/ValidationInput';
 import { Button } from '@/shared/shadcn/ui/button';
 import { applyFormatToDateTime } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { cn } from '@/shared/shadcn/utils';
 
 // first format is default rendering
 const DATE_FORMATS = [
@@ -45,10 +46,11 @@ const RadioEntry = (props: RadioEntryProps) => {
 interface DateFormatProps {
   status: boolean;
   closeMenu: () => void;
+  className?: string;
 }
 
 export const DateFormat = (props: DateFormatProps) => {
-  const { status, closeMenu } = props;
+  const { status, closeMenu, className } = props;
   const ref = useRef<HTMLInputElement>(null);
 
   const [time, setTime] = useState<string | undefined>(TIME_FORMATS[0].value);
@@ -178,7 +180,7 @@ export const DateFormat = (props: DateFormatProps) => {
   };
 
   return (
-    <div className="h-58">
+    <div className={cn('h-58 w-100', className)}>
       {formattedDate && (
         <div className="mt-3 flex items-center justify-center bg-accent p-2 text-sm">{formattedDate}</div>
       )}
