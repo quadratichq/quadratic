@@ -272,7 +272,7 @@ How can I help you?
           ref={textareaRef}
           id="prompt-input"
           value={prompt}
-          className="border-t-lightGray border-b-0 border-l-0 border-r-0 border-t pl-1 pr-1 shadow-none focus-visible:ring-0"
+          className="border-t-lightGray rounded-none border-b-0 border-l-0 border-r-0 border-t pl-1 pr-1 shadow-none focus-visible:ring-0"
           onChange={(event) => {
             setPrompt(event.target.value);
           }}
