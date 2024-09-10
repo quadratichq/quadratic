@@ -263,7 +263,7 @@ How can I help you?
       </div>
 
       <form
-        className="z-10 px-2"
+        className="z-10 m-2 rounded-lg bg-slate-100"
         onSubmit={(e) => {
           e.preventDefault();
         }}
@@ -272,7 +272,7 @@ How can I help you?
           ref={textareaRef}
           id="prompt-input"
           value={prompt}
-          className="border-t-lightGray rounded-none border-b-0 border-l-0 border-r-0 border-t pl-1 pr-1 shadow-none focus-visible:ring-0"
+          className="min-h-14 rounded-none border-none p-2 shadow-none focus-visible:ring-0"
           onChange={(event) => {
             setPrompt(event.target.value);
           }}
@@ -294,20 +294,33 @@ How can I help you?
             }
           }}
           autoComplete="off"
-          placeholder="Ask a question"
+          placeholder="Ask a question..."
           autoHeight={true}
           maxHeight="120px"
         />
 
-        <div className="flex w-full select-none items-center justify-between px-1">
+        <div
+          className="flex w-full select-none items-center justify-between px-2"
+          onClick={() => {
+            textareaRef.current?.focus();
+          }}
+        >
           <SelectAIModelDropdownMenu loading={loading} isAnthropic={isAnthropicModel(model)} setModel={setModel} />
 
           {loading ? (
             <div className="flex items-center gap-2">
               <CircularProgress size="0.75rem" />
               <TooltipHint title="Stop generating">
-                <IconButton size="small" color="primary" onClick={abortPrompt} edge="end">
-                  <Stop fontSize="inherit" />
+                <IconButton
+                  size="small"
+                  color="primary"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    abortPrompt();
+                  }}
+                  edge="end"
+                >
+                  <Stop fontSize="inherit" sx={{ backgroundColor: '#2463EB', borderRadius: '3px', color: 'white' }} />
                 </IconButton>
               </TooltipHint>
             </div>
@@ -328,12 +341,22 @@ How can I help you?
               >
                 <IconButton
                   size="small"
-                  color="primary"
-                  onClick={submitPrompt}
+                  color="default"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    submitPrompt();
+                  }}
                   edge="end"
-                  {...(prompt.length === 0 ? { disabled: true } : {})}
+                  disabled={prompt.length === 0}
                 >
-                  <ArrowUpward fontSize="inherit" />
+                  <ArrowUpward
+                    fontSize="inherit"
+                    sx={{
+                      backgroundColor: prompt.length === 0 ? colors.mediumGray : '#2463EB',
+                      borderRadius: '3px',
+                      color: 'white',
+                    }}
+                  />
                 </IconButton>
               </ConditionalWrapper>
             </div>
