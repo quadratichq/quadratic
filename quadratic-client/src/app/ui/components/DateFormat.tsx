@@ -12,8 +12,8 @@ import { cn } from '@/shared/shadcn/utils';
 
 // first format is default rendering
 const DATE_FORMATS = [
-  { value: '%m/%d/%Y', label: '3/4/2024' },
-  { value: '%Y-%m-%d', label: '2024-3-4' },
+  { value: '%m/%d/%Y', label: '03/04/2024' },
+  { value: '%Y-%m-%d', label: '2024-03-04' },
   { value: '%B %d, %Y', label: 'March 4, 2024' },
 ];
 
