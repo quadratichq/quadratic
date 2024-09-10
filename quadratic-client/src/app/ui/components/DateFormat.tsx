@@ -3,12 +3,12 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { DOCUMENTATION_DATE_TIME_FORMATTING } from '@/shared/constants/urls';
 import { Label } from '@/shared/shadcn/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/shared/shadcn/ui/radio-group';
-import { cn } from '@/shared/shadcn/utils';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import { Tooltip } from '@mui/material';
-import { CheckIcon } from '@radix-ui/react-icons';
-import { useEffect, useRef, useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ValidationInput } from '../menus/Validations/Validation/ValidationUI/ValidationInput';
+import { Button } from '@/shared/shadcn/ui/button';
+import { applyFormatToDateTime } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { cn } from '@/shared/shadcn/utils';
 
 // first format is default rendering
 const DATE_FORMATS = [
@@ -34,41 +34,52 @@ const RadioEntry = (props: RadioEntryProps) => {
   const { value, label } = props;
 
   return (
-    <div className="flex items-center space-x-2">
-      <RadioGroupItem value={value} id={value} className="border-0" />
-      <Label htmlFor={value}>{label}</Label>
+    <div className="flex items-center">
+      <RadioGroupItem value={value} id={value} />
+      <Label htmlFor={value} className="pl-2 font-normal">
+        {label}
+      </Label>
     </div>
   );
 };
 
-// todo: add link to help page...
-
-const customHelp = (
-  <div className="h-full cursor-pointer" onClick={() => console.log('open help for date time formats')}>
-    <Tooltip title="Help with custom date and time formats" className="align-super">
-      <a href={DOCUMENTATION_DATE_TIME_FORMATTING} target="_blank" title="Open help in another tab" rel="noreferrer">
-        <HelpOutlineIcon sx={{ width: '0.85rem', height: '0.85rem' }} />
-      </a>
-    </Tooltip>
-  </div>
-);
-
 interface DateFormatProps {
   status: boolean;
   closeMenu: () => void;
+  className?: string;
 }
 
 export const DateFormat = (props: DateFormatProps) => {
-  const { status, closeMenu } = props;
+  const { status, closeMenu, className } = props;
   const ref = useRef<HTMLInputElement>(null);
 
   const [time, setTime] = useState<string | undefined>(TIME_FORMATS[0].value);
   const [date, setDate] = useState<string | undefined>(DATE_FORMATS[0].value);
   const [custom, setCustom] = useState<string | undefined>();
 
+  const [tab, setTab] = useState<'presets' | 'custom'>('presets');
+
+  const [original, setOriginal] = useState<string | undefined>('2024/3/4');
+  const [current, setCurrent] = useState<string | undefined>();
+  const [formattedDate, setFormattedDate] = useState<string | undefined>();
+  useEffect(() => {
+    if (original && current) {
+      setFormattedDate(applyFormatToDateTime(original, current));
+    }
+  }, [original, current]);
+
+  const apply = useCallback(() => {
+    quadraticCore.setDateTimeFormat(sheets.getRustSelection(), `${date} ${time}`, sheets.getCursorPosition());
+    closeMenu();
+  }, [closeMenu, date, time]);
+
   useEffect(() => {
     const findCurrent = async () => {
       const cursorPosition = sheets.sheet.cursor.cursorPosition;
+      const date = await quadraticCore.getEditCell(sheets.sheet.id, cursorPosition.x, cursorPosition.y);
+      if (date) {
+        setOriginal(date);
+      }
       const summary = await quadraticCore.getCellFormatSummary(
         sheets.sheet.id,
         cursorPosition.x,
@@ -94,16 +105,22 @@ export const DateFormat = (props: DateFormatProps) => {
         if (summary.dateTime.replace(updatedDate, '').replace(updatedTime, '').trim() === '') {
           setTime(updatedTime);
           setDate(updatedDate);
-          setCustom(undefined);
+          setCustom(`${updatedDate} ${updatedTime}`);
+          setCurrent(`${updatedDate} ${updatedTime}`);
+          setTab('presets');
         } else {
           setCustom(summary.dateTime);
           setDate(undefined);
           setTime(undefined);
+          setCurrent(summary.dateTime);
+          setTab('custom');
         }
       } else {
         setDate(updatedDate);
         setTime(updatedTime);
-        setCustom(undefined);
+        setCustom(`${updatedDate} ${updatedTime}`);
+        setCurrent(`${updatedDate} ${updatedTime}`);
+        setTab('presets');
       }
     };
 
@@ -115,24 +132,47 @@ export const DateFormat = (props: DateFormatProps) => {
   const changeDate = (value: string) => {
     setDate(value);
     const currentTime = time ?? TIME_FORMATS[0].value;
-    const newTime = `${value} ${currentTime}`;
-    setCustom(undefined);
-    quadraticCore.setDateTimeFormat(sheets.getRustSelection(), newTime, sheets.getCursorPosition());
+    setCurrent(`${value} ${currentTime}`);
+    setCustom(`${value} ${currentTime}`);
   };
 
   const changeTime = (value: string) => {
     setTime(value);
     const currentDate = date ?? DATE_FORMATS[0].value;
-    const newTime = `${currentDate} ${value}`;
-    setCustom(undefined);
-    quadraticCore.setDateTimeFormat(sheets.getRustSelection(), newTime, sheets.getCursorPosition());
+    setCurrent(`${currentDate} ${value}`);
+    setCustom(`${currentDate} ${value}`);
   };
 
   const changeCustom = async (value: string) => {
-    setTime(undefined);
-    setDate(undefined);
-    setCustom(value);
-    quadraticCore.setDateTimeFormat(sheets.getRustSelection(), value, sheets.getCursorPosition());
+    if (value) {
+      // need to check if the value is a default format
+      let possibleDate: string | undefined;
+      let possibleTime: string | undefined;
+      for (const format of DATE_FORMATS) {
+        if (value.includes(format.value)) {
+          possibleDate = format.value;
+          break;
+        }
+      }
+      for (const format of TIME_FORMATS) {
+        if (value.includes(format.value)) {
+          possibleTime = format.value;
+          break;
+        }
+      }
+
+      // the custom date is just `{date} {time}` so we can set it to defaults
+      if (possibleDate && possibleTime && value.replace(possibleDate, '').replace(possibleTime, '').trim() === '') {
+        setTime(possibleTime);
+        setDate(possibleDate);
+        setCustom(`${possibleDate} ${possibleTime}`);
+      } else {
+        setTime(undefined);
+        setDate(undefined);
+        setCustom(value);
+      }
+      setCurrent(value);
+    }
   };
 
   const customFocus = () => {
@@ -140,42 +180,73 @@ export const DateFormat = (props: DateFormatProps) => {
   };
 
   return (
-    <div className="flex flex-col gap-5 px-8 py-4">
-      <div>
-        <RadioGroup value={date} onValueChange={changeDate}>
-          <div className="flex flex-col gap-1">Date Format</div>
-          {DATE_FORMATS.map((format) => (
-            <RadioEntry key={format.value} value={format.value} label={format.label} />
-          ))}
-        </RadioGroup>
-      </div>
-      <div>
-        <RadioGroup value={time} onValueChange={changeTime}>
-          <div>Time Format</div>
-          {TIME_FORMATS.map((format) => (
-            <RadioEntry key={format.value} value={format.value} label={format.label} />
-          ))}
-        </RadioGroup>
-      </div>
-      <div>
-        <div className="mb-1">Custom Time and Date Format</div>
-        <div className="flex items-center">
-          <div
-            className="mr-2 aspect-square h-4 w-4 cursor-pointer rounded-full border shadow focus-visible:ring-1 focus-visible:ring-ring"
-            onClick={customFocus}
+    <div className={cn('h-58 w-100', className)}>
+      {formattedDate && (
+        <div className="mt-3 flex items-center justify-center bg-accent p-2 text-sm">{formattedDate}</div>
+      )}
+      <Tabs className="text-sm" value={tab}>
+        <TabsList className="mt-2 w-full border-b border-border">
+          <TabsTrigger value="presets" className="w-1/2" onClick={() => setTab('presets')}>
+            Presets
+          </TabsTrigger>
+          <TabsTrigger
+            value="custom"
+            className="w-1/2"
+            onClick={() => {
+              setTab('custom');
+              customFocus();
+            }}
           >
-            <CheckIcon className={(cn('h-3.5 w-3.5 fill-primary'), custom ? '' : 'invisible')} />
+            Custom
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="presets" className="mt-2 grid grid-cols-2">
+          <div>
+            <RadioGroup value={date} onValueChange={changeDate}>
+              <div className="font-semibold">Date</div>
+              {DATE_FORMATS.map((format) => (
+                <RadioEntry key={format.value} value={format.value} label={format.label} />
+              ))}
+            </RadioGroup>
           </div>
-          <ValidationInput
-            ref={ref}
-            className="h-6"
-            placeholder="Custom"
-            onChange={changeCustom}
-            value={custom ?? ''}
-            onEnter={closeMenu}
-          />
-          {customHelp}
-        </div>
+          <div>
+            <RadioGroup value={time} onValueChange={changeTime}>
+              <div className="font-semibold">Time</div>
+              {TIME_FORMATS.map((format) => (
+                <RadioEntry key={format.value} value={format.value} label={format.label} />
+              ))}
+            </RadioGroup>
+          </div>
+        </TabsContent>
+        <TabsContent value="custom">
+          <div className="flex flex-col gap-1">
+            <ValidationInput
+              ref={ref}
+              placeholder="%d, %B %Y"
+              onChange={changeCustom}
+              value={custom ?? ''}
+              onEnter={closeMenu}
+            />
+            <p className="text-xs text-muted-foreground ">
+              Learn custom date and time formatting{' '}
+              <a
+                href={DOCUMENTATION_DATE_TIME_FORMATTING}
+                target="_blank"
+                className="underline hover:text-primary"
+                title="Open help in another tab"
+                rel="noreferrer"
+              >
+                in the docs
+              </a>
+            </p>
+          </div>
+        </TabsContent>
+      </Tabs>
+      <div className="flex justify-end gap-2 pt-5">
+        <Button variant="secondary" onClick={closeMenu}>
+          Cancel
+        </Button>
+        <Button onClick={apply}>Apply</Button>
       </div>
     </div>
   );

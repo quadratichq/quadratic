@@ -11,6 +11,8 @@ import {
   textFormatSetPercentage,
 } from './formatCells';
 
+import { focusGrid } from '@/app/helpers/focusGrid';
+import { DateFormat } from '@/app/ui/components/DateFormat';
 import {
   DecimalDecreaseIcon,
   DecimalIncreaseIcon,
@@ -21,12 +23,10 @@ import {
   PercentIcon,
   QuoteIcon,
 } from '@/app/ui/icons';
-import '@szhsin/react-menu/dist/index.css';
-import { TopBarMenuItem } from '../TopBarMenuItem';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import '@szhsin/react-menu/dist/index.css';
 import { useRef, useState } from 'react';
-import { focusGrid } from '@/app/helpers/focusGrid';
-import { DateFormat } from '@/app/ui/components/DateFormat';
+import { TopBarMenuItem } from '../TopBarMenuItem';
 
 export const NumberFormatMenu = () => {
   const menuRef = useRef<MenuInstance | null>(null);
@@ -92,14 +92,14 @@ export const NumberFormatMenu = () => {
       <SubMenu
         label={
           <MenuLineItem
-            primary="Date and Time Format"
+            primary="Date and time format"
             secondary={`3/4/${new Date().getFullYear()}`}
             icon={CalendarMonthIcon}
           ></MenuLineItem>
         }
         onMenuChange={(e) => setOpenDateFormatMenu(e.open)}
       >
-        <DateFormat status={openDateFormatMenu} closeMenu={closeMenu} />
+        <DateFormat status={openDateFormatMenu} closeMenu={closeMenu} className="block min-w-80 px-4 py-2" />
       </SubMenu>
     </Menu>
   );

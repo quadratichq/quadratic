@@ -5,9 +5,9 @@ import { formatDate, formatDateTime, formatTime, parseTime } from '@/app/quadrat
 import { ValidationInput } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationInput';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Close } from '@mui/icons-material';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import { IconButton, Tooltip } from '@mui/material';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
+import { CheckSharp, Close } from '@mui/icons-material';
+import { IconButton } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { Calendar } from '../../../../shared/shadcn/ui/calendar';
@@ -126,11 +126,11 @@ export const CalendarPicker = () => {
       {showTime && (
         <div className="flex w-full gap-2 p-3">
           <ValidationInput value={formatTime(value)} onChange={changeTime} onEnter={finish} />
-          <Tooltip title="Set current date and time">
-            <Button onClick={setCurrentDateTime} className="p-1">
-              <AccessTimeIcon />
+          <TooltipPopover label="Set current date and time">
+            <Button onClick={setCurrentDateTime} className="px-2">
+              <CheckSharp fontSize="small" />
             </Button>
-          </Tooltip>
+          </TooltipPopover>
         </div>
       )}
     </div>

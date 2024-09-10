@@ -2,7 +2,7 @@ use chrono::{NaiveDate, NaiveDateTime, NaiveTime, ParseError};
 
 use quadratic_core::{
     date_time::{
-        date_time_to_date_time_string, i32_to_naive_time, i64_to_naive_date,
+        date_time_to_date_time_string, date_to_date_string, i32_to_naive_time, i64_to_naive_date,
         naive_date_time_to_i64, naive_date_to_i64, naive_time_to_i32, parse_date, parse_time,
         time_to_time_string, DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT,
     },
@@ -117,4 +117,21 @@ pub fn number_to_date(number: i64) -> Option<String> {
 pub fn number_to_time(number: i32) -> Option<String> {
     let time = i32_to_naive_time(number)?;
     Some(time.format(DEFAULT_TIME_FORMAT).to_string())
+}
+
+#[wasm_bindgen(js_name = "applyFormatToDateTime")]
+/// Applies a date format to a date from CellValue.to_edit()
+/// Note: this will likely change, but for now we hardcode the formats
+///    CellValue::Date(d) => d.format("%m/%d/%Y").to_string(),
+///    CellValue::Time(t) => t.format("%-I:%M %p").to_string(),
+///    CellValue::DateTime(t) => t.format("%m/%d/%Y %-I:%M %p").to_string(),
+pub fn apply_format_to_date_time(date: &str, format: &str) -> Option<String> {
+    if let Ok(dt) = NaiveDateTime::parse_from_str(date, "%m/%d/%Y %-I:%M %p") {
+        return Some(date_time_to_date_time_string(dt, Some(format.to_string())));
+    } else if let Ok(dt) = NaiveDate::parse_from_str(date, "%m/%d/%Y") {
+        return Some(date_to_date_string(dt, Some(format.to_string())));
+    } else if let Ok(dt) = NaiveTime::parse_from_str(date, "%-I:%M %p") {
+        return Some(time_to_time_string(dt, Some(format.to_string())));
+    }
+    None
 }
