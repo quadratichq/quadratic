@@ -59,15 +59,11 @@ export const ValidationInput = forwardRef((props: ValidationInputProps, ref: Ref
         }
         onChange(input.value);
       }
-
-      // setHasFocus(false);
     },
     [onChange]
   );
 
   const handleOnFocus = useCallback((e: FocusEvent<HTMLDivElement>) => {
-    // setHasFocus(true);
-
     // change the focus from the div to the input on focus
     const input = parentRef.current?.querySelector('input');
     if (!input) {
