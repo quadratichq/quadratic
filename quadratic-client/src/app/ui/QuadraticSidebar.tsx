@@ -1,4 +1,8 @@
-import { provideFeedbackAction } from '@/app/actions';
+import {
+  isAvailableBecauseCanEditFile,
+  isAvailableBecauseFileLocationIsAccessibleAndWriteable,
+  provideFeedbackAction,
+} from '@/app/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
@@ -39,6 +43,9 @@ export const QuadraticSidebar = () => {
     teamPermissions,
   };
 
+  const canEditFile = isAvailableBecauseCanEditFile(isAvailableArgs);
+  const canDoTeamsStuff = isAvailableBecauseFileLocationIsAccessibleAndWriteable(isAvailableArgs);
+
   return (
     <TooltipProvider>
       <nav className="hidden h-full w-12 flex-shrink-0 flex-col border-r border-border bg-accent lg:flex">
@@ -52,30 +59,40 @@ export const QuadraticSidebar = () => {
           </Link>
         </SidebarTooltip>
         <div className="mt-2">
-          <SidebarTooltip label="Insert code cell" shortcut={'/'}>
-            <SidebarButton onClick={() => setEditorInteractionState((prev) => ({ ...prev, showCellTypeMenu: true }))}>
-              <CodeIcon />
-            </SidebarButton>
-          </SidebarTooltip>
+          {canEditFile && (
+            <SidebarTooltip label="Insert code cell" shortcut={'/'}>
+              <SidebarButton onClick={() => setEditorInteractionState((prev) => ({ ...prev, showCellTypeMenu: true }))}>
+                <CodeIcon />
+              </SidebarButton>
+            </SidebarTooltip>
+          )}
+
           <SidebarTooltip label={(gridSettings.showCellTypeOutlines ? 'Hide' : 'Show') + ' code cell outlines'}>
             <SidebarButton onClick={() => gridSettings.setShowCellTypeOutlines(!gridSettings.showCellTypeOutlines)}>
               {gridSettings.showCellTypeOutlines ? <CodeCellOutlineOn /> : <CodeCellOutlineOff />}
             </SidebarButton>
           </SidebarTooltip>
-          <SidebarTooltip label="Connections">
-            <SidebarButton
-              onClick={() => setEditorInteractionState((prev) => ({ ...prev, showConnectionsMenu: true }))}
-            >
-              <DatabaseIcon />
-            </SidebarButton>
-          </SidebarTooltip>
-          <KernelMenu>
-            <SidebarTooltip label="Kernel">
-              <SidebarButton onClick={() => {}}>
-                <MemoryIcon />
+
+          {canDoTeamsStuff && (
+            <SidebarTooltip label="Connections">
+              <SidebarButton
+                onClick={() => setEditorInteractionState((prev) => ({ ...prev, showConnectionsMenu: true }))}
+              >
+                <DatabaseIcon />
               </SidebarButton>
             </SidebarTooltip>
-          </KernelMenu>
+          )}
+
+          {canEditFile && (
+            <KernelMenu>
+              <SidebarTooltip label="Kernel">
+                <SidebarButton onClick={() => {}}>
+                  <MemoryIcon />
+                </SidebarButton>
+              </SidebarTooltip>
+            </KernelMenu>
+          )}
+
           <SidebarTooltip label="Command palette" shortcut={KeyboardSymbols.Command + 'P'}>
             <SidebarButton onClick={() => setEditorInteractionState((prev) => ({ ...prev, showCommandPalette: true }))}>
               <ManageSearch />
