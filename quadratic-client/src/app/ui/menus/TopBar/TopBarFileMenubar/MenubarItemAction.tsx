@@ -41,7 +41,18 @@ type MenubarItemActionProps = {
     | Action.ClearFormattingBorders
     | Action.InsertCodePython
     | Action.InsertCodeJavascript
-    | Action.InsertCodeFormula;
+    | Action.InsertCodeFormula
+    | Action.HelpContactUs
+    | Action.InsertChartPython
+    | Action.InsertChartJavascript
+    | Action.InsertSheet
+    | Action.ZoomIn
+    | Action.ZoomOut
+    | Action.ZoomToSelection
+    | Action.ZoomToFit
+    | Action.ZoomTo50
+    | Action.ZoomTo100
+    | Action.ZoomTo200;
   shortcutOverride?: string;
 };
 
