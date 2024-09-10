@@ -14,6 +14,7 @@ import { Calendar } from '../../../../shared/shadcn/ui/calendar';
 import { inlineEditorEvents } from '../inlineEditor/inlineEditorEvents';
 import { inlineEditorHandler } from '../inlineEditor/inlineEditorHandler';
 import { inlineEditorMonaco } from '../inlineEditor/inlineEditorMonaco';
+import { dateToDateString, dateToDateTimeString } from '@/shared/utils/dateTime';
 
 export const CalendarPicker = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
@@ -65,20 +66,6 @@ export const CalendarPicker = () => {
       events.off('cursorPosition', clear);
     };
   });
-
-  const dateToDateString = (date: Date): string => {
-    return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
-  };
-
-  const dateToDateTimeString = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-  };
 
   const changeDate = (newDate: Date | undefined) => {
     if (!newDate || !date) return;
