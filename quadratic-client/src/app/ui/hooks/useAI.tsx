@@ -2,33 +2,39 @@ import { authClient } from '@/auth';
 import { AI } from '@/shared/constants/routes';
 import {
   AIMessage,
+  AnthropicMessage,
   AnthropicModel,
   AnthropicModelSchema,
   OpenAIMessage,
   OpenAIModel,
+  UserMessage,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 type HandleOpenAIPromptProps = {
   model: OpenAIModel;
   messages: OpenAIMessage[];
-  setMessages: (value: React.SetStateAction<AIMessage[]>) => void;
+  setMessages: (value: React.SetStateAction<(UserMessage | AIMessage)[]>) => void;
   signal: AbortSignal;
 };
 
 type HandleAnthropicAIPromptProps = {
   model: AnthropicModel;
-  messages: AIMessage[];
-  setMessages: (value: React.SetStateAction<AIMessage[]>) => void;
+  messages: AnthropicMessage[];
+  setMessages: (value: React.SetStateAction<(UserMessage | AIMessage)[]>) => void;
   signal: AbortSignal;
 };
 
 export function useAI() {
+  const isAnthropicModel = useCallback((model: AnthropicModel | OpenAIModel): model is AnthropicModel => {
+    return AnthropicModelSchema.safeParse(model).success;
+  }, []);
+
   const parseOpenAIStream = useCallback(
     async (
       reader: ReadableStreamDefaultReader<Uint8Array>,
       responseMessage: AIMessage,
-      setMessages: (value: React.SetStateAction<AIMessage[]>) => void
+      setMessages: (value: React.SetStateAction<(UserMessage | AIMessage)[]>) => void
     ): Promise<{ error?: boolean; content: string }> => {
       const decoder = new TextDecoder();
 
@@ -68,7 +74,7 @@ export function useAI() {
     async (
       reader: ReadableStreamDefaultReader<Uint8Array>,
       responseMessage: AIMessage,
-      setMessages: (value: React.SetStateAction<AIMessage[]>) => void
+      setMessages: (value: React.SetStateAction<(UserMessage | AIMessage)[]>) => void
     ): Promise<{ error?: boolean; content: string }> => {
       const decoder = new TextDecoder();
       while (true) {
@@ -114,8 +120,8 @@ export function useAI() {
       setMessages,
       signal,
     }: HandleOpenAIPromptProps | HandleAnthropicAIPromptProps): Promise<{ error?: boolean; content: string }> => {
-      let responseMessage: AIMessage = { role: 'assistant', content: '' };
-      const isAnthropic = AnthropicModelSchema.safeParse(model).success;
+      let responseMessage: AIMessage = { role: 'assistant', content: '', model };
+      const isAnthropic = isAnthropicModel(model);
       try {
         const token = await authClient.getTokenOrRedirect();
         const endpoint = isAnthropic ? AI.ANTHROPIC.STREAM : AI.OPENAI.STREAM;
@@ -131,7 +137,7 @@ export function useAI() {
             response.status === 429
               ? 'You have exceeded the maximum number of requests. Please try again later.'
               : `Looks like there was a problem. Status Code: ${response.status}`;
-          setMessages((prev) => [...prev, { role: 'assistant', content: error }]);
+          setMessages((prev) => [...prev, { role: 'assistant', content: error, model }]);
           if (response.status !== 429) {
             console.error(`Error retrieving data from AI API: ${response.status}`);
           }
@@ -159,8 +165,8 @@ export function useAI() {
         }
       }
     },
-    [parseAnthropicStream, parseOpenAIStream]
+    [isAnthropicModel, parseAnthropicStream, parseOpenAIStream]
   );
 
-  return { handleAIStream };
+  return { handleAIStream, isAnthropicModel };
 }

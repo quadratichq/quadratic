@@ -5,7 +5,7 @@ import { colors } from '@/app/theme/colors';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { useAI } from '@/app/ui/hooks/useAI';
-import { AI, Anthropic, OpenAI } from '@/app/ui/icons';
+import { Anthropic, OpenAI } from '@/app/ui/icons';
 import { CodeBlockParser } from '@/app/ui/menus/CodeEditor/AICodeBlockParser';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { QuadraticDocs } from '@/app/ui/menus/CodeEditor/QuadraticDocs';
@@ -14,15 +14,23 @@ import { Avatar } from '@/shared/components/Avatar';
 import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
-import { Send, Stop } from '@mui/icons-material';
+import { ArrowUpward, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
+import { CaretDownIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
-import { AIMessage, AnthropicModelSchema, OpenAIMessage } from 'quadratic-shared/typesAndSchemasAI';
+import {
+  AIMessage,
+  AnthropicMessage,
+  AnthropicModel,
+  OpenAIMessage,
+  OpenAIModel,
+  UserMessage,
+} from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 import './AiAssistant.css';
@@ -93,8 +101,9 @@ I will strictly adhere to the cell context.
 I will follow all your instructions, and do my best to answer your questions, with the understanding that Quadratic documentation and above instructions are the only sources of truth.
 How can I help you?
 `,
+      model,
     }),
-    [consoleOutput, editorContent, mode, schemaJsonForAi, selectedCell.x, selectedCell.y]
+    [consoleOutput, editorContent, mode, schemaJsonForAi, selectedCell.x, selectedCell.y, model]
   );
 
   // Focus the input when relevant & the tab comes into focus
@@ -119,46 +128,55 @@ How can I help you?
     setLoading(false);
   };
 
-  const isAnthropic = useMemo(() => AnthropicModelSchema.safeParse(model).success, [model]);
-
-  const { handleAIStream } = useAI();
+  const { handleAIStream, isAnthropicModel } = useAI();
 
   const submitPrompt = useCallback(async () => {
     if (loading) return;
     setLoading(true);
     controllerRef.current = new AbortController();
-
-    const updatedMessages: AIMessage[] = [...messages, { role: 'user', content: prompt }];
+    const updatedMessages: (UserMessage | AIMessage)[] = [...messages, { role: 'user', content: prompt }];
     setMessages(updatedMessages);
     setPrompt('');
 
+    const messagesToSend = [
+      {
+        role: cellContext.role,
+        content: cellContext.content,
+      },
+      ...updatedMessages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      })),
+    ];
+
+    const isAnthropic = isAnthropicModel(model);
     if (isAnthropic) {
-      const aiMessage: AIMessage[] = [
+      const aiMessages: AnthropicMessage[] = [
         {
           role: 'user',
           content: quadraticContext,
         },
-        cellContext,
-        ...updatedMessages,
+        ...messagesToSend,
       ];
+
       await handleAIStream({
-        model: 'claude-3-5-sonnet-20240620',
-        messages: aiMessage,
+        model,
+        messages: aiMessages,
         setMessages,
         signal: controllerRef.current.signal,
       });
     } else {
-      const aiMessage: OpenAIMessage[] = [
+      const aiMessages: OpenAIMessage[] = [
         {
           role: 'system',
           content: quadraticContext,
         },
-        cellContext,
-        ...updatedMessages,
+        ...messagesToSend,
       ];
-      handleAIStream({
-        model: 'gpt-4o',
-        messages: aiMessage,
+
+      await handleAIStream({
+        model,
+        messages: aiMessages,
         setMessages,
         signal: controllerRef.current.signal,
       });
@@ -166,12 +184,14 @@ How can I help you?
 
     setLoading(false);
   }, [
-    cellContext,
+    cellContext.content,
+    cellContext.role,
     controllerRef,
     handleAIStream,
-    isAnthropic,
+    isAnthropicModel,
     loading,
     messages,
+    model,
     prompt,
     quadraticContext,
     setLoading,
@@ -231,7 +251,7 @@ How can I help you?
                       marginBottom: '0.5rem',
                     }}
                   >
-                    <AI sx={{ color: colors.languageAI }}></AI>
+                    {isAnthropicModel(message.model) ? <Anthropic /> : <OpenAI />}
                   </Avatar>
                   <CodeBlockParser input={message.content} />
                 </>
@@ -243,7 +263,7 @@ How can I help you?
       </div>
 
       <form
-        className="z-10 flex gap-2 px-3 pb-2"
+        className="z-10 px-2"
         onSubmit={(e) => {
           e.preventDefault();
         }}
@@ -252,6 +272,13 @@ How can I help you?
           ref={textareaRef}
           id="prompt-input"
           value={prompt}
+          style={{
+            border: 'none',
+            boxShadow: 'none',
+            borderTop: `1px solid #E1E7EF`,
+            paddingLeft: '4px',
+            paddingRight: '4px',
+          }}
           onChange={(event) => {
             setPrompt(event.target.value);
           }}
@@ -278,61 +305,96 @@ How can I help you?
           maxHeight="120px"
         />
 
-        <div className="relative flex items-end">
-          <div className="absolute bottom-10">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <IconButton size="small">{isAnthropic ? <Anthropic /> : <OpenAI />}</IconButton>
-              </DropdownMenuTrigger>
-
-              <DropdownMenuContent>
-                <DropdownMenuItem
-                  onClick={() => setModel('claude-3-5-sonnet-20240620')}
-                  className={`${model === 'claude-3-5-sonnet-20240620' ? 'bg-gray-100' : ''}`}
-                >
-                  claude-3.5-sonnet
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
-                  onClick={() => setModel('gpt-4o')}
-                  className={`${model === 'gpt-4o' ? 'bg-gray-100' : ''}`}
-                >
-                  gpt-4o
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          {loading && <CircularProgress size="1rem" className="absolute bottom-2.5 right-14" />}
+        <div className="flex w-full select-none items-center justify-between px-1">
+          <SelectAIModelDropdownMenu loading={loading} isAnthropic={isAnthropicModel(model)} setModel={setModel} />
 
           {loading ? (
-            <TooltipHint title="Stop generating">
-              <IconButton size="small" color="primary" onClick={abortPrompt} edge="end">
-                <Stop />
-              </IconButton>
-            </TooltipHint>
+            <div className="flex items-center gap-2">
+              <CircularProgress size="0.75rem" />
+              <TooltipHint title="Stop generating">
+                <IconButton size="small" color="primary" onClick={abortPrompt} edge="end">
+                  <Stop fontSize="inherit" />
+                </IconButton>
+              </TooltipHint>
+            </div>
           ) : (
-            <ConditionalWrapper
-              condition={prompt.length !== 0}
-              Wrapper={({ children }) => (
-                <TooltipHint title="Send" shortcut={`${KeyboardSymbols.Command}↵`}>
-                  {children as React.ReactElement}
-                </TooltipHint>
-              )}
-            >
-              <IconButton
-                size="small"
-                color="primary"
-                onClick={submitPrompt}
-                edge="end"
-                {...(prompt.length === 0 ? { disabled: true } : {})}
+            <div className="flex items-center gap-3 text-[10px] text-slate-500">
+              <span>{KeyboardSymbols.Command}↵ new line</span>
+              <span>↵ submit</span>
+              <ConditionalWrapper
+                condition={prompt.length !== 0}
+                Wrapper={({ children }) => (
+                  <TooltipHint title="Submit" shortcut={`↵`}>
+                    {children as React.ReactElement}
+                  </TooltipHint>
+                )}
               >
-                <Send />
-              </IconButton>
-            </ConditionalWrapper>
+                <IconButton
+                  size="small"
+                  color="primary"
+                  onClick={submitPrompt}
+                  edge="end"
+                  {...(prompt.length === 0 ? { disabled: true } : {})}
+                >
+                  <ArrowUpward fontSize="inherit" />
+                </IconButton>
+              </ConditionalWrapper>
+            </div>
           )}
         </div>
       </form>
     </div>
   );
 };
+
+function SelectAIModelDropdownMenu({
+  loading,
+  isAnthropic,
+  setModel,
+}: {
+  loading: boolean;
+  isAnthropic: boolean;
+  setModel: React.Dispatch<React.SetStateAction<AnthropicModel | OpenAIModel>>;
+}) {
+  return (
+    <DropdownMenu>
+      <ConditionalWrapper
+        condition={!loading}
+        Wrapper={({ children }) => <TooltipHint title="Select AI model">{children as React.ReactElement}</TooltipHint>}
+      >
+        <DropdownMenuTrigger asChild disabled={loading}>
+          <div className={`flex items-center text-xs ${loading ? 'opacity-60' : ''}`}>
+            {isAnthropic ? (
+              <>
+                <Anthropic fontSize="inherit" />
+                <span className="pl-2 pr-1">Anthropic: claude-3.5-sonnet</span>
+              </>
+            ) : (
+              <>
+                <OpenAI fontSize="inherit" />
+                <span className="pl-2 pr-1">OpenAI: gpt-4o</span>
+              </>
+            )}
+            <CaretDownIcon />
+          </div>
+        </DropdownMenuTrigger>
+      </ConditionalWrapper>
+
+      <DropdownMenuContent align="start" alignOffset={-4}>
+        <DropdownMenuCheckboxItem checked={isAnthropic} onCheckedChange={() => setModel('claude-3-5-sonnet-20240620')}>
+          <div className="flex w-full items-center justify-between text-xs">
+            <span className="pr-4">Anthropic: claude-3.5-sonnet</span>
+            <Anthropic fontSize="inherit" />
+          </div>
+        </DropdownMenuCheckboxItem>
+
+        <DropdownMenuCheckboxItem checked={!isAnthropic} onCheckedChange={() => setModel('gpt-4o')}>
+          <div className="flex w-full items-center justify-between text-xs">
+            <span className="pr-4">OpenAI: gpt-4o</span>
+            <OpenAI fontSize="inherit" />
+          </div>
+        </DropdownMenuCheckboxItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}

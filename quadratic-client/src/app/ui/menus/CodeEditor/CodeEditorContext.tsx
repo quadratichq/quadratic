@@ -3,7 +3,7 @@ import { CodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditor';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { Monaco } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
-import { AIMessage, AnthropicModel, OpenAIModel } from 'quadratic-shared/typesAndSchemasAI';
+import { AIMessage, AnthropicModel, OpenAIModel, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import React, { createContext, useContext, useRef, useState } from 'react';
 import { PanelTab } from './panels//CodeEditorPanelBottom';
 
@@ -11,7 +11,7 @@ type Context = {
   aiAssistant: {
     controllerRef: React.MutableRefObject<AbortController | null>;
     loading: [boolean, React.Dispatch<React.SetStateAction<boolean>>];
-    messages: [AIMessage[], React.Dispatch<React.SetStateAction<AIMessage[]>>];
+    messages: [(UserMessage | AIMessage)[], React.Dispatch<React.SetStateAction<(UserMessage | AIMessage)[]>>];
     prompt: [string, React.Dispatch<React.SetStateAction<string>>];
     model: [AnthropicModel | OpenAIModel, React.Dispatch<React.SetStateAction<AnthropicModel | OpenAIModel>>];
   };
@@ -66,7 +66,7 @@ export const CodeEditorProvider = () => {
   const editorRef = useRef<Context['editorRef']['current']>(null);
   const evaluationResult = useState<Context['evaluationResult'][0]>(undefined);
   const monacoRef = useRef<Context['monacoRef']['current']>(null);
-  const panelBottomActiveTab = useState<PanelTab>('console');
+  const panelBottomActiveTab = useState<PanelTab>('ai-assistant');
   const showSnippetsPopover = useState<Context['showSnippetsPopover'][0]>(false);
   const spillError = useState<Context['spillError'][0]>(undefined);
 
