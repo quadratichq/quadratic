@@ -313,7 +313,7 @@ How can I help you?
             </div>
           ) : (
             <div className="flex items-center gap-3 text-[10px] text-slate-500">
-              <span>{KeyboardSymbols.Command}↵ new line</span>
+              <span>{KeyboardSymbols.Shift}↵ new line</span>
               <span>↵ submit</span>
               <ConditionalWrapper
                 condition={prompt.length !== 0}
