@@ -43,6 +43,8 @@ const RadioEntry = (props: RadioEntryProps) => {
   );
 };
 
+const defaultDate = `03/04/${new Date().getFullYear()} 3:14 PM`;
+
 interface DateFormatProps {
   status: boolean;
   closeMenu: () => void;
@@ -59,7 +61,7 @@ export const DateFormat = (props: DateFormatProps) => {
 
   const [tab, setTab] = useState<'presets' | 'custom'>('presets');
 
-  const [original, setOriginal] = useState<string | undefined>('2024/3/4');
+  const [original, setOriginal] = useState<string | undefined>(defaultDate);
   const [current, setCurrent] = useState<string | undefined>();
   const [formattedDate, setFormattedDate] = useState<string | undefined>();
   useEffect(() => {
@@ -79,6 +81,8 @@ export const DateFormat = (props: DateFormatProps) => {
       const date = await quadraticCore.getEditCell(sheets.sheet.id, cursorPosition.x, cursorPosition.y);
       if (date) {
         setOriginal(date);
+      } else {
+        setOriginal(defaultDate);
       }
       const summary = await quadraticCore.getCellFormatSummary(
         sheets.sheet.id,

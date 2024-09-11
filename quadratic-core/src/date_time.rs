@@ -17,21 +17,21 @@ pub const DEFAULT_DATE_TIME_FORMAT: &str = "%m/%d/%Y %-I:%M %p";
 fn is_date_item(item: &Item<'_>) -> bool {
     match item {
         Item::Numeric(numeric, _) => match numeric {
-            Numeric::Year => true,
-            Numeric::YearDiv100 => true,
-            Numeric::YearMod100 => true,
-            Numeric::IsoYear => true,
-            Numeric::IsoYearDiv100 => true,
-            Numeric::IsoYearMod100 => true,
-            Numeric::Month => true,
-            Numeric::Day => true,
-            Numeric::WeekFromSun => true,
-            Numeric::WeekFromMon => true,
-            Numeric::IsoWeek => true,
-            Numeric::NumDaysFromSun => true,
-            Numeric::WeekdayFromMon => true,
-            Numeric::Ordinal => true,
-            _ => false,
+            Numeric::Year
+            | Numeric::YearDiv100
+            | Numeric::YearMod100
+            | Numeric::IsoYear
+            | Numeric::IsoYearDiv100
+            | Numeric::IsoYearMod100
+            | Numeric::Month
+            | Numeric::Day
+            | Numeric::WeekFromSun
+            | Numeric::WeekFromMon
+            | Numeric::IsoWeek
+            | Numeric::NumDaysFromSun
+            | Numeric::WeekdayFromMon
+            | Numeric::Ordinal
+            | _ => false,
         },
         Item::Fixed(
             Fixed::ShortMonthName
