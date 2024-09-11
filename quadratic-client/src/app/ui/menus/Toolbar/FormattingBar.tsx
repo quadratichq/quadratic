@@ -4,7 +4,7 @@ import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { QColorPicker } from '@/app/ui/components/qColorPicker';
-import { useBorders } from '@/app/ui/hooks/useBorders';
+import { useBorders, UseBordersResults } from '@/app/ui/hooks/useBorders';
 import {
   ArrowDropDownIcon,
   BorderAllIcon,
@@ -75,6 +75,20 @@ export const FormattingBar = () => {
             ]}
             actionArgs={borders}
           />
+          <FormatButtonDropdown showDropdownArrow tooltipLabel="Border line style" Icon={BorderAllIcon}>
+            <FormatButtonDropdownActions
+              actions={[
+                Action.FormatBorderLine1,
+                Action.FormatBorderLine2,
+                Action.FormatBorderLine3,
+                Action.FormatBorderDashed,
+                Action.FormatBorderDotted,
+                Action.FormatBorderDouble,
+              ]}
+              actionArgs={borders}
+            />
+          </FormatButtonDropdown>
+          <FormatBorderColorPickerButton action={Action.FormatBorderColor} borders={borders} />
         </FormatButtonDropdown>
 
         <Separator />
@@ -243,6 +257,34 @@ function FormatColorPickerButton({ action }: { action: Action.FormatTextColor | 
           }}
           onClear={() => {
             run(undefined);
+            focusGrid();
+          }}
+        />
+      </DropdownMenuItem>
+    </FormatButtonDropdown>
+  );
+}
+
+function FormatBorderColorPickerButton({
+  action,
+  borders,
+}: {
+  action: Action.FormatBorderColor;
+  borders: UseBordersResults;
+}) {
+  const actionSpec = defaultActionSpec[action];
+  if (!actionSpec) {
+    throw new Error(`Action ${action} not found in defaultActionSpec`);
+  }
+  const { label, run } = actionSpec;
+  const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
+
+  return (
+    <FormatButtonDropdown tooltipLabel={label} Icon={Icon}>
+      <DropdownMenuItem>
+        <QColorPicker
+          onChangeComplete={(color) => {
+            run({ borders, color });
             focusGrid();
           }}
         />

@@ -1,5 +1,6 @@
 import { Action } from '@/app/actions/actions';
 import { ActionSpecRecord } from '@/app/actions/actionsSpec';
+import { convertReactColorToString } from '@/app/helpers/convertColor';
 import { UseBordersResults } from '@/app/ui/hooks/useBorders';
 import {
   clearFormattingAndBorders,
@@ -68,6 +69,13 @@ export type FormatActionArgs = {
   [Action.FormatBorderTop]: UseBordersResults;
   [Action.FormatBorderBottom]: UseBordersResults;
   [Action.FormatBorderClear]: UseBordersResults;
+  [Action.FormatBorderLine1]: UseBordersResults;
+  [Action.FormatBorderLine2]: UseBordersResults;
+  [Action.FormatBorderLine3]: UseBordersResults;
+  [Action.FormatBorderDashed]: UseBordersResults;
+  [Action.FormatBorderDotted]: UseBordersResults;
+  [Action.FormatBorderDouble]: UseBordersResults;
+  [Action.FormatBorderColor]: { borders: UseBordersResults; color: ColorResult };
 };
 
 export const formatActionsSpec: Partial<ActionSpecRecord> = {
@@ -286,6 +294,55 @@ export const formatActionsSpec: Partial<ActionSpecRecord> = {
     Icon: BorderClearIcon,
     run: (borders: FormatActionArgs[Action.FormatBorderClear]) => {
       borders.clearBorders();
+    },
+  },
+  [Action.FormatBorderLine1]: {
+    label: 'Border line 1',
+    Icon: BorderClearIcon,
+    run: (borders: FormatActionArgs[Action.FormatBorderLine1]) => {
+      borders.changeBorders({ line: 'line1' });
+    },
+  },
+  [Action.FormatBorderLine2]: {
+    label: 'Border line 2',
+    Icon: BorderClearIcon,
+    run: (borders: FormatActionArgs[Action.FormatBorderLine2]) => {
+      borders.changeBorders({ line: 'line2' });
+    },
+  },
+  [Action.FormatBorderLine3]: {
+    label: 'Border line 3',
+    Icon: BorderClearIcon,
+    run: (borders: FormatActionArgs[Action.FormatBorderLine3]) => {
+      borders.changeBorders({ line: 'line3' });
+    },
+  },
+  [Action.FormatBorderDashed]: {
+    label: 'Border dashed',
+    Icon: BorderClearIcon,
+    run: (borders: FormatActionArgs[Action.FormatBorderDashed]) => {
+      borders.changeBorders({ line: 'dashed' });
+    },
+  },
+  [Action.FormatBorderDotted]: {
+    label: 'Border dotted',
+    Icon: BorderClearIcon,
+    run: (borders: FormatActionArgs[Action.FormatBorderDotted]) => {
+      borders.changeBorders({ line: 'dotted' });
+    },
+  },
+  [Action.FormatBorderDouble]: {
+    label: 'Border double',
+    Icon: BorderClearIcon,
+    run: (borders: FormatActionArgs[Action.FormatBorderDouble]) => {
+      borders.changeBorders({ line: 'double' });
+    },
+  },
+  [Action.FormatBorderColor]: {
+    label: 'Border color',
+    Icon: FormatColorFillIcon,
+    run: ({ borders, color }: FormatActionArgs[Action.FormatBorderColor]) => {
+      borders.changeBorders({ color: convertReactColorToString(color) });
     },
   },
 };
