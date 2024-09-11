@@ -432,7 +432,7 @@ class Core {
       await initCore();
       const gc = GridController.newFromFile(new Uint8Array(file), sequenceNum, false);
       const version = gc.getVersion();
-      const contents = gc.exportToFile();
+      const contents = gc.exportGridToFile();
       return { contents, version };
     } catch (error: unknown) {
       console.error(error);
@@ -468,7 +468,7 @@ class Core {
             throw new Error('Unsupported file type');
         }
         const version = gc.getVersion();
-        const contents = gc.exportToFile();
+        const contents = gc.exportGridToFile();
         return { contents, version };
       } catch (error: unknown) {
         console.error(error);
@@ -637,7 +637,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        resolve(this.gridController.exportToFile());
+        resolve(this.gridController.exportOpenGridToFile());
       });
     });
   }
