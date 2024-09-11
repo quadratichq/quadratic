@@ -10,7 +10,7 @@ use arrow_buffer::ArrowNativeType;
 use arrow_data::ArrayData;
 use arrow_schema::{DataType, TimeUnit};
 use bigdecimal::BigDecimal;
-use chrono::{NaiveDate, TimeZone, Utc};
+use chrono::{NaiveDate, NaiveTime, TimeDelta, TimeZone, Utc};
 
 use crate::{cell_values::CellValues, CellValue};
 
@@ -51,18 +51,12 @@ pub fn arrow_col_to_cell_value_vec(array: &ArrayRef) -> Result<Vec<CellValue>> {
             array_data,
             &i64_naive_date,
         )),
-        DataType::Time32(unit) => {
-            arrow_time_unit_to_cell_values::<i32>(array_data, unit, "%H:%M:%S", &None)
-        }
-        DataType::Time64(unit) => {
-            arrow_time_unit_to_cell_values::<i64>(array_data, unit, "%H:%M:%S", &None)
-        }
-        DataType::Timestamp(unit, extra) => {
-            arrow_time_unit_to_cell_values::<i64>(array_data, unit, "%Y-%m-%d %H:%M:%S", extra)
-        }
+        DataType::Time32(unit) => arrow_time_unit_to_cell_values::<i32>(array_data, unit),
+        DataType::Time64(unit) => arrow_time_unit_to_cell_values::<i64>(array_data, unit),
+        DataType::Timestamp(unit, extra) => arrow_timestamp_to_cell_value(array_data, unit, extra),
         // unsupported data type
         _ => {
-            dbg!("Unlandled arrow type: {:?} => {:?}", data_type, array_data);
+            dbg!("Unhandled arrow type: {:?} => {:?}", data_type, array_data);
             Ok(vec![])
         }
     }
@@ -172,10 +166,7 @@ where
         let data = buffer.typed_data::<T>();
         values.extend(
             data.iter()
-                .map(|v| {
-                    let timestamp = conversion_fn(*v).format("%Y-%m-%d").to_string();
-                    CellValue::Text(timestamp)
-                })
+                .map(|v| CellValue::Date(conversion_fn(*v)))
                 .collect::<Vec<CellValue>>(),
         );
     }
@@ -186,8 +177,6 @@ where
 fn arrow_time_unit_to_cell_values<T>(
     array_data: ArrayData,
     time_unit: &TimeUnit,
-    format: &str,
-    _extra: &Option<Arc<str>>,
 ) -> Result<Vec<CellValue>>
 where
     T: ArrowNativeType,
@@ -200,21 +189,57 @@ where
         values.extend(
             data.iter()
                 .map(|v| {
-                    let timestamp = match time_unit {
-                        TimeUnit::Nanosecond => Utc.timestamp_nanos((*v).into()).format(format),
-                        TimeUnit::Microsecond => {
-                            map_local_result(Utc.timestamp_micros((*v).into()))?.format(format)
-                        }
-                        TimeUnit::Millisecond => {
-                            map_local_result(Utc.timestamp_millis_opt((*v).into()))?.format(format)
-                        }
-                        TimeUnit::Second => {
-                            map_local_result(Utc.timestamp_millis_opt((*v).into()))?.format(format)
-                        }
-                    };
+                    if let Some(nt) = NaiveTime::from_hms_opt(0, 0, 0) {
+                        let time_result = match time_unit {
+                            TimeUnit::Second => {
+                                nt.overflowing_add_signed(TimeDelta::seconds((*v).into())).0
+                            }
+                            TimeUnit::Millisecond => {
+                                nt.overflowing_add_signed(TimeDelta::milliseconds((*v).into()))
+                                    .0
+                            }
+                            TimeUnit::Microsecond => {
+                                nt.overflowing_add_signed(TimeDelta::microseconds((*v).into()))
+                                    .0
+                            }
+                            TimeUnit::Nanosecond => {
+                                nt.overflowing_add_signed(TimeDelta::nanoseconds((*v).into()))
+                                    .0
+                            }
+                        };
 
-                    // TODO(ddimaria): convert to Instant when they're implement
-                    Ok(CellValue::Text(timestamp.to_string()))
+                        Ok(CellValue::Time(time_result))
+                    } else {
+                        Err(anyhow::anyhow!("Invalid time"))
+                    }
+                })
+                .collect::<Result<Vec<CellValue>>>()?,
+        );
+    }
+
+    Ok(values)
+}
+
+fn arrow_timestamp_to_cell_value(
+    array_date: ArrayData,
+    unit: &TimeUnit,
+    _extra: &Option<Arc<str>>,
+) -> Result<Vec<CellValue>> {
+    let mut values = vec![];
+
+    for buffer in array_date.buffers() {
+        let data = buffer.typed_data::<i64>();
+        values.extend(
+            data.iter()
+                .map(|v| {
+                    let dt = match unit {
+                        TimeUnit::Nanosecond => Utc.timestamp_nanos(*v),
+                        TimeUnit::Microsecond => map_local_result(Utc.timestamp_micros(*v))?,
+                        TimeUnit::Millisecond => map_local_result(Utc.timestamp_millis_opt(*v))?,
+                        TimeUnit::Second => map_local_result(Utc.timestamp_millis_opt(*v))?,
+                    };
+                    let naive_dt = dt.naive_utc();
+                    Ok(CellValue::DateTime(naive_dt))
                 })
                 .collect::<Result<Vec<CellValue>>>()?,
         );

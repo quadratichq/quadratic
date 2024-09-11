@@ -1,18 +1,16 @@
 use code_run::CodeRunResult;
 
 use crate::{
-    controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     grid::{
-        borders::{get_render_horizontal_borders, get_render_vertical_borders},
         code_run,
         formats::format::Format,
         js_types::{
-            JsHtmlOutput, JsNumber, JsRenderBorders, JsRenderCell, JsRenderCellSpecial,
-            JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsSheetFill,
-            JsValidationWarning,
+            JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
+            JsRenderCodeCellState, JsRenderFill, JsSheetFill, JsValidationWarning,
         },
         CellAlign, CodeCellLanguage, CodeRun, Column,
     },
+    renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     CellValue, Pos, Rect, RunError, RunErrorMsg, Value,
 };
 
@@ -69,6 +67,15 @@ impl Sheet {
             };
         }
 
+        let align = if matches!(value, CellValue::Number(_))
+            || matches!(value, CellValue::DateTime(_))
+            || matches!(value, CellValue::Date(_))
+            || matches!(value, CellValue::Time(_))
+        {
+            Some(CellAlign::Right)
+        } else {
+            None
+        };
         let special = self.validations.render_special_pos(Pos { x, y }).or({
             if matches!(value, CellValue::Logical(_)) {
                 Some(JsRenderCellSpecial::Logical)
@@ -79,11 +86,6 @@ impl Sheet {
 
         match column {
             None => {
-                let align = if matches!(value, CellValue::Number(_)) {
-                    Some(CellAlign::Right)
-                } else {
-                    None
-                };
                 let format = Format::combine(
                     None,
                     self.try_format_column(x).as_ref(),
@@ -96,10 +98,11 @@ impl Sheet {
                 } else {
                     None
                 };
+                let value = Self::value_date_time(value, format.date_time);
                 JsRenderCell {
                     x,
                     y,
-                    value: value.to_display(),
+                    value,
                     language,
                     align,
                     vertical_align: format.vertical_align,
@@ -128,6 +131,9 @@ impl Sheet {
                         number = Some((&format).into());
                         value.to_display()
                     }
+                    CellValue::Date(_) | CellValue::DateTime(_) | CellValue::Time(_) => {
+                        Self::value_date_time(value, format.date_time)
+                    }
                     _ => value.to_display(),
                 };
                 JsRenderCell {
@@ -135,7 +141,7 @@ impl Sheet {
                     y,
                     value,
                     language,
-                    align: format.align,
+                    align: format.align.or(align),
                     wrap: format.wrap,
                     bold: format.bold,
                     italic: format.italic,
@@ -458,14 +464,6 @@ impl Sheet {
             .collect()
     }
 
-    /// Returns borders to render in a sheet.
-    pub fn render_borders(&self) -> JsRenderBorders {
-        JsRenderBorders {
-            horizontal: get_render_horizontal_borders(self),
-            vertical: get_render_vertical_borders(self),
-        }
-    }
-
     /// Send images in this sheet to the client. Note: we only have images
     /// inside CodeRuns. We may open this up in the future to allow images to be
     /// placed directly on the grid without a CodeRun. In that case, we'll need
@@ -498,6 +496,28 @@ impl Sheet {
     pub fn send_all_validations(&self) {
         if let Ok(validations) = serde_json::to_string(&self.validations.validations) {
             crate::wasm_bindings::js::jsSheetValidations(self.id.to_string(), validations);
+        }
+    }
+
+    /// Sends all validation warnings for this sheet to the client.
+    pub fn send_all_validation_warnings(&self) {
+        let warnings = self
+            .validations
+            .warnings
+            .iter()
+            .map(|(pos, validation_id)| JsValidationWarning {
+                x: pos.x,
+                y: pos.y,
+                validation: Some(*validation_id),
+                style: self
+                    .validations
+                    .validation(*validation_id)
+                    .map(|v| v.error.style.clone()),
+            })
+            .collect::<Vec<_>>();
+
+        if let Ok(warnings) = serde_json::to_string(&warnings) {
+            crate::wasm_bindings::js::jsValidationWarning(self.id.to_string(), warnings);
         }
     }
 
@@ -543,6 +563,8 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     use std::collections::HashSet;
 
     use chrono::Utc;
@@ -555,18 +577,17 @@ mod tests {
             formats::{format::Format, format_update::FormatUpdate, Formats},
             js_types::{
                 JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
-                JsSheetFill,
+                JsSheetFill, JsValidationWarning,
             },
             sheet::validations::{
-                validation::Validation,
+                validation::{Validation, ValidationStyle},
                 validation_rules::{validation_logical::ValidationLogical, ValidationRule},
             },
-            Bold, CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, CodeRun, CodeRunResult,
-            Italic, RenderSize, Sheet,
+            Bold, CellVerticalAlign, CellWrap, Italic, RenderSize,
         },
         selection::Selection,
         wasm_bindings::js::{expect_js_call, expect_js_call_count, hash_test},
-        CellValue, CodeCellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
+        CodeCellValue, SheetPos,
     };
 
     #[test]
@@ -1169,6 +1190,41 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!("{},{}", sheet.id, validations),
+            true,
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn send_all_validation_warnings() {
+        let mut sheet = Sheet::test();
+        let sheet_id = sheet.id;
+        let validation_id = Uuid::new_v4();
+        sheet.validations.set(Validation {
+            id: validation_id,
+            selection: Selection::rect(Rect::new(0, 0, 1, 1), sheet_id),
+            rule: ValidationRule::Logical(ValidationLogical {
+                ignore_blank: false,
+                ..Default::default()
+            }),
+            message: Default::default(),
+            error: Default::default(),
+        });
+        sheet
+            .validations
+            .warnings
+            .insert((0, 0).into(), validation_id);
+        sheet.send_all_validation_warnings();
+        let warnings = serde_json::to_string(&vec![JsValidationWarning {
+            x: 0,
+            y: 0,
+            validation: Some(validation_id),
+            style: Some(ValidationStyle::Stop),
+        }])
+        .unwrap();
+        expect_js_call(
+            "jsValidationWarning",
+            format!("{},{}", sheet.id, warnings),
             true,
         );
     }

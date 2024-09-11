@@ -3,10 +3,7 @@ use crate::{
     color::Rgba,
     controller::operations::clipboard::{Clipboard, ClipboardOrigin},
     formulas::replace_a1_notation,
-    grid::{
-        formats::Formats, get_cell_borders_in_rect, CellAlign, CellVerticalAlign, CellWrap,
-        CodeCellLanguage, Sheet,
-    },
+    grid::{formats::Formats, CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, Sheet},
     selection::Selection,
     CellValue, Pos, Rect,
 };
@@ -91,7 +88,7 @@ impl Sheet {
                     let text_color = summary.text_color;
                     let fill_color = summary.fill_color;
 
-                    let cell_border = self.borders().per_cell.to_owned().get_cell_border(pos);
+                    // let cell_border = self.borders().per_cell.to_owned().get_cell_border(pos);
                     let cell_align = self.get_formatting_value::<CellAlign>(pos);
                     let cell_vertical_align = self.get_formatting_value::<CellVerticalAlign>(pos);
                     let cell_wrap = self.get_formatting_value::<CellWrap>(pos);
@@ -100,7 +97,7 @@ impl Sheet {
                         || italic
                         || text_color.is_some()
                         || fill_color.is_some()
-                        || cell_border.is_some()
+                        // || cell_border.is_some()
                         || cell_align.is_some()
                         || cell_vertical_align.is_some()
                         || cell_wrap.is_some()
@@ -128,28 +125,28 @@ impl Sheet {
                                 );
                             }
                         }
-                        if let Some(cell_border) = cell_border {
-                            for (side, border) in cell_border.borders.iter().enumerate() {
-                                let side = match side {
-                                    0 => "-left",
-                                    1 => "-top",
-                                    2 => "-right",
-                                    3 => "-bottom",
-                                    _ => "",
-                                };
-                                if let Some(border) = border {
-                                    style.push_str(
-                                        format!(
-                                            "border{}: {} {};",
-                                            side,
-                                            border.line.as_css_string(),
-                                            border.color.as_rgb_hex()
-                                        )
-                                        .as_str(),
-                                    );
-                                }
-                            }
-                        }
+                        // if let Some(cell_border) = cell_border {
+                        //     for (side, border) in cell_border.borders.iter().enumerate() {
+                        //         let side = match side {
+                        //             0 => "-left",
+                        //             1 => "-top",
+                        //             2 => "-right",
+                        //             3 => "-bottom",
+                        //             _ => "",
+                        //         };
+                        //         if let Some(border) = border {
+                        //             style.push_str(
+                        //                 format!(
+                        //                     "border{}: {} {};",
+                        //                     side,
+                        //                     border.line.as_css_string(),
+                        //                     border.color.as_rgb_hex()
+                        //                 )
+                        //                 .as_str(),
+                        //             );
+                        //         }
+                        //     }
+                        // }
                         if let Some(cell_align) = cell_align {
                             style.push_str(cell_align.as_css_string());
                         }
@@ -227,13 +224,10 @@ impl Sheet {
                 });
         }
 
-        let (formats, borders) = if let Some(bounds) = sheet_bounds {
-            (
-                self.override_cell_formats(bounds, Some(selection)),
-                get_cell_borders_in_rect(self, bounds, Some(selection)),
-            )
+        let formats = if let Some(bounds) = sheet_bounds {
+            self.override_cell_formats(bounds, Some(selection))
         } else {
-            (Formats::default(), vec![])
+            Formats::default()
         };
 
         if selection.all {
@@ -251,12 +245,18 @@ impl Sheet {
         }
         let sheet_formats = self.sheet_formats(selection, &clipboard_origin);
         let validations = self.validations.to_clipboard(selection, &clipboard_origin);
+        let borders = self.borders.to_clipboard(selection);
 
         let clipboard = Clipboard {
             cells,
             formats,
             sheet_formats,
-            borders,
+            borders: borders.map(|borders| {
+                (
+                    selection.translate(-clipboard_origin.x, -clipboard_origin.y),
+                    borders,
+                )
+            }),
             values,
             w: sheet_bounds.map_or(0, |b| b.width()),
             h: sheet_bounds.map_or(0, |b| b.height()),

@@ -30,6 +30,10 @@ impl GridController {
                     self.execute_set_cell_formats_selection(transaction, op);
                 }
                 Operation::SetBorders { .. } => self.execute_set_borders(transaction, op),
+                Operation::SetBordersSelection { .. } => {
+                    self.execute_set_borders_selection(transaction, op);
+                }
+
                 Operation::MoveCells { .. } => self.execute_move_cells(transaction, op),
 
                 Operation::AddSheet { .. } => self.execute_add_sheet(transaction, op),

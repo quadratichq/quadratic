@@ -26,7 +26,7 @@ import './useGetBorderMenu.css';
 
 export function useGetBorderMenu(): JSX.Element | null {
   const { color } = useRecoilValue(borderMenuAtom);
-  const { disabled, changeBorders } = useBorders();
+  const { changeBorders } = useBorders();
 
   const handleChangeBorderSelection = useCallback(
     (selection: BorderSelection) => {
@@ -50,10 +50,6 @@ export function useGetBorderMenu(): JSX.Element | null {
     },
     [changeBorders]
   );
-
-  if (disabled) {
-    return null;
-  }
 
   return (
     <div className="borderMenu">

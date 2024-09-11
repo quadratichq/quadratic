@@ -3,7 +3,7 @@ from typing import Tuple
 import getCellsDB
 from pandas import DataFrame, Series
 
-from ..utils import result_to_value, stack_line_number, to_python_type
+from ..utils import result_to_value, stack_line_number, to_python_type_df
 
 results = None
 
@@ -120,7 +120,7 @@ def getCells(
     y_offset = p0[1]
 
     for cell in cells:
-        value = to_python_type(cell.value, cell.type_name)
+        value = to_python_type_df(cell.value, cell.type_name)
         df.at[cell.y - y_offset, cell.x - x_offset] = value
 
     # Move the first row to the header

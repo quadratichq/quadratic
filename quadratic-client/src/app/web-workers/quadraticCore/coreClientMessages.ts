@@ -1,14 +1,17 @@
 import { Coordinate } from '@/app/gridGL/types/size';
 import {
+  BorderSelection,
+  BorderStyle,
   CellAlign,
   CellFormatSummary,
   CellVerticalAlign,
   CellWrap,
   CodeCellLanguage,
   Format,
+  JsBordersSheet,
+  JsCellValue,
   JsCodeCell,
   JsHtmlOutput,
-  JsRenderBorders,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
@@ -474,15 +477,11 @@ export interface ClientCoreRerunCodeCells {
   cursor: string;
 }
 
-export interface ClientCoreSetRegionBorders {
-  type: 'clientCoreSetRegionBorders';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  selection: string;
-  style?: string;
+export interface ClientCoreSetBorders {
+  type: 'clientCoreSetBorders';
+  selection: Selection;
+  borderSelection: BorderSelection;
+  style?: BorderStyle;
   cursor: string;
 }
 
@@ -617,17 +616,16 @@ export interface CoreClientSheetOffsets {
   column?: number;
   row?: number;
   size: number;
-  borders: JsRenderBorders;
 }
 
 export interface CoreClientGenerateThumbnail {
   type: 'coreClientGenerateThumbnail';
 }
 
-export interface CoreClientSheetBorders {
-  type: 'coreClientSheetBorders';
+export interface CoreClientBordersSheet {
+  type: 'coreClientBordersSheet';
   sheetId: string;
-  borders: JsRenderBorders;
+  borders: JsBordersSheet;
 }
 
 export interface CoreClientSheetRenderCells {
@@ -868,19 +866,6 @@ export interface CoreClientImage {
   h?: string;
 }
 
-export interface ClientCoreGetValidation {
-  type: 'clientCoreGetValidation';
-  id: number;
-  sheetId: string;
-  validationId: string;
-}
-
-export interface CoreClientGetValidation {
-  type: 'coreClientGetValidation';
-  id: number;
-  validation: Validation | undefined;
-}
-
 export interface ClientCoreGetValidations {
   type: 'clientCoreGetValidations';
   id: number;
@@ -945,6 +930,13 @@ export interface CoreClientMultiplayerSynced {
   type: 'coreClientMultiplayerSynced';
 }
 
+export interface ClientCoreSetDateTimeFormat {
+  type: 'clientCoreSetDateTimeFormat';
+  selection: Selection;
+  format: string;
+  cursor: string;
+}
+
 export interface ClientCoreValidateInput {
   type: 'clientCoreValidateInput';
   id: number;
@@ -958,6 +950,20 @@ export interface CoreClientValidateInput {
   type: 'coreClientValidateInput';
   id: number;
   validationId: string | undefined;
+}
+
+export interface ClientCoreGetCellValue {
+  type: 'clientCoreGetCellValue';
+  id: number;
+  sheetId: string;
+  x: number;
+  y: number;
+}
+
+export interface CoreClientGetCellValue {
+  type: 'coreClientGetCellValue';
+  id: number;
+  value: JsCellValue | undefined;
 }
 
 export type ClientCoreMessage =
@@ -1003,7 +1009,7 @@ export type ClientCoreMessage =
   | ClientCoreCopyToClipboard
   | ClientCoreCutToClipboard
   | ClientCorePasteFromClipboard
-  | ClientCoreSetRegionBorders
+  | ClientCoreSetBorders
   | ClientCoreSetCellRenderResize
   | ClientCoreAutocomplete
   | ClientCoreExportCsvSelection
@@ -1023,7 +1029,7 @@ export type ClientCoreMessage =
   | ClientCoreGetFormatColumn
   | ClientCoreGetFormatRow
   | ClientCoreGetFormatCell
-  | ClientCoreGetValidation
+  | ClientCoreSetDateTimeFormat
   | ClientCoreGetValidations
   | ClientCoreUpdateValidation
   | ClientCoreRemoveValidation
@@ -1031,7 +1037,8 @@ export type ClientCoreMessage =
   | ClientCoreGetValidationFromPos
   | ClientCoreGetValidationList
   | ClientCoreGetDisplayCell
-  | ClientCoreValidateInput;
+  | ClientCoreValidateInput
+  | ClientCoreGetCellValue;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1063,7 +1070,6 @@ export type CoreClientMessage =
   | CoreClientFindNextRow
   | CoreClientGenerateThumbnail
   | CoreClientLoad
-  | CoreClientSheetBorders
   | CoreClientSheetRenderCells
   | CoreClientSheetCodeCellRender
   | CoreClientSheetBoundsUpdate
@@ -1083,7 +1089,6 @@ export type CoreClientMessage =
   | CoreClientGetFormatCell
   | CoreClientSheetMetaFills
   | CoreClientSetCursorSelection
-  | CoreClientGetValidation
   | CoreClientOfflineTransactionsApplied
   | CoreClientGetValidations
   | CoreClientSheetValidations
@@ -1094,4 +1099,6 @@ export type CoreClientMessage =
   | CoreClientRenderValidationWarnings
   | CoreClientResizeRowHeights
   | CoreClientMultiplayerSynced
-  | CoreClientValidateInput;
+  | CoreClientValidateInput
+  | CoreClientBordersSheet
+  | CoreClientGetCellValue;

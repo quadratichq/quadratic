@@ -9,6 +9,7 @@ import { HoverCell } from './hoverCell/HoverCell';
 import { HtmlCells } from './htmlCells/HtmlCells';
 import { MultiplayerCellEdits } from './multiplayerInput/MultiplayerCellEdits';
 import { HtmlValidations } from './validations/HtmlValidations';
+import { Annotations } from './annotations/Annotations';
 
 interface Props {
   parent?: HTMLDivElement;
@@ -105,6 +106,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
             <HoverCell />
             <MultiplayerCursors topHeading={topHeading} leftHeading={leftHeading} />
             <HtmlValidations />
+            <Annotations />
           </div>
         </div>
       </div>

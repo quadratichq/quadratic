@@ -1,5 +1,4 @@
-import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
-
+import { Menu, MenuDivider, MenuInstance, MenuItem, SubMenu } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { MenuLineItem } from '../MenuLineItem';
 import {
@@ -24,10 +23,23 @@ import {
 } from '@/app/ui/icons';
 import '@szhsin/react-menu/dist/index.css';
 import { TopBarMenuItem } from '../TopBarMenuItem';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import { useRef, useState } from 'react';
+import { focusGrid } from '@/app/helpers/focusGrid';
+import { DateFormat } from '@/app/ui/components/DateFormat';
 
 export const NumberFormatMenu = () => {
+  const menuRef = useRef<MenuInstance | null>(null);
+  const [openDateFormatMenu, setOpenDateFormatMenu] = useState(false);
+
+  const closeMenu = () => {
+    menuRef.current?.closeMenu();
+    focusGrid();
+  };
+
   return (
     <Menu
+      instanceRef={menuRef}
       menuButton={({ open }) => (
         <TopBarMenuItem title="Number format" open={open}>
           <Icon123 style={{ fontSize: '1.8125rem' }} />
@@ -74,6 +86,17 @@ export const NumberFormatMenu = () => {
           icon={DecimalDecreaseIcon}
         />
       </MenuItem>
+
+      <MenuDivider />
+
+      <SubMenu
+        label={
+          <MenuLineItem primary="Date and Time Format" secondary="3/4/2024" icon={CalendarMonthIcon}></MenuLineItem>
+        }
+        onMenuChange={(e) => setOpenDateFormatMenu(e.open)}
+      >
+        <DateFormat status={openDateFormatMenu} closeMenu={closeMenu} />
+      </SubMenu>
     </Menu>
   );
 };

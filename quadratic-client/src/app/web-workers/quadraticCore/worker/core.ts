@@ -7,12 +7,15 @@
 
 import { debugWebWorkers } from '@/app/debugFlags';
 import {
+  BorderSelection,
+  BorderStyle,
   CellAlign,
   CellFormatSummary,
   CellVerticalAlign,
   CellWrap,
   CodeCellLanguage,
   Format,
+  JsCellValue,
   JsCodeCell,
   JsCodeResult,
   JsRenderCell,
@@ -733,24 +736,14 @@ class Core {
 
   //#endregion
 
-  setRegionBorders(
-    sheetId: string,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    selection: string,
-    style: string | undefined,
-    cursor: string
-  ) {
+  setBorders(selection: Selection, borderSelection: BorderSelection, style: BorderStyle | undefined, cursor: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setRegionBorders(
-          sheetId,
-          numbersToRectStringified(x, y, width, height),
-          selection,
-          style,
+        this.gridController.setBorders(
+          JSON.stringify(selection, bigIntReplacer),
+          JSON.stringify(borderSelection),
+          JSON.stringify(style),
           cursor
         );
         resolve(undefined);
@@ -972,11 +965,12 @@ class Core {
   }
 
   getValidation(sheetId: string, validationId: string): Validation | undefined {
-    if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const validation = this.gridController.getValidation(sheetId, validationId);
-    if (validation) {
-      return JSON.parse(validation);
-    }
+    // if (!this.gridController) throw new Error('Expected gridController to be defined');
+    // const validation = this.gridController.getValidation(sheetId, validationId);
+    // if (validation) {
+    //   return JSON.parse(validation);
+    // }
+    return;
   }
 
   getValidations(sheetId: string): Validation[] {
@@ -1013,6 +1007,11 @@ class Core {
     this.gridController.receiveRowHeights(transactionId, sheetId, rowHeights);
   }
 
+  setDateTimeFormat(selection: Selection, format: string, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.setDateTimeFormat(JSON.stringify(selection, bigIntReplacer), format, cursor);
+  }
+
   getValidationList(sheetId: string, x: number, y: number) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     const list = this.gridController.getValidationList(sheetId, BigInt(x), BigInt(y));
@@ -1029,6 +1028,14 @@ class Core {
     const validationId = this.gridController.validateInput(sheetId, posToPos(x, y), input);
     if (validationId) {
       return JSON.parse(validationId);
+    }
+  }
+
+  getCellValue(sheetId: string, x: number, y: number): JsCellValue | undefined {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const cellValue = this.gridController.getCellValue(sheetId, posToPos(x, y));
+    if (cellValue) {
+      return JSON.parse(cellValue);
     }
   }
 }

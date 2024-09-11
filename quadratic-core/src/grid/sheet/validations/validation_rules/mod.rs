@@ -5,6 +5,8 @@ use crate::CellValue;
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
+use validation_date_time::ValidationDateTime;
+// use validation_date_time::ValidationDateTime;
 use validation_list::ValidationList;
 use validation_logical::ValidationLogical;
 use validation_number::ValidationNumber;
@@ -12,6 +14,7 @@ use validation_text::ValidationText;
 
 use super::super::Sheet;
 
+pub mod validation_date_time;
 pub mod validation_list;
 pub mod validation_logical;
 pub mod validation_number;
@@ -24,6 +27,7 @@ pub enum ValidationRule {
     Logical(ValidationLogical),
     Text(ValidationText),
     Number(ValidationNumber),
+    DateTime(ValidationDateTime),
 }
 
 impl ValidationRule {
@@ -34,6 +38,7 @@ impl ValidationRule {
             ValidationRule::Logical(logical) => logical.validate(value),
             ValidationRule::Text(text) => text.validate(value),
             ValidationRule::Number(number) => number.validate(value),
+            ValidationRule::DateTime(dt) => dt.validate(value),
             ValidationRule::None => true,
         }
     }
@@ -54,6 +59,7 @@ impl ValidationRule {
             ValidationRule::Logical(_) => true,
             ValidationRule::Text(text) => text.ignore_blank,
             ValidationRule::Number(number) => number.ignore_blank,
+            ValidationRule::DateTime(dt) => dt.ignore_blank,
             ValidationRule::None => true,
         }
     }

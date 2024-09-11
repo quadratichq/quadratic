@@ -195,8 +195,21 @@ impl GridController {
         } else {
             None
         };
+
+        // todo...
         self.set_cell_render_size(rect.to_sheet_rect(sheet_id), value, cursor);
         Ok(())
+    }
+
+    #[wasm_bindgen(js_name = "setDateTimeFormat")]
+    pub fn js_set_date_time_format(
+        &mut self,
+        selection: String,
+        date_time: Option<String>,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        self.set_date_time_format(selection, date_time, cursor)
     }
 
     /// Changes cell numeric decimals.

@@ -2,12 +2,9 @@ use crate::CellValue;
 #[cfg(test)]
 use crate::{Array, Pos};
 use block::{Block, BlockContent, SameValue};
-#[cfg(test)]
-pub use borders::print_borders;
 pub use borders::{
-    generate_borders, generate_borders_full, get_cell_borders_in_rect, get_rect_borders,
-    set_rect_borders, BorderSelection, BorderStyle, CellBorderLine, CellBorders, CellSide,
-    IdSpaceBorders, LegacyCellBorder, LegacyCellBorders, SheetBorders,
+    BorderSelection, BorderStyle, CellBorderLine, CellBorders, CellSide, IdSpaceBorders,
+    SheetBorders,
 };
 pub use bounds::GridBounds;
 pub use code_run::*;

@@ -1,20 +1,25 @@
 use std::fs::create_dir_all;
 
+use crate::grid::sheet::borders::{JsBorderHorizontal, JsBorderVertical, JsBordersSheet};
 use controller::operations::clipboard::PasteSpecial;
 use grid::{
     formats::format::Format,
-    js_types::{JsSheetFill, JsValidationWarning},
-    sheet::validations::{
-        validation::{
-            Validation, ValidationDisplay, ValidationDisplaySheet, ValidationError,
-            ValidationMessage, ValidationStyle,
-        },
-        validation_rules::{
-            validation_list::{ValidationList, ValidationListSource},
-            validation_logical::ValidationLogical,
-            validation_number::{NumberRange, ValidationNumber},
-            validation_text::{TextCase, TextMatch, ValidationText},
-            ValidationRule,
+    js_types::{JsCellValue, JsSheetFill, JsValidationWarning},
+    sheet::{
+        borders::{BorderStyleCell, BorderStyleTimestamp},
+        validations::{
+            validation::{
+                Validation, ValidationDisplay, ValidationDisplaySheet, ValidationError,
+                ValidationMessage, ValidationStyle,
+            },
+            validation_rules::{
+                validation_date_time::{DateTimeRange, ValidationDateTime},
+                validation_list::{ValidationList, ValidationListSource},
+                validation_logical::ValidationLogical,
+                validation_number::{NumberRange, ValidationNumber},
+                validation_text::{TextCase, TextMatch, ValidationText},
+                ValidationRule,
+            },
         },
     },
 };
@@ -26,8 +31,8 @@ use quadratic_core::{
     },
     grid::{
         js_types::{
-            JsCodeCell, JsHtmlOutput, JsNumber, JsRenderBorder, JsRenderBorders, JsRenderCell,
-            JsRenderCellSpecial, JsRenderCodeCell, JsRenderCodeCellState,
+            JsCodeCell, JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial,
+            JsRenderCodeCell, JsRenderCodeCellState,
         },
         sheet::search::SearchOptions,
         BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage, ConnectionKind,
@@ -106,8 +111,11 @@ fn main() {
         CellBorderLine,
         BorderSelection,
         BorderStyle,
-        JsRenderBorder,
-        JsRenderBorders,
+        BorderStyleCell,
+        BorderStyleTimestamp,
+        JsBorderHorizontal,
+        JsBorderVertical,
+        JsBordersSheet,
         JsCodeResult,
         MinMax,
         TransientResize,
@@ -129,11 +137,14 @@ fn main() {
         ValidationDisplay,
         ValidationDisplaySheet,
         ValidationNumber,
+        ValidationDateTime,
         NumberRange,
+        DateTimeRange,
         TextCase,
         TextMatch,
         ValidationText,
-        JsValidationWarning
+        JsValidationWarning,
+        JsCellValue,
     );
 
     if create_dir_all("../quadratic-client/src/app/quadratic-core-types").is_ok() {

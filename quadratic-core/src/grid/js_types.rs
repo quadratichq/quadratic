@@ -8,7 +8,6 @@ use super::formats::format::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;
 use super::{CodeCellLanguage, NumericFormat};
-use crate::grid::BorderStyle;
 use crate::{Pos, SheetRect};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -51,6 +50,12 @@ impl From<&Format> for JsNumber {
             format: format.numeric_format.clone(),
         }
     }
+}
+
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+pub struct JsCellValue {
+    pub value: String,
+    pub kind: String,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -127,43 +132,14 @@ pub struct JsSheetFill {
     pub all: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
-pub struct JsRenderBorders {
-    pub horizontal: Vec<JsRenderBorder>,
-    pub vertical: Vec<JsRenderBorder>,
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
+pub enum CellType {
+    Date,
+    DateTime,
 }
 
-impl JsRenderBorders {
-    pub fn new(horizontal: Vec<JsRenderBorder>, vertical: Vec<JsRenderBorder>) -> Self {
-        JsRenderBorders {
-            horizontal,
-            vertical,
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
-pub struct JsRenderBorder {
-    pub x: i64,
-    pub y: i64,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub w: Option<usize>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub h: Option<usize>,
-    pub style: BorderStyle,
-}
-
-impl JsRenderBorder {
-    pub fn new(x: i64, y: i64, w: Option<usize>, h: Option<usize>, style: BorderStyle) -> Self {
-        Self { x, y, w, h, style }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash, TS)]
 #[serde(rename_all = "camelCase")]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CellFormatSummary {
     pub bold: Option<bool>,
     pub italic: Option<bool>,
@@ -175,6 +151,9 @@ pub struct CellFormatSummary {
     pub align: Option<CellAlign>,
     pub vertical_align: Option<CellVerticalAlign>,
     pub wrap: Option<CellWrap>,
+
+    pub date_time: Option<String>,
+    pub cell_type: Option<CellType>,
 }
 
 #[derive(Serialize, PartialEq, Debug)]

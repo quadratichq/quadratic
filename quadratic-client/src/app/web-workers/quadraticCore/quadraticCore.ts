@@ -16,6 +16,7 @@ import {
   CellWrap,
   CodeCellLanguage,
   Format,
+  JsCellValue,
   JsCodeCell,
   JsRenderCell,
   MinMax,
@@ -28,7 +29,6 @@ import {
   Validation,
 } from '@/app/quadratic-core-types';
 import { authClient } from '@/auth';
-import { Rectangle } from 'pixi.js';
 import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
 import {
   ClientCoreCellHasContent,
@@ -112,9 +112,6 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientSheetRenderCells') {
       events.emit('renderCells', e.data.sheetId, e.data.renderCells);
       return;
-    } else if (e.data.type === 'coreClientSheetBorders') {
-      events.emit('sheetBorders', e.data.sheetId, e.data.borders);
-      return;
     } else if (e.data.type === 'coreClientSheetCodeCellRender') {
       events.emit('renderCodeCells', e.data.sheetId, e.data.codeCells);
       return;
@@ -179,6 +176,9 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientMultiplayerSynced') {
       events.emit('multiplayerSynced');
+      return;
+    } else if (e.data.type === 'coreClientBordersSheet') {
+      events.emit('bordersSheet', e.data.sheetId, e.data.borders);
       return;
     }
 
@@ -338,6 +338,22 @@ class QuadraticCore {
         resolve(message.cell);
       };
       this.send(message);
+    });
+  }
+
+  getCellValue(sheetId: string, x: number, y: number): Promise<JsCellValue | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { value: JsCellValue | undefined }) => {
+        resolve(message.value);
+      };
+      this.send({
+        type: 'clientCoreGetCellValue',
+        sheetId,
+        x,
+        y,
+        id,
+      });
     });
   }
 
@@ -651,6 +667,15 @@ class QuadraticCore {
     });
   }
 
+  setDateTimeFormat(selection: Selection, format: string, cursor: string) {
+    this.send({
+      type: 'clientCoreSetDateTimeFormat',
+      selection,
+      format,
+      cursor,
+    });
+  }
+
   deleteCellValues(selection: Selection, cursor?: string) {
     this.send({
       type: 'clientCoreDeleteCellValues',
@@ -773,16 +798,12 @@ class QuadraticCore {
 
   //#region Borders
 
-  setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle) {
+  setBorders(selection: Selection, borderSelection: BorderSelection, style?: BorderStyle) {
     this.send({
-      type: 'clientCoreSetRegionBorders',
-      sheetId,
-      x: rectangle.x,
-      y: rectangle.y,
-      width: rectangle.width,
-      height: rectangle.height,
-      selection: JSON.stringify(selection),
-      style: style ? JSON.stringify(style) : undefined,
+      type: 'clientCoreSetBorders',
+      selection,
+      borderSelection,
+      style,
       cursor: sheets.getCursorPosition(),
     });
   }
@@ -985,21 +1006,6 @@ class QuadraticCore {
   //#endregion
 
   //#region Data Validation
-
-  getValidation(sheetId: string, validationId: string): Promise<Validation | undefined> {
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: { validation: Validation | undefined }) => {
-        resolve(message.validation);
-      };
-      this.send({
-        type: 'clientCoreGetValidation',
-        id,
-        sheetId,
-        validationId,
-      });
-    });
-  }
 
   getValidationFromPos(sheetId: string, x: number, y: number): Promise<Validation | undefined> {
     return new Promise((resolve) => {

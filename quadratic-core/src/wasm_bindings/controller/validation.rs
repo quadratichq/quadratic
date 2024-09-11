@@ -7,20 +7,6 @@ use super::*;
 
 #[wasm_bindgen]
 impl GridController {
-    /// Returns a stringified version of Validation for a given selection
-    #[wasm_bindgen(js_name = "getValidation")]
-    pub fn js_validation(&self, sheet_id: String, validation_id: String) -> String {
-        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-            dbgjs!("Error parsing sheet_id in getValidation");
-            return String::new();
-        };
-        let Ok(validation_id) = Uuid::from_str(&validation_id) else {
-            dbgjs!("Error parsing validation_id in getValidation");
-            return String::new();
-        };
-        serde_json::to_string(&self.validation(sheet_id, validation_id)).unwrap_or_default()
-    }
-
     /// Returns a list of values for a List validation
     #[wasm_bindgen(js_name = "getValidationList")]
     pub fn js_validation_list(&self, sheet_id: String, x: i64, y: i64) -> String {
