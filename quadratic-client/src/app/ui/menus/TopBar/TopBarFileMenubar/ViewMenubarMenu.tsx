@@ -51,15 +51,15 @@ export const ViewMenubarMenu = () => {
             <ZoomInIcon /> Zoom
           </MenubarSubTrigger>
           <MenubarSubContent>
-            <MenubarItemAction action={Action.ZoomIn} />
-            <MenubarItemAction action={Action.ZoomOut} />
+            <MenubarItemAction action={Action.ZoomIn} actionArgs={undefined} />
+            <MenubarItemAction action={Action.ZoomOut} actionArgs={undefined} />
             <MenubarSeparator />
-            <MenubarItemAction action={Action.ZoomToSelection} />
-            <MenubarItemAction action={Action.ZoomToFit} />
+            <MenubarItemAction action={Action.ZoomToSelection} actionArgs={undefined} />
+            <MenubarItemAction action={Action.ZoomToFit} actionArgs={undefined} />
             <MenubarSeparator />
-            <MenubarItemAction action={Action.ZoomTo50} />
-            <MenubarItemAction action={Action.ZoomTo100} />
-            <MenubarItemAction action={Action.ZoomTo200} />
+            <MenubarItemAction action={Action.ZoomTo50} actionArgs={undefined} />
+            <MenubarItemAction action={Action.ZoomTo100} actionArgs={undefined} />
+            <MenubarItemAction action={Action.ZoomTo200} actionArgs={undefined} />
           </MenubarSubContent>
         </MenubarSub>
         <MenubarItem onClick={() => settings.setPresentationMode(!settings.presentationMode)}>

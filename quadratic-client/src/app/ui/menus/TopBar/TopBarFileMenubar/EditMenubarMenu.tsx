@@ -7,22 +7,22 @@ export const EditMenubarMenu = () => {
     <MenubarMenu>
       <MenubarTrigger>Edit</MenubarTrigger>
       <MenubarContent>
-        <MenubarItemAction action={Action.Undo} />
-        <MenubarItemAction action={Action.Redo} />
+        <MenubarItemAction action={Action.Undo} actionArgs={undefined} />
+        <MenubarItemAction action={Action.Redo} actionArgs={undefined} />
 
         <MenubarSeparator />
-        <MenubarItemAction action={Action.Cut} />
-        <MenubarItemAction action={Action.Copy} />
-        <MenubarItemAction action={Action.Paste} />
-        <MenubarItemAction action={Action.PasteValuesOnly} />
-        <MenubarItemAction action={Action.PasteFormattingOnly} />
+        <MenubarItemAction action={Action.Cut} actionArgs={undefined} />
+        <MenubarItemAction action={Action.Copy} actionArgs={undefined} />
+        <MenubarItemAction action={Action.Paste} actionArgs={undefined} />
+        <MenubarItemAction action={Action.PasteValuesOnly} actionArgs={undefined} />
+        <MenubarItemAction action={Action.PasteFormattingOnly} actionArgs={undefined} />
         <MenubarSeparator />
-        <MenubarItemAction action={Action.ShowGoToMenu} />
-        <MenubarItemAction action={Action.FindInCurrentSheet} />
-        <MenubarItemAction action={Action.FindInAllSheets} />
+        <MenubarItemAction action={Action.ShowGoToMenu} actionArgs={undefined} />
+        <MenubarItemAction action={Action.FindInCurrentSheet} actionArgs={undefined} />
+        <MenubarItemAction action={Action.FindInAllSheets} actionArgs={undefined} />
         <MenubarSeparator />
-        <MenubarItemAction action={Action.CopyAsPng} />
-        <MenubarItemAction action={Action.DownloadAsCsv} />
+        <MenubarItemAction action={Action.CopyAsPng} actionArgs={undefined} />
+        <MenubarItemAction action={Action.DownloadAsCsv} actionArgs={undefined} />
       </MenubarContent>
     </MenubarMenu>
   );

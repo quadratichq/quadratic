@@ -24,9 +24,9 @@ type ActionAvailabilityArgs = {
  * Shared types for actions in the app that can be used across multiple locations,
  * e.g. the sidebar, command palette, file menu, and formatting bar.
  */
-export type ActionSpec<T = {}> = {
+export type ActionSpec<ActionArgsType> = {
   label: string;
-  run: (args?: T) => void;
+  run: (args: ActionArgsType) => void;
 
   // Used for contexts where we want to show a longer label
   labelVerbose?: string;

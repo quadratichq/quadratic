@@ -45,8 +45,8 @@ export const FileMenubarMenu = () => {
 
         <MenubarSeparator />
 
-        <MenubarItemAction action={Action.FileShare} />
-        <MenubarItemAction action={Action.FileRename} />
+        <MenubarItemAction action={Action.FileShare} actionArgs={undefined} />
+        <MenubarItemAction action={Action.FileRename} actionArgs={undefined} />
         {downloadFileAction.isAvailable(isAvailableArgs) && (
           <MenubarItem onClick={() => downloadFileAction.run({ name })}>
             <DownloadIcon /> Download

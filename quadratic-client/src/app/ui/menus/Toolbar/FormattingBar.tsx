@@ -1,4 +1,5 @@
 import { Action } from '@/app/actions/actions';
+import { ActionArgs } from '@/app/actions/actionsSpec';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
@@ -33,20 +34,23 @@ export const FormattingBar = () => {
           focusGrid();
         }}
       >
-        <FormatButton action={Action.FormatNumberCurrency} />
-        <FormatButton action={Action.FormatNumberPercent} />
+        <FormatButton action={Action.FormatNumberCurrency} actionArgs={undefined} />
+        <FormatButton action={Action.FormatNumberPercent} actionArgs={undefined} />
         <FormatButtonDropdown showDropdownArrow tooltipLabel="More number formats" Icon={Number123Icon}>
-          <FormatButtonDropdownActions actions={[Action.FormatNumberAutomatic, Action.FormatNumberScientific]} />
+          <FormatButtonDropdownActions
+            actions={[Action.FormatNumberAutomatic, Action.FormatNumberScientific]}
+            actionArgs={undefined}
+          />
         </FormatButtonDropdown>
         <Separator />
-        <FormatButton action={Action.FormatNumberToggleCommas} />
-        <FormatButton action={Action.FormatNumberDecimalDecrease} />
-        <FormatButton action={Action.FormatNumberDecimalIncrease} />
+        <FormatButton action={Action.FormatNumberToggleCommas} actionArgs={undefined} />
+        <FormatButton action={Action.FormatNumberDecimalDecrease} actionArgs={undefined} />
+        <FormatButton action={Action.FormatNumberDecimalIncrease} actionArgs={undefined} />
 
         <Separator />
 
-        <FormatButton action={Action.ToggleBold} />
-        <FormatButton action={Action.ToggleItalic} />
+        <FormatButton action={Action.ToggleBold} actionArgs={undefined} />
+        <FormatButton action={Action.ToggleItalic} actionArgs={undefined} />
 
         <FormatColorPickerButton action={Action.FormatTextColor} />
 
@@ -67,6 +71,7 @@ export const FormattingBar = () => {
               Action.FormatAlignHorizontalCenter,
               Action.FormatAlignHorizontalRight,
             ]}
+            actionArgs={undefined}
           />
         </FormatButtonDropdown>
         <FormatButtonDropdown showDropdownArrow tooltipLabel="Vertical align" Icon={VerticalAlignTopIcon}>
@@ -76,17 +81,19 @@ export const FormattingBar = () => {
               Action.FormatAlignVerticalMiddle,
               Action.FormatAlignVerticalBottom,
             ]}
+            actionArgs={undefined}
           />
         </FormatButtonDropdown>
         <FormatButtonDropdown showDropdownArrow tooltipLabel="Text wrap" Icon={FormatTextWrapIcon}>
           <FormatButtonDropdownActions
             actions={[Action.FormatTextWrapWrap, Action.FormatTextWrapOverflow, Action.FormatTextWrapClip]}
+            actionArgs={undefined}
           />
         </FormatButtonDropdown>
 
         <Separator />
 
-        <FormatButton action={Action.ClearFormattingBorders} />
+        <FormatButton action={Action.ClearFormattingBorders} actionArgs={undefined} />
       </ToggleGroup.Root>
     </TooltipProvider>
   );
@@ -134,7 +141,13 @@ function FormatButtonDropdown({
   );
 }
 
-function FormatButtonDropdownActions({ actions }: { actions: Action[] }) {
+function FormatButtonDropdownActions<T extends Action>({
+  actions,
+  actionArgs,
+}: {
+  actions: T[];
+  actionArgs: T extends keyof ActionArgs ? ActionArgs[T] : void;
+}) {
   return actions.map((action, key) => {
     const actionSpec = defaultActionSpec[action];
     if (!actionSpec) {
@@ -147,7 +160,7 @@ function FormatButtonDropdownActions({ actions }: { actions: Action[] }) {
         key={key}
         onClick={() => {
           mixpanel.track('[FormattingBar].button', { label });
-          run();
+          run(actionArgs);
         }}
       >
         {Icon && <Icon className="mr-2" />}
@@ -157,7 +170,13 @@ function FormatButtonDropdownActions({ actions }: { actions: Action[] }) {
   });
 }
 
-function FormatButton({ action }: { action: Action }) {
+function FormatButton<T extends Action>({
+  action,
+  actionArgs,
+}: {
+  action: T;
+  actionArgs: T extends keyof ActionArgs ? ActionArgs[T] : void;
+}) {
   const actionSpec = defaultActionSpec[action];
   if (!actionSpec) {
     throw new Error(`Action ${action} not found in defaultActionSpec`);
@@ -177,7 +196,7 @@ function FormatButton({ action }: { action: Action }) {
           className="flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none"
           onClick={() => {
             mixpanel.track('[FormattingBar].button', { label });
-            run();
+            run(actionArgs);
           }}
         >
           {Icon && <Icon />}

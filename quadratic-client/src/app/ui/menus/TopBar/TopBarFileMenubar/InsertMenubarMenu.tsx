@@ -34,9 +34,9 @@ export const InsertMenubarMenu = () => {
             <CodeIcon /> Code
           </MenubarSubTrigger>
           <MenubarSubContent>
-            <MenubarItemAction action={Action.InsertCodePython} />
-            <MenubarItemAction action={Action.InsertCodeJavascript} />
-            <MenubarItemAction action={Action.InsertCodeFormula} />
+            <MenubarItemAction action={Action.InsertCodePython} actionArgs={undefined} />
+            <MenubarItemAction action={Action.InsertCodeJavascript} actionArgs={undefined} />
+            <MenubarItemAction action={Action.InsertCodeFormula} actionArgs={undefined} />
           </MenubarSubContent>
         </MenubarSub>
         <MenubarSub>
@@ -45,8 +45,8 @@ export const InsertMenubarMenu = () => {
             Chart
           </MenubarSubTrigger>
           <MenubarSubContent>
-            <MenubarItemAction action={Action.InsertChartPython} />
-            <MenubarItemAction action={Action.InsertChartJavascript} />
+            <MenubarItemAction action={Action.InsertChartPython} actionArgs={undefined} />
+            <MenubarItemAction action={Action.InsertChartJavascript} actionArgs={undefined} />
           </MenubarSubContent>
         </MenubarSub>
         <MenubarSub>
@@ -59,8 +59,8 @@ export const InsertMenubarMenu = () => {
               From file (CSV, Excel, or Parquet)
             </MenubarItem>
             <MenubarSeparator />
-            <MenubarItemAction action={Action.InsertApiRequestJavascript} />
-            <MenubarItemAction action={Action.InsertApiRequestPython} />
+            <MenubarItemAction action={Action.InsertApiRequestJavascript} actionArgs={undefined} />
+            <MenubarItemAction action={Action.InsertApiRequestPython} actionArgs={undefined} />
             <MenubarSeparator />
             <MenubarItem onClick={() => setEditorInteractionState((prev) => ({ ...prev, showCellTypeMenu: true }))}>
               From connection…
@@ -77,7 +77,7 @@ export const InsertMenubarMenu = () => {
           Dropdown
         </MenubarItem>
         <MenubarSeparator />
-        <MenubarItemAction action={Action.InsertSheet} />
+        <MenubarItemAction action={Action.InsertSheet} actionArgs={undefined} />
       </MenubarContent>
     </MenubarMenu>
   );

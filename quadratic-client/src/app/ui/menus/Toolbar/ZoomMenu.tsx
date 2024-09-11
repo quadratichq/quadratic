@@ -1,4 +1,5 @@
 import { Action } from '@/app/actions/actions';
+import { ActionArgs } from '@/app/actions/actionsSpec';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { events } from '@/app/events/events';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
@@ -39,21 +40,57 @@ export const ZoomMenu = () => {
           focusGrid();
         }}
       >
-        <DropdownMenuItemFromAction mixpanelEvent="[ZoomDropdown].zoomIn" action={Action.ZoomIn} />
-        <DropdownMenuItemFromAction mixpanelEvent="[ZoomDropdown].zoomOut" action={Action.ZoomOut} />
+        <DropdownMenuItemFromAction
+          mixpanelEvent="[ZoomDropdown].zoomIn"
+          action={Action.FormatTextColor}
+          actionArgs={undefined}
+        />
+        <DropdownMenuItemFromAction
+          mixpanelEvent="[ZoomDropdown].zoomOut"
+          action={Action.ZoomOut}
+          actionArgs={undefined}
+        />
         <DropdownMenuSeparator />
-        <DropdownMenuItemFromAction mixpanelEvent="[ZoomDropdown].zoomToSelection" action={Action.ZoomToSelection} />
-        <DropdownMenuItemFromAction mixpanelEvent="[ZoomDropdown].zoomToFit" action={Action.ZoomToFit} />
+        <DropdownMenuItemFromAction
+          mixpanelEvent="[ZoomDropdown].zoomToSelection"
+          action={Action.ZoomToSelection}
+          actionArgs={undefined}
+        />
+        <DropdownMenuItemFromAction
+          mixpanelEvent="[ZoomDropdown].zoomToFit"
+          action={Action.ZoomToFit}
+          actionArgs={undefined}
+        />
         <DropdownMenuSeparator />
-        <DropdownMenuItemFromAction mixpanelEvent="[ZoomDropdown].zoomTo50%" action={Action.ZoomTo50} />
-        <DropdownMenuItemFromAction mixpanelEvent="[ZoomDropdown].zoomTo100%" action={Action.ZoomTo100} />
-        <DropdownMenuItemFromAction mixpanelEvent="[ZoomDropdown].zoomTo200%" action={Action.ZoomTo200} />
+        <DropdownMenuItemFromAction
+          mixpanelEvent="[ZoomDropdown].zoomTo50%"
+          action={Action.ZoomTo50}
+          actionArgs={undefined}
+        />
+        <DropdownMenuItemFromAction
+          mixpanelEvent="[ZoomDropdown].zoomTo100%"
+          action={Action.ZoomTo100}
+          actionArgs={undefined}
+        />
+        <DropdownMenuItemFromAction
+          mixpanelEvent="[ZoomDropdown].zoomTo200%"
+          action={Action.ZoomTo200}
+          actionArgs={undefined}
+        />
       </DropdownMenuContent>
     </DropdownMenu>
   );
 };
 
-function DropdownMenuItemFromAction({ action, mixpanelEvent }: { action: Action; mixpanelEvent: string }) {
+function DropdownMenuItemFromAction<T extends Action>({
+  action,
+  actionArgs,
+  mixpanelEvent,
+}: {
+  action: T;
+  actionArgs: T extends keyof ActionArgs ? ActionArgs[T] : void;
+  mixpanelEvent: string;
+}) {
   const actionSpec = defaultActionSpec[action];
   if (actionSpec === undefined) {
     throw new Error(`No action spec found for action: ${action}`);
@@ -64,7 +101,7 @@ function DropdownMenuItemFromAction({ action, mixpanelEvent }: { action: Action;
     <DropdownMenuItem
       onClick={() => {
         mixpanel.track(mixpanelEvent);
-        actionSpec.run();
+        actionSpec.run(actionArgs);
       }}
     >
       {actionSpec.label} {shortcutDisplay && <DropdownMenuShortcut>{shortcutDisplay}</DropdownMenuShortcut>}

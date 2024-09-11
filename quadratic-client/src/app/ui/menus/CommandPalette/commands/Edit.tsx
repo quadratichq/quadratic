@@ -10,7 +10,6 @@ import {
   undoAction,
 } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
-import { ActionSpec } from '@/app/actions/actionsSpec';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import {
@@ -39,7 +38,7 @@ import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
 // TODO: Make this more type safe
-const downloadSelectionAsCsvAction = defaultActionSpec[Action.DownloadAsCsv] as ActionSpec<void>;
+const downloadSelectionAsCsvAction = defaultActionSpec[Action.DownloadAsCsv];
 
 const data: CommandGroup = {
   heading: 'Edit',
@@ -206,15 +205,15 @@ const data: CommandGroup = {
       },
     },
     {
-      label: downloadSelectionAsCsvAction.label,
+      label: downloadSelectionAsCsvAction?.label ?? '',
       Component: (props) => {
         return (
           <CommandPaletteListItem
             {...props}
             action={() => {
-              downloadSelectionAsCsvAction.run();
+              downloadSelectionAsCsvAction?.run(undefined);
             }}
-            icon={downloadSelectionAsCsvAction.Icon && <downloadSelectionAsCsvAction.Icon />}
+            icon={downloadSelectionAsCsvAction?.Icon && <downloadSelectionAsCsvAction.Icon />}
             shortcut={keyboardShortcutEnumToDisplay(Action.DownloadAsCsv)}
           />
         );

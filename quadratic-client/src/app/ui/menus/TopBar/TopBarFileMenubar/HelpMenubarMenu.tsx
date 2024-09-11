@@ -22,7 +22,7 @@ export const HelpMenubarMenu = () => {
         <MenubarItem onClick={() => setEditorInteractionState((prev) => ({ ...prev, showFeedbackMenu: true }))}>
           <FeedbackIcon /> Feedback
         </MenubarItem>
-        <MenubarItemAction action={Action.HelpContactUs} />
+        <MenubarItemAction action={Action.HelpContactUs} actionArgs={undefined} />
       </MenubarContent>
     </MenubarMenu>
   );
