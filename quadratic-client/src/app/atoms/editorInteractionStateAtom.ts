@@ -16,6 +16,7 @@ export interface EditorInteractionState {
   showShareFileMenu: boolean;
   showSearch: boolean | SearchOptions;
   showValidation: boolean | string;
+  showAI: boolean;
   annotationState?: 'dropdown';
   showContextMenu: boolean;
   permissions: FilePermission[];
@@ -51,6 +52,7 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   showSearch: false,
   showContextMenu: false,
   showValidation: false,
+  showAI: true,
   permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
   uuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
   selectedCell: { x: 0, y: 0 },
@@ -79,7 +81,8 @@ export const editorInteractionStateAtom = atom({
           oldValue.showNewFileMenu ||
           oldValue.showRenameFileMenu ||
           oldValue.showShareFileMenu ||
-          oldValue.showSearch;
+          oldValue.showSearch ||
+          oldValue.showAI;
         const newModelShow =
           newValue.showCellTypeMenu ||
           newValue.showCodeEditor ||
@@ -90,7 +93,8 @@ export const editorInteractionStateAtom = atom({
           newValue.showNewFileMenu ||
           newValue.showRenameFileMenu ||
           newValue.showShareFileMenu ||
-          newValue.showSearch;
+          newValue.showSearch ||
+          newValue.showAI;
         if (oldModalShow && !newModelShow) {
           focusGrid();
         }
