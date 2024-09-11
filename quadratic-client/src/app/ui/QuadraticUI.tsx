@@ -65,7 +65,7 @@ export default function QuadraticUI() {
       }}
     >
       {!presentationMode && <QuadraticSidebar />}
-      <div className="flex w-full flex-col">
+      <div className="flex min-w-0 flex-grow flex-col" id="main">
         {!presentationMode && <TopBar />}
         {!presentationMode && <Toolbar />}
 
@@ -80,7 +80,6 @@ export default function QuadraticUI() {
         >
           <FileDragDropWrapper>
             <QuadraticGrid />
-            {!presentationMode && <SheetBar />}
           </FileDragDropWrapper>
           {editorInteractionState.showCodeEditor && <CodeEditorProvider />}
           {editorInteractionState.showValidation && <ValidationPanel />}
@@ -97,6 +96,7 @@ export default function QuadraticUI() {
           ></div>
         </div>
 
+        {!presentationMode && <SheetBar />}
         {!presentationMode && !isEmbed && <BottomBar />}
       </div>
 

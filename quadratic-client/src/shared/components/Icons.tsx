@@ -30,6 +30,10 @@ const Icon = (props: BaseIconProps) => {
 type IconProps = Omit<BaseIconProps, 'children'>;
 export type IconComponent = React.FC<IconProps>;
 
+export const AddIcon: IconComponent = (props) => {
+  return <Icon {...props}>add</Icon>;
+};
+
 export const ArrowDropDownIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_drop_down</Icon>;
 };
@@ -84,6 +88,14 @@ export const CheckBoxIcon: IconComponent = (props) => {
 
 export const CheckSmallIcon: IconComponent = (props) => {
   return <Icon {...props}>check_small</Icon>;
+};
+
+export const ChevronLeftIcon: IconComponent = (props) => {
+  return <Icon {...props}>chevron_left</Icon>;
+};
+
+export const ChevronRightIcon: IconComponent = (props) => {
+  return <Icon {...props}>chevron_right</Icon>;
 };
 
 export const CodeCellOutlineOn: IconComponent = (props) => {

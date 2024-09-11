@@ -1,6 +1,5 @@
 import { events } from '@/app/events/events';
-import { Add, ChevronLeft, ChevronRight } from '@mui/icons-material';
-import { Stack, useTheme } from '@mui/material';
+import { AddIcon, ChevronLeftIcon, ChevronRightIcon } from '@/shared/components/Icons';
 import mixpanel from 'mixpanel-browser';
 import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
@@ -24,7 +23,6 @@ export const SheetBar = (): JSX.Element => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_, setTrigger] = useState(0);
 
-  const theme = useTheme();
   const { permissions } = useRecoilValue(editorInteractionStateAtom);
   const hasPermission = hasPermissionToEditFile(permissions) && !isMobile;
 
@@ -46,15 +44,14 @@ export const SheetBar = (): JSX.Element => {
 
   // handle disabling left arrow and right arrow
   const [sheetTabs, setSheetTabs] = useState<HTMLDivElement | undefined>();
-  const [leftArrow, setLeftArrow] = useState<HTMLElement | undefined>();
-  const [rightArrow, setRightArrow] = useState<HTMLElement | undefined>();
+  const [leftArrow, setLeftArrow] = useState<HTMLButtonElement | undefined>();
+  const [rightArrow, setRightArrow] = useState<HTMLButtonElement | undefined>();
   const leftRef = useCallback(
     (node: HTMLButtonElement) => {
       setLeftArrow(node);
       if (!sheetTabs || !node) return;
       const hide = sheetTabs.scrollLeft === 0 || sheetTabs.offsetWidth === sheetTabs.scrollWidth;
-      node.style.opacity = hide ? '0.25' : '1';
-      node.style.cursor = hide ? 'auto' : 'pointer';
+      node.disabled = hide;
     },
     [sheetTabs]
   );
@@ -66,8 +63,7 @@ export const SheetBar = (): JSX.Element => {
       const hide =
         sheetTabs.offsetWidth === sheetTabs.scrollWidth ||
         Math.round(sheetTabs.scrollLeft) === Math.round(sheetTabs.scrollWidth - sheetTabs.offsetWidth);
-      node.style.opacity = hide ? '0.25' : '1';
-      node.style.cursor = hide ? 'auto' : 'pointer';
+      node.disabled = hide;
     },
     [sheetTabs]
   );
@@ -78,15 +74,13 @@ export const SheetBar = (): JSX.Element => {
       node.addEventListener('scroll', () => {
         if (leftArrow) {
           const hide = node.scrollLeft === 0 || node.offsetWidth === node.scrollWidth;
-          leftArrow.style.opacity = hide ? '0.25' : '1';
-          leftArrow.style.cursor = hide ? 'auto' : 'pointer';
+          leftArrow.disabled = hide;
         }
         if (rightArrow) {
           const hide =
             node.offsetWidth === node.scrollWidth ||
             Math.round(node.scrollLeft) === Math.round(node.scrollWidth - node.offsetWidth);
-          rightArrow.style.opacity = hide ? '0.25' : '1';
-          rightArrow.style.cursor = hide ? 'auto' : 'pointer';
+          rightArrow.disabled = hide;
         }
       });
     },
@@ -411,19 +405,7 @@ export const SheetBar = (): JSX.Element => {
   const clearRename = useCallback(() => setForceRename(undefined), []);
 
   return (
-    <Stack
-      direction="row"
-      justifyContent="space-between"
-      alignItems="stretch"
-      sx={{
-        color: theme.palette.text.secondary,
-        height: '2rem',
-        fontSize: '0.7rem',
-        zIndex: 1,
-        backgroundColor: theme.palette.background.paper,
-      }}
-      className="sheet-bar select-none"
-    >
+    <div className="align-stretch z-[1] flex h-8 flex-shrink-0 select-none flex-row justify-between bg-background text-xs text-muted-foreground">
       {hasPermission && (
         <SheetBarButton
           onClick={() => {
@@ -431,29 +413,21 @@ export const SheetBar = (): JSX.Element => {
             sheets.userAddSheet();
             focusGrid();
           }}
-          style={{ borderTop: `1px solid ${theme.palette.divider}` }}
-          tooltip="Add Sheet"
+          className="border-r border-t border-border"
+          tooltip="Add sheet"
         >
-          <Add fontSize="small" color="inherit" />
+          <AddIcon />
         </SheetBarButton>
       )}
 
-      <Stack
-        direction="row"
-        flexShrink="1"
+      <div
+        className="-ml-[1px] flex flex-shrink flex-grow flex-row overflow-hidden pt-[1px] shadow-[inset_0_1px_0_hsl(var(--border))]"
         ref={sheetsRef}
         onWheel={(e) => {
           if (!sheetTabs) return;
           if (e.deltaX) {
             sheetTabs.scrollLeft += e.deltaX;
           }
-        }}
-        sx={{
-          overflow: 'hidden',
-          boxShadow: `inset 0 1px 0 ${theme.palette.divider}`,
-          width: '100%',
-          // Hide left border when user can't see "+" button
-          marginLeft: '-1px',
         }}
       >
         {sheets.map((sheet) => (
@@ -468,22 +442,32 @@ export const SheetBar = (): JSX.Element => {
             clearRename={clearRename}
           />
         ))}
-      </Stack>
+      </div>
 
-      <Stack direction="row" sx={{ borderTop: `1px solid ${theme.palette.divider}` }}>
-        <SheetBarButton buttonRef={leftRef} onPointerDown={() => handleArrowDown(-1)} onPointerUp={handleArrowUp}>
-          <ChevronLeft fontSize="small" color="inherit" />
+      <div className="flex border-t border-border">
+        <SheetBarButton
+          buttonRef={leftRef}
+          onPointerDown={() => handleArrowDown(-1)}
+          onPointerUp={handleArrowUp}
+          tooltip="Scroll left"
+        >
+          <ChevronLeftIcon />
         </SheetBarButton>
 
-        <SheetBarButton buttonRef={rightRef} onPointerDown={() => handleArrowDown(1)} onPointerUp={handleArrowUp}>
-          <ChevronRight fontSize="small" color="inherit" />
+        <SheetBarButton
+          buttonRef={rightRef}
+          onPointerDown={() => handleArrowDown(1)}
+          onPointerUp={handleArrowUp}
+          tooltip="Scroll right"
+        >
+          <ChevronRightIcon />
         </SheetBarButton>
-      </Stack>
+      </div>
       <SheetBarTabContextMenu
         contextMenu={contextMenu}
         handleClose={() => setContextMenu(undefined)}
         handleRename={handleRename}
       />
-    </Stack>
+    </div>
   );
 };
