@@ -180,9 +180,6 @@ function FormatButtonDropdownActions<T extends Action>({
 }) {
   return actions.map((action, key) => {
     const actionSpec = defaultActionSpec[action];
-    if (!actionSpec) {
-      throw new Error(`Action ${action} not found in defaultActionSpec`);
-    }
     const { label, run } = actionSpec;
     const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
     return (
@@ -208,10 +205,6 @@ function FormatButton<T extends Action>({
   actionArgs: T extends keyof ActionArgs ? ActionArgs[T] : void;
 }) {
   const actionSpec = defaultActionSpec[action];
-  if (!actionSpec) {
-    throw new Error(`Action ${action} not found in defaultActionSpec`);
-  }
-
   const { label, run } = actionSpec;
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
   const keyboardShortcut = keyboardShortcutEnumToDisplay(action);
@@ -241,9 +234,6 @@ function FormatButton<T extends Action>({
 
 function FormatColorPickerButton({ action }: { action: Action.FormatTextColor | Action.FormatFillColor }) {
   const actionSpec = defaultActionSpec[action];
-  if (!actionSpec) {
-    throw new Error(`Action ${action} not found in defaultActionSpec`);
-  }
   const { label, run } = actionSpec;
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
 
@@ -273,9 +263,6 @@ function FormatBorderColorPickerButton({
   borders: UseBordersResults;
 }) {
   const actionSpec = defaultActionSpec[action];
-  if (!actionSpec) {
-    throw new Error(`Action ${action} not found in defaultActionSpec`);
-  }
   const { label, run } = actionSpec;
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
 

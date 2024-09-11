@@ -52,7 +52,7 @@ const emitGridSettingsChange: AtomEffect<GridSettings> = ({ onSet }) => {
   });
 };
 
-const gridSettingsAtom = atom({
+export const gridSettingsAtom = atom({
   key: 'gridSettings',
   default: defaultGridSettings,
   effects: [localStorageEffect, emitGridSettingsChange],

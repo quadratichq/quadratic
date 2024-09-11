@@ -1,6 +1,7 @@
 import { Action } from '@/app/actions/actions';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { SNIPPET_JS_API, SNIPPET_JS_CHART } from '@/app/ui/menus/CodeEditor/snippetsJS';
 import { SNIPPET_PY_API, SNIPPET_PY_CHART } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { ArrowDropDownCircleIcon, CheckBoxIcon, SheetIcon } from '@/shared/components/Icons';
@@ -143,6 +144,21 @@ export const insertActionsSpec = {
         ...prev,
         showValidation: 'list',
       }));
+    },
+  },
+  [Action.InsertCellReference]: {
+    label: 'Cell reference',
+    labelVerbose: 'Insert cell reference',
+    run: () => {
+      if (pixiAppSettings.editorInteractionState.showCodeEditor) {
+        insertCellRef(pixiAppSettings.editorInteractionState);
+      }
+    },
+  },
+  [Action.RemoveInsertedCells]: {
+    label: 'Remove inserted cells',
+    run: () => {
+      // TODO(ayush): add this when refactoring shortcuts to use action specs
     },
   },
 };

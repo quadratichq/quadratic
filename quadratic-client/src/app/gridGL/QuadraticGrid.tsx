@@ -10,6 +10,7 @@ import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { ImportProgress } from '@/app/ui/components/ImportProgress';
 import { Search } from '@/app/ui/components/Search';
 import { FloatingContextMenu } from '@/app/ui/menus/ContextMenu/FloatingContextMenu';
+import { gridSettingsAtom } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { MouseEvent, useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
@@ -49,6 +50,11 @@ export default function QuadraticGrid() {
   useEffect(() => {
     pixiAppSettings.addGlobalSnackbar = addGlobalSnackbar;
   }, [addGlobalSnackbar]);
+
+  const [gridSettings, setGridSettings] = useRecoilState(gridSettingsAtom);
+  useEffect(() => {
+    pixiAppSettings.updateGridSettings(gridSettings, setGridSettings);
+  }, [gridSettings, setGridSettings]);
 
   // Pan mode
   const onMouseUp = () => {

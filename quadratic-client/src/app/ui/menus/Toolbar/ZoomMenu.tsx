@@ -92,10 +92,6 @@ function DropdownMenuItemFromAction<T extends Action>({
   mixpanelEvent: string;
 }) {
   const actionSpec = defaultActionSpec[action];
-  if (actionSpec === undefined) {
-    throw new Error(`No action spec found for action: ${action}`);
-  }
-
   const shortcutDisplay = keyboardShortcutEnumToDisplay(action);
   return (
     <DropdownMenuItem

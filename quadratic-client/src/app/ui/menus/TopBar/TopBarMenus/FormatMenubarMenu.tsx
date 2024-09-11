@@ -149,10 +149,6 @@ export const FormatMenubarMenu = () => {
 
 function MenubarColorPickerItemAction({ action }: { action: Action.FormatTextColor | Action.FormatFillColor }) {
   const actionSpec = defaultActionSpec[action];
-  if (!actionSpec) {
-    throw new Error(`Action ${action} not found in defaultActionSpec`);
-  }
-
   const { run, label } = actionSpec;
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
 
@@ -189,10 +185,6 @@ function MenubarBorderColorPickerItemAction({
   borders: UseBordersResults;
 }) {
   const actionSpec = defaultActionSpec[action];
-  if (!actionSpec) {
-    throw new Error(`Action ${action} not found in defaultActionSpec`);
-  }
-
   const { run, label } = actionSpec;
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
 

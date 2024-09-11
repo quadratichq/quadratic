@@ -1,5 +1,4 @@
 import { Action } from '@/app/actions/actions';
-import { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { convertReactColorToString } from '@/app/helpers/convertColor';
 import { UseBordersResults } from '@/app/ui/hooks/useBorders';
 import {
@@ -78,7 +77,7 @@ export type FormatActionArgs = {
   [Action.FormatBorderColor]: { borders: UseBordersResults; color: ColorResult };
 };
 
-export const formatActionsSpec: Partial<ActionSpecRecord> = {
+export const formatActionsSpec = {
   [Action.FormatAlignHorizontalCenter]: {
     label: 'Center',
     Icon: FormatAlignCenterIcon,

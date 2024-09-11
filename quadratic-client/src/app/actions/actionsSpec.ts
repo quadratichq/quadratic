@@ -13,7 +13,7 @@ import { ApiTypes, FilePermission, TeamPermission } from 'quadratic-shared/types
  * whether that action (and its associated shortcuts) should be available to the
  * current user.
  */
-type ActionAvailabilityArgs = {
+export type ActionAvailabilityArgs = {
   filePermissions: FilePermission[];
   isAuthenticated: boolean;
   teamPermissions: TeamPermission[] | undefined;

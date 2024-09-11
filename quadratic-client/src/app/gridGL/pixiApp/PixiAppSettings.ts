@@ -37,6 +37,8 @@ class PixiAppSettings {
   unsavedEditorChanges?: string;
 
   temporarilyHideCellTypeOutlines = false;
+  gridSettings = defaultGridSettings;
+  setGridSettings?: SetterOrUpdater<GridSettings>;
   editorInteractionState = editorInteractionStateDefault;
   setEditorInteractionState?: SetterOrUpdater<EditorInteractionState>;
   addGlobalSnackbar?: GlobalSnackbar['addGlobalSnackbar'];
@@ -83,6 +85,11 @@ class PixiAppSettings {
 
   get permissions(): ApiTypes['/v0/files/:uuid.GET.response']['userMakingRequest']['filePermissions'] {
     return this.editorInteractionState.permissions;
+  }
+
+  updateGridSettings(gridSettings: GridSettings, setGridSettings: SetterOrUpdater<GridSettings>): void {
+    this.gridSettings = gridSettings;
+    this.setGridSettings = setGridSettings;
   }
 
   updateEditorInteractionState(

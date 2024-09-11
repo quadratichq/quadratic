@@ -18,9 +18,6 @@ export const MenubarItemAction = <T extends Action>({
   shortcutOverride?: string;
 }) => {
   const actionSpec = defaultActionSpec[action];
-  if (!actionSpec) {
-    throw new Error(`Action ${action} not found in defaultActionSpec`);
-  }
 
   // Get args for doing permissions
   const { isAuthenticated } = useRootRouteLoaderData();
