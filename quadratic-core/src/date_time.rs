@@ -30,8 +30,8 @@ fn is_date_item(item: &Item<'_>) -> bool {
             | Numeric::IsoWeek
             | Numeric::NumDaysFromSun
             | Numeric::WeekdayFromMon
-            | Numeric::Ordinal
-            | _ => false,
+            | Numeric::Ordinal => true,
+            _ => false,
         },
         Item::Fixed(
             Fixed::ShortMonthName
@@ -53,12 +53,13 @@ fn is_date_item(item: &Item<'_>) -> bool {
 fn is_time_item(item: &Item<'_>) -> bool {
     match item {
         Item::Numeric(numeric, _) => match numeric {
-            Numeric::Hour => true,
-            Numeric::Hour12 => true,
-            Numeric::Minute => true,
-            Numeric::Second => true,
-            Numeric::Nanosecond => true,
-            Numeric::Timestamp => true,
+            Numeric::Ordinal
+            | Numeric::Hour
+            | Numeric::Hour12
+            | Numeric::Minute
+            | Numeric::Second
+            | Numeric::Nanosecond
+            | Numeric::Timestamp => true,
             _ => false,
         },
         Item::Fixed(
@@ -67,6 +68,13 @@ fn is_time_item(item: &Item<'_>) -> bool {
             | Fixed::Nanosecond3
             | Fixed::Nanosecond6
             | Fixed::Nanosecond9
+            | Fixed::TimezoneName
+            | Fixed::TimezoneOffset
+            | Fixed::TimezoneOffsetColon
+            | Fixed::TimezoneOffsetColonZ
+            | Fixed::TimezoneOffsetDoubleColon
+            | Fixed::TimezoneOffsetTripleColon
+            | Fixed::TimezoneOffsetZ
             | Fixed::UpperAmPm,
         ) => true,
         _ => false,
@@ -74,10 +82,7 @@ fn is_time_item(item: &Item<'_>) -> bool {
 }
 
 fn is_space_item(item: &Item<'_>) -> bool {
-    match item {
-        Item::Space(_) => true,
-        _ => false,
-    }
+    matches!(item, Item::Space(_))
 }
 
 /// Finds the index of the first time item in a strftime format string.
@@ -103,13 +108,28 @@ pub fn date_to_date_string(date: NaiveDate, format: Option<String>) -> String {
         return date.format(DEFAULT_DATE_FORMAT).to_string();
     };
 
-    if let Some(mut time_start) = find_items_time_start(&items) {
-        // remove any space items before the time items
-        while time_start > 0 && is_space_item(&items[time_start - 1]) {
-            time_start -= 1;
+    let time_start = find_items_time_start(&items);
+    let date_start = find_items_date_start(&items);
+
+    if let (Some(mut time_start), Some(date_start)) = (time_start, date_start) {
+        // remove any time items before the date items
+        if date_start < time_start {
+            while time_start > 0 && is_space_item(&items[time_start - 1]) {
+                time_start -= 1;
+            }
+            items.drain(time_start..);
+        } else if date_start > time_start {
+            let mut date_end = date_start - 1;
+            while date_end > 0 && is_space_item(&items[date_end - 1]) {
+                date_end -= 1;
+            }
+            items.drain(0..=date_end);
         }
-        items.truncate(time_start);
+    } else if let (Some(_), None) = (time_start, date_start) {
+        // handle case where there are no date items, only time items
+        return date.to_string();
     }
+
     date.format_with_items(items.iter()).to_string()
 }
 
@@ -123,22 +143,23 @@ pub fn time_to_time_string(time: NaiveTime, format: Option<String>) -> String {
 
     let time_start = find_items_time_start(&items);
     let date_start = find_items_date_start(&items);
-    if let (Some(mut time_start), Some(date_start)) = (time_start, date_start) {
+    if let (Some(mut time_start), Some(mut date_start)) = (time_start, date_start) {
         // remove any space items before the time items
         if time_start > date_start {
             while time_start > 0 && is_space_item(&items[time_start]) {
                 time_start -= 1;
             }
             items.drain(date_start..time_start);
+        } else if date_start > time_start {
+            while date_start > 0 && is_space_item(&items[date_start - 1]) {
+                date_start -= 1;
+            }
+            items.drain(date_start..);
         }
     } else if date_start.is_some() {
         // handle case where there are no time items, only date items
         return time.to_string();
     }
-
-    // todo: this can throw an uncaught error if the format
-    // string is invalid. This should be handled better and
-    // fallback to to_display on error.
 
     // remove any date items before the time items
     time.format_with_items(items.iter()).to_string()
@@ -339,5 +360,50 @@ mod tests {
         let time = "4 pm".to_string();
         let parsed_time = parse_time(&time).unwrap();
         assert_eq!(parsed_time, NaiveTime::from_hms_opt(16, 0, 0).unwrap());
+    }
+
+    #[test]
+    #[parallel]
+    fn format_date_with_bad_ordering() {
+        let date = NaiveDate::from_ymd_opt(2024, 12, 23);
+        let format = "%d/%m/%Y %S %m %Y".to_string();
+        let formatted_date = date_to_date_string(date.unwrap(), Some(format));
+        assert_eq!(formatted_date, "23/12/2024".to_string());
+    }
+
+    #[test]
+    #[parallel]
+    fn format_time_wrong_order() {
+        let time = NaiveTime::from_hms_opt(12, 34, 56).unwrap();
+        let format = "%H:%M:%S %A";
+        let formatted_time = time_to_time_string(time, Some(format.to_string()));
+        assert_eq!(formatted_time, "12:34:56".to_string());
+    }
+
+    #[test]
+    #[parallel]
+    fn format_time() {
+        let time = NaiveTime::from_hms_opt(12, 34, 56).unwrap();
+        let format = "%A %H:%M:%S";
+        let formatted_time = time_to_time_string(time, Some(format.to_string()));
+        assert_eq!(formatted_time, "12:34:56".to_string());
+    }
+
+    #[test]
+    #[parallel]
+    fn format_date() {
+        let date = NaiveDate::from_ymd_opt(2024, 12, 23);
+        let format = "%A %d %B %Y %H:%M:%S";
+        let formatted_date = date_to_date_string(date.unwrap(), Some(format.to_string()));
+        assert_eq!(formatted_date, "Monday 23 December 2024".to_string());
+    }
+
+    #[test]
+    #[parallel]
+    fn format_date_opposite_order() {
+        let date = NaiveDate::from_ymd_opt(2024, 12, 23);
+        let format = "%H:%M:%S %Y %B %d %A";
+        let formatted_date = date_to_date_string(date.unwrap(), Some(format.to_string()));
+        assert_eq!(formatted_date, "2024 December 23 Monday".to_string());
     }
 }
