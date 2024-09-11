@@ -18,7 +18,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         const textarea = textareaRef.current;
         if (textarea) {
           textarea.style.height = '';
-          textarea.style.height = `${textarea.scrollHeight + 1}px`;
+          textarea.style.height = `${textarea.scrollHeight}px`;
         }
       });
     }, [textareaRef]);
