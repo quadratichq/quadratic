@@ -5,6 +5,8 @@
 //! format string to only include the relevant elements. (Otherwise it throws an
 //! error.)
 
+use std::cmp::Ordering;
+
 use chrono::{
     format::{Fixed, Item, Numeric, StrftimeItems},
     DateTime, NaiveDate, NaiveDateTime, NaiveTime, Timelike,
@@ -15,70 +17,68 @@ pub const DEFAULT_TIME_FORMAT: &str = "%-I:%M %p";
 pub const DEFAULT_DATE_TIME_FORMAT: &str = "%m/%d/%Y %-I:%M %p";
 
 fn is_date_item(item: &Item<'_>) -> bool {
-    match item {
-        Item::Numeric(numeric, _) => match numeric {
+    matches!(
+        item,
+        Item::Numeric(
             Numeric::Year
-            | Numeric::YearDiv100
-            | Numeric::YearMod100
-            | Numeric::IsoYear
-            | Numeric::IsoYearDiv100
-            | Numeric::IsoYearMod100
-            | Numeric::Month
-            | Numeric::Day
-            | Numeric::WeekFromSun
-            | Numeric::WeekFromMon
-            | Numeric::IsoWeek
-            | Numeric::NumDaysFromSun
-            | Numeric::WeekdayFromMon
-            | Numeric::Ordinal => true,
-            _ => false,
-        },
-        Item::Fixed(
+                | Numeric::YearDiv100
+                | Numeric::YearMod100
+                | Numeric::IsoYear
+                | Numeric::IsoYearDiv100
+                | Numeric::IsoYearMod100
+                | Numeric::Month
+                | Numeric::Day
+                | Numeric::WeekFromSun
+                | Numeric::WeekFromMon
+                | Numeric::IsoWeek
+                | Numeric::NumDaysFromSun
+                | Numeric::WeekdayFromMon
+                | Numeric::Ordinal,
+            _
+        ) | Item::Fixed(
             Fixed::ShortMonthName
-            | Fixed::LongMonthName
-            | Fixed::LongWeekdayName
-            | Fixed::ShortWeekdayName
-            | Fixed::TimezoneName
-            | Fixed::TimezoneOffset
-            | Fixed::TimezoneOffsetColon
-            | Fixed::TimezoneOffsetColonZ
-            | Fixed::TimezoneOffsetDoubleColon
-            | Fixed::TimezoneOffsetTripleColon
-            | Fixed::TimezoneOffsetZ,
-        ) => true,
-        _ => false,
-    }
+                | Fixed::LongMonthName
+                | Fixed::LongWeekdayName
+                | Fixed::ShortWeekdayName
+                | Fixed::TimezoneName
+                | Fixed::TimezoneOffset
+                | Fixed::TimezoneOffsetColon
+                | Fixed::TimezoneOffsetColonZ
+                | Fixed::TimezoneOffsetDoubleColon
+                | Fixed::TimezoneOffsetTripleColon
+                | Fixed::TimezoneOffsetZ
+        )
+    )
 }
 
 fn is_time_item(item: &Item<'_>) -> bool {
-    match item {
-        Item::Numeric(numeric, _) => match numeric {
+    matches!(
+        item,
+        Item::Numeric(
             Numeric::Ordinal
-            | Numeric::Hour
-            | Numeric::Hour12
-            | Numeric::Minute
-            | Numeric::Second
-            | Numeric::Nanosecond
-            | Numeric::Timestamp => true,
-            _ => false,
-        },
-        Item::Fixed(
+                | Numeric::Hour
+                | Numeric::Hour12
+                | Numeric::Minute
+                | Numeric::Second
+                | Numeric::Nanosecond
+                | Numeric::Timestamp,
+            _
+        ) | Item::Fixed(
             Fixed::LowerAmPm
-            | Fixed::Nanosecond
-            | Fixed::Nanosecond3
-            | Fixed::Nanosecond6
-            | Fixed::Nanosecond9
-            | Fixed::TimezoneName
-            | Fixed::TimezoneOffset
-            | Fixed::TimezoneOffsetColon
-            | Fixed::TimezoneOffsetColonZ
-            | Fixed::TimezoneOffsetDoubleColon
-            | Fixed::TimezoneOffsetTripleColon
-            | Fixed::TimezoneOffsetZ
-            | Fixed::UpperAmPm,
-        ) => true,
-        _ => false,
-    }
+                | Fixed::Nanosecond
+                | Fixed::Nanosecond3
+                | Fixed::Nanosecond6
+                | Fixed::Nanosecond9
+                | Fixed::TimezoneName
+                | Fixed::TimezoneOffset
+                | Fixed::TimezoneOffsetColon
+                | Fixed::TimezoneOffsetColonZ
+                | Fixed::TimezoneOffsetDoubleColon
+                | Fixed::TimezoneOffsetTripleColon
+                | Fixed::TimezoneOffsetZ
+                | Fixed::UpperAmPm
+        )
+    )
 }
 
 fn is_space_item(item: &Item<'_>) -> bool {
@@ -113,17 +113,21 @@ pub fn date_to_date_string(date: NaiveDate, format: Option<String>) -> String {
 
     if let (Some(mut time_start), Some(date_start)) = (time_start, date_start) {
         // remove any time items before the date items
-        if date_start < time_start {
-            while time_start > 0 && is_space_item(&items[time_start - 1]) {
-                time_start -= 1;
+        match date_start.cmp(&time_start) {
+            Ordering::Less => {
+                while time_start > 0 && is_space_item(&items[time_start - 1]) {
+                    time_start -= 1;
+                }
+                items.drain(time_start..);
             }
-            items.drain(time_start..);
-        } else if date_start > time_start {
-            let mut date_end = date_start - 1;
-            while date_end > 0 && is_space_item(&items[date_end - 1]) {
-                date_end -= 1;
+            Ordering::Greater => {
+                let mut date_end = date_start - 1;
+                while date_end > 0 && is_space_item(&items[date_end - 1]) {
+                    date_end -= 1;
+                }
+                items.drain(0..=date_end);
             }
-            items.drain(0..=date_end);
+            Ordering::Equal => (),
         }
     } else if let (Some(_), None) = (time_start, date_start) {
         // handle case where there are no date items, only time items
@@ -145,16 +149,20 @@ pub fn time_to_time_string(time: NaiveTime, format: Option<String>) -> String {
     let date_start = find_items_date_start(&items);
     if let (Some(mut time_start), Some(mut date_start)) = (time_start, date_start) {
         // remove any space items before the time items
-        if time_start > date_start {
-            while time_start > 0 && is_space_item(&items[time_start]) {
-                time_start -= 1;
+        match time_start.cmp(&date_start) {
+            Ordering::Greater => {
+                while time_start > 0 && is_space_item(&items[time_start]) {
+                    time_start -= 1;
+                }
+                items.drain(date_start..time_start);
             }
-            items.drain(date_start..time_start);
-        } else if date_start > time_start {
-            while date_start > 0 && is_space_item(&items[date_start - 1]) {
-                date_start -= 1;
+            Ordering::Less => {
+                while date_start > 0 && is_space_item(&items[date_start - 1]) {
+                    date_start -= 1;
+                }
+                items.drain(date_start..);
             }
-            items.drain(date_start..);
+            Ordering::Equal => (),
         }
     } else if date_start.is_some() {
         // handle case where there are no time items, only date items
