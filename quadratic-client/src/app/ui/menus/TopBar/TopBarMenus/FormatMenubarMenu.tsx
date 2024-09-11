@@ -1,7 +1,13 @@
 import { Action } from '@/app/actions/actions';
-import { MenubarBorderItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarBorderItemAction';
+import { useBorders } from '@/app/ui/hooks/useBorders';
 import { MenubarColorPickerItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarColorPickerItemAction';
-import { FormatAlignLeftIcon, FormatBoldIcon, FormatTextWrapIcon, Number123Icon } from '@/shared/components/Icons';
+import {
+  BorderAllIcon,
+  FormatAlignLeftIcon,
+  FormatBoldIcon,
+  FormatTextWrapIcon,
+  Number123Icon,
+} from '@/shared/components/Icons';
 import {
   MenubarContent,
   MenubarMenu,
@@ -14,6 +20,7 @@ import {
 import { MenubarItemAction } from './MenubarItemAction';
 
 export const FormatMenubarMenu = () => {
+  const borders = useBorders();
   return (
     <MenubarMenu>
       <MenubarTrigger>Format</MenubarTrigger>
@@ -97,7 +104,23 @@ export const FormatMenubarMenu = () => {
 
         <MenubarColorPickerItemAction action={Action.FormatTextColor} />
         <MenubarColorPickerItemAction action={Action.FormatFillColor} />
-        <MenubarBorderItemAction action={Action.FormatBorders} />
+        <MenubarSub>
+          <MenubarSubTrigger>
+            <BorderAllIcon /> Borders
+          </MenubarSubTrigger>
+          <MenubarSubContent>
+            <MenubarItemAction action={Action.FormatBorderAll} actionArgs={borders} />
+            <MenubarItemAction action={Action.FormatBorderOuter} actionArgs={borders} />
+            <MenubarItemAction action={Action.FormatBorderInner} actionArgs={borders} />
+            <MenubarItemAction action={Action.FormatBorderVertical} actionArgs={borders} />
+            <MenubarItemAction action={Action.FormatBorderHorizontal} actionArgs={borders} />
+            <MenubarItemAction action={Action.FormatBorderLeft} actionArgs={borders} />
+            <MenubarItemAction action={Action.FormatBorderRight} actionArgs={borders} />
+            <MenubarItemAction action={Action.FormatBorderTop} actionArgs={borders} />
+            <MenubarItemAction action={Action.FormatBorderBottom} actionArgs={borders} />
+            <MenubarItemAction action={Action.FormatBorderClear} actionArgs={borders} />
+          </MenubarSubContent>
+        </MenubarSub>
 
         <MenubarSeparator />
 

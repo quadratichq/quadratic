@@ -1,3 +1,4 @@
+import { Action } from '@/app/actions/actions';
 import {
   copySelectionToPNG,
   copyToClipboard,
@@ -19,7 +20,6 @@ import {
   RedoIcon,
   UndoIcon,
 } from '@/shared/components/Icons';
-import { Action } from './actions';
 
 export const editActionsSpec = {
   [Action.Undo]: {

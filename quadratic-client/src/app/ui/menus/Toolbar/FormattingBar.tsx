@@ -3,10 +3,11 @@ import { ActionArgs } from '@/app/actions/actionsSpec';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
-import { BorderMenu } from '@/app/ui/components/BorderMenu';
 import { QColorPicker } from '@/app/ui/components/qColorPicker';
+import { useBorders } from '@/app/ui/hooks/useBorders';
 import {
   ArrowDropDownIcon,
+  BorderAllIcon,
   FormatAlignLeftIcon,
   FormatTextWrapIcon,
   Number123Icon,
@@ -24,6 +25,7 @@ import mixpanel from 'mixpanel-browser';
 import { ReactNode } from 'react';
 
 export const FormattingBar = () => {
+  const borders = useBorders();
   return (
     <TooltipProvider>
       <ToggleGroup.Root
@@ -57,7 +59,23 @@ export const FormattingBar = () => {
         <Separator />
 
         <FormatColorPickerButton action={Action.FormatFillColor} />
-        <FormatBorderButton action={Action.FormatBorders} />
+        <FormatButtonDropdown showDropdownArrow tooltipLabel="Borders" Icon={BorderAllIcon}>
+          <FormatButtonDropdownActions
+            actions={[
+              Action.FormatBorderAll,
+              Action.FormatBorderOuter,
+              Action.FormatBorderInner,
+              Action.FormatBorderVertical,
+              Action.FormatBorderHorizontal,
+              Action.FormatBorderLeft,
+              Action.FormatBorderRight,
+              Action.FormatBorderTop,
+              Action.FormatBorderBottom,
+              Action.FormatBorderClear,
+            ]}
+            actionArgs={borders}
+          />
+        </FormatButtonDropdown>
 
         <Separator />
 
@@ -229,21 +247,6 @@ function FormatColorPickerButton({ action }: { action: Action.FormatTextColor | 
           }}
         />
       </DropdownMenuItem>
-    </FormatButtonDropdown>
-  );
-}
-
-function FormatBorderButton({ action }: { action: Action.FormatBorders }) {
-  const actionSpec = defaultActionSpec[action];
-  if (!actionSpec) {
-    throw new Error(`Action ${action} not found in defaultActionSpec`);
-  }
-  const { label } = actionSpec;
-  const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
-
-  return (
-    <FormatButtonDropdown tooltipLabel={label} Icon={Icon}>
-      <BorderMenu />
     </FormatButtonDropdown>
   );
 }

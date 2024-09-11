@@ -42,6 +42,42 @@ export const BorderAllIcon: IconComponent = (props) => {
   return <Icon {...props}>border_all</Icon>;
 };
 
+export const BorderOuterIcon: IconComponent = (props) => {
+  return <Icon {...props}>border_outer</Icon>;
+};
+
+export const BorderInnerIcon: IconComponent = (props) => {
+  return <Icon {...props}>border_inner</Icon>;
+};
+
+export const BorderVerticalIcon: IconComponent = (props) => {
+  return <Icon {...props}>border_vertical</Icon>;
+};
+
+export const BorderHorizontalIcon: IconComponent = (props) => {
+  return <Icon {...props}>border_horizontal</Icon>;
+};
+
+export const BorderLeftIcon: IconComponent = (props) => {
+  return <Icon {...props}>border_left</Icon>;
+};
+
+export const BorderRightIcon: IconComponent = (props) => {
+  return <Icon {...props}>border_right</Icon>;
+};
+
+export const BorderTopIcon: IconComponent = (props) => {
+  return <Icon {...props}>border_bottom</Icon>;
+};
+
+export const BorderBottomIcon: IconComponent = (props) => {
+  return <Icon {...props}>border_bottom</Icon>;
+};
+
+export const BorderClearIcon: IconComponent = (props) => {
+  return <Icon {...props}>border_clear</Icon>;
+};
+
 export const CheckBoxIcon: IconComponent = (props) => {
   return <Icon {...props}>check_box</Icon>;
 };

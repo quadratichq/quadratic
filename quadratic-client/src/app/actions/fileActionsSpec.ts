@@ -1,7 +1,7 @@
+import { Action } from '@/app/actions/actions';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { FileRenameIcon, PersonAddIcon } from '@/shared/components/Icons';
-import { Action } from './actions';
 
 export const fileActionsSpec = {
   [Action.FileShare]: {
