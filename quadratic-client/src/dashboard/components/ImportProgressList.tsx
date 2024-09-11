@@ -4,8 +4,9 @@ import { filesImportProgressListAtom } from '@/dashboard/atoms/filesImportProgre
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Progress } from '@/shared/shadcn/ui/progress';
+import { cn } from '@/shared/shadcn/utils';
 import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
 
 export const ImportProgressList = () => {
@@ -65,15 +66,6 @@ const ImportProgressItem = ({
   importing: boolean;
   onOpen: () => void;
 }) => {
-  const navigate = useNavigate();
-
-  const handleOpen = useCallback(() => {
-    onOpen();
-    if (file.uuid !== undefined) {
-      navigate(ROUTES.FILE(file.uuid));
-    }
-  }, [file.uuid, onOpen, navigate]);
-
   const fileName = stripExtension(file.name);
   const extension = getExtension(file.name);
   const progress = Math.round(file.progress);
@@ -89,6 +81,8 @@ const ImportProgressItem = ({
       : file.step === 'read' && current < index
       ? 'Pending...'
       : 'Importing...';
+
+  const disabled = file.uuid === undefined;
 
   const textColor = file.step === 'error' || file.step === 'cancel' ? 'text-destructive' : 'text-[#6A778B]';
   return (
@@ -122,14 +116,16 @@ const ImportProgressItem = ({
             Cancel
           </Button>
         ) : state === 'Imported' ? (
-          <Button
-            variant="outline"
-            disabled={importing || file.uuid === undefined}
-            className="w-[82px]"
-            onClick={handleOpen}
+          <Link
+            key={file.uuid}
+            to={ROUTES.FILE(file.uuid ?? '')}
+            reloadDocument
+            className={cn('relative z-10 h-full w-full', disabled && `pointer-events-none`)}
           >
-            Open
-          </Button>
+            <Button variant="outline" disabled={importing || disabled} className="w-[82px]" onClick={onOpen}>
+              Open
+            </Button>
+          </Link>
         ) : null}
       </div>
     </div>

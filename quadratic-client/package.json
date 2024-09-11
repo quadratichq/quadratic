@@ -1,6 +1,6 @@
 {
   "name": "quadratic-client",
-  "version": "0.3.0",
+  "version": "0.5.1",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -67,7 +67,7 @@
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.48.2",
     "react-markdown": "^9.0.1",
-    "react-router-dom": "^6.19.0",
+    "react-router-dom": "^6.26.1",
     "recoil": "^0.7.7",
     "remark-gfm": "^4.0.0",
     "semver": "^7.5.4",
