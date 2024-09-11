@@ -3,7 +3,6 @@ import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLang
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
-import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { useAI } from '@/app/ui/hooks/useAI';
 import { Anthropic, OpenAI } from '@/app/ui/icons';
 import { CodeBlockParser } from '@/app/ui/menus/CodeEditor/AICodeBlockParser';
@@ -12,6 +11,7 @@ import { QuadraticDocs } from '@/app/ui/menus/CodeEditor/QuadraticDocs';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { Avatar } from '@/shared/components/Avatar';
 import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
+import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -19,8 +19,9 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { ArrowUpward, Stop } from '@mui/icons-material';
-import { CircularProgress, IconButton } from '@mui/material';
+import { CircularProgress } from '@mui/material';
 import { CaretDownIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import {
@@ -300,7 +301,7 @@ How can I help you?
         />
 
         <div
-          className="flex w-full select-none items-center justify-between px-2"
+          className="flex w-full select-none items-center justify-between px-2 pb-1"
           onClick={() => {
             textareaRef.current?.focus();
           }}
@@ -309,20 +310,18 @@ How can I help you?
 
           {loading ? (
             <div className="flex items-center gap-2">
-              <CircularProgress size="0.75rem" />
-              <TooltipHint title="Stop generating">
-                <IconButton
-                  size="small"
-                  color="primary"
+              <CircularProgress size="0.8125rem" />
+              <TooltipPopover label="Stop generating">
+                <Button
+                  size="icon-sm"
                   onClick={(e) => {
                     e.stopPropagation();
                     abortPrompt();
                   }}
-                  edge="end"
                 >
-                  <Stop fontSize="inherit" sx={{ backgroundColor: '#2463EB', borderRadius: '3px', color: 'white' }} />
-                </IconButton>
-              </TooltipHint>
+                  <Stop fontSize="small" />
+                </Button>
+              </TooltipPopover>
             </div>
           ) : (
             <div className="flex items-center gap-3 text-xs text-slate-500">
@@ -334,30 +333,21 @@ How can I help you?
               <ConditionalWrapper
                 condition={prompt.length !== 0}
                 Wrapper={({ children }) => (
-                  <TooltipHint title="Submit" shortcut={`${KeyboardSymbols.Enter}`}>
+                  <TooltipPopover label="Submit" shortcut={`${KeyboardSymbols.Enter}`}>
                     {children as React.ReactElement}
-                  </TooltipHint>
+                  </TooltipPopover>
                 )}
               >
-                <IconButton
-                  size="small"
-                  color="default"
+                <Button
+                  size="icon-sm"
                   onClick={(e) => {
                     e.stopPropagation();
                     submitPrompt();
                   }}
-                  edge="end"
                   disabled={prompt.length === 0}
                 >
-                  <ArrowUpward
-                    fontSize="inherit"
-                    sx={{
-                      backgroundColor: prompt.length === 0 ? colors.mediumGray : '#2463EB',
-                      borderRadius: '3px',
-                      color: 'white',
-                    }}
-                  />
-                </IconButton>
+                  <ArrowUpward fontSize="small" />
+                </Button>
               </ConditionalWrapper>
             </div>
           )}
