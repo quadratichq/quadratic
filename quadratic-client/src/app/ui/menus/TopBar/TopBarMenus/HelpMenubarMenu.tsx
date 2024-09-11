@@ -1,6 +1,6 @@
 import { Action } from '@/app/actions/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarFileMenubar/MenubarItemAction';
+import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
 import { DocumentationIcon, FeedbackIcon } from '@/shared/components/Icons';
 import { DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { MenubarContent, MenubarItem, MenubarMenu, MenubarTrigger } from '@/shared/shadcn/ui/menubar';

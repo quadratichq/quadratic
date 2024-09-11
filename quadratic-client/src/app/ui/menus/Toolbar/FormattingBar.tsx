@@ -3,10 +3,10 @@ import { ActionArgs } from '@/app/actions/actionsSpec';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
+import { BorderMenu } from '@/app/ui/components/BorderMenu';
 import { QColorPicker } from '@/app/ui/components/qColorPicker';
 import {
   ArrowDropDownIcon,
-  BorderAllIcon,
   FormatAlignLeftIcon,
   FormatTextWrapIcon,
   Number123Icon,
@@ -57,9 +57,7 @@ export const FormattingBar = () => {
         <Separator />
 
         <FormatColorPickerButton action={Action.FormatFillColor} />
-        <FormatButtonDropdown tooltipLabel="Borders" Icon={BorderAllIcon}>
-          <DropdownMenuItem>TODO border picker</DropdownMenuItem>
-        </FormatButtonDropdown>
+        <FormatBorderButton action={Action.FormatBorders} />
 
         <Separator />
 
@@ -209,11 +207,7 @@ function FormatButton<T extends Action>({
   );
 }
 
-type FormatColorPickerButtonProps = {
-  action: Action.FormatTextColor | Action.FormatFillColor;
-};
-
-function FormatColorPickerButton({ action }: FormatColorPickerButtonProps) {
+function FormatColorPickerButton({ action }: { action: Action.FormatTextColor | Action.FormatFillColor }) {
   const actionSpec = defaultActionSpec[action];
   if (!actionSpec) {
     throw new Error(`Action ${action} not found in defaultActionSpec`);
@@ -235,6 +229,21 @@ function FormatColorPickerButton({ action }: FormatColorPickerButtonProps) {
           }}
         />
       </DropdownMenuItem>
+    </FormatButtonDropdown>
+  );
+}
+
+function FormatBorderButton({ action }: { action: Action.FormatBorders }) {
+  const actionSpec = defaultActionSpec[action];
+  if (!actionSpec) {
+    throw new Error(`Action ${action} not found in defaultActionSpec`);
+  }
+  const { label } = actionSpec;
+  const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
+
+  return (
+    <FormatButtonDropdown tooltipLabel={label} Icon={Icon}>
+      <BorderMenu />
     </FormatButtonDropdown>
   );
 }

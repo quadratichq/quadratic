@@ -37,6 +37,7 @@ export enum Action {
   FormatTextWrapWrap = 'format_text_wrap_wrap',
   FormatTextColor = 'format_text_color',
   FormatFillColor = 'format_fill_color',
+  FormatBorders = 'format_borders',
   GridPanMode = 'grid_pan_mode',
   ShowCommandPalette = 'show_command_palette',
   TogglePresentationMode = 'toggle_presentation_mode',

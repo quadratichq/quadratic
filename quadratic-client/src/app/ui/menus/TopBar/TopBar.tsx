@@ -1,4 +1,4 @@
-import TopBarFileMenubar from '@/app/ui/menus/TopBar/TopBarFileMenubar';
+import TopBarMenus from '@/app/ui/menus/TopBar/TopBarMenus';
 import { isElectron } from '@/shared/utils/isElectron';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { isEmbed } from '../../../helpers/isEmbed';
@@ -39,7 +39,7 @@ export const TopBar = () => {
           WebkitAppRegion: 'no-drag',
         }}
       >
-        <TopBarFileMenubar />
+        <TopBarMenus />
         {/*
         TODO: what about embedable view? should we show the file menu?
         TODO: (jimniels) delete these components & apply permissions above

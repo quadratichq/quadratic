@@ -34,16 +34,14 @@ import {
   setVerticalAlign,
   setWrap,
 } from '../formatCells';
+import { BorderMenu } from './BorderMenu';
 import './formatMenuStyles.scss';
-import { useGetBorderMenu } from './useGetBorderMenu';
 
 export const FormatMenu = () => {
   // focus canvas after the format menu closes
   const onMenuChange = useCallback((event: MenuChangeEvent) => {
     if (!event.open) focusGrid();
   }, []);
-
-  const borders = useGetBorderMenu();
 
   return (
     <Menu
@@ -110,7 +108,9 @@ export const FormatMenu = () => {
         <QColorPicker onChangeComplete={setFillColor} onClear={clearFillColor} />
       </SubMenu>
 
-      <SubMenu label={<MenuLineItem primary="Border" icon={BorderNoneIcon} />}>{borders}</SubMenu>
+      <SubMenu label={<MenuLineItem primary="Border" icon={BorderNoneIcon} />}>
+        <BorderMenu />
+      </SubMenu>
 
       <MenuDivider />
       <MenuItem onClick={clearFormattingAndBorders}>

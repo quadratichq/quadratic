@@ -1,15 +1,9 @@
 import { Action } from '@/app/actions/actions';
-import { MenubarColorPickerItemAction } from '@/app/ui/menus/TopBar/TopBarFileMenubar/MenubarColorPickerItemAction';
-import {
-  BorderAllIcon,
-  FormatAlignLeftIcon,
-  FormatBoldIcon,
-  FormatTextWrapIcon,
-  Number123Icon,
-} from '@/shared/components/Icons';
+import { MenubarBorderItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarBorderItemAction';
+import { MenubarColorPickerItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarColorPickerItemAction';
+import { FormatAlignLeftIcon, FormatBoldIcon, FormatTextWrapIcon, Number123Icon } from '@/shared/components/Icons';
 import {
   MenubarContent,
-  MenubarItem,
   MenubarMenu,
   MenubarSeparator,
   MenubarSub,
@@ -103,16 +97,7 @@ export const FormatMenubarMenu = () => {
 
         <MenubarColorPickerItemAction action={Action.FormatTextColor} />
         <MenubarColorPickerItemAction action={Action.FormatFillColor} />
-
-        <MenubarSub>
-          <MenubarSubTrigger>
-            <BorderAllIcon />
-            Border
-          </MenubarSubTrigger>
-          <MenubarSubContent>
-            <MenubarItem>TODO</MenubarItem>
-          </MenubarSubContent>
-        </MenubarSub>
+        <MenubarBorderItemAction action={Action.FormatBorders} />
 
         <MenubarSeparator />
 

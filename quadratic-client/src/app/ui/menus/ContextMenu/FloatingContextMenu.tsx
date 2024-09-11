@@ -14,7 +14,6 @@ import { colors } from '@/app/theme/colors';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { QColorPicker } from '@/app/ui/components/qColorPicker';
 import {
-  BorderAllIcon,
   DecimalDecreaseIcon,
   DecimalIncreaseIcon,
   DollarIcon,
@@ -39,7 +38,7 @@ import {
   WrapTextIcon,
 } from '@/app/ui/icons';
 import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
-import { useGetBorderMenu } from '@/app/ui/menus/TopBar/SubMenus/FormatMenu/useGetBorderMenu';
+import { BorderMenu } from '@/app/ui/menus/TopBar/SubMenus/FormatMenu/BorderMenu';
 import {
   clearFillColor,
   clearFormattingAndBorders,
@@ -83,7 +82,6 @@ export const FloatingContextMenu = (props: Props) => {
   const [moreMenuProps, moreMenuToggle] = useMenuState();
   const menuDiv = useRef<HTMLDivElement>(null);
   const moreMenuButtonRef = useRef(null);
-  const borders = useGetBorderMenu();
 
   const textColorRef = useRef<MenuInstance>(null);
   const fillColorRef = useRef<MenuInstance>(null);
@@ -588,31 +586,9 @@ export const FloatingContextMenu = (props: Props) => {
             }}
           />
         </Menu>
-        {!borders ? (
-          <TooltipHint title="Borders">
-            <span>
-              <IconButton size="small" disabled={true} sx={iconBtnSx}>
-                <BorderAllIcon fontSize={iconSize} />
-              </IconButton>
-            </span>
-          </TooltipHint>
-        ) : (
-          <Menu
-            menuButton={
-              <div>
-                <TooltipHint title="Borders">
-                  <span>
-                    <IconButton size="small" sx={iconBtnSx}>
-                      <BorderAllIcon fontSize={iconSize} />
-                    </IconButton>
-                  </span>
-                </TooltipHint>
-              </div>
-            }
-          >
-            {borders}
-          </Menu>
-        )}
+
+        <BorderMenu />
+
         <MenuDividerVertical />
 
         <TooltipHint title="Format automatically">

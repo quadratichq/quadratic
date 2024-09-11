@@ -1,6 +1,6 @@
 import { Action } from '@/app/actions/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarFileMenubar/MenubarItemAction';
+import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import {
   ArrowDropDownCircleIcon,

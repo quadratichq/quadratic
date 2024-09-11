@@ -1,7 +1,7 @@
 import { Action } from '@/app/actions/actions';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { useGridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
-import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarFileMenubar/MenubarItemAction';
+import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
 import { CheckSmallIcon, CropFreeIcon, ZoomInIcon } from '@/shared/components/Icons';
 import {
   MenubarContent,

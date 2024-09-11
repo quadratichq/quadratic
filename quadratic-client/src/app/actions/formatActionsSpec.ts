@@ -17,6 +17,7 @@ import {
   textFormatSetPercentage,
 } from '@/app/ui/menus/TopBar/SubMenus/formatCells';
 import {
+  BorderAllIcon,
   CurrencyIcon,
   DecimalDecreaseIcon,
   DecimalIncreaseIcon,
@@ -196,5 +197,10 @@ export const formatActionsSpec: Partial<ActionSpecRecord> = {
     run: (args: FormatActionArgs[Action.FormatFillColor]) => {
       setFillColor(args);
     },
+  },
+  [Action.FormatBorders]: {
+    label: 'Borders',
+    Icon: BorderAllIcon,
+    run: () => {},
   },
 };
