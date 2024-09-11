@@ -97,10 +97,9 @@ impl Sheet {
             reverse_operations.extend(self.values_ops_for_column(column));
             reverse_operations.extend(self.formats_ops_for_column(column));
             reverse_operations.extend(self.code_runs_for_column(column));
+            reverse_operations.extend(self.borders.get_column_ops(self.id, column));
 
-            // create reverse operations for validations
-
-            // create reverse operations for borders
+            // todo: create reverse operations for validations
 
             // create reverse operation for column-based formatting
             if let Some(format) = self.try_format_column(column) {
@@ -115,6 +114,7 @@ impl Sheet {
         self.columns.remove(&column);
         self.code_runs.retain(|pos, _| pos.x != column);
         self.formats_columns.remove(&column);
+        self.borders.remove_column(column);
 
         // update the indices of all columns impacted by the deletion
         if column < 0 {

@@ -1096,6 +1096,17 @@ class QuadraticCore {
   }
 
   //#endregion
+
+  //#region manipulate columns and rows
+  deleteColumn(sheetId: string, column: number, cursor: string) {
+    this.send({
+      type: 'clientCoreDeleteColumn',
+      sheetId,
+      column,
+      cursor,
+    });
+  }
+  //#endregion
 }
 
 export const quadraticCore = new QuadraticCore();

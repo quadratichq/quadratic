@@ -556,6 +556,10 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreDeleteColumn':
+        core.deleteColumn(e.data.sheetId, e.data.column, e.data.cursor);
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core

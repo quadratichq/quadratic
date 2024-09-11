@@ -966,6 +966,13 @@ export interface CoreClientGetCellValue {
   value: JsCellValue | undefined;
 }
 
+export interface ClientCoreDeleteColumn {
+  type: 'clientCoreDeleteColumn';
+  sheetId: string;
+  column: number;
+  cursor: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1038,7 +1045,8 @@ export type ClientCoreMessage =
   | ClientCoreGetValidationList
   | ClientCoreGetDisplayCell
   | ClientCoreValidateInput
-  | ClientCoreGetCellValue;
+  | ClientCoreGetCellValue
+  | ClientCoreDeleteColumn;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

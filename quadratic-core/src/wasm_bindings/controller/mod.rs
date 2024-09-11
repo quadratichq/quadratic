@@ -22,6 +22,7 @@ pub mod summarize;
 pub mod transactions;
 pub mod validation;
 pub mod worker;
+pub mod col_row;
 
 #[wasm_bindgen]
 impl GridController {

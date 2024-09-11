@@ -1029,6 +1029,11 @@ class Core {
       return JSON.parse(cellValue);
     }
   }
+
+  deleteColumn(sheetId: string, column: number, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.deleteColumn(sheetId, BigInt(column), cursor);
+  }
 }
 
 export const core = new Core();
