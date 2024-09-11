@@ -333,7 +333,7 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        sheet.borders.print_borders();
+        sheet.borders.print();
         assert_eq!(sheet.borders.bounds(), Some(Rect::new(0, 6, 5, 6)));
     }
 

@@ -1,5 +1,6 @@
-//! Stores column data, including formatting. This file is a bit confusing and
-//! should be refactored.
+//! Stores column data, including formatting.
+//!
+//! TODO: This file is confusing and should be broken up and refactored.
 
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -350,6 +351,90 @@ impl<B: BlockContent> ColumnData<B> {
             .last_key_value()
             .map(|(y, block)| *y + block.len() as i64 - 1)
     }
+
+    /// Shift all blocks so there's an empty entry at y.
+    ///
+    /// Note: this is not designed to handle negative values (since we're deprecating it on the sheet)
+    pub fn insert_and_shift_right(&mut self, y: i64) {
+        let mut new_blocks = BTreeMap::new();
+
+        for (start, block) in self.0.iter() {
+            // block is before the insertion point, then copy
+            if *start < y && (*start + block.len() as i64) < y {
+                new_blocks.insert(*start, block.clone());
+            }
+            // block is at or after the insertion point, then shift right
+            else if *start >= y {
+                let mut new_block = block.clone();
+                new_block.y += 1;
+                new_blocks.insert(*start + 1, new_block);
+            }
+            // otherwise we have to split the block
+            else {
+                let split_point = y - *start + 1;
+                let [before, after] = block.clone().split(split_point);
+                if let Some(before) = before {
+                    new_blocks.insert(*start, before);
+                }
+                if let Some(mut after) = after {
+                    let y = start + split_point;
+                    after.y = y;
+                    new_blocks.insert(y, after);
+                }
+            }
+        }
+        self.0 = new_blocks;
+    }
+
+    /// Removes a position and shifts the remaining positions to the left.
+    pub fn remove_and_shift_left(&mut self, y: i64) {
+        let mut new_blocks = BTreeMap::new();
+
+        for (start, block) in self.0.iter() {
+            // block is before the removal point, then copy
+            if *start < y && (*start + block.len() as i64) < y {
+                new_blocks.insert(*start, block.clone());
+            }
+            // block contains the removal point
+            else if *start <= y && (*start + block.len() as i64) >= y {
+                let [before, after] = block.clone().split(y);
+                if let Some(before) = before {
+                    new_blocks.insert(*start, before);
+                }
+                if let Some(mut after) = after {
+                    // if after only contains y, then we're done
+                    if after.len() > 1 {
+                        // otherwise, we shorten its length
+                        after.delta_len(-1);
+                        new_blocks.insert(after.y, after);
+                    }
+                }
+            }
+            // block is after the removal point, then shift left
+            else if *start >= y {
+                let mut new_block = block.clone();
+                new_block.y -= 1;
+                new_blocks.insert(*start - 1, new_block);
+            }
+        }
+        self.0 = new_blocks;
+    }
+
+    #[cfg(test)]
+    pub fn print(&self) {
+        if let Some(bounds) = self.range() {
+            for y in bounds.start..bounds.end {
+                if y != bounds.end - 1 {
+                    print!("{}: {:?}, ", y, self.get(y));
+                } else {
+                    print!("{}: {:?}", y, self.get(y));
+                }
+            }
+            println!();
+        } else {
+            println!("empty");
+        }
+    }
 }
 
 impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq>
@@ -567,6 +652,96 @@ mod test {
         cd.insert_block(3, 2, true);
         assert_eq!(cd.get(3), Some(true));
         assert_eq!(cd.get(4), Some(true));
+        assert_eq!(cd.get(5), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn insert_and_shift_right_start() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+        cd.set_range(1..4, true);
+        cd.set_range(5..6, false);
+        cd.insert_and_shift_right(1);
+        assert_eq!(cd.get(1), None);
+        assert_eq!(cd.get(2), Some(true));
+        assert_eq!(cd.get(3), Some(true));
+        assert_eq!(cd.get(4), Some(true));
+        assert_eq!(cd.get(5), None);
+        assert_eq!(cd.get(6), Some(false));
+        assert_eq!(cd.get(7), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn insert_and_shift_right_middle() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+        cd.set_range(1..4, true);
+        cd.set_range(5..6, false);
+        cd.insert_and_shift_right(3);
+        assert_eq!(cd.get(1), Some(true));
+        assert_eq!(cd.get(2), Some(true));
+        assert_eq!(cd.get(3), None);
+        assert_eq!(cd.get(4), Some(true));
+        assert_eq!(cd.get(5), None);
+        assert_eq!(cd.get(6), Some(false));
+        assert_eq!(cd.get(7), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn insert_and_shift_right_end() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+        cd.set_range(1..4, true);
+        cd.set_range(5..6, false);
+        cd.insert_and_shift_right(4);
+        assert_eq!(cd.get(1), Some(true));
+        assert_eq!(cd.get(2), Some(true));
+        assert_eq!(cd.get(3), Some(true));
+        assert_eq!(cd.get(4), None);
+        assert_eq!(cd.get(5), None);
+        assert_eq!(cd.get(6), Some(false));
+        assert_eq!(cd.get(7), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn remove_and_shift_left_start() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+        cd.set_range(1..4, true);
+        cd.set_range(5..6, false);
+        cd.remove_and_shift_left(1);
+        assert_eq!(cd.get(1), Some(true));
+        assert_eq!(cd.get(2), Some(true));
+        assert_eq!(cd.get(3), None);
+        assert_eq!(cd.get(4), Some(false));
+        assert_eq!(cd.get(5), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn remove_and_shift_left_middle() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+        cd.set_range(1..4, true);
+        cd.set_range(5..6, false);
+        cd.remove_and_shift_left(2);
+        assert_eq!(cd.get(1), Some(true));
+        assert_eq!(cd.get(2), Some(true));
+        assert_eq!(cd.get(3), None);
+        assert_eq!(cd.get(4), Some(false));
+        assert_eq!(cd.get(5), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn remove_and_shift_left_end() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+        cd.set_range(1..4, true);
+        cd.set_range(5..6, false);
+        cd.remove_and_shift_left(3);
+        assert_eq!(cd.get(1), Some(true));
+        assert_eq!(cd.get(2), Some(true));
+        assert_eq!(cd.get(3), None);
+        assert_eq!(cd.get(4), Some(false));
         assert_eq!(cd.get(5), None);
     }
 }

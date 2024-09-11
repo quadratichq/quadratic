@@ -362,7 +362,7 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
 
-        sheet.borders.print_borders();
+        sheet.borders.print();
 
         let bounds = sheet.borders.bounds().unwrap();
         let horizontal = sheet.borders.horizontal_borders_in_rect(bounds);
