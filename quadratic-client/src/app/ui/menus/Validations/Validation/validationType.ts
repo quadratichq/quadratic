@@ -1,5 +1,6 @@
 import { Validation } from '@/app/quadratic-core-types';
 
+export const ValidationRuleSimpleValues = ['text', 'number', 'list', 'list-range', 'logical', 'none'];
 export type ValidationRuleSimple = 'text' | 'number' | 'list' | 'list-range' | 'logical' | 'none' | '';
 export type ValidationUndefined = Validation | Omit<Validation, 'rule'> | undefined;
 export type ValidationUIType = 'checkbox' | 'dropdown';
