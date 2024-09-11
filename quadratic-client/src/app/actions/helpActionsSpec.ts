@@ -1,3 +1,4 @@
+import { isAvailableBecauseLoggedIn } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -22,7 +23,7 @@ export const helpActionsSpec: Partial<ActionSpecRecord> = {
   [Action.HelpFeedback]: {
     label: 'Feedback',
     Icon: FeedbackIcon,
-    // isAvailable
+    isAvailable: isAvailableBecauseLoggedIn,
     run: () => {
       if (!pixiAppSettings.setEditorInteractionState) return;
       pixiAppSettings.setEditorInteractionState((prev) => ({ ...prev, showFeedbackMenu: true }));

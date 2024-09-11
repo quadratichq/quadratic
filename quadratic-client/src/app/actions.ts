@@ -63,7 +63,7 @@ export const hasPermissionToEditFile = (filePermissions: FilePermission[]) => fi
 // They are shared between actions here and command palette actions
 export const isAvailableBecauseCanEditFile = ({ filePermissions }: IsAvailableArgs) =>
   hasPermissionToEditFile(filePermissions);
-const isAvailableBecauseLoggedIn = ({ isAuthenticated }: IsAvailableArgs) => isAuthenticated;
+export const isAvailableBecauseLoggedIn = ({ isAuthenticated }: IsAvailableArgs) => isAuthenticated;
 export const isAvailableBecauseFileLocationIsAccessibleAndWriteable = ({
   fileTeamPrivacy,
   teamPermissions,

@@ -1,3 +1,4 @@
+import { isAvailableBecauseCanEditFile } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import {
   copySelectionToPNG,
@@ -25,7 +26,7 @@ export const editActionsSpec = {
   [Action.Undo]: {
     label: 'Undo',
     Icon: UndoIcon,
-    // isAvailable: (args) => args.filePermissions.includes('EDIT')
+    isAvailable: isAvailableBecauseCanEditFile,
     run: () => {
       quadraticCore.undo();
     },
@@ -33,7 +34,7 @@ export const editActionsSpec = {
   [Action.Redo]: {
     label: 'Redo',
     Icon: RedoIcon,
-    // isAvailable: (args) => args.filePermissions.includes('EDIT')
+    isAvailable: isAvailableBecauseCanEditFile,
     run: () => {
       quadraticCore.redo();
     },
@@ -41,6 +42,7 @@ export const editActionsSpec = {
   [Action.Cut]: {
     label: 'Cut',
     Icon: CutIcon,
+    isAvailable: isAvailableBecauseCanEditFile,
     run: () => {
       cutToClipboard();
     },
@@ -55,6 +57,7 @@ export const editActionsSpec = {
   [Action.Paste]: {
     label: 'Paste',
     Icon: PasteIcon,
+    isAvailable: isAvailableBecauseCanEditFile,
     run: () => {
       pasteFromClipboard();
     },
@@ -62,6 +65,7 @@ export const editActionsSpec = {
   [Action.PasteValuesOnly]: {
     label: 'Paste values only',
     Icon: PasteIcon,
+    isAvailable: isAvailableBecauseCanEditFile,
     run: () => {
       pasteFromClipboard('Values');
     },
@@ -69,6 +73,7 @@ export const editActionsSpec = {
   [Action.PasteFormattingOnly]: {
     label: 'Paste formatting only',
     Icon: PasteIcon,
+    isAvailable: isAvailableBecauseCanEditFile,
     run: () => {
       pasteFromClipboard('Formats');
     },

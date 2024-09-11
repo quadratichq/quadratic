@@ -7,6 +7,7 @@ import { InsertMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/InsertMenub
 import { ViewMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/ViewMenubarMenu';
 import { Menubar } from '@/shared/shadcn/ui/menubar';
 import { useRecoilValue } from 'recoil';
+import './styles.css';
 
 export const TopBarMenus = () => {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);

@@ -27,6 +27,8 @@ export const FileMenubarMenu = () => {
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const isAvailableArgs = { filePermissions: permissions, fileTeamPrivacy, isAuthenticated, teamPermissions };
 
+  if (!isAuthenticated) return null;
+
   return (
     <MenubarMenu>
       <MenubarTrigger>File</MenubarTrigger>
