@@ -300,7 +300,7 @@ How can I help you?
         />
 
         <div
-          className="flex w-full select-none items-center justify-between px-2"
+          className="flex w-full select-none items-center justify-between px-2 @container"
           onClick={() => {
             textareaRef.current?.focus();
           }}
@@ -326,11 +326,11 @@ How can I help you?
             </div>
           ) : (
             <div className="flex items-center gap-3 text-xs text-slate-500">
-              <span>
+              <span className="hidden @sm:block">
                 {KeyboardSymbols.Shift}
                 {KeyboardSymbols.Enter} new line
               </span>
-              <span>{KeyboardSymbols.Enter} submit</span>
+              <span className="hidden @sm:block">{KeyboardSymbols.Enter} submit</span>
               <ConditionalWrapper
                 condition={prompt.length !== 0}
                 Wrapper={({ children }) => (
