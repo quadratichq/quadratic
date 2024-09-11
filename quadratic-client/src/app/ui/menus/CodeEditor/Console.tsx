@@ -27,7 +27,7 @@ export function Console() {
           e.preventDefault();
         }
       }}
-      className="h-full overflow-y-auto whitespace-pre-wrap pl-3 pr-4 outline-none"
+      className="h-full overflow-y-auto whitespace-pre-wrap pl-3 pr-3 outline-none"
       style={codeEditorBaseStyles}
       // Disable Grammarly
       data-gramm="false"

@@ -205,7 +205,7 @@ How can I help you?
     <div className="grid h-full grid-rows-[1fr_auto]">
       <div
         ref={aiResponseRef}
-        className="select-text overflow-y-auto whitespace-pre-wrap pl-3 pr-4 text-sm outline-none"
+        className="select-text overflow-y-auto whitespace-pre-wrap pl-3 pr-3 text-sm outline-none"
         spellCheck={false}
         onKeyDown={(e) => {
           if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
@@ -264,7 +264,7 @@ How can I help you?
       </div>
 
       <form
-        className="z-10 m-2 rounded-lg bg-slate-100"
+        className="z-10 m-3 rounded-lg bg-slate-100"
         onSubmit={(e) => {
           e.preventDefault();
         }}
