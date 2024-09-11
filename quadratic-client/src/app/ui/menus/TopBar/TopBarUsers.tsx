@@ -31,9 +31,8 @@ export const TopBarUsers = () => {
       <TooltipProvider>
         {/* TODO(ayush): create custom AvatarGroup component */}
         <AvatarGroup
-          spacing={16}
           componentsProps={{ additionalAvatar: { sx: sharedAvatarSxProps } }}
-          className="gap-3"
+          className="gap-1"
           sx={{
             alignSelf: 'center',
             alignItems: 'center',
