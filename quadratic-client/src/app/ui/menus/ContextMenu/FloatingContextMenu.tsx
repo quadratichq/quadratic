@@ -682,7 +682,7 @@ export const FloatingContextMenu = (props: Props) => {
               moreMenuToggle();
             }}
           >
-            <MenuLineItem primary="Data Validation" />
+            <MenuLineItem primary="Data validation" />
           </MenuItem>
           <MenuDivider />
           <MenuItem
@@ -734,7 +734,7 @@ export const FloatingContextMenu = (props: Props) => {
               moreMenuToggle();
             }}
           >
-            <MenuLineItem primary="Date and time formatting" />
+            <MenuLineItem primary="Date and time format" />
           </MenuItem>
         </ControlledMenu>
       </Toolbar>

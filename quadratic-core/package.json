@@ -1,6 +1,5 @@
 {
   "name": "quadratic-core",
-  "version": "1.0.0",
   "description": "This contains the Rust code for the quadraticCore web worker via WASM.",
   "main": "index.js",
   "scripts": {
