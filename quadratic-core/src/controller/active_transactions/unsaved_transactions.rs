@@ -88,11 +88,12 @@ impl UnsavedTransactions {
     }
 
     pub fn delete(&mut self, transaction_id: &Uuid) {
-        self.transactions.remove(
-            self.iter()
-                .position(|unsaved_transaction| unsaved_transaction.id() == *transaction_id)
-                .unwrap(),
-        );
+        if let Some(index) = self
+            .iter()
+            .position(|unsaved_transaction| unsaved_transaction.id() == *transaction_id)
+        {
+            self.transactions.remove(index);
+        }
     }
 
     /// Marks a transaction as sent to the server (called by TS after multiplayer.ts successfully sends the transaction)
