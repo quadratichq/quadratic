@@ -964,15 +964,6 @@ class Core {
     );
   }
 
-  getValidation(sheetId: string, validationId: string): Validation | undefined {
-    // if (!this.gridController) throw new Error('Expected gridController to be defined');
-    // const validation = this.gridController.getValidation(sheetId, validationId);
-    // if (validation) {
-    //   return JSON.parse(validation);
-    // }
-    return;
-  }
-
   getValidations(sheetId: string): Validation[] {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     const validations = this.gridController.getValidations(sheetId);
