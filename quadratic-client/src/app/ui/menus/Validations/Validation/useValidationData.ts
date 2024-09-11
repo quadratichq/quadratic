@@ -1,16 +1,16 @@
 //! Holds current Validation data and provides functions that create or change validations.
 //! This is a passed-version of context for the Validation component.
 
-import { v4 as uuid } from 'uuid';
-import { sheets } from '@/app/grid/controller/Sheets';
-import { Selection, Validation, ValidationRule } from '@/app/quadratic-core-types';
-import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
-import { getSelectionString } from '@/app/grid/sheet/selection';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { validationRuleSimple, ValidationRuleSimple, ValidationUndefined } from './validationType';
 import { hasPermissionToEditFile } from '@/app/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { getSelectionString } from '@/app/grid/sheet/selection';
+import { Selection, Validation, ValidationRule } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { v4 as uuid } from 'uuid';
+import { validationRuleSimple, ValidationRuleSimple, ValidationUndefined } from './validationType';
 
 export type SetState<T> = Dispatch<SetStateAction<T>>;
 
@@ -212,6 +212,16 @@ export const useValidationData = (): ValidationData => {
     },
     [sheetId]
   );
+
+  // if showValidations is ValidationRuleSimple, initialize the rule
+  useEffect(() => {
+    if (
+      typeof showValidation === 'string' &&
+      ['text', 'number', 'list', 'list-range', 'logical'].includes(showValidation)
+    ) {
+      changeRule(showValidation as ValidationRuleSimple);
+    }
+  }, [changeRule, showValidation]);
 
   // Whether the UI shows (eg, checkbox for logical validation; dropdown for
   // list validation)

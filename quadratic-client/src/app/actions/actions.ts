@@ -9,6 +9,8 @@ export enum Action {
   InsertChartJavascript = 'insert_chart_javascript',
   InsertApiRequestJavascript = 'insert_api_request_javascript',
   InsertApiRequestPython = 'insert_api_request_python',
+  InsertCheckbox = 'insert_checkbox',
+  InsertDropdown = 'insert_dropdown',
   Copy = 'copy',
   Cut = 'cut',
   Paste = 'paste',

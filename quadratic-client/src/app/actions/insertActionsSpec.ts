@@ -3,7 +3,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { SNIPPET_JS_API, SNIPPET_JS_CHART } from '@/app/ui/menus/CodeEditor/snippetsJS';
 import { SNIPPET_PY_API, SNIPPET_PY_CHART } from '@/app/ui/menus/CodeEditor/snippetsPY';
-import { SheetIcon } from '@/shared/components/Icons';
+import { ArrowDropDownCircleIcon, CheckBoxIcon, SheetIcon } from '@/shared/components/Icons';
 
 export const insertActionsSpec = {
   [Action.InsertCodePython]: {
@@ -121,6 +121,28 @@ export const insertActionsSpec = {
     Icon: SheetIcon,
     run: () => {
       sheets.userAddSheet();
+    },
+  },
+  [Action.InsertCheckbox]: {
+    label: 'Checkbox',
+    Icon: CheckBoxIcon,
+    run: () => {
+      if (!pixiAppSettings.setEditorInteractionState) return;
+      pixiAppSettings.setEditorInteractionState((prev) => ({
+        ...prev,
+        showValidation: 'logical',
+      }));
+    },
+  },
+  [Action.InsertDropdown]: {
+    label: 'Dropdown',
+    Icon: ArrowDropDownCircleIcon,
+    run: () => {
+      if (!pixiAppSettings.setEditorInteractionState) return;
+      pixiAppSettings.setEditorInteractionState((prev) => ({
+        ...prev,
+        showValidation: 'list',
+      }));
     },
   },
 };
