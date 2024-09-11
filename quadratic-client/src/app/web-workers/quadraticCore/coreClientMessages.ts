@@ -297,6 +297,12 @@ export interface CoreClientUpdateHtml {
   html: JsHtmlOutput;
 }
 
+export interface CoreClientSetAIAssistTransactionId {
+  type: 'coreClientSetAIAssistTransactionId';
+  id: number;
+  transactionId: string;
+}
+
 //#endregion
 
 //#region Set values
@@ -308,6 +314,31 @@ export interface ClientCoreSetCellValue {
   y: number;
   value: string;
   cursor?: string;
+}
+
+export interface ClientCoreSetCodeCellValue {
+  type: 'clientCoreSetCodeCellValue';
+  sheetId: string;
+  x: number;
+  y: number;
+  language: CodeCellLanguage;
+  codeString: string;
+  cursor?: string;
+}
+
+export interface ClientCoreSetAIAssistResponse {
+  type: 'clientCoreSetAIAssistResponse';
+  id: number;
+  sheetId: string;
+  insertAt: Coordinate;
+  response: string;
+  cursor?: string;
+}
+
+export interface ClientCoreConfirmAIAssistResponse {
+  type: 'clientCoreConfirmAIAssistResponse';
+  transactionId: string;
+  accept: boolean;
 }
 
 export interface ClientCoreSetCellBold {
@@ -441,16 +472,6 @@ export interface CoreClientImportFile {
 export interface ClientCoreDeleteCellValues {
   type: 'clientCoreDeleteCellValues';
   selection: Selection;
-  cursor?: string;
-}
-
-export interface ClientCoreSetCodeCellValue {
-  type: 'clientCoreSetCodeCellValue';
-  sheetId: string;
-  x: number;
-  y: number;
-  language: CodeCellLanguage;
-  codeString: string;
   cursor?: string;
 }
 
@@ -966,6 +987,9 @@ export type ClientCoreMessage =
   | ClientCoreCellHasContent
   | ClientCoreGetEditCell
   | ClientCoreSetCellValue
+  | ClientCoreSetCodeCellValue
+  | ClientCoreSetAIAssistResponse
+  | ClientCoreConfirmAIAssistResponse
   | ClientCoreGetCellFormatSummary
   | ClientCoreInitMultiplayer
   | ClientCoreSummarizeSelection
@@ -986,7 +1010,6 @@ export type ClientCoreMessage =
   | ClientCoreSetCommas
   | ClientCoreImportFile
   | ClientCoreDeleteCellValues
-  | ClientCoreSetCodeCellValue
   | ClientCoreAddSheet
   | ClientCoreDeleteSheet
   | ClientCoreMoveSheet
@@ -1094,4 +1117,5 @@ export type CoreClientMessage =
   | CoreClientRenderValidationWarnings
   | CoreClientResizeRowHeights
   | CoreClientMultiplayerSynced
-  | CoreClientValidateInput;
+  | CoreClientValidateInput
+  | CoreClientSetAIAssistTransactionId;

@@ -1,6 +1,9 @@
 use std::fs::create_dir_all;
 
-use controller::operations::clipboard::PasteSpecial;
+use controller::{
+    execution::ai_assist::{AIAssistResponse, AICellValue, AICodeCell},
+    operations::clipboard::PasteSpecial,
+};
 use grid::{
     formats::format::Format,
     js_types::{JsSheetFill, JsValidationWarning},
@@ -61,6 +64,9 @@ fn main() {
     s += "// Do not modify it manually.\n\n";
 
     s += &generate_type_declarations!(
+        AICellValue,
+        AICodeCell,
+        AIAssistResponse,
         CodeCellLanguage,
         ConnectionKind,
         JsHtmlOutput,

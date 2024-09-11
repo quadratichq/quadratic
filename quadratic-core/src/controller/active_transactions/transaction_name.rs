@@ -21,4 +21,5 @@ pub enum TransactionName {
     DuplicateSheet,
     MoveCells,
     Validation,
+    AIAssist,
 }

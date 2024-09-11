@@ -4,6 +4,7 @@ use crate::wasm_bindings::controller::sheet_info::SheetInfo;
 use js_sys::{ArrayBuffer, Uint8Array};
 use std::str::FromStr;
 
+pub mod ai_assist;
 pub mod auto_complete;
 pub mod borders;
 pub mod bounds;

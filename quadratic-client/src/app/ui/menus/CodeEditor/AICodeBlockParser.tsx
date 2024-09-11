@@ -15,17 +15,19 @@ export function parseCodeBlocks(input: string): Array<string | JSX.Element> {
 
     // Add any text before the current code block
     if (lastIndex < match.index) {
-      blocks.push(<Markdown>{input.substring(lastIndex, match.index)}</Markdown>);
+      blocks.push(
+        <Markdown key={`markdown-${lastIndex}-${match.index}`}>{input.substring(lastIndex, match.index)}</Markdown>
+      );
     }
 
     // Add the code block as a CodeSnippet component
-    blocks.push(<CodeSnippet key={lastIndex} code={code} language={language} />);
+    blocks.push(<CodeSnippet key={`codesnippet-${lastIndex}-${match.index}`} code={code} language={language} />);
     lastIndex = CODE_BLOCK_REGEX.lastIndex;
   }
 
   // Add any remaining text after the last code block
   if (lastIndex < input.length) {
-    blocks.push(<Markdown>{input.substring(lastIndex)}</Markdown>);
+    blocks.push(<Markdown key={`markdown-${lastIndex}-${input.length}`}>{input.substring(lastIndex)}</Markdown>);
   }
 
   return blocks;

@@ -1,9 +1,9 @@
 import { Coordinate } from '@/app/gridGL/types/size';
-import { AiMessage } from '@/app/ui/menus/CodeEditor/AiAssistant';
 import { CodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditor';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { Monaco } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
+import { AIMessage } from 'quadratic-shared/typesAndSchemasAI';
 import React, { createContext, useContext, useRef, useState } from 'react';
 import { PanelTab } from './panels//CodeEditorPanelBottom';
 
@@ -11,7 +11,7 @@ type Context = {
   aiAssistant: {
     controllerRef: React.MutableRefObject<AbortController | null>;
     loading: [boolean, React.Dispatch<React.SetStateAction<boolean>>];
-    messages: [AiMessage[], React.Dispatch<React.SetStateAction<AiMessage[]>>];
+    messages: [AIMessage[], React.Dispatch<React.SetStateAction<AIMessage[]>>];
     prompt: [string, React.Dispatch<React.SetStateAction<string>>];
   };
   // `undefined` is used here as a loading state. Once the editor mounts, it becomes a string (possibly empty)
