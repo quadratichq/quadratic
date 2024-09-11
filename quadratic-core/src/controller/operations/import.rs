@@ -177,11 +177,8 @@ impl GridController {
                     let cell_value = match cell {
                         ExcelData::Empty => continue,
                         ExcelData::String(value) => CellValue::Text(value.to_string()),
-                        ExcelData::DateTimeIso(ref value) => {
-                            dbg!(value);
-                            CellValue::unpack_date_time(value)
-                                .unwrap_or(CellValue::Text(value.to_string()))
-                        }
+                        ExcelData::DateTimeIso(ref value) => CellValue::unpack_date_time(value)
+                            .unwrap_or(CellValue::Text(value.to_string())),
                         ExcelData::DateTime(ref value) => {
                             if value.is_datetime() {
                                 value.as_datetime().map_or_else(
