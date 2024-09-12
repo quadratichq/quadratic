@@ -1,4 +1,5 @@
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
+import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
 import { CodeEditorProvider } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import ConnectionsMenu from '@/app/ui/menus/ConnectionsMenu';
 import Toolbar from '@/app/ui/menus/Toolbar';
@@ -8,6 +9,7 @@ import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { useEffect } from 'react';
+import { isMobile } from 'react-device-detect';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
@@ -28,7 +30,6 @@ import CommandPalette from './menus/CommandPalette';
 import FeedbackMenu from './menus/FeedbackMenu';
 import GoTo from './menus/GoTo';
 import SheetBar from './menus/SheetBar';
-import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 import { useMultiplayerUsers } from './menus/TopBar/useMultiplayerUsers';
 import { ValidationPanel } from './menus/Validations/ValidationPanel';
 
@@ -43,6 +44,7 @@ export default function QuadraticUI() {
   const { uuid } = useParams() as { uuid: string };
   const { name, renameFile } = useFileContext();
   const { users } = useMultiplayerUsers();
+  const gridSettings = useGridSettings();
   const follow = editorInteractionState.follow
     ? users.find((user) => user.session_id === editorInteractionState.follow)
     : undefined;
@@ -51,6 +53,15 @@ export default function QuadraticUI() {
   useEffect(() => {
     pixiApp.resize();
   }, [presentationMode, editorInteractionState.showCodeEditor]);
+
+  // For mobile, set Headers to not visible by default
+  useEffect(() => {
+    if (isMobile) {
+      gridSettings.setShowHeadings(false);
+      pixiApp.viewportChanged();
+    }
+    // eslint-disable-next-line
+  }, []);
 
   return (
     <div

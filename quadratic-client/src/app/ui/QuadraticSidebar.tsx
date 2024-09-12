@@ -7,8 +7,8 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 import { sheets } from '@/app/grid/controller/Sheets';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
 import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
-import { useGridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import {

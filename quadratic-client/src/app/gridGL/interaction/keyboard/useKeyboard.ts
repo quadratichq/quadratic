@@ -2,7 +2,7 @@ import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Size } from '@/app/gridGL/types/size';
-import { useGridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
+import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import React from 'react';
 import { keyboardCell } from './keyboardCell';

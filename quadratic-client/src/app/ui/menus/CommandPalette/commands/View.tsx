@@ -2,7 +2,7 @@ import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '@/app/gr
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { ZoomInIcon, ZoomOutIcon } from '@/shared/components/Icons';
 import { Checkbox } from '@/shared/shadcn/ui/checkbox';
-import { useGridSettings } from '../../TopBar/SubMenus/useGridSettings';
+import { useGridSettings } from '../../../hooks/useGridSettings';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
 const commands: CommandGroup = {

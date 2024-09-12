@@ -7,8 +7,8 @@ import { TopBarShareButton } from './TopBarShareButton';
 import { TopBarUsers } from './TopBarUsers';
 
 export const TopBar = () => {
-  // const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  // const { permissions } = editorInteractionState;
+  // TODO: what about embedable view? should we show the file menu?
+  // TODO: (jimniels) delete these components & apply permissions above
 
   return (
     <div
@@ -40,17 +40,6 @@ export const TopBar = () => {
         }}
       >
         <TopBarMenus />
-        {/*
-        TODO: what about embedable view? should we show the file menu?
-        TODO: (jimniels) delete these components & apply permissions above
-        <QuadraticMenu />
-        hasPermissionToEditFile(permissions) && isDesktop && (
-          <>
-            <DataMenu />
-            <FormatMenu />
-            <NumberFormatMenu />
-          </>
-        )}*/}
       </div>
 
       <TopBarFileNameAndLocationMenu />

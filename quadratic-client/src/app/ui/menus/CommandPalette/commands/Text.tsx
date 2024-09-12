@@ -1,3 +1,4 @@
+import { setAlign, setBold, setItalic, setVerticalAlign, setWrap } from '@/app/ui/helpers/formatCells';
 import {
   FormatAlignCenterIcon,
   FormatAlignLeftIcon,
@@ -13,7 +14,6 @@ import {
 } from '@/shared/components/Icons';
 import { isAvailableBecauseCanEditFile } from '../../../../actions';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { setAlign, setBold, setItalic, setVerticalAlign, setWrap } from '../../TopBar/SubMenus/formatCells';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
 const commands: CommandGroup = {

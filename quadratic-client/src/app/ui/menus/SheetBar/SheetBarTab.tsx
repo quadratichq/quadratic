@@ -1,9 +1,10 @@
 import { events } from '@/app/events/events';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { ArrowDropDownIcon } from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
-import { ArrowDropDown } from '@mui/icons-material';
-import { Box, Fade, IconButton, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
+import { Box, Fade, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
 import { MouseEvent, PointerEvent, useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
@@ -45,7 +46,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
   return (
     <div
       className={cn(
-        'relative hover:bg-accent',
+        'group relative hover:bg-accent',
         active &&
           'sticky left-0 right-0 z-[1] -mt-[1px] !bg-background shadow-[inset_1px_0_0_hsl(var(--border)),inset_-1px_0_0_hsl(var(--border))]'
       )}
@@ -77,7 +78,9 @@ export const SheetBarTab = (props: Props): JSX.Element => {
           sheet={sheet}
         />
         {sheet.id !== sheets.sheet.id && <TabMultiplayer sheetId={sheet.id} />}
-        <TabButton active={active} hasPermission={hasPermission} onContextMenu={onContextMenu} sheet={sheet} />
+        <div className={cn('flex', !active && 'invisible opacity-0 group-hover:visible group-hover:opacity-100')}>
+          <TabButton active={active} hasPermission={hasPermission} onContextMenu={onContextMenu} sheet={sheet} />
+        </div>
         <Popper open={nameExists} anchorEl={containerRef.current} transition>
           {({ TransitionProps }) => (
             <Fade {...TransitionProps} timeout={350}>
@@ -284,28 +287,18 @@ function TabButton({
   onContextMenu: Props['onContextMenu'];
   sheet: Props['sheet'];
 }) {
-  const theme = useTheme();
-
   return hasPermission ? (
-    <IconButton
-      size="small"
-      sx={{
-        mr: theme.spacing(-0.5),
-        p: '0',
-        ...(active
-          ? {
-              opacity: 1,
-              visibility: 'visible',
-            }
-          : { opacity: 0, visibility: 'none' }),
-      }}
+    <Button
+      variant="ghost"
+      className={'-mr-1 h-4 w-4'}
+      size="icon-sm"
       onClick={(e) => {
         e.stopPropagation();
         onContextMenu(e, sheet);
       }}
     >
-      <ArrowDropDown fontSize="inherit" />
-    </IconButton>
+      <ArrowDropDownIcon />
+    </Button>
   ) : null;
 }
 

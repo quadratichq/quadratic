@@ -7,7 +7,7 @@ import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { SetterOrUpdater } from 'recoil';
 import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../grid/controller/Sheets';
-import { defaultGridSettings, GridSettings } from '../../ui/menus/TopBar/SubMenus/useGridSettings';
+import { defaultGridSettings, GridSettings } from '../../ui/hooks/useGridSettings';
 import { pixiApp } from './PixiApp';
 
 export enum PanMode {
