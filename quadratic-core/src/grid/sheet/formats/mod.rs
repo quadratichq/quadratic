@@ -6,8 +6,9 @@ use crate::{
     },
     grid::formats::{format::Format, format_update::FormatUpdate, Formats},
     selection::Selection,
+    Pos,
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub mod format_all;
 pub mod format_cell;
@@ -63,28 +64,32 @@ impl Sheet {
         &mut self,
         selection: &Selection,
         formats: &Formats,
-    ) -> (Vec<Operation>, Vec<i64>) {
+    ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>) {
         if selection.all {
             self.set_format_all(formats)
         } else {
             let mut ops = vec![];
-            let mut resize = vec![];
+            let mut dirty_hashes = HashSet::new();
+            let mut resize = HashSet::new();
             if let Some(columns) = selection.columns.as_ref() {
-                let (operations, resize_rows) = self.set_formats_columns(columns, formats);
+                let (operations, hashes, resize_rows) = self.set_formats_columns(columns, formats);
                 ops.extend(operations);
+                dirty_hashes.extend(hashes);
                 resize.extend(resize_rows);
             }
             if let Some(rows) = selection.rows.as_ref() {
-                let (operations, resize_rows) = self.set_formats_rows(rows, formats);
+                let (operations, hashes, resize_rows) = self.set_formats_rows(rows, formats);
                 ops.extend(operations);
+                dirty_hashes.extend(hashes);
                 resize.extend(resize_rows);
             }
             if let Some(rects) = selection.rects.as_ref() {
-                let (operations, resize_rows) = self.set_formats_rects(rects, formats);
+                let (operations, hashes, resize_rows) = self.set_formats_rects(rects, formats);
                 ops.extend(operations);
+                dirty_hashes.extend(hashes);
                 resize.extend(resize_rows);
             }
-            (ops, resize)
+            (ops, dirty_hashes, resize)
         }
     }
 

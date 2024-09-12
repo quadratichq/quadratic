@@ -276,7 +276,7 @@ mod test {
             RenderSize, SheetId,
         },
         selection::Selection,
-        wasm_bindings::js::{expect_js_call, hash_test},
+        wasm_bindings::js::{clear_js_calls, expect_js_call, hash_test},
         Rect,
     };
     use serial_test::serial;
@@ -285,6 +285,8 @@ mod test {
     #[test]
     #[serial]
     fn send_render_cells() {
+        clear_js_calls();
+
         let mut gc = GridController::test();
         let sheet_id = SheetId::test();
         gc.sheet_mut(gc.sheet_ids()[0]).id = sheet_id;
@@ -444,7 +446,7 @@ mod test {
     #[serial]
     fn send_render_cells_from_rects() {
         let mut gc = GridController::test();
-        let sheet_id = SheetId::new();
+        let sheet_id = SheetId::test();
         gc.sheet_mut(gc.sheet_ids()[0]).id = sheet_id;
 
         gc.set_cell_value((0, 0, sheet_id).into(), "test 1".to_string(), None);
