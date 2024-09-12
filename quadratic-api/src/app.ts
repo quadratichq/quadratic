@@ -7,7 +7,8 @@ import fs from 'fs';
 import helmet from 'helmet';
 import path from 'path';
 import { CORS, NODE_ENV, SENTRY_DSN } from './env-vars';
-import ai_chat_router from './routes/ai_chat';
+import anthropic_router from './routes/ai/anthropic';
+import openai_router from './routes/ai/openai';
 import internal_router from './routes/internal';
 import { ApiError } from './utils/ApiError';
 export const app = express();
@@ -68,7 +69,8 @@ app.get('/', (req, res) => {
 
 // App routes
 // TODO: eventually move all of these into the `v0` directory and register them dynamically
-app.use('/ai', ai_chat_router);
+app.use('/ai', anthropic_router);
+app.use('/ai', openai_router);
 // Internal routes
 app.use('/v0/internal', internal_router);
 

@@ -186,8 +186,7 @@ export class PointerDown {
     const sheet = sheets.sheet;
     const cursor = sheet.cursor;
 
-    // for determining if double click
-    if (!this.pointerMoved && this.doubleClickTimeout && this.positionRaw) {
+    if (!this.pointerMoved && this.positionRaw) {
       if (
         Math.abs(this.positionRaw.x - world.x) + Math.abs(this.positionRaw.y - world.y) >
         MINIMUM_MOVE_POSITION / viewport.scale.x

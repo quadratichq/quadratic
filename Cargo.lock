@@ -4874,7 +4874,7 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 [[package]]
 name = "ts-rs"
 version = "7.0.0"
-source = "git+https://github.com/HactarCE/ts-rs/?rev=812c1a8#812c1a8b5ff3128916426e95e228f51430eb02cc"
+source = "git+https://github.com/quadratichq/ts-rs/?rev=812c1a8#812c1a8b5ff3128916426e95e228f51430eb02cc"
 dependencies = [
  "smallvec",
  "thiserror",
@@ -4885,7 +4885,7 @@ dependencies = [
 [[package]]
 name = "ts-rs-macros"
 version = "7.0.0"
-source = "git+https://github.com/HactarCE/ts-rs/?rev=812c1a8#812c1a8b5ff3128916426e95e228f51430eb02cc"
+source = "git+https://github.com/quadratichq/ts-rs/?rev=812c1a8#812c1a8b5ff3128916426e95e228f51430eb02cc"
 dependencies = [
  "Inflector",
  "proc-macro2 1.0.86",

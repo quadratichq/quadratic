@@ -34,8 +34,13 @@ class RenderText {
   bitmapFonts?: RenderBitmapFonts;
   viewport?: Rectangle;
   sheetId?: string;
+  scale?: number;
+
+  lastUpdateTick = 0;
+  viewportBuffer: Map<string, SharedArrayBuffer>;
 
   constructor() {
+    this.viewportBuffer = new Map();
     init().then(() => {
       this.status.rust = true;
       this.ready();
@@ -107,6 +112,38 @@ class RenderText {
     setTimeout(this.update);
   };
 
+  updateViewportBuffer = () => {
+    if (!this.viewport || !this.sheetId) return;
+
+    const cellsLabels = this.cellsLabels.get(this.sheetId);
+    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.updateViewportBuffer');
+    const neighborRect = cellsLabels.getViewportNeighborBounds();
+    if (!neighborRect || !this.sheetId) return;
+
+    this.viewportBuffer.forEach((buffer) => {
+      const cornerHashes = cellsLabels.getCornerHashesInBound(neighborRect);
+      if (cornerHashes.length === 0) return;
+
+      // Update the viewport in the SharedArrayBuffer
+      const int32Array = new Int32Array(buffer);
+
+      int32Array[0] = 0; // Set flag to indicate viewport is set
+
+      int32Array[1] = cornerHashes[0];
+      int32Array[2] = cornerHashes[1];
+      int32Array[3] = cornerHashes[2];
+      int32Array[4] = cornerHashes[3];
+
+      // Update the UUID (sheetId) in the SharedArrayBuffer
+      const uint8Array = new Uint8Array(buffer);
+      const encoder = new TextEncoder();
+      const sheetIdBytes = encoder.encode(this.sheetId);
+      uint8Array.set(sheetIdBytes, 20);
+
+      int32Array[0] = 1; // Set flag to indicate viewport is set
+    });
+  };
+
   // Called before first render when all text visible in the viewport has been rendered and sent to the client
   completeRenderCells(message: { sheetId: string; hashX: number; hashY: number; renderCells: JsRenderCell[] }) {
     const cellsLabels = this.cellsLabels.get(message.sheetId);
@@ -145,6 +182,7 @@ class RenderText {
     const cellsLabels = this.cellsLabels.get(sheetBounds.sheet_id);
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.sheetBoundsUpdate');
     cellsLabels.updateSheetBounds(sheetBounds);
+    this.updateViewportBuffer();
   }
 
   showLabel(sheetId: string, x: number, y: number, show: boolean) {
@@ -176,6 +214,21 @@ class RenderText {
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.resizeRowHeights');
     cellsLabels.resizeRowHeights(rowHeights);
   }
+
+  setHashesDirty(sheetId: string, hashes: string) {
+    const cellsLabels = this.cellsLabels.get(sheetId);
+    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.completeRenderCells');
+    cellsLabels.setHashesDirty(hashes);
+  }
+
+  setViewportBuffer = (transactionId: string, buffer: SharedArrayBuffer) => {
+    this.viewportBuffer.set(transactionId, buffer);
+    this.updateViewportBuffer();
+  };
+
+  clearViewportBuffer = (transactionId: string) => {
+    this.viewportBuffer.delete(transactionId);
+  };
 }
 
 export const renderText = new RenderText();
