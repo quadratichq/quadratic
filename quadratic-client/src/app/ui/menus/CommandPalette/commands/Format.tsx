@@ -19,7 +19,7 @@ import {
   textFormatSetCurrency,
   textFormatSetExponential,
   textFormatSetPercentage,
-} from '../../TopBar/SubMenus/formatCells';
+} from '../../../helpers/formatCells';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
 const commands: CommandGroup = {

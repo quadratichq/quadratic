@@ -1,4 +1,4 @@
-import TopBarMenus from '@/app/ui/menus/TopBar/TopBarMenus';
+import TopBarFileMenu from '@/app/ui/menus/TopBar/TopBarFileMenu';
 import { isElectron } from '@/shared/utils/isElectron';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { isEmbed } from '../../../helpers/isEmbed';
@@ -7,8 +7,8 @@ import { TopBarShareButton } from './TopBarShareButton';
 import { TopBarUsers } from './TopBarUsers';
 
 export const TopBar = () => {
-  // const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  // const { permissions } = editorInteractionState;
+  // TODO: what about embedable view? should we show the file menu?
+  // TODO: (jimniels) delete these components & apply permissions above
 
   return (
     <div
@@ -39,18 +39,7 @@ export const TopBar = () => {
           WebkitAppRegion: 'no-drag',
         }}
       >
-        <TopBarMenus />
-        {/*
-        TODO: what about embedable view? should we show the file menu?
-        TODO: (jimniels) delete these components & apply permissions above
-        <QuadraticMenu />
-        hasPermissionToEditFile(permissions) && isDesktop && (
-          <>
-            <DataMenu />
-            <FormatMenu />
-            <NumberFormatMenu />
-          </>
-        )}*/}
+        <TopBarFileMenu />
       </div>
 
       <TopBarFileNameAndLocationMenu />

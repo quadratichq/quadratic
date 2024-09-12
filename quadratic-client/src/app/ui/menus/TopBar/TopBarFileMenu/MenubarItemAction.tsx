@@ -28,7 +28,6 @@ export const MenubarItemAction = <T extends Action>({
 
   const { label, run } = actionSpec;
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
-  const labelVerbose = 'labelVerbose' in actionSpec ? actionSpec.labelVerbose ?? label : label;
   const keyboardShortcut = shortcutOverride ? shortcutOverride : keyboardShortcutEnumToDisplay(action);
   const isAvailable = 'isAvailable' in actionSpec ? actionSpec.isAvailable : undefined;
 
@@ -39,7 +38,7 @@ export const MenubarItemAction = <T extends Action>({
   // TODO: (jimniels) implement isAvailable
   return (
     <MenubarItem onClick={() => run(actionArgs)}>
-      {Icon && <Icon />} {labelVerbose}
+      {Icon && <Icon />} {label}
       {keyboardShortcut && <MenubarShortcut>{keyboardShortcut}</MenubarShortcut>}
     </MenubarItem>
   );

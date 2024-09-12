@@ -8,6 +8,7 @@ import { Following } from '@/app/ui/components/Following';
 import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
 import PresentationModeHint from '@/app/ui/components/PresentationModeHint';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
+import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
 import { BottomBar } from '@/app/ui/menus/BottomBar/BottomBar';
 import CellTypeMenu from '@/app/ui/menus/CellTypeMenu';
 import { AiAssistant } from '@/app/ui/menus/CodeEditor/AiAssistant';
@@ -18,7 +19,6 @@ import FeedbackMenu from '@/app/ui/menus/FeedbackMenu';
 import GoTo from '@/app/ui/menus/GoTo';
 import SheetBar from '@/app/ui/menus/SheetBar';
 import Toolbar from '@/app/ui/menus/Toolbar';
-import { useGridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
 import { TopBar } from '@/app/ui/menus/TopBar/TopBar';
 import { useMultiplayerUsers } from '@/app/ui/menus/TopBar/useMultiplayerUsers';
 import { ValidationPanel } from '@/app/ui/menus/Validations/ValidationPanel';
@@ -30,6 +30,7 @@ import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { useEffect } from 'react';
+import { isMobile } from 'react-device-detect';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState } from 'recoil';
 
@@ -44,6 +45,7 @@ export default function QuadraticUI() {
   const { uuid } = useParams() as { uuid: string };
   const { name, renameFile } = useFileContext();
   const { users } = useMultiplayerUsers();
+  const gridSettings = useGridSettings();
   const follow = editorInteractionState.follow
     ? users.find((user) => user.session_id === editorInteractionState.follow)
     : undefined;
@@ -52,6 +54,15 @@ export default function QuadraticUI() {
   useEffect(() => {
     pixiApp.resize();
   }, [presentationMode, editorInteractionState.showCodeEditor]);
+
+  // For mobile, set Headers to not visible by default
+  useEffect(() => {
+    if (isMobile) {
+      gridSettings.setShowHeadings(false);
+      pixiApp.viewportChanged();
+    }
+    // eslint-disable-next-line
+  }, []);
 
   return (
     <div
@@ -66,7 +77,7 @@ export default function QuadraticUI() {
       }}
     >
       {!presentationMode && <QuadraticSidebar />}
-      <div className="flex w-full flex-col">
+      <div className="flex min-w-0 flex-grow flex-col" id="main">
         {!presentationMode && <TopBar />}
         {!presentationMode && <Toolbar />}
 
@@ -82,7 +93,6 @@ export default function QuadraticUI() {
           {editorInteractionState.showAI && <AiAssistant />}
           <FileDragDropWrapper>
             <QuadraticGrid />
-            {!presentationMode && <SheetBar />}
           </FileDragDropWrapper>
           {editorInteractionState.showCodeEditor && <CodeEditorProvider />}
           {editorInteractionState.showValidation && <ValidationPanel />}
@@ -99,6 +109,7 @@ export default function QuadraticUI() {
           ></div>
         </div>
 
+        {!presentationMode && <SheetBar />}
         {!presentationMode && !isEmbed && <BottomBar />}
       </div>
 

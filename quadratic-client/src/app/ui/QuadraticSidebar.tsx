@@ -4,9 +4,12 @@ import {
   provideFeedbackAction,
 } from '@/app/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
 import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
-import { useGridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import {
   AIIcon,
@@ -47,6 +50,10 @@ export const QuadraticSidebar = () => {
   const canEditFile = isAvailableBecauseCanEditFile(isAvailableArgs);
   const canDoTeamsStuff = isAvailableBecauseFileLocationIsAccessibleAndWriteable(isAvailableArgs);
 
+  const sheet = sheets.sheet;
+  const cursor = sheet.cursor;
+  const cursorPosition = cursor.cursorPosition;
+
   return (
     <TooltipProvider>
       <nav className="hidden h-full w-12 flex-shrink-0 flex-col border-r border-border bg-accent lg:flex">
@@ -70,7 +77,19 @@ export const QuadraticSidebar = () => {
 
           {canEditFile && (
             <SidebarTooltip label="Insert code cell" shortcut={'/'}>
-              <SidebarButton onClick={() => setEditorInteractionState((prev) => ({ ...prev, showCellTypeMenu: true }))}>
+              <SidebarButton
+                onClick={async () => {
+                  const column = cursorPosition.x;
+                  const row = cursorPosition.y;
+                  const code = await quadraticCore.getCodeCell(sheets.sheet.id, column, row);
+
+                  if (code) {
+                    doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
+                  } else {
+                    setEditorInteractionState((prev) => ({ ...prev, showCellTypeMenu: true }));
+                  }
+                }}
+              >
                 <CodeIcon />
               </SidebarButton>
             </SidebarTooltip>

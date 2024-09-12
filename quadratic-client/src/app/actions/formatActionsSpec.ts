@@ -1,6 +1,5 @@
 import { Action } from '@/app/actions/actions';
 import { convertReactColorToString } from '@/app/helpers/convertColor';
-import { UseBordersResults } from '@/app/ui/hooks/useBorders';
 import {
   clearFormattingAndBorders,
   removeCellNumericFormat,
@@ -17,7 +16,8 @@ import {
   textFormatSetCurrency,
   textFormatSetExponential,
   textFormatSetPercentage,
-} from '@/app/ui/menus/TopBar/SubMenus/formatCells';
+} from '@/app/ui/helpers/formatCells';
+import { UseBordersResults } from '@/app/ui/hooks/useBorders';
 import {
   BorderAllIcon,
   BorderBottomIcon,

@@ -14,6 +14,23 @@ import { colors } from '@/app/theme/colors';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { QColorPicker } from '@/app/ui/components/qColorPicker';
 import {
+  clearFillColor,
+  clearFormattingAndBorders,
+  removeCellNumericFormat,
+  setAlign,
+  setBold,
+  setFillColor,
+  setItalic,
+  setTextColor,
+  setVerticalAlign,
+  setWrap,
+  textFormatDecreaseDecimalPlaces,
+  textFormatIncreaseDecimalPlaces,
+  textFormatSetCurrency,
+  textFormatSetExponential,
+  textFormatSetPercentage,
+} from '@/app/ui/helpers/formatCells';
+import {
   DecimalDecreaseIcon,
   DecimalIncreaseIcon,
   DollarIcon,
@@ -39,23 +56,6 @@ import {
 } from '@/app/ui/icons';
 import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
 import { BorderMenu } from '@/app/ui/menus/TopBar/SubMenus/FormatMenu/BorderMenu';
-import {
-  clearFillColor,
-  clearFormattingAndBorders,
-  removeCellNumericFormat,
-  setAlign,
-  setBold,
-  setFillColor,
-  setItalic,
-  setTextColor,
-  setVerticalAlign,
-  setWrap,
-  textFormatDecreaseDecimalPlaces,
-  textFormatIncreaseDecimalPlaces,
-  textFormatSetCurrency,
-  textFormatSetExponential,
-  textFormatSetPercentage,
-} from '@/app/ui/menus/TopBar/SubMenus/formatCells';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { Divider, IconButton, Toolbar } from '@mui/material';

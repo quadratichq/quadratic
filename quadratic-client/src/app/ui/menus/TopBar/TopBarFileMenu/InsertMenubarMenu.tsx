@@ -1,6 +1,6 @@
 import { Action } from '@/app/actions/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
+import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarFileMenu/MenubarItemAction';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CodeIcon, DataObjectIcon, InsertChartIcon } from '@/shared/components/Icons';
 import { IMPORT_MESSAGE } from '@/shared/constants/appConstants';
