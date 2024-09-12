@@ -91,6 +91,7 @@ export default function QuadraticUI() {
         >
           <FileDragDropWrapper>
             <QuadraticGrid />
+            {!presentationMode && <SheetBar />}
           </FileDragDropWrapper>
           {editorInteractionState.showCodeEditor && <CodeEditorProvider />}
           {editorInteractionState.showValidation && <ValidationPanel />}
@@ -107,7 +108,6 @@ export default function QuadraticUI() {
           ></div>
         </div>
 
-        {!presentationMode && <SheetBar />}
         {!presentationMode && !isEmbed && <BottomBar />}
       </div>
 
