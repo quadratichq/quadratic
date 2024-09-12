@@ -40,12 +40,12 @@ impl Sheet {
         &mut self,
         rows: &[i64],
         formats: &Formats,
-    ) -> (Vec<Operation>, Vec<i64>) {
+    ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>) {
         let mut old_formats = Formats::default();
         let mut formats_iter = formats.iter_values();
 
-        // tracks which column of cells need to be rerendered
-        let mut render_rows = HashSet::new();
+        // tracks which hashes than need to be updated
+        let mut dirty_hashes = HashSet::new();
 
         // tracks whether we need to update fills for the row
         let mut render_row_fills = false;
@@ -65,7 +65,13 @@ impl Sheet {
                 // don't need to do anything if there are no changes
                 if !format_update.is_default() {
                     if format_update.render_cells_changed() {
-                        render_rows.insert(*y);
+                        if let Some((start, end)) = self.row_bounds(*y, true) {
+                            for col in start..=end {
+                                let pos = Pos { x: col, y: *y };
+                                let (x, y) = pos.quadrant();
+                                dirty_hashes.insert(Pos { x, y });
+                            }
+                        }
                     }
 
                     if format_update.fill_changed() {
@@ -119,7 +125,7 @@ impl Sheet {
         });
 
         if old_formats == *formats {
-            return (vec![], vec![]);
+            return (vec![], HashSet::new(), HashSet::new());
         }
 
         // adds operations to revert changes to the columns
@@ -153,11 +159,6 @@ impl Sheet {
             });
         }
 
-        // force a rerender of all impacted cells
-        if !render_rows.is_empty() {
-            self.send_row_render_cells(render_rows.into_iter().collect());
-        }
-
         // force a rerender of all column, row, and sheet fills
         if render_row_fills {
             self.send_sheet_fills();
@@ -168,7 +169,7 @@ impl Sheet {
             self.send_fills(&render_fills);
         }
 
-        (ops, resize_rows.into_iter().collect())
+        (ops, dirty_hashes, resize_rows)
     }
 }
 

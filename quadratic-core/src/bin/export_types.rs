@@ -85,6 +85,7 @@ fn main() {
         grid::js_types::CellFormatSummary,
         grid::js_types::JsClipboard,
         grid::js_types::JsRowHeight,
+        grid::js_types::JsPos,
         ArraySize,
         Axis,
         Instant,

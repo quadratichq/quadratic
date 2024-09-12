@@ -98,6 +98,7 @@ impl GridController {
     }
 
     #[wasm_bindgen(js_name = "test")]
+    #[cfg(test)]
     pub fn js_test() -> GridController {
         GridController::test()
     }

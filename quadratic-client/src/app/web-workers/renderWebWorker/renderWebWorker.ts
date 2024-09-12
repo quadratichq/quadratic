@@ -88,14 +88,14 @@ class RenderWebWorker {
     this.worker.postMessage(message);
   }
 
-  pixiIsReady(sheetId: string, bounds: Rectangle) {
+  pixiIsReady(sheetId: string, bounds: Rectangle, scale: number) {
     this.preloadQueue.forEach((message) => this.handleMessage(message));
     this.preloadQueue = [];
-    this.updateViewport(sheetId, bounds);
+    this.updateViewport(sheetId, bounds, scale);
   }
 
-  updateViewport(sheetId: string, bounds: Rectangle) {
-    const message: ClientRenderViewport = { type: 'clientRenderViewport', sheetId, bounds };
+  updateViewport(sheetId: string, bounds: Rectangle, scale: number) {
+    const message: ClientRenderViewport = { type: 'clientRenderViewport', sheetId, bounds, scale };
     this.send(message);
   }
 
