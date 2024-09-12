@@ -1,5 +1,4 @@
 import { Coordinate } from '@/app/gridGL/types/size';
-import { CodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditor';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { Monaco } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
@@ -34,7 +33,7 @@ const CodeEditorContext = createContext<Context>({
   spillError: [undefined, () => {}],
 });
 
-export const CodeEditorProvider = () => {
+export const CodeEditorProvider = ({ children }: { children: React.ReactNode }) => {
   const codeString = useState<Context['codeString'][0]>(undefined); // update code cell
   const consoleOutput = useState<Context['consoleOutput'][0]>(undefined);
   const editorContent = useState<Context['editorContent'][0]>(codeString[0]);
@@ -59,7 +58,7 @@ export const CodeEditorProvider = () => {
         spillError,
       }}
     >
-      <CodeEditor />
+      {children}
     </CodeEditorContext.Provider>
   );
 };

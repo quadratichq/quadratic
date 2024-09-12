@@ -10,18 +10,23 @@ import {
   UserMessage,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
+import { SetterOrUpdater } from 'recoil';
 
 type HandleOpenAIPromptProps = {
   model: OpenAIModel;
   messages: OpenAIMessage[];
-  setMessages: (value: React.SetStateAction<(UserMessage | AIMessage)[]>) => void;
+  setMessages:
+    | SetterOrUpdater<(UserMessage | AIMessage)[]>
+    | ((value: React.SetStateAction<(UserMessage | AIMessage)[]>) => void);
   signal: AbortSignal;
 };
 
 type HandleAnthropicAIPromptProps = {
   model: AnthropicModel;
   messages: AnthropicMessage[];
-  setMessages: (value: React.SetStateAction<(UserMessage | AIMessage)[]>) => void;
+  setMessages:
+    | SetterOrUpdater<(UserMessage | AIMessage)[]>
+    | ((value: React.SetStateAction<(UserMessage | AIMessage)[]>) => void);
   signal: AbortSignal;
 };
 
@@ -37,7 +42,6 @@ export function useAI() {
       setMessages: (value: React.SetStateAction<(UserMessage | AIMessage)[]>) => void
     ): Promise<{ error?: boolean; content: string }> => {
       const decoder = new TextDecoder();
-
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
@@ -144,7 +148,7 @@ export function useAI() {
           return { error: true, content: error };
         }
 
-        setMessages((prev) => [...prev, responseMessage]);
+        setMessages((prev) => [...prev, { ...responseMessage }]);
 
         const reader = response.body?.getReader();
         if (!reader) throw new Error('Response body is not readable');

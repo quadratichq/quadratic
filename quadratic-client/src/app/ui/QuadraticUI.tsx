@@ -11,6 +11,7 @@ import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
 import { BottomBar } from '@/app/ui/menus/BottomBar/BottomBar';
 import CellTypeMenu from '@/app/ui/menus/CellTypeMenu';
+import CodeEditor from '@/app/ui/menus/CodeEditor';
 import { AiAssistant } from '@/app/ui/menus/CodeEditor/AiAssistant';
 import { CodeEditorProvider } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import CommandPalette from '@/app/ui/menus/CommandPalette';
@@ -90,11 +91,13 @@ export default function QuadraticUI() {
             position: 'relative',
           }}
         >
-          {editorInteractionState.showAI && <AiAssistant />}
-          <FileDragDropWrapper>
-            <QuadraticGrid />
-          </FileDragDropWrapper>
-          {editorInteractionState.showCodeEditor && <CodeEditorProvider />}
+          <CodeEditorProvider>
+            {editorInteractionState.showAI && <AiAssistant />}
+            <FileDragDropWrapper>
+              <QuadraticGrid />
+            </FileDragDropWrapper>
+            {editorInteractionState.showCodeEditor && <CodeEditor />}
+          </CodeEditorProvider>
           {editorInteractionState.showValidation && <ValidationPanel />}
           <Following follow={follow} />
           <div

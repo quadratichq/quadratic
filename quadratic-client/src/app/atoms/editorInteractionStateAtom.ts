@@ -2,9 +2,9 @@ import { Coordinate } from '@/app/gridGL/types/size';
 import { focusGrid } from '@/app/helpers/focusGrid.js';
 import { CodeCellLanguage, SearchOptions } from '@/app/quadratic-core-types';
 import { FilePermission } from 'quadratic-shared/typesAndSchemas';
-import { atom, DefaultValue } from 'recoil';
+import { atom, DefaultValue, selector } from 'recoil';
 
-export interface EditorInteractionState {
+export type EditorInteractionState = {
   showCellTypeMenu: boolean;
   showCodeEditor: boolean;
   showCommandPalette: boolean;
@@ -37,7 +37,7 @@ export interface EditorInteractionState {
   };
   undo: boolean;
   redo: boolean;
-}
+};
 
 export const editorInteractionStateDefault: EditorInteractionState = {
   showCellTypeMenu: false,
@@ -63,7 +63,7 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   redo: false,
 };
 
-export const editorInteractionStateAtom = atom({
+export const editorInteractionStateAtom = atom<EditorInteractionState>({
   key: 'editorInteractionState', // unique ID (with respect to other atoms/selectors)
   default: editorInteractionStateDefault,
   effects: [
@@ -101,4 +101,18 @@ export const editorInteractionStateAtom = atom({
       });
     },
   ],
+});
+
+export const showAIAtom = selector<EditorInteractionState['showAI']>({
+  key: 'showAIAtom',
+  get: ({ get }) => {
+    const editorInteractionState = get(editorInteractionStateAtom);
+    return editorInteractionState.showAI;
+  },
+  set: ({ set }, newValue) => {
+    set(editorInteractionStateAtom, (prev) => ({
+      ...prev,
+      showAI: newValue instanceof DefaultValue ? prev.showAI : newValue,
+    }));
+  },
 });

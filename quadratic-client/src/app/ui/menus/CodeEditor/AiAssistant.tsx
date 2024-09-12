@@ -1,4 +1,9 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  aiAssistantPanelAtom,
+  aiAssistantPanelMessagesAtom,
+  aiAssistantPanelModelAtom,
+} from '@/app/atoms/aiAssistantPanelAtom';
+import { editorInteractionStateAtom, showAIAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
@@ -11,6 +16,7 @@ import { ResizeControl } from '@/app/ui/menus/CodeEditor/panels/ResizeControl';
 import { QuadraticDocs } from '@/app/ui/menus/CodeEditor/QuadraticDocs';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { Avatar } from '@/shared/components/Avatar';
+import { ChevronLeftIcon } from '@/shared/components/Icons';
 import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
@@ -22,7 +28,7 @@ import {
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { ArrowUpward, Stop } from '@mui/icons-material';
-import { CircularProgress } from '@mui/material';
+import { CircularProgress, IconButton } from '@mui/material';
 import { CaretDownIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import {
@@ -34,7 +40,7 @@ import {
   UserMessage,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { SetterOrUpdater, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import './AiAssistant.css';
 
 const MIN_CONTAINER_WIDTH = 350;
@@ -44,11 +50,11 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   const [containerWidth, setContainerWidth] = useState(MIN_CONTAINER_WIDTH);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const aiResponseRef = useRef<HTMLDivElement>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [messages, setMessages] = useState<(UserMessage | AIMessage)[]>([]);
-  const [model, setModel] = useState<AnthropicModel | OpenAIModel>('claude-3-5-sonnet-20240620');
-  const [prompt, setPrompt] = useState('');
+  const [{ abortController, loading, messages, model, prompt }, setAiAssistantPanelState] =
+    useRecoilState(aiAssistantPanelAtom);
+  const setMessages = useSetRecoilState(aiAssistantPanelMessagesAtom);
+  const setModel = useSetRecoilState(aiAssistantPanelModelAtom);
+  const setShowAI = useSetRecoilState(showAIAtom);
   const {
     consoleOutput: [consoleOutput],
     editorContent: [editorContent],
@@ -128,19 +134,23 @@ How can I help you?
 
   const abortPrompt = () => {
     mixpanel.track('[AI].prompt.cancel', { language: getConnectionKind(mode) });
-    abortControllerRef.current?.abort();
-    setLoading(false);
+    abortController?.abort();
+    setAiAssistantPanelState((prev) => ({ ...prev, loading: false }));
   };
 
   const { handleAIStream, isAnthropicModel } = useAI();
 
   const submitPrompt = useCallback(async () => {
     if (loading) return;
-    setLoading(true);
-    abortControllerRef.current = new AbortController();
+    const abortController = new AbortController();
     const updatedMessages: (UserMessage | AIMessage)[] = [...messages, { role: 'user', content: prompt }];
-    setMessages(updatedMessages);
-    setPrompt('');
+    setAiAssistantPanelState((prev) => ({
+      ...prev,
+      abortController,
+      loading: true,
+      messages: updatedMessages,
+      prompt: '',
+    }));
 
     const messagesToSend = [
       {
@@ -167,7 +177,7 @@ How can I help you?
         model,
         messages: aiMessages,
         setMessages,
-        signal: abortControllerRef.current.signal,
+        signal: abortController.signal,
       });
     } else {
       const aiMessages: OpenAIMessage[] = [
@@ -182,13 +192,12 @@ How can I help you?
         model,
         messages: aiMessages,
         setMessages,
-        signal: abortControllerRef.current.signal,
+        signal: abortController.signal,
       });
     }
 
-    setLoading(false);
+    setAiAssistantPanelState((prev) => ({ ...prev, abortController: undefined, loading: false }));
   }, [
-    abortControllerRef,
     cellContext.content,
     cellContext.role,
     handleAIStream,
@@ -198,9 +207,8 @@ How can I help you?
     model,
     prompt,
     quadraticContext,
-    setLoading,
+    setAiAssistantPanelState,
     setMessages,
-    setPrompt,
   ]);
 
   // Designed to live in a box that takes up the full height of its container
@@ -225,7 +233,20 @@ How can I help you?
           setContainerWidth(newContainerWidth);
         }}
       />
-      <div className="grid h-full w-full grid-rows-[1fr_auto]">
+
+      <div className="grid h-full w-full grid-rows-[auto_1fr_auto]">
+        <div className="m-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <IconButton onClick={() => setShowAI(false)}>
+              <ChevronLeftIcon />
+            </IconButton>
+            <span>AI Assistant</span>
+          </div>
+          <Button onClick={() => setMessages([])} variant="outline" disabled={messages.length === 0}>
+            Clear
+          </Button>
+        </div>
+
         <div
           ref={aiResponseRef}
           className="select-text overflow-y-auto whitespace-pre-wrap pl-3 pr-3 text-sm outline-none"
@@ -298,7 +319,7 @@ How can I help you?
             value={prompt}
             className="min-h-14 rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0"
             onChange={(event) => {
-              setPrompt(event.target.value);
+              setAiAssistantPanelState((prev) => ({ ...prev, prompt: event.target.value }));
             }}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
@@ -388,7 +409,7 @@ function SelectAIModelDropdownMenu({
 }: {
   loading: boolean;
   isAnthropic: boolean;
-  setModel: React.Dispatch<React.SetStateAction<AnthropicModel | OpenAIModel>>;
+  setModel: SetterOrUpdater<AnthropicModel | OpenAIModel>;
 }) {
   return (
     <DropdownMenu>
