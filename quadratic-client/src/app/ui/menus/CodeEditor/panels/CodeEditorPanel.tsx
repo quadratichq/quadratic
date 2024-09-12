@@ -50,8 +50,6 @@ export const CodeEditorPanel = memo((props: Props) => {
       />
     ) : undefined;
 
-  const showAiAssistant = Boolean(isAuthenticated);
-
   return (
     <>
       {/* Panel position (left/bottom) control */}
@@ -64,18 +62,10 @@ export const CodeEditorPanel = memo((props: Props) => {
       </div>
 
       {panelPosition === 'left' && (
-        <CodeEditorPanelSide
-          schemaBrowser={schemaBrowser}
-          showAiAssistant={showAiAssistant}
-          codeEditorPanelData={props.codeEditorPanelData}
-        />
+        <CodeEditorPanelSide schemaBrowser={schemaBrowser} codeEditorPanelData={props.codeEditorPanelData} />
       )}
       {panelPosition === 'bottom' && (
-        <CodeEditorPanelBottom
-          schemaBrowser={schemaBrowser}
-          showAiAssistant={showAiAssistant}
-          codeEditorPanelData={props.codeEditorPanelData}
-        />
+        <CodeEditorPanelBottom schemaBrowser={schemaBrowser} codeEditorPanelData={props.codeEditorPanelData} />
       )}
     </>
   );

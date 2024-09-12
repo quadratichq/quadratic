@@ -9,6 +9,7 @@ import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
 import { useGridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import {
+  AIIcon,
   CodeCellOutlineOff,
   CodeCellOutlineOn,
   CodeIcon,
@@ -59,6 +60,14 @@ export const QuadraticSidebar = () => {
           </Link>
         </SidebarTooltip>
         <div className="mt-2">
+          {canEditFile && (
+            <SidebarTooltip label="AI Assistant">
+              <SidebarButton onClick={() => setEditorInteractionState((prev) => ({ ...prev, showAI: !prev.showAI }))}>
+                <AIIcon />
+              </SidebarButton>
+            </SidebarTooltip>
+          )}
+
           {canEditFile && (
             <SidebarTooltip label="Insert code cell" shortcut={'/'}>
               <SidebarButton onClick={() => setEditorInteractionState((prev) => ({ ...prev, showCellTypeMenu: true }))}>

@@ -54,9 +54,6 @@ export const CodeEditor = () => {
     editorContent: [editorContent, setEditorContent],
     evaluationResult: [evaluationResult, setEvaluationResult],
     panelBottomActiveTab: [, setPanelBottomActiveTab],
-    aiAssistant: {
-      messages: [, setAiMessages],
-    },
   } = useCodeEditor();
   const { pythonState } = usePythonState();
   const javascriptState = useJavascriptState();
@@ -71,14 +68,12 @@ export const CodeEditor = () => {
   useEffect(() => {
     events.emit('codeEditor');
     setPanelBottomActiveTab(mode === 'Connection' ? 'data-browser' : 'console');
-    setAiMessages([]);
   }, [
     showCodeEditor,
     editorInteractionState.selectedCell.x,
     editorInteractionState.selectedCell.y,
     mode,
     setPanelBottomActiveTab,
-    setAiMessages,
   ]);
 
   const cellLocation: SheetPosTS = useMemo(() => {

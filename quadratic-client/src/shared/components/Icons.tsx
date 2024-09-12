@@ -30,6 +30,10 @@ const Icon = (props: BaseIconProps) => {
 type IconProps = Omit<BaseIconProps, 'children'>;
 export type IconComponent = React.FC<IconProps>;
 
+export const AIIcon: IconComponent = (props) => {
+  return <Icon {...props}>auto_awesome</Icon>;
+};
+
 export const ArrowDropDownIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_drop_down</Icon>;
 };

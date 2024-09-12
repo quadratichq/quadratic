@@ -1,18 +1,16 @@
-import { AiAssistant } from '@/app/ui/menus/CodeEditor/AiAssistant';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { PanelBox, calculatePanelBoxMinimizedSize } from '@/app/ui/menus/CodeEditor/panels/PanelBox';
+import { ResizeControl } from '@/app/ui/menus/CodeEditor/panels/ResizeControl';
 import { useCodeEditorContainer } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorContainer';
 import { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ResizeControl } from './ResizeControl';
 
 interface Props {
   codeEditorPanelData: CodeEditorPanelData;
   schemaBrowser: React.ReactNode | undefined;
-  showAiAssistant: boolean;
 }
 
-export function CodeEditorPanelSide({ schemaBrowser, showAiAssistant, codeEditorPanelData }: Props) {
+export function CodeEditorPanelSide({ schemaBrowser, codeEditorPanelData }: Props) {
   const container = useCodeEditorContainer();
   const minimizedSize = useMemo(() => {
     const minimizedSize = calculatePanelBoxMinimizedSize();
@@ -117,25 +115,6 @@ export function CodeEditorPanelSide({ schemaBrowser, showAiAssistant, codeEditor
       >
         <Console />
       </PanelBox>
-      {showAiAssistant && (
-        <>
-          <ResizeControl
-            style={{ top: panels[0].height }}
-            disabled={!panels[0].open || (!panels[1].open && !panels[2]?.open)}
-            position="HORIZONTAL"
-            setState={(e) => changeResizeBar(e, true)}
-          />
-          <PanelBox
-            id="panel-1"
-            title="AI Assistant"
-            open={panels[1].open}
-            toggleOpen={panels[1].toggleOpen}
-            height={panels[1].height}
-          >
-            <AiAssistant />
-          </PanelBox>
-        </>
-      )}
 
       {schemaBrowser && (
         <>

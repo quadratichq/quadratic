@@ -1,7 +1,29 @@
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import QuadraticGrid from '@/app/gridGL/QuadraticGrid';
+import { isEmbed } from '@/app/helpers/isEmbed';
+import { FileDragDropWrapper } from '@/app/ui/components/FileDragDropWrapper';
+import { useFileContext } from '@/app/ui/components/FileProvider';
+import { Following } from '@/app/ui/components/Following';
+import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
+import PresentationModeHint from '@/app/ui/components/PresentationModeHint';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
+import { BottomBar } from '@/app/ui/menus/BottomBar/BottomBar';
+import CellTypeMenu from '@/app/ui/menus/CellTypeMenu';
+import { AiAssistant } from '@/app/ui/menus/CodeEditor/AiAssistant';
 import { CodeEditorProvider } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import CommandPalette from '@/app/ui/menus/CommandPalette';
 import ConnectionsMenu from '@/app/ui/menus/ConnectionsMenu';
+import FeedbackMenu from '@/app/ui/menus/FeedbackMenu';
+import GoTo from '@/app/ui/menus/GoTo';
+import SheetBar from '@/app/ui/menus/SheetBar';
 import Toolbar from '@/app/ui/menus/Toolbar';
+import { useGridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
+import { TopBar } from '@/app/ui/menus/TopBar/TopBar';
+import { useMultiplayerUsers } from '@/app/ui/menus/TopBar/useMultiplayerUsers';
+import { ValidationPanel } from '@/app/ui/menus/Validations/ValidationPanel';
+import { QuadraticSidebar } from '@/app/ui/QuadraticSidebar';
+import { UpdateAlertVersion } from '@/app/ui/UpdateAlertVersion';
 import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
@@ -10,27 +32,6 @@ import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { useEffect } from 'react';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
-import QuadraticGrid from '../gridGL/QuadraticGrid';
-import { pixiApp } from '../gridGL/pixiApp/PixiApp';
-import { isEmbed } from '../helpers/isEmbed';
-import { TopBar } from '../ui/menus/TopBar/TopBar';
-import { QuadraticSidebar } from './QuadraticSidebar';
-import { UpdateAlertVersion } from './UpdateAlertVersion';
-import { FileDragDropWrapper } from './components/FileDragDropWrapper';
-import { useFileContext } from './components/FileProvider';
-import { Following } from './components/Following';
-import { PermissionOverlay } from './components/PermissionOverlay';
-import PresentationModeHint from './components/PresentationModeHint';
-import { BottomBar } from './menus/BottomBar/BottomBar';
-import CellTypeMenu from './menus/CellTypeMenu';
-import CommandPalette from './menus/CommandPalette';
-import FeedbackMenu from './menus/FeedbackMenu';
-import GoTo from './menus/GoTo';
-import SheetBar from './menus/SheetBar';
-import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
-import { useMultiplayerUsers } from './menus/TopBar/useMultiplayerUsers';
-import { ValidationPanel } from './menus/Validations/ValidationPanel';
 
 export default function QuadraticUI() {
   const {
@@ -78,6 +79,7 @@ export default function QuadraticUI() {
             position: 'relative',
           }}
         >
+          {editorInteractionState.showAI && <AiAssistant />}
           <FileDragDropWrapper>
             <QuadraticGrid />
             {!presentationMode && <SheetBar />}

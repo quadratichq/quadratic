@@ -5,7 +5,10 @@ import { colors } from '@/app/theme/colors';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { AI } from '@/app/ui/icons';
+import { CodeBlockParser } from '@/app/ui/menus/CodeEditor/AICodeBlockParser';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { ResizeControl } from '@/app/ui/menus/CodeEditor/panels/ResizeControl';
+import { QuadraticDocs } from '@/app/ui/menus/CodeEditor/QuadraticDocs';
 import { authClient } from '@/auth';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
@@ -15,27 +18,27 @@ import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Send, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { CodeBlockParser } from './AICodeBlockParser';
 import './AiAssistant.css';
-import { QuadraticDocs } from './QuadraticDocs';
 
 export type AiMessage = {
   role: 'user' | 'system' | 'assistant';
   content: string;
 };
 
+const MIN_CONTAINER_WIDTH = 350;
+
 export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(MIN_CONTAINER_WIDTH);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const aiResponseRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [messages, setMessages] = useState<AiMessage[]>([]);
+  const [prompt, setPrompt] = useState('');
   const {
-    aiAssistant: {
-      prompt: [prompt, setPrompt],
-      loading: [loading, setLoading],
-      messages: [messages, setMessages],
-      controllerRef,
-    },
     consoleOutput: [consoleOutput],
     editorContent: [editorContent],
   } = useCodeEditor();
@@ -86,13 +89,13 @@ ${QuadraticDocs}`,
 
   const abortPrompt = () => {
     mixpanel.track('[AI].prompt.cancel', { language: getConnectionKind(mode) });
-    controllerRef.current?.abort();
+    abortControllerRef.current?.abort();
     setLoading(false);
   };
 
   const submitPrompt = async () => {
     if (loading) return;
-    controllerRef.current = new AbortController();
+    abortControllerRef.current = new AbortController();
     setLoading(true);
     const token = await authClient.getTokenOrRedirect();
     const updatedMessages = [...messages, { role: 'user', content: prompt }] as AiMessage[];
@@ -105,7 +108,7 @@ ${QuadraticDocs}`,
 
     await fetch(`${apiClient.getApiUrl()}/ai/chat/stream`, {
       method: 'POST',
-      signal: controllerRef.current.signal,
+      signal: abortControllerRef.current.signal,
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -186,135 +189,153 @@ ${QuadraticDocs}`,
     setLoading(false);
   };
 
-  const displayMessages = messages.filter((message, index) => message.role !== 'system');
+  const displayMessages = messages.filter((message) => message.role !== 'system');
 
   // Designed to live in a box that takes up the full height of its container
   return (
-    <div className="grid h-full grid-rows-[1fr_auto]">
-      <div
-        ref={aiResponseRef}
-        className="select-text overflow-y-auto whitespace-pre-wrap pl-3 pr-4 text-sm outline-none"
-        spellCheck={false}
-        onKeyDown={(e) => {
-          if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
-            // Allow a few commands, but nothing else
-          } else {
-            e.preventDefault();
-          }
-        }}
-        // Disable Grammarly
-        data-gramm="false"
-        data-gramm_editor="false"
-        data-enable-grammarly="false"
-      >
-        <div id="ai-streaming-output" className="pb-2">
-          {displayMessages.map((message, index) => (
-            <div
-              key={index}
-              style={{
-                borderTop: index !== 0 ? `1px solid ${colors.lightGray}` : 'none',
-                marginTop: '1rem',
-                paddingTop: index !== 0 ? '1rem' : '0',
-              }}
-            >
-              {message.role === 'user' ? (
-                <>
-                  <Avatar
-                    src={user?.picture}
-                    alt={user?.name}
-                    style={{
-                      backgroundColor: colors.quadraticSecondary,
-                    }}
-                  >
-                    {user?.name}
-                  </Avatar>
-                  {message.content}
-                </>
-              ) : (
-                <>
-                  <Avatar
-                    alt="AI Assistant"
-                    style={{
-                      backgroundColor: 'white',
-                      marginBottom: '0.5rem',
-                    }}
-                  >
-                    <AI sx={{ color: colors.languageAI }}></AI>
-                  </Avatar>
-                  <CodeBlockParser input={message.content} />
-                </>
-              )}
-            </div>
-          ))}
-          <div id="ai-streaming-output-anchor" key="ai-streaming-output-anchor" />
-        </div>
-      </div>
-      <form
-        className="z-10 flex gap-2 px-3 pb-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-        }}
-      >
-        <Textarea
-          ref={textareaRef}
-          id="prompt-input"
-          value={prompt}
-          onChange={(event) => {
-            setPrompt(event.target.value);
-          }}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              if (event.ctrlKey || event.shiftKey) {
-                return;
-              }
-
-              event.preventDefault();
-              if (prompt.trim().length === 0) {
-                return;
-              }
-
-              mixpanel.track('[AI].prompt.send', { language: getConnectionKind(mode) });
-
-              submitPrompt();
-              event.currentTarget.focus();
+    <div ref={containerRef} className="relative shrink-0 overflow-hidden" style={{ width: `${containerWidth}px` }}>
+      <div className="grid h-full w-full grid-rows-[1fr_auto]">
+        <div
+          ref={aiResponseRef}
+          className="select-text overflow-y-auto whitespace-pre-wrap pl-3 pr-4 text-sm outline-none"
+          spellCheck={false}
+          onKeyDown={(e) => {
+            if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
+              // Allow a few commands, but nothing else
+            } else {
+              e.preventDefault();
             }
           }}
-          autoComplete="off"
-          placeholder="Ask a question"
-          autoHeight={true}
-          maxHeight="120px"
-        />
-
-        <div className="relative flex items-end">
-          {loading && <CircularProgress size="1rem" className="absolute bottom-2.5 right-14" />}
-          {loading ? (
-            <TooltipHint title="Stop generating">
-              <IconButton size="small" color="primary" onClick={abortPrompt} edge="end">
-                <Stop />
-              </IconButton>
-            </TooltipHint>
-          ) : (
-            <ConditionalWrapper
-              condition={prompt.length !== 0}
-              Wrapper={({ children }) => (
-                <TooltipHint title="Send" shortcut={`${KeyboardSymbols.Command}↵`}>
-                  {children as React.ReactElement}
-                </TooltipHint>
-              )}
-            >
-              <IconButton
-                size="small"
-                color="primary"
-                onClick={submitPrompt}
-                edge="end"
-                {...(prompt.length === 0 ? { disabled: true } : {})}
+          // Disable Grammarly
+          data-gramm="false"
+          data-gramm_editor="false"
+          data-enable-grammarly="false"
+        >
+          <div id="ai-streaming-output" className="pb-2">
+            {displayMessages.map((message, index) => (
+              <div
+                key={index}
+                style={{
+                  borderTop: index !== 0 ? `1px solid ${colors.lightGray}` : 'none',
+                  marginTop: '1rem',
+                  paddingTop: index !== 0 ? '1rem' : '0',
+                }}
               >
-                <Send />
-              </IconButton>
-            </ConditionalWrapper>
-          )}
+                {message.role === 'user' ? (
+                  <>
+                    <Avatar
+                      src={user?.picture}
+                      alt={user?.name}
+                      style={{
+                        backgroundColor: colors.quadraticSecondary,
+                      }}
+                    >
+                      {user?.name}
+                    </Avatar>
+                    {message.content}
+                  </>
+                ) : (
+                  <>
+                    <Avatar
+                      alt="AI Assistant"
+                      style={{
+                        backgroundColor: 'white',
+                        marginBottom: '0.5rem',
+                      }}
+                    >
+                      <AI sx={{ color: colors.languageAI }}></AI>
+                    </Avatar>
+                    <CodeBlockParser input={message.content} />
+                  </>
+                )}
+              </div>
+            ))}
+            <div id="ai-streaming-output-anchor" key="ai-streaming-output-anchor" />
+          </div>
         </div>
-      </form>
+        <form
+          className="z-10 flex gap-2 px-3 pb-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+          }}
+        >
+          <Textarea
+            ref={textareaRef}
+            id="prompt-input"
+            value={prompt}
+            onChange={(event) => {
+              setPrompt(event.target.value);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                if (event.ctrlKey || event.shiftKey) {
+                  return;
+                }
+
+                event.preventDefault();
+                if (prompt.trim().length === 0) {
+                  return;
+                }
+
+                mixpanel.track('[AI].prompt.send', { language: getConnectionKind(mode) });
+
+                submitPrompt();
+                event.currentTarget.focus();
+              }
+            }}
+            autoComplete="off"
+            placeholder="Ask a question"
+            autoHeight={true}
+            maxHeight="120px"
+          />
+
+          <div className="relative flex items-end">
+            {loading && <CircularProgress size="1rem" className="absolute bottom-2.5 right-14" />}
+            {loading ? (
+              <TooltipHint title="Stop generating">
+                <IconButton size="small" color="primary" onClick={abortPrompt} edge="end">
+                  <Stop />
+                </IconButton>
+              </TooltipHint>
+            ) : (
+              <ConditionalWrapper
+                condition={prompt.length !== 0}
+                Wrapper={({ children }) => (
+                  <TooltipHint title="Send" shortcut={`${KeyboardSymbols.Command}↵`}>
+                    {children as React.ReactElement}
+                  </TooltipHint>
+                )}
+              >
+                <IconButton
+                  size="small"
+                  color="primary"
+                  onClick={submitPrompt}
+                  edge="end"
+                  {...(prompt.length === 0 ? { disabled: true } : {})}
+                >
+                  <Send />
+                </IconButton>
+              </ConditionalWrapper>
+            )}
+          </div>
+        </form>
+      </div>
+      <ResizeControl
+        position="VERTICAL"
+        style={{ right: '10px' }}
+        side="END"
+        setState={(e) => {
+          const container = containerRef.current;
+          if (!container) return;
+
+          e.stopPropagation();
+          e.preventDefault();
+
+          const containerRect = container.getBoundingClientRect();
+          const newContainerWidth = Math.max(MIN_CONTAINER_WIDTH, e.x - containerRect.left);
+          setContainerWidth(newContainerWidth);
+        }}
+      />
     </div>
   );
 };
