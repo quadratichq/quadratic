@@ -5,7 +5,9 @@ import { deleteColumnRow } from '@/app/gridGL/HTMLGrid/actionColumnRow';
 import { useHeadingSize } from '@/app/gridGL/HTMLGrid/useHeadingSize';
 import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
 import { ControlledMenu, MenuItem } from '@szhsin/react-menu';
+import { useCallback, useEffect } from 'react';
 import { useRecoilState } from 'recoil';
+import { pixiApp } from '../pixiApp/PixiApp';
 
 export const GridHeadingContextMenu = () => {
   const [show, setShow] = useRecoilState(gridHeadingAtom);
@@ -14,9 +16,19 @@ export const GridHeadingContextMenu = () => {
   // of HTMLGridContainer's parent
   const { leftHeading, topHeading } = useHeadingSize();
 
-  const onClose = () => {
+  const onClose = useCallback(() => {
     setShow({ world: undefined, column: undefined, row: undefined });
-  };
+  }, [setShow]);
+
+  useEffect(() => {
+    pixiApp.viewport.on('moved', onClose);
+    pixiApp.viewport.on('zoomed', onClose);
+
+    return () => {
+      pixiApp.viewport.off('moved', onClose);
+      pixiApp.viewport.off('zoomed', onClose);
+    };
+  }, [onClose]);
 
   if (!show?.world) return null;
 

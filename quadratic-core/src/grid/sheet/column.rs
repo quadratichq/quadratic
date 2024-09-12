@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::{
     cell_values::CellValues,
     controller::{
@@ -5,6 +7,7 @@ use crate::{
         operations::operation::Operation,
     },
     grid::formats::Formats,
+    renderer_constants::CELL_SHEET_HEIGHT,
     selection::Selection,
     Pos, SheetPos,
 };
@@ -127,6 +130,8 @@ impl Sheet {
         self.formats_columns.remove(&column);
         self.borders.remove_column(self.id, column);
 
+        let mut updated_cols = HashSet::new();
+
         // update the indices of all columns impacted by the deletion
         if column < 0 {
             let mut columns_to_update = Vec::new();
@@ -139,6 +144,7 @@ impl Sheet {
                 if let Some(mut column_data) = self.columns.remove(&col) {
                     column_data.x += 1;
                     self.columns.insert(col + 1, column_data);
+                    updated_cols.insert(col + 1);
                 }
             }
         } else {
@@ -152,6 +158,7 @@ impl Sheet {
                 if let Some(mut column_data) = self.columns.remove(&col) {
                     column_data.x -= 1;
                     self.columns.insert(col - 1, column_data);
+                    updated_cols.insert(col - 1);
                 }
             }
         }
@@ -194,6 +201,21 @@ impl Sheet {
             }
         }
 
+        let dirty_hashes = transaction
+            .dirty_hashes
+            .entry(self.id)
+            .or_insert_with(HashSet::new);
+
+        updated_cols.iter().for_each(|col| {
+            if let Some((start, end)) = self.column_bounds(*col, false) {
+                for y in (start..=end).step_by(CELL_SHEET_HEIGHT as usize) {
+                    let mut pos = Pos { x: *col, y };
+                    pos.to_quadrant();
+                    dirty_hashes.insert(pos);
+                }
+            }
+        });
+
         reverse_operations
     }
 }
@@ -201,6 +223,7 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use crate::{
+        controller::execution::TransactionType,
         grid::{
             formats::{format::Format, format_update::FormatUpdate},
             CellWrap,
@@ -271,7 +294,9 @@ mod tests {
             ),
         );
 
-        let ops = sheet.delete_column(0, true);
+        let mut transaction = PendingTransaction::default();
+        transaction.transaction_type = TransactionType::User;
+        let ops = sheet.delete_column(&mut transaction, 0);
         assert_eq!(ops.len(), 3);
         assert_eq!(sheet.columns.len(), 3);
 

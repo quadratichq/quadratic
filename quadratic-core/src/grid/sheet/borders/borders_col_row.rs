@@ -152,7 +152,8 @@ impl Borders {
             }
         });
 
-        if changed {
+        // todo: this should be a PendingTransaction flag instead of a js call from here
+        if (cfg!(target_family = "wasm") || cfg!(test)) && changed {
             self.send_sheet_borders(sheet_id);
         }
     }
