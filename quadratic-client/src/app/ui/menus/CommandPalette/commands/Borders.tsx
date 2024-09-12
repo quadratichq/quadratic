@@ -2,15 +2,15 @@ import { ChangeBorder, useBorders, UseBordersResults } from '@/app/ui/hooks/useB
 import {
   BorderAllIcon,
   BorderBottomIcon,
+  BorderClearIcon,
   BorderHorizontalIcon,
   BorderInnerIcon,
   BorderLeftIcon,
-  BorderNoneIcon,
   BorderOuterIcon,
   BorderRightIcon,
   BorderTopIcon,
   BorderVerticalIcon,
-} from '@/app/ui/icons';
+} from '@/shared/components/Icons';
 import { isAvailableBecauseCanEditFile } from '../../../../actions';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
@@ -37,7 +37,7 @@ export const BordersHook = (): CommandGroup => {
           return (
             <CommandPaletteListItem
               {...props}
-              icon={<BorderNoneIcon />}
+              icon={<BorderClearIcon />}
               action={() => {
                 borders.clearBorders();
               }}
