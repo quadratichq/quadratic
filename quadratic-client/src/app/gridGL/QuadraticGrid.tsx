@@ -10,7 +10,6 @@ import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { ImportProgress } from '@/app/ui/components/ImportProgress';
 import { Search } from '@/app/ui/components/Search';
 import { gridSettingsAtom } from '@/app/ui/hooks/useGridSettings';
-import { FloatingContextMenu } from '@/app/ui/menus/ContextMenu/FloatingContextMenu';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { MouseEvent, useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
@@ -134,7 +133,6 @@ export default function QuadraticGrid() {
       onKeyUp={onKeyUp}
     >
       <HTMLGridContainer parent={container} />
-      <FloatingContextMenu container={container} />
       <ImportProgress />
       <Search />
     </div>

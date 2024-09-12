@@ -1,14 +1,14 @@
+import { events } from '@/app/events/events';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { sheets } from '../../../grid/controller/Sheets';
+import { inlineEditorMonaco } from '../../HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { pixiApp } from '../../pixiApp/PixiApp';
 import { PanMode, pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
-import { events } from '@/app/events/events';
-import { inlineEditorMonaco } from '../../HTMLGrid/inlineEditor/inlineEditorMonaco';
 
 const MINIMUM_MOVE_POSITION = 5;
 
@@ -54,16 +54,11 @@ export class PointerDown {
 
     // If right click and we have a multi cell selection.
     // If the user has clicked inside the selection.
-    if (rightClick && cursor.multiCursor) {
-      const lastMultiCursor = cursor.multiCursor[cursor.multiCursor.length - 1];
-      if (
-        column >= lastMultiCursor.left &&
-        column <= lastMultiCursor.right &&
-        row >= lastMultiCursor.top &&
-        row <= lastMultiCursor.bottom
-      )
-        // Ignore this click. User is accessing the RightClickMenu.
-        return;
+    if (rightClick) {
+      events.emit('gridContextMenu', world, column, row);
+
+      // Ignore this click. User is accessing the RightClickMenu.
+      return;
     }
 
     if (this.doubleClickTimeout) {
