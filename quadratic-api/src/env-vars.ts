@@ -42,11 +42,12 @@ export const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY as string;
 // Required in prod, optional locally
 export const M2M_AUTH_TOKEN = process.env.M2M_AUTH_TOKEN;
 export const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+export const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 export const SLACK_FEEDBACK_URL = process.env.SLACK_FEEDBACK_URL;
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 
 if (NODE_ENV === 'production') {
-  ['M2M_AUTH_TOKEN', 'OPENAI_API_KEY', 'SLACK_FEEDBACK_URL'].forEach(ensureEnvVarExists);
+  ['M2M_AUTH_TOKEN', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'SLACK_FEEDBACK_URL'].forEach(ensureEnvVarExists);
 }
 
 ensureSampleTokenNotUsedInProduction();

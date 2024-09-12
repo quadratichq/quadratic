@@ -49,6 +49,8 @@ export function CodeEditorPanelBottom({
           />
         </Button>
         <TabsList>
+          {schemaBrowser && <TabsTrigger value="data-browser">Schema</TabsTrigger>}
+          {showAiAssistant && <TabsTrigger value="ai-assistant">AI Assistant</TabsTrigger>}
           <TabsTrigger
             value="console"
             className={cn(
@@ -60,8 +62,6 @@ export function CodeEditorPanelBottom({
           >
             Console
           </TabsTrigger>
-          {schemaBrowser && <TabsTrigger value="data-browser">Schema</TabsTrigger>}
-          {showAiAssistant && <TabsTrigger value="ai-assistant">AI Assistant</TabsTrigger>}
         </TabsList>
       </div>
 
