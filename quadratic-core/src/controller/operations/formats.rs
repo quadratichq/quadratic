@@ -22,7 +22,7 @@ impl GridController {
             Operation::SetBordersSelection {
                 selection: selection.clone(),
                 borders: RunLengthEncoding::repeat(
-                    BorderStyleCellUpdate::clear(true),
+                    BorderStyleCellUpdate::clear(false),
                     selection.count(),
                 ),
             },
