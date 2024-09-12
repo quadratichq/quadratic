@@ -37,7 +37,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import './AiAssistant.css';
 
-
 const MIN_CONTAINER_WIDTH = 350;
 
 export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
@@ -205,179 +204,180 @@ How can I help you?
   ]);
 
   // Designed to live in a box that takes up the full height of its container
-  return (<div
-    ref={containerRef}
-    className="relative h-full shrink-0 overflow-hidden"
-    style={{ width: `${containerWidth + 1}px` }}
-  >
-    <ResizeControl
-      position="VERTICAL"
-      style={{ left: `${containerWidth}px` }}
-      setState={(e) => {
-        const container = containerRef.current;
-        if (!container) return;
+  return (
+    <div
+      ref={containerRef}
+      className="relative h-full shrink-0 overflow-hidden"
+      style={{ width: `${containerWidth + 1}px` }}
+    >
+      <ResizeControl
+        position="VERTICAL"
+        style={{ left: `${containerWidth}px` }}
+        setState={(e) => {
+          const container = containerRef.current;
+          if (!container) return;
 
-        e.stopPropagation();
-        e.preventDefault();
+          e.stopPropagation();
+          e.preventDefault();
 
           const containerRect = container.getBoundingClientRect();
           const newContainerWidth = Math.max(MIN_CONTAINER_WIDTH, e.x - containerRect.left);
           setContainerWidth(newContainerWidth);
         }}
       />
-    <div className="grid h-full w-full grid-rows-[1fr_auto]">
-      <div
-        ref={aiResponseRef}
-        className="select-text overflow-y-auto whitespace-pre-wrap pl-3 pr-3 text-sm outline-none"
-        spellCheck={false}
-        onKeyDown={(e) => {
-          if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
-            // Allow a few commands, but nothing else
-          } else {
-            e.preventDefault();
-          }
-        }}
-        // Disable Grammarly
-        data-gramm="false"
-        data-gramm_editor="false"
-        data-enable-grammarly="false"
-      >
-        <div id="ai-streaming-output" className="pb-2">
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              style={{
-                borderTop: index !== 0 ? `1px solid ${colors.lightGray}` : 'none',
-                marginTop: '1rem',
-                paddingTop: index !== 0 ? '1rem' : '0',
-              }}
-            >
-              {message.role === 'user' ? (
-                <>
-                  <Avatar
-                    src={user?.picture}
-                    alt={user?.name}
-                    style={{
-                      backgroundColor: colors.quadraticSecondary,
-                      marginBottom: '0.5rem',
-                    }}
-                  >
-                    {user?.name}
-                  </Avatar>
-                  {message.content}
-                </>
-              ) : (
-                <>
-                  <Avatar
-                    alt="AI Assistant"
-                    style={{
-                      backgroundColor: 'white',
-                      marginBottom: '0.5rem',
-                    }}
-                  >
-                    {isAnthropicModel(message.model) ? <Anthropic /> : <OpenAI />}
-                  </Avatar>
-                  <CodeBlockParser input={message.content} />
-                </>
-              )}
-            </div>
-          ))}
-          <div id="ai-streaming-output-anchor" key="ai-streaming-output-anchor" />
-        </div>
-      </div>
-
-      <form
-        className="z-10 m-3 rounded-lg bg-slate-100"
-        onSubmit={(e) => {
-          e.preventDefault();
-        }}
-      >
-        <Textarea
-          ref={textareaRef}
-          id="prompt-input"
-          value={prompt}
-          className="min-h-14 rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0"
-          onChange={(event) => {
-            setPrompt(event.target.value);
-          }}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              if (event.ctrlKey || event.shiftKey) {
-                return;
-              }
-
-              event.preventDefault();
-              if (prompt.trim().length === 0) {
-                return;
-              }
-
-              mixpanel.track('[AI].prompt.send', { language: getConnectionKind(mode) });
-
-              submitPrompt();
-              event.currentTarget.focus();
+      <div className="grid h-full w-full grid-rows-[1fr_auto]">
+        <div
+          ref={aiResponseRef}
+          className="select-text overflow-y-auto whitespace-pre-wrap pl-3 pr-3 text-sm outline-none"
+          spellCheck={false}
+          onKeyDown={(e) => {
+            if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
+              // Allow a few commands, but nothing else
+            } else {
+              e.preventDefault();
             }
           }}
-          autoComplete="off"
-          placeholder="Ask a question..."
-          autoHeight={true}
-          maxHeight="120px"
-        />
+          // Disable Grammarly
+          data-gramm="false"
+          data-gramm_editor="false"
+          data-enable-grammarly="false"
+        >
+          <div id="ai-streaming-output" className="pb-2">
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                style={{
+                  borderTop: index !== 0 ? `1px solid ${colors.lightGray}` : 'none',
+                  marginTop: '1rem',
+                  paddingTop: index !== 0 ? '1rem' : '0',
+                }}
+              >
+                {message.role === 'user' ? (
+                  <>
+                    <Avatar
+                      src={user?.picture}
+                      alt={user?.name}
+                      style={{
+                        backgroundColor: colors.quadraticSecondary,
+                        marginBottom: '0.5rem',
+                      }}
+                    >
+                      {user?.name}
+                    </Avatar>
+                    {message.content}
+                  </>
+                ) : (
+                  <>
+                    <Avatar
+                      alt="AI Assistant"
+                      style={{
+                        backgroundColor: 'white',
+                        marginBottom: '0.5rem',
+                      }}
+                    >
+                      {isAnthropicModel(message.model) ? <Anthropic /> : <OpenAI />}
+                    </Avatar>
+                    <CodeBlockParser input={message.content} />
+                  </>
+                )}
+              </div>
+            ))}
+            <div id="ai-streaming-output-anchor" key="ai-streaming-output-anchor" />
+          </div>
+        </div>
 
-        <div
-          className="flex w-full select-none items-center justify-between px-2 pb-1 @container"
-          onClick={() => {
-            textareaRef.current?.focus();
+        <form
+          className="z-10 m-3 rounded-lg bg-slate-100"
+          onSubmit={(e) => {
+            e.preventDefault();
           }}
         >
-          <SelectAIModelDropdownMenu loading={loading} isAnthropic={isAnthropicModel(model)} setModel={setModel} />
+          <Textarea
+            ref={textareaRef}
+            id="prompt-input"
+            value={prompt}
+            className="min-h-14 rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0"
+            onChange={(event) => {
+              setPrompt(event.target.value);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                if (event.ctrlKey || event.shiftKey) {
+                  return;
+                }
 
-          {loading ? (
-            <div className="flex items-center gap-2">
-              <CircularProgress size="0.8125rem" />
-              <TooltipPopover label="Stop generating">
-                <Button
-                  size="icon-sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    abortPrompt();
-                  }}
+                event.preventDefault();
+                if (prompt.trim().length === 0) {
+                  return;
+                }
+
+                mixpanel.track('[AI].prompt.send', { language: getConnectionKind(mode) });
+
+                submitPrompt();
+                event.currentTarget.focus();
+              }
+            }}
+            autoComplete="off"
+            placeholder="Ask a question..."
+            autoHeight={true}
+            maxHeight="120px"
+          />
+
+          <div
+            className="flex w-full select-none items-center justify-between px-2 pb-1 @container"
+            onClick={() => {
+              textareaRef.current?.focus();
+            }}
+          >
+            <SelectAIModelDropdownMenu loading={loading} isAnthropic={isAnthropicModel(model)} setModel={setModel} />
+
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <CircularProgress size="0.8125rem" />
+                <TooltipPopover label="Stop generating">
+                  <Button
+                    size="icon-sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      abortPrompt();
+                    }}
+                  >
+                    <Stop fontSize="small" />
+                  </Button>
+                </TooltipPopover>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 text-xs text-slate-500">
+                <span className="hidden @sm:block">
+                  {KeyboardSymbols.Shift}
+                  {KeyboardSymbols.Enter} new line
+                </span>
+                <span className="hidden @sm:block">{KeyboardSymbols.Enter} submit</span>
+                <ConditionalWrapper
+                  condition={prompt.length !== 0}
+                  Wrapper={({ children }) => (
+                    <TooltipPopover label="Submit" shortcut={`${KeyboardSymbols.Enter}`}>
+                      {children as React.ReactElement}
+                    </TooltipPopover>
+                  )}
                 >
-                  <Stop fontSize="small" />
-                </Button>
-              </TooltipPopover>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 text-xs text-slate-500">
-              <span className="hidden @sm:block">
-                {KeyboardSymbols.Shift}
-                {KeyboardSymbols.Enter} new line
-              </span>
-              <span className="hidden @sm:block">{KeyboardSymbols.Enter} submit</span>
-              <ConditionalWrapper
-                condition={prompt.length !== 0}
-                Wrapper={({ children }) => (
-                  <TooltipPopover label="Submit" shortcut={`${KeyboardSymbols.Enter}`}>
-                    {children as React.ReactElement}
-                  </TooltipPopover>
-                )}
-              >
-                <Button
-                  size="icon-sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    submitPrompt();
-                  }}
-                  disabled={prompt.length === 0}
-                >
-                  <ArrowUpward fontSize="small" />
-                </Button>
-              </ConditionalWrapper>
-            </div>
-          )}
-        </div>
-      </form>
+                  <Button
+                    size="icon-sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      submitPrompt();
+                    }}
+                    disabled={prompt.length === 0}
+                  >
+                    <ArrowUpward fontSize="small" />
+                  </Button>
+                </ConditionalWrapper>
+              </div>
+            )}
+          </div>
+        </form>
+      </div>
     </div>
-  </div>
   );
 };
 
@@ -425,6 +425,5 @@ function SelectAIModelDropdownMenu({
         </DropdownMenuCheckboxItem>
       </DropdownMenuContent>
     </DropdownMenu>
-   
   );
 }
