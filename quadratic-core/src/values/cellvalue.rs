@@ -547,6 +547,16 @@ impl CellValue {
             _ => Ok(self),
         }
     }
+    /// Returns whether the type is a date, time, datetime, or duration.
+    fn is_datetime_like(&self) -> bool {
+        matches!(
+            self,
+            CellValue::Date(_)
+                | CellValue::Time(_)
+                | CellValue::DateTime(_)
+                | CellValue::Duration(_)
+        )
+    }
 
     /// Adds two values, casting them as needed.
     pub fn add(
@@ -564,24 +574,25 @@ impl CellValue {
             // datetime + number(days)
             (CellValue::Number(n), CellValue::DateTime(dt))
             | (CellValue::DateTime(dt), CellValue::Number(n)) => CellValue::DateTime(
-                super::time::add_to_datetime(*dt, Duration::from_days(n.to_f64().unwrap_or(0.0))),
+                super::time::add_to_datetime(*dt, Duration::from_days_bigdec(n)),
             ),
 
             // date + number(days)
             (CellValue::Number(n), CellValue::Date(d))
-            | (CellValue::Date(d), CellValue::Number(n)) => CellValue::Date(
-                super::time::add_to_date(*d, Duration::from_days(n.to_f64().unwrap_or(0.0)))),
+            | (CellValue::Date(d), CellValue::Number(n)) => {
+                CellValue::Date(super::time::add_to_date(*d, Duration::from_days_bigdec(n)))
+            }
 
             // time + number(hours)
             (CellValue::Number(n), CellValue::Time(t))
             | (CellValue::Time(t), CellValue::Number(n)) => {
-                CellValue::Time(super::time::add_to_time(*t, Duration::from_hours(n.to_f64().unwrap_or(0.0))))
+                CellValue::Time(super::time::add_to_time(*t, Duration::from_hours_bigdec(n)))
             }
 
             // duration + number(days)
             (CellValue::Duration(dur), CellValue::Number(n))
             | (CellValue::Number(n), CellValue::Duration(dur)) => {
-                CellValue::Duration(*dur + Duration::from_days(n.to_f64().unwrap_or(0.0)))
+                CellValue::Duration(*dur + Duration::from_days_bigdec(n))
             }
 
             // date + time
@@ -613,26 +624,108 @@ impl CellValue {
             }
 
             // duration + duration
-            (CellValue::Duration(dur), CellValue::Duration(dur2)) => {
-                CellValue::Duration(*dur + *dur2)
-            }
-
-            // other operation involving dates and times
-            (
-                CellValue::Date(_) | CellValue::Time(_) | CellValue::DateTime(_),
-                CellValue::Date(_) | CellValue::Time(_) | CellValue::DateTime(_),
-            ) => {
-                return Err(RunErrorMsg::BadDateTimeOp {
-                    op: "add".into(),
-                    ty1: a.type_name().into(),
-                    ty2: Some(b.type_name().into()),
-                    use_duration_instead: true,
-                }
-                .with_span(span))
+            (CellValue::Duration(dur1), CellValue::Duration(dur2)) => {
+                CellValue::Duration(*dur1 + *dur2)
             }
 
             // other operation
-            _ => todo!(),
+            _ => {
+                return Err(RunErrorMsg::BadOp {
+                    op: "add".into(),
+                    ty1: a.type_name().into(),
+                    ty2: Some(b.type_name().into()),
+                    use_duration_instead: a.is_datetime_like() || b.is_datetime_like(),
+                }
+                .with_span(span))
+            }
+        };
+
+        Ok(Spanned { span, inner: v })
+    }
+
+    /// Subtracts two values, casting them as needed.
+    pub fn sub(
+        span: Span,
+        lhs: Spanned<CellValue>,
+        rhs: Spanned<CellValue>,
+    ) -> CodeResult<Spanned<CellValue>> {
+        let a = lhs.inner.to_numeric()?;
+        let b = rhs.inner.to_numeric()?;
+
+        let v = match (&a, &b) {
+            // number - number
+            (CellValue::Number(n1), CellValue::Number(n2)) => CellValue::Number(n1 - n2),
+
+            // datetime - number(days)
+            (CellValue::DateTime(dt), CellValue::Number(n)) => CellValue::DateTime(
+                super::time::add_to_datetime(*dt, Duration::from_days_bigdec(&-n)),
+            ),
+
+            // date - number(days)
+            (CellValue::Date(d), CellValue::Number(n)) => CellValue::Date(
+                super::time::add_to_date(*d, Duration::from_days_bigdec(&-n)),
+            ),
+
+            // time - number(hours)
+            (CellValue::Time(t), CellValue::Number(n)) => CellValue::Time(
+                super::time::add_to_time(*t, Duration::from_hours_bigdec(&-n)),
+            ),
+
+            // duration - number(days)
+            (CellValue::Duration(dur), CellValue::Number(n)) => {
+                CellValue::Duration(*dur - Duration::from_days_bigdec(n))
+            }
+
+            // number(days) - duration
+            (CellValue::Number(n), CellValue::Duration(dur)) => {
+                CellValue::Duration(Duration::from_days_bigdec(n) - *dur)
+            }
+
+            // datetime - duration
+            (CellValue::DateTime(dt), CellValue::Duration(dur)) => {
+                CellValue::DateTime(super::time::add_to_datetime(*dt, -*dur))
+            }
+
+            // date - duration
+            (CellValue::Date(d), CellValue::Duration(dur)) => {
+                if dur.is_integer_days() {
+                    CellValue::Date(super::time::add_to_date(*d, -*dur))
+                } else {
+                    CellValue::DateTime(super::time::add_to_datetime(
+                        NaiveDateTime::from(*d),
+                        -*dur,
+                    ))
+                }
+            }
+
+            // time - duration
+            (CellValue::Time(t), CellValue::Duration(dur)) => {
+                CellValue::Time(super::time::add_to_time(*t, -*dur))
+            }
+
+            // other operation
+            _ => {
+                return Err(RunErrorMsg::BadOp {
+                    op: "subtract".into(),
+                    ty1: a.type_name().into(),
+                    ty2: Some(b.type_name().into()),
+                    use_duration_instead: a.is_datetime_like() || b.is_datetime_like(),
+                }
+                .with_span(span))
+            }
+        };
+
+        Ok(Spanned { span, inner: v })
+    }
+
+    /// Negates a value.
+    pub fn neg(value: Spanned<CellValue>) -> CodeResult<Spanned<CellValue>> {
+        let span = value.span;
+
+        let v = match value.inner.to_numeric()? {
+            CellValue::Number(n) => CellValue::Number(-n),
+            CellValue::Duration(dur) => CellValue::Duration(-dur),
+            _ => return Err(RunErrorMsg::InvalidArgument.with_span(value.span)),
         };
 
         Ok(Spanned { span, inner: v })

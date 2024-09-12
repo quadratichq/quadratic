@@ -3,6 +3,7 @@ use std::ops::{Add, Mul, Neg, Sub};
 use std::str::FromStr;
 
 use anyhow::{bail, Result};
+use bigdecimal::{BigDecimal, ToPrimitive};
 use chrono::{DateTime, MappedLocalTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -344,6 +345,18 @@ impl Duration {
             months,
             ..Self::ZERO
         }
+    }
+
+    /// Constructs a duration lasting some number of days, automatically
+    /// converting to `f64`.
+    pub fn from_days_bigdec(days: &BigDecimal) -> Self {
+        Self::from_days(days.to_f64().unwrap_or(0.0))
+    }
+
+    /// Constructs a duration lasting some number of hours, automatically
+    /// converting to `f64`.
+    pub fn from_hours_bigdec(hours: &BigDecimal) -> Self {
+        Self::from_hours(hours.to_f64().unwrap_or(0.0))
     }
 
     /// Constructs a duration lasting some number of days.

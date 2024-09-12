@@ -40,10 +40,11 @@ fn get_functions() -> Vec<FormulaFunction> {
         formula_fn!(
             #[operator]
             #[zip_map]
-            fn "-"([a]: f64, [b]: (Option<f64>)) {
+            fn "-"(span: Span, [a]: (Spanned<CellValue>), [b]: (Option<Spanned<CellValue>>)) {
+                let a = a.cloned();
                 match b {
-                    Some(b) => a - b,
-                    None => -a
+                    Some(b) => CellValue::sub(*span,a, b.cloned())?.inner,
+                    None => CellValue::neg(a)?.inner,
                 }
             }
         ),

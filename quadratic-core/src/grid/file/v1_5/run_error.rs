@@ -45,7 +45,7 @@ pub enum RunErrorMsg {
     BadFunctionName,
     BadCellReference,
     BadNumber,
-    BadDateTimeOp {
+    BadOp {
         op: Cow<'static, str>,
         ty1: Cow<'static, str>,
         ty2: Option<Cow<'static, str>>,
@@ -124,12 +124,12 @@ impl RunError {
                 crate::RunErrorMsg::BadFunctionName => RunErrorMsg::BadFunctionName,
                 crate::RunErrorMsg::BadCellReference => RunErrorMsg::BadCellReference,
                 crate::RunErrorMsg::BadNumber => RunErrorMsg::BadNumber,
-                crate::RunErrorMsg::BadDateTimeOp {
+                crate::RunErrorMsg::BadOp {
                     op,
                     ty1,
                     ty2,
                     use_duration_instead,
-                } => RunErrorMsg::BadDateTimeOp {
+                } => RunErrorMsg::BadOp {
                     op,
                     ty1,
                     ty2,
@@ -230,12 +230,12 @@ impl From<RunError> for crate::RunError {
                 RunErrorMsg::BadFunctionName => crate::RunErrorMsg::BadFunctionName,
                 RunErrorMsg::BadCellReference => crate::RunErrorMsg::BadCellReference,
                 RunErrorMsg::BadNumber => crate::RunErrorMsg::BadNumber,
-                RunErrorMsg::BadDateTimeOp {
+                RunErrorMsg::BadOp {
                     op,
                     ty1,
                     ty2,
                     use_duration_instead,
-                } => crate::RunErrorMsg::BadDateTimeOp {
+                } => crate::RunErrorMsg::BadOp {
                     op,
                     ty1,
                     ty2,

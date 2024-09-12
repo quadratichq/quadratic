@@ -72,7 +72,7 @@ pub enum RunErrorMsg {
     BadFunctionName,
     BadCellReference,
     BadNumber,
-    BadDateTimeOp {
+    BadOp {
         op: Cow<'static, str>,
         ty1: Cow<'static, str>,
         ty2: Option<Cow<'static, str>>,
@@ -169,7 +169,7 @@ impl fmt::Display for RunErrorMsg {
             Self::BadNumber => {
                 write!(f, "Bad numeric literal")
             }
-            Self::BadDateTimeOp {
+            Self::BadOp {
                 op,
                 ty1,
                 ty2,
