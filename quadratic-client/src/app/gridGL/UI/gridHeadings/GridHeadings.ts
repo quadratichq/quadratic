@@ -13,6 +13,8 @@ import { getColumnA1Notation } from './getA1Notation';
 
 type Selected = 'all' | number[] | undefined;
 
+export type IntersectsHeadings = { column?: number; row?: number; corner?: true };
+
 // Constants for headers
 export const LABEL_MAXIMUM_WIDTH_PERCENT = 0.7;
 export const LABEL_MAXIMUM_HEIGHT_PERCENT = 0.5;
@@ -473,7 +475,7 @@ export class GridHeadings extends Container {
   }
 
   // whether the point is in the heading
-  intersectsHeadings(world: Point): { column?: number; row?: number; corner?: true } | undefined {
+  intersectsHeadings(world: Point): IntersectsHeadings | undefined {
     if (!this.columnRect || !this.rowRect || !this.cornerRect) return;
     const offsets = sheets.sheet.offsets;
 

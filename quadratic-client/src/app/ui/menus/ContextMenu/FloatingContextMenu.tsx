@@ -1,5 +1,6 @@
 import { downloadSelectionAsCsvAction, hasPermissionToEditFile } from '@/app/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { gridHeadingAtom } from '@/app/atoms/gridHeadingAtom';
 import { events } from '@/app/events/events';
 import { copySelectionToPNG, fullClipboardSupport, pasteFromClipboard } from '@/app/grid/actions/clipboard/clipboard';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -64,7 +65,7 @@ import { Divider, IconButton, Toolbar } from '@mui/material';
 import { ControlledMenu, Menu, MenuDivider, MenuInstance, MenuItem, useMenuState } from '@szhsin/react-menu';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import './floatingMenuStyles.scss';
 
 // todo: this file needs to be broken up and rewritten
@@ -79,6 +80,7 @@ const VERTICAL_PADDING = 20;
 export const FloatingContextMenu = (props: Props) => {
   const { container } = props;
   const { addGlobalSnackbar } = useGlobalSnackbar();
+  const gridHeading = useRecoilValue(gridHeadingAtom);
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const showContextMenu = editorInteractionState.showContextMenu;
   const [moreMenuProps, moreMenuToggle] = useMenuState();
@@ -180,6 +182,11 @@ export const FloatingContextMenu = (props: Props) => {
       visibility = true;
     }
 
+    // Hide if we're showing the grid heading context menu
+    if (gridHeading.world !== undefined) {
+      visibility = false;
+    }
+
     // Apply visibility
     // menuDiv.current.style.visibility = visibility;
     if (visibility === true) {
@@ -252,7 +259,14 @@ export const FloatingContextMenu = (props: Props) => {
       setTimeout(updateContextMenuCSSTransform, 100);
     } else menuDiv.current.style.pointerEvents = 'auto';
     return transform;
-  }, [container, showContextMenu, editorInteractionState.permissions, moreMenuProps.state, moreMenuToggle]);
+  }, [
+    container,
+    showContextMenu,
+    editorInteractionState.permissions,
+    moreMenuProps.state,
+    gridHeading.world,
+    moreMenuToggle,
+  ]);
 
   // formatting state at cursor position
   const [cursorBold, setCursorBold] = useState(false);

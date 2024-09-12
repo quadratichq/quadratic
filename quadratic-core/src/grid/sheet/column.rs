@@ -1,6 +1,12 @@
 use crate::{
-    cell_values::CellValues, controller::operations::operation::Operation, grid::formats::Formats,
-    selection::Selection, Pos, SheetPos,
+    cell_values::CellValues,
+    controller::{
+        active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation,
+    },
+    grid::formats::Formats,
+    selection::Selection,
+    Pos, SheetPos,
 };
 
 use super::Sheet;
@@ -83,7 +89,12 @@ impl Sheet {
     }
 
     /// Deletes columns and returns the operations to undo the deletion.
-    pub fn delete_column(&mut self, column: i64, undoable: bool) -> Vec<Operation> {
+    pub fn delete_column(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        column: i64,
+    ) -> Vec<Operation> {
+        let undoable = transaction.is_user_undo_redo();
         let mut reverse_operations = Vec::new();
 
         // create undo operations for the deleted column
@@ -114,7 +125,7 @@ impl Sheet {
         self.columns.remove(&column);
         self.code_runs.retain(|pos, _| pos.x != column);
         self.formats_columns.remove(&column);
-        self.borders.remove_column(column);
+        self.borders.remove_column(self.id, column);
 
         // update the indices of all columns impacted by the deletion
         if column < 0 {

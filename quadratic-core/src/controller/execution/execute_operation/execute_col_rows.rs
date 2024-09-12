@@ -7,10 +7,8 @@ impl GridController {
     pub fn execute_delete_column(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::DeleteColumn { sheet_id, column } = op.clone() {
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-                transaction
-                    .reverse_operations
-                    .extend(sheet.delete_column(column, transaction.is_user_undo_redo()));
-
+                let reverse = sheet.delete_column(transaction, column);
+                transaction.reverse_operations.extend(reverse);
                 transaction.forward_operations.push(op);
             }
         }

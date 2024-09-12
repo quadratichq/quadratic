@@ -106,7 +106,7 @@ export default function QuadraticGrid() {
         event.preventDefault();
         // If it's not already visible, show the context menu
         if (!editorInteractionState.showContextMenu) {
-          setEditorInteractionState((state) => ({ ...state, showContextMenu: true }));
+          // setEditorInteractionState((state) => ({ ...state, showContextMenu: true }));
         }
       }}
       onMouseDown={onMouseDown}

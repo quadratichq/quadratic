@@ -355,7 +355,8 @@ impl<B: BlockContent> ColumnData<B> {
     /// Shift all blocks so there's an empty entry at y.
     ///
     /// Note: this is not designed to handle negative values (since we're deprecating it on the sheet)
-    pub fn insert_and_shift_right(&mut self, y: i64) {
+    pub fn insert_and_shift_right(&mut self, y: i64) -> bool {
+        let mut changed = false;
         let mut new_blocks = BTreeMap::new();
 
         for (start, block) in self.0.iter() {
@@ -368,6 +369,7 @@ impl<B: BlockContent> ColumnData<B> {
                 let mut new_block = block.clone();
                 new_block.y += 1;
                 new_blocks.insert(*start + 1, new_block);
+                changed = true;
             }
             // otherwise we have to split the block
             else {
@@ -381,13 +383,16 @@ impl<B: BlockContent> ColumnData<B> {
                     after.y = y;
                     new_blocks.insert(y, after);
                 }
+                changed = true;
             }
         }
         self.0 = new_blocks;
+        changed
     }
 
     /// Removes a position and shifts the remaining positions to the left.
-    pub fn remove_and_shift_left(&mut self, y: i64) {
+    pub fn remove_and_shift_left(&mut self, y: i64) -> bool {
+        let mut changed = false;
         let mut new_blocks = BTreeMap::new();
 
         for (start, block) in self.0.iter() {
@@ -409,15 +414,18 @@ impl<B: BlockContent> ColumnData<B> {
                         new_blocks.insert(after.y, after);
                     }
                 }
+                changed = true;
             }
             // block is after the removal point, then shift left
             else if *start >= y {
                 let mut new_block = block.clone();
                 new_block.y -= 1;
                 new_blocks.insert(*start - 1, new_block);
+                changed = true;
             }
         }
         self.0 = new_blocks;
+        changed
     }
 
     #[cfg(test)]
@@ -691,9 +699,10 @@ mod test {
     #[parallel]
     fn insert_and_shift_right_end() {
         let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+        assert_eq!(cd.insert_and_shift_right(1), false);
         cd.set_range(1..4, true);
         cd.set_range(5..6, false);
-        cd.insert_and_shift_right(4);
+        assert_eq!(cd.insert_and_shift_right(4), true);
         assert_eq!(cd.get(1), Some(true));
         assert_eq!(cd.get(2), Some(true));
         assert_eq!(cd.get(3), Some(true));
@@ -735,9 +744,10 @@ mod test {
     #[parallel]
     fn remove_and_shift_left_end() {
         let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+        assert_eq!(cd.remove_and_shift_left(1), false);
         cd.set_range(1..4, true);
         cd.set_range(5..6, false);
-        cd.remove_and_shift_left(3);
+        assert_eq!(cd.remove_and_shift_left(3), true);
         assert_eq!(cd.get(1), Some(true));
         assert_eq!(cd.get(2), Some(true));
         assert_eq!(cd.get(3), None);

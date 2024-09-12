@@ -151,6 +151,9 @@ export class PointerHeading {
               );
             } else {
               selectColumns([...columns, column], undefined, true);
+              if (columns.length === 0 && event.ctrlKey) {
+                events.emit('gridHeadingContextMenu', world, column, undefined);
+              }
             }
           }
         } else if (intersects.row !== undefined) {
@@ -176,6 +179,9 @@ export class PointerHeading {
               );
             } else {
               selectRows([...rows, row], undefined, true);
+              if (rows.length === 0 && event.ctrlKey) {
+                events.emit('gridHeadingContextMenu', world, undefined, row);
+              }
             }
           }
         }
@@ -200,11 +206,13 @@ export class PointerHeading {
       else {
         if (intersects.column !== undefined) {
           selectColumns([intersects.column]);
+          // check if we're trying to open the context menu
         } else if (intersects.row !== undefined) {
           selectRows([intersects.row]);
         }
       }
     }
+
     return true;
   }
 

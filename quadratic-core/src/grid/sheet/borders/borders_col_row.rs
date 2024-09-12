@@ -95,7 +95,8 @@ impl Borders {
     }
 
     /// Removes a column at the given coordinate.
-    pub fn remove_column(&mut self, column: i64) {
+    pub fn remove_column(&mut self, sheet_id: SheetId, column: i64) {
+        let mut changed = false;
         self.left.remove(&column);
 
         // collect all the columns that need to be decremented
@@ -106,6 +107,8 @@ impl Borders {
             .sorted()
             .collect();
 
+        changed |= !to_decrement.is_empty();
+
         // decrement all columns (forwards because we're shifting left)
         for &x in to_decrement.iter() {
             if let Some(data) = self.left.remove(&x) {
@@ -113,7 +116,10 @@ impl Borders {
             }
         }
 
-        self.right.remove(&column);
+        if self.right.contains_key(&column) {
+            changed = true;
+            self.right.remove(&column);
+        }
 
         // collect all the columns that need to be decremented
         let to_decrement: Vec<i64> = self
@@ -122,6 +128,8 @@ impl Borders {
             .filter_map(|(x, _)| if *x >= column { Some(*x) } else { None })
             .sorted()
             .collect();
+
+        changed |= !to_decrement.is_empty();
 
         // decrement all columns (forwards because we're shifting left)
         for &x in to_decrement.iter() {
@@ -133,12 +141,20 @@ impl Borders {
         // removes a column in top and bottom
         self.top.iter_mut().for_each(|(_, data)| {
             // find any blocks that overlap the new column
-            data.remove_and_shift_left(column);
+            if data.remove_and_shift_left(column) {
+                changed = true;
+            }
         });
         self.bottom.iter_mut().for_each(|(_, data)| {
             // find any blocks that overlap the new column
-            data.remove_and_shift_left(column);
+            if data.remove_and_shift_left(column) {
+                changed = true;
+            }
         });
+
+        if changed {
+            self.send_sheet_borders(sheet_id);
+        }
     }
 
     /// Removes a row at the given coordinate.
@@ -266,7 +282,7 @@ mod tests {
     #[parallel]
     fn delete_column_empty() {
         let mut borders = Borders::default();
-        borders.remove_column(0);
+        borders.remove_column(SheetId::test(), 0);
         assert_eq!(borders, Borders::default());
     }
 
@@ -374,7 +390,7 @@ mod tests {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.borders.remove_column(1);
+        sheet.borders.remove_column(sheet_id, 1);
 
         let mut gc_expected = GridController::test();
         let sheet_id = gc_expected.sheet_ids()[0];
@@ -402,7 +418,7 @@ mod tests {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.borders.remove_column(5);
+        sheet.borders.remove_column(sheet_id, 5);
 
         let mut gc_expected = GridController::test();
         let sheet_id = gc_expected.sheet_ids()[0];
@@ -433,7 +449,7 @@ mod tests {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.borders.remove_column(10);
+        sheet.borders.remove_column(sheet_id, 10);
 
         let mut gc_expected = GridController::test();
         let sheet_id = gc_expected.sheet_ids()[0];

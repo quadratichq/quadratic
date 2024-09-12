@@ -240,4 +240,16 @@ export class SheetCursor {
   overlapsSelection(selection: Selection): boolean {
     return selectionOverlapsSelection(this.getRustSelection(), selection);
   }
+
+  hasOneColumnRowSelection(): boolean {
+    console.log(this.columnRow);
+    return (
+      this.columnRow !== undefined &&
+      !this.columnRow.all &&
+      !!(
+        (this.columnRow.columns && this.columnRow.columns.length === 1) ||
+        (this.columnRow.rows && this.columnRow.rows.length === 1)
+      )
+    );
+  }
 }

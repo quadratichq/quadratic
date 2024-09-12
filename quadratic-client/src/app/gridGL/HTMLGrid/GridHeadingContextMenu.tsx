@@ -1,0 +1,44 @@
+//! This shows the grid heading context menu.
+
+import { gridHeadingAtom } from '@/app/atoms/gridHeadingAtom';
+import { deleteColumnRow } from '@/app/gridGL/HTMLGrid/actionColumnRow';
+import { useHeadingSize } from '@/app/gridGL/HTMLGrid/useHeadingSize';
+import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
+import { ControlledMenu, MenuItem } from '@szhsin/react-menu';
+import { useRecoilState } from 'recoil';
+
+export const GridHeadingContextMenu = () => {
+  const [show, setShow] = useRecoilState(gridHeadingAtom);
+
+  // we need to remove the adjustment for the headings, since it's added as part
+  // of HTMLGridContainer's parent
+  const { leftHeading, topHeading } = useHeadingSize();
+
+  const onClose = () => {
+    setShow({ world: undefined, column: undefined, row: undefined });
+  };
+
+  if (!show?.world) return null;
+
+  const item = show.column ? 'column' : 'row';
+  const dir = show.column ? ['to the left', 'to the right'] : ['above', 'below'];
+
+  return (
+    <ControlledMenu
+      state={'open'}
+      onClose={onClose}
+      anchorPoint={{ x: show.world.x + leftHeading, y: show.world.y + topHeading + 50 }}
+      menuStyle={{ padding: '2px 0', color: 'inherit' }}
+    >
+      <MenuItem disabled>
+        <MenuLineItem primary={`Insert ${item} ${dir[0]}`} />
+      </MenuItem>
+      <MenuItem disabled>
+        <MenuLineItem primary={`Insert ${item} ${dir[1]}`} />
+      </MenuItem>
+      <MenuItem onClick={() => deleteColumnRow(show.column, show.row)}>
+        <MenuLineItem primary={`Delete ${item}`} />
+      </MenuItem>
+    </ControlledMenu>
+  );
+};
