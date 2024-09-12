@@ -157,7 +157,7 @@ class Core {
   }): Promise<JsRenderCell[]> {
     return new Promise((resolve) => {
       this.renderQueue.push(() => {
-        if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getGridBounds');
+        if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getRenderCells');
         const cells = this.gridController.getRenderCells(
           data.sheetId,
           numbersToRectStringified(data.x, data.y, data.width, data.height)

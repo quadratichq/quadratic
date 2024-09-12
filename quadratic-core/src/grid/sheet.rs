@@ -122,9 +122,8 @@ impl Sheet {
     }
 
     // creates a Sheet for testing
-    #[cfg(test)]
     pub fn test() -> Self {
-        Sheet::new(SheetId::test(), String::from("name"), String::from("A0"))
+        Sheet::new(SheetId::test(), String::from("Sheet 1"), String::from("a0"))
     }
 
     /// Populates the current sheet with random values

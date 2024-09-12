@@ -25,6 +25,7 @@ export interface JsRenderFill { x: bigint, y: bigint, w: number, h: number, colo
 export interface CellFormatSummary { bold: boolean | null, italic: boolean | null, commas: boolean | null, textColor: string | null, fillColor: string | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, dateTime: string | null, cellType: CellType | null, }
 export interface JsClipboard { plainText: string, html: string, }
 export interface JsRowHeight { row: bigint, height: number, }
+export interface JsPos { x: bigint, y: bigint, }
 export interface ArraySize { w: number, h: number, }
 export type Axis = "X" | "Y";
 export interface Instant { seconds: number, }
