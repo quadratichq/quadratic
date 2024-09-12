@@ -218,6 +218,26 @@ impl Sheet {
 
         reverse_operations
     }
+
+    pub fn insert_column(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        column: i64,
+    ) -> Vec<Operation> {
+        let undoable = transaction.is_user_undo_redo();
+        let mut reverse_operations = Vec::new();
+
+        // create undo operations for the inserted column
+        if undoable {
+            // reverse operation to delete the column (this will also shift all impacted columns)
+            reverse_operations.push(Operation::DeleteColumn {
+                sheet_id: self.id,
+                column,
+            });
+        }
+
+        reverse_operations
+    }
 }
 
 #[cfg(test)]

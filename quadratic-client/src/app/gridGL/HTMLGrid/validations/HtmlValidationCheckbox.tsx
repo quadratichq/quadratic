@@ -9,11 +9,12 @@ interface Props {
 }
 
 export const HtmlValidationCheckbox = (props: Props) => {
-  const { validation } = props.htmlValidationsData;
+  const { validation, location } = props.htmlValidationsData;
 
   useEffect(() => {
     const triggerCell = async (column: number, row: number) => {
       if (!validation) return;
+      if (!location || location.x !== column || location.y !== row) return;
       if (validation.rule !== 'None' && 'Logical' in validation.rule) {
         const value = await quadraticCore.getDisplayCell(sheets.sheet.id, column, row);
         quadraticCore.setCellValue(
@@ -30,7 +31,7 @@ export const HtmlValidationCheckbox = (props: Props) => {
     return () => {
       events.off('triggerCell', triggerCell);
     };
-  }, [validation]);
+  }, [location, validation]);
 
   return null;
 };

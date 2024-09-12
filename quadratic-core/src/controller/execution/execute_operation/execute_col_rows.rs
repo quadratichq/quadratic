@@ -18,8 +18,14 @@ impl GridController {
         if let Operation::DeleteRow { .. /*sheet_id, row*/ } = op {}
     }
 
-    pub fn execute_insert_column(&mut self, _transaction: &mut PendingTransaction, op: Operation) {
-        if let Operation::InsertColumn { .. /*sheet_id, column*/ } = op {}
+    pub fn execute_insert_column(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+        if let Operation::InsertColumn { sheet_id, column } = op {
+            if let Some(sheet) = self.try_sheet_mut(sheet_id) {
+                let reverse = sheet.insert_column(transaction, column);
+                transaction.reverse_operations.extend(reverse);
+                transaction.forward_operations.push(op);
+            }
+        }
     }
 
     pub fn execute_insert_row(&mut self, _transaction: &mut PendingTransaction, op: Operation) {
