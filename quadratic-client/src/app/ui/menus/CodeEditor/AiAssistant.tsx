@@ -193,7 +193,26 @@ ${QuadraticDocs}`,
 
   // Designed to live in a box that takes up the full height of its container
   return (
-    <div ref={containerRef} className="relative shrink-0 overflow-hidden" style={{ width: `${containerWidth}px` }}>
+    <div
+      ref={containerRef}
+      className="relative h-full shrink-0 overflow-hidden"
+      style={{ width: `${containerWidth + 1}px` }}
+    >
+      <ResizeControl
+        position="VERTICAL"
+        style={{ left: `${containerWidth}px` }}
+        setState={(e) => {
+          const container = containerRef.current;
+          if (!container) return;
+
+          e.stopPropagation();
+          e.preventDefault();
+
+          const containerRect = container.getBoundingClientRect();
+          const newContainerWidth = Math.max(MIN_CONTAINER_WIDTH, e.x - containerRect.left);
+          setContainerWidth(newContainerWidth);
+        }}
+      />
       <div className="grid h-full w-full grid-rows-[1fr_auto]">
         <div
           ref={aiResponseRef}
@@ -320,22 +339,6 @@ ${QuadraticDocs}`,
           </div>
         </form>
       </div>
-      <ResizeControl
-        position="VERTICAL"
-        style={{ right: '10px' }}
-        side="END"
-        setState={(e) => {
-          const container = containerRef.current;
-          if (!container) return;
-
-          e.stopPropagation();
-          e.preventDefault();
-
-          const containerRect = container.getBoundingClientRect();
-          const newContainerWidth = Math.max(MIN_CONTAINER_WIDTH, e.x - containerRect.left);
-          setContainerWidth(newContainerWidth);
-        }}
-      />
     </div>
   );
 };
