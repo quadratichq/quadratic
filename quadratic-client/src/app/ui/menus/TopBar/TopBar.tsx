@@ -1,4 +1,4 @@
-import TopBarMenus from '@/app/ui/menus/TopBar/TopBarMenus';
+import TopBarFileMenu from '@/app/ui/menus/TopBar/TopBarFileMenu';
 import { isElectron } from '@/shared/utils/isElectron';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { isEmbed } from '../../../helpers/isEmbed';
@@ -39,7 +39,7 @@ export const TopBar = () => {
           WebkitAppRegion: 'no-drag',
         }}
       >
-        <TopBarMenus />
+        <TopBarFileMenu />
       </div>
 
       <TopBarFileNameAndLocationMenu />

@@ -1,10 +1,10 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { EditMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/EditMenubarMenu';
-import { FileMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/FileMenubarMenu';
-import { FormatMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/FormatMenubarMenu';
-import { HelpMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/HelpMenubarMenu';
-import { InsertMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/InsertMenubarMenu';
-import { ViewMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/ViewMenubarMenu';
+import { EditMenubarMenu } from '@/app/ui/menus/TopBar/TopBarFileMenu/EditMenubarMenu';
+import { FileMenubarMenu } from '@/app/ui/menus/TopBar/TopBarFileMenu/FileMenubarMenu';
+import { FormatMenubarMenu } from '@/app/ui/menus/TopBar/TopBarFileMenu/FormatMenubarMenu';
+import { HelpMenubarMenu } from '@/app/ui/menus/TopBar/TopBarFileMenu/HelpMenubarMenu';
+import { InsertMenubarMenu } from '@/app/ui/menus/TopBar/TopBarFileMenu/InsertMenubarMenu';
+import { ViewMenubarMenu } from '@/app/ui/menus/TopBar/TopBarFileMenu/ViewMenubarMenu';
 import { Menubar } from '@/shared/shadcn/ui/menubar';
 import { useRecoilValue } from 'recoil';
 import './styles.css';
