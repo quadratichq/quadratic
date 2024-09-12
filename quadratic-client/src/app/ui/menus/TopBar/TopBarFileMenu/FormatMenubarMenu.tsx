@@ -160,7 +160,7 @@ function MenubarColorPickerItemAction({ action }: { action: Action.FormatTextCol
         {label}
       </MenubarSubTrigger>
       <MenubarSubContent>
-        <MenubarItem>
+        <MenubarItem className="color-picker-dropdown-menu flex-col gap-0 p-0 hover:bg-background focus:bg-background">
           <QColorPicker
             onChangeComplete={(color) => {
               run(color);

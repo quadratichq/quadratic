@@ -239,7 +239,7 @@ function FormatColorPickerButton({ action }: { action: Action.FormatTextColor | 
 
   return (
     <FormatButtonDropdown tooltipLabel={label} Icon={Icon}>
-      <DropdownMenuItem>
+      <DropdownMenuItem className="color-picker-dropdown-menu flex-col p-0 hover:bg-background focus:bg-background">
         <QColorPicker
           onChangeComplete={(color) => {
             run(color);
