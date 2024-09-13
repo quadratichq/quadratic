@@ -54,16 +54,11 @@ export class PointerDown {
 
     // If right click and we have a multi cell selection.
     // If the user has clicked inside the selection.
-    if (rightClick && cursor.multiCursor) {
-      const lastMultiCursor = cursor.multiCursor[cursor.multiCursor.length - 1];
-      if (
-        column >= lastMultiCursor.left &&
-        column <= lastMultiCursor.right &&
-        row >= lastMultiCursor.top &&
-        row <= lastMultiCursor.bottom
-      )
-        // Ignore this click. User is accessing the RightClickMenu.
-        return;
+    if (rightClick) {
+      events.emit('gridContextMenu', world, column, row);
+
+      // Ignore this click. User is accessing the RightClickMenu.
+      return;
     }
 
     if (this.doubleClickTimeout) {

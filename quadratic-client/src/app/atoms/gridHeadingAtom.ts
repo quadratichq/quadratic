@@ -28,11 +28,11 @@ export const gridHeadingAtom = atom({
       };
 
       events.on('cursorPosition', clear);
-      events.on('gridHeadingContextMenu', set);
+      events.on('gridContextMenu', set);
 
       return () => {
         events.off('cursorPosition', clear);
-        events.off('gridHeadingContextMenu', set);
+        events.off('gridContextMenu', set);
       };
     },
   ],

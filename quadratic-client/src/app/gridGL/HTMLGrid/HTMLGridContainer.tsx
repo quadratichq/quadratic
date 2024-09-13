@@ -1,5 +1,4 @@
 import { events } from '@/app/events/events';
-import { GridHeadingContextMenu } from '@/app/gridGL/HTMLGrid/GridHeadingContextMenu';
 import { InlineEditor } from '@/app/gridGL/HTMLGrid/inlineEditor/InlineEditor';
 import { MultiplayerCursors } from '@/app/gridGL/HTMLGrid/multiplayerCursor/MulitplayerCursors';
 import { useHeadingSize } from '@/app/gridGL/HTMLGrid/useHeadingSize';
@@ -8,6 +7,7 @@ import { pixiApp } from '../pixiApp/PixiApp';
 import { Annotations } from './annotations/Annotations';
 import { CodeHint } from './CodeHint';
 import { CodeRunning } from './codeRunning/CodeRunning';
+import { GridContextMenu } from './GridContextMenu';
 import { HoverCell } from './hoverCell/HoverCell';
 import { HtmlCells } from './htmlCells/HtmlCells';
 import { MultiplayerCellEdits } from './multiplayerInput/MultiplayerCellEdits';
@@ -68,7 +68,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
 
   return (
     <>
-      <GridHeadingContextMenu />
+      <GridContextMenu />
       <div
         style={{
           position: 'absolute',

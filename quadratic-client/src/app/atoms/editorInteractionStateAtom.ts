@@ -12,10 +12,12 @@ export interface EditorInteractionState {
   showGoToMenu: boolean;
   showFeedbackMenu: boolean;
   showNewFileMenu: boolean;
+  showRenameFileMenu: boolean;
   showShareFileMenu: boolean;
   showSearch: boolean | SearchOptions;
   showValidation: boolean | string;
   annotationState?: 'dropdown' | 'date-format' | 'calendar' | 'calendar-time';
+  showAI: boolean;
   showContextMenu: boolean;
   permissions: FilePermission[];
   uuid: string;
@@ -45,11 +47,13 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   showGoToMenu: false,
   showFeedbackMenu: false,
   showNewFileMenu: false,
+  showRenameFileMenu: false,
   showShareFileMenu: false,
   showSearch: false,
   showContextMenu: false,
   showValidation: false,
   annotationState: undefined,
+  showAI: true,
   permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
   uuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
   selectedCell: { x: 0, y: 0 },
@@ -76,8 +80,10 @@ export const editorInteractionStateAtom = atom({
           oldValue.showGoToMenu ||
           oldValue.showFeedbackMenu ||
           oldValue.showNewFileMenu ||
+          oldValue.showRenameFileMenu ||
           oldValue.showShareFileMenu ||
-          oldValue.showSearch;
+          oldValue.showSearch ||
+          oldValue.showAI;
         const newModelShow =
           newValue.showCellTypeMenu ||
           newValue.showCodeEditor ||
@@ -86,8 +92,10 @@ export const editorInteractionStateAtom = atom({
           newValue.showGoToMenu ||
           newValue.showFeedbackMenu ||
           newValue.showNewFileMenu ||
+          newValue.showRenameFileMenu ||
           newValue.showShareFileMenu ||
-          newValue.showSearch;
+          newValue.showSearch ||
+          newValue.showAI;
         if (oldModalShow && !newModelShow) {
           focusGrid();
         }

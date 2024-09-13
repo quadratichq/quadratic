@@ -3,6 +3,7 @@ export const DEFAULT_FILE_NAME = 'Untitled';
 export const CSV_IMPORT_MESSAGE = 'Drag and drop a CSV file on the grid to import it.';
 export const EXCEL_IMPORT_MESSAGE = 'Drag and drop an Excel file on the grid to import it.';
 export const PARQUET_IMPORT_MESSAGE = 'Drag and drop a Parquet file on the grid to import it.';
+export const IMPORT_MESSAGE = 'Drag and drop a file (CSV, Excel, or Parquet) on the grid to import it.';
 export const TYPE = {
   // Borrowed from mui typography
   body1: 'text-md',

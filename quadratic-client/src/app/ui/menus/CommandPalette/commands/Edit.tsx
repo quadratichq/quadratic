@@ -1,13 +1,16 @@
 import {
   copyAction,
   cutAction,
-  downloadSelectionAsCsvAction,
+  findInSheet,
+  findInSheets,
   pasteAction,
   pasteActionFormats,
   pasteActionValues,
   redoAction,
   undoAction,
 } from '@/app/actions';
+import { Action } from '@/app/actions/actions';
+import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import {
   copySelectionToPNG,
@@ -16,14 +19,26 @@ import {
   fullClipboardSupport,
   pasteFromClipboard,
 } from '@/app/grid/actions/clipboard/clipboard';
-import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
-import { useFileContext } from '@/app/ui/components/FileProvider';
-import { ClipboardIcon, CopyIcon, RedoIcon, ScissorsIcon, UndoIcon } from '@/app/ui/icons';
+import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import {
+  CopyAsPng,
+  CutIcon,
+  FileCopyIcon,
+  FindInFileIcon,
+  GoToIcon,
+  PasteIcon,
+  RedoIcon,
+  UndoIcon,
+} from '@/shared/components/Icons';
 import { isMac } from '@/shared/utils/isMac';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useSetRecoilState } from 'recoil';
+import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
+
+// TODO: Make this more type safe
+const downloadSelectionAsCsvAction = defaultActionSpec[Action.DownloadAsCsv];
 
 const data: CommandGroup = {
   heading: 'Edit',
@@ -66,7 +81,7 @@ const data: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             action={cutToClipboard}
-            icon={<ScissorsIcon />}
+            icon={<CutIcon />}
             label={cutAction.label}
             shortcut={KeyboardSymbols.Command + 'X'}
           />
@@ -81,7 +96,7 @@ const data: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             action={copyToClipboard}
-            icon={<CopyIcon />}
+            icon={<FileCopyIcon />}
             shortcut={KeyboardSymbols.Command + 'C'}
           />
         );
@@ -96,7 +111,7 @@ const data: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             action={pasteFromClipboard}
-            icon={<ClipboardIcon />}
+            icon={<PasteIcon />}
             shortcut={KeyboardSymbols.Command + 'V'}
           />
         );
@@ -111,6 +126,7 @@ const data: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             action={() => pasteFromClipboard('Values')}
+            icon={<PasteIcon />}
             shortcut="V"
             shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}
           />
@@ -121,39 +137,7 @@ const data: CommandGroup = {
       label: pasteActionFormats.label,
       isAvailable: pasteActionFormats.isAvailable,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} action={() => pasteFromClipboard('Formats')} />;
-      },
-    },
-    {
-      label: 'Copy selection as PNG',
-      isAvailable: () => fullClipboardSupport(),
-      Component: (props) => {
-        const { addGlobalSnackbar } = useGlobalSnackbar();
-        return (
-          <CommandPaletteListItem
-            {...props}
-            action={() => copySelectionToPNG(addGlobalSnackbar)}
-            // icon={<ImageIcon />}
-            shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}
-            shortcut="C"
-          />
-        );
-      },
-    },
-    {
-      label: downloadSelectionAsCsvAction.label,
-      Component: (props) => {
-        const { name: fileName } = useFileContext();
-        return (
-          <CommandPaletteListItem
-            {...props}
-            action={() => {
-              downloadSelectionAsCsvAction.run({ fileName });
-            }}
-            shortcut="E"
-            shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}
-          />
-        );
+        return <CommandPaletteListItem {...props} icon={<PasteIcon />} action={() => pasteFromClipboard('Formats')} />;
       },
     },
     {
@@ -166,8 +150,71 @@ const data: CommandGroup = {
             action={() =>
               setEditorInteractionState({ ...editorInteractionState, showCommandPalette: false, showGoToMenu: true })
             }
-            // icon={<ThickArrowRightIcon />}
+            icon={<GoToIcon />}
             shortcut={KeyboardSymbols.Command + 'G'}
+          />
+        );
+      },
+    },
+    {
+      label: findInSheet.label,
+      keywords: ['search'],
+      Component: (props) => {
+        const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+        return (
+          <CommandPaletteListItem
+            {...props}
+            action={() => setEditorInteractionState((state) => ({ ...state, showSearch: true }))}
+            icon={<FindInFileIcon />}
+            shortcut="F"
+            shortcutModifiers={KeyboardSymbols.Command}
+          />
+        );
+      },
+    },
+    {
+      label: findInSheets.label,
+      keywords: ['search'],
+      Component: (props) => {
+        const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+        return (
+          <CommandPaletteListItem
+            {...props}
+            action={() => setEditorInteractionState((state) => ({ ...state, showSearch: { sheet_id: undefined } }))}
+            icon={<FindInFileIcon />}
+            shortcut="F"
+            shortcutModifiers={[KeyboardSymbols.Shift, KeyboardSymbols.Command]}
+          />
+        );
+      },
+    },
+    {
+      label: 'Copy selection as PNG',
+      isAvailable: () => fullClipboardSupport(),
+      Component: (props) => {
+        const { addGlobalSnackbar } = useGlobalSnackbar();
+        return (
+          <CommandPaletteListItem
+            {...props}
+            action={() => copySelectionToPNG(addGlobalSnackbar)}
+            icon={<CopyAsPng />}
+            shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}
+            shortcut="C"
+          />
+        );
+      },
+    },
+    {
+      label: downloadSelectionAsCsvAction?.label ?? '',
+      Component: (props) => {
+        return (
+          <CommandPaletteListItem
+            {...props}
+            action={() => {
+              downloadSelectionAsCsvAction?.run(undefined);
+            }}
+            icon={downloadSelectionAsCsvAction?.Icon && <downloadSelectionAsCsvAction.Icon />}
+            shortcut={keyboardShortcutEnumToDisplay(Action.DownloadAsCsv)}
           />
         );
       },

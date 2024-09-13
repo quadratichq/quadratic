@@ -1,9 +1,10 @@
+import { hasPermissionToEditFile } from '@/app/actions';
+import { Action } from '@/app/actions/actions';
+import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { hasPermissionToEditFile } from '../../../actions';
-import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 
 export function keyboardCode(
   event: React.KeyboardEvent<HTMLElement>,
@@ -13,8 +14,7 @@ export function keyboardCode(
     return false;
   }
   // Execute code cell
-  if (matchShortcut('execute_code', event)) {
-    console.log();
+  if (matchShortcut(Action.ExecuteCode, event)) {
     quadraticCore.rerunCodeCells(
       sheets.sheet.id,
       sheets.sheet.cursor.cursorPosition.x,
@@ -25,19 +25,19 @@ export function keyboardCode(
   }
 
   // Rerun sheet code
-  if (matchShortcut('rerun_sheet_code', event)) {
+  if (matchShortcut(Action.RerunSheetCode, event)) {
     quadraticCore.rerunCodeCells(sheets.sheet.id, undefined, undefined, sheets.getCursorPosition());
     return true;
   }
 
   // Rerun all code
-  if (matchShortcut('rerun_all_code', event)) {
+  if (matchShortcut(Action.RerunAllCode, event)) {
     quadraticCore.rerunCodeCells(undefined, undefined, undefined, sheets.getCursorPosition());
     return true;
   }
 
   // Insert cell reference
-  if (editorInteractionState.showCodeEditor && matchShortcut('insert_cell_reference', event)) {
+  if (editorInteractionState.showCodeEditor && matchShortcut(Action.InsertCellReference, event)) {
     insertCellRef(editorInteractionState);
     return true;
   }

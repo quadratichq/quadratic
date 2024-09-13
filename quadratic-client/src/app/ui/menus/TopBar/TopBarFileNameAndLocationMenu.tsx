@@ -9,9 +9,8 @@ import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { useFileContext } from '../../components/FileProvider';
-import { TopBarFileMenuDropdown } from './TopBarFileMenuDropdown';
 
-export const TopBarFileMenu = () => {
+export const TopBarFileNameAndLocationMenu = () => {
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const { name } = useFileContext();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
@@ -42,10 +41,6 @@ export const TopBarFileMenu = () => {
                 <span className={`block max-w-[25vw] truncate`}>{name}</span>
               )}
             </Type>
-
-            <div className="hidden md:block">
-              <TopBarFileMenuDropdown setIsRenaming={setIsRenaming} />
-            </div>
           </div>
         </div>
       )}

@@ -26,7 +26,7 @@ export class GridLines extends Graphics {
   gridLinesY: GridLine[] = [];
 
   draw(bounds: Rectangle): void {
-    this.lineStyle({ width: 1, color: colors.gridLines, alpha: 0.125, alignment: 0.5, native: false });
+    this.lineStyle({ width: 1, color: colors.gridLines, alpha: 0.2, alignment: 0.5, native: false });
     const range = this.drawHorizontalLines(bounds);
     this.drawVerticalLines(bounds, range);
     this.dirty = false;
@@ -53,7 +53,7 @@ export class GridLines extends Graphics {
       this.alpha = gridAlpha;
       this.visible = true;
 
-      this.lineStyle(1, colors.gridLines, 0.125, 0.5, true);
+      this.lineStyle(1, colors.gridLines, 0.2, 0.5, true);
       this.gridLinesX = [];
       this.gridLinesY = [];
       const range = this.drawHorizontalLines(bounds);

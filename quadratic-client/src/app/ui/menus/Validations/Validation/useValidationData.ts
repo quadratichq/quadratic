@@ -10,7 +10,12 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { v4 as uuid } from 'uuid';
-import { validationRuleSimple, ValidationRuleSimple, ValidationUndefined } from './validationType';
+import {
+  validationRuleSimple,
+  ValidationRuleSimple,
+  ValidationRuleSimpleValues,
+  ValidationUndefined,
+} from './validationType';
 
 export type SetState<T> = Dispatch<SetStateAction<T>>;
 
@@ -48,40 +53,6 @@ export const useValidationData = (): ValidationData => {
   const toggleMoreOptions = useCallback(() => {
     setMoreOptions((old) => !old);
   }, []);
-
-  // gets the validation for the current selection or creates a new one
-  useEffect(() => {
-    const getValidation = async () => {
-      let v: Validation | Omit<Validation, 'rule'> | undefined;
-      if (showValidation && showValidation !== true && showValidation !== 'new') {
-        v = sheets.getById(sheetId)?.validations.find((v) => v.id === showValidation);
-      }
-      if (v) {
-        setOriginalValidation(v);
-      } else {
-        v = {
-          id: uuid(),
-          selection: sheets.getRustSelection(),
-          rule: undefined,
-          message: {
-            show: true,
-            title: '',
-            message: '',
-          },
-          error: {
-            show: true,
-            style: 'Stop',
-            title: '',
-            message: '',
-          },
-        };
-
-        setOriginalValidation(undefined);
-      }
-      setValidation(v);
-    };
-    getValidation();
-  }, [sheetId, showValidation]);
 
   // Used to coerce bigints to numbers for JSON.stringify; see
   // https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-2064279949.
@@ -226,6 +197,15 @@ export const useValidationData = (): ValidationData => {
     [sheetId]
   );
 
+  useEffect(() => {
+    if (
+      typeof showValidation === 'string' &&
+      ['text', 'number', 'list', 'list-range', 'logical', 'none'].includes(showValidation)
+    ) {
+      changeRule(showValidation as ValidationRuleSimple);
+    }
+  }, [changeRule, showValidation]);
+
   // Whether the UI shows (eg, checkbox for logical validation; dropdown for
   // list validation)
   const showUI = useMemo(() => {
@@ -331,6 +311,49 @@ export const useValidationData = (): ValidationData => {
       });
     }
   };
+
+  useEffect(() => {
+    const getValidation = async () => {
+      // showValidation can be a pre-selected rule for a new validation
+      let rule: ValidationRuleSimple | undefined = undefined;
+      if (typeof showValidation === 'string' && ValidationRuleSimpleValues.includes(showValidation)) {
+        rule = showValidation as ValidationRuleSimple;
+      }
+
+      // gets the validation for the current selection or creates a new one
+      let v: Validation | Omit<Validation, 'rule'> | undefined;
+      if (showValidation && showValidation !== true && showValidation !== 'new' && rule === undefined) {
+        v = sheets.getById(sheetId)?.validations.find((v) => v.id === showValidation);
+      }
+      if (v) {
+        setOriginalValidation(v);
+      } else {
+        v = {
+          id: uuid(),
+          selection: sheets.getRustSelection(),
+          rule: undefined,
+          message: {
+            show: true,
+            title: '',
+            message: '',
+          },
+          error: {
+            show: true,
+            style: 'Stop',
+            title: '',
+            message: '',
+          },
+        };
+
+        setOriginalValidation(undefined);
+      }
+      setValidation(v);
+      if (rule) {
+        changeRule(rule);
+      }
+    };
+    getValidation();
+  }, [changeRule, sheetId, showValidation]);
 
   return {
     validate,

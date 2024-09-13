@@ -1,13 +1,14 @@
+import { useSetRecoilState } from 'recoil';
 import { validationAction } from '../../../../actions';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
-import { useSetRecoilState } from 'recoil';
 
 export const validationCommandGroup: CommandGroup = {
-  heading: 'Data Validations',
+  heading: 'Data validations',
   commands: [
     {
       label: validationAction.label,
+      isAvailable: validationAction.isAvailable,
       Component: (props) => {
         const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
         return (

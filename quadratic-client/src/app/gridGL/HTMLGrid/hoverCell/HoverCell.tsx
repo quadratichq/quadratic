@@ -4,14 +4,14 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { pluralize } from '@/app/helpers/pluralize';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
-import { useGridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
+import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { ReactNode, useEffect, useRef, useState } from 'react';
-import './HoverCell.css';
-import { ErrorValidation } from '../../cells/CellsSheet';
-import { HtmlValidationMessage } from '../validations/HtmlValidationMessage';
-import { usePositionCellMessage } from '../usePositionCellMessage';
 import { Rectangle } from 'pixi.js';
+import { ReactNode, useEffect, useRef, useState } from 'react';
+import { ErrorValidation } from '../../cells/CellsSheet';
+import { usePositionCellMessage } from '../usePositionCellMessage';
+import { HtmlValidationMessage } from '../validations/HtmlValidationMessage';
+import './HoverCell.css';
 
 export interface EditingCell {
   x: number;

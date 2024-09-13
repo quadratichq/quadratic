@@ -1,4 +1,4 @@
-import { downloadSelectionAsCsvAction, hasPermissionToEditFile } from '@/app/actions';
+import { hasPermissionToEditFile } from '@/app/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { gridHeadingAtom } from '@/app/atoms/gridHeadingAtom';
 import { events } from '@/app/events/events';
@@ -12,11 +12,26 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
-import { useFileContext } from '@/app/ui/components/FileProvider';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { QColorPicker } from '@/app/ui/components/qColorPicker';
 import {
-  BorderAllIcon,
+  clearFillColor,
+  clearFormattingAndBorders,
+  removeCellNumericFormat,
+  setAlign,
+  setBold,
+  setFillColor,
+  setItalic,
+  setTextColor,
+  setVerticalAlign,
+  setWrap,
+  textFormatDecreaseDecimalPlaces,
+  textFormatIncreaseDecimalPlaces,
+  textFormatSetCurrency,
+  textFormatSetExponential,
+  textFormatSetPercentage,
+} from '@/app/ui/helpers/formatCells';
+import {
   DecimalDecreaseIcon,
   DecimalIncreaseIcon,
   DollarIcon,
@@ -41,24 +56,7 @@ import {
   WrapTextIcon,
 } from '@/app/ui/icons';
 import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
-import { useGetBorderMenu } from '@/app/ui/menus/TopBar/SubMenus/FormatMenu/useGetBorderMenu';
-import {
-  clearFillColor,
-  clearFormattingAndBorders,
-  removeCellNumericFormat,
-  setAlign,
-  setBold,
-  setFillColor,
-  setItalic,
-  setTextColor,
-  setVerticalAlign,
-  setWrap,
-  textFormatDecreaseDecimalPlaces,
-  textFormatIncreaseDecimalPlaces,
-  textFormatSetCurrency,
-  textFormatSetExponential,
-  textFormatSetPercentage,
-} from '@/app/ui/menus/TopBar/SubMenus/formatCells';
+import { BorderMenu } from '@/app/ui/menus/TopBar/SubMenus/FormatMenu/BorderMenu';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { Divider, IconButton, Toolbar } from '@mui/material';
@@ -86,8 +84,6 @@ export const FloatingContextMenu = (props: Props) => {
   const [moreMenuProps, moreMenuToggle] = useMenuState();
   const menuDiv = useRef<HTMLDivElement>(null);
   const moreMenuButtonRef = useRef(null);
-  const borders = useGetBorderMenu();
-  const { name: fileName } = useFileContext();
 
   const textColorRef = useRef<MenuInstance>(null);
   const fillColorRef = useRef<MenuInstance>(null);
@@ -604,31 +600,9 @@ export const FloatingContextMenu = (props: Props) => {
             }}
           />
         </Menu>
-        {!borders ? (
-          <TooltipHint title="Borders">
-            <span>
-              <IconButton size="small" disabled={true} sx={iconBtnSx}>
-                <BorderAllIcon fontSize={iconSize} />
-              </IconButton>
-            </span>
-          </TooltipHint>
-        ) : (
-          <Menu
-            menuButton={
-              <div>
-                <TooltipHint title="Borders">
-                  <span>
-                    <IconButton size="small" sx={iconBtnSx}>
-                      <BorderAllIcon fontSize={iconSize} />
-                    </IconButton>
-                  </span>
-                </TooltipHint>
-              </div>
-            }
-          >
-            {borders}
-          </Menu>
-        )}
+
+        <BorderMenu />
+
         <MenuDividerVertical />
 
         <TooltipHint title="Format automatically">
@@ -729,26 +703,6 @@ export const FloatingContextMenu = (props: Props) => {
               primary="Copy selection as PNG"
               secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'C'}
             ></MenuLineItem>
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              downloadSelectionAsCsvAction.run({ fileName });
-              moreMenuToggle();
-            }}
-          >
-            <MenuLineItem
-              primary={downloadSelectionAsCsvAction.label}
-              secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'E'}
-            />
-          </MenuItem>
-          <MenuDivider />
-          <MenuItem
-            onClick={() => {
-              setEditorInteractionState((state) => ({ ...state, annotationState: 'date-format' }));
-              moreMenuToggle();
-            }}
-          >
-            <MenuLineItem primary="Date and time format" />
           </MenuItem>
         </ControlledMenu>
       </Toolbar>
