@@ -42,8 +42,8 @@ export const MODEL_OPTIONS: ModelOption = {
   },
   'o1-preview': {
     displayName: 'OpenAI: o1-preview',
-    temperature: 1,
-    stream: false,
+    temperature: 1, // only temperature 1 is supported for o1-preview
+    stream: false, // stream is not supported for o1-preview
     enabled: debug,
   },
 } as const;
@@ -196,11 +196,11 @@ export function useAI() {
               throw new Error(`Invalid response: ${data}`);
             }
           } else {
-            if (data && data.content) {
-              responseMessage.content += data.content;
-              setMessages((prev) => [...prev, { ...responseMessage }]);
-            } else if (data.refusal) {
+            if (data.refusal) {
               throw new Error(data.refusal);
+            } else if (data && data.content) {
+              responseMessage.content += data.content;
+              setMessages((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
             }
           }
           return { content: responseMessage.content };

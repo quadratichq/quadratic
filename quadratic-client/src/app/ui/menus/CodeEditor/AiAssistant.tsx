@@ -129,51 +129,57 @@ How can I help you?
 
   const { handleAIStream, isAnthropicModel } = useAI();
 
-  const submitPrompt = useCallback(async () => {
-    if (loading) return;
-    const abortController = new AbortController();
-    const updatedMessages: (UserMessage | AIMessage)[] = [...messages, { role: 'user', content: prompt }];
-    setAiAssistantPanelState((prev) => ({
-      ...prev,
-      abortController,
-      loading: true,
-      messages: updatedMessages,
-      prompt: '',
-    }));
+  const submitPrompt = useCallback(
+    async (userPrompt?: string) => {
+      if (loading) return;
+      const abortController = new AbortController();
+      const updatedMessages: (UserMessage | AIMessage)[] =
+        userPrompt !== undefined
+          ? [{ role: 'user', content: userPrompt }]
+          : [...messages, { role: 'user', content: prompt }];
+      setAiAssistantPanelState((prev) => ({
+        ...prev,
+        abortController,
+        loading: true,
+        messages: updatedMessages,
+        prompt: userPrompt !== undefined ? '' : prev.prompt,
+      }));
 
-    const messagesToSend: PromptMessage[] = [
-      {
-        role: 'user',
-        content: quadraticContext,
-      },
-      {
-        role: 'assistant',
-        content: aiContextReassertion,
-      },
-      ...updatedMessages.map((message) => ({
-        role: message.role,
-        content: message.content,
-      })),
-    ];
-    await handleAIStream({
+      const messagesToSend: PromptMessage[] = [
+        {
+          role: 'user',
+          content: quadraticContext,
+        },
+        {
+          role: 'assistant',
+          content: aiContextReassertion,
+        },
+        ...updatedMessages.map((message) => ({
+          role: message.role,
+          content: message.content,
+        })),
+      ];
+      await handleAIStream({
+        model,
+        messages: messagesToSend,
+        setMessages,
+        signal: abortController.signal,
+      });
+
+      setAiAssistantPanelState((prev) => ({ ...prev, abortController: undefined, loading: false }));
+    },
+    [
+      aiContextReassertion,
+      handleAIStream,
+      loading,
+      messages,
       model,
-      messages: messagesToSend,
+      prompt,
+      quadraticContext,
+      setAiAssistantPanelState,
       setMessages,
-      signal: abortController.signal,
-    });
-
-    setAiAssistantPanelState((prev) => ({ ...prev, abortController: undefined, loading: false }));
-  }, [
-    aiContextReassertion,
-    handleAIStream,
-    loading,
-    messages,
-    model,
-    prompt,
-    quadraticContext,
-    setAiAssistantPanelState,
-    setMessages,
-  ]);
+    ]
+  );
 
   // Designed to live in a box that takes up the full height of its container
   return (
@@ -206,9 +212,16 @@ How can I help you?
             </IconButton>
             <span>AI Assistant</span>
           </div>
-          <Button onClick={() => setMessages([])} variant="outline" disabled={messages.length === 0}>
-            Clear
-          </Button>
+          <div className="flex items-center gap-2">
+            {consoleOutput?.stdErr !== undefined && (
+              <Button onClick={() => submitPrompt('Fix the error in the code cell')} variant="success">
+                Fix error
+              </Button>
+            )}
+            <Button onClick={() => setMessages([])} variant="outline" disabled={messages.length === 0}>
+              Clear
+            </Button>
+          </div>
         </div>
 
         <div
