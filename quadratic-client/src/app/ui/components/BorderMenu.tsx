@@ -44,7 +44,7 @@ export const BorderMenu = () => {
           const Icon = 'Icon' in defaultActionSpec[actionKey] ? defaultActionSpec[actionKey].Icon : undefined;
           const run = defaultActionSpec[actionKey].run;
           return (
-            <ToggleGroup.Item autoFocus={i === 0} asChild value={actionKey}>
+            <ToggleGroup.Item autoFocus={i === 0} asChild value={actionKey} key={actionKey}>
               <Button
                 size="icon"
                 variant="ghost"

@@ -9,7 +9,7 @@ export const Toolbar = () => {
   const { permissions } = editorInteractionState;
 
   return (
-    <div className="flex h-8 flex-shrink-0 border-b border-border">
+    <div className="flex h-8 flex-shrink-0 select-none border-b border-border">
       <div className="w-44 border-r border-border">
         <CursorPosition />
       </div>
