@@ -182,6 +182,10 @@ export const EditIcon: IconComponent = (props) => {
   return <Icon {...props}>edit</Icon>;
 };
 
+export const ExternalLinkIcon: IconComponent = (props) => {
+  return <Icon {...props}>north_east</Icon>;
+};
+
 export const FormatAlignCenterIcon: IconComponent = (props) => {
   return <Icon {...props}>format_align_center</Icon>;
 };
