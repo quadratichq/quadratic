@@ -33,7 +33,7 @@ export const GridContextMenu = () => {
   }, [onClose]);
 
   useEffect(() => {
-    const updateGridMenu = (world: Point, column: number, row: number) => {
+    const updateGridMenu = (world: Point, column?: number, row?: number) => {
       setShow({ world, column, row });
     };
     events.on('gridContextMenu', updateGridMenu);

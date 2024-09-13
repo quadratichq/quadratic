@@ -152,7 +152,7 @@ export class PointerHeading {
             } else {
               selectColumns([...columns, column], undefined, true);
               if (columns.length === 0 && event.ctrlKey) {
-                events.emit('gridHeadingContextMenu', world, column, undefined);
+                events.emit('gridContextMenu', world, column, undefined);
               }
             }
           }
@@ -180,7 +180,7 @@ export class PointerHeading {
             } else {
               selectRows([...rows, row], undefined, true);
               if (rows.length === 0 && event.ctrlKey) {
-                events.emit('gridHeadingContextMenu', world, undefined, row);
+                events.emit('gridContextMenu', world, undefined, row);
               }
             }
           }
