@@ -26,7 +26,7 @@ jest.mock('./src/storage/storage', () => {
     uploadFile: jest.fn().mockImplementation(async () => {
       return { bucket: 'test-bucket', key: 'test-key' };
     }),
-    uploadMiddleware: () => multerS3Storage,
+    uploadMiddleware: multerS3Storage,
   };
 });
 
