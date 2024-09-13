@@ -1,3 +1,4 @@
+import { hasPermissionToEditFile } from '@/app/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import QuadraticGrid from '@/app/gridGL/QuadraticGrid';
@@ -26,6 +27,7 @@ import { ValidationPanel } from '@/app/ui/menus/Validations/ValidationPanel';
 import { QuadraticSidebar } from '@/app/ui/QuadraticSidebar';
 import { UpdateAlertVersion } from '@/app/ui/UpdateAlertVersion';
 import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
@@ -36,17 +38,18 @@ import { useNavigation, useParams } from 'react-router';
 import { useRecoilState } from 'recoil';
 
 export default function QuadraticUI() {
+  const { isAuthenticated } = useRootRouteLoaderData();
   const {
     team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
   const connectionsFetcher = useConnectionsFetcher();
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { presentationMode } = useGridSettings();
+  const canEditFile = hasPermissionToEditFile(editorInteractionState.permissions);
   const navigation = useNavigation();
   const { uuid } = useParams() as { uuid: string };
   const { name, renameFile } = useFileContext();
   const { users } = useMultiplayerUsers();
-  const gridSettings = useGridSettings();
+  const { presentationMode, setShowHeadings } = useGridSettings();
   const follow = editorInteractionState.follow
     ? users.find((user) => user.session_id === editorInteractionState.follow)
     : undefined;
@@ -59,7 +62,7 @@ export default function QuadraticUI() {
   // For mobile, set Headers to not visible by default
   useEffect(() => {
     if (isMobile) {
-      gridSettings.setShowHeadings(false);
+      setShowHeadings(false);
       pixiApp.viewportChanged();
     }
     // eslint-disable-next-line
@@ -92,7 +95,7 @@ export default function QuadraticUI() {
           }}
         >
           <CodeEditorProvider>
-            {editorInteractionState.showAI && <AiAssistant />}
+            {editorInteractionState.showAI && canEditFile && isAuthenticated && <AiAssistant />}
             <FileDragDropWrapper>
               <QuadraticGrid />
               {!presentationMode && <SheetBar />}

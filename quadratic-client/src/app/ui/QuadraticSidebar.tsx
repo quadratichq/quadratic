@@ -69,7 +69,7 @@ export const QuadraticSidebar = () => {
           </Link>
         </SidebarTooltip>
         <div className="mt-2 flex flex-col items-center gap-1">
-          {canEditFile && (
+          {canEditFile && isAuthenticated && (
             <SidebarTooltip label="AI Assistant">
               <SidebarToggle
                 pressed={editorInteractionState.showAI}
