@@ -56,7 +56,10 @@ pub fn arrow_col_to_cell_value_vec(array: &ArrayRef) -> Result<Vec<CellValue>> {
         DataType::Timestamp(unit, extra) => arrow_timestamp_to_cell_value(array_data, unit, extra),
         // unsupported data type
         _ => {
-            dbg!("Unhandled arrow type: {:?} => {:?}", data_type, array_data);
+            dbgjs!(format!(
+                "Unhandled arrow type: {:?} => {:?}",
+                data_type, array_data
+            ));
             Ok(vec![])
         }
     }
@@ -189,29 +192,26 @@ where
         values.extend(
             data.iter()
                 .map(|v| {
-                    if let Some(nt) = NaiveTime::from_hms_opt(0, 0, 0) {
-                        let time_result = match time_unit {
-                            TimeUnit::Second => {
-                                nt.overflowing_add_signed(TimeDelta::seconds((*v).into())).0
-                            }
-                            TimeUnit::Millisecond => {
-                                nt.overflowing_add_signed(TimeDelta::milliseconds((*v).into()))
-                                    .0
-                            }
-                            TimeUnit::Microsecond => {
-                                nt.overflowing_add_signed(TimeDelta::microseconds((*v).into()))
-                                    .0
-                            }
-                            TimeUnit::Nanosecond => {
-                                nt.overflowing_add_signed(TimeDelta::nanoseconds((*v).into()))
-                                    .0
-                            }
-                        };
+                    let nt = NaiveTime::MIN;
+                    let time_result = match time_unit {
+                        TimeUnit::Second => {
+                            nt.overflowing_add_signed(TimeDelta::seconds((*v).into())).0
+                        }
+                        TimeUnit::Millisecond => {
+                            nt.overflowing_add_signed(TimeDelta::milliseconds((*v).into()))
+                                .0
+                        }
+                        TimeUnit::Microsecond => {
+                            nt.overflowing_add_signed(TimeDelta::microseconds((*v).into()))
+                                .0
+                        }
+                        TimeUnit::Nanosecond => {
+                            nt.overflowing_add_signed(TimeDelta::nanoseconds((*v).into()))
+                                .0
+                        }
+                    };
 
-                        Ok(CellValue::Time(time_result))
-                    } else {
-                        Err(anyhow::anyhow!("Invalid time"))
-                    }
+                    Ok(CellValue::Time(time_result))
                 })
                 .collect::<Result<Vec<CellValue>>>()?,
         );
