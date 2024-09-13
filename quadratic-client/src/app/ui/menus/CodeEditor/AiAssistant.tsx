@@ -53,7 +53,7 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
     editorContent: [editorContent],
   } = useCodeEditor();
   const { loggedInUser: user } = useRootRouteLoaderData();
-  const { mode, selectedCell } = useRecoilValue(editorInteractionStateAtom);
+  const { mode, selectedCell, showCodeEditor } = useRecoilValue(editorInteractionStateAtom);
   const connection = getConnectionInfo(mode);
 
   const { data: schemaData } = useConnectionSchemaBrowser({ uuid: connection?.id, type: connection?.kind });
@@ -158,7 +158,7 @@ How can I help you?
         abortController,
         loading: true,
         messages: updatedMessages,
-        prompt: userPrompt !== undefined ? '' : prev.prompt,
+        prompt: userPrompt === undefined ? '' : prev.prompt,
       }));
 
       const messagesToSend: PromptMessage[] = [
@@ -221,7 +221,7 @@ How can I help you?
       />
 
       <div className="grid h-full w-full grid-rows-[auto_1fr_auto]">
-        <div className="m-3 flex items-center justify-between">
+        <div className="flex items-center justify-between p-2">
           <div className="flex items-center gap-2">
             <IconButton onClick={() => setShowAI(false)}>
               <ChevronLeftIcon />
@@ -229,7 +229,7 @@ How can I help you?
             <span>AI Assistant</span>
           </div>
           <div className="flex items-center gap-2">
-            {consoleOutput?.stdErr !== undefined && (
+            {showCodeEditor && consoleOutput?.stdErr && (
               <Button onClick={() => submitPrompt('Fix the error in the code cell')} variant="success">
                 Fix error
               </Button>
@@ -421,24 +421,23 @@ function SelectAIModelDropdownMenu({
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="start" alignOffset={-4}>
-        {Object.entries(MODEL_OPTIONS).map(([model, { displayName, enabled }]) =>
-          enabled ? (
-            <DropdownMenuCheckboxItem
-              key={model}
-              checked={model === selectedModel}
-              onCheckedChange={() => setSelectedModel(model as AnthropicModel | OpenAIModel)}
-            >
-              <div className="flex w-full items-center justify-between text-xs">
-                <span className="pr-4">{displayName}</span>
-                {isAnthropicModel(model as AnthropicModel | OpenAIModel) ? (
-                  <Anthropic fontSize="inherit" />
-                ) : (
-                  <OpenAI fontSize="inherit" />
-                )}
-              </div>
-            </DropdownMenuCheckboxItem>
-          ) : null
-        )}
+        {Object.entries(MODEL_OPTIONS)
+          .filter(([, { enabled }]) => enabled)
+          .map(([model, { displayName }]) => {
+            const optionModel = model as keyof typeof MODEL_OPTIONS;
+            return (
+              <DropdownMenuCheckboxItem
+                key={model}
+                checked={model === selectedModel}
+                onCheckedChange={() => setSelectedModel(optionModel)}
+              >
+                <div className="flex w-full items-center justify-between text-xs">
+                  <span className="pr-4">{displayName}</span>
+                  {isAnthropicModel(optionModel) ? <Anthropic fontSize="inherit" /> : <OpenAI fontSize="inherit" />}
+                </div>
+              </DropdownMenuCheckboxItem>
+            );
+          })}
       </DropdownMenuContent>
     </DropdownMenu>
   );

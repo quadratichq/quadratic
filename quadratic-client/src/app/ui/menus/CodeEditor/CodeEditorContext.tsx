@@ -1,9 +1,9 @@
 import { Coordinate } from '@/app/gridGL/types/size';
+import { PanelTab } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { Monaco } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
 import React, { createContext, useContext, useRef, useState } from 'react';
-import { PanelTab } from './panels//CodeEditorPanelBottom';
 
 type Context = {
   // `undefined` is used here as a loading state. Once the editor mounts, it becomes a string (possibly empty)
@@ -19,6 +19,7 @@ type Context = {
   panelBottomActiveTab: [PanelTab, React.Dispatch<React.SetStateAction<PanelTab>>];
   showSnippetsPopover: [boolean, React.Dispatch<React.SetStateAction<boolean>>];
   spillError: [Coordinate[] | undefined, React.Dispatch<React.SetStateAction<Coordinate[] | undefined>>];
+  modifiedEditorContent: [string | undefined, React.Dispatch<React.SetStateAction<string | undefined>>];
 };
 
 const CodeEditorContext = createContext<Context>({
@@ -31,6 +32,7 @@ const CodeEditorContext = createContext<Context>({
   panelBottomActiveTab: ['console', () => {}],
   showSnippetsPopover: [false, () => {}],
   spillError: [undefined, () => {}],
+  modifiedEditorContent: [undefined, () => {}],
 });
 
 export const CodeEditorProvider = ({ children }: { children: React.ReactNode }) => {
@@ -43,7 +45,7 @@ export const CodeEditorProvider = ({ children }: { children: React.ReactNode }) 
   const panelBottomActiveTab = useState<PanelTab>('console');
   const showSnippetsPopover = useState<Context['showSnippetsPopover'][0]>(false);
   const spillError = useState<Context['spillError'][0]>(undefined);
-
+  const modifiedEditorContent = useState<Context['modifiedEditorContent'][0]>(undefined);
   return (
     <CodeEditorContext.Provider
       value={{
@@ -56,6 +58,7 @@ export const CodeEditorProvider = ({ children }: { children: React.ReactNode }) 
         panelBottomActiveTab,
         showSnippetsPopover,
         spillError,
+        modifiedEditorContent,
       }}
     >
       {children}

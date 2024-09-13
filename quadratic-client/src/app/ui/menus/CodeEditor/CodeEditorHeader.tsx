@@ -1,10 +1,17 @@
+import { hasPermissionToEditFile } from '@/app/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import { codeCellIsAConnection, getCodeCell, getConnectionUuid, getLanguage } from '@/app/helpers/codeCellLanguage';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
+import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
+import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { CodeEditorDiffButton } from '@/app/ui/menus/CodeEditor/CodeEditorDiffButton';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
+import { SnippetsPopover } from '@/app/ui/menus/CodeEditor/SnippetsPopover';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
@@ -14,16 +21,10 @@ import { Close, PlayArrow, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { hasPermissionToEditFile } from '../../../actions';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
-import { TooltipHint } from '../../components/TooltipHint';
-import { SnippetsPopover } from './SnippetsPopover';
 
 interface Props {
   cellLocation: SheetPosTS | undefined;
   unsaved: boolean;
-
   saveAndRunCell: () => void;
   cancelRun: () => void;
   closeEditor: () => void;
@@ -34,6 +35,9 @@ export const CodeEditorHeader = (props: Props) => {
   const {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
+  const {
+    modifiedEditorContent: [modifiedEditorContent],
+  } = useCodeEditor();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
   const isConnection = codeCellIsAConnection(editorInteractionState.mode);
@@ -154,6 +158,7 @@ export const CodeEditorHeader = (props: Props) => {
           </div>
         </TooltipHint>
       </div>
+
       <div className="mx-2 flex flex-col truncate">
         <div className="text-sm font-medium leading-4">
           Cell ({cellLocation.x}, {cellLocation.y})
@@ -161,36 +166,56 @@ export const CodeEditorHeader = (props: Props) => {
             <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
           )}
         </div>
+
         {currentConnectionName && (
           <div className="text-xs leading-4 text-muted-foreground">Connection: {currentConnectionName}</div>
         )}
       </div>
+
       <div className="ml-auto flex flex-shrink-0 items-center gap-2">
         {isRunningComputation && (
           <TooltipHint title={`${language} executing…`} placement="bottom">
             <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
           </TooltipHint>
         )}
-        {hasPermission && ['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
-        {hasPermission && ['Python', 'Javascript'].includes(language as string) && <SnippetsPopover />}
-        {hasPermission &&
-          (!isRunningComputation ? (
-            <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
-              <span>
-                <IconButton id="QuadraticCodeEditorRunButtonID" size="small" color="primary" onClick={saveAndRunCell}>
-                  <PlayArrow />
-                </IconButton>
-              </span>
-            </TooltipHint>
-          ) : (
-            <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
-              <span>
-                <IconButton size="small" color="primary" onClick={cancelRun} disabled={!isRunningComputation}>
-                  <Stop />
-                </IconButton>
-              </span>
-            </TooltipHint>
-          ))}
+
+        {hasPermission && (
+          <>
+            {modifiedEditorContent !== undefined ? (
+              <CodeEditorDiffButton />
+            ) : (
+              <>
+                {['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
+
+                {['Python', 'Javascript'].includes(language as string) && <SnippetsPopover />}
+
+                {!isRunningComputation ? (
+                  <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
+                    <span>
+                      <IconButton
+                        id="QuadraticCodeEditorRunButtonID"
+                        size="small"
+                        color="primary"
+                        onClick={saveAndRunCell}
+                      >
+                        <PlayArrow />
+                      </IconButton>
+                    </span>
+                  </TooltipHint>
+                ) : (
+                  <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
+                    <span>
+                      <IconButton size="small" color="primary" onClick={cancelRun} disabled={!isRunningComputation}>
+                        <Stop />
+                      </IconButton>
+                    </span>
+                  </TooltipHint>
+                )}
+              </>
+            )}
+          </>
+        )}
+
         <TooltipHint title="Close" shortcut="ESC" placement="bottom">
           <IconButton id="QuadraticCodeEditorCloseButtonID" size="small" onClick={closeEditor}>
             <Close />

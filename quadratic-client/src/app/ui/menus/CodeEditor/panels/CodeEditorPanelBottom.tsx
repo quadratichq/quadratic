@@ -52,8 +52,8 @@ export function CodeEditorPanelBottom({
             className={cn(
               `relative font-medium after:absolute after:right-1 after:top-4`,
               // Special indicators when the console isn't active and there's output
-              tab !== 'console' && hasOutput && `after:h-[4px] after:w-[4px] after:rounded-full after:content-['']`,
-              tab !== 'console' && consoleOutput?.stdErr ? 'after:bg-destructive' : 'after:bg-muted-foreground'
+              hasOutput && `after:h-[4px] after:w-[4px] after:rounded-full after:content-['']`,
+              consoleOutput?.stdErr ? 'after:bg-destructive' : 'after:bg-muted-foreground'
             )}
           >
             Console

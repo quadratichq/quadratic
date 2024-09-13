@@ -1,46 +1,46 @@
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
+import { hasPermissionToEditFile } from '@/app/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { events } from '@/app/events/events';
+import { SheetPosTS } from '@/app/gridGL/types/size';
+import { codeCellIsAConnection, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
+import { CodeCellLanguage, SheetRect } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import Editor, { Monaco } from '@monaco-editor/react';
-import * as monaco from 'monaco-editor';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
-import { hasPermissionToEditFile } from '../../../actions';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { pyrightWorker, uri } from '../../../web-workers/pythonLanguageServer/worker';
-import { useCodeEditor } from './CodeEditorContext';
-import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
+import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlaceholder';
+import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
+import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import {
   provideCompletionItems as provideCompletionItemsPython,
   provideHover as provideHoverPython,
   provideSignatureHelp as provideSignatureHelpPython,
-} from './PythonLanguageModel';
-import { QuadraticEditorTheme } from './quadraticEditorTheme';
-import { useEditorCellHighlights } from './useEditorCellHighlights';
+} from '@/app/ui/menus/CodeEditor/PythonLanguageModel';
+import { QuadraticEditorTheme } from '@/app/ui/menus/CodeEditor/quadraticEditorTheme';
+import { useEditorCellHighlights } from '@/app/ui/menus/CodeEditor/useEditorCellHighlights';
+import { useEditorOnSelectionChange } from '@/app/ui/menus/CodeEditor/useEditorOnSelectionChange';
+import { useEditorReturn } from '@/app/ui/menus/CodeEditor/useEditorReturn';
+import { javascriptLibraryForEditor } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generatedJavascriptForEditor';
+import { pyrightWorker, uri } from '@/app/web-workers/pythonLanguageServer/worker';
+import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
+import useEventListener from '@/shared/hooks/useEventListener';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import Editor, { DiffEditor, Monaco } from '@monaco-editor/react';
+import { CircularProgress } from '@mui/material';
+import * as monaco from 'monaco-editor';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { useEditorDiagnostics } from './useEditorDiagnostics';
 // import { Diagnostic } from 'vscode-languageserver-types';
 // import { typescriptLibrary } from '@/web-workers/javascriptWebWorker/worker/javascript/typescriptLibrary';
-import { events } from '@/app/events/events';
-import { SheetPosTS } from '@/app/gridGL/types/size';
-import { codeCellIsAConnection, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
-import { SheetRect } from '@/app/quadratic-core-types';
-import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlaceholder';
-import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
-import { javascriptLibraryForEditor } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generatedJavascriptForEditor';
-import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
-import useEventListener from '@/shared/hooks/useEventListener';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { CircularProgress } from '@mui/material';
-import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
-import { useEditorReturn } from './useEditorReturn';
 
 interface Props {
-  editorContent: string | undefined;
-  setEditorContent: (value: string | undefined) => void;
+  editorContent?: string;
+  setEditorContent: (value?: string) => void;
   closeEditor: (skipSaveCheck: boolean) => void;
   evaluationResult?: EvaluationResult;
   cellsAccessed?: SheetRect[] | null;
   cellLocation: SheetPosTS;
+  modifiedEditorContent?: string;
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // diagnostics?: Diagnostic[];
 }
@@ -53,7 +53,15 @@ let registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
 };
 
 export const CodeEditorBody = (props: Props) => {
-  const { editorContent, setEditorContent, closeEditor, evaluationResult, cellsAccessed, cellLocation } = props;
+  const {
+    editorContent,
+    setEditorContent,
+    closeEditor,
+    evaluationResult,
+    cellsAccessed,
+    cellLocation,
+    modifiedEditorContent,
+  } = props;
   const {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
@@ -216,31 +224,56 @@ export const CodeEditorBody = (props: Props) => {
         flex: '2',
       }}
     >
-      <Editor
-        height="100%"
-        width="100%"
-        language={monacoLanguage}
-        value={editorContent}
-        onChange={setEditorContent}
-        onMount={onMount}
-        loading={<CircularProgress style={{ width: '18px', height: '18px' }} />}
-        options={{
-          theme: 'light',
-          readOnly: !canEdit,
-          minimap: { enabled: true },
-          overviewRulerLanes: 0,
-          hideCursorInOverviewRuler: true,
-          overviewRulerBorder: false,
-          scrollbar: {
-            horizontal: 'hidden',
-          },
-          wordWrap: 'on',
+      {modifiedEditorContent === undefined || modifiedEditorContent === editorContent ? (
+        <>
+          <Editor
+            height="100%"
+            width="100%"
+            language={monacoLanguage}
+            value={editorContent}
+            onChange={setEditorContent}
+            onMount={onMount}
+            loading={<CircularProgress style={{ width: '18px', height: '18px' }} />}
+            options={{
+              theme: 'light',
+              readOnly: !canEdit,
+              minimap: { enabled: true },
+              overviewRulerLanes: 0,
+              hideCursorInOverviewRuler: true,
+              overviewRulerBorder: false,
+              scrollbar: {
+                horizontal: 'hidden',
+              },
+              wordWrap: 'on',
 
-          // need to ignore unused b/c of the async wrapper around the code and import code
-          showUnused: language === 'Javascript' ? false : true,
-        }}
-      />
-      <CodeEditorPlaceholder />
+              // need to ignore unused b/c of the async wrapper around the code and import code
+              showUnused: language === 'Javascript' ? false : true,
+            }}
+          />
+          <CodeEditorPlaceholder />
+        </>
+      ) : (
+        <DiffEditor
+          height="100%"
+          width="100%"
+          language={monacoLanguage}
+          original={editorContent}
+          modified={modifiedEditorContent}
+          options={{
+            renderSideBySide: false,
+            readOnly: true,
+            minimap: { enabled: true },
+            overviewRulerLanes: 0,
+            hideCursorInOverviewRuler: true,
+            overviewRulerBorder: false,
+            scrollbar: {
+              horizontal: 'hidden',
+            },
+            wordWrap: 'on',
+            showUnused: language === 'Javascript' ? false : true,
+          }}
+        />
+      )}
     </div>
   );
 };
