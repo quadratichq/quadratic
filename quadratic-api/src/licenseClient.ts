@@ -1,3 +1,7 @@
+//! License Client
+//!
+//! Modifying this license check is violating the Quadratic Terms and Conditions and is stealing software, and we will come after you.
+
 import axios from 'axios';
 import { LicenseSchema } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';

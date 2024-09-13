@@ -45,7 +45,8 @@ if (NODE_ENV === 'production') {
 }
 
 // Intentionally hard-coded to avoid this being environment-configurable
-export const LICENSE_API_URI = 'https://selfhost.quadratic-preview.com';
+// NOTE: Modifying this license check is violating the Quadratic Terms and Conditions and is stealing software, and we will come after you.
+export const LICENSE_API_URI = 'https://selfhost.quadratichq.com';
 
 ensureSampleTokenNotUsedInProduction();
 
