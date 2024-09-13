@@ -182,13 +182,7 @@ mod test {
             sheet.cell_format_summary(Pos { x: 1, y: 1 }, false),
             CellFormatSummary {
                 bold: Some(true),
-                italic: None,
-                text_color: None,
-                fill_color: None,
-                commas: None,
-                align: None,
-                vertical_align: None,
-                wrap: None
+                ..Default::default()
             }
         );
         assert_eq!(
@@ -198,14 +192,8 @@ mod test {
         assert_eq!(
             sheet.cell_format_summary(Pos { x: 3, y: 2 }, false),
             CellFormatSummary {
-                bold: None,
                 italic: Some(true),
-                text_color: None,
-                fill_color: None,
-                commas: None,
-                align: None,
-                vertical_align: None,
-                wrap: None
+                ..Default::default()
             }
         );
     }
@@ -723,26 +711,14 @@ mod test {
             sheet.cell_format_summary(Pos { x: 1, y: 1 }, false),
             CellFormatSummary {
                 bold: Some(true),
-                italic: None,
-                text_color: None,
-                fill_color: None,
-                commas: None,
-                align: None,
-                vertical_align: None,
-                wrap: None
+                ..Default::default()
             }
         );
         assert_eq!(
             sheet.cell_format_summary(Pos { x: 2, y: 2 }, false),
             CellFormatSummary {
-                bold: None,
                 italic: Some(true),
-                text_color: None,
-                fill_color: None,
-                commas: None,
-                align: None,
-                vertical_align: None,
-                wrap: None
+                ..Default::default()
             }
         );
     }
@@ -881,26 +857,14 @@ mod test {
             sheet.cell_format_summary(Pos { x: 1, y: 2 }, false),
             CellFormatSummary {
                 bold: Some(true),
-                italic: None,
-                text_color: None,
-                fill_color: None,
-                commas: None,
-                align: None,
-                vertical_align: None,
-                wrap: None
+                ..Default::default()
             }
         );
         assert_eq!(
             sheet.cell_format_summary(Pos { x: 3, y: 4 }, false),
             CellFormatSummary {
-                bold: None,
-                italic: None,
-                text_color: None,
                 fill_color: Some("red".to_string()),
-                commas: None,
-                align: None,
-                vertical_align: None,
-                wrap: None
+                ..Default::default()
             }
         );
     }

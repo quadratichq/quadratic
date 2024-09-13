@@ -15,22 +15,31 @@ use crate::{
 use super::Sheet;
 
 impl Sheet {
-    /// Returns a HashMap<Pos, &CellValue> for a Selection in the Sheet.
-    /// Note: there's an order of precedence in enumerating the selection:
+    /// Returns a HashMap<Pos, &CellValue> for a Selection in the Sheet. Note:
+    /// there's an order of precedence in enumerating the selection:
     /// 1. All
     /// 2. Columns
     /// 3. Rows
     /// 4. Rects
     ///
     /// If the selection is empty or the count > max_count then it returns None.
-    /// It ignores CellValue::Blank, and CellValue::Code (since it uses the CodeRun instead).
+    /// It ignores CellValue::Blank (except below), and CellValue::Code (since
+    /// it uses the CodeRun instead).
     ///
-    /// Note: if the Code has an error, then it will not be part of the result (for now).
+    /// include_blanks will include CellValue::Blank when gathering cells within
+    /// rects. Note: it will not place blanks for all, columns, or rows. (That
+    /// has to happen within the client (todo), similar to how we show
+    /// checkboxes or dropdown arrows for validations in rows, columns, and
+    /// all.)
+    ///
+    /// Note: if the Code has an error, then it will not be part of the result
+    /// (for now).
     pub fn selection(
         &self,
         selection: &Selection,
         max_count: Option<i64>,
         skip_code_runs: bool,
+        include_blanks: bool,
     ) -> Option<IndexMap<Pos, &CellValue>> {
         let mut count = 0;
 
@@ -74,7 +83,8 @@ impl Sheet {
                                 for x in 0..a.width() {
                                     for y in 0..a.height() {
                                         if let Ok(entry) = a.get(x, y) {
-                                            if !matches!(entry, &CellValue::Blank) {
+                                            if include_blanks || !matches!(entry, &CellValue::Blank)
+                                            {
                                                 count += 1;
                                                 if count >= max_count.unwrap_or(i64::MAX) {
                                                     return None;
@@ -87,6 +97,18 @@ impl Sheet {
                                                     entry,
                                                 );
                                             }
+                                        } else if include_blanks {
+                                            count += 1;
+                                            if count >= max_count.unwrap_or(i64::MAX) {
+                                                return None;
+                                            }
+                                            cells.insert(
+                                                Pos {
+                                                    x: x as i64 + pos.x,
+                                                    y: y as i64 + pos.y,
+                                                },
+                                                &CellValue::Blank,
+                                            );
                                         }
                                     }
                                 }
@@ -189,13 +211,21 @@ impl Sheet {
                 for x in rect.min.x..=rect.max.x {
                     for y in rect.min.y..=rect.max.y {
                         if let Some(entry) = self.cell_value_ref(Pos { x, y }) {
-                            if !matches!(entry, &CellValue::Blank) && check_code(entry) {
+                            if (include_blanks || !matches!(entry, &CellValue::Blank))
+                                && check_code(entry)
+                            {
                                 count += 1;
                                 if count >= max_count.unwrap_or(i64::MAX) {
                                     return None;
                                 }
                                 cells.insert(Pos { x, y }, entry);
                             }
+                        } else if include_blanks {
+                            count += 1;
+                            if count >= max_count.unwrap_or(i64::MAX) {
+                                return None;
+                            }
+                            cells.insert(Pos { x, y }, &CellValue::Blank);
                         }
                     }
                 }
@@ -289,7 +319,7 @@ impl Sheet {
         selection: &Selection,
         skip_code_runs: bool,
     ) -> Vec<(Pos, &CellValue)> {
-        if let Some(map) = self.selection(selection, None, skip_code_runs) {
+        if let Some(map) = self.selection(selection, None, skip_code_runs, false) {
             let mut vec: Vec<_> = map.iter().map(|(pos, value)| (*pos, *value)).collect();
             vec.sort_by(|(a, _), (b, _)| {
                 if a.y < b.y {
@@ -446,13 +476,13 @@ mod tests {
             all: true,
         };
 
-        let results = sheet.selection(&selection, None, false).unwrap();
+        let results = sheet.selection(&selection, None, false, false).unwrap();
         assert_eq!(results.len(), 12);
 
-        let results = sheet.selection(&selection, Some(10), false);
+        let results = sheet.selection(&selection, Some(10), false, false);
         assert!(results.is_none());
 
-        let results = sheet.selection(&selection, None, true).unwrap();
+        let results = sheet.selection(&selection, None, true, false).unwrap();
         assert_eq!(results.len(), 10);
     }
 
@@ -489,15 +519,15 @@ mod tests {
             all: false,
         };
 
-        let results = sheet.selection(&selection, None, false).unwrap();
+        let results = sheet.selection(&selection, None, false, false).unwrap();
         assert_eq!(results.len(), 10);
         assert_results_has_value(&results, Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
         assert_results_has_value(&results, Pos { x: -1, y: 2 }, CellValue::Number(12.into()));
 
-        let results = sheet.selection(&selection, Some(5), false);
+        let results = sheet.selection(&selection, Some(5), false, false);
         assert!(results.is_none());
 
-        let results = sheet.selection(&selection, None, true).unwrap();
+        let results = sheet.selection(&selection, None, true, false).unwrap();
         assert_eq!(results.len(), 8);
     }
 
@@ -524,13 +554,13 @@ mod tests {
             all: false,
         };
 
-        let results = sheet.selection(&selection, None, false).unwrap();
+        let results = sheet.selection(&selection, None, false, false).unwrap();
         assert_eq!(results.len(), 9);
 
-        let results = sheet.selection(&selection, Some(5), false);
+        let results = sheet.selection(&selection, Some(5), false, false);
         assert!(results.is_none());
 
-        let results = sheet.selection(&selection, None, true).unwrap();
+        let results = sheet.selection(&selection, None, true, false).unwrap();
         assert_eq!(results.len(), 7);
     }
 
@@ -563,6 +593,7 @@ mod tests {
                 },
                 None,
                 false,
+                false,
             )
             .unwrap();
         assert_eq!(results.len(), 5);
@@ -584,6 +615,7 @@ mod tests {
                     all: false,
                 },
                 Some(3),
+                false,
                 false,
             )
             .is_none());
@@ -614,6 +646,7 @@ mod tests {
                 },
                 None,
                 false,
+                false,
             )
             .unwrap();
         assert_results_has_value(&results, (4, 0).into(), CellValue::Number(1.into()));
@@ -632,6 +665,7 @@ mod tests {
                 },
                 Some(1),
                 false,
+                false
             )
             .is_none());
 
@@ -648,6 +682,7 @@ mod tests {
                 },
                 None,
                 true,
+                false,
             )
             .unwrap();
         assert_eq!(results.len(), 1);
@@ -683,7 +718,7 @@ mod tests {
             all: false,
         };
 
-        let results = sheet.selection(&selection, None, false).unwrap();
+        let results = sheet.selection(&selection, None, false, false).unwrap();
         assert_eq!(results.len(), 7);
         assert_results_has_value(&results, Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
         assert_results_has_value(&results, Pos { x: 2, y: 0 }, CellValue::Number(3.into()));
@@ -890,5 +925,29 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(sheet.selection_rects_values(&selection), vec![]);
+    }
+
+    #[test]
+    #[parallel]
+    fn selection_blanks() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_values(0, 0, 2, 2, vec!["1", "", "3", ""]);
+
+        let selection = Selection {
+            sheet_id: sheet.id,
+            x: 0,
+            y: 0,
+            rects: Some(vec![Rect::new(0, 0, 1, 1)]),
+            rows: None,
+            columns: None,
+            all: false,
+        };
+
+        let results = sheet.selection(&selection, None, false, true).unwrap();
+        assert_eq!(results.len(), 4);
+        assert_results_has_value(&results, Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
+        assert_results_has_value(&results, Pos { x: 1, y: 0 }, CellValue::Blank);
+        assert_results_has_value(&results, Pos { x: 0, y: 1 }, CellValue::Number(3.into()));
+        assert_results_has_value(&results, Pos { x: 1, y: 1 }, CellValue::Blank);
     }
 }

@@ -19,6 +19,7 @@ export type Command = {
 export interface CommandPaletteListItemDynamicProps {
   label: string;
   closeCommandPalette: () => void;
+  openDateFormat: () => void;
   fuzzysortResult: Fuzzysort.Result | null;
   value: string;
 }
