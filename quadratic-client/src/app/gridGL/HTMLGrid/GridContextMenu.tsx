@@ -18,10 +18,6 @@ import { pixiApp } from '../pixiApp/PixiApp';
 export const GridContextMenu = () => {
   const [show, setShow] = useRecoilState(gridHeadingAtom);
 
-  // we need to remove the adjustment for the headings, since it's added as part
-  // of HTMLGridContainer's parent
-  const { leftHeading, topHeading } = useHeadingSize();
-
   const onClose = useCallback(() => {
     setShow({ world: undefined, column: undefined, row: undefined });
   }, [setShow]);
@@ -55,7 +51,14 @@ export const GridContextMenu = () => {
   // const dir = show.column ? ['to the left', 'to the right'] : ['above', 'below'];
 
   return (
-    <div className="absolute" ref={ref} style={{ left: show.world?.x + leftHeading, top: show.world?.y + topHeading }}>
+    <div
+      className="absolute"
+      ref={ref}
+      style={{
+        left: show.world?.x + pixiApp.viewport.x,
+        top: show.world?.y + pixiApp.viewport.y,
+      }}
+    >
       <ControlledMenu
         state={'open'}
         onClose={onClose}
