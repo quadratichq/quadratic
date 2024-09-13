@@ -29,13 +29,15 @@ export const HtmlValidationList = (props: Props) => {
   const listCoordinate = useRef<Coordinate | undefined>();
 
   const inlineEditorStatus = useInlineEditorStatus();
-
   useEffect(() => {
     // this closes the dropdown when the cursor moves except when the user
     // clicked on the dropdown in a different cells (this handles the race
     // condition between changing the cell and opening the annotation)
-    if (location?.x !== listCoordinate.current?.x && location?.y !== listCoordinate.current?.y) {
+    if (location?.x !== listCoordinate.current?.x || location?.y !== listCoordinate.current?.y) {
       setEditorInteractionState((prev) => ({ ...prev, annotationState: undefined }));
+      setList(undefined);
+      setIndex(-1);
+      listCoordinate.current = location ? { x: location.x, y: location.y } : undefined;
     }
   }, [location, location?.x, location?.y, setEditorInteractionState, validation]);
 

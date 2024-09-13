@@ -33,14 +33,24 @@ TooltipContent.displayName = TooltipPrimitive.Content.displayName;
  *   <Button>Hover me</Button>
  * </TooltipPopover>
  */
-const TooltipPopover = ({ label, children }: { label: string; children: React.ReactNode }) => {
+const TooltipPopover = ({
+  label,
+  children,
+  shortcut,
+}: {
+  label: string;
+  children: React.ReactNode;
+  shortcut?: string;
+}) => {
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>{children}</TooltipTrigger>
         <TooltipPrimitive.Portal>
           <TooltipContent>
-            <p>{label}</p>
+            <p>
+              {label} {shortcut && <span className="opacity-50">({shortcut})</span>}
+            </p>
           </TooltipContent>
         </TooltipPrimitive.Portal>
       </Tooltip>
