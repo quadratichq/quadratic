@@ -12,16 +12,14 @@ import {
 import { useCallback } from 'react';
 import { SetterOrUpdater } from 'recoil';
 
-type ModelOption = {
+export const MODEL_OPTIONS: {
   [key in AnthropicModel | OpenAIModel]: {
     displayName: string;
     temperature: number;
     stream: boolean;
     enabled: boolean;
   };
-};
-
-export const MODEL_OPTIONS: ModelOption = {
+} = {
   'claude-3-5-sonnet-20240620': {
     displayName: 'Anthropic: claude-3.5-sonnet',
     temperature: 0,

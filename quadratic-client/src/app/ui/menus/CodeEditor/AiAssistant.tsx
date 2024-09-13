@@ -242,7 +242,7 @@ How can I help you?
 
         <div
           ref={aiResponseRef}
-          className="select-text overflow-y-auto whitespace-pre-wrap pl-3 pr-3 text-sm outline-none"
+          className="select-text overflow-y-auto whitespace-pre-wrap px-2 text-sm outline-none"
           spellCheck={false}
           onKeyDown={(e) => {
             if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
