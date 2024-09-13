@@ -251,6 +251,7 @@ export class SheetCursor {
       )
     );
   }
+
   includesCell(column: number, row: number): boolean {
     if (this.multiCursor) {
       return this.multiCursor.some((rect) => rect.contains(column, row));
