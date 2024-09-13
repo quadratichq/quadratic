@@ -1,3 +1,0 @@
-:80 {
-  reverse_proxy http://host.docker.internal:3000
-}
