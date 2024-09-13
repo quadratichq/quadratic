@@ -33,7 +33,6 @@ export const FormattingBar = () => {
         type="multiple"
         className="flex select-none text-sm"
         onValueChange={() => {
-          console.log('fired value change');
           focusGrid();
         }}
       >
