@@ -215,12 +215,12 @@ How can I help you?
   return (
     <div
       ref={containerRef}
-      className="relative h-full shrink-0 overflow-hidden"
-      style={{ width: `${containerWidth + 1}px` }}
+      className="relative hidden h-full shrink-0 overflow-hidden lg:block"
+      style={{ width: `${containerWidth}px` }}
     >
       <ResizeControl
         position="VERTICAL"
-        style={{ left: `${containerWidth}px` }}
+        style={{ left: `${containerWidth - 2}px` }}
         setState={(e) => {
           const container = containerRef.current;
           if (!container) return;
