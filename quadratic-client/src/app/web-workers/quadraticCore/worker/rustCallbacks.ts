@@ -97,6 +97,9 @@ declare var self: WorkerGlobalScope &
       validationWarnings: JsValidationWarning[]
     ) => void;
     sendMultiplayerSynced: () => void;
+    sendHashesDirty: (sheetId: string, hashes: string) => void;
+    sendSetViewportBuffer: (transactionId: string, buffer: SharedArrayBuffer) => void;
+    sendClearViewportBuffer: (transactionId: string) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -297,4 +300,16 @@ export const jsRenderValidationWarnings = (sheetId: string, hashX: BigInt, hashY
 
 export const jsMultiplayerSynced = () => {
   self.sendMultiplayerSynced();
+};
+
+export const jsHashesDirty = (sheetId: string, hashes: string) => {
+  self.sendHashesDirty(sheetId, hashes);
+};
+
+export const jsSendViewportBuffer = (transactionId: string, buffer: SharedArrayBuffer) => {
+  self.sendSetViewportBuffer(transactionId, buffer);
+};
+
+export const jsClearViewportBuffer = (transactionId: string) => {
+  self.sendClearViewportBuffer(transactionId);
 };

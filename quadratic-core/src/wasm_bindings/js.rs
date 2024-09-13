@@ -1,5 +1,8 @@
 use super::*;
 
+#[cfg(not(test))]
+use js_sys::SharedArrayBuffer;
+
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_namespace = JSON)]
@@ -114,7 +117,7 @@ extern "C" {
     // rows: Vec<i64>
     pub fn jsRequestRowHeights(transaction_id: String, sheet_id: String, rows: String);
     // row_heights: Vec<JsRowHeight>
-    pub fn jsResizeRowHeights(sheet_id: String, row_heights: String /*Vec<JsRowHeight>*/);
+    pub fn jsResizeRowHeights(sheet_id: String, row_heights: String);
 
     pub fn jsSheetValidations(sheet_id: String, validations: String /* Vec<Validation> */);
     pub fn jsValidationWarning(
@@ -129,6 +132,13 @@ extern "C" {
     );
 
     pub fn jsMultiplayerSynced();
+
+    // hashes: Vec<JsPos>
+    pub fn jsHashesDirty(sheet_id: String, hashes: String);
+
+    pub fn jsSendViewportBuffer(transaction_id: String, buffer: SharedArrayBuffer);
+
+    pub fn jsClearViewportBuffer(transaction_id: String);
 }
 
 #[cfg(test)]
@@ -619,4 +629,31 @@ pub fn jsMultiplayerSynced() {
         .lock()
         .unwrap()
         .push(TestFunction::new("jsMultiplayerSynced", "".into()));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsHashesDirty(sheet_id: String, hashes: String /*Vec<JsPos>*/) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsHashesDirty",
+        format!("{},{}", sheet_id, hashes),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSendViewportBuffer(transaction_id: String, buffer: [u8; 56]) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsSendViewportBuffer",
+        format!("{:?},{:?}", transaction_id, buffer),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsClearViewportBuffer(transaction_id: String) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsSendViewportBuffer",
+        format!("{:?}", transaction_id),
+    ));
 }

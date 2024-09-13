@@ -24,6 +24,7 @@ pub mod small_timestamp;
 mod span;
 pub mod test_util;
 mod values;
+pub mod viewport;
 
 #[cfg(feature = "js")]
 pub mod wasm_bindings;

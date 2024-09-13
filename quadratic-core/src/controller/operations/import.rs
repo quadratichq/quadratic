@@ -61,7 +61,7 @@ impl GridController {
 
         // then create operations using MAXIMUM_IMPORT_LINES to break up the SetCellValues operations
         let mut ops = vec![] as Vec<Operation>;
-        let mut cell_values = CellValues::new(width, height);
+        let mut cell_values = CellValues::new(width, height.min(IMPORT_LINES_PER_OPERATION));
         let mut current_y = 0;
         let mut y: u32 = 0;
         for entry in reader.records() {

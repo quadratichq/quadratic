@@ -586,8 +586,8 @@ mod tests {
             Bold, CellVerticalAlign, CellWrap, Italic, RenderSize,
         },
         selection::Selection,
-        wasm_bindings::js::{expect_js_call, expect_js_call_count, hash_test},
-        CodeCellValue, SheetPos,
+        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
+        CellValue, CodeCellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
     };
 
     #[test]
@@ -1054,6 +1054,8 @@ mod tests {
     #[test]
     #[serial]
     fn render_bool_on_code_run() {
+        clear_js_calls();
+
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
