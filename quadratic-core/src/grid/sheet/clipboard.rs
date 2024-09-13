@@ -245,7 +245,12 @@ impl Sheet {
         }
         let sheet_formats = self.sheet_formats(selection, &clipboard_origin);
         let validations = self.validations.to_clipboard(selection, &clipboard_origin);
+
         let borders = self.borders.to_clipboard(selection);
+        let top = self.borders.top.get(&7i64).unwrap().get(3);
+        dbgjs!(&top);
+        dbgjs!(&self.borders.get(3, 7));
+        dbgjs!(&borders);
 
         let clipboard = Clipboard {
             cells,

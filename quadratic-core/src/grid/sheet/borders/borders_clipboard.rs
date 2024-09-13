@@ -34,7 +34,7 @@ impl Borders {
             for rect in rects {
                 for row in rect.min.y..=rect.max.y {
                     for col in rect.min.x..=rect.max.x {
-                        updates.push(self.get_update_override(col, row));
+                        updates.push(self.update_override(col, row));
                     }
                 }
             }
@@ -44,5 +44,39 @@ impl Borders {
         } else {
             Some(updates)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        controller::GridController,
+        grid::{BorderSelection, BorderStyle},
+        SheetRect,
+    };
+
+    use super::*;
+
+    use serial_test::parallel;
+
+    #[parallel]
+    #[test]
+    fn to_clipboard() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::new(1, 1, 10, 10, sheet_id)),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let copy = sheet
+            .borders
+            .to_clipboard(&Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)));
+
+        dbg!(&copy);
     }
 }
