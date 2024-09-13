@@ -71,6 +71,7 @@ class InlineEditorHandler {
   private reset() {
     this.open = false;
     this.initialValue = '';
+    inlineEditorMonaco.set('');
     inlineEditorEvents.emit('status', false);
     this.cursorIsMoving = false;
     this.x = this.y = this.width = this.height = 0;
@@ -147,7 +148,7 @@ class InlineEditorHandler {
       }
       inlineEditorFormula.cursorMoved();
     } else {
-      this.close(0, 0, false);
+      this.close(0, 0, true);
     }
   };
 
@@ -376,12 +377,12 @@ class InlineEditorHandler {
 
     if (this.cursorIsMoving) {
       inlineEditorKeyboard.resetKeyboardPosition(true);
-    } else {
-      // Ensure we're on the right sheet so we can show the change
-      sheets.current = this.location.sheetId;
     }
 
     if (!cancel) {
+      // Ensure we're on the right sheet so we can show the change
+      sheets.current = this.location.sheetId;
+
       if (this.formula) {
         const updatedValue = inlineEditorFormula.closeParentheses();
         if (updatedValue) value = updatedValue;
@@ -473,7 +474,7 @@ class InlineEditorHandler {
     }
     this.div = div;
 
-    this.hideDiv();
+    this.close(0, 0, true);
   }
 
   detach() {
@@ -496,11 +497,10 @@ class InlineEditorHandler {
     return this.open;
   }
 
-  showDiv = () => {
+  private showDiv = () => {
     if (!this.div) {
       throw new Error('Expected div to be defined in showDiv');
     }
-
     if (!pixiAppSettings.setInlineEditorState) {
       throw new Error('Expected pixiAppSettings.setInlineEditorState to be defined in InlineEditorHandler');
     }
@@ -509,15 +509,13 @@ class InlineEditorHandler {
       ...prev,
       visible: true,
     }));
-
     this.showing = true;
   };
 
-  hideDiv = () => {
+  private hideDiv = () => {
     if (!this.div) {
       throw new Error('Expected div to be defined in showDiv');
     }
-
     if (!pixiAppSettings.setInlineEditorState) {
       throw new Error('Expected pixiAppSettings.setInlineEditorState to be defined in InlineEditorHandler');
     }
@@ -525,11 +523,7 @@ class InlineEditorHandler {
     pixiAppSettings.setInlineEditorState((prev) => ({
       ...prev,
       visible: false,
-      formula: false,
     }));
-    this.location = undefined;
-    inlineEditorMonaco.set('');
-    this.initialValue = '';
     this.showing = false;
   };
 

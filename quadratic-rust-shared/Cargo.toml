@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-rust-shared"
-version = "0.1.0"
+version = "0.5.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -9,8 +9,8 @@ edition = "2021"
 aes = "0.8.4"
 arrow = "51.0.0"
 async-trait = "0.1.80"
-aws-config = { version= "1.1.1", features = ["behavior-version-latest"] }
-aws-sdk-s3 = {version = "1.12.0", features = ["behavior-version-latest", "rt-tokio"] }
+aws-config = { version = "1.1.1", features = ["behavior-version-latest"] }
+aws-sdk-s3 = { version = "1.12.0", features = ["behavior-version-latest", "rt-tokio"] }
 bigdecimal = "0.3.0" # need this fixed to the sqlx dependency
 bytes = "1.6.0"
 cbc = { version = "0.1.2", features = ["alloc"] }
@@ -23,11 +23,21 @@ redis = { version = "0.25.3", features = ["tokio-comp"] }
 reqwest = { version = "0.11.22", features = ["json", "serde_json"] }
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
-sqlx = { version = "0.7.4", features = ["chrono", "uuid", "mysql", "postgres", "bigdecimal", "json", "runtime-tokio-native-tls"] }
+sqlx = { version = "0.7.4", features = [
+  "chrono",
+  "uuid",
+  "mysql",
+  "postgres",
+  "bigdecimal",
+  "json",
+  "runtime-tokio-native-tls",
+] }
 strum = "0.26.2"
 strum_macros = "0.26.2"
 thiserror = "1.0.51"
+tiberius = { version = "0.12.3", features = ["bigdecimal", "chrono", "time", "tds73"] }
 tokio = { version = "1.34.0", features = ["full"] }
+tokio-util = { version = "0.7.11", features = ["compat"] }
 tracing = "0.1.40"
 uuid = { version = "1.6.1", features = ["serde", "v4"] }
 

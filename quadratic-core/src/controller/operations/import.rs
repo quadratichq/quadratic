@@ -1,17 +1,20 @@
 use std::io::Cursor;
 
 use anyhow::{anyhow, bail, Result};
+use chrono::{NaiveDate, NaiveTime};
+
+use crate::{
+    cell_values::CellValues,
+    controller::GridController,
+    grid::{file::sheet_schema::export_sheet, CodeCellLanguage, Sheet, SheetId},
+    CellValue, CodeCellValue, Pos, SheetPos,
+};
 use bytes::Bytes;
 use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
 use lexicon_fractional_index::key_between;
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 
 use super::operation::Operation;
-use crate::cell_values::CellValues;
-use crate::controller::GridController;
-use crate::grid::file::sheet_schema::export_sheet;
-use crate::grid::{CodeCellLanguage, Sheet, SheetId};
-use crate::{CellValue, CodeCellValue, Pos, SheetPos};
 
 const IMPORT_LINES_PER_OPERATION: u32 = 10000;
 
@@ -58,7 +61,7 @@ impl GridController {
 
         // then create operations using MAXIMUM_IMPORT_LINES to break up the SetCellValues operations
         let mut ops = vec![] as Vec<Operation>;
-        let mut cell_values = CellValues::new(width, height);
+        let mut cell_values = CellValues::new(width, height.min(IMPORT_LINES_PER_OPERATION));
         let mut current_y = 0;
         let mut y: u32 = 0;
         for entry in reader.records() {
@@ -174,27 +177,38 @@ impl GridController {
                     let cell_value = match cell {
                         ExcelData::Empty => continue,
                         ExcelData::String(value) => CellValue::Text(value.to_string()),
-                        ExcelData::DateTimeIso(ref value) => CellValue::Text(value.to_string()),
+                        ExcelData::DateTimeIso(ref value) => CellValue::unpack_date_time(value)
+                            .unwrap_or(CellValue::Text(value.to_string())),
+                        ExcelData::DateTime(ref value) => {
+                            if value.is_datetime() {
+                                value.as_datetime().map_or_else(
+                                    || CellValue::Blank,
+                                    |v| {
+                                        // there's probably a better way to figure out if it's a Date or a DateTime, but this works for now
+                                        if let (Ok(zero_time), Ok(zero_date)) = (
+                                            NaiveTime::parse_from_str("00:00:00", "%H:%M:%S"),
+                                            NaiveDate::parse_from_str("1899-12-31", "%Y-%m-%d"),
+                                        ) {
+                                            if v.time() == zero_time {
+                                                CellValue::Date(v.date())
+                                            } else if v.date() == zero_date {
+                                                CellValue::Time(v.time())
+                                            } else {
+                                                CellValue::DateTime(v)
+                                            }
+                                        } else {
+                                            CellValue::DateTime(v)
+                                        }
+                                    },
+                                )
+                            } else {
+                                CellValue::Text(value.to_string())
+                            }
+                        }
                         ExcelData::DurationIso(ref value) => CellValue::Text(value.to_string()),
                         ExcelData::Float(ref value) => {
                             CellValue::unpack_str_float(&value.to_string(), CellValue::Blank)
                         }
-                        // TODO(ddimaria): implement when implementing Instant
-                        // ExcelData::DateTime(ref value) => match value.is_datetime() {
-                        //     true => value.as_datetime().map_or_else(
-                        //         || CellValue::Blank,
-                        //         |v| CellValue::Instant(v.into()),
-                        //     ),
-                        //     false => CellValue::Text(value.to_string()),
-                        // },
-                        // TODO(ddimaria): remove when implementing Instant
-                        ExcelData::DateTime(ref value) => match value.is_datetime() {
-                            true => value.as_datetime().map_or_else(
-                                || CellValue::Blank,
-                                |v| CellValue::Text(v.to_string()),
-                            ),
-                            false => CellValue::Text(value.to_string()),
-                        },
                         ExcelData::Int(ref value) => {
                             CellValue::unpack_str_float(&value.to_string(), CellValue::Blank)
                         }
@@ -319,6 +333,8 @@ impl GridController {
 
             for col_index in 0..num_cols {
                 let col = batch.column(col_index);
+
+                // arrow.rs has the `impl TryFrom<&ArrayRef> for CellValues` block
                 let values: CellValues = col.try_into()?;
 
                 let operations = Operation::SetCellValues {
@@ -378,10 +394,10 @@ fn read_utf16(bytes: &[u8]) -> Option<String> {
 
 #[cfg(test)]
 mod test {
-    use serial_test::parallel;
-
     use super::{read_utf16, *};
     use crate::CellValue;
+    use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+    use serial_test::parallel;
 
     const INVALID_ENCODING_FILE: &[u8] =
         include_bytes!("../../../../quadratic-rust-shared/data/csv/encoding_issue.csv");
@@ -474,6 +490,40 @@ mod test {
 
     #[test]
     #[parallel]
+    fn import_csv_date_time() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
+
+        let pos = Pos { x: 0, y: 0 };
+        let csv = "2024-12-21,13:23:00,2024-12-21 13:23:00\n".to_string();
+        gc.import_csv(sheet_id, csv.as_bytes().to_vec(), "csv", pos, None)
+            .unwrap();
+
+        assert_eq!(
+            gc.sheet(sheet_id).cell_value((0, 0).into()),
+            Some(CellValue::Date(
+                NaiveDate::parse_from_str("2024-12-21", "%Y-%m-%d").unwrap()
+            ))
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).cell_value((1, 0).into()),
+            Some(CellValue::Time(
+                NaiveTime::parse_from_str("13:23:00", "%H:%M:%S").unwrap()
+            ))
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).cell_value((2, 0).into()),
+            Some(CellValue::DateTime(
+                NaiveDate::from_ymd_opt(2024, 12, 21)
+                    .unwrap()
+                    .and_hms_opt(13, 23, 0)
+                    .unwrap()
+            ))
+        );
+    }
+
+    #[test]
+    #[parallel]
     fn import_excel() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/simple.xlsx");
@@ -508,5 +558,157 @@ mod test {
         let file = include_bytes!("../../../test-files/invalid.xlsx");
         let result = gc.import_excel(file.to_vec(), "invalid.xlsx", None);
         assert!(result.is_err());
+    }
+
+    #[test]
+    #[parallel]
+    fn import_parquet_date_time() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let file = include_bytes!("../../../test-files/date_time_formats_arrow.parquet");
+        let pos = Pos { x: 0, y: 0 };
+        gc.import_parquet(sheet_id, file.to_vec(), "parquet", pos, None)
+            .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+
+        // date
+        assert_eq!(
+            sheet.cell_value((0, 1).into()),
+            Some(CellValue::Date(
+                NaiveDate::parse_from_str("2024-12-21", "%Y-%m-%d").unwrap()
+            ))
+        );
+        assert_eq!(
+            sheet.cell_value((0, 2).into()),
+            Some(CellValue::Date(
+                NaiveDate::parse_from_str("2024-12-22", "%Y-%m-%d").unwrap()
+            ))
+        );
+        assert_eq!(
+            sheet.cell_value((0, 3).into()),
+            Some(CellValue::Date(
+                NaiveDate::parse_from_str("2024-12-23", "%Y-%m-%d").unwrap()
+            ))
+        );
+
+        // time
+        assert_eq!(
+            sheet.cell_value((1, 1).into()),
+            Some(CellValue::Time(
+                NaiveTime::parse_from_str("13:23:00", "%H:%M:%S").unwrap()
+            ))
+        );
+        assert_eq!(
+            sheet.cell_value((1, 2).into()),
+            Some(CellValue::Time(
+                NaiveTime::parse_from_str("14:45:00", "%H:%M:%S").unwrap()
+            ))
+        );
+        assert_eq!(
+            sheet.cell_value((1, 3).into()),
+            Some(CellValue::Time(
+                NaiveTime::parse_from_str("16:30:00", "%H:%M:%S").unwrap()
+            ))
+        );
+
+        // date time
+        assert_eq!(
+            sheet.cell_value((2, 1).into()),
+            Some(CellValue::DateTime(
+                NaiveDate::from_ymd_opt(2024, 12, 21)
+                    .unwrap()
+                    .and_hms_opt(13, 23, 0)
+                    .unwrap()
+            ))
+        );
+        assert_eq!(
+            sheet.cell_value((2, 2).into()),
+            Some(CellValue::DateTime(
+                NaiveDate::from_ymd_opt(2024, 12, 22)
+                    .unwrap()
+                    .and_hms_opt(14, 30, 0)
+                    .unwrap()
+            ))
+        );
+        assert_eq!(
+            sheet.cell_value((2, 3).into()),
+            Some(CellValue::DateTime(
+                NaiveDate::from_ymd_opt(2024, 12, 23)
+                    .unwrap()
+                    .and_hms_opt(16, 45, 0)
+                    .unwrap()
+            ))
+        );
+    }
+
+    #[test]
+    fn import_excel_date_time() {
+        let mut gc = GridController::new_blank();
+        let file = include_bytes!("../../../test-files/date_time.xlsx");
+        gc.import_excel(file.to_vec(), "excel", None).unwrap();
+
+        let sheet_id = gc.grid.sheets()[0].id;
+        let sheet = gc.sheet(sheet_id);
+
+        // date
+        assert_eq!(
+            sheet.cell_value((0, 2).into()),
+            Some(CellValue::Date(
+                NaiveDate::parse_from_str("1990-12-21", "%Y-%m-%d").unwrap()
+            ))
+        );
+        assert_eq!(
+            sheet.cell_value((0, 3).into()),
+            Some(CellValue::Date(
+                NaiveDate::parse_from_str("1990-12-22", "%Y-%m-%d").unwrap()
+            ))
+        );
+        assert_eq!(
+            sheet.cell_value((0, 4).into()),
+            Some(CellValue::Date(
+                NaiveDate::parse_from_str("1990-12-23", "%Y-%m-%d").unwrap()
+            ))
+        );
+
+        // date time
+        assert_eq!(
+            sheet.cell_value((1, 2).into()),
+            Some(CellValue::DateTime(
+                NaiveDateTime::parse_from_str("2021-1-5 15:45", "%Y-%m-%d %H:%M").unwrap()
+            ))
+        );
+        assert_eq!(
+            sheet.cell_value((1, 3).into()),
+            Some(CellValue::DateTime(
+                NaiveDateTime::parse_from_str("2021-1-6 15:45", "%Y-%m-%d %H:%M").unwrap()
+            ))
+        );
+        assert_eq!(
+            sheet.cell_value((1, 4).into()),
+            Some(CellValue::DateTime(
+                NaiveDateTime::parse_from_str("2021-1-7 15:45", "%Y-%m-%d %H:%M").unwrap()
+            ))
+        );
+
+        // time
+        assert_eq!(
+            sheet.cell_value((2, 2).into()),
+            Some(CellValue::Time(
+                NaiveTime::parse_from_str("13:23:00", "%H:%M:%S").unwrap()
+            ))
+        );
+        assert_eq!(
+            sheet.cell_value((2, 3).into()),
+            Some(CellValue::Time(
+                NaiveTime::parse_from_str("14:23:00", "%H:%M:%S").unwrap()
+            ))
+        );
+        assert_eq!(
+            sheet.cell_value((2, 4).into()),
+            Some(CellValue::Time(
+                NaiveTime::parse_from_str("15:23:00", "%H:%M:%S").unwrap()
+            ))
+        );
     }
 }

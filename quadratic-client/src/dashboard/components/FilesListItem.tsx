@@ -307,7 +307,7 @@ export function FilesListItemExampleFile({
   const { href, thumbnail, name, description } = file;
   return (
     <ListItem>
-      <Link to={href} className="flex w-full">
+      <Link to={href} className="flex w-full" reloadDocument>
         <ListItemView viewPreferences={viewPreferences} thumbnail={thumbnail} lazyLoad={lazyLoad}>
           <FilesListItemCore
             name={name}

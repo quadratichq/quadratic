@@ -1,6 +1,6 @@
 {
   "name": "quadratic-shared",
-  "version": "1.0.0",
+  "version": "0.5.1",
   "description": "Code shared between quadratic-api and quadratic-client (each app has to compile this code itself)",
   "main": "index.js",
   "scripts": {
@@ -9,7 +9,11 @@
   },
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": "18.x"
+  },
   "dependencies": {
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "zod": "^3.23.8"
   }
 }

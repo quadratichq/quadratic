@@ -1,5 +1,7 @@
 import { getSelectionString } from '@/app/grid/sheet/selection';
 import { Validation } from '@/app/quadratic-core-types';
+import { numberToDate, numberToTime } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { joinWithOr } from '@/shared/utils/text';
 
 export const translateValidationError = (validation: Validation): JSX.Element | null => {
   if (validation.rule === 'None') {
@@ -18,14 +20,14 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
               return (
                 <div key={i}>
                   Text {verb} be one of these values:{' '}
-                  <span className={listClassName}>{r.Exactly.CaseSensitive.join(', ')}</span> (case sensitive).
+                  <span className={listClassName}>{joinWithOr(r.Exactly.CaseSensitive)}</span> (case sensitive).
                 </div>
               );
             } else {
               return (
                 <div key={i}>
                   Text {verb} be one of these values:{' '}
-                  <span className={listClassName}>{r.Exactly.CaseInsensitive.join(', ')}</span>.
+                  <span className={listClassName}>{joinWithOr(r.Exactly.CaseInsensitive)}</span>.
                 </div>
               );
             }
@@ -36,14 +38,14 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
               return (
                 <div key={i}>
                   Text {verb} contain one of these values:{' '}
-                  <span className={listClassName}>{r.Contains.CaseSensitive.join(', ')}</span> (case sensitive).
+                  <span className={listClassName}>{joinWithOr(r.Contains.CaseSensitive)}</span> (case sensitive).
                 </div>
               );
             } else {
               return (
                 <div key={i}>
                   Text {verb} contain one of these values:{' '}
-                  <span className={listClassName}>{r.Contains.CaseInsensitive.join(', ')}</span>.
+                  <span className={listClassName}>{joinWithOr(r.Contains.CaseInsensitive)}</span>.
                 </div>
               );
             }
@@ -54,14 +56,14 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
               return (
                 <div key={i}>
                   Text {verb} not contain any of these values:{' '}
-                  <span className={listClassName}>{r.NotContains.CaseSensitive.join(', ')}</span> (case sensitive).
+                  <span className={listClassName}>{joinWithOr(r.NotContains.CaseSensitive)}</span> (case sensitive).
                 </div>
               );
             } else {
               return (
                 <div key={i}>
                   Text {verb} <span className="underline">not</span> contain any of these values:{' '}
-                  <span className={listClassName}>{r.NotContains.CaseInsensitive.join(', ')}</span>.
+                  <span className={listClassName}>{joinWithOr(r.NotContains.CaseInsensitive)}</span>.
                 </div>
               );
             }
@@ -115,7 +117,7 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
           if ('Equal' in r) {
             return (
               <div key={i}>
-                Number {verb} be equal to <span className={listClassName}>{r.Equal.join(', ')}</span>.
+                Number {verb} be equal to <span className={listClassName}>{joinWithOr(r.Equal)}</span>.
               </div>
             );
           }
@@ -124,7 +126,7 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
             return (
               <div key={i}>
                 Number {verb} <span className="underline">not</span> be equal to{' '}
-                <span className={listClassName}>{r.NotEqual.join(', ')}</span>.
+                <span className={listClassName}>{joinWithOr(r.NotEqual)}</span>.
               </div>
             );
           }
@@ -148,7 +150,7 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
       return (
         <div className="whitespace-normal">
           Value {verb} be one of these values:{' '}
-          <span className={listClassName}>{validation.rule.List.source.List.join(', ')}</span>.
+          <span className={listClassName}>{joinWithOr(validation.rule.List.source.List)}</span>.
         </div>
       );
     } else if ('Selection' in validation.rule.List.source) {
@@ -159,6 +161,106 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
         </div>
       );
     }
+  }
+
+  if ('DateTime' in validation.rule && validation.rule.DateTime) {
+    return (
+      <div className="flex flex-col gap-2 whitespace-normal">
+        {validation.rule.DateTime.ranges.map((r, i) => {
+          if ('DateRange' in r) {
+            return (
+              <div key={i}>
+                {r.DateRange[0] !== null && r.DateRange[1] !== null && (
+                  <>
+                    Date {verb} be between{' '}
+                    <span className={listClassName}>
+                      {numberToDate(BigInt(r.DateRange[0]))} and {numberToDate(BigInt(r.DateRange[1]))}
+                    </span>
+                    .
+                  </>
+                )}
+                {r.DateRange[0] !== null && r.DateRange[1] === null && (
+                  <>
+                    Date {verb} be on or after{' '}
+                    <span className={listClassName}>{numberToDate(BigInt(r.DateRange[0]))}</span>.
+                  </>
+                )}
+                {r.DateRange[0] === null && r.DateRange[1] !== null && (
+                  <>
+                    Date {verb} be on or before{' '}
+                    <span className={listClassName}>{numberToDate(BigInt(r.DateRange[1]))}</span>.
+                  </>
+                )}
+              </div>
+            );
+          }
+
+          if ('DateEqual' in r) {
+            return (
+              <div key={i}>
+                Date {verb} be{' '}
+                <span className={listClassName}>{joinWithOr(r.DateEqual.map((n) => numberToDate(BigInt(n))))}</span>.
+              </div>
+            );
+          }
+
+          if ('DateNotEqual' in r) {
+            return (
+              <div key={i}>
+                Date {verb} <span className="underline">not</span> be{' '}
+                <span className={listClassName}>{joinWithOr(r.DateNotEqual.map((n) => numberToDate(BigInt(n))))}</span>.
+              </div>
+            );
+          }
+
+          if ('TimeRange' in r) {
+            return (
+              <div key={i}>
+                {r.TimeRange[0] !== null && r.TimeRange[1] !== null && (
+                  <>
+                    Time {verb} be between{' '}
+                    <span className={listClassName}>
+                      {numberToTime(r.TimeRange[0])} and {numberToTime(r.TimeRange[1])}
+                    </span>
+                    .
+                  </>
+                )}
+                {r.TimeRange[0] !== null && r.TimeRange[1] === null && (
+                  <>
+                    Time {verb} be on or before <span className={listClassName}>{numberToTime(r.TimeRange[0])}</span>.
+                  </>
+                )}
+                {r.TimeRange[0] === null && r.TimeRange[1] !== null && (
+                  <>
+                    Time {verb} be on or after <span className={listClassName}>{numberToTime(r.TimeRange[1])}</span>.
+                  </>
+                )}
+              </div>
+            );
+          }
+
+          if ('TimeEqual' in r) {
+            return (
+              <div key={i}>
+                Time {verb} be{' '}
+                <span className={listClassName}>{joinWithOr(r.TimeEqual.map((n) => numberToTime(n)))}</span>.
+              </div>
+            );
+          }
+
+          if ('TimeNotEqual' in r) {
+            return (
+              <div key={i}>
+                Time {verb} <span className="underline">not</span> be{' '}
+                <span className={listClassName}>{joinWithOr(r.TimeNotEqual.map((n) => numberToTime(n)))}</span>.
+              </div>
+            );
+          }
+
+          return <div key={i}></div>;
+        })}
+      </div>
+    );
   }
 
   return null;

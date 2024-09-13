@@ -16,6 +16,7 @@ import {
   CellWrap,
   CodeCellLanguage,
   Format,
+  JsCellValue,
   JsCodeCell,
   JsRenderCell,
   MinMax,
@@ -341,6 +342,22 @@ class QuadraticCore {
     });
   }
 
+  getCellValue(sheetId: string, x: number, y: number): Promise<JsCellValue | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { value: JsCellValue | undefined }) => {
+        resolve(message.value);
+      };
+      this.send({
+        type: 'clientCoreGetCellValue',
+        sheetId,
+        x,
+        y,
+        id,
+      });
+    });
+  }
+
   hasRenderCells(sheetId: string, column: number, row: number, width: number, height: number): Promise<boolean> {
     return new Promise((resolve) => {
       const id = this.id++;
@@ -647,6 +664,15 @@ class QuadraticCore {
       type: 'clientCoreSetCommas',
       selection,
       commas,
+      cursor,
+    });
+  }
+
+  setDateTimeFormat(selection: Selection, format: string, cursor: string) {
+    this.send({
+      type: 'clientCoreSetDateTimeFormat',
+      selection,
+      format,
       cursor,
     });
   }
@@ -985,21 +1011,6 @@ class QuadraticCore {
   //#endregion
 
   //#region Data Validation
-
-  getValidation(sheetId: string, validationId: string): Promise<Validation | undefined> {
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: { validation: Validation | undefined }) => {
-        resolve(message.validation);
-      };
-      this.send({
-        type: 'clientCoreGetValidation',
-        id,
-        sheetId,
-        validationId,
-      });
-    });
-  }
 
   getValidationFromPos(sheetId: string, x: number, y: number): Promise<Validation | undefined> {
     return new Promise((resolve) => {

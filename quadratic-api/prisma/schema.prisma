@@ -135,6 +135,7 @@ enum TeamRole {
 enum ConnectionType {
     POSTGRES
     MYSQL
+    MSSQL
 }
 
 model Connection {

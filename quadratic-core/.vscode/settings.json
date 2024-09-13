@@ -1,11 +1,19 @@
 {
   "cSpell.words": [
     "bigdecimal",
+    "Datelike",
+    "dateparser",
+    "datetime",
     "dbgjs",
+    "ddimaria",
     "htmlescape",
     "indexmap",
     "Itertools",
+    "milli",
     "Rects",
+    "rposition",
+    "Strftime",
+    "Timelike",
     "undoable"
   ],
   "lldb.displayFormat": "auto",

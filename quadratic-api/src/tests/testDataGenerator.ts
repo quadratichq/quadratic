@@ -137,6 +137,14 @@ function getDefaultConnectionTypeDetails(type: ConnectionType) {
         username: 'root',
         password: 'password',
       };
+    case 'MSSQL':
+      return {
+        host: 'localhost',
+        port: '1433',
+        database: 'msdb',
+        username: 'sa',
+        password: 'yourStrong(!)Password',
+      };
     default:
       throw new Error(`No default connection data for type ${type}`);
   }

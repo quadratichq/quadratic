@@ -13,6 +13,7 @@ import {
   CellWrap,
   CodeCellLanguage,
   Format,
+  JsCellValue,
   JsCodeCell,
   JsCodeResult,
   JsRenderCell,
@@ -159,7 +160,7 @@ class Core {
   }): Promise<JsRenderCell[]> {
     return new Promise((resolve) => {
       this.renderQueue.push(() => {
-        if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getGridBounds');
+        if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getRenderCells');
         const cells = this.gridController.getRenderCells(
           data.sheetId,
           numbersToRectStringified(data.x, data.y, data.width, data.height)
@@ -437,7 +438,7 @@ class Core {
       await initCore();
       const gc = GridController.newFromFile(new Uint8Array(file), sequenceNum, false);
       const version = gc.getVersion();
-      const contents = gc.exportToFile();
+      const contents = gc.exportGridToFile();
       return { contents, version };
     } catch (error: unknown) {
       console.error(error);
@@ -473,7 +474,7 @@ class Core {
             throw new Error('Unsupported file type');
         }
         const version = gc.getVersion();
-        const contents = gc.exportToFile();
+        const contents = gc.exportGridToFile();
         return { contents, version };
       } catch (error: unknown) {
         console.error(error);
@@ -642,7 +643,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        resolve(this.gridController.exportToFile());
+        resolve(this.gridController.exportOpenGridToFile());
       });
     });
   }
@@ -976,14 +977,6 @@ class Core {
     );
   }
 
-  getValidation(sheetId: string, validationId: string): Validation | undefined {
-    if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const validation = this.gridController.getValidation(sheetId, validationId);
-    if (validation) {
-      return JSON.parse(validation);
-    }
-  }
-
   getValidations(sheetId: string): Validation[] {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     const validations = this.gridController.getValidations(sheetId);
@@ -1018,6 +1011,11 @@ class Core {
     this.gridController.receiveRowHeights(transactionId, sheetId, rowHeights);
   }
 
+  setDateTimeFormat(selection: Selection, format: string, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.setDateTimeFormat(JSON.stringify(selection, bigIntReplacer), format, cursor);
+  }
+
   getValidationList(sheetId: string, x: number, y: number) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     const list = this.gridController.getValidationList(sheetId, BigInt(x), BigInt(y));
@@ -1034,6 +1032,14 @@ class Core {
     const validationId = this.gridController.validateInput(sheetId, posToPos(x, y), input);
     if (validationId) {
       return JSON.parse(validationId);
+    }
+  }
+
+  getCellValue(sheetId: string, x: number, y: number): JsCellValue | undefined {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const cellValue = this.gridController.getCellValue(sheetId, posToPos(x, y));
+    if (cellValue) {
+      return JSON.parse(cellValue);
     }
   }
 }

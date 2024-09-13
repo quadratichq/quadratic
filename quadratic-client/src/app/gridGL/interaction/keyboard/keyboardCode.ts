@@ -14,10 +14,11 @@ export function keyboardCode(
   }
   // Execute code cell
   if (matchShortcut('execute_code', event)) {
+    console.log();
     quadraticCore.rerunCodeCells(
       sheets.sheet.id,
-      editorInteractionState.selectedCell.x,
-      editorInteractionState.selectedCell.y,
+      sheets.sheet.cursor.cursorPosition.x,
+      sheets.sheet.cursor.cursorPosition.y,
       sheets.getCursorPosition()
     );
     return true;
