@@ -82,6 +82,14 @@ export const BorderClearIcon: IconComponent = (props) => {
   return <Icon {...props}>border_clear</Icon>;
 };
 
+export const BorderStyleIcon: IconComponent = (props) => {
+  return <Icon {...props}>border_style</Icon>;
+};
+
+export const BorderColorIcon: IconComponent = (props) => {
+  return <Icon {...props}>border_color</Icon>;
+};
+
 export const CheckBoxIcon: IconComponent = (props) => {
   return <Icon {...props}>check_box</Icon>;
 };

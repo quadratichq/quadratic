@@ -22,6 +22,7 @@ import {
   BorderAllIcon,
   BorderBottomIcon,
   BorderClearIcon,
+  BorderColorIcon,
   BorderHorizontalIcon,
   BorderInnerIcon,
   BorderLeftIcon,
@@ -339,7 +340,7 @@ export const formatActionsSpec = {
   },
   [Action.FormatBorderColor]: {
     label: 'Border color',
-    Icon: FormatColorFillIcon,
+    Icon: BorderColorIcon,
     run: ({ borders, color }: FormatActionArgs[Action.FormatBorderColor]) => {
       borders.changeBorders({ color: convertReactColorToString(color) });
     },

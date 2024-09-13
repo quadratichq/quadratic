@@ -1,8 +1,8 @@
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { focusGrid } from '@/app/helpers/focusGrid';
+import { BorderMenu } from '@/app/ui/components/BorderMenu';
 import { QColorPicker } from '@/app/ui/components/qColorPicker';
-import { useBorders, UseBordersResults } from '@/app/ui/hooks/useBorders';
 import {
   BorderAllIcon,
   FormatAlignLeftIcon,
@@ -23,7 +23,6 @@ import {
 import { MenubarItemAction } from './MenubarItemAction';
 
 export const FormatMenubarMenu = () => {
-  const borders = useBorders();
   return (
     <MenubarMenu>
       <MenubarTrigger>Format</MenubarTrigger>
@@ -107,35 +106,13 @@ export const FormatMenubarMenu = () => {
 
         <MenubarColorPickerItemAction action={Action.FormatTextColor} />
         <MenubarColorPickerItemAction action={Action.FormatFillColor} />
+
         <MenubarSub>
           <MenubarSubTrigger>
             <BorderAllIcon /> Borders
           </MenubarSubTrigger>
           <MenubarSubContent>
-            <MenubarItemAction action={Action.FormatBorderAll} actionArgs={borders} />
-            <MenubarItemAction action={Action.FormatBorderOuter} actionArgs={borders} />
-            <MenubarItemAction action={Action.FormatBorderInner} actionArgs={borders} />
-            <MenubarItemAction action={Action.FormatBorderVertical} actionArgs={borders} />
-            <MenubarItemAction action={Action.FormatBorderHorizontal} actionArgs={borders} />
-            <MenubarItemAction action={Action.FormatBorderLeft} actionArgs={borders} />
-            <MenubarItemAction action={Action.FormatBorderRight} actionArgs={borders} />
-            <MenubarItemAction action={Action.FormatBorderTop} actionArgs={borders} />
-            <MenubarItemAction action={Action.FormatBorderBottom} actionArgs={borders} />
-            <MenubarItemAction action={Action.FormatBorderClear} actionArgs={borders} />
-            <MenubarSub>
-              <MenubarSubTrigger>
-                <BorderAllIcon /> Border line style
-              </MenubarSubTrigger>
-              <MenubarSubContent>
-                <MenubarItemAction action={Action.FormatBorderLine1} actionArgs={borders} />
-                <MenubarItemAction action={Action.FormatBorderLine2} actionArgs={borders} />
-                <MenubarItemAction action={Action.FormatBorderLine3} actionArgs={borders} />
-                <MenubarItemAction action={Action.FormatBorderDashed} actionArgs={borders} />
-                <MenubarItemAction action={Action.FormatBorderDotted} actionArgs={borders} />
-                <MenubarItemAction action={Action.FormatBorderDouble} actionArgs={borders} />
-              </MenubarSubContent>
-            </MenubarSub>
-            <MenubarBorderColorPickerItemAction action={Action.FormatBorderColor} borders={borders} />
+            <BorderMenu />
           </MenubarSubContent>
         </MenubarSub>
 
@@ -168,38 +145,6 @@ function MenubarColorPickerItemAction({ action }: { action: Action.FormatTextCol
             }}
             onClear={() => {
               run(undefined);
-              focusGrid();
-            }}
-          />
-        </MenubarItem>
-      </MenubarSubContent>
-    </MenubarSub>
-  );
-}
-
-function MenubarBorderColorPickerItemAction({
-  action,
-  borders,
-}: {
-  action: Action.FormatBorderColor;
-  borders: UseBordersResults;
-}) {
-  const actionSpec = defaultActionSpec[action];
-  const { run, label } = actionSpec;
-  const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
-
-  // TODO: (jimniels) implement isAvailable
-  return (
-    <MenubarSub>
-      <MenubarSubTrigger>
-        {Icon && <Icon />}
-        {label}
-      </MenubarSubTrigger>
-      <MenubarSubContent>
-        <MenubarItem>
-          <QColorPicker
-            onChangeComplete={(color) => {
-              run({ borders, color });
               focusGrid();
             }}
           />

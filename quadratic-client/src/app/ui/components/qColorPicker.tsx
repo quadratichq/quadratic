@@ -4,12 +4,14 @@ import './qColorPicker.scss';
 interface IProps {
   onChangeComplete: ColorChangeHandler | undefined;
   onClear?: () => void;
+  color?: string;
 }
 
 export const QColorPicker = (props: IProps) => {
   return (
     <>
       <CompactPicker
+        color={props.color}
         className="color-picker-submenu"
         onChangeComplete={props.onChangeComplete}
         colors={[
