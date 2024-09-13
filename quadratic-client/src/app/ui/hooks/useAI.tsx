@@ -1,4 +1,4 @@
-import { authClient } from '@/auth';
+import { authClient } from '@/auth/auth';
 import { AI } from '@/shared/constants/routes';
 import {
   AIMessage,
