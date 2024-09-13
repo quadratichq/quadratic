@@ -18,6 +18,19 @@ jest.mock('./src/middleware/validateAccessToken', () => {
   };
 });
 
+jest.mock('./src/licenseClient', () => {
+  return {
+    post: async () => {
+      return {
+        limits: {
+          seats: 10,
+        },
+        status: 'active',
+      };
+    },
+  };
+});
+
 jest.mock('./src/storage/storage', () => {
   return {
     s3Client: {},
