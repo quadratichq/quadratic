@@ -12,7 +12,6 @@ export const CodeEditorDiffButton = () => {
 
   const handleDiffReject = useCallback(() => {
     setModifiedEditorContent(undefined);
-    console.log('reject');
   }, [setModifiedEditorContent]);
 
   const handleDiffAccept = useCallback(() => {

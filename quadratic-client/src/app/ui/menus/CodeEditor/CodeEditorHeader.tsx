@@ -36,6 +36,7 @@ export const CodeEditorHeader = (props: Props) => {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
   const {
+    editorContent: [editorContent],
     modifiedEditorContent: [modifiedEditorContent],
   } = useCodeEditor();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
@@ -181,7 +182,7 @@ export const CodeEditorHeader = (props: Props) => {
 
         {hasPermission && (
           <>
-            {modifiedEditorContent !== undefined ? (
+            {modifiedEditorContent !== undefined && modifiedEditorContent !== editorContent ? (
               <CodeEditorDiffButton />
             ) : (
               <>
