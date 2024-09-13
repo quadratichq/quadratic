@@ -209,8 +209,10 @@ mod test {
                 align: None,
                 vertical_align: None,
                 wrap: None,
+                date_time: None,
+                cell_type: None,
                 underline: None,
-                strike_through: None
+                strike_through: None,
             }
         );
         assert_eq!(
@@ -228,6 +230,8 @@ mod test {
                 align: None,
                 vertical_align: None,
                 wrap: None,
+                date_time: None,
+                cell_type: None,
                 underline: None,
                 strike_through: None
             }
@@ -247,6 +251,8 @@ mod test {
                 align: None,
                 vertical_align: None,
                 wrap: None,
+                date_time: None,
+                cell_type: None,
                 underline: Some(true),
                 strike_through: None
             }
@@ -266,6 +272,8 @@ mod test {
                 align: None,
                 vertical_align: None,
                 wrap: None,
+                date_time: None,
+                cell_type: None,
                 underline: None,
                 strike_through: Some(true),
             }
@@ -792,6 +800,8 @@ mod test {
                 align: None,
                 vertical_align: None,
                 wrap: None,
+                date_time: None,
+                cell_type: None,
                 underline: None,
                 strike_through: None
             }
@@ -807,6 +817,8 @@ mod test {
                 align: None,
                 vertical_align: None,
                 wrap: None,
+                date_time: None,
+                cell_type: None,
                 underline: None,
                 strike_through: None
             }
@@ -954,6 +966,8 @@ mod test {
                 align: None,
                 vertical_align: None,
                 wrap: None,
+                date_time: None,
+                cell_type: None,
                 underline: None,
                 strike_through: None
             }
@@ -969,6 +983,8 @@ mod test {
                 align: None,
                 vertical_align: None,
                 wrap: None,
+                date_time: None,
+                cell_type: None,
                 underline: None,
                 strike_through: None
             }

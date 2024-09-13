@@ -199,6 +199,17 @@ impl GridController {
         Ok(())
     }
 
+    #[wasm_bindgen(js_name = "setDateTimeFormat")]
+    pub fn js_set_date_time_format(
+        &mut self,
+        selection: String,
+        date_time: Option<String>,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        self.set_date_time_format(selection, date_time, cursor)
+    }
+
     /// Changes cell numeric decimals.
     #[wasm_bindgen(js_name = "changeDecimalPlaces")]
     pub fn js_change_decimal_places(

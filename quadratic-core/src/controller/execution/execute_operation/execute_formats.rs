@@ -3,6 +3,7 @@ use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
 use crate::grid::formatting::CellFmtArray;
 use crate::grid::*;
+use formatting::DateTimeFormatting;
 
 impl GridController {
     // Supports deprecated SetCellFormats operation.
@@ -48,6 +49,9 @@ impl GridController {
                 ),
                 CellFmtArray::RenderSize(output_size) => CellFmtArray::RenderSize(
                     self.set_cell_formats_for_type::<RenderSize>(&sheet_rect, output_size),
+                ),
+                CellFmtArray::DateTime(date_time) => CellFmtArray::DateTime(
+                    self.set_cell_formats_for_type::<DateTimeFormatting>(&sheet_rect, date_time),
                 ),
                 CellFmtArray::Underline(underline) => CellFmtArray::Underline(
                     self.set_cell_formats_for_type::<Underline>(&sheet_rect, underline),

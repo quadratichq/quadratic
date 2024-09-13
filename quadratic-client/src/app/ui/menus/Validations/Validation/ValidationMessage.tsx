@@ -1,6 +1,7 @@
 import { ValidationStyle } from '@/app/quadratic-core-types';
 import { ValidationData } from './useValidationData';
-import { ValidationUICheckbox, ValidationDropdown, ValidationInput, ValidationTextArea } from './ValidationUI';
+import { ValidationInput } from './ValidationUI/ValidationInput';
+import { ValidationDropdown, ValidationTextArea, ValidationUICheckbox } from './ValidationUI/ValidationUI';
 
 interface Props {
   validationData: ValidationData;

@@ -28,6 +28,8 @@ pub struct Column {
     pub text_color: ColumnData<SameValue<String>>,
     pub fill_color: ColumnData<SameValue<String>>,
     pub render_size: ColumnData<SameValue<RenderSize>>,
+    #[serde(default)]
+    pub date_time: ColumnData<SameValue<String>>,
     pub underline: ColumnData<SameValue<bool>>,
     pub strike_through: ColumnData<SameValue<bool>>,
 }
@@ -64,6 +66,7 @@ impl Column {
                 self.italic.range(),
                 self.text_color.range(),
                 self.fill_color.range(),
+                self.date_time.range(),
                 self.underline.range(),
                 self.strike_through.range(),
             ])
@@ -82,6 +85,7 @@ impl Column {
             self.italic.range(),
             self.text_color.range(),
             self.fill_color.range(),
+            self.date_time.range(),
             self.underline.range(),
             self.strike_through.range(),
         ])
@@ -101,6 +105,7 @@ impl Column {
             || self.italic.get(y).is_some()
             || self.text_color.get(y).is_some()
             || self.fill_color.get(y).is_some()
+            || self.date_time.get(y).is_some()
             || self.underline.get(y).is_some()
             || self.strike_through.get(y).is_some()
     }
@@ -119,6 +124,7 @@ impl Column {
             text_color: self.text_color.get(y),
             fill_color: self.fill_color.get(y),
             render_size: self.render_size.get(y),
+            date_time: self.date_time.get(y),
             underline: self.underline.get(y),
             strike_through: self.strike_through.get(y),
         };

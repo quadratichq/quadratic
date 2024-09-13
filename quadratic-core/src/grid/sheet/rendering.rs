@@ -62,6 +62,15 @@ impl Sheet {
             };
         }
 
+        let align = if matches!(value, CellValue::Number(_))
+            || matches!(value, CellValue::DateTime(_))
+            || matches!(value, CellValue::Date(_))
+            || matches!(value, CellValue::Time(_))
+        {
+            Some(CellAlign::Right)
+        } else {
+            None
+        };
         let special = self.validations.render_special_pos(Pos { x, y }).or({
             if matches!(value, CellValue::Logical(_)) {
                 Some(JsRenderCellSpecial::Logical)
@@ -72,11 +81,6 @@ impl Sheet {
 
         match column {
             None => {
-                let align = if matches!(value, CellValue::Number(_)) {
-                    Some(CellAlign::Right)
-                } else {
-                    None
-                };
                 let format = Format::combine(
                     None,
                     self.try_format_column(x).as_ref(),
@@ -89,10 +93,11 @@ impl Sheet {
                 } else {
                     None
                 };
+                let value = Self::value_date_time(value, format.date_time);
                 JsRenderCell {
                     x,
                     y,
-                    value: value.to_display(),
+                    value,
                     language,
                     align,
                     vertical_align: format.vertical_align,
@@ -123,6 +128,9 @@ impl Sheet {
                         number = Some((&format).into());
                         value.to_display()
                     }
+                    CellValue::Date(_) | CellValue::DateTime(_) | CellValue::Time(_) => {
+                        Self::value_date_time(value, format.date_time)
+                    }
                     _ => value.to_display(),
                 };
                 JsRenderCell {
@@ -130,7 +138,7 @@ impl Sheet {
                     y,
                     value,
                     language,
-                    align: format.align,
+                    align: format.align.or(align),
                     wrap: format.wrap,
                     bold: format.bold,
                     italic: format.italic,
@@ -498,6 +506,28 @@ impl Sheet {
         }
     }
 
+    /// Sends all validation warnings for this sheet to the client.
+    pub fn send_all_validation_warnings(&self) {
+        let warnings = self
+            .validations
+            .warnings
+            .iter()
+            .map(|(pos, validation_id)| JsValidationWarning {
+                x: pos.x,
+                y: pos.y,
+                validation: Some(*validation_id),
+                style: self
+                    .validations
+                    .validation(*validation_id)
+                    .map(|v| v.error.style.clone()),
+            })
+            .collect::<Vec<_>>();
+
+        if let Ok(warnings) = serde_json::to_string(&warnings) {
+            crate::wasm_bindings::js::jsValidationWarning(self.id.to_string(), warnings);
+        }
+    }
+
     /// Sends validation warnings for a hashed region to the client.
     pub fn send_validation_warnings(&self, hash_x: i64, hash_y: i64, rect: Rect) {
         let warnings = self
@@ -546,26 +576,25 @@ mod tests {
     use serial_test::{parallel, serial};
     use uuid::Uuid;
 
-    use crate::controller::transaction_types::JsCodeResult;
-    use crate::controller::GridController;
-    use crate::grid::formats::format::Format;
-    use crate::grid::formats::format_update::FormatUpdate;
-    use crate::grid::formats::Formats;
-    use crate::grid::js_types::{
-        JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell, JsSheetFill,
+    use crate::{
+        controller::{transaction_types::JsCodeResult, GridController},
+        grid::{
+            formats::{format::Format, format_update::FormatUpdate, Formats},
+            js_types::{
+                JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
+                JsSheetFill, JsValidationWarning,
+            },
+            sheet::validations::{
+                validation::{Validation, ValidationStyle},
+                validation_rules::{validation_logical::ValidationLogical, ValidationRule},
+            },
+            Bold, CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, CodeRun, CodeRunResult,
+            Italic, RenderSize, Sheet,
+        },
+        selection::Selection,
+        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
+        CellValue, CodeCellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
     };
-    use crate::grid::sheet::validations::validation::Validation;
-    use crate::grid::sheet::validations::validation_rules::validation_logical::ValidationLogical;
-    use crate::grid::sheet::validations::validation_rules::ValidationRule;
-    use crate::grid::{
-        Bold, CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, CodeRun, CodeRunResult,
-        Italic, RenderSize, Sheet,
-    };
-    use crate::selection::Selection;
-    use crate::wasm_bindings::js::{
-        clear_js_calls, expect_js_call, expect_js_call_count, hash_test,
-    };
-    use crate::{CellValue, CodeCellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value};
 
     #[test]
     #[parallel]
@@ -1169,6 +1198,41 @@ mod tests {
         expect_js_call(
             "jsSheetValidations",
             format!("{},{}", sheet.id, validations),
+            true,
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn send_all_validation_warnings() {
+        let mut sheet = Sheet::test();
+        let sheet_id = sheet.id;
+        let validation_id = Uuid::new_v4();
+        sheet.validations.set(Validation {
+            id: validation_id,
+            selection: Selection::rect(Rect::new(0, 0, 1, 1), sheet_id),
+            rule: ValidationRule::Logical(ValidationLogical {
+                ignore_blank: false,
+                ..Default::default()
+            }),
+            message: Default::default(),
+            error: Default::default(),
+        });
+        sheet
+            .validations
+            .warnings
+            .insert((0, 0).into(), validation_id);
+        sheet.send_all_validation_warnings();
+        let warnings = serde_json::to_string(&vec![JsValidationWarning {
+            x: 0,
+            y: 0,
+            validation: Some(validation_id),
+            style: Some(ValidationStyle::Stop),
+        }])
+        .unwrap();
+        expect_js_call(
+            "jsValidationWarning",
+            format!("{},{}", sheet.id, warnings),
             true,
         );
     }

@@ -40,6 +40,7 @@ impl Sheet {
             text_color: column.text_color.get(y),
             fill_color: column.fill_color.get(y),
             render_size: column.render_size.get(y),
+            date_time: column.date_time.get(y),
             underline: column.underline.get(y),
             strike_through: column.strike_through.get(y),
         });
@@ -111,10 +112,17 @@ impl Sheet {
             old_format.render_size = Some(column.render_size.get(y));
             column.render_size.set(y, render_size.clone());
         }
+
+        if let Some(dt) = update.date_time.as_ref() {
+            old_format.date_time = Some(column.date_time.get(y));
+            column.date_time.set(y, dt.clone());
+        }
+
         if let Some(underline) = update.underline {
             old_format.underline = Some(column.underline.get(y));
             column.underline.set(y, underline);
         }
+
         if let Some(strike_through) = update.strike_through {
             old_format.strike_through = Some(column.strike_through.get(y));
             column.strike_through.set(y, strike_through);

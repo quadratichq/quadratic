@@ -4,12 +4,15 @@ use controller::operations::clipboard::PasteSpecial;
 use formulas::{CellRef, CellRefCoord, RangeRef};
 use grid::formats::format::Format;
 use grid::js_types::{
-    CellFormatSummary, JsClipboard, JsPos, JsRenderFill, JsRowHeight, JsSheetFill,
+    CellFormatSummary, JsCellValue, JsClipboard, JsPos, JsRenderFill, JsRowHeight, JsSheetFill,
     JsValidationWarning,
 };
 use grid::sheet::validations::validation::{
     Validation, ValidationDisplay, ValidationDisplaySheet, ValidationError, ValidationMessage,
     ValidationStyle,
+};
+use grid::sheet::validations::validation_rules::validation_date_time::{
+    DateTimeRange, ValidationDateTime,
 };
 use grid::sheet::validations::validation_rules::validation_list::{
     ValidationList, ValidationListSource,
@@ -75,10 +78,12 @@ fn main() {
         CodeCellLanguage,
         ColumnRow,
         ConnectionKind,
+        DateTimeRange,
         Duration,
         Format,
         GridBounds,
         Instant,
+        JsCellValue,
         JsClipboard,
         JsCodeCell,
         JsCodeResult,
@@ -122,6 +127,7 @@ fn main() {
         TransactionName,
         TransientResize,
         Validation,
+        ValidationDateTime,
         ValidationDisplay,
         ValidationDisplaySheet,
         ValidationError,

@@ -20,6 +20,7 @@ pub struct Format {
     pub text_color: Option<String>,
     pub fill_color: Option<String>,
     pub render_size: Option<RenderSize>,
+    pub date_time: Option<String>,
     pub underline: Option<bool>,
     pub strike_through: Option<bool>,
 }
@@ -37,6 +38,7 @@ impl Format {
             && self.text_color.is_none()
             && self.fill_color.is_none()
             && self.render_size.is_none()
+            && self.date_time.is_none()
             && self.underline.is_none()
             && self.strike_through.is_none()
     }
@@ -54,6 +56,7 @@ impl Format {
         self.text_color = None;
         self.fill_color = None;
         self.render_size = None;
+        self.date_time = None;
         self.underline = None;
         self.strike_through = None;
     }
@@ -104,6 +107,10 @@ impl Format {
         if let Some(render_size) = update.render_size.as_ref() {
             old.render_size = Some(self.render_size.clone());
             self.render_size.clone_from(render_size);
+        }
+        if let Some(date_time) = update.date_time.as_ref() {
+            old.date_time = Some(self.date_time.clone());
+            self.date_time.clone_from(date_time);
         }
         if let Some(underline) = update.underline {
             old.underline = Some(self.underline);
@@ -160,6 +167,9 @@ impl Format {
         }
         if self.render_size.is_some() && update.render_size.is_some() {
             old.render_size = Some(None);
+        }
+        if self.date_time.is_some() && update.date_time.is_some() {
+            old.date_time = Some(None);
         }
         if self.underline.is_some() && update.underline.is_some() {
             old.underline = Some(None);
@@ -224,6 +234,7 @@ impl Format {
                 .render_size
                 .clone()
                 .map_or(Some(None), |r| Some(Some(r))),
+            date_time: self.date_time.clone().map_or(Some(None), |d| Some(Some(d))),
             underline: self.underline.map_or(Some(None), |u| Some(Some(u))),
             strike_through: self.strike_through.map_or(Some(None), |s| Some(Some(s))),
         }
@@ -263,6 +274,9 @@ impl Display for Format {
         if let Some(render_size) = &self.render_size {
             s.push_str(&format!("render_size: {:?}, ", render_size));
         }
+        if let Some(date_time) = &self.date_time {
+            s.push_str(&format!("date_time: {:?}, ", date_time));
+        }
         if let Some(underline) = self.underline {
             s.push_str(&format!("underline: {:?}, ", underline));
         }
@@ -288,6 +302,7 @@ impl From<&Format> for FormatUpdate {
             text_color: format.text_color.clone().map(Some),
             fill_color: format.fill_color.clone().map(Some),
             render_size: format.render_size.clone().map(Some),
+            date_time: format.date_time.clone().map(Some),
             underline: format.underline.map(Some),
             strike_through: format.strike_through.map(Some),
         }
@@ -309,6 +324,7 @@ impl From<Format> for FormatUpdate {
             text_color: format.text_color.clone().map(Some),
             fill_color: format.fill_color.clone().map(Some),
             render_size: format.render_size.clone().map(Some),
+            date_time: format.date_time.clone().map(Some),
             underline: format.underline.map(Some),
             strike_through: format.strike_through.map(Some),
         }
@@ -350,6 +366,7 @@ mod test {
                 w: "1".to_string(),
                 h: "2".to_string(),
             }),
+            date_time: Some("%H".to_string()),
             underline: Some(true),
             strike_through: Some(true),
         };
@@ -367,6 +384,7 @@ mod test {
         assert_eq!(format.text_color, None);
         assert_eq!(format.fill_color, None);
         assert_eq!(format.render_size, None);
+        assert_eq!(format.date_time, None);
         assert_eq!(format.underline, None);
         assert_eq!(format.strike_through, None);
     }
@@ -392,6 +410,7 @@ mod test {
                 w: "1".to_string(),
                 h: "2".to_string(),
             }),
+            date_time: Some("%H".to_string()),
             underline: Some(true),
             strike_through: Some(true),
         };
@@ -414,6 +433,7 @@ mod test {
                 w: "3".to_string(),
                 h: "4".to_string(),
             })),
+            date_time: Some(Some("%M".to_string())),
             underline: Some(Some(true)),
             strike_through: Some(Some(true)),
         };
@@ -435,6 +455,7 @@ mod test {
                 text_color: Some(None),
                 fill_color: Some(None),
                 render_size: Some(None),
+                date_time: Some(None),
                 underline: Some(None),
                 strike_through: Some(None),
             }
@@ -445,7 +466,7 @@ mod test {
     #[parallel]
     fn merge_update_into() {
         let mut format = Format::default();
-        let update = super::FormatUpdate {
+        let update = FormatUpdate {
             align: Some(Some(CellAlign::Center)),
             vertical_align: Some(Some(CellVerticalAlign::Middle)),
             wrap: Some(Some(CellWrap::Wrap)),
@@ -463,6 +484,7 @@ mod test {
                 w: "1".to_string(),
                 h: "2".to_string(),
             })),
+            date_time: Some(Some("%H".to_string())),
             underline: Some(Some(true)),
             strike_through: Some(Some(true)),
         };
@@ -492,6 +514,7 @@ mod test {
                 h: "2".to_string()
             })
         );
+        assert_eq!(format.date_time, Some("%H".to_string()));
         assert_eq!(format.underline, Some(true));
         assert_eq!(format.strike_through, Some(true));
 
@@ -574,6 +597,7 @@ mod test {
                 w: "1".to_string(),
                 h: "2".to_string(),
             }),
+            date_time: Some("%H".to_string()),
             underline: Some(true),
             strike_through: Some(true),
         };
@@ -603,6 +627,7 @@ mod test {
                 h: "2".to_string()
             }))
         );
+        assert_eq!(update.date_time, Some(Some("%H".to_string())));
         assert_eq!(update.underline, Some(Some(true)));
         assert_eq!(update.strike_through, Some(Some(true)));
     }
@@ -628,6 +653,7 @@ mod test {
                 w: "1".to_string(),
                 h: "2".to_string(),
             }),
+            date_time: Some("%H".to_string()),
             underline: Some(true),
             strike_through: Some(true),
         };
@@ -657,6 +683,7 @@ mod test {
                 h: "2".to_string()
             }))
         );
+        assert_eq!(update.date_time, Some(Some("%H".to_string())));
         assert_eq!(update.underline, Some(Some(true)));
         assert_eq!(update.strike_through, Some(Some(true)));
     }
@@ -679,6 +706,7 @@ mod test {
                 text_color: Some(None),
                 fill_color: Some(None),
                 render_size: Some(None),
+                date_time: Some(None),
                 underline: Some(None),
                 strike_through: Some(None),
             }

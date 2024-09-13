@@ -53,6 +53,12 @@ impl From<&Format> for JsNumber {
     }
 }
 
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+pub struct JsCellValue {
+    pub value: String,
+    pub kind: String,
+}
+
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
@@ -163,9 +169,14 @@ impl JsRenderBorder {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
+pub enum CellType {
+    Date,
+    DateTime,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash, TS)]
 #[serde(rename_all = "camelCase")]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CellFormatSummary {
     pub bold: Option<bool>,
     pub italic: Option<bool>,
@@ -177,6 +188,10 @@ pub struct CellFormatSummary {
     pub align: Option<CellAlign>,
     pub vertical_align: Option<CellVerticalAlign>,
     pub wrap: Option<CellWrap>,
+
+    pub date_time: Option<String>,
+    pub cell_type: Option<CellType>,
+
     pub underline: Option<bool>,
     pub strike_through: Option<bool>,
 }

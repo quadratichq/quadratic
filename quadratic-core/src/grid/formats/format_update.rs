@@ -79,6 +79,12 @@ pub struct FormatUpdate {
         skip_serializing_if = "Option::is_none",
         with = "::serde_with::rust::double_option"
     )]
+    pub date_time: Option<Option<String>>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "::serde_with::rust::double_option"
+    )]
     pub underline: Option<Option<bool>>,
     #[serde(
         default,
@@ -104,6 +110,7 @@ impl FormatUpdate {
             text_color: Some(None),
             fill_color: Some(None),
             render_size: Some(None),
+            date_time: Some(None),
             underline: Some(None),
             strike_through: Some(None),
         }
@@ -121,6 +128,7 @@ impl FormatUpdate {
             && self.text_color.is_none()
             && self.fill_color.is_none()
             && self.render_size.is_none()
+            && self.date_time.is_none()
             && self.underline.is_none()
             && self.strike_through.is_none()
     }
@@ -141,6 +149,7 @@ impl FormatUpdate {
             || self.bold.is_some()
             || self.italic.is_some()
             || self.text_color.is_some()
+            || self.date_time.is_some()
             || self.underline.is_some()
             || self.strike_through.is_some()
     }
@@ -155,6 +164,7 @@ impl FormatUpdate {
             || self.numeric_commas.is_some()
             || self.bold.is_some()
             || self.italic.is_some()
+            || self.date_time.is_some()
     }
 
     pub fn combine(&self, other: &FormatUpdate) -> FormatUpdate {
@@ -170,6 +180,7 @@ impl FormatUpdate {
             text_color: self.text_color.clone().or(other.text_color.clone()),
             fill_color: self.fill_color.clone().or(other.fill_color.clone()),
             render_size: self.render_size.clone().or(other.render_size.clone()),
+            date_time: self.date_time.clone().or(other.date_time.clone()),
             underline: self.underline.or(other.underline),
             strike_through: self.strike_through.or(other.strike_through),
         }
@@ -211,6 +222,9 @@ impl FormatUpdate {
         if self.render_size.is_some() {
             clear.render_size = Some(None);
         }
+        if self.date_time.is_some() {
+            clear.date_time = Some(None);
+        }
         if self.underline.is_some() {
             clear.underline = Some(None);
         }
@@ -236,6 +250,7 @@ impl From<&FormatUpdate> for Format {
             text_color: update.text_color.clone().unwrap_or(None),
             fill_color: update.fill_color.clone().unwrap_or(None),
             render_size: update.render_size.clone().unwrap_or(None),
+            date_time: update.date_time.clone().unwrap_or(None),
             underline: update.underline.unwrap_or(None),
             strike_through: update.strike_through.unwrap_or(None),
         }
@@ -279,6 +294,7 @@ mod tests {
                 text_color: Some(None),
                 fill_color: Some(None),
                 render_size: Some(None),
+                date_time: Some(None),
                 underline: Some(None),
                 strike_through: Some(None),
             }
@@ -438,6 +454,7 @@ mod tests {
                 w: "1".to_string(),
                 h: "2".to_string(),
             })),
+            date_time: Some(Some("%H".to_string())),
             underline: Some(Some(true)),
             strike_through: Some(Some(true)),
         };
@@ -460,6 +477,7 @@ mod tests {
                 w: "3".to_string(),
                 h: "4".to_string(),
             })),
+            date_time: Some(Some("%M".to_string())),
             underline: Some(Some(false)),
             strike_through: Some(Some(false)),
         };
@@ -492,6 +510,7 @@ mod tests {
                 h: "2".to_string()
             }))
         );
+        assert_eq!(combined.date_time, Some(Some("%H".to_string())));
         assert_eq!(combined.underline, Some(Some(true)));
         assert_eq!(combined.strike_through, Some(Some(true)));
     }
@@ -517,6 +536,7 @@ mod tests {
                 w: "1".to_string(),
                 h: "2".to_string(),
             })),
+            date_time: Some(Some("%H".to_string())),
             underline: Some(Some(true)),
             strike_through: Some(Some(true)),
         };
@@ -534,6 +554,7 @@ mod tests {
         assert_eq!(cleared.text_color, Some(None));
         assert_eq!(cleared.fill_color, Some(None));
         assert_eq!(cleared.render_size, Some(None));
+        assert_eq!(cleared.date_time, Some(None));
         assert_eq!(cleared.underline, Some(None));
         assert_eq!(cleared.strike_through, Some(None));
     }
@@ -559,6 +580,7 @@ mod tests {
                 w: "1".to_string(),
                 h: "2".to_string(),
             })),
+            date_time: Some(Some("%H".to_string())),
             underline: Some(Some(true)),
             strike_through: Some(Some(true)),
         };
@@ -588,6 +610,7 @@ mod tests {
                 h: "2".to_string()
             })
         );
+        assert_eq!(format.date_time, Some("%H".to_string()));
         assert_eq!(format.underline, Some(true));
         assert_eq!(format.strike_through, Some(true));
     }

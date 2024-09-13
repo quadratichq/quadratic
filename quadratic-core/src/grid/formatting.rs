@@ -21,6 +21,7 @@ pub enum CellFmtArray {
     TextColor(RunLengthEncoding<Option<String>>),
     FillColor(RunLengthEncoding<Option<String>>),
     RenderSize(RunLengthEncoding<Option<RenderSize>>),
+    DateTime(RunLengthEncoding<Option<String>>),
     Underline(RunLengthEncoding<Option<bool>>),
     StrikeThrough(RunLengthEncoding<Option<bool>>),
 }
@@ -250,4 +251,15 @@ pub enum NumericFormatKind {
     Currency, // { symbol: String }, // TODO: would be nice if this were just a single char (and it could be)
     Percentage,
     Exponential,
+}
+
+pub struct DateTimeFormatting;
+impl CellFmtAttr for DateTimeFormatting {
+    type Value = String;
+    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
+        &column.date_time
+    }
+    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
+        &mut column.date_time
+    }
 }

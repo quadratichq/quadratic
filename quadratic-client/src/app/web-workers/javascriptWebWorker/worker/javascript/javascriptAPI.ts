@@ -8,7 +8,7 @@ import { javascriptClient } from '../javascriptClient';
 import { javascriptCore } from '../javascriptCore';
 import { Javascript } from './javascript';
 
-export type CellType = number | string | boolean | undefined;
+export type CellType = number | string | boolean | Date | undefined;
 export type CellPos = { x: number; y: number };
 
 export class JavascriptAPI {
@@ -20,6 +20,8 @@ export class JavascriptAPI {
 
   private convertType(entry: JsGetCellResponse): CellType | undefined {
     if (entry.type_name === 'blank') return undefined;
+    if (entry.type_name === 'date time' || entry.type_name === 'date')
+      return `___date___${new Date(entry.value).getTime()}`;
     return entry.type_name === 'number' ? parseFloat(entry.value) : entry.value;
   }
 

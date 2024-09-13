@@ -252,6 +252,24 @@ impl GridController {
         Ok(())
     }
 
+    pub(crate) fn set_date_time_format(
+        &mut self,
+        selection: Selection,
+        date_time: Option<String>,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let formats = Formats::repeat(
+            FormatUpdate {
+                date_time: Some(date_time),
+                ..Default::default()
+            },
+            selection.count(),
+        );
+        let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        Ok(())
+    }
+
     pub(crate) fn set_underline_selection(
         &mut self,
         selection: Selection,
@@ -809,5 +827,32 @@ mod test {
         assert_eq!(sheet.format_column(1).fill_color, Some("red".to_string()));
         assert_eq!(sheet.format_row(0).fill_color, Some("red".to_string()));
         assert_eq!(sheet.format_row(2).fill_color, Some("red".to_string()));
+    }
+
+    #[test]
+    #[parallel]
+    fn set_date_time_format() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_date_time_format(
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+                rows: None,
+                columns: None,
+                all: false,
+            },
+            Some("yyyy-mm-dd".to_string()),
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.columns.get(&0).unwrap().date_time.get(0),
+            Some("yyyy-mm-dd".to_string())
+        );
     }
 }

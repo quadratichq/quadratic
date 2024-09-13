@@ -115,7 +115,8 @@ export class CellsLabels extends Container {
       // refresh viewport if necessary
       if (sheets.sheet.id === this.cellsSheet.sheetId) {
         const bounds = pixiApp.viewport.getVisibleBounds();
-        if (intersects.rectangleRectangle(cellsTextHash.viewRectangle, bounds)) {
+        const hashBounds = cellsTextHash.bounds.toRectangle();
+        if (hashBounds && intersects.rectangleRectangle(hashBounds, bounds)) {
           cellsTextHash.show();
           if (pixiApp.gridLines) {
             pixiApp.gridLines.dirty = true;
@@ -142,7 +143,8 @@ export class CellsLabels extends Container {
       this.cellsTextHashDebug.removeChildren();
     }
     this.cellsTextHashes.children.forEach((cellsTextHash) => {
-      if (intersects.rectangleRectangle(cellsTextHash.viewRectangle, bounds)) {
+      const hashBounds = cellsTextHash.bounds.toRectangle();
+      if (hashBounds && intersects.rectangleRectangle(hashBounds, bounds)) {
         cellsTextHash.show();
         if (debugShowCellsHashBoxes) {
           cellsTextHash.drawDebugBox(this.cellsTextDebug, this.cellsTextHashDebug);

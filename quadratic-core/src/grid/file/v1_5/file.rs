@@ -239,6 +239,7 @@ fn upgrade_column(x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
                     )
                 })
                 .collect(),
+            date_time: Default::default(),
             underline: HashMap::new(),
             strike_through: HashMap::new(),
         },

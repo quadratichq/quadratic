@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 use std::fmt::{self, Display};
 
-use chrono::{DateTime, Utc};
+use crate::grid::file::v1_5::schema as v1_5;
+use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 pub use v1_5::RunErrorMsg;
 
 use super::schema_validation::Validations;
-use crate::grid::file::v1_5::schema as v1_5;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GridSchema {
@@ -103,6 +103,9 @@ pub struct Format {
     pub text_color: Option<String>,
     pub fill_color: Option<String>,
     pub render_size: Option<RenderSize>,
+
+    #[serde(default)]
+    pub date_time: Option<String>,
     pub underline: Option<bool>,
     pub strike_through: Option<bool>,
 }
@@ -200,6 +203,8 @@ pub struct Column {
     pub text_color: HashMap<String, ColumnRepeat<String>>,
     pub fill_color: HashMap<String, ColumnRepeat<String>>,
     pub render_size: HashMap<String, ColumnRepeat<RenderSize>>,
+    #[serde(default)]
+    pub date_time: HashMap<String, ColumnRepeat<String>>,
 
     // Same as comment for `vertical_align`
     #[serde(skip_serializing_if = "HashMap::is_empty", default)]
@@ -219,6 +224,9 @@ pub enum CellValue {
     Code(CodeCell),
     Logical(bool),
     Instant(String),
+    Date(NaiveDate),
+    Time(NaiveTime),
+    DateTime(NaiveDateTime),
     Duration(String),
     Error(RunError),
     Image(String),
