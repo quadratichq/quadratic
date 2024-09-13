@@ -1034,6 +1034,21 @@ class Core {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.deleteColumn(sheetId, BigInt(column), cursor);
   }
+
+  insertColumn(sheetId: string, column: number, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.insertColumn(sheetId, BigInt(column), cursor);
+  }
+
+  deleteRow(sheetId: string, row: number, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    // this.gridController.deleteRow(sheetId, BigInt(row), cursor);
+  }
+
+  insertRow(sheetId: string, row: number, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    // this.gridController.insertRow(sheetId, BigInt(row), cursor);
+  }
 }
 
 export const core = new Core();

@@ -973,6 +973,27 @@ export interface ClientCoreDeleteColumn {
   cursor: string;
 }
 
+export interface ClientCoreDeleteRow {
+  type: 'clientCoreDeleteRow';
+  sheetId: string;
+  row: number;
+  cursor: string;
+}
+
+export interface ClientCoreInsertColumn {
+  type: 'clientCoreInsertColumn';
+  sheetId: string;
+  column: number;
+  cursor: string;
+}
+
+export interface ClientCoreInsertRow {
+  type: 'clientCoreInsertRow';
+  sheetId: string;
+  row: number;
+  cursor: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1046,7 +1067,10 @@ export type ClientCoreMessage =
   | ClientCoreGetDisplayCell
   | ClientCoreValidateInput
   | ClientCoreGetCellValue
-  | ClientCoreDeleteColumn;
+  | ClientCoreDeleteColumn
+  | ClientCoreDeleteRow
+  | ClientCoreInsertColumn
+  | ClientCoreInsertRow;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

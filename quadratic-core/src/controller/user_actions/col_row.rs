@@ -11,4 +11,9 @@ impl GridController {
         let ops = vec![Operation::DeleteColumn { sheet_id, column }];
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
+
+    pub fn insert_column(&mut self, sheet_id: SheetId, column: i64, cursor: Option<String>) {
+        let ops = vec![Operation::InsertColumn { sheet_id, column }];
+        self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
+    }
 }

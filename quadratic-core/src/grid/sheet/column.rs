@@ -236,6 +236,97 @@ impl Sheet {
             });
         }
 
+        let mut updated_cols = HashSet::new();
+
+        // update the indices of all columns impacted by the insertion
+        if column < 0 {
+            todo!();
+            // let mut columns_to_update = Vec::new();
+            // for col in self.columns.keys() {
+            //     if *col < column {
+            //         columns_to_update.push(*col);
+            //     }
+            // }
+            // for col in columns_to_update {
+            //     if let Some(mut column_data) = self.columns.remove(&col) {
+            //         column_data.x += 1;
+            //         self.columns.insert(col + 1, column_data);
+            //         updated_cols.insert(col + 1);
+            //     }
+            // }
+        } else {
+            let mut columns_to_update = Vec::new();
+            for col in self.columns.keys() {
+                if *col > column {
+                    columns_to_update.push(*col);
+                }
+            }
+            columns_to_update.reverse();
+            for col in columns_to_update {
+                if let Some(mut column_data) = self.columns.remove(&col) {
+                    column_data.x += 1;
+                    self.columns.insert(col + 1, column_data);
+                    updated_cols.insert(col + 1);
+                }
+            }
+        }
+
+        // update the indices of all code_runs impacted by the insertion
+        let mut code_runs_to_move = Vec::new();
+        for (pos, _) in self.code_runs.iter() {
+            if (column < 0 && pos.x < column) || (column >= 0 && pos.x > column) {
+                code_runs_to_move.push(*pos);
+            }
+        }
+        code_runs_to_move.reverse();
+        for old_pos in code_runs_to_move {
+            if let Some(code_run) = self.code_runs.shift_remove(&old_pos) {
+                let new_pos = if column < 0 && old_pos.x < column {
+                    todo!();
+                    // Pos {
+                    //     x: old_pos.x + 1,
+                    //     y: old_pos.y,
+                    // }
+                } else {
+                    Pos {
+                        x: old_pos.x + 1,
+                        y: old_pos.y,
+                    }
+                };
+                self.code_runs.insert(new_pos, code_run);
+            }
+        }
+
+        // update the indices of all column-based formats impacted by the deletion
+        let mut formats_to_update = Vec::new();
+        for col in self.formats_columns.keys() {
+            if (column < 0 && *col < column) || (column >= 0 && *col > column) {
+                formats_to_update.push(*col);
+            }
+        }
+        formats_to_update.reverse();
+        for col in formats_to_update {
+            if let Some(format) = self.formats_columns.remove(&col) {
+                let new_col = if column < 0 { col - 1 } else { col + 1 };
+                self.formats_columns.insert(new_col, format);
+            }
+        }
+
+        let dirty_hashes = transaction
+            .dirty_hashes
+            .entry(self.id)
+            .or_insert_with(HashSet::new);
+
+        updated_cols.iter().for_each(|col| {
+            if let Some((start, end)) = self.column_bounds(*col, false) {
+                for y in (start..=end).step_by(CELL_SHEET_HEIGHT as usize) {
+                    let mut pos = Pos { x: *col, y };
+                    pos.to_quadrant();
+                    dirty_hashes.insert(pos);
+                }
+            }
+        });
+
         reverse_operations
     }
 }

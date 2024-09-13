@@ -560,6 +560,18 @@ class CoreClient {
         core.deleteColumn(e.data.sheetId, e.data.column, e.data.cursor);
         return;
 
+      case 'clientCoreDeleteRow':
+        core.deleteRow(e.data.sheetId, e.data.row, e.data.cursor);
+        return;
+
+      case 'clientCoreInsertColumn':
+        core.insertColumn(e.data.sheetId, e.data.column, e.data.cursor);
+        return;
+
+      case 'clientCoreInsertRow':
+        core.insertRow(e.data.sheetId, e.data.row, e.data.cursor);
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core

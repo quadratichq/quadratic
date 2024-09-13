@@ -1,7 +1,7 @@
 //! This shows the grid heading context menu.
 
 import { gridHeadingAtom } from '@/app/atoms/gridHeadingAtom';
-import { deleteColumnRow } from '@/app/gridGL/HTMLGrid/actionColumnRow';
+import { deleteColumnRow, insertColumnRow } from '@/app/gridGL/HTMLGrid/actionColumnRow';
 import { useHeadingSize } from '@/app/gridGL/HTMLGrid/useHeadingSize';
 import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
 import { ControlledMenu, MenuItem } from '@szhsin/react-menu';
@@ -42,10 +42,10 @@ export const GridHeadingContextMenu = () => {
       anchorPoint={{ x: show.world.x + leftHeading, y: show.world.y + topHeading + 50 }}
       menuStyle={{ padding: '2px 0', color: 'inherit' }}
     >
-      <MenuItem disabled>
+      <MenuItem onClick={() => insertColumnRow(show.column, show.row, -1)}>
         <MenuLineItem primary={`Insert ${item} ${dir[0]}`} />
       </MenuItem>
-      <MenuItem disabled>
+      <MenuItem onClick={() => insertColumnRow(show.column, show.row, 0)}>
         <MenuLineItem primary={`Insert ${item} ${dir[1]}`} />
       </MenuItem>
       <MenuItem onClick={() => deleteColumnRow(show.column, show.row)}>
