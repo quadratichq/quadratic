@@ -1,6 +1,7 @@
 import { Action } from '@/app/actions/actions';
 import { ActionArgs } from '@/app/actions/actionsSpec';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
@@ -37,7 +38,12 @@ export const MenubarItemAction = <T extends Action>({
 
   // TODO: (jimniels) implement isAvailable
   return (
-    <MenubarItem onClick={() => run(actionArgs)}>
+    <MenubarItem
+      onClick={() => {
+        run(actionArgs);
+        focusGrid();
+      }}
+    >
       {Icon && <Icon />} {label}
       {keyboardShortcut && <MenubarShortcut>{keyboardShortcut}</MenubarShortcut>}
     </MenubarItem>
