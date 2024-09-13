@@ -215,11 +215,6 @@ impl GridController {
             y: selection.y,
         };
 
-        // clear the sheet first
-        if !matches!(special, PasteSpecial::Values) {
-            ops.extend(self.clear_format_selection_operations(selection));
-        }
-
         let mut cursor_translate_x = selection.x - clipboard.origin.x;
         let mut cursor_translate_y = selection.y - clipboard.origin.y;
 
