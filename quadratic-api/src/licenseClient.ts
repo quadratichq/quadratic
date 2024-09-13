@@ -9,8 +9,6 @@ import dbClient from './dbClient';
 import { LICENSE_API_URI, LICENSE_KEY } from './env-vars';
 
 type LicenseResponse = z.infer<typeof LicenseSchema>;
-// const StatusEnum = LicenseSchema.shape.status;
-// type StatusType = z.infer<typeof StatusEnum>;
 
 let cachedResult: LicenseResponse | null = null;
 let lastCheckedTime: number | null = null;

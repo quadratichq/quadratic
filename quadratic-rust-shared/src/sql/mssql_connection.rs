@@ -297,7 +297,7 @@ where
         .unwrap_or(ArrowType::Void)
 }
 
-fn convert_mssql_type_owned<'a, T, F>(
+fn convert_mssql_type_owned<T, F>(
     column_data: ColumnData<'static>,
     map_to_arrow_type: F,
 ) -> ArrowType
