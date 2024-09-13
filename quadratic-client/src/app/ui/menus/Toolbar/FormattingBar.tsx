@@ -272,7 +272,7 @@ function FormatColorPickerButton({
 
   return (
     <FormatButtonDropdown tooltipLabel={label} Icon={Icon}>
-      <div className="color-picker-dropdown-menu">
+      <DropdownMenuItem className="color-picker-dropdown-menu flex flex-col !bg-background p-0">
         <QColorPicker
           onChangeComplete={(color) => {
             run(color);
@@ -283,7 +283,7 @@ function FormatColorPickerButton({
             focusGrid();
           }}
         />
-      </div>
+      </DropdownMenuItem>
     </FormatButtonDropdown>
   );
 }
