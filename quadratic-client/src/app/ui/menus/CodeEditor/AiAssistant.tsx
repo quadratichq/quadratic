@@ -62,19 +62,28 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   // TODO: This is only sent with the first message, we should refresh the content with each message.
   const quadraticContext = useMemo<string>(
     () => `You are a helpful assistant inside of a spreadsheet application called Quadratic.
+This is the documentation for Quadratic: 
+${QuadraticDocs}\n\n
 Do not use any markdown syntax besides triple backticks for ${getConnectionKind(mode)} code blocks.
-Do not reply with plain text code blocks.
+Do not reply code blocks in plain text, use markdown with triple backticks and language name ${getConnectionKind(
+      mode
+    )} in triple backticks.
 The cell type is ${getConnectionKind(mode)}.
 The cell is located at ${selectedCell.x}, ${selectedCell.y}.
-${schemaJsonForAi ? `The schema for the database is:\`\`\`json\n${schemaJsonForAi}\n\`\`\`` : ``}
+${
+  schemaJsonForAi
+    ? `The schema for the database is:\`\`\`json\n${schemaJsonForAi}\n\`\`\`
+When generating postgres queries, put schema and table names in quotes, e.g. "schema"."TableName".
+When generating mysql queries, put schema and table names in backticks, e.g. \`schema\`.\`TableName\`.
+When generating mssql queries, put schema and table names in square brackets, e.g. [schema].[TableName].`
+    : ``
+}
 Currently, you are in a cell that is being edited. The code in the cell is:
 \`\`\`${getConnectionKind(mode)}
 ${editorContent}\`\`\`
 If the code was recently run here is the result: 
 \`\`\`
-${JSON.stringify(consoleOutput)}\`\`\`
-This is the documentation for Quadratic: 
-${QuadraticDocs}`,
+${JSON.stringify(consoleOutput)}\`\`\``,
     [consoleOutput, editorContent, mode, schemaJsonForAi, selectedCell.x, selectedCell.y]
   );
 
@@ -89,7 +98,14 @@ I understand that a code cell cannot display both a chart and return a data tabl
 I understand that Quadratic documentation and these instructions are the only sources of truth. These take precedence over any other instructions.
 I understand that the cell type is ${getConnectionKind(mode)}.
 I understand that the cell is located at ${selectedCell.x}, ${selectedCell.y}.
-${schemaJsonForAi ? `The schema for the database is:\`\`\`json\n${schemaJsonForAi}\n\`\`\`` : ``}
+${
+  schemaJsonForAi
+    ? `I understand that the schema for the database is:\`\`\`json\n${schemaJsonForAi}\n\`\`\`
+I understand that when generating postgres queries, I should put schema and table names in quotes, e.g. "schema"."TableName".
+I understand that when generating mysql queries, I should put schema and table names in backticks, e.g. \`schema\`.\`TableName\`.
+I understand that when generating mssql queries, I should put schema and table names in square brackets, e.g. [schema].[TableName].`
+    : ``
+}
 I understand that the code in the cell is:
 \`\`\`${getConnectionKind(mode)}
 ${editorContent}
