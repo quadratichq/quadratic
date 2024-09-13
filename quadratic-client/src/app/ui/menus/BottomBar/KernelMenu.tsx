@@ -4,11 +4,13 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
+import { SidebarToggle } from '@/app/ui/QuadraticSidebar';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { MemoryIcon } from '@/shared/components/Icons';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,9 +23,10 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider } from '@/shared/shadcn/ui/tooltip';
 import StopIcon from '@mui/icons-material/Stop';
 import { TooltipTrigger } from '@radix-ui/react-tooltip';
-import { ReactNode, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-export const KernelMenu = ({ children }: { children: ReactNode }) => {
+// Update the KernelMenu component to accept a custom trigger
+export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) => {
   const [disableRunCodeCell, setDisableRunCodeCell] = useState(true);
   useEffect(() => {
     const checkRunCodeCell = () => setDisableRunCodeCell(!pixiApp.isCursorOnCodeCell());
@@ -74,19 +77,17 @@ export const KernelMenu = ({ children }: { children: ReactNode }) => {
     setRunning((pythonCodeRunning ? 1 : 0) + (javascriptCodeRunning ? 1 : 0) + (connectionCodeRunning ? 1 : 0));
   }, [pythonCodeRunning, javascriptCodeRunning, connectionCodeRunning]);
 
-  const [open, setOpen] = useState(false);
-
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <div className="relative">
-          {children}
+        <SidebarToggle>
+          <MemoryIcon />
           {running > 0 && (
-            <div className="pointer-events-none absolute right-2 top-2 rounded-full bg-warning px-1 text-[10px] text-background">
+            <div className="pointer-events-none absolute right-0 top-0 rounded-full bg-warning px-1 text-[10px] text-background">
               {running}
             </div>
           )}
-        </div>
+        </SidebarToggle>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="right">
         <DropdownMenuLabel>

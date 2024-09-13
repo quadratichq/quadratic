@@ -95,6 +95,7 @@ export default function QuadraticUI() {
             {editorInteractionState.showAI && <AiAssistant />}
             <FileDragDropWrapper>
               <QuadraticGrid />
+              {!presentationMode && <SheetBar />}
             </FileDragDropWrapper>
             {editorInteractionState.showCodeEditor && <CodeEditor />}
           </CodeEditorProvider>
@@ -112,7 +113,6 @@ export default function QuadraticUI() {
           ></div>
         </div>
 
-        {!presentationMode && <SheetBar />}
         {!presentationMode && !isEmbed && <BottomBar />}
       </div>
 

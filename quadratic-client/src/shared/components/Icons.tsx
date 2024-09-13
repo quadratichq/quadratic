@@ -146,6 +146,10 @@ export const DataObjectIcon: IconComponent = (props) => {
   return <Icon {...props}>data_object</Icon>;
 };
 
+export const DataValidationsIcon: IconComponent = (props) => {
+  return <Icon {...props}>rubric</Icon>;
+};
+
 export const DocumentationIcon: IconComponent = (props) => {
   return <Icon {...props}>menu_book</Icon>;
 };

@@ -121,6 +121,9 @@ interface EventTypes {
   // dropdown button is pressed for dropdown Validation
   triggerCell: (column: number, row: number, forceOpen: boolean) => void;
   dropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape') => void;
+
+  // context menu opens on a grid heading
+  gridContextMenu: (world: Point, column: number, row: number) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

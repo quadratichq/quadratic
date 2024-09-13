@@ -62,6 +62,7 @@
     "gen:pyright:worker": "npm run gen:pyright:worker --workspace=quadratic-kernels/python-wasm"
   },
   "dependencies": {
+    "@radix-ui/react-toggle": "^1.1.0",
     "tsc": "^2.0.4",
     "vitest": "^1.5.0",
     "zod": "^3.23.8"
