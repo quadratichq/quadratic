@@ -145,7 +145,7 @@ impl GridController {
                     }
                 }
 
-                if (cfg! (target_family = "wasm") || cfg! (test)) && !transaction.is_ server() {
+                if (cfg! (target_family = "wasm") || cfg! (test)) && !transaction.is_server() {
                     let dirty_hashes = transaction
                         .dirty_hashes
                         .entry(selection.sheet_id)
