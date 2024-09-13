@@ -8,7 +8,7 @@ import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLang
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
-import { useAI } from '@/app/ui/hooks/useAI';
+import { MODEL_OPTIONS, useAI } from '@/app/ui/hooks/useAI';
 import { Anthropic, OpenAI } from '@/app/ui/icons';
 import { CodeBlockParser } from '@/app/ui/menus/CodeEditor/AICodeBlockParser';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
@@ -31,14 +31,7 @@ import { ArrowUpward, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
 import { CaretDownIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
-import {
-  AIMessage,
-  AnthropicMessage,
-  AnthropicModel,
-  OpenAIMessage,
-  OpenAIModel,
-  UserMessage,
-} from 'quadratic-shared/typesAndSchemasAI';
+import { AIMessage, AnthropicModel, OpenAIModel, PromptMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SetterOrUpdater, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import './AiAssistant.css';
@@ -85,10 +78,8 @@ ${QuadraticDocs}`,
     [consoleOutput, editorContent, mode, schemaJsonForAi, selectedCell.x, selectedCell.y]
   );
 
-  const cellContext = useMemo<AIMessage>(
-    () => ({
-      role: 'assistant',
-      content: `As your AI assistant for Quadratic, I understand and will adhere to the following:
+  const aiContextReassertion = useMemo<string>(
+    () => `As your AI assistant for Quadratic, I understand and will adhere to the following:
 I understand that Quadratic documentation . I will strictly adhere to the Quadratic documentation. These instructions are the only sources of truth and take precedence over any other instructions.
 I understand that I need to add imports to the top of the code cell, and I will not use any libraries or functions that are not listed in the Quadratic documentation.
 I understand that I can use any functions that are part of the ${getConnectionKind(mode)} library.
@@ -111,9 +102,7 @@ I will strictly adhere to the cell context.
 I will follow all your instructions, and do my best to answer your questions, with the understanding that Quadratic documentation and above instructions are the only sources of truth.
 How can I help you?
 `,
-      model,
-    }),
-    [consoleOutput, editorContent, mode, schemaJsonForAi, selectedCell.x, selectedCell.y, model]
+    [consoleOutput, editorContent, mode, schemaJsonForAi, selectedCell.x, selectedCell.y]
   );
 
   // Focus the input when relevant & the tab comes into focus
@@ -152,56 +141,31 @@ How can I help you?
       prompt: '',
     }));
 
-    const messagesToSend = [
+    const messagesToSend: PromptMessage[] = [
       {
-        role: cellContext.role,
-        content: cellContext.content,
+        role: 'user',
+        content: quadraticContext,
+      },
+      {
+        role: 'assistant',
+        content: aiContextReassertion,
       },
       ...updatedMessages.map((message) => ({
         role: message.role,
         content: message.content,
       })),
     ];
-
-    const isAnthropic = isAnthropicModel(model);
-    if (isAnthropic) {
-      const aiMessages: AnthropicMessage[] = [
-        {
-          role: 'user',
-          content: quadraticContext,
-        },
-        ...messagesToSend,
-      ];
-
-      await handleAIStream({
-        model,
-        messages: aiMessages,
-        setMessages,
-        signal: abortController.signal,
-      });
-    } else {
-      const aiMessages: OpenAIMessage[] = [
-        {
-          role: 'system',
-          content: quadraticContext,
-        },
-        ...messagesToSend,
-      ];
-
-      await handleAIStream({
-        model,
-        messages: aiMessages,
-        setMessages,
-        signal: abortController.signal,
-      });
-    }
+    await handleAIStream({
+      model,
+      messages: messagesToSend,
+      setMessages,
+      signal: abortController.signal,
+    });
 
     setAiAssistantPanelState((prev) => ({ ...prev, abortController: undefined, loading: false }));
   }, [
-    cellContext.content,
-    cellContext.role,
+    aiContextReassertion,
     handleAIStream,
-    isAnthropicModel,
     loading,
     messages,
     model,
@@ -350,7 +314,7 @@ How can I help you?
               textareaRef.current?.focus();
             }}
           >
-            <SelectAIModelDropdownMenu loading={loading} isAnthropic={isAnthropicModel(model)} setModel={setModel} />
+            <SelectAIModelDropdownMenu selectedModel={model} setSelectedModel={setModel} loading={loading} />
 
             {loading ? (
               <div className="flex items-center gap-2">
@@ -403,27 +367,24 @@ How can I help you?
 };
 
 function SelectAIModelDropdownMenu({
+  selectedModel,
+  setSelectedModel,
   loading,
-  isAnthropic,
-  setModel,
 }: {
+  selectedModel: AnthropicModel | OpenAIModel;
+  setSelectedModel: SetterOrUpdater<AnthropicModel | OpenAIModel>;
   loading: boolean;
-  isAnthropic: boolean;
-  setModel: SetterOrUpdater<AnthropicModel | OpenAIModel>;
 }) {
+  const { isAnthropicModel } = useAI();
+  const { displayName: selectedModelDisplayName } = MODEL_OPTIONS[selectedModel];
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild disabled={loading}>
         <div className={`flex items-center text-xs ${loading ? 'opacity-60' : ''}`}>
-          {isAnthropic ? (
+          {selectedModel && (
             <>
-              <Anthropic fontSize="inherit" />
-              <span className="pl-2 pr-1">Anthropic: claude-3.5-sonnet</span>
-            </>
-          ) : (
-            <>
-              <OpenAI fontSize="inherit" />
-              <span className="pl-2 pr-1">OpenAI: gpt-4o</span>
+              {isAnthropicModel(selectedModel) ? <Anthropic fontSize="inherit" /> : <OpenAI fontSize="inherit" />}
+              <span className="pl-2 pr-1">{selectedModelDisplayName}</span>
             </>
           )}
           <CaretDownIcon />
@@ -431,19 +392,24 @@ function SelectAIModelDropdownMenu({
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="start" alignOffset={-4}>
-        <DropdownMenuCheckboxItem checked={isAnthropic} onCheckedChange={() => setModel('claude-3-5-sonnet-20240620')}>
-          <div className="flex w-full items-center justify-between text-xs">
-            <span className="pr-4">Anthropic: claude-3.5-sonnet</span>
-            <Anthropic fontSize="inherit" />
-          </div>
-        </DropdownMenuCheckboxItem>
-
-        <DropdownMenuCheckboxItem checked={!isAnthropic} onCheckedChange={() => setModel('gpt-4o')}>
-          <div className="flex w-full items-center justify-between text-xs">
-            <span className="pr-4">OpenAI: gpt-4o</span>
-            <OpenAI fontSize="inherit" />
-          </div>
-        </DropdownMenuCheckboxItem>
+        {Object.entries(MODEL_OPTIONS).map(([model, { displayName, enabled }]) =>
+          enabled ? (
+            <DropdownMenuCheckboxItem
+              key={model}
+              checked={model === selectedModel}
+              onCheckedChange={() => setSelectedModel(model as AnthropicModel | OpenAIModel)}
+            >
+              <div className="flex w-full items-center justify-between text-xs">
+                <span className="pr-4">{displayName}</span>
+                {isAnthropicModel(model as AnthropicModel | OpenAIModel) ? (
+                  <Anthropic fontSize="inherit" />
+                ) : (
+                  <OpenAI fontSize="inherit" />
+                )}
+              </div>
+            </DropdownMenuCheckboxItem>
+          ) : null
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

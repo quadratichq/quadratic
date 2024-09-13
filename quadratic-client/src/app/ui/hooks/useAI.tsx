@@ -1,29 +1,56 @@
+import { debug } from '@/app/debugFlags';
 import { authClient } from '@/auth';
 import { AI } from '@/shared/constants/routes';
 import {
   AIMessage,
-  AnthropicMessage,
   AnthropicModel,
   AnthropicModelSchema,
-  OpenAIMessage,
   OpenAIModel,
+  PromptMessage,
   UserMessage,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 import { SetterOrUpdater } from 'recoil';
 
-type HandleOpenAIPromptProps = {
-  model: OpenAIModel;
-  messages: OpenAIMessage[];
-  setMessages:
-    | SetterOrUpdater<(UserMessage | AIMessage)[]>
-    | ((value: React.SetStateAction<(UserMessage | AIMessage)[]>) => void);
-  signal: AbortSignal;
+type ModelOption = {
+  [key in AnthropicModel | OpenAIModel]: {
+    displayName: string;
+    temperature: number;
+    stream: boolean;
+    enabled: boolean;
+  };
 };
 
-type HandleAnthropicAIPromptProps = {
-  model: AnthropicModel;
-  messages: AnthropicMessage[];
+export const MODEL_OPTIONS: ModelOption = {
+  'claude-3-5-sonnet-20240620': {
+    displayName: 'Anthropic: claude-3.5-sonnet',
+    temperature: 0,
+    stream: true,
+    enabled: true,
+  },
+  'gpt-4o': {
+    displayName: 'OpenAI: gpt-4o',
+    temperature: 0,
+    stream: true,
+    enabled: true,
+  },
+  'gpt-4o-2024-08-06': {
+    displayName: 'OpenAI: gpt-4o-2024-08-06',
+    temperature: 0,
+    stream: true,
+    enabled: debug,
+  },
+  'o1-preview': {
+    displayName: 'OpenAI: o1-preview',
+    temperature: 1,
+    stream: false,
+    enabled: debug,
+  },
+} as const;
+
+type HandleAIPromptProps = {
+  model: AnthropicModel | OpenAIModel;
+  messages: PromptMessage[];
   setMessages:
     | SetterOrUpdater<(UserMessage | AIMessage)[]>
     | ((value: React.SetStateAction<(UserMessage | AIMessage)[]>) => void);
@@ -123,17 +150,20 @@ export function useAI() {
       messages,
       setMessages,
       signal,
-    }: HandleOpenAIPromptProps | HandleAnthropicAIPromptProps): Promise<{ error?: boolean; content: string }> => {
+    }: HandleAIPromptProps): Promise<{ error?: boolean; content: string }> => {
       let responseMessage: AIMessage = { role: 'assistant', content: '', model };
-      const isAnthropic = isAnthropicModel(model);
+      setMessages((prev) => [...prev, { ...responseMessage, content: 'Loading...' }]);
+
       try {
+        const isAnthropic = isAnthropicModel(model);
+        const { stream, temperature } = MODEL_OPTIONS[model];
         const token = await authClient.getTokenOrRedirect();
-        const endpoint = isAnthropic ? AI.ANTHROPIC.STREAM : AI.OPENAI.STREAM;
+        const endpoint = isAnthropic ? AI.ANTHROPIC[stream ? 'STREAM' : 'CHAT'] : AI.OPENAI[stream ? 'STREAM' : 'CHAT'];
         const response = await fetch(endpoint, {
           method: 'POST',
           signal,
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model, messages }),
+          body: JSON.stringify({ model, messages, temperature }),
         });
 
         if (!response.ok) {
@@ -148,15 +178,32 @@ export function useAI() {
           return { error: true, content: error };
         }
 
-        setMessages((prev) => [...prev, { ...responseMessage }]);
-
-        const reader = response.body?.getReader();
-        if (!reader) throw new Error('Response body is not readable');
-
-        if (isAnthropic) {
-          return parseAnthropicStream(reader, responseMessage, setMessages);
+        if (stream) {
+          const reader = response.body?.getReader();
+          if (!reader) throw new Error('Response body is not readable');
+          if (isAnthropic) {
+            return parseAnthropicStream(reader, responseMessage, setMessages);
+          } else {
+            return parseOpenAIStream(reader, responseMessage, setMessages);
+          }
         } else {
-          return parseOpenAIStream(reader, responseMessage, setMessages);
+          const data = await response.json();
+          if (isAnthropic) {
+            if (data && data.type === 'text') {
+              responseMessage.content += data.text;
+              setMessages((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
+            } else {
+              throw new Error(`Invalid response: ${data}`);
+            }
+          } else {
+            if (data && data.content) {
+              responseMessage.content += data.content;
+              setMessages((prev) => [...prev, { ...responseMessage }]);
+            } else if (data.refusal) {
+              throw new Error(data.refusal);
+            }
+          }
+          return { content: responseMessage.content };
         }
       } catch (err: any) {
         if (err.name === 'AbortError') {

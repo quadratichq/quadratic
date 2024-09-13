@@ -24,11 +24,11 @@ const ai_rate_limiter = rateLimit({
 
 openai_router.post('/openai/chat', validateAccessToken, ai_rate_limiter, async (request, response) => {
   try {
-    const { model, messages } = OpenAIAutoCompleteRequestBodySchema.parse(request.body);
+    const { model, messages, temperature } = OpenAIAutoCompleteRequestBodySchema.parse(request.body);
     const result = await openai.chat.completions.create({
       model,
       messages,
-      temperature: 0,
+      temperature,
     });
     response.json(result.choices[0].message);
   } catch (error: any) {
@@ -42,19 +42,17 @@ openai_router.post('/openai/chat', validateAccessToken, ai_rate_limiter, async (
 
 openai_router.post('/openai/chat/stream', validateAccessToken, ai_rate_limiter, async (request: Request, response) => {
   try {
-    const { model, messages } = OpenAIAutoCompleteRequestBodySchema.parse(request.body);
+    const { model, messages, temperature } = OpenAIAutoCompleteRequestBodySchema.parse(request.body);
+    const completion = await openai.chat.completions.create({
+      model,
+      messages,
+      temperature,
+      stream: true,
+    });
 
     response.setHeader('Content-Type', 'text/event-stream');
     response.setHeader('Cache-Control', 'no-cache');
     response.setHeader('Connection', 'keep-alive');
-
-    const completion = await openai.chat.completions.create({
-      model,
-      messages,
-      temperature: 0,
-      stream: true,
-    });
-
     for await (const chunk of completion) {
       response.write(`data: ${JSON.stringify(chunk)}\n\n`);
     }
