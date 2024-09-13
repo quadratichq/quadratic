@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 //! This shows the grid heading context menu.
+
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { gridHeadingAtom } from '@/app/atoms/gridHeadingAtom';
@@ -9,16 +11,12 @@ import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { IconComponent } from '@/shared/components/Icons';
 import { ControlledMenu, MenuItem } from '@szhsin/react-menu';
 import { Point } from 'pixi.js';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilState } from 'recoil';
 import { pixiApp } from '../pixiApp/PixiApp';
 
 export const GridContextMenu = () => {
   const [show, setShow] = useRecoilState(gridHeadingAtom);
-
-  // we need to remove the adjustment for the headings, since it's added as part
-  // of HTMLGridContainer's parent
-  const { leftHeading, topHeading } = useHeadingSize();
 
   const onClose = useCallback(() => {
     setShow({ world: undefined, column: undefined, row: undefined });
@@ -45,27 +43,33 @@ export const GridContextMenu = () => {
     };
   }, [setShow]);
 
-  if (!show?.world) return null;
-
-  // const item = show.column ? 'column' : 'row';
-  // const dir = show.column ? ['to the left', 'to the right'] : ['above', 'below'];
+  const ref = useRef<HTMLDivElement>(null);
 
   return (
-    <ControlledMenu
-      state={'open'}
-      onClose={onClose}
-      anchorPoint={{ x: show.world.x + leftHeading, y: show.world.y + topHeading + 50 }}
-      menuStyle={{ padding: '0', color: 'inherit' }}
-      menuClassName="bg-background"
+    <div
+      className="absolute"
+      ref={ref}
+      style={{
+        left: (show.world?.x ?? 0) + pixiApp.viewport.x,
+        top: (show.world?.y ?? 0) + pixiApp.viewport.y,
+      }}
     >
-      <MenuItemAction action={Action.Cut} />
-      <MenuItemAction action={Action.Copy} />
-      <MenuItemAction action={Action.Paste} />
-      <MenuItemAction action={Action.PasteValuesOnly} />
-      <MenuItemAction action={Action.PasteFormattingOnly} />
-      <MenuItemAction action={Action.CopyAsPng} />
-      <MenuItemAction action={Action.DownloadAsCsv} />
-    </ControlledMenu>
+      <ControlledMenu
+        state={show?.world ? 'open' : 'closed'}
+        onClose={onClose}
+        anchorRef={ref}
+        menuStyle={{ padding: '0', color: 'inherit' }}
+        menuClassName="bg-background"
+      >
+        <MenuItemAction action={Action.Cut} />
+        <MenuItemAction action={Action.Copy} />
+        <MenuItemAction action={Action.Paste} />
+        <MenuItemAction action={Action.PasteValuesOnly} />
+        <MenuItemAction action={Action.PasteFormattingOnly} />
+        <MenuItemAction action={Action.CopyAsPng} />
+        <MenuItemAction action={Action.DownloadAsCsv} />
+      </ControlledMenu>
+    </div>
   );
 };
 

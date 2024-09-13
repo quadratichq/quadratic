@@ -55,9 +55,18 @@ export class PointerDown {
     // If right click and we have a multi cell selection.
     // If the user has clicked inside the selection.
     if (rightClick) {
-      events.emit('gridContextMenu', world, column, row);
-
-      // Ignore this click. User is accessing the RightClickMenu.
+      if (!cursor.includesCell(column, row)) {
+        cursor.changePosition({
+          cursorPosition: { x: column, y: row },
+          multiCursor: null,
+          ensureVisible: false,
+        });
+        // hack to ensure that the context menu opens after the cursor changes
+        // position (otherwise it may close immediately)
+        setTimeout(() => events.emit('gridContextMenu', world, column, row));
+      } else {
+        events.emit('gridContextMenu', world, column, row);
+      }
       return;
     }
 
