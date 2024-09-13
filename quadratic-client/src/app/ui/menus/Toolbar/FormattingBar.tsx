@@ -69,7 +69,6 @@ export const FormattingBar = () => {
 
         <Separator />
 
-        {/* TODO: (jimniels) make these icons match the current selection */}
         <FormatButtonDropdown showDropdownArrow tooltipLabel="Horizontal align" Icon={FormatAlignLeftIcon}>
           <FormatButtonDropdownActions
             actions={[
@@ -233,7 +232,6 @@ function FormatButton<T extends Action>({
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
   const keyboardShortcut = keyboardShortcutEnumToDisplay(action);
 
-  // TODO: (jimniels) make a style, like primary color, when the format is applied
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -266,8 +264,6 @@ function FormatColorPickerButton({
   const actionSpec = defaultActionSpec[action];
   const { label, run } = actionSpec;
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
-
-  // TODO: (jimniels) active style
 
   return (
     <FormatButtonDropdown tooltipLabel={label} Icon={Icon}>
