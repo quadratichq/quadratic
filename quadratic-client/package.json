@@ -1,6 +1,6 @@
 {
   "name": "quadratic-client",
-  "version": "0.3.0",
+  "version": "0.5.1",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -67,7 +67,7 @@
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.48.2",
     "react-markdown": "^9.0.1",
-    "react-router-dom": "^6.19.0",
+    "react-router-dom": "^6.26.1",
     "recoil": "^0.7.7",
     "remark-gfm": "^4.0.0",
     "semver": "^7.5.4",
@@ -86,7 +86,7 @@
     "start": "export VITE_VERSION=$(git rev-parse HEAD) && export NODE_OPTIONS=--max-old-space-size=16384 && vite dev",
     "start:no-hmr": "npm run build && vite preview --port 3000",
     "build": "export VITE_VERSION=$(git rev-parse HEAD) && export NODE_OPTIONS=--max-old-space-size=16384 && vite build",
-    "build:prod": "tsc ../quadratic-shared/*.ts && export VITE_VERSION=$GIT_COMMIT && export NODE_OPTIONS=--max-old-space-size=16384 && vite build",
+    "build:prod": "tsc --project ../quadratic-shared/tsconfig.json && export VITE_VERSION=$GIT_COMMIT && export NODE_OPTIONS=--max-old-space-size=16384 && vite build",
     "build:docker": "export VITE_VERSION=$(git rev-parse HEAD) && export NODE_OPTIONS=--max-old-space-size=16384 && vite build --mode docker",
     "build:wasm": "npm run build:wasm:javascript && npm run build:wasm:nodejs && npm run build:wasm:types",
     "build:wasm:types": "cd .. && cd quadratic-core && cargo run --bin export_types",

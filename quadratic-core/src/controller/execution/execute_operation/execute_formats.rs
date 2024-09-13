@@ -82,7 +82,7 @@ impl GridController {
                     CellFmtArray::FillColor(_) => self.send_fill_cells(&sheet_rect),
                     _ => {
                         self.send_updated_bounds_rect(&sheet_rect, true);
-                        self.send_render_cells(&sheet_rect);
+                        self.add_dirty_hashes_from_sheet_rect(transaction, sheet_rect);
                         if matches!(
                             attr,
                             CellFmtArray::Wrap(_)
@@ -131,13 +131,15 @@ impl GridController {
     ) {
         if let Operation::SetCellFormatsSelection { selection, formats } = op {
             if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
-                let (reverse_operations, rows) = sheet.set_formats_selection(&selection, &formats);
+                let (reverse_operations, hashes, rows) =
+                    sheet.set_formats_selection(&selection, &formats);
                 if reverse_operations.is_empty() {
                     return;
                 }
 
                 if !transaction.is_server() {
                     self.send_updated_bounds_selection(&selection, true);
+
                     if !rows.is_empty() && transaction.is_user() {
                         let resize_rows = transaction
                             .resize_rows
@@ -145,6 +147,14 @@ impl GridController {
                             .or_default();
                         resize_rows.extend(rows);
                     }
+                }
+
+                if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+                    let dirty_hashes = transaction
+                        .dirty_hashes
+                        .entry(selection.sheet_id)
+                        .or_default();
+                    dirty_hashes.extend(hashes);
                 }
 
                 transaction.generate_thumbnail |= self.thumbnail_dirty_selection(&selection);

@@ -267,6 +267,24 @@ impl fmt::Display for JsRowHeight {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct JsPos {
+    pub x: i64,
+    pub y: i64,
+}
+impl fmt::Display for JsPos {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "JsPos(x: {}, x: {})", self.x, self.x)
+    }
+}
+impl From<Pos> for JsPos {
+    fn from(pos: Pos) -> Self {
+        JsPos { x: pos.x, y: pos.y }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct JsValidationWarning {
     pub x: i64,

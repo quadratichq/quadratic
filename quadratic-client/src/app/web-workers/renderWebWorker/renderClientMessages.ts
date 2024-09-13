@@ -40,6 +40,7 @@ export interface ClientRenderViewport {
   type: 'clientRenderViewport';
   sheetId: string;
   bounds: Rectangle;
+  scale: number;
 }
 
 export interface RenderClientFirstRenderComplete {

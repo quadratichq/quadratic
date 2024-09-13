@@ -1,7 +1,6 @@
 {
   "name": "quadratic-files",
   "description": "Quadratic File Service",
-  "version": "0.1.0",
   "dependencies": {},
   "devDependencies": {},
   "scripts": {

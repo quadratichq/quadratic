@@ -8,7 +8,8 @@
 import { debugShowLoadingHashes } from '@/app/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
-import { JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import { isFloatEqual } from '@/app/helpers/float';
+import { ColumnRow, JsPos, JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
@@ -229,15 +230,31 @@ export class CellsLabels {
   }
 
   getViewportNeighborBounds(): Rectangle | undefined {
-    const bounds = renderText.viewport;
-    if (!bounds) return undefined;
+    const viewportBounds = renderText.viewport;
+    if (!viewportBounds) return undefined;
+
     return new Rectangle(
-      bounds.x - NEIGHBORS * bounds.width,
-      bounds.y - 2 * NEIGHBORS * bounds.height,
-      bounds.width * (1 + 2 * NEIGHBORS),
-      bounds.height * (1 + 4 * NEIGHBORS)
+      viewportBounds.x - viewportBounds.width * NEIGHBORS * (renderText.scale ?? 1),
+      viewportBounds.y - viewportBounds.height * 4 * NEIGHBORS * (renderText.scale ?? 1),
+      viewportBounds.width * (1 + 2 * NEIGHBORS * (renderText.scale ?? 1)),
+      viewportBounds.height * (1 + 8 * NEIGHBORS * (renderText.scale ?? 1))
     );
   }
+
+  getCornerHashesInBound = (screenRect: Rectangle): number[] => {
+    const topLeftCell: ColumnRow = JSON.parse(this.sheetOffsets.getColumnRowFromScreen(screenRect.x, screenRect.y));
+    const { x: topLeftHashX, y: topLeftHashY } = CellsLabels.getHash(topLeftCell.column, topLeftCell.row);
+
+    const bottomRightCell: ColumnRow = JSON.parse(
+      this.sheetOffsets.getColumnRowFromScreen(screenRect.x + screenRect.width, screenRect.y + screenRect.height)
+    );
+    const { x: bottomRightHashX, y: bottomRightHashY } = CellsLabels.getHash(
+      bottomRightCell.column,
+      bottomRightCell.row
+    );
+
+    return [topLeftHashX, topLeftHashY, bottomRightHashX, bottomRightHashY];
+  };
 
   // distance from viewport center to hash center
   private hashDistanceSquared(hash: CellsTextHash, viewport: Rectangle): number {
@@ -263,15 +280,16 @@ export class CellsLabels {
     // visible and in need of rendering, and (3) not visible and loaded.
     this.cellsTextHash.forEach((hash) => {
       if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) {
-        if (!hash.loaded || hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
+        if (!hash.clientLoaded || hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
           visibleDirtyHashes.push(hash);
         }
       } else if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect) && !findHashToDelete) {
-        if (!hash.loaded || hash.dirty || hash.dirtyText) {
+        if (!hash.clientLoaded || hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
           notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         }
       } else {
         if (hash.dirty || hash.dirtyText) {
+          if (hash.clientLoaded) hash.unloadClient();
           notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         } else if (hash.loaded) {
           hash.unload();
@@ -283,7 +301,25 @@ export class CellsLabels {
       return;
     }
 
-    if (visibleDirtyHashes.length) {
+    visibleDirtyHashes.sort((a, b) => a.hashY - b.hashY);
+    notVisibleDirtyHashes.sort((a, b) => a.distance - b.distance);
+
+    const runningTransaction = renderText.viewportBuffer.size > 0;
+    if (runningTransaction) {
+      const hashWithRenderCells = [
+        ...visibleDirtyHashes.filter((hash) => Array.isArray(hash.dirty)),
+        ...notVisibleDirtyHashes.filter((h) => Array.isArray(h.hash)).map((h) => h.hash),
+      ];
+
+      if (debugShowLoadingHashes)
+        console.log(
+          `[CellsTextHash] rendering visible: ${visibleDirtyHashes[0].hashX}, ${visibleDirtyHashes[0].hashY}`
+        );
+
+      if (hashWithRenderCells.length) {
+        return { hash: hashWithRenderCells[0], visible: true };
+      }
+    } else if (visibleDirtyHashes.length) {
       // if hashes are visible then sort smallest to largest by y and return the first one
       visibleDirtyHashes.sort((a, b) => a.hashY - b.hashY);
 
@@ -350,6 +386,25 @@ export class CellsLabels {
       this.cellsTextHash.set(key, cellsHash);
     }
     cellsHash.dirty = renderCells;
+  }
+
+  setHashesDirty(hashesString: string): void {
+    try {
+      const hashes = JSON.parse(hashesString) as JsPos[];
+      hashes.forEach(({ x, y }) => {
+        const hashX = Number(x);
+        const hashY = Number(y);
+        const key = this.getHashKey(hashX, hashY);
+        let cellsHash = this.cellsTextHash.get(key);
+        if (!cellsHash) {
+          cellsHash = new CellsTextHash(this, hashX, hashY);
+          this.cellsTextHash.set(key, cellsHash);
+        }
+        cellsHash.dirty = true;
+      });
+    } catch (e) {
+      console.error('[CellsLabels] setHashesDirty: Error parsing hashes: ', e);
+    }
   }
 
   setOffsetsDelta(column: number | undefined, row: number | undefined, delta: number) {
@@ -467,7 +522,7 @@ export class CellsLabels {
       return { row, height };
     });
     const changesRowHeights: JsRowHeight[] = jsRowHeights.filter(
-      ({ row, height }) => Math.abs(height - this.sheetOffsets.getRowHeight(Number(row))) > 0.001
+      ({ row, height }) => !isFloatEqual(height, this.sheetOffsets.getRowHeight(Number(row)))
     );
     return changesRowHeights;
   }

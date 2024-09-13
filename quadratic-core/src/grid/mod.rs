@@ -60,6 +60,13 @@ impl Grid {
         Grid { sheets: vec![] }
     }
 
+    pub fn test() -> Self {
+        let mut ret = Grid::new_blank();
+        let sheet = Sheet::test();
+        ret.add_sheet(Some(sheet));
+        ret
+    }
+
     #[cfg(test)]
     pub fn from_array(base_pos: Pos, array: &Array) -> Self {
         let mut ret = Grid::new();

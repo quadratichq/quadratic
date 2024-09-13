@@ -1,9 +1,9 @@
 import { Coordinate } from '@/app/gridGL/types/size';
-import { AiMessage } from '@/app/ui/menus/CodeEditor/AiAssistant';
 import { CodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditor';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { Monaco } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
+import { AIMessage, AnthropicModel, OpenAIModel, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import React, { createContext, useContext, useRef, useState } from 'react';
 import { PanelTab } from './panels//CodeEditorPanelBottom';
 
@@ -11,8 +11,9 @@ type Context = {
   aiAssistant: {
     controllerRef: React.MutableRefObject<AbortController | null>;
     loading: [boolean, React.Dispatch<React.SetStateAction<boolean>>];
-    messages: [AiMessage[], React.Dispatch<React.SetStateAction<AiMessage[]>>];
+    messages: [(UserMessage | AIMessage)[], React.Dispatch<React.SetStateAction<(UserMessage | AIMessage)[]>>];
     prompt: [string, React.Dispatch<React.SetStateAction<string>>];
+    model: [AnthropicModel | OpenAIModel, React.Dispatch<React.SetStateAction<AnthropicModel | OpenAIModel>>];
   };
   // `undefined` is used here as a loading state. Once the editor mounts, it becomes a string (possibly empty)
   codeString: [string | undefined, React.Dispatch<React.SetStateAction<string | undefined>>];
@@ -36,6 +37,7 @@ const CodeEditorContext = createContext<Context>({
     loading: [false, () => {}],
     messages: [[], () => {}],
     prompt: ['', () => {}],
+    model: ['claude-3-5-sonnet-20240620', () => {}],
   },
   codeString: [undefined, () => {}],
   consoleOutput: [undefined, () => {}],
@@ -55,6 +57,7 @@ export const CodeEditorProvider = () => {
     loading: useState<Context['aiAssistant']['loading'][0]>(false),
     messages: useState<Context['aiAssistant']['messages'][0]>([]),
     controllerRef: useRef<Context['aiAssistant']['controllerRef']['current']>(null),
+    model: useState<Context['aiAssistant']['model'][0]>('claude-3-5-sonnet-20240620'),
   };
   const codeString = useState<Context['codeString'][0]>(undefined); // update code cell
   const consoleOutput = useState<Context['consoleOutput'][0]>(undefined);
@@ -63,7 +66,7 @@ export const CodeEditorProvider = () => {
   const editorRef = useRef<Context['editorRef']['current']>(null);
   const evaluationResult = useState<Context['evaluationResult'][0]>(undefined);
   const monacoRef = useRef<Context['monacoRef']['current']>(null);
-  const panelBottomActiveTab = useState<PanelTab>('console');
+  const panelBottomActiveTab = useState<PanelTab>('ai-assistant');
   const showSnippetsPopover = useState<Context['showSnippetsPopover'][0]>(false);
   const spillError = useState<Context['spillError'][0]>(undefined);
 

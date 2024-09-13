@@ -143,6 +143,9 @@ export class CellsTextHash {
     this.drawRects = [];
     this.labelMeshes.clear();
     this.overflowGridLines = [];
+  };
+
+  unloadClient = () => {
     if (this.clientLoaded) {
       this.clientLoaded = false;
       renderClient.unload(this.cellsLabels.sheetId, this.hashX, this.hashY);
@@ -175,13 +178,19 @@ export class CellsTextHash {
       this.dirty = false;
       let cells: JsRenderCell[] | false;
       if (!Array.isArray(dirty) && (!this.loaded || dirty === true)) {
-        cells = await renderCore.getRenderCells(
-          this.cellsLabels.sheetId,
-          this.AABB.x,
-          this.AABB.y,
-          this.AABB.width + 1,
-          this.AABB.height + 1
-        );
+        try {
+          cells = await renderCore.getRenderCells(
+            this.cellsLabels.sheetId,
+            this.AABB.x,
+            this.AABB.y,
+            this.AABB.width + 1,
+            this.AABB.height + 1
+          );
+        } catch (e) {
+          this.dirty = dirty;
+          console.warn(`[CellsTextHash] update: Error getting render cells: ${e}`);
+          return false;
+        }
       } else if (dirty === 'show') {
         // if dirty === 'show' then we only need to update the visibility of the
         // cells. This is used to change visibility of a CellLabel without
