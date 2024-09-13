@@ -210,6 +210,18 @@ impl Rect {
         self.max.y = self.max.y.max(y);
     }
 
+    pub fn to_hashes(&self) -> HashSet<Pos> {
+        let mut hashes = HashSet::new();
+        let min_hash = self.min.quadrant();
+        let max_hash = self.max.quadrant();
+        for x in min_hash.0..=max_hash.0 {
+            for y in min_hash.1..=max_hash.1 {
+                hashes.insert(Pos { x, y });
+            }
+        }
+        hashes
+    }
+
     /// Finds the intersection of two rectangles.
     pub fn intersection(&self, other: &Rect) -> Option<Rect> {
         let x1 = self.min.x.max(other.min.x);
