@@ -45,22 +45,17 @@ export const GridContextMenu = () => {
 
   const ref = useRef<HTMLDivElement>(null);
 
-  if (!show?.world) return null;
-
-  // const item = show.column ? 'column' : 'row';
-  // const dir = show.column ? ['to the left', 'to the right'] : ['above', 'below'];
-
   return (
     <div
       className="absolute"
       ref={ref}
       style={{
-        left: show.world?.x + pixiApp.viewport.x,
-        top: show.world?.y + pixiApp.viewport.y,
+        left: (show.world?.x ?? 0) + pixiApp.viewport.x,
+        top: (show.world?.y ?? 0) + pixiApp.viewport.y,
       }}
     >
       <ControlledMenu
-        state={'open'}
+        state={show?.world ? 'open' : 'closed'}
         onClose={onClose}
         anchorRef={ref}
         menuStyle={{ padding: '0', color: 'inherit' }}

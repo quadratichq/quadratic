@@ -242,7 +242,6 @@ export class SheetCursor {
   }
 
   hasOneColumnRowSelection(): boolean {
-    console.log(this.columnRow);
     return (
       this.columnRow !== undefined &&
       !this.columnRow.all &&
@@ -251,5 +250,12 @@ export class SheetCursor {
         (this.columnRow.rows && this.columnRow.rows.length === 1)
       )
     );
+  }
+  includesCell(column: number, row: number): boolean {
+    if (this.multiCursor) {
+      return this.multiCursor.some((rect) => rect.contains(column, row));
+    } else {
+      return this.cursorPosition.x === column && this.cursorPosition.y === row;
+    }
   }
 }
