@@ -26,7 +26,8 @@ const insertColumnRight: ActionSpec<void> = {
 const deleteColumn: ActionSpec<void> = {
   label: 'Delete column',
   isAvailable: isColumnRowAvailable,
-  run: () => quadraticCore.deleteRow(sheets.sheet.id, sheets.sheet.cursor.cursorPosition.x, sheets.getCursorPosition()),
+  run: () =>
+    quadraticCore.deleteColumn(sheets.sheet.id, sheets.sheet.cursor.cursorPosition.x, sheets.getCursorPosition()),
 };
 
 const insertRowAbove: ActionSpec<void> = {
