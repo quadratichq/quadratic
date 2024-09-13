@@ -7,6 +7,7 @@ import { useRootRouteLoaderData } from '@/routes/_root';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 
 import { MenubarItem, MenubarShortcut } from '@/shared/shadcn/ui/menubar';
+import mixpanel from 'mixpanel-browser';
 
 // TODO: (jimniels) implement types based on ayush's PR
 export const MenubarItemAction = <T extends Action>({
@@ -40,6 +41,7 @@ export const MenubarItemAction = <T extends Action>({
   return (
     <MenubarItem
       onClick={() => {
+        mixpanel.track('[FileMenu].selected', { label });
         run(actionArgs);
         focusGrid();
       }}
