@@ -194,7 +194,15 @@ function CommandItemWrapper({
   uuid?: string;
 }) {
   return (
-    <CommandItem disabled={disabled} onSelect={onSelect} value={name + (uuid ? uuid : '')}>
+    <CommandItem
+      disabled={disabled}
+      onSelect={onSelect}
+      value={name + (uuid ? uuid : '')}
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+    >
       <div className="mr-4">{icon}</div>
       <div className="flex flex-col">
         <span className="flex items-center">

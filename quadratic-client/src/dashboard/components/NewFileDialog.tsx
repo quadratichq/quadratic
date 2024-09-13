@@ -105,7 +105,9 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: initi
             <li className={`col-span-1`}>
               <Link
                 to={isPrivate ? ROUTES.CREATE_FILE_PRIVATE(teamUuid) : ROUTES.CREATE_FILE(teamUuid)}
+                reloadDocument
                 className={cn(gridItemClassName, gridItemInteractiveClassName, 'border-primary text-muted-foreground')}
+                onClick={onClose}
               >
                 <ItemIcon>
                   <PlusIcon />
@@ -135,6 +137,7 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: initi
               <Link
                 to={newFileApiHref}
                 className={cn('text-muted-foreground', gridItemClassName, gridItemInteractiveClassName)}
+                onClick={onClose}
               >
                 <ItemIcon>
                   <RocketIcon />

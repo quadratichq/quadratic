@@ -3,22 +3,23 @@ use std::collections::BTreeMap;
 use arrow::datatypes::Date32Type;
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
+use bytes::Bytes;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use uuid::Uuid;
+
 use sqlx::{
     mysql::{MySqlColumn, MySqlConnectOptions, MySqlRow /* , MySqlTypeInfo*/},
     Column, ConnectOptions, MySqlConnection as SqlxMySqlConnection, Row, TypeInfo,
 };
-use uuid::Uuid;
 
+use crate::arrow::arrow_type::ArrowType;
+use crate::convert_mysql_type;
 use crate::error::{Result, SharedError, Sql};
-use crate::sql::{ArrowType, Connection};
-use crate::{
-    convert_mysql_type,
-    sql::{DatabaseSchema, SchemaColumn, SchemaTable},
-};
+use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
+use crate::sql::Connection;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MySqlConnection {
@@ -26,7 +27,7 @@ pub struct MySqlConnection {
     pub password: Option<String>,
     pub host: String,
     pub port: Option<String>,
-    pub database: Option<String>,
+    pub database: String,
 }
 
 impl MySqlConnection {
@@ -35,7 +36,7 @@ impl MySqlConnection {
         password: Option<String>,
         host: String,
         port: Option<String>,
-        database: Option<String>,
+        database: String,
     ) -> MySqlConnection {
         MySqlConnection {
             username,
@@ -45,6 +46,15 @@ impl MySqlConnection {
             database,
         }
     }
+
+    async fn query_all(pool: &mut SqlxMySqlConnection, sql: &str) -> Result<Vec<MySqlRow>> {
+        let rows = sqlx::query(sql)
+            .fetch_all(pool)
+            .await
+            .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
+
+        Ok(rows)
+    }
 }
 
 #[async_trait]
@@ -53,9 +63,22 @@ impl Connection for MySqlConnection {
     type Row = MySqlRow;
     type Column = MySqlColumn;
 
+    fn row_len(row: &Self::Row) -> usize {
+        row.len()
+    }
+
+    fn row_columns(row: &Self::Row) -> Box<dyn Iterator<Item = &Self::Column> + '_> {
+        Box::new(row.columns().iter())
+    }
+
+    fn column_name(col: &Self::Column) -> &str {
+        col.name()
+    }
+
     async fn connect(&self) -> Result<Self::Conn> {
         let mut options = MySqlConnectOptions::new();
         options = options.host(&self.host);
+        options = options.database(&self.database);
 
         if let Some(ref username) = self.username {
             options = options.username(username);
@@ -71,10 +94,6 @@ impl Connection for MySqlConnection {
             })?);
         }
 
-        if let Some(ref database) = self.database {
-            options = options.database(database);
-        }
-
         let pool = options
             .connect()
             .await
@@ -85,16 +104,16 @@ impl Connection for MySqlConnection {
 
     async fn query(
         &self,
-        mut pool: Self::Conn,
+        pool: &mut Self::Conn,
         sql: &str,
         max_bytes: Option<u64>,
-    ) -> Result<(Vec<Self::Row>, bool)> {
+    ) -> Result<(Bytes, bool)> {
         let mut rows = vec![];
         let mut over_the_limit = false;
 
         if let Some(max_bytes) = max_bytes {
             let mut bytes = 0;
-            let mut stream = sqlx::query(sql).fetch(&mut pool);
+            let mut stream = sqlx::query(sql).fetch(pool);
 
             while let Some(row) = stream.next().await {
                 let row = row.map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
@@ -108,20 +127,14 @@ impl Connection for MySqlConnection {
                 rows.push(row);
             }
         } else {
-            rows = sqlx::query(sql)
-                .fetch_all(&mut pool)
-                .await
-                .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
+            rows = MySqlConnection::query_all(pool, sql).await?;
         }
 
-        Ok((rows, over_the_limit))
+        Ok((Self::to_parquet(rows)?, over_the_limit))
     }
 
-    async fn schema(&self, pool: Self::Conn) -> Result<DatabaseSchema> {
-        let database = self.database.as_ref().ok_or_else(|| {
-            SharedError::Sql(Sql::Schema("Database name is required for MySQL".into()))
-        })?;
-
+    async fn schema(&self, pool: &mut Self::Conn) -> Result<DatabaseSchema> {
+        let database = self.database.to_owned();
         let sql = format!("
             select c.TABLE_SCHEMA as 'database', c.TABLE_SCHEMA as 'schema', c.TABLE_NAME as 'table', 
                 c.COLUMN_NAME as 'column_name', c.DATA_TYPE as 'column_type', c.IS_NULLABLE as 'is_nullable'
@@ -129,10 +142,10 @@ impl Connection for MySqlConnection {
             where table_schema = '{database}'
             order by c.TABLE_NAME, c.ORDINAL_POSITION, c.COLUMN_NAME");
 
-        let (rows, _) = self.query(pool, &sql, None).await?;
+        let rows = MySqlConnection::query_all(pool, &sql).await?;
 
         let mut schema = DatabaseSchema {
-            database: self.database.to_owned().unwrap_or_default(),
+            database: self.database.to_owned(),
             tables: BTreeMap::new(),
         };
 
@@ -221,7 +234,7 @@ mod tests {
             Some("password".into()),
             "0.0.0.0".into(),
             Some("3306".into()),
-            Some("mysql-connection".into()),
+            "mysql-connection".into(),
         )
     }
 
@@ -243,15 +256,10 @@ mod tests {
     #[tokio::test]
     #[traced_test]
     async fn test_mysql_query_to_arrow() {
-        let (connection, pool) = setup().await;
-        let (rows, over_the_limit) = connection
-            .query(
-                pool.unwrap(),
-                "select * from all_native_data_types order by id limit 1",
-                None,
-            )
-            .await
-            .unwrap();
+        let (_, pool) = setup().await;
+        let mut pool = pool.unwrap();
+        let sql = "select * from all_native_data_types order by id limit 1";
+        let rows = MySqlConnection::query_all(&mut pool, &sql).await.unwrap();
 
         // for row in &rows {
         //     for (index, col) in row.columns().iter().enumerate() {
@@ -263,8 +271,6 @@ mod tests {
         let row = &rows[0];
         let columns = row.columns();
         let to_arrow = |index: usize| MySqlConnection::to_arrow(row, &columns[index], index);
-
-        assert!(!over_the_limit);
 
         assert_eq!(to_arrow(0), ArrowType::Int32(1));
         assert_eq!(to_arrow(1), ArrowType::Int8(127));
@@ -316,8 +322,8 @@ mod tests {
     #[traced_test]
     async fn test_mysql_schema() {
         let connection = new_mysql_connection();
-        let pool = connection.connect().await.unwrap();
-        let schema = connection.schema(pool).await.unwrap();
+        let mut pool = connection.connect().await.unwrap();
+        let schema = connection.schema(&mut pool).await.unwrap();
 
         // for (table_name, table) in &_schema.tables {
         //     println!("Table: {}", table_name);

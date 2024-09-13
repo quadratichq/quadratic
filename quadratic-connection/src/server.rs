@@ -9,8 +9,7 @@ use axum::{
     Extension, Json, Router,
 };
 use jsonwebtoken::jwk::JwkSet;
-use quadratic_rust_shared::auth::jwt::get_jwks;
-use quadratic_rust_shared::sql::Connection;
+use quadratic_rust_shared::{auth::jwt::get_jwks, sql::Connection};
 use serde::{Deserialize, Serialize};
 use std::{iter::once, time::Duration};
 use tokio::{sync::OnceCell, time};
@@ -28,8 +27,10 @@ use crate::{
     error::{ConnectionError, Result},
     proxy::proxy,
     sql::{
+        mssql::{query as query_mssql, schema as schema_mssql, test as test_mssql},
         mysql::{query as query_mysql, schema as schema_mysql, test as test_mysql},
         postgres::{query as query_postgres, schema as schema_postgres, test as test_postgres},
+        snowflake::{query as query_snowflake, schema as schema_snowflake, test as test_snowflake},
     },
     state::State,
 };
@@ -112,6 +113,14 @@ pub(crate) fn app(state: State) -> Result<Router> {
         .route("/mysql/test", post(test_mysql))
         .route("/mysql/query", post(query_mysql))
         .route("/mysql/schema/:id", get(schema_mysql))
+        // mssql
+        .route("/mssql/test", post(test_mssql))
+        .route("/mssql/query", post(query_mssql))
+        .route("/mssql/schema/:id", get(schema_mssql))
+        // snowflake
+        .route("/snowflake/test", post(test_snowflake))
+        .route("/snowflake/query", post(query_snowflake))
+        .route("/snowflake/schema/:id", get(schema_snowflake))
         //
         // proxy
         .route("/proxy", any(proxy))

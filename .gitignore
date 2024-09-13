@@ -68,6 +68,7 @@ docker/static/html
 docker/postgres-connection/data
 docker/mysql-connection/data
 docker/snowflake-connection/data
+docker/mssql-connection/data
 
 # JMeter
 jmeter.log

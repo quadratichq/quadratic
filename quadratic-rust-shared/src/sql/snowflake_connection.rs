@@ -1,247 +1,258 @@
-use std::collections::BTreeMap;
-
-use arrow::datatypes::Date32Type;
+use arrow::array::ArrayRef;
+use arrow_array::array::Array;
 use async_trait::async_trait;
-use bigdecimal::BigDecimal;
-use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
-use futures_util::StreamExt;
+use bytes::{Bytes, BytesMut};
+use parquet::arrow::ArrowWriter;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use sqlx::{
-    postgres::{types::PgTimeTz, PgColumn, PgConnectOptions, PgRow, PgTypeKind},
-    Column, ConnectOptions, PgConnection, Row, TypeInfo,
-};
-use uuid::Uuid;
+use snowflake_api::{QueryResult, SnowflakeApi};
+use std::collections::BTreeMap;
+use std::sync::Arc;
 
+use crate::arrow::arrow_type::ArrowType;
 use crate::error::{Result, SharedError, Sql};
-use crate::sql::{ArrowType, Connection};
-use crate::{
-    convert_pg_type,
-    sql::{DatabaseSchema, SchemaColumn, SchemaTable},
-};
+use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
+use crate::sql::Connection;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SnowflakeConnection {
-    pub username: Option<String>,
-    pub password: Option<String>,
-    pub host: String,
-    pub port: Option<String>,
-    pub database: Option<String>,
+    pub account_identifier: String,
+    pub username: String,
+    pub password: String,
+    pub warehouse: Option<String>,
+    pub database: String,
+    pub schema: Option<String>,
+    pub role: Option<String>,
 }
 
 impl SnowflakeConnection {
     pub fn new(
-        username: Option<String>,
-        password: Option<String>,
-        host: String,
-        port: Option<String>,
-        database: Option<String>,
+        account_identifier: String,
+        username: String,
+        password: String,
+        warehouse: Option<String>,
+        database: String,
+        schema: Option<String>,
+        role: Option<String>,
     ) -> SnowflakeConnection {
         SnowflakeConnection {
+            account_identifier,
             username,
             password,
-            host,
-            port,
+            warehouse,
             database,
+            schema,
+            role,
         }
     }
 }
 
+fn transpose(matrix: Vec<Vec<String>>) -> Vec<Vec<String>> {
+    if matrix.is_empty() {
+        return vec![];
+    }
+
+    let row_len = matrix[0].len();
+    let mut transposed: Vec<Vec<String>> = vec![Vec::with_capacity(matrix.len()); row_len];
+
+    for row in matrix {
+        for (i, element) in row.into_iter().enumerate() {
+            transposed[i].push(element);
+        }
+    }
+
+    transposed
+}
+
 #[async_trait]
 impl Connection for SnowflakeConnection {
-    type Conn = PgConnection;
-    type Row = PgRow;
-    type Column = PgColumn;
+    type Conn = SnowflakeApi;
+    type Row = Arc<dyn Array>;
+    type Column = ArrayRef;
 
-    async fn connect(&self) -> Result<Self::Conn> {
-        let mut options = PgConnectOptions::new();
-        options = options.host(&self.host);
+    fn row_len(_row: &Self::Row) -> usize {
+        unimplemented!();
+    }
 
-        if let Some(ref username) = self.username {
-            options = options.username(username);
-        }
+    fn row_columns(_row: &Self::Row) -> Box<dyn Iterator<Item = &Self::Column> + '_> {
+        unimplemented!();
+    }
 
-        if let Some(ref password) = self.password {
-            options = options.password(password);
-        }
+    fn column_name(_col: &Self::Column) -> &str {
+        unimplemented!();
+    }
 
-        if let Some(ref port) = self.port {
-            options = options.port(port.parse::<u16>().map_err(|_| {
-                SharedError::Sql(Sql::Connect("Could not parse port into a number".into()))
-            })?);
-        }
+    async fn connect(&self) -> Result<SnowflakeApi> {
+        let client = SnowflakeApi::with_password_auth(
+            &self.account_identifier,
+            self.warehouse.as_deref(),
+            Some(&self.database),
+            self.schema.as_deref(),
+            &self.username,
+            self.role.as_deref(),
+            &self.password,
+        )
+        .map_err(|e| {
+            SharedError::Sql(Sql::Connect(format!("Error connecting to snowflake: {e}")))
+        })?;
 
-        if let Some(ref database) = self.database {
-            options = options.database(database);
-        }
-
-        let pool = options
-            .connect()
-            .await
-            .map_err(|e| SharedError::Sql(Sql::Connect(format!("{:?}: {e}", self.database))))?;
-
-        Ok(pool)
+        Ok(client)
     }
 
     async fn query(
         &self,
-        mut pool: Self::Conn,
+        client: &mut Self::Conn,
         sql: &str,
         max_bytes: Option<u64>,
-    ) -> Result<(Vec<Self::Row>, bool)> {
-        let mut rows = vec![];
-        let mut over_the_limit = false;
+    ) -> Result<(Bytes, bool)> {
+        let mut parquet = BytesMut::new();
 
-        if let Some(max_bytes) = max_bytes {
-            let mut bytes = 0;
-            let mut stream = sqlx::query(sql).fetch(&mut pool);
+        let row_stream = client
+            .exec(sql)
+            .await
+            .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
 
-            while let Some(row) = stream.next().await {
-                let row = row.map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
-                bytes += row.len() as u64;
+        match row_stream {
+            QueryResult::Arrow(a) => {
+                for batch in a {
+                    let file = Vec::new();
+                    let mut writer = ArrowWriter::try_new(file, batch.schema(), None)?;
 
-                if bytes > max_bytes {
-                    over_the_limit = true;
-                    break;
+                    writer.write(&batch)?;
+
+                    let bytes = writer.into_inner()?;
+
+                    if let Some(max_bytes) = max_bytes {
+                        if (parquet.len() + bytes.len()) as u64 > max_bytes {
+                            return Ok((parquet.into(), true));
+                        }
+                    }
+
+                    parquet.extend_from_slice(&bytes);
                 }
-
-                rows.push(row);
             }
-            tracing::info!("Query executed with {bytes} bytes");
-        } else {
-            rows = sqlx::query(sql)
-                .fetch_all(&mut pool)
-                .await
-                .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
+            QueryResult::Json(j) => {
+                println!("{j}");
+            }
+            QueryResult::Empty => { /* noop */ }
         }
 
-        Ok((rows, over_the_limit))
+        Ok((parquet.into(), false))
     }
 
-    async fn schema(&self, pool: Self::Conn) -> Result<DatabaseSchema> {
-        let database = self.database.as_ref().ok_or_else(|| {
-            SharedError::Sql(Sql::Schema("Database name is required for MySQL".into()))
-        })?;
+    async fn schema(&self, client: &mut Self::Conn) -> Result<DatabaseSchema> {
+        //         let database = self.database.as_ref().ok_or_else(|| {
+        //             SharedError::Sql(Sql::Schema("Database name is required for MsSQL".into()))
+        //         })?;
 
-        let sql = format!("
-            select c.table_catalog as database, c.table_schema as schema, c.table_name as table, c.column_name, c.udt_name as column_type, c.is_nullable
-            from information_schema.tables as t inner join information_schema.columns as c on t.table_name = c.table_name
-            where t.table_type = 'BASE TABLE' 
-                and c.table_schema not in 
-                    ('pg_catalog', 'information_schema')
-                    and c.table_catalog = '{database}'
-            order by c.table_name, c.ordinal_position, c.column_name");
+        let sql = "
+            SELECT
+                db.database_name,
+                sch.schema_name,
+                tbl.table_name,
+                col.column_name,
+                col.data_type,
+                col.is_nullable
+            FROM
+                information_schema.columns col
+            JOIN
+                information_schema.tables tbl 
+                    ON col.table_catalog = tbl.table_catalog
+                    AND col.table_schema = tbl.table_schema
+                    AND col.table_name = tbl.table_name
+            JOIN
+                information_schema.schemata sch
+                    ON tbl.table_schema = sch.schema_name
+            JOIN
+                information_schema.databases db
+                ON sch.catalog_name = db.database_name
+            WHERE sch.schema_name = 'PUBLIC'
+            ORDER BY
+                db.database_name,
+                sch.schema_name,
+                tbl.table_name,
+                col.ordinal_position;";
 
-        let (rows, _) = self.query(pool, &sql, None).await?;
+        let row_stream = client
+            .exec(sql)
+            .await
+            .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
+
+        let mut data = vec![vec![]; 6];
+
+        match row_stream {
+            QueryResult::Arrow(a) => {
+                for batch in a {
+                    let num_cols = batch.num_columns();
+
+                    for col_index in 0..num_cols {
+                        let col = batch.column(col_index);
+
+                        // convert columns into a vec of strings
+                        let col_values = col
+                            .as_any()
+                            .downcast_ref::<arrow::array::StringArray>()
+                            .unwrap()
+                            .iter()
+                            .map(|s| s.unwrap_or_default().to_string())
+                            .collect::<Vec<String>>();
+
+                        // data in coming in as batches, so we need to combine them
+                        data[col_index].extend(col_values);
+                    }
+                }
+            }
+            QueryResult::Json(j) => {
+                println!("{j}");
+            }
+            QueryResult::Empty => {
+                println!("Query finished successfully")
+            }
+        }
+
+        let rows = transpose(data);
 
         let mut schema = DatabaseSchema {
-            database: self.database.to_owned().unwrap_or_default(),
+            database: self.database.to_owned(),
             tables: BTreeMap::new(),
         };
 
-        for row in rows.into_iter() {
-            let table_name = row.get::<String, usize>(2);
+        for (index, row) in rows.into_iter().enumerate() {
+            let default_schema_name = format!("Unknown Schema - {}", index);
+            let schema_name: &str = row.get(1).unwrap_or(&default_schema_name);
+
+            let default_table_name = format!("Unknown Table - {}", index);
+            let table_name: &str = row.get(2).unwrap_or(&default_table_name);
+
+            let default_column_name = format!("Unknown Column - {}", index);
+            let column_name: &str = row.get(3).unwrap_or(&default_column_name);
+
+            let default_column_type = format!("Unknown Type - {}", index);
+            let column_type: &str = row.get(4).unwrap_or(&default_column_type);
+
+            let is_nullable: &str = row.get(5).map_or("NO", |v| v);
 
             schema
                 .tables
-                // get or insert the table
-                .entry(table_name.to_owned())
+                .entry(table_name.into())
                 .or_insert_with(|| SchemaTable {
-                    name: table_name,
-                    schema: row.get::<String, usize>(1),
+                    name: table_name.into(),
+                    schema: schema_name.into(),
                     columns: vec![],
                 })
                 .columns
-                // add the column to the table
                 .push(SchemaColumn {
-                    name: row.get::<String, usize>(3),
-                    r#type: row.get::<String, usize>(4),
-                    is_nullable: matches!(
-                        row.get::<String, usize>(5).to_lowercase().as_str(),
-                        "yes"
-                    ),
+                    name: column_name.into(),
+                    r#type: column_type.into(),
+                    is_nullable: is_nullable.to_uppercase() == "YES",
                 });
         }
 
         Ok(schema)
     }
 
-    fn to_arrow(row: &Self::Row, column: &Self::Column, index: usize) -> ArrowType {
-        // println!("Column: {} ({})", column.name(), column.type_info().name());
-        match column.type_info().name() {
-            "TEXT" | "VARCHAR" | "CHAR" | "CHAR(N)" | "NAME" | "CITEXT" => {
-                ArrowType::Utf8(convert_pg_type!(String, row, index))
-            }
-            "SMALLINT" | "SMALLSERIAL" | "INT2" => {
-                ArrowType::Int16(convert_pg_type!(i16, row, index))
-            }
-            "INT" | "SERIAL" | "INT4" => ArrowType::Int32(convert_pg_type!(i32, row, index)),
-            "BIGINT" | "BIGSERIAL" | "INT8" => ArrowType::Int64(convert_pg_type!(i64, row, index)),
-            "BOOL" => ArrowType::Boolean(convert_pg_type!(bool, row, index)),
-            "REAL" | "FLOAT4" => ArrowType::Float32(convert_pg_type!(f32, row, index)),
-            "DOUBLE PRECISION" | "FLOAT8" => ArrowType::Float64(convert_pg_type!(f64, row, index)),
-            "NUMERIC" => ArrowType::BigDecimal(convert_pg_type!(BigDecimal, row, index)),
-            "TIMESTAMP" => ArrowType::Timestamp(convert_pg_type!(NaiveDateTime, row, index)),
-            "TIMESTAMPTZ" => ArrowType::TimestampTz(convert_pg_type!(DateTime<Local>, row, index)),
-            "DATE" => {
-                let naive_date = convert_pg_type!(NaiveDate, row, index);
-                ArrowType::Date32(Date32Type::from_naive_date(naive_date))
-            }
-            "TIME" => ArrowType::Time32(convert_pg_type!(NaiveTime, row, index)),
-            "TIMETZ" => {
-                let time = row.try_get::<PgTimeTz, usize>(index).ok();
-                time.map_or_else(|| ArrowType::Void, |time| ArrowType::Time32(time.time))
-            }
-            "INTERVAL" => {
-                // TODO(ddimaria): implement once we support intervals
-                // let interval = row.try_get::<PgInterval, usize>(index).ok();
-                // PgInterval { months: -2, days: 0, microseconds: 0
-                ArrowType::Void
-            }
-            "JSON" => ArrowType::Json(convert_pg_type!(Value, row, index)),
-            "JSONB" => ArrowType::Jsonb(convert_pg_type!(Value, row, index)),
-            "UUID" => ArrowType::Uuid(convert_pg_type!(Uuid, row, index)),
-            "XML" => ArrowType::Void,
-            "VOID" => ArrowType::Void,
-            // try to convert others to a string
-            _ => {
-                match column.type_info().kind() {
-                    PgTypeKind::Enum(_) => {
-                        let value = row
-                            .try_get_raw(index)
-                            .map(|value| value.as_str().unwrap_or_default().to_string());
-
-                        if let Ok(value) = value {
-                            return ArrowType::Utf8(value);
-                        }
-                    }
-                    PgTypeKind::Simple => {}
-                    PgTypeKind::Pseudo => {}
-                    PgTypeKind::Domain(_type_info) => {}
-                    PgTypeKind::Composite(_type_info_array) => {}
-                    PgTypeKind::Array(_type_info) => {}
-                    PgTypeKind::Range(_type_info) => {}
-                };
-
-                // println!(
-                //     "Unknown type: {:?}",
-                //     row.try_get_raw(index)
-                //         .and_then(|value| Ok(value.as_str().unwrap_or_default().to_string()))
-                // );
-
-                ArrowType::Utf8(convert_pg_type!(String, row, index))
-            }
-        }
+    fn to_arrow(_row: &Self::Row, _: &ArrayRef, _index: usize) -> ArrowType {
+        unimplemented!();
     }
-}
-
-#[macro_export]
-macro_rules! convert_pg_type {
-    ( $kind:ty, $row:ident, $index:ident ) => {{
-        $row.try_get::<$kind, usize>($index)
-            .ok()
-            .unwrap_or_default()
-    }};
 }
 
 #[cfg(test)]
@@ -251,50 +262,229 @@ mod tests {
     // use std::io::Read;
     use tracing_test::traced_test;
 
-    fn new_postgres_connection() -> SnowflakeConnection {
+    const PARQUET_FILE: &str = "data/parquet/all_native_data_types-snowflake.parquet";
+
+    fn new_snowflake_connection() -> SnowflakeConnection {
         SnowflakeConnection::new(
-            Some("postgres".into()),
-            Some("postgres".into()),
-            "0.0.0.0".into(),
-            Some("5432".into()),
-            Some("postgres".into()),
+            "test".into(),
+            "test".into(),
+            "test".into(),
+            None,
+            "all_native_data_types".into(),
+            None,
+            None,
         )
     }
 
-    #[tokio::test]
-    #[traced_test]
-    async fn test_postgres_connection() {
-        let connection = new_postgres_connection();
-        let pool = connection.connect().await.unwrap();
-        let (rows, _) = connection
-            // .query(pool, "select * from \"FileCheckpoint\" limit 10")
-            .query(
-                pool,
-                "select * from all_native_data_types order by id limit 1",
-                None,
-            )
+    async fn _seed(
+        connection: SnowflakeConnection,
+        client: Result<SnowflakeApi>,
+    ) -> SnowflakeConnection {
+        let sql = "        
+            CREATE OR REPLACE TABLE all_native_data_types (
+                integer_col INTEGER,
+                float_col FLOAT,
+                number_col NUMBER(38, 0),
+                decimal_col DECIMAL(18, 2),
+                boolean_col BOOLEAN,
+                varchar_col VARCHAR(255),
+                char_col CHAR(10),
+                string_col STRING,
+                binary_col BINARY,
+                date_col DATE,
+                time_col TIME,
+                timestamp_ntz_col TIMESTAMP_NTZ,
+                timestamp_ltz_col TIMESTAMP_LTZ,
+                timestamp_tz_col TIMESTAMP_TZ,
+                variant_col VARIANT,
+                object_col OBJECT,
+                array_col ARRAY,
+                geography_col GEOGRAPHY
+            );
+            
+            INSERT INTO all_native_data_types (
+                integer_col, float_col, number_col, decimal_col, boolean_col, varchar_col, char_col, string_col,
+                binary_col, date_col, time_col, timestamp_ntz_col, timestamp_ltz_col, timestamp_tz_col,
+                variant_col, object_col, array_col, geography_col
+            ) select 
+                321, 321.654, 111111111111111111, 321654.78, FALSE, 'Snowflake', 'B', 'Sample text',
+                TO_BINARY('DEADBEEF', 'HEX'), '2023-06-26', '12:34:56', '2023-06-26 12:34:56',
+                '2023-06-26 12:34:56 +01:00', '2023-06-26 12:34:56 +01:00',
+                PARSE_JSON('{\"key\": \"value\"}'), 
+                OBJECT_CONSTRUCT(  'name', 'Jones'::VARIANT,  'age',  42::VARIANT),
+                ARRAY_CONSTRUCT(1, 2, 3), 'POINT(-122.4194 37.7749)';
+        ";
+
+        connection
+            .query(&mut client.unwrap(), sql, None)
             .await
             .unwrap();
 
-        for row in &rows {
-            for (index, col) in row.columns().iter().enumerate() {
-                let value = SnowflakeConnection::to_arrow(row, col, index);
-                println!("{} ({}) = {:?}", col.name(), col.type_info().name(), value);
-            }
-        }
+        connection
+    }
 
-        let _data = SnowflakeConnection::to_parquet(rows);
+    async fn setup() -> (SnowflakeConnection, Result<SnowflakeApi>) {
+        let connection = new_snowflake_connection();
 
-        // println!("{:?}", _data);
+        // save for mocking
+        // let client = connection.connect().await.map(|c| {
+        //     c.with_host(Some(
+        //         "http://snowflake.localhost.localstack.cloud:4567".into(),
+        //     ))
+        // });
+
+        // save for seeding if needed
+        // let connection = seed(connection, client).await;
+        let client = connection.connect().await;
+
+        (connection, client)
+    }
+
+    async fn test_query(max_bytes: Option<u64>) -> (Bytes, bool) {
+        let (connection, client) = setup().await;
+        connection
+            .query(
+                &mut client.unwrap(),
+                "select * from all_native_data_types.public.all_native_data_types;",
+                max_bytes,
+            )
+            .await
+            .unwrap()
     }
 
     #[tokio::test]
     #[traced_test]
-    async fn test_postgres_schema() {
-        let connection = new_postgres_connection();
-        let pool = connection.connect().await.unwrap();
-        let _schema = connection.schema(pool).await.unwrap();
+    async fn test_snowflake_connection() {
+        let (_, client) = setup().await;
 
-        // println!("{:?}", schema);
+        assert!(client.is_ok());
+    }
+
+    #[tokio::test]
+    #[traced_test]
+    async fn test_snowflake_query() {
+        let (rows, over_the_limit) = test_query(None).await;
+
+        // save this to write to a file for testing
+        // std::fs::write(PARQUET_FILE, rows).unwrap();
+
+        // let mut file = std::fs::File::open(PARQUET_FILE).unwrap();
+        // let metadata = std::fs::metadata(PARQUET_FILE).expect("unable to read metadata");
+        // let mut buffer = vec![0; metadata.len() as usize];
+        // file.read_exact(&mut buffer).expect("buffer overflow");
+        let file = std::fs::read(PARQUET_FILE).unwrap();
+
+        // just compare lengths for now
+        assert_eq!(rows.len(), Bytes::from(file).len());
+        assert_eq!(over_the_limit, false);
+
+        // test if we're over the limit
+        let (_, over_the_limit) = test_query(Some(10)).await;
+        assert_eq!(over_the_limit, true);
+    }
+
+    #[tokio::test]
+    #[traced_test]
+    async fn test_snowflake_schema() {
+        let connection = new_snowflake_connection();
+        let mut client = connection.connect().await.unwrap();
+        let schema = connection.schema(&mut client).await.unwrap();
+
+        let expected = vec![
+            SchemaColumn {
+                name: "INTEGER_COL".into(),
+                r#type: "NUMBER".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "FLOAT_COL".into(),
+                r#type: "FLOAT".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "NUMBER_COL".into(),
+                r#type: "NUMBER".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "DECIMAL_COL".into(),
+                r#type: "NUMBER".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "BOOLEAN_COL".into(),
+                r#type: "BOOLEAN".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "VARCHAR_COL".into(),
+                r#type: "TEXT".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "CHAR_COL".into(),
+                r#type: "TEXT".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "STRING_COL".into(),
+                r#type: "TEXT".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "BINARY_COL".into(),
+                r#type: "BINARY".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "DATE_COL".into(),
+                r#type: "DATE".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "TIME_COL".into(),
+                r#type: "TIME".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "TIMESTAMP_NTZ_COL".into(),
+                r#type: "TIMESTAMP_NTZ".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "TIMESTAMP_LTZ_COL".into(),
+                r#type: "TIMESTAMP_LTZ".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "TIMESTAMP_TZ_COL".into(),
+                r#type: "TIMESTAMP_TZ".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "VARIANT_COL".into(),
+                r#type: "VARIANT".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "OBJECT_COL".into(),
+                r#type: "OBJECT".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "ARRAY_COL".into(),
+                r#type: "ARRAY".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "GEOGRAPHY_COL".into(),
+                r#type: "GEOGRAPHY".into(),
+                is_nullable: true,
+            },
+        ];
+
+        let columns = &schema.tables.get("ALL_NATIVE_DATA_TYPES").unwrap().columns;
+
+        assert_eq!(columns, &expected);
     }
 }

@@ -237,6 +237,7 @@ services:
     profiles:
       - quadratic-connection
       - quadratic-connection-db
+      - quadratic-connection-db-postgres
 
   mysql-connection:
     image: mysql:8
@@ -260,21 +261,58 @@ services:
     profiles:
       - quadratic-connection
       - quadratic-connection-db
+      - quadratic-connection-db-mysql
 
   snowflake-connection:
     image: localstack/snowflake:latest
     restart: always
     container_name: snowflake-connection
     ports:
-      - 127.0.0.1:4566:4566
+      - 127.0.0.1:4567:4566
     environment:
       ACTIVATE_PRO: 0
+      LOCALSTACK_AUTH_TOKEN: ${LOCALSTACK_AUTH_TOKEN:?}
     volumes:
       - ./docker/snowflake-connection/data:/var/lib/localstack
     profiles:
       - quadratic-connection
       - quadratic-connection-db
       - quadratic-connection-db-snowflake
+
+  mssql-connection:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    restart: always
+    container_name: mssql-connection
+    user: root
+    ports:
+      - 1433:1433
+    environment:
+      ACCEPT_EULA: Y
+      MSSQL_SA_PASSWORD: yourStrong(!)Password
+      MSSQL_PID: Express
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P '${MSSQL_SA_PASSWORD}' -Q 'SELECT 1' || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ./docker/mssql-connection/data:/var/opt/mssql
+      - ./docker/mssql-connection/scripts:/docker-entrypoint-initdb.d/
+    command: >
+      bash -c "
+      /opt/mssql/bin/sqlservr &
+      /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -i /docker-entrypoint-initdb.d/create_db.sql -C &&
+      /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -i /docker-entrypoint-initdb.d/seed_db.sql -C &&
+      tail -f /dev/null
+      "
+    profiles:
+      - quadratic-connection
+      - quadratic-connection-db
+      - quadratic-connection-db-mssql
 
 volumes:
   docker:

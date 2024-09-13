@@ -51,6 +51,8 @@ export const colors = {
   languageAI: '#1a8c5d',
   languagePostgres: '#336791',
   languageMysql: '#00758f',
+  languageMssql: '#cfd8dc',
+  languageSnowflake: '#249edc',
   languageJavascript: '#ca8a04',
 
   // todo: this can be change for dark background

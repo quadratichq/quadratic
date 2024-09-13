@@ -25,7 +25,7 @@ async fn get_connection(
     state: &State,
     claims: &Claims,
     connection_id: &Uuid,
-) -> Result<(MySqlConnection, ApiConnection)> {
+) -> Result<(MySqlConnection, ApiConnection<MySqlConnection>)> {
     let connection = if cfg!(not(test)) {
         get_api_connection(state, "", &claims.sub, connection_id).await?
     } else {
@@ -35,7 +35,7 @@ async fn get_connection(
             r#type: "".into(),
             created_date: "".into(),
             updated_date: "".into(),
-            type_details: quadratic_rust_shared::quadratic_api::TypeDetails {
+            type_details: MySqlConnection {
                 host: "0.0.0.0".into(),
                 port: Some("3306".into()),
                 username: Some("user".into()),
@@ -45,15 +45,15 @@ async fn get_connection(
         }
     };
 
-    let pg_connection = MySqlConnection::new(
+    let mysql_connection = MySqlConnection::new(
         connection.type_details.username.to_owned(),
         connection.type_details.password.to_owned(),
         connection.type_details.host.to_owned(),
         connection.type_details.port.to_owned(),
-        Some(connection.type_details.database.to_owned()),
+        connection.type_details.database.to_owned(),
     );
 
-    Ok((pg_connection, connection))
+    Ok((mysql_connection, connection))
 }
 
 /// Query the database and return the results as a parquet file.
@@ -75,8 +75,8 @@ pub(crate) async fn schema(
     claims: Claims,
 ) -> Result<Json<Schema>> {
     let (connection, api_connection) = get_connection(&state, &claims, &id).await?;
-    let pool = connection.connect().await?;
-    let database_schema = connection.schema(pool).await?;
+    let mut pool = connection.connect().await?;
+    let database_schema = connection.schema(&mut pool).await?;
     let schema = Schema {
         id: api_connection.uuid,
         name: api_connection.name,
@@ -101,7 +101,7 @@ mod tests {
     use bytes::Bytes;
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
     use http::StatusCode;
-    use quadratic_rust_shared::sql::{SchemaColumn, SchemaTable};
+    use quadratic_rust_shared::sql::schema::{SchemaColumn, SchemaTable};
     use tracing_test::traced_test;
     use uuid::Uuid;
 

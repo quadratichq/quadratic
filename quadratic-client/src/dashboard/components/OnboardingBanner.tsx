@@ -81,6 +81,7 @@ export function OnboardingBanner() {
             <Button variant="outline" className={contentBtnClassName} asChild>
               <Link
                 to={ROUTES.CREATE_FILE(teamUuid)}
+                reloadDocument
                 onClick={() => {
                   mixpanel.track('[OnboardingBanner].newFileBlank');
                 }}
@@ -140,6 +141,16 @@ export function OnboardingBanner() {
             <Button variant="outline" className={contentBtnClassName + ' gap-2'} asChild>
               <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'POSTGRES')} onClick={trackCreateConnection}>
                 <LanguageIcon language="POSTGRES" /> Postgres
+              </Link>
+            </Button>
+            <Button variant="outline" className={contentBtnClassName + ' gap-2'} asChild>
+              <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'MSSQL')} onClick={trackCreateConnection}>
+                <LanguageIcon language="MSSQL" /> MsSQL
+              </Link>
+            </Button>
+            <Button variant="outline" className={contentBtnClassName + ' gap-2'} asChild>
+              <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'SNOWFLAKE')} onClick={trackCreateConnection}>
+                <LanguageIcon language="SNOWFLAKE" /> Snowflake
               </Link>
             </Button>
           </div>

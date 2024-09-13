@@ -135,6 +135,24 @@ function getDefaultConnectionTypeDetails(type: ConnectionType) {
         port: '5432',
         database: 'postgres',
         username: 'root',
+        password: '',
+      };
+    case 'MSSQL':
+      return {
+        host: 'localhost',
+        port: '1433',
+        database: 'msdb',
+        username: 'sa',
+        password: 'yourStrong(!)Password',
+      };
+    case 'SNOWFLAKE':
+      return {
+        account: 'xxxx-us-east-1',
+        port: '433',
+        warehouse: 'compute',
+        database: 'msdb',
+        user: 'snowman',
+        role: 'ACCOUNTADMIN',
         password: 'password',
       };
     default:

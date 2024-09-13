@@ -53,6 +53,10 @@ export const CommandPaletteListItem = (props: CommandPaletteListItemProps) => {
         closeCommandPalette();
         action();
       }}
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
       disabled={disabled}
     >
       <div className={`mr-2 flex h-5 w-5 items-center text-muted-foreground`}>{icon ? icon : null}</div>
