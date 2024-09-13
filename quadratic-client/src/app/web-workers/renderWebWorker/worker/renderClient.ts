@@ -45,7 +45,9 @@ class RenderClient {
           e.data.bounds.height
         );
         renderText.sheetId = e.data.sheetId;
+        renderText.scale = e.data.scale;
         if (startUpdate) renderText.ready();
+        renderText.updateViewportBuffer();
         return;
 
       case 'clientRenderSheetOffsetsTransient':

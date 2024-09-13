@@ -94,10 +94,7 @@ impl GridController {
         let pos = serde_json::from_str(&pos).unwrap_or_default();
         if let Some(sheet) = self.try_sheet_from_string_id(sheet_id) {
             if let Some(cv) = sheet.js_cell_value(pos) {
-                match serde_json::to_string(&cv) {
-                    Ok(s) => return s,
-                    Err(_) => return String::new(),
-                }
+                return serde_json::to_string(&cv).unwrap_or_default();
             }
         }
         String::new()
