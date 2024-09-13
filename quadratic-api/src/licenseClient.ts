@@ -42,7 +42,6 @@ export const licenseClient = {
       // Use cached result if within the cache duration
       return cachedResult;
     }
-
     // Otherwise, perform the check
     const result = await licenseClient.checkFromServer();
 

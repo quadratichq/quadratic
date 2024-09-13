@@ -4,7 +4,7 @@
   "description": "Code shared between quadratic-api and quadratic-client (each app has to compile this code itself)",
   "main": "index.js",
   "scripts": {
-    "compile": "tsc ./*.ts",
+    "compile": "tsc --project ./tsconfig.json",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

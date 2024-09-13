@@ -9,7 +9,6 @@ import { validateOptionalAccessToken } from '../../middleware/validateOptionalAc
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { getFileUrl } from '../../storage/storage';
 import { RequestWithOptionalUser } from '../../types/Request';
-import { ResponseError } from '../../types/Response';
 
 export default [
   validateRequestSchema(
@@ -24,10 +23,7 @@ export default [
   handler,
 ];
 
-async function handler(
-  req: RequestWithOptionalUser,
-  res: Response<ApiTypes['/v0/files/:uuid.GET.response'] | ResponseError>
-) {
+async function handler(req: RequestWithOptionalUser, res: Response<any>) {
   const userId = req.user?.id;
   const {
     file: { id, thumbnail, uuid, name, createdDate, updatedDate, publicLinkAccess, ownerUserId, ownerTeam },
@@ -45,6 +41,7 @@ async function handler(
       sequenceNumber: 'desc',
     },
   });
+
   if (!checkpoint) {
     return res.status(500).json({ error: { message: 'No Checkpoints exist for this file' } });
   }
@@ -62,7 +59,9 @@ async function handler(
     fileTeamPrivacy = 'PUBLIC_TO_TEAM';
   }
 
+  console.log('a');
   const license = await licenseClient.check();
+  console.log('b');
 
   if (license === null) {
     return res.status(500).json({ error: { message: 'Unable to retrieve license' } });

@@ -18,15 +18,19 @@ jest.mock('./src/middleware/validateAccessToken', () => {
   };
 });
 
+const licenseClientResponse = {
+  limits: {
+    seats: 10,
+  },
+  status: 'active',
+};
+
 jest.mock('./src/licenseClient', () => {
   return {
-    post: async () => {
-      return {
-        limits: {
-          seats: 10,
-        },
-        status: 'active',
-      };
+    licenseClient: {
+      post: async () => licenseClientResponse,
+      checkFromServer: async () => licenseClientResponse,
+      check: async () => licenseClientResponse,
     },
   };
 });
