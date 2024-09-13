@@ -20,15 +20,12 @@ export interface UseBordersResults {
 export const useBorders = (): UseBordersResults => {
   const setBorderMenuState = useSetRecoilState(borderMenuAtom);
 
-  const changeBorders = (options: ChangeBorder): void => {
-    setBorderMenuState((prev) => {
-      const selection = options.selection ?? prev.selection;
-      const color = options.color ?? prev.color;
-      const line = options.line ?? prev.line;
-      const cursor = sheets.sheet.cursor;
-      if (cursor.multiCursor && cursor.multiCursor.length > 1) {
-        console.log('TODO: implement multiCursor border support');
-      } else {
+  const changeBorders = useCallback(
+    (options: ChangeBorder) => {
+      setBorderMenuState((prev) => {
+        const selection = options.selection ?? prev.selection;
+        const color = options.color ?? prev.color;
+        const line = options.line ?? prev.line;
         const colorTint = convertColorStringToTint(color);
         const colorArray = convertTintToArray(colorTint);
         const style: BorderStyle = {
@@ -50,8 +47,8 @@ export const useBorders = (): UseBordersResults => {
           quadraticCore.setBorders(rustSelection, prev.selection, style);
         }
         return { selection, color, line };
-      }
-    });
+      });
+    },
     [setBorderMenuState]
   );
 
@@ -62,7 +59,7 @@ export const useBorders = (): UseBordersResults => {
       return;
     }
     quadraticCore.setBorders(sheets.getRustSelection(), 'clear');
-  };
+  }, []);
 
   return {
     changeBorders,
