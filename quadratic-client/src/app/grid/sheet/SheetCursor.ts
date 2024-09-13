@@ -241,13 +241,14 @@ export class SheetCursor {
     return selectionOverlapsSelection(this.getRustSelection(), selection);
   }
 
-  hasOneColumnRowSelection(): boolean {
+  hasOneColumnRowSelection(oneCell?: boolean): boolean {
     return (
       this.columnRow !== undefined &&
       !this.columnRow.all &&
       !!(
         (this.columnRow.columns && this.columnRow.columns.length === 1) ||
-        (this.columnRow.rows && this.columnRow.rows.length === 1)
+        (this.columnRow.rows && this.columnRow.rows.length === 1) ||
+        (oneCell && !this.multiCursor)
       )
     );
   }

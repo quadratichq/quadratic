@@ -144,15 +144,20 @@ export class PointerHeading {
             }
           } else {
             if (columns.includes(column)) {
-              selectColumns(
-                columns.filter((c) => c !== column),
-                undefined,
-                true
-              );
+              if (event.ctrlKey) {
+                events.emit('gridContextMenu', world, column, undefined);
+              } else {
+                selectColumns(
+                  columns.filter((c) => c !== column),
+                  undefined,
+                  true
+                );
+              }
             } else {
               selectColumns([...columns, column], undefined, true);
-              if (columns.length === 0 && event.ctrlKey) {
-                events.emit('gridContextMenu', world, column, undefined);
+              if (event.ctrlKey) {
+                // need the timeout to allow the cursor events to complete
+                setTimeout(() => events.emit('gridContextMenu', world, column, undefined));
               }
             }
           }
@@ -172,15 +177,20 @@ export class PointerHeading {
             }
           } else {
             if (rows.includes(row)) {
-              selectRows(
-                rows.filter((c) => c !== row),
-                undefined,
-                true
-              );
+              if (event.ctrlKey) {
+                events.emit('gridContextMenu', world, undefined, row);
+              } else {
+                selectRows(
+                  rows.filter((c) => c !== row),
+                  undefined,
+                  true
+                );
+              }
             } else {
               selectRows([...rows, row], undefined, true);
-              if (rows.length === 0 && event.ctrlKey) {
-                events.emit('gridContextMenu', world, undefined, row);
+              if (event.ctrlKey) {
+                // need the timeout to allow the cursor events to complete
+                setTimeout(() => events.emit('gridContextMenu', world, undefined, row));
               }
             }
           }

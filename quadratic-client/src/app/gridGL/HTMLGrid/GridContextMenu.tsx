@@ -9,11 +9,12 @@ import { useHeadingSize } from '@/app/gridGL/HTMLGrid/useHeadingSize';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { IconComponent } from '@/shared/components/Icons';
-import { ControlledMenu, MenuItem } from '@szhsin/react-menu';
+import { ControlledMenu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 import { Point } from 'pixi.js';
 import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilState } from 'recoil';
 import { pixiApp } from '../pixiApp/PixiApp';
+import { sheets } from '@/app/grid/controller/Sheets';
 
 export const GridContextMenu = () => {
   const [show, setShow] = useRecoilState(gridHeadingAtom);
@@ -45,6 +46,8 @@ export const GridContextMenu = () => {
 
   const ref = useRef<HTMLDivElement>(null);
 
+  const isColumnRowAvailable = sheets.sheet.cursor.hasOneColumnRowSelection(true);
+
   return (
     <div
       className="absolute"
@@ -68,6 +71,14 @@ export const GridContextMenu = () => {
         <MenuItemAction action={Action.PasteFormattingOnly} />
         <MenuItemAction action={Action.CopyAsPng} />
         <MenuItemAction action={Action.DownloadAsCsv} />
+        {isColumnRowAvailable && <MenuDivider />}
+        <MenuItemAction action={Action.InsertColumnLeft} />
+        <MenuItemAction action={Action.InsertColumnRight} />
+        <MenuItemAction action={Action.DeleteColumn} />
+        {isColumnRowAvailable && <MenuDivider />}
+        <MenuItemAction action={Action.InsertRowAbove} />
+        <MenuItemAction action={Action.InsertRowBelow} />
+        <MenuItemAction action={Action.DeleteRow} />
       </ControlledMenu>
     </div>
   );

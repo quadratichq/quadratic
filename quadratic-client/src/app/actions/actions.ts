@@ -122,4 +122,10 @@ export enum Action {
   SaveInlineEditorMoveLeft = 'save_inline_editor_move_left',
   RemoveInsertedCells = 'remove_inserted_cells',
   TriggerCell = 'trigger_cell',
+  InsertColumnLeft = 'insert_column_left',
+  InsertColumnRight = 'insert_column_right',
+  InsertRowAbove = 'insert_row_above',
+  InsertRowBelow = 'insert_row_below',
+  DeleteRow = 'delete_row',
+  DeleteColumn = 'delete_column',
 }
