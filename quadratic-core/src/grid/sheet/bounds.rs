@@ -115,13 +115,7 @@ impl Sheet {
     pub fn bounds(&self, ignore_formatting: bool) -> GridBounds {
         match ignore_formatting {
             true => self.data_bounds,
-            false => {
-                let mut b = GridBounds::merge(self.data_bounds, self.format_bounds);
-                if let Some(border_bounds) = self.borders.bounds() {
-                    b.add_rect(border_bounds);
-                }
-                b
-            }
+            false => GridBounds::merge(self.data_bounds, self.format_bounds),
         }
     }
 

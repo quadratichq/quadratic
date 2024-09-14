@@ -58,11 +58,6 @@ mod tests {
         SheetRect,
     };
 
-    use super::*;
-
-    use serial_test::parallel;
-
-    #[parallel]
     #[test]
     #[parallel]
     fn to_clipboard() {

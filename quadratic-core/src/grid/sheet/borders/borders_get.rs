@@ -3,7 +3,7 @@ use super::{BorderStyleCell, BorderStyleCellUpdate, Borders};
 impl Borders {
     /// Gets a BorderStyleCellUpdate for a cell that will override the current
     /// cell. This is called by the clipboard.
-    pub fn get_update_override(&self, x: i64, y: i64) -> BorderStyleCellUpdate {
+    pub fn update_override(&self, x: i64, y: i64) -> BorderStyleCellUpdate {
         let mut cell = BorderStyleCell::default();
 
         if self.all.top.is_some() {
