@@ -286,8 +286,8 @@ mod tests {
     use super::*;
     use crate::{
         controller::{operations::clipboard::PasteSpecial, GridController},
-        grid::{BorderSelection, BorderStyle},
-        SheetRect,
+        grid::{BorderSelection, BorderStyle, CellBorderLine},
+        Rect, SheetRect,
     };
     use serial_test::parallel;
 
@@ -324,22 +324,34 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn copy_borders() {
+    fn clipboard_borders() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
+        let selection = Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id));
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),
+            selection.clone(),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
         );
 
         let sheet = gc.sheet(sheet_id);
-        let (html, _) = sheet
-            .copy_to_clipboard(&Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet.id)))
-            .unwrap();
+        let (_, html) = sheet.copy_to_clipboard(&selection).unwrap();
 
-        dbg!(&html);
+        gc.paste_from_clipboard(
+            Selection::pos(2, 2, sheet_id),
+            None,
+            Some(html),
+            PasteSpecial::None,
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let border = sheet.borders.get(2, 2);
+        assert_eq!(border.top.unwrap().line, CellBorderLine::default());
+        assert_eq!(border.bottom.unwrap().line, CellBorderLine::default());
+        assert_eq!(border.left.unwrap().line, CellBorderLine::default());
+        assert_eq!(border.right.unwrap().line, CellBorderLine::default());
     }
 }

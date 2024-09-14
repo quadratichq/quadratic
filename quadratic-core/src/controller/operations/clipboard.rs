@@ -317,8 +317,6 @@ impl GridController {
             ops.push(cursor);
         }
 
-        dbgjs!(&ops);
-        dbgjs!(&special);
         ops
     }
 
