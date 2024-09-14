@@ -143,8 +143,12 @@ impl Borders {
         }
     }
 
-    /// Returns the bounds of the borders. It needs to offset right and bottom by 1
-    /// because the borders are rendered by the next cell/row.
+    /// Returns the bounds of the borders.
+    ///
+    /// It offsets right and bottom by 1 because the borders are rendered by the
+    /// next cell/row. For example, if there is a full border at (1, 1), then
+    /// the bounds are (1, 1, 2, 2) so the border is rendered at (1, 1) and (2,
+    /// 2).
     pub(crate) fn bounds(&self) -> Option<Rect> {
         let x_start_left = self.left.keys().min().copied();
         let x_start_right = self.right.keys().min().copied().map(|x| x + 1);
@@ -212,6 +216,23 @@ mod tests {
         selection::Selection,
         SheetRect,
     };
+
+    #[test]
+    #[parallel]
+    fn bounds_single() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.borders.bounds(), Some(Rect::new(1, 1, 2, 2)))
+    }
 
     #[test]
     #[parallel]
