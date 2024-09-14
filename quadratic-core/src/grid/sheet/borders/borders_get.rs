@@ -140,10 +140,10 @@ impl Borders {
 
     /// Gets the border style for a cell.
     pub fn get(&self, x: i64, y: i64) -> BorderStyleCell {
-        let top = self.top.get(&x).and_then(|row| row.get(y));
+        let top = self.top.get(&y).and_then(|row| row.get(x));
         let bottom = self.bottom.get(&(y)).and_then(|row| row.get(x));
-        let left = self.left.get(&y).and_then(|row| row.get(x));
-        let right = self.right.get(&(y)).and_then(|row| row.get(x));
+        let left = self.left.get(&x).and_then(|row| row.get(y));
+        let right = self.right.get(&(x)).and_then(|row| row.get(y));
 
         BorderStyleCell {
             top,

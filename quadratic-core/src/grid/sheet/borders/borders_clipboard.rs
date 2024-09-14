@@ -42,8 +42,6 @@ impl Borders {
         if updates.is_empty() {
             None
         } else {
-            dbgjs!(&self);
-            dbgjs!(&updates);
             Some(updates)
         }
     }
