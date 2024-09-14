@@ -113,7 +113,13 @@ impl Sheet {
     pub fn bounds(&self, ignore_formatting: bool) -> GridBounds {
         match ignore_formatting {
             true => self.data_bounds,
-            false => GridBounds::merge(self.data_bounds, self.format_bounds),
+            false => {
+                let mut b = GridBounds::merge(self.data_bounds, self.format_bounds);
+                if let Some(border_bounds) = self.borders.bounds() {
+                    b.add_rect(border_bounds);
+                }
+                b
+            }
         }
     }
 
@@ -368,13 +374,12 @@ impl Sheet {
 mod test {
     use crate::{
         controller::GridController,
-        grid::CellWrap,
         grid::{
             sheet::validations::{
                 validation::Validation,
                 validation_rules::{validation_logical::ValidationLogical, ValidationRule},
             },
-            CellAlign, CodeCellLanguage, GridBounds, Sheet,
+            BorderSelection, BorderStyle, CellAlign, CellWrap, CodeCellLanguage, GridBounds, Sheet,
         },
         selection::Selection,
         CellValue, Pos, Rect, SheetPos, SheetRect,
@@ -886,6 +891,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn recalculate_bounds_validations() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -907,6 +913,26 @@ mod test {
         assert_eq!(
             sheet.data_bounds,
             GridBounds::NonEmpty(Rect::new(0, 0, 0, 0))
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn bounds_with_borders() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.bounds(false),
+            GridBounds::NonEmpty(Rect::new(1, 1, 1, 1))
         );
     }
 }

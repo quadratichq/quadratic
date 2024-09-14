@@ -286,7 +286,8 @@ mod tests {
     use super::*;
     use crate::{
         controller::{operations::clipboard::PasteSpecial, GridController},
-        Rect,
+        grid::{BorderSelection, BorderStyle},
+        SheetRect,
     };
     use serial_test::parallel;
 
@@ -319,5 +320,26 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.cell_value(Pos { x: 1, y: 5 }).is_none());
+    }
+
+    #[test]
+    #[parallel]
+    fn copy_borders() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let (html, _) = sheet
+            .copy_to_clipboard(&Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet.id)))
+            .unwrap();
+
+        dbg!(&html);
     }
 }
