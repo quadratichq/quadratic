@@ -110,16 +110,12 @@ impl Sheet {
     ///
     /// If `ignore_formatting` is `true`, only data is considered; if it is
     /// `false`, then data and formatting are both considered.
+    ///
+    /// Borders are not included in this bounds call.
     pub fn bounds(&self, ignore_formatting: bool) -> GridBounds {
         match ignore_formatting {
             true => self.data_bounds,
-            false => {
-                let mut b = GridBounds::merge(self.data_bounds, self.format_bounds);
-                if let Some(border_bounds) = self.borders.bounds() {
-                    b.add_rect(border_bounds);
-                }
-                b
-            }
+            false => GridBounds::merge(self.data_bounds, self.format_bounds),
         }
     }
 
@@ -918,7 +914,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn bounds_with_borders() {
+    fn empty_bounds_with_borders() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
@@ -930,9 +926,6 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.bounds(false),
-            GridBounds::NonEmpty(Rect::new(1, 1, 1, 1))
-        );
+        assert_eq!(sheet.bounds(false), GridBounds::Empty);
     }
 }

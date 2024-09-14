@@ -26,7 +26,7 @@ impl Borders {
 
             for r in bounds.min.y..=bounds.max.y {
                 for c in bounds.min.x..=bounds.max.x {
-                    if let Some(border) = self.try_get(c, r) {
+                    if let Some(border) = self.try_get_update(c, r) {
                         // clear the entire column
                         if c == column {
                             self.apply_update(c, r, update);
@@ -102,7 +102,7 @@ impl Borders {
 
             for c in bounds.min.x..=bounds.max.x {
                 for r in bounds.min.y..=bounds.max.y {
-                    if let Some(border) = self.try_get(c, r) {
+                    if let Some(border) = self.try_get_update(c, r) {
                         // clear the entire row
                         if r == row {
                             self.apply_update(c, r, update);
@@ -194,7 +194,7 @@ impl Borders {
             undo_selection.rects = Some(vec![bounds]);
             for c in bounds.min.x..=bounds.max.x {
                 for r in bounds.min.y..=bounds.max.y {
-                    if let Some(border) = self.try_get(c, r) {
+                    if let Some(border) = self.try_get_update(c, r) {
                         self.apply_update(c, r, update);
                         borders.push(border);
                     }

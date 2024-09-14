@@ -4,49 +4,135 @@ impl Borders {
     /// Gets a BorderStyleCellUpdate for a cell that will override the current
     /// cell. This is called by the clipboard.
     pub fn get_update_override(&self, x: i64, y: i64) -> BorderStyleCellUpdate {
-        let mut cell = self.get(x, y);
+        let mut cell = BorderStyleCell::default();
 
-        if cell.top.is_none() && self.all.top.is_some() {
+        if self.all.top.is_some() {
             cell.top = self.all.top;
         }
-        if cell.bottom.is_none() && self.all.bottom.is_some() {
+        if self.all.bottom.is_some() {
             cell.bottom = self.all.bottom;
         }
-        if cell.left.is_none() && self.all.left.is_some() {
+        if self.all.left.is_some() {
             cell.left = self.all.left;
         }
-        if cell.right.is_none() && self.all.right.is_some() {
+        if self.all.right.is_some() {
             cell.right = self.all.right;
         }
 
-        if let Some(column) = self.columns.get(&x) {
-            if cell.top.is_none() && column.top.is_some() {
-                cell.top = column.top;
+        // for columns and rows, we'll have to compare the timestamps to get the correct value
+        let column = self.columns.get(&x);
+        let row = self.rows.get(&y);
+
+        match (column, row) {
+            (Some(column), Some(row)) => {
+                match (column.top, row.top) {
+                    (Some(column_top), Some(row_top)) => {
+                        if column_top.timestamp > row_top.timestamp {
+                            cell.top = Some(column_top);
+                        } else {
+                            cell.top = Some(row_top);
+                        }
+                    }
+                    (Some(column_top), None) => {
+                        cell.top = Some(column_top);
+                    }
+                    (None, Some(row_top)) => {
+                        cell.top = Some(row_top);
+                    }
+                    (None, None) => {}
+                }
+                match (column.bottom, row.bottom) {
+                    (Some(column_bottom), Some(row_bottom)) => {
+                        if column_bottom.timestamp > row_bottom.timestamp {
+                            cell.bottom = Some(column_bottom);
+                        } else {
+                            cell.bottom = Some(row_bottom);
+                        }
+                    }
+                    (Some(column_bottom), None) => {
+                        cell.bottom = Some(column_bottom);
+                    }
+                    (None, Some(row_bottom)) => {
+                        cell.bottom = Some(row_bottom);
+                    }
+                    (None, None) => {}
+                }
+                match (column.left, row.left) {
+                    (Some(column_left), Some(row_left)) => {
+                        if column_left.timestamp > row_left.timestamp {
+                            cell.left = Some(column_left);
+                        } else {
+                            cell.left = Some(row_left);
+                        }
+                    }
+                    (Some(column_left), None) => {
+                        cell.left = Some(column_left);
+                    }
+                    (None, Some(row_left)) => {
+                        cell.left = Some(row_left);
+                    }
+                    (None, None) => {}
+                }
+                match (column.right, row.right) {
+                    (Some(column_right), Some(row_right)) => {
+                        if column_right.timestamp > row_right.timestamp {
+                            cell.right = Some(column_right);
+                        } else {
+                            cell.right = Some(row_right);
+                        }
+                    }
+                    (Some(column_right), None) => {
+                        cell.right = Some(column_right);
+                    }
+                    (None, Some(row_right)) => {
+                        cell.right = Some(row_right);
+                    }
+                    (None, None) => {}
+                }
             }
-            if cell.bottom.is_none() && column.bottom.is_some() {
-                cell.bottom = column.bottom;
+            (Some(column), None) => {
+                if column.top.is_some() {
+                    cell.top = column.top;
+                }
+                if column.bottom.is_some() {
+                    cell.bottom = column.bottom;
+                }
+                if column.left.is_some() {
+                    cell.left = column.left;
+                }
+                if column.right.is_some() {
+                    cell.right = column.right;
+                }
             }
-            if cell.left.is_none() && column.left.is_some() {
-                cell.left = column.left;
+            (None, Some(row)) => {
+                if row.top.is_some() {
+                    cell.top = row.top;
+                }
+                if row.bottom.is_some() {
+                    cell.bottom = row.bottom;
+                }
+                if row.left.is_some() {
+                    cell.left = row.left;
+                }
+                if row.right.is_some() {
+                    cell.right = row.right;
+                }
             }
-            if cell.right.is_none() && column.right.is_some() {
-                cell.right = column.right;
-            }
+            (None, None) => {}
         }
 
-        if let Some(row) = self.rows.get(&y) {
-            if cell.top.is_none() && row.top.is_some() {
-                cell.top = row.top;
-            }
-            if cell.bottom.is_none() && row.bottom.is_some() {
-                cell.bottom = row.bottom;
-            }
-            if cell.left.is_none() && row.left.is_some() {
-                cell.left = row.left;
-            }
-            if cell.right.is_none() && row.right.is_some() {
-                cell.right = row.right;
-            }
+        let c = self.get(x, y);
+        if c.top.is_some() {
+            cell.top = c.top;
+        }
+        if c.bottom.is_some() {
+            cell.bottom = c.bottom;
+        }
+        if c.left.is_some() {
+            cell.left = c.left;
+        }
+        if c.right.is_some() {
+            cell.right = c.right;
         }
 
         cell.override_border(false)
@@ -68,7 +154,7 @@ impl Borders {
     }
 
     /// Gets an update to undo the border to its current state.
-    pub fn try_get(&self, x: i64, y: i64) -> Option<BorderStyleCellUpdate> {
+    pub fn try_get_update(&self, x: i64, y: i64) -> Option<BorderStyleCellUpdate> {
         let cell = self.get(x, y);
         if cell.top.is_some()
             || cell.bottom.is_some()

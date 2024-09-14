@@ -42,6 +42,8 @@ impl Borders {
         if updates.is_empty() {
             None
         } else {
+            dbgjs!(&self);
+            dbgjs!(&updates);
             Some(updates)
         }
     }
@@ -49,14 +51,18 @@ impl Borders {
 
 #[cfg(test)]
 mod tests {
+    use serial_test::parallel;
+
     use super::*;
     use crate::{
         color::Rgba,
         controller::GridController,
         grid::{BorderSelection, BorderStyle, CellBorderLine},
+        SheetRect,
     };
 
     #[test]
+    #[parallel]
     fn to_clipboard() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -91,5 +97,38 @@ mod tests {
             CellBorderLine::default()
         );
         assert_eq!(entry.right.unwrap().unwrap().color, Rgba::default());
+    }
+
+    #[test]
+    #[parallel]
+    fn simple_clipboard() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let copy = sheet
+            .borders
+            .to_clipboard(&Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)))
+            .unwrap();
+
+        assert_eq!(copy.size(), 1);
+        let first = copy.get_at(0).unwrap();
+        assert_eq!(first.top.unwrap().unwrap().line, CellBorderLine::default());
+        assert_eq!(
+            first.bottom.unwrap().unwrap().line,
+            CellBorderLine::default()
+        );
+        assert_eq!(first.left.unwrap().unwrap().line, CellBorderLine::default());
+        assert_eq!(
+            first.right.unwrap().unwrap().line,
+            CellBorderLine::default()
+        );
     }
 }
