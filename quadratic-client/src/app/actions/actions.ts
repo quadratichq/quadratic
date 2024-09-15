@@ -1,4 +1,5 @@
 export enum Action {
+  CmdClick = 'cmd_click',
   FileShare = 'file_share',
   FileRename = 'file_rename',
   InsertCodePython = 'insert_code_python',
@@ -125,5 +126,4 @@ export enum Action {
   SaveInlineEditorMoveLeft = 'save_inline_editor_move_left',
   RemoveInsertedCells = 'remove_inserted_cells',
   TriggerCell = 'trigger_cell',
-  CmdClick = 'cmd_click',
 }

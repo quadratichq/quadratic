@@ -3,6 +3,10 @@ import { Keys, MacModifiers, WindowsModifiers } from '@/app/keyboard/keys';
 import { ActionShortcut } from '@/app/keyboard/shortcut';
 
 export const defaultShortcuts: ActionShortcut = {
+  [Action.CmdClick]: {
+    mac: [[MacModifiers.Cmd]],
+    windows: [[WindowsModifiers.Ctrl]],
+  },
   [Action.Copy]: {
     mac: [[MacModifiers.Cmd, Keys.C]],
     windows: [[WindowsModifiers.Ctrl, Keys.C]],
@@ -340,9 +344,5 @@ export const defaultShortcuts: ActionShortcut = {
   [Action.TriggerCell]: {
     mac: [[Keys.Space]],
     windows: [[Keys.Space]],
-  },
-  [Action.CmdClick]: {
-    mac: [[MacModifiers.Cmd]],
-    windows: [[WindowsModifiers.Ctrl]],
   },
 };

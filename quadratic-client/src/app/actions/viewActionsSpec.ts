@@ -10,6 +10,7 @@ import { isMac } from '@/shared/utils/isMac';
 
 type ViewActionSpec = Pick<
   ActionSpecRecord,
+  | Action.CmdClick
   | Action.ZoomIn
   | Action.ZoomOut
   | Action.ZoomToSelection
@@ -27,10 +28,13 @@ type ViewActionSpec = Pick<
   | Action.PageDown
   | Action.ShowGoToMenu
   | Action.ShowCellTypeMenu
-  | Action.CmdClick
 >;
 
 export const viewActionsSpec: ViewActionSpec = {
+  [Action.CmdClick]: {
+    label: isMac ? 'Cmd click' : 'Ctrl click',
+    run: () => {},
+  },
   [Action.ZoomIn]: {
     label: 'Zoom in',
     run: () => {
@@ -172,9 +176,5 @@ export const viewActionsSpec: ViewActionSpec = {
     run: () => {
       openCodeEditor();
     },
-  },
-  [Action.CmdClick]: {
-    label: isMac ? 'Cmd click' : 'Ctrl click',
-    run: () => {},
   },
 };
