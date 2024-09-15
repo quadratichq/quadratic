@@ -53,15 +53,14 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   const [loading, setLoading] = useRecoilState(aiAssistantLoadingAtom);
   const [messages, setMessages] = useRecoilState(aiAssistantMessagesAtom);
   const [prompt, setPrompt] = useRecoilState(aiAssistantPromptAtom);
-  const setShowAI = useSetRecoilState(showAIAtom);
   const {
     consoleOutput: [consoleOutput],
     editorContent: [editorContent],
   } = useCodeEditor();
   const { loggedInUser: user } = useRootRouteLoaderData();
   const { mode, selectedCell, showCodeEditor } = useRecoilValue(editorInteractionStateAtom);
+  const setShowAI = useSetRecoilState(showAIAtom);
   const connection = getConnectionInfo(mode);
-
   const { data: schemaData } = useConnectionSchemaBrowser({ uuid: connection?.id, type: connection?.kind });
   const schemaJsonForAi = useMemo(() => (schemaData ? JSON.stringify(schemaData) : ''), [schemaData]);
 

@@ -1,6 +1,6 @@
 import { connectionClient } from '@/shared/api/connectionClient';
 import mixpanel from 'mixpanel-browser';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useFetcher } from 'react-router-dom';
 
 type SchemaData = Awaited<ReturnType<typeof connectionClient.schemas.get>>;
@@ -22,7 +22,10 @@ export const useConnectionSchemaBrowser = ({ type, uuid }: { uuid: string | unde
     key: uuid ? `SCHEMA_FOR_CONNECTION_${uuid}` : undefined,
   });
 
-  const fetcherUrl = uuid && type ? `/api/connections/${uuid}/schema/${type?.toLowerCase()}` : '';
+  const fetcherUrl = useMemo(
+    () => (uuid && type ? `/api/connections/${uuid}/schema/${type?.toLowerCase()}` : ''),
+    [type, uuid]
+  );
 
   useEffect(() => {
     // Don’t bother fetching anything if we don't have the connection
@@ -35,10 +38,10 @@ export const useConnectionSchemaBrowser = ({ type, uuid }: { uuid: string | unde
     }
   }, [fetcher, fetcherUrl]);
 
-  const reloadSchema = () => {
+  const reloadSchema = useCallback(() => {
     mixpanel.track('[Connections].schemaViewer.refresh');
     fetcher.load(fetcherUrl);
-  };
+  }, [fetcher, fetcherUrl]);
 
   return {
     // undefined = hasn't loaded yet, null = error, otherwise the data
