@@ -15,14 +15,14 @@ import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { Coordinate, DrawRects } from '@/app/gridGL/types/size';
 import { JsRenderCell } from '@/app/quadratic-core-types';
+import { CellLabel } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
+import { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsLabels';
+import { CellsTextHashContent } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashContent';
+import { CellsTextHashSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
+import { LabelMeshes } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/LabelMeshes';
+import { renderClient } from '@/app/web-workers/renderWebWorker/worker/renderClient';
+import { renderCore } from '@/app/web-workers/renderWebWorker/worker/renderCore';
 import { Rectangle } from 'pixi.js';
-import { renderClient } from '../renderClient';
-import { renderCore } from '../renderCore';
-import { CellLabel } from './CellLabel';
-import { CellsLabels } from './CellsLabels';
-import { CellsTextHashContent } from './CellsTextHashContent';
-import { CellsTextHashSpecial } from './CellsTextHashSpecial';
-import { LabelMeshes } from './LabelMeshes';
 
 // Draw hashed regions of cell glyphs (the text + text formatting)
 export class CellsTextHash {

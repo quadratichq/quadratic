@@ -14,15 +14,18 @@ import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/conv
 import { isFloatGreaterThan, isFloatLessThan } from '@/app/helpers/float';
 import { CellAlign, CellVerticalAlign, CellWrap, JsNumber, JsRenderCell } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
+import { RenderBitmapChar } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
+import {
+  extractCharCode,
+  splitTextToCharacters,
+} from '@/app/web-workers/renderWebWorker/worker/cellsLabel/bitmapTextUtils';
+import { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsLabels';
+import { convertNumber, reduceDecimals } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/convertNumber';
+import { LabelMeshEntry } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/LabelMeshEntry';
+import { LabelMeshes } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/LabelMeshes';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT } from '@/shared/constants/gridConstants';
 import { removeItems } from '@pixi/utils';
 import { Point, Rectangle } from 'pixi.js';
-import { RenderBitmapChar } from '../../renderBitmapFonts';
-import { CellsLabels } from './CellsLabels';
-import { LabelMeshEntry } from './LabelMeshEntry';
-import { LabelMeshes } from './LabelMeshes';
-import { extractCharCode, splitTextToCharacters } from './bitmapTextUtils';
-import { convertNumber, reduceDecimals } from './convertNumber';
 
 interface CharRenderData {
   charData: RenderBitmapChar;
@@ -150,7 +153,7 @@ export class CellLabel {
     } else if (cell?.textColor) {
       this.tint = convertColorStringToTint(cell.textColor);
     } else if (this.link) {
-      this.tint = convertColorStringToTint(colors.quadraticPrimary);
+      this.tint = convertColorStringToTint(colors.link);
     } else {
       this.tint = 0;
     }
