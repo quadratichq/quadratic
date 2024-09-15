@@ -1,6 +1,9 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { MULTIPLAYER_COLORS } from '@/app/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { getAuth0AvatarSrc } from '@/app/helpers/links';
+import { colors } from '@/app/theme/colors';
+import { useMultiplayerUsers } from '@/app/ui/menus/TopBar/useMultiplayerUsers';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import {
@@ -11,14 +14,11 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
-import { getAuth0AvatarSrc } from '@/shared/utils/auth0UserImageSrc';
 import { displayInitials, displayName } from '@/shared/utils/userUtil';
 import { Avatar, AvatarGroup } from '@mui/material';
 import { EyeOpenIcon } from '@radix-ui/react-icons';
 import { useSubmit } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { colors } from '../../../theme/colors';
-import { useMultiplayerUsers } from './useMultiplayerUsers';
 
 const sharedAvatarSxProps = { width: 24, height: 24, fontSize: '.8125rem' };
 

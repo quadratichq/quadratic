@@ -1,7 +1,7 @@
 import { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import { PanMode } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { SheetPosTS } from '@/app/gridGL/types/size';
+import { Coordinate, SheetPosTS } from '@/app/gridGL/types/size';
 import {
   JsCodeCell,
   JsHtmlOutput,
@@ -35,6 +35,7 @@ interface EventTypes {
 
   search: (found?: SheetPosTS[], current?: number) => void;
   hoverCell: (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => void;
+  hoverTooltip: (pos?: Coordinate, text?: string) => void;
 
   zoom: (scale: number) => void;
   panMode: (pan: PanMode) => void;

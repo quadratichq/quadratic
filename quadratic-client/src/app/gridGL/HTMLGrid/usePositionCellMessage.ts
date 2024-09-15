@@ -1,11 +1,12 @@
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { events } from '@/app/events/events';
+import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { useHeadingSize } from '@/app/gridGL/HTMLGrid/useHeadingSize';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Rectangle } from 'pixi.js';
 import { useEffect, useState } from 'react';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { events } from '@/app/events/events';
-import { inlineEditorEvents } from './inlineEditor/inlineEditorEvents';
-import { inlineEditorHandler } from './inlineEditor/inlineEditorHandler';
 import { useRecoilValue } from 'recoil';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 
 interface Props {
   div: HTMLDivElement | null;
@@ -27,6 +28,7 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
   const { div, offsets, forceLeft, direction: side } = props;
   const [top, setTop] = useState<number | undefined>();
   const [left, setLeft] = useState<number | undefined>();
+  const { leftHeading, topHeading } = useHeadingSize();
 
   useEffect(() => {
     const updatePosition = () => {
@@ -36,8 +38,16 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
       const bounds = viewport.getVisibleBounds();
 
       if (side === 'vertical') {
-        setLeft(offsets.left);
-        setTop(offsets.bottom);
+        let left = offsets.left;
+        left = Math.min(left, bounds.right - div.offsetWidth);
+        left = Math.max(left, bounds.left + leftHeading);
+        setLeft(left);
+
+        let top = offsets.top - div.offsetHeight;
+        if (top < bounds.top + topHeading) {
+          top = offsets.bottom;
+        }
+        setTop(top);
       } else {
         // checks whether the inline editor or dropdown is open; if so, always
         // show to the left to avoid overlapping the content
@@ -77,7 +87,7 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
       pixiApp.viewport.off('moved', updatePosition);
       window.removeEventListener('resize', updatePosition);
     };
-  }, [div, editorInteractionState.annotationState, forceLeft, offsets, side]);
+  }, [div, editorInteractionState.annotationState, forceLeft, leftHeading, offsets, side, topHeading]);
 
   return { top, left };
 };

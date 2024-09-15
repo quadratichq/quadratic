@@ -5,8 +5,8 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { zoomIn, zoomInOut, zoomOut, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
 import { moveViewport } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { GoToIcon } from '@/shared/components/Icons';
-import { isMac } from '@/shared/utils/isMac';
 
 type ViewActionSpec = Pick<
   ActionSpecRecord,
@@ -32,7 +32,7 @@ type ViewActionSpec = Pick<
 
 export const viewActionsSpec: ViewActionSpec = {
   [Action.CmdClick]: {
-    label: isMac ? 'Cmd click' : 'Ctrl click',
+    label: `${KeyboardSymbols.Command}+click`,
     run: () => {},
   },
   [Action.ZoomIn]: {

@@ -2,6 +2,7 @@ import { isAvailableBecauseLoggedIn } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { openLink } from '@/app/helpers/links';
 import { DocumentationIcon, FeedbackIcon, MailIcon } from '@/shared/components/Icons';
 import { CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
 
@@ -12,14 +13,14 @@ export const helpActionsSpec: HelpActionSpec = {
     label: 'Contact us',
     Icon: MailIcon,
     run: () => {
-      window.open(CONTACT_URL, '_blank', 'noreferrer,noopener');
+      openLink(CONTACT_URL);
     },
   },
   [Action.HelpDocs]: {
     label: 'Docs',
     Icon: DocumentationIcon,
     run: () => {
-      window.open(DOCUMENTATION_URL, '_blank', 'noreferrer,noopener');
+      openLink(DOCUMENTATION_URL);
     },
   },
   [Action.HelpFeedback]: {

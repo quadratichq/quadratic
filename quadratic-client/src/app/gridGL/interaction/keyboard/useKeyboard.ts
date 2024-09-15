@@ -1,19 +1,18 @@
 import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { keyboardCell } from '@/app/gridGL/interaction/keyboard/keyboardCell';
+import { keyboardClipboard } from '@/app/gridGL/interaction/keyboard/keyboardClipboard';
+import { keyboardCode } from '@/app/gridGL/interaction/keyboard/keyboardCode';
+import { keyboardDropdown } from '@/app/gridGL/interaction/keyboard/keyboardDropdown';
+import { keyboardPosition } from '@/app/gridGL/interaction/keyboard/keyboardPosition';
+import { keyboardSearch } from '@/app/gridGL/interaction/keyboard/keyboardSearch';
+import { keyboardSelect } from '@/app/gridGL/interaction/keyboard/keyboardSelect';
+import { keyboardUndoRedo } from '@/app/gridGL/interaction/keyboard/keyboardUndoRedo';
+import { keyboardViewport } from '@/app/gridGL/interaction/keyboard/keyboardViewport';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Size } from '@/app/gridGL/types/size';
 import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import React from 'react';
-import { keyboardCell } from './keyboardCell';
-import { keyboardClipboard } from './keyboardClipboard';
-import { keyboardCode } from './keyboardCode';
-import { keyboardDropdown } from './keyboardDropdown';
-import { keyboardPosition } from './keyboardPosition';
-import { keyboardSearch } from './keyboardSearch';
-import { keyboardSelect } from './keyboardSelect';
-import { keyboardUndoRedo } from './keyboardUndoRedo';
-import { keyboardViewport } from './keyboardViewport';
 
 export interface IProps {
   editorInteractionState: EditorInteractionState;
