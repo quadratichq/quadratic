@@ -14,21 +14,21 @@ import { useEffect, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export function AIAssistantSelectAIModelMenu() {
-  const { model, setModel } = useAIAssistantModel();
+  const { model: selectedMode, setModel: setSelectedModel } = useAIAssistantModel();
   // If the model is not enabled, set the model to the first enabled model
   useEffect(() => {
-    if (!MODEL_OPTIONS[model].enabled) {
+    if (!MODEL_OPTIONS[selectedMode].enabled) {
       const models = Object.keys(MODEL_OPTIONS) as (keyof typeof MODEL_OPTIONS)[];
       const newModel = models.find((model) => MODEL_OPTIONS[model].enabled);
       if (newModel) {
-        setModel(newModel);
+        setSelectedModel(newModel);
       }
     }
-  }, [model, setModel]);
+  }, [selectedMode, setSelectedModel]);
 
   const loading = useRecoilValue(aiAssistantLoadingAtom);
 
-  const { displayName: selectedModelDisplayName } = useMemo(() => MODEL_OPTIONS[model], [model]);
+  const { displayName: selectedModelDisplayName } = useMemo(() => MODEL_OPTIONS[selectedMode], [selectedMode]);
 
   const enabledModels = useMemo(() => {
     const models = Object.keys(MODEL_OPTIONS) as (keyof typeof MODEL_OPTIONS)[];
@@ -38,9 +38,9 @@ export function AIAssistantSelectAIModelMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild disabled={loading}>
         <div className={`flex items-center text-xs ${loading ? 'opacity-60' : ''}`}>
-          {model && (
+          {selectedMode && (
             <>
-              {isAnthropicModel(model) ? <Anthropic fontSize="inherit" /> : <OpenAI fontSize="inherit" />}
+              {isAnthropicModel(selectedMode) ? <Anthropic fontSize="inherit" /> : <OpenAI fontSize="inherit" />}
               <span className="pl-2 pr-1">{selectedModelDisplayName}</span>
             </>
           )}
@@ -53,13 +53,13 @@ export function AIAssistantSelectAIModelMenu() {
           const displayName = MODEL_OPTIONS[enabledModel].displayName;
           return (
             <DropdownMenuCheckboxItem
-              key={model}
-              checked={model === enabledModel}
-              onCheckedChange={() => setModel(enabledModel)}
+              key={enabledModel}
+              checked={selectedMode === enabledModel}
+              onCheckedChange={() => setSelectedModel(enabledModel)}
             >
               <div className="flex w-full items-center justify-between text-xs">
                 <span className="pr-4">{displayName}</span>
-                {isAnthropicModel(model) ? <Anthropic fontSize="inherit" /> : <OpenAI fontSize="inherit" />}
+                {isAnthropicModel(enabledModel) ? <Anthropic fontSize="inherit" /> : <OpenAI fontSize="inherit" />}
               </div>
             </DropdownMenuCheckboxItem>
           );
