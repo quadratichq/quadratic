@@ -38,7 +38,8 @@ export function keyboardCode(
 
   // Insert cell reference
   if (editorInteractionState.showCodeEditor && matchShortcut(Action.InsertCellReference, event)) {
-    insertCellRef(editorInteractionState);
+    const { selectedCell, selectedCellSheet, mode } = editorInteractionState;
+    insertCellRef(selectedCell, selectedCellSheet, mode);
     return true;
   }
 

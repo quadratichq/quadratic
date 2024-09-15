@@ -1,11 +1,21 @@
 import { hasPermissionToEditFile } from '@/app/actions';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  codeEditorEditorContentAtom,
+  codeEditorEvaluationResultAtom,
+  codeEditorModifiedEditorContentAtom,
+} from '@/app/atoms/codeEditorAtom';
+import {
+  editorInteractionStateModeAtom,
+  editorInteractionStatePermissionsAtom,
+  editorInteractionStateSelectedCellAtom,
+  editorInteractionStateSelectedCellSheetAtom,
+  editorInteractionStateShowCodeEditorAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import { codeCellIsAConnection, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
 import { CodeCellLanguage, SheetRect } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
@@ -15,32 +25,28 @@ import {
   provideSignatureHelp as provideSignatureHelpPython,
 } from '@/app/ui/menus/CodeEditor/PythonLanguageModel';
 import { QuadraticEditorTheme } from '@/app/ui/menus/CodeEditor/quadraticEditorTheme';
+import { useCodeEditorRef } from '@/app/ui/menus/CodeEditor/useCodeEditorRef';
 import { useEditorCellHighlights } from '@/app/ui/menus/CodeEditor/useEditorCellHighlights';
 import { useEditorOnSelectionChange } from '@/app/ui/menus/CodeEditor/useEditorOnSelectionChange';
 import { useEditorReturn } from '@/app/ui/menus/CodeEditor/useEditorReturn';
 import { javascriptLibraryForEditor } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generatedJavascriptForEditor';
 import { pyrightWorker, uri } from '@/app/web-workers/pythonLanguageServer/worker';
-import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import useEventListener from '@/shared/hooks/useEventListener';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import Editor, { DiffEditor, Monaco } from '@monaco-editor/react';
 import { CircularProgress } from '@mui/material';
 import * as monaco from 'monaco-editor';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRecoilState, useRecoilValue } from 'recoil';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { useEditorDiagnostics } from './useEditorDiagnostics';
 // import { Diagnostic } from 'vscode-languageserver-types';
 // import { typescriptLibrary } from '@/web-workers/javascriptWebWorker/worker/javascript/typescriptLibrary';
 
 interface Props {
-  editorContent?: string;
-  setEditorContent: (value?: string) => void;
   closeEditor: (skipSaveCheck: boolean) => void;
-  evaluationResult?: EvaluationResult;
   cellsAccessed?: SheetRect[] | null;
   cellLocation: SheetPosTS;
-  modifiedEditorContent?: string;
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // diagnostics?: Diagnostic[];
 }
@@ -53,28 +59,28 @@ let registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
 };
 
 export const CodeEditorBody = (props: Props) => {
-  const {
-    editorContent,
-    setEditorContent,
-    closeEditor,
-    evaluationResult,
-    cellsAccessed,
-    cellLocation,
-    modifiedEditorContent,
-  } = props;
+  const { closeEditor, cellsAccessed, cellLocation } = props;
+  const evaluationResult = useRecoilValue(codeEditorEvaluationResultAtom);
+  const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
+  const modifiedEditorContent = useRecoilValue(codeEditorModifiedEditorContentAtom);
   const {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const language = editorInteractionState.mode;
-  const monacoLanguage = getLanguageForMonaco(language);
-  const isConnection = codeCellIsAConnection(language);
-  const canEdit =
-    hasPermissionToEditFile(editorInteractionState.permissions) &&
-    (isConnection ? teamPermissions?.includes('TEAM_EDIT') : true);
+
+  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
+  const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
+  const language = useRecoilValue(editorInteractionStateModeAtom);
+  const monacoLanguage = useMemo(() => getLanguageForMonaco(language), [language]);
+  const isConnection = useMemo(() => codeCellIsAConnection(language), [language]);
+  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
+  const canEdit = useMemo(
+    () => hasPermissionToEditFile(permissions) && (isConnection ? teamPermissions?.includes('TEAM_EDIT') : true),
+    [isConnection, permissions, teamPermissions]
+  );
+  const showCodeEditor = useRecoilValue(editorInteractionStateShowCodeEditorAtom);
   const [didMount, setDidMount] = useState(false);
   const [isValidRef, setIsValidRef] = useState(false);
-  const { editorRef, monacoRef } = useCodeEditor();
+  const { editorRef, monacoRef } = useCodeEditorRef();
 
   useEditorCellHighlights(isValidRef, editorRef, monacoRef, language, cellsAccessed);
   useEditorOnSelectionChange(isValidRef, editorRef, monacoRef, language);
@@ -84,13 +90,13 @@ export const CodeEditorBody = (props: Props) => {
   // useEditorDiagnostics(isValidRef, editorRef, monacoRef, language, diagnostics);
 
   useEffect(() => {
-    if (editorInteractionState.showCodeEditor) {
+    if (showCodeEditor) {
       // focus editor on show editor change
       editorRef.current?.focus();
       editorRef.current?.setPosition({ lineNumber: 0, column: 0 });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editorInteractionState.showCodeEditor]);
+  }, [showCodeEditor]);
 
   useEffect(() => {
     const insertText = (text: string) => {
@@ -205,11 +211,10 @@ export const CodeEditorBody = (props: Props) => {
         '!findWidgetVisible && !inReferenceSearchEditor && !editorHasSelection && !suggestWidgetVisible'
       );
       editorRef.current.addCommand(monacoRef.current.KeyCode.KeyL | monacoRef.current.KeyMod.CtrlCmd, () => {
-        insertCellRef(editorInteractionState);
+        insertCellRef(selectedCell, selectedCellSheet, language);
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [closeEditor, didMount]);
+  }, [closeEditor, didMount, editorRef, language, monacoRef, selectedCell, selectedCellSheet]);
 
   useEffect(() => {
     return () => editorRef.current?.dispose();

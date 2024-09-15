@@ -1,18 +1,20 @@
+import { codeEditorConsoleOutputAtom, codeEditorSpillErrorAtom } from '@/app/atoms/codeEditorAtom';
+import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { colors } from '@/app/theme/colors';
+import { codeEditorBaseStyles, codeEditorCommentStyles } from '@/app/ui/menus/CodeEditor/styles';
+import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { colors } from '../../../theme/colors';
-import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
 export function Console() {
-  const {
-    consoleOutput: [consoleOutput],
-    spillError: [spillError],
-  } = useCodeEditor();
-  const { mode } = useRecoilValue(editorInteractionStateAtom);
-  const codeCell = getCodeCell(mode);
-  const hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
+  const consoleOutput = useRecoilValue(codeEditorConsoleOutputAtom);
+  const spillError = useRecoilValue(codeEditorSpillErrorAtom);
+  const mode = useRecoilValue(editorInteractionStateModeAtom);
+  const codeCell = useMemo(() => getCodeCell(mode), [mode]);
+  const hasOutput = useMemo(
+    () => Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError),
+    [consoleOutput, spillError]
+  );
 
   // Designed to live in a box that takes up the full height of its container
   return (

@@ -115,6 +115,26 @@ const createSelector = <T extends keyof EditorInteractionState>(key: T) =>
       })),
   });
 
-export const editorInteractionStateModeAtom = createSelector('mode');
+export const editorInteractionStateShowCellTypeMenuAtom = createSelector('showCellTypeMenu');
 export const editorInteractionStateShowCodeEditorAtom = createSelector('showCodeEditor');
+export const editorInteractionStateShowCommandPaletteAtom = createSelector('showCommandPalette');
+export const editorInteractionStateShowConnectionsMenuAtom = createSelector('showConnectionsMenu');
+export const editorInteractionStateShowGoToMenuAtom = createSelector('showGoToMenu');
+export const editorInteractionStateShowFeedbackMenuAtom = createSelector('showFeedbackMenu');
+export const editorInteractionStateShowNewFileMenuAtom = createSelector('showNewFileMenu');
+export const editorInteractionStateShowRenameFileMenuAtom = createSelector('showRenameFileMenu');
+export const editorInteractionStateShowShareFileMenuAtom = createSelector('showShareFileMenu');
+export const editorInteractionStateShowSearchAtom = createSelector('showSearch');
+export const editorInteractionStateShowContextMenuAtom = createSelector('showContextMenu');
+export const editorInteractionStateShowValidationAtom = createSelector('showValidation');
 export const editorInteractionStateShowAIAssistantAtom = createSelector('showAIAssistant');
+
+export const editorInteractionStateAnnotationStateAtom = createSelector('annotationState');
+export const editorInteractionStatePermissionsAtom = createSelector('permissions');
+export const editorInteractionStateSelectedCellAtom = createSelector('selectedCell');
+export const editorInteractionStateSelectedCellSheetAtom = createSelector('selectedCellSheet');
+export const editorInteractionStateInitialCodeAtom = createSelector('initialCode');
+export const editorInteractionStateFollowAtom = createSelector('follow');
+export const editorInteractionStateModeAtom = createSelector('mode');
+export const editorInteractionStateEditorEscapePressedAtom = createSelector('editorEscapePressed');
+export const editorInteractionStateWaitingForEditorCloseAtom = createSelector('waitingForEditorClose');

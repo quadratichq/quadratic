@@ -1,27 +1,29 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateAnnotationStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { formatDate, formatDateTime, formatTime, parseTime } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { ValidationInput } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationInput';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Calendar } from '@/shared/shadcn/ui/calendar';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
+import { dateToDateString, dateToDateTimeString } from '@/shared/utils/dateTime';
 import { CheckSharp, Close } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { Calendar } from '../../../../shared/shadcn/ui/calendar';
-import { inlineEditorEvents } from '../inlineEditor/inlineEditorEvents';
-import { inlineEditorHandler } from '../inlineEditor/inlineEditorHandler';
-import { inlineEditorMonaco } from '../inlineEditor/inlineEditorMonaco';
-import { dateToDateString, dateToDateTimeString } from '@/shared/utils/dateTime';
 
 export const CalendarPicker = () => {
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const [annotationState, setAnnotationState] = useRecoilState(editorInteractionStateAnnotationStateAtom);
 
-  const showTime = editorInteractionState.annotationState === 'calendar-time';
-  const showCalendar =
-    editorInteractionState.annotationState === 'calendar' || editorInteractionState.annotationState === 'calendar-time';
+  const showTime = useMemo(() => annotationState === 'calendar-time', [annotationState]);
+  const showCalendar = useMemo(
+    () => annotationState === 'calendar' || annotationState === 'calendar-time',
+    [annotationState]
+  );
 
   const [value, setValue] = useState<string | undefined>();
   const [date, setDate] = useState<Date | undefined>();
@@ -50,7 +52,7 @@ export const CalendarPicker = () => {
     };
 
     if (showCalendar) fetchValue();
-  }, [editorInteractionState.annotationState, showCalendar, showTime]);
+  }, [annotationState, showCalendar, showTime]);
 
   // we need to clear the component when the cursor moves to ensure it properly
   // populates when changing position.
@@ -67,51 +69,54 @@ export const CalendarPicker = () => {
     };
   });
 
-  const changeDate = (newDate: Date | undefined) => {
-    if (!newDate || !date) return;
-    let replacement: string;
-    if (showTime) {
-      newDate.setHours(date.getHours(), date.getMinutes(), date.getSeconds());
-      replacement = formatDateTime(dateToDateTimeString(newDate), dateFormat);
-    } else {
-      replacement = formatDate(dateToDateString(newDate), dateFormat);
-    }
-    setDate(newDate);
-    inlineEditorEvents.emit('replaceText', replacement, false);
-    if (!showTime) {
-      inlineEditorHandler.close(0, 0, false);
-    }
-  };
-
-  const changeTime = (time: string) => {
-    if (!date) return;
-    const combinedDate = parseTime(dateToDateString(date), time);
-    if (combinedDate) {
-      const newDate = new Date(combinedDate);
-      if (!isNaN(newDate as any)) {
-        setDate(newDate);
-        inlineEditorEvents.emit('replaceText', formatDateTime(dateToDateTimeString(newDate), dateFormat), false);
+  const changeDate = useCallback(
+    (newDate: Date | undefined) => {
+      if (!newDate || !date) return;
+      let replacement: string;
+      if (showTime) {
+        newDate.setHours(date.getHours(), date.getMinutes(), date.getSeconds());
+        replacement = formatDateTime(dateToDateTimeString(newDate), dateFormat);
+      } else {
+        replacement = formatDate(dateToDateString(newDate), dateFormat);
       }
-    }
-  };
+      setDate(newDate);
+      inlineEditorEvents.emit('replaceText', replacement, false);
+      if (!showTime) {
+        inlineEditorHandler.close(0, 0, false);
+      }
+    },
+    [date, dateFormat, showTime]
+  );
 
-  const setCurrentDateTime = () => {
+  const changeTime = useCallback(
+    (time: string) => {
+      if (!date) return;
+      const combinedDate = parseTime(dateToDateString(date), time);
+      if (combinedDate) {
+        const newDate = new Date(combinedDate);
+        if (!isNaN(newDate as any)) {
+          setDate(newDate);
+          inlineEditorEvents.emit('replaceText', formatDateTime(dateToDateTimeString(newDate), dateFormat), false);
+        }
+      }
+    },
+    [date, dateFormat]
+  );
+
+  const setCurrentDateTime = useCallback(() => {
     const newDate = new Date();
     const replacement = formatDateTime(dateToDateTimeString(newDate), dateFormat);
     setDate(newDate);
     inlineEditorEvents.emit('replaceText', replacement, false);
     inlineEditorHandler.close(0, 0, false);
-  };
+  }, [dateFormat]);
 
-  const close = () => {
-    setEditorInteractionState((state) => ({
-      ...state,
-      annotationState: undefined,
-    }));
+  const close = useCallback(() => {
+    setAnnotationState(undefined);
     inlineEditorMonaco.focus();
-  };
+  }, [setAnnotationState]);
 
-  const finish = () => inlineEditorHandler.close(0, 0, false);
+  const finish = useCallback(() => inlineEditorHandler.close(0, 0, false), []);
 
   if (!showCalendar || !date || !value) return null;
 

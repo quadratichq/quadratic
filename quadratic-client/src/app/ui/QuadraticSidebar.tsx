@@ -4,10 +4,10 @@ import {
   provideFeedbackAction,
 } from '@/app/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { showCellTypeOutlinesAtom } from '@/app/atoms/gridSettingsAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
-import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
 import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useRootRouteLoaderData } from '@/routes/_root';
@@ -37,7 +37,7 @@ import { useRecoilState } from 'recoil';
 
 export const QuadraticSidebar = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const gridSettings = useGridSettings();
+  const [showCellTypeOutlines, setShowCellTypeOutlines] = useRecoilState(showCellTypeOutlinesAtom);
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
     userMakingRequest: { fileTeamPrivacy, teamPermissions },
@@ -106,10 +106,10 @@ export const QuadraticSidebar = () => {
 
           <SidebarTooltip label={'Code cell outlines'}>
             <SidebarToggle
-              pressed={gridSettings.showCellTypeOutlines}
-              onPressedChange={() => gridSettings.setShowCellTypeOutlines(!gridSettings.showCellTypeOutlines)}
+              pressed={showCellTypeOutlines}
+              onPressedChange={() => setShowCellTypeOutlines(!showCellTypeOutlines)}
             >
-              {gridSettings.showCellTypeOutlines ? <CodeCellOutlineOn /> : <CodeCellOutlineOff />}
+              {showCellTypeOutlines ? <CodeCellOutlineOn /> : <CodeCellOutlineOff />}
             </SidebarToggle>
           </SidebarTooltip>
 

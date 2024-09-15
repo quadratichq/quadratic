@@ -1,10 +1,10 @@
 import { aiAssistantMessagesAtom, aiAssistantMessagesCountAtom } from '@/app/atoms/aiAssistantAtom';
+import { codeEditorConsoleOutputAtom } from '@/app/atoms/codeEditorAtom';
 import {
   editorInteractionStateShowAIAssistantAtom,
   editorInteractionStateShowCodeEditorAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/AIAssistant/useSubmitAIAssistantPrompt';
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { ChevronLeftIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { IconButton } from '@mui/material';
@@ -16,9 +16,7 @@ export function AIAssistantHeader() {
   const setShowAIAssistant = useSetRecoilState(editorInteractionStateShowAIAssistantAtom);
   const showCodeEditor = useRecoilValue(editorInteractionStateShowCodeEditorAtom);
   const submitPrompt = useSubmitAIAssistantPrompt();
-  const {
-    consoleOutput: [consoleOutput],
-  } = useCodeEditor();
+  const codeEditorConsoleOutput = useRecoilValue(codeEditorConsoleOutputAtom);
 
   return (
     <div className="flex items-center justify-between p-2">
@@ -31,7 +29,7 @@ export function AIAssistantHeader() {
       </div>
 
       <div className="flex items-center gap-2">
-        {showCodeEditor && consoleOutput?.stdErr && (
+        {showCodeEditor && codeEditorConsoleOutput?.stdErr && (
           <Button
             onClick={() => submitPrompt({ userPrompt: 'Fix the error in the code cell', clearMessages: true })}
             variant="success"

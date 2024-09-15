@@ -1,3 +1,4 @@
+import { codeEditorEditorContentAtom, codeEditorShowSnippetsPopoverAtom } from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import { BoxIcon, SheetComeFromIcon, SheetGoToIcon } from '@/app/ui/icons';
@@ -15,20 +16,18 @@ import {
   SNIPPET_PY_READ,
   SNIPPET_PY_RETURN,
 } from '@/app/ui/menus/CodeEditor/snippetsPY';
+import { useCodeEditorRef } from '@/app/ui/menus/CodeEditor/useCodeEditorRef';
 import { Button } from '@/shared/shadcn/ui/button';
 import { ApiOutlined, BarChartOutlined, IntegrationInstructionsOutlined } from '@mui/icons-material';
 import mixpanel from 'mixpanel-browser';
-import { useRecoilValue } from 'recoil';
-import { useCodeEditor } from './CodeEditorContext';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 export function CodeEditorEmptyState() {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const codeCell = getCodeCell(editorInteractionState.mode);
-  const {
-    editorContent: [editorContent, setEditorContent],
-    editorRef,
-    showSnippetsPopover: [, setShowSnippetsPopover],
-  } = useCodeEditor();
+  const { editorRef } = useCodeEditorRef();
+  const setShowSnippetsPopover = useSetRecoilState(codeEditorShowSnippetsPopoverAtom);
+  const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
 
   // Must meet these criteria to even show in the UI
   if (editorContent !== '') {

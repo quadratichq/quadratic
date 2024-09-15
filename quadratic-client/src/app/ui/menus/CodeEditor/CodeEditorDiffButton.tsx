@@ -1,14 +1,13 @@
+import { codeEditorEditorContentAtom, codeEditorModifiedEditorContentAtom } from '@/app/atoms/codeEditorAtom';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { ThumbDownOutlined, ThumbUpOutlined } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import { useCallback } from 'react';
+import { useRecoilState, useSetRecoilState } from 'recoil';
 
 export const CodeEditorDiffButton = () => {
-  const {
-    editorContent: [, setEditorContent],
-    modifiedEditorContent: [modifiedEditorContent, setModifiedEditorContent],
-  } = useCodeEditor();
+  const setEditorContent = useSetRecoilState(codeEditorEditorContentAtom);
+  const [modifiedEditorContent, setModifiedEditorContent] = useRecoilState(codeEditorModifiedEditorContentAtom);
 
   const handleDiffReject = useCallback(() => {
     setModifiedEditorContent(undefined);

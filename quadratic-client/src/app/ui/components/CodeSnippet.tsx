@@ -1,11 +1,12 @@
+import { codeEditorEditorContentAtom, codeEditorModifiedEditorContentAtom } from '@/app/atoms/codeEditorAtom';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
 import Editor from '@monaco-editor/react';
 import { ContentCopyOutlined, ContentPasteGoOutlined, DifferenceOutlined } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useState } from 'react';
+import { useSetRecoilState } from 'recoil';
 
 interface Props {
   code: string;
@@ -69,10 +70,8 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
 }
 
 function CodeSnippetInsertButton({ language, text }: { language: Props['language']; text: string }) {
-  const {
-    editorContent: [, setEditorContent],
-    modifiedEditorContent: [, setModifiedEditorContent],
-  } = useCodeEditor();
+  const setEditorContent = useSetRecoilState(codeEditorEditorContentAtom);
+  const setModifiedEditorContent = useSetRecoilState(codeEditorModifiedEditorContentAtom);
 
   // Replace what's in the editor with the given text
   const handleInsertReplace = useCallback(() => {
@@ -91,9 +90,7 @@ function CodeSnippetInsertButton({ language, text }: { language: Props['language
 }
 
 function CodeSnippetDiffEditor({ text }: { text: string }) {
-  const {
-    modifiedEditorContent: [, setModifiedEditorContent],
-  } = useCodeEditor();
+  const setModifiedEditorContent = useSetRecoilState(codeEditorModifiedEditorContentAtom);
   const handleEditorDiff = useCallback(() => {
     mixpanel.track('[AI].code.diff');
     setModifiedEditorContent(text);

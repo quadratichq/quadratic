@@ -1,5 +1,19 @@
 import { hasPermissionToEditFile } from '@/app/actions';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  editorInteractionStateFollowAtom,
+  editorInteractionStatePermissionsAtom,
+  editorInteractionStateShowAIAssistantAtom,
+  editorInteractionStateShowCellTypeMenuAtom,
+  editorInteractionStateShowCodeEditorAtom,
+  editorInteractionStateShowCommandPaletteAtom,
+  editorInteractionStateShowFeedbackMenuAtom,
+  editorInteractionStateShowGoToMenuAtom,
+  editorInteractionStateShowNewFileMenuAtom,
+  editorInteractionStateShowRenameFileMenuAtom,
+  editorInteractionStateShowShareFileMenuAtom,
+  editorInteractionStateShowValidationAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
+import { presentationModeAtom, showHeadingsAtom } from '@/app/atoms/gridSettingsAtom';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import QuadraticGrid from '@/app/gridGL/QuadraticGrid';
 import { isEmbed } from '@/app/helpers/isEmbed';
@@ -9,12 +23,10 @@ import { Following } from '@/app/ui/components/Following';
 import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
 import PresentationModeHint from '@/app/ui/components/PresentationModeHint';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
-import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
 import { AIAssistant } from '@/app/ui/menus/AIAssistant/AIAssistant';
 import { BottomBar } from '@/app/ui/menus/BottomBar/BottomBar';
 import CellTypeMenu from '@/app/ui/menus/CellTypeMenu';
 import CodeEditor from '@/app/ui/menus/CodeEditor';
-import { CodeEditorProvider } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import CommandPalette from '@/app/ui/menus/CommandPalette';
 import ConnectionsMenu from '@/app/ui/menus/ConnectionsMenu';
 import FeedbackMenu from '@/app/ui/menus/FeedbackMenu';
@@ -32,10 +44,10 @@ import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useNavigation, useParams } from 'react-router';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 export default function QuadraticUI() {
   const { isAuthenticated } = useRootRouteLoaderData();
@@ -43,21 +55,40 @@ export default function QuadraticUI() {
     team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
   const connectionsFetcher = useConnectionsFetcher();
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const canEditFile = hasPermissionToEditFile(editorInteractionState.permissions);
+
+  const showCellTypeMenu = useRecoilValue(editorInteractionStateShowCellTypeMenuAtom);
+  const showCodeEditor = useRecoilValue(editorInteractionStateShowCodeEditorAtom);
+  const showCommandPalette = useRecoilValue(editorInteractionStateShowCommandPaletteAtom);
+  const showGoToMenu = useRecoilValue(editorInteractionStateShowGoToMenuAtom);
+  const showFeedbackMenu = useRecoilValue(editorInteractionStateShowFeedbackMenuAtom);
+  const [showNewFileMenu, setShowNewFileMenu] = useRecoilState(editorInteractionStateShowNewFileMenuAtom);
+  const [showRenameFileMenu, setShowRenameFileMenu] = useRecoilState(editorInteractionStateShowRenameFileMenuAtom);
+  const [showShareFileMenu, setShowShareFileMenu] = useRecoilState(editorInteractionStateShowShareFileMenuAtom);
+  const showValidation = useRecoilValue(editorInteractionStateShowValidationAtom);
+  const showAIAssistant = useRecoilValue(editorInteractionStateShowAIAssistantAtom);
+
+  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
+  const canEditFile = useMemo(() => hasPermissionToEditFile(permissions), [permissions]);
+
+  const { users } = useMultiplayerUsers();
+  const editorInteractionStateFollow = useRecoilValue(editorInteractionStateFollowAtom);
+  const follow = useMemo(
+    () =>
+      editorInteractionStateFollow ? users.find((user) => user.session_id === editorInteractionStateFollow) : undefined,
+    [editorInteractionStateFollow, users]
+  );
+
   const navigation = useNavigation();
   const { uuid } = useParams() as { uuid: string };
   const { name, renameFile } = useFileContext();
-  const { users } = useMultiplayerUsers();
-  const { presentationMode, setShowHeadings } = useGridSettings();
-  const follow = editorInteractionState.follow
-    ? users.find((user) => user.session_id === editorInteractionState.follow)
-    : undefined;
+
+  const presentationMode = useRecoilValue(presentationModeAtom);
+  const setShowHeadings = useSetRecoilState(showHeadingsAtom);
 
   // Resize the canvas when user goes in/out of presentation mode
   useEffect(() => {
     pixiApp.resize();
-  }, [presentationMode, editorInteractionState.showCodeEditor]);
+  }, [presentationMode, showCodeEditor]);
 
   // For mobile, set Headers to not visible by default
   useEffect(() => {
@@ -94,15 +125,13 @@ export default function QuadraticUI() {
             position: 'relative',
           }}
         >
-          <CodeEditorProvider>
-            {editorInteractionState.showAIAssistant && canEditFile && isAuthenticated && <AIAssistant />}
-            <FileDragDropWrapper>
-              <QuadraticGrid />
-              {!presentationMode && <SheetBar />}
-            </FileDragDropWrapper>
-            {editorInteractionState.showCodeEditor && <CodeEditor />}
-          </CodeEditorProvider>
-          {editorInteractionState.showValidation && <ValidationPanel />}
+          {showAIAssistant && canEditFile && isAuthenticated && <AIAssistant />}
+          <FileDragDropWrapper>
+            <QuadraticGrid />
+            {!presentationMode && <SheetBar />}
+          </FileDragDropWrapper>
+          {showCodeEditor && <CodeEditor />}
+          {showValidation && <ValidationPanel />}
           <Following follow={follow} />
           <div
             style={{
@@ -120,37 +149,24 @@ export default function QuadraticUI() {
       </div>
 
       {/* Global overlay menus */}
-      {editorInteractionState.showFeedbackMenu && <FeedbackMenu />}
-      {editorInteractionState.showShareFileMenu && (
-        <ShareFileDialog
-          onClose={() => {
-            setEditorInteractionState((prevState) => ({
-              ...prevState,
-              showShareFileMenu: false,
-            }));
-          }}
-          name={name}
-          uuid={uuid}
-        />
-      )}
-      {editorInteractionState.showNewFileMenu && (
+      {showFeedbackMenu && <FeedbackMenu />}
+      {showShareFileMenu && <ShareFileDialog onClose={() => setShowShareFileMenu(false)} name={name} uuid={uuid} />}
+      {showNewFileMenu && (
         <NewFileDialog
-          onClose={() => {
-            setEditorInteractionState((prev) => ({ ...prev, showNewFileMenu: false }));
-          }}
+          onClose={() => setShowNewFileMenu(false)}
           isPrivate={true}
           connections={connectionsFetcher.data ? connectionsFetcher.data.connections : []}
           teamUuid={teamUuid}
         />
       )}
       {presentationMode && <PresentationModeHint />}
-      {editorInteractionState.showCellTypeMenu && <CellTypeMenu />}
-      {editorInteractionState.showCommandPalette && <CommandPalette />}
-      {editorInteractionState.showGoToMenu && <GoTo />}
-      {editorInteractionState.showRenameFileMenu && (
+      {showCellTypeMenu && <CellTypeMenu />}
+      {showCommandPalette && <CommandPalette />}
+      {showGoToMenu && <GoTo />}
+      {showRenameFileMenu && (
         <DialogRenameItem
           itemLabel="file"
-          onClose={() => setEditorInteractionState((prev) => ({ ...prev, showRenameFileMenu: false }))}
+          onClose={() => setShowRenameFileMenu(false)}
           onSave={(newValue) => renameFile(newValue)}
           value={name}
         />

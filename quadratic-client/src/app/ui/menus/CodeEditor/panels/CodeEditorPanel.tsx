@@ -2,8 +2,10 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 import { getConnectionInfo } from '@/app/helpers/codeCellLanguage';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { PanelPositionBottomIcon, PanelPositionLeftIcon } from '@/app/ui/icons';
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { CodeEditorPanelBottom } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
+import { CodeEditorPanelSide } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelSide';
 import { CodeEditorPanelData, PanelPosition } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import { useCodeEditorRef } from '@/app/ui/menus/CodeEditor/useCodeEditorRef';
 import { useConnectionSchemaBrowserTableQueryActionInsertQuery } from '@/dashboard/hooks/useConnectionSchemaBrowserTableQueryAction';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
@@ -12,8 +14,6 @@ import { cn } from '@/shared/shadcn/utils';
 import { IconButton } from '@mui/material';
 import { MouseEvent, memo, useCallback } from 'react';
 import { useRecoilValue } from 'recoil';
-import { CodeEditorPanelBottom } from './CodeEditorPanelBottom';
-import { CodeEditorPanelSide } from './CodeEditorPanelSide';
 
 interface Props {
   codeEditorPanelData: CodeEditorPanelData;
@@ -25,7 +25,7 @@ export const CodeEditorPanel = memo((props: Props) => {
     userMakingRequest: { teamPermissions },
     team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
-  const { editorRef } = useCodeEditor();
+  const { editorRef } = useCodeEditorRef();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const connectionInfo = getConnectionInfo(editorInteractionState.mode);
   const { codeEditorPanelData } = props;

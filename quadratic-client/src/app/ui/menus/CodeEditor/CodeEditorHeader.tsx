@@ -1,5 +1,10 @@
 import { hasPermissionToEditFile } from '@/app/actions';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { codeEditorEditorContentAtom, codeEditorModifiedEditorContentAtom } from '@/app/atoms/codeEditorAtom';
+import {
+  editorInteractionStateModeAtom,
+  editorInteractionStatePermissionsAtom,
+  editorInteractionStateSelectedCellSheetAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetPosTS } from '@/app/gridGL/types/size';
@@ -8,7 +13,6 @@ import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { CodeEditorDiffButton } from '@/app/ui/menus/CodeEditor/CodeEditorDiffButton';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
 import { SnippetsPopover } from '@/app/ui/menus/CodeEditor/SnippetsPopover';
@@ -19,7 +23,7 @@ import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { cn } from '@/shared/shadcn/utils';
 import { Close, PlayArrow, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 interface Props {
@@ -35,33 +39,45 @@ export const CodeEditorHeader = (props: Props) => {
   const {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
-  const {
-    editorContent: [editorContent],
-    modifiedEditorContent: [modifiedEditorContent],
-  } = useCodeEditor();
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const editorContent = useRecoilValue(codeEditorEditorContentAtom);
+  const modifiedEditorContent = useRecoilValue(codeEditorModifiedEditorContentAtom);
+  const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
+  const mode = useRecoilValue(editorInteractionStateModeAtom);
+  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
-  const isConnection = codeCellIsAConnection(editorInteractionState.mode);
-  const hasPermission =
-    hasPermissionToEditFile(editorInteractionState.permissions) &&
-    (isConnection ? teamPermissions?.includes('TEAM_EDIT') : true);
-  const codeCell = getCodeCell(editorInteractionState.mode);
+  const isConnection = useMemo(() => codeCellIsAConnection(mode), [mode]);
+  const hasPermission = useMemo(
+    () => hasPermissionToEditFile(permissions) && (isConnection ? teamPermissions?.includes('TEAM_EDIT') : true),
+    [permissions, teamPermissions, isConnection]
+  );
+  const codeCell = useMemo(() => getCodeCell(mode), [mode]);
   const connectionsFetcher = useConnectionsFetcher();
-  const language = getLanguage(editorInteractionState.mode);
+  const language = useMemo(() => getLanguage(mode), [mode]);
 
   // Get the connection name (it's possible the user won't have access to it
   // because they're in a file they have access to but not the team — or
   // the connection was deleted)
-  let currentConnectionName = '';
-  if (connectionsFetcher.data) {
-    const connectionUuid = getConnectionUuid(editorInteractionState.mode);
-    const foundConnection = connectionsFetcher.data.connections.find(({ uuid }) => uuid === connectionUuid);
-    if (foundConnection) currentConnectionName = foundConnection.name;
-  }
+  const currentConnectionName = useMemo(() => {
+    if (connectionsFetcher.data) {
+      const connectionUuid = getConnectionUuid(mode);
+      const foundConnection = connectionsFetcher.data.connections.find(({ uuid }) => uuid === connectionUuid);
+      if (foundConnection) {
+        return foundConnection.name;
+      }
+    }
+    return '';
+  }, [connectionsFetcher.data, mode]);
 
   // Keep track of the current sheet ID so we know whether to show the sheet name or not
-  const currentCodeEditorCellIsNotInActiveSheet = currentSheetId !== editorInteractionState.selectedCellSheet;
-  const currentSheetNameOfActiveCodeEditorCell = sheets.getById(editorInteractionState.selectedCellSheet)?.name;
+  const currentCodeEditorCellIsNotInActiveSheet = useMemo(
+    () => currentSheetId !== selectedCellSheet,
+    [currentSheetId, selectedCellSheet]
+  );
+  const currentSheetNameOfActiveCodeEditorCell = useMemo(
+    () => sheets.getById(selectedCellSheet)?.name,
+    [selectedCellSheet]
+  );
+
   useEffect(() => {
     const updateSheetName = () => setCurrentSheetId(sheets.sheet.id);
     events.on('changeSheet', updateSheetName);

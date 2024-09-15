@@ -1,6 +1,13 @@
 import { Action } from '@/app/actions/actions';
+import {
+  presentationModeAtom,
+  showCellTypeOutlinesAtom,
+  showCodePeekAtom,
+  showGridAxesAtom,
+  showGridLinesAtom,
+  showHeadingsAtom,
+} from '@/app/atoms/gridSettingsAtom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
-import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarFileMenu/MenubarItemAction';
 import { CheckSmallIcon, CropFreeIcon, ZoomInIcon } from '@/shared/components/Icons';
 import {
@@ -14,6 +21,7 @@ import {
   MenubarSubTrigger,
   MenubarTrigger,
 } from '@/shared/shadcn/ui/menubar';
+import { useRecoilState } from 'recoil';
 
 const MenubarItemCheckbox = ({ checked }: { checked: boolean }) => {
   return <CheckSmallIcon className={checked ? 'visible opacity-100' : 'invisible opacity-0'} />;
@@ -22,27 +30,33 @@ const MenubarItemCheckbox = ({ checked }: { checked: boolean }) => {
 // TODO: (enhancement) move these into `viewActionsSpec` by making the `.run()`
 // function of each accessible from outside of react (e.g. without `useGridSettings`)
 export const ViewMenubarMenu = () => {
-  const settings = useGridSettings();
+  const [showHeadings, setShowHeadings] = useRecoilState(showHeadingsAtom);
+  const [showGridAxes, setShowGridAxes] = useRecoilState(showGridAxesAtom);
+  const [showGridLines, setShowGridLines] = useRecoilState(showGridLinesAtom);
+  const [showCellTypeOutlines, setShowCellTypeOutlines] = useRecoilState(showCellTypeOutlinesAtom);
+  const [showCodePeek, setShowCodePeek] = useRecoilState(showCodePeekAtom);
+  const [presentationMode, setPresentationMode] = useRecoilState(presentationModeAtom);
+
   return (
     <MenubarMenu>
       <MenubarTrigger>View</MenubarTrigger>
       <MenubarContent>
-        <MenubarItem onClick={() => settings.setShowHeadings(!settings.showHeadings)}>
-          <MenubarItemCheckbox checked={settings.showHeadings} /> Show row and column headings
+        <MenubarItem onClick={() => setShowHeadings(!showHeadings)}>
+          <MenubarItemCheckbox checked={showHeadings} /> Show row and column headings
         </MenubarItem>
-        <MenubarItem onClick={() => settings.setShowGridAxes(!settings.showGridAxes)}>
-          <MenubarItemCheckbox checked={settings.showGridAxes} /> Show grid axis
+        <MenubarItem onClick={() => setShowGridAxes(!showGridAxes)}>
+          <MenubarItemCheckbox checked={showGridAxes} /> Show grid axis
         </MenubarItem>
-        <MenubarItem onClick={() => settings.setShowGridLines(!settings.showGridLines)}>
-          <MenubarItemCheckbox checked={settings.showGridLines} />
+        <MenubarItem onClick={() => setShowGridLines(!showGridLines)}>
+          <MenubarItemCheckbox checked={showGridLines} />
           Show grid lines
         </MenubarItem>
-        <MenubarItem onClick={() => settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines)}>
-          <MenubarItemCheckbox checked={settings.showCellTypeOutlines} />
+        <MenubarItem onClick={() => setShowCellTypeOutlines(!showCellTypeOutlines)}>
+          <MenubarItemCheckbox checked={showCellTypeOutlines} />
           Show code cell outlines
         </MenubarItem>
-        <MenubarItem onClick={() => settings.setShowCodePeek(!settings.showCodePeek)}>
-          <MenubarItemCheckbox checked={settings.showCodePeek} />
+        <MenubarItem onClick={() => setShowCodePeek(!showCodePeek)}>
+          <MenubarItemCheckbox checked={showCodePeek} />
           Show code peek
         </MenubarItem>
         <MenubarSeparator />
@@ -62,7 +76,7 @@ export const ViewMenubarMenu = () => {
             <MenubarItemAction action={Action.ZoomTo200} actionArgs={undefined} />
           </MenubarSubContent>
         </MenubarSub>
-        <MenubarItem onClick={() => settings.setPresentationMode(!settings.presentationMode)}>
+        <MenubarItem onClick={() => setPresentationMode(!presentationMode)}>
           <CropFreeIcon />
           Presentation mode
           <MenubarShortcut>{KeyboardSymbols.Command + '.'}</MenubarShortcut>

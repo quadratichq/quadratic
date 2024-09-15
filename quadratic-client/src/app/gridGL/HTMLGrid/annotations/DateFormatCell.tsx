@@ -1,21 +1,18 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateAnnotationStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { DateFormat } from '@/app/ui/components/DateFormat';
 import { useCallback } from 'react';
 import { useRecoilState } from 'recoil';
 
 export const DateFormatCell = () => {
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const [annotationState, setAnnotationState] = useRecoilState(editorInteractionStateAnnotationStateAtom);
 
   const close = useCallback(() => {
-    setEditorInteractionState((state) => ({
-      ...state,
-      annotationState: undefined,
-    }));
+    setAnnotationState(undefined);
     focusGrid();
-  }, [setEditorInteractionState]);
+  }, [setAnnotationState]);
 
-  if (editorInteractionState.annotationState !== 'date-format') return null;
+  if (annotationState !== 'date-format') return null;
   return (
     <div
       className="pointer-events-auto rounded border bg-white p-4 shadow"

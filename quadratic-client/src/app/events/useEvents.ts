@@ -1,11 +1,15 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  editorInteractionStateAtom,
+  editorInteractionStateShowValidationAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { useEffect } from 'react';
-import { useRecoilState } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 // Handles passing between events and editorInteractionStateAtom
 export const useEvents = () => {
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const showValidation = useRecoilValue(editorInteractionStateShowValidationAtom);
+  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
 
   useEffect(() => {
     const handleUndoRedo = (undo: boolean, redo: boolean) => {
@@ -25,6 +29,6 @@ export const useEvents = () => {
   }, [setEditorInteractionState]);
 
   useEffect(() => {
-    events.emit('validation', editorInteractionState.showValidation);
-  }, [editorInteractionState]);
+    events.emit('validation', showValidation);
+  }, [showValidation]);
 };

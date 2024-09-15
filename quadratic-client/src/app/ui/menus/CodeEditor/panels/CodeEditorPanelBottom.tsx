@@ -1,11 +1,16 @@
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import {
+  codeEditorConsoleOutputAtom,
+  codeEditorPanelBottomActiveTabAtom,
+  codeEditorSpillErrorAtom,
+} from '@/app/atoms/codeEditorAtom';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { cn } from '@/shared/shadcn/utils';
 import { ChevronRightIcon } from '@radix-ui/react-icons';
-import { ReactNode } from 'react';
+import { ReactNode, useMemo } from 'react';
+import { useRecoilState, useRecoilValue } from 'recoil';
 
 export type PanelTab = 'console' | 'data-browser';
 
@@ -18,18 +23,19 @@ export function CodeEditorPanelBottom({
   codeEditorPanelData: { bottomHidden, setBottomHidden },
   schemaBrowser,
 }: Props) {
-  const {
-    consoleOutput: [consoleOutput],
-    panelBottomActiveTab: [tab, setTab],
-    spillError: [spillError],
-  } = useCodeEditor();
-  const hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
+  const consoleOutput = useRecoilValue(codeEditorConsoleOutputAtom);
+  const spillError = useRecoilValue(codeEditorSpillErrorAtom);
+  const [panelBottomActiveTab, setPanelBottomActiveTab] = useRecoilState(codeEditorPanelBottomActiveTabAtom);
+  const hasOutput = useMemo(
+    () => Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError),
+    [consoleOutput?.stdErr?.length, consoleOutput?.stdOut?.length, spillError]
+  );
 
   return (
     <Tabs
-      value={tab}
+      value={panelBottomActiveTab}
       onValueChange={(value) => {
-        setTab(value as PanelTab);
+        setPanelBottomActiveTab(value as PanelTab);
         if (bottomHidden) {
           setBottomHidden((prev) => !prev);
         }

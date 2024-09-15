@@ -1,6 +1,25 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  codeEditorCodeStringAtom,
+  codeEditorConsoleOutputAtom,
+  codeEditorEditorContentAtom,
+  codeEditorEvaluationResultAtom,
+  codeEditorModifiedEditorContentAtom,
+  codeEditorPanelBottomActiveTabAtom,
+  codeEditorSpillErrorAtom,
+} from '@/app/atoms/codeEditorAtom';
+import {
+  editorInteractionStateAtom,
+  editorInteractionStateEditorEscapePressedAtom,
+  editorInteractionStateInitialCodeAtom,
+  editorInteractionStateModeAtom,
+  editorInteractionStatePermissionsAtom,
+  editorInteractionStateSelectedCellAtom,
+  editorInteractionStateSelectedCellSheetAtom,
+  editorInteractionStateShowCodeEditorAtom,
+  editorInteractionStateWaitingForEditorCloseAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
 import { useConnectionState } from '@/app/atoms/useConnectionState';
 import { useJavascriptState } from '@/app/atoms/useJavascriptState';
 import { usePythonState } from '@/app/atoms/usePythonState';
@@ -13,7 +32,6 @@ import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { CodeCellLanguage, JsCodeCell, JsRenderCodeCell, Pos, SheetRect } from '@/app/quadratic-core-types';
 import { CodeEditorBody } from '@/app/ui/menus/CodeEditor/CodeEditorBody';
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { CodeEditorEmptyState } from '@/app/ui/menus/CodeEditor/CodeEditorEmptyState';
 import { CodeEditorHeader } from '@/app/ui/menus/CodeEditor/CodeEditorHeader';
 import { CodeEditorPanel } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanel';
@@ -29,7 +47,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import './CodeEditor.css';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { Diagnostic } from 'vscode-languageserver-types';
@@ -44,18 +62,25 @@ export interface ConsoleOutput {
 }
 
 export const CodeEditor = () => {
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { showCodeEditor, mode: editorMode } = editorInteractionState;
-  const mode = getLanguage(editorMode);
-  const {
-    consoleOutput: [, setOut],
-    spillError: [, setSpillError],
-    codeString: [codeString, setCodeString],
-    editorContent: [editorContent, setEditorContent],
-    modifiedEditorContent: [modifiedEditorContent],
-    evaluationResult: [evaluationResult, setEvaluationResult],
-    panelBottomActiveTab: [, setPanelBottomActiveTab],
-  } = useCodeEditor();
+  const showCodeEditor = useRecoilValue(editorInteractionStateShowCodeEditorAtom);
+  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
+  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
+  const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
+  const initialCode = useRecoilValue(editorInteractionStateInitialCodeAtom);
+  const editorMode = useRecoilValue(editorInteractionStateModeAtom);
+  const mode = useMemo(() => getLanguage(editorMode), [editorMode]);
+  const editorEscapePressed = useRecoilValue(editorInteractionStateEditorEscapePressedAtom);
+  const waitingForEditorClose = useRecoilValue(editorInteractionStateWaitingForEditorCloseAtom);
+  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+
+  const [codeString, setCodeString] = useRecoilState(codeEditorCodeStringAtom);
+  const [evaluationResult, setEvaluationResult] = useRecoilState(codeEditorEvaluationResultAtom);
+  const setConsoleOutput = useSetRecoilState(codeEditorConsoleOutputAtom);
+  const setSpillError = useSetRecoilState(codeEditorSpillErrorAtom);
+  const setPanelBottomActiveTab = useSetRecoilState(codeEditorPanelBottomActiveTabAtom);
+  const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
+  const setModifiedEditorContent = useSetRecoilState(codeEditorModifiedEditorContentAtom);
+
   const { pythonState } = usePythonState();
   const javascriptState = useJavascriptState();
   const connectionState = useConnectionState();
@@ -69,21 +94,15 @@ export const CodeEditor = () => {
   useEffect(() => {
     events.emit('codeEditor');
     setPanelBottomActiveTab(mode === 'Connection' ? 'data-browser' : 'console');
-  }, [
-    showCodeEditor,
-    editorInteractionState.selectedCell.x,
-    editorInteractionState.selectedCell.y,
-    mode,
-    setPanelBottomActiveTab,
-  ]);
+  }, [showCodeEditor, selectedCell.x, selectedCell.y, mode, setPanelBottomActiveTab]);
 
   const cellLocation: SheetPosTS = useMemo(() => {
     return {
-      x: editorInteractionState.selectedCell.x,
-      y: editorInteractionState.selectedCell.y,
-      sheetId: editorInteractionState.selectedCellSheet,
+      x: selectedCell.x,
+      y: selectedCell.y,
+      sheetId: selectedCellSheet,
     };
-  }, [editorInteractionState]);
+  }, [selectedCell.x, selectedCell.y, selectedCellSheet]);
 
   const unsaved = useMemo(() => {
     const unsaved = editorContent !== codeString;
@@ -97,7 +116,7 @@ export const CodeEditor = () => {
 
   // handle someone trying to open a different code editor
   useEffect(() => {
-    if (editorInteractionState.waitingForEditorClose) {
+    if (waitingForEditorClose) {
       // if unsaved then show save dialog and wait for that to complete
       if (unsaved) {
         setShowSaveChangesAlert(true);
@@ -105,7 +124,6 @@ export const CodeEditor = () => {
 
       // otherwise either open the new editor or show the cell type menu (if type is not selected)
       else {
-        const waitingForEditorClose = editorInteractionState.waitingForEditorClose;
         if (waitingForEditorClose) {
           if (waitingForEditorClose.inlineEditor) {
             pixiAppSettings.changeInput(true);
@@ -129,35 +147,35 @@ export const CodeEditor = () => {
         }
       }
     }
-  }, [editorInteractionState.waitingForEditorClose, setEditorInteractionState, unsaved]);
+  }, [setEditorInteractionState, unsaved, waitingForEditorClose]);
 
   // ensure codeCell is created w/content and updated when it receives a change request from Rust
   useEffect(() => {
     const updateCodeCell = async (pushCodeCell?: JsCodeCell) => {
       // selectedCellSheet may be undefined if code editor was activated from within the CellInput
-      if (!editorInteractionState.selectedCellSheet) return;
+      if (!selectedCellSheet) return;
       const codeCell =
-        pushCodeCell ??
-        (await quadraticCore.getCodeCell(
-          editorInteractionState.selectedCellSheet,
-          editorInteractionState.selectedCell.x,
-          editorInteractionState.selectedCell.y
-        ));
+        pushCodeCell ?? (await quadraticCore.getCodeCell(selectedCellSheet, selectedCell.x, selectedCell.y));
 
-      const initialCode = editorInteractionState.initialCode;
       if (codeCell) {
         setCodeString(codeCell.code_string);
         setCellsAccessed(codeCell.cells_accessed);
-        setOut({ stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined });
-        if (!pushCodeCell) setEditorContent(initialCode ?? codeCell.code_string);
+        setConsoleOutput({ stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined });
+        if (!pushCodeCell) {
+          setEditorContent(initialCode ?? codeCell.code_string);
+          setModifiedEditorContent(undefined);
+        }
         const newEvaluationResult = codeCell.evaluation_result ? JSON.parse(codeCell.evaluation_result) : {};
         setEvaluationResult({ ...newEvaluationResult, ...codeCell.return_info });
         setSpillError(codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as Coordinate)));
       } else {
         setCodeString('');
-        if (!pushCodeCell) setEditorContent(initialCode ?? '');
+        if (!pushCodeCell) {
+          setEditorContent(initialCode ?? '');
+          setModifiedEditorContent(undefined);
+        }
         setEvaluationResult(undefined);
-        setOut(undefined);
+        setConsoleOutput(undefined);
       }
     };
 
@@ -184,15 +202,15 @@ export const CodeEditor = () => {
     cellLocation.sheetId,
     cellLocation.x,
     cellLocation.y,
-    editorInteractionState.initialCode,
-    editorInteractionState.selectedCell.x,
-    editorInteractionState.selectedCell.y,
-    editorInteractionState.selectedCellSheet,
-    setEditorInteractionState,
-    setEvaluationResult,
+    initialCode,
+    selectedCell.x,
+    selectedCell.y,
+    selectedCellSheet,
     setCodeString,
+    setConsoleOutput,
     setEditorContent,
-    setOut,
+    setEvaluationResult,
+    setModifiedEditorContent,
     setSpillError,
   ]);
 
@@ -230,16 +248,16 @@ export const CodeEditor = () => {
 
   // handle when escape is pressed when escape does not have focus
   useEffect(() => {
-    if (editorInteractionState.editorEscapePressed) {
+    if (editorEscapePressed) {
       if (unsaved) {
         setShowSaveChangesAlert(true);
       } else {
         closeEditor(true);
       }
     }
-  }, [closeEditor, editorInteractionState.editorEscapePressed, unsaved]);
+  }, [closeEditor, editorEscapePressed, unsaved]);
 
-  const saveAndRunCell = async () => {
+  const saveAndRunCell = useCallback(async () => {
     if (editorMode === undefined) throw new Error(`Language ${editorMode} not supported in CodeEditor#saveAndRunCell`);
 
     quadraticCore.setCodeCellValue({
@@ -264,9 +282,9 @@ export const CodeEditor = () => {
         send_to: 'AW-11007319783/C-yfCJOe6JkZEOe92YAp',
       });
     }
-  };
+  }, [cellLocation.sheetId, cellLocation.x, cellLocation.y, editorContent, editorMode, mode, setCodeString]);
 
-  const cancelRun = () => {
+  const cancelRun = useCallback(() => {
     if (mode === 'Python') {
       if (pythonState === 'running') {
         pythonWebWorker.cancelExecution();
@@ -281,62 +299,64 @@ export const CodeEditor = () => {
         quadraticCore.sendCancelExecution(language);
       }
     }
-  };
+  }, [connectionState, javascriptState, mode, pythonState]);
 
-  const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    // Don't allow the shortcuts below for certain users
-    if (!hasPermissionToEditFile(editorInteractionState.permissions)) {
-      return;
-    }
+  const onKeyDownEditor = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      // Don't allow the shortcuts below for certain users
+      if (!hasPermissionToEditFile(permissions)) {
+        return;
+      }
 
-    // Command + S
-    if (matchShortcut(Action.Save, event)) {
-      event.preventDefault();
-      saveAndRunCell();
-    }
+      // Command + S
+      if (matchShortcut(Action.Save, event)) {
+        event.preventDefault();
+        saveAndRunCell();
+      }
 
-    // Command + Enter
-    if (matchShortcut(Action.ExecuteCode, event)) {
-      event.preventDefault();
-      event.stopPropagation();
-      saveAndRunCell();
-    }
+      // Command + Enter
+      if (matchShortcut(Action.ExecuteCode, event)) {
+        event.preventDefault();
+        event.stopPropagation();
+        saveAndRunCell();
+      }
 
-    // Command + Escape
-    if (matchShortcut(Action.CancelExecution, event)) {
-      event.preventDefault();
-      event.stopPropagation();
-      cancelRun();
-    }
+      // Command + Escape
+      if (matchShortcut(Action.CancelExecution, event)) {
+        event.preventDefault();
+        event.stopPropagation();
+        cancelRun();
+      }
 
-    // Command + Plus
-    if (matchShortcut(Action.ZoomIn, event)) {
-      event.preventDefault();
-      event.stopPropagation();
-      dispatchEditorAction('editor.action.fontZoomIn');
-    }
+      // Command + Plus
+      if (matchShortcut(Action.ZoomIn, event)) {
+        event.preventDefault();
+        event.stopPropagation();
+        dispatchEditorAction('editor.action.fontZoomIn');
+      }
 
-    // Command + Minus
-    if (matchShortcut(Action.ZoomOut, event)) {
-      event.preventDefault();
-      event.stopPropagation();
-      dispatchEditorAction('editor.action.fontZoomOut');
-    }
+      // Command + Minus
+      if (matchShortcut(Action.ZoomOut, event)) {
+        event.preventDefault();
+        event.stopPropagation();
+        dispatchEditorAction('editor.action.fontZoomOut');
+      }
 
-    // Command + 0
-    if (matchShortcut(Action.ZoomTo100, event)) {
-      event.preventDefault();
-      event.stopPropagation();
-      dispatchEditorAction('editor.action.fontZoomReset');
-    }
-  };
+      // Command + 0
+      if (matchShortcut(Action.ZoomTo100, event)) {
+        event.preventDefault();
+        event.stopPropagation();
+        dispatchEditorAction('editor.action.fontZoomReset');
+      }
+    },
+    [cancelRun, permissions, saveAndRunCell]
+  );
 
-  const afterDialog = () => {
+  const afterDialog = useCallback(() => {
     setShowSaveChangesAlert(false);
-    if (editorInteractionState.editorEscapePressed) {
+    if (editorEscapePressed) {
       closeEditor(true);
     }
-    const waitingForEditorClose = editorInteractionState.waitingForEditorClose;
     if (waitingForEditorClose) {
       setEditorInteractionState((oldState) => ({
         ...oldState,
@@ -354,7 +374,7 @@ export const CodeEditor = () => {
     } else {
       closeEditor(true);
     }
-  };
+  }, [closeEditor, editorEscapePressed, setEditorInteractionState, waitingForEditorClose]);
 
   const codeEditorPanelData = useCodeEditorPanelData();
 
@@ -424,21 +444,13 @@ export const CodeEditor = () => {
           closeEditor={() => closeEditor(false)}
         />
         <CodeEditorBody
-          editorContent={editorContent}
-          setEditorContent={setEditorContent}
           closeEditor={closeEditor}
-          evaluationResult={evaluationResult}
           cellsAccessed={!unsaved ? cellsAccessed : []}
           cellLocation={cellLocation}
-          modifiedEditorContent={modifiedEditorContent}
         />
         <CodeEditorEmptyState />
-        {editorInteractionState.mode !== 'Formula' && editorContent && (
-          <ReturnTypeInspector
-            language={editorInteractionState.mode}
-            evaluationResult={evaluationResult}
-            unsaved={unsaved}
-          />
+        {editorMode !== 'Formula' && editorContent && (
+          <ReturnTypeInspector language={editorMode} evaluationResult={evaluationResult} unsaved={unsaved} />
         )}
       </div>
 

@@ -1,3 +1,4 @@
+import { showCodePeekAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
@@ -7,10 +8,10 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { pluralize } from '@/app/helpers/pluralize';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
-import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { ReactNode, useEffect, useRef, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 import './HoverCell.css';
 
 export interface EditingCell {
@@ -21,7 +22,7 @@ export interface EditingCell {
 }
 
 export const HoverCell = () => {
-  const { showCodePeek } = useGridSettings();
+  const showCodePeek = useRecoilValue(showCodePeekAtom);
   const [cell, setCell] = useState<JsRenderCodeCell | EditingCell | ErrorValidation | undefined>();
   const [offsets, setOffsets] = useState<Rectangle>(new Rectangle());
 

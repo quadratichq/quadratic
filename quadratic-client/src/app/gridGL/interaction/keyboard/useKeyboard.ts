@@ -1,4 +1,5 @@
 import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { keyboardCell } from '@/app/gridGL/interaction/keyboard/keyboardCell';
 import { keyboardClipboard } from '@/app/gridGL/interaction/keyboard/keyboardClipboard';
@@ -11,8 +12,8 @@ import { keyboardUndoRedo } from '@/app/gridGL/interaction/keyboard/keyboardUndo
 import { keyboardViewport } from '@/app/gridGL/interaction/keyboard/keyboardViewport';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Size } from '@/app/gridGL/types/size';
-import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { useRecoilState } from 'recoil';
 
 export interface IProps {
   editorInteractionState: EditorInteractionState;
@@ -23,7 +24,7 @@ export const pixiKeyboardCanvasProps: { headerSize: Size } = { headerSize: { wid
 
 export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void } => {
   const { editorInteractionState, setEditorInteractionState } = props;
-  const { presentationMode, setPresentationMode } = useGridSettings();
+  const [presentationMode, setPresentationMode] = useRecoilState(presentationModeAtom);
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
