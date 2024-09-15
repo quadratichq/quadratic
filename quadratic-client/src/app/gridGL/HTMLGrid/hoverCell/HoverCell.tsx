@@ -162,7 +162,7 @@ export const HoverCell = () => {
     asyncFunction();
   }, [cell]);
 
-  const { top, left } = usePositionCellMessage({ div: ref.current, offsets, forceLeft: false });
+  const { top, left } = usePositionCellMessage({ div: ref.current, offsets });
 
   return (
     <div

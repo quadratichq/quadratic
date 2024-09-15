@@ -1,18 +1,18 @@
-function getLinkToOpen(url: string): string {
-  if (url.match(/^https?:\/\//i)) {
+function getUrlToOpen(link: string): string {
+  if (link.match(/^https?:\/\//i)) {
     // URL already starts with http:// or https://
-    return url;
-  } else if (url.startsWith('/')) {
+    return link;
+  } else if (link.startsWith('/')) {
     // URL starts with /, it is a relative path
-    return url;
+    return link;
   } else {
     // URL doesn't have a protocol, prepend https://
-    return `https://${url}`;
+    return `https://${link}`;
   }
 }
 
 export function openLink(url: string) {
-  window.open(getLinkToOpen(url), '_blank', 'noopener,noreferrer');
+  window.open(getUrlToOpen(url), '_blank', 'noopener,noreferrer');
 }
 
 export function getAuth0AvatarSrc(picture?: string) {

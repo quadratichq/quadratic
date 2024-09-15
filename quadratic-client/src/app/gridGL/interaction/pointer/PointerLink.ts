@@ -33,7 +33,7 @@ export class PointerLink {
     const pos = this.checkHoverLink(world);
     if (pos) {
       this.cursor = 'pointer';
-      const tooltipText = `${defaultActionSpec[Action.CmdClick].label} to open link`;
+      const tooltipText = `Open Link (${defaultActionSpec[Action.CmdClick].label})`;
       this.emitHoverTooltip(pos, tooltipText);
       return true;
     }
@@ -47,7 +47,7 @@ export class PointerLink {
       const cell = this.checkHoverLink(world);
       if (cell) {
         quadraticCore.getDisplayCell(pixiApp.cellsSheets.current?.sheetId ?? '', cell.x, cell.y).then((url) => {
-          if (url !== undefined) openLink(url);
+          if (url) openLink(url);
         });
         return true;
       }
