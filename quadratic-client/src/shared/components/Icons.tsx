@@ -238,6 +238,10 @@ export const FormatToggleCommasIcon: IconComponent = (props) => {
   return <Icon {...props}>format_quote</Icon>;
 };
 
+export const FormatDateTimeIcon: IconComponent = (props) => {
+  return <Icon {...props}>calendar_month</Icon>;
+};
+
 export const FileCopyIcon: IconComponent = (props) => {
   return <Icon {...props}>file_copy</Icon>;
 };

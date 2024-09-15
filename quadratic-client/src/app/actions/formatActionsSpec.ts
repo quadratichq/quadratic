@@ -1,4 +1,5 @@
 import { Action } from '@/app/actions/actions';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { convertReactColorToString } from '@/app/helpers/convertColor';
 import {
   clearFormattingAndBorders,
@@ -40,6 +41,7 @@ import {
   FormatClearIcon,
   FormatColorFillIcon,
   FormatColorTextIcon,
+  FormatDateTimeIcon,
   FormatItalicIcon,
   FormatNumberAutomaticIcon,
   FormatTextClipIcon,
@@ -189,6 +191,14 @@ export const formatActionsSpec = {
     Icon: FormatToggleCommasIcon,
     run: () => {
       setCellCommas();
+    },
+  },
+  [Action.FormatDateTime]: {
+    label: 'Date and time',
+    Icon: FormatDateTimeIcon,
+    run: () => {
+      if (!pixiAppSettings.setEditorInteractionState) return;
+      pixiAppSettings.setEditorInteractionState((state) => ({ ...state, annotationState: 'date-format' }));
     },
   },
   [Action.FormatTextWrapClip]: {

@@ -39,8 +39,8 @@ def attempt_fix_await(code: str) -> str:
     return code
 
 
-def to_unix_timestamp(value: pd.Timestamp | date | time | datetime):
-    return (value - pd.Timestamp("1970-01-01")) // pd.Timedelta("1s")
+def to_iso_format(value: pd.Timestamp | date | time | datetime):
+    return value.isoformat()
 
 
 def to_interval(
@@ -49,8 +49,8 @@ def to_interval(
     ]
 ):
     return (
-        str(to_unix_timestamp(value.start_time)),
-        str(to_unix_timestamp(value.end_time)),
+        str(to_iso_format(value.start_time)),
+        str(to_iso_format(value.end_time)),
     )
 
 
@@ -77,7 +77,6 @@ def to_quadratic_type(
         | None
     ),
 ) -> Tuple[str, str]:
-
     try:
         if value == None or value == "":
             return ("", "blank")
@@ -86,6 +85,7 @@ def to_quadratic_type(
             return (str(value), "text")
 
         value = ast.literal_eval(value)
+
     except:
         pass
 
@@ -94,18 +94,19 @@ def to_quadratic_type(
             return (str(value), "number")
         elif type(value) == bool:
             return (str(bool(value)), "logical")
-        elif isinstance(
-            value, (pd.Timestamp, np.datetime64, date, time, datetime)
-        ) or pd.api.types.is_datetime64_dtype(value):
-            return (str(to_unix_timestamp(value)), "instant")
-
-        # TODO(ddimaria): implement when we implement duration in Rust
-        # elif isinstance(value, (pd.Period, np.timedelta64, timedelta)):
-        # elif isinstance(value, pd.Period):
-        #     return (to_interval(value), "duration")
+        elif isinstance(value, np.datetime64):
+            return (to_iso_format(pd.Timestamp(value)), "date time")
+        elif isinstance(value, pd.Timestamp) or pd.api.types.is_datetime64_dtype(value):
+            return (to_iso_format(value), "date time")
+        elif isinstance(value, datetime):
+            return (to_iso_format(value), "date time")
+        elif isinstance(value, date):
+            return (to_iso_format(value), "date")
+        elif isinstance(value, time):
+            return (to_iso_format(value), "time")
         else:
             return (str(value), "text")
-    except:
+    except Exception as e:
         return (str(value), "text")
 
 
@@ -120,8 +121,37 @@ def to_python_type(value: str, value_type: str) -> int | float | str | bool:
             return str(value)
         elif value_type == "logical":
             return ast.literal_eval(normalize_bool(value))
-        elif value_type == "instant":
-            return datetime.fromtimestamp(int(value), tz=pytz.utc)
+        elif value_type == "time":
+            return datetime.fromisoformat(
+                value,
+            ).time()
+        elif value_type == "date":
+            return datetime.fromisoformat(value)
+        elif value_type == "date time":
+            return datetime.fromisoformat(value)
+        else:
+            return value
+    except:
+        return value
+
+
+# Convert from quadratic types to python df types
+def to_python_type_df(value: str, value_type: str) -> int | float | str | bool:
+    try:
+        if value_type == "blank":
+            return None
+        elif value_type == "number":
+            return number_type(value)
+        elif value_type == "text":
+            return str(value)
+        elif value_type == "logical":
+            return ast.literal_eval(normalize_bool(value))
+        elif value_type == "time":
+            return str(value)
+        elif value_type == "date":
+            return pd.to_datetime(value)
+        elif value_type == "date time":
+            return pd.to_datetime(value)
         else:
             return value
     except:

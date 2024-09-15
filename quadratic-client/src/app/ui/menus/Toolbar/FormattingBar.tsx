@@ -44,10 +44,16 @@ export const FormattingBar = () => {
             actionArgs={undefined}
           />
         </FormatButtonDropdown>
+
         <Separator />
+
         <FormatButton action={Action.FormatNumberToggleCommas} actionArgs={undefined} />
         <FormatButton action={Action.FormatNumberDecimalDecrease} actionArgs={undefined} />
         <FormatButton action={Action.FormatNumberDecimalIncrease} actionArgs={undefined} />
+
+        <Separator />
+
+        <FormatButton action={Action.FormatDateTime} actionArgs={undefined} />
 
         <Separator />
 

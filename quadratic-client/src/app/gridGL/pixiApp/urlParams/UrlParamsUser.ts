@@ -44,7 +44,7 @@ export class UrlParamsUser {
     if (code) {
       let language: CodeCellLanguage | undefined;
       if (code === 'python') language = 'Python';
-      // else if (code === 'javascript') language = 'JavaScript';
+      else if (code === 'javascript') language = 'Javascript';
       else if (code === 'formula') language = 'Formula';
       if (language) {
         if (!pixiAppSettings.setEditorInteractionState) {

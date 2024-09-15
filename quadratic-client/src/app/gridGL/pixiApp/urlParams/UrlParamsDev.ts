@@ -21,6 +21,7 @@ export interface UrlParamsDevState {
   sheets: Record<string, SheetState>;
   sheetId?: string;
   code?: { x: number; y: number; sheetId: string; language: CodeCellLanguage };
+  validation?: boolean | string;
   insertAndRunCodeInNewSheet?: { language: CodeCellLanguage; codeString: string };
 }
 
@@ -48,6 +49,7 @@ export class UrlParamsDev {
       setTimeout(() => {
         this.loadSheets();
         this.loadCode();
+        this.loadValidation();
         this.loadCodeAndRun();
         if (!this.noUpdates) {
           this.setupListeners();
@@ -81,7 +83,7 @@ export class UrlParamsDev {
         if (!pixiAppSettings.setEditorInteractionState) {
           throw new Error('Expected setEditorInteractionState to be set in urlParams.loadCode');
         }
-        pixiAppSettings.setEditorInteractionState?.({
+        pixiAppSettings.setEditorInteractionState({
           ...pixiAppSettings.editorInteractionState,
           showCodeEditor: true,
           mode: code,
@@ -92,6 +94,18 @@ export class UrlParamsDev {
           selectedCellSheet: sheetId,
         });
       }
+    }
+  }
+
+  private loadValidation() {
+    if (this.state.validation) {
+      if (!pixiAppSettings.setEditorInteractionState) {
+        throw new Error('Expected setEditorInteractionState to be set in urlParams.loadValidation');
+      }
+      pixiAppSettings.setEditorInteractionState({
+        ...pixiAppSettings.editorInteractionState,
+        showValidation: this.state.validation,
+      });
     }
   }
 
@@ -151,6 +165,7 @@ export class UrlParamsDev {
     events.on('cursorPosition', this.updateCursorViewport);
     events.on('changeSheet', this.updateSheet);
     events.on('codeEditor', this.updateCode);
+    events.on('validation', this.updateValidation);
     pixiApp.viewport.on('moved', this.updateCursorViewport);
     pixiApp.viewport.on('zoomed', this.updateCursorViewport);
   }
@@ -180,6 +195,17 @@ export class UrlParamsDev {
         sheetId: selectedCellSheet,
         language: mode as CodeCellLanguage,
       };
+    }
+    this.dirty = true;
+  };
+
+  private updateValidation = () => {
+    const state = pixiAppSettings.editorInteractionState;
+    const { showValidation } = state;
+    if (!showValidation) {
+      this.state.validation = undefined;
+    } else {
+      this.state.validation = showValidation;
     }
     this.dirty = true;
   };
