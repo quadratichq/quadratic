@@ -1,8 +1,9 @@
 import {
-  aiAssistantPanelAtom,
-  aiAssistantPanelMessagesAtom,
-  aiAssistantPanelModelAtom,
-} from '@/app/atoms/aiAssistantPanelAtom';
+  aiAssistantAbortControllerAtom,
+  aiAssistantLoadingAtom,
+  aiAssistantMessagesAtom,
+  aiAssistantPromptAtom,
+} from '@/app/atoms/aiAssistantAtom';
 import { editorInteractionStateAtom, showAIAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
@@ -18,6 +19,7 @@ import { useRootRouteLoaderData } from '@/routes/_root';
 import { Avatar } from '@/shared/components/Avatar';
 import { ChevronLeftIcon } from '@/shared/components/Icons';
 import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
+import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
@@ -32,21 +34,25 @@ import { CircularProgress, IconButton } from '@mui/material';
 import { CaretDownIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { AIMessage, AnthropicModel, OpenAIModel, PromptMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { SetterOrUpdater, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import './AiAssistant.css';
 
-const MIN_CONTAINER_WIDTH = 350;
+const MIN_PANEL_WIDTH = 350;
 
 export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(MIN_CONTAINER_WIDTH);
+  const aiPanelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const aiResponseRef = useRef<HTMLDivElement>(null);
-  const [{ abortController, loading, messages, model, prompt }, setAiAssistantPanelState] =
-    useRecoilState(aiAssistantPanelAtom);
-  const setMessages = useSetRecoilState(aiAssistantPanelMessagesAtom);
-  const setModel = useSetRecoilState(aiAssistantPanelModelAtom);
+  const [model, setModel] = useLocalStorage<AnthropicModel | OpenAIModel>(
+    'aiAssistantModel',
+    'claude-3-5-sonnet-20240620'
+  );
+  const [panelWidth, setPanelWidth] = useLocalStorage<number>('aiAssistantPanelWidth', MIN_PANEL_WIDTH);
+  const [abortController, setAbortController] = useRecoilState(aiAssistantAbortControllerAtom);
+  const [loading, setLoading] = useRecoilState(aiAssistantLoadingAtom);
+  const [messages, setMessages] = useRecoilState(aiAssistantMessagesAtom);
+  const [prompt, setPrompt] = useRecoilState(aiAssistantPromptAtom);
   const setShowAI = useSetRecoilState(showAIAtom);
   const {
     consoleOutput: [consoleOutput],
@@ -137,29 +143,39 @@ How can I help you?
     }
   }, []);
 
-  const abortPrompt = () => {
+  // If the model is not enabled, set the model to the first enabled model
+  useEffect(() => {
+    if (!MODEL_OPTIONS[model].enabled) {
+      const models = Object.keys(MODEL_OPTIONS) as (keyof typeof MODEL_OPTIONS)[];
+      const newModel = models.find((model) => MODEL_OPTIONS[model].enabled);
+      if (newModel) {
+        setModel(newModel);
+      }
+    }
+  }, [model, setModel]);
+
+  const abortPrompt = useCallback(() => {
     mixpanel.track('[AI].prompt.cancel', { language: getConnectionKind(mode) });
     abortController?.abort();
-    setAiAssistantPanelState((prev) => ({ ...prev, loading: false }));
-  };
+    setLoading(false);
+  }, [abortController, mode, setLoading]);
 
   const { handleAIStream, isAnthropicModel } = useAI();
 
   const submitPrompt = useCallback(
     async (userPrompt?: string) => {
       if (loading) return;
+      setLoading(true);
+
       const abortController = new AbortController();
+      setAbortController(abortController);
+
       const updatedMessages: (UserMessage | AIMessage)[] =
         userPrompt !== undefined
           ? [{ role: 'user', content: userPrompt }]
           : [...messages, { role: 'user', content: prompt }];
-      setAiAssistantPanelState((prev) => ({
-        ...prev,
-        abortController,
-        loading: true,
-        messages: updatedMessages,
-        prompt: userPrompt === undefined ? '' : prev.prompt,
-      }));
+      setMessages(updatedMessages);
+      setPrompt(userPrompt === undefined ? '' : prompt);
 
       const messagesToSend: PromptMessage[] = [
         {
@@ -182,7 +198,8 @@ How can I help you?
         signal: abortController.signal,
       });
 
-      setAiAssistantPanelState((prev) => ({ ...prev, abortController: undefined, loading: false }));
+      setAbortController(undefined);
+      setLoading(false);
     },
     [
       aiContextReassertion,
@@ -192,31 +209,33 @@ How can I help you?
       model,
       prompt,
       quadraticContext,
-      setAiAssistantPanelState,
+      setAbortController,
+      setLoading,
       setMessages,
+      setPrompt,
     ]
   );
 
   // Designed to live in a box that takes up the full height of its container
   return (
     <div
-      ref={containerRef}
+      ref={aiPanelRef}
       className="relative hidden h-full shrink-0 overflow-hidden lg:block"
-      style={{ width: `${containerWidth}px` }}
+      style={{ width: `${panelWidth}px` }}
     >
       <ResizeControl
         position="VERTICAL"
-        style={{ left: `${containerWidth - 2}px` }}
+        style={{ left: `${panelWidth - 2}px` }}
         setState={(e) => {
-          const container = containerRef.current;
-          if (!container) return;
+          const panel = aiPanelRef.current;
+          if (!panel) return;
 
           e.stopPropagation();
           e.preventDefault();
 
-          const containerRect = container.getBoundingClientRect();
-          const newContainerWidth = Math.max(MIN_CONTAINER_WIDTH, e.x - containerRect.left);
-          setContainerWidth(newContainerWidth);
+          const containerRect = panel.getBoundingClientRect();
+          const newPanelWidth = Math.max(MIN_PANEL_WIDTH, e.x - containerRect.left);
+          setPanelWidth(newPanelWidth);
         }}
       />
 
@@ -311,9 +330,7 @@ How can I help you?
             id="prompt-input"
             value={prompt}
             className="min-h-14 rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0"
-            onChange={(event) => {
-              setAiAssistantPanelState((prev) => ({ ...prev, prompt: event.target.value }));
-            }}
+            onChange={(event) => setPrompt(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
                 if (event.ctrlKey || event.shiftKey) {
