@@ -1,18 +1,19 @@
 //! This handles the keyboard events for the inline editor. In particular, it
 //! handles when the cursorIsMoving outside of the inline formula edit box.
 
+import { Action } from '@/app/actions/actions';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getSingleSelection } from '@/app/grid/sheet/selection';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
+import { keyboardDropdown } from '@/app/gridGL/interaction/keyboard/keyboardDropdown';
 import { keyboardPosition } from '@/app/gridGL/interaction/keyboard/keyboardPosition';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { keyboardDropdown } from '../../interaction/keyboard/keyboardDropdown';
 
 class InlineEditorKeyboard {
   escapeBackspacePressed = false;
@@ -122,7 +123,7 @@ class InlineEditorKeyboard {
     }
 
     // Escape key
-    if (matchShortcut('close_inline_editor', e)) {
+    if (matchShortcut(Action.CloseInlineEditor, e)) {
       e.stopPropagation();
       if (inlineEditorHandler.cursorIsMoving) {
         inlineEditorHandler.cursorIsMoving = false;
@@ -134,7 +135,7 @@ class InlineEditorKeyboard {
     }
 
     // Enter key
-    else if (matchShortcut('save_inline_editor', e)) {
+    else if (matchShortcut(Action.SaveInlineEditor, e)) {
       e.stopPropagation();
       e.preventDefault();
       if (!(await this.handleValidationError())) {
@@ -143,7 +144,7 @@ class InlineEditorKeyboard {
     }
 
     // Shift+Enter key
-    else if (matchShortcut('save_inline_editor_move_up', e)) {
+    else if (matchShortcut(Action.SaveInlineEditorMoveUp, e)) {
       e.stopPropagation();
       if (!(await this.handleValidationError())) {
         inlineEditorHandler.close(0, -1, false);
@@ -151,7 +152,7 @@ class InlineEditorKeyboard {
     }
 
     // Tab key
-    else if (matchShortcut('save_inline_editor_move_right', e)) {
+    else if (matchShortcut(Action.SaveInlineEditorMoveRight, e)) {
       e.stopPropagation();
       e.preventDefault();
       if (!(await this.handleValidationError())) {
@@ -160,7 +161,7 @@ class InlineEditorKeyboard {
     }
 
     // Shift+Tab key
-    else if (matchShortcut('save_inline_editor_move_left', e)) {
+    else if (matchShortcut(Action.SaveInlineEditorMoveLeft, e)) {
       e.stopPropagation();
       e.preventDefault();
       if (!(await this.handleValidationError())) {
@@ -170,40 +171,40 @@ class InlineEditorKeyboard {
 
     // Arrow up
     else if (
-      matchShortcut('move_cursor_up', e) ||
-      matchShortcut('expand_selection_up', e) ||
-      matchShortcut('jump_cursor_content_top', e) ||
-      matchShortcut('expand_selection_content_top', e)
+      matchShortcut(Action.MoveCursorUp, e) ||
+      matchShortcut(Action.ExpandSelectionUp, e) ||
+      matchShortcut(Action.JumpCursorContentTop, e) ||
+      matchShortcut(Action.ExpandSelectionContentTop, e)
     ) {
       this.handleArrowVertical(false, e);
     }
 
     // Arrow down
     else if (
-      matchShortcut('move_cursor_down', e) ||
-      matchShortcut('expand_selection_down', e) ||
-      matchShortcut('jump_cursor_content_bottom', e) ||
-      matchShortcut('expand_selection_content_bottom', e)
+      matchShortcut(Action.MoveCursorDown, e) ||
+      matchShortcut(Action.ExpandSelectionDown, e) ||
+      matchShortcut(Action.JumpCursorContentBottom, e) ||
+      matchShortcut(Action.ExpandSelectionContentBottom, e)
     ) {
       this.handleArrowVertical(true, e);
     }
 
     // Arrow left
     else if (
-      matchShortcut('move_cursor_left', e) ||
-      matchShortcut('expand_selection_left', e) ||
-      matchShortcut('jump_cursor_content_left', e) ||
-      matchShortcut('expand_selection_content_left', e)
+      matchShortcut(Action.MoveCursorLeft, e) ||
+      matchShortcut(Action.ExpandSelectionLeft, e) ||
+      matchShortcut(Action.JumpCursorContentLeft, e) ||
+      matchShortcut(Action.ExpandSelectionContentLeft, e)
     ) {
       this.handleArrowHorizontal(false, e);
     }
 
     // Arrow right
     else if (
-      matchShortcut('move_cursor_right', e) ||
-      matchShortcut('expand_selection_right', e) ||
-      matchShortcut('jump_cursor_content_right', e) ||
-      matchShortcut('expand_selection_content_right', e)
+      matchShortcut(Action.MoveCursorRight, e) ||
+      matchShortcut(Action.ExpandSelectionRight, e) ||
+      matchShortcut(Action.JumpCursorContentRight, e) ||
+      matchShortcut(Action.ExpandSelectionContentRight, e)
     ) {
       this.handleArrowHorizontal(true, e);
     }
@@ -216,7 +217,7 @@ class InlineEditorKeyboard {
     }
 
     // Backspace key cancels cursorIsMoving and removes any inserted cells.
-    else if (matchShortcut('remove_inserted_cells', e)) {
+    else if (matchShortcut(Action.RemoveInsertedCells, e)) {
       if (inlineEditorHandler.cursorIsMoving) {
         e.stopPropagation();
         e.preventDefault();
@@ -227,7 +228,7 @@ class InlineEditorKeyboard {
     }
 
     // toggle italics
-    else if (matchShortcut('toggle_italic', e)) {
+    else if (matchShortcut(Action.ToggleItalic, e)) {
       e.preventDefault();
       e.stopPropagation();
       inlineEditorHandler.toggleItalics();
@@ -242,7 +243,7 @@ class InlineEditorKeyboard {
     }
 
     // toggle bold
-    else if (matchShortcut('toggle_bold', e)) {
+    else if (matchShortcut(Action.ToggleBold, e)) {
       e.preventDefault();
       e.stopPropagation();
       if (inlineEditorHandler.location) {
@@ -257,7 +258,7 @@ class InlineEditorKeyboard {
     }
 
     // toggle underline
-    else if (matchShortcut('toggle_underline', e)) {
+    else if (matchShortcut(Action.ToggleUnderline, e)) {
       e.preventDefault();
       e.stopPropagation();
       if (inlineEditorHandler.location) {
@@ -272,7 +273,7 @@ class InlineEditorKeyboard {
     }
 
     // toggle strike-through
-    else if (matchShortcut('toggle_strike_through', e)) {
+    else if (matchShortcut(Action.ToggleStrikeThrough, e)) {
       e.preventDefault();
       e.stopPropagation();
       if (inlineEditorHandler.location) {
@@ -287,7 +288,7 @@ class InlineEditorKeyboard {
     }
 
     // trigger cell type menu
-    else if (matchShortcut('show_cell_type_menu', e) && inlineEditorMonaco.get().length === 0) {
+    else if (matchShortcut(Action.ShowCellTypeMenu, e) && inlineEditorMonaco.get().length === 0) {
       e.preventDefault();
       e.stopPropagation();
       pixiAppSettings.changeInput(false);

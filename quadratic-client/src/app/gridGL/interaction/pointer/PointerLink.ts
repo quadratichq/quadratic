@@ -1,3 +1,4 @@
+import { Action } from '@/app/actions/actions';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
@@ -43,7 +44,7 @@ export class PointerLink {
   };
 
   pointerDown = (world: Point, event: PointerEvent): boolean => {
-    if (!matchShortcut('open_link', event)) return false;
+    if (!matchShortcut(Action.CmdClick, event)) return false;
     this.cursor = undefined;
     const cell = this.checkHoverLink(world);
     if (cell) {

@@ -1,11 +1,15 @@
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
+import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
 import { CodeEditorProvider } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import ConnectionsMenu from '@/app/ui/menus/ConnectionsMenu';
+import Toolbar from '@/app/ui/menus/Toolbar';
 import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
+import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { useEffect } from 'react';
+import { isMobile } from 'react-device-detect';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
@@ -13,6 +17,7 @@ import QuadraticGrid from '../gridGL/QuadraticGrid';
 import { pixiApp } from '../gridGL/pixiApp/PixiApp';
 import { isEmbed } from '../helpers/isEmbed';
 import { TopBar } from '../ui/menus/TopBar/TopBar';
+import { QuadraticSidebar } from './QuadraticSidebar';
 import { UpdateAlertVersion } from './UpdateAlertVersion';
 import { FileDragDropWrapper } from './components/FileDragDropWrapper';
 import { useFileContext } from './components/FileProvider';
@@ -25,7 +30,6 @@ import CommandPalette from './menus/CommandPalette';
 import FeedbackMenu from './menus/FeedbackMenu';
 import GoTo from './menus/GoTo';
 import SheetBar from './menus/SheetBar';
-import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 import { useMultiplayerUsers } from './menus/TopBar/useMultiplayerUsers';
 import { ValidationPanel } from './menus/Validations/ValidationPanel';
 
@@ -38,8 +42,9 @@ export default function QuadraticUI() {
   const { presentationMode } = useGridSettings();
   const navigation = useNavigation();
   const { uuid } = useParams() as { uuid: string };
-  const { name } = useFileContext();
+  const { name, renameFile } = useFileContext();
   const { users } = useMultiplayerUsers();
+  const gridSettings = useGridSettings();
   const follow = editorInteractionState.follow
     ? users.find((user) => user.session_id === editorInteractionState.follow)
     : undefined;
@@ -49,52 +54,64 @@ export default function QuadraticUI() {
     pixiApp.resize();
   }, [presentationMode, editorInteractionState.showCodeEditor]);
 
+  // For mobile, set Headers to not visible by default
+  useEffect(() => {
+    if (isMobile) {
+      gridSettings.setShowHeadings(false);
+      pixiApp.viewportChanged();
+    }
+    // eslint-disable-next-line
+  }, []);
+
   return (
     <div
       style={{
         width: '100%',
         height: '100%',
         display: 'flex',
-        flexDirection: 'column',
+        // flexDirection: 'column',
         transition: '.3s ease opacity',
         opacity: 1,
         ...(navigation.state !== 'idle' ? { opacity: '.5', pointerEvents: 'none' } : {}),
       }}
     >
-      {editorInteractionState.showCellTypeMenu && <CellTypeMenu />}
-      {!presentationMode && <TopBar />}
-      {editorInteractionState.showCommandPalette && <CommandPalette />}
-      {editorInteractionState.showGoToMenu && <GoTo />}
+      {!presentationMode && <QuadraticSidebar />}
+      <div className="flex min-w-0 flex-grow flex-col" id="main">
+        {!presentationMode && <TopBar />}
+        {!presentationMode && <Toolbar />}
 
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          overflow: 'hidden',
-          position: 'relative',
-        }}
-      >
-        <FileDragDropWrapper>
-          <QuadraticGrid />
-          {!presentationMode && <SheetBar />}
-        </FileDragDropWrapper>
-        {editorInteractionState.showCodeEditor && <CodeEditorProvider />}
-        {editorInteractionState.showValidation && <ValidationPanel />}
-        <Following follow={follow} />
         <div
           style={{
             width: '100%',
             height: '100%',
+            display: 'flex',
             overflow: 'hidden',
-            position: 'absolute',
-            border: follow ? `3px solid ${follow.colorString}` : '',
-            pointerEvents: 'none',
+            position: 'relative',
           }}
-        ></div>
+        >
+          <FileDragDropWrapper>
+            <QuadraticGrid />
+            {!presentationMode && <SheetBar />}
+          </FileDragDropWrapper>
+          {editorInteractionState.showCodeEditor && <CodeEditorProvider />}
+          {editorInteractionState.showValidation && <ValidationPanel />}
+          <Following follow={follow} />
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              overflow: 'hidden',
+              position: 'absolute',
+              border: follow ? `3px solid ${follow.colorString}` : '',
+              pointerEvents: 'none',
+            }}
+          ></div>
+        </div>
+
+        {!presentationMode && !isEmbed && <BottomBar />}
       </div>
 
-      {!presentationMode && !isEmbed && <BottomBar />}
+      {/* Global overlay menus */}
       {editorInteractionState.showFeedbackMenu && <FeedbackMenu />}
       {editorInteractionState.showShareFileMenu && (
         <ShareFileDialog
@@ -119,7 +136,17 @@ export default function QuadraticUI() {
         />
       )}
       {presentationMode && <PresentationModeHint />}
-
+      {editorInteractionState.showCellTypeMenu && <CellTypeMenu />}
+      {editorInteractionState.showCommandPalette && <CommandPalette />}
+      {editorInteractionState.showGoToMenu && <GoTo />}
+      {editorInteractionState.showRenameFileMenu && (
+        <DialogRenameItem
+          itemLabel="file"
+          onClose={() => setEditorInteractionState((prev) => ({ ...prev, showRenameFileMenu: false }))}
+          onSave={(newValue) => renameFile(newValue)}
+          value={name}
+        />
+      )}
       <ConnectionsMenu />
       <PermissionOverlay />
       {!isEmbed && <PermissionOverlay />}

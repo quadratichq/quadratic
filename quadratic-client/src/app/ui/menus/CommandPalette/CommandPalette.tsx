@@ -16,7 +16,6 @@ import fileCommandGroup from './commands/File';
 import formatCommandGroup from './commands/Format';
 import helpCommandGroup from './commands/Help';
 import importCommandGroup from './commands/Import';
-import searchCommandGroup from './commands/Search';
 import getSheetCommandGroup from './commands/Sheets';
 import textCommandGroup from './commands/Text';
 import { validationCommandGroup } from './commands/Validation';
@@ -65,7 +64,6 @@ export const CommandPalette = () => {
     getSheetCommandGroup(),
     helpCommandGroup,
     codeCommandGroup,
-    searchCommandGroup,
     columnRowCommandGroup,
     validationCommandGroup,
   ];

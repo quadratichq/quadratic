@@ -1,18 +1,19 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { DateFormat } from '@/app/ui/components/DateFormat';
+import { useCallback } from 'react';
 import { useRecoilState } from 'recoil';
 
 export const DateFormatCell = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
 
-  const close = () => {
+  const close = useCallback(() => {
     setEditorInteractionState((state) => ({
       ...state,
       annotationState: undefined,
     }));
     focusGrid();
-  };
+  }, [setEditorInteractionState]);
 
   if (editorInteractionState.annotationState !== 'date-format') return null;
   return (
@@ -27,7 +28,7 @@ export const DateFormatCell = () => {
         e.stopPropagation();
       }}
     >
-      <DateFormat status={true} closeMenu={close} />
+      <DateFormat closeMenu={close} />
     </div>
   );
 };

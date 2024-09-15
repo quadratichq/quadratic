@@ -1,15 +1,16 @@
+import { hasPermissionToEditFile } from '@/app/actions';
+import { Action } from '@/app/actions/actions';
+import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import { events } from '@/app/events/events';
 import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetCursor } from '@/app/grid/sheet/SheetCursor';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { isAllowedFirstChar } from '@/app/gridGL/interaction/keyboard/keyboardCellChars';
+import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { hasPermissionToEditFile } from '../../../actions';
-import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { sheets } from '../../../grid/controller/Sheets';
-import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
-import { doubleClickCell } from '../pointer/doubleClickCell';
-import { isAllowedFirstChar } from './keyboardCellChars';
-import { events } from '@/app/events/events';
 
 function inCodeEditor(editorInteractionState: EditorInteractionState, cursor: SheetCursor): boolean {
   if (!editorInteractionState.showCodeEditor) return false;
@@ -41,7 +42,7 @@ export function keyboardCell(options: {
   const hasPermission = hasPermissionToEditFile(editorInteractionState.permissions);
 
   // Move cursor right, don't clear selection
-  if (matchShortcut('move_cursor_right_with_selection', event)) {
+  if (matchShortcut(Action.MoveCursorRightWithSelection, event)) {
     cursor.changePosition({
       keyboardMovePosition: {
         x: cursorPosition.x + 1,
@@ -56,7 +57,7 @@ export function keyboardCell(options: {
   }
 
   // Move cursor left, don't clear selection
-  if (matchShortcut('move_cursor_left_with_selection', event)) {
+  if (matchShortcut(Action.MoveCursorLeftWithSelection, event)) {
     cursor.changePosition({
       keyboardMovePosition: {
         x: cursorPosition.x - 1,
@@ -71,7 +72,7 @@ export function keyboardCell(options: {
   }
 
   // Edit cell
-  if (matchShortcut('edit_cell', event)) {
+  if (matchShortcut(Action.EditCell, event)) {
     if (!inlineEditorHandler.isEditingFormula()) {
       const column = cursorPosition.x;
       const row = cursorPosition.y;
@@ -94,7 +95,7 @@ export function keyboardCell(options: {
   }
 
   // Delete cell
-  if (matchShortcut('delete_cell', event)) {
+  if (matchShortcut(Action.DeleteCell, event)) {
     if (inCodeEditor(editorInteractionState, cursor)) {
       if (!pixiAppSettings.unsavedEditorChanges) {
         setEditorInteractionState((state) => ({
@@ -116,13 +117,13 @@ export function keyboardCell(options: {
   }
 
   // Show code editor
-  if (matchShortcut('show_cell_type_menu', event)) {
+  if (matchShortcut(Action.ShowCellTypeMenu, event)) {
     openCodeEditor();
     return true;
   }
 
   // Triggers Validation UI
-  if (matchShortcut('trigger_cell', event)) {
+  if (matchShortcut(Action.TriggerCell, event)) {
     const p = sheets.sheet.cursor.cursorPosition;
     events.emit('triggerCell', p.x, p.y, true);
   }
