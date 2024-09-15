@@ -10,10 +10,10 @@ import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
 import PresentationModeHint from '@/app/ui/components/PresentationModeHint';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
+import { AIAssistant } from '@/app/ui/menus/AIAssistant/AIAssistant';
 import { BottomBar } from '@/app/ui/menus/BottomBar/BottomBar';
 import CellTypeMenu from '@/app/ui/menus/CellTypeMenu';
 import CodeEditor from '@/app/ui/menus/CodeEditor';
-import { AiAssistant } from '@/app/ui/menus/CodeEditor/AiAssistant';
 import { CodeEditorProvider } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import CommandPalette from '@/app/ui/menus/CommandPalette';
 import ConnectionsMenu from '@/app/ui/menus/ConnectionsMenu';
@@ -95,7 +95,7 @@ export default function QuadraticUI() {
           }}
         >
           <CodeEditorProvider>
-            {editorInteractionState.showAI && canEditFile && isAuthenticated && <AiAssistant />}
+            {editorInteractionState.showAI && canEditFile && isAuthenticated && <AIAssistant />}
             <FileDragDropWrapper>
               <QuadraticGrid />
               {!presentationMode && <SheetBar />}

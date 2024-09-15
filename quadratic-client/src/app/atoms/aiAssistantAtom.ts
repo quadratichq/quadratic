@@ -1,27 +1,27 @@
 import { AIMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
 
-type AiAssistantState = {
+type AIAssistantState = {
   abortController?: AbortController;
   loading: boolean;
   messages: (UserMessage | AIMessage)[];
   prompt: string;
 };
 
-const defaultAiAssistantState: AiAssistantState = {
+const defaultAIAssistantState: AIAssistantState = {
   abortController: undefined,
   loading: false,
   messages: [],
   prompt: '',
 };
 
-export const aiAssistantAtom = atom<AiAssistantState>({
+export const aiAssistantAtom = atom<AIAssistantState>({
   key: 'aiAssistantAtom',
-  default: defaultAiAssistantState,
+  default: defaultAIAssistantState,
 });
 
-const createSelector = <T extends keyof AiAssistantState>(key: T) =>
-  selector<AiAssistantState[T]>({
+const createSelector = <T extends keyof AIAssistantState>(key: T) =>
+  selector<AIAssistantState[T]>({
     key: `aiAssistant${key.charAt(0).toUpperCase() + key.slice(1)}Atom`,
     get: ({ get }) => get(aiAssistantAtom)[key],
     set: ({ set }, newValue) =>

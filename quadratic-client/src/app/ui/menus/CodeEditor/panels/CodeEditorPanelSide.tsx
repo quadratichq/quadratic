@@ -1,6 +1,6 @@
+import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { PanelBox, calculatePanelBoxMinimizedSize } from '@/app/ui/menus/CodeEditor/panels/PanelBox';
-import { ResizeControl } from '@/app/ui/menus/CodeEditor/panels/ResizeControl';
 import { useCodeEditorContainer } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorContainer';
 import { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { useCallback, useEffect, useMemo, useState } from 'react';
