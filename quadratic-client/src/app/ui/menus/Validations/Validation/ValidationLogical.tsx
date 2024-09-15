@@ -1,5 +1,5 @@
 import { ValidationData } from './useValidationData';
-import { ValidationMoreOptions, ValidationUICheckbox } from './ValidationUI';
+import { ValidationMoreOptions, ValidationUICheckbox } from './ValidationUI/ValidationUI';
 
 interface Props {
   validationData: ValidationData;

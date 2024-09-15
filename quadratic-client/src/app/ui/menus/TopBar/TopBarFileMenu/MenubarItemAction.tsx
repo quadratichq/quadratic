@@ -1,11 +1,13 @@
 import { Action } from '@/app/actions/actions';
 import { ActionArgs } from '@/app/actions/actionsSpec';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 
 import { MenubarItem, MenubarShortcut } from '@/shared/shadcn/ui/menubar';
+import mixpanel from 'mixpanel-browser';
 
 // TODO: (jimniels) implement types based on ayush's PR
 export const MenubarItemAction = <T extends Action>({
@@ -37,7 +39,13 @@ export const MenubarItemAction = <T extends Action>({
 
   // TODO: (jimniels) implement isAvailable
   return (
-    <MenubarItem onClick={() => run(actionArgs)}>
+    <MenubarItem
+      onClick={() => {
+        mixpanel.track('[FileMenu].selected', { label });
+        run(actionArgs);
+        focusGrid();
+      }}
+    >
       {Icon && <Icon />} {label}
       {keyboardShortcut && <MenubarShortcut>{keyboardShortcut}</MenubarShortcut>}
     </MenubarItem>

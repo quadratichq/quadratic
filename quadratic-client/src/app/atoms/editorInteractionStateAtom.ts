@@ -17,7 +17,7 @@ export type EditorInteractionState = {
   showSearch: boolean | SearchOptions;
   showValidation: boolean | string;
   showAI: boolean;
-  annotationState?: 'dropdown';
+  annotationState?: 'dropdown' | 'date-format' | 'calendar' | 'calendar-time';
   showContextMenu: boolean;
   permissions: FilePermission[];
   uuid: string;
@@ -53,6 +53,7 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   showContextMenu: false,
   showValidation: false,
   showAI: true,
+  annotationState: undefined,
   permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
   uuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
   selectedCell: { x: 0, y: 0 },

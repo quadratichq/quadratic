@@ -1,8 +1,38 @@
 import { Action } from '@/app/actions/actions';
+import { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { selectAllCells, selectColumns, selectRows } from '@/app/gridGL/helpers/selectCells';
 
-export const selectionActionsSpec = {
+type SelectionActionSpec = Pick<
+  ActionSpecRecord,
+  | Action.SelectAll
+  | Action.SelectColumn
+  | Action.SelectRow
+  | Action.MoveCursorUp
+  | Action.JumpCursorContentTop
+  | Action.ExpandSelectionUp
+  | Action.ExpandSelectionContentTop
+  | Action.MoveCursorDown
+  | Action.JumpCursorContentBottom
+  | Action.ExpandSelectionDown
+  | Action.ExpandSelectionContentBottom
+  | Action.MoveCursorLeft
+  | Action.JumpCursorContentLeft
+  | Action.ExpandSelectionLeft
+  | Action.ExpandSelectionContentLeft
+  | Action.MoveCursorLeftWithSelection
+  | Action.MoveCursorRight
+  | Action.JumpCursorContentRight
+  | Action.ExpandSelectionRight
+  | Action.ExpandSelectionContentRight
+  | Action.MoveCursorRightWithSelection
+  | Action.GotoA0
+  | Action.GotoBottomRight
+  | Action.GotoRowStart
+  | Action.GotoRowEnd
+>;
+
+export const selectionActionsSpec: SelectionActionSpec = {
   [Action.SelectAll]: {
     label: 'Select all',
     run: () => {

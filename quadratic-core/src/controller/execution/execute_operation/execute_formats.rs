@@ -1,3 +1,5 @@
+use formatting::DateTimeFormatting;
+
 use crate::{
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
@@ -50,6 +52,9 @@ impl GridController {
                 ),
                 CellFmtArray::RenderSize(output_size) => CellFmtArray::RenderSize(
                     self.set_cell_formats_for_type::<RenderSize>(&sheet_rect, output_size),
+                ),
+                CellFmtArray::DateTime(date_time) => CellFmtArray::DateTime(
+                    self.set_cell_formats_for_type::<DateTimeFormatting>(&sheet_rect, date_time),
                 ),
             };
             if old_attr == attr {
@@ -145,7 +150,7 @@ impl GridController {
                     }
                 }
 
-                if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+                if (cfg! (target_family = "wasm") || cfg! (test)) && !transaction.is_server() {
                     let dirty_hashes = transaction
                         .dirty_hashes
                         .entry(selection.sheet_id)

@@ -86,6 +86,14 @@ export const BorderClearIcon: IconComponent = (props) => {
   return <Icon {...props}>border_clear</Icon>;
 };
 
+export const BorderStyleIcon: IconComponent = (props) => {
+  return <Icon {...props}>border_style</Icon>;
+};
+
+export const BorderColorIcon: IconComponent = (props) => {
+  return <Icon {...props}>border_color</Icon>;
+};
+
 export const CheckBoxIcon: IconComponent = (props) => {
   return <Icon {...props}>check_box</Icon>;
 };
@@ -178,6 +186,10 @@ export const EditIcon: IconComponent = (props) => {
   return <Icon {...props}>edit</Icon>;
 };
 
+export const ExternalLinkIcon: IconComponent = (props) => {
+  return <Icon {...props}>north_east</Icon>;
+};
+
 export const FormatAlignCenterIcon: IconComponent = (props) => {
   return <Icon {...props}>format_align_center</Icon>;
 };
@@ -228,6 +240,10 @@ export const FormatTextWrapIcon: IconComponent = (props) => {
 
 export const FormatToggleCommasIcon: IconComponent = (props) => {
   return <Icon {...props}>format_quote</Icon>;
+};
+
+export const FormatDateTimeIcon: IconComponent = (props) => {
+  return <Icon {...props}>calendar_month</Icon>;
 };
 
 export const FileCopyIcon: IconComponent = (props) => {

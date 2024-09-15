@@ -17,8 +17,8 @@ export function keyboardCode(
   if (matchShortcut(Action.ExecuteCode, event)) {
     quadraticCore.rerunCodeCells(
       sheets.sheet.id,
-      editorInteractionState.selectedCell.x,
-      editorInteractionState.selectedCell.y,
+      sheets.sheet.cursor.cursorPosition.x,
+      sheets.sheet.cursor.cursorPosition.y,
       sheets.getCursorPosition()
     );
     return true;

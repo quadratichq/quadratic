@@ -1,14 +1,15 @@
-import { ValidationData } from './useValidationData';
-import { useMemo } from 'react';
-import { ValidationUICheckbox, ValidationMoreOptions, ValidationInput } from './ValidationUI';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { defaultSelection } from '@/app/grid/sheet/selection';
 import { Selection, ValidationRule } from '@/app/quadratic-core-types';
 import { SheetRange } from '@/app/ui/components/SheetRange';
-import { sheets } from '@/app/grid/controller/Sheets';
+import { useMemo } from 'react';
+import { ValidationData } from './useValidationData';
+import { ValidationInput } from './ValidationUI/ValidationInput';
+import { ValidationMoreOptions, ValidationUICheckbox } from './ValidationUI/ValidationUI';
 
 interface Props {
   validationData: ValidationData;
-  onEnter?: () => void;
+  onEnter: () => void;
 }
 
 export const ValidationListInput = (props: Props) => {
@@ -106,7 +107,7 @@ export const ValidationList = (props: Props) => {
           requireSheetId={sheetId}
         />
       )}
-      {rule === 'list' && <ValidationListInput validationData={props.validationData} />}
+      {rule === 'list' && <ValidationListInput validationData={props.validationData} onEnter={onEnter} />}
 
       <ValidationUICheckbox
         label="Allow blank values"

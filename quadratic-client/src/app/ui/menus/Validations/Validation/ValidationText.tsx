@@ -1,9 +1,10 @@
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/shared/shadcn/ui/accordion';
+import { Tooltip } from '@mui/material';
+import { InfoCircledIcon } from '@radix-ui/react-icons';
 import { useCallback, useMemo } from 'react';
 import { ValidationData } from './useValidationData';
-import { ValidationInput, ValidationMoreOptions, ValidationUICheckbox } from './ValidationUI';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/shared/shadcn/ui/accordion';
-import { InfoCircledIcon } from '@radix-ui/react-icons';
-import { Tooltip } from '@mui/material';
+import { ValidationInput } from './ValidationUI/ValidationInput';
+import { ValidationMoreOptions, ValidationUICheckbox } from './ValidationUI/ValidationUI';
 
 interface Props {
   validationData: ValidationData;

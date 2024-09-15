@@ -6,16 +6,16 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getSelectionString } from '@/app/grid/sheet/selection';
 import { Selection, Validation, ValidationRule } from '@/app/quadratic-core-types';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { v4 as uuid } from 'uuid';
 import {
   validationRuleSimple,
   ValidationRuleSimple,
   ValidationRuleSimpleValues,
   ValidationUndefined,
-} from './validationType';
+} from '@/app/ui/menus/Validations/Validation/validationType';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { v4 as uuid } from 'uuid';
 
 export type SetState<T> = Dispatch<SetStateAction<T>>;
 
@@ -172,6 +172,19 @@ export const useValidationData = (): ValidationData => {
           rule = { Logical: { show_checkbox: true, ignore_blank: true } };
           break;
 
+        case 'date':
+          rule = {
+            DateTime: {
+              ignore_blank: true,
+              require_date: false,
+              require_time: false,
+              prohibit_date: false,
+              prohibit_time: false,
+              ranges: [],
+            },
+          };
+          break;
+
         default:
           throw new Error('Invalid rule type in useValidationData.changeRule');
       }
@@ -241,6 +254,8 @@ export const useValidationData = (): ValidationData => {
       return rule.Text.ignore_blank;
     } else if ('Number' in rule) {
       return rule.Number.ignore_blank;
+    } else if ('DateTime' in rule) {
+      return rule.DateTime.ignore_blank;
     }
     return false;
   }, [validation]);
@@ -260,6 +275,9 @@ export const useValidationData = (): ValidationData => {
         }
         if ('Number' in old.rule) {
           return { ...old, rule: { Number: { ...old.rule.Number, ignore_blank: checked } } };
+        }
+        if ('DateTime' in old.rule) {
+          return { ...old, rule: { DateTime: { ...old.rule.DateTime, ignore_blank: checked } } };
         }
       }
     });

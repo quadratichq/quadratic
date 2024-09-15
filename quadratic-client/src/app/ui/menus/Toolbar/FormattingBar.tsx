@@ -3,8 +3,9 @@ import { ActionArgs } from '@/app/actions/actionsSpec';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
+import { BorderMenu } from '@/app/ui/components/BorderMenu';
 import { QColorPicker } from '@/app/ui/components/qColorPicker';
-import { useBorders, UseBordersResults } from '@/app/ui/hooks/useBorders';
+
 import {
   ArrowDropDownIcon,
   BorderAllIcon,
@@ -19,20 +20,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import mixpanel from 'mixpanel-browser';
 import { ReactNode } from 'react';
 
 export const FormattingBar = () => {
-  const borders = useBorders();
   return (
     <TooltipProvider>
       <ToggleGroup.Root
         type="multiple"
-        className="flex text-sm"
+        className="flex select-none text-sm"
         onValueChange={() => {
-          console.log('fired value change');
           focusGrid();
         }}
       >
@@ -44,56 +44,37 @@ export const FormattingBar = () => {
             actionArgs={undefined}
           />
         </FormatButtonDropdown>
+
         <Separator />
+
         <FormatButton action={Action.FormatNumberToggleCommas} actionArgs={undefined} />
         <FormatButton action={Action.FormatNumberDecimalDecrease} actionArgs={undefined} />
         <FormatButton action={Action.FormatNumberDecimalIncrease} actionArgs={undefined} />
 
         <Separator />
 
+        <FormatButton action={Action.FormatDateTime} actionArgs={undefined} />
+
+        <Separator />
+
         <FormatButton action={Action.ToggleBold} actionArgs={undefined} />
         <FormatButton action={Action.ToggleItalic} actionArgs={undefined} />
-
         <FormatColorPickerButton action={Action.FormatTextColor} />
 
         <Separator />
 
         <FormatColorPickerButton action={Action.FormatFillColor} />
-        <FormatButtonDropdown showDropdownArrow tooltipLabel="Borders" Icon={BorderAllIcon}>
-          <FormatButtonDropdownActions
-            actions={[
-              Action.FormatBorderAll,
-              Action.FormatBorderOuter,
-              Action.FormatBorderInner,
-              Action.FormatBorderVertical,
-              Action.FormatBorderHorizontal,
-              Action.FormatBorderLeft,
-              Action.FormatBorderRight,
-              Action.FormatBorderTop,
-              Action.FormatBorderBottom,
-              Action.FormatBorderClear,
-            ]}
-            actionArgs={borders}
-          />
-          <FormatButtonDropdown showDropdownArrow tooltipLabel="Border line style" Icon={BorderAllIcon}>
-            <FormatButtonDropdownActions
-              actions={[
-                Action.FormatBorderLine1,
-                Action.FormatBorderLine2,
-                Action.FormatBorderLine3,
-                Action.FormatBorderDashed,
-                Action.FormatBorderDotted,
-                Action.FormatBorderDouble,
-              ]}
-              actionArgs={borders}
-            />
-          </FormatButtonDropdown>
-          <FormatBorderColorPickerButton action={Action.FormatBorderColor} borders={borders} />
-        </FormatButtonDropdown>
+        <FormatButtonPopover
+          disableCloseAutoFocus
+          tooltipLabel="Borders"
+          Icon={BorderAllIcon}
+          className="flex flex-row flex-wrap"
+        >
+          <BorderMenu />
+        </FormatButtonPopover>
 
         <Separator />
 
-        {/* TODO: (jimniels) make these icons match the current selection */}
         <FormatButtonDropdown showDropdownArrow tooltipLabel="Horizontal align" Icon={FormatAlignLeftIcon}>
           <FormatButtonDropdownActions
             actions={[
@@ -138,11 +119,15 @@ function FormatButtonDropdown({
   tooltipLabel,
   children,
   showDropdownArrow,
+  className,
+  disableCloseAutoFocus,
 }: {
   Icon: any;
   children: ReactNode;
   tooltipLabel: string;
   showDropdownArrow?: boolean;
+  className?: string;
+  disableCloseAutoFocus?: boolean;
 }) {
   return (
     <DropdownMenu>
@@ -156,10 +141,11 @@ function FormatButtonDropdown({
           </ToggleGroup.Item>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          <TooltipLabel label={tooltipLabel} />
+          <TooltipContents label={tooltipLabel} />
         </TooltipContent>
       </Tooltip>
       <DropdownMenuContent
+        className={className}
         onCloseAutoFocus={(e) => {
           e.preventDefault();
           focusGrid();
@@ -168,6 +154,49 @@ function FormatButtonDropdown({
         {children}
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+function FormatButtonPopover({
+  Icon,
+  tooltipLabel,
+  children,
+  showDropdownArrow,
+  className,
+  disableCloseAutoFocus,
+}: {
+  Icon: any;
+  children: ReactNode;
+  tooltipLabel: string;
+  showDropdownArrow?: boolean;
+  className?: string;
+  disableCloseAutoFocus?: boolean;
+}) {
+  return (
+    <Popover>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <ToggleGroup.Item value={tooltipLabel} asChild aria-label={tooltipLabel}>
+            <PopoverTrigger className="flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground">
+              <Icon />
+              {showDropdownArrow && <ArrowDropDownIcon className="-ml-1 -mr-2" />}
+            </PopoverTrigger>
+          </ToggleGroup.Item>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          <TooltipContents label={tooltipLabel} />
+        </TooltipContent>
+      </Tooltip>
+      <PopoverContent
+        className={className + ' w-fit p-1'}
+        onCloseAutoFocus={(e) => {
+          e.preventDefault();
+          focusGrid();
+        }}
+      >
+        {children}
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -209,7 +238,6 @@ function FormatButton<T extends Action>({
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
   const keyboardShortcut = keyboardShortcutEnumToDisplay(action);
 
-  // TODO: (jimniels) make a style, like primary color, when the format is applied
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -226,20 +254,26 @@ function FormatButton<T extends Action>({
         </ToggleGroup.Item>
       </TooltipTrigger>
       <TooltipContent side="bottom">
-        <TooltipLabel label={label} keyboardShortcut={keyboardShortcut} />
+        <TooltipContents label={label} keyboardShortcut={keyboardShortcut} />
       </TooltipContent>
     </Tooltip>
   );
 }
 
-function FormatColorPickerButton({ action }: { action: Action.FormatTextColor | Action.FormatFillColor }) {
+function FormatColorPickerButton({
+  action,
+  activeColor,
+}: {
+  action: Action.FormatTextColor | Action.FormatFillColor;
+  activeColor?: string;
+}) {
   const actionSpec = defaultActionSpec[action];
   const { label, run } = actionSpec;
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
 
   return (
     <FormatButtonDropdown tooltipLabel={label} Icon={Icon}>
-      <DropdownMenuItem className="color-picker-dropdown-menu flex-col p-0 hover:bg-background focus:bg-background">
+      <DropdownMenuItem className="color-picker-dropdown-menu flex flex-col !bg-background p-0">
         <QColorPicker
           onChangeComplete={(color) => {
             run(color);
@@ -255,32 +289,7 @@ function FormatColorPickerButton({ action }: { action: Action.FormatTextColor | 
   );
 }
 
-function FormatBorderColorPickerButton({
-  action,
-  borders,
-}: {
-  action: Action.FormatBorderColor;
-  borders: UseBordersResults;
-}) {
-  const actionSpec = defaultActionSpec[action];
-  const { label, run } = actionSpec;
-  const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
-
-  return (
-    <FormatButtonDropdown tooltipLabel={label} Icon={Icon}>
-      <DropdownMenuItem>
-        <QColorPicker
-          onChangeComplete={(color) => {
-            run({ borders, color });
-            focusGrid();
-          }}
-        />
-      </DropdownMenuItem>
-    </FormatButtonDropdown>
-  );
-}
-
-function TooltipLabel({ label, keyboardShortcut }: { label: string; keyboardShortcut?: string }) {
+function TooltipContents({ label, keyboardShortcut }: { label: string; keyboardShortcut?: string }) {
   return (
     <p>
       {label}{' '}

@@ -30,6 +30,7 @@ import { Toggle } from '@/shared/shadcn/ui/toggle';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { TooltipProvider } from '@radix-ui/react-tooltip';
+import mixpanel from 'mixpanel-browser';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
@@ -197,7 +198,14 @@ function SidebarTooltip({
 }) {
   return (
     <Tooltip>
-      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipTrigger
+        asChild
+        onClick={() => {
+          mixpanel.track('[QuadraticSidebar].button', { label });
+        }}
+      >
+        {children}
+      </TooltipTrigger>
       <TooltipPortal>
         <TooltipContent side="right" className="flex gap-1">
           <p>{label}</p>

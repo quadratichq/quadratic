@@ -73,6 +73,12 @@ pub struct FormatUpdate {
         with = "::serde_with::rust::double_option"
     )]
     pub render_size: Option<Option<RenderSize>>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "::serde_with::rust::double_option"
+    )]
+    pub date_time: Option<Option<String>>,
 }
 
 impl FormatUpdate {
@@ -91,6 +97,7 @@ impl FormatUpdate {
             text_color: Some(None),
             fill_color: Some(None),
             render_size: Some(None),
+            date_time: Some(None),
         }
     }
 
@@ -106,6 +113,7 @@ impl FormatUpdate {
             && self.text_color.is_none()
             && self.fill_color.is_none()
             && self.render_size.is_none()
+            && self.date_time.is_none()
     }
 
     /// Whether we need to send a client html update.
@@ -124,6 +132,7 @@ impl FormatUpdate {
             || self.bold.is_some()
             || self.italic.is_some()
             || self.text_color.is_some()
+            || self.date_time.is_some()
     }
 
     pub fn fill_changed(&self) -> bool {
@@ -136,6 +145,7 @@ impl FormatUpdate {
             || self.numeric_commas.is_some()
             || self.bold.is_some()
             || self.italic.is_some()
+            || self.date_time.is_some()
     }
 
     pub fn combine(&self, other: &FormatUpdate) -> FormatUpdate {
@@ -151,6 +161,7 @@ impl FormatUpdate {
             text_color: self.text_color.clone().or(other.text_color.clone()),
             fill_color: self.fill_color.clone().or(other.fill_color.clone()),
             render_size: self.render_size.clone().or(other.render_size.clone()),
+            date_time: self.date_time.clone().or(other.date_time.clone()),
         }
     }
 
@@ -190,6 +201,9 @@ impl FormatUpdate {
         if self.render_size.is_some() {
             clear.render_size = Some(None);
         }
+        if self.date_time.is_some() {
+            clear.date_time = Some(None);
+        }
         clear
     }
 }
@@ -209,6 +223,7 @@ impl From<&FormatUpdate> for Format {
             text_color: update.text_color.clone().unwrap_or(None),
             fill_color: update.fill_color.clone().unwrap_or(None),
             render_size: update.render_size.clone().unwrap_or(None),
+            date_time: update.date_time.clone().unwrap_or(None),
         }
     }
 }
@@ -248,7 +263,8 @@ mod tests {
                 italic: Some(None),
                 text_color: Some(None),
                 fill_color: Some(None),
-                render_size: Some(None)
+                render_size: Some(None),
+                date_time: Some(None),
             }
         );
     }
@@ -382,6 +398,7 @@ mod tests {
                 w: "1".to_string(),
                 h: "2".to_string(),
             })),
+            date_time: Some(Some("%H".to_string())),
         };
 
         let format2 = FormatUpdate {
@@ -400,6 +417,7 @@ mod tests {
                 w: "3".to_string(),
                 h: "4".to_string(),
             })),
+            date_time: Some(Some("%M".to_string())),
             ..Default::default()
         };
 
@@ -431,6 +449,7 @@ mod tests {
                 h: "2".to_string()
             }))
         );
+        assert_eq!(combined.date_time, Some(Some("%H".to_string())));
     }
 
     #[test]
@@ -453,14 +472,15 @@ mod tests {
                 w: "1".to_string(),
                 h: "2".to_string(),
             })),
-            ..Default::default()
+            date_time: Some(Some("%H".to_string())),
+            wrap: Some(Some(CellWrap::Overflow)),
         };
 
         let cleared = format.clear_update();
 
         assert_eq!(cleared.align, Some(None));
         assert_eq!(cleared.vertical_align, Some(None));
-        assert_eq!(cleared.wrap, None);
+        assert_eq!(cleared.wrap, Some(None));
         assert_eq!(cleared.numeric_format, Some(None));
         assert_eq!(cleared.numeric_decimals, Some(None));
         assert_eq!(cleared.numeric_commas, Some(None));
@@ -469,6 +489,7 @@ mod tests {
         assert_eq!(cleared.text_color, Some(None));
         assert_eq!(cleared.fill_color, Some(None));
         assert_eq!(cleared.render_size, Some(None));
+        assert_eq!(cleared.date_time, Some(None));
     }
 
     #[test]
@@ -492,6 +513,7 @@ mod tests {
                 w: "1".to_string(),
                 h: "2".to_string(),
             })),
+            date_time: Some(Some("%H".to_string())),
         };
 
         let format: Format = (&update).into();
@@ -519,6 +541,7 @@ mod tests {
                 h: "2".to_string()
             })
         );
+        assert_eq!(format.date_time, Some("%H".to_string()));
     }
 
     #[test]

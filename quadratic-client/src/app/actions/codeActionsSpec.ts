@@ -1,11 +1,17 @@
 import { Action } from '@/app/actions/actions';
+import { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
-export const codeActionsSpec = {
+type CodeActionSpec = Pick<
+  ActionSpecRecord,
+  Action.CancelExecution | Action.ExecuteCode | Action.RerunSheetCode | Action.RerunAllCode
+>;
+
+export const codeActionsSpec: CodeActionSpec = {
   [Action.CancelExecution]: {
     label: 'Cancel execution',
     run: () => {

@@ -37,6 +37,16 @@ export function javascriptConvertOutputType(
         '. Likely you are missing `await` before a call that returns a Promise, e.g., `await fetch(...)`.'
     );
     return null;
+  } else if (value instanceof Date) {
+    if (isNaN(value as any)) {
+      message.push(
+        `WARNING: Unsupported output type: 'Invalid Date' ${
+          x !== undefined && y !== undefined ? `at cell(${column + x}, ${row + y})` : ''
+        }`
+      );
+      return null;
+    }
+    return { output: [value.toISOString(), 'date time'], displayType: 'Date' };
   } else if (typeof value === 'function') {
     message.push(
       `WARNING: Unsupported output type: 'function' ${
@@ -67,7 +77,7 @@ export function javascriptConvertOutputType(
 }
 
 function isExpectedObjectType(a: any) {
-  return typeof a === 'function' || a instanceof Blob;
+  return typeof a === 'function' || a instanceof Blob || a instanceof Date;
 }
 
 // Formats the display type for an array based on a Set of types.

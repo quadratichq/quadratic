@@ -8,6 +8,7 @@ mod error_run;
 pub mod color;
 pub mod compression;
 pub mod controller;
+pub mod date_time;
 pub mod error_core;
 pub mod ext;
 pub mod formulas;

@@ -1,10 +1,13 @@
 import { isAvailableBecauseLoggedIn } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
+import { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { DocumentationIcon, FeedbackIcon, MailIcon } from '@/shared/components/Icons';
 import { CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
 
-export const helpActionsSpec = {
+type HelpActionSpec = Pick<ActionSpecRecord, Action.HelpContactUs | Action.HelpDocs | Action.HelpFeedback>;
+
+export const helpActionsSpec: HelpActionSpec = {
   [Action.HelpContactUs]: {
     label: 'Contact us',
     Icon: MailIcon,

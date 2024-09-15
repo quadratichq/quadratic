@@ -41,7 +41,7 @@ impl Sheet {
                     response.push(JsGetCellResponse {
                         x,
                         y,
-                        value: cell.to_edit(),
+                        value: cell.to_get_cells(),
                         type_name: cell.type_name().into(),
                     });
                 } else {
@@ -146,12 +146,15 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use super::*;
     use crate::{
         controller::GridController,
         grid::{CodeCellLanguage, Sheet},
         CellValue, Pos, Rect, SheetPos,
     };
+    use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
     use serial_test::parallel;
 
     #[test]
@@ -167,42 +170,82 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn test_get_cells_response() {
+    fn get_cells_response() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
         sheet.set_cell_value(Pos { x: 1, y: 0 }, CellValue::Number(2.into()));
         sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(3.into()));
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(4.into()));
-        let response = sheet.get_cells_response(Rect::from_numbers(0, 0, 2, 2));
-        assert_eq!(
-            response,
-            vec![
-                JsGetCellResponse {
-                    x: 0,
-                    y: 0,
-                    value: "1".into(),
-                    type_name: "number".into(),
-                },
-                JsGetCellResponse {
-                    x: 1,
-                    y: 0,
-                    value: "2".into(),
-                    type_name: "number".into(),
-                },
-                JsGetCellResponse {
-                    x: 0,
-                    y: 1,
-                    value: "3".into(),
-                    type_name: "number".into(),
-                },
-                JsGetCellResponse {
-                    x: 1,
-                    y: 1,
-                    value: "4".into(),
-                    type_name: "number".into(),
-                },
-            ],
+        sheet.set_cell_value(Pos { x: 2, y: 0 }, CellValue::Text("test".into()));
+        sheet.set_cell_value(
+            Pos { x: 3, y: 1 },
+            CellValue::DateTime(NaiveDateTime::from_str("2024-08-15T01:20:00").unwrap()),
         );
+        sheet.set_cell_value(Pos { x: 2, y: 1 }, CellValue::Logical(true));
+        sheet.set_cell_value(
+            Pos { x: 2, y: 2 },
+            CellValue::Date(NaiveDate::from_str("2024-08-15").unwrap()),
+        );
+        sheet.set_cell_value(
+            Pos { x: 3, y: 0 },
+            CellValue::Time(NaiveTime::from_str("01:20:00").unwrap()),
+        );
+        let response = sheet.get_cells_response(Rect::new(0, 0, 3, 3));
+        assert_eq!(response.len(), 16);
+        assert!(response.contains(&JsGetCellResponse {
+            x: 0,
+            y: 0,
+            value: "1".into(),
+            type_name: "number".into(),
+        }));
+        assert!(response.contains(&JsGetCellResponse {
+            x: 1,
+            y: 0,
+            value: "2".into(),
+            type_name: "number".into(),
+        }));
+        assert!(response.contains(&JsGetCellResponse {
+            x: 0,
+            y: 1,
+            value: "3".into(),
+            type_name: "number".into(),
+        }));
+        assert!(response.contains(&JsGetCellResponse {
+            x: 1,
+            y: 1,
+            value: "4".into(),
+            type_name: "number".into(),
+        }));
+        assert!(response.contains(&JsGetCellResponse {
+            x: 2,
+            y: 0,
+            value: "test".into(),
+            type_name: "text".into(),
+        }));
+        assert!(response.contains(&JsGetCellResponse {
+            x: 3,
+            y: 1,
+            value: "2024-08-15T01:20:00.000".into(),
+            type_name: "date time".into(),
+        }));
+        assert!(response.contains(&JsGetCellResponse {
+            x: 2,
+            y: 1,
+            value: "true".into(),
+            type_name: "logical".into(),
+        }));
+        assert!(response.contains(&JsGetCellResponse {
+            x: 2,
+            y: 2,
+            value: "2024-08-15".into(),
+            type_name: "date".into(),
+        }));
+        assert!(response.contains(&JsGetCellResponse {
+            x: 3,
+            y: 0,
+            value: "01:20:00.000".into(),
+            type_name: "time".into(),
+        }));
     }
 
     #[test]
