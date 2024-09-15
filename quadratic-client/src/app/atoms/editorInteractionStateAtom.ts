@@ -104,15 +104,17 @@ export const editorInteractionStateAtom = atom<EditorInteractionState>({
   ],
 });
 
-export const showAIAssistantAtom = selector<EditorInteractionState['showAIAssistant']>({
-  key: 'showAIAssistantAtom',
-  get: ({ get }) => {
-    return get(editorInteractionStateAtom).showAIAssistant;
-  },
-  set: ({ set }, newValue) => {
-    set(editorInteractionStateAtom, (prev) => ({
-      ...prev,
-      showAIAssistant: newValue instanceof DefaultValue ? prev.showAIAssistant : newValue,
-    }));
-  },
-});
+const createSelector = <T extends keyof EditorInteractionState>(key: T) =>
+  selector<EditorInteractionState[T]>({
+    key: `aiAssistant${key.charAt(0).toUpperCase() + key.slice(1)}Atom`,
+    get: ({ get }) => get(editorInteractionStateAtom)[key],
+    set: ({ set }, newValue) =>
+      set(editorInteractionStateAtom, (prev) => ({
+        ...prev,
+        [key]: newValue instanceof DefaultValue ? prev[key] : newValue,
+      })),
+  });
+
+export const editorInteractionStateModeAtom = createSelector('mode');
+export const editorInteractionStateShowCodeEditorAtom = createSelector('showCodeEditor');
+export const editorInteractionStateShowAIAssistantAtom = createSelector('showAIAssistant');

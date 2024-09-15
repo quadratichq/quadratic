@@ -3,7 +3,7 @@ import {
   aiAssistantLoadingAtom,
   aiAssistantPromptAtom,
 } from '@/app/atoms/aiAssistantAtom';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
@@ -29,7 +29,7 @@ export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessage
   const [prompt, setPrompt] = useRecoilState(aiAssistantPromptAtom);
   const [loading, setLoading] = useRecoilState(aiAssistantLoadingAtom);
 
-  const { mode } = useRecoilValue(editorInteractionStateAtom);
+  const mode = useRecoilValue(editorInteractionStateModeAtom);
   const abortPrompt = useCallback(() => {
     mixpanel.track('[AI].prompt.cancel', { language: getConnectionKind(mode) });
     abortController?.abort();
@@ -60,7 +60,7 @@ export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessage
             if (prompt.trim().length === 0) return;
 
             mixpanel.track('[AI].prompt.send', { language: getConnectionKind(mode) });
-            submitPrompt();
+            submitPrompt({ userPrompt: prompt });
             event.currentTarget.focus();
           }
         }}
@@ -115,7 +115,7 @@ export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessage
                 size="icon-sm"
                 onClick={(e) => {
                   e.stopPropagation();
-                  submitPrompt();
+                  submitPrompt({ userPrompt: prompt });
                 }}
                 disabled={prompt.length === 0}
               >

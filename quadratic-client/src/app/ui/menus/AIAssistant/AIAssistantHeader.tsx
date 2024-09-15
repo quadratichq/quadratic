@@ -1,5 +1,8 @@
 import { aiAssistantMessagesAtom, aiAssistantMessagesCountAtom } from '@/app/atoms/aiAssistantAtom';
-import { editorInteractionStateAtom, showAIAssistantAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  editorInteractionStateShowAIAssistantAtom,
+  editorInteractionStateShowCodeEditorAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
 import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/AIAssistant/useSubmitAIAssistantPrompt';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { ChevronLeftIcon } from '@/shared/components/Icons';
@@ -10,8 +13,8 @@ import { useRecoilValue, useSetRecoilState } from 'recoil';
 export function AIAssistantHeader() {
   const messagesCount = useRecoilValue(aiAssistantMessagesCountAtom);
   const setMessages = useSetRecoilState(aiAssistantMessagesAtom);
-  const setShowAIAssistant = useSetRecoilState(showAIAssistantAtom);
-  const { showCodeEditor } = useRecoilValue(editorInteractionStateAtom);
+  const setShowAIAssistant = useSetRecoilState(editorInteractionStateShowAIAssistantAtom);
+  const showCodeEditor = useRecoilValue(editorInteractionStateShowCodeEditorAtom);
   const submitPrompt = useSubmitAIAssistantPrompt();
   const {
     consoleOutput: [consoleOutput],
@@ -29,7 +32,10 @@ export function AIAssistantHeader() {
 
       <div className="flex items-center gap-2">
         {showCodeEditor && consoleOutput?.stdErr && (
-          <Button onClick={() => submitPrompt('Fix the error in the code cell')} variant="success">
+          <Button
+            onClick={() => submitPrompt({ userPrompt: 'Fix the error in the code cell', clearMessages: true })}
+            variant="success"
+          >
             Fix error
           </Button>
         )}

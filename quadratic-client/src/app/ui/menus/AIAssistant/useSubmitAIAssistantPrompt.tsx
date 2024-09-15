@@ -4,7 +4,7 @@ import {
   aiAssistantMessagesAtom,
   aiAssistantPromptAtom,
 } from '@/app/atoms/aiAssistantAtom';
-import { showAIAssistantAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateShowAIAssistantAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useAIAssistantModel } from '@/app/ui/menus/AIAssistant/useAIAssistantModel';
 import { useAIContextMessages } from '@/app/ui/menus/AIAssistant/useAIContextMessages';
 import { useAIRequestToAPI } from '@/app/ui/menus/AIAssistant/useAIRequestToAPI';
@@ -17,12 +17,13 @@ export function useSubmitAIAssistantPrompt() {
   const setAbortController = useSetRecoilState(aiAssistantAbortControllerAtom);
   const [loading, setLoading] = useRecoilState(aiAssistantLoadingAtom);
   const [messages, setMessages] = useRecoilState(aiAssistantMessagesAtom);
-  const [prompt, setPrompt] = useRecoilState(aiAssistantPromptAtom);
+  const setPrompt = useSetRecoilState(aiAssistantPromptAtom);
   const { quadraticContext, aiContextReassertion } = useAIContextMessages();
   const { model } = useAIAssistantModel();
-  const setShowAIAssistant = useSetRecoilState(showAIAssistantAtom);
+  const setShowAIAssistant = useSetRecoilState(editorInteractionStateShowAIAssistantAtom);
+
   const submitPrompt = useCallback(
-    async (userPrompt?: string) => {
+    async ({ userPrompt, clearMessages }: { userPrompt: string; clearMessages?: boolean }) => {
       setShowAIAssistant(true);
       if (loading) return;
       setLoading(true);
@@ -30,12 +31,11 @@ export function useSubmitAIAssistantPrompt() {
       const abortController = new AbortController();
       setAbortController(abortController);
 
-      const updatedMessages: (UserMessage | AIMessage)[] =
-        userPrompt !== undefined
-          ? [{ role: 'user', content: userPrompt }]
-          : [...messages, { role: 'user', content: prompt }];
+      const updatedMessages: (UserMessage | AIMessage)[] = clearMessages
+        ? [{ role: 'user', content: userPrompt }]
+        : [...messages, { role: 'user', content: userPrompt }];
       setMessages(updatedMessages);
-      setPrompt(userPrompt === undefined ? '' : prompt);
+      setPrompt('');
 
       const messagesToSend: PromptMessage[] = [
         {
@@ -67,7 +67,6 @@ export function useSubmitAIAssistantPrompt() {
       loading,
       messages,
       model,
-      prompt,
       quadraticContext,
       setAbortController,
       setLoading,
