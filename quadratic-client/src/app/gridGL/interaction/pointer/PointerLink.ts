@@ -9,7 +9,17 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Point } from 'pixi.js';
 
 export class PointerLink {
-  cursor: string | undefined;
+  cursor?: string;
+
+  private pos?: Coordinate;
+  private text?: string;
+
+  private emitHoverTooltip = (pos?: Coordinate, text?: string) => {
+    if (text === this.text && pos?.x === this.pos?.x && pos?.y === this.pos?.y) return;
+    events.emit('hoverTooltip', pos, text);
+    this.pos = pos;
+    this.text = text;
+  };
 
   private checkHoverLink = (world: Point): Coordinate | undefined => {
     if (!pixiApp.cellsSheets.current) {
@@ -24,11 +34,11 @@ export class PointerLink {
     if (pos) {
       this.cursor = 'pointer';
       const tooltipText = `${defaultActionSpec[Action.CmdClick].label} to open link`;
-      events.emit('hoverTooltip', pos, tooltipText);
+      this.emitHoverTooltip(pos, tooltipText);
       return true;
     }
     this.cursor = undefined;
-    events.emit('hoverTooltip', undefined);
+    this.emitHoverTooltip();
     return false;
   };
 
