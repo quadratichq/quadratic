@@ -83,13 +83,7 @@ impl GridController {
                 }
                 // if the code run is being removed, tell the client that there is no longer a code cell
                 if new_code_run.is_none() && !transaction.is_server() {
-                    crate::wasm_bindings::js::jsUpdateCodeCell(
-                        sheet_id.to_string(),
-                        sheet_pos.x,
-                        sheet_pos.y,
-                        None,
-                        None,
-                    );
+                    transaction.code_cells.insert(sheet_pos);
                 }
             }
         }
@@ -154,23 +148,7 @@ impl GridController {
 
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
             if let Some(sheet) = self.try_sheet(sheet_id) {
-                if let (Some(code_cell), Some(render_code_cell)) = (
-                    sheet.edit_code_value(sheet_pos.into()),
-                    sheet.get_render_code_cell(sheet_pos.into()),
-                ) {
-                    if let (Ok(code_cell), Ok(render_code_cell)) = (
-                        serde_json::to_string(&code_cell),
-                        serde_json::to_string(&render_code_cell),
-                    ) {
-                        crate::wasm_bindings::js::jsUpdateCodeCell(
-                            sheet_id.to_string(),
-                            sheet_pos.x,
-                            sheet_pos.y,
-                            Some(code_cell),
-                            Some(render_code_cell),
-                        );
-                    }
-                }
+                sheet.send_code_cell(sheet_pos.into());
             }
             self.send_updated_bounds_rect(&sheet_rect, false);
             self.add_dirty_hashes_from_sheet_rect(transaction, sheet_rect);

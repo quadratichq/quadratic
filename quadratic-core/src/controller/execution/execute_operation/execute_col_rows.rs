@@ -11,6 +11,7 @@ impl GridController {
                 transaction.reverse_operations.extend(reverse);
                 transaction.forward_operations.push(op);
 
+                sheet.recalculate_bounds();
                 if !transaction.is_server() {
                     self.send_updated_bounds(sheet_id);
                 }
@@ -29,6 +30,7 @@ impl GridController {
                 transaction.reverse_operations.extend(reverse);
                 transaction.forward_operations.push(op);
 
+                sheet.recalculate_bounds();
                 if !transaction.is_server() {
                     self.send_updated_bounds(sheet_id);
                 }

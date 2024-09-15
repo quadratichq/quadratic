@@ -73,6 +73,12 @@ pub struct PendingTransaction {
 
     // whether to send the updated borders to sheets
     pub sheet_borders: HashSet<SheetId>,
+
+    // code cells to update
+    //
+    // todo: this should really be a HashMap<SheetId, HashSet<Pos>> -- and then
+    // change the js call to be a HashMap<SheetId, Vec<Pos>>
+    pub code_cells: HashSet<SheetPos>,
 }
 
 impl Default for PendingTransaction {
@@ -97,6 +103,7 @@ impl Default for PendingTransaction {
             dirty_hashes: HashMap::new(),
             viewport_buffer: None,
             sheet_borders: HashSet::new(),
+            code_cells: HashSet::new(),
         }
     }
 }

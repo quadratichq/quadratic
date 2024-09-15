@@ -97,11 +97,11 @@ impl Sheet {
         transaction: &mut PendingTransaction,
         column: i64,
     ) -> Vec<Operation> {
-        let undoable = transaction.is_user_undo_redo();
         let mut reverse_operations = Vec::new();
 
-        // create undo operations for the deleted column
-        if undoable {
+        // create undo operations for the deleted column (only when needed since
+        // it's a bit expensive)
+        if transaction.is_user_undo_redo() {
             // reverse operation to create the column (this will also shift all impacted columns)
             reverse_operations.push(Operation::InsertColumn {
                 sheet_id: self.id,
@@ -126,7 +126,14 @@ impl Sheet {
 
         // remove all the column's data from the sheet
         self.columns.remove(&column);
-        self.code_runs.retain(|pos, _| pos.x != column);
+        self.code_runs.retain(|pos, _| {
+            if pos.x == column {
+                transaction.code_cells.insert(pos.to_sheet_pos(self.id));
+                false
+            } else {
+                true
+            }
+        });
         self.formats_columns.remove(&column);
         if self.borders.remove_column(column) {
             transaction.sheet_borders.insert(self.id);
@@ -163,6 +170,8 @@ impl Sheet {
                     y: old_pos.y,
                 };
                 self.code_runs.insert(new_pos, code_run);
+                transaction.code_cells.insert(old_pos.to_sheet_pos(self.id));
+                transaction.code_cells.insert(new_pos.to_sheet_pos(self.id));
             }
         }
 
@@ -179,11 +188,11 @@ impl Sheet {
             }
         }
 
+        // send the value hashes that have changed to the client
         let dirty_hashes = transaction
             .dirty_hashes
             .entry(self.id)
             .or_insert_with(HashSet::new);
-
         updated_cols.iter().for_each(|col| {
             if let Some((start, end)) = self.column_bounds(*col, false) {
                 for y in (start..=end).step_by(CELL_SHEET_HEIGHT as usize) {
@@ -202,11 +211,10 @@ impl Sheet {
         transaction: &mut PendingTransaction,
         column: i64,
     ) -> Vec<Operation> {
-        let undoable = transaction.is_user_undo_redo();
         let mut reverse_operations = Vec::new();
 
         // create undo operations for the inserted column
-        if undoable {
+        if transaction.is_user_undo_redo() {
             // reverse operation to delete the column (this will also shift all impacted columns)
             reverse_operations.push(Operation::DeleteColumn {
                 sheet_id: self.id,
@@ -247,6 +255,8 @@ impl Sheet {
                     y: old_pos.y,
                 };
                 self.code_runs.insert(new_pos, code_run);
+                transaction.code_cells.insert(old_pos.to_sheet_pos(self.id));
+                transaction.code_cells.insert(new_pos.to_sheet_pos(self.id));
             }
         }
 

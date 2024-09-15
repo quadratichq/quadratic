@@ -125,6 +125,12 @@ impl GridController {
                     sheet.borders.send_sheet_borders(*sheet_id);
                 }
             });
+
+            transaction.code_cells.iter().for_each(|sheet_pos| {
+                if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
+                    sheet.send_code_cell((*sheet_pos).into());
+                }
+            });
         }
     }
 
