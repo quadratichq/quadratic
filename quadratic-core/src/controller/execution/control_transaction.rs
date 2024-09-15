@@ -119,6 +119,12 @@ impl GridController {
                     sheet.send_all_validations();
                 }
             });
+
+            transaction.sheet_borders.iter().for_each(|sheet_id| {
+                if let Some(sheet) = self.try_sheet(*sheet_id) {
+                    sheet.borders.send_sheet_borders(*sheet_id);
+                }
+            });
         }
     }
 

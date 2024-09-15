@@ -55,16 +55,14 @@ impl GridController {
                     self.send_fill_cells(&bounds.to_sheet_rect(sheet_id));
                 }
 
-                if let Some(sheet) = self.try_sheet(sheet_id) {
-                    sheet.borders.send_sheet_borders(sheet.id);
-                }
-
                 transaction
                     .forward_operations
                     .push(Operation::AddSheetSchema { schema });
                 transaction
                     .reverse_operations
                     .push(Operation::DeleteSheet { sheet_id });
+
+                transaction.sheet_borders.insert(sheet_id);
             }
         }
     }

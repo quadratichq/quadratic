@@ -10,6 +10,10 @@ impl GridController {
                 let reverse = sheet.delete_column(transaction, column);
                 transaction.reverse_operations.extend(reverse);
                 transaction.forward_operations.push(op);
+
+                if !transaction.is_server() {
+                    self.send_updated_bounds(sheet_id);
+                }
             }
         }
     }
@@ -24,6 +28,10 @@ impl GridController {
                 let reverse = sheet.insert_column(transaction, column);
                 transaction.reverse_operations.extend(reverse);
                 transaction.forward_operations.push(op);
+
+                if !transaction.is_server() {
+                    self.send_updated_bounds(sheet_id);
+                }
             }
         }
     }

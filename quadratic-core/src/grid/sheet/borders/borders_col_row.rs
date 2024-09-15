@@ -9,7 +9,11 @@ use super::{BorderStyleCellUpdates, Borders};
 
 impl Borders {
     /// Inserts a new column at the given coordinate.
-    pub fn insert_column(&mut self, column: i64) {
+    ///
+    /// Returns true if borders were changed.
+    pub fn insert_column(&mut self, column: i64) -> bool {
+        let mut changed = false;
+
         // collect all the columns that need to be incremented
         let to_increment: Vec<i64> = self
             .left
@@ -22,6 +26,7 @@ impl Borders {
         for &x in to_increment.iter().rev() {
             if let Some(data) = self.left.remove(&x) {
                 self.left.insert(x + 1, data);
+                changed = true;
             }
         }
 
@@ -37,22 +42,31 @@ impl Borders {
         for &x in to_increment.iter().rev() {
             if let Some(data) = self.right.remove(&x) {
                 self.right.insert(x + 1, data);
+                changed = true;
             }
         }
 
         // inserts a column in top and bottom
         self.top.iter_mut().for_each(|(_, data)| {
             // find any blocks that overlap the new column
-            data.insert_and_shift_right(column);
+            if data.insert_and_shift_right(column) {
+                changed = true;
+            }
         });
         self.bottom.iter_mut().for_each(|(_, data)| {
             // find any blocks that overlap the new column
-            data.insert_and_shift_right(column);
+            if data.insert_and_shift_right(column) {
+                changed = true;
+            }
         });
+
+        changed
     }
 
     /// Inserts a new row at the given coordinate.
-    pub fn insert_row(&mut self, row: i64) {
+    pub fn insert_row(&mut self, row: i64) -> bool {
+        let mut changed = false;
+
         // collect all the rows that need to be incremented
         let to_increment: Vec<i64> = self
             .top
@@ -65,6 +79,7 @@ impl Borders {
         for &y in to_increment.iter().rev() {
             if let Some(data) = self.top.remove(&y) {
                 self.top.insert(y + 1, data);
+                changed = true;
             }
         }
 
@@ -80,22 +95,29 @@ impl Borders {
         for &y in to_increment.iter().rev() {
             if let Some(data) = self.bottom.remove(&y) {
                 self.bottom.insert(y + 1, data);
+                changed = true;
             }
         }
 
         // inserts a row in left and right
         self.left.iter_mut().for_each(|(_, data)| {
             // find any blocks that overlap the new row
-            data.insert_and_shift_right(row);
+            if data.insert_and_shift_right(row) {
+                changed = true;
+            }
         });
         self.right.iter_mut().for_each(|(_, data)| {
             // find any blocks that overlap the new row
-            data.insert_and_shift_right(row);
+            if data.insert_and_shift_right(row) {
+                changed = true;
+            }
         });
+
+        changed
     }
 
     /// Removes a column at the given coordinate.
-    pub fn remove_column(&mut self, sheet_id: SheetId, column: i64) {
+    pub fn remove_column(&mut self, column: i64) -> bool {
         let mut changed = false;
         self.left.remove(&column);
 
@@ -107,18 +129,17 @@ impl Borders {
             .sorted()
             .collect();
 
-        changed |= !to_decrement.is_empty();
-
         // decrement all columns (forwards because we're shifting left)
         for &x in to_decrement.iter() {
             if let Some(data) = self.left.remove(&x) {
                 self.left.insert(x - 1, data);
+                changed = true;
             }
         }
 
         if self.right.contains_key(&column) {
-            changed = true;
             self.right.remove(&column);
+            changed = true;
         }
 
         // collect all the columns that need to be decremented
@@ -129,12 +150,11 @@ impl Borders {
             .sorted()
             .collect();
 
-        changed |= !to_decrement.is_empty();
-
         // decrement all columns (forwards because we're shifting left)
         for &x in to_decrement.iter() {
             if let Some(data) = self.right.remove(&x) {
                 self.right.insert(x - 1, data);
+                changed = true;
             }
         }
 
@@ -152,15 +172,17 @@ impl Borders {
             }
         });
 
-        // todo: this should be a PendingTransaction flag instead of a js call from here
-        if (cfg!(target_family = "wasm") || cfg!(test)) && changed {
-            self.send_sheet_borders(sheet_id);
-        }
+        changed
     }
 
     /// Removes a row at the given coordinate.
-    pub fn remove_row(&mut self, row: i64) {
-        self.top.remove(&row);
+    pub fn remove_row(&mut self, row: i64) -> bool {
+        let mut changed = false;
+
+        if self.top.contains_key(&row) {
+            self.top.remove(&row);
+            changed = true;
+        }
 
         // collect all the rows that need to be decremented
         let to_decrement: Vec<i64> = self
@@ -174,10 +196,14 @@ impl Borders {
         for &y in to_decrement.iter() {
             if let Some(data) = self.top.remove(&y) {
                 self.top.insert(y - 1, data);
+                changed = true;
             }
         }
 
-        self.bottom.remove(&row);
+        if self.bottom.contains_key(&row) {
+            self.bottom.remove(&row);
+            changed = true;
+        }
 
         // collect all the rows that need to be decremented
         let to_decrement: Vec<i64> = self
@@ -191,18 +217,25 @@ impl Borders {
         for &y in to_decrement.iter() {
             if let Some(data) = self.bottom.remove(&y) {
                 self.bottom.insert(y - 1, data);
+                changed = true;
             }
         }
 
         // removes a row in left and right
         self.left.iter_mut().for_each(|(_, data)| {
             // find any blocks that overlap the new row
-            data.remove_and_shift_left(row);
+            if data.remove_and_shift_left(row) {
+                changed = true;
+            }
         });
         self.right.iter_mut().for_each(|(_, data)| {
             // find any blocks that overlap the new row
-            data.remove_and_shift_left(row);
+            if data.remove_and_shift_left(row) {
+                changed = true;
+            }
         });
+
+        changed
     }
 
     /// Gets an operation to recreate the column's borders.
@@ -275,7 +308,7 @@ mod tests {
     #[parallel]
     fn insert_column_empty() {
         let mut borders = Borders::default();
-        borders.insert_column(0);
+        assert!(!borders.insert_column(0));
         assert_eq!(borders, Borders::default());
     }
 
@@ -283,7 +316,7 @@ mod tests {
     #[parallel]
     fn delete_column_empty() {
         let mut borders = Borders::default();
-        borders.remove_column(SheetId::test(), 0);
+        assert!(!borders.remove_column(0));
         assert_eq!(borders, Borders::default());
     }
 
@@ -301,7 +334,7 @@ mod tests {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.borders.insert_column(1);
+        assert!(sheet.borders.insert_column(1));
 
         let mut gc_expected = GridController::test();
         let sheet_id = gc_expected.sheet_ids()[0];
@@ -329,7 +362,7 @@ mod tests {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.borders.insert_column(5);
+        assert!(sheet.borders.insert_column(5));
 
         let mut gc_expected = GridController::test();
         let sheet_id = gc_expected.sheet_ids()[0];
@@ -363,7 +396,7 @@ mod tests {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.borders.insert_column(11);
+        assert!(sheet.borders.insert_column(11));
 
         let mut gc_expected = GridController::test();
         let sheet_id = gc_expected.sheet_ids()[0];
@@ -391,7 +424,7 @@ mod tests {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.borders.remove_column(sheet_id, 1);
+        assert!(sheet.borders.remove_column(1));
 
         let mut gc_expected = GridController::test();
         let sheet_id = gc_expected.sheet_ids()[0];
@@ -419,7 +452,7 @@ mod tests {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.borders.remove_column(sheet_id, 5);
+        assert!(sheet.borders.remove_column(5));
 
         let mut gc_expected = GridController::test();
         let sheet_id = gc_expected.sheet_ids()[0];
@@ -450,7 +483,7 @@ mod tests {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.borders.remove_column(sheet_id, 10);
+        assert!(sheet.borders.remove_column(10));
 
         let mut gc_expected = GridController::test();
         let sheet_id = gc_expected.sheet_ids()[0];

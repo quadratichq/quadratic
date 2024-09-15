@@ -128,60 +128,39 @@ impl Sheet {
         self.columns.remove(&column);
         self.code_runs.retain(|pos, _| pos.x != column);
         self.formats_columns.remove(&column);
-        self.borders.remove_column(self.id, column);
+        if self.borders.remove_column(column) {
+            transaction.sheet_borders.insert(self.id);
+        }
 
         let mut updated_cols = HashSet::new();
 
         // update the indices of all columns impacted by the deletion
-        if column < 0 {
-            let mut columns_to_update = Vec::new();
-            for col in self.columns.keys() {
-                if *col < column {
-                    columns_to_update.push(*col);
-                }
+        let mut columns_to_update = Vec::new();
+        for col in self.columns.keys() {
+            if *col > column {
+                columns_to_update.push(*col);
             }
-            for col in columns_to_update {
-                if let Some(mut column_data) = self.columns.remove(&col) {
-                    column_data.x += 1;
-                    self.columns.insert(col + 1, column_data);
-                    updated_cols.insert(col + 1);
-                }
-            }
-        } else {
-            let mut columns_to_update = Vec::new();
-            for col in self.columns.keys() {
-                if *col > column {
-                    columns_to_update.push(*col);
-                }
-            }
-            for col in columns_to_update {
-                if let Some(mut column_data) = self.columns.remove(&col) {
-                    column_data.x -= 1;
-                    self.columns.insert(col - 1, column_data);
-                    updated_cols.insert(col - 1);
-                }
+        }
+        for col in columns_to_update {
+            if let Some(mut column_data) = self.columns.remove(&col) {
+                column_data.x -= 1;
+                self.columns.insert(col - 1, column_data);
+                updated_cols.insert(col - 1);
             }
         }
 
         // update the indices of all code_runs impacted by the deletion
         let mut code_runs_to_move = Vec::new();
         for (pos, _) in self.code_runs.iter() {
-            if (column < 0 && pos.x < column) || (column >= 0 && pos.x > column) {
+            if pos.x > column {
                 code_runs_to_move.push(*pos);
             }
         }
         for old_pos in code_runs_to_move {
             if let Some(code_run) = self.code_runs.shift_remove(&old_pos) {
-                let new_pos = if column < 0 && old_pos.x < column {
-                    Pos {
-                        x: old_pos.x + 1,
-                        y: old_pos.y,
-                    }
-                } else {
-                    Pos {
-                        x: old_pos.x - 1,
-                        y: old_pos.y,
-                    }
+                let new_pos = Pos {
+                    x: old_pos.x - 1,
+                    y: old_pos.y,
                 };
                 self.code_runs.insert(new_pos, code_run);
             }
@@ -190,14 +169,13 @@ impl Sheet {
         // update the indices of all column-based formats impacted by the deletion
         let mut formats_to_update = Vec::new();
         for col in self.formats_columns.keys() {
-            if (column < 0 && *col < column) || (column >= 0 && *col > column) {
+            if *col > column {
                 formats_to_update.push(*col);
             }
         }
         for col in formats_to_update {
             if let Some(format) = self.formats_columns.remove(&col) {
-                let new_col = if column < 0 { col + 1 } else { col - 1 };
-                self.formats_columns.insert(new_col, format);
+                self.formats_columns.insert(col - 1, format);
             }
         }
 
@@ -239,59 +217,34 @@ impl Sheet {
         let mut updated_cols = HashSet::new();
 
         // update the indices of all columns impacted by the insertion
-        if column < 0 {
-            todo!();
-            // let mut columns_to_update = Vec::new();
-            // for col in self.columns.keys() {
-            //     if *col < column {
-            //         columns_to_update.push(*col);
-            //     }
-            // }
-            // for col in columns_to_update {
-            //     if let Some(mut column_data) = self.columns.remove(&col) {
-            //         column_data.x += 1;
-            //         self.columns.insert(col + 1, column_data);
-            //         updated_cols.insert(col + 1);
-            //     }
-            // }
-        } else {
-            let mut columns_to_update = Vec::new();
-            for col in self.columns.keys() {
-                if *col > column {
-                    columns_to_update.push(*col);
-                }
+        let mut columns_to_update = Vec::new();
+        for col in self.columns.keys() {
+            if *col >= column {
+                columns_to_update.push(*col);
             }
-            columns_to_update.reverse();
-            for col in columns_to_update {
-                if let Some(mut column_data) = self.columns.remove(&col) {
-                    column_data.x += 1;
-                    self.columns.insert(col + 1, column_data);
-                    updated_cols.insert(col + 1);
-                }
+        }
+        columns_to_update.reverse();
+        for col in columns_to_update {
+            if let Some(mut column_data) = self.columns.remove(&col) {
+                column_data.x += 1;
+                self.columns.insert(col + 1, column_data);
+                updated_cols.insert(col + 1);
             }
         }
 
         // update the indices of all code_runs impacted by the insertion
         let mut code_runs_to_move = Vec::new();
         for (pos, _) in self.code_runs.iter() {
-            if (column < 0 && pos.x < column) || (column >= 0 && pos.x > column) {
+            if pos.x > column {
                 code_runs_to_move.push(*pos);
             }
         }
         code_runs_to_move.reverse();
         for old_pos in code_runs_to_move {
             if let Some(code_run) = self.code_runs.shift_remove(&old_pos) {
-                let new_pos = if column < 0 && old_pos.x < column {
-                    todo!();
-                    // Pos {
-                    //     x: old_pos.x + 1,
-                    //     y: old_pos.y,
-                    // }
-                } else {
-                    Pos {
-                        x: old_pos.x + 1,
-                        y: old_pos.y,
-                    }
+                let new_pos = Pos {
+                    x: old_pos.x + 1,
+                    y: old_pos.y,
                 };
                 self.code_runs.insert(new_pos, code_run);
             }
@@ -300,16 +253,19 @@ impl Sheet {
         // update the indices of all column-based formats impacted by the deletion
         let mut formats_to_update = Vec::new();
         for col in self.formats_columns.keys() {
-            if (column < 0 && *col < column) || (column >= 0 && *col > column) {
+            if *col > column {
                 formats_to_update.push(*col);
             }
         }
         formats_to_update.reverse();
         for col in formats_to_update {
             if let Some(format) = self.formats_columns.remove(&col) {
-                let new_col = if column < 0 { col - 1 } else { col + 1 };
-                self.formats_columns.insert(new_col, format);
+                self.formats_columns.insert(col + 1, format);
             }
+        }
+
+        if self.borders.insert_column(column) {
+            transaction.sheet_borders.insert(self.id);
         }
 
         let dirty_hashes = transaction
@@ -333,18 +289,21 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
+    use serial_test::parallel;
+
     use crate::{
-        controller::execution::TransactionType,
+        controller::{execution::TransactionType, GridController},
         grid::{
             formats::{format::Format, format_update::FormatUpdate},
-            CellWrap,
+            BorderStyle, CellBorderLine, CellWrap, GridBounds,
         },
-        CellValue,
+        CellValue, Rect,
     };
 
     use super::*;
 
     #[test]
+    #[parallel]
     fn delete_column() {
         // will delete column 0 and -1
         let mut sheet = Sheet::test();
@@ -423,5 +382,145 @@ mod tests {
             }
         );
         assert!(sheet.code_runs.get(&Pos { x: 0, y: 2 }).is_some());
+    }
+
+    #[test]
+    #[parallel]
+    fn insert_column_start() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_values(1, 1, 3, 1, vec!["A", "B", "C"]);
+        sheet.borders.set(
+            1,
+            1,
+            Some(BorderStyle::default()),
+            Some(BorderStyle::default()),
+            Some(BorderStyle::default()),
+            Some(BorderStyle::default()),
+        );
+        sheet.borders.set(
+            2,
+            1,
+            Some(BorderStyle::default()),
+            Some(BorderStyle::default()),
+            Some(BorderStyle::default()),
+            Some(BorderStyle::default()),
+        );
+        sheet.borders.set(
+            3,
+            1,
+            Some(BorderStyle::default()),
+            Some(BorderStyle::default()),
+            Some(BorderStyle::default()),
+            Some(BorderStyle::default()),
+        );
+
+        let mut transaction = PendingTransaction::default();
+
+        sheet.insert_column(&mut transaction, 1);
+
+        assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
+        assert_eq!(
+            sheet.display_value(Pos { x: 2, y: 1 }),
+            Some(CellValue::Text("A".to_string()))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 3, y: 1 }),
+            Some(CellValue::Text("B".to_string()))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 4, y: 1 }),
+            Some(CellValue::Text("C".to_string()))
+        );
+
+        assert_eq!(sheet.borders.get(1, 1).top, None);
+        assert_eq!(
+            sheet.borders.get(2, 1).top.unwrap().line,
+            CellBorderLine::default()
+        );
+        assert_eq!(
+            sheet.borders.get(3, 1).top.unwrap().line,
+            CellBorderLine::default()
+        );
+        assert_eq!(
+            sheet.borders.get(4, 1).top.unwrap().line,
+            CellBorderLine::default()
+        );
+        assert_eq!(sheet.borders.get(5, 1).top, None);
+    }
+
+    #[test]
+    #[parallel]
+    fn insert_column_middle() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_values(1, 1, 3, 1, vec!["A", "B", "C"]);
+
+        let mut transaction = PendingTransaction::default();
+
+        sheet.insert_column(&mut transaction, 2);
+
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Text("A".to_string()))
+        );
+        assert_eq!(sheet.display_value(Pos { x: 2, y: 1 }), None);
+        assert_eq!(
+            sheet.display_value(Pos { x: 3, y: 1 }),
+            Some(CellValue::Text("B".to_string()))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 4, y: 1 }),
+            Some(CellValue::Text("C".to_string()))
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn insert_column_end() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_values(1, 1, 2, 1, vec!["A", "B"]);
+
+        let mut transaction = PendingTransaction::default();
+
+        sheet.insert_column(&mut transaction, 3);
+
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Text("A".to_string()))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 2, y: 1 }),
+            Some(CellValue::Text("B".to_string()))
+        );
+        assert_eq!(sheet.display_value(Pos { x: 3, y: 1 }), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn execute_insert_column() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_cell_values(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            vec![vec!["A", "B", "C"]],
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.bounds(false),
+            GridBounds::NonEmpty(Rect::new(1, 1, 3, 1))
+        );
+        gc.insert_column(sheet_id, 3, None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.bounds(false),
+            GridBounds::NonEmpty(Rect::new(1, 1, 4, 1))
+        );
     }
 }

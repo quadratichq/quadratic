@@ -66,9 +66,13 @@ pub struct PendingTransaction {
 
     pub resize_rows: HashMap<SheetId, HashSet<i64>>,
 
+    // which hashes are dirty
     pub dirty_hashes: HashMap<SheetId, HashSet<Pos>>,
 
     pub viewport_buffer: Option<ViewportBuffer>,
+
+    // whether to send the updated borders to sheets
+    pub sheet_borders: HashSet<SheetId>,
 }
 
 impl Default for PendingTransaction {
@@ -76,8 +80,6 @@ impl Default for PendingTransaction {
         PendingTransaction {
             id: Uuid::new_v4(),
             transaction_name: TransactionName::Unknown,
-            // sheet_id: None,
-            // rect: None,
             cursor: None,
             transaction_type: TransactionType::User,
             operations: VecDeque::new(),
@@ -94,6 +96,7 @@ impl Default for PendingTransaction {
             resize_rows: HashMap::new(),
             dirty_hashes: HashMap::new(),
             viewport_buffer: None,
+            sheet_borders: HashSet::new(),
         }
     }
 }
