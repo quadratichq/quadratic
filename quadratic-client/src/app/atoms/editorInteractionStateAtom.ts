@@ -16,7 +16,7 @@ export type EditorInteractionState = {
   showShareFileMenu: boolean;
   showSearch: boolean | SearchOptions;
   showValidation: boolean | string;
-  showAI: boolean;
+  showAIAssistant: boolean;
   annotationState?: 'dropdown' | 'date-format' | 'calendar' | 'calendar-time';
   showContextMenu: boolean;
   permissions: FilePermission[];
@@ -52,7 +52,7 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   showSearch: false,
   showContextMenu: false,
   showValidation: false,
-  showAI: true,
+  showAIAssistant: true,
   annotationState: undefined,
   permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
   uuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
@@ -83,7 +83,7 @@ export const editorInteractionStateAtom = atom<EditorInteractionState>({
           oldValue.showRenameFileMenu ||
           oldValue.showShareFileMenu ||
           oldValue.showSearch ||
-          oldValue.showAI;
+          oldValue.showAIAssistant;
         const newModelShow =
           newValue.showCellTypeMenu ||
           newValue.showCodeEditor ||
@@ -95,7 +95,7 @@ export const editorInteractionStateAtom = atom<EditorInteractionState>({
           newValue.showRenameFileMenu ||
           newValue.showShareFileMenu ||
           newValue.showSearch ||
-          newValue.showAI;
+          newValue.showAIAssistant;
         if (oldModalShow && !newModelShow) {
           focusGrid();
         }
@@ -104,16 +104,15 @@ export const editorInteractionStateAtom = atom<EditorInteractionState>({
   ],
 });
 
-export const showAIAtom = selector<EditorInteractionState['showAI']>({
-  key: 'showAIAtom',
+export const showAIAssistantAtom = selector<EditorInteractionState['showAIAssistant']>({
+  key: 'showAIAssistantAtom',
   get: ({ get }) => {
-    const editorInteractionState = get(editorInteractionStateAtom);
-    return editorInteractionState.showAI;
+    return get(editorInteractionStateAtom).showAIAssistant;
   },
   set: ({ set }, newValue) => {
     set(editorInteractionStateAtom, (prev) => ({
       ...prev,
-      showAI: newValue instanceof DefaultValue ? prev.showAI : newValue,
+      showAIAssistant: newValue instanceof DefaultValue ? prev.showAIAssistant : newValue,
     }));
   },
 });

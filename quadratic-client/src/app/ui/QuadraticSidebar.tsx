@@ -73,8 +73,10 @@ export const QuadraticSidebar = () => {
           {canEditFile && isAuthenticated && (
             <SidebarTooltip label="AI Assistant">
               <SidebarToggle
-                pressed={editorInteractionState.showAI}
-                onPressedChange={() => setEditorInteractionState((prev) => ({ ...prev, showAI: !prev.showAI }))}
+                pressed={editorInteractionState.showAIAssistant}
+                onPressedChange={() =>
+                  setEditorInteractionState((prev) => ({ ...prev, showAIAssistant: !prev.showAIAssistant }))
+                }
               >
                 <AIIcon />
               </SidebarToggle>

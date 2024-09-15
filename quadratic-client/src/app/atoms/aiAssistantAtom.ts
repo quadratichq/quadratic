@@ -35,3 +35,8 @@ export const aiAssistantAbortControllerAtom = createSelector('abortController');
 export const aiAssistantLoadingAtom = createSelector('loading');
 export const aiAssistantMessagesAtom = createSelector('messages');
 export const aiAssistantPromptAtom = createSelector('prompt');
+
+export const aiAssistantMessagesCountAtom = selector<number>({
+  key: 'aiAssistantMessagesCountAtom',
+  get: ({ get }) => get(aiAssistantMessagesAtom).length,
+});

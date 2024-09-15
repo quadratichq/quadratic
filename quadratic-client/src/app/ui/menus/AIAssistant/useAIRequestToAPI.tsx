@@ -1,4 +1,4 @@
-import { debug } from '@/app/debugFlags';
+import { MODEL_OPTIONS } from '@/app/ui/menus/AIAssistant/MODELS';
 import { authClient } from '@/auth';
 import { AI } from '@/shared/constants/routes';
 import {
@@ -12,39 +12,9 @@ import {
 import { useCallback } from 'react';
 import { SetterOrUpdater } from 'recoil';
 
-export const MODEL_OPTIONS: {
-  [key in AnthropicModel | OpenAIModel]: {
-    displayName: string;
-    temperature: number;
-    stream: boolean;
-    enabled: boolean;
-  };
-} = {
-  'claude-3-5-sonnet-20240620': {
-    displayName: 'Anthropic: claude-3.5-sonnet',
-    temperature: 0,
-    stream: true,
-    enabled: true,
-  },
-  'gpt-4o': {
-    displayName: 'OpenAI: gpt-4o',
-    temperature: 0,
-    stream: true,
-    enabled: true,
-  },
-  'gpt-4o-2024-08-06': {
-    displayName: 'OpenAI: gpt-4o-2024-08-06',
-    temperature: 0,
-    stream: true,
-    enabled: debug,
-  },
-  'o1-preview': {
-    displayName: 'OpenAI: o1-preview',
-    temperature: 1, // only temperature 1 is supported for o1-preview
-    stream: false, // stream is not supported for o1-preview
-    enabled: debug,
-  },
-} as const;
+export function isAnthropicModel(model: AnthropicModel | OpenAIModel): model is AnthropicModel {
+  return AnthropicModelSchema.safeParse(model).success;
+}
 
 type HandleAIPromptProps = {
   model: AnthropicModel | OpenAIModel;
@@ -55,11 +25,7 @@ type HandleAIPromptProps = {
   signal: AbortSignal;
 };
 
-export function useAI() {
-  const isAnthropicModel = useCallback((model: AnthropicModel | OpenAIModel): model is AnthropicModel => {
-    return AnthropicModelSchema.safeParse(model).success;
-  }, []);
-
+export function useAIRequestToAPI() {
   const parseOpenAIStream = useCallback(
     async (
       reader: ReadableStreamDefaultReader<Uint8Array>,
@@ -142,7 +108,7 @@ export function useAI() {
     []
   );
 
-  const handleAIStream = useCallback(
+  const handleAIRequestToAPI = useCallback(
     async ({
       model,
       messages,
@@ -214,8 +180,8 @@ export function useAI() {
         }
       }
     },
-    [isAnthropicModel, parseAnthropicStream, parseOpenAIStream]
+    [parseAnthropicStream, parseOpenAIStream]
   );
 
-  return { handleAIStream, isAnthropicModel };
+  return handleAIRequestToAPI;
 }

@@ -95,7 +95,7 @@ export default function QuadraticUI() {
           }}
         >
           <CodeEditorProvider>
-            {editorInteractionState.showAI && canEditFile && isAuthenticated && <AIAssistant />}
+            {editorInteractionState.showAIAssistant && canEditFile && isAuthenticated && <AIAssistant />}
             <FileDragDropWrapper>
               <QuadraticGrid />
               {!presentationMode && <SheetBar />}
