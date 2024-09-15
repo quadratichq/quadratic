@@ -1,11 +1,13 @@
 import { isAvailableBecauseCanEditFile } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
-import { ActionAvailabilityArgs } from '@/app/actions/actionsSpec';
+import { ActionAvailabilityArgs, ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { FileRenameIcon, PersonAddIcon } from '@/shared/components/Icons';
 
-export const fileActionsSpec = {
+type FileActionSpec = Pick<ActionSpecRecord, Action.FileShare | Action.FileRename>;
+
+export const fileActionsSpec: FileActionSpec = {
   [Action.FileShare]: {
     label: 'Share',
     Icon: PersonAddIcon,

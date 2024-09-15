@@ -1,5 +1,6 @@
 import { isAvailableBecauseCanEditFile } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
+import { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { events } from '@/app/events/events';
 import {
   copySelectionToPNG,
@@ -24,7 +25,33 @@ import {
   UndoIcon,
 } from '@/shared/components/Icons';
 
-export const editActionsSpec = {
+type EditActionSpec = Pick<
+  ActionSpecRecord,
+  | Action.Undo
+  | Action.Redo
+  | Action.Cut
+  | Action.Copy
+  | Action.Paste
+  | Action.PasteValuesOnly
+  | Action.PasteFormattingOnly
+  | Action.FindInCurrentSheet
+  | Action.FindInAllSheets
+  | Action.CopyAsPng
+  | Action.DownloadAsCsv
+  | Action.Save
+  | Action.FillRight
+  | Action.FillDown
+  | Action.EditCell
+  | Action.DeleteCell
+  | Action.CloseInlineEditor
+  | Action.SaveInlineEditor
+  | Action.SaveInlineEditorMoveUp
+  | Action.SaveInlineEditorMoveRight
+  | Action.SaveInlineEditorMoveLeft
+  | Action.TriggerCell
+>;
+
+export const editActionsSpec: EditActionSpec = {
   [Action.Undo]: {
     label: 'Undo',
     Icon: UndoIcon,

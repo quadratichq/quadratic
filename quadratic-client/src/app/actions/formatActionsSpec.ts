@@ -1,4 +1,5 @@
 import { Action } from '@/app/actions/actions';
+import { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { convertReactColorToString } from '@/app/helpers/convertColor';
 import {
@@ -58,6 +59,49 @@ import { ColorResult } from 'react-color';
 
 // TODO: (jimniels) add isAvailable check for these (when you do command palette)
 
+type FormatActionSpec = Pick<
+  ActionSpecRecord,
+  | Action.FormatAlignHorizontalCenter
+  | Action.FormatAlignHorizontalLeft
+  | Action.FormatAlignHorizontalRight
+  | Action.FormatAlignVerticalBottom
+  | Action.FormatAlignVerticalMiddle
+  | Action.FormatAlignVerticalTop
+  | Action.ToggleBold
+  | Action.ToggleItalic
+  | Action.ClearFormattingBorders
+  | Action.FormatNumberAutomatic
+  | Action.FormatNumberCurrency
+  | Action.FormatNumberDecimalDecrease
+  | Action.FormatNumberDecimalIncrease
+  | Action.FormatNumberPercent
+  | Action.FormatNumberScientific
+  | Action.FormatNumberToggleCommas
+  | Action.FormatDateTime
+  | Action.FormatTextWrapClip
+  | Action.FormatTextWrapOverflow
+  | Action.FormatTextWrapWrap
+  | Action.FormatTextColor
+  | Action.FormatFillColor
+  | Action.FormatBorderAll
+  | Action.FormatBorderOuter
+  | Action.FormatBorderInner
+  | Action.FormatBorderVertical
+  | Action.FormatBorderHorizontal
+  | Action.FormatBorderLeft
+  | Action.FormatBorderRight
+  | Action.FormatBorderTop
+  | Action.FormatBorderBottom
+  | Action.FormatBorderClear
+  | Action.FormatBorderLine1
+  | Action.FormatBorderLine2
+  | Action.FormatBorderLine3
+  | Action.FormatBorderDashed
+  | Action.FormatBorderDotted
+  | Action.FormatBorderDouble
+  | Action.FormatBorderColor
+>;
+
 export type FormatActionArgs = {
   [Action.FormatTextColor]?: ColorResult;
   [Action.FormatFillColor]?: ColorResult;
@@ -80,7 +124,7 @@ export type FormatActionArgs = {
   [Action.FormatBorderColor]: { borders: UseBordersResults; color: ColorResult };
 };
 
-export const formatActionsSpec = {
+export const formatActionsSpec: FormatActionSpec = {
   [Action.FormatAlignHorizontalCenter]: {
     label: 'Center',
     Icon: FormatAlignCenterIcon,
