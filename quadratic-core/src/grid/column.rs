@@ -373,15 +373,14 @@ impl<B: BlockContent> ColumnData<B> {
             }
             // otherwise we have to split the block
             else {
-                let split_point = y - *start + 1;
+                let split_point = y;
                 let [before, after] = block.clone().split(split_point);
                 if let Some(before) = before {
                     new_blocks.insert(*start, before);
                 }
                 if let Some(mut after) = after {
-                    let y = start + split_point;
-                    after.y = y;
-                    new_blocks.insert(y, after);
+                    after.y = split_point + 1;
+                    new_blocks.insert(split_point + 1, after);
                 }
                 changed = true;
             }
@@ -661,6 +660,19 @@ mod test {
         assert_eq!(cd.get(3), Some(true));
         assert_eq!(cd.get(4), Some(true));
         assert_eq!(cd.get(5), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn insert_and_shift_right_simple() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+        cd.set_range(10..13, true);
+        cd.insert_and_shift_right(11);
+        assert_eq!(cd.get(10), Some(true));
+        assert_eq!(cd.get(11), None);
+        assert_eq!(cd.get(12), Some(true));
+        assert_eq!(cd.get(13), Some(true));
+        assert_eq!(cd.get(14), None);
     }
 
     #[test]

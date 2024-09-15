@@ -53,6 +53,7 @@ impl Borders {
                 changed = true;
             }
         });
+
         self.bottom.iter_mut().for_each(|(_, data)| {
             // find any blocks that overlap the new column
             if data.insert_and_shift_right(column) {
