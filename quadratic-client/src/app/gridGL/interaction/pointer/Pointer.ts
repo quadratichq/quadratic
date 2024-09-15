@@ -1,4 +1,5 @@
 import { PointerCellMoving } from '@/app/gridGL/interaction/pointer/PointerCellMoving';
+import { PointerLink } from '@/app/gridGL/interaction/pointer/PointerLink';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { Viewport } from 'pixi-viewport';
@@ -13,12 +14,13 @@ import { PointerImages } from './PointerImages';
 
 export class Pointer {
   pointerHeading: PointerHeading;
-  pointerImages: PointerImages;
+  private pointerImages: PointerImages;
   pointerAutoComplete: PointerAutoComplete;
-  pointerHtmlCells: PointerHtmlCells;
-  pointerCursor: PointerCursor;
+  private pointerHtmlCells: PointerHtmlCells;
+  private pointerCursor: PointerCursor;
   pointerDown: PointerDown;
   pointerCellMoving: PointerCellMoving;
+  private pointerLink: PointerLink;
 
   constructor(viewport: Viewport) {
     this.pointerHeading = new PointerHeading();
@@ -28,6 +30,7 @@ export class Pointer {
     this.pointerCursor = new PointerCursor();
     this.pointerHtmlCells = new PointerHtmlCells();
     this.pointerCellMoving = new PointerCellMoving();
+    this.pointerLink = new PointerLink();
 
     viewport.on('pointerdown', this.handlePointerDown);
     viewport.on('pointermove', this.pointerMove);
@@ -95,6 +98,7 @@ export class Pointer {
       this.pointerCellMoving.pointerDown(event) ||
       this.pointerHtmlCells.pointerDown(e) ||
       this.pointerHeading.pointerDown(world, event) ||
+      this.pointerLink.pointerDown(world, event) ||
       this.pointerAutoComplete.pointerDown(world) ||
       this.pointerDown.pointerDown(world, event);
 
@@ -115,7 +119,8 @@ export class Pointer {
       this.pointerHeading.pointerMove(world) ||
       this.pointerAutoComplete.pointerMove(world) ||
       this.pointerDown.pointerMove(world, event) ||
-      this.pointerCursor.pointerMove(world);
+      this.pointerCursor.pointerMove(world) ||
+      this.pointerLink.pointerMove(world, event);
 
     this.updateCursor();
   };
@@ -123,11 +128,12 @@ export class Pointer {
   // change the cursor based on pointer priority
   private updateCursor() {
     const cursor =
-      pixiApp.pointer.pointerCellMoving.cursor ??
-      pixiApp.pointer.pointerHtmlCells.cursor ??
-      pixiApp.pointer.pointerImages.cursor ??
-      pixiApp.pointer.pointerHeading.cursor ??
-      pixiApp.pointer.pointerAutoComplete.cursor;
+      this.pointerCellMoving.cursor ??
+      this.pointerHtmlCells.cursor ??
+      this.pointerImages.cursor ??
+      this.pointerHeading.cursor ??
+      this.pointerAutoComplete.cursor ??
+      this.pointerLink.cursor;
     pixiApp.canvas.style.cursor = cursor ?? 'unset';
   }
 

@@ -4,6 +4,7 @@ import { CodeHint } from '@/app/gridGL/HTMLGrid/CodeHint';
 import { CodeRunning } from '@/app/gridGL/HTMLGrid/codeRunning/CodeRunning';
 import { GridContextMenu } from '@/app/gridGL/HTMLGrid/GridContextMenu';
 import { HoverCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
+import { HoverTooltip } from '@/app/gridGL/HTMLGrid/hoverTooltip/HoverTooltip';
 import { HtmlCells } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCells';
 import { InlineEditor } from '@/app/gridGL/HTMLGrid/inlineEditor/InlineEditor';
 import { MultiplayerCursors } from '@/app/gridGL/HTMLGrid/multiplayerCursor/MulitplayerCursors';
@@ -97,6 +98,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
               <HtmlCells />
               <CodeRunning />
               <HoverCell />
+              <HoverTooltip />
               <MultiplayerCursors topHeading={topHeading} leftHeading={leftHeading} />
               <HtmlValidations />
               <Annotations />

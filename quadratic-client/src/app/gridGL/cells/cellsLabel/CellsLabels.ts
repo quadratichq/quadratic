@@ -11,6 +11,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { Coordinate } from '@/app/gridGL/types/size';
 import { JsValidationWarning } from '@/app/quadratic-core-types';
 import {
   RenderClientCellsTextHashClear,
@@ -78,6 +79,8 @@ export class CellsLabels extends Container {
       this.cellsTextHash.set(key, cellsTextHash);
     }
     cellsTextHash.content.import(message.content);
+    cellsTextHash.links = message.links;
+    cellsTextHash.newDrawRects = message.drawRects;
   }
 
   // Returns whether the cell has content by checking CellsTextHashContent.
@@ -240,6 +243,17 @@ export class CellsLabels extends Container {
     const hash = this.getHash(column, row);
     if (hash) {
       return hash.intersectsErrorMarkerValidation(world);
+    }
+  }
+
+  intersectsLink(world: Point): Coordinate | undefined {
+    const sheet = sheets.getById(this.sheetId);
+    if (!sheet) throw new Error('Expected sheet to be defined in CellsLabels');
+    const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
+    const hash = this.getHash(column, row);
+    const cell = sheet.getColumnRow(world.x, world.y);
+    if (hash && cell && hash.intersectsLink(cell)) {
+      return { x: column, y: row };
     }
   }
 }

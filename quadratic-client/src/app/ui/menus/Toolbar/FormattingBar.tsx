@@ -59,6 +59,8 @@ export const FormattingBar = () => {
 
         <FormatButton action={Action.ToggleBold} actionArgs={undefined} />
         <FormatButton action={Action.ToggleItalic} actionArgs={undefined} />
+        <FormatButton action={Action.ToggleUnderline} actionArgs={undefined} />
+        <FormatButton action={Action.ToggleStrikeThrough} actionArgs={undefined} />
         <FormatColorPickerButton action={Action.FormatTextColor} />
 
         <Separator />

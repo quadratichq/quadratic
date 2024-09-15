@@ -1,8 +1,11 @@
-use super::{block::SameValue, Column, ColumnData};
-use crate::RunLengthEncoding;
-use serde::{Deserialize, Serialize};
 use std::fmt;
+
+use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
+
+use super::block::SameValue;
+use super::{Column, ColumnData};
+use crate::RunLengthEncoding;
 
 /// Array of a single cell formatting attribute.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -19,6 +22,8 @@ pub enum CellFmtArray {
     FillColor(RunLengthEncoding<Option<String>>),
     RenderSize(RunLengthEncoding<Option<RenderSize>>),
     DateTime(RunLengthEncoding<Option<String>>),
+    Underline(RunLengthEncoding<Option<bool>>),
+    StrikeThrough(RunLengthEncoding<Option<bool>>),
 }
 
 /// Cell formatting attribute.
@@ -134,6 +139,27 @@ impl CellFmtAttr for RenderSize {
     }
     fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
         &mut column.render_size
+    }
+}
+
+pub struct Underline;
+impl CellFmtAttr for Underline {
+    type Value = bool;
+    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
+        &column.underline
+    }
+    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
+        &mut column.underline
+    }
+}
+pub struct StrikeThrough;
+impl CellFmtAttr for StrikeThrough {
+    type Value = bool;
+    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
+        &column.strike_through
+    }
+    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
+        &mut column.strike_through
     }
 }
 

@@ -6,7 +6,7 @@
  */
 
 import { debugWebWorkersMessages } from '@/app/debugFlags';
-import { Coordinate } from '@/app/gridGL/types/size';
+import { Coordinate, DrawRects } from '@/app/gridGL/types/size';
 import { Rectangle } from 'pixi.js';
 import {
   ClientRenderMessage,
@@ -14,9 +14,9 @@ import {
   RenderClientLabelMeshEntry,
   RenderClientMessage,
 } from '../renderClientMessages';
+import { RenderSpecial } from './cellsLabel/CellsTextHashSpecial';
 import { renderCore } from './renderCore';
 import { renderText } from './renderText';
-import { RenderSpecial } from './cellsLabel/CellsTextHashSpecial';
 
 declare var self: WorkerGlobalScope & typeof globalThis;
 
@@ -82,7 +82,9 @@ class RenderClient {
     hashY: number,
     viewRectangle: { x: number; y: number; width: number; height: number },
     overflowGridLines: Coordinate[],
-    content: Uint32Array
+    content: Uint32Array,
+    links: Coordinate[],
+    drawRects: DrawRects[]
   ) {
     const message: RenderClientCellsTextHashClear = {
       type: 'renderClientCellsTextHashClear',
@@ -92,6 +94,8 @@ class RenderClient {
       viewRectangle,
       overflowGridLines,
       content,
+      links,
+      drawRects,
     };
     this.send(message);
   }
