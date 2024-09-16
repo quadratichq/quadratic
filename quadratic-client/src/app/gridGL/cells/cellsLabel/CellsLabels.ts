@@ -7,21 +7,21 @@
  */
 
 import { debugShowCellsHashBoxes, debugShowCellsSheetCulling } from '@/app/debugFlags';
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { JsValidationWarning } from '@/app/quadratic-core-types';
 import {
   RenderClientCellsTextHashClear,
   RenderClientLabelMeshEntry,
 } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
+import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
 import { Container, Graphics, Point, Rectangle } from 'pixi.js';
 import { CellsSheet, ErrorMarker, ErrorValidation } from '../CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 import { CellsTextHash } from './CellsTextHash';
-import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
-import { events } from '@/app/events/events';
-import { JsValidationWarning } from '@/app/quadratic-core-types';
 
 export class CellsLabels extends Container {
   private cellsSheet: CellsSheet;
@@ -112,7 +112,8 @@ export class CellsLabels extends Container {
       // refresh viewport if necessary
       if (sheets.sheet.id === this.cellsSheet.sheetId) {
         const bounds = pixiApp.viewport.getVisibleBounds();
-        if (intersects.rectangleRectangle(cellsTextHash.viewRectangle, bounds)) {
+        const hashBounds = cellsTextHash.bounds.toRectangle();
+        if (hashBounds && intersects.rectangleRectangle(hashBounds, bounds)) {
           cellsTextHash.show();
           if (pixiApp.gridLines) {
             pixiApp.gridLines.dirty = true;
@@ -139,7 +140,8 @@ export class CellsLabels extends Container {
       this.cellsTextHashDebug.removeChildren();
     }
     this.cellsTextHashes.children.forEach((cellsTextHash) => {
-      if (intersects.rectangleRectangle(cellsTextHash.viewRectangle, bounds)) {
+      const hashBounds = cellsTextHash.bounds.toRectangle();
+      if (hashBounds && intersects.rectangleRectangle(hashBounds, bounds)) {
         cellsTextHash.show();
         if (debugShowCellsHashBoxes) {
           cellsTextHash.drawDebugBox(this.cellsTextDebug, this.cellsTextHashDebug);

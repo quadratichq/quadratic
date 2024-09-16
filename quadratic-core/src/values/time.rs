@@ -6,11 +6,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::CellValue;
 
-#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
+// #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct Instant {
-    #[cfg_attr(test, proptest(strategy = "0.0..(i32::MAX as f64)"))]
+    // #[cfg_attr(test, proptest(strategy = "0.0..(i32::MAX as f64)"))]
     pub seconds: f64,
 }
 
@@ -43,7 +43,7 @@ impl fmt::Display for Instant {
         write!(
             f,
             "{}",
-            CellValue::unpack_unix_timestamp(self.seconds as i64).unwrap_or_default()
+            CellValue::Text("not implemented".to_string()) // unpack_unix_timestamp(self.seconds as i64).unwrap_or_default()
         )
         // write!(f, "{s} seconds", s = self.seconds)
     }

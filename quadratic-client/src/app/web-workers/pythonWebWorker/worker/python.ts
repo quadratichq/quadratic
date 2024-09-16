@@ -249,7 +249,6 @@ class Python {
         input_python_stack_trace: String(e),
       };
     }
-
     if (pythonRun) pythonCore.sendPythonResults(message.transactionId, pythonRun);
 
     // destroy the output as it can cause memory leaks

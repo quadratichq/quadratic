@@ -21,6 +21,7 @@ import {
   textFormatSetPercentage,
 } from '../../TopBar/SubMenus/formatCells';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
+import DateRangeIcon from '@mui/icons-material/DateRange';
 
 const commands: CommandGroup = {
   heading: 'Format',
@@ -91,6 +92,13 @@ const commands: CommandGroup = {
         return (
           <CommandPaletteListItem {...props} action={textFormatDecreaseDecimalPlaces} icon={<DecimalDecreaseIcon />} />
         );
+      },
+    },
+    {
+      label: 'Date and time format',
+      isAvailable: isAvailableBecauseCanEditFile,
+      Component: (props) => {
+        return <CommandPaletteListItem {...props} action={props.openDateFormat} icon={<DateRangeIcon />} />;
       },
     },
   ],

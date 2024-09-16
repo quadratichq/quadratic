@@ -1,3 +1,5 @@
+import { events } from '@/app/events/events';
+import { JsValidationWarning } from '@/app/quadratic-core-types';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { Container, Rectangle, Sprite } from 'pixi.js';
 import { pixiApp } from '../pixiApp/PixiApp';
@@ -9,8 +11,6 @@ import { CellsImages } from './cellsImages/CellsImages';
 import { CellsLabels } from './cellsLabel/CellsLabels';
 import { CellsMarkers } from './CellsMarkers';
 import { CellsSearch } from './CellsSearch';
-import { events } from '@/app/events/events';
-import { JsValidationWarning } from '@/app/quadratic-core-types';
 
 export interface ErrorMarker {
   triangle?: Sprite;
