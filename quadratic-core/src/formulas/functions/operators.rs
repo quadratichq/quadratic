@@ -26,23 +26,30 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[operator]
             #[zip_map]
             fn "+"(span: Span, [a]: (Spanned<CellValue>), [b]: (Option<Spanned<CellValue>>)) {
-                 match b {
-                    Some(b) => CellValue::add(*span, *a, *b)?.inner,
-                    None => CellValue::add(*span,* a,Spanned {
+                let v = match b {
+                    Some(b) => CellValue::add(*span, *a, *b),
+                    None => CellValue::add(*span, *a, Spanned {
                         span: *span,
                         inner: &0.into(),
-                    })?.inner
+                    })
+                };
+                match v {
+                    Ok(spanned) => spanned.inner,
+                    Err(e) => CellValue::Error(Box::new(e)),
                 }
-
             }
         ),
         formula_fn!(
             #[operator]
             #[zip_map]
             fn "-"(span: Span, [a]: (Spanned<CellValue>), [b]: (Option<Spanned<CellValue>>)) {
-                match b {
-                    Some(b) => CellValue::sub(*span, *a,* b)?.inner,
-                    None => CellValue::neg(*a)?.inner,
+                let v = match b {
+                    Some(b) => CellValue::sub(*span, *a, *b),
+                    None => CellValue::neg(*a),
+                };
+                match v {
+                    Ok(spanned) => spanned.inner,
+                    Err(e) => CellValue::Error(Box::new(e)),
                 }
             }
         ),
@@ -50,14 +57,20 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[operator]
             #[zip_map]
             fn "*"(span: Span, [a]: (Spanned<CellValue>), [b]: (Spanned<CellValue>)) {
-                CellValue::mul(*span, *a, *b)?.inner
+                match CellValue::mul(*span, *a, *b) {
+                    Ok(spanned) => spanned.inner,
+                    Err(e) => CellValue::Error(Box::new(e)),
+                }
             }
         ),
         formula_fn!(
             #[operator]
             #[zip_map]
             fn "/"(span: Span, [dividend]: (Spanned<CellValue>), [divisor]: (Spanned<CellValue>)) {
-                CellValue::checked_div(*span, *dividend, *divisor)?.inner
+                match CellValue::checked_div(*span, *dividend, *divisor) {
+                    Ok(spanned) => spanned.inner,
+                    Err(e) => CellValue::Error(Box::new(e)),
+                }
             }
         ),
         formula_fn!(
