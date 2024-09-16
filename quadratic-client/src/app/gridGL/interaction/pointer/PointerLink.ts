@@ -33,7 +33,7 @@ export class PointerLink {
     const pos = this.checkHoverLink(world);
     if (pos) {
       this.cursor = 'pointer';
-      const tooltipText = `Open Link (${defaultActionSpec[Action.CmdClick].label})`;
+      const tooltipText = `Open link (${defaultActionSpec[Action.CmdClick].label})`;
       this.emitHoverTooltip(pos, tooltipText);
       return true;
     }
