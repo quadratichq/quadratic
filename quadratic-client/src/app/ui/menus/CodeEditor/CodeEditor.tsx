@@ -5,7 +5,6 @@ import {
   codeEditorConsoleOutputAtom,
   codeEditorEditorContentAtom,
   codeEditorEvaluationResultAtom,
-  codeEditorModifiedEditorContentAtom,
   codeEditorPanelBottomActiveTabAtom,
   codeEditorSpillErrorAtom,
 } from '@/app/atoms/codeEditorAtom';
@@ -80,7 +79,6 @@ export const CodeEditor = () => {
   const setSpillError = useSetRecoilState(codeEditorSpillErrorAtom);
   const setPanelBottomActiveTab = useSetRecoilState(codeEditorPanelBottomActiveTabAtom);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
-  const setModifiedEditorContent = useSetRecoilState(codeEditorModifiedEditorContentAtom);
 
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
@@ -166,7 +164,6 @@ export const CodeEditor = () => {
         setConsoleOutput({ stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined });
         if (!pushCodeCell) {
           setEditorContent(initialCode ?? codeCell.code_string);
-          setModifiedEditorContent(undefined);
         }
         const newEvaluationResult = codeCell.evaluation_result ? JSON.parse(codeCell.evaluation_result) : {};
         setEvaluationResult({ ...newEvaluationResult, ...codeCell.return_info });
@@ -175,7 +172,6 @@ export const CodeEditor = () => {
         setCodeString('');
         if (!pushCodeCell) {
           setEditorContent(initialCode ?? '');
-          setModifiedEditorContent(undefined);
         }
         setEvaluationResult(undefined);
         setConsoleOutput(undefined);
@@ -213,7 +209,6 @@ export const CodeEditor = () => {
     setConsoleOutput,
     setEditorContent,
     setEvaluationResult,
-    setModifiedEditorContent,
     setSpillError,
   ]);
 

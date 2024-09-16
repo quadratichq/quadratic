@@ -71,14 +71,12 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
 
 function CodeSnippetInsertButton({ language, text }: { language: Props['language']; text: string }) {
   const setEditorContent = useSetRecoilState(codeEditorEditorContentAtom);
-  const setModifiedEditorContent = useSetRecoilState(codeEditorModifiedEditorContentAtom);
 
   // Replace what's in the editor with the given text
   const handleInsertReplace = useCallback(() => {
     mixpanel.track('[AI].code.replace', { language });
     setEditorContent(text);
-    setModifiedEditorContent(undefined);
-  }, [language, text, setEditorContent, setModifiedEditorContent]);
+  }, [language, text, setEditorContent]);
 
   return (
     <TooltipHint title={'Insert and replace'}>

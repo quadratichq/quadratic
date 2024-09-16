@@ -15,8 +15,7 @@ export const CodeEditorDiffButton = () => {
 
   const handleDiffAccept = useCallback(() => {
     setEditorContent(modifiedEditorContent);
-    setModifiedEditorContent(undefined);
-  }, [modifiedEditorContent, setEditorContent, setModifiedEditorContent]);
+  }, [modifiedEditorContent, setEditorContent]);
   return (
     <div className="code-editor-diff-button flex items-center">
       <TooltipHint title={'Reject'} placement="bottom">
