@@ -14,7 +14,7 @@ import { useEffect, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export function AIAssistantSelectAIModelMenu() {
-  const { model: selectedMode, setModel: setSelectedModel } = useAIAssistantModel();
+  const [selectedMode, setSelectedModel] = useAIAssistantModel();
   // If the model is not enabled, set the model to the first enabled model
   useEffect(() => {
     if (!MODEL_OPTIONS[selectedMode].enabled) {

@@ -29,7 +29,7 @@ type AIAssistantUserMessageFormProps = {
 export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessageFormProps) {
   const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
   const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
-  const submitPrompt = useSubmitAIAssistantPrompt({ sheetId: selectedCellSheet, pos: selectedCell });
+  const submitPrompt = useSubmitAIAssistantPrompt();
 
   const abortController = useRecoilValue(aiAssistantAbortControllerAtom);
   const [prompt, setPrompt] = useRecoilState(aiAssistantPromptAtom);
@@ -51,6 +51,7 @@ export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessage
       });
     }
   }, [autoFocus]);
+
   return (
     <form className="z-10 m-3 rounded-lg bg-slate-100" onSubmit={(e) => e.preventDefault()}>
       <Textarea
@@ -66,7 +67,7 @@ export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessage
             if (prompt.trim().length === 0) return;
 
             mixpanel.track('[AI].prompt.send', { language: getConnectionKind(mode) });
-            submitPrompt({ userPrompt: prompt });
+            submitPrompt({ sheetId: selectedCellSheet, pos: selectedCell, userPrompt: prompt });
             event.currentTarget.focus();
           }
         }}
@@ -121,7 +122,7 @@ export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessage
                 size="icon-sm"
                 onClick={(e) => {
                   e.stopPropagation();
-                  submitPrompt({ userPrompt: prompt });
+                  submitPrompt({ sheetId: selectedCellSheet, pos: selectedCell, userPrompt: prompt });
                 }}
                 disabled={prompt.length === 0}
               >

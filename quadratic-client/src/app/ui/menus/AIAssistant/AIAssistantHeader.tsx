@@ -17,9 +17,8 @@ export function AIAssistantHeader() {
   const showCodeEditor = useRecoilValue(editorInteractionStateShowCodeEditorAtom);
   const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
   const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
-  const submitPrompt = useSubmitAIAssistantPrompt({ sheetId: selectedCellSheet, pos: selectedCell });
+  const submitPrompt = useSubmitAIAssistantPrompt();
   const codeEditorConsoleOutput = useRecoilValue(codeEditorConsoleOutputAtom);
-
   const messagesCount = useRecoilValue(aiAssistantMessagesCountAtom);
   const setMessages = useSetRecoilState(aiAssistantMessagesAtom);
 
@@ -36,7 +35,14 @@ export function AIAssistantHeader() {
       <div className="flex items-center gap-2">
         {showCodeEditor && codeEditorConsoleOutput?.stdErr && (
           <Button
-            onClick={() => submitPrompt({ userPrompt: 'Fix the error in the code cell', clearMessages: true })}
+            onClick={() =>
+              submitPrompt({
+                sheetId: selectedCellSheet,
+                pos: selectedCell,
+                userPrompt: 'Fix the error in the code cell',
+                clearMessages: true,
+              })
+            }
             variant="success"
           >
             Fix error
