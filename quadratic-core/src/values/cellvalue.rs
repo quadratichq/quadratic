@@ -99,14 +99,14 @@ impl CellValue {
             CellValue::Number(_) => "number",
             CellValue::Logical(_) => "logical",
             CellValue::Instant(_) => "time instant",
-            CellValue::Duration(_) => "time duration",
+            CellValue::Duration(_) => "duration",
             CellValue::Error(_) => "error",
             CellValue::Html(_) => "html",
             CellValue::Code(_) => "code",
             CellValue::Image(_) => "image",
             CellValue::Date(_) => "date",
             CellValue::Time(_) => "time",
-            CellValue::DateTime(_) => "date time",
+            CellValue::DateTime(_) => "date+time",
         }
     }
     /// Returns a formula-source-code representation of the value.
@@ -548,13 +548,10 @@ impl CellValue {
         }
     }
     /// Returns whether the type is a date, time, datetime, or duration.
-    fn is_datetime_like(&self) -> bool {
+    fn has_date_or_time(&self) -> bool {
         matches!(
             self,
-            CellValue::Date(_)
-                | CellValue::Time(_)
-                | CellValue::DateTime(_)
-                | CellValue::Duration(_)
+            CellValue::Date(_) | CellValue::Time(_) | CellValue::DateTime(_),
         )
     }
 
@@ -634,7 +631,9 @@ impl CellValue {
                     op: "add".into(),
                     ty1: a.type_name().into(),
                     ty2: Some(b.type_name().into()),
-                    use_duration_instead: a.is_datetime_like() || b.is_datetime_like(),
+                    use_duration_instead: (a.has_date_or_time() || b.has_date_or_time())
+                        && !matches!(a, CellValue::Duration(_))
+                        && !matches!(b, CellValue::Duration(_)),
                 }
                 .with_span(span))
             }
@@ -703,13 +702,42 @@ impl CellValue {
                 CellValue::Time(super::time::add_to_time(*t, -*dur))
             }
 
+            // datetime - datetime
+            (CellValue::DateTime(dt1), CellValue::DateTime(dt2)) => {
+                CellValue::Duration(Duration::from(*dt1 - *dt2))
+            }
+            // datetime - date
+            (CellValue::DateTime(dt), CellValue::Date(d)) => {
+                CellValue::Duration(Duration::from(*dt - NaiveDateTime::from(*d)))
+            }
+            // date - datetime
+            (CellValue::Date(d), CellValue::DateTime(dt)) => {
+                CellValue::Duration(Duration::from(NaiveDateTime::from(*d) - *dt))
+            }
+            // date - date
+            (CellValue::Date(d1), CellValue::Date(d2)) => {
+                CellValue::Duration(Duration::from(*d1 - *d2))
+            }
+
+            // time - time
+            (CellValue::Time(t1), CellValue::Time(t2)) => {
+                CellValue::Duration(Duration::from(*t1 - *t2))
+            }
+
+            // duration - duration
+            (CellValue::Duration(dur1), CellValue::Duration(dur2)) => {
+                CellValue::Duration(*dur1 - *dur2)
+            }
+
             // other operation
             _ => {
                 return Err(RunErrorMsg::BadOp {
                     op: "subtract".into(),
                     ty1: a.type_name().into(),
                     ty2: Some(b.type_name().into()),
-                    use_duration_instead: a.is_datetime_like() || b.is_datetime_like(),
+                    use_duration_instead: (a.has_date_or_time() || b.has_date_or_time())
+                        && !matches!(a, CellValue::Duration(_))
+                        && !matches!(b, CellValue::Duration(_)),
                 }
                 .with_span(span))
             }

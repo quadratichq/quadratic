@@ -180,7 +180,7 @@ impl fmt::Display for RunErrorMsg {
                     write!(f, " and {ty2}")?;
                 }
                 if *use_duration_instead {
-                    write!(f, "; use a Duration such as '1y 5d 12h 30m' instead")?;
+                    write!(f, "; use a duration such as '1y 5d 12h 30m' instead")?;
                 }
                 Ok(())
             }
