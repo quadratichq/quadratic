@@ -1,14 +1,13 @@
+import { isEmbed } from '@/app/helpers/isEmbed';
 import TopBarFileMenu from '@/app/ui/menus/TopBar/TopBarFileMenu';
 import { isElectron } from '@/shared/utils/isElectron';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
-import { isEmbed } from '../../../helpers/isEmbed';
 import { TopBarFileNameAndLocationMenu } from './TopBarFileNameAndLocationMenu';
 import { TopBarShareButton } from './TopBarShareButton';
 import { TopBarUsers } from './TopBarUsers';
 
 export const TopBar = () => {
   // TODO: what about embedable view? should we show the file menu?
-  // TODO: (jimniels) delete these components & apply permissions above
 
   return (
     <div
@@ -39,7 +38,7 @@ export const TopBar = () => {
           WebkitAppRegion: 'no-drag',
         }}
       >
-        <TopBarFileMenu />
+        {!isEmbed && <TopBarFileMenu />}
       </div>
 
       <TopBarFileNameAndLocationMenu />

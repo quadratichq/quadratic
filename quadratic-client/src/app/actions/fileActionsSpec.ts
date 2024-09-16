@@ -11,7 +11,6 @@ export const fileActionsSpec: FileActionSpec = {
   [Action.FileShare]: {
     label: 'Share',
     Icon: PersonAddIcon,
-    // TODO: (jimniels) implement types based on ayush's PR
     isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => !isEmbed && isAuthenticated,
     run: () => {
       if (!pixiAppSettings.setEditorInteractionState) return;
