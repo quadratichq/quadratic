@@ -543,7 +543,7 @@ impl CellValue {
     fn to_numeric(&self) -> CodeResult<CellValue> {
         match self {
             CellValue::Blank => Ok(CellValue::Number(0.into())),
-            CellValue::Text(s) => Ok(CellValue::parse_from_str(&s)),
+            CellValue::Text(s) => Ok(CellValue::parse_from_str(s)),
             CellValue::Logical(false) => Ok(CellValue::Number(0.into())),
             CellValue::Logical(true) => Ok(CellValue::Number(1.into())),
             CellValue::Error(e) => Err((**e).clone()),
