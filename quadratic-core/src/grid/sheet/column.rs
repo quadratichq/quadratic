@@ -35,7 +35,7 @@ impl Sheet {
                     }
                 }
                 reverse_operations.push(Operation::SetCellValues {
-                    sheet_pos: SheetPos::new(self.id, 0, 0),
+                    sheet_pos: SheetPos::new(self.id, column, min),
                     values,
                 });
                 current_min = current_max + 1;
@@ -102,12 +102,6 @@ impl Sheet {
         // create undo operations for the deleted column (only when needed since
         // it's a bit expensive)
         if transaction.is_user_undo_redo() {
-            // reverse operation to create the column (this will also shift all impacted columns)
-            reverse_operations.push(Operation::InsertColumn {
-                sheet_id: self.id,
-                column,
-            });
-
             reverse_operations.extend(self.values_ops_for_column(column));
             reverse_operations.extend(self.formats_ops_for_column(column));
             reverse_operations.extend(self.code_runs_for_column(column));
@@ -122,10 +116,18 @@ impl Sheet {
                     formats: Formats::repeat(format.to_replace(), 1),
                 });
             }
+
+            // reverse operation to create the column (this will also shift all impacted columns)
+            reverse_operations.push(Operation::InsertColumn {
+                sheet_id: self.id,
+                column,
+            });
         }
 
-        // remove all the column's data from the sheet
+        // remove the column's data from the sheet
         self.columns.remove(&column);
+
+        // remove the column's code runs from the sheet
         self.code_runs.retain(|pos, _| {
             if pos.x == column {
                 transaction.code_cells.insert(pos.to_sheet_pos(self.id));
@@ -134,14 +136,17 @@ impl Sheet {
                 true
             }
         });
+
+        // remove the column's formats from the sheet
         self.formats_columns.remove(&column);
+
+        // remove the column's borders from the sheet
         if self.borders.remove_column(column) {
             transaction.sheet_borders.insert(self.id);
         }
 
-        let mut updated_cols = HashSet::new();
-
         // update the indices of all columns impacted by the deletion
+        let mut updated_cols = HashSet::new();
         let mut columns_to_update = Vec::new();
         for col in self.columns.keys() {
             if *col > column {
@@ -170,6 +175,8 @@ impl Sheet {
                     y: old_pos.y,
                 };
                 self.code_runs.insert(new_pos, code_run);
+
+                // signal client to update the code runs
                 transaction.code_cells.insert(old_pos.to_sheet_pos(self.id));
                 transaction.code_cells.insert(new_pos.to_sheet_pos(self.id));
             }
@@ -185,6 +192,7 @@ impl Sheet {
         for col in formats_to_update {
             if let Some(format) = self.formats_columns.remove(&col) {
                 self.formats_columns.insert(col - 1, format);
+                updated_cols.insert(col - 1);
             }
         }
 
@@ -202,6 +210,9 @@ impl Sheet {
                 }
             }
         });
+
+        // todo: fill_color needs a separate update
+        // todo: html needs a separate update as well
 
         reverse_operations
     }
@@ -255,6 +266,8 @@ impl Sheet {
                     y: old_pos.y,
                 };
                 self.code_runs.insert(new_pos, code_run);
+
+                // signal the client to updates to the code cells (to draw the code arrays)
                 transaction.code_cells.insert(old_pos.to_sheet_pos(self.id));
                 transaction.code_cells.insert(new_pos.to_sheet_pos(self.id));
             }
@@ -271,18 +284,20 @@ impl Sheet {
         for col in formats_to_update {
             if let Some(format) = self.formats_columns.remove(&col) {
                 self.formats_columns.insert(col + 1, format);
+                updated_cols.insert(col + 1);
             }
         }
 
+        // signal client ot update the borders for changed columns
         if self.borders.insert_column(column) {
             transaction.sheet_borders.insert(self.id);
         }
 
+        // signal client to update the hashes for changed columns
         let dirty_hashes = transaction
             .dirty_hashes
             .entry(self.id)
             .or_insert_with(HashSet::new);
-
         updated_cols.iter().for_each(|col| {
             if let Some((start, end)) = self.column_bounds(*col, false) {
                 for y in (start..=end).step_by(CELL_SHEET_HEIGHT as usize) {
@@ -292,6 +307,9 @@ impl Sheet {
                 }
             }
         });
+
+        // todo: fill_color needs a separate update
+        // todo: html needs a separate update as well
 
         reverse_operations
     }
