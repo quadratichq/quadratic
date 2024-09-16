@@ -5,6 +5,7 @@ import { FilePermission } from 'quadratic-shared/typesAndSchemas';
 import { atom, DefaultValue } from 'recoil';
 
 export interface EditorInteractionState {
+  isRunningAsyncAction: boolean;
   showCellTypeMenu: boolean;
   showCodeEditor: boolean;
   showCommandPalette: boolean;
@@ -40,6 +41,7 @@ export interface EditorInteractionState {
 }
 
 export const editorInteractionStateDefault: EditorInteractionState = {
+  isRunningAsyncAction: false,
   showCellTypeMenu: false,
   showCodeEditor: false,
   showCommandPalette: false,
@@ -52,7 +54,7 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   showSearch: false,
   showContextMenu: false,
   showValidation: false,
-  showAI: true,
+  showAI: false,
   annotationState: undefined,
   permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
   uuid: '', // when we call <RecoilRoot> we initialize this with the value from the server

@@ -1,13 +1,8 @@
 import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
-import { sheets } from '@/app/grid/controller/Sheets';
-import { downloadFile, downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
-import { FileContextType } from '@/app/ui/components/FileProvider';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { getActionFileDuplicate } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
-import { DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { ApiTypes, FilePermission, FilePermissionSchema, TeamPermission } from 'quadratic-shared/typesAndSchemas';
 import { SubmitFunction } from 'react-router-dom';
 import { SetterOrUpdater } from 'recoil';
@@ -77,25 +72,12 @@ export const createNewFileAction = {
   },
 };
 
-export const renameFileAction = {
-  label: 'Rename',
-  isAvailable: isAvailableBecauseCanEditFile,
-};
-
 export const duplicateFileAction = {
   label: 'Duplicate',
   isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
   async run({ uuid, submit }: { uuid: string; submit: SubmitFunction }) {
     const data = getActionFileDuplicate({ redirect: true, isPrivate: true });
     submit(data, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
-  },
-};
-
-export const downloadFileAction = {
-  label: 'Download',
-  isAvailable: isAvailableBecauseLoggedIn,
-  async run({ name }: { name: FileContextType['name'] }) {
-    downloadQuadraticFile(name, await quadraticCore.export());
   },
 };
 
@@ -120,13 +102,6 @@ export const provideFeedbackAction = {
   isAvailable: isAvailableBecauseLoggedIn,
   run({ setEditorInteractionState }: { setEditorInteractionState: SetterOrUpdater<EditorInteractionState> }) {
     setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
-  },
-};
-
-export const viewDocsAction = {
-  label: 'Docs',
-  run() {
-    window.open(DOCUMENTATION_URL, '_blank')?.focus();
   },
 };
 
@@ -177,13 +152,6 @@ export const rerunAction = {
 export const rerunSheetAction = {
   label: 'Run all code cells in the current sheet',
   isAvailable: isAvailableBecauseCanEditFile,
-};
-
-export const downloadSelectionAsCsvAction = {
-  label: 'Download selection as CSV',
-  async run({ fileName }: { fileName: string }) {
-    downloadFile(fileName, await quadraticCore.exportCsvSelection(sheets.getRustSelection()), 'text/plain', 'csv');
-  },
 };
 
 export const dataValidations = {

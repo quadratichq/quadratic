@@ -1,11 +1,11 @@
-import { createNewFileAction, deleteFile, downloadFileAction, duplicateFileAction } from '@/app/actions';
+import { createNewFileAction, deleteFile, duplicateFileAction } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarFileMenu/MenubarItemAction';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { DeleteIcon, DownloadIcon, DraftIcon, FileCopyIcon } from '@/shared/components/Icons';
+import { DeleteIcon, DraftIcon, FileCopyIcon } from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { MenubarContent, MenubarItem, MenubarMenu, MenubarSeparator, MenubarTrigger } from '@/shared/shadcn/ui/menubar';
 import { useSubmit } from 'react-router-dom';
@@ -49,11 +49,7 @@ export const FileMenubarMenu = () => {
 
         <MenubarItemAction action={Action.FileShare} actionArgs={undefined} />
         <MenubarItemAction action={Action.FileRename} actionArgs={undefined} />
-        {downloadFileAction.isAvailable(isAvailableArgs) && (
-          <MenubarItem onClick={() => downloadFileAction.run({ name })}>
-            <DownloadIcon /> Download
-          </MenubarItem>
-        )}
+        <MenubarItemAction action={Action.FileDownload} actionArgs={{ name }} />
 
         <MenubarSeparator />
 
