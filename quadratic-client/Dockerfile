@@ -57,7 +57,7 @@ RUN echo 'Building quadratic-rust-client...' && npm run build --workspace=quadra
 
 # Build the quadratic-shared
 WORKDIR /app
-RUN echo 'Building quadratic-shared...' && npx tsc ./quadratic-shared/*.ts
+RUN echo 'Building quadratic-shared...' && npm run compile --workspace=quadratic-shared
 
 # Build the front-end
 WORKDIR /app
