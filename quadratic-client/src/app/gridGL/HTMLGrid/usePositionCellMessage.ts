@@ -15,6 +15,8 @@ interface Props {
   // used to trigger a check to see if the message should be forced to the left
   forceLeft?: boolean;
 
+  forceTop?: boolean;
+
   direction?: 'vertical' | 'horizontal';
 }
 
@@ -24,8 +26,8 @@ interface PositionCellMessage {
 }
 
 export const usePositionCellMessage = (props: Props): PositionCellMessage => {
-  const { div, offsets, forceLeft, direction: side } = props;
   const annotationState = useRecoilValue(editorInteractionStateAnnotationStateAtom);
+  const { div, offsets, forceLeft, forceTop, direction: side } = props;
   const [top, setTop] = useState<number | undefined>();
   const [left, setLeft] = useState<number | undefined>();
   const { leftHeading, topHeading } = useHeadingSize();
@@ -43,9 +45,12 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
         left = Math.max(left, bounds.left + leftHeading);
         setLeft(left);
 
-        let top = offsets.top - div.offsetHeight;
-        if (top < bounds.top + topHeading) {
-          top = offsets.bottom;
+        let top = offsets.bottom;
+        if (forceTop) {
+          top = offsets.top - div.offsetHeight;
+          if (top < bounds.top + topHeading) {
+            top = offsets.bottom;
+          }
         }
         setTop(top);
       } else {
@@ -87,7 +92,7 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
       pixiApp.viewport.off('moved', updatePosition);
       window.removeEventListener('resize', updatePosition);
     };
-  }, [div, annotationState, forceLeft, leftHeading, offsets, side, topHeading]);
+  }, [div, annotationState, forceLeft, leftHeading, offsets, side, topHeading, forceTop]);
 
   return { top, left };
 };
