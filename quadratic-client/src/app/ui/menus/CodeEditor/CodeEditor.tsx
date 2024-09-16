@@ -65,8 +65,8 @@ export interface ConsoleOutput {
 export const CodeEditor = () => {
   const showCodeEditor = useRecoilValue(editorInteractionStateShowCodeEditorAtom);
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
-  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
   const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
+  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
   const initialCode = useRecoilValue(editorInteractionStateInitialCodeAtom);
   const editorMode = useRecoilValue(editorInteractionStateModeAtom);
   const mode = useMemo(() => getLanguage(editorMode), [editorMode]);

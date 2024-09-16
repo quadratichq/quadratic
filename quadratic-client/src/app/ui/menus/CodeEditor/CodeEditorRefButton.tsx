@@ -22,8 +22,8 @@ import { useRecoilValue } from 'recoil';
 
 export const CodeEditorRefButton = () => {
   const [relative, setRelative] = useLocalStorage('insertCellRefRelative', false);
-  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
   const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
+  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
   const mode = useRecoilValue(editorInteractionStateModeAtom);
 
   const [disabled, setDisabled] = useState(true);

@@ -38,15 +38,22 @@ export const useConnectionSchemaBrowser = ({ type, uuid }: { uuid: string | unde
     }
   }, [fetcher, fetcherUrl]);
 
+  // undefined = hasn't loaded yet, null = error, otherwise the data
+  const data = useMemo(
+    () => (fetcher.data === undefined ? undefined : fetcher.data.ok ? fetcher.data.data : null),
+    [fetcher.data]
+  );
+
+  const isLoading = useMemo(() => fetcher.state !== 'idle', [fetcher.state]);
+
   const reloadSchema = useCallback(() => {
     mixpanel.track('[Connections].schemaViewer.refresh');
     fetcher.load(fetcherUrl);
   }, [fetcher, fetcherUrl]);
 
   return {
-    // undefined = hasn't loaded yet, null = error, otherwise the data
-    data: fetcher.data === undefined ? undefined : fetcher.data.ok ? fetcher.data.data : null,
-    isLoading: fetcher.state !== 'idle',
+    data,
+    isLoading,
     reloadSchema,
   };
 };

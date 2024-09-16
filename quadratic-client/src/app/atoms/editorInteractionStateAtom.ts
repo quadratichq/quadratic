@@ -15,21 +15,21 @@ export type EditorInteractionState = {
   showRenameFileMenu: boolean;
   showShareFileMenu: boolean;
   showSearch: boolean | SearchOptions;
+  showContextMenu: boolean;
   showValidation: boolean | string;
   showAIAssistant: boolean;
   annotationState?: 'dropdown' | 'date-format' | 'calendar' | 'calendar-time';
-  showContextMenu: boolean;
   permissions: FilePermission[];
   uuid: string;
-  selectedCell: Coordinate;
   selectedCellSheet: string;
+  selectedCell: Coordinate;
   mode?: CodeCellLanguage;
   initialCode?: string;
   follow?: string;
   editorEscapePressed?: boolean;
   waitingForEditorClose?: {
-    selectedCell: Coordinate;
     selectedCellSheet: string;
+    selectedCell: Coordinate;
     mode?: CodeCellLanguage;
     showCellTypeMenu: boolean;
     inlineEditor?: boolean;
@@ -56,10 +56,13 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   annotationState: undefined,
   permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
   uuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
-  selectedCell: { x: 0, y: 0 },
   selectedCellSheet: '',
-  initialCode: undefined,
+  selectedCell: { x: 0, y: 0 },
   mode: undefined,
+  initialCode: undefined,
+  follow: undefined,
+  editorEscapePressed: undefined,
+  waitingForEditorClose: undefined,
   undo: false,
   redo: false,
 };
@@ -131,8 +134,8 @@ export const editorInteractionStateShowAIAssistantAtom = createSelector('showAIA
 
 export const editorInteractionStateAnnotationStateAtom = createSelector('annotationState');
 export const editorInteractionStatePermissionsAtom = createSelector('permissions');
-export const editorInteractionStateSelectedCellAtom = createSelector('selectedCell');
 export const editorInteractionStateSelectedCellSheetAtom = createSelector('selectedCellSheet');
+export const editorInteractionStateSelectedCellAtom = createSelector('selectedCell');
 export const editorInteractionStateInitialCodeAtom = createSelector('initialCode');
 export const editorInteractionStateFollowAtom = createSelector('follow');
 export const editorInteractionStateModeAtom = createSelector('mode');

@@ -5,36 +5,52 @@ import {
   aiAssistantPromptAtom,
 } from '@/app/atoms/aiAssistantAtom';
 import { editorInteractionStateShowAIAssistantAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { Coordinate } from '@/app/gridGL/types/size';
 import { useAIAssistantModel } from '@/app/ui/menus/AIAssistant/useAIAssistantModel';
 import { useAIContextMessages } from '@/app/ui/menus/AIAssistant/useAIContextMessages';
 import { useAIRequestToAPI } from '@/app/ui/menus/AIAssistant/useAIRequestToAPI';
 import { AIMessage, PromptMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
-import { useRecoilState, useSetRecoilState } from 'recoil';
+import { useSetRecoilState } from 'recoil';
 
-export function useSubmitAIAssistantPrompt() {
-  const handleAIRequestToAPI = useAIRequestToAPI();
+export function useSubmitAIAssistantPrompt({ sheetId, pos }: { sheetId?: string; pos?: Coordinate }) {
   const setAbortController = useSetRecoilState(aiAssistantAbortControllerAtom);
-  const [loading, setLoading] = useRecoilState(aiAssistantLoadingAtom);
-  const [messages, setMessages] = useRecoilState(aiAssistantMessagesAtom);
+  const setLoading = useSetRecoilState(aiAssistantLoadingAtom);
+  const setMessages = useSetRecoilState(aiAssistantMessagesAtom);
   const setPrompt = useSetRecoilState(aiAssistantPromptAtom);
-  const { quadraticContext, aiContextReassertion } = useAIContextMessages();
   const { model } = useAIAssistantModel();
-  const setShowAIAssistant = useSetRecoilState(editorInteractionStateShowAIAssistantAtom);
+  const handleAIRequestToAPI = useAIRequestToAPI();
 
+  const setShowAIAssistant = useSetRecoilState(editorInteractionStateShowAIAssistantAtom);
+  const { quadraticContext, aiContextReassertion } = useAIContextMessages({
+    sheetId,
+    pos,
+  });
+
+  // returns false if context is not loaded
   const submitPrompt = useCallback(
-    async ({ userPrompt, clearMessages }: { userPrompt: string; clearMessages?: boolean }) => {
+    async ({ userPrompt, clearMessages }: { userPrompt: string; clearMessages?: boolean }): Promise<boolean> => {
+      if (quadraticContext === undefined || aiContextReassertion === undefined) return false;
+
       setShowAIAssistant(true);
-      if (loading) return;
-      setLoading(true);
+
+      let previousLoading = false;
+      setLoading((prev) => {
+        previousLoading = prev;
+        return true;
+      });
+      if (previousLoading) return false;
 
       const abortController = new AbortController();
       setAbortController(abortController);
 
-      const updatedMessages: (UserMessage | AIMessage)[] = clearMessages
-        ? [{ role: 'user', content: userPrompt }]
-        : [...messages, { role: 'user', content: userPrompt }];
-      setMessages(updatedMessages);
+      let updatedMessages: (UserMessage | AIMessage)[] = [];
+      setMessages((prevMessages) => {
+        updatedMessages = clearMessages
+          ? [{ role: 'user', content: userPrompt }]
+          : [...prevMessages, { role: 'user', content: userPrompt }];
+        return updatedMessages;
+      });
       setPrompt('');
 
       const messagesToSend: PromptMessage[] = [
@@ -51,21 +67,24 @@ export function useSubmitAIAssistantPrompt() {
           content: message.content,
         })),
       ];
-      await handleAIRequestToAPI({
-        model,
-        messages: messagesToSend,
-        setMessages,
-        signal: abortController.signal,
-      });
+      try {
+        await handleAIRequestToAPI({
+          model,
+          messages: messagesToSend,
+          setMessages,
+          signal: abortController.signal,
+        });
+      } catch (error) {
+        console.error(error);
+      }
 
       setAbortController(undefined);
       setLoading(false);
+      return true;
     },
     [
       aiContextReassertion,
       handleAIRequestToAPI,
-      loading,
-      messages,
       model,
       quadraticContext,
       setAbortController,

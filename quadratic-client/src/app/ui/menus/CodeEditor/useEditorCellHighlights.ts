@@ -68,8 +68,8 @@ export const useEditorCellHighlights = (
   monacoRef: React.MutableRefObject<Monaco | null>,
   cellsAccessed?: SheetRect[] | null
 ) => {
-  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
   const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
+  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
   const language = useRecoilValue(editorInteractionStateModeAtom);
   const decorations = useRef<monaco.editor.IEditorDecorationsCollection | undefined>(undefined);
 

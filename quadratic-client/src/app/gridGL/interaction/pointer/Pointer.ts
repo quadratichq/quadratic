@@ -1,16 +1,17 @@
+import { PointerAIAssist } from '@/app/gridGL/interaction/pointer/PointerAIAssist';
+import { PointerAutoComplete } from '@/app/gridGL/interaction/pointer/PointerAutoComplete';
 import { PointerCellMoving } from '@/app/gridGL/interaction/pointer/PointerCellMoving';
+import { PointerCursor } from '@/app/gridGL/interaction/pointer/pointerCursor';
+import { PointerDown } from '@/app/gridGL/interaction/pointer/PointerDown';
+import { PointerHeading } from '@/app/gridGL/interaction/pointer/PointerHeading';
+import { PointerHtmlCells } from '@/app/gridGL/interaction/pointer/PointerHtmlCells';
+import { PointerImages } from '@/app/gridGL/interaction/pointer/PointerImages';
 import { PointerLink } from '@/app/gridGL/interaction/pointer/PointerLink';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { Viewport } from 'pixi-viewport';
 import { InteractionEvent } from 'pixi.js';
-import { pixiApp } from '../../pixiApp/PixiApp';
-import { PointerAutoComplete } from './PointerAutoComplete';
-import { PointerCursor } from './pointerCursor';
-import { PointerDown } from './PointerDown';
-import { PointerHeading } from './PointerHeading';
-import { PointerHtmlCells } from './PointerHtmlCells';
-import { PointerImages } from './PointerImages';
 
 export class Pointer {
   pointerHeading: PointerHeading;
@@ -21,6 +22,7 @@ export class Pointer {
   pointerDown: PointerDown;
   pointerCellMoving: PointerCellMoving;
   private pointerLink: PointerLink;
+  private pointerAIAssist: PointerAIAssist;
 
   constructor(viewport: Viewport) {
     this.pointerHeading = new PointerHeading();
@@ -31,6 +33,7 @@ export class Pointer {
     this.pointerHtmlCells = new PointerHtmlCells();
     this.pointerCellMoving = new PointerCellMoving();
     this.pointerLink = new PointerLink();
+    this.pointerAIAssist = new PointerAIAssist();
 
     viewport.on('pointerdown', this.handlePointerDown);
     viewport.on('pointermove', this.pointerMove);
@@ -99,6 +102,7 @@ export class Pointer {
       this.pointerHtmlCells.pointerDown(e) ||
       this.pointerHeading.pointerDown(world, event) ||
       this.pointerLink.pointerDown(world, event) ||
+      this.pointerAIAssist.pointerDown(world, event) ||
       this.pointerAutoComplete.pointerDown(world) ||
       this.pointerDown.pointerDown(world, event);
 
@@ -120,7 +124,8 @@ export class Pointer {
       this.pointerAutoComplete.pointerMove(world) ||
       this.pointerDown.pointerMove(world, event) ||
       this.pointerCursor.pointerMove(world) ||
-      this.pointerLink.pointerMove(world, event);
+      this.pointerLink.pointerMove(world, event) ||
+      this.pointerAIAssist.pointerMove(world);
 
     this.updateCursor();
   };
@@ -133,7 +138,8 @@ export class Pointer {
       this.pointerImages.cursor ??
       this.pointerHeading.cursor ??
       this.pointerAutoComplete.cursor ??
-      this.pointerLink.cursor;
+      this.pointerLink.cursor ??
+      this.pointerAIAssist.cursor;
     pixiApp.canvas.style.cursor = cursor ?? 'unset';
   }
 

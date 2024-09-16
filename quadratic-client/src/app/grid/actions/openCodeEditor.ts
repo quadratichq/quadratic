@@ -8,9 +8,7 @@ export const openCodeEditor = async () => {
     throw new Error('Expected setEditorInteractionState to be defined in openCodeEditor');
   }
   const cursorPosition = sheets.sheet.cursor.cursorPosition;
-
-  const x = cursorPosition.x;
-  const y = cursorPosition.y;
+  const { x, y } = cursorPosition;
   const cell = await quadraticCore.getRenderCell(sheets.sheet.id, x, y);
   if (cell?.language) {
     if (editorInteractionState.showCodeEditor) {
@@ -19,7 +17,7 @@ export const openCodeEditor = async () => {
         ...editorInteractionState,
         showCellTypeMenu: false,
         waitingForEditorClose: {
-          selectedCell: { x: x, y: y },
+          selectedCell: { x, y },
           selectedCellSheet: sheets.sheet.id,
           mode: cell.language,
           showCellTypeMenu: false,
@@ -30,7 +28,7 @@ export const openCodeEditor = async () => {
       setEditorInteractionState({
         ...editorInteractionState,
         showCellTypeMenu: false,
-        selectedCell: { x: x, y: y },
+        selectedCell: { x, y },
         selectedCellSheet: sheets.sheet.id,
         mode: cell.language,
         showCodeEditor: true,
@@ -43,7 +41,7 @@ export const openCodeEditor = async () => {
       ...editorInteractionState,
       waitingForEditorClose: {
         showCellTypeMenu: true,
-        selectedCell: { x: x, y: y },
+        selectedCell: { x, y },
         selectedCellSheet: sheets.sheet.id,
         mode: 'Python',
         initialCode: undefined,
@@ -54,7 +52,7 @@ export const openCodeEditor = async () => {
     setEditorInteractionState({
       ...editorInteractionState,
       showCellTypeMenu: true,
-      selectedCell: { x: x, y: y },
+      selectedCell: { x, y },
       selectedCellSheet: sheets.sheet.id,
       mode: undefined,
       initialCode: undefined,

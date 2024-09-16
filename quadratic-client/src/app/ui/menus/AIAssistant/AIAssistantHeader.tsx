@@ -1,6 +1,8 @@
 import { aiAssistantMessagesAtom, aiAssistantMessagesCountAtom } from '@/app/atoms/aiAssistantAtom';
 import { codeEditorConsoleOutputAtom } from '@/app/atoms/codeEditorAtom';
 import {
+  editorInteractionStateSelectedCellAtom,
+  editorInteractionStateSelectedCellSheetAtom,
   editorInteractionStateShowAIAssistantAtom,
   editorInteractionStateShowCodeEditorAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
@@ -11,12 +13,15 @@ import { IconButton } from '@mui/material';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 export function AIAssistantHeader() {
-  const messagesCount = useRecoilValue(aiAssistantMessagesCountAtom);
-  const setMessages = useSetRecoilState(aiAssistantMessagesAtom);
   const setShowAIAssistant = useSetRecoilState(editorInteractionStateShowAIAssistantAtom);
   const showCodeEditor = useRecoilValue(editorInteractionStateShowCodeEditorAtom);
-  const submitPrompt = useSubmitAIAssistantPrompt();
+  const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
+  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
+  const submitPrompt = useSubmitAIAssistantPrompt({ sheetId: selectedCellSheet, pos: selectedCell });
   const codeEditorConsoleOutput = useRecoilValue(codeEditorConsoleOutputAtom);
+
+  const messagesCount = useRecoilValue(aiAssistantMessagesCountAtom);
+  const setMessages = useSetRecoilState(aiAssistantMessagesAtom);
 
   return (
     <div className="flex items-center justify-between p-2">

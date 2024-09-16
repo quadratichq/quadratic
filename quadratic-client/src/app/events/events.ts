@@ -46,7 +46,7 @@ interface EventTypes {
   deleteSheet: (sheetId: string, user: boolean) => void;
   sheetInfo: (sheetInfo: SheetInfo[]) => void;
   sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
-  changeSheet: () => void;
+  changeSheet: (sheetId: string) => void;
   sheetBounds: (sheetBounds: SheetBounds) => void;
 
   setCursor: (cursor?: string, selection?: Selection) => void;
@@ -127,6 +127,9 @@ interface EventTypes {
   validation: (validation: string | boolean) => void;
   // context menu opens on a grid heading
   gridContextMenu: (world: Point, column: number, row: number) => void;
+
+  // ask AI to fix error in code cell
+  askAICodeCell: (sheetId: string, pos: Coordinate) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

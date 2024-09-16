@@ -64,8 +64,8 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
 
-  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
   const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
+  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
   const language = useRecoilValue(editorInteractionStateModeAtom);
   const monacoLanguage = useMemo(() => getLanguageForMonaco(language), [language]);
   const isConnection = useMemo(() => codeCellIsAConnection(language), [language]);

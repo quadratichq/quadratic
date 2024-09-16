@@ -3,7 +3,11 @@ import {
   aiAssistantLoadingAtom,
   aiAssistantPromptAtom,
 } from '@/app/atoms/aiAssistantAtom';
-import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  editorInteractionStateModeAtom,
+  editorInteractionStateSelectedCellAtom,
+  editorInteractionStateSelectedCellSheetAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
 import { getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
@@ -23,7 +27,9 @@ type AIAssistantUserMessageFormProps = {
 };
 
 export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessageFormProps) {
-  const submitPrompt = useSubmitAIAssistantPrompt();
+  const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
+  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
+  const submitPrompt = useSubmitAIAssistantPrompt({ sheetId: selectedCellSheet, pos: selectedCell });
 
   const abortController = useRecoilValue(aiAssistantAbortControllerAtom);
   const [prompt, setPrompt] = useRecoilState(aiAssistantPromptAtom);
