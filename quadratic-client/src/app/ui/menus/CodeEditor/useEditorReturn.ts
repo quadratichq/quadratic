@@ -1,18 +1,19 @@
+import { codeEditorEvaluationResultAtom } from '@/app/atoms/codeEditorAtom';
+import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
-import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import monaco, { Range, editor } from 'monaco-editor';
 import { useEffect, useRef } from 'react';
+import { useRecoilValue } from 'recoil';
 
 // highlight the return line and add a return icon next to the line number
 export const useEditorReturn = (
   isValidRef: boolean,
   editorRef: React.MutableRefObject<editor.IStandaloneCodeEditor | null>,
-  monacoRef: React.MutableRefObject<typeof monaco | null>,
-  language?: CodeCellLanguage,
-  evaluationResult?: EvaluationResult
+  monacoRef: React.MutableRefObject<typeof monaco | null>
   // codeEditorReturn?: ComputedPythonReturnType
 ) => {
+  const language = useRecoilValue(editorInteractionStateModeAtom);
+  const evaluationResult = useRecoilValue(codeEditorEvaluationResultAtom);
   let decorations = useRef<editor.IEditorDecorationsCollection | undefined>(undefined);
   const codeCell = getCodeCell(language);
 
@@ -64,7 +65,7 @@ export const useEditorReturn = (
 
     onChangeModel();
 
-    // remove the return hightlight and decoration when the model changes
+    // remove the return highlight and decoration when the model changes
     editor.onDidChangeModelContent(() => decorations.current?.clear());
   }, [isValidRef, editorRef, monacoRef, codeCell, evaluationResult]);
 };

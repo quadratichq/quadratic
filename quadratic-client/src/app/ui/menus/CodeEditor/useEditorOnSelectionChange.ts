@@ -1,24 +1,23 @@
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
+import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import monaco from 'monaco-editor';
 import { useEffect } from 'react';
-import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { useRecoilValue } from 'recoil';
 
 export const useEditorOnSelectionChange = (
   isValidRef: boolean,
   editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>,
-  monacoRef: React.MutableRefObject<typeof monaco | null>,
-  language?: CodeCellLanguage
+  monacoRef: React.MutableRefObject<typeof monaco | null>
 ) => {
+  const language = useRecoilValue(editorInteractionStateModeAtom);
   useEffect(() => {
     if (language !== 'Formula') return;
 
     const editor = editorRef.current;
-
     if (!isValidRef || !editor) return;
 
     const model = editor.getModel();
     const monacoInst = monacoRef.current;
-
     if (!monacoInst || !model) return;
 
     editor.onDidChangeCursorPosition((e) => {

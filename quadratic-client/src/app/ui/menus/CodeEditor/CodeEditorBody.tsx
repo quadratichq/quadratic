@@ -1,9 +1,5 @@
 import { hasPermissionToEditFile } from '@/app/actions';
-import {
-  codeEditorEditorContentAtom,
-  codeEditorEvaluationResultAtom,
-  codeEditorModifiedEditorContentAtom,
-} from '@/app/atoms/codeEditorAtom';
+import { codeEditorEditorContentAtom, codeEditorModifiedEditorContentAtom } from '@/app/atoms/codeEditorAtom';
 import {
   editorInteractionStateModeAtom,
   editorInteractionStatePermissionsAtom,
@@ -60,7 +56,6 @@ let registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
 
 export const CodeEditorBody = (props: Props) => {
   const { closeEditor, cellsAccessed, cellLocation } = props;
-  const evaluationResult = useRecoilValue(codeEditorEvaluationResultAtom);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
   const modifiedEditorContent = useRecoilValue(codeEditorModifiedEditorContentAtom);
   const {
@@ -82,9 +77,9 @@ export const CodeEditorBody = (props: Props) => {
   const [isValidRef, setIsValidRef] = useState(false);
   const { editorRef, monacoRef } = useCodeEditorRef();
 
-  useEditorCellHighlights(isValidRef, editorRef, monacoRef, language, cellsAccessed);
-  useEditorOnSelectionChange(isValidRef, editorRef, monacoRef, language);
-  useEditorReturn(isValidRef, editorRef, monacoRef, language, evaluationResult);
+  useEditorCellHighlights(isValidRef, editorRef, monacoRef, cellsAccessed);
+  useEditorOnSelectionChange(isValidRef, editorRef, monacoRef);
+  useEditorReturn(isValidRef, editorRef, monacoRef);
 
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // useEditorDiagnostics(isValidRef, editorRef, monacoRef, language, diagnostics);

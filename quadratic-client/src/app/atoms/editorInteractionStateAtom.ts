@@ -106,7 +106,7 @@ export const editorInteractionStateAtom = atom<EditorInteractionState>({
 
 const createSelector = <T extends keyof EditorInteractionState>(key: T) =>
   selector<EditorInteractionState[T]>({
-    key: `aiAssistant${key.charAt(0).toUpperCase() + key.slice(1)}Atom`,
+    key: `editorInteractionState${key.charAt(0).toUpperCase() + key.slice(1)}Atom`,
     get: ({ get }) => get(editorInteractionStateAtom)[key],
     set: ({ set }, newValue) =>
       set(editorInteractionStateAtom, (prev) => ({
