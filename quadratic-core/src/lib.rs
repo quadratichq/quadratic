@@ -8,6 +8,7 @@ mod error_run;
 pub mod color;
 pub mod compression;
 pub mod controller;
+pub mod date_time;
 pub mod error_core;
 pub mod ext;
 pub mod formulas;
@@ -19,6 +20,7 @@ pub mod sheet_offsets;
 mod span;
 pub mod test_util;
 mod values;
+pub mod viewport;
 
 #[cfg(feature = "js")]
 pub mod wasm_bindings;

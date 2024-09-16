@@ -12,7 +12,7 @@ use super::column::Column;
 use super::formats::format::Format;
 use super::formatting::CellFmtAttr;
 use super::ids::SheetId;
-use super::js_types::CellFormatSummary;
+use super::js_types::{CellFormatSummary, CellType, JsCellValue};
 use super::resize::ResizeMap;
 use super::{CellWrap, CodeRun, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
@@ -28,6 +28,7 @@ pub mod code;
 pub mod formats;
 pub mod formatting;
 pub mod rendering;
+pub mod rendering_date_time;
 pub mod row_resize;
 pub mod search;
 pub mod selection;
@@ -117,9 +118,8 @@ impl Sheet {
     }
 
     // creates a Sheet for testing
-    #[cfg(test)]
     pub fn test() -> Self {
-        Sheet::new(SheetId::test(), String::from("name"), String::from("A0"))
+        Sheet::new(SheetId::test(), String::from("Sheet 1"), String::from("a0"))
     }
 
     /// Populates the current sheet with random values
@@ -232,6 +232,14 @@ impl Sheet {
         }
     }
 
+    /// Returns the JsCellValue at a position
+    pub fn js_cell_value(&self, pos: Pos) -> Option<JsCellValue> {
+        self.display_value(pos).map(|value| JsCellValue {
+            value: value.to_string(),
+            kind: value.type_name().to_string(),
+        })
+    }
+
     /// Returns the cell_value at the Pos in column.values. This does not check or return results within code_runs.
     pub fn cell_value(&self, pos: Pos) -> Option<CellValue> {
         let column = self.get_column(pos.x)?;
@@ -290,8 +298,16 @@ impl Sheet {
             align: column.align.get(pos.y),
             vertical_align: column.vertical_align.get(pos.y),
             wrap: column.wrap.get(pos.y),
+            date_time: column.date_time.get(pos.y),
             ..Default::default()
         });
+        let cell_type = self
+            .display_value(pos)
+            .and_then(|cell_value| match cell_value {
+                CellValue::Date(_) => Some(CellType::Date),
+                CellValue::DateTime(_) => Some(CellType::DateTime),
+                _ => None,
+            });
         let format = if include_sheet_info {
             Format::combine(
                 cell.as_ref(),
@@ -311,6 +327,8 @@ impl Sheet {
             align: format.align,
             vertical_align: format.vertical_align,
             wrap: format.wrap,
+            date_time: format.date_time,
+            cell_type,
         }
     }
 
@@ -500,6 +518,7 @@ mod test {
         CodeCellValue, SheetPos,
     };
     use bigdecimal::BigDecimal;
+    use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
     use serial_test::parallel;
     use std::str::FromStr;
 
@@ -811,7 +830,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn test_cell_format_summary() {
+    fn cell_format_summary() {
         let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.sheet(sheet_id).clone();
 
@@ -823,13 +842,7 @@ mod test {
         let value = sheet.cell_format_summary((2, 1).into(), false);
         let mut cell_format_summary = CellFormatSummary {
             bold: Some(true),
-            italic: None,
-            text_color: None,
-            fill_color: None,
-            commas: None,
-            align: None,
-            vertical_align: None,
-            wrap: None,
+            ..Default::default()
         };
         assert_eq!(value, cell_format_summary);
 
@@ -844,6 +857,29 @@ mod test {
 
         let existing_cell_format_summary = sheet.cell_format_summary((2, 1).into(), false);
         assert_eq!(cell_format_summary.clone(), existing_cell_format_summary);
+
+        sheet.set_cell_value(
+            Pos { x: 0, y: 0 },
+            CellValue::Date(NaiveDate::from_str("2024-12-21").unwrap()),
+        );
+        let format_summary = sheet.cell_format_summary((0, 0).into(), false);
+        assert_eq!(format_summary.cell_type, Some(CellType::Date));
+
+        sheet.set_cell_value(
+            Pos { x: 1, y: 0 },
+            CellValue::DateTime(
+                NaiveDateTime::parse_from_str("2024-12-21 1:23 PM", "%Y-%m-%d %-I:%M %p").unwrap(),
+            ),
+        );
+        let format_summary = sheet.cell_format_summary((1, 0).into(), false);
+        assert_eq!(format_summary.cell_type, Some(CellType::DateTime));
+
+        sheet.set_cell_value(
+            Pos { x: 2, y: 0 },
+            CellValue::Time(NaiveTime::parse_from_str("1:23 pm", "%-I:%M %p").unwrap()),
+        );
+        let format_summary = sheet.cell_format_summary((2, 0).into(), false);
+        assert_eq!(format_summary.cell_type, None);
     }
 
     #[test]
@@ -1069,5 +1105,20 @@ mod test {
         let mut rows = sheet.get_rows_with_wrap_in_selection(&selection);
         rows.sort();
         assert_eq!(rows, vec![0, 2]);
+    }
+
+    #[test]
+    #[parallel]
+    fn js_cell_value() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
+        let js_cell_value = sheet.js_cell_value(Pos { x: 0, y: 0 });
+        assert_eq!(
+            js_cell_value,
+            Some(JsCellValue {
+                value: "test".to_string(),
+                kind: "text".to_string()
+            })
+        );
     }
 }

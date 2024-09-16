@@ -1,0 +1,44 @@
+name: Bump Version on PR against to main
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Type of version bump'
+        default: patch
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+  pull_request:
+    types: [opened]
+    branches:
+      - main
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install jq
+        run: sudo apt-get install jq
+
+      - name: Run bump.sh script
+        run: ./bump.sh ${{ github.event.inputs.bump_type || 'patch' }}
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add .
+          git commit -m 'Bump version' || exit 0
+          git pull --rebase
+          git push

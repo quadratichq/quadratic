@@ -86,6 +86,23 @@ export interface CoreRenderResizeRowHeights {
   rowHeights: string;
 }
 
+export interface CoreRenderHashesDirty {
+  type: 'coreRenderHashesDirty';
+  sheetId: string;
+  hashes: string;
+}
+
+export interface CoreRenderSetViewportBuffer {
+  type: 'coreRenderSetViewportBuffer';
+  transactionId: string;
+  buffer: SharedArrayBuffer;
+}
+
+export interface CoreRenderClearViewportBuffer {
+  type: 'coreRenderClearViewportBuffer';
+  transactionId: string;
+}
+
 export type CoreRenderMessage =
   | CoreRenderCells
   | CoreRenderSheetInfo
@@ -96,6 +113,9 @@ export type CoreRenderMessage =
   | CoreRenderSheetInfoUpdate
   | CoreRenderSheetBoundsUpdate
   | CoreRenderRequestRowHeights
-  | CoreRenderResizeRowHeights;
+  | CoreRenderResizeRowHeights
+  | CoreRenderHashesDirty
+  | CoreRenderSetViewportBuffer
+  | CoreRenderClearViewportBuffer;
 
 export type RenderCoreMessage = RenderCoreRequestRenderCells | RenderCoreResponseRowHeights;

@@ -1,11 +1,11 @@
-import { Checkbox } from '@/shared/shadcn/ui/checkbox';
-import { ValidationData } from './useValidationData';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Input } from '@/shared/shadcn/ui/input';
+import { Checkbox } from '@/shared/shadcn/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/shadcn/ui/select';
-import { FocusEvent, useCallback, useEffect, useRef } from 'react';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
-import { cn } from '@/shared/shadcn/utils';
+import { Close } from '@mui/icons-material';
+import { IconButton } from '@mui/material';
+import { FocusEvent, useCallback, useEffect, useRef } from 'react';
+import { ValidationData } from '../useValidationData';
 
 interface CheckboxProps {
   className?: string;
@@ -28,10 +28,11 @@ export const ValidationUICheckbox = (props: CheckboxProps) => {
   );
 };
 
-interface InputProps {
+interface TextAreaProps {
+  className?: string;
+
   label?: string;
-  value: string;
-  error?: string;
+  value?: string;
   disabled?: boolean;
 
   // used to update whenever the input loses focus
@@ -47,64 +48,11 @@ interface InputProps {
   placeholder?: string;
 
   readOnly?: boolean;
-
-  type?: 'number';
 }
 
-export const ValidationInput = (props: InputProps) => {
-  const { label, value, onChange, onInput, footer, height, placeholder, error, disabled, readOnly, type, onEnter } =
+export const ValidationTextArea = (props: TextAreaProps) => {
+  const { className, label, value, onChange, onInput, footer, height, placeholder, disabled, readOnly, onEnter } =
     props;
-  const ref = useRef<HTMLInputElement>(null);
-
-  const onBlur = useCallback(
-    (e: FocusEvent<HTMLInputElement>) => {
-      if (onChange) {
-        onChange(e.currentTarget.value);
-      }
-    },
-    [onChange]
-  );
-
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.value = value;
-    }
-  }, [value]);
-
-  return (
-    <div>
-      {label && <div className={disabled ? 'opacity-50' : ''}>{label}</div>}
-      <div>
-        <div className={cn('flex w-full items-center space-x-2', error ? 'border border-red-500' : '')}>
-          <Input
-            ref={ref}
-            onBlur={onBlur}
-            onInput={onInput ? (e) => onInput(e.currentTarget.value) : undefined}
-            style={{ height }}
-            placeholder={placeholder}
-            disabled={disabled}
-            readOnly={readOnly}
-            type={type}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && onEnter) {
-                if (value !== e.currentTarget.value) {
-                  onInput?.(e.currentTarget.value);
-                  onChange?.(e.currentTarget.value);
-                }
-                setTimeout(onEnter, 0);
-              }
-            }}
-          />
-        </div>
-        {footer && <div className="text-xs">{footer}</div>}
-        {error && <div className="text-xs text-red-500">{error}</div>}
-      </div>
-    </div>
-  );
-};
-
-export const ValidationTextArea = (props: InputProps) => {
-  const { label, value, onChange, onInput, footer, height, placeholder, disabled, readOnly, onEnter } = props;
   const ref = useRef<HTMLTextAreaElement>(null);
 
   const onBlur = useCallback(
@@ -118,7 +66,7 @@ export const ValidationTextArea = (props: InputProps) => {
 
   useEffect(() => {
     if (ref.current) {
-      ref.current.value = value;
+      ref.current.value = value ?? '';
     }
   }, [value]);
 
@@ -127,6 +75,7 @@ export const ValidationTextArea = (props: InputProps) => {
       {label && <div className={disabled ? 'opacity-50' : ''}>{label}</div>}
       <div>
         <Textarea
+          className={className}
           ref={ref}
           onBlur={onChange ? onBlur : undefined}
           onInput={onInput ? (e) => onInput(e.currentTarget.value) : undefined}
@@ -160,17 +109,23 @@ export const ValidationMoreOptions = (props: { validationData: ValidationData })
 interface DropdownProps {
   label?: string;
   value: string;
+  className?: string;
   onChange: (value: string) => void;
-  options: { value: string; label: string | JSX.Element }[];
+  options: (string | { value: string; label: string | JSX.Element })[];
   disabled?: boolean;
   readOnly?: boolean;
+
+  // first entry is blank
+  includeBlank?: boolean;
 }
 
 export const ValidationDropdown = (props: DropdownProps) => {
-  const { label, value, onChange, options, disabled, readOnly } = props;
+  const { label, value, className, onChange, options, disabled, readOnly, includeBlank } = props;
+
+  const optionsBlank = includeBlank ? [{ value: 'blank', label: '' }, ...options] : options;
 
   return (
-    <div>
+    <div className={className}>
       {label && <div className={disabled ? 'opacity-50' : ''}>{label}</div>}
       <Select value={value} onValueChange={onChange} disabled={disabled || readOnly}>
         <SelectTrigger
@@ -183,13 +138,30 @@ export const ValidationDropdown = (props: DropdownProps) => {
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {options.map(({ value, label }) => (
-            <SelectItem key={value} value={value}>
-              {label}
+          {optionsBlank.map((option) => (
+            <SelectItem
+              className="h-7"
+              key={typeof option === 'string' ? option : option.value}
+              value={typeof option === 'string' ? option : option.value}
+            >
+              {typeof option === 'string' ? option : option.label}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
     </div>
+  );
+};
+
+interface CloseProps {
+  onClose: () => void;
+}
+
+export const ValidationClose = (props: CloseProps) => {
+  const { onClose } = props;
+  return (
+    <IconButton sx={{ padding: 0, width: 20, height: 20 }} onClick={onClose}>
+      <Close sx={{ padding: 0, width: 15, height: 15 }} />
+    </IconButton>
   );
 };

@@ -1,10 +1,8 @@
 import { events } from '@/app/events/events';
-import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { JsRowHeight, Selection, SheetInfo } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
-import { pixiAppSettings } from '../../gridGL/pixiApp/PixiAppSettings';
 import { Sheet } from '../sheet/Sheet';
 import { SheetCursorSave } from '../sheet/SheetCursor';
 
@@ -192,9 +190,6 @@ class Sheets {
       pixiApp.cursor.dirty = true;
       pixiApp.multiplayerCursor.dirty = true;
       pixiApp.boxCells.reset();
-      if (!inlineEditorHandler.isEditingFormula()) {
-        pixiAppSettings.changeInput(false);
-      }
       pixiApp.cellsSheets.show(value);
       this.updateSheetBar();
       pixiApp.viewport.loadViewport();
