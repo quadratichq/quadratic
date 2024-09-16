@@ -141,15 +141,8 @@ class RenderCore {
       };
       this.renderCorePort.postMessage(message);
       this.waitingForResponse.set(id, (cells: JsRenderCell[]) => {
-        clearTimeout(timeOut);
         resolve(cells);
       });
-      // if core is busy, render worker can get stuck waiting for response
-      // 1 second is an arbitrary timeout, should be enough time for core to process request
-      const timeOut = setTimeout(() => {
-        this.waitingForResponse.delete(id);
-        reject('[renderCore] getRenderCells timeout');
-      }, 1000);
       this.id++;
     });
   }
