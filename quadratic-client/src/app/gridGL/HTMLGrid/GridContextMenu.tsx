@@ -5,7 +5,7 @@ import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { gridHeadingAtom } from '@/app/atoms/gridHeadingAtom';
 import { events } from '@/app/events/events';
-import { useHeadingSize } from '@/app/gridGL/HTMLGrid/useHeadingSize';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { IconComponent } from '@/shared/components/Icons';
@@ -20,6 +20,7 @@ export const GridContextMenu = () => {
 
   const onClose = useCallback(() => {
     setShow({ world: undefined, column: undefined, row: undefined });
+    focusGrid();
   }, [setShow]);
 
   useEffect(() => {
