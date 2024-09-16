@@ -37,6 +37,9 @@ export const FormattingBar = () => {
           focusGrid();
         }}
       >
+        <FormatButton action={Action.FormatNumberToggleCommas} actionArgs={undefined} />
+        <FormatButton action={Action.FormatNumberDecimalDecrease} actionArgs={undefined} />
+        <FormatButton action={Action.FormatNumberDecimalIncrease} actionArgs={undefined} />
         <FormatButton action={Action.FormatNumberCurrency} actionArgs={undefined} />
         <FormatButton action={Action.FormatNumberPercent} actionArgs={undefined} />
         <FormatButtonDropdown showDropdownArrow tooltipLabel="More number formats" Icon={Number123Icon}>
@@ -45,12 +48,6 @@ export const FormattingBar = () => {
             actionArgs={undefined}
           />
         </FormatButtonDropdown>
-
-        <Separator />
-
-        <FormatButton action={Action.FormatNumberToggleCommas} actionArgs={undefined} />
-        <FormatButton action={Action.FormatNumberDecimalDecrease} actionArgs={undefined} />
-        <FormatButton action={Action.FormatNumberDecimalIncrease} actionArgs={undefined} />
 
         <Separator />
 
