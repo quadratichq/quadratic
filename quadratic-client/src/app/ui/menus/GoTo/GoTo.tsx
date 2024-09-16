@@ -1,26 +1,22 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateShowGoToMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { moveViewport } from '@/app/gridGL/interaction/viewportHelper';
 import { Coordinate } from '@/app/gridGL/types/size';
+import { getCoordinatesFromUserInput } from '@/app/ui/menus/GoTo/getCoordinatesFromUserInput';
 import '@/app/ui/styles/floating-dialog.css';
 import { CommandDialog, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
 import { ArrowForward } from '@mui/icons-material';
 import { Rectangle } from 'pixi.js';
 import React, { useCallback } from 'react';
 import { useRecoilState } from 'recoil';
-import { getCoordinatesFromUserInput } from './getCoordinatesFromUserInput';
 
 export const GoTo = () => {
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { showGoToMenu } = editorInteractionState;
+  const [showGoToMenu, setShowGoToMenu] = useRecoilState(editorInteractionStateShowGoToMenuAtom);
   const [value, setValue] = React.useState<string>('');
 
   const closeMenu = useCallback(() => {
-    setEditorInteractionState((state) => ({
-      ...state,
-      showGoToMenu: false,
-    }));
-  }, [setEditorInteractionState]);
+    setShowGoToMenu(false);
+  }, [setShowGoToMenu]);
 
   const coordinates = getCoordinatesFromUserInput(value);
 

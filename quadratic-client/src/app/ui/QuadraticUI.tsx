@@ -2,16 +2,10 @@ import { hasPermissionToEditFile } from '@/app/actions';
 import {
   editorInteractionStateFollowAtom,
   editorInteractionStatePermissionsAtom,
-  editorInteractionStateShowAIAssistantAtom,
-  editorInteractionStateShowCellTypeMenuAtom,
   editorInteractionStateShowCodeEditorAtom,
-  editorInteractionStateShowCommandPaletteAtom,
-  editorInteractionStateShowFeedbackMenuAtom,
-  editorInteractionStateShowGoToMenuAtom,
   editorInteractionStateShowNewFileMenuAtom,
   editorInteractionStateShowRenameFileMenuAtom,
   editorInteractionStateShowShareFileMenuAtom,
-  editorInteractionStateShowValidationAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { presentationModeAtom, showHeadingsAtom } from '@/app/atoms/gridSettingsAtom';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -56,16 +50,10 @@ export default function QuadraticUI() {
   } = useFileRouteLoaderData();
   const connectionsFetcher = useConnectionsFetcher();
 
-  const showCellTypeMenu = useRecoilValue(editorInteractionStateShowCellTypeMenuAtom);
   const showCodeEditor = useRecoilValue(editorInteractionStateShowCodeEditorAtom);
-  const showCommandPalette = useRecoilValue(editorInteractionStateShowCommandPaletteAtom);
-  const showGoToMenu = useRecoilValue(editorInteractionStateShowGoToMenuAtom);
-  const showFeedbackMenu = useRecoilValue(editorInteractionStateShowFeedbackMenuAtom);
+  const [showShareFileMenu, setShowShareFileMenu] = useRecoilState(editorInteractionStateShowShareFileMenuAtom);
   const [showNewFileMenu, setShowNewFileMenu] = useRecoilState(editorInteractionStateShowNewFileMenuAtom);
   const [showRenameFileMenu, setShowRenameFileMenu] = useRecoilState(editorInteractionStateShowRenameFileMenuAtom);
-  const [showShareFileMenu, setShowShareFileMenu] = useRecoilState(editorInteractionStateShowShareFileMenuAtom);
-  const showValidation = useRecoilValue(editorInteractionStateShowValidationAtom);
-  const showAIAssistant = useRecoilValue(editorInteractionStateShowAIAssistantAtom);
 
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const canEditFile = useMemo(() => hasPermissionToEditFile(permissions), [permissions]);
@@ -115,7 +103,6 @@ export default function QuadraticUI() {
       <div className="flex min-w-0 flex-grow flex-col" id="main">
         {!presentationMode && <TopBar />}
         {!presentationMode && <Toolbar />}
-
         <div
           style={{
             width: '100%',
@@ -125,13 +112,13 @@ export default function QuadraticUI() {
             position: 'relative',
           }}
         >
-          {showAIAssistant && canEditFile && isAuthenticated && <AIAssistant />}
+          {canEditFile && isAuthenticated && <AIAssistant />}
           <FileDragDropWrapper>
             <QuadraticGrid />
             {!presentationMode && <SheetBar />}
           </FileDragDropWrapper>
-          {showCodeEditor && <CodeEditor />}
-          {showValidation && <ValidationPanel />}
+          <CodeEditor />
+          <ValidationPanel />
           <Following follow={follow} />
           <div
             style={{
@@ -147,9 +134,8 @@ export default function QuadraticUI() {
 
         {!presentationMode && !isEmbed && <BottomBar />}
       </div>
-
       {/* Global overlay menus */}
-      {showFeedbackMenu && <FeedbackMenu />}
+      <FeedbackMenu />
       {showShareFileMenu && <ShareFileDialog onClose={() => setShowShareFileMenu(false)} name={name} uuid={uuid} />}
       {showNewFileMenu && (
         <NewFileDialog
@@ -160,9 +146,9 @@ export default function QuadraticUI() {
         />
       )}
       {presentationMode && <PresentationModeHint />}
-      {showCellTypeMenu && <CellTypeMenu />}
-      {showCommandPalette && <CommandPalette />}
-      {showGoToMenu && <GoTo />}
+      <CellTypeMenu />
+      <CommandPalette />
+      <GoTo />
       {showRenameFileMenu && (
         <DialogRenameItem
           itemLabel="file"

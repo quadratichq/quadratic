@@ -1,6 +1,8 @@
 import { Action as FileShareAction } from '@/routes/api.files.$uuid.sharing';
 import { TeamAction } from '@/routes/teams.$teamUuid';
 import { Avatar } from '@/shared/components/Avatar';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -37,10 +39,8 @@ import {
   UserTeamRoleSchema,
   emailSchema,
 } from 'quadratic-shared/typesAndSchemas';
-import React, { Children, FormEvent, ReactNode, useEffect, useRef, useState } from 'react';
+import React, { Children, FormEvent, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FetcherSubmitFunction, useFetcher, useFetchers, useSubmit } from 'react-router-dom';
-import { useGlobalSnackbar } from './GlobalSnackbarProvider';
-import { Type } from './Type';
 
 function getRoleLabel(role: UserTeamRole | UserFileRole) {
   // prettier-ignore
@@ -63,8 +63,8 @@ export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.
     invites,
     team: { uuid },
   } = data;
-  const action = ROUTES.TEAM(uuid);
-  const numberOfOwners = users.filter((user) => user.role === 'OWNER').length;
+  const action = useMemo(() => ROUTES.TEAM(uuid), [uuid]);
+  const numberOfOwners = useMemo(() => users.filter((user) => user.role === 'OWNER').length, [users]);
 
   const pendingInvites = useFetchers()
     .filter(
@@ -81,11 +81,14 @@ export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.
     });
 
   // Get all emails of users and pending invites so user can't input them
-  const exisitingTeamEmails: string[] = [
-    ...users.map((user) => user.email),
-    ...invites.map((invite) => invite.email),
-    ...pendingInvites.map((invite) => invite.email),
-  ];
+  const existingTeamEmails: string[] = useMemo(
+    () => [
+      ...users.map((user) => user.email),
+      ...invites.map((invite) => invite.email),
+      ...pendingInvites.map((invite) => invite.email),
+    ],
+    [invites, pendingInvites, users]
+  );
 
   // <Button
   //   variant="link"
@@ -105,7 +108,7 @@ export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.
         <InviteForm
           action={action}
           intent="create-team-invite"
-          disallowedEmails={exisitingTeamEmails}
+          disallowedEmails={existingTeamEmails}
           roles={[
             ...(userMakingRequest.teamRole === UserTeamRoleSchema.enum.OWNER ? [UserTeamRoleSchema.enum.OWNER] : []),
             UserTeamRoleSchema.enum.EDITOR,
@@ -198,33 +201,40 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
     owner,
   } = data;
   const fetchers = useFetchers();
-  const action = ROUTES.API.FILE_SHARING(uuid);
-  const canEditFile = filePermissions.includes('FILE_EDIT');
+  const action = useMemo(() => ROUTES.API.FILE_SHARING(uuid), [uuid]);
+  const canEditFile = useMemo(() => filePermissions.includes('FILE_EDIT'), [filePermissions]);
 
   sortLoggedInUserFirst(users, loggedInUserId);
 
-  const pendingInvites = fetchers
-    .filter(
-      (fetcher) =>
-        isJsonObject(fetcher.json) && fetcher.json.intent === 'create-file-invite' && fetcher.state !== 'idle'
-    )
-    .map((fetcher, i) => {
-      const { email, role } = fetcher.json as FileShareAction['request.create-file-invite'];
-      return {
-        id: i,
-        email,
-        role,
-      };
-    });
+  const pendingInvites = useMemo(
+    () =>
+      fetchers
+        .filter(
+          (fetcher) =>
+            isJsonObject(fetcher.json) && fetcher.json.intent === 'create-file-invite' && fetcher.state !== 'idle'
+        )
+        .map((fetcher, i) => {
+          const { email, role } = fetcher.json as FileShareAction['request.create-file-invite'];
+          return {
+            id: i,
+            email,
+            role,
+          };
+        }),
+    [fetchers]
+  );
 
-  const disallowedEmails: string[] = [
-    ...(owner.type === 'user' ? [owner.email] : []),
-    ...users.map((user) => user.email),
-    ...invites.map((invite) => invite.email),
-    ...pendingInvites.map((invite) => invite.email),
-  ];
+  const disallowedEmails: string[] = useMemo(
+    () => [
+      ...(owner.type === 'user' ? [owner.email] : []),
+      ...users.map((user) => user.email),
+      ...invites.map((invite) => invite.email),
+      ...pendingInvites.map((invite) => invite.email),
+    ],
+    [invites, owner, pendingInvites, users]
+  );
 
-  const isTeamFile = owner.type === 'team';
+  const isTeamFile = useMemo(() => owner.type === 'team', [owner]);
 
   return (
     <>
@@ -336,15 +346,26 @@ function CopyLinkButton({
 }) {
   const fetchers = useFetchers();
   const { addGlobalSnackbar } = useGlobalSnackbar();
-  const publicLinkAccessFetcher = fetchers.find(
-    (fetcher) =>
-      isJsonObject(fetcher.json) && fetcher.json.intent === 'update-public-link-access' && fetcher.state !== 'idle'
+  const publicLinkAccessFetcher = useMemo(
+    () =>
+      fetchers.find(
+        (fetcher) =>
+          isJsonObject(fetcher.json) && fetcher.json.intent === 'update-public-link-access' && fetcher.state !== 'idle'
+      ),
+    [fetchers]
   );
-  const optimisticPublicLinkAccess = publicLinkAccessFetcher
-    ? (publicLinkAccessFetcher.json as FileShareAction['request.update-public-link-access']).publicLinkAccess
-    : publicLinkAccess;
-  const url = window.location.origin + ROUTES.FILE(uuid);
-  const disabled = publicLinkAccess ? (isTeamFile ? false : optimisticPublicLinkAccess === 'NOT_SHARED') : true;
+  const optimisticPublicLinkAccess = useMemo(
+    () =>
+      publicLinkAccessFetcher
+        ? (publicLinkAccessFetcher.json as FileShareAction['request.update-public-link-access']).publicLinkAccess
+        : publicLinkAccess,
+    [publicLinkAccess, publicLinkAccessFetcher]
+  );
+  const url = useMemo(() => window.location.origin + ROUTES.FILE(uuid), [uuid]);
+  const disabled = useMemo(
+    () => (publicLinkAccess ? (isTeamFile ? false : optimisticPublicLinkAccess === 'NOT_SHARED') : true),
+    [isTeamFile, optimisticPublicLinkAccess, publicLinkAccess]
+  );
 
   return (
     <>
@@ -392,8 +413,7 @@ function CopyLinkButton({
 
 export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: string; onClose: () => void }) {
   const fetcher = useFetcher();
-
-  const loadState = !fetcher.data ? 'LOADING' : !fetcher.data.ok ? 'FAILED' : 'LOADED';
+  const loadState = useMemo(() => (!fetcher.data ? 'LOADING' : !fetcher.data.ok ? 'FAILED' : 'LOADED'), [fetcher]);
 
   // On the initial mount, load the data (if it's not there already)
   useEffect(() => {
@@ -402,8 +422,9 @@ export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: s
     }
   }, [fetcher, uuid]);
 
-  const loaderData =
-    loadState === 'LOADED' ? (fetcher.data.data as ApiTypes['/v0/files/:uuid/sharing.GET.response']) : undefined;
+  const loaderData = useMemo(() => {
+    return loadState === 'LOADED' ? (fetcher.data.data as ApiTypes['/v0/files/:uuid/sharing.GET.response']) : undefined;
+  }, [loadState, fetcher.data]);
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -485,46 +506,53 @@ export function InviteForm({
   const [error, setError] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
   const submit = useSubmit();
-  const deleteTriggered =
-    useFetchers().filter(
-      (fetcher) =>
-        fetcher.state === 'submitting' &&
-        isJsonObject(fetcher.json) &&
-        typeof fetcher.json.intent === 'string' &&
-        fetcher.json.intent.includes('delete')
-    ).length > 0;
+  const fetchers = useFetchers();
+  const deleteTriggered = useMemo(
+    () =>
+      fetchers.filter(
+        (fetcher) =>
+          fetcher.state === 'submitting' &&
+          isJsonObject(fetcher.json) &&
+          typeof fetcher.json.intent === 'string' &&
+          fetcher.json.intent.includes('delete')
+      ).length > 0,
+    [fetchers]
+  );
 
-  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const onSubmit = useCallback(
+    (e: FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
 
-    // Get the data from the form
-    const formData = new FormData(e.currentTarget);
-    const emailFromUser = String(formData.get('email_search')).trim();
-    const role = String(formData.get('role'));
+      // Get the data from the form
+      const formData = new FormData(e.currentTarget);
+      const emailFromUser = String(formData.get('email_search')).trim();
+      const role = String(formData.get('role'));
 
-    // Validate email
-    let email;
-    try {
-      email = emailSchema.parse(emailFromUser);
-    } catch (e) {
-      setError('Invalid email.');
-      return;
-    }
-    if (disallowedEmails.includes(email)) {
-      setError('This email has already been invited.');
-      return;
-    }
+      // Validate email
+      let email;
+      try {
+        email = emailSchema.parse(emailFromUser);
+      } catch (e) {
+        setError('Invalid email.');
+        return;
+      }
+      if (disallowedEmails.includes(email)) {
+        setError('This email has already been invited.');
+        return;
+      }
 
-    // Submit the data
-    // TODO: (enhancement) enhance types so it knows which its submitting to
-    submit({ intent, email: email, role }, { method: 'POST', action, encType: 'application/json', navigate: false });
+      // Submit the data
+      // TODO: (enhancement) enhance types so it knows which its submitting to
+      submit({ intent, email: email, role }, { method: 'POST', action, encType: 'application/json', navigate: false });
 
-    // Reset the email input & focus it
-    if (inputRef.current) {
-      inputRef.current.value = '';
-      inputRef.current.focus();
-    }
-  };
+      // Reset the email input & focus it
+      if (inputRef.current) {
+        inputRef.current.value = '';
+        inputRef.current.focus();
+      }
+    },
+    [action, disallowedEmails, intent, submit]
+  );
 
   // Manage focus if a delete is triggered
   useEffect(() => {
@@ -620,6 +648,8 @@ function ManageUser({
   let activeRole = user.role;
   let error = undefined;
 
+  const label = useMemo(() => getRoleLabel(activeRole), [activeRole]);
+
   // If user is being deleted, hide them
   if (fetcherDelete.state !== 'idle') {
     return null;
@@ -634,8 +664,6 @@ function ManageUser({
   } else if (fetcherUpdate.data && !fetcherUpdate.data.ok) {
     error = 'Failed to update. Try again.';
   }
-
-  const label = getRoleLabel(activeRole);
 
   return (
     <ListItemUser
@@ -845,25 +873,31 @@ function ListItemPublicLink({
     publicLinkAccess = data.publicLinkAccess;
   }
 
-  const setPublicLinkAccess = async (newValue: PublicLinkAccess) => {
-    const data: FileShareAction['request.update-public-link-access'] = {
-      intent: 'update-public-link-access',
-      publicLinkAccess: newValue,
-    };
-    fetcher.submit(data, {
-      method: 'POST',
-      action: fetcherUrl,
-      encType: 'application/json',
-    });
-  };
+  const setPublicLinkAccess = useCallback(
+    async (newValue: PublicLinkAccess) => {
+      const data: FileShareAction['request.update-public-link-access'] = {
+        intent: 'update-public-link-access',
+        publicLinkAccess: newValue,
+      };
+      fetcher.submit(data, {
+        method: 'POST',
+        action: fetcherUrl,
+        encType: 'application/json',
+      });
+    },
+    [fetcher, fetcherUrl]
+  );
 
-  const optionsByValue: Record<PublicLinkAccess, string> = {
-    NOT_SHARED: 'No access',
-    READONLY: 'Can view',
-    EDIT: 'Can edit',
-  };
+  const optionsByValue: Record<PublicLinkAccess, string> = useMemo(
+    () => ({
+      NOT_SHARED: 'No access',
+      READONLY: 'Can view',
+      EDIT: 'Can edit',
+    }),
+    []
+  );
 
-  const activeOptionLabel = optionsByValue[publicLinkAccess];
+  const activeOptionLabel = useMemo(() => optionsByValue[publicLinkAccess], [publicLinkAccess, optionsByValue]);
 
   return (
     <ListItem>

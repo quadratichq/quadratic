@@ -1,21 +1,21 @@
+import { validationAction } from '@/app/actions';
+import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { CommandGroup, CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { useSetRecoilState } from 'recoil';
-import { validationAction } from '../../../../actions';
-import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
-export const validationCommandGroup: CommandGroup = {
+const validationCommandGroup: CommandGroup = {
   heading: 'Data validations',
   commands: [
     {
       label: validationAction.label,
       isAvailable: validationAction.isAvailable,
       Component: (props) => {
-        const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+        const setShowValidation = useSetRecoilState(editorInteractionStateShowValidationAtom);
         return (
           <CommandPaletteListItem
             {...props}
             action={() => {
-              setEditorInteractionState((old) => ({ ...old, showValidation: true }));
+              setShowValidation(true);
             }}
           />
         );
@@ -23,3 +23,5 @@ export const validationCommandGroup: CommandGroup = {
     },
   ],
 };
+
+export default validationCommandGroup;
