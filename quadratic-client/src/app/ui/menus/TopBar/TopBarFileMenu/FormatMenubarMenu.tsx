@@ -17,7 +17,6 @@ import {
   MenubarItem,
   MenubarMenu,
   MenubarSeparator,
-  MenubarShortcut,
   MenubarSub,
   MenubarSubContent,
   MenubarSubTrigger,
@@ -138,16 +137,15 @@ function DataTimeSubMenu({ action }: { action: Action.FormatDateTime }) {
   const actionSpec = defaultActionSpec[action];
   const { label } = actionSpec;
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
-  const shortcutOverride = `3/4/${new Date().getFullYear()}`;
+
   return (
     <MenubarSub>
       <MenubarSubTrigger>
         {Icon && <Icon />}
         {label}
-        <MenubarShortcut>{shortcutOverride}</MenubarShortcut>
       </MenubarSubTrigger>
       <MenubarSubContent>
-        <DateFormat className="block min-w-80 px-4 py-2" closeMenu={() => focusGrid()} />
+        <DateFormat className="block min-w-80 p-2" closeMenu={() => focusGrid()} />
       </MenubarSubContent>
     </MenubarSub>
   );
@@ -158,7 +156,6 @@ function MenubarColorPickerSubMenu({ action }: { action: Action.FormatTextColor 
   const { run, label } = actionSpec;
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
 
-  // TODO: (jimniels) implement isAvailable
   return (
     <MenubarSub>
       <MenubarSubTrigger>

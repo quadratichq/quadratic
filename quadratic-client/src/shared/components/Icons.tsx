@@ -1,10 +1,10 @@
 /**
- * TODO: (jimniels) explain how this implementation works
- * Styles are in ./icons.css
- * Font is imported in index.html
- * We import 20 and 24 dp icons
- *
+ * This is where we map all the icons we use to the ones from [Google's Material Symbols](https://fonts.google.com/icons)
+ * We use Google’s recommended implementation stragegy, which is loading the font
+ * FWIW: the font is loaded via the root `index.html`
+ * We import 20 dp icons, as those are the only ones we use at the moment.
  */
+import { cn } from '@/shared/shadcn/utils';
 import './icons.css';
 
 /**
@@ -12,7 +12,9 @@ import './icons.css';
  */
 interface BaseIconProps extends React.HTMLAttributes<HTMLSpanElement> {
   children: string;
-  // TODO: size: 'sm' | 'md' | 'lg' | 'xl' -> '20' '24' '40' '48';
+  // TODO: if and when we need to use other sizes, we'll have this as a prop
+  // Note: we'll have to load the additional sizes via the font loader in `index.html`
+  //e.g. size: 'sm' | 'md' | 'lg' | 'xl' -> '20' '24' '40' '48';
 }
 
 const Icon = (props: BaseIconProps) => {
@@ -299,12 +301,11 @@ export const MemoryIcon: IconComponent = (props) => {
 };
 
 export const Number123Icon: IconComponent = (props) => {
-  // TODO: (jimniels) merge classNames here
-  // TODO: (jimniels) if we support sizing, you'll have to adjust this for each size
   // This icon is just too small, so we make it more readable within its container
   // by increasing its size and adjusting its position
+  // TODO: if/when we support sizing, we'll have to adjust this for each size
   return (
-    <Icon {...props} className="relative left-[-4px] top-[-4px] !text-[28px]">
+    <Icon {...props} className={cn(props.className, 'relative left-[-4px] top-[-4px] !text-[28px]')}>
       123
     </Icon>
   );
