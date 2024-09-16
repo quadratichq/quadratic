@@ -1,14 +1,7 @@
 import { getSelectionString } from '@/app/grid/sheet/selection';
 import { Validation } from '@/app/quadratic-core-types';
 import { numberToDate, numberToTime } from '@/app/quadratic-rust-client/quadratic_rust_client';
-
-const joinWithOr = (arr: any[]): string => {
-  if (arr.length === 1) {
-    return arr[0];
-  }
-
-  return `${arr.slice(0, -1).join(', ')} or ${arr[arr.length - 1]}`;
-};
+import { joinWithOr } from '@/shared/utils/text';
 
 export const translateValidationError = (validation: Validation): JSX.Element | null => {
   if (validation.rule === 'None') {

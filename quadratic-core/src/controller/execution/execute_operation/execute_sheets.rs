@@ -256,7 +256,10 @@ mod tests {
             operations::operation::Operation, GridController,
         },
         grid::{CodeCellLanguage, SheetId},
-        wasm_bindings::{controller::sheet_info::SheetInfo, js::expect_js_call},
+        wasm_bindings::{
+            controller::sheet_info::SheetInfo,
+            js::{clear_js_calls, expect_js_call},
+        },
         CellValue, SheetPos,
     };
     use bigdecimal::BigDecimal;
@@ -277,7 +280,7 @@ mod tests {
             true,
         );
 
-        // was jsAdSheet called with the right stuff
+        // was jsAddSheet called with the right stuff
         gc.undo(None);
         assert_eq!(gc.grid.sheets().len(), 1);
         expect_js_call("jsDeleteSheet", format!("{},{}", sheet_id, true), true);
@@ -487,6 +490,8 @@ mod tests {
     #[test]
     #[serial]
     fn duplicate_sheet() {
+        clear_js_calls();
+
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 

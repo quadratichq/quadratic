@@ -61,7 +61,7 @@ impl GridController {
 
         // then create operations using MAXIMUM_IMPORT_LINES to break up the SetCellValues operations
         let mut ops = vec![] as Vec<Operation>;
-        let mut cell_values = CellValues::new(width, height);
+        let mut cell_values = CellValues::new(width, height.min(IMPORT_LINES_PER_OPERATION));
         let mut current_y = 0;
         let mut y: u32 = 0;
         for entry in reader.records() {
@@ -177,11 +177,8 @@ impl GridController {
                     let cell_value = match cell {
                         ExcelData::Empty => continue,
                         ExcelData::String(value) => CellValue::Text(value.to_string()),
-                        ExcelData::DateTimeIso(ref value) => {
-                            dbg!(value);
-                            CellValue::unpack_date_time(value)
-                                .unwrap_or(CellValue::Text(value.to_string()))
-                        }
+                        ExcelData::DateTimeIso(ref value) => CellValue::unpack_date_time(value)
+                            .unwrap_or(CellValue::Text(value.to_string())),
                         ExcelData::DateTime(ref value) => {
                             if value.is_datetime() {
                                 value.as_datetime().map_or_else(
