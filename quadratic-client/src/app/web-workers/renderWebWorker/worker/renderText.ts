@@ -113,16 +113,18 @@ class RenderText {
   };
 
   updateViewportBuffer = () => {
+    if (this.viewportBuffer.size === 0) return;
     if (!this.viewport || !this.sheetId) return;
 
     const cellsLabels = this.cellsLabels.get(this.sheetId);
-    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.updateViewportBuffer');
+    if (!cellsLabels) return;
+
     const neighborRect = cellsLabels.getViewportNeighborBounds();
-    if (!neighborRect || !this.sheetId) return;
+    if (!neighborRect) return;
 
     this.viewportBuffer.forEach((buffer) => {
       const cornerHashes = cellsLabels.getCornerHashesInBound(neighborRect);
-      if (cornerHashes.length === 0) return;
+      if (cornerHashes.length !== 4) return;
 
       // Update the viewport in the SharedArrayBuffer
       const int32Array = new Int32Array(buffer);

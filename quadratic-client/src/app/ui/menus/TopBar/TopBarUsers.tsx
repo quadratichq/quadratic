@@ -173,7 +173,7 @@ function UserAvatar({
     });
   };
   return (
-    <div className="relative">
+    <div className="relative hidden lg:block">
       <Tooltip>
         <TooltipTrigger asChild>
           <button onClick={handleFollow}>

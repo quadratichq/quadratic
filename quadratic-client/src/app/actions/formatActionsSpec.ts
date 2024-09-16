@@ -61,8 +61,6 @@ import {
 } from '@/shared/components/Icons';
 import { ColorResult } from 'react-color';
 
-// TODO: (jimniels) add isAvailable check for these (when you do command palette)
-
 type FormatActionSpec = Pick<
   ActionSpecRecord,
   | Action.FormatAlignHorizontalCenter
@@ -129,6 +127,8 @@ export type FormatActionArgs = {
   [Action.FormatBorderDouble]: UseBordersResults;
   [Action.FormatBorderColor]: { borders: UseBordersResults; color: ColorResult };
 };
+
+// TODO: add `isAvailable` check for these (when you add them to the command palette)
 
 export const formatActionsSpec: FormatActionSpec = {
   [Action.FormatAlignHorizontalCenter]: {

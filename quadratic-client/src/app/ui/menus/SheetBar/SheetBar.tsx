@@ -413,7 +413,7 @@ export const SheetBar = (): JSX.Element => {
             sheets.userAddSheet();
             focusGrid();
           }}
-          className="border-r border-t border-border"
+          className="rounded-none border-r border-t border-border"
           tooltip="Add sheet"
         >
           <AddIcon />
