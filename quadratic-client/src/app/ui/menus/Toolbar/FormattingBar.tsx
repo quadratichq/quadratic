@@ -4,6 +4,7 @@ import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { BorderMenu } from '@/app/ui/components/BorderMenu';
+import { DateFormat } from '@/app/ui/components/DateFormat';
 import { QColorPicker } from '@/app/ui/components/qColorPicker';
 
 import {
@@ -53,7 +54,7 @@ export const FormattingBar = () => {
 
         <Separator />
 
-        <FormatButton action={Action.FormatDateTime} actionArgs={undefined} />
+        <FormatDateAndTimePickerButton />
 
         <Separator />
 
@@ -286,6 +287,22 @@ function FormatColorPickerButton({
         />
       </DropdownMenuItem>
     </FormatButtonDropdown>
+  );
+}
+
+function FormatDateAndTimePickerButton() {
+  const dateAndTimeAction = defaultActionSpec[Action.FormatDateTime];
+
+  return (
+    <FormatButtonPopover tooltipLabel={dateAndTimeAction.label} Icon={dateAndTimeAction.Icon}>
+      <div className="min-w-80 p-2">
+        <DateFormat
+          closeMenu={() => {
+            focusGrid();
+          }}
+        />
+      </div>
+    </FormatButtonPopover>
   );
 }
 

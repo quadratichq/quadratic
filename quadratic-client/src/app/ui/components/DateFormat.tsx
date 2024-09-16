@@ -183,12 +183,10 @@ export const DateFormat = (props: DateFormatProps) => {
   if (!current) return null;
 
   return (
-    <div className={cn('h-58 w-100', className)}>
-      {formattedDate && (
-        <div className="mt-3 flex items-center justify-center bg-accent p-2 text-sm">{formattedDate}</div>
-      )}
+    <div className={cn('h-58 w-full', className)}>
+      {formattedDate && <div className="flex items-center justify-center bg-accent p-2 text-sm">{formattedDate}</div>}
       <Tabs className="text-sm" value={tab}>
-        <TabsList className="mt-2 w-full border-b border-border">
+        <TabsList className="mt-1 w-full border-b border-border">
           <TabsTrigger value="presets" className="w-1/2" onClick={() => setTab('presets')}>
             Presets
           </TabsTrigger>
@@ -245,7 +243,7 @@ export const DateFormat = (props: DateFormatProps) => {
           </div>
         </TabsContent>
       </Tabs>
-      <div className="flex justify-end gap-2 pt-5">
+      <div className="flex justify-end gap-2 pt-4">
         <Button variant="secondary" onClick={closeMenu}>
           Cancel
         </Button>

@@ -1,9 +1,8 @@
+import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { Rectangle } from 'pixi.js';
 import { useEffect, useRef, useState } from 'react';
 import { usePositionCellMessage } from '../usePositionCellMessage';
-import { DateFormatCell } from './DateFormatCell';
-import { Rectangle } from 'pixi.js';
-import { sheets } from '@/app/grid/controller/Sheets';
-import { events } from '@/app/events/events';
 import { CalendarPicker } from './CalendarPicker';
 
 export const Annotations = () => {
@@ -28,7 +27,6 @@ export const Annotations = () => {
 
   return (
     <div ref={ref} className="absolute" style={{ top, left }}>
-      <DateFormatCell />
       <CalendarPicker />
     </div>
   );
