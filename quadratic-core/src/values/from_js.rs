@@ -112,7 +112,7 @@ impl CellValue {
             "duration" => CellValue::Text("not implemented".into()),
             "image" => CellValue::Image(value.into()),
             "date" => Self::from_js_date(value),
-            "date time" => Self::from_js_date_time(value),
+            "date+time" => Self::from_js_date_time(value),
             _ => CellValue::unpack_date_time(value).unwrap_or(CellValue::Text(value.into())),
         };
 
@@ -142,7 +142,7 @@ mod tests {
     #[parallel]
     fn from_js_date() {
         let value = "2024-08-15T10:53:48.750Z".to_string();
-        let js_type = "date time";
+        let js_type = "date+time";
         let pos = (0, 1).into();
         let sheet = &mut Sheet::test();
         let value = CellValue::from_js(&value, js_type, pos, sheet);
@@ -155,7 +155,7 @@ mod tests {
         );
 
         let value = "2021-09-01T00:00:00.000Z".to_string();
-        let js_type = "date time";
+        let js_type = "date+time";
         let pos = (0, 1).into();
         let sheet = &mut Sheet::test();
         let value = CellValue::from_js(&value, js_type, pos, sheet);
