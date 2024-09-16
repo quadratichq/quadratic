@@ -17,3 +17,4 @@ export const TYPE = {
   // Taken from shadcn/ui form styles
   formError: 'text-[0.8rem] font-medium text-destructive',
 };
+export const VERSION = `Quadratic ${import.meta.env.VITE_VERSION?.slice(0, 7)} (BETA)`;
