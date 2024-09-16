@@ -537,14 +537,14 @@ impl CellValue {
         }
     }
 
-    fn to_numeric(self) -> CodeResult<CellValue> {
+    fn to_numeric(&self) -> CodeResult<CellValue> {
         match self {
             CellValue::Blank => Ok(CellValue::Number(0.into())),
             CellValue::Text(s) => Ok(CellValue::parse_from_str(&s)),
             CellValue::Logical(false) => Ok(CellValue::Number(0.into())),
             CellValue::Logical(true) => Ok(CellValue::Number(1.into())),
-            CellValue::Error(e) => Err(*e),
-            _ => Ok(self),
+            CellValue::Error(e) => Err((**e).clone()),
+            _ => Ok(self.clone()),
         }
     }
     /// Returns whether the type is a date, time, datetime, or duration.
@@ -558,13 +558,10 @@ impl CellValue {
     /// Adds two values, casting them as needed.
     pub fn add(
         span: Span,
-        lhs: Spanned<CellValue>,
-        rhs: Spanned<CellValue>,
+        lhs: Spanned<&CellValue>,
+        rhs: Spanned<&CellValue>,
     ) -> CodeResult<Spanned<CellValue>> {
-        let a = lhs.inner.to_numeric()?;
-        let b = rhs.inner.to_numeric()?;
-
-        let v = match (&a, &b) {
+        let v = match (&lhs.inner.to_numeric()?, &rhs.inner.to_numeric()?) {
             // number + number
             (CellValue::Number(a), CellValue::Number(b)) => CellValue::Number(a + b),
 
@@ -629,13 +626,14 @@ impl CellValue {
             _ => {
                 return Err(RunErrorMsg::BadOp {
                     op: "add".into(),
-                    ty1: a.type_name().into(),
-                    ty2: Some(b.type_name().into()),
-                    use_duration_instead: (a.has_date_or_time() || b.has_date_or_time())
-                        && !matches!(a, CellValue::Duration(_))
-                        && !matches!(b, CellValue::Duration(_)),
+                    ty1: lhs.inner.type_name().into(),
+                    ty2: Some(rhs.inner.type_name().into()),
+                    use_duration_instead: (lhs.inner.has_date_or_time()
+                        || rhs.inner.has_date_or_time())
+                        && !matches!(lhs.inner, CellValue::Duration(_))
+                        && !matches!(rhs.inner, CellValue::Duration(_)),
                 }
-                .with_span(span))
+                .with_span(span));
             }
         };
 
@@ -645,8 +643,8 @@ impl CellValue {
     /// Subtracts two values, casting them as needed.
     pub fn sub(
         span: Span,
-        lhs: Spanned<CellValue>,
-        rhs: Spanned<CellValue>,
+        lhs: Spanned<&CellValue>,
+        rhs: Spanned<&CellValue>,
     ) -> CodeResult<Spanned<CellValue>> {
         let a = lhs.inner.to_numeric()?;
         let b = rhs.inner.to_numeric()?;
@@ -735,11 +733,10 @@ impl CellValue {
                     op: "subtract".into(),
                     ty1: a.type_name().into(),
                     ty2: Some(b.type_name().into()),
-                    use_duration_instead: (a.has_date_or_time() || b.has_date_or_time())
-                        && !matches!(a, CellValue::Duration(_))
+                    use_duration_instead: a.has_date_or_time()
                         && !matches!(b, CellValue::Duration(_)),
                 }
-                .with_span(span))
+                .with_span(span));
             }
         };
 
@@ -747,7 +744,7 @@ impl CellValue {
     }
 
     /// Negates a value.
-    pub fn neg(value: Spanned<CellValue>) -> CodeResult<Spanned<CellValue>> {
+    pub fn neg(value: Spanned<&CellValue>) -> CodeResult<Spanned<CellValue>> {
         let span = value.span;
 
         let v = match value.inner.to_numeric()? {
@@ -757,6 +754,93 @@ impl CellValue {
         };
 
         Ok(Spanned { span, inner: v })
+    }
+
+    // Multiplies two values.
+    pub fn mul(
+        span: Span,
+        lhs: Spanned<&CellValue>,
+        rhs: Spanned<&CellValue>,
+    ) -> CodeResult<Spanned<CellValue>> {
+        let v = match (&lhs.inner.to_numeric()?, &rhs.inner.to_numeric()?) {
+            (CellValue::Number(n1), CellValue::Number(n2)) => CellValue::Number(n1 * n2),
+
+            (CellValue::Duration(d), CellValue::Number(n))
+            | (CellValue::Number(n), CellValue::Duration(d)) => {
+                CellValue::Duration(*d * n.to_f64().unwrap_or(0.0))
+            }
+
+            _ => {
+                return Err(RunErrorMsg::BadOp {
+                    op: "multiply".into(),
+                    ty1: lhs.inner.type_name().into(),
+                    ty2: Some(rhs.inner.type_name().into()),
+                    use_duration_instead: (lhs.inner.has_date_or_time()
+                        && matches!(rhs.inner, CellValue::Number(_)))
+                        || (rhs.inner.has_date_or_time()
+                            && matches!(lhs.inner, CellValue::Number(_))),
+                }
+                .with_span(span));
+            }
+        };
+
+        Ok(Spanned { span, inner: v })
+    }
+
+    // Divides two values, returning an error in case of division by zero.
+    pub fn checked_div(
+        span: Span,
+        lhs: Spanned<&CellValue>,
+        rhs: Spanned<&CellValue>,
+    ) -> CodeResult<Spanned<CellValue>> {
+        let a = lhs.inner.to_numeric()?;
+        let b = rhs.inner.to_numeric()?;
+
+        let v = match (&a, &b) {
+            (CellValue::Number(n1), CellValue::Number(n2)) => {
+                CellValue::from(crate::formulas::util::checked_div(
+                    span,
+                    n1.to_f64().unwrap_or(0.0),
+                    n2.to_f64().unwrap_or(0.0),
+                )?)
+            }
+            (CellValue::Duration(d), CellValue::Number(n)) => {
+                let recip = n.to_f64().unwrap_or(1.0).recip();
+                match recip.is_finite() {
+                    true => CellValue::Duration(*d * recip),
+                    false => return Err(RunErrorMsg::DivideByZero.with_span(span)),
+                }
+            }
+
+            _ => {
+                return Err(RunErrorMsg::BadOp {
+                    op: "divide".into(),
+                    ty1: a.type_name().into(),
+                    ty2: Some(b.type_name().into()),
+                    use_duration_instead: a.has_date_or_time() && matches!(b, CellValue::Number(_)),
+                }
+                .with_span(span));
+            }
+        };
+
+        Ok(Spanned { span, inner: v })
+    }
+
+    /// Returns the arithmetic mean of a sequence of values, or an error if
+    /// there are no values. Ignores blank values.
+    pub fn average(
+        span: Span,
+        values: impl IntoIterator<Item = CodeResult<f64>>,
+    ) -> CodeResult<f64> {
+        // This may someday be generalized to work with dates as well, but it's
+        // important that it still ignores blanks.
+        let mut sum = 0.0;
+        let mut count = 0;
+        for n in values {
+            sum += n?;
+            count += 1;
+        }
+        crate::formulas::util::checked_div(span, sum, count as f64)
     }
 }
 

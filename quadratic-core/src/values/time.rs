@@ -313,6 +313,13 @@ impl Mul<f64> for Duration {
     }
 }
 
+impl From<chrono::TimeDelta> for Duration {
+    fn from(value: chrono::TimeDelta) -> Self {
+        Duration::from_seconds(value.num_seconds() as f64)
+            + Duration::from_nanoseconds(value.subsec_nanos() as f64)
+    }
+}
+
 impl Duration {
     /// Zero duration.
     pub const ZERO: Self = Self {

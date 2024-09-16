@@ -1,7 +1,7 @@
 use bigdecimal::{BigDecimal, ToPrimitive, Zero};
 use itertools::Itertools;
 
-use super::{CellValue, IsBlank, Value, Duration};
+use super::{CellValue, Duration, IsBlank, Value};
 use crate::{CodeResult, CodeResultExt, RunErrorMsg, Span, Spanned, Unspan};
 
 const CURRENCY_PREFIXES: &[char] = &['$', '¥', '£', '€'];
