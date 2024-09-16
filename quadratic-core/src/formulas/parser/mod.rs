@@ -73,11 +73,12 @@ pub fn parse_and_check_formula(formula_string: &str, x: i64, y: i64) -> bool {
 /// assert_eq!(replaced, "SUM(nA0)");
 /// ```
 pub fn replace_internal_cell_references(source: &str, pos: Pos) -> String {
-    let replace_fn = |cell_ref: RangeRef| cell_ref.a1_string(pos);
-    replace_cell_references(source, pos, &replace_fn)
+    let replace_fn = |range_ref: RangeRef| range_ref.a1_string(pos);
+    replace_cell_range_references(source, pos, &replace_fn)
 }
 
-/// Replace A1 notation in a formula with internal cell references.
+/// Replace A1 notation in a formula with internal cell references (RC
+/// notation).
 ///
 /// # Example
 /// ```rust
@@ -88,14 +89,53 @@ pub fn replace_internal_cell_references(source: &str, pos: Pos) -> String {
 /// assert_eq!(replaced, "SUM(R[0]C[-1])");
 /// ```
 pub fn replace_a1_notation(source: &str, pos: Pos) -> String {
-    let replace_fn = |cell_ref: RangeRef| cell_ref.to_string();
-    replace_cell_references(source, pos, &replace_fn)
+    let replace_fn = |range_ref: RangeRef| range_ref.to_string();
+    replace_cell_range_references(source, pos, &replace_fn)
 }
 
-fn replace_cell_references(
+/// Replace all cell references with internal cell references (RC notation) by
+/// applying the function `replace_x_fn` to X coordinates and `replace_y_fn` to
+/// Y coordinates.
+pub fn replace_cell_references_with(
     source: &str,
     pos: Pos,
-    replace_fn: &dyn Fn(RangeRef) -> String,
+    replace_x_fn: impl Fn(&Option<String>, CellRefCoord) -> CellRefCoord,
+    replace_y_fn: impl Fn(&Option<String>, CellRefCoord) -> CellRefCoord,
+) -> String {
+    let replace_xy_fn = |cell_ref: CellRef| CellRef {
+        x: replace_x_fn(&cell_ref.sheet, cell_ref.x),
+        y: replace_y_fn(&cell_ref.sheet, cell_ref.y),
+        sheet: cell_ref.sheet,
+    };
+
+    replace_cell_range_references(source, pos, |range_ref| {
+        match range_ref {
+            RangeRef::RowRange { start, end, sheet } => RangeRef::RowRange {
+                start: replace_y_fn(&sheet, start),
+                end: replace_y_fn(&sheet, end),
+                sheet,
+            },
+            RangeRef::ColRange { start, end, sheet } => RangeRef::ColRange {
+                start: replace_x_fn(&sheet, start),
+                end: replace_x_fn(&sheet, end),
+                sheet,
+            },
+            RangeRef::CellRange { start, end } => RangeRef::CellRange {
+                start: replace_xy_fn(start),
+                end: replace_xy_fn(end),
+            },
+            RangeRef::Cell { pos } => RangeRef::Cell {
+                pos: replace_xy_fn(pos),
+            },
+        }
+        .to_string()
+    })
+}
+
+fn replace_cell_range_references(
+    source: &str,
+    pos: Pos,
+    replace_fn: impl Fn(RangeRef) -> String,
 ) -> String {
     let spans = find_cell_references(source, pos);
     let mut replaced = source.to_string();
@@ -106,8 +146,8 @@ fn replace_cell_references(
         .rev()
         .for_each(|spanned: Spanned<RangeRef>| {
             let Spanned { span, inner } = spanned;
-            let cell = replace_fn(inner);
-            replaced.replace_range::<Range<usize>>(span.into(), &cell);
+            let new_str = replace_fn(inner);
+            replaced.replace_range::<Range<usize>>(span.into(), &new_str);
         });
 
     replaced
@@ -310,6 +350,26 @@ mod tests {
 
         let replaced = replace_a1_notation(src, (0, 0).into());
         assert_eq!(replaced, expected);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_replace_xy_shift() {
+        let pos = pos![C6].into();
+        let src = "SUM(A4,B$6, C7)";
+        let expected = "SUM(A2,B$5, C8)";
+
+        let replaced = replace_cell_references_with(
+            src,
+            pos,
+            |_sheet, x| x,
+            |_sheet, y| match y {
+                CellRefCoord::Absolute(i) => CellRefCoord::Absolute(i - 1),
+                CellRefCoord::Relative(i) => CellRefCoord::Relative(i * 2),
+            },
+        );
+        let replaced_a1 = replace_internal_cell_references(&replaced, pos);
+        assert_eq!( replaced_a1, expected);
     }
 
     #[test]
