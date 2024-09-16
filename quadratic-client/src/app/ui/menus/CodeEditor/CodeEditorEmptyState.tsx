@@ -16,16 +16,19 @@ import {
   SNIPPET_PY_READ,
   SNIPPET_PY_RETURN,
 } from '@/app/ui/menus/CodeEditor/snippetsPY';
-import { useCodeEditorRef } from '@/app/ui/menus/CodeEditor/useCodeEditorRef';
 import { Button } from '@/shared/shadcn/ui/button';
 import { ApiOutlined, BarChartOutlined, IntegrationInstructionsOutlined } from '@mui/icons-material';
 import mixpanel from 'mixpanel-browser';
+import * as monaco from 'monaco-editor';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
-export function CodeEditorEmptyState() {
+type CodeEditorEmptyStateProps = {
+  editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>;
+};
+
+export function CodeEditorEmptyState({ editorRef }: CodeEditorEmptyStateProps) {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const codeCell = getCodeCell(editorInteractionState.mode);
-  const { editorRef } = useCodeEditorRef();
   const setShowSnippetsPopover = useSetRecoilState(codeEditorShowSnippetsPopoverAtom);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
 

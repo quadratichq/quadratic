@@ -1,13 +1,14 @@
 import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import monaco from 'monaco-editor';
+import { Monaco } from '@monaco-editor/react';
+import * as monaco from 'monaco-editor';
 import { useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const useEditorOnSelectionChange = (
   isValidRef: boolean,
   editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>,
-  monacoRef: React.MutableRefObject<typeof monaco | null>
+  monacoRef: React.MutableRefObject<Monaco | null>
 ) => {
   const language = useRecoilValue(editorInteractionStateModeAtom);
   useEffect(() => {

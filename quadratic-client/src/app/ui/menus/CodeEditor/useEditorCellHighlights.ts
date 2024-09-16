@@ -11,7 +11,8 @@ import { parsePython as parseCellsAccessed } from '@/app/helpers/parseEditorPyth
 import { SheetRect } from '@/app/quadratic-core-types';
 import { parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { colors } from '@/app/theme/colors';
-import monaco, { editor } from 'monaco-editor';
+import { Monaco } from '@monaco-editor/react';
+import * as monaco from 'monaco-editor';
 import { useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -64,13 +65,13 @@ export const createFormulaStyleHighlights = () => {
 export const useEditorCellHighlights = (
   isValidRef: boolean,
   editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>,
-  monacoRef: React.MutableRefObject<typeof monaco | null>,
+  monacoRef: React.MutableRefObject<Monaco | null>,
   cellsAccessed?: SheetRect[] | null
 ) => {
   const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
   const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
   const language = useRecoilValue(editorInteractionStateModeAtom);
-  const decorations = useRef<editor.IEditorDecorationsCollection | undefined>(undefined);
+  const decorations = useRef<monaco.editor.IEditorDecorationsCollection | undefined>(undefined);
 
   // Dynamically generate the classnames we'll use for cell references by pulling
   // the colors from the same colors used in pixi and stick them in the DOM

@@ -5,30 +5,29 @@ import { PanelPositionBottomIcon, PanelPositionLeftIcon } from '@/app/ui/icons';
 import { CodeEditorPanelBottom } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import { CodeEditorPanelSide } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelSide';
 import { CodeEditorPanelData, PanelPosition } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
-import { useCodeEditorRef } from '@/app/ui/menus/CodeEditor/useCodeEditorRef';
 import { useConnectionSchemaBrowserTableQueryActionInsertQuery } from '@/dashboard/hooks/useConnectionSchemaBrowserTableQueryAction';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { cn } from '@/shared/shadcn/utils';
 import { IconButton } from '@mui/material';
+import * as monaco from 'monaco-editor';
 import { MouseEvent, memo, useCallback } from 'react';
 import { useRecoilValue } from 'recoil';
 
-interface Props {
+type CodeEditorPanelProps = {
   codeEditorPanelData: CodeEditorPanelData;
-}
+  editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>;
+};
 
-export const CodeEditorPanel = memo((props: Props) => {
+export const CodeEditorPanel = memo(({ codeEditorPanelData, editorRef }: CodeEditorPanelProps) => {
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
     userMakingRequest: { teamPermissions },
     team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
-  const { editorRef } = useCodeEditorRef();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const connectionInfo = getConnectionInfo(editorInteractionState.mode);
-  const { codeEditorPanelData } = props;
   const { panelPosition, setPanelPosition } = codeEditorPanelData;
 
   const changePanelPosition = useCallback(
@@ -62,10 +61,10 @@ export const CodeEditorPanel = memo((props: Props) => {
       </div>
 
       {panelPosition === 'left' && (
-        <CodeEditorPanelSide schemaBrowser={schemaBrowser} codeEditorPanelData={props.codeEditorPanelData} />
+        <CodeEditorPanelSide schemaBrowser={schemaBrowser} codeEditorPanelData={codeEditorPanelData} />
       )}
       {panelPosition === 'bottom' && (
-        <CodeEditorPanelBottom schemaBrowser={schemaBrowser} codeEditorPanelData={props.codeEditorPanelData} />
+        <CodeEditorPanelBottom schemaBrowser={schemaBrowser} codeEditorPanelData={codeEditorPanelData} />
       )}
     </>
   );

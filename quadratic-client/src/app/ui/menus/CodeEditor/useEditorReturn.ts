@@ -1,20 +1,21 @@
 import { codeEditorEvaluationResultAtom } from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
-import monaco, { Range, editor } from 'monaco-editor';
+import { Monaco } from '@monaco-editor/react';
+import * as monaco from 'monaco-editor';
 import { useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 
 // highlight the return line and add a return icon next to the line number
 export const useEditorReturn = (
   isValidRef: boolean,
-  editorRef: React.MutableRefObject<editor.IStandaloneCodeEditor | null>,
-  monacoRef: React.MutableRefObject<typeof monaco | null>
+  editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>,
+  monacoRef: React.MutableRefObject<Monaco | null>
   // codeEditorReturn?: ComputedPythonReturnType
 ) => {
   const language = useRecoilValue(editorInteractionStateModeAtom);
   const evaluationResult = useRecoilValue(codeEditorEvaluationResultAtom);
-  let decorations = useRef<editor.IEditorDecorationsCollection | undefined>(undefined);
+  let decorations = useRef<monaco.editor.IEditorDecorationsCollection | undefined>(undefined);
   const codeCell = getCodeCell(language);
 
   useEffect(() => {
@@ -54,7 +55,7 @@ export const useEditorReturn = (
       if (evaluationResult.line_number && evaluationResult.output_type) {
         decorations.current = editorRef.current?.createDecorationsCollection([
           {
-            range: new Range(evaluationResult.line_number, 0, evaluationResult.line_number, 0),
+            range: new monaco.Range(evaluationResult.line_number, 0, evaluationResult.line_number, 0),
             options: {
               linesDecorationsClassName: 'codeEditorReturnLineDecoration',
             },

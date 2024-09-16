@@ -3,7 +3,6 @@ import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionSta
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { snippetsJS } from '@/app/ui/menus/CodeEditor/snippetsJS';
 import { snippetsPY } from '@/app/ui/menus/CodeEditor/snippetsPY';
-import { useCodeEditorRef } from '@/app/ui/menus/CodeEditor/useCodeEditorRef';
 import { ExternalLinkIcon } from '@/shared/components/Icons';
 import {
   DOCUMENTATION_JAVASCRIPT_URL,
@@ -24,11 +23,15 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popo
 import { IntegrationInstructionsOutlined } from '@mui/icons-material';
 import { IconButton, useTheme } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
+import * as monaco from 'monaco-editor';
 import { ReactNode, useEffect, useMemo } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
-export function SnippetsPopover() {
-  const { editorRef } = useCodeEditorRef();
+type SnippetsPopoverProps = {
+  editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>;
+};
+
+export function SnippetsPopover({ editorRef }: SnippetsPopoverProps) {
   const [showSnippetsPopover, setShowSnippetsPopover] = useRecoilState(codeEditorShowSnippetsPopoverAtom);
   const editorInteractionStateMode = useRecoilValue(editorInteractionStateModeAtom);
   const theme = useTheme();

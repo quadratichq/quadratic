@@ -1,16 +1,17 @@
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
-import monaco, { editor } from 'monaco-editor';
+import { Monaco } from '@monaco-editor/react';
+import * as monaco from 'monaco-editor';
 import { useEffect, useRef } from 'react';
 import { Diagnostic } from 'vscode-languageserver-types';
 
 export const useEditorDiagnostics = (
   isValidRef: boolean,
-  editorRef: React.MutableRefObject<editor.IStandaloneCodeEditor | null>,
-  monacoRef: React.MutableRefObject<typeof monaco | null>,
+  editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>,
+  monacoRef: React.MutableRefObject<Monaco | null>,
   language?: CodeCellLanguage,
   diagnostics?: Diagnostic[]
 ) => {
-  let currentDiagnostics = useRef<editor.IEditorDecorationsCollection | undefined>(undefined);
+  let currentDiagnostics = useRef<monaco.editor.IEditorDecorationsCollection | undefined>(undefined);
 
   useEffect(() => {
     if (language === 'Formula') return;

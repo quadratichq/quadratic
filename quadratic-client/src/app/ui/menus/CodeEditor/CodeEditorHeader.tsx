@@ -23,19 +23,21 @@ import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { cn } from '@/shared/shadcn/utils';
 import { Close, PlayArrow, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
+import * as monaco from 'monaco-editor';
 import { useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
-interface Props {
+type CodeEditorHeaderProps = {
   cellLocation: SheetPosTS | undefined;
   unsaved: boolean;
   saveAndRunCell: () => void;
   cancelRun: () => void;
   closeEditor: () => void;
-}
+  editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>;
+};
 
-export const CodeEditorHeader = (props: Props) => {
-  const { cellLocation, unsaved, saveAndRunCell, cancelRun, closeEditor } = props;
+export const CodeEditorHeader = (props: CodeEditorHeaderProps) => {
+  const { cellLocation, unsaved, saveAndRunCell, cancelRun, closeEditor, editorRef } = props;
   const {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
@@ -204,7 +206,7 @@ export const CodeEditorHeader = (props: Props) => {
               <>
                 {['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
 
-                {['Python', 'Javascript'].includes(language as string) && <SnippetsPopover />}
+                {['Python', 'Javascript'].includes(language as string) && <SnippetsPopover editorRef={editorRef} />}
 
                 {!isRunningComputation ? (
                   <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">

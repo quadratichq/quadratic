@@ -46,7 +46,8 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { cn } from '@/shared/shadcn/utils';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import mixpanel from 'mixpanel-browser';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import * as monaco from 'monaco-editor';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import './CodeEditor.css';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
@@ -80,6 +81,8 @@ export const CodeEditor = () => {
   const setPanelBottomActiveTab = useSetRecoilState(codeEditorPanelBottomActiveTabAtom);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
   const setModifiedEditorContent = useSetRecoilState(codeEditorModifiedEditorContentAtom);
+
+  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
   const { pythonState } = usePythonState();
   const javascriptState = useJavascriptState();
@@ -442,13 +445,15 @@ export const CodeEditor = () => {
           saveAndRunCell={saveAndRunCell}
           cancelRun={cancelRun}
           closeEditor={() => closeEditor(false)}
+          editorRef={editorRef}
         />
         <CodeEditorBody
           closeEditor={closeEditor}
           cellsAccessed={!unsaved ? cellsAccessed : []}
           cellLocation={cellLocation}
+          editorRef={editorRef}
         />
-        <CodeEditorEmptyState />
+        <CodeEditorEmptyState editorRef={editorRef} />
         {editorMode !== 'Formula' && editorContent && (
           <ReturnTypeInspector language={editorMode} evaluationResult={evaluationResult} unsaved={unsaved} />
         )}
@@ -469,7 +474,7 @@ export const CodeEditor = () => {
               : 100 - codeEditorPanelData.editorHeightPercentage + '%',
         }}
       >
-        <CodeEditorPanel codeEditorPanelData={codeEditorPanelData} />
+        <CodeEditorPanel codeEditorPanelData={codeEditorPanelData} editorRef={editorRef} />
       </div>
       <CodeEditorPanels codeEditorPanelData={codeEditorPanelData} />
     </div>

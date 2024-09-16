@@ -1,8 +1,6 @@
 import { Coordinate } from '@/app/gridGL/types/size';
 import { PanelTab } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
-import { Monaco } from '@monaco-editor/react';
-import monaco from 'monaco-editor';
 import { atom, DefaultValue, selector } from 'recoil';
 
 type CodeEditorState = {
@@ -14,8 +12,6 @@ type CodeEditorState = {
   showSnippetsPopover: boolean;
   editorContent?: string;
   modifiedEditorContent?: string;
-  editor?: monaco.editor.IStandaloneCodeEditor;
-  monaco?: Monaco;
 };
 
 const defaultCodeEditorState: CodeEditorState = {
@@ -27,8 +23,6 @@ const defaultCodeEditorState: CodeEditorState = {
   showSnippetsPopover: false,
   editorContent: undefined,
   modifiedEditorContent: undefined,
-  editor: undefined,
-  monaco: undefined,
 };
 
 export const codeEditorAtom = atom<CodeEditorState>({
@@ -55,5 +49,3 @@ export const codeEditorPanelBottomActiveTabAtom = createSelector('panelBottomAct
 export const codeEditorShowSnippetsPopoverAtom = createSelector('showSnippetsPopover');
 export const codeEditorEditorContentAtom = createSelector('editorContent');
 export const codeEditorModifiedEditorContentAtom = createSelector('modifiedEditorContent');
-export const codeEditorEditorAtom = createSelector('editor');
-export const codeEditorMonacoAtom = createSelector('monaco');
