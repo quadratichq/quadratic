@@ -6,10 +6,10 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
-    grid::formats::Formats,
+    grid::{formats::Formats, CodeCellLanguage},
     renderer_constants::CELL_SHEET_HEIGHT,
     selection::Selection,
-    Pos, SheetPos,
+    CellValue, Pos, SheetPos,
 };
 
 use super::Sheet;
@@ -124,8 +124,13 @@ impl Sheet {
             });
         }
 
+        let mut updated_cols = HashSet::new();
+
         // remove the column's data from the sheet
-        self.columns.remove(&column);
+        if self.columns.contains_key(&column) {
+            self.columns.remove(&column);
+            updated_cols.insert(column);
+        }
 
         // remove the column's code runs from the sheet
         self.code_runs.retain(|pos, _| {
@@ -138,7 +143,10 @@ impl Sheet {
         });
 
         // remove the column's formats from the sheet
-        self.formats_columns.remove(&column);
+        if self.formats_columns.contains_key(&column) {
+            self.formats_columns.remove(&column);
+            updated_cols.insert(column);
+        }
 
         // remove the column's borders from the sheet
         if self.borders.remove_column(column) {
@@ -146,7 +154,6 @@ impl Sheet {
         }
 
         // update the indices of all columns impacted by the deletion
-        let mut updated_cols = HashSet::new();
         let mut columns_to_update = Vec::new();
         for col in self.columns.keys() {
             if *col > column {
@@ -260,11 +267,11 @@ impl Sheet {
         }
         code_runs_to_move.reverse();
         for old_pos in code_runs_to_move {
+            let new_pos = Pos {
+                x: old_pos.x + 1,
+                y: old_pos.y,
+            };
             if let Some(code_run) = self.code_runs.shift_remove(&old_pos) {
-                let new_pos = Pos {
-                    x: old_pos.x + 1,
-                    y: old_pos.y,
-                };
                 self.code_runs.insert(new_pos, code_run);
 
                 // signal the client to updates to the code cells (to draw the code arrays)

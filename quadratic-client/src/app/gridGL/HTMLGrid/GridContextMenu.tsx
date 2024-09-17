@@ -15,12 +15,14 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilState } from 'recoil';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { focusGrid } from '@/app/helpers/focusGrid';
 
 export const GridContextMenu = () => {
   const [show, setShow] = useRecoilState(gridHeadingAtom);
 
   const onClose = useCallback(() => {
     setShow({ world: undefined, column: undefined, row: undefined });
+    focusGrid();
   }, [setShow]);
 
   useEffect(() => {
