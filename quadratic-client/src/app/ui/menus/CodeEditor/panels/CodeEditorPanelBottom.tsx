@@ -8,12 +8,12 @@ import {
   editorInteractionStateSelectedCellSheetAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
-import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { AIIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { ChevronRightIcon } from '@radix-ui/react-icons';
 import { ReactNode, useMemo } from 'react';
@@ -76,7 +76,7 @@ export function CodeEditorPanelBottom({
           </TabsTrigger>
 
           {consoleOutput?.stdErr ? (
-            <TooltipHint title={'Ask AI to fix error'}>
+            <TooltipPopover label={'Ask AI to fix error'}>
               <Button
                 className="ml-2"
                 size="sm"
@@ -86,7 +86,7 @@ export function CodeEditorPanelBottom({
               >
                 <AIIcon />
               </Button>
-            </TooltipHint>
+            </TooltipPopover>
           ) : null}
         </TabsList>
       </div>

@@ -9,10 +9,10 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { pluralize } from '@/app/helpers/pluralize';
 import { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
-import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { AIIcon, CodeIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { Rectangle } from 'pixi.js';
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
@@ -231,7 +231,7 @@ function HoverCellRunError({ codeCell, onClick }: { codeCell: JsCodeCell; onClic
         <span>Run Error</span>
 
         <div className="hover-cell-header-buttons">
-          <TooltipHint title={'Ask AI to fix error'}>
+          <TooltipPopover label={'Ask AI to fix error'}>
             <Button
               size="sm"
               onClick={() => {
@@ -241,9 +241,9 @@ function HoverCellRunError({ codeCell, onClick }: { codeCell: JsCodeCell; onClic
             >
               <AIIcon />
             </Button>
-          </TooltipHint>
+          </TooltipPopover>
 
-          <TooltipHint title={'Open in code editor'}>
+          <TooltipPopover label={'Open in code editor'}>
             <Button
               size="sm"
               onClick={() => {
@@ -260,7 +260,7 @@ function HoverCellRunError({ codeCell, onClick }: { codeCell: JsCodeCell; onClic
             >
               <CodeIcon />
             </Button>
-          </TooltipHint>
+          </TooltipPopover>
         </div>
       </div>
 
