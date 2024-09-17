@@ -52,7 +52,7 @@ export function HoverCell() {
     }, HOVER_CELL_FADE_IN_OUT_DELAY);
   }, []);
 
-  const handleMouseEnter = useCallback(() => {
+  const handleHover = useCallback(() => {
     addPointerEvents();
     setHovering(true);
     hoveringRef.current = true;
@@ -131,9 +131,7 @@ export function HoverCell() {
           if (renderCodeCell.state === 'RunError') {
             setOnlyCode(false);
             if (codeCell) {
-              setText(
-                <HoverCellRunError codeCell={codeCell} onClick={hideHoverCell} onMouseEnter={handleMouseEnter} />
-              );
+              setText(<HoverCellRunError codeCell={codeCell} onClick={hideHoverCell} />);
             }
           } else {
             setOnlyCode(true);
@@ -157,7 +155,7 @@ export function HoverCell() {
         );
       }
     },
-    [handleMouseEnter, hideHoverCell]
+    [hideHoverCell]
   );
 
   useEffect(() => {
@@ -210,7 +208,8 @@ export function HoverCell() {
         visibility: !onlyCode || showCodePeek ? 'visible' : 'hidden',
         transition: delay ? `opacity 150ms linear ${HOVER_CELL_FADE_IN_OUT_DELAY}ms` : 'opacity 150ms linear',
       }}
-      onMouseEnter={handleMouseEnter}
+      onMouseEnter={handleHover}
+      onMouseMove={handleHover}
       onMouseLeave={handleMouseLeave}
     >
       <div className="p-4">{text}</div>
@@ -218,15 +217,7 @@ export function HoverCell() {
   );
 }
 
-function HoverCellRunError({
-  codeCell,
-  onClick,
-  onMouseEnter,
-}: {
-  codeCell: JsCodeCell;
-  onClick: () => void;
-  onMouseEnter: () => void;
-}) {
+function HoverCellRunError({ codeCell, onClick }: { codeCell: JsCodeCell; onClick: () => void }) {
   const setEditorInteractionStateWaitingForEditorClose = useSetRecoilState(
     editorInteractionStateWaitingForEditorCloseAtom
   );
@@ -248,7 +239,6 @@ function HoverCellRunError({
                 events.emit('askAICodeCell', sheetId, { x, y });
                 onClick();
               }}
-              onMouseEnter={onMouseEnter}
             >
               <AIIcon />
             </IconButton>
@@ -269,7 +259,6 @@ function HoverCellRunError({
                 });
                 onClick();
               }}
-              onMouseEnter={onMouseEnter}
             >
               <CodeIcon />
             </IconButton>
