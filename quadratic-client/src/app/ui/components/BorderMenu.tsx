@@ -77,7 +77,7 @@ export const BorderMenu = () => {
                   run(borders);
                 }}
               >
-                <CheckSmallIcon className={cn(isActive ? 'opacity-100' : 'opacity-0')} />
+                <CheckSmallIcon className={cn(!isActive && 'invisible opacity-0')} />
                 <span className={className}></span>
               </ToggleGroup.Item>
             );
