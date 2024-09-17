@@ -45,18 +45,16 @@ const TooltipPopover = ({
   shortcut?: string;
 }) => {
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>{children}</TooltipTrigger>
-        <TooltipPortal>
-          <TooltipContent>
-            <p>
-              {label} {shortcut && <span className="opacity-50">({shortcut})</span>}
-            </p>
-          </TooltipContent>
-        </TooltipPortal>
-      </Tooltip>
-    </TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipPortal>
+        <TooltipContent>
+          <p>
+            {label} {shortcut && <span className="opacity-50">({shortcut})</span>}
+          </p>
+        </TooltipContent>
+      </TooltipPortal>
+    </Tooltip>
   );
 };
 

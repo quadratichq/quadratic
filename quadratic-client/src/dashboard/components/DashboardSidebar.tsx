@@ -12,7 +12,7 @@ import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { SchoolOutlined } from '@mui/icons-material';
 import { ExternalLinkIcon, FileIcon, GearIcon, MixIcon, PersonIcon, PlusIcon } from '@radix-ui/react-icons';
@@ -165,21 +165,19 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
 function SidebarNavLinkCreateButton({ children, isPrivate }: { children: ReactNode; isPrivate: boolean }) {
   const setNewFileDialogState = useSetRecoilState(newFileDialogAtom);
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="absolute right-2 top-1 ml-auto opacity-30 hover:opacity-100"
-            onClick={() => setNewFileDialogState({ show: true, isPrivate })}
-          >
-            <PlusIcon />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{children}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="absolute right-2 top-1 ml-auto opacity-30 hover:opacity-100"
+          onClick={() => setNewFileDialogState({ show: true, isPrivate })}
+        >
+          <PlusIcon />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{children}</TooltipContent>
+    </Tooltip>
   );
 }
 
