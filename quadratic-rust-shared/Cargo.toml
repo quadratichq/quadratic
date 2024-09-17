@@ -43,3 +43,4 @@ uuid = { version = "1.6.1", features = ["serde", "v4"] }
 [dev-dependencies]
 tracing-test = "0.2.4"
 arrow = { version = "53.0.0", features = ["prettyprint"] }
+httpmock = { version = "0.8.0-alpha.1", features = ["proxy", "record"] }
