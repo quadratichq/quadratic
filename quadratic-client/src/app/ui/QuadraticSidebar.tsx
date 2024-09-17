@@ -8,9 +8,9 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
+import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { useRootRouteLoaderData } from '@/routes/_root';
 import {
   CodeCellOutlineOff,
   CodeCellOutlineOn,
@@ -25,7 +25,6 @@ import {
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { ShowAfter } from '@/shared/components/ShowAfter';
 import { DOCUMENTATION_URL } from '@/shared/constants/urls';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
@@ -39,17 +38,7 @@ import { useRecoilState } from 'recoil';
 export const QuadraticSidebar = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const gridSettings = useGridSettings();
-  const { isAuthenticated } = useRootRouteLoaderData();
-  const {
-    userMakingRequest: { fileTeamPrivacy, teamPermissions },
-  } = useFileRouteLoaderData();
-
-  const isAvailableArgs = {
-    filePermissions: editorInteractionState.permissions,
-    fileTeamPrivacy,
-    isAuthenticated,
-    teamPermissions,
-  };
+  const isAvailableArgs = useIsAvailableArgs();
 
   const canEditFile = isAvailableBecauseCanEditFile(isAvailableArgs);
   const canDoTeamsStuff = isAvailableBecauseFileLocationIsAccessibleAndWriteable(isAvailableArgs);

@@ -2,6 +2,7 @@ import { createNewFileAction, deleteFile, duplicateFileAction } from '@/app/acti
 import { Action } from '@/app/actions/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useFileContext } from '@/app/ui/components/FileProvider';
+import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarFileMenu/MenubarItemAction';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -9,7 +10,7 @@ import { DeleteIcon, DraftIcon, FileCopyIcon } from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { MenubarContent, MenubarItem, MenubarMenu, MenubarSeparator, MenubarTrigger } from '@/shared/shadcn/ui/menubar';
 import { useSubmit } from 'react-router-dom';
-import { useRecoilState } from 'recoil';
+import { useSetRecoilState } from 'recoil';
 
 // TODO: (enhancement) move these into `fileActionsSpec` by making the `.run()`
 // function of each accessible from outside of react
@@ -17,15 +18,13 @@ import { useRecoilState } from 'recoil';
 export const FileMenubarMenu = () => {
   const { name } = useFileContext();
   const submit = useSubmit();
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
-    userMakingRequest: { fileTeamPrivacy, teamPermissions },
     file: { uuid: fileUuid },
   } = useFileRouteLoaderData();
-  const { permissions } = editorInteractionState;
   const { addGlobalSnackbar } = useGlobalSnackbar();
-  const isAvailableArgs = { filePermissions: permissions, fileTeamPrivacy, isAuthenticated, teamPermissions };
+  const isAvailableArgs = useIsAvailableArgs();
 
   if (!isAuthenticated) return null;
 
