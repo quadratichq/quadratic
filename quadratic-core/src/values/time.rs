@@ -11,6 +11,8 @@ use strum::VariantArray;
 
 use crate::CellValue;
 
+const MAX_SUBSECOND_DIGITS: f64 = 10.0;
+
 // #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
@@ -102,6 +104,11 @@ impl fmt::Display for Duration {
                 unit = u;
                 quantity /= Duration::from(u).seconds;
             }
+
+            // Round so we don't display bogus digits
+            let precision = 10.0_f64.powf(MAX_SUBSECOND_DIGITS);
+            quantity = (quantity * precision).round() / precision;
+
             return write!(f, "{quantity}{unit}");
         }
 
@@ -156,6 +163,9 @@ impl fmt::Display for Duration {
             if quantity == 0.0 {
                 quantity = 0.0;
             }
+
+            // Round `quantity` to the nearest 0.001
+            quantity = (quantity * 1000.0).round() / 1000.0;
 
             write!(f, "{quantity}{unit}")?;
         }
@@ -598,27 +608,24 @@ mod tests {
 
     #[test]
     fn test_duration_parsing() {
-        // Some of these numbers are chosen very carefully (by trial and error)
-        // to avoid float precision issues. This makes me very sad but is the
-        // easiest way to compactly test input & output at the same time.
         for (input, expected) in [
             ("3y10d", Ok("3y 10d")),
             ("987 attosec", Ok("987as")),
-            ("0.31 attosec", Ok("0.31as")),
-            ("0.172 ns", Ok("172ps")),
-            ("0.0003 seconds", Ok("300µs")),
+            ("0.12 attosec", Ok("0.12as")),
+            ("0.456 ns", Ok("456ps")),
+            ("0.0004 seconds", Ok("400µs")),
             ("10year,3 mo2w16d, 4000min", Ok("10y 3mo 32d 18h 40m")),
             (" 0 \tDAYS", Ok("0s")),
             (" 6   milliseconds 5 µs 4nanosec  ", Ok("6.005004ms")),
-            ("3 picosecond, 2 fs9as", Ok("3.002009ps")),
+            ("3 picosecond, 2 fs1as", Ok("3.002001ps")),
             ("0.5s", Ok("500ms")),
             ("1 year 0.5s", Ok("1y 0d 0h 0m 0.5s")),
             // negatives
             ("-1 yrs", Ok("-1y")),
-            ("-6 milliseconds -5 µs -3nanosec", Ok("-6.005003ms")),
+            ("-6 milliseconds -5 µs -4nanosec", Ok("-6.005004ms")),
             ("-3 picosecond, -2 fs1as", Ok("-3.001999ps")),
             ("-1 y-3 d", Ok("-1y -3d")),
-            ("-0.5s", Ok("-500ms")),
+            ("-0.4s", Ok("-400ms")),
             ("-1 year -0.5s", Ok("-1y 0d 0h 0m -0.5s")),
             // errors
             ("1y ,3m", Err(())),                     // space before comma
