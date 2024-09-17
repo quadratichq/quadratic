@@ -23,6 +23,18 @@ export const CalendarPicker = () => {
   const showCalendar =
     editorInteractionState.annotationState === 'calendar' || editorInteractionState.annotationState === 'calendar-time';
 
+  useEffect(() => {
+    const close = (opened: boolean) => {
+      if (!opened) {
+        setEditorInteractionState((state) => ({
+          ...state,
+          annotationState: undefined,
+        }));
+      }
+    };
+    inlineEditorEvents.on('status', close);
+  }, [setEditorInteractionState]);
+
   const [value, setValue] = useState<string | undefined>();
   const [date, setDate] = useState<Date | undefined>();
   const [dateFormat, setDateFormat] = useState<string | undefined>('');
