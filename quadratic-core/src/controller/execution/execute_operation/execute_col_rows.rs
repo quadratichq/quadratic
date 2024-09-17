@@ -18,10 +18,6 @@ impl GridController {
         row: Option<i64>,
         delta: i64,
     ) {
-        dbgjs!(format!(
-            "adjust_formulas sheet_id: {:?}, sheet_name: {:?}, column: {:?}, row: {:?}, delta: {:?}",
-            sheet_id, sheet_name, column, row, delta
-        ));
         self.grid.sheets().iter().for_each(|sheet| {
             sheet.code_runs.iter().for_each(|(pos, code_run)| {
                 if let Some(column) = column {
