@@ -8,16 +8,17 @@ import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButt
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import { CloseIcon, CodeRunIcon, CodeStopIcon } from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { Button } from '@/shared/shadcn/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { Close, PlayArrow, Stop } from '@mui/icons-material';
-import { CircularProgress, IconButton } from '@mui/material';
+import { CircularProgress } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
-import { TooltipHint } from '../../components/TooltipHint';
 import { SnippetsPopover } from './SnippetsPopover';
 
 interface Props {
@@ -140,32 +141,44 @@ export const CodeEditorHeader = (props: Props) => {
   if (!cellLocation) return null;
 
   return (
-    <div className="flex items-center px-3 py-1">
-      <div
-        className={cn(
-          `relative`,
-          unsaved &&
-            `after:pointer-events-none after:absolute after:-bottom-0.5 after:-right-0.5 after:h-3 after:w-3 after:rounded-full after:border-2 after:border-solid after:border-background after:bg-gray-400 after:content-['']`
-        )}
-      >
-        <TooltipHint title={`${codeCell?.label}${unsaved ? ' · Unsaved changes' : ''}`} placement="bottom">
-          <div className="flex items-center">
+    <div className="flex items-center">
+      <div className="flex h-10 flex-row items-center truncate border-r border-border pl-3 pr-3">
+        <Tooltip>
+          <TooltipTrigger className="mr-1.5 flex items-center">
             <LanguageIcon language={codeCell?.id} fontSize="small" />
-          </div>
-        </TooltipHint>
-      </div>
-      <div className="mx-2 flex flex-col truncate">
-        <div className="text-sm font-medium leading-4">
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{`${codeCell?.label}${unsaved ? ' · Unsaved changes' : ''}`}</TooltipContent>
+        </Tooltip>
+
+        <span className="text-sm font-medium leading-4">
           Cell ({cellLocation.x}, {cellLocation.y})
           {currentCodeEditorCellIsNotInActiveSheet && (
             <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
           )}
-        </div>
+        </span>
+
+        <TooltipHint title="Close" shortcut="ESC">
+          <Button
+            variant="ghost"
+            id="QuadraticCodeEditorCloseButtonID"
+            size="icon-sm"
+            onClick={closeEditor}
+            className={cn(
+              'ml-1.5 h-5 w-5 text-muted-foreground',
+              `relative hover:after:hidden`,
+              unsaved &&
+                `after:pointer-events-none after:absolute after:bottom-0.5 after:right-0.5 after:h-4 after:w-4 after:rounded-full after:border-4 after:border-solid after:border-background after:bg-muted-foreground after:content-['']`
+            )}
+          >
+            <CloseIcon />
+          </Button>
+        </TooltipHint>
+
         {currentConnectionName && (
           <div className="text-xs leading-4 text-muted-foreground">Connection: {currentConnectionName}</div>
         )}
       </div>
-      <div className="ml-auto flex flex-shrink-0 items-center gap-2">
+      <div className="flex h-10 flex-shrink-0 flex-grow items-center justify-end gap-2 border-b border-border pr-3">
         {isRunningComputation && (
           <TooltipHint title={`${language} executing…`} placement="bottom">
             <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
@@ -174,29 +187,34 @@ export const CodeEditorHeader = (props: Props) => {
         {hasPermission && ['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
         {hasPermission && ['Python', 'Javascript'].includes(language as string) && <SnippetsPopover />}
         {hasPermission &&
-          (!isRunningComputation ? (
+          (isRunningComputation ? (
             <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
-              <span>
-                <IconButton id="QuadraticCodeEditorRunButtonID" size="small" color="primary" onClick={saveAndRunCell}>
-                  <PlayArrow />
-                </IconButton>
-              </span>
+              <Button id="QuadraticCodeEditorRunButtonID" size="icon" onClick={saveAndRunCell} className="rounded-full">
+                <CodeRunIcon size="md" />
+              </Button>
             </TooltipHint>
           ) : (
             <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
-              <span>
-                <IconButton size="small" color="primary" onClick={cancelRun} disabled={!isRunningComputation}>
-                  <Stop />
-                </IconButton>
-              </span>
+              <Button size="icon" onClick={cancelRun} className="rounded-full">
+                <CodeStopIcon size="md" />
+              </Button>
             </TooltipHint>
           ))}
-        <TooltipHint title="Close" shortcut="ESC" placement="bottom">
-          <IconButton id="QuadraticCodeEditorCloseButtonID" size="small" onClick={closeEditor}>
-            <Close />
-          </IconButton>
-        </TooltipHint>
       </div>
     </div>
   );
 };
+
+function TooltipHint({ title, shortcut, children }: any) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side="bottom">
+        <p>
+          {title}
+          {shortcut && <span className="ml-2 opacity-50">({shortcut})</span>}
+        </p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}

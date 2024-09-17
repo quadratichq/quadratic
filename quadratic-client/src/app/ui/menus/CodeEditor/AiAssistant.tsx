@@ -340,6 +340,7 @@ How can I help you?
               >
                 <Button
                   size="icon-sm"
+                  className="rounded-full"
                   onClick={(e) => {
                     e.stopPropagation();
                     submitPrompt();

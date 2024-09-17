@@ -14,13 +14,19 @@ interface BaseIconProps extends React.HTMLAttributes<HTMLSpanElement> {
   children: string;
   // TODO: if and when we need to use other sizes, we'll have this as a prop
   // Note: we'll have to load the additional sizes via the font loader in `index.html`
-  //e.g. size: 'sm' | 'md' | 'lg' | 'xl' -> '20' '24' '40' '48';
+  size?: 'sm' | 'md'; //  '20' | '24' - in the future, 'lg' | 'xl' -> '40' '48';
 }
 
 const Icon = (props: BaseIconProps) => {
-  const { children, className, ...rest } = props;
+  const { children, className, size, ...rest } = props;
+
+  let sizeInt = 20; // default is 'sm'
+  if (size === 'md') {
+    sizeInt = 24;
+  }
+
   return (
-    <span className={`material-symbols-outlined material-symbols-20 ${className ? className : ''}`} {...rest}>
+    <span className={`material-symbols-outlined material-symbols-${sizeInt} ${className ? className : ''}`} {...rest}>
       {children}
     </span>
   );
@@ -367,6 +373,14 @@ export const RefreshIcon: IconComponent = (props) => {
   return <Icon {...props}>refresh</Icon>;
 };
 
+export const CodeRunIcon: IconComponent = (props) => {
+  return <Icon {...props}>play_arrow</Icon>;
+};
+
+export const CodeStopIcon: IconComponent = (props) => {
+  return <Icon {...props}>stop</Icon>;
+};
+
 export const ScientificIcon: IconComponent = (props) => {
   return <Icon {...props}>functions</Icon>;
 };
@@ -377,6 +391,10 @@ export const SettingsIcon: IconComponent = (props) => {
 
 export const SheetIcon: IconComponent = (props) => {
   return <Icon {...props}>tab</Icon>;
+};
+
+export const SnippetsIcon: IconComponent = (props) => {
+  return <Icon {...props}>integration_instructions</Icon>;
 };
 
 export const VerticalAlignBottomIcon: IconComponent = (props) => {
