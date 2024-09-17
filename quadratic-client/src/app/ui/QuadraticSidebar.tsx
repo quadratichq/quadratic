@@ -23,11 +23,13 @@ import {
   MemoryIcon,
 } from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
+import { ShowAfter } from '@/shared/components/ShowAfter';
 import { DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { CircularProgress } from '@mui/material';
 import { TooltipProvider } from '@radix-ui/react-tooltip';
 import mixpanel from 'mixpanel-browser';
 import React from 'react';
@@ -63,11 +65,19 @@ export const QuadraticSidebar = () => {
           <Link
             to="/"
             reloadDocument
-            className="hover flex h-12 items-center justify-center border-b border-border text-muted-foreground"
+            className="group relative flex h-12 items-center justify-center border-b border-border text-muted-foreground"
           >
             <QuadraticLogo />
+            {editorInteractionState.isRunningAsyncAction && (
+              <ShowAfter delay={300}>
+                <div className="absolute left-0 top-0 flex h-full w-full items-center justify-center bg-accent group-hover:hidden">
+                  <CircularProgress style={{ width: 18, height: 18 }} />
+                </div>
+              </ShowAfter>
+            )}
           </Link>
         </SidebarTooltip>
+
         <div className="mt-2 flex flex-col items-center gap-1">
           {canEditFile && (
             <SidebarTooltip label="Code editor" shortcut={'/'}>

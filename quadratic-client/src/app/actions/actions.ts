@@ -1,5 +1,6 @@
 export enum Action {
   CmdClick = 'cmd_click',
+  FileDownload = 'file_download',
   FileShare = 'file_share',
   FileRename = 'file_rename',
   InsertCodePython = 'insert_code_python',

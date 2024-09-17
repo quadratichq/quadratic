@@ -1,3 +1,4 @@
+import { VERSION } from '@/shared/constants/appConstants';
 import { debugShowFPS } from '../../../debugFlags';
 import BottomBarItem from './BottomBarItem';
 import { SelectionSummary } from './SelectionSummary';
@@ -41,7 +42,7 @@ export const BottomBar = () => {
         <SyncState />
         {/* {showOnDesktop && <PythonStateItem />} */}
         <div className="hidden lg:block">
-          <BottomBarItem>Quadratic {import.meta.env.VITE_VERSION?.slice(0, 7)} (BETA)</BottomBarItem>
+          <BottomBarItem>{VERSION}</BottomBarItem>
         </div>
       </div>
     </div>

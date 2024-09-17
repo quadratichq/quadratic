@@ -75,10 +75,10 @@ export default function QuadraticUI() {
         ...(navigation.state !== 'idle' ? { opacity: '.5', pointerEvents: 'none' } : {}),
       }}
     >
-      {!presentationMode && <QuadraticSidebar />}
+      {!presentationMode && !isEmbed && <QuadraticSidebar />}
       <div className="flex min-w-0 flex-grow flex-col" id="main">
         {!presentationMode && <TopBar />}
-        {!presentationMode && <Toolbar />}
+        {!presentationMode && !isEmbed && <Toolbar />}
 
         <div
           style={{
