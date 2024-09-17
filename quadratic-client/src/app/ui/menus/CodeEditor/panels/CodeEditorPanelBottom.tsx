@@ -3,8 +3,15 @@ import {
   codeEditorPanelBottomActiveTabAtom,
   codeEditorSpillErrorAtom,
 } from '@/app/atoms/codeEditorAtom';
+import {
+  editorInteractionStateSelectedCellAtom,
+  editorInteractionStateSelectedCellSheetAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
+import { events } from '@/app/events/events';
+import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import { AIIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { cn } from '@/shared/shadcn/utils';
@@ -23,6 +30,8 @@ export function CodeEditorPanelBottom({
   codeEditorPanelData: { bottomHidden, setBottomHidden },
   schemaBrowser,
 }: Props) {
+  const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
+  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
   const consoleOutput = useRecoilValue(codeEditorConsoleOutputAtom);
   const spillError = useRecoilValue(codeEditorSpillErrorAtom);
   const [panelBottomActiveTab, setPanelBottomActiveTab] = useRecoilState(codeEditorPanelBottomActiveTabAtom);
@@ -53,6 +62,7 @@ export function CodeEditorPanelBottom({
         </Button>
         <TabsList>
           {schemaBrowser && <TabsTrigger value="data-browser">Schema</TabsTrigger>}
+
           <TabsTrigger
             value="console"
             className={cn(
@@ -64,6 +74,20 @@ export function CodeEditorPanelBottom({
           >
             Console
           </TabsTrigger>
+
+          {consoleOutput?.stdErr ? (
+            <TooltipHint title={'Ask AI to fix error'}>
+              <Button
+                className="ml-2"
+                size="sm"
+                onClick={() => {
+                  events.emit('askAICodeCell', selectedCellSheet, selectedCell);
+                }}
+              >
+                <AIIcon />
+              </Button>
+            </TooltipHint>
+          ) : null}
         </TabsList>
       </div>
 

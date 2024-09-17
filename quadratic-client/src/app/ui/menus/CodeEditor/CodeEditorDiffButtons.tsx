@@ -5,7 +5,7 @@ import { IconButton } from '@mui/material';
 import { useCallback } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 
-export const CodeEditorDiffButton = () => {
+export const CodeEditorDiffButtons = () => {
   const setEditorContent = useSetRecoilState(codeEditorEditorContentAtom);
   const [modifiedEditorContent, setModifiedEditorContent] = useRecoilState(codeEditorModifiedEditorContentAtom);
 

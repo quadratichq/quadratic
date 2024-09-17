@@ -13,7 +13,7 @@ import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
-import { CodeEditorDiffButton } from '@/app/ui/menus/CodeEditor/CodeEditorDiffButton';
+import { CodeEditorDiffButtons } from '@/app/ui/menus/CodeEditor/CodeEditorDiffButtons';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
 import { SnippetsPopover } from '@/app/ui/menus/CodeEditor/SnippetsPopover';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
@@ -201,7 +201,7 @@ export const CodeEditorHeader = (props: CodeEditorHeaderProps) => {
         {hasPermission && (
           <>
             {modifiedEditorContent !== undefined && modifiedEditorContent !== editorContent ? (
-              <CodeEditorDiffButton />
+              <CodeEditorDiffButtons />
             ) : (
               <>
                 {['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}

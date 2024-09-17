@@ -11,6 +11,7 @@
 
 .hover-cell-header-buttons {
   display: flex;
+  gap: 4px;
 }
 
 .hover-cell-header-space {

@@ -12,14 +12,14 @@ import { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { AIIcon, CodeIcon } from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
-import { IconButton } from '@mui/material';
 import { Rectangle } from 'pixi.js';
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import './HoverCell.css';
 
-export const HOVER_CELL_FADE_IN_OUT_DELAY = 500;
+export const HOVER_CELL_FADE_IN_OUT_DELAY = 250;
 
 export interface EditingCell {
   x: number;
@@ -232,22 +232,20 @@ function HoverCellRunError({ codeCell, onClick }: { codeCell: JsCodeCell; onClic
 
         <div className="hover-cell-header-buttons">
           <TooltipHint title={'Ask AI to fix error'}>
-            <IconButton
-              className="pointer-events-auto"
-              size="small"
+            <Button
+              size="sm"
               onClick={() => {
                 events.emit('askAICodeCell', sheetId, { x, y });
                 onClick();
               }}
             >
               <AIIcon />
-            </IconButton>
+            </Button>
           </TooltipHint>
 
           <TooltipHint title={'Open in code editor'}>
-            <IconButton
-              className="pointer-events-auto"
-              size="small"
+            <Button
+              size="sm"
               onClick={() => {
                 setEditorInteractionStateWaitingForEditorClose({
                   selectedCellSheet: sheetId,
@@ -261,7 +259,7 @@ function HoverCellRunError({ codeCell, onClick }: { codeCell: JsCodeCell; onClic
               }}
             >
               <CodeIcon />
-            </IconButton>
+            </Button>
           </TooltipHint>
         </div>
       </div>

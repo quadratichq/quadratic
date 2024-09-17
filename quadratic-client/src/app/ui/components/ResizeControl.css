@@ -1,7 +1,7 @@
 /* Shared styles for the 1px line */
 .resize-control {
   background-color: var(--resize-control-background);
-  z-index: 5;
+  z-index: 25;
 }
 
 /* Vertical control, left side */
