@@ -109,6 +109,7 @@ pub fn replace_cell_references_with(
     };
 
     replace_cell_range_references(source, pos, |range_ref| {
+        dbgjs!(&range_ref);
         match range_ref {
             RangeRef::RowRange { start, end, sheet } => RangeRef::RowRange {
                 start: replace_y_fn(&sheet, start),
@@ -369,7 +370,7 @@ mod tests {
             },
         );
         let replaced_a1 = replace_internal_cell_references(&replaced, pos);
-        assert_eq!( replaced_a1, expected);
+        assert_eq!(replaced_a1, expected);
     }
 
     #[test]

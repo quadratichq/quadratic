@@ -6,10 +6,10 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
-    grid::{formats::Formats, CodeCellLanguage},
+    grid::formats::Formats,
     renderer_constants::CELL_SHEET_HEIGHT,
     selection::Selection,
-    CellValue, Pos, SheetPos,
+    Pos, SheetPos,
 };
 
 use super::Sheet;

@@ -16,8 +16,12 @@ impl GridController {
         sheet_name: String,
         column: Option<i64>,
         row: Option<i64>,
-        delta: i8,
+        delta: i64,
     ) {
+        dbgjs!(format!(
+            "adjust_formulas sheet_id: {:?}, sheet_name: {:?}, column: {:?}, row: {:?}, delta: {:?}",
+            sheet_id, sheet_name, column, row, delta
+        ));
         self.grid.sheets().iter().for_each(|sheet| {
             sheet.code_runs.iter().for_each(|(pos, code_run)| {
                 if let Some(column) = column {
@@ -36,15 +40,15 @@ impl GridController {
                                     if *coord_sheet_name == sheet_name {
                                         match cell_ref {
                                             CellRefCoord::Relative(x) => {
-                                                if x >= column {
-                                                    CellRefCoord::Relative(x + delta as i64)
+                                                if x + pos.x >= column {
+                                                    CellRefCoord::Relative(x + delta)
                                                 } else {
                                                     CellRefCoord::Relative(x)
                                                 }
                                             }
                                             CellRefCoord::Absolute(x) => {
                                                 if x >= column {
-                                                    CellRefCoord::Absolute(x + delta as i64)
+                                                    CellRefCoord::Absolute(x + delta)
                                                 } else {
                                                     CellRefCoord::Absolute(x)
                                                 }
@@ -84,15 +88,15 @@ impl GridController {
                                     if *coord_sheet_name == sheet_name {
                                         match cell_ref {
                                             CellRefCoord::Relative(y) => {
-                                                if y >= row {
-                                                    CellRefCoord::Relative(y + delta as i64)
+                                                if y + pos.y >= row {
+                                                    CellRefCoord::Relative(y + delta)
                                                 } else {
                                                     CellRefCoord::Relative(y)
                                                 }
                                             }
                                             CellRefCoord::Absolute(y) => {
                                                 if y >= row {
-                                                    CellRefCoord::Absolute(y + delta as i64)
+                                                    CellRefCoord::Absolute(y + delta)
                                                 } else {
                                                     CellRefCoord::Absolute(y)
                                                 }
@@ -109,10 +113,14 @@ impl GridController {
                                     code: new_code,
                                     ..code.clone()
                                 });
+                                let sheet_pos = pos.to_sheet_pos(sheet_id);
                                 transaction.operations.push_back(Operation::SetCellValues {
-                                    sheet_pos: pos.to_sheet_pos(sheet_id),
+                                    sheet_pos: sheet_pos.clone(),
                                     values: code_cell_value.into(),
                                 });
+                                transaction
+                                    .operations
+                                    .push_back(Operation::ComputeCode { sheet_pos });
                             }
                         }
                     }
@@ -137,6 +145,7 @@ impl GridController {
             }
 
             if transaction.is_user() {
+                // adjust formulas to account for deleted column
                 self.adjust_formulas(transaction, sheet_id, sheet_name, Some(column), None, -1);
 
                 // update information for all cells to the right of the deleted column
@@ -204,6 +213,8 @@ impl GridController {
 mod tests {
     use serial_test::parallel;
 
+    use crate::{grid::CodeCellLanguage, Pos, SheetPos};
+
     use super::*;
 
     #[test]
@@ -230,6 +241,65 @@ mod tests {
             None,
             Some(row),
             delta,
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn adjust_formulas() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            SheetPos {
+                sheet_id,
+                x: 1,
+                y: 0,
+            },
+            "1".into(),
+            None,
+        );
+        gc.set_code_cell(
+            SheetPos {
+                sheet_id,
+                x: 0,
+                y: 0,
+            },
+            CodeCellLanguage::Formula,
+            "B0".into(),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.rendered_value(Pos { x: 0, y: 0 }).unwrap(),
+            "1".to_string()
+        );
+
+        let mut transaction = PendingTransaction::default();
+        gc.adjust_formulas(
+            &mut transaction,
+            sheet_id,
+            sheet.name.clone(),
+            Some(1),
+            None,
+            1,
+        );
+
+        assert_eq!(transaction.operations.len(), 1);
+        assert_eq!(
+            transaction.operations[0],
+            Operation::SetCellValues {
+                sheet_pos: SheetPos {
+                    sheet_id,
+                    x: 0,
+                    y: 0
+                },
+                values: CellValue::Code(CodeCellValue {
+                    language: CodeCellLanguage::Formula,
+                    code: "R[0]C[2]".to_string()
+                })
+                .into(),
+            }
         );
     }
 }
