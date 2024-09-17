@@ -6,10 +6,9 @@ import { Rectangle } from 'pixi.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import './HoverTooltip.css';
 
-export const HoverTooltip = () => {
+export function HoverTooltip() {
   const [offsets, setOffsets] = useState<Rectangle>(new Rectangle());
   const [text, setText] = useState<string | undefined>();
-  const ref = useRef<HTMLDivElement>(null);
 
   const handleTooltipEvent = useCallback((pos?: Coordinate, text?: string) => {
     if (pos) {
@@ -25,6 +24,7 @@ export const HoverTooltip = () => {
     };
   }, [handleTooltipEvent]);
 
+  const ref = useRef<HTMLDivElement>(null);
   const { top, left } = usePositionCellMessage({ div: ref.current, offsets, direction: 'vertical', forceTop: true });
 
   return (
@@ -36,4 +36,4 @@ export const HoverTooltip = () => {
       {text}
     </div>
   );
-};
+}

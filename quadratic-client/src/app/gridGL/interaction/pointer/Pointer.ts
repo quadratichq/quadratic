@@ -1,4 +1,3 @@
-import { PointerAIAssist } from '@/app/gridGL/interaction/pointer/PointerAIAssist';
 import { PointerAutoComplete } from '@/app/gridGL/interaction/pointer/PointerAutoComplete';
 import { PointerCellMoving } from '@/app/gridGL/interaction/pointer/PointerCellMoving';
 import { PointerCursor } from '@/app/gridGL/interaction/pointer/pointerCursor';
@@ -22,7 +21,6 @@ export class Pointer {
   pointerDown: PointerDown;
   pointerCellMoving: PointerCellMoving;
   private pointerLink: PointerLink;
-  private pointerAIAssist: PointerAIAssist;
 
   constructor(viewport: Viewport) {
     this.pointerHeading = new PointerHeading();
@@ -33,7 +31,6 @@ export class Pointer {
     this.pointerHtmlCells = new PointerHtmlCells();
     this.pointerCellMoving = new PointerCellMoving();
     this.pointerLink = new PointerLink();
-    this.pointerAIAssist = new PointerAIAssist();
 
     viewport.on('pointerdown', this.handlePointerDown);
     viewport.on('pointermove', this.pointerMove);
@@ -102,7 +99,6 @@ export class Pointer {
       this.pointerHtmlCells.pointerDown(e) ||
       this.pointerHeading.pointerDown(world, event) ||
       this.pointerLink.pointerDown(world, event) ||
-      this.pointerAIAssist.pointerDown(world, event) ||
       this.pointerAutoComplete.pointerDown(world) ||
       this.pointerDown.pointerDown(world, event);
 
@@ -124,8 +120,7 @@ export class Pointer {
       this.pointerAutoComplete.pointerMove(world) ||
       this.pointerDown.pointerMove(world, event) ||
       this.pointerCursor.pointerMove(world) ||
-      this.pointerLink.pointerMove(world, event) ||
-      this.pointerAIAssist.pointerMove(world);
+      this.pointerLink.pointerMove(world, event);
 
     this.updateCursor();
   };
@@ -138,8 +133,8 @@ export class Pointer {
       this.pointerImages.cursor ??
       this.pointerHeading.cursor ??
       this.pointerAutoComplete.cursor ??
-      this.pointerLink.cursor ??
-      this.pointerAIAssist.cursor;
+      this.pointerLink.cursor;
+
     pixiApp.canvas.style.cursor = cursor ?? 'unset';
   }
 
