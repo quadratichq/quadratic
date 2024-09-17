@@ -4,7 +4,7 @@ import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { PanelPositionBottomIcon, PanelPositionLeftIcon } from '@/app/ui/icons';
 import { CodeEditorPanelBottom } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import { CodeEditorPanelSide } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelSide';
-import { CodeEditorPanelData, PanelPosition } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import { PanelPosition, useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { useConnectionSchemaBrowserTableQueryActionInsertQuery } from '@/dashboard/hooks/useConnectionSchemaBrowserTableQueryAction';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
@@ -16,11 +16,11 @@ import { MouseEvent, memo, useCallback } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type CodeEditorPanelProps = {
-  codeEditorPanelData: CodeEditorPanelData;
   editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>;
+  codeEditorRef: React.RefObject<HTMLDivElement>;
 };
 
-export const CodeEditorPanel = memo(({ codeEditorPanelData, editorRef }: CodeEditorPanelProps) => {
+export const CodeEditorPanel = memo(({ editorRef, codeEditorRef }: CodeEditorPanelProps) => {
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
     userMakingRequest: { teamPermissions },
@@ -28,7 +28,7 @@ export const CodeEditorPanel = memo(({ codeEditorPanelData, editorRef }: CodeEdi
   } = useFileRouteLoaderData();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const connectionInfo = getConnectionInfo(editorInteractionState.mode);
-  const { panelPosition, setPanelPosition } = codeEditorPanelData;
+  const { panelPosition, setPanelPosition } = useCodeEditorPanelData();
 
   const changePanelPosition = useCallback(
     (e: MouseEvent<HTMLButtonElement>) => {
@@ -60,12 +60,8 @@ export const CodeEditorPanel = memo(({ codeEditorPanelData, editorRef }: CodeEdi
         </TooltipHint>
       </div>
 
-      {panelPosition === 'left' && (
-        <CodeEditorPanelSide schemaBrowser={schemaBrowser} codeEditorPanelData={codeEditorPanelData} />
-      )}
-      {panelPosition === 'bottom' && (
-        <CodeEditorPanelBottom schemaBrowser={schemaBrowser} codeEditorPanelData={codeEditorPanelData} />
-      )}
+      {panelPosition === 'left' && <CodeEditorPanelSide codeEditorRef={codeEditorRef} schemaBrowser={schemaBrowser} />}
+      {panelPosition === 'bottom' && <CodeEditorPanelBottom schemaBrowser={schemaBrowser} />}
     </>
   );
 });

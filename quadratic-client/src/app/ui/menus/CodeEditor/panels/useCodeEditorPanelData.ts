@@ -57,16 +57,16 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
   // this stores the width/height when editor is in horizontal mode
   const [panelWidth, setPanelWidth] = useLocalStorage('codeEditorPanelWidth', MIN_WIDTH_PANEL);
   const [panelHeightPercentage, setPanelHeightPercentage] = useLocalStorage<number>(
-    `codeEditorPanelHeightPercentage-${type}`,
+    `codeEditorPanelHeightPercentage${type}`,
     50
   );
   const [panelHidden, setPanelHidden] = useLocalStorage<boolean[]>(
-    `codeEditorPanelHidden-${type}`,
+    `codeEditorPanelHidden${type}`,
     type === 'Connection' ? HIDDEN_2 : HIDDEN_1
   );
   // stores the heights when in horizontal mode (Connection has 2 panels, others have 1)
   const [panelHeightPercentages, setPanelHeightPercentages] = useLocalStorage<number[]>(
-    `codeEditorPanelHeightPercentages-${type}`,
+    `codeEditorPanelHeightPercentages${type}`,
     type === 'Connection' ? HEIGHT_PERCENT_2 : HEIGHT_PERCENT_1
   );
   const [panelPosition, setPanelPosition] = useLocalStorage<PanelPosition>('codeEditorPanelPosition', 'bottom');

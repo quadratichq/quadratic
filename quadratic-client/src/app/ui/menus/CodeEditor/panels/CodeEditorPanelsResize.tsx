@@ -1,29 +1,27 @@
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
-import { useCodeEditorContainer } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorContainer';
 import {
-  CodeEditorPanelData,
   MIN_WIDTH_PANEL,
   MIN_WIDTH_VISIBLE_GRID,
+  useCodeEditorPanelData,
 } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { memo, useEffect, useState } from 'react';
 
-interface Props {
-  codeEditorPanelData: CodeEditorPanelData;
-}
-
 const MIN_WIDTH_EDITOR = 350;
 
-export const CodeEditorPanels = memo((props: Props) => {
-  const { codeEditorPanelData } = props;
+interface CodeEditorPanelsResizeProps {
+  codeEditorRef: React.RefObject<HTMLDivElement>;
+}
+
+export const CodeEditorPanels = memo(({ codeEditorRef }: CodeEditorPanelsResizeProps) => {
+  const codeEditorPanelData = useCodeEditorPanelData();
 
   // we need to calculate the console height after a change in bottomHidden
   const [consoleHeaderHeight, setConsoleHeaderHeight] = useState(0);
 
-  const container = useCodeEditorContainer();
   useEffect(() => {
     const setHeight = () => {
-      if (codeEditorPanelData.bottomHidden && container) {
-        const editor = container.firstChild as HTMLDivElement;
+      if (codeEditorPanelData.bottomHidden && codeEditorRef.current) {
+        const editor = codeEditorRef.current.firstChild as HTMLDivElement;
         if (editor) {
           const editorRect = editor.getBoundingClientRect();
           setConsoleHeaderHeight(editorRect.height);
@@ -31,12 +29,12 @@ export const CodeEditorPanels = memo((props: Props) => {
       }
     };
     // ensures container is already rendered; otherwise we wait for the next tick
-    if (!container) {
+    if (!codeEditorRef.current) {
       setTimeout(setHeight, 0);
     } else {
       setHeight();
     }
-  }, [codeEditorPanelData.bottomHidden, container]);
+  }, [codeEditorPanelData.bottomHidden, codeEditorRef]);
 
   return (
     <>
@@ -110,9 +108,9 @@ export const CodeEditorPanels = memo((props: Props) => {
               width: '100%',
             }}
             setState={(mouseEvent) => {
-              if (!container) return;
+              if (!codeEditorRef.current) return;
 
-              const containerRect = container.getBoundingClientRect();
+              const containerRect = codeEditorRef.current.getBoundingClientRect();
               const newTopHeight = ((mouseEvent.clientY - containerRect.top) / containerRect.height) * 100;
 
               if (newTopHeight >= 25 && newTopHeight <= 75) {

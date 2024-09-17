@@ -9,7 +9,7 @@ import {
 } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
-import { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { AIIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
@@ -22,14 +22,11 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 export type PanelTab = 'console' | 'data-browser';
 
 interface Props {
-  codeEditorPanelData: CodeEditorPanelData;
   schemaBrowser: ReactNode | undefined;
 }
 
-export function CodeEditorPanelBottom({
-  codeEditorPanelData: { bottomHidden, setBottomHidden },
-  schemaBrowser,
-}: Props) {
+export function CodeEditorPanelBottom({ schemaBrowser }: Props) {
+  const { bottomHidden, setBottomHidden } = useCodeEditorPanelData();
   const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
   const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
   const consoleOutput = useRecoilValue(codeEditorConsoleOutputAtom);

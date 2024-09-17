@@ -376,13 +376,15 @@ export const CodeEditor = () => {
 
   const codeEditorPanelData = useCodeEditorPanelData();
 
+  const codeEditorRef = useRef<HTMLDivElement | null>(null);
+
   if (!showCodeEditor) {
     return null;
   }
 
   return (
     <div
-      id="code-editor-container"
+      ref={codeEditorRef}
       className={cn(
         'relative flex h-full bg-background',
         codeEditorPanelData.panelPosition === 'left' ? '' : 'flex-col'
@@ -469,9 +471,9 @@ export const CodeEditor = () => {
               : 100 - codeEditorPanelData.editorHeightPercentage + '%',
         }}
       >
-        <CodeEditorPanel codeEditorPanelData={codeEditorPanelData} editorRef={editorRef} />
+        <CodeEditorPanel editorRef={editorRef} codeEditorRef={codeEditorRef} />
       </div>
-      <CodeEditorPanels codeEditorPanelData={codeEditorPanelData} />
+      <CodeEditorPanels codeEditorRef={codeEditorRef} />
     </div>
   );
 };

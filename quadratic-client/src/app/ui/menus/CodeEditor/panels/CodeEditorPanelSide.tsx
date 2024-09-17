@@ -1,17 +1,16 @@
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { PanelBox, calculatePanelBoxMinimizedSize } from '@/app/ui/menus/CodeEditor/panels/PanelBox';
-import { useCodeEditorContainer } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorContainer';
-import { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-interface Props {
-  codeEditorPanelData: CodeEditorPanelData;
+interface CodeEditorPanelSideProps {
+  codeEditorRef: React.RefObject<HTMLDivElement>;
   schemaBrowser: React.ReactNode | undefined;
 }
 
-export function CodeEditorPanelSide({ schemaBrowser, codeEditorPanelData }: Props) {
-  const container = useCodeEditorContainer();
+export function CodeEditorPanelSide({ codeEditorRef, schemaBrowser }: CodeEditorPanelSideProps) {
+  const codeEditorPanelData = useCodeEditorPanelData();
   const minimizedSize = useMemo(() => {
     const minimizedSize = calculatePanelBoxMinimizedSize();
     return minimizedSize;
@@ -19,70 +18,56 @@ export function CodeEditorPanelSide({ schemaBrowser, codeEditorPanelData }: Prop
 
   const [containerHeight, setContainerHeight] = useState(0);
   useEffect(() => {
-    if (container) {
-      setContainerHeight(container.getBoundingClientRect().height);
+    if (codeEditorRef.current) {
+      setContainerHeight(codeEditorRef.current.getBoundingClientRect().height);
     }
-  }, [container]);
+  }, [codeEditorRef]);
 
-  const { panels, leftOverPercentage, adjustedContainerHeight } = useMemo(() => {
-    let leftOverPercentage = 0;
-    let adjustedContainerHeight = containerHeight;
-
+  const panels = useMemo(() => {
     // ensure containerHeight has a value > 0 to avoid division by zero
     // (sometimes happens when starting with ?state)
     const minimizedPercentage = minimizedSize / (containerHeight ? containerHeight : 1);
+    let leftOverPercentage = 0;
     for (let i = 0; i < codeEditorPanelData.panelHidden.length; i++) {
       if (codeEditorPanelData.panelHidden[i]) {
         leftOverPercentage += codeEditorPanelData.panelHeightPercentages[i] / 100 - minimizedPercentage;
-        adjustedContainerHeight -= minimizedSize;
       }
     }
+
     const visiblePanels = codeEditorPanelData.panelHidden.filter((hidden) => !hidden).length;
-    return {
-      panels: codeEditorPanelData.panelHidden.map((hidden, i) => {
-        const toggleOpen = () => {
-          codeEditorPanelData.setPanelHidden((prevState) => prevState.map((val, j) => (i === j ? !val : val)));
-        };
-        let height: number;
-        if (hidden) {
-          height = minimizedSize;
-        } else {
-          height =
-            (codeEditorPanelData.panelHeightPercentages[i] / 100 +
-              (visiblePanels ? leftOverPercentage / visiblePanels : 0)) *
-            containerHeight;
-        }
-        return { open: !hidden, toggleOpen, height };
-      }),
-      leftOverPercentage,
-      adjustedContainerHeight,
-    };
-  }, [containerHeight, codeEditorPanelData, minimizedSize]);
+    return codeEditorPanelData.panelHidden.map((hidden, i) => {
+      const toggleOpen = () => {
+        codeEditorPanelData.setPanelHidden((prevState) => prevState.map((val, j) => (i === j ? !val : val)));
+      };
+      let height: number;
+      if (hidden) {
+        height = minimizedSize;
+      } else {
+        height =
+          (codeEditorPanelData.panelHeightPercentages[i] / 100 +
+            (visiblePanels ? leftOverPercentage / visiblePanels : 0)) *
+          containerHeight;
+      }
+      return { open: !hidden, toggleOpen, height };
+    });
+  }, [codeEditorPanelData, containerHeight, minimizedSize]);
 
   // changes resize bar when dragging
   const changeResizeBar = useCallback(
     (e: MouseEvent) => {
-      if (!container) return;
+      if (!codeEditorRef.current) return;
 
       e.stopPropagation();
       e.preventDefault();
 
-      const containerRect = container.getBoundingClientRect();
+      const containerRect = codeEditorRef.current.getBoundingClientRect();
       let containerHeight = containerRect.height;
       let clientY = e.clientY;
 
-      if (!panels[0].open) {
-        const percentOfVisible = (containerRect.bottom - clientY - containerRect.top) / adjustedContainerHeight;
-        const percent =
-          ((containerRect.bottom - clientY - containerRect.top) / containerHeight) * 100 -
-          leftOverPercentage * percentOfVisible;
-        codeEditorPanelData.adjustPanelPercentage(1, percent);
-      } else {
-        const percent = (1 - (clientY - containerRect.top) / containerHeight) * 100;
-        codeEditorPanelData.adjustPanelPercentage(1, percent);
-      }
+      const percent = (1 - (clientY - containerRect.top) / containerHeight) * 100;
+      codeEditorPanelData.adjustPanelPercentage(1, percent);
     },
-    [adjustedContainerHeight, codeEditorPanelData, container, leftOverPercentage, panels]
+    [codeEditorPanelData, codeEditorRef]
   );
 
   return (
@@ -101,16 +86,16 @@ export function CodeEditorPanelSide({ schemaBrowser, codeEditorPanelData }: Prop
         <>
           <ResizeControl
             style={{ top: panels[0].height }}
-            disabled={!panels[0].open}
+            disabled={!panels[0].open || !panels[1].open}
             position="HORIZONTAL"
             setState={changeResizeBar}
           />
           <PanelBox
-            id="panel-2"
+            id="panel-1"
             title="Schema"
-            open={panels[0].open}
-            toggleOpen={panels[0].toggleOpen}
-            height={panels[0].height}
+            open={panels[1].open}
+            toggleOpen={panels[1].toggleOpen}
+            height={panels[1].height}
           >
             {schemaBrowser}
           </PanelBox>
