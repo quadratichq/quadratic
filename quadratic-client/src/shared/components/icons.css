@@ -1,7 +1,3 @@
-.material-symbols-loaded .material-symbols-outlined {
-  opacity: 1;
-}
-
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
   font-weight: normal;
@@ -17,9 +13,6 @@
   font-feature-settings: 'liga';
   -webkit-font-feature-settings: 'liga';
   -webkit-font-smoothing: antialiased;
-
-  /* don't show initially */
-  opacity: 0;
 }
 
 .material-symbols-24 {
