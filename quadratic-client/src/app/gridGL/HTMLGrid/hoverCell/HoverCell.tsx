@@ -9,6 +9,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { pluralize } from '@/app/helpers/pluralize';
 import { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
+import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { AIIcon, CodeIcon } from '@/shared/components/Icons';
 import { cn } from '@/shared/shadcn/utils';
@@ -33,6 +34,7 @@ export function HoverCell() {
   const [offsets, setOffsets] = useState<Rectangle>(new Rectangle());
   const [delay, setDelay] = useState(true);
   const [hovering, setHovering] = useState(false);
+  const hoveringRef = useRef(false);
 
   const timeoutId = useRef<NodeJS.Timeout | undefined>();
   const [allowPointerEvents, setAllowPointerEvents] = useState(false);
@@ -46,66 +48,35 @@ export function HoverCell() {
     clearTimeout(timeoutId.current);
     timeoutId.current = setTimeout(() => {
       setAllowPointerEvents(false);
+      timeoutId.current = undefined;
     }, HOVER_CELL_FADE_IN_OUT_DELAY);
   }, []);
 
   const handleMouseEnter = useCallback(() => {
     addPointerEvents();
     setHovering(true);
+    hoveringRef.current = true;
   }, [addPointerEvents]);
 
   const handleMouseLeave = useCallback(() => {
     removePointerEvents();
     setHovering(false);
+    hoveringRef.current = false;
   }, [removePointerEvents]);
 
   const hideHoverCell = useCallback(() => {
     setCell(undefined);
     setHovering(false);
+    hoveringRef.current = false;
     setDelay(false);
     setAllowPointerEvents(false);
+    clearTimeout(timeoutId.current);
   }, []);
-
-  useEffect(() => {
-    const addCell = (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => {
-      if (hovering) return;
-      if (cell) {
-        setCell(cell);
-        setOffsets(sheets.sheet.getCellOffsets(cell.x, cell.y));
-        setDelay('validationId' in cell ? false : true);
-        addPointerEvents();
-      } else {
-        setCell(undefined);
-        removePointerEvents();
-      }
-    };
-    events.on('hoverCell', addCell);
-    return () => {
-      events.off('hoverCell', addCell);
-    };
-  }, [addPointerEvents, hovering, removePointerEvents]);
-
-  useEffect(() => {
-    const remove = () => {
-      hideHoverCell();
-    };
-
-    pixiApp.viewport.on('moved', remove);
-    pixiApp.viewport.on('zoomed', remove);
-    events.on('cursorPosition', remove);
-    return () => {
-      pixiApp.viewport.off('moved', remove);
-      pixiApp.viewport.off('zoomed', remove);
-      events.off('cursorPosition', remove);
-    };
-  }, [hideHoverCell]);
 
   const [text, setText] = useState<ReactNode>();
   const [onlyCode, setOnlyCode] = useState(false);
-  useEffect(() => {
-    const asyncFunction = async () => {
-      if (!cell) return;
-
+  const updateText = useCallback(
+    async (cell: JsRenderCodeCell | EditingCell | ErrorValidation) => {
       const errorValidationCell = 'validationId' in cell ? cell : undefined;
       const renderCodeCell = 'language' in cell && 'state' in cell && 'spill_error' in cell ? cell : undefined;
       const editingCell = 'user' in cell && 'codeEditor' in cell ? cell : undefined;
@@ -185,10 +156,42 @@ export function HoverCell() {
           </>
         );
       }
+    },
+    [handleMouseEnter, hideHoverCell]
+  );
+
+  useEffect(() => {
+    const addCell = (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => {
+      setCell(cell);
+      if (cell && !hoveringRef.current) {
+        setOffsets(sheets.sheet.getCellOffsets(cell.x, cell.y));
+        setDelay('validationId' in cell ? false : true);
+        updateText(cell);
+        addPointerEvents();
+      } else {
+        removePointerEvents();
+      }
+    };
+    events.on('hoverCell', addCell);
+    return () => {
+      events.off('hoverCell', addCell);
+    };
+  }, [addPointerEvents, removePointerEvents, updateText]);
+
+  useEffect(() => {
+    const remove = () => {
+      hideHoverCell();
     };
 
-    asyncFunction();
-  }, [cell, handleMouseEnter, hideHoverCell]);
+    pixiApp.viewport.on('moved', remove);
+    pixiApp.viewport.on('zoomed', remove);
+    events.on('cursorPosition', remove);
+    return () => {
+      pixiApp.viewport.off('moved', remove);
+      pixiApp.viewport.off('zoomed', remove);
+      events.off('cursorPosition', remove);
+    };
+  }, [hideHoverCell]);
 
   const ref = useRef<HTMLDivElement>(null);
   const { top, left } = usePositionCellMessage({ div: ref.current, offsets });
@@ -210,7 +213,7 @@ export function HoverCell() {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <div className="pointer-events-none p-4">{text}</div>
+      <div className="p-4">{text}</div>
     </div>
   );
 }
@@ -233,44 +236,52 @@ function HoverCellRunError({
   const y = Number(codeCell.y);
   return (
     <>
-      <div className="hover-cell-header pointer-events-none">
+      <div className="hover-cell-header">
         <span>Run Error</span>
+
         <div className="hover-cell-header-buttons">
-          <IconButton
-            className="pointer-events-auto"
-            size="small"
-            onClick={() => {
-              events.emit('askAICodeCell', sheetId, { x, y });
-              onClick();
-            }}
-            onMouseEnter={onMouseEnter}
-          >
-            <AIIcon />
-          </IconButton>
-          <IconButton
-            className="pointer-events-auto"
-            size="small"
-            onClick={() => {
-              setEditorInteractionStateWaitingForEditorClose({
-                selectedCellSheet: sheetId,
-                selectedCell: { x, y },
-                mode: codeCell.language,
-                showCellTypeMenu: false,
-                inlineEditor: false,
-                initialCode: codeCell.code_string,
-              });
-              onClick();
-            }}
-            onMouseEnter={onMouseEnter}
-          >
-            <CodeIcon />
-          </IconButton>
+          <TooltipHint title={'Ask AI to fix error'}>
+            <IconButton
+              className="pointer-events-auto"
+              size="small"
+              onClick={() => {
+                events.emit('askAICodeCell', sheetId, { x, y });
+                onClick();
+              }}
+              onMouseEnter={onMouseEnter}
+            >
+              <AIIcon />
+            </IconButton>
+          </TooltipHint>
+
+          <TooltipHint title={'Open in code editor'}>
+            <IconButton
+              className="pointer-events-auto"
+              size="small"
+              onClick={() => {
+                setEditorInteractionStateWaitingForEditorClose({
+                  selectedCellSheet: sheetId,
+                  selectedCell: { x, y },
+                  mode: codeCell.language,
+                  showCellTypeMenu: false,
+                  inlineEditor: false,
+                  initialCode: codeCell.code_string,
+                });
+                onClick();
+              }}
+              onMouseEnter={onMouseEnter}
+            >
+              <CodeIcon />
+            </IconButton>
+          </TooltipHint>
         </div>
       </div>
+
       <div className="hover-cell-body">
         <div>There was an error running the code in this cell.</div>
         <div className="hover-cell-error-msg">{codeCell.std_err}</div>
       </div>
+
       <div className="hover-cell-header-space">{language} Code</div>
       <div className="code-body">{codeCell.code_string}</div>
     </>
