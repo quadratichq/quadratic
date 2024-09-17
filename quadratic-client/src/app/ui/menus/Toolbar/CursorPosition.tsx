@@ -39,7 +39,7 @@ export const CursorPosition = () => {
       open={editorInteractionState.showGoToMenu}
       onOpenChange={(open) => setEditorInteractionState((prev) => ({ ...prev, showGoToMenu: open }))}
     >
-      <PopoverTrigger className="group flex h-full w-full items-center justify-between pl-2 pr-1 text-sm hover:bg-accent focus:bg-accent focus:outline-none">
+      <PopoverTrigger className="group flex h-full w-full items-center justify-between pl-2 pr-1 text-sm hover:bg-accent focus:bg-accent focus:outline-none data-[state=open]:bg-accent">
         <span className="truncate">{multiCursorPositionString ? multiCursorPositionString : cursorPositionString}</span>
         <ArrowDropDownIcon className="text-muted-foreground group-hover:text-foreground" />
       </PopoverTrigger>
