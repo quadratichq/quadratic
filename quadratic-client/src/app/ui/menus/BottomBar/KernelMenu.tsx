@@ -20,7 +20,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipProvider } from '@/shared/shadcn/ui/tooltip';
+import { Tooltip, TooltipContent } from '@/shared/shadcn/ui/tooltip';
 import StopIcon from '@mui/icons-material/Stop';
 import { TooltipTrigger } from '@radix-ui/react-tooltip';
 import { useEffect, useState } from 'react';
@@ -105,21 +105,19 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
         )}
         {pythonCodeRunning && (
           <DropdownMenuItem onClick={pythonWebWorker.cancelExecution}>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipContent>Stop running cell</TooltipContent>
-                <TooltipTrigger>
-                  <div className="ml-5 text-sm">
-                    <StopIcon style={{ color: colors.darkGray }} />
-                    cell({pythonCodeRunning.sheetPos.x}, {pythonCodeRunning.sheetPos.y}
-                    {pythonCodeRunning.sheetPos.sheetId !== sheets.sheet.id
-                      ? `, "${sheets.getById(pythonCodeRunning.sheetPos.sheetId)?.name || ''}"`
-                      : ''}
-                    ) is running...
-                  </div>
-                </TooltipTrigger>
-              </Tooltip>
-            </TooltipProvider>
+            <Tooltip>
+              <TooltipContent>Stop running cell</TooltipContent>
+              <TooltipTrigger>
+                <div className="ml-5 text-sm">
+                  <StopIcon style={{ color: colors.darkGray }} />
+                  cell({pythonCodeRunning.sheetPos.x}, {pythonCodeRunning.sheetPos.y}
+                  {pythonCodeRunning.sheetPos.sheetId !== sheets.sheet.id
+                    ? `, "${sheets.getById(pythonCodeRunning.sheetPos.sheetId)?.name || ''}"`
+                    : ''}
+                  ) is running...
+                </div>
+              </TooltipTrigger>
+            </Tooltip>
           </DropdownMenuItem>
         )}
         {javascriptCodeRunning && (
@@ -130,21 +128,19 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
         )}
         {javascriptCodeRunning && (
           <DropdownMenuItem onClick={javascriptWebWorker.cancelExecution}>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipContent>Stop running cell</TooltipContent>
-                <TooltipTrigger>
-                  <div className="ml-5 text-sm">
-                    <StopIcon style={{ color: colors.darkGray }} />
-                    cell({javascriptCodeRunning.sheetPos.x}, {javascriptCodeRunning.sheetPos.y}
-                    {javascriptCodeRunning.sheetPos.sheetId !== sheets.sheet.id
-                      ? `, "${sheets.getById(javascriptCodeRunning.sheetPos.sheetId)?.name || ''}"`
-                      : ''}
-                    ) is running...
-                  </div>
-                </TooltipTrigger>
-              </Tooltip>
-            </TooltipProvider>
+            <Tooltip>
+              <TooltipContent>Stop running cell</TooltipContent>
+              <TooltipTrigger>
+                <div className="ml-5 text-sm">
+                  <StopIcon style={{ color: colors.darkGray }} />
+                  cell({javascriptCodeRunning.sheetPos.x}, {javascriptCodeRunning.sheetPos.y}
+                  {javascriptCodeRunning.sheetPos.sheetId !== sheets.sheet.id
+                    ? `, "${sheets.getById(javascriptCodeRunning.sheetPos.sheetId)?.name || ''}"`
+                    : ''}
+                  ) is running...
+                </div>
+              </TooltipTrigger>
+            </Tooltip>
           </DropdownMenuItem>
         )}
         {connectionCodeRunning && (
@@ -155,21 +151,19 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
         )}
         {connectionCodeRunning && (
           <DropdownMenuItem onClick={() => quadraticCore.sendCancelExecution({ Connection: {} as any })}>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipContent>Stop running cell</TooltipContent>
-                <TooltipTrigger>
-                  <div className="ml-5 text-sm">
-                    <StopIcon style={{ color: colors.darkGray }} />
-                    cell({connectionCodeRunning.sheetPos.x}, {connectionCodeRunning.sheetPos.y}
-                    {connectionCodeRunning.sheetPos.sheetId !== sheets.sheet.id
-                      ? `, "${sheets.getById(connectionCodeRunning.sheetPos.sheetId)?.name || ''}"`
-                      : ''}
-                    ) is running...
-                  </div>
-                </TooltipTrigger>
-              </Tooltip>
-            </TooltipProvider>
+            <Tooltip>
+              <TooltipContent>Stop running cell</TooltipContent>
+              <TooltipTrigger>
+                <div className="ml-5 text-sm">
+                  <StopIcon style={{ color: colors.darkGray }} />
+                  cell({connectionCodeRunning.sheetPos.x}, {connectionCodeRunning.sheetPos.y}
+                  {connectionCodeRunning.sheetPos.sheetId !== sheets.sheet.id
+                    ? `, "${sheets.getById(connectionCodeRunning.sheetPos.sheetId)?.name || ''}"`
+                    : ''}
+                  ) is running...
+                </div>
+              </TooltipTrigger>
+            </Tooltip>
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />

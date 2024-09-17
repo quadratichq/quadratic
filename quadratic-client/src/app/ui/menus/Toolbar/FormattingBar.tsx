@@ -22,91 +22,85 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import mixpanel from 'mixpanel-browser';
 import { ReactNode } from 'react';
 
 export const FormattingBar = () => {
   return (
-    <TooltipProvider>
-      <ToggleGroup.Root
-        type="multiple"
-        className="flex select-none text-sm"
-        onValueChange={() => {
-          focusGrid();
-        }}
+    <ToggleGroup.Root
+      type="multiple"
+      className="flex select-none text-sm"
+      onValueChange={() => {
+        focusGrid();
+      }}
+    >
+      <FormatButton action={Action.FormatNumberToggleCommas} actionArgs={undefined} />
+      <FormatButton action={Action.FormatNumberDecimalDecrease} actionArgs={undefined} />
+      <FormatButton action={Action.FormatNumberDecimalIncrease} actionArgs={undefined} />
+      <FormatButton action={Action.FormatNumberCurrency} actionArgs={undefined} />
+      <FormatButton action={Action.FormatNumberPercent} actionArgs={undefined} />
+      <FormatButtonDropdown showDropdownArrow tooltipLabel="More number formats" Icon={Number123Icon}>
+        <FormatButtonDropdownActions
+          actions={[Action.FormatNumberAutomatic, Action.FormatNumberScientific]}
+          actionArgs={undefined}
+        />
+      </FormatButtonDropdown>
+
+      <Separator />
+
+      <FormatDateAndTimePickerButton />
+
+      <Separator />
+
+      <FormatButton action={Action.ToggleBold} actionArgs={undefined} />
+      <FormatButton action={Action.ToggleItalic} actionArgs={undefined} />
+      <FormatButton action={Action.ToggleUnderline} actionArgs={undefined} />
+      <FormatButton action={Action.ToggleStrikeThrough} actionArgs={undefined} />
+      <FormatColorPickerButton action={Action.FormatTextColor} />
+
+      <Separator />
+
+      <FormatColorPickerButton action={Action.FormatFillColor} />
+      <FormatButtonPopover
+        disableCloseAutoFocus
+        tooltipLabel="Borders"
+        Icon={BorderAllIcon}
+        className="flex flex-row flex-wrap"
       >
-        <FormatButton action={Action.FormatNumberToggleCommas} actionArgs={undefined} />
-        <FormatButton action={Action.FormatNumberDecimalDecrease} actionArgs={undefined} />
-        <FormatButton action={Action.FormatNumberDecimalIncrease} actionArgs={undefined} />
-        <FormatButton action={Action.FormatNumberCurrency} actionArgs={undefined} />
-        <FormatButton action={Action.FormatNumberPercent} actionArgs={undefined} />
-        <FormatButtonDropdown showDropdownArrow tooltipLabel="More number formats" Icon={Number123Icon}>
-          <FormatButtonDropdownActions
-            actions={[Action.FormatNumberAutomatic, Action.FormatNumberScientific]}
-            actionArgs={undefined}
-          />
-        </FormatButtonDropdown>
+        <BorderMenu />
+      </FormatButtonPopover>
 
-        <Separator />
+      <Separator />
 
-        <FormatDateAndTimePickerButton />
+      <FormatButtonDropdown showDropdownArrow tooltipLabel="Horizontal align" Icon={FormatAlignLeftIcon}>
+        <FormatButtonDropdownActions
+          actions={[
+            Action.FormatAlignHorizontalLeft,
+            Action.FormatAlignHorizontalCenter,
+            Action.FormatAlignHorizontalRight,
+          ]}
+          actionArgs={undefined}
+        />
+      </FormatButtonDropdown>
+      <FormatButtonDropdown showDropdownArrow tooltipLabel="Vertical align" Icon={VerticalAlignTopIcon}>
+        <FormatButtonDropdownActions
+          actions={[Action.FormatAlignVerticalTop, Action.FormatAlignVerticalMiddle, Action.FormatAlignVerticalBottom]}
+          actionArgs={undefined}
+        />
+      </FormatButtonDropdown>
+      <FormatButtonDropdown showDropdownArrow tooltipLabel="Text wrap" Icon={FormatTextWrapIcon}>
+        <FormatButtonDropdownActions
+          actions={[Action.FormatTextWrapWrap, Action.FormatTextWrapOverflow, Action.FormatTextWrapClip]}
+          actionArgs={undefined}
+        />
+      </FormatButtonDropdown>
 
-        <Separator />
+      <Separator />
 
-        <FormatButton action={Action.ToggleBold} actionArgs={undefined} />
-        <FormatButton action={Action.ToggleItalic} actionArgs={undefined} />
-        <FormatButton action={Action.ToggleUnderline} actionArgs={undefined} />
-        <FormatButton action={Action.ToggleStrikeThrough} actionArgs={undefined} />
-        <FormatColorPickerButton action={Action.FormatTextColor} />
-
-        <Separator />
-
-        <FormatColorPickerButton action={Action.FormatFillColor} />
-        <FormatButtonPopover
-          disableCloseAutoFocus
-          tooltipLabel="Borders"
-          Icon={BorderAllIcon}
-          className="flex flex-row flex-wrap"
-        >
-          <BorderMenu />
-        </FormatButtonPopover>
-
-        <Separator />
-
-        <FormatButtonDropdown showDropdownArrow tooltipLabel="Horizontal align" Icon={FormatAlignLeftIcon}>
-          <FormatButtonDropdownActions
-            actions={[
-              Action.FormatAlignHorizontalLeft,
-              Action.FormatAlignHorizontalCenter,
-              Action.FormatAlignHorizontalRight,
-            ]}
-            actionArgs={undefined}
-          />
-        </FormatButtonDropdown>
-        <FormatButtonDropdown showDropdownArrow tooltipLabel="Vertical align" Icon={VerticalAlignTopIcon}>
-          <FormatButtonDropdownActions
-            actions={[
-              Action.FormatAlignVerticalTop,
-              Action.FormatAlignVerticalMiddle,
-              Action.FormatAlignVerticalBottom,
-            ]}
-            actionArgs={undefined}
-          />
-        </FormatButtonDropdown>
-        <FormatButtonDropdown showDropdownArrow tooltipLabel="Text wrap" Icon={FormatTextWrapIcon}>
-          <FormatButtonDropdownActions
-            actions={[Action.FormatTextWrapWrap, Action.FormatTextWrapOverflow, Action.FormatTextWrapClip]}
-            actionArgs={undefined}
-          />
-        </FormatButtonDropdown>
-
-        <Separator />
-
-        <FormatButton action={Action.ClearFormattingBorders} actionArgs={undefined} />
-      </ToggleGroup.Root>
-    </TooltipProvider>
+      <FormatButton action={Action.ClearFormattingBorders} actionArgs={undefined} />
+    </ToggleGroup.Root>
   );
 };
 
