@@ -61,22 +61,24 @@ export const QuadraticSidebar = () => {
   return (
     <TooltipProvider>
       <nav className="hidden h-full w-12 flex-shrink-0 flex-col border-r border-border bg-accent lg:flex">
-        <SidebarTooltip label="Back to dashboard">
-          <Link
-            to="/"
-            reloadDocument
-            className="group relative flex h-12 items-center justify-center border-b border-border text-muted-foreground"
-          >
-            <QuadraticLogo />
-            {editorInteractionState.isRunningAsyncAction && (
-              <ShowAfter delay={300}>
-                <div className="absolute left-0 top-0 flex h-full w-full items-center justify-center bg-accent group-hover:hidden">
-                  <CircularProgress style={{ width: 18, height: 18 }} />
-                </div>
-              </ShowAfter>
-            )}
-          </Link>
-        </SidebarTooltip>
+        <div className="flex h-12 items-center justify-center border-b border-border">
+          <SidebarTooltip label="Back to dashboard">
+            <Link
+              to="/"
+              reloadDocument
+              className="group relative flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:bg-border"
+            >
+              <QuadraticLogo />
+              {editorInteractionState.isRunningAsyncAction && (
+                <ShowAfter delay={300}>
+                  <div className="absolute left-0 top-0 flex h-full w-full items-center justify-center bg-accent group-hover:hidden">
+                    <CircularProgress style={{ width: 18, height: 18 }} />
+                  </div>
+                </ShowAfter>
+              )}
+            </Link>
+          </SidebarTooltip>
+        </div>
 
         <div className="mt-2 flex flex-col items-center gap-1">
           {canEditFile && (
