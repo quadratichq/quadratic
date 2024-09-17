@@ -6,6 +6,7 @@ import { Empty } from '@/dashboard/components/Empty';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
 import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
 import { apiClient } from '@/shared/api/apiClient';
+import { MenuIcon } from '@/shared/components/Icons';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { useTheme } from '@/shared/hooks/useTheme';
@@ -13,7 +14,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
 import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { ExclamationTriangleIcon, HamburgerMenuIcon, InfoCircledIcon } from '@radix-ui/react-icons';
+import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useRef, useState } from 'react';
@@ -210,7 +211,7 @@ export const Component = () => {
               <Sheet open={isOpen} onOpenChange={setIsOpen}>
                 <SheetTrigger asChild>
                   <Button variant="ghost" size="icon" onClick={() => setIsOpen(true)}>
-                    <HamburgerMenuIcon />
+                    <MenuIcon />
                   </Button>
                 </SheetTrigger>
                 <SheetContent className="p-0" style={{ width: DRAWER_WIDTH }}>

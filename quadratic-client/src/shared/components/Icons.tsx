@@ -36,6 +36,10 @@ export const AddIcon: IconComponent = (props) => {
   return <Icon {...props}>add</Icon>;
 };
 
+export const ApiIcon: IconComponent = (props) => {
+  return <Icon {...props}>api</Icon>;
+};
+
 export const ArrowDropDownIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_drop_down</Icon>;
 };
@@ -96,6 +100,10 @@ export const CheckBoxIcon: IconComponent = (props) => {
   return <Icon {...props}>check_box</Icon>;
 };
 
+export const CheckIcon: IconComponent = (props) => {
+  return <Icon {...props}>check</Icon>;
+};
+
 export const CheckSmallIcon: IconComponent = (props) => {
   return <Icon {...props}>check_small</Icon>;
 };
@@ -106,6 +114,10 @@ export const ChevronLeftIcon: IconComponent = (props) => {
 
 export const ChevronRightIcon: IconComponent = (props) => {
   return <Icon {...props}>chevron_right</Icon>;
+};
+
+export const CloseIcon: IconComponent = (props) => {
+  return <Icon {...props}>close</Icon>;
 };
 
 export const CodeCellOutlineOn: IconComponent = (props) => {
@@ -184,8 +196,16 @@ export const EditIcon: IconComponent = (props) => {
   return <Icon {...props}>edit</Icon>;
 };
 
+export const EducationIcon: IconComponent = (props) => {
+  return <Icon {...props}>school</Icon>;
+};
+
+export const ExamplesIcon: IconComponent = (props) => {
+  return <Icon {...props}>view_carousel</Icon>;
+};
+
 export const ExternalLinkIcon: IconComponent = (props) => {
-  return <Icon {...props}>north_east</Icon>;
+  return <Icon {...props}>arrow_outward</Icon>;
 };
 
 export const FormatAlignCenterIcon: IconComponent = (props) => {
@@ -264,12 +284,20 @@ export const GoToIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_top_right</Icon>;
 };
 
+export const GroupIcon: IconComponent = (props) => {
+  return <Icon {...props}>group</Icon>;
+};
+
 export const ImportIcon: IconComponent = (props) => {
   return <Icon {...props}>login</Icon>;
 };
 
 export const InsertChartIcon: IconComponent = (props) => {
   return <Icon {...props}>insert_chart</Icon>;
+};
+
+export const LogoutIcon: IconComponent = (props) => {
+  return <Icon {...props}>logout</Icon>;
 };
 
 export const HelpIcon: IconComponent = (props) => {
@@ -284,8 +312,16 @@ export const ManageSearch: IconComponent = (props) => {
   return <Icon {...props}>manage_search</Icon>;
 };
 
+export const MenuIcon: IconComponent = (props) => {
+  return <Icon {...props}>menu</Icon>;
+};
+
 export const MemoryIcon: IconComponent = (props) => {
   return <Icon {...props}>memory</Icon>;
+};
+
+export const MoreVertIcon: IconComponent = (props) => {
+  return <Icon {...props}>more_vert</Icon>;
 };
 
 export const Number123Icon: IconComponent = (props) => {
@@ -301,6 +337,14 @@ export const Number123Icon: IconComponent = (props) => {
 
 export const FindInFileIcon: IconComponent = (props) => {
   return <Icon {...props}>pageview</Icon>;
+};
+
+export const FilePrivateIcon: IconComponent = (props) => {
+  return <Icon {...props}>lock</Icon>;
+};
+
+export const FileSharedWithMeIcon: IconComponent = (props) => {
+  return <Icon {...props}>move_to_inbox</Icon>;
 };
 
 export const PasteIcon: IconComponent = (props) => {
@@ -319,8 +363,16 @@ export const RedoIcon: IconComponent = (props) => {
   return <Icon {...props}>redo</Icon>;
 };
 
+export const RefreshIcon: IconComponent = (props) => {
+  return <Icon {...props}>refresh</Icon>;
+};
+
 export const ScientificIcon: IconComponent = (props) => {
   return <Icon {...props}>functions</Icon>;
+};
+
+export const SettingsIcon: IconComponent = (props) => {
+  return <Icon {...props}>settings</Icon>;
 };
 
 export const SheetIcon: IconComponent = (props) => {
@@ -337,6 +389,14 @@ export const VerticalAlignMiddleIcon: IconComponent = (props) => {
 
 export const VerticalAlignTopIcon: IconComponent = (props) => {
   return <Icon {...props}>vertical_align_top</Icon>;
+};
+
+export const ViewListIcon: IconComponent = (props) => {
+  return <Icon {...props}>list</Icon>;
+};
+
+export const ViewGridIcon: IconComponent = (props) => {
+  return <Icon {...props}>grid_view</Icon>;
 };
 
 export const UndoIcon: IconComponent = (props) => {

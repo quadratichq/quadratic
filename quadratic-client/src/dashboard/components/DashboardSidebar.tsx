@@ -1,11 +1,22 @@
 import { colors } from '@/app/theme/colors';
 import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
-import { ConnectionsIcon, PrivateFileIcon, SharedWithMeIcon } from '@/dashboard/components/CustomRadixIcons';
 import { TeamSwitcher } from '@/dashboard/components/TeamSwitcher';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { getActionFileMove } from '@/routes/api.files.$uuid';
 import { Avatar } from '@/shared/components/Avatar';
+import {
+  AddIcon,
+  DatabaseIcon,
+  DraftIcon,
+  EducationIcon,
+  ExamplesIcon,
+  ExternalLinkIcon,
+  FilePrivateIcon,
+  FileSharedWithMeIcon,
+  GroupIcon,
+  SettingsIcon,
+} from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import { TYPE } from '@/shared/constants/appConstants';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
@@ -14,8 +25,6 @@ import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { SchoolOutlined } from '@mui/icons-material';
-import { ExternalLinkIcon, FileIcon, GearIcon, MixIcon, PersonIcon, PlusIcon } from '@radix-ui/react-icons';
 import { ReactNode, useState } from 'react';
 import { NavLink, useLocation, useNavigation, useSearchParams, useSubmit } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
@@ -36,7 +45,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
   } = useDashboardRouteLoaderData();
 
   const canEditTeam = teamPermissions.includes('TEAM_EDIT');
-  const classNameIcons = `mx-1 text-muted-foreground`;
+  const classNameIcons = `mx-0.5 text-muted-foreground`;
 
   return (
     <nav className={`flex h-full flex-col gap-4 overflow-auto`}>
@@ -54,24 +63,24 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         <div className="grid gap-0.5">
           <div className="relative">
             <SidebarNavLink to={ROUTES.TEAM(activeTeamUuid)} dropTarget={canEditTeam ? null : undefined}>
-              <FileIcon className={classNameIcons} />
+              <DraftIcon className={classNameIcons} />
               Files
             </SidebarNavLink>
             {canEditTeam && <SidebarNavLinkCreateButton isPrivate={false}>New file</SidebarNavLinkCreateButton>}
           </div>
           {canEditTeam && (
             <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
-              <ConnectionsIcon className={classNameIcons} />
+              <DatabaseIcon className={classNameIcons} />
               Connections
             </SidebarNavLink>
           )}
           <SidebarNavLink to={ROUTES.TEAM_MEMBERS(activeTeamUuid)}>
-            <PersonIcon className={classNameIcons} />
+            <GroupIcon className={classNameIcons} />
             Members
           </SidebarNavLink>
           {canEditTeam && (
             <SidebarNavLink to={ROUTES.TEAM_SETTINGS(activeTeamUuid)}>
-              <GearIcon className={classNameIcons} />
+              <SettingsIcon className={classNameIcons} />
               Settings
             </SidebarNavLink>
           )}
@@ -86,13 +95,13 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         </Type>
         <div className="relative">
           <SidebarNavLink to={ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)} dropTarget={ownerUserId}>
-            <PrivateFileIcon className={classNameIcons} />
+            <FilePrivateIcon className={classNameIcons} />
             My files
           </SidebarNavLink>
           <SidebarNavLinkCreateButton isPrivate={true}>New private file</SidebarNavLinkCreateButton>
         </div>
         <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
-          <SharedWithMeIcon className={classNameIcons} />
+          <FileSharedWithMeIcon className={classNameIcons} />
           Shared with me
         </SidebarNavLink>
 
@@ -105,7 +114,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         <div className="grid gap-0.5">
           {canEditTeam && (
             <SidebarNavLink to={ROUTES.EXAMPLES}>
-              <MixIcon className={classNameIcons} />
+              <ExamplesIcon className={classNameIcons} />
               Examples
             </SidebarNavLink>
           )}
@@ -134,7 +143,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
               );
             }}
           >
-            <SchoolOutlined sx={{ fontSize: '16px' }} className={classNameIcons} />
+            <EducationIcon className={classNameIcons} />
             Education
             <Badge variant="secondary" className="ml-auto">
               Enrolled
@@ -173,7 +182,7 @@ function SidebarNavLinkCreateButton({ children, isPrivate }: { children: ReactNo
           className="absolute right-2 top-1 ml-auto opacity-30 hover:opacity-100"
           onClick={() => setNewFileDialogState({ show: true, isPrivate })}
         >
-          <PlusIcon />
+          <AddIcon />
         </Button>
       </TooltipTrigger>
       <TooltipContent>{children}</TooltipContent>
