@@ -259,10 +259,12 @@ impl Connection for SnowflakeConnection {
 mod tests {
 
     use crate::parquet::utils::compare_parquet_file_with_bytes;
+    use crate::test::request::get_server;
+
+    #[cfg(feature = "record-reqpest-mock")]
+    use crate::test::request::{playback_server, record_start, record_stop, recording_server};
 
     use super::*;
-    use httpmock::prelude::*;
-    use std::path::PathBuf;
     use tracing_test::traced_test;
 
     const PARQUET_FILE: &str = "data/parquet/all_native_data_types-snowflake.parquet";
@@ -336,46 +338,17 @@ mod tests {
         (connection, client)
     }
 
-    async fn test_query(record: bool, max_bytes: Option<u64>) -> (Bytes, bool) {
+    async fn test_query(max_bytes: Option<u64>) -> (Bytes, bool) {
         let connection = new_snowflake_connection();
-        let scenario = "snowflake";
-        let fixtures_dir = "./fixtures";
-        let fixtures_path = PathBuf::from(fixtures_dir);
-        let path = PathBuf::from(format!("{fixtures_dir}/{scenario}.yml"));
+        let scenario = "snowflake-connection";
         let url = format!(
             "https://{}.snowflakecomputing.com",
             &connection.account_identifier
         );
-        let mut recording = None;
+        let server = get_server(cfg!(feature = "record-reqpest-mock"), scenario, &url);
 
-        let server = match record {
-            true => {
-                let recording_server = MockServer::start();
-
-                // proxy all requests from the mock server to `url`
-                recording_server.forward_to(&url, |rule| {
-                    rule.filter(|when| {
-                        when.any_request();
-                    });
-                });
-
-                recording_server
-            }
-            false => {
-                let playback_server = MockServer::start();
-                playback_server.playback(path.clone());
-                playback_server
-            }
-        };
-
-        if record {
-            // setuup the recording server, this is not used during playback but required for recording
-            recording = Some(server.record(|rule| {
-                rule.filter(|when| {
-                    when.any_request();
-                });
-            }));
-        }
+        #[cfg(feature = "record-reqpest-mock")]
+        let recording = record_start(&server);
 
         // get the snowflake client, using the mock server as the host (`server.base_url()`)
         let client = connection
@@ -392,14 +365,8 @@ mod tests {
             .await
             .unwrap();
 
-        if let Some(recording) = recording {
-            let saved_path = recording
-                .save_to_async(fixtures_path, scenario)
-                .await
-                .expect("cannot store scenario on disk");
-
-            std::fs::rename(saved_path, path).unwrap();
-        }
+        #[cfg(feature = "record-reqpest-mock")]
+        record_stop(scenario, recording).await;
 
         result
     }
@@ -415,14 +382,14 @@ mod tests {
     #[tokio::test]
     #[traced_test]
     async fn test_snowflake_query() {
-        let (rows, over_the_limit) = test_query(false, None).await;
+        let (rows, over_the_limit) = test_query(None).await;
 
         // ensure the parquet file is the same as the bytes
         assert!(compare_parquet_file_with_bytes(PARQUET_FILE, rows));
         assert_eq!(over_the_limit, false);
 
         // // test if we're over the limit
-        let (_, over_the_limit) = test_query(false, Some(10)).await;
+        let (_, over_the_limit) = test_query(Some(10)).await;
         assert_eq!(over_the_limit, true);
     }
 

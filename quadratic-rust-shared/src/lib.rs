@@ -8,5 +8,8 @@ pub mod pubsub;
 pub mod quadratic_api;
 pub mod sql;
 
+#[cfg(test)]
+pub mod test;
+
 // pub use aws::*;
 pub use error::*;
