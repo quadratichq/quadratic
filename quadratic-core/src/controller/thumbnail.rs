@@ -126,7 +126,7 @@ mod test {
     #[test]
     #[parallel]
     fn thumbnail_dirty_selection_all() {
-        let gc = GridController::test();
+        let gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
         assert!(!gc.thumbnail_dirty_selection(&Selection {
             sheet_id: SheetId::test(),
@@ -151,7 +151,7 @@ mod test {
     #[test]
     #[parallel]
     fn thumbnail_dirty_selection_columns() {
-        let gc = GridController::test();
+        let gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
         assert!(!gc.thumbnail_dirty_selection(&Selection {
             sheet_id: SheetId::test(),
@@ -196,7 +196,7 @@ mod test {
     #[test]
     #[parallel]
     fn thumbnail_dirty_selection_rows() {
-        let gc = GridController::test();
+        let gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
         assert!(!gc.thumbnail_dirty_selection(&Selection {
             sheet_id: SheetId::test(),
@@ -241,7 +241,7 @@ mod test {
     #[test]
     #[parallel]
     fn thumbnail_dirty_selection_rects() {
-        let gc = GridController::test();
+        let gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
         assert!(!gc.thumbnail_dirty_selection(&Selection {
             sheet_id: SheetId::test(),

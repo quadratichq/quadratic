@@ -73,6 +73,7 @@ impl GridController {
             .and_then(|sheet| sheet.validations.get_validation_from_pos(pos))
     }
 
+    /// Gets a list of strings for a validation list (user defined or from a selection).
     pub fn validation_list(&self, sheet_id: SheetId, x: i64, y: i64) -> Option<Vec<String>> {
         let sheet = self.try_sheet(sheet_id)?;
         let validation = sheet.validations.get_validation_from_pos(Pos { x, y })?;

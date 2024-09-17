@@ -1,11 +1,13 @@
-use crate::{
-    controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-    grid::SheetId,
-    ArraySize,
-};
-use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
+use std::fmt;
 use std::ops::Range;
-use std::{fmt, str::FromStr};
+use std::str::FromStr;
+
+use serde::{Deserialize, Serialize};
+
+use crate::controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
+use crate::grid::SheetId;
+use crate::ArraySize;
 
 /// Cell position {x, y}.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -288,6 +290,18 @@ impl Rect {
         self.max.y = self.max.y.max(y);
     }
 
+    pub fn to_hashes(&self) -> HashSet<Pos> {
+        let mut hashes = HashSet::new();
+        let min_hash = self.min.quadrant();
+        let max_hash = self.max.quadrant();
+        for x in min_hash.0..=max_hash.0 {
+            for y in min_hash.1..=max_hash.1 {
+                hashes.insert(Pos { x, y });
+            }
+        }
+        hashes
+    }
+
     /// Finds the intersection of two rectangles.
     pub fn intersection(&self, other: &Rect) -> Option<Rect> {
         let x1 = self.min.x.max(other.min.x);
@@ -521,6 +535,18 @@ impl SheetRect {
             None
         }
     }
+
+    pub fn to_hashes(&self) -> HashSet<Pos> {
+        let mut hashes = HashSet::new();
+        let min_hash = self.min.quadrant();
+        let max_hash = self.max.quadrant();
+        for x in min_hash.0..=max_hash.0 {
+            for y in min_hash.1..=max_hash.1 {
+                hashes.insert(Pos { x, y });
+            }
+        }
+        hashes
+    }
 }
 impl fmt::Display for SheetRect {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -587,12 +613,11 @@ impl SheetPos {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-        grid::SheetId,
-        Pos, Rect, SheetPos, SheetRect,
-    };
     use serial_test::parallel;
+
+    use crate::controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
+    use crate::grid::SheetId;
+    use crate::{Pos, Rect, SheetPos, SheetRect};
 
     #[test]
     #[parallel]

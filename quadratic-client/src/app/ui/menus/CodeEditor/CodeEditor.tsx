@@ -69,7 +69,7 @@ export const CodeEditor = () => {
   // Trigger vanilla changes to code editor
   useEffect(() => {
     events.emit('codeEditor');
-    setPanelBottomActiveTab(mode === 'Connection' ? 'data-browser' : 'console');
+    setPanelBottomActiveTab(mode === 'Connection' ? 'data-browser' : 'ai-assistant');
     setAiMessages([]);
   }, [
     showCodeEditor,

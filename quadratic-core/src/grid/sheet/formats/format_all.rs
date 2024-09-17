@@ -77,13 +77,19 @@ impl Sheet {
     /// to watch for changes to html cells.
     ///
     /// Returns a Vec<Operation> to undo this operation.
-    pub(crate) fn set_format_all(&mut self, update: &Formats) -> (Vec<Operation>, Vec<i64>) {
+    pub(crate) fn set_format_all(
+        &mut self,
+        update: &Formats,
+    ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>) {
         let mut old = Formats::default();
         let mut format_all = self.format_all();
         let old_wrap = format_all.wrap;
 
         // tracks whether we need to rerender all cells
         let mut render_cells = false;
+
+        // tracks which hashes than need to be updated
+        let mut dirty_hashes = HashSet::new();
 
         // tracks whether we need to change the fills
         let mut change_sheet_fills = false;
@@ -96,17 +102,19 @@ impl Sheet {
             // if there are no changes to the format_all, then we don't need to
             // do anything
             if format_update.is_default() {
-                return (vec![], vec![]);
+                return (vec![], dirty_hashes, resize_rows);
             }
 
             if matches!(old_wrap, Some(CellWrap::Wrap))
                 || matches!(format_update.wrap, Some(Some(CellWrap::Wrap)))
             {
+                // text wrap changes, resize all rows
                 let bounds = self.bounds(true);
                 if let GridBounds::NonEmpty(rect) = bounds {
                     resize_rows.extend(rect.y_range());
                 }
             } else {
+                // only resize rows that have wrap text
                 let bounds = self.bounds(true);
                 if let GridBounds::NonEmpty(rect) = bounds {
                     let rows = self.get_rows_with_wrap_in_rect(&rect);
@@ -208,13 +216,17 @@ impl Sheet {
 
             // force a rerender of all impacted cells
             if render_cells {
-                self.send_all_render_cells();
+                let bounds = self.bounds(true);
+                if let GridBounds::NonEmpty(rect) = bounds {
+                    let hashes = rect.to_hashes();
+                    dirty_hashes.extend(hashes);
+                }
             }
 
-            (ops, resize_rows.into_iter().collect())
+            (ops, dirty_hashes, resize_rows)
         } else {
             // there are no updates, so nothing more to do
-            (vec![], vec![])
+            (vec![], HashSet::new(), HashSet::new())
         }
     }
 }

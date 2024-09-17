@@ -1,7 +1,6 @@
 {
   "name": "quadratic-multiplayer",
   "description": "Quadratic Multiplayer server",
-  "version": "0.1.0",
   "dependencies": {},
   "devDependencies": {},
   "scripts": {

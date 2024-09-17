@@ -24,6 +24,9 @@ impl GridController {
                 transaction_name,
             );
         }
+
+        self.send_viewport_buffer(transaction);
+
         loop {
             if transaction.operations.is_empty() && transaction.resize_rows.is_empty() {
                 transaction.complete = true;
@@ -31,6 +34,9 @@ impl GridController {
             }
 
             self.execute_operation(transaction);
+
+            self.process_visible_dirty_hashes(transaction);
+
             if transaction.has_async > 0 {
                 self.transactions.update_async_transaction(transaction);
                 break;
@@ -52,6 +58,10 @@ impl GridController {
                 }
             }
         }
+
+        self.process_visible_dirty_hashes(transaction);
+        self.process_remaining_dirty_hashes(transaction);
+        self.clear_viewport_buffer(transaction);
     }
 
     /// Finalizes the transaction and pushes it to the various stacks (if needed)
