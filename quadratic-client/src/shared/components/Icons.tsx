@@ -4,6 +4,7 @@
  * Font is imported in index.html
  * We import 20 and 24 dp icons
  *
+ * https://fonts.google.com/icons
  */
 import './icons.css';
 
