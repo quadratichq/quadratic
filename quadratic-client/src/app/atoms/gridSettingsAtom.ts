@@ -1,5 +1,6 @@
 import { debugGridSettings } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { AtomEffect, DefaultValue, atom, selector } from 'recoil';
 
 const SETTINGS_KEY = 'viewSettings';
@@ -62,11 +63,13 @@ const createSelector = <T extends keyof GridSettings>(key: T) =>
   selector<GridSettings[T]>({
     key: `codeEditor${key.charAt(0).toUpperCase() + key.slice(1)}Atom`,
     get: ({ get }) => get(gridSettingsAtom)[key],
-    set: ({ set }, newValue) =>
+    set: ({ set }, newValue) => {
       set(gridSettingsAtom, (prev) => ({
         ...prev,
         [key]: newValue instanceof DefaultValue ? prev[key] : newValue,
-      })),
+      }));
+      focusGrid();
+    },
   });
 
 export const showGridAxesAtom = createSelector('showGridAxes');

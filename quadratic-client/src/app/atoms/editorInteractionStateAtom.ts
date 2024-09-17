@@ -5,6 +5,7 @@ import { FilePermission } from 'quadratic-shared/typesAndSchemas';
 import { atom, DefaultValue, selector } from 'recoil';
 
 export type EditorInteractionState = {
+  isRunningAsyncAction: boolean;
   showCellTypeMenu: boolean;
   showCodeEditor: boolean;
   showCommandPalette: boolean;
@@ -40,6 +41,7 @@ export type EditorInteractionState = {
 };
 
 export const editorInteractionStateDefault: EditorInteractionState = {
+  isRunningAsyncAction: false,
   showCellTypeMenu: false,
   showCodeEditor: false,
   showCommandPalette: false,
