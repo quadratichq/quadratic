@@ -6,11 +6,8 @@ import {
   pasteAction,
   pasteActionFormats,
   pasteActionValues,
-  redoAction,
-  undoAction,
 } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
-import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import {
   copySelectionToPNG,
@@ -19,60 +16,17 @@ import {
   fullClipboardSupport,
   pasteFromClipboard,
 } from '@/app/grid/actions/clipboard/clipboard';
-import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import {
-  CopyAsPng,
-  CutIcon,
-  FileCopyIcon,
-  FindInFileIcon,
-  GoToIcon,
-  PasteIcon,
-  RedoIcon,
-  UndoIcon,
-} from '@/shared/components/Icons';
-import { isMac } from '@/shared/utils/isMac';
+import { CopyAsPng, CutIcon, FileCopyIcon, FindInFileIcon, GoToIcon, PasteIcon } from '@/shared/components/Icons';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
-// TODO: Make this more type safe
-const downloadSelectionAsCsvAction = defaultActionSpec[Action.DownloadAsCsv];
-
 const data: CommandGroup = {
   heading: 'Edit',
   commands: [
-    {
-      label: undoAction.label,
-      isAvailable: undoAction.isAvailable,
-      Component: (props) => {
-        return (
-          <CommandPaletteListItem
-            {...props}
-            action={quadraticCore.undo}
-            icon={<UndoIcon />}
-            shortcut={KeyboardSymbols.Command + 'Z'}
-          />
-        );
-      },
-    },
-    {
-      label: redoAction.label,
-      isAvailable: redoAction.isAvailable,
-      Component: (props) => {
-        return (
-          <CommandPaletteListItem
-            {...props}
-            action={quadraticCore.redo}
-            icon={<RedoIcon />}
-            shortcutModifiers={isMac ? [KeyboardSymbols.Command, KeyboardSymbols.Shift] : [KeyboardSymbols.Command]}
-            shortcut={isMac ? 'Z' : 'Y'}
-          />
-        );
-      },
-    },
-
+    Action.Undo,
+    Action.Redo,
     {
       label: cutAction.label,
       isAvailable: cutAction.isAvailable,
@@ -204,21 +158,7 @@ const data: CommandGroup = {
         );
       },
     },
-    {
-      label: downloadSelectionAsCsvAction?.label ?? '',
-      Component: (props) => {
-        return (
-          <CommandPaletteListItem
-            {...props}
-            action={() => {
-              downloadSelectionAsCsvAction?.run(undefined);
-            }}
-            icon={downloadSelectionAsCsvAction?.Icon && <downloadSelectionAsCsvAction.Icon />}
-            shortcut={keyboardShortcutEnumToDisplay(Action.DownloadAsCsv)}
-          />
-        );
-      },
-    },
+    Action.DownloadAsCsv,
   ],
 };
 

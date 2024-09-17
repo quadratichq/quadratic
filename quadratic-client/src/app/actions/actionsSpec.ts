@@ -41,6 +41,8 @@ export type ActionSpec<ActionArgsType> = {
   // ```
   Icon?: IconComponent;
   isAvailable?: (args: ActionAvailabilityArgs) => boolean;
+  // Used for command palette search
+  keywords?: string[];
 };
 
 export type ActionSpecRecord = {
