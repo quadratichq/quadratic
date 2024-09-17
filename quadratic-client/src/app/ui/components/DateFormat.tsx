@@ -71,11 +71,8 @@ export const DateFormat = (props: DateFormatProps) => {
   }, [original, current]);
 
   const apply = useCallback(() => {
-    if (!date && !time && custom) {
-      quadraticCore.setDateTimeFormat(sheets.getRustSelection(), custom, sheets.getCursorPosition());
-    } else {
-      quadraticCore.setDateTimeFormat(sheets.getRustSelection(), `${date} ${time}`, sheets.getCursorPosition());
-    }
+    const format = !date && !time && custom ? custom : `${date} ${time}`;
+    quadraticCore.setDateTimeFormat(sheets.getRustSelection(), format, sheets.getCursorPosition());
     closeMenu();
   }, [closeMenu, custom, date, time]);
 
