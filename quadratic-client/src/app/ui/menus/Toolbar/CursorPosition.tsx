@@ -1,12 +1,14 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateShowGoToMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import GoTo from '@/app/ui/menus/GoTo';
 import { ArrowDropDownIcon } from '@/shared/components/Icons';
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
 import { useEffect, useState } from 'react';
-import { useSetRecoilState } from 'recoil';
+import { useRecoilState } from 'recoil';
 
 export const CursorPosition = () => {
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const [showGoToMenu, setShowGoToMenu] = useRecoilState(editorInteractionStateShowGoToMenuAtom);
   const [cursorPositionString, setCursorPositionString] = useState('');
   const [multiCursorPositionString, setMultiCursorPositionString] = useState('');
 
@@ -33,12 +35,14 @@ export const CursorPosition = () => {
   }, []);
 
   return (
-    <button
-      className="group flex h-full w-full items-center justify-between pl-2 pr-1 text-sm hover:bg-accent focus:bg-accent focus:outline-none"
-      onClick={() => setEditorInteractionState((prev) => ({ ...prev, showGoToMenu: true }))}
-    >
-      <span className="truncate">{multiCursorPositionString ? multiCursorPositionString : cursorPositionString}</span>
-      <ArrowDropDownIcon className="text-muted-foreground group-hover:text-foreground" />
-    </button>
+    <Popover open={showGoToMenu} onOpenChange={(open) => setShowGoToMenu(open)}>
+      <PopoverTrigger className="group flex h-full w-full items-center justify-between pl-2 pr-1 text-sm hover:bg-accent focus:bg-accent focus:outline-none data-[state=open]:bg-accent">
+        <span className="truncate">{multiCursorPositionString ? multiCursorPositionString : cursorPositionString}</span>
+        <ArrowDropDownIcon className="text-muted-foreground group-hover:text-foreground" />
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-0" align="start">
+        <GoTo />
+      </PopoverContent>
+    </Popover>
   );
 };

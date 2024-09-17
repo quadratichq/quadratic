@@ -24,7 +24,6 @@ import CodeEditor from '@/app/ui/menus/CodeEditor';
 import CommandPalette from '@/app/ui/menus/CommandPalette';
 import ConnectionsMenu from '@/app/ui/menus/ConnectionsMenu';
 import FeedbackMenu from '@/app/ui/menus/FeedbackMenu';
-import GoTo from '@/app/ui/menus/GoTo';
 import SheetBar from '@/app/ui/menus/SheetBar';
 import Toolbar from '@/app/ui/menus/Toolbar';
 import { TopBar } from '@/app/ui/menus/TopBar/TopBar';
@@ -149,7 +148,6 @@ export default function QuadraticUI() {
       {presentationMode && <PresentationModeHint />}
       <CellTypeMenu />
       <CommandPalette />
-      <GoTo />
       {showRenameFileMenu && (
         <DialogRenameItem
           itemLabel="file"
