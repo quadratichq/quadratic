@@ -261,7 +261,7 @@ mod tests {
     use crate::parquet::utils::compare_parquet_file_with_bytes;
     use crate::test::request::get_server;
 
-    #[cfg(feature = "record-reqpest-mock")]
+    #[cfg(feature = "record-request-mock")]
     use crate::test::request::{playback_server, record_start, record_stop, recording_server};
 
     use super::*;
@@ -338,6 +338,7 @@ mod tests {
         (connection, client)
     }
 
+    // to record: cargo test --features record-request-mock
     async fn test_query(max_bytes: Option<u64>) -> (Bytes, bool) {
         let connection = new_snowflake_connection();
         let scenario = "snowflake-connection";
@@ -345,9 +346,9 @@ mod tests {
             "https://{}.snowflakecomputing.com",
             &connection.account_identifier
         );
-        let server = get_server(cfg!(feature = "record-reqpest-mock"), scenario, &url);
+        let server = get_server(cfg!(feature = "record-request-mock"), scenario, &url);
 
-        #[cfg(feature = "record-reqpest-mock")]
+        #[cfg(feature = "record-request-mock")]
         let recording = record_start(&server);
 
         // get the snowflake client, using the mock server as the host (`server.base_url()`)
@@ -365,7 +366,7 @@ mod tests {
             .await
             .unwrap();
 
-        #[cfg(feature = "record-reqpest-mock")]
+        #[cfg(feature = "record-request-mock")]
         record_stop(scenario, recording).await;
 
         result
