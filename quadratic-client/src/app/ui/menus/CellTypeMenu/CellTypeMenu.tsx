@@ -9,7 +9,7 @@ import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { LinkNewTab } from '@/app/ui/components/LinkNewTab';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { JavaScript } from '@/app/ui/icons';
-import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
+import { DatabaseIcon } from '@/shared/components/Icons';
 import {
   DOCUMENTATION_FORMULAS_URL,
   DOCUMENTATION_JAVASCRIPT_URL,
@@ -167,7 +167,7 @@ export default function CellTypeMenu() {
                   Connect to Postgres, MySQL, <LinkNewTabWrapper href={DOCUMENTATION_URL}>and more</LinkNewTabWrapper>
                 </>
               }
-              icon={<ConnectionsIcon className="text-muted-foreground opacity-80" />}
+              icon={<DatabaseIcon className="text-muted-foreground opacity-80" />}
               onSelect={() => {
                 setEditorInteractionState((prev) => ({
                   ...prev,
@@ -210,7 +210,7 @@ function CommandItemWrapper({
         e.stopPropagation();
       }}
     >
-      <div className="mr-4">{icon}</div>
+      <div className="mr-4 flex h-5 w-5 items-center">{icon}</div>
       <div className="flex flex-col">
         <span className="flex items-center">
           {name}{' '}

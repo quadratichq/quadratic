@@ -120,6 +120,7 @@ const createSelector = <T extends keyof EditorInteractionState>(key: T) =>
       })),
   });
 
+export const editorInteractionStateShowIsRunningAsyncActionAtom = createSelector('isRunningAsyncAction');
 export const editorInteractionStateShowCellTypeMenuAtom = createSelector('showCellTypeMenu');
 export const editorInteractionStateShowCodeEditorAtom = createSelector('showCodeEditor');
 export const editorInteractionStateShowCommandPaletteAtom = createSelector('showCommandPalette');

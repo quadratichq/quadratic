@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from '@/shared/shadcn/ui/select';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import {
@@ -678,16 +678,14 @@ function ManageUser({
         ) : (
           <div className="flex items-center gap-4">
             {publicLinkAccess === 'EDIT' && activeRole === 'VIEWER' && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <ExclamationTriangleIcon className="text-warning" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-40 text-center">
-                    This person can still edit because the file is set so <em>anyone with the link can edit</em>.
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <ExclamationTriangleIcon className="text-warning" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-40 text-center">
+                  This person can still edit because the file is set so <em>anyone with the link can edit</em>.
+                </TooltipContent>
+              </Tooltip>
             )}
             <Select
               value={activeRole}

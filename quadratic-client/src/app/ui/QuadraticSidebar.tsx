@@ -3,11 +3,20 @@ import {
   isAvailableBecauseFileLocationIsAccessibleAndWriteable,
   provideFeedbackAction,
 } from '@/app/actions';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  editorInteractionStateShowAIAssistantAtom,
+  editorInteractionStateShowCodeEditorAtom,
+  editorInteractionStateShowCommandPaletteAtom,
+  editorInteractionStateShowConnectionsMenuAtom,
+  editorInteractionStateShowFeedbackMenuAtom,
+  editorInteractionStateShowIsRunningAsyncActionAtom,
+  editorInteractionStateShowValidationAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
 import { showCellTypeOutlinesAtom } from '@/app/atoms/gridSettingsAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useRootRouteLoaderData } from '@/routes/_root';
@@ -26,32 +35,28 @@ import {
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { ShowAfter } from '@/shared/components/ShowAfter';
 import { DOCUMENTATION_URL } from '@/shared/constants/urls';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { CircularProgress } from '@mui/material';
-import { TooltipProvider } from '@radix-ui/react-tooltip';
 import mixpanel from 'mixpanel-browser';
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 
 export const QuadraticSidebar = () => {
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const isRunningAsyncAction = useRecoilValue(editorInteractionStateShowIsRunningAsyncActionAtom);
+  const [showAIAssistant, setShowAIAssistant] = useRecoilState(editorInteractionStateShowAIAssistantAtom);
+  const [showCodeEditor, setShowCodeEditor] = useRecoilState(editorInteractionStateShowCodeEditorAtom);
   const [showCellTypeOutlines, setShowCellTypeOutlines] = useRecoilState(showCellTypeOutlinesAtom);
+  const [showConnectionsMenu, setShowConnectionsMenu] = useRecoilState(editorInteractionStateShowConnectionsMenuAtom);
+  const [showValidation, setShowValidation] = useRecoilState(editorInteractionStateShowValidationAtom);
+  const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
+  const [showFeedbackMenu, setShowFeedbackMenu] = useRecoilState(editorInteractionStateShowFeedbackMenuAtom);
+
   const { isAuthenticated } = useRootRouteLoaderData();
-  const {
-    userMakingRequest: { fileTeamPrivacy, teamPermissions },
-  } = useFileRouteLoaderData();
 
-  const isAvailableArgs = {
-    filePermissions: editorInteractionState.permissions,
-    fileTeamPrivacy,
-    isAuthenticated,
-    teamPermissions,
-  };
-
+  const isAvailableArgs = useIsAvailableArgs();
   const canEditFile = isAvailableBecauseCanEditFile(isAvailableArgs);
   const canDoTeamsStuff = isAvailableBecauseFileLocationIsAccessibleAndWriteable(isAvailableArgs);
 
@@ -60,16 +65,16 @@ export const QuadraticSidebar = () => {
   const cursorPosition = cursor.cursorPosition;
 
   return (
-    <TooltipProvider>
-      <nav className="hidden h-full w-12 flex-shrink-0 flex-col border-r border-border bg-accent lg:flex">
+    <nav className="hidden h-full w-12 flex-shrink-0 flex-col border-r border-border bg-accent lg:flex">
+      <div className="flex h-12 items-center justify-center border-b border-border">
         <SidebarTooltip label="Back to dashboard">
           <Link
             to="/"
             reloadDocument
-            className="group relative flex h-12 items-center justify-center border-b border-border text-muted-foreground"
+            className="group relative flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:bg-border"
           >
             <QuadraticLogo />
-            {editorInteractionState.isRunningAsyncAction && (
+            {isRunningAsyncAction && (
               <ShowAfter delay={300}>
                 <div className="absolute left-0 top-0 flex h-full w-full items-center justify-center bg-accent group-hover:hidden">
                   <CircularProgress style={{ width: 18, height: 18 }} />
@@ -78,107 +83,91 @@ export const QuadraticSidebar = () => {
             )}
           </Link>
         </SidebarTooltip>
+      </div>
 
-        <div className="mt-2 flex flex-col items-center gap-1">
-          {canEditFile && isAuthenticated && (
-            <SidebarTooltip label="AI Assistant">
-              <SidebarToggle
-                pressed={editorInteractionState.showAIAssistant}
-                onPressedChange={() =>
-                  setEditorInteractionState((prev) => ({ ...prev, showAIAssistant: !prev.showAIAssistant }))
-                }
-              >
-                <AIIcon />
-              </SidebarToggle>
-            </SidebarTooltip>
-          )}
+      <div className="mt-2 flex flex-col items-center gap-1">
+        {canEditFile && isAuthenticated && (
+          <SidebarTooltip label="AI Assistant">
+            <SidebarToggle pressed={showAIAssistant} onPressedChange={() => setShowAIAssistant((prev) => !prev)}>
+              <AIIcon />
+            </SidebarToggle>
+          </SidebarTooltip>
+        )}
 
-          {canEditFile && (
-            <SidebarTooltip label="Code editor" shortcut={'/'}>
-              <SidebarToggle
-                pressed={editorInteractionState.showCodeEditor}
-                onPressedChange={async () => {
-                  const column = cursorPosition.x;
-                  const row = cursorPosition.y;
-                  const code = await quadraticCore.getCodeCell(sheets.sheet.id, column, row);
-
-                  if (code) {
-                    doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
-                  } else {
-                    setEditorInteractionState((prev) => ({ ...prev, showCellTypeMenu: true }));
-                  }
-                }}
-              >
-                <CodeIcon />
-              </SidebarToggle>
-            </SidebarTooltip>
-          )}
-
-          <SidebarTooltip label={'Code cell outlines'}>
+        {canEditFile && (
+          <SidebarTooltip label="Code editor" shortcut={'/'}>
             <SidebarToggle
-              pressed={showCellTypeOutlines}
-              onPressedChange={() => setShowCellTypeOutlines(!showCellTypeOutlines)}
-            >
-              {showCellTypeOutlines ? <CodeCellOutlineOn /> : <CodeCellOutlineOff />}
-            </SidebarToggle>
-          </SidebarTooltip>
+              pressed={showCodeEditor}
+              onPressedChange={async () => {
+                const column = cursorPosition.x;
+                const row = cursorPosition.y;
+                const code = await quadraticCore.getCodeCell(sheets.sheet.id, column, row);
 
-          {canDoTeamsStuff && (
-            <SidebarTooltip label="Connections">
-              <SidebarToggle
-                pressed={editorInteractionState.showConnectionsMenu}
-                onPressedChange={() => setEditorInteractionState((prev) => ({ ...prev, showConnectionsMenu: true }))}
-              >
-                <DatabaseIcon />
-              </SidebarToggle>
-            </SidebarTooltip>
-          )}
-
-          {canEditFile && (
-            <SidebarTooltip label="Data validation">
-              <SidebarToggle
-                pressed={Boolean(editorInteractionState.showValidation)}
-                onPressedChange={() =>
-                  setEditorInteractionState((prev) => ({ ...prev, showValidation: !Boolean(prev.showValidation) }))
+                if (code) {
+                  doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
+                } else {
+                  setShowCodeEditor((prev) => !prev);
                 }
-              >
-                <DataValidationsIcon />
-              </SidebarToggle>
-            </SidebarTooltip>
-          )}
-
-          {canEditFile && <KernelMenu triggerIcon={<MemoryIcon />} />}
-
-          <SidebarTooltip label="Command palette" shortcut={KeyboardSymbols.Command + 'P'}>
-            <SidebarToggle
-              pressed={editorInteractionState.showCommandPalette}
-              onPressedChange={() => setEditorInteractionState((prev) => ({ ...prev, showCommandPalette: true }))}
+              }}
             >
-              <ManageSearch />
+              <CodeIcon />
             </SidebarToggle>
           </SidebarTooltip>
-        </div>
-        <div className="mb-2 mt-auto flex flex-col items-center gap-1">
-          {provideFeedbackAction.isAvailable(isAvailableArgs) && (
-            <SidebarTooltip label={provideFeedbackAction.label}>
-              <SidebarToggle
-                pressed={editorInteractionState.showFeedbackMenu}
-                onPressedChange={() => setEditorInteractionState((prev) => ({ ...prev, showFeedbackMenu: true }))}
-              >
-                <FeedbackIcon />
-              </SidebarToggle>
-            </SidebarTooltip>
-          )}
-          <SidebarTooltip label="Documentation">
-            <SidebarToggle asChild>
-              <Link to={DOCUMENTATION_URL} target="_blank" rel="noreferrer" className="flex">
-                <DocumentationIcon />
-              </Link>
+        )}
+
+        <SidebarTooltip label={'Code cell outlines'}>
+          <SidebarToggle
+            pressed={showCellTypeOutlines}
+            onPressedChange={() => setShowCellTypeOutlines((prev) => !prev)}
+          >
+            {showCellTypeOutlines ? <CodeCellOutlineOn /> : <CodeCellOutlineOff />}
+          </SidebarToggle>
+        </SidebarTooltip>
+
+        {canDoTeamsStuff && (
+          <SidebarTooltip label="Connections">
+            <SidebarToggle
+              pressed={showConnectionsMenu}
+              onPressedChange={() => setShowConnectionsMenu((prev) => !prev)}
+            >
+              <DatabaseIcon />
             </SidebarToggle>
           </SidebarTooltip>
-        </div>
-      </nav>
-    </TooltipProvider>
+        )}
+
+        {canEditFile && (
+          <SidebarTooltip label="Data validation">
+            <SidebarToggle pressed={!!showValidation} onPressedChange={() => setShowValidation((prev) => !prev)}>
+              <DataValidationsIcon />
+            </SidebarToggle>
+          </SidebarTooltip>
+        )}
+
+        {canEditFile && <KernelMenu triggerIcon={<MemoryIcon />} />}
+
+        <SidebarTooltip label="Command palette" shortcut={KeyboardSymbols.Command + 'P'}>
+          <SidebarToggle pressed={showCommandPalette} onPressedChange={() => setShowCommandPalette((prev) => !prev)}>
+            <ManageSearch />
+          </SidebarToggle>
+        </SidebarTooltip>
+      </div>
+      <div className="mb-2 mt-auto flex flex-col items-center gap-1">
+        {provideFeedbackAction.isAvailable(isAvailableArgs) && (
+          <SidebarTooltip label={provideFeedbackAction.label}>
+            <SidebarToggle pressed={showFeedbackMenu} onPressedChange={() => setShowFeedbackMenu(true)}>
+              <FeedbackIcon />
+            </SidebarToggle>
+          </SidebarTooltip>
+        )}
+        <SidebarTooltip label="Documentation">
+          <SidebarToggle asChild>
+            <Link to={DOCUMENTATION_URL} target="_blank" rel="noreferrer" className="flex">
+              <DocumentationIcon />
+            </Link>
+          </SidebarToggle>
+        </SidebarTooltip>
+      </div>
+    </nav>
   );
 };
 
