@@ -1,10 +1,16 @@
+import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import {
   editorInteractionStateAnnotationStateAtom,
   editorInteractionStatePermissionsAtom,
   editorInteractionStateShowCellTypeMenuAtom,
   editorInteractionStateShowCommandPaletteAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
-import { Command } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
+import {
+  Command,
+  CommandPaletteListItem,
+  CommandPaletteListItemDynamicProps,
+} from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { BordersHook } from '@/app/ui/menus/CommandPalette/commands/Borders';
 import codeCommandGroup from '@/app/ui/menus/CommandPalette/commands/Code';
 import columnRowCommandGroup from '@/app/ui/menus/CommandPalette/commands/ColumnRow';
@@ -99,7 +105,36 @@ export const CommandPalette = () => {
       <CommandList>
         {commandGroups.map(({ heading, commands }) => {
           let filteredCommands: Array<Command & { fuzzysortResult: any }> = [];
-          commands.forEach((command, i) => {
+          commands.forEach((commandOrAction, i) => {
+            // Right now, we are in the process of centralizing all actions.
+            // That means for each command palette item will either be:
+            // 1) a `Command` type (the OLD way)
+            // 2) an `Action` type (the new way)
+            // Once we convert all actions to the new format, we can remove this
+            // intermediate step of converting an `Action` to a `Command` and
+            // just expect that they'll all be `Action` types.
+            let command;
+            if (typeof commandOrAction === 'string') {
+              const actionSpec = defaultActionSpec[commandOrAction];
+              command = {
+                ...defaultActionSpec[commandOrAction],
+                Component: (props: CommandPaletteListItemDynamicProps) => (
+                  <CommandPaletteListItem
+                    {...props}
+                    // This works fine for `run` functions that don't require anything
+                    // But how will we handle the case where we want some actions require
+                    // different args to the `run` function?
+                    // @ts-expect-error
+                    action={actionSpec.run}
+                    icon={'Icon' in actionSpec && actionSpec.Icon ? <actionSpec.Icon /> : null}
+                    shortcut={keyboardShortcutEnumToDisplay(commandOrAction)}
+                  />
+                ),
+              };
+            } else {
+              command = commandOrAction;
+            }
+
             const { label, keywords, isAvailable } = command;
 
             // Is the command even available?

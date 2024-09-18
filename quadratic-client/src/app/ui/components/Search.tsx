@@ -1,4 +1,5 @@
-import { findInSheet, findInSheets } from '@/app/actions';
+import { Action } from '@/app/actions/actions';
+import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { editorInteractionStateShowSearchAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -17,6 +18,9 @@ import { ChevronLeftIcon, ChevronRightIcon, Cross2Icon, DotsHorizontalIcon } fro
 import { useEffect, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
+const findInSheetActionSpec = defaultActionSpec[Action.FindInCurrentSheet];
+const findInSheetsActionSpec = defaultActionSpec[Action.FindInAllSheets];
+
 export function Search() {
   const [showSearch, setShowSearch] = useRecoilState(editorInteractionStateShowSearchAtom);
 
@@ -30,7 +34,7 @@ export function Search() {
   const [current, setCurrent] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const placeholder = !searchOptions.sheet_id ? findInSheets.label : findInSheet.label;
+  const placeholder = !searchOptions.sheet_id ? findInSheetsActionSpec.label : findInSheetActionSpec.label;
 
   const onChange = async (search: string, updatedSearchOptions = searchOptions) => {
     if (search.length > 0) {

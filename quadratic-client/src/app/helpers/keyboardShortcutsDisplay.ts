@@ -12,7 +12,27 @@ export function keyboardShortcutEnumToDisplay(action: Action) {
     return display;
   }
 
-  platformShortcuts[0]?.forEach((key) => {
+  // Define a uniform, consistent display order for the shortcut keys
+  // The larger or more central modifiers tend to come last, like Command or Control.
+  // So, for macOS for example, you would see:
+  //   Redo  ⌘Z
+  //   Undo ⇧⌘Z
+  // Not:
+  //   Redo  ⌘Z
+  //   Undo ⌘⇧Z
+  const orderMap = new Map(
+    (isMac
+      ? [MacModifiers.Ctrl, MacModifiers.Alt, MacModifiers.Shift, MacModifiers.Cmd]
+      : [WindowsModifiers.Ctrl, WindowsModifiers.Alt, WindowsModifiers.Shift]
+    ).map((key, index) => [key, index])
+  );
+  const orderedKeys = platformShortcuts[0]?.sort((a, b) => {
+    const orderA = orderMap.get(a as MacModifiers | WindowsModifiers) ?? Infinity;
+    const orderB = orderMap.get(b as MacModifiers | WindowsModifiers) ?? Infinity;
+    return orderA - orderB;
+  });
+
+  orderedKeys?.forEach((key) => {
     switch (key) {
       case MacModifiers.Cmd:
         display += KeyboardSymbols.Command;
