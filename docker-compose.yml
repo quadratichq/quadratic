@@ -263,22 +263,6 @@ services:
       - quadratic-connection-db
       - quadratic-connection-db-mysql
 
-  snowflake-connection:
-    image: localstack/snowflake:latest
-    restart: always
-    container_name: snowflake-connection
-    ports:
-      - 127.0.0.1:4567:4566
-    environment:
-      ACTIVATE_PRO: 0
-      LOCALSTACK_AUTH_TOKEN: ${LOCALSTACK_AUTH_TOKEN:?}
-    volumes:
-      - ./docker/snowflake-connection/data:/var/lib/localstack
-    profiles:
-      - quadratic-connection
-      - quadratic-connection-db
-      - quadratic-connection-db-snowflake
-
   mssql-connection:
     image: mcr.microsoft.com/mssql/server:2022-latest
     restart: always
