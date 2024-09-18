@@ -74,7 +74,7 @@ impl Ord for Instant {
 }
 
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
-#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct Duration {
     pub months: i32,
@@ -82,15 +82,6 @@ pub struct Duration {
     // `chrono::TimeDelta` would make sense here but it gives some serde error?
     #[cfg_attr(test, proptest(strategy = "(i32::MIN as f64)..(i32::MAX as f64)"))]
     pub seconds: f64,
-}
-
-impl Default for Duration {
-    fn default() -> Self {
-        Self {
-            months: 0,
-            seconds: 0.0,
-        }
-    }
 }
 
 impl fmt::Display for Duration {

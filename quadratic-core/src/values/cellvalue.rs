@@ -118,7 +118,7 @@ impl CellValue {
             CellValue::Logical(true) => "TRUE".to_string(),
             CellValue::Logical(false) => "FALSE".to_string(),
             CellValue::Instant(_) => todo!("repr of Instant"),
-            CellValue::Duration(_) => todo!("repr of Duration"),
+            CellValue::Duration(d) => d.to_string(),
             CellValue::Error(_) => "[error]".to_string(),
             CellValue::Html(s) => s.clone(),
             CellValue::Code(_) => todo!("repr of code"),
@@ -168,7 +168,7 @@ impl CellValue {
             CellValue::Logical(true) => "true".to_string(),
             CellValue::Logical(false) => "false".to_string(),
             CellValue::Instant(_) => todo!("repr of Instant"),
-            CellValue::Duration(_) => todo!("repr of Duration"),
+            CellValue::Duration(d) => d.to_string(),
             CellValue::Error(_) => "[error]".to_string(),
             CellValue::Date(d) => d.format(DEFAULT_DATE_FORMAT).to_string(),
             CellValue::Time(d) => d.format(DEFAULT_TIME_FORMAT).to_string(),
@@ -275,7 +275,7 @@ impl CellValue {
             CellValue::Time(t) => t.format("%-I:%M %p").to_string(),
             CellValue::DateTime(t) => t.format("%m/%d/%Y %-I:%M %p").to_string(),
 
-            CellValue::Duration(_) => todo!("repr of Duration"),
+            CellValue::Duration(d) => d.to_string(),
             CellValue::Error(_) => "[error]".to_string(),
 
             // this should not be editable
@@ -297,7 +297,7 @@ impl CellValue {
             CellValue::Date(d) => d.format("%Y-%m-%d").to_string(),
             CellValue::Time(t) => t.format("%H:%M:%S%.3f").to_string(),
             CellValue::DateTime(t) => t.format("%Y-%m-%dT%H:%M:%S%.3f").to_string(),
-            CellValue::Duration(_) => todo!("repr of Duration"),
+            CellValue::Duration(d) => d.to_string(),
             CellValue::Error(_) => "[error]".to_string(),
 
             // these should not return a value
