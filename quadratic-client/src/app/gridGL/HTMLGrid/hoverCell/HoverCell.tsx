@@ -168,7 +168,13 @@ export const HoverCell = () => {
     <div
       ref={ref}
       className="absolute z-50 w-64 rounded-md border bg-popover p-4 text-popover-foreground opacity-0 shadow-md outline-none"
-      style={{ left, top, visibility: !onlyCode || showCodePeek ? 'visible' : 'hidden' }}
+      style={{
+        left,
+        top,
+        visibility: !onlyCode || showCodePeek ? 'visible' : 'hidden',
+        transformOrigin: `0 0`,
+        transform: `scale(${1 / pixiApp.viewport.scale.x})`,
+      }}
     >
       {text}
     </div>
