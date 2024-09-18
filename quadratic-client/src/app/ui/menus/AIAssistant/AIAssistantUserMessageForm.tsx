@@ -8,6 +8,7 @@ import {
   editorInteractionStateSelectedCellAtom,
   editorInteractionStateSelectedCellSheetAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
@@ -53,7 +54,7 @@ export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessage
   }, [autoFocus]);
 
   return (
-    <form className="z-10 m-3 rounded-lg bg-slate-100" onSubmit={(e) => e.preventDefault()}>
+    <form className="z-10 mx-3 mb-3 mt-1 rounded-lg bg-slate-100" onSubmit={(e) => e.preventDefault()}>
       <Textarea
         ref={textareaRef}
         id="prompt-input"
@@ -67,7 +68,11 @@ export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessage
             if (prompt.trim().length === 0) return;
 
             mixpanel.track('[AI].prompt.send', { language: getConnectionKind(mode) });
-            submitPrompt({ sheetId: selectedCellSheet, pos: selectedCell, userPrompt: prompt });
+            submitPrompt({
+              sheetId: selectedCellSheet ? selectedCellSheet : sheets.current,
+              pos: selectedCell,
+              userPrompt: prompt,
+            });
             event.currentTarget.focus();
           }
         }}

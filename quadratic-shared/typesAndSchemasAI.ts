@@ -9,6 +9,7 @@ export type OpenAIModel = z.infer<typeof OpenAIModelSchema>;
 export const UserMessageSchema = z.object({
   role: z.literal('user'),
   content: z.string(),
+  internalContext: z.boolean(),
 });
 export type UserMessage = z.infer<typeof UserMessageSchema>;
 
@@ -16,10 +17,14 @@ export const AIMessageSchema = z.object({
   role: z.literal('assistant'),
   content: z.string(),
   model: AnthropicModelSchema.or(OpenAIModelSchema),
+  internalContext: z.boolean(),
 });
 export type AIMessage = z.infer<typeof AIMessageSchema>;
 
-export const PromptMessageSchema = z.union([UserMessageSchema, AIMessageSchema.omit({ model: true })]);
+export const PromptMessageSchema = z.union([
+  UserMessageSchema.omit({ internalContext: true }),
+  AIMessageSchema.omit({ model: true, internalContext: true }),
+]);
 export type PromptMessage = z.infer<typeof PromptMessageSchema>;
 
 export const AnthropicAutoCompleteRequestBodySchema = z.object({

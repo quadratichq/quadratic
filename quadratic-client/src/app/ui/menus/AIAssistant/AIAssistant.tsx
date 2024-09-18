@@ -1,5 +1,6 @@
 import { editorInteractionStateShowAIAssistantAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
+import { AIAssistantContext } from '@/app/ui/menus/AIAssistant/AIAssistantContext';
 import { AIAssistantHeader } from '@/app/ui/menus/AIAssistant/AIAssistantHeader';
 import { AIAssistantMessages } from '@/app/ui/menus/AIAssistant/AIAssistantMessages';
 import { AIAssistantUserMessageForm } from '@/app/ui/menus/AIAssistant/AIAssistantUserMessageForm';
@@ -38,9 +39,10 @@ export const AIAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
       style={{ width: `${panelWidth}px` }}
     >
       <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 2}px` }} setState={handleResize} />
-      <div className="grid h-full w-full grid-rows-[auto_1fr_auto]">
+      <div className="grid h-full w-full grid-rows-[auto_1fr_auto_auto]">
         <AIAssistantHeader />
         <AIAssistantMessages />
+        <AIAssistantContext />
         <AIAssistantUserMessageForm autoFocus={autoFocus} />
       </div>
     </div>

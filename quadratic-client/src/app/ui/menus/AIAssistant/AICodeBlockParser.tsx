@@ -2,7 +2,7 @@ import { CodeSnippet } from '@/app/ui/components/CodeSnippet';
 import { Markdown } from '@/app/ui/components/Markdown';
 
 // Regular expression to match code blocks
-const CODE_BLOCK_REGEX = /```([a-zA-Z]+)?\n([\s\S]+?)(?:\n```|$)/g;
+const CODE_BLOCK_REGEX = /```([a-zA-Z]+)?\n([\s\S]+?)(?:\n*```|$)/g;
 
 export function parseCodeBlocks(input: string): Array<string | JSX.Element> {
   const blocks: Array<string | JSX.Element> = [];

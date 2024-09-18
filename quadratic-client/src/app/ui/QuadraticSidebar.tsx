@@ -15,6 +15,7 @@ import {
 import { showCellTypeOutlinesAtom } from '@/app/atoms/gridSettingsAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
@@ -88,7 +89,13 @@ export const QuadraticSidebar = () => {
       <div className="mt-2 flex flex-col items-center gap-1">
         {canEditFile && isAuthenticated && (
           <SidebarTooltip label="AI Assistant">
-            <SidebarToggle pressed={showAIAssistant} onPressedChange={() => setShowAIAssistant((prev) => !prev)}>
+            <SidebarToggle
+              pressed={showAIAssistant}
+              onPressedChange={() => {
+                setShowAIAssistant((prev) => !prev);
+                focusGrid();
+              }}
+            >
               <AIIcon />
             </SidebarToggle>
           </SidebarTooltip>
@@ -107,6 +114,7 @@ export const QuadraticSidebar = () => {
                   doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
                 } else {
                   setShowCodeEditor((prev) => !prev);
+                  focusGrid();
                 }
               }}
             >
@@ -118,7 +126,10 @@ export const QuadraticSidebar = () => {
         <SidebarTooltip label={'Code cell outlines'}>
           <SidebarToggle
             pressed={showCellTypeOutlines}
-            onPressedChange={() => setShowCellTypeOutlines((prev) => !prev)}
+            onPressedChange={() => {
+              setShowCellTypeOutlines((prev) => !prev);
+              focusGrid();
+            }}
           >
             {showCellTypeOutlines ? <CodeCellOutlineOn /> : <CodeCellOutlineOff />}
           </SidebarToggle>
@@ -128,7 +139,10 @@ export const QuadraticSidebar = () => {
           <SidebarTooltip label="Connections">
             <SidebarToggle
               pressed={showConnectionsMenu}
-              onPressedChange={() => setShowConnectionsMenu((prev) => !prev)}
+              onPressedChange={() => {
+                setShowConnectionsMenu((prev) => !prev);
+                focusGrid();
+              }}
             >
               <DatabaseIcon />
             </SidebarToggle>
@@ -137,7 +151,13 @@ export const QuadraticSidebar = () => {
 
         {canEditFile && (
           <SidebarTooltip label="Data validation">
-            <SidebarToggle pressed={!!showValidation} onPressedChange={() => setShowValidation((prev) => !prev)}>
+            <SidebarToggle
+              pressed={!!showValidation}
+              onPressedChange={() => {
+                setShowValidation((prev) => !prev);
+                focusGrid();
+              }}
+            >
               <DataValidationsIcon />
             </SidebarToggle>
           </SidebarTooltip>
@@ -146,7 +166,13 @@ export const QuadraticSidebar = () => {
         {canEditFile && <KernelMenu triggerIcon={<MemoryIcon />} />}
 
         <SidebarTooltip label="Command palette" shortcut={KeyboardSymbols.Command + 'P'}>
-          <SidebarToggle pressed={showCommandPalette} onPressedChange={() => setShowCommandPalette((prev) => !prev)}>
+          <SidebarToggle
+            pressed={showCommandPalette}
+            onPressedChange={() => {
+              setShowCommandPalette((prev) => !prev);
+              focusGrid();
+            }}
+          >
             <ManageSearch />
           </SidebarToggle>
         </SidebarTooltip>

@@ -38,45 +38,49 @@ export function AIAssistantMessages() {
       data-enable-grammarly="false"
     >
       <div id="ai-streaming-output" className="pb-2">
-        {messages.map((message, index) => (
-          <div
-            key={index}
-            style={{
-              borderTop: index !== 0 ? `1px solid ${colors.lightGray}` : 'none',
-              marginTop: '1rem',
-              paddingTop: index !== 0 ? '1rem' : '0',
-            }}
-          >
-            {message.role === 'user' ? (
-              <>
-                <Avatar
-                  src={user?.picture}
-                  alt={user?.name}
-                  style={{
-                    backgroundColor: colors.quadraticSecondary,
-                    marginBottom: '0.5rem',
-                  }}
-                >
-                  {user?.name}
-                </Avatar>
-                {message.content}
-              </>
-            ) : (
-              <>
-                <Avatar
-                  alt="AI Assistant"
-                  style={{
-                    backgroundColor: 'white',
-                    marginBottom: '0.5rem',
-                  }}
-                >
-                  {isAnthropicModel(message.model) ? <Anthropic /> : <OpenAI />}
-                </Avatar>
-                <CodeBlockParser input={message.content} />
-              </>
-            )}
-          </div>
-        ))}
+        {messages
+          // .filter((message) => debug || !message.internalContext) TODO: Uncomment this before merging
+          .map((message, index) => (
+            <div
+              key={index}
+              style={{
+                borderTop: index !== 0 ? `1px solid ${colors.lightGray}` : 'none',
+                marginTop: '1rem',
+                paddingTop: index !== 0 ? '1rem' : '0',
+                backgroundColor: message.internalContext ? colors.lightGray : 'white',
+                borderRadius: '0.5rem',
+              }}
+            >
+              {message.role === 'user' ? (
+                <>
+                  <Avatar
+                    src={user?.picture}
+                    alt={user?.name}
+                    style={{
+                      backgroundColor: colors.quadraticSecondary,
+                      marginBottom: '0.5rem',
+                    }}
+                  >
+                    {user?.name}
+                  </Avatar>
+                  <CodeBlockParser input={message.content} />
+                </>
+              ) : (
+                <>
+                  <Avatar
+                    alt="AI Assistant"
+                    style={{
+                      backgroundColor: 'white',
+                      marginBottom: '0.5rem',
+                    }}
+                  >
+                    {isAnthropicModel(message.model) ? <Anthropic /> : <OpenAI />}
+                  </Avatar>
+                  <CodeBlockParser input={message.content} />
+                </>
+              )}
+            </div>
+          ))}
         <div id="ai-streaming-output-anchor" key="ai-streaming-output-anchor" />
       </div>
     </div>
