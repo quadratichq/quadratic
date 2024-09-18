@@ -165,16 +165,8 @@ export const SidebarToggle = React.forwardRef<HTMLButtonElement, React.Component
 );
 SidebarToggle.displayName = 'SidebarToggle';
 
-export function SidebarTooltip({
-  children,
-  label,
-  shortcut,
-}: {
-  children: React.ReactNode;
-  label: string;
-  shortcut?: string;
-}) {
-  return (
+export const SidebarTooltip = React.forwardRef(
+  ({ children, label, shortcut }: { children: React.ReactNode; label: string; shortcut?: string }, ref) => (
     <Tooltip>
       <TooltipTrigger
         asChild
@@ -191,5 +183,5 @@ export function SidebarTooltip({
         </TooltipContent>
       </TooltipPortal>
     </Tooltip>
-  );
-}
+  )
+);

@@ -10,7 +10,6 @@ import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javas
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { MemoryIcon } from '@/shared/components/Icons';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -82,7 +81,7 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
       <DropdownMenuTrigger asChild>
         <SidebarTooltip label="Kernel">
           <SidebarToggle>
-            <MemoryIcon />
+            {triggerIcon}
             {running > 0 && (
               <div className="pointer-events-none absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-warning text-[10px] text-background">
                 {running}
