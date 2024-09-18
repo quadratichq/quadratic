@@ -4,13 +4,13 @@ import {
   aiAssistantLoadingAtom,
   aiAssistantMessagesAtom,
   aiAssistantPromptAtom,
-  ContextType,
+  defaultAIAssistantState,
 } from '@/app/atoms/aiAssistantAtom';
 import { editorInteractionStateShowAIAssistantAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { useAIAssistantModel } from '@/app/ui/menus/AIAssistant/useAIAssistantModel';
 import { useAIRequestToAPI } from '@/app/ui/menus/AIAssistant/useAIRequestToAPI';
-import { useCodeContextMessages } from '@/app/ui/menus/AIAssistant/useCodeContextMessages';
+import { useCodeCellContextMessages } from '@/app/ui/menus/AIAssistant/useCodeCellContextMessages';
 import { useQuadraticContextMessages } from '@/app/ui/menus/AIAssistant/useQuadraticContextMessages';
 import { AIMessage, PromptMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
@@ -26,7 +26,7 @@ export function useSubmitAIAssistantPrompt() {
   const handleAIRequestToAPI = useAIRequestToAPI();
   const setShowAIAssistant = useSetRecoilState(editorInteractionStateShowAIAssistantAtom);
   const { quadraticContext } = useQuadraticContextMessages();
-  const { getCodeContext } = useCodeContextMessages();
+  const { getCodeCellContext } = useCodeCellContextMessages();
 
   const submitPrompt = useCallback(
     async ({
@@ -49,12 +49,16 @@ export function useSubmitAIAssistantPrompt() {
       });
       if (previousLoading) return;
 
-      setContext({ type: ContextType.CodeCell, sheetId, pos });
+      let aiContext = defaultAIAssistantState.context;
+      setContext((prev) => {
+        aiContext = { ...prev, codeCell: { sheetId, pos } };
+        return aiContext;
+      });
 
       const abortController = new AbortController();
       setAbortController(abortController);
 
-      const { codeContext } = await getCodeContext({
+      const { codeContext } = await getCodeCellContext({
         sheetId,
         pos,
         model,
@@ -66,17 +70,17 @@ export function useSubmitAIAssistantPrompt() {
           .filter((prevMessage) => prevMessage.role === 'user' && prevMessage.internalContext)
           .pop();
         const contextChanged = lastContextMessage?.content !== codeContext[0].content;
-        const nextContext = contextChanged ? codeContext : [];
+        const newContext = contextChanged ? codeContext : [];
         updatedMessages = clearMessages
-          ? [...nextContext, { role: 'user', content: userPrompt, internalContext: false }]
-          : [...prevMessages, ...nextContext, { role: 'user', content: userPrompt, internalContext: false }];
+          ? [...newContext, { role: 'user', content: userPrompt, internalContext: false }]
+          : [...prevMessages, ...newContext, { role: 'user', content: userPrompt, internalContext: false }];
         return updatedMessages;
       });
 
       setPrompt('');
 
       const messagesToSend: PromptMessage[] = [
-        ...quadraticContext,
+        ...(aiContext.quadraticDocs ? quadraticContext : []),
         ...updatedMessages.map((message) => ({
           role: message.role,
           content: message.content,
@@ -97,7 +101,7 @@ export function useSubmitAIAssistantPrompt() {
       setLoading(false);
     },
     [
-      getCodeContext,
+      getCodeCellContext,
       handleAIRequestToAPI,
       model,
       quadraticContext,

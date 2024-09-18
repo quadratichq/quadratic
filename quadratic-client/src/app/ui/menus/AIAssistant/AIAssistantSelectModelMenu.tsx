@@ -13,7 +13,7 @@ import { CaretDownIcon } from '@radix-ui/react-icons';
 import { useEffect, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
-export function AIAssistantSelectAIModelMenu() {
+export function AIAssistantSelectModelMenu() {
   const [selectedMode, setSelectedModel] = useAIAssistantModel();
   // If the model is not enabled, set the model to the first enabled model
   useEffect(() => {

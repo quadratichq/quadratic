@@ -2,14 +2,7 @@ import { Coordinate } from '@/app/gridGL/types/size';
 import { AIMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
 
-export enum ContextType {
-  CodeCell = 'codeCell',
-  Selection = 'selection',
-  Sheet = 'sheet',
-}
-
-type CodeCellContext = {
-  type: ContextType;
+export type CodeCell = {
   sheetId: string;
   pos: Coordinate;
 };
@@ -19,15 +12,31 @@ type AIAssistantState = {
   loading: boolean;
   messages: (UserMessage | AIMessage)[];
   prompt: string;
-  context?: CodeCellContext;
+  context: {
+    quadraticDocs: boolean;
+    connections: boolean;
+    allSheets: boolean;
+    currentSheet: boolean;
+    visibleData: boolean;
+    cursorSelection: boolean;
+    codeCell?: CodeCell;
+  };
 };
 
-const defaultAIAssistantState: AIAssistantState = {
+export const defaultAIAssistantState: AIAssistantState = {
   abortController: undefined,
   loading: false,
   messages: [],
   prompt: '',
-  context: undefined,
+  context: {
+    quadraticDocs: true,
+    connections: false,
+    allSheets: false,
+    currentSheet: false,
+    visibleData: false,
+    cursorSelection: false,
+    codeCell: undefined,
+  },
 };
 
 export const aiAssistantAtom = atom<AIAssistantState>({

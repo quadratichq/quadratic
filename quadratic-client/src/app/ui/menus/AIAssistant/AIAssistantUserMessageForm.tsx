@@ -12,7 +12,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
-import { AIAssistantSelectAIModelMenu } from '@/app/ui/menus/AIAssistant/AIAssistantSelectAIModelMenu';
+import { AIAssistantSelectModelMenu } from '@/app/ui/menus/AIAssistant/AIAssistantSelectModelMenu';
 import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/AIAssistant/useSubmitAIAssistantPrompt';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
@@ -88,7 +88,7 @@ export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessage
           textareaRef.current?.focus();
         }}
       >
-        <AIAssistantSelectAIModelMenu />
+        <AIAssistantSelectModelMenu />
 
         {loading ? (
           <div className="flex items-center gap-2">
