@@ -275,6 +275,19 @@ mod tests {
     fn test_formula_datetime_subtract() {
         let mut g = Grid::new();
 
+        // Test error message formatting
+        g.sheets_mut()[0].set_cell_value(pos![A1], val("41y6mo4h"));
+        g.sheets_mut()[0].set_cell_value(pos![A2], date("1983-09-26"));
+        assert_eq!(
+            eval_to_err(&g, "=A1-A2").msg.to_string(),
+            "Cannot add duration and date",
+        );
+        g.sheets_mut()[0].set_cell_value(pos![A1], val("2000-01-01"));
+        assert_eq!(
+            eval_to_err(&g, "=A1-A2").msg.to_string(),
+            "Cannot add date and date; use duration instead",
+        );
+
         for (a, b, expected) in [
             (val("10"), val("51"), Ok("-41")),
             (val("10"), val("-51"), Ok("61")),
