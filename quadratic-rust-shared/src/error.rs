@@ -8,7 +8,7 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-pub type Result<T> = std::result::Result<T, SharedError>;
+pub type Result<T, E = SharedError> = std::result::Result<T, E>;
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum Arrow {
