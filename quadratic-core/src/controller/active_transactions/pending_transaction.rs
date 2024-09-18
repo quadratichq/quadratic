@@ -75,10 +75,13 @@ pub struct PendingTransaction {
     pub sheet_borders: HashSet<SheetId>,
 
     // code cells to update
-    //
-    // todo: this should really be a HashMap<SheetId, HashSet<Pos>> -- and then
-    // change the js call to be a HashMap<SheetId, Vec<Pos>>
-    pub code_cells: HashSet<SheetPos>,
+    pub code_cells: HashMap<SheetId, HashSet<Pos>>,
+
+    // html cells to update
+    pub html_cells: HashMap<SheetId, HashSet<Pos>>,
+
+    // image cells to update
+    pub image_cells: HashMap<SheetId, HashSet<Pos>>,
 }
 
 impl Default for PendingTransaction {
@@ -103,7 +106,9 @@ impl Default for PendingTransaction {
             dirty_hashes: HashMap::new(),
             viewport_buffer: None,
             sheet_borders: HashSet::new(),
-            code_cells: HashSet::new(),
+            code_cells: HashMap::new(),
+            html_cells: HashMap::new(),
+            image_cells: HashMap::new(),
         }
     }
 }
@@ -192,6 +197,30 @@ impl PendingTransaction {
     pub fn is_multiplayer(&self) -> bool {
         matches!(self.transaction_type, TransactionType::Multiplayer)
     }
+
+    /// Adds a code cell to the transaction
+    pub fn add_code_cell(&mut self, sheet_id: SheetId, pos: Pos) {
+        self.code_cells
+            .entry(sheet_id)
+            .or_insert_with(HashSet::new)
+            .insert(pos);
+    }
+
+    /// Adds an html cell to the transaction
+    pub fn add_html_cell(&mut self, sheet_id: SheetId, pos: Pos) {
+        self.html_cells
+            .entry(sheet_id)
+            .or_insert_with(HashSet::new)
+            .insert(pos);
+    }
+
+    /// Adds an image cell to the transaction
+    pub fn add_image_cell(&mut self, sheet_id: SheetId, pos: Pos) {
+        self.image_cells
+            .entry(sheet_id)
+            .or_insert_with(HashSet::new)
+            .insert(pos);
+    }
 }
 
 #[cfg(test)]
@@ -244,6 +273,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn is_user() {
         let transaction = PendingTransaction {
             transaction_type: TransactionType::User,
@@ -262,5 +292,40 @@ mod tests {
             ..Default::default()
         };
         assert!(!transaction.is_user());
+    }
+
+    #[test]
+    #[parallel]
+    fn test_add_code_cell() {
+        let mut transaction = PendingTransaction::default();
+        let sheet_id = SheetId::new();
+        let pos = Pos { x: 0, y: 0 };
+        transaction.add_code_cell(sheet_id, pos);
+        assert_eq!(transaction.code_cells.len(), 1);
+        assert_eq!(transaction.code_cells[&sheet_id].len(), 1);
+        assert_eq!(transaction.code_cells[&sheet_id].contains(&pos), true);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_add_html_cell() {
+        let mut transaction = PendingTransaction::default();
+        let sheet_id = SheetId::new();
+        let pos = Pos { x: 0, y: 0 };
+        transaction.add_html_cell(sheet_id, pos);
+        assert_eq!(transaction.html_cells.len(), 1);
+        assert_eq!(transaction.html_cells[&sheet_id].len(), 1);
+        assert_eq!(transaction.html_cells[&sheet_id].contains(&pos), true);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_add_image_cell() {
+        let mut transaction = PendingTransaction::default();
+        let sheet_id = SheetId::new();
+        let pos = Pos { x: 0, y: 0 };
+        transaction.add_image_cell(sheet_id, pos);
+        assert_eq!(transaction.image_cells.len(), 1);
+        assert_eq!(transaction.image_cells[&sheet_id].len(), 1);
     }
 }

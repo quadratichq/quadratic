@@ -8,6 +8,7 @@ use crate::controller::operations::operation::Operation;
 use crate::controller::transaction::Transaction;
 use crate::controller::transaction_types::JsCodeResult;
 use crate::error_core::Result;
+use crate::grid::js_types::JsHtmlOutput;
 use crate::grid::{CodeRun, CodeRunResult};
 use crate::parquet::parquet_to_vec;
 use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
@@ -126,11 +127,51 @@ impl GridController {
                 }
             });
 
-            transaction.code_cells.iter().for_each(|sheet_pos| {
-                if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
-                    sheet.send_code_cell((*sheet_pos).into());
-                }
-            });
+            // todo: this can be sent in less calls
+            transaction
+                .code_cells
+                .iter()
+                .for_each(|(sheet_id, positions)| {
+                    if let Some(sheet) = self.try_sheet(*sheet_id) {
+                        positions.iter().for_each(|pos| {
+                            sheet.send_code_cell(*pos);
+                        });
+                    }
+                });
+
+            // todo: this can be sent in less calls
+            transaction
+                .html_cells
+                .iter()
+                .for_each(|(sheet_id, positions)| {
+                    if let Some(sheet) = self.try_sheet(*sheet_id) {
+                        positions.iter().for_each(|pos| {
+                            let html = sheet.get_single_html_output(*pos).unwrap_or(JsHtmlOutput {
+                                sheet_id: sheet_id.to_string(),
+                                x: pos.x,
+                                y: pos.y,
+                                html: None,
+                                w: None,
+                                h: None,
+                            });
+                            if let Ok(html) = serde_json::to_string(&html) {
+                                crate::wasm_bindings::js::jsUpdateHtml(html);
+                            } else {
+                                dbgjs!("Error serializing html");
+                            }
+                        });
+                    }
+                });
+
+            // todo: this can be sent in less calls
+            transaction
+                .image_cells
+                .iter()
+                .for_each(|(sheet_id, positions)| {
+                    positions.iter().for_each(|pos| {
+                        self.send_image(pos.to_sheet_pos(*sheet_id));
+                    });
+                });
         }
     }
 

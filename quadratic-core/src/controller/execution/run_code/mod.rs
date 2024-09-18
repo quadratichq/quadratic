@@ -5,7 +5,6 @@ use crate::controller::operations::operation::Operation;
 use crate::controller::transaction_types::JsCodeResult;
 use crate::controller::GridController;
 use crate::error_core::{CoreError, Result};
-use crate::grid::js_types::JsHtmlOutput;
 use crate::grid::{CodeCellLanguage, CodeRun, CodeRunResult};
 use crate::{Array, CellValue, Pos, RunError, RunErrorMsg, SheetPos, SheetRect, Span, Value};
 
@@ -40,20 +39,18 @@ impl GridController {
                 .unwrap_or(sheet.code_runs.len()),
         );
 
-        let mut update_html = false;
-        let mut update_image = false;
         let old_code_run = if let Some(new_code_run) = &new_code_run {
             if new_code_run.is_html()
                 && (cfg!(target_family = "wasm") || cfg!(test))
                 && !transaction.is_server()
             {
-                update_html = true;
+                transaction.add_html_cell(sheet_id, pos);
             }
             if new_code_run.is_image()
                 && (cfg!(target_family = "wasm") || cfg!(test))
                 && !transaction.is_server()
             {
-                update_image = true;
+                transaction.add_image_cell(sheet_id, pos);
             }
             let (old_index, old_code_run) = sheet.code_runs.insert_full(pos, new_code_run.clone());
 
@@ -76,14 +73,14 @@ impl GridController {
             // if there was html here, send the html update to the client
             if let Some(old_code_run) = &old_code_run {
                 if old_code_run.is_html() && !transaction.is_server() {
-                    update_html = true;
+                    transaction.add_html_cell(sheet_id, pos);
                 }
                 if old_code_run.is_image() && !transaction.is_server() {
-                    update_image = true;
+                    transaction.add_image_cell(sheet_id, pos);
                 }
                 // if the code run is being removed, tell the client that there is no longer a code cell
                 if new_code_run.is_none() && !transaction.is_server() {
-                    transaction.code_cells.insert(sheet_pos);
+                    transaction.add_code_cell(sheet_id, pos);
                 }
             }
         }
@@ -107,26 +104,6 @@ impl GridController {
                 }
             }
         };
-
-        if update_html {
-            let html = sheet.get_single_html_output(pos).unwrap_or(JsHtmlOutput {
-                sheet_id: sheet_id.to_string(),
-                x: pos.x,
-                y: pos.y,
-                html: None,
-                w: None,
-                h: None,
-            });
-            if let Ok(html) = serde_json::to_string(&html) {
-                crate::wasm_bindings::js::jsUpdateHtml(html);
-            } else {
-                dbgjs!("Error serializing html");
-            }
-        }
-
-        if update_image {
-            self.send_image(sheet_pos);
-        }
 
         transaction.forward_operations.push(Operation::SetCodeRun {
             sheet_pos,

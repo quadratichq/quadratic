@@ -135,7 +135,7 @@ impl Sheet {
         // remove the column's code runs from the sheet
         self.code_runs.retain(|pos, _| {
             if pos.x == column {
-                transaction.code_cells.insert(pos.to_sheet_pos(self.id));
+                transaction.add_code_cell(self.id, *pos);
                 false
             } else {
                 true
@@ -184,8 +184,8 @@ impl Sheet {
                 self.code_runs.insert(new_pos, code_run);
 
                 // signal client to update the code runs
-                transaction.code_cells.insert(old_pos.to_sheet_pos(self.id));
-                transaction.code_cells.insert(new_pos.to_sheet_pos(self.id));
+                transaction.add_code_cell(self.id, old_pos);
+                transaction.add_code_cell(self.id, new_pos);
             }
         }
 
@@ -275,8 +275,8 @@ impl Sheet {
                 self.code_runs.insert(new_pos, code_run);
 
                 // signal the client to updates to the code cells (to draw the code arrays)
-                transaction.code_cells.insert(old_pos.to_sheet_pos(self.id));
-                transaction.code_cells.insert(new_pos.to_sheet_pos(self.id));
+                transaction.add_code_cell(self.id, old_pos);
+                transaction.add_code_cell(self.id, new_pos);
             }
         }
 
