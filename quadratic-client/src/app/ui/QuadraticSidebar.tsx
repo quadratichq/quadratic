@@ -3,20 +3,18 @@ import {
   isAvailableBecauseFileLocationIsAccessibleAndWriteable,
   provideFeedbackAction,
 } from '@/app/actions';
+import { Action } from '@/app/actions/actions';
+import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { sheets } from '@/app/grid/controller/Sheets';
-import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
+import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
   CodeCellOutlineOff,
   CodeCellOutlineOn,
-  CodeIcon,
   DatabaseIcon,
-  DataValidationsIcon,
   DocumentationIcon,
   FeedbackIcon,
   ManageSearch,
@@ -34,6 +32,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
 
+const toggleCodeEditor = defaultActionSpec[Action.ShowCellTypeMenu];
+
 export const QuadraticSidebar = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const gridSettings = useGridSettings();
@@ -41,10 +41,6 @@ export const QuadraticSidebar = () => {
 
   const canEditFile = isAvailableBecauseCanEditFile(isAvailableArgs);
   const canDoTeamsStuff = isAvailableBecauseFileLocationIsAccessibleAndWriteable(isAvailableArgs);
-
-  const sheet = sheets.sheet;
-  const cursor = sheet.cursor;
-  const cursorPosition = cursor.cursorPosition;
 
   return (
     <nav className="hidden h-full w-12 flex-shrink-0 flex-col border-r border-border bg-accent lg:flex">
@@ -69,22 +65,17 @@ export const QuadraticSidebar = () => {
 
       <div className="mt-2 flex flex-col items-center gap-1">
         {canEditFile && (
-          <SidebarTooltip label="Code editor" shortcut={'/'}>
+          <SidebarTooltip
+            label={toggleCodeEditor.label}
+            shortcut={keyboardShortcutEnumToDisplay(Action.ShowCellTypeMenu)}
+          >
             <SidebarToggle
               pressed={editorInteractionState.showCodeEditor}
               onPressedChange={async () => {
-                const column = cursorPosition.x;
-                const row = cursorPosition.y;
-                const code = await quadraticCore.getCodeCell(sheets.sheet.id, column, row);
-
-                if (code) {
-                  doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
-                } else {
-                  setEditorInteractionState((prev) => ({ ...prev, showCellTypeMenu: true }));
-                }
+                toggleCodeEditor.run();
               }}
             >
-              <CodeIcon />
+              {toggleCodeEditor.Icon && <toggleCodeEditor.Icon />}
             </SidebarToggle>
           </SidebarTooltip>
         )}
@@ -105,19 +96,6 @@ export const QuadraticSidebar = () => {
               onPressedChange={() => setEditorInteractionState((prev) => ({ ...prev, showConnectionsMenu: true }))}
             >
               <DatabaseIcon />
-            </SidebarToggle>
-          </SidebarTooltip>
-        )}
-
-        {canEditFile && (
-          <SidebarTooltip label="Data validation">
-            <SidebarToggle
-              pressed={Boolean(editorInteractionState.showValidation)}
-              onPressedChange={() =>
-                setEditorInteractionState((prev) => ({ ...prev, showValidation: !Boolean(prev.showValidation) }))
-              }
-            >
-              <DataValidationsIcon />
             </SidebarToggle>
           </SidebarTooltip>
         )}
@@ -173,7 +151,7 @@ export const SidebarToggle = React.forwardRef<HTMLButtonElement, React.Component
 );
 SidebarToggle.displayName = 'SidebarToggle';
 
-function SidebarTooltip({
+export function SidebarTooltip({
   children,
   label,
   shortcut,
