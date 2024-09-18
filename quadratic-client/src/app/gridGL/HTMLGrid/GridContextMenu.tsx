@@ -4,6 +4,7 @@ import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { gridHeadingAtom } from '@/app/atoms/gridHeadingAtom';
 import { events } from '@/app/events/events';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { IconComponent } from '@/shared/components/Icons';
@@ -13,7 +14,6 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilState } from 'recoil';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { focusGrid } from '@/app/helpers/focusGrid';
 
 export const GridContextMenu = () => {
   const [show, setShow] = useRecoilState(gridHeadingAtom);

@@ -1,4 +1,5 @@
 export enum Action {
+  FileDownload = 'file_download',
   FileShare = 'file_share',
   FileRename = 'file_rename',
   InsertCodePython = 'insert_code_python',
@@ -34,6 +35,7 @@ export enum Action {
   FormatNumberPercent = 'format_number_percent',
   FormatNumberScientific = 'format_number_scientific',
   FormatNumberToggleCommas = 'format_number_toggle_commas',
+  FormatDateTime = 'format_date_time',
   FormatTextWrapClip = 'format_text_wrap_clip',
   FormatTextWrapOverflow = 'format_text_wrap_overflow',
   FormatTextWrapWrap = 'format_text_wrap_wrap',

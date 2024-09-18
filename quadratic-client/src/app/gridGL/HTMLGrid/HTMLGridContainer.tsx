@@ -1,17 +1,17 @@
 import { events } from '@/app/events/events';
+import { Annotations } from '@/app/gridGL/HTMLGrid/annotations/Annotations';
+import { CodeHint } from '@/app/gridGL/HTMLGrid/CodeHint';
+import { CodeRunning } from '@/app/gridGL/HTMLGrid/codeRunning/CodeRunning';
+import { GridContextMenu } from '@/app/gridGL/HTMLGrid/GridContextMenu';
+import { HoverCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
+import { HtmlCells } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCells';
 import { InlineEditor } from '@/app/gridGL/HTMLGrid/inlineEditor/InlineEditor';
 import { MultiplayerCursors } from '@/app/gridGL/HTMLGrid/multiplayerCursor/MulitplayerCursors';
+import { MultiplayerCellEdits } from '@/app/gridGL/HTMLGrid/multiplayerInput/MultiplayerCellEdits';
 import { useHeadingSize } from '@/app/gridGL/HTMLGrid/useHeadingSize';
+import { HtmlValidations } from '@/app/gridGL/HTMLGrid/validations/HtmlValidations';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { ReactNode, useCallback, useEffect, useState } from 'react';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { Annotations } from './annotations/Annotations';
-import { CodeHint } from './CodeHint';
-import { CodeRunning } from './codeRunning/CodeRunning';
-import { GridContextMenu } from './GridContextMenu';
-import { HoverCell } from './hoverCell/HoverCell';
-import { HtmlCells } from './htmlCells/HtmlCells';
-import { MultiplayerCellEdits } from './multiplayerInput/MultiplayerCellEdits';
-import { HtmlValidations } from './validations/HtmlValidations';
 
 interface Props {
   parent?: HTMLDivElement;

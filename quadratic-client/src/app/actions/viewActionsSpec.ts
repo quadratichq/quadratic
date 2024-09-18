@@ -1,4 +1,5 @@
 import { Action } from '@/app/actions/actions';
+import { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { zoomIn, zoomInOut, zoomOut, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
@@ -6,7 +7,28 @@ import { moveViewport } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { GoToIcon } from '@/shared/components/Icons';
 
-export const viewActionsSpec = {
+type ViewActionSpec = Pick<
+  ActionSpecRecord,
+  | Action.ZoomIn
+  | Action.ZoomOut
+  | Action.ZoomToSelection
+  | Action.ZoomToFit
+  | Action.ZoomTo50
+  | Action.ZoomTo100
+  | Action.ZoomTo200
+  | Action.GridPanMode
+  | Action.ShowCommandPalette
+  | Action.TogglePresentationMode
+  | Action.CloseOverlay
+  | Action.SwitchSheetNext
+  | Action.SwitchSheetPrevious
+  | Action.PageUp
+  | Action.PageDown
+  | Action.ShowGoToMenu
+  | Action.ShowCellTypeMenu
+>;
+
+export const viewActionsSpec: ViewActionSpec = {
   [Action.ZoomIn]: {
     label: 'Zoom in',
     run: () => {

@@ -1,4 +1,5 @@
 import { Action } from '@/app/actions/actions';
+import { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
@@ -6,7 +7,23 @@ import { SNIPPET_JS_API, SNIPPET_JS_CHART } from '@/app/ui/menus/CodeEditor/snip
 import { SNIPPET_PY_API, SNIPPET_PY_CHART } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { ArrowDropDownCircleIcon, CheckBoxIcon, SheetIcon } from '@/shared/components/Icons';
 
-export const insertActionsSpec = {
+type InsertActionSpec = Pick<
+  ActionSpecRecord,
+  | Action.InsertCodePython
+  | Action.InsertCodeJavascript
+  | Action.InsertCodeFormula
+  | Action.InsertChartPython
+  | Action.InsertChartJavascript
+  | Action.InsertApiRequestJavascript
+  | Action.InsertApiRequestPython
+  | Action.InsertSheet
+  | Action.InsertCheckbox
+  | Action.InsertDropdown
+  | Action.InsertCellReference
+  | Action.RemoveInsertedCells
+>;
+
+export const insertActionsSpec: InsertActionSpec = {
   [Action.InsertCodePython]: {
     label: 'Python',
     labelVerbose: 'Insert Python code',

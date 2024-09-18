@@ -1,4 +1,5 @@
 import { Action } from '@/app/actions/actions';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarFileMenu/MenubarItemAction';
@@ -27,21 +28,46 @@ export const ViewMenubarMenu = () => {
     <MenubarMenu>
       <MenubarTrigger>View</MenubarTrigger>
       <MenubarContent>
-        <MenubarItem onClick={() => settings.setShowHeadings(!settings.showHeadings)}>
+        <MenubarItem
+          onClick={() => {
+            settings.setShowHeadings(!settings.showHeadings);
+            focusGrid();
+          }}
+        >
           <MenubarItemCheckbox checked={settings.showHeadings} /> Show row and column headings
         </MenubarItem>
-        <MenubarItem onClick={() => settings.setShowGridAxes(!settings.showGridAxes)}>
+        <MenubarItem
+          onClick={() => {
+            settings.setShowGridAxes(!settings.showGridAxes);
+            focusGrid();
+          }}
+        >
           <MenubarItemCheckbox checked={settings.showGridAxes} /> Show grid axis
         </MenubarItem>
-        <MenubarItem onClick={() => settings.setShowGridLines(!settings.showGridLines)}>
+        <MenubarItem
+          onClick={() => {
+            settings.setShowGridLines(!settings.showGridLines);
+            focusGrid();
+          }}
+        >
           <MenubarItemCheckbox checked={settings.showGridLines} />
           Show grid lines
         </MenubarItem>
-        <MenubarItem onClick={() => settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines)}>
+        <MenubarItem
+          onClick={() => {
+            settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines);
+            focusGrid();
+          }}
+        >
           <MenubarItemCheckbox checked={settings.showCellTypeOutlines} />
           Show code cell outlines
         </MenubarItem>
-        <MenubarItem onClick={() => settings.setShowCodePeek(!settings.showCodePeek)}>
+        <MenubarItem
+          onClick={() => {
+            settings.setShowCodePeek(!settings.showCodePeek);
+            focusGrid();
+          }}
+        >
           <MenubarItemCheckbox checked={settings.showCodePeek} />
           Show code peek
         </MenubarItem>
@@ -62,7 +88,12 @@ export const ViewMenubarMenu = () => {
             <MenubarItemAction action={Action.ZoomTo200} actionArgs={undefined} />
           </MenubarSubContent>
         </MenubarSub>
-        <MenubarItem onClick={() => settings.setPresentationMode(!settings.presentationMode)}>
+        <MenubarItem
+          onClick={() => {
+            settings.setPresentationMode(!settings.presentationMode);
+            focusGrid();
+          }}
+        >
           <CropFreeIcon />
           Presentation mode
           <MenubarShortcut>{KeyboardSymbols.Command + '.'}</MenubarShortcut>

@@ -42,7 +42,7 @@ export const ZoomMenu = () => {
       >
         <DropdownMenuItemFromAction
           mixpanelEvent="[ZoomDropdown].zoomIn"
-          action={Action.FormatTextColor}
+          action={Action.ZoomIn}
           actionArgs={undefined}
         />
         <DropdownMenuItemFromAction

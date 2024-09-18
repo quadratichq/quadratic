@@ -3,11 +3,19 @@ import { MULTIPLAYER_COLORS } from '@/app/gridGL/HTMLGrid/multiplayerCursor/mult
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { Tooltip, TooltipContent, TooltipPortal, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shared/shadcn/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { getAuth0AvatarSrc } from '@/shared/utils/auth0UserImageSrc';
 import { displayInitials, displayName } from '@/shared/utils/userUtil';
 import { Avatar, AvatarGroup } from '@mui/material';
 import { EyeOpenIcon } from '@radix-ui/react-icons';
+import { useSubmit } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { colors } from '../../../theme/colors';
 import { useMultiplayerUsers } from './useMultiplayerUsers';
@@ -15,6 +23,7 @@ import { useMultiplayerUsers } from './useMultiplayerUsers';
 const sharedAvatarSxProps = { width: 24, height: 24, fontSize: '.8125rem' };
 
 export const TopBarUsers = () => {
+  const submit = useSubmit();
   const { loggedInUser: user } = useRootRouteLoaderData();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { users, followers } = useMultiplayerUsers();
@@ -28,47 +37,60 @@ export const TopBarUsers = () => {
 
   return (
     <>
-      <TooltipProvider>
-        {/* TODO(ayush): create custom AvatarGroup component */}
-        <AvatarGroup
-          componentsProps={{ additionalAvatar: { sx: sharedAvatarSxProps } }}
-          className="gap-1"
-          sx={{
-            alignSelf: 'center',
-            alignItems: 'center',
-            flexDirection: 'row',
-            // Styles for the "+2" avatar
-            '& > .MuiAvatar-root': { marginRight: '.25rem', backgroundColor: '#aaa', border: `2px solid #aaa` },
-          }}
-          max={5}
-        >
-          {
-            <You
-              displayName={displayName(user ?? anonymous, true)}
-              initial={displayInitials(user ?? anonymous)}
-              picture={user?.picture ?? ''}
-              border={multiplayer.colorString ?? 'black'}
-              bgColor={multiplayer.colorString}
-            />
-          }
-          {users.map((user) => {
-            return (
-              <UserAvatar
-                key={user.session_id}
-                displayName={displayName(user, false)}
-                initial={displayInitials(user)}
-                picture={user.image}
-                border={user.colorString}
-                sessionId={user.session_id}
-                follow={editorInteractionState.follow === user.session_id}
-                follower={followers.includes(user.session_id)}
-                viewport={user.viewport}
-                bgColor={user.colorString}
+      {/* TODO(ayush): create custom AvatarGroup component */}
+      <AvatarGroup
+        componentsProps={{ additionalAvatar: { sx: sharedAvatarSxProps } }}
+        className="gap-1"
+        sx={{
+          alignSelf: 'center',
+          alignItems: 'center',
+          flexDirection: 'row',
+          // Styles for the "+2" avatar
+          '& > .MuiAvatar-root': { marginRight: '.25rem', backgroundColor: '#aaa', border: `2px solid #aaa` },
+        }}
+        max={5}
+      >
+        {
+          <DropdownMenu>
+            <DropdownMenuTrigger>
+              <You
+                displayName={displayName(user ?? anonymous, true)}
+                initial={displayInitials(user ?? anonymous)}
+                picture={user?.picture ?? ''}
+                border={multiplayer.colorString ?? 'black'}
+                bgColor={multiplayer.colorString}
               />
-            );
-          })}
-        </AvatarGroup>
-      </TooltipProvider>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="text-sm">
+              <DropdownMenuItem disabled>{user?.email}</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  submit(null, { action: '/logout', method: 'POST' });
+                }}
+              >
+                Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        }
+        {users.map((user) => {
+          return (
+            <UserAvatar
+              key={user.session_id}
+              displayName={displayName(user, false)}
+              initial={displayInitials(user)}
+              picture={user.image}
+              border={user.colorString}
+              sessionId={user.session_id}
+              follow={editorInteractionState.follow === user.session_id}
+              follower={followers.includes(user.session_id)}
+              viewport={user.viewport}
+              bgColor={user.colorString}
+            />
+          );
+        })}
+      </AvatarGroup>
     </>
   );
 };
@@ -149,7 +171,7 @@ function UserAvatar({
     });
   };
   return (
-    <div className="relative">
+    <div className="relative hidden lg:block">
       <Tooltip>
         <TooltipTrigger asChild>
           <button onClick={handleFollow}>

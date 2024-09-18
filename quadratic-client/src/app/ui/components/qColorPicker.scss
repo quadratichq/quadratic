@@ -6,7 +6,7 @@
     display: none !important;
   }
 
-  div span div {
+  div span > div {
     position: relative;
     border-radius: 2px;
     overflow: hidden;
@@ -20,6 +20,12 @@
       top: 0;
       bottom: 0;
     }
+  }
+
+  div span > div > div {
+    background: #fff !important;
+    border-radius: 1px !important;
+    inset: 4px !important;
   }
 }
 

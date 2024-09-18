@@ -1,7 +1,6 @@
 .lineStyleBorder {
-  width: 110px;
-  margin-top: 3px;
-  padding-bottom: 3px;
+  display: block;
+  width: 100%;
 }
 
 .normalBorder {
@@ -25,15 +24,9 @@
 }
 
 .twoLineBorder {
-  border-top: 1px solid black;
+  position: relative;
+  top: 2px;
+  border-top: 2px double black;
   position: relative;
   margin-bottom: 5px;
-}
-
-.twoLineBorder:after {
-  content: '';
-  position: absolute;
-  width: 100%;
-  border-bottom: 1px solid black;
-  bottom: 3px;
 }

@@ -6,16 +6,16 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getSelectionString } from '@/app/grid/sheet/selection';
 import { Selection, Validation, ValidationRule } from '@/app/quadratic-core-types';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { v4 as uuid } from 'uuid';
 import {
   validationRuleSimple,
   ValidationRuleSimple,
   ValidationRuleSimpleValues,
   ValidationUndefined,
-} from './validationType';
+} from '@/app/ui/menus/Validations/Validation/validationType';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { v4 as uuid } from 'uuid';
 
 export type SetState<T> = Dispatch<SetStateAction<T>>;
 

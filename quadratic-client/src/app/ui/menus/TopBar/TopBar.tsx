@@ -1,14 +1,22 @@
+import { isEmbed } from '@/app/helpers/isEmbed';
 import TopBarFileMenu from '@/app/ui/menus/TopBar/TopBarFileMenu';
+import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
+import { VERSION } from '@/shared/constants/appConstants';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shared/shadcn/ui/dropdown-menu';
 import { isElectron } from '@/shared/utils/isElectron';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
-import { isEmbed } from '../../../helpers/isEmbed';
 import { TopBarFileNameAndLocationMenu } from './TopBarFileNameAndLocationMenu';
 import { TopBarShareButton } from './TopBarShareButton';
 import { TopBarUsers } from './TopBarUsers';
 
 export const TopBar = () => {
   // TODO: what about embedable view? should we show the file menu?
-  // TODO: (jimniels) delete these components & apply permissions above
 
   return (
     <div
@@ -39,7 +47,27 @@ export const TopBar = () => {
           WebkitAppRegion: 'no-drag',
         }}
       >
-        <TopBarFileMenu />
+        {!isEmbed && (
+          <div className="hidden lg:block">
+            <TopBarFileMenu />
+          </div>
+        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex items-center gap-0 self-stretch px-2 lg:hidden">
+            <QuadraticLogo />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem
+              onClick={() => {
+                window.location.href = '/';
+              }}
+            >
+              Back to dashboard
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem disabled>{VERSION}</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <TopBarFileNameAndLocationMenu />
@@ -54,7 +82,9 @@ export const TopBar = () => {
         {!isEmbed && (
           <>
             <TopBarUsers />
-            <TopBarShareButton />
+            <div className="hidden md:block">
+              <TopBarShareButton />
+            </div>
           </>
         )}
       </div>

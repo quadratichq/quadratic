@@ -1,14 +1,14 @@
 import { sheets } from '@/app/grid/controller/Sheets';
+import { applyFormatToDateTime } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { ValidationInput } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationInput';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { DOCUMENTATION_DATE_TIME_FORMATTING } from '@/shared/constants/urls';
+import { Button } from '@/shared/shadcn/ui/button';
 import { Label } from '@/shared/shadcn/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/shared/shadcn/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { ValidationInput } from '../menus/Validations/Validation/ValidationUI/ValidationInput';
-import { Button } from '@/shared/shadcn/ui/button';
-import { applyFormatToDateTime } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { cn } from '@/shared/shadcn/utils';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 // first format is default rendering
 const DATE_FORMATS = [
@@ -46,23 +46,72 @@ const RadioEntry = (props: RadioEntryProps) => {
 const defaultDate = `03/04/${new Date().getFullYear()} 3:14 PM`;
 
 interface DateFormatProps {
-  status: boolean;
   closeMenu: () => void;
   className?: string;
 }
 
 export const DateFormat = (props: DateFormatProps) => {
-  const { status, closeMenu, className } = props;
+  const { closeMenu, className } = props;
   const ref = useRef<HTMLInputElement>(null);
 
   const [time, setTime] = useState<string | undefined>(TIME_FORMATS[0].value);
   const [date, setDate] = useState<string | undefined>(DATE_FORMATS[0].value);
   const [custom, setCustom] = useState<string | undefined>();
-
   const [tab, setTab] = useState<'presets' | 'custom'>('presets');
 
   const [original, setOriginal] = useState<string | undefined>(defaultDate);
   const [current, setCurrent] = useState<string | undefined>();
+  const findCurrent = useCallback(async () => {
+    const cursorPosition = sheets.sheet.cursor.cursorPosition;
+    const date = await quadraticCore.getEditCell(sheets.sheet.id, cursorPosition.x, cursorPosition.y);
+    if (date) {
+      setOriginal(date);
+    } else {
+      setOriginal(defaultDate);
+    }
+    const summary = await quadraticCore.getCellFormatSummary(sheets.sheet.id, cursorPosition.x, cursorPosition.y, true);
+    let updatedDate = DATE_FORMATS[0].value;
+    let updatedTime = TIME_FORMATS[0].value;
+
+    if (summary?.dateTime) {
+      for (const format of DATE_FORMATS) {
+        if (summary.dateTime.includes(format.value)) {
+          updatedDate = format.value;
+          break;
+        }
+      }
+      for (const format of TIME_FORMATS) {
+        if (summary.dateTime.includes(format.value)) {
+          updatedTime = format.value;
+          break;
+        }
+      }
+      if (summary.dateTime.replace(updatedDate, '').replace(updatedTime, '').trim() === '') {
+        setTime(updatedTime);
+        setDate(updatedDate);
+        setCustom(`${updatedDate} ${updatedTime}`);
+        setCurrent(`${updatedDate} ${updatedTime}`);
+        setTab('presets');
+      } else {
+        setCustom(summary.dateTime);
+        setDate(undefined);
+        setTime(undefined);
+        setCurrent(summary.dateTime);
+        setTab('custom');
+      }
+    } else {
+      setDate(updatedDate);
+      setTime(updatedTime);
+      setCustom(`${updatedDate} ${updatedTime}`);
+      setCurrent(`${updatedDate} ${updatedTime}`);
+      setTab('presets');
+    }
+  }, []);
+
+  useEffect(() => {
+    findCurrent();
+  }, [findCurrent]);
+
   const [formattedDate, setFormattedDate] = useState<string | undefined>();
   useEffect(() => {
     if (original && current) {
@@ -72,82 +121,30 @@ export const DateFormat = (props: DateFormatProps) => {
 
   const apply = useCallback(() => {
     quadraticCore.setDateTimeFormat(sheets.getRustSelection(), `${date} ${time}`, sheets.getCursorPosition());
-    closeMenu();
+    closeMenu?.();
   }, [closeMenu, date, time]);
 
-  useEffect(() => {
-    const findCurrent = async () => {
-      const cursorPosition = sheets.sheet.cursor.cursorPosition;
-      const date = await quadraticCore.getEditCell(sheets.sheet.id, cursorPosition.x, cursorPosition.y);
-      if (date) {
-        setOriginal(date);
-      } else {
-        setOriginal(defaultDate);
-      }
-      const summary = await quadraticCore.getCellFormatSummary(
-        sheets.sheet.id,
-        cursorPosition.x,
-        cursorPosition.y,
-        true
-      );
-      let updatedDate = DATE_FORMATS[0].value;
-      let updatedTime = TIME_FORMATS[0].value;
+  const changeDate = useCallback(
+    (value: string) => {
+      setDate(value);
+      const currentTime = time ?? TIME_FORMATS[0].value;
+      setCurrent(`${value} ${currentTime}`);
+      setCustom(`${value} ${currentTime}`);
+    },
+    [time]
+  );
 
-      if (summary?.dateTime) {
-        for (const format of DATE_FORMATS) {
-          if (summary.dateTime.includes(format.value)) {
-            updatedDate = format.value;
-            break;
-          }
-        }
-        for (const format of TIME_FORMATS) {
-          if (summary.dateTime.includes(format.value)) {
-            updatedTime = format.value;
-            break;
-          }
-        }
-        if (summary.dateTime.replace(updatedDate, '').replace(updatedTime, '').trim() === '') {
-          setTime(updatedTime);
-          setDate(updatedDate);
-          setCustom(`${updatedDate} ${updatedTime}`);
-          setCurrent(`${updatedDate} ${updatedTime}`);
-          setTab('presets');
-        } else {
-          setCustom(summary.dateTime);
-          setDate(undefined);
-          setTime(undefined);
-          setCurrent(summary.dateTime);
-          setTab('custom');
-        }
-      } else {
-        setDate(updatedDate);
-        setTime(updatedTime);
-        setCustom(`${updatedDate} ${updatedTime}`);
-        setCurrent(`${updatedDate} ${updatedTime}`);
-        setTab('presets');
-      }
-    };
+  const changeTime = useCallback(
+    (value: string) => {
+      setTime(value);
+      const currentDate = date ?? DATE_FORMATS[0].value;
+      setCurrent(`${currentDate} ${value}`);
+      setCustom(`${currentDate} ${value}`);
+    },
+    [date]
+  );
 
-    if (status) {
-      findCurrent();
-    }
-  }, [status]);
-
-  const changeDate = (value: string) => {
-    setDate(value);
-    const currentTime = time ?? TIME_FORMATS[0].value;
-    setCurrent(`${value} ${currentTime}`);
-    setCustom(`${value} ${currentTime}`);
-  };
-
-  const changeTime = (value: string) => {
-    setTime(value);
-    const currentDate = date ?? DATE_FORMATS[0].value;
-    setCurrent(`${currentDate} ${value}`);
-    setCustom(`${currentDate} ${value}`);
-  };
-
-  const changeCustom = async (value: string) => {
+  const changeCustom = useCallback(async (value: string) => {
     if (value) {
       // need to check if the value is a default format
       let possibleDate: string | undefined;
@@ -177,19 +174,19 @@ export const DateFormat = (props: DateFormatProps) => {
       }
       setCurrent(value);
     }
-  };
+  }, []);
 
-  const customFocus = () => {
+  const customFocus = useCallback(() => {
     ref.current?.focus();
-  };
+  }, []);
+
+  if (!current) return null;
 
   return (
-    <div className={cn('h-58 w-100', className)}>
-      {formattedDate && (
-        <div className="mt-3 flex items-center justify-center bg-accent p-2 text-sm">{formattedDate}</div>
-      )}
+    <div className={cn('h-58 w-full', className)}>
+      {formattedDate && <div className="flex items-center justify-center bg-accent p-2 text-sm">{formattedDate}</div>}
       <Tabs className="text-sm" value={tab}>
-        <TabsList className="mt-2 w-full border-b border-border">
+        <TabsList className="mt-1 w-full border-b border-border">
           <TabsTrigger value="presets" className="w-1/2" onClick={() => setTab('presets')}>
             Presets
           </TabsTrigger>
@@ -246,7 +243,7 @@ export const DateFormat = (props: DateFormatProps) => {
           </div>
         </TabsContent>
       </Tabs>
-      <div className="flex justify-end gap-2 pt-5">
+      <div className="flex justify-end gap-2 pt-4">
         <Button variant="secondary" onClick={closeMenu}>
           Cancel
         </Button>

@@ -28,7 +28,6 @@ import { BottomBar } from './menus/BottomBar/BottomBar';
 import CellTypeMenu from './menus/CellTypeMenu';
 import CommandPalette from './menus/CommandPalette';
 import FeedbackMenu from './menus/FeedbackMenu';
-import GoTo from './menus/GoTo';
 import SheetBar from './menus/SheetBar';
 import { useMultiplayerUsers } from './menus/TopBar/useMultiplayerUsers';
 import { ValidationPanel } from './menus/Validations/ValidationPanel';
@@ -75,10 +74,10 @@ export default function QuadraticUI() {
         ...(navigation.state !== 'idle' ? { opacity: '.5', pointerEvents: 'none' } : {}),
       }}
     >
-      {!presentationMode && <QuadraticSidebar />}
+      {!presentationMode && !isEmbed && <QuadraticSidebar />}
       <div className="flex min-w-0 flex-grow flex-col" id="main">
         {!presentationMode && <TopBar />}
-        {!presentationMode && <Toolbar />}
+        {!presentationMode && !isEmbed && <Toolbar />}
 
         <div
           style={{
@@ -138,7 +137,6 @@ export default function QuadraticUI() {
       {presentationMode && <PresentationModeHint />}
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu />}
       {editorInteractionState.showCommandPalette && <CommandPalette />}
-      {editorInteractionState.showGoToMenu && <GoTo />}
       {editorInteractionState.showRenameFileMenu && (
         <DialogRenameItem
           itemLabel="file"

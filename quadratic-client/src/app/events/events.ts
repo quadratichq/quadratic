@@ -1,3 +1,4 @@
+import { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import { PanMode } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { SheetPosTS } from '@/app/gridGL/types/size';
@@ -28,7 +29,6 @@ import {
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import EventEmitter from 'eventemitter3';
 import { Point } from 'pixi.js';
-import { ErrorValidation } from '../gridGL/cells/CellsSheet';
 
 interface EventTypes {
   needRefresh: (state: 'required' | 'recommended' | 'force') => void;
@@ -124,9 +124,6 @@ interface EventTypes {
 
   // when validation changes state
   validation: (validation: string | boolean) => void;
-
-  // context menu opens on a grid heading
-  gridContextMenu: (world: Point, column?: number, row?: number) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();
