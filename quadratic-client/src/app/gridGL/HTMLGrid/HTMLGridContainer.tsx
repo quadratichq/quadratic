@@ -76,17 +76,6 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
 
   return (
     <>
-      {/* This is positioned on the grid over the headings and not zoomed */}
-      <div
-        ref={normalRef}
-        style={{
-          position: 'absolute',
-          pointerEvents: 'none',
-        }}
-      >
-        <GridContextMenu />
-      </div>
-
       {/* This is positioned on the grid inside the headings and zoomed */}
       <div
         style={{
@@ -122,6 +111,18 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* This is positioned on the grid over the headings and not zoomed. It comes
+          after the above, so it's above it on the grid. */}
+      <div
+        ref={normalRef}
+        style={{
+          position: 'absolute',
+          pointerEvents: 'none',
+        }}
+      >
+        <GridContextMenu />
       </div>
     </>
   );
