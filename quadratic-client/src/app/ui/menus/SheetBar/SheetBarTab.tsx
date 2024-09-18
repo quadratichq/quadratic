@@ -1,4 +1,12 @@
+import { hasPermissionToEditFile } from '@/app/actions';
+import {
+  editorInteractionStateFollowAtom,
+  editorInteractionStatePermissionsAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { Sheet } from '@/app/grid/sheet/Sheet';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { ArrowDropDownIcon } from '@/shared/components/Icons';
@@ -8,11 +16,6 @@ import { Box, Fade, Paper, Popper, Stack, Typography, useTheme } from '@mui/mate
 import { MouseEvent, PointerEvent, useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
-import { hasPermissionToEditFile } from '../../../actions';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { sheets } from '../../../grid/controller/Sheets';
-import { Sheet } from '../../../grid/sheet/Sheet';
-import { focusGrid } from '../../../helpers/focusGrid';
 
 const SHEET_NAME_MAX_LENGTH = 50;
 
@@ -32,7 +35,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
   const [isRenaming, setIsRenaming] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const theme = useTheme();
-  const { permissions } = useRecoilValue(editorInteractionStateAtom);
+  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const hasPermission = hasPermissionToEditFile(permissions) && !isMobile;
 
   useEffect(() => {
@@ -106,7 +109,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
 
 function TabWrapper({ children, sheet, active }: any) {
   const theme = useTheme();
-  const { follow } = useRecoilValue(editorInteractionStateAtom);
+  const follow = useRecoilValue(editorInteractionStateFollowAtom);
   return (
     <Stack
       direction="row"

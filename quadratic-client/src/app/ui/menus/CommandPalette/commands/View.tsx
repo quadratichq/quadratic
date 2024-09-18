@@ -24,7 +24,7 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             icon={<Checkbox checked={showHeadings} />}
-            action={() => setShowHeadings(!showHeadings)}
+            action={() => setShowHeadings((prev) => !prev)}
           />
         );
       },
@@ -38,7 +38,7 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             icon={<Checkbox checked={showGridAxes} />}
-            action={() => setShowGridAxes(!showGridAxes)}
+            action={() => setShowGridAxes((prev) => !prev)}
           />
         );
       },
@@ -52,7 +52,7 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             icon={<Checkbox checked={showGridLines} />}
-            action={() => setShowGridLines(!showGridLines)}
+            action={() => setShowGridLines((prev) => !prev)}
           />
         );
       },
@@ -65,7 +65,7 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             icon={<Checkbox checked={showCellTypeOutlines} />}
-            action={() => setShowCellTypeOutlines(!showCellTypeOutlines)}
+            action={() => setShowCellTypeOutlines((prev) => !prev)}
           />
         );
       },
@@ -78,7 +78,7 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             icon={<Checkbox checked={showCodePeek} />}
-            action={() => setShowCodePeek(!showCodePeek)}
+            action={() => setShowCodePeek((prev) => !prev)}
           />
         );
       },
@@ -91,7 +91,7 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             icon={<Checkbox checked={presentationMode} />}
-            action={() => setPresentationMode(!presentationMode)}
+            action={() => setPresentationMode((prev) => !prev)}
             shortcut="."
             shortcutModifiers={[KeyboardSymbols.Command]}
           />

@@ -1,20 +1,20 @@
-import { IconButton, Tooltip } from '@mui/material';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Close } from '@mui/icons-material';
-import { useSetRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { usePositionCellMessage } from '@/app/gridGL/HTMLGrid/usePositionCellMessage';
+import { translateValidationError } from '@/app/gridGL/HTMLGrid/validations/translateValidationError';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { usePositionCellMessage } from '../usePositionCellMessage';
-import { Rectangle } from 'pixi.js';
 import { Validation } from '@/app/quadratic-core-types';
-import { pixiApp } from '../../pixiApp/PixiApp';
-import { Button } from '@/shared/shadcn/ui/button';
-import ErrorIcon from '@mui/icons-material/Error';
-import WarningIcon from '@mui/icons-material/Warning';
-import InfoIcon from '@mui/icons-material/Info';
 import { colors } from '@/app/theme/colors';
 import { validationText } from '@/app/ui/menus/Validations/Validations/ValidationEntry';
-import { translateValidationError } from './translateValidationError';
+import { Button } from '@/shared/shadcn/ui/button';
+import { Close } from '@mui/icons-material';
+import ErrorIcon from '@mui/icons-material/Error';
+import InfoIcon from '@mui/icons-material/Info';
+import WarningIcon from '@mui/icons-material/Warning';
+import { IconButton, Tooltip } from '@mui/material';
+import { Rectangle } from 'pixi.js';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSetRecoilState } from 'recoil';
 
 interface Props {
   column?: number;
@@ -25,7 +25,7 @@ interface Props {
 }
 
 export const HtmlValidationMessage = (props: Props) => {
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const setShowValidation = useSetRecoilState(editorInteractionStateShowValidationAtom);
   const { offsets, validation, column, row, hoverError } = props;
   const [hide, setHide] = useState(true);
 
@@ -56,12 +56,9 @@ export const HtmlValidationMessage = (props: Props) => {
 
   const showValidation = useCallback(() => {
     if (validation) {
-      setEditorInteractionState((old) => ({
-        ...old,
-        showValidation: validation?.id,
-      }));
+      setShowValidation(validation?.id);
     }
-  }, [setEditorInteractionState, validation]);
+  }, [setShowValidation, validation]);
 
   let title: JSX.Element | null = null;
   let message: JSX.Element | null = null;

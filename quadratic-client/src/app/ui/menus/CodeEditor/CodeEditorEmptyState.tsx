@@ -1,5 +1,5 @@
 import { codeEditorEditorContentAtom, codeEditorShowSnippetsPopoverAtom } from '@/app/atoms/codeEditorAtom';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import { BoxIcon, SheetComeFromIcon, SheetGoToIcon } from '@/app/ui/icons';
 import {
@@ -27,8 +27,8 @@ type CodeEditorEmptyStateProps = {
 };
 
 export function CodeEditorEmptyState({ editorRef }: CodeEditorEmptyStateProps) {
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const codeCell = getCodeCell(editorInteractionState.mode);
+  const mode = useRecoilValue(editorInteractionStateModeAtom);
+  const codeCell = getCodeCell(mode);
   const setShowSnippetsPopover = useSetRecoilState(codeEditorShowSnippetsPopoverAtom);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
 

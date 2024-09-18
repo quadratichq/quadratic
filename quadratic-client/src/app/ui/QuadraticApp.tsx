@@ -1,5 +1,13 @@
+import { hasPermissionToEditFile } from '@/app/actions';
+import {
+  editorInteractionStatePermissionsAtom,
+  editorInteractionStateUuidAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { useEvents } from '@/app/events/useEvents';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { QuadraticLoading } from '@/app/ui/loading/QuadraticLoading';
+import QuadraticUIContext from '@/app/ui/QuadraticUIContext';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
@@ -9,15 +17,11 @@ import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
 import { v4 } from 'uuid';
-import { hasPermissionToEditFile } from '../actions';
-import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
-import { pixiApp } from '../gridGL/pixiApp/PixiApp';
-import QuadraticUIContext from './QuadraticUIContext';
-import { QuadraticLoading } from './loading/QuadraticLoading';
 
 export function QuadraticApp() {
   const didMount = useRef<boolean>(false);
-  const { permissions, uuid } = useRecoilValue(editorInteractionStateAtom);
+  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
+  const uuid = useRecoilValue(editorInteractionStateUuidAtom);
   const { loggedInUser } = useRootRouteLoaderData();
 
   // Loading states

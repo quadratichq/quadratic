@@ -1,16 +1,16 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { useValidationsData } from '@/app/ui/menus/Validations/Validations/useValidationsData';
+import { ValidationEntry } from '@/app/ui/menus/Validations/Validations/ValidationEntry';
+import { ValidationsHeader } from '@/app/ui/menus/Validations/Validations/ValidationsHeader';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
 import { useCallback, useEffect, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
-import { useValidationsData } from './useValidationsData';
-import { ValidationEntry } from './ValidationEntry';
-import { ValidationsHeader } from './ValidationsHeader';
 
 export const Validations = () => {
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const setShowValidation = useSetRecoilState(editorInteractionStateShowValidationAtom);
   const validationsData = useValidationsData();
   const { validations, sheetId, readOnly } = validationsData;
 
@@ -34,16 +34,9 @@ export const Validations = () => {
     checkValidations();
   }, [sheetId, validations]);
 
-  const addValidation = useCallback(() => {
-    setEditorInteractionState((old) => ({
-      ...old,
-      showValidation: 'new',
-    }));
-  }, [setEditorInteractionState]);
-
-  const removeValidations = () => {
+  const removeValidations = useCallback(() => {
     quadraticCore.removeValidations(sheetId);
-  };
+  }, [sheetId]);
 
   return (
     <div
@@ -70,7 +63,7 @@ export const Validations = () => {
             <Button variant="secondary" onClick={removeValidations}>
               Remove All
             </Button>
-            <Button onClick={addValidation} autoFocus>
+            <Button onClick={() => setShowValidation('new')} autoFocus>
               Add Validation
             </Button>
           </div>

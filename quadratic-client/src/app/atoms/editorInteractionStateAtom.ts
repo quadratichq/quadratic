@@ -137,6 +137,7 @@ export const editorInteractionStateShowAIAssistantAtom = createSelector('showAIA
 
 export const editorInteractionStateAnnotationStateAtom = createSelector('annotationState');
 export const editorInteractionStatePermissionsAtom = createSelector('permissions');
+export const editorInteractionStateUuidAtom = createSelector('uuid');
 export const editorInteractionStateSelectedCellSheetAtom = createSelector('selectedCellSheet');
 export const editorInteractionStateSelectedCellAtom = createSelector('selectedCell');
 export const editorInteractionStateInitialCodeAtom = createSelector('initialCode');
@@ -144,3 +145,5 @@ export const editorInteractionStateFollowAtom = createSelector('follow');
 export const editorInteractionStateModeAtom = createSelector('mode');
 export const editorInteractionStateEditorEscapePressedAtom = createSelector('editorEscapePressed');
 export const editorInteractionStateWaitingForEditorCloseAtom = createSelector('waitingForEditorClose');
+export const editorInteractionStateUndoAtom = createSelector('undo');
+export const editorInteractionStateRedoAtom = createSelector('redo');

@@ -21,7 +21,7 @@ import {
   MenubarSubTrigger,
   MenubarTrigger,
 } from '@/shared/shadcn/ui/menubar';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useSetRecoilState } from 'recoil';
 
 const MenubarItemCheckbox = ({ checked }: { checked: boolean }) => {
   return <CheckSmallIcon className={checked ? 'visible opacity-100' : 'invisible opacity-0'} />;
@@ -35,27 +35,27 @@ export const ViewMenubarMenu = () => {
   const [showGridLines, setShowGridLines] = useRecoilState(showGridLinesAtom);
   const [showCellTypeOutlines, setShowCellTypeOutlines] = useRecoilState(showCellTypeOutlinesAtom);
   const [showCodePeek, setShowCodePeek] = useRecoilState(showCodePeekAtom);
-  const [presentationMode, setPresentationMode] = useRecoilState(presentationModeAtom);
+  const setPresentationMode = useSetRecoilState(presentationModeAtom);
 
   return (
     <MenubarMenu>
       <MenubarTrigger>View</MenubarTrigger>
       <MenubarContent>
-        <MenubarItem onClick={() => setShowHeadings(!showHeadings)}>
+        <MenubarItem onClick={() => setShowHeadings((prev) => !prev)}>
           <MenubarItemCheckbox checked={showHeadings} /> Show row and column headings
         </MenubarItem>
-        <MenubarItem onClick={() => setShowGridAxes(!showGridAxes)}>
+        <MenubarItem onClick={() => setShowGridAxes((prev) => !prev)}>
           <MenubarItemCheckbox checked={showGridAxes} /> Show grid axis
         </MenubarItem>
-        <MenubarItem onClick={() => setShowGridLines(!showGridLines)}>
+        <MenubarItem onClick={() => setShowGridLines((prev) => !prev)}>
           <MenubarItemCheckbox checked={showGridLines} />
           Show grid lines
         </MenubarItem>
-        <MenubarItem onClick={() => setShowCellTypeOutlines(!showCellTypeOutlines)}>
+        <MenubarItem onClick={() => setShowCellTypeOutlines((prev) => !prev)}>
           <MenubarItemCheckbox checked={showCellTypeOutlines} />
           Show code cell outlines
         </MenubarItem>
-        <MenubarItem onClick={() => setShowCodePeek(!showCodePeek)}>
+        <MenubarItem onClick={() => setShowCodePeek((prev) => !prev)}>
           <MenubarItemCheckbox checked={showCodePeek} />
           Show code peek
         </MenubarItem>
@@ -76,7 +76,7 @@ export const ViewMenubarMenu = () => {
             <MenubarItemAction action={Action.ZoomTo200} actionArgs={undefined} />
           </MenubarSubContent>
         </MenubarSub>
-        <MenubarItem onClick={() => setPresentationMode(!presentationMode)}>
+        <MenubarItem onClick={() => setPresentationMode((prev) => !prev)}>
           <CropFreeIcon />
           Presentation mode
           <MenubarShortcut>{KeyboardSymbols.Command + '.'}</MenubarShortcut>

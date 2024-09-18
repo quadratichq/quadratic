@@ -1,14 +1,13 @@
+import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getSelectionString } from '@/app/grid/sheet/selection';
 import { Validation } from '@/app/quadratic-core-types';
+import { validationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
+import { ValidationsData } from '@/app/ui/menus/Validations/Validations/useValidationsData';
 import { Button } from '@/shared/shadcn/ui/button';
+import { cn } from '@/shared/shadcn/utils';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useCallback, useMemo } from 'react';
-
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { cn } from '@/shared/shadcn/utils';
 import { useSetRecoilState } from 'recoil';
-import { ValidationsData } from './useValidationsData';
-import { validationRuleSimple } from '../Validation/validationType';
 
 interface Props {
   validation: Validation;
@@ -41,20 +40,13 @@ export const validationText = (validation: Validation) => {
 };
 
 export const ValidationEntry = (props: Props) => {
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const setShowValidation = useSetRecoilState(editorInteractionStateShowValidationAtom);
   const { validation, validationsData, highlight, active } = props;
   const { deleteValidation, readOnly } = validationsData;
 
   const title = useMemo(() => validationText(validation), [validation]);
 
   const selection = useMemo(() => getSelectionString(validation.selection), [validation.selection]);
-
-  const selectValidation = useCallback(() => {
-    setEditorInteractionState((old) => ({
-      ...old,
-      showValidation: validation.id,
-    }));
-  }, [setEditorInteractionState, validation.id]);
 
   const ref = useCallback(
     (node: HTMLButtonElement) => {
@@ -70,7 +62,7 @@ export const ValidationEntry = (props: Props) => {
       ref={ref}
       variant="ghost"
       className={cn('h-fit w-full border-b border-gray-100', highlight ? 'bg-gray-50' : '')}
-      onClick={selectValidation}
+      onClick={() => setShowValidation(validation.id)}
     >
       <div className="group flex w-full items-center justify-between py-2">
         <div className="flex shrink flex-col items-start text-left">

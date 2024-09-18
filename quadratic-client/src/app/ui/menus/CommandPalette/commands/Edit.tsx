@@ -11,7 +11,11 @@ import {
 } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  editorInteractionStateShowCommandPaletteAtom,
+  editorInteractionStateShowGoToMenuAtom,
+  editorInteractionStateShowSearchAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
 import {
   copySelectionToPNG,
   copyToClipboard,
@@ -20,6 +24,8 @@ import {
   pasteFromClipboard,
 } from '@/app/grid/actions/clipboard/clipboard';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { CommandGroup, CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import {
@@ -33,9 +39,7 @@ import {
   UndoIcon,
 } from '@/shared/components/Icons';
 import { isMac } from '@/shared/utils/isMac';
-import { useRecoilState, useSetRecoilState } from 'recoil';
-import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
+import { useSetRecoilState } from 'recoil';
 
 // TODO: Make this more type safe
 const downloadSelectionAsCsvAction = defaultActionSpec[Action.DownloadAsCsv];
@@ -143,13 +147,15 @@ const data: CommandGroup = {
     {
       label: 'Go to cell',
       Component: (props) => {
-        const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+        const setShowCommandPalette = useSetRecoilState(editorInteractionStateShowCommandPaletteAtom);
+        const setShowGoToMenu = useSetRecoilState(editorInteractionStateShowGoToMenuAtom);
         return (
           <CommandPaletteListItem
             {...props}
-            action={() =>
-              setEditorInteractionState({ ...editorInteractionState, showCommandPalette: false, showGoToMenu: true })
-            }
+            action={() => {
+              setShowCommandPalette(false);
+              setShowGoToMenu(true);
+            }}
             icon={<GoToIcon />}
             shortcut={KeyboardSymbols.Command + 'G'}
           />
@@ -160,11 +166,11 @@ const data: CommandGroup = {
       label: findInSheet.label,
       keywords: ['search'],
       Component: (props) => {
-        const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+        const setShowSearch = useSetRecoilState(editorInteractionStateShowSearchAtom);
         return (
           <CommandPaletteListItem
             {...props}
-            action={() => setEditorInteractionState((state) => ({ ...state, showSearch: true }))}
+            action={() => setShowSearch(true)}
             icon={<FindInFileIcon />}
             shortcut="F"
             shortcutModifiers={KeyboardSymbols.Command}
@@ -176,11 +182,11 @@ const data: CommandGroup = {
       label: findInSheets.label,
       keywords: ['search'],
       Component: (props) => {
-        const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+        const setShowSearch = useSetRecoilState(editorInteractionStateShowSearchAtom);
         return (
           <CommandPaletteListItem
             {...props}
-            action={() => setEditorInteractionState((state) => ({ ...state, showSearch: { sheet_id: undefined } }))}
+            action={() => setShowSearch({ sheet_id: undefined })}
             icon={<FindInFileIcon />}
             shortcut="F"
             shortcutModifiers={[KeyboardSymbols.Shift, KeyboardSymbols.Command]}

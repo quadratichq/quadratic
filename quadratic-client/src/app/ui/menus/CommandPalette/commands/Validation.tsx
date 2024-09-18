@@ -11,14 +11,7 @@ const validationCommandGroup: CommandGroup = {
       isAvailable: validationAction.isAvailable,
       Component: (props) => {
         const setShowValidation = useSetRecoilState(editorInteractionStateShowValidationAtom);
-        return (
-          <CommandPaletteListItem
-            {...props}
-            action={() => {
-              setShowValidation(true);
-            }}
-          />
-        );
+        return <CommandPaletteListItem {...props} action={() => setShowValidation(true)} />;
       },
     },
   ],

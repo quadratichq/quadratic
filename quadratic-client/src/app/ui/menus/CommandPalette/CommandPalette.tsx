@@ -1,6 +1,7 @@
 import {
-  editorInteractionStateAtom,
+  editorInteractionStateAnnotationStateAtom,
   editorInteractionStatePermissionsAtom,
+  editorInteractionStateShowCellTypeMenuAtom,
   editorInteractionStateShowCommandPaletteAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { Command } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
@@ -23,33 +24,28 @@ import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandList } 
 import fuzzysort from 'fuzzysort';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 export const CommandPalette = () => {
-  const showCommandPalette = useRecoilValue(editorInteractionStateShowCommandPaletteAtom);
+  const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
     userMakingRequest: { fileTeamPrivacy, teamPermissions },
   } = useFileRouteLoaderData();
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
+  const setAnnotationState = useSetRecoilState(editorInteractionStateAnnotationStateAtom);
   const [activeSearchValue, setActiveSearchValue] = useState<string>('');
 
   // Fn that closes the command palette and gets passed down to individual ListItems
   const closeCommandPalette = useCallback(() => {
-    setEditorInteractionState((prev) => ({
-      ...prev,
-      showCellTypeMenu: false,
-      showCommandPalette: false,
-    }));
-  }, [setEditorInteractionState]);
+    setShowCellTypeMenu(false);
+    setShowCommandPalette(false);
+  }, [setShowCellTypeMenu, setShowCommandPalette]);
 
   const openDateFormat = useCallback(() => {
-    setEditorInteractionState((prev) => ({
-      ...prev,
-      annotationState: 'date-format',
-    }));
-  }, [setEditorInteractionState]);
+    setAnnotationState('date-format');
+  }, [setAnnotationState]);
 
   useEffect(() => {
     mixpanel.track('[CommandPalette].open');

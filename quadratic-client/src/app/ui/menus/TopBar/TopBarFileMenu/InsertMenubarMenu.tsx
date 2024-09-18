@@ -1,5 +1,5 @@
 import { Action } from '@/app/actions/actions';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateShowCellTypeMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarFileMenu/MenubarItemAction';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CodeIcon, DataObjectIcon, InsertChartIcon } from '@/shared/components/Icons';
@@ -17,7 +17,7 @@ import {
 import { useSetRecoilState } from 'recoil';
 
 export const InsertMenubarMenu = () => {
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const { addGlobalSnackbar } = useGlobalSnackbar();
   return (
     <MenubarMenu>
@@ -56,9 +56,7 @@ export const InsertMenubarMenu = () => {
             <MenubarItemAction action={Action.InsertApiRequestJavascript} actionArgs={undefined} />
             <MenubarItemAction action={Action.InsertApiRequestPython} actionArgs={undefined} />
             <MenubarSeparator />
-            <MenubarItem onClick={() => setEditorInteractionState((prev) => ({ ...prev, showCellTypeMenu: true }))}>
-              From connection…
-            </MenubarItem>
+            <MenubarItem onClick={() => setShowCellTypeMenu(true)}>From connection…</MenubarItem>
           </MenubarSubContent>
         </MenubarSub>
 

@@ -1,4 +1,4 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getConnectionInfo } from '@/app/helpers/codeCellLanguage';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { PanelPositionBottomIcon, PanelPositionLeftIcon } from '@/app/ui/icons';
@@ -26,8 +26,8 @@ export const CodeEditorPanel = memo(({ editorRef, codeEditorRef }: CodeEditorPan
     userMakingRequest: { teamPermissions },
     team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const connectionInfo = getConnectionInfo(editorInteractionState.mode);
+  const mode = useRecoilValue(editorInteractionStateModeAtom);
+  const connectionInfo = getConnectionInfo(mode);
   const { panelPosition, setPanelPosition } = useCodeEditorPanelData();
 
   const changePanelPosition = useCallback(

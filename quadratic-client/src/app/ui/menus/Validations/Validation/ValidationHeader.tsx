@@ -1,38 +1,25 @@
-import { IconButton } from '@mui/material';
-import { TooltipHint } from '../../../components/TooltipHint';
-import { useSetRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { Close } from '@mui/icons-material';
-import { useCallback, useState } from 'react';
-import { cn } from '@/shared/shadcn/utils';
-import { ValidationData } from './useValidationData';
+import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { TooltipHint } from '@/app/ui/components/TooltipHint';
+import { ValidationData } from '@/app/ui/menus/Validations/Validation/useValidationData';
+import { cn } from '@/shared/shadcn/utils';
+import { Close } from '@mui/icons-material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { IconButton } from '@mui/material';
+import { useState } from 'react';
+import { useSetRecoilState } from 'recoil';
 
 export const ValidationHeader = (props: { validationData: ValidationData }) => {
   const { unsaved, sheetId } = props.validationData;
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const setShowValidation = useSetRecoilState(editorInteractionStateShowValidationAtom);
+
   const [sheetName] = useState(` - ${sheets.getById(sheetId)?.name}`);
-
-  const close = useCallback(() => {
-    setEditorInteractionState((prev) => ({
-      ...prev,
-      showValidation: false,
-    }));
-  }, [setEditorInteractionState]);
-
-  const back = useCallback(() => {
-    setEditorInteractionState((prev) => ({
-      ...prev,
-      showValidation: true,
-    }));
-  }, [setEditorInteractionState]);
 
   return (
     <div className="mb-2 flex items-center justify-between border-b border-b-gray-100 pb-2">
       <div className="flex items-center gap-1">
         <TooltipHint title="Back to Data Validations for the sheet" placement="bottom">
-          <IconButton size="small" onClick={back}>
+          <IconButton size="small" onClick={() => setShowValidation(true)}>
             <ArrowBackIcon />
           </IconButton>
         </TooltipHint>
@@ -47,7 +34,7 @@ export const ValidationHeader = (props: { validationData: ValidationData }) => {
         </div>
       </div>
       <TooltipHint title="Close" shortcut="ESC" placement="bottom">
-        <IconButton size="small" onClick={close}>
+        <IconButton size="small" onClick={() => setShowValidation(false)}>
           <Close />
         </IconButton>
       </TooltipHint>
