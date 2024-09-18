@@ -105,30 +105,6 @@ export const provideFeedbackAction = {
   },
 };
 
-export const cutAction = {
-  label: 'Cut',
-  isAvailable: isAvailableBecauseCanEditFile,
-};
-
-export const pasteAction = {
-  label: 'Paste',
-  isAvailable: isAvailableBecauseCanEditFile,
-};
-
-export const pasteActionValues = {
-  label: 'Paste values only',
-  isAvailable: isAvailableBecauseCanEditFile,
-};
-
-export const pasteActionFormats = {
-  label: 'Paste formats only',
-  isAvailable: isAvailableBecauseCanEditFile,
-};
-
-export const copyAction = {
-  label: 'Copy',
-};
-
 export const rerunCellAction = {
   label: 'Run this code cell',
   isAvailable: isAvailableBecauseCanEditFile,
@@ -147,13 +123,6 @@ export const rerunSheetAction = {
 export const dataValidations = {
   label: 'Data Validations',
   isAvailable: isAvailableBecauseCanEditFile,
-};
-
-export const findInSheet = {
-  label: 'Find in current sheet',
-};
-export const findInSheets = {
-  label: 'Find in all sheets',
 };
 
 export const resizeColumnAction = {
