@@ -83,7 +83,7 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
         <SidebarToggle>
           <MemoryIcon />
           {running > 0 && (
-            <div className="pointer-events-none absolute right-0 top-0 rounded-full bg-warning px-1 text-[10px] text-background">
+            <div className="pointer-events-none absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-warning text-[10px] text-background">
               {running}
             </div>
           )}
