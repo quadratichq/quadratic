@@ -4,7 +4,6 @@ import {
   editorInteractionStateUuidAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
-import { useEvents } from '@/app/events/useEvents';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { QuadraticLoading } from '@/app/ui/loading/QuadraticLoading';
 import QuadraticUIContext from '@/app/ui/QuadraticUIContext';
@@ -95,8 +94,6 @@ export function QuadraticApp() {
       };
     }
   }, [multiplayerLoading]);
-
-  useEvents();
 
   // Show loading screen until everything is loaded
   if (offlineLoading || multiplayerLoading) {

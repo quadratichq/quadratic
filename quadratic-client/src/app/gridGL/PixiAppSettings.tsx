@@ -6,6 +6,7 @@ import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { useEffect } from 'react';
 import { useRecoilState } from 'recoil';
 
+// handles updating the pixiAppSettings
 export const PixiAppSettings = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [inlineEditorState, setInlineEditorState] = useRecoilState(inlineEditorAtom);
