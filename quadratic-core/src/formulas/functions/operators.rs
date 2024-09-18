@@ -280,12 +280,12 @@ mod tests {
         g.sheets_mut()[0].set_cell_value(pos![A2], date("1983-09-26"));
         assert_eq!(
             eval_to_err(&g, "=A1-A2").msg.to_string(),
-            "Cannot add duration and date",
+            "Cannot subtract duration and date",
         );
         g.sheets_mut()[0].set_cell_value(pos![A1], val("2000-01-01"));
         assert_eq!(
             eval_to_err(&g, "=A1-A2").msg.to_string(),
-            "Cannot add date and date; use duration instead",
+            "Cannot subtract date and date; use duration instead",
         );
 
         for (a, b, expected) in [
