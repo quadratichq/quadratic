@@ -1,0 +1,13 @@
+[package]
+name = "arrow-tables"
+authors.workspace = true
+edition.workspace = true
+description.workspace = true
+repository.workspace = true
+license-file.workspace = true
+version.workspace = true
+
+[dependencies]
+arrow = { version = "53.0.0", features = ["prettyprint"] }
+datafusion = "42.0.0"
+tokio = { version = "1.40.0", features = ["full"] }

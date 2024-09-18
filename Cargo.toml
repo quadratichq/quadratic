@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = [
+members = [ "experiments/arrow-tables",
     "quadratic-connection",
     "quadratic-core",
     "quadratic-files",
