@@ -140,11 +140,9 @@ impl Connection for SnowflakeConnection {
     }
 
     async fn schema(&self, client: &mut Self::Conn) -> Result<DatabaseSchema> {
-        //         let database = self.database.as_ref().ok_or_else(|| {
-        //             SharedError::Sql(Sql::Schema("Database name is required for MsSQL".into()))
-        //         })?;
-
-        let sql = "
+        let database = self.database.to_owned();
+        let sql = format!(
+            "
             SELECT
                 db.database_name,
                 sch.schema_name,
@@ -153,27 +151,28 @@ impl Connection for SnowflakeConnection {
                 col.data_type,
                 col.is_nullable
             FROM
-                information_schema.columns col
+                {database}.information_schema.columns col
             JOIN
-                information_schema.tables tbl 
+                {database}.information_schema.tables tbl 
                     ON col.table_catalog = tbl.table_catalog
                     AND col.table_schema = tbl.table_schema
                     AND col.table_name = tbl.table_name
             JOIN
-                information_schema.schemata sch
+                {database}.information_schema.schemata sch
                     ON tbl.table_schema = sch.schema_name
             JOIN
-                information_schema.databases db
+                {database}.information_schema.databases db
                 ON sch.catalog_name = db.database_name
-            WHERE sch.schema_name = 'PUBLIC'
+            where sch.schema_name != 'INFORMATION_SCHEMA'
             ORDER BY
                 db.database_name,
                 sch.schema_name,
                 tbl.table_name,
-                col.ordinal_position;";
-
+                col.ordinal_position;"
+        );
+        tracing::info!("Querying snowflake schema: {sql}");
         let row_stream = client
-            .exec(sql)
+            .exec(&sql)
             .await
             .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
 

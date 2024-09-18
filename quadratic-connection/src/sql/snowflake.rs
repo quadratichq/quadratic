@@ -16,8 +16,21 @@ use crate::{
 use super::{query_generic, Schema};
 
 /// Test the connection to the database.
-pub(crate) async fn test(Json(connection): Json<SnowflakeConnection>) -> Json<TestResponse> {
-    test_connection(connection).await
+pub(crate) async fn test(
+    state: Extension<State>,
+    Json(connection): Json<SnowflakeConnection>,
+) -> Json<TestResponse> {
+    let sql_query = SqlQuery {
+        query: "SELECT 1".into(),
+        connection_id: Uuid::new_v4(), // This is not used
+    };
+    let response = query_generic::<SnowflakeConnection>(connection, state, sql_query.into()).await;
+    let message = match response {
+        Ok(_) => None,
+        Err(e) => Some(e.to_string()),
+    };
+
+    TestResponse::new(message.is_none(), message).into()
 }
 
 /// Get the connection details from the API and create a MySqlConnection.
