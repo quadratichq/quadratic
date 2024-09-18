@@ -45,7 +45,7 @@ describe('keyboardShortcutEnumToDisplay', () => {
     };
 
     const result = keyboardShortcutEnumToDisplay(mockAction);
-    expect(result).toBe(`${KeyboardSymbols.Command}${KeyboardSymbols.Shift}A`);
+    expect(result).toBe(`${KeyboardSymbols.Shift}${KeyboardSymbols.Command}A`);
   });
 
   it('should handle special keys correctly', () => {
@@ -68,7 +68,7 @@ describe('keyboardShortcutEnumToDisplay', () => {
 
     const result = keyboardShortcutEnumToDisplay(mockAction);
     expect(result).toBe(
-      `${KeyboardSymbols.Command}${KeyboardSymbols.Control}${KeyboardSymbols.Alt}${KeyboardSymbols.Shift}`
+      `${KeyboardSymbols.Control}${KeyboardSymbols.Alt}${KeyboardSymbols.Shift}${KeyboardSymbols.Command}`
     );
   });
 
