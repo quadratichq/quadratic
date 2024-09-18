@@ -58,7 +58,9 @@ export const ConnectionTypeDetailsSnowflakeSchema = z.object({
   account_identifier: z.string().min(1, { message: 'Required' }),
   database: z.string().min(1, { message: 'Required' }),
   username: z.string().min(1, { message: 'Required' }),
-  password: z.string().optional().transform(transformEmptyStringToUndefined),
+  password: z.string().min(1, { message: 'Required' }),
+  warehouse: z.string().optional().transform(transformEmptyStringToUndefined),
+  role: z.string().optional().transform(transformEmptyStringToUndefined),
 });
 
 /**
