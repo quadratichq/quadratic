@@ -120,9 +120,10 @@ export const DateFormat = (props: DateFormatProps) => {
   }, [original, current]);
 
   const apply = useCallback(() => {
-    quadraticCore.setDateTimeFormat(sheets.getRustSelection(), `${date} ${time}`, sheets.getCursorPosition());
-    closeMenu?.();
-  }, [closeMenu, date, time]);
+    const format = !date && !time && custom ? custom : `${date} ${time}`;
+    quadraticCore.setDateTimeFormat(sheets.getRustSelection(), format, sheets.getCursorPosition());
+    closeMenu();
+  }, [closeMenu, custom, date, time]);
 
   const changeDate = useCallback(
     (value: string) => {
@@ -149,6 +150,7 @@ export const DateFormat = (props: DateFormatProps) => {
       // need to check if the value is a default format
       let possibleDate: string | undefined;
       let possibleTime: string | undefined;
+
       for (const format of DATE_FORMATS) {
         if (value.includes(format.value)) {
           possibleDate = format.value;
@@ -172,6 +174,7 @@ export const DateFormat = (props: DateFormatProps) => {
         setDate(undefined);
         setCustom(value);
       }
+
       setCurrent(value);
     }
   }, []);

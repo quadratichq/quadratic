@@ -26,11 +26,6 @@ export interface HtmlGridContainerProps {
 export const HTMLGridContainer = (props: Props): ReactNode | null => {
   const { parent } = props;
 
-  const [container, setContainer] = useState<HTMLDivElement>();
-  const containerRef = useCallback((node: HTMLDivElement) => {
-    if (node) setContainer(node);
-  }, []);
-
   const [showInput, setShowInput] = useState(false);
   useEffect(() => {
     const changeInput = (input: boolean) => setShowInput(input);
@@ -40,15 +35,28 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
     };
   }, []);
 
+  // this one is not zoomed and positioned over the grid headings
+  const [normalContainer, setNormalContainer] = useState<HTMLDivElement>();
+  const normalRef = useCallback((node: HTMLDivElement) => {
+    if (node) setNormalContainer(node);
+  }, []);
+
+  const [zoomContainer, setZoomContainer] = useState<HTMLDivElement>();
+  const zoomRef = useCallback((node: HTMLDivElement) => {
+    if (node) setZoomContainer(node);
+  }, []);
+
   useEffect(() => {
-    if (!container || !parent) return;
+    if (!zoomContainer || !normalContainer || !parent) return;
     const viewport = pixiApp.viewport;
     const updateTransform = () => {
       viewport.updateTransform();
       let worldTransform = viewport.worldTransform;
-      container.style.transform = `matrix(${worldTransform.a}, ${worldTransform.b}, ${worldTransform.c}, ${
-        worldTransform.d
-      }, ${worldTransform.tx + parent.offsetLeft}, ${worldTransform.ty + parent.offsetTop})`;
+      const transform = `matrix(${worldTransform.a}, ${worldTransform.b}, ${worldTransform.c}, ${worldTransform.d}, ${
+        worldTransform.tx + parent.offsetLeft
+      }, ${worldTransform.ty + parent.offsetTop})`;
+      zoomContainer.style.transform = transform;
+      normalContainer.style.transform = transform;
     };
     updateTransform();
     viewport.on('moved', updateTransform);
@@ -61,7 +69,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
       viewport.off('zoomed', updateTransform);
       window.removeEventListener('resize', updateTransform);
     };
-  }, [parent, container]);
+  }, [normalContainer, parent, zoomContainer]);
 
   const { leftHeading, topHeading } = useHeadingSize();
 
@@ -69,7 +77,18 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
 
   return (
     <>
-      <GridContextMenu />
+      {/* This is positioned on the grid over the headings and not zoomed */}
+      <div
+        ref={normalRef}
+        style={{
+          position: 'absolute',
+          pointerEvents: 'none',
+        }}
+      >
+        <GridContextMenu />
+      </div>
+
+      {/* This is positioned on the grid inside the headings and zoomed */}
       <div
         style={{
           position: 'absolute',
@@ -83,7 +102,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
       >
         <div style={{ position: 'relative' }}>
           <div
-            ref={containerRef}
+            ref={zoomRef}
             style={{
               position: 'absolute',
               top: `${-topHeading}px`,
