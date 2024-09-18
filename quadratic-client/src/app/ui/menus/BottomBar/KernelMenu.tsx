@@ -79,8 +79,8 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <SidebarTooltip label="Kernel">
+      <SidebarTooltip label="Kernel">
+        <DropdownMenuTrigger asChild>
           <SidebarToggle>
             <MemoryIcon />
             {running > 0 && (
@@ -89,8 +89,8 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
               </div>
             )}
           </SidebarToggle>
-        </SidebarTooltip>
-      </DropdownMenuTrigger>
+        </DropdownMenuTrigger>
+      </SidebarTooltip>
       <DropdownMenuContent side="right">
         <DropdownMenuLabel>
           Status: {pythonCodeRunning || javascriptCodeRunning || connectionCodeRunning ? 'running' : 'idle'}
