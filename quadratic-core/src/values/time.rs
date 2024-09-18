@@ -609,6 +609,8 @@ mod tests {
             (" 0 \tDAYS", Ok("0s")),
             (" 6   milliseconds 5 µs 4nanosec  ", Ok("6.005004ms")),
             ("3 picosecond, 2 fs1as", Ok("3.002001ps")),
+            ("10 femtoseconds", Ok("10fs")),
+            ("14 nanosec", Ok("14ns")),
             ("0.5s", Ok("500ms")),
             ("1 year 0.5s", Ok("1y 0d 0h 0m 0.5s")),
             // negatives
