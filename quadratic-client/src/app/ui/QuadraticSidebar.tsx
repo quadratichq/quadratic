@@ -3,6 +3,8 @@ import {
   isAvailableBecauseFileLocationIsAccessibleAndWriteable,
   provideFeedbackAction,
 } from '@/app/actions';
+import { Action } from '@/app/actions/actions';
+import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import {
   editorInteractionStateShowAIAssistantAtom,
   editorInteractionStateShowCodeEditorAtom,
@@ -10,24 +12,18 @@ import {
   editorInteractionStateShowConnectionsMenuAtom,
   editorInteractionStateShowFeedbackMenuAtom,
   editorInteractionStateShowIsRunningAsyncActionAtom,
-  editorInteractionStateShowValidationAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { showCellTypeOutlinesAtom } from '@/app/atoms/gridSettingsAtom';
-import { sheets } from '@/app/grid/controller/Sheets';
-import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
-import { focusGrid } from '@/app/helpers/focusGrid';
+import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import {
   AIIcon,
   CodeCellOutlineOff,
   CodeCellOutlineOn,
-  CodeIcon,
   DatabaseIcon,
-  DataValidationsIcon,
   DocumentationIcon,
   FeedbackIcon,
   ManageSearch,
@@ -41,17 +37,19 @@ import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared
 import { cn } from '@/shared/shadcn/utils';
 import { CircularProgress } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 export const QuadraticSidebar = () => {
   const isRunningAsyncAction = useRecoilValue(editorInteractionStateShowIsRunningAsyncActionAtom);
   const [showAIAssistant, setShowAIAssistant] = useRecoilState(editorInteractionStateShowAIAssistantAtom);
-  const [showCodeEditor, setShowCodeEditor] = useRecoilState(editorInteractionStateShowCodeEditorAtom);
+
+  const showCodeEditor = useRecoilValue(editorInteractionStateShowCodeEditorAtom);
+  const toggleCodeEditor = useMemo(() => defaultActionSpec[Action.ShowCellTypeMenu], []);
+
   const [showCellTypeOutlines, setShowCellTypeOutlines] = useRecoilState(showCellTypeOutlinesAtom);
   const [showConnectionsMenu, setShowConnectionsMenu] = useRecoilState(editorInteractionStateShowConnectionsMenuAtom);
-  const [showValidation, setShowValidation] = useRecoilState(editorInteractionStateShowValidationAtom);
   const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
   const [showFeedbackMenu, setShowFeedbackMenu] = useRecoilState(editorInteractionStateShowFeedbackMenuAtom);
 
@@ -60,10 +58,6 @@ export const QuadraticSidebar = () => {
   const isAvailableArgs = useIsAvailableArgs();
   const canEditFile = isAvailableBecauseCanEditFile(isAvailableArgs);
   const canDoTeamsStuff = isAvailableBecauseFileLocationIsAccessibleAndWriteable(isAvailableArgs);
-
-  const sheet = sheets.sheet;
-  const cursor = sheet.cursor;
-  const cursorPosition = cursor.cursorPosition;
 
   return (
     <nav className="hidden h-full w-12 flex-shrink-0 flex-col border-r border-border bg-accent lg:flex">
@@ -89,36 +83,19 @@ export const QuadraticSidebar = () => {
       <div className="mt-2 flex flex-col items-center gap-1">
         {canEditFile && isAuthenticated && (
           <SidebarTooltip label="AI Assistant">
-            <SidebarToggle
-              pressed={showAIAssistant}
-              onPressedChange={() => {
-                setShowAIAssistant((prev) => !prev);
-                focusGrid();
-              }}
-            >
+            <SidebarToggle pressed={showAIAssistant} onPressedChange={() => setShowAIAssistant((prev) => !prev)}>
               <AIIcon />
             </SidebarToggle>
           </SidebarTooltip>
         )}
 
         {canEditFile && (
-          <SidebarTooltip label="Code editor" shortcut={'/'}>
-            <SidebarToggle
-              pressed={showCodeEditor}
-              onPressedChange={async () => {
-                const column = cursorPosition.x;
-                const row = cursorPosition.y;
-                const code = await quadraticCore.getCodeCell(sheets.sheet.id, column, row);
-
-                if (code) {
-                  doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
-                } else {
-                  setShowCodeEditor((prev) => !prev);
-                  focusGrid();
-                }
-              }}
-            >
-              <CodeIcon />
+          <SidebarTooltip
+            label={toggleCodeEditor.label}
+            shortcut={keyboardShortcutEnumToDisplay(Action.ShowCellTypeMenu)}
+          >
+            <SidebarToggle pressed={showCodeEditor} onPressedChange={() => toggleCodeEditor.run()}>
+              {toggleCodeEditor.Icon && <toggleCodeEditor.Icon />}
             </SidebarToggle>
           </SidebarTooltip>
         )}
@@ -126,10 +103,7 @@ export const QuadraticSidebar = () => {
         <SidebarTooltip label={'Code cell outlines'}>
           <SidebarToggle
             pressed={showCellTypeOutlines}
-            onPressedChange={() => {
-              setShowCellTypeOutlines((prev) => !prev);
-              focusGrid();
-            }}
+            onPressedChange={() => setShowCellTypeOutlines((prev) => !prev)}
           >
             {showCellTypeOutlines ? <CodeCellOutlineOn /> : <CodeCellOutlineOff />}
           </SidebarToggle>
@@ -139,26 +113,9 @@ export const QuadraticSidebar = () => {
           <SidebarTooltip label="Connections">
             <SidebarToggle
               pressed={showConnectionsMenu}
-              onPressedChange={() => {
-                setShowConnectionsMenu((prev) => !prev);
-                focusGrid();
-              }}
+              onPressedChange={() => setShowConnectionsMenu((prev) => !prev)}
             >
               <DatabaseIcon />
-            </SidebarToggle>
-          </SidebarTooltip>
-        )}
-
-        {canEditFile && (
-          <SidebarTooltip label="Data validation">
-            <SidebarToggle
-              pressed={!!showValidation}
-              onPressedChange={() => {
-                setShowValidation((prev) => !prev);
-                focusGrid();
-              }}
-            >
-              <DataValidationsIcon />
             </SidebarToggle>
           </SidebarTooltip>
         )}
@@ -166,13 +123,7 @@ export const QuadraticSidebar = () => {
         {canEditFile && <KernelMenu triggerIcon={<MemoryIcon />} />}
 
         <SidebarTooltip label="Command palette" shortcut={KeyboardSymbols.Command + 'P'}>
-          <SidebarToggle
-            pressed={showCommandPalette}
-            onPressedChange={() => {
-              setShowCommandPalette((prev) => !prev);
-              focusGrid();
-            }}
-          >
+          <SidebarToggle pressed={showCommandPalette} onPressedChange={() => setShowCommandPalette((prev) => !prev)}>
             <ManageSearch />
           </SidebarToggle>
         </SidebarTooltip>
@@ -214,7 +165,7 @@ export const SidebarToggle = React.forwardRef<HTMLButtonElement, React.Component
 );
 SidebarToggle.displayName = 'SidebarToggle';
 
-function SidebarTooltip({
+export function SidebarTooltip({
   children,
   label,
   shortcut,

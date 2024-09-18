@@ -64,6 +64,7 @@ export const InsertMenubarMenu = () => {
 
         <MenubarItemAction action={Action.InsertCheckbox} actionArgs={undefined} />
         <MenubarItemAction action={Action.InsertDropdown} actionArgs={undefined} />
+        <MenubarItemAction action={Action.ToggleDataValidation} actionArgs={undefined} />
 
         <MenubarSeparator />
 

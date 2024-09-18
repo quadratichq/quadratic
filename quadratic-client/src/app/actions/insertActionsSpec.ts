@@ -5,7 +5,7 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { SNIPPET_JS_API, SNIPPET_JS_CHART } from '@/app/ui/menus/CodeEditor/snippetsJS';
 import { SNIPPET_PY_API, SNIPPET_PY_CHART } from '@/app/ui/menus/CodeEditor/snippetsPY';
-import { ArrowDropDownCircleIcon, CheckBoxIcon, SheetIcon } from '@/shared/components/Icons';
+import { ArrowDropDownCircleIcon, CheckBoxIcon, DataValidationsIcon, SheetIcon } from '@/shared/components/Icons';
 
 type InsertActionSpec = Pick<
   ActionSpecRecord,
@@ -19,6 +19,7 @@ type InsertActionSpec = Pick<
   | Action.InsertSheet
   | Action.InsertCheckbox
   | Action.InsertDropdown
+  | Action.ToggleDataValidation
   | Action.InsertCellReference
   | Action.RemoveInsertedCells
 >;
@@ -143,6 +144,7 @@ export const insertActionsSpec: InsertActionSpec = {
   },
   [Action.InsertCheckbox]: {
     label: 'Checkbox',
+    labelVerbose: 'Insert checkbox',
     Icon: CheckBoxIcon,
     run: () => {
       if (!pixiAppSettings.setEditorInteractionState) return;
@@ -154,12 +156,25 @@ export const insertActionsSpec: InsertActionSpec = {
   },
   [Action.InsertDropdown]: {
     label: 'Dropdown',
+    labelVerbose: 'Insert dropdown',
     Icon: ArrowDropDownCircleIcon,
     run: () => {
       if (!pixiAppSettings.setEditorInteractionState) return;
       pixiAppSettings.setEditorInteractionState((prev) => ({
         ...prev,
         showValidation: 'list',
+      }));
+    },
+  },
+  [Action.ToggleDataValidation]: {
+    label: 'Data validation rule',
+    labelVerbose: 'Manage data validation rules',
+    Icon: DataValidationsIcon,
+    run: () => {
+      if (!pixiAppSettings.setEditorInteractionState) return;
+      pixiAppSettings.setEditorInteractionState((prev) => ({
+        ...prev,
+        showValidation: true,
       }));
     },
   },

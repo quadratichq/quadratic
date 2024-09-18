@@ -13,6 +13,7 @@ export enum Action {
   InsertApiRequestPython = 'insert_api_request_python',
   InsertCheckbox = 'insert_checkbox',
   InsertDropdown = 'insert_dropdown',
+  ToggleDataValidation = 'toggle_data_validation',
   Copy = 'copy',
   Cut = 'cut',
   Paste = 'paste',
