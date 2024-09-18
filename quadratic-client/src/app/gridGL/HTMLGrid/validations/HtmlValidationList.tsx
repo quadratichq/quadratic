@@ -151,6 +151,8 @@ export const HtmlValidationList = (props: Props) => {
       style={{
         top: offsets.bottom,
         left: offsets.left,
+        transformOrigin: `0 0`,
+        transform: `scale(${1 / pixiApp.viewport.scale.x})`,
         minWidth: offsets.width,
         maxHeight: `min(50vh, calc(${viewportBottom - offsets.bottom}px))`,
       }}

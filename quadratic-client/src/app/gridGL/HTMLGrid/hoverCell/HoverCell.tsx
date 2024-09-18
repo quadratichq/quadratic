@@ -33,6 +33,7 @@ export function HoverCell() {
   const [cell, setCell] = useState<JsRenderCodeCell | EditingCell | ErrorValidation | undefined>();
   const [offsets, setOffsets] = useState<Rectangle>(new Rectangle());
   const [delay, setDelay] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [hovering, setHovering] = useState(false);
   const hoveringRef = useRef(false);
 
@@ -154,6 +155,8 @@ export function HoverCell() {
           </>
         );
       }
+
+      setLoading(false);
     },
     [hideHoverCell]
   );
@@ -164,6 +167,7 @@ export function HoverCell() {
       if (cell && !hoveringRef.current) {
         setOffsets(sheets.sheet.getCellOffsets(cell.x, cell.y));
         setDelay('validationId' in cell ? false : true);
+        setLoading(true);
         updateText(cell);
         addPointerEvents();
       } else {
@@ -194,11 +198,15 @@ export function HoverCell() {
   const ref = useRef<HTMLDivElement>(null);
   const { top, left } = usePositionCellMessage({ div: ref.current, offsets });
 
+  if (loading) {
+    return null;
+  }
+
   return (
     <div
       ref={ref}
       className={cn(
-        'outline-non absolute z-50 box-border w-64 select-none rounded-md border bg-popover text-popover-foreground shadow-md',
+        'absolute z-50 box-border w-64 select-none rounded-md border bg-popover text-popover-foreground shadow-md outline-none',
         cell || hovering ? 'opacity-100' : 'opacity-0',
         allowPointerEvents ? 'pointer-events-auto' : 'pointer-events-none'
       )}
@@ -207,6 +215,8 @@ export function HoverCell() {
         left,
         visibility: !onlyCode || showCodePeek ? 'visible' : 'hidden',
         transition: delay ? `opacity 150ms linear ${HOVER_CELL_FADE_IN_OUT_DELAY}ms` : 'opacity 150ms linear',
+        transformOrigin: `0 0`,
+        transform: `scale(${1 / pixiApp.viewport.scale.x})`,
       }}
       onMouseEnter={handleHover}
       onMouseMove={handleHover}

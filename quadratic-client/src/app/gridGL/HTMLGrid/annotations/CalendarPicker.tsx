@@ -4,7 +4,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
-import { formatDate, formatDateTime, formatTime, parseTime } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { formatDateTime, formatTime, parseTime } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { ValidationInput } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationInput';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -24,6 +24,19 @@ export const CalendarPicker = () => {
     () => annotationState === 'calendar' || annotationState === 'calendar-time',
     [annotationState]
   );
+
+  useEffect(() => {
+    const close = (opened: boolean) => {
+      if (!opened) {
+        setAnnotationState(undefined);
+      }
+    };
+
+    inlineEditorEvents.on('status', close);
+    return () => {
+      inlineEditorEvents.off('status', close);
+    };
+  }, [setAnnotationState]);
 
   const [value, setValue] = useState<string | undefined>();
   const [date, setDate] = useState<Date | undefined>();
@@ -75,9 +88,9 @@ export const CalendarPicker = () => {
       let replacement: string;
       if (showTime) {
         newDate.setHours(date.getHours(), date.getMinutes(), date.getSeconds());
-        replacement = formatDateTime(dateToDateTimeString(newDate), dateFormat);
+        replacement = dateToDateTimeString(newDate);
       } else {
-        replacement = formatDate(dateToDateString(newDate), dateFormat);
+        replacement = dateToDateString(newDate);
       }
       setDate(newDate);
       inlineEditorEvents.emit('replaceText', replacement, false);
@@ -85,7 +98,7 @@ export const CalendarPicker = () => {
         inlineEditorHandler.close(0, 0, false);
       }
     },
-    [date, dateFormat, showTime]
+    [date, showTime]
   );
 
   const changeTime = useCallback(

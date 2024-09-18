@@ -51,8 +51,10 @@ export const GridContextMenu = () => {
       className="absolute"
       ref={ref}
       style={{
-        left: (show.world?.x ?? 0) + pixiApp.viewport.x,
-        top: (show.world?.y ?? 0) + pixiApp.viewport.y,
+        left: show.world?.x ?? 0,
+        top: show.world?.y ?? 0,
+        transform: `scale(${1 / pixiApp.viewport.scale.x})`,
+        pointerEvents: 'auto',
       }}
     >
       <ControlledMenu
