@@ -123,12 +123,62 @@ mod tests {
 
     #[test]
     #[parallel]
+    fn test_formula_comparison_ops() {
+        fn assert_all_compare_ops_work(lesser: &str, greater: &str) {
+            let g = Grid::new();
+            let eval =
+                |lhs: &str, op: &str, rhs: &str| eval_to_string(&g, &format!("{lhs} {op} {rhs}"));
+
+            assert_eq!(eval(lesser, "<", greater), "TRUE");
+            assert_eq!(eval(greater, "<", lesser), "FALSE");
+            assert_eq!(eval(greater, "<", greater), "FALSE");
+
+            assert_eq!(eval(lesser, ">", greater), "FALSE");
+            assert_eq!(eval(greater, ">", lesser), "TRUE");
+            assert_eq!(eval(greater, ">", greater), "FALSE");
+
+            assert_eq!(eval(lesser, "<=", greater), "TRUE");
+            assert_eq!(eval(greater, "<=", lesser), "FALSE");
+            assert_eq!(eval(greater, "<=", greater), "TRUE");
+
+            assert_eq!(eval(lesser, ">=", greater), "FALSE");
+            assert_eq!(eval(greater, ">=", lesser), "TRUE");
+            assert_eq!(eval(greater, ">=", greater), "TRUE");
+
+            assert_eq!(eval(lesser, "=", greater), "FALSE");
+            assert_eq!(eval(lesser, "==", greater), "FALSE");
+            assert_eq!(eval(greater, "=", greater), "TRUE");
+            assert_eq!(eval(greater, "==", greater), "TRUE");
+
+            assert_eq!(eval(lesser, "<>", greater), "TRUE");
+            assert_eq!(eval(lesser, "!=", greater), "TRUE");
+            assert_eq!(eval(greater, "<>", greater), "FALSE");
+            assert_eq!(eval(greater, "!=", greater), "FALSE");
+        }
+
+        // Test numbers
+        assert_all_compare_ops_work("1", "2");
+
+        // Test strings (case-insensitive)
+        assert_all_compare_ops_work("'abc'", "'def'");
+        assert_all_compare_ops_work("'ABC'", "'def'");
+        assert_all_compare_ops_work("'abc'", "'DEF'");
+        assert_all_compare_ops_work("'ABC'", "'DEF'");
+
+        // Test duration (`+0` coerces to duration)
+        assert_all_compare_ops_work("('300 days'+0)", "('1 year'+0)");
+        assert_all_compare_ops_work("('300 days'+0)", "('301 days'+0)");
+    }
+
+    #[test]
+    #[parallel]
     #[allow(clippy::identity_op)]
     fn test_formula_math_operators() {
         let g = Grid::new();
 
         assert_eq!(
             (1 * -6 + -2 - 1 * (-3_i32).pow(2_u32.pow(3))).to_string(),
+            // TODO: `-3 ^ 2` should be parsed as `-(3 ^ 2)`, not `(-3) ^ 2`
             eval_to_string(&g, "1 * -6 + -2 - 1 * -3 ^ 2 ^ 3"),
         );
         assert_eq!((1.0 / 2.0).to_string(), eval_to_string(&g, "1/2"));
