@@ -114,9 +114,6 @@ impl GridController {
                                     sheet_pos: sheet_pos.clone(),
                                     values: code_cell_value.into(),
                                 });
-                                transaction
-                                    .operations
-                                    .push_back(Operation::ComputeCode { sheet_pos });
                             }
                         }
                     }
