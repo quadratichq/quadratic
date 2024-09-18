@@ -37,27 +37,30 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
       if (!div || !offsets) return;
 
       const viewport = pixiApp.viewport;
-      const scale = pixiApp.viewport.scale.x;
       const bounds = viewport.getVisibleBounds();
+
+      const scale = pixiApp.viewport.scale.x;
+      const offsetWidth = div.offsetWidth / scale;
+      const offsetHeight = div.offsetHeight / scale;
+
+      const leftHeadingScaled = leftHeading / scale;
+      const topHeadingScaled = topHeading / scale;
 
       if (side === 'vertical') {
         let left = offsets.left;
-        left = Math.min(left, bounds.right - div.offsetWidth);
-        left = Math.max(left, bounds.left + leftHeading);
+        left = Math.min(left, bounds.right - offsetWidth);
+        left = Math.max(left, bounds.left + leftHeadingScaled);
         setLeft(left);
 
         let top = offsets.bottom;
         if (forceTop) {
-          top = offsets.top - div.offsetHeight;
-          if (top < bounds.top + topHeading) {
+          top = offsets.top - offsetHeight;
+          if (top < bounds.top + topHeadingScaled) {
             top = offsets.bottom;
           }
         }
         setTop(top);
       } else {
-        const offsetWidth = div.offsetWidth * scale;
-        const offsetHeight = div.offsetHeight * scale;
-
         // checks whether the inline editor or dropdown is open; if so, always
         // show to the left to avoid overlapping the content
         let triggerLeft = false;
