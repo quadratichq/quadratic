@@ -86,4 +86,12 @@ describe('convertNumber', () => {
       0
     )
   ).toEqual(undefined);
+  expect(
+    reduceDecimals(
+      '0.3333333333333333',
+      '33.33333333333333%',
+      { commas: null, decimals: null, format: { type: 'PERCENTAGE', symbol: null } },
+      4
+    )
+  ).toEqual({ number: '33.3333%', currentFractionDigits: 4 });
 });
