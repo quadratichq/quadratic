@@ -15,7 +15,6 @@ import {
   CodeCellOutlineOff,
   CodeCellOutlineOn,
   DatabaseIcon,
-  DataValidationsIcon,
   DocumentationIcon,
   FeedbackIcon,
   ManageSearch,
@@ -97,19 +96,6 @@ export const QuadraticSidebar = () => {
               onPressedChange={() => setEditorInteractionState((prev) => ({ ...prev, showConnectionsMenu: true }))}
             >
               <DatabaseIcon />
-            </SidebarToggle>
-          </SidebarTooltip>
-        )}
-
-        {canEditFile && (
-          <SidebarTooltip label="Data validation">
-            <SidebarToggle
-              pressed={Boolean(editorInteractionState.showValidation)}
-              onPressedChange={() =>
-                setEditorInteractionState((prev) => ({ ...prev, showValidation: !Boolean(prev.showValidation) }))
-              }
-            >
-              <DataValidationsIcon />
             </SidebarToggle>
           </SidebarTooltip>
         )}
