@@ -43,15 +43,14 @@ export const HtmlValidationMessage = (props: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [column, hoverError, row, validation]);
 
-  const [div, setDiv] = useState<HTMLDivElement | null>(null);
-  const ref = useCallback((node: HTMLDivElement) => {
-    setDiv(node);
-  }, []);
-
   useEffect(() => {
     setHide(false);
   }, [validation]);
 
+  const [div, setDiv] = useState<HTMLDivElement | null>(null);
+  const ref = useCallback((node: HTMLDivElement) => {
+    setDiv(node);
+  }, []);
   const { top, left } = usePositionCellMessage({ div, offsets, forceLeft: true });
 
   const showValidation = useCallback(() => {

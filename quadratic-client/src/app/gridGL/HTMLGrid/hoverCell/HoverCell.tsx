@@ -195,8 +195,11 @@ export function HoverCell() {
     };
   }, [hideHoverCell]);
 
-  const ref = useRef<HTMLDivElement>(null);
-  const { top, left } = usePositionCellMessage({ div: ref.current, offsets });
+  const [div, setDiv] = useState<HTMLDivElement | null>(null);
+  const ref = useCallback((node: HTMLDivElement) => {
+    setDiv(node);
+  }, []);
+  const { top, left } = usePositionCellMessage({ div, offsets });
 
   if (loading) {
     return null;

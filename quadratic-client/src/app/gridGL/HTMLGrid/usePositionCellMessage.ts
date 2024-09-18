@@ -42,9 +42,8 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
       const scale = pixiApp.viewport.scale.x;
       const offsetWidth = div.offsetWidth / scale;
       const offsetHeight = div.offsetHeight / scale;
-
-      const leftHeadingScaled = leftHeading / scale;
       const topHeadingScaled = topHeading / scale;
+      const leftHeadingScaled = leftHeading / scale;
 
       if (side === 'vertical') {
         let left = offsets.left;
