@@ -1,11 +1,12 @@
 import { GenericAction } from '@/app/actions';
+import { Action } from '@/app/actions/actions';
 import { CommandItem, CommandShortcut } from '@/shared/shadcn/ui/command';
 import fuzzysort from 'fuzzysort';
 import mixpanel from 'mixpanel-browser';
 
 export type CommandGroup = {
   heading: string;
-  commands: Command[];
+  commands: Array<Command | Action>;
 };
 
 export type Command = {

@@ -125,16 +125,6 @@ export const pasteActionFormats = {
   isAvailable: isAvailableBecauseCanEditFile,
 };
 
-export const undoAction = {
-  label: 'Undo',
-  isAvailable: isAvailableBecauseCanEditFile,
-};
-
-export const redoAction = {
-  label: 'Redo',
-  isAvailable: isAvailableBecauseCanEditFile,
-};
-
 export const copyAction = {
   label: 'Copy',
 };
