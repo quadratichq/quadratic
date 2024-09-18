@@ -56,6 +56,7 @@ export const GridContextMenu = () => {
         left: show.world?.x ?? 0,
         top: show.world?.y ?? 0,
         transform: `scale(${1 / pixiApp.viewport.scale.x})`,
+        pointerEvents: 'auto',
       }}
     >
       <ControlledMenu
