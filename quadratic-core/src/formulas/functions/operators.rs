@@ -282,10 +282,10 @@ mod tests {
             eval_to_err(&g, "=A1-A2").msg.to_string(),
             "Cannot subtract duration and date",
         );
-        g.sheets_mut()[0].set_cell_value(pos![A1], val("2000-01-01"));
+        g.sheets_mut()[0].set_cell_value(pos![A1], time("1:30"));
         assert_eq!(
             eval_to_err(&g, "=A1-A2").msg.to_string(),
-            "Cannot subtract date and date; use duration instead",
+            "Cannot subtract time and date; use a duration such as '1y 5d 12h 30m' instead",
         );
 
         for (a, b, expected) in [
