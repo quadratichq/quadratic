@@ -168,9 +168,7 @@ export const CodeEditor = () => {
         setSpillError(codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as Coordinate)));
       } else {
         setCodeString('');
-        if (!pushCodeCell) {
-          setEditorContent(initialCode ?? '');
-        }
+        if (!pushCodeCell) setEditorContent(initialCode ?? '');
         setEvaluationResult(undefined);
         setConsoleOutput(undefined);
       }

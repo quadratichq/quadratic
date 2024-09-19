@@ -1,4 +1,4 @@
-import { editorInteractionStateDefault } from '@/app/atoms/editorInteractionStateAtom';
+import { defaultEditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import {
   copyToClipboardEvent,
@@ -278,7 +278,7 @@ export class PixiApp {
     this.viewport.scale.set(1);
     const { x, y } = this.getStartingViewport();
     this.viewport.position.set(x, y);
-    pixiAppSettings.setEditorInteractionState?.(editorInteractionStateDefault);
+    pixiAppSettings.setEditorInteractionState?.(defaultEditorInteractionState);
   }
 
   rebuild() {

@@ -4,7 +4,7 @@ import { CodeCellLanguage, SearchOptions } from '@/app/quadratic-core-types';
 import { FilePermission } from 'quadratic-shared/typesAndSchemas';
 import { atom, DefaultValue, selector } from 'recoil';
 
-export type EditorInteractionState = {
+export interface EditorInteractionState {
   isRunningAsyncAction: boolean;
   showCellTypeMenu: boolean;
   showCodeEditor: boolean;
@@ -38,9 +38,9 @@ export type EditorInteractionState = {
   };
   undo: boolean;
   redo: boolean;
-};
+}
 
-export const editorInteractionStateDefault: EditorInteractionState = {
+export const defaultEditorInteractionState: EditorInteractionState = {
   isRunningAsyncAction: false,
   showCellTypeMenu: false,
   showCodeEditor: false,
@@ -71,7 +71,7 @@ export const editorInteractionStateDefault: EditorInteractionState = {
 
 export const editorInteractionStateAtom = atom<EditorInteractionState>({
   key: 'editorInteractionState', // unique ID (with respect to other atoms/selectors)
-  default: editorInteractionStateDefault,
+  default: defaultEditorInteractionState,
   effects: [
     // this effect is used to focus the grid when the modal is closed
     ({ onSet }) => {

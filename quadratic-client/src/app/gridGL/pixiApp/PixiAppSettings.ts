@@ -1,4 +1,4 @@
-import { EditorInteractionState, editorInteractionStateDefault } from '@/app/atoms/editorInteractionStateAtom';
+import { defaultEditorInteractionState, EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { defaultGridSettings, GridSettings } from '@/app/atoms/gridSettingsAtom';
 import { defaultInlineEditor, InlineEditorState } from '@/app/atoms/inlineEditorAtom';
 import { events } from '@/app/events/events';
@@ -39,7 +39,7 @@ class PixiAppSettings {
   temporarilyHideCellTypeOutlines = false;
   gridSettings = defaultGridSettings;
   setGridSettings?: SetterOrUpdater<GridSettings>;
-  editorInteractionState = editorInteractionStateDefault;
+  editorInteractionState = defaultEditorInteractionState;
   setEditorInteractionState?: SetterOrUpdater<EditorInteractionState>;
   addGlobalSnackbar?: GlobalSnackbar['addGlobalSnackbar'];
   inlineEditorState = defaultInlineEditor;
