@@ -1,8 +1,8 @@
 //! WASM functions for date and time conversions.
 
-mod date_time_test_utils;
+mod date_time_convert;
 
-use date_time_test_utils::*;
+use date_time_convert::*;
 use wasm_bindgen::prelude::*;
 
 #[allow(non_snake_case)]
