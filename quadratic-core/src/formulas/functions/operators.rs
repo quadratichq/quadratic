@@ -166,8 +166,12 @@ mod tests {
         assert_all_compare_ops_work("'ABC'", "'DEF'");
 
         // Test duration (`+0` coerces to duration)
+        assert_all_compare_ops_work("('2 months'+0)", "('1 year'+0)");
         assert_all_compare_ops_work("('300 days'+0)", "('1 year'+0)");
         assert_all_compare_ops_work("('300 days'+0)", "('301 days'+0)");
+        // Any number of days is always considered less than one month. This is
+        // a little weird, but I don't know what else to do.
+        assert_all_compare_ops_work("('300 days'+0)", "('1 month'+0)");
     }
 
     #[test]

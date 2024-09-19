@@ -649,4 +649,16 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn test_duration_construction() {
+        assert_eq!(Duration::from_years(3).to_string(), "3y");
+        assert_eq!(Duration::from_months(3).to_string(), "3mo");
+
+        assert_eq!(Duration::from_days(3.25).to_string(), "3d 6h");
+
+        assert_eq!(Duration::from_attoseconds(3.2).to_string(), "3.2as");
+        assert_eq!(Duration::from_femtoseconds(3.2).to_string(), "3.2fs");
+        assert_eq!(Duration::from_picoseconds(3.2).to_string(), "3.2ps");
+    }
 }
