@@ -102,6 +102,12 @@ export class Pointer {
   };
 
   private pointerMove = (e: InteractionEvent): void => {
+    if (e.data.originalEvent.target) {
+      const target = e.data.originalEvent.target as HTMLElement;
+      if (target.tagName !== 'CANVAS') {
+        return;
+      }
+    }
     if (this.isMoreThanOneTouch(e) || this.isOverCodeEditor(e)) return;
     const world = pixiApp.viewport.toWorld(e.data.global);
     const event = e.data.originalEvent as PointerEvent;
