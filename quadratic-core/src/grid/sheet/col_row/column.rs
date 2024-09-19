@@ -291,7 +291,6 @@ impl Sheet {
                 if code_run.is_html() {
                     transaction.add_html_cell(self.id, old_pos);
                     transaction.add_html_cell(self.id, new_pos);
-                    dbgjs!("html is moving...");
                 } else if code_run.is_image() {
                     transaction.add_image_cell(self.id, old_pos);
                     transaction.add_image_cell(self.id, new_pos);
