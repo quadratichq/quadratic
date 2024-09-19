@@ -27,7 +27,7 @@ export const ViewMenubarMenu = () => {
   return (
     <MenubarMenu>
       <MenubarTrigger>View</MenubarTrigger>
-      <MenubarContent>
+      <MenubarContent className="top-bar-menubar">
         <MenubarItem
           onClick={() => {
             settings.setShowHeadings(!settings.showHeadings);
