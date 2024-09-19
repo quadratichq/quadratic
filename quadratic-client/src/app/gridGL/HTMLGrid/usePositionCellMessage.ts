@@ -1,4 +1,4 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateAnnotationStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
@@ -26,7 +26,7 @@ interface PositionCellMessage {
 }
 
 export const usePositionCellMessage = (props: Props): PositionCellMessage => {
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const annotationState = useRecoilValue(editorInteractionStateAnnotationStateAtom);
   const { div, offsets, forceLeft, forceTop, direction: side } = props;
   const [top, setTop] = useState<number | undefined>();
   const [left, setLeft] = useState<number | undefined>();
@@ -42,9 +42,8 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
       const scale = pixiApp.viewport.scale.x;
       const offsetWidth = div.offsetWidth / scale;
       const offsetHeight = div.offsetHeight / scale;
-
-      const leftHeadingScaled = leftHeading / scale;
       const topHeadingScaled = topHeading / scale;
+      const leftHeadingScaled = leftHeading / scale;
 
       if (side === 'vertical') {
         let left = offsets.left;
@@ -65,7 +64,7 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
         // show to the left to avoid overlapping the content
         let triggerLeft = false;
         if (forceLeft) {
-          triggerLeft = inlineEditorHandler.isOpen() || editorInteractionState.annotationState === 'dropdown';
+          triggerLeft = inlineEditorHandler.isOpen() || annotationState === 'dropdown';
         }
         // only box to the left if it doesn't fit.
         if (triggerLeft || offsets.right + offsetWidth > bounds.right) {
@@ -99,7 +98,7 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
       pixiApp.viewport.off('moved', updatePosition);
       window.removeEventListener('resize', updatePosition);
     };
-  }, [div, editorInteractionState.annotationState, forceLeft, forceTop, leftHeading, offsets, side, topHeading]);
+  }, [div, annotationState, forceLeft, leftHeading, offsets, side, topHeading, forceTop]);
 
   return { top, left };
 };

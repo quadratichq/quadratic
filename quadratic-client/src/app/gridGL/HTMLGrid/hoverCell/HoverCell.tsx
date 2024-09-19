@@ -1,3 +1,4 @@
+import { showCodePeekAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
@@ -6,12 +7,15 @@ import { HtmlValidationMessage } from '@/app/gridGL/HTMLGrid/validations/HtmlVal
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { pluralize } from '@/app/helpers/pluralize';
-import { JsRenderCodeCell } from '@/app/quadratic-core-types';
-import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
+import { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { cn } from '@/shared/shadcn/utils';
 import { Rectangle } from 'pixi.js';
-import { ReactNode, useEffect, useRef, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 import './HoverCell.css';
+
+export const HOVER_CELL_FADE_IN_OUT_DELAY = 250;
 
 export interface EditingCell {
   x: number;
@@ -20,89 +24,79 @@ export interface EditingCell {
   codeEditor: boolean;
 }
 
-export const HoverCell = () => {
-  const { showCodePeek } = useGridSettings();
+export function HoverCell() {
+  const showCodePeek = useRecoilValue(showCodePeekAtom);
   const [cell, setCell] = useState<JsRenderCodeCell | EditingCell | ErrorValidation | undefined>();
   const [offsets, setOffsets] = useState<Rectangle>(new Rectangle());
+  const [delay, setDelay] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [hovering, setHovering] = useState(false);
+  const hoveringRef = useRef(false);
 
-  const ref = useRef<HTMLDivElement>(null);
+  const timeoutId = useRef<NodeJS.Timeout | undefined>();
+  const [allowPointerEvents, setAllowPointerEvents] = useState(false);
 
-  useEffect(() => {
-    const addCell = (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => {
-      const div = ref.current;
-      if (!div) return;
-      if (!cell) {
-        if (!div.classList.contains('hover-cell-fade-out')) {
-          div.classList.add('hover-cell-fade-out');
-          div.classList.remove('hover-cell-fade-in');
-          div.classList.remove('hover-cell-fade-in-no-delay');
-        }
-      } else {
-        if (!div.classList.contains('hover-cell-fade-in') && !div.classList.contains('hover-cell-fade-in-no-delay')) {
-          if ('validationId' in cell || window.getComputedStyle(div).getPropertyValue('opacity') !== '0') {
-            div.classList.add('hover-cell-fade-in-no-delay');
-          } else {
-            div.classList.add('hover-cell-fade-in');
-          }
-          div.classList.remove('hover-cell-fade-out');
-        }
-        setCell(cell);
-        setOffsets(sheets.sheet.getCellOffsets(cell.x, cell.y));
-      }
-    };
-    events.on('hoverCell', addCell);
-    return () => {
-      events.off('hoverCell', addCell);
-    };
+  const addPointerEvents = useCallback(() => {
+    clearTimeout(timeoutId.current);
+    setAllowPointerEvents(true);
   }, []);
 
-  useEffect(() => {
-    const remove = () => {
-      const div = ref.current;
-      if (!div) return;
-      if (!div.classList.contains('hover-cell-fade-out')) {
-        div.classList.add('hover-cell-fade-out');
-        div.classList.remove('hover-cell-fade-in');
-        div.classList.remove('hover-cell-fade-in-no-delay');
-      }
-    };
-    pixiApp.viewport.on('moved', remove);
-    pixiApp.viewport.on('zoomed', remove);
-    events.on('cursorPosition', remove);
-    return () => {
-      pixiApp.viewport.off('moved', remove);
-      pixiApp.viewport.off('zoomed', remove);
-      events.off('cursorPosition', remove);
-    };
+  const removePointerEvents = useCallback(() => {
+    clearTimeout(timeoutId.current);
+    timeoutId.current = setTimeout(() => {
+      setAllowPointerEvents(false);
+      timeoutId.current = undefined;
+    }, HOVER_CELL_FADE_IN_OUT_DELAY);
+  }, []);
+
+  const handleHover = useCallback(() => {
+    addPointerEvents();
+    setHovering(true);
+    hoveringRef.current = true;
+  }, [addPointerEvents]);
+
+  const handleMouseLeave = useCallback(() => {
+    removePointerEvents();
+    setHovering(false);
+    hoveringRef.current = false;
+  }, [removePointerEvents]);
+
+  const hideHoverCell = useCallback(() => {
+    setCell(undefined);
+    setHovering(false);
+    hoveringRef.current = false;
+    setDelay(false);
+    setAllowPointerEvents(false);
+    clearTimeout(timeoutId.current);
   }, []);
 
   const [text, setText] = useState<ReactNode>();
   const [onlyCode, setOnlyCode] = useState(false);
-  useEffect(() => {
-    const asyncFunction = async () => {
-      if (cell && 'validationId' in cell) {
-        const offsets = sheets.sheet.getCellOffsets(cell.x, cell.y);
-        const validation = sheets.sheet.getValidationById(cell.validationId);
-        if (validation) {
-          setText(
-            <div className="relative">
-              <HtmlValidationMessage
-                column={cell.x}
-                row={cell.y}
-                offsets={offsets}
-                validation={validation}
-                hoverError
-              />
-            </div>
-          );
-        }
-        return;
+  const updateText = useCallback(async (cell: JsRenderCodeCell | EditingCell | ErrorValidation) => {
+    const errorValidationCell = 'validationId' in cell ? cell : undefined;
+    const renderCodeCell = 'language' in cell && 'state' in cell && 'spill_error' in cell ? cell : undefined;
+    const editingCell = 'user' in cell && 'codeEditor' in cell ? cell : undefined;
+
+    if (errorValidationCell) {
+      const offsets = sheets.sheet.getCellOffsets(errorValidationCell.x, errorValidationCell.y);
+      const validation = sheets.sheet.getValidationById(errorValidationCell.validationId);
+      setOnlyCode(false);
+      if (validation) {
+        setText(
+          <div className="relative">
+            <HtmlValidationMessage
+              column={errorValidationCell.x}
+              row={errorValidationCell.y}
+              offsets={offsets}
+              validation={validation}
+              hoverError
+            />
+          </div>
+        );
       }
-      const code = cell ? await quadraticCore.getCodeCell(sheets.sheet.id, Number(cell.x), Number(cell.y)) : undefined;
-      const renderCodeCell = cell as JsRenderCodeCell | undefined;
-      const language = getLanguage(renderCodeCell?.language);
-      const editingCell = cell as EditingCell | undefined;
-      const spillError = renderCodeCell ? renderCodeCell.spill_error : undefined;
+    } else if (renderCodeCell) {
+      const spillError = renderCodeCell.spill_error;
+
       if (spillError) {
         setOnlyCode(false);
         setText(
@@ -124,59 +118,127 @@ export const HoverCell = () => {
             </div>
           </>
         );
-      } else if (renderCodeCell?.state === 'RunError') {
-        setOnlyCode(false);
-        if (code) {
+      } else {
+        const language = getLanguage(renderCodeCell.language);
+        const sheetId = sheets.sheet.id;
+        const { x, y } = renderCodeCell;
+        const codeCell = await quadraticCore.getCodeCell(sheetId, x, y);
+
+        if (renderCodeCell.state === 'RunError') {
+          setOnlyCode(false);
+          if (codeCell) {
+            setText(<HoverCellRunError codeCell={codeCell} />);
+          }
+        } else {
+          setOnlyCode(true);
           setText(
             <>
-              <div className="hover-cell-header">Run Error</div>
-              <div className="hover-cell-body">
-                <div>There was an error running the code in this cell.</div>
-                <div className="hover-cell-error-msg">{code.std_err}</div>
-              </div>
-              <div className="hover-cell-header-space">{language} Code</div>
-              <div className="code-body">{code?.code_string}</div>
+              <div className="hover-cell-header">{language} Code</div>
+              <div className="code-body">{codeCell?.code_string}</div>
             </>
           );
         }
-      } else if (renderCodeCell?.state) {
-        setOnlyCode(true);
-        setText(
-          <>
-            <div className="hover-cell-header">{language} Code</div>
-            <div className="code-body">{code?.code_string}</div>
-          </>
-        );
-      } else if (editingCell?.user) {
-        setOnlyCode(false);
-        setText(
-          <>
-            <div className="hover-cell-header">Multiplayer Edit</div>
-            <div className="hover-cell-body">
-              {editingCell.codeEditor ? 'The code in this cell' : 'This cell'} is being edited by {editingCell.user}.
-            </div>
-          </>
-        );
+      }
+    } else if (editingCell) {
+      setOnlyCode(false);
+      setText(
+        <>
+          <div className="hover-cell-header">Multiplayer Edit</div>
+          <div className="hover-cell-body">
+            {editingCell.codeEditor ? 'The code in this cell' : 'This cell'} is being edited by {editingCell.user}.
+          </div>
+        </>
+      );
+    }
+
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    const addCell = (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => {
+      setCell(cell);
+      if (cell && !hoveringRef.current) {
+        setOffsets(sheets.sheet.getCellOffsets(cell.x, cell.y));
+        setDelay('validationId' in cell ? false : true);
+        setLoading(true);
+        updateText(cell);
+        addPointerEvents();
+      } else {
+        removePointerEvents();
       }
     };
-    asyncFunction();
-  }, [cell]);
+    events.on('hoverCell', addCell);
+    return () => {
+      events.off('hoverCell', addCell);
+    };
+  }, [addPointerEvents, removePointerEvents, updateText]);
 
-  const { top, left } = usePositionCellMessage({ div: ref.current, offsets });
+  useEffect(() => {
+    const remove = () => {
+      hideHoverCell();
+    };
+
+    pixiApp.viewport.on('moved', remove);
+    pixiApp.viewport.on('zoomed', remove);
+    events.on('cursorPosition', remove);
+    return () => {
+      pixiApp.viewport.off('moved', remove);
+      pixiApp.viewport.off('zoomed', remove);
+      events.off('cursorPosition', remove);
+    };
+  }, [hideHoverCell]);
+
+  const [div, setDiv] = useState<HTMLDivElement | null>(null);
+  const ref = useCallback((node: HTMLDivElement) => {
+    setDiv(node);
+  }, []);
+  const { top, left } = usePositionCellMessage({ div, offsets });
+
+  if (loading) {
+    return null;
+  }
 
   return (
     <div
       ref={ref}
-      className="absolute z-50 w-64 rounded-md border bg-popover p-4 text-popover-foreground opacity-0 shadow-md outline-none"
+      className={cn(
+        'absolute z-50 box-border w-64 select-none rounded-md border bg-popover text-popover-foreground shadow-md outline-none',
+        cell || hovering ? 'opacity-100' : 'opacity-0',
+        allowPointerEvents ? 'pointer-events-auto' : 'pointer-events-none'
+      )}
       style={{
-        left,
         top,
+        left,
         visibility: !onlyCode || showCodePeek ? 'visible' : 'hidden',
+        transition: delay ? `opacity 150ms linear ${HOVER_CELL_FADE_IN_OUT_DELAY}ms` : 'opacity 150ms linear',
         transformOrigin: `0 0`,
         transform: `scale(${1 / pixiApp.viewport.scale.x})`,
       }}
+      onMouseEnter={handleHover}
+      onMouseMove={handleHover}
+      onMouseLeave={handleMouseLeave}
     >
-      {text}
+      <div className="p-4">{text}</div>
     </div>
   );
-};
+}
+
+function HoverCellRunError({ codeCell }: { codeCell: JsCodeCell }) {
+  const language = getLanguage(codeCell.language);
+
+  return (
+    <>
+      <div className="hover-cell-header">
+        <span>Run Error</span>
+      </div>
+
+      <div className="hover-cell-body">
+        <div>There was an error running the code in this cell.</div>
+        <div className="hover-cell-error-msg">{codeCell.std_err}</div>
+      </div>
+
+      <div className="hover-cell-header-space">{language} Code</div>
+      <div className="code-body">{codeCell.code_string}</div>
+    </>
+  );
+}

@@ -1,4 +1,5 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { codeEditorEditorContentAtom, codeEditorShowSnippetsPopoverAtom } from '@/app/atoms/codeEditorAtom';
+import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import { BoxIcon, SheetComeFromIcon, SheetGoToIcon } from '@/app/ui/icons';
 import {
@@ -18,17 +19,27 @@ import {
 import { Button } from '@/shared/shadcn/ui/button';
 import { ApiOutlined, BarChartOutlined, IntegrationInstructionsOutlined } from '@mui/icons-material';
 import mixpanel from 'mixpanel-browser';
-import { useRecoilValue } from 'recoil';
-import { useCodeEditor } from './CodeEditorContext';
+import * as monaco from 'monaco-editor';
+import { useCallback, useMemo } from 'react';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
-export function CodeEditorEmptyState() {
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const codeCell = getCodeCell(editorInteractionState.mode);
-  const {
-    editorContent: [editorContent, setEditorContent],
-    editorRef,
-    showSnippetsPopover: [, setShowSnippetsPopover],
-  } = useCodeEditor();
+interface CodeEditorEmptyStateProps {
+  editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>;
+}
+
+export function CodeEditorEmptyState({ editorRef }: CodeEditorEmptyStateProps) {
+  const mode = useRecoilValue(editorInteractionStateModeAtom);
+  const codeCell = useMemo(() => getCodeCell(mode), [mode]);
+  const setShowSnippetsPopover = useSetRecoilState(codeEditorShowSnippetsPopoverAtom);
+  const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
+
+  const fillWithSnippet = useCallback(
+    (code: string) => {
+      setEditorContent(code);
+      editorRef.current?.focus();
+    },
+    [editorRef, setEditorContent]
+  );
 
   // Must meet these criteria to even show in the UI
   if (editorContent !== '') {
@@ -37,11 +48,6 @@ export function CodeEditorEmptyState() {
   if (!(codeCell?.id === 'Javascript' || codeCell?.id === 'Python')) {
     return null;
   }
-
-  const fillWithSnippet = (code: string) => {
-    setEditorContent(code);
-    editorRef.current?.focus();
-  };
 
   const buttons = [
     {

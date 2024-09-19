@@ -5,10 +5,16 @@ import {
 } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  editorInteractionStateShowCodeEditorAtom,
+  editorInteractionStateShowCommandPaletteAtom,
+  editorInteractionStateShowConnectionsMenuAtom,
+  editorInteractionStateShowFeedbackMenuAtom,
+  editorInteractionStateShowIsRunningAsyncActionAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
+import { showCellTypeOutlinesAtom } from '@/app/atoms/gridSettingsAtom';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
-import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
 import {
@@ -28,17 +34,20 @@ import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared
 import { cn } from '@/shared/shadcn/utils';
 import { CircularProgress } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useRecoilState } from 'recoil';
-
-const toggleCodeEditor = defaultActionSpec[Action.ShowCellTypeMenu];
+import { useRecoilState, useRecoilValue } from 'recoil';
 
 export const QuadraticSidebar = () => {
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const gridSettings = useGridSettings();
-  const isAvailableArgs = useIsAvailableArgs();
+  const isRunningAsyncAction = useRecoilValue(editorInteractionStateShowIsRunningAsyncActionAtom);
+  const showCodeEditor = useRecoilValue(editorInteractionStateShowCodeEditorAtom);
+  const toggleCodeEditor = useMemo(() => defaultActionSpec[Action.ShowCellTypeMenu], []);
+  const [showCellTypeOutlines, setShowCellTypeOutlines] = useRecoilState(showCellTypeOutlinesAtom);
+  const [showConnectionsMenu, setShowConnectionsMenu] = useRecoilState(editorInteractionStateShowConnectionsMenuAtom);
+  const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
+  const [showFeedbackMenu, setShowFeedbackMenu] = useRecoilState(editorInteractionStateShowFeedbackMenuAtom);
 
+  const isAvailableArgs = useIsAvailableArgs();
   const canEditFile = isAvailableBecauseCanEditFile(isAvailableArgs);
   const canDoTeamsStuff = isAvailableBecauseFileLocationIsAccessibleAndWriteable(isAvailableArgs);
 
@@ -52,7 +61,7 @@ export const QuadraticSidebar = () => {
             className="group relative flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:bg-border"
           >
             <QuadraticLogo />
-            {editorInteractionState.isRunningAsyncAction && (
+            {isRunningAsyncAction && (
               <ShowAfter delay={300}>
                 <div className="absolute left-0 top-0 flex h-full w-full items-center justify-center bg-accent group-hover:hidden">
                   <CircularProgress style={{ width: 18, height: 18 }} />
@@ -69,12 +78,7 @@ export const QuadraticSidebar = () => {
             label={toggleCodeEditor.label}
             shortcut={keyboardShortcutEnumToDisplay(Action.ShowCellTypeMenu)}
           >
-            <SidebarToggle
-              pressed={editorInteractionState.showCodeEditor}
-              onPressedChange={async () => {
-                toggleCodeEditor.run();
-              }}
-            >
+            <SidebarToggle pressed={showCodeEditor} onPressedChange={() => toggleCodeEditor.run()}>
               {toggleCodeEditor.Icon && <toggleCodeEditor.Icon />}
             </SidebarToggle>
           </SidebarTooltip>
@@ -82,18 +86,18 @@ export const QuadraticSidebar = () => {
 
         <SidebarTooltip label={'Code cell outlines'}>
           <SidebarToggle
-            pressed={gridSettings.showCellTypeOutlines}
-            onPressedChange={() => gridSettings.setShowCellTypeOutlines(!gridSettings.showCellTypeOutlines)}
+            pressed={showCellTypeOutlines}
+            onPressedChange={() => setShowCellTypeOutlines((prev) => !prev)}
           >
-            {gridSettings.showCellTypeOutlines ? <CodeCellOutlineOn /> : <CodeCellOutlineOff />}
+            {showCellTypeOutlines ? <CodeCellOutlineOn /> : <CodeCellOutlineOff />}
           </SidebarToggle>
         </SidebarTooltip>
 
         {canDoTeamsStuff && (
           <SidebarTooltip label="Connections">
             <SidebarToggle
-              pressed={editorInteractionState.showConnectionsMenu}
-              onPressedChange={() => setEditorInteractionState((prev) => ({ ...prev, showConnectionsMenu: true }))}
+              pressed={showConnectionsMenu}
+              onPressedChange={() => setShowConnectionsMenu((prev) => !prev)}
             >
               <DatabaseIcon />
             </SidebarToggle>
@@ -103,10 +107,7 @@ export const QuadraticSidebar = () => {
         {canEditFile && <KernelMenu triggerIcon={<MemoryIcon />} />}
 
         <SidebarTooltip label="Command palette" shortcut={KeyboardSymbols.Command + 'P'}>
-          <SidebarToggle
-            pressed={editorInteractionState.showCommandPalette}
-            onPressedChange={() => setEditorInteractionState((prev) => ({ ...prev, showCommandPalette: true }))}
-          >
+          <SidebarToggle pressed={showCommandPalette} onPressedChange={() => setShowCommandPalette((prev) => !prev)}>
             <ManageSearch />
           </SidebarToggle>
         </SidebarTooltip>
@@ -114,10 +115,7 @@ export const QuadraticSidebar = () => {
       <div className="mb-2 mt-auto flex flex-col items-center gap-1">
         {provideFeedbackAction.isAvailable(isAvailableArgs) && (
           <SidebarTooltip label={provideFeedbackAction.label}>
-            <SidebarToggle
-              pressed={editorInteractionState.showFeedbackMenu}
-              onPressedChange={() => setEditorInteractionState((prev) => ({ ...prev, showFeedbackMenu: true }))}
-            >
+            <SidebarToggle pressed={showFeedbackMenu} onPressedChange={() => setShowFeedbackMenu(true)}>
               <FeedbackIcon />
             </SidebarToggle>
           </SidebarTooltip>
@@ -151,16 +149,8 @@ export const SidebarToggle = React.forwardRef<HTMLButtonElement, React.Component
 );
 SidebarToggle.displayName = 'SidebarToggle';
 
-export function SidebarTooltip({
-  children,
-  label,
-  shortcut,
-}: {
-  children: React.ReactNode;
-  label: string;
-  shortcut?: string;
-}) {
-  return (
+export const SidebarTooltip = React.forwardRef(
+  ({ children, label, shortcut }: { children: React.ReactNode; label: string; shortcut?: string }, ref) => (
     <Tooltip>
       <TooltipTrigger
         asChild
@@ -177,5 +167,5 @@ export function SidebarTooltip({
         </TooltipContent>
       </TooltipPortal>
     </Tooltip>
-  );
-}
+  )
+);

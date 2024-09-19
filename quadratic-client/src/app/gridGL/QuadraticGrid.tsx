@@ -1,6 +1,5 @@
 import { Action } from '@/app/actions/actions';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
+import { editorInteractionStateShowContextMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { HTMLGridContainer } from '@/app/gridGL/HTMLGrid/HTMLGridContainer';
 import { useKeyboard } from '@/app/gridGL/interaction/keyboard/useKeyboard';
@@ -9,10 +8,8 @@ import { PanMode, pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { ImportProgress } from '@/app/ui/components/ImportProgress';
 import { Search } from '@/app/ui/components/Search';
-import { gridSettingsAtom } from '@/app/ui/hooks/useGridSettings';
-import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { MouseEvent, useCallback, useEffect, useState } from 'react';
-import { useRecoilState } from 'recoil';
+import { useSetRecoilState } from 'recoil';
 
 // Keep track of state of mouse/space for panning mode
 let mouseIsDown = false;
@@ -38,22 +35,7 @@ export default function QuadraticGrid() {
     };
   }, []);
 
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const [inlineEditorState, setInlineEditorState] = useRecoilState(inlineEditorAtom);
-  useEffect(() => {
-    pixiAppSettings.updateEditorInteractionState(editorInteractionState, setEditorInteractionState);
-    pixiAppSettings.updateInlineEditorState(inlineEditorState, setInlineEditorState);
-  }, [editorInteractionState, inlineEditorState, setEditorInteractionState, setInlineEditorState]);
-
-  const { addGlobalSnackbar } = useGlobalSnackbar();
-  useEffect(() => {
-    pixiAppSettings.addGlobalSnackbar = addGlobalSnackbar;
-  }, [addGlobalSnackbar]);
-
-  const [gridSettings, setGridSettings] = useRecoilState(gridSettingsAtom);
-  useEffect(() => {
-    pixiAppSettings.updateGridSettings(gridSettings, setGridSettings);
-  }, [gridSettings, setGridSettings]);
+  const setShowContextMenu = useSetRecoilState(editorInteractionStateShowContextMenuAtom);
 
   // Pan mode
   const onMouseUp = () => {
@@ -95,10 +77,7 @@ export default function QuadraticGrid() {
     return false;
   };
 
-  const { onKeyDown: onKeyDownFromUseKeyboard } = useKeyboard({
-    editorInteractionState,
-    setEditorInteractionState,
-  });
+  const { onKeyDown: onKeyDownFromUseKeyboard } = useKeyboard();
 
   return (
     <div
@@ -114,19 +93,10 @@ export default function QuadraticGrid() {
       }}
       onContextMenu={(event) => {
         event.preventDefault();
-        // If it's not already visible, show the context menu
-        if (!editorInteractionState.showContextMenu) {
-          setEditorInteractionState((state) => ({ ...state, showContextMenu: true }));
-        }
+        setShowContextMenu(true);
       }}
       onMouseDown={onMouseDown}
-      onClick={() => {
-        // <FloatingContextMenu> prevents events from bubbling up to here, so
-        // we always hide the context menu if it's open
-        if (editorInteractionState.showContextMenu) {
-          setEditorInteractionState((state) => ({ ...state, showContextMenu: false }));
-        }
-      }}
+      onClick={() => setShowContextMenu(false)}
       onKeyDown={(e) => {
         onKeyDown(e) || onKeyDownFromUseKeyboard(e);
       }}

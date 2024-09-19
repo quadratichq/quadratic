@@ -24,19 +24,21 @@ const ai_rate_limiter = rateLimit({
 
 anthropic_router.post('/anthropic/chat', validateAccessToken, ai_rate_limiter, async (request, response) => {
   try {
-    const { model, messages } = AnthropicAutoCompleteRequestBodySchema.parse(request.body);
-    const message = await anthropic.messages.create({
+    const { model, messages, temperature } = AnthropicAutoCompleteRequestBodySchema.parse(request.body);
+    const result = await anthropic.messages.create({
       model,
       messages,
-      temperature: 0,
+      temperature,
       max_tokens: 8192,
     });
-    response.json(message);
+    response.json(result.content[0]);
   } catch (error: any) {
     if (error.response) {
       response.status(error.response.status).json(error.response.data);
+      console.log(error.response.status, error.response.data);
     } else {
       response.status(400).json(error.message);
+      console.log(error.message);
     }
   }
 });
@@ -47,19 +49,18 @@ anthropic_router.post(
   ai_rate_limiter,
   async (request: Request, response) => {
     try {
-      const { model, messages } = AnthropicAutoCompleteRequestBodySchema.parse(request.body);
-
-      response.setHeader('Content-Type', 'text/event-stream');
-      response.setHeader('Cache-Control', 'no-cache');
-      response.setHeader('Connection', 'keep-alive');
-
+      const { model, messages, temperature } = AnthropicAutoCompleteRequestBodySchema.parse(request.body);
       const chunks = await anthropic.messages.create({
         model,
         messages,
+        temperature,
         max_tokens: 8192,
         stream: true,
       });
 
+      response.setHeader('Content-Type', 'text/event-stream');
+      response.setHeader('Cache-Control', 'no-cache');
+      response.setHeader('Connection', 'keep-alive');
       for await (const chunk of chunks) {
         response.write(`data: ${JSON.stringify(chunk)}\n\n`);
       }

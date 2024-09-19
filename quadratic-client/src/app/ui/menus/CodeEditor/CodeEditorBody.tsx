@@ -1,46 +1,48 @@
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
+import { hasPermissionToEditFile } from '@/app/actions';
+import { codeEditorEditorContentAtom } from '@/app/atoms/codeEditorAtom';
+import {
+  editorInteractionStateModeAtom,
+  editorInteractionStatePermissionsAtom,
+  editorInteractionStateSelectedCellAtom,
+  editorInteractionStateSelectedCellSheetAtom,
+  editorInteractionStateShowCodeEditorAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
+import { events } from '@/app/events/events';
+import { SheetPosTS } from '@/app/gridGL/types/size';
+import { codeCellIsAConnection, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
+import { CodeCellLanguage, SheetRect } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import Editor, { Monaco } from '@monaco-editor/react';
-import * as monaco from 'monaco-editor';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
-import { hasPermissionToEditFile } from '../../../actions';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { pyrightWorker, uri } from '../../../web-workers/pythonLanguageServer/worker';
-import { useCodeEditor } from './CodeEditorContext';
-import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
+import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlaceholder';
+import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
+import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import {
   provideCompletionItems as provideCompletionItemsPython,
   provideHover as provideHoverPython,
   provideSignatureHelp as provideSignatureHelpPython,
-} from './PythonLanguageModel';
-import { QuadraticEditorTheme } from './quadraticEditorTheme';
-import { useEditorCellHighlights } from './useEditorCellHighlights';
+} from '@/app/ui/menus/CodeEditor/PythonLanguageModel';
+import { QuadraticEditorTheme } from '@/app/ui/menus/CodeEditor/quadraticEditorTheme';
+import { useEditorCellHighlights } from '@/app/ui/menus/CodeEditor/useEditorCellHighlights';
+import { useEditorOnSelectionChange } from '@/app/ui/menus/CodeEditor/useEditorOnSelectionChange';
+import { useEditorReturn } from '@/app/ui/menus/CodeEditor/useEditorReturn';
+import { javascriptLibraryForEditor } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generatedJavascriptForEditor';
+import { pyrightWorker, uri } from '@/app/web-workers/pythonLanguageServer/worker';
+import useEventListener from '@/shared/hooks/useEventListener';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import Editor, { Monaco } from '@monaco-editor/react';
+import { CircularProgress } from '@mui/material';
+import * as monaco from 'monaco-editor';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRecoilState, useRecoilValue } from 'recoil';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { useEditorDiagnostics } from './useEditorDiagnostics';
 // import { Diagnostic } from 'vscode-languageserver-types';
 // import { typescriptLibrary } from '@/web-workers/javascriptWebWorker/worker/javascript/typescriptLibrary';
-import { events } from '@/app/events/events';
-import { SheetPosTS } from '@/app/gridGL/types/size';
-import { codeCellIsAConnection, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
-import { SheetRect } from '@/app/quadratic-core-types';
-import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlaceholder';
-import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
-import { javascriptLibraryForEditor } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generatedJavascriptForEditor';
-import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
-import useEventListener from '@/shared/hooks/useEventListener';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { CircularProgress } from '@mui/material';
-import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
-import { useEditorReturn } from './useEditorReturn';
 
-interface Props {
-  editorContent: string | undefined;
-  setEditorContent: (value: string | undefined) => void;
+interface CodeEditorBodyProps {
   closeEditor: (skipSaveCheck: boolean) => void;
-  evaluationResult?: EvaluationResult;
   cellsAccessed?: SheetRect[] | null;
   cellLocation: SheetPosTS;
+  editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>;
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // diagnostics?: Diagnostic[];
 }
@@ -52,37 +54,40 @@ let registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
   Javascript: false,
 };
 
-export const CodeEditorBody = (props: Props) => {
-  const { editorContent, setEditorContent, closeEditor, evaluationResult, cellsAccessed, cellLocation } = props;
+export const CodeEditorBody = (props: CodeEditorBodyProps) => {
+  const { closeEditor, cellsAccessed, cellLocation, editorRef } = props;
   const {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const language = editorInteractionState.mode;
-  const monacoLanguage = getLanguageForMonaco(language);
-  const isConnection = codeCellIsAConnection(language);
-  const canEdit =
-    hasPermissionToEditFile(editorInteractionState.permissions) &&
-    (isConnection ? teamPermissions?.includes('TEAM_EDIT') : true);
-  const [didMount, setDidMount] = useState(false);
+  const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
+  const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
+  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
+  const language = useRecoilValue(editorInteractionStateModeAtom);
+  const monacoLanguage = useMemo(() => getLanguageForMonaco(language), [language]);
+  const isConnection = useMemo(() => codeCellIsAConnection(language), [language]);
+  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
+  const canEdit = useMemo(
+    () => hasPermissionToEditFile(permissions) && (isConnection ? teamPermissions?.includes('TEAM_EDIT') : true),
+    [isConnection, permissions, teamPermissions]
+  );
+  const showCodeEditor = useRecoilValue(editorInteractionStateShowCodeEditorAtom);
   const [isValidRef, setIsValidRef] = useState(false);
-  const { editorRef, monacoRef } = useCodeEditor();
-
-  useEditorCellHighlights(isValidRef, editorRef, monacoRef, language, cellsAccessed);
-  useEditorOnSelectionChange(isValidRef, editorRef, monacoRef, language);
-  useEditorReturn(isValidRef, editorRef, monacoRef, language, evaluationResult);
+  const monacoRef = useRef<Monaco | null>(null);
+  useEditorCellHighlights(isValidRef, editorRef, monacoRef, cellsAccessed);
+  useEditorOnSelectionChange(isValidRef, editorRef, monacoRef);
+  useEditorReturn(isValidRef, editorRef, monacoRef);
 
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // useEditorDiagnostics(isValidRef, editorRef, monacoRef, language, diagnostics);
 
   useEffect(() => {
-    if (editorInteractionState.showCodeEditor) {
+    if (showCodeEditor) {
       // focus editor on show editor change
       editorRef.current?.focus();
       editorRef.current?.setPosition({ lineNumber: 0, column: 0 });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editorInteractionState.showCodeEditor]);
+  }, [showCodeEditor]);
 
   useEffect(() => {
     const insertText = (text: string) => {
@@ -130,6 +135,20 @@ export const CodeEditorBody = (props: Props) => {
     }, 250);
   }, [cellLocation, editorRef]);
 
+  const addCommands = useCallback(
+    (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
+      editor.addCommand(
+        monaco.KeyCode.Escape,
+        () => closeEditor(false),
+        '!findWidgetVisible && !inReferenceSearchEditor && !editorHasSelection && !suggestWidgetVisible'
+      );
+      editor.addCommand(monaco.KeyCode.KeyL | monaco.KeyMod.CtrlCmd, () => {
+        insertCellRef(selectedCell, selectedCellSheet, language);
+      });
+    },
+    [closeEditor, language, selectedCell, selectedCellSheet]
+  );
+
   const runEditorAction = (e: CustomEvent<string>) => editorRef.current?.getAction(e.detail)?.run();
   useEventListener('run-editor-action', runEditorAction);
   const onMount = useCallback(
@@ -143,8 +162,7 @@ export const CodeEditorBody = (props: Props) => {
       monaco.editor.defineTheme('quadratic', QuadraticEditorTheme);
       monaco.editor.setTheme('quadratic');
 
-      // this needs to be before the register conditional below
-      setDidMount(true);
+      addCommands(editor, monaco);
 
       // Only register language once
       if (monacoLanguage === 'formula' && !registered.Formula) {
@@ -185,28 +203,12 @@ export const CodeEditorBody = (props: Props) => {
         registered.Javascript = true;
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [setDidMount]
+    [addCommands, editorRef, monacoLanguage]
   );
 
   useEffect(() => {
-    if (editorRef.current && monacoRef.current && didMount) {
-      editorRef.current.addCommand(
-        monacoRef.current.KeyCode.Escape,
-        () => closeEditor(false),
-        '!findWidgetVisible && !inReferenceSearchEditor && !editorHasSelection && !suggestWidgetVisible'
-      );
-      editorRef.current.addCommand(monacoRef.current.KeyCode.KeyL | monacoRef.current.KeyMod.CtrlCmd, () => {
-        insertCellRef(editorInteractionState);
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [closeEditor, didMount]);
-
-  useEffect(() => {
     return () => editorRef.current?.dispose();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [editorRef]);
 
   return (
     <div

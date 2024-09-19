@@ -1,23 +1,22 @@
 import { cellTypeMenuOpenedCountAtom } from '@/app/atoms/cellTypeMenuOpenedCountAtom';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  editorInteractionStateAtom,
+  editorInteractionStateShowCellTypeMenuAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
+import { colors } from '@/app/theme/colors';
+import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { LinkNewTab } from '@/app/ui/components/LinkNewTab';
+import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { JavaScript } from '@/app/ui/icons';
+import '@/app/ui/styles/floating-dialog.css';
+import { DatabaseIcon } from '@/shared/components/Icons';
 import {
   DOCUMENTATION_FORMULAS_URL,
   DOCUMENTATION_JAVASCRIPT_URL,
   DOCUMENTATION_PYTHON_URL,
   DOCUMENTATION_URL,
 } from '@/shared/constants/urls';
-import mixpanel from 'mixpanel-browser';
-import React, { useCallback, useEffect } from 'react';
-import { useRecoilState, useSetRecoilState } from 'recoil';
-import '../../styles/floating-dialog.css';
-
-import { colors } from '@/app/theme/colors';
-import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
-import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
-import { DatabaseIcon } from '@/shared/components/Icons';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import {
   CommandDialog,
@@ -28,7 +27,9 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/shared/shadcn/ui/command';
-
+import mixpanel from 'mixpanel-browser';
+import React, { useCallback, useEffect } from 'react';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 export interface CellTypeOption {
   name: string;
   searchStrings?: string[];
@@ -79,7 +80,8 @@ let CELL_TYPE_OPTIONS: CellTypeOption[] = [
 ];
 
 export default function CellTypeMenu() {
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const showCellTypeMenu = useRecoilValue(editorInteractionStateShowCellTypeMenuAtom);
+  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const setCellTypeMenuOpenedCount = useSetRecoilState(cellTypeMenuOpenedCountAtom);
   const fetcher = useConnectionsFetcher();
 
@@ -92,24 +94,28 @@ export default function CellTypeMenu() {
   }, []);
 
   const close = useCallback(() => {
-    setEditorInteractionState({
-      ...editorInteractionState,
+    setEditorInteractionState((prev) => ({
+      ...prev,
       showCellTypeMenu: false,
-    });
-  }, [editorInteractionState, setEditorInteractionState]);
+    }));
+  }, [setEditorInteractionState]);
 
   const openEditor = useCallback(
     (mode: CodeCellLanguage) => {
       mixpanel.track('[CellTypeMenu].selected', { mode });
-      setEditorInteractionState({
-        ...editorInteractionState,
+      setEditorInteractionState((prev) => ({
+        ...prev,
         showCodeEditor: true,
         showCellTypeMenu: false,
         mode,
-      });
+      }));
     },
-    [editorInteractionState, setEditorInteractionState]
+    [setEditorInteractionState]
   );
+
+  if (!showCellTypeMenu) {
+    return null;
+  }
 
   return (
     <CommandDialog
@@ -162,11 +168,11 @@ export default function CellTypeMenu() {
               }
               icon={<DatabaseIcon className="text-muted-foreground opacity-80" />}
               onSelect={() => {
-                setEditorInteractionState({
-                  ...editorInteractionState,
+                setEditorInteractionState((prev) => ({
+                  ...prev,
                   showCellTypeMenu: false,
                   showConnectionsMenu: true,
-                });
+                }));
               }}
             />
           </CommandGroup>

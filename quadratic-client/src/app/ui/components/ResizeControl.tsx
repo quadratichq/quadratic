@@ -1,4 +1,4 @@
-import { colors } from '../../../../theme/colors';
+import { colors } from '@/app/theme/colors';
 import './ResizeControl.css';
 
 interface ResizeControlProps {
@@ -9,20 +9,17 @@ interface ResizeControlProps {
 }
 
 export function ResizeControl({ disabled, setState, position, style }: ResizeControlProps) {
-  if (!style) {
-    style = {};
-  }
-
   return (
     <div
       className={`resize-control resize-control--position-${position} ${disabled ? 'resize-control--disabled' : ''}`}
       data-position={position}
-      style={{
-        ...style,
-        // @ts-expect-error typescript doesn't like us setting CSS custom properties
-        '--resize-control-highlight': colors.quadraticPrimary,
-        '--resize-control-background': colors.mediumGray,
-      }}
+      style={
+        {
+          ...style,
+          '--resize-control-highlight': colors.quadraticPrimary,
+          '--resize-control-background': colors.mediumGray,
+        } as React.CSSProperties
+      }
       onMouseDown={(e) => {
         if (disabled) return;
 

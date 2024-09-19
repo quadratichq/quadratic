@@ -4,13 +4,12 @@ import { usePositionCellMessage } from '@/app/gridGL/HTMLGrid/usePositionCellMes
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { Rectangle } from 'pixi.js';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import './HoverTooltip.css';
 
 export const HoverTooltip = () => {
   const [offsets, setOffsets] = useState<Rectangle>(new Rectangle());
   const [text, setText] = useState<string | undefined>();
-  const ref = useRef<HTMLDivElement>(null);
 
   const handleTooltipEvent = useCallback((pos?: Coordinate, text?: string) => {
     if (pos) {
@@ -26,7 +25,11 @@ export const HoverTooltip = () => {
     };
   }, [handleTooltipEvent]);
 
-  const { top, left } = usePositionCellMessage({ div: ref.current, offsets, direction: 'vertical', forceTop: true });
+  const [div, setDiv] = useState<HTMLDivElement | null>(null);
+  const ref = useCallback((node: HTMLDivElement) => {
+    setDiv(node);
+  }, []);
+  const { top, left } = usePositionCellMessage({ div, offsets, direction: 'vertical', forceTop: true });
 
   return (
     <div

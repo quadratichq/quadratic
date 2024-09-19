@@ -1,9 +1,9 @@
+import { hasPermissionToEditFile } from '@/app/actions';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { hasPermissionToEditFile } from '../../../actions';
-import { sheets } from '../../../grid/controller/Sheets';
-import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 export async function doubleClickCell(options: {
@@ -12,24 +12,20 @@ export async function doubleClickCell(options: {
   language?: CodeCellLanguage;
   cell?: string;
 }) {
-  if (inlineEditorHandler.isEditingFormula()) return;
-
   const { language, cell, column, row } = options;
-  const settings = pixiAppSettings;
 
-  const hasPermission = hasPermissionToEditFile(settings.editorInteractionState.permissions);
-
-  if (!settings.setEditorInteractionState || !settings.editorInteractionState) return;
-
+  if (inlineEditorHandler.isEditingFormula()) return;
   if (multiplayer.cellIsBeingEdited(column, row, sheets.sheet.id)) return;
+  if (!pixiAppSettings.setEditorInteractionState || !pixiAppSettings.editorInteractionState) return;
+  const hasPermission = hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions);
 
   // Open the correct code editor
   if (language) {
     const formula = language === 'Formula';
 
-    if (settings.editorInteractionState.showCodeEditor) {
-      settings.setEditorInteractionState({
-        ...settings.editorInteractionState,
+    if (pixiAppSettings.editorInteractionState.showCodeEditor) {
+      pixiAppSettings.setEditorInteractionState({
+        ...pixiAppSettings.editorInteractionState,
         editorEscapePressed: false,
         showCellTypeMenu: false,
         waitingForEditorClose: {
@@ -48,10 +44,10 @@ export async function doubleClickCell(options: {
         if (cursor.x !== column || cursor.y !== row) {
           sheets.sheet.cursor.changePosition({ cursorPosition: { x: column, y: row } });
         }
-        settings.changeInput(true, cell);
+        pixiAppSettings.changeInput(true, cell);
       } else {
-        settings.setEditorInteractionState({
-          ...settings.editorInteractionState,
+        pixiAppSettings.setEditorInteractionState({
+          ...pixiAppSettings.editorInteractionState,
           showCellTypeMenu: false,
           showCodeEditor: true,
           selectedCell: { x: column, y: row },
@@ -70,11 +66,11 @@ export async function doubleClickCell(options: {
 
     // open the calendar pick if the cell is a date
     if (value && ['date', 'date time'].includes(value.kind)) {
-      settings.setEditorInteractionState({
-        ...settings.editorInteractionState,
+      pixiAppSettings.setEditorInteractionState({
+        ...pixiAppSettings.editorInteractionState,
         annotationState: `calendar${value.kind === 'date time' ? '-time' : ''}`,
       });
     }
-    settings.changeInput(true, cell);
+    pixiAppSettings.changeInput(true, cell);
   }
 }

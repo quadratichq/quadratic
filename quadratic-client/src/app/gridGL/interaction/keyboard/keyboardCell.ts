@@ -8,8 +8,10 @@ import { SheetCursor } from '@/app/grid/sheet/SheetCursor';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { isAllowedFirstChar } from '@/app/gridGL/interaction/keyboard/keyboardCellChars';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
+import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 function inCodeEditor(editorInteractionState: EditorInteractionState, cursor: SheetCursor): boolean {
@@ -104,6 +106,8 @@ export function keyboardCell(options: {
           showCodeEditor: false,
           mode: undefined,
         }));
+        pixiApp.cellHighlights.clear();
+        multiplayer.sendEndCellEdit();
       } else {
         pixiAppSettings.addGlobalSnackbar?.('You can not delete a code cell with unsaved changes', {
           severity: 'warning',

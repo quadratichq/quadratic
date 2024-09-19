@@ -1,10 +1,19 @@
+import { hasPermissionToEditFile } from '@/app/actions';
+import {
+  editorInteractionStateModeAtom,
+  editorInteractionStatePermissionsAtom,
+  editorInteractionStateSelectedCellSheetAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import { codeCellIsAConnection, getCodeCell, getConnectionUuid, getLanguage } from '@/app/helpers/codeCellLanguage';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
+import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
+import { SnippetsPopover } from '@/app/ui/menus/CodeEditor/SnippetsPopover';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
@@ -12,51 +21,61 @@ import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { cn } from '@/shared/shadcn/utils';
 import { Close, PlayArrow, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
-import { useEffect, useState } from 'react';
+import * as monaco from 'monaco-editor';
+import { useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { hasPermissionToEditFile } from '../../../actions';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
-import { TooltipHint } from '../../components/TooltipHint';
-import { SnippetsPopover } from './SnippetsPopover';
 
-interface Props {
+interface CodeEditorHeaderProps {
   cellLocation: SheetPosTS | undefined;
   unsaved: boolean;
-
   saveAndRunCell: () => void;
   cancelRun: () => void;
   closeEditor: () => void;
+  editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>;
 }
 
-export const CodeEditorHeader = (props: Props) => {
-  const { cellLocation, unsaved, saveAndRunCell, cancelRun, closeEditor } = props;
+export const CodeEditorHeader = (props: CodeEditorHeaderProps) => {
+  const { cellLocation, unsaved, saveAndRunCell, cancelRun, closeEditor, editorRef } = props;
   const {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
+  const mode = useRecoilValue(editorInteractionStateModeAtom);
+  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
-  const isConnection = codeCellIsAConnection(editorInteractionState.mode);
-  const hasPermission =
-    hasPermissionToEditFile(editorInteractionState.permissions) &&
-    (isConnection ? teamPermissions?.includes('TEAM_EDIT') : true);
-  const codeCell = getCodeCell(editorInteractionState.mode);
+  const isConnection = useMemo(() => codeCellIsAConnection(mode), [mode]);
+  const hasPermission = useMemo(
+    () => hasPermissionToEditFile(permissions) && (isConnection ? teamPermissions?.includes('TEAM_EDIT') : true),
+    [permissions, teamPermissions, isConnection]
+  );
+  const codeCell = useMemo(() => getCodeCell(mode), [mode]);
   const connectionsFetcher = useConnectionsFetcher();
-  const language = getLanguage(editorInteractionState.mode);
+  const language = useMemo(() => getLanguage(mode), [mode]);
 
   // Get the connection name (it's possible the user won't have access to it
   // because they're in a file they have access to but not the team — or
   // the connection was deleted)
-  let currentConnectionName = '';
-  if (connectionsFetcher.data) {
-    const connectionUuid = getConnectionUuid(editorInteractionState.mode);
-    const foundConnection = connectionsFetcher.data.connections.find(({ uuid }) => uuid === connectionUuid);
-    if (foundConnection) currentConnectionName = foundConnection.name;
-  }
+  const currentConnectionName = useMemo(() => {
+    if (connectionsFetcher.data) {
+      const connectionUuid = getConnectionUuid(mode);
+      const foundConnection = connectionsFetcher.data.connections.find(({ uuid }) => uuid === connectionUuid);
+      if (foundConnection) {
+        return foundConnection.name;
+      }
+    }
+    return '';
+  }, [connectionsFetcher.data, mode]);
 
   // Keep track of the current sheet ID so we know whether to show the sheet name or not
-  const currentCodeEditorCellIsNotInActiveSheet = currentSheetId !== editorInteractionState.selectedCellSheet;
-  const currentSheetNameOfActiveCodeEditorCell = sheets.getById(editorInteractionState.selectedCellSheet)?.name;
+  const currentCodeEditorCellIsNotInActiveSheet = useMemo(
+    () => currentSheetId !== selectedCellSheet,
+    [currentSheetId, selectedCellSheet]
+  );
+  const currentSheetNameOfActiveCodeEditorCell = useMemo(
+    () => sheets.getById(selectedCellSheet)?.name,
+    [selectedCellSheet]
+  );
+
   useEffect(() => {
     const updateSheetName = () => setCurrentSheetId(sheets.sheet.id);
     events.on('changeSheet', updateSheetName);
@@ -154,6 +173,7 @@ export const CodeEditorHeader = (props: Props) => {
           </div>
         </TooltipHint>
       </div>
+
       <div className="mx-2 flex flex-col truncate">
         <div className="text-sm font-medium leading-4">
           Cell ({cellLocation.x}, {cellLocation.y})
@@ -161,36 +181,45 @@ export const CodeEditorHeader = (props: Props) => {
             <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
           )}
         </div>
+
         {currentConnectionName && (
           <div className="text-xs leading-4 text-muted-foreground">Connection: {currentConnectionName}</div>
         )}
       </div>
+
       <div className="ml-auto flex flex-shrink-0 items-center gap-2">
         {isRunningComputation && (
           <TooltipHint title={`${language} executing…`} placement="bottom">
             <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
           </TooltipHint>
         )}
-        {hasPermission && ['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
-        {hasPermission && ['Python', 'Javascript'].includes(language as string) && <SnippetsPopover />}
-        {hasPermission &&
-          (!isRunningComputation ? (
-            <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
-              <span>
-                <IconButton id="QuadraticCodeEditorRunButtonID" size="small" color="primary" onClick={saveAndRunCell}>
-                  <PlayArrow />
-                </IconButton>
-              </span>
-            </TooltipHint>
-          ) : (
-            <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
-              <span>
-                <IconButton size="small" color="primary" onClick={cancelRun} disabled={!isRunningComputation}>
-                  <Stop />
-                </IconButton>
-              </span>
-            </TooltipHint>
-          ))}
+
+        {hasPermission && (
+          <>
+            {['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
+
+            {['Python', 'Javascript'].includes(language as string) && <SnippetsPopover editorRef={editorRef} />}
+
+            {!isRunningComputation ? (
+              <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
+                <span>
+                  <IconButton id="QuadraticCodeEditorRunButtonID" size="small" color="primary" onClick={saveAndRunCell}>
+                    <PlayArrow />
+                  </IconButton>
+                </span>
+              </TooltipHint>
+            ) : (
+              <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
+                <span>
+                  <IconButton size="small" color="primary" onClick={cancelRun} disabled={!isRunningComputation}>
+                    <Stop />
+                  </IconButton>
+                </span>
+              </TooltipHint>
+            )}
+          </>
+        )}
+
         <TooltipHint title="Close" shortcut="ESC" placement="bottom">
           <IconButton id="QuadraticCodeEditorCloseButtonID" size="small" onClick={closeEditor}>
             <Close />

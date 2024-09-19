@@ -183,7 +183,8 @@ export const insertActionsSpec: InsertActionSpec = {
     labelVerbose: 'Insert cell reference',
     run: () => {
       if (pixiAppSettings.editorInteractionState.showCodeEditor) {
-        insertCellRef(pixiAppSettings.editorInteractionState);
+        const { selectedCell, selectedCellSheet, mode } = pixiAppSettings.editorInteractionState;
+        insertCellRef(selectedCell, selectedCellSheet, mode);
       }
     },
   },
