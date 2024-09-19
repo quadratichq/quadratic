@@ -12,6 +12,7 @@ use crate::arrow::arrow_type::ArrowType;
 use crate::error::{Result, SharedError, Sql};
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
 use crate::sql::Connection;
+use crate::utils::array::transpose;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SnowflakeConnection {
@@ -46,23 +47,10 @@ impl SnowflakeConnection {
     }
 }
 
-fn transpose(matrix: Vec<Vec<String>>) -> Vec<Vec<String>> {
-    if matrix.is_empty() {
-        return vec![];
-    }
-
-    let row_len = matrix[0].len();
-    let mut transposed: Vec<Vec<String>> = vec![Vec::with_capacity(matrix.len()); row_len];
-
-    for row in matrix {
-        for (i, element) in row.into_iter().enumerate() {
-            transposed[i].push(element);
-        }
-    }
-
-    transposed
-}
-
+/// Implement the Connection trait for Snowflake
+///
+/// Since the snowflake api returns arrow data, we don't need some of the
+/// trait functions implemented.
 #[async_trait]
 impl Connection for SnowflakeConnection {
     type Conn = SnowflakeApi;
@@ -78,6 +66,10 @@ impl Connection for SnowflakeConnection {
     }
 
     fn column_name(_col: &Self::Column) -> &str {
+        unimplemented!();
+    }
+
+    fn to_arrow(_row: &Self::Row, _: &ArrayRef, _index: usize) -> ArrowType {
         unimplemented!();
     }
 
@@ -130,9 +122,7 @@ impl Connection for SnowflakeConnection {
                     parquet.extend_from_slice(&bytes);
                 }
             }
-            QueryResult::Json(j) => {
-                println!("{j}");
-            }
+            QueryResult::Json(j) => unimplemented!("{j}"),
             QueryResult::Empty => { /* noop */ }
         }
 
@@ -170,7 +160,7 @@ impl Connection for SnowflakeConnection {
                 tbl.table_name,
                 col.ordinal_position;"
         );
-        tracing::info!("Querying snowflake schema: {sql}");
+
         let row_stream = client
             .exec(&sql)
             .await
@@ -192,7 +182,7 @@ impl Connection for SnowflakeConnection {
                             .downcast_ref::<arrow::array::StringArray>()
                             .unwrap()
                             .iter()
-                            .map(|s| s.unwrap_or_default().to_string())
+                            .map(|s| s.unwrap_or_default().to_owned())
                             .collect::<Vec<String>>();
 
                         // data in coming in as batches, so we need to combine them
@@ -200,57 +190,40 @@ impl Connection for SnowflakeConnection {
                     }
                 }
             }
-            QueryResult::Json(j) => {
-                println!("{j}");
-            }
-            QueryResult::Empty => {
-                println!("Query finished successfully")
-            }
+            QueryResult::Json(j) => unimplemented!("{j}"),
+            QueryResult::Empty => { /* noop */ }
         }
 
         let rows = transpose(data);
-
         let mut schema = DatabaseSchema {
             database: self.database.to_owned(),
             tables: BTreeMap::new(),
         };
 
         for (index, row) in rows.into_iter().enumerate() {
-            let default_schema_name = format!("Unknown Schema - {}", index);
-            let schema_name: &str = row.get(1).unwrap_or(&default_schema_name);
-
-            let default_table_name = format!("Unknown Table - {}", index);
-            let table_name: &str = row.get(2).unwrap_or(&default_table_name);
-
-            let default_column_name = format!("Unknown Column - {}", index);
-            let column_name: &str = row.get(3).unwrap_or(&default_column_name);
-
-            let default_column_type = format!("Unknown Type - {}", index);
-            let column_type: &str = row.get(4).unwrap_or(&default_column_type);
-
-            let is_nullable: &str = row.get(5).map_or("NO", |v| v);
+            let safe_get = |data: Option<&String>, kind: &str| {
+                data.map(|s| s.to_string())
+                    .unwrap_or(format!("Unknown {kind} - {index}"))
+            };
+            let table_name = safe_get(row.get(2), "Table");
 
             schema
                 .tables
-                .entry(table_name.into())
+                .entry(table_name.to_owned())
                 .or_insert_with(|| SchemaTable {
-                    name: table_name.into(),
-                    schema: schema_name.into(),
+                    name: table_name,
+                    schema: safe_get(row.get(1), "Schema"),
                     columns: vec![],
                 })
                 .columns
                 .push(SchemaColumn {
-                    name: column_name.into(),
-                    r#type: column_type.into(),
-                    is_nullable: is_nullable.to_uppercase() == "YES",
+                    name: safe_get(row.get(3), "Column"),
+                    r#type: safe_get(row.get(4), "Type"),
+                    is_nullable: row.get(5).map_or("NO", |v| v).to_uppercase() == "YES",
                 });
         }
 
         Ok(schema)
-    }
-
-    fn to_arrow(_row: &Self::Row, _: &ArrayRef, _index: usize) -> ArrowType {
-        unimplemented!();
     }
 }
 

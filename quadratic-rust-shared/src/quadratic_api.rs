@@ -138,16 +138,6 @@ pub struct Connection<T> {
     pub type_details: T,
 }
 
-// #[derive(Debug, Serialize, Deserialize, Default)]
-// #[serde(rename_all = "camelCase")]
-// pub struct TypeDetails {
-//     pub host: String,
-//     pub port: Option<String>,
-//     pub username: Option<String>,
-//     pub password: Option<String>,
-//     pub database: String,
-// }
-
 /// Retrieve user's connection from the quadratic API server.
 pub async fn get_connection<T: DeserializeOwned>(
     base_url: &str,

@@ -89,7 +89,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
             name="warehouse"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Warehouse</FormLabel>
+                <FormLabel>Warehouse (optional)</FormLabel>
                 <FormControl>
                   <Input autoComplete="off" {...field} />
                 </FormControl>
@@ -102,7 +102,7 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
             name="role"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Role</FormLabel>
+                <FormLabel>Role (optional)</FormLabel>
                 <FormControl>
                   <Input autoComplete="off" {...field} />
                 </FormControl>

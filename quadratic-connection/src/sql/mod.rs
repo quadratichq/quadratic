@@ -35,9 +35,6 @@ pub(crate) async fn query_generic<T: Connection>(
     let start = Instant::now();
     let max_response_bytes = Some(state.settings.max_response_bytes);
 
-    // let connection = get_connection(&*state, &claims, &sql_query.connection_id).await?;
-    // headers.insert("ELAPSED-API-CONNECTION-MS", time_header(start));
-
     let start_connect = Instant::now();
     let mut pool = connection.connect().await?;
 
@@ -48,18 +45,9 @@ pub(crate) async fn query_generic<T: Connection>(
         .query(&mut pool, &sql_query.query, max_response_bytes)
         .await?;
 
-    // headers.insert("RECORD-COUNT", number_header(rows.len()));
     headers.insert("RECORD-COUNT", number_header(0));
     headers.insert("ELAPSED-DATABASE-QUERY-MS", time_header(start_query));
     headers.insert("OVER-THE-LIMIT", number_header(over_the_limit));
-
-    // let start_conversion = Instant::now();
-    // let parquet = T::to_parquet(rows)?;
-
-    // headers.insert(
-    //     "ELAPSED-PARQUET-CONVERSION-MS",
-    //     time_header(start_conversion),
-    // );
 
     state.stats.lock().await.last_query_time = Some(Instant::now());
     headers.insert("ELAPSED-TOTAL-MS", time_header(start));

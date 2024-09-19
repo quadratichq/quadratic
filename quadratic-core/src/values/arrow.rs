@@ -27,7 +27,6 @@ fn i64_naive_date(value: i64) -> NaiveDate {
 pub fn arrow_col_to_cell_value_vec(array: &ArrayRef) -> Result<Vec<CellValue>> {
     let data_type = array.data_type();
     let array_data = array.to_data();
-    dbgjs!(format!("Converting arrow type: {}", data_type));
 
     match data_type {
         DataType::Int8 => Ok(arrow_int_to_cell_values::<i8>(array_data)),

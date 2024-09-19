@@ -196,33 +196,25 @@ ORDER BY
         };
 
         for (index, row) in rows.into_iter().enumerate() {
-            let default_schema_name = format!("Unknown Schema - {}", index);
-            let schema_name: &str = row.get(1).unwrap_or(&default_schema_name);
-
-            let default_table_name = format!("Unknown Table - {}", index);
-            let table_name: &str = row.get(2).unwrap_or(&default_table_name);
-
-            let default_column_name = format!("Unknown Column - {}", index);
-            let column_name: &str = row.get(3).unwrap_or(&default_column_name);
-
-            let default_column_type = format!("Unknown Type - {}", index);
-            let column_type: &str = row.get(4).unwrap_or(&default_column_type);
-
-            let is_nullable: &str = row.get(5).unwrap_or("NO");
+            let safe_get = |data: Option<&str>, kind: &str| {
+                data.map(|s| s.to_string())
+                    .unwrap_or(format!("Unknown {kind} - {index}"))
+            };
+            let table_name = safe_get(row.get(2), "Table");
 
             schema
                 .tables
-                .entry(table_name.into())
+                .entry(table_name.to_owned())
                 .or_insert_with(|| SchemaTable {
-                    name: table_name.into(),
-                    schema: schema_name.into(),
+                    name: table_name,
+                    schema: safe_get(row.get(3), "Schema"),
                     columns: vec![],
                 })
                 .columns
                 .push(SchemaColumn {
-                    name: column_name.into(),
-                    r#type: column_type.into(),
-                    is_nullable: is_nullable.to_uppercase() == "YES",
+                    name: safe_get(row.get(4), "Column"),
+                    r#type: safe_get(row.get(5), "Type"),
+                    is_nullable: row.get(5).map_or("NO", |v| v).to_uppercase() == "YES",
                 });
         }
 

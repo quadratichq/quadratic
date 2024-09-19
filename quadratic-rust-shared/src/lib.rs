@@ -7,6 +7,7 @@ pub mod parquet;
 pub mod pubsub;
 pub mod quadratic_api;
 pub mod sql;
+pub mod utils;
 
 #[cfg(test)]
 pub mod test;
