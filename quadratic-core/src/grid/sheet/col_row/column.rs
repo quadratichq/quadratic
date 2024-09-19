@@ -234,7 +234,6 @@ impl Sheet {
         });
 
         // todo: fill_color needs a separate update
-        // todo: html needs a separate update as well
 
         reverse_operations
     }
@@ -340,7 +339,6 @@ impl Sheet {
         });
 
         // todo: fill_color needs a separate update
-        // todo: html needs a separate update as well
 
         reverse_operations
     }

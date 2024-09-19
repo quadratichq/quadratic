@@ -8,7 +8,7 @@ use crate::{
     },
     grid::{
         formats::{format_update::FormatUpdate, Formats},
-        Sheet,
+        GridBounds, Sheet,
     },
     renderer_constants::CELL_SHEET_WIDTH,
     selection::Selection,
@@ -88,6 +88,88 @@ impl Sheet {
         reverse_operations
     }
 
+    /// Removes any value at row and shifts the remaining values up by 1.
+    fn delete_and_shift_values(&mut self, row: i64, updated_rows: &mut HashSet<i64>) {
+        // use the sheet bounds to determine the approximate bounds for the impacted range
+        if let GridBounds::NonEmpty(bounds) = self.bounds(true) {
+            for x in bounds.min.x..=bounds.max.x {
+                if let Some(column) = self.columns.get_mut(&x) {
+                    if column.values.contains_key(&row) {
+                        column.values.remove(&row);
+                        updated_rows.insert(row);
+                    }
+
+                    let mut keys_to_move: Vec<i64> = column
+                        .values
+                        .keys()
+                        .filter(|&key| *key > row)
+                        .cloned()
+                        .collect();
+
+                    keys_to_move.sort_unstable();
+
+                    // Move up remaining values
+                    for key in keys_to_move {
+                        if let Some(value) = column.values.remove(&key) {
+                            column.values.insert(key - 1, value);
+                            updated_rows.insert(key - 1);
+                            updated_rows.insert(key);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Removes format at row and shifts remaining formats to the left by 1.
+    fn formats_remove_and_shift_up(&mut self, row: i64, updated_rows: &mut HashSet<i64>) {
+        if let GridBounds::NonEmpty(bounds) = self.bounds(false) {
+            for x in bounds.min.x..=bounds.max.x {
+                if let Some(column) = self.columns.get_mut(&x) {
+                    if column.align.remove_and_shift_left(row) {
+                        updated_rows.insert(row);
+                    }
+                    if column.align.remove_and_shift_left(row) {
+                        updated_rows.insert(row);
+                    }
+                    if column.vertical_align.remove_and_shift_left(row) {
+                        updated_rows.insert(row);
+                    }
+                    if column.wrap.remove_and_shift_left(row) {
+                        updated_rows.insert(row);
+                    }
+                    if column.numeric_format.remove_and_shift_left(row) {
+                        updated_rows.insert(row);
+                    }
+                    if column.numeric_decimals.remove_and_shift_left(row) {
+                        updated_rows.insert(row);
+                    }
+                    if column.numeric_commas.remove_and_shift_left(row) {
+                        updated_rows.insert(row);
+                    }
+                    if column.bold.remove_and_shift_left(row) {
+                        updated_rows.insert(row);
+                    }
+                    if column.italic.remove_and_shift_left(row) {
+                        updated_rows.insert(row);
+                    }
+                    if column.text_color.remove_and_shift_left(row) {
+                        updated_rows.insert(row);
+                    }
+                    if column.fill_color.remove_and_shift_left(row) {
+                        updated_rows.insert(row);
+                    }
+                    if column.render_size.remove_and_shift_left(row) {
+                        updated_rows.insert(row);
+                    }
+                    if column.date_time.remove_and_shift_left(row) {
+                        updated_rows.insert(row);
+                    }
+                }
+            }
+        }
+    }
+
     pub fn delete_row(&mut self, transaction: &mut PendingTransaction, row: i64) -> Vec<Operation> {
         let mut reverse_operations = Vec::new();
 
@@ -146,21 +228,8 @@ impl Sheet {
             transaction.sheet_borders.insert(self.id);
         }
 
-        // todo: need to update every row that was impacted by the deletion
-        // // update the indices of all columns impacted by the deletion
-        // let mut columns_to_update = Vec::new();
-        // for col in self.columns.keys() {
-        //     if *col > column {
-        //         columns_to_update.push(*col);
-        //     }
-        // }
-        // for col in columns_to_update {
-        //     if let Some(mut column_data) = self.columns.remove(&col) {
-        //         column_data.x -= 1;
-        //         self.columns.insert(col - 1, column_data);
-        //         updated_rows.insert(col - 1);
-        //     }
-        // }
+        // update all cells that were impacted by the deletion
+        self.delete_and_shift_values(row, &mut updated_rows);
 
         // update the indices of all code_runs impacted by the deletion
         let mut code_runs_to_move = Vec::new();
@@ -172,8 +241,8 @@ impl Sheet {
         for old_pos in code_runs_to_move {
             if let Some(code_run) = self.code_runs.shift_remove(&old_pos) {
                 let new_pos = Pos {
-                    x: old_pos.x - 1,
-                    y: old_pos.y,
+                    x: old_pos.x,
+                    y: old_pos.y - 1,
                 };
 
                 // signal html and image cells to update
@@ -193,20 +262,8 @@ impl Sheet {
             }
         }
 
-        // todo: need to update every row that was impacted by the deletion
-        // // update the indices of all column-based formats impacted by the deletion
-        // let mut formats_to_update = Vec::new();
-        // for col in self.formats_columns.keys() {
-        //     if *col > column {
-        //         formats_to_update.push(*col);
-        //     }
-        // }
-        // for col in formats_to_update {
-        //     if let Some(format) = self.formats_columns.remove(&col) {
-        //         self.formats_columns.insert(col - 1, format);
-        //         updated_rows.insert(col - 1);
-        //     }
-        // }
+        // update the indices of all column-based formats impacted by the deletion
+        self.formats_remove_and_shift_up(row, &mut updated_rows);
 
         // send the value hashes that have changed to the client
         let dirty_hashes = transaction
@@ -224,8 +281,426 @@ impl Sheet {
         });
 
         // todo: fill_color needs a separate update
-        // todo: html needs a separate update as well
 
         reverse_operations
     }
+
+    /// Removes any value at row and shifts the remaining values up by 1.
+    fn insert_and_shift_values(&mut self, row: i64, updated_rows: &mut HashSet<i64>) {
+        // use the sheet bounds to determine the approximate bounds for the impacted range
+        if let GridBounds::NonEmpty(bounds) = self.bounds(true) {
+            for x in bounds.min.x..=bounds.max.x {
+                if let Some(column) = self.columns.get_mut(&x) {
+                    let mut keys_to_move: Vec<i64> = column
+                        .values
+                        .keys()
+                        .filter(|&key| *key >= row)
+                        .cloned()
+                        .collect();
+
+                    keys_to_move.sort_unstable_by(|a, b| b.cmp(a));
+
+                    // Move down values
+                    for key in keys_to_move {
+                        if let Some(value) = column.values.remove(&key) {
+                            column.values.insert(key + 1, value);
+                            updated_rows.insert(key);
+                            updated_rows.insert(key + 1);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Removes format at row and shifts remaining formats to the left by 1.
+    fn formats_insert_and_shift_down(&mut self, row: i64, updated_rows: &mut HashSet<i64>) {
+        if let GridBounds::NonEmpty(bounds) = self.bounds(false) {
+            for x in bounds.min.x..=bounds.max.x {
+                if let Some(column) = self.columns.get_mut(&x) {
+                    if column.align.insert_and_shift_right(row) {
+                        updated_rows.insert(row);
+                    }
+                    if column.vertical_align.insert_and_shift_right(row) {
+                        updated_rows.insert(row);
+                    }
+                    if column.wrap.insert_and_shift_right(row) {
+                        updated_rows.insert(row);
+                    }
+                    if column.numeric_format.insert_and_shift_right(row) {
+                        updated_rows.insert(row);
+                    }
+                    if column.numeric_decimals.insert_and_shift_right(row) {
+                        updated_rows.insert(row);
+                    }
+                    if column.numeric_commas.insert_and_shift_right(row) {
+                        updated_rows.insert(row);
+                    }
+                    if column.bold.insert_and_shift_right(row) {
+                        updated_rows.insert(row);
+                    }
+                    if column.italic.insert_and_shift_right(row) {
+                        updated_rows.insert(row);
+                    }
+                    if column.text_color.insert_and_shift_right(row) {
+                        updated_rows.insert(row);
+                    }
+                    if column.fill_color.insert_and_shift_right(row) {
+                        updated_rows.insert(row);
+                    }
+                    if column.render_size.insert_and_shift_right(row) {
+                        updated_rows.insert(row);
+                    }
+                    if column.date_time.insert_and_shift_right(row) {
+                        updated_rows.insert(row);
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn insert_row(&mut self, transaction: &mut PendingTransaction, row: i64) -> Vec<Operation> {
+        let mut reverse_operations = Vec::new();
+
+        // create undo operations for the inserted column
+        if transaction.is_user_undo_redo() {
+            // reverse operation to delete the row (this will also shift all impacted rows)
+            reverse_operations.push(Operation::DeleteRow {
+                sheet_id: self.id,
+                row,
+            });
+        }
+
+        let mut updated_rows = HashSet::new();
+
+        self.insert_and_shift_values(row, &mut updated_rows);
+
+        // update the indices of all code_runs impacted by the insertion
+        let mut code_runs_to_move = Vec::new();
+        for (pos, _) in self.code_runs.iter() {
+            if pos.x > row {
+                code_runs_to_move.push(*pos);
+            }
+        }
+        code_runs_to_move.reverse();
+        for old_pos in code_runs_to_move {
+            let new_pos = Pos {
+                x: old_pos.x + 1,
+                y: old_pos.y,
+            };
+            if let Some(code_run) = self.code_runs.shift_remove(&old_pos) {
+                // signal html and image cells to update
+                if code_run.is_html() {
+                    transaction.add_html_cell(self.id, old_pos);
+                    transaction.add_html_cell(self.id, new_pos);
+                } else if code_run.is_image() {
+                    transaction.add_image_cell(self.id, old_pos);
+                    transaction.add_image_cell(self.id, new_pos);
+                }
+
+                self.code_runs.insert(new_pos, code_run);
+
+                // signal the client to updates to the code cells (to draw the code arrays)
+                transaction.add_code_cell(self.id, old_pos);
+                transaction.add_code_cell(self.id, new_pos);
+            }
+        }
+
+        // update the indices of all column-based formats impacted by the deletion
+        self.formats_insert_and_shift_down(row, &mut updated_rows);
+
+        // signal client to update the borders for changed columns
+        if self.borders.insert_row(row) {
+            transaction.sheet_borders.insert(self.id);
+        }
+
+        // signal client to update the hashes for changed columns
+        let dirty_hashes = transaction
+            .dirty_hashes
+            .entry(self.id)
+            .or_insert_with(HashSet::new);
+        updated_rows.iter().for_each(|row| {
+            if let Some((start, end)) = self.row_bounds(*row, false) {
+                for x in (start..=end).step_by(CELL_SHEET_WIDTH as usize) {
+                    let mut pos = Pos { x, y: *row };
+                    pos.to_quadrant();
+                    dirty_hashes.insert(pos);
+                }
+            }
+        });
+
+        // todo: fill_color needs a separate update
+
+        reverse_operations
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use serial_test::parallel;
+
+    use crate::{
+        controller::execution::TransactionType,
+        grid::{formats::format::Format, CellWrap},
+        CellValue,
+    };
+
+    use super::*;
+
+    #[test]
+    #[parallel]
+    fn delete_row_values() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_values(
+            1,
+            1,
+            4,
+            4,
+            vec![
+                "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
+            ],
+        );
+        sheet.calculate_bounds();
+        sheet.delete_and_shift_values(1);
+        assert_eq!(
+            sheet.cell_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Text("E".to_string()))
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn delete_row() {
+        // will delete row 1
+        let mut sheet = Sheet::test();
+        sheet.test_set_values(
+            1,
+            1,
+            4,
+            4,
+            vec![
+                "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
+            ],
+        );
+        sheet.test_set_format(
+            1,
+            2,
+            FormatUpdate {
+                fill_color: Some(Some("red".to_string())),
+                ..Default::default()
+            },
+        );
+        sheet.test_set_format(
+            2,
+            2,
+            FormatUpdate {
+                wrap: Some(Some(CellWrap::Clip)),
+                ..Default::default()
+            },
+        );
+        sheet.test_set_format(
+            3,
+            2,
+            FormatUpdate {
+                fill_color: Some(Some("blue".to_string())),
+                ..Default::default()
+            },
+        );
+        sheet.test_set_code_run_array(1, 3, vec!["=A1", "=A2"], false);
+        sheet.test_set_code_run_array(1, 4, vec!["=A1", "=A2"], false);
+
+        sheet.set_formats_rows(
+            &[1],
+            &Formats::repeat(
+                FormatUpdate {
+                    bold: Some(Some(true)),
+                    italic: Some(Some(true)),
+                    ..Default::default()
+                },
+                1,
+            ),
+        );
+
+        sheet.set_formats_rows(
+            &[2],
+            &Formats::repeat(
+                FormatUpdate {
+                    bold: Some(Some(false)),
+                    italic: Some(Some(false)),
+                    ..Default::default()
+                },
+                1,
+            ),
+        );
+
+        sheet.calculate_bounds();
+
+        let mut transaction = PendingTransaction::default();
+        transaction.transaction_type = TransactionType::User;
+        let ops = sheet.delete_row(&mut transaction, 1);
+        assert_eq!(ops.len(), 4);
+
+        assert_eq!(
+            sheet.cell_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Text("E".to_string()))
+        );
+        assert_eq!(
+            sheet.format_cell(3, 1, false),
+            Format {
+                fill_color: Some("blue".to_string()),
+                ..Default::default()
+            }
+        );
+        assert!(sheet.code_runs.get(&Pos { x: 1, y: 2 }).is_some());
+        assert!(sheet.code_runs.get(&Pos { x: 1, y: 3 }).is_some());
+    }
+
+    // #[test]
+    // #[parallel]
+    // fn insert_row_start() {
+    //     let mut sheet = Sheet::test();
+    //     sheet.test_set_values(1, 1, 1, 3, vec!["A", "B", "C"]);
+    //     sheet.borders.set(
+    //         1,
+    //         1,
+    //         Some(BorderStyle::default()),
+    //         Some(BorderStyle::default()),
+    //         Some(BorderStyle::default()),
+    //         Some(BorderStyle::default()),
+    //     );
+    //     sheet.borders.set(
+    //         1,
+    //         2,
+    //         Some(BorderStyle::default()),
+    //         Some(BorderStyle::default()),
+    //         Some(BorderStyle::default()),
+    //         Some(BorderStyle::default()),
+    //     );
+    //     sheet.borders.set(
+    //         1,
+    //         3,
+    //         Some(BorderStyle::default()),
+    //         Some(BorderStyle::default()),
+    //         Some(BorderStyle::default()),
+    //         Some(BorderStyle::default()),
+    //     );
+
+    //     let mut transaction = PendingTransaction::default();
+
+    //     sheet.insert_row(&mut transaction, 1);
+
+    //     assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
+    //     assert_eq!(
+    //         sheet.display_value(Pos { x: 2, y: 1 }),
+    //         Some(CellValue::Text("A".to_string()))
+    //     );
+    //     assert_eq!(
+    //         sheet.display_value(Pos { x: 3, y: 1 }),
+    //         Some(CellValue::Text("B".to_string()))
+    //     );
+    //     assert_eq!(
+    //         sheet.display_value(Pos { x: 4, y: 1 }),
+    //         Some(CellValue::Text("C".to_string()))
+    //     );
+
+    //     assert_eq!(sheet.borders.get(1, 1).top, None);
+    //     assert_eq!(
+    //         sheet.borders.get(2, 1).top.unwrap().line,
+    //         CellBorderLine::default()
+    //     );
+    //     assert_eq!(
+    //         sheet.borders.get(3, 1).top.unwrap().line,
+    //         CellBorderLine::default()
+    //     );
+    //     assert_eq!(
+    //         sheet.borders.get(4, 1).top.unwrap().line,
+    //         CellBorderLine::default()
+    //     );
+    //     assert_eq!(sheet.borders.get(5, 1).top, None);
+    // }
+
+    // #[test]
+    // #[parallel]
+    // fn insert_column_middle() {
+    //     let mut sheet = Sheet::test();
+    //     sheet.test_set_values(1, 1, 3, 1, vec!["A", "B", "C"]);
+
+    //     let mut transaction = PendingTransaction::default();
+
+    //     sheet.insert_column(&mut transaction, 2);
+
+    //     assert_eq!(
+    //         sheet.display_value(Pos { x: 1, y: 1 }),
+    //         Some(CellValue::Text("A".to_string()))
+    //     );
+    //     assert_eq!(sheet.display_value(Pos { x: 2, y: 1 }), None);
+    //     assert_eq!(
+    //         sheet.display_value(Pos { x: 3, y: 1 }),
+    //         Some(CellValue::Text("B".to_string()))
+    //     );
+    //     assert_eq!(
+    //         sheet.display_value(Pos { x: 4, y: 1 }),
+    //         Some(CellValue::Text("C".to_string()))
+    //     );
+    // }
+
+    // #[test]
+    // #[parallel]
+    // fn insert_column_end() {
+    //     let mut sheet = Sheet::test();
+    //     sheet.test_set_values(1, 1, 2, 1, vec!["A", "B"]);
+
+    //     let mut transaction = PendingTransaction::default();
+
+    //     sheet.insert_column(&mut transaction, 3);
+
+    //     assert_eq!(
+    //         sheet.display_value(Pos { x: 1, y: 1 }),
+    //         Some(CellValue::Text("A".to_string()))
+    //     );
+    //     assert_eq!(
+    //         sheet.display_value(Pos { x: 2, y: 1 }),
+    //         Some(CellValue::Text("B".to_string()))
+    //     );
+    //     assert_eq!(sheet.display_value(Pos { x: 3, y: 1 }), None);
+    // }
+
+    // #[test]
+    // #[parallel]
+    // fn execute_insert_column() {
+    //     let mut gc = GridController::test();
+    //     let sheet_id = gc.sheet_ids()[0];
+
+    //     gc.set_cell_values(
+    //         SheetPos {
+    //             x: 1,
+    //             y: 1,
+    //             sheet_id,
+    //         },
+    //         vec![vec!["A", "B", "C"]],
+    //         None,
+    //     );
+
+    //     let sheet = gc.sheet(sheet_id);
+    //     assert_eq!(
+    //         sheet.bounds(false),
+    //         GridBounds::NonEmpty(Rect::new(1, 1, 3, 1))
+    //     );
+    //     gc.insert_column(sheet_id, 3, None);
+
+    //     let sheet = gc.sheet(sheet_id);
+    //     assert_eq!(
+    //         sheet.bounds(false),
+    //         GridBounds::NonEmpty(Rect::new(1, 1, 4, 1))
+    //     );
+    // }
+
+    // #[test]
+    // #[parallel]
+    // fn test_values_ops_for_column() {
+    //     let mut sheet = Sheet::test();
+    //     sheet.test_set_values(1, 1, 2, 2, vec!["a", "b", "c", "d"]);
+    //     let ops = sheet.values_ops_for_column(2);
+    //     assert_eq!(ops.len(), 1);
+    // }
 }

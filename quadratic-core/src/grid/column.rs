@@ -157,21 +157,21 @@ impl<B: BlockContent> ColumnData<B> {
     pub fn new() -> Self {
         Self(BTreeMap::new())
     }
-    fn get_block_containing(&self, y: i64) -> Option<&Block<B>> {
+    pub fn get_block_containing(&self, y: i64) -> Option<&Block<B>> {
         self.0
             .range(..=y)
             .next_back()
             .map(|(_, block)| block)
             .filter(|block| block.contains(y))
     }
-    fn remove_block_containing(&mut self, y: i64) -> Option<Block<B>> {
+    pub fn remove_block_containing(&mut self, y: i64) -> Option<Block<B>> {
         let key = self.get_block_containing(y)?.start();
         self.remove_block_at(key)
     }
-    fn remove_block_at(&mut self, y: i64) -> Option<Block<B>> {
+    pub fn remove_block_at(&mut self, y: i64) -> Option<Block<B>> {
         self.0.remove(&y)
     }
-    fn add_block(&mut self, block: Block<B>) {
+    pub fn add_block(&mut self, block: Block<B>) {
         if block.is_empty() {
             return;
         }
