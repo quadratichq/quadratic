@@ -412,6 +412,10 @@ class InlineEditorHandler {
         const validationError = await this.validateInput();
         if (validationError) {
           events.emit('hoverCell', { x: this.location.x, y: this.location.y, validationId: validationError, value });
+          // need to change the sheet back to the original sheet if there's a validation error
+          if (skipChangeSheet) {
+            sheets.current = location.sheetId;
+          }
           return false;
         } else {
           quadraticCore.setCellValue(
