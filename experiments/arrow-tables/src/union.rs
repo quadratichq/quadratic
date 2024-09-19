@@ -1,165 +1,123 @@
-use arrow::array::{
-    Array, ArrayRef, BooleanArray, Float64Array, Int32Array, StringArray, UnionArray, UnionBuilder,
-};
+use arrow::array::{Array, ArrayRef, Int32Array, RecordBatch, StringArray, UnionArray};
 use arrow::buffer::ScalarBuffer;
-use arrow::compute::filter;
-use arrow::compute::{sort_to_indices, take, SortOptions};
-use arrow::datatypes::{
-    DataType, Field, Float64Type, GenericStringType, Int32Type, Int64Type, Schema, StringViewType,
-    UnionFields, UnionMode, Utf8Type,
-};
-use arrow::record_batch::RecordBatch;
-use arrow::util::pretty;
+use arrow::datatypes::{DataType, Field, Schema, UnionFields};
+use std::collections::HashMap;
 use std::sync::Arc;
 
-// Function to create the table
-pub fn create_table() {
-    let mut builder = UnionBuilder::new_dense();
-    builder.append::<Int32Type>("a", 1).unwrap();
-    builder.append_null::<Int32Type>("a").unwrap();
-    builder.append::<Float64Type>("c", 3.0).unwrap();
-    builder.append_null::<Float64Type>("c").unwrap();
-    builder.append::<Int32Type>("a", 4).unwrap();
-    let union = builder.build().unwrap();
-
-    let schema = Schema::new(vec![Field::new(
-        "struct_array_1",
-        union.data_type().clone(),
-        true,
-    )]);
-    println!("union.data_type().clone() {:?}", union.data_type().clone());
-
-    let record_batch = RecordBatch::try_new(
-        Arc::new(schema),
-        vec![Arc::new(union.clone()), Arc::new(union)],
-    )
-    .unwrap();
-
-    let record_batch_slice = record_batch.slice(1, 3);
-    println!("{:?}", record_batch_slice);
-    pretty::print_batches(&[record_batch]).unwrap();
+fn new_union_array() -> UnionArray {
+    let union_fields = UnionFields::empty();
+    let type_ids = vec![].into_iter().collect::<ScalarBuffer<i8>>();
+    UnionArray::try_new(union_fields, type_ids, None, vec![]).unwrap()
 }
 
-fn create_2d_union_array() -> UnionArray {
-    let inner_union1 = create_inner_union_array(vec![1, 2], vec!["three", "four"]);
-    let inner_union2 = create_inner_union_array(vec![5], vec!["six", "seven", "eight"]);
-    let inner_union3 = create_inner_union_array(vec![9, 10, 11], vec!["twelve"]);
-
-    let type_ids = vec![0, 0].into_iter().collect::<ScalarBuffer<i8>>();
-    // let offsets = Int32Array::from(vec![0, 1, 2]);
-    let child_arrays: Vec<ArrayRef> = vec![Arc::new(inner_union1), Arc::new(inner_union2)];
-    let union_fields_inner = [
-        (0, Arc::new(Field::new("int", DataType::Int32, false))),
-        (1, Arc::new(Field::new("string", DataType::Utf8, false))),
-    ]
-    .into_iter()
-    .collect::<UnionFields>();
-
-    let union_fields = [
-        (
-            0,
-            Arc::new(Field::new(
-                "inner_union",
-                DataType::Union(union_fields_inner.clone(), UnionMode::Dense),
-                false,
-            )),
-        ),
-        (
-            1,
-            Arc::new(Field::new(
-                "inner_union",
-                DataType::Union(union_fields_inner, UnionMode::Dense),
-                false,
-            )),
-        ),
-    ]
-    .into_iter()
-    .collect::<UnionFields>();
-
-    UnionArray::try_new(union_fields, type_ids, None, child_arrays).unwrap()
+fn type_map() -> HashMap<DataType, i8> {
+    let mut map = HashMap::new();
+    map.insert(DataType::Int32, 0);
+    map.insert(DataType::Utf8, 1);
+    map
 }
 
-fn create_inner_union_array(int_data: Vec<i32>, str_data: Vec<&str>) -> UnionArray {
-    let int_array = Int32Array::from(int_data);
-    let str_array = StringArray::from(str_data);
+fn union_field(mut table: UnionArray, field: Field) -> ArrayRef {
+    let (union_fields, type_ids, offsets, children) = table.into_parts();
+    Arc::new(Int32Array::from(vec![1]))
+}
 
-    let mut type_ids = Vec::new();
-    let mut offsets = Vec::new();
+fn add_union_field(table: UnionArray, data_type: DataType) -> UnionArray {
+    let index = *type_map().get(&data_type).unwrap();
+    let (mut union_fields, mut type_ids, offsets, mut children) = table.into_parts();
 
-    for i in 0..int_array.len() {
-        type_ids.push(0);
-        offsets.push(i as i32);
+    let mut type_ids_vec = type_ids.iter().collect::<Vec<_>>();
+    // let mut chidren_vec = children.iter().collect::<Vec<_>>();
+    let mut union_fields_vec = union_fields
+        .iter()
+        .map(|(i, f)| (i, f.to_owned()))
+        .collect::<Vec<_>>();
+
+    if !union_fields_vec.iter().any(|(i, _)| i == &index) {
+        let field = Field::new(data_type.to_string(), data_type.to_owned(), false);
+        union_fields_vec.push((index, Arc::new(field)));
+        union_fields = union_fields_vec.into_iter().collect::<UnionFields>();
+
+        type_ids_vec.push(&index);
+        type_ids = type_ids_vec
+            .into_iter()
+            .cloned()
+            .collect::<ScalarBuffer<i8>>();
+
+        let child = match data_type {
+            DataType::Int32 => Arc::new(Int32Array::from(vec![1])) as Arc<dyn Array>,
+            DataType::Utf8 => Arc::new(StringArray::from(vec!["first"])) as Arc<dyn Array>,
+            _ => unreachable!(),
+        };
+
+        children.push(child);
+    } else {
+        let child_index = children
+            .iter()
+            .position(|c| c.data_type() == &data_type)
+            .unwrap();
+
+        match data_type {
+            DataType::Int32 => {
+                let mut child = children[child_index]
+                    .as_any()
+                    .downcast_ref::<Int32Array>()
+                    .unwrap()
+                    .into_iter()
+                    .collect::<Vec<_>>();
+
+                child.push(Some(2));
+                children[child_index] = Arc::new(Int32Array::from(child)) as Arc<dyn Array>;
+            }
+            DataType::Utf8 => {
+                let mut child = children[child_index]
+                    .as_any()
+                    .downcast_ref::<StringArray>()
+                    .unwrap()
+                    .into_iter()
+                    .collect::<Vec<_>>();
+
+                child.push(Some("Second"));
+                children[child_index] = Arc::new(StringArray::from(child)) as Arc<dyn Array>;
+            }
+            _ => unreachable!(),
+        };
     }
 
-    // let str_offset = int_array.len() as i32;
-    for i in 0..str_array.len() {
-        type_ids.push(1);
-        offsets.push(i as i32);
-    }
-
-    let type_ids = type_ids.into_iter().collect::<ScalarBuffer<i8>>();
-    // let offsets = Int32Array::from(offsets);
-
-    let child_data: Vec<ArrayRef> = vec![Arc::new(int_array), Arc::new(str_array)];
-    let union_fields = [
-        (0, Arc::new(Field::new("int", DataType::Int32, false))),
-        (1, Arc::new(Field::new("string", DataType::Utf8, false))),
-    ]
-    .into_iter()
-    .collect::<UnionFields>();
-
-    // let data_type = DataType::Union(union_fields, UnionMode::Dense);
-
-    UnionArray::try_new(union_fields, type_ids, None, child_data).unwrap()
-}
-
-pub fn add_col() {
-    let mut builder = UnionBuilder::new_sparse();
-    builder.append::<Int32Type>("a", 1).unwrap();
-    builder.append_null::<Int32Type>("a").unwrap();
-    builder.append::<Float64Type>("c", 3.0).unwrap();
-    builder.append_null::<Float64Type>("c").unwrap();
-    builder.append::<Int32Type>("a", 4).unwrap();
-    let union = builder.build().unwrap();
-
-    let schema = Schema::new(vec![Field::new(
-        "struct_array",
-        union.data_type().clone(),
-        true,
-    )]);
-
-    let record_batch = RecordBatch::try_new(Arc::new(schema), vec![Arc::new(union)]).unwrap();
-
-    let record_batch_slice = record_batch.slice(1, 3);
-    println!("{:?}", record_batch_slice);
+    UnionArray::try_new(union_fields, type_ids, None, children).unwrap()
 }
 
 fn union_to_record_batch(union_array: &UnionArray) -> RecordBatch {
-    let schema = Schema::new(vec![Field::new(
-        "2d_union",
-        union_array.data_type().clone(),
-        false,
-    )]);
+    let (union_fields, _, _, columns) = union_array.clone().into_parts();
+    let union_fields = union_fields
+        .iter()
+        .map(|(_, field)| field.to_owned())
+        .collect::<Vec<_>>();
+    let columns = columns.into_iter().collect::<Vec<_>>();
+    let schema = Schema::new(union_fields);
 
-    RecordBatch::try_new(Arc::new(schema), vec![Arc::new(union_array.clone())]).unwrap()
+    RecordBatch::try_new(Arc::new(schema), columns).unwrap()
 }
 
 #[cfg(test)]
 mod tests {
+    use arrow::util::pretty;
+
     use super::*;
 
     #[test]
     fn union() {
-        // let table = create_table();
-        let outer_union = create_2d_union_array();
-        let record_batch = union_to_record_batch(&outer_union);
+        let table = new_union_array();
 
-        println!("{:?}", outer_union);
+        let table = add_union_field(table, DataType::Int32);
+        let table = add_union_field(table, DataType::Utf8);
+        let table = add_union_field(table, DataType::Int32);
+        let table = add_union_field(table, DataType::Utf8);
 
-        // pretty::print_columns("col_name", &[outer_union.child(0).to_owned()]).unwrap();
+        // println!("{:?}", table);
 
-        // println!("{:?}", outer_union);
-        // println!("{:?}", record_batch);
+        let record_batch = union_to_record_batch(&table);
+        println!("{:?}", record_batch);
         // pretty::print_batches(&[record_batch]).unwrap();
     }
 }
