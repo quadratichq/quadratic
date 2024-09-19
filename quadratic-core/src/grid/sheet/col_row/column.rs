@@ -275,7 +275,7 @@ impl Sheet {
         // update the indices of all code_runs impacted by the insertion
         let mut code_runs_to_move = Vec::new();
         for (pos, _) in self.code_runs.iter() {
-            if pos.x > column {
+            if pos.x >= column {
                 code_runs_to_move.push(*pos);
             }
         }
@@ -349,12 +349,12 @@ mod tests {
     use serial_test::parallel;
 
     use crate::{
-        controller::{execution::TransactionType, GridController},
+        controller::execution::TransactionType,
         grid::{
             formats::{format::Format, format_update::FormatUpdate},
-            BorderStyle, CellBorderLine, CellWrap, GridBounds,
+            BorderStyle, CellBorderLine, CellWrap,
         },
-        CellValue, Rect,
+        CellValue,
     };
 
     use super::*;
@@ -549,36 +549,6 @@ mod tests {
             Some(CellValue::Text("B".to_string()))
         );
         assert_eq!(sheet.display_value(Pos { x: 3, y: 1 }), None);
-    }
-
-    #[test]
-    #[parallel]
-    fn execute_insert_column() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-
-        gc.set_cell_values(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
-            vec![vec!["A", "B", "C"]],
-            None,
-        );
-
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.bounds(false),
-            GridBounds::NonEmpty(Rect::new(1, 1, 3, 1))
-        );
-        gc.insert_column(sheet_id, 3, None);
-
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.bounds(false),
-            GridBounds::NonEmpty(Rect::new(1, 1, 4, 1))
-        );
     }
 
     #[test]

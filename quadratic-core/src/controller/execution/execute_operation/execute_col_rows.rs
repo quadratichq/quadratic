@@ -211,8 +211,19 @@ impl GridController {
         }
     }
 
-    pub fn execute_insert_row(&mut self, _transaction: &mut PendingTransaction, op: Operation) {
-        if let Operation::InsertRow { .. /*sheet_id, row*/ } = op {}
+    pub fn execute_insert_row(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+        if let Operation::InsertRow { sheet_id, row } = op {
+            if let Some(sheet) = self.try_sheet_mut(sheet_id) {
+                let reverse = sheet.insert_row(transaction, row);
+                transaction.reverse_operations.extend(reverse);
+                transaction.forward_operations.push(op);
+
+                sheet.recalculate_bounds();
+                if !transaction.is_server() {
+                    self.send_updated_bounds(sheet_id);
+                }
+            }
+        }
     }
 
     pub fn execute_move_column(&mut self, _transaction: &mut PendingTransaction, op: Operation) {
@@ -239,7 +250,7 @@ impl GridController {
 mod tests {
     use serial_test::parallel;
 
-    use crate::{grid::CodeCellLanguage, Pos, SheetPos};
+    use crate::{grid::CodeCellLanguage, Pos, Rect, SheetPos};
 
     use super::*;
 
@@ -326,6 +337,66 @@ mod tests {
                 })
                 .into(),
             }
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn execute_insert_column() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_cell_values(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            vec![vec!["A", "B", "C"]],
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.bounds(false),
+            GridBounds::NonEmpty(Rect::new(1, 1, 3, 1))
+        );
+        gc.insert_column(sheet_id, 3, None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.bounds(false),
+            GridBounds::NonEmpty(Rect::new(1, 1, 4, 1))
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn execute_insert_row() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_cell_values(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            vec![vec!["A"], vec!["B"], vec!["C"]],
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.bounds(false),
+            GridBounds::NonEmpty(Rect::new(1, 1, 1, 3))
+        );
+        gc.insert_row(sheet_id, 3, None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.bounds(false),
+            GridBounds::NonEmpty(Rect::new(1, 1, 1, 4))
         );
     }
 }

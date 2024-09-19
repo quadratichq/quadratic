@@ -1042,12 +1042,12 @@ class Core {
 
   deleteRow(sheetId: string, row: number, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    // this.gridController.deleteRow(sheetId, BigInt(row), cursor);
+    this.gridController.deleteRow(sheetId, BigInt(row), cursor);
   }
 
   insertRow(sheetId: string, row: number, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    // this.gridController.insertRow(sheetId, BigInt(row), cursor);
+    this.gridController.insertRow(sheetId, BigInt(row), cursor);
   }
 }
 

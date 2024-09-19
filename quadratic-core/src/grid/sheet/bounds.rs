@@ -393,6 +393,7 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{
+            formats::format_update::FormatUpdate,
             sheet::validations::{
                 validation::Validation,
                 validation_rules::{validation_logical::ValidationLogical, ValidationRule},
@@ -954,6 +955,29 @@ mod test {
     #[test]
     #[parallel]
     fn row_bounds_formats() {
-        todo!();
+        let mut sheet = Sheet::test();
+
+        sheet.set_format_cell(
+            Pos { x: 3, y: 1 },
+            &FormatUpdate {
+                fill_color: Some(Some("red".to_string())),
+                ..Default::default()
+            },
+            false,
+        );
+        sheet.set_format_cell(
+            Pos { x: 5, y: 1 },
+            &FormatUpdate {
+                fill_color: Some(Some("red".to_string())),
+                ..Default::default()
+            },
+            false,
+        );
+
+        // Check that the bounds include the formatted row
+        assert_eq!(sheet.row_bounds_formats(1), Some((3, 5)));
+
+        // Check that the data bounds are still empty
+        assert_eq!(sheet.data_bounds, GridBounds::Empty);
     }
 }

@@ -21,6 +21,8 @@ use crate::{CellValue, IsBlank};
 pub struct Column {
     pub x: i64,
     pub values: BTreeMap<i64, CellValue>,
+
+    // should have 12 format options
     pub align: ColumnData<SameValue<CellAlign>>,
     pub vertical_align: ColumnData<SameValue<CellVerticalAlign>>,
     pub wrap: ColumnData<SameValue<CellWrap>>,
@@ -94,30 +96,25 @@ impl Column {
     pub fn has_data_in_row(&self, y: i64) -> bool {
         self.values.get(&y).is_some_and(|v| !v.is_blank())
     }
-    pub fn has_anything_in_row(&self, y: i64) -> bool {
-        self.has_data_in_row(y)
-            || self.align.get(y).is_some()
-            || self.vertical_align.get(y).is_some()
-            || self.wrap.get(y).is_some()
-            || self.numeric_format.get(y).is_some()
-            || self.numeric_decimals.get(y).is_some()
-            || self.bold.get(y).is_some()
-            || self.italic.get(y).is_some()
-            || self.text_color.get(y).is_some()
-            || self.fill_color.get(y).is_some()
-            || self.date_time.get(y).is_some()
-    }
 
+    /// Returns true if the column has any format options set in the given row.
     pub fn has_format_in_row(&self, y: i64) -> bool {
         self.align.get(y).is_some()
             || self.vertical_align.get(y).is_some()
             || self.wrap.get(y).is_some()
             || self.numeric_format.get(y).is_some()
             || self.numeric_decimals.get(y).is_some()
+            || self.numeric_commas.get(y).is_some()
             || self.bold.get(y).is_some()
             || self.italic.get(y).is_some()
             || self.text_color.get(y).is_some()
             || self.fill_color.get(y).is_some()
+            || self.render_size.get(y).is_some()
+            || self.date_time.get(y).is_some()
+    }
+
+    pub fn has_anything_in_row(&self, y: i64) -> bool {
+        self.has_data_in_row(y) || self.has_format_in_row(y)
     }
 
     /// Gets the Format for a column (which will eventually replace the data structure)

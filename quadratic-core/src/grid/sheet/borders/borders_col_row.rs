@@ -249,7 +249,6 @@ impl Borders {
         }
 
         if let Some(bounds) = self.bounds_column(column, false, false) {
-            dbg!(&bounds);
             for row in bounds.min.y..=bounds.max.y {
                 let border = self.get(column, row).override_border(false);
                 borders.push(border);
@@ -298,9 +297,10 @@ mod tests {
         controller::GridController,
         grid::{
             sheet::borders::BorderStyleCellUpdate, BorderSelection, BorderStyle, CellBorderLine,
+            CodeCellLanguage,
         },
         selection::Selection,
-        Rect, SheetRect,
+        CellValue, Pos, Rect, SheetPos, SheetRect,
     };
 
     use super::*;
@@ -787,6 +787,124 @@ mod tests {
                 selection,
                 borders: BorderStyleCellUpdates::repeat(BorderStyleCellUpdate::all(), 2),
             }
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn delete_row_undo_code() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_code_cell(
+            SheetPos::new(sheet_id, 1, 1),
+            CodeCellLanguage::Formula,
+            "12".to_string(),
+            None,
+        );
+        gc.set_code_cell(
+            SheetPos::new(sheet_id, 1, 2),
+            CodeCellLanguage::Formula,
+            "34".to_string(),
+            None,
+        );
+        gc.set_code_cell(
+            SheetPos::new(sheet_id, 1, 3),
+            CodeCellLanguage::Formula,
+            "56".to_string(),
+            None,
+        );
+
+        gc.delete_row(sheet_id, 2, None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Number(12.into()))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 2 }),
+            Some(CellValue::Number(56.into()))
+        );
+        assert_eq!(sheet.display_value(Pos { x: 1, y: 3 }), None);
+
+        // this will reinsert the row
+        gc.undo(None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Number(12.into()))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 2 }),
+            Some(CellValue::Number(34.into()))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 3 }),
+            Some(CellValue::Number(56.into()))
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn insert_row_undo_code() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_code_cell(
+            SheetPos::new(sheet_id, 1, 1),
+            CodeCellLanguage::Formula,
+            "12".to_string(),
+            None,
+        );
+        gc.set_code_cell(
+            SheetPos::new(sheet_id, 1, 2),
+            CodeCellLanguage::Formula,
+            "34".to_string(),
+            None,
+        );
+        gc.set_code_cell(
+            SheetPos::new(sheet_id, 1, 3),
+            CodeCellLanguage::Formula,
+            "56".to_string(),
+            None,
+        );
+
+        gc.insert_row(sheet_id, 2, None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Number(12.into()))
+        );
+        assert_eq!(sheet.display_value(Pos { x: 1, y: 2 }), None);
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 3 }),
+            Some(CellValue::Number(34.into()))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 4 }),
+            Some(CellValue::Number(56.into()))
+        );
+        assert_eq!(sheet.display_value(Pos { x: 1, y: 5 }), None);
+
+        // this will remove the inserted row
+        gc.undo(None);
+
+        let sheet = gc.sheet(sheet_id);
+
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Number(12.into()))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 2 }),
+            Some(CellValue::Number(34.into()))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 3 }),
+            Some(CellValue::Number(56.into()))
         );
     }
 }

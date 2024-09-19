@@ -238,6 +238,7 @@ impl Sheet {
                 code_runs_to_move.push(*pos);
             }
         }
+        code_runs_to_move.sort_unstable();
         for old_pos in code_runs_to_move {
             if let Some(code_run) = self.code_runs.shift_remove(&old_pos) {
                 let new_pos = Pos {
@@ -378,15 +379,16 @@ impl Sheet {
         // update the indices of all code_runs impacted by the insertion
         let mut code_runs_to_move = Vec::new();
         for (pos, _) in self.code_runs.iter() {
-            if pos.x > row {
+            if pos.y >= row {
                 code_runs_to_move.push(*pos);
             }
         }
         code_runs_to_move.reverse();
+
         for old_pos in code_runs_to_move {
             let new_pos = Pos {
-                x: old_pos.x + 1,
-                y: old_pos.y,
+                x: old_pos.x,
+                y: old_pos.y + 1,
             };
             if let Some(code_run) = self.code_runs.shift_remove(&old_pos) {
                 // signal html and image cells to update
@@ -441,7 +443,7 @@ mod test {
 
     use crate::{
         controller::execution::TransactionType,
-        grid::{formats::format::Format, CellWrap},
+        grid::{formats::format::Format, BorderStyle, CellBorderLine, CellWrap},
         CellValue,
     };
 
@@ -461,7 +463,7 @@ mod test {
             ],
         );
         sheet.calculate_bounds();
-        sheet.delete_and_shift_values(1);
+        sheet.delete_and_shift_values(1, &mut HashSet::new());
         assert_eq!(
             sheet.cell_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text("E".to_string()))
@@ -555,152 +557,133 @@ mod test {
         assert!(sheet.code_runs.get(&Pos { x: 1, y: 3 }).is_some());
     }
 
-    // #[test]
-    // #[parallel]
-    // fn insert_row_start() {
-    //     let mut sheet = Sheet::test();
-    //     sheet.test_set_values(1, 1, 1, 3, vec!["A", "B", "C"]);
-    //     sheet.borders.set(
-    //         1,
-    //         1,
-    //         Some(BorderStyle::default()),
-    //         Some(BorderStyle::default()),
-    //         Some(BorderStyle::default()),
-    //         Some(BorderStyle::default()),
-    //     );
-    //     sheet.borders.set(
-    //         1,
-    //         2,
-    //         Some(BorderStyle::default()),
-    //         Some(BorderStyle::default()),
-    //         Some(BorderStyle::default()),
-    //         Some(BorderStyle::default()),
-    //     );
-    //     sheet.borders.set(
-    //         1,
-    //         3,
-    //         Some(BorderStyle::default()),
-    //         Some(BorderStyle::default()),
-    //         Some(BorderStyle::default()),
-    //         Some(BorderStyle::default()),
-    //     );
+    #[test]
+    #[parallel]
+    fn insert_row_start() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_values(1, 1, 1, 3, vec!["A", "B", "C"]);
+        sheet.borders.set(
+            1,
+            1,
+            Some(BorderStyle::default()),
+            Some(BorderStyle::default()),
+            Some(BorderStyle::default()),
+            Some(BorderStyle::default()),
+        );
+        sheet.borders.set(
+            1,
+            2,
+            Some(BorderStyle::default()),
+            Some(BorderStyle::default()),
+            Some(BorderStyle::default()),
+            Some(BorderStyle::default()),
+        );
+        sheet.borders.set(
+            1,
+            3,
+            Some(BorderStyle::default()),
+            Some(BorderStyle::default()),
+            Some(BorderStyle::default()),
+            Some(BorderStyle::default()),
+        );
+        sheet.test_set_code_run_array(4, 1, vec!["A", "B"], false);
 
-    //     let mut transaction = PendingTransaction::default();
+        sheet.calculate_bounds();
 
-    //     sheet.insert_row(&mut transaction, 1);
+        let mut transaction = PendingTransaction::default();
 
-    //     assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
-    //     assert_eq!(
-    //         sheet.display_value(Pos { x: 2, y: 1 }),
-    //         Some(CellValue::Text("A".to_string()))
-    //     );
-    //     assert_eq!(
-    //         sheet.display_value(Pos { x: 3, y: 1 }),
-    //         Some(CellValue::Text("B".to_string()))
-    //     );
-    //     assert_eq!(
-    //         sheet.display_value(Pos { x: 4, y: 1 }),
-    //         Some(CellValue::Text("C".to_string()))
-    //     );
+        sheet.insert_row(&mut transaction, 1);
 
-    //     assert_eq!(sheet.borders.get(1, 1).top, None);
-    //     assert_eq!(
-    //         sheet.borders.get(2, 1).top.unwrap().line,
-    //         CellBorderLine::default()
-    //     );
-    //     assert_eq!(
-    //         sheet.borders.get(3, 1).top.unwrap().line,
-    //         CellBorderLine::default()
-    //     );
-    //     assert_eq!(
-    //         sheet.borders.get(4, 1).top.unwrap().line,
-    //         CellBorderLine::default()
-    //     );
-    //     assert_eq!(sheet.borders.get(5, 1).top, None);
-    // }
+        assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 2 }),
+            Some(CellValue::Text("A".to_string()))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 3 }),
+            Some(CellValue::Text("B".to_string()))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 4 }),
+            Some(CellValue::Text("C".to_string()))
+        );
 
-    // #[test]
-    // #[parallel]
-    // fn insert_column_middle() {
-    //     let mut sheet = Sheet::test();
-    //     sheet.test_set_values(1, 1, 3, 1, vec!["A", "B", "C"]);
+        assert_eq!(sheet.borders.get(1, 1).top, None);
+        assert_eq!(
+            sheet.borders.get(1, 2).top.unwrap().line,
+            CellBorderLine::default()
+        );
+        assert_eq!(
+            sheet.borders.get(1, 3).top.unwrap().line,
+            CellBorderLine::default()
+        );
+        assert_eq!(
+            sheet.borders.get(1, 4).top.unwrap().line,
+            CellBorderLine::default()
+        );
+        assert_eq!(sheet.borders.get(5, 1).top, None);
 
-    //     let mut transaction = PendingTransaction::default();
+        assert!(sheet.code_runs.get(&Pos { x: 4, y: 1 }).is_none());
+        assert!(sheet.code_runs.get(&Pos { x: 4, y: 2 }).is_some());
 
-    //     sheet.insert_column(&mut transaction, 2);
+        assert_eq!(
+            sheet.display_value(Pos { x: 4, y: 2 }),
+            Some(CellValue::Text("A".to_string()))
+        );
+    }
 
-    //     assert_eq!(
-    //         sheet.display_value(Pos { x: 1, y: 1 }),
-    //         Some(CellValue::Text("A".to_string()))
-    //     );
-    //     assert_eq!(sheet.display_value(Pos { x: 2, y: 1 }), None);
-    //     assert_eq!(
-    //         sheet.display_value(Pos { x: 3, y: 1 }),
-    //         Some(CellValue::Text("B".to_string()))
-    //     );
-    //     assert_eq!(
-    //         sheet.display_value(Pos { x: 4, y: 1 }),
-    //         Some(CellValue::Text("C".to_string()))
-    //     );
-    // }
+    #[test]
+    #[parallel]
+    fn insert_row_middle() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_values(1, 1, 1, 3, vec!["A", "B", "C"]);
 
-    // #[test]
-    // #[parallel]
-    // fn insert_column_end() {
-    //     let mut sheet = Sheet::test();
-    //     sheet.test_set_values(1, 1, 2, 1, vec!["A", "B"]);
+        let mut transaction = PendingTransaction::default();
 
-    //     let mut transaction = PendingTransaction::default();
+        sheet.insert_row(&mut transaction, 2);
 
-    //     sheet.insert_column(&mut transaction, 3);
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Text("A".to_string()))
+        );
+        assert_eq!(sheet.display_value(Pos { x: 1, y: 2 }), None);
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 3 }),
+            Some(CellValue::Text("B".to_string()))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 4 }),
+            Some(CellValue::Text("C".to_string()))
+        );
+    }
 
-    //     assert_eq!(
-    //         sheet.display_value(Pos { x: 1, y: 1 }),
-    //         Some(CellValue::Text("A".to_string()))
-    //     );
-    //     assert_eq!(
-    //         sheet.display_value(Pos { x: 2, y: 1 }),
-    //         Some(CellValue::Text("B".to_string()))
-    //     );
-    //     assert_eq!(sheet.display_value(Pos { x: 3, y: 1 }), None);
-    // }
+    #[test]
+    #[parallel]
+    fn insert_row_end() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_values(1, 1, 1, 2, vec!["A", "B"]);
 
-    // #[test]
-    // #[parallel]
-    // fn execute_insert_column() {
-    //     let mut gc = GridController::test();
-    //     let sheet_id = gc.sheet_ids()[0];
+        let mut transaction = PendingTransaction::default();
 
-    //     gc.set_cell_values(
-    //         SheetPos {
-    //             x: 1,
-    //             y: 1,
-    //             sheet_id,
-    //         },
-    //         vec![vec!["A", "B", "C"]],
-    //         None,
-    //     );
+        sheet.insert_row(&mut transaction, 3);
 
-    //     let sheet = gc.sheet(sheet_id);
-    //     assert_eq!(
-    //         sheet.bounds(false),
-    //         GridBounds::NonEmpty(Rect::new(1, 1, 3, 1))
-    //     );
-    //     gc.insert_column(sheet_id, 3, None);
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Text("A".to_string()))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 2 }),
+            Some(CellValue::Text("B".to_string()))
+        );
+        assert_eq!(sheet.display_value(Pos { x: 1, y: 3 }), None);
+    }
 
-    //     let sheet = gc.sheet(sheet_id);
-    //     assert_eq!(
-    //         sheet.bounds(false),
-    //         GridBounds::NonEmpty(Rect::new(1, 1, 4, 1))
-    //     );
-    // }
-
-    // #[test]
-    // #[parallel]
-    // fn test_values_ops_for_column() {
-    //     let mut sheet = Sheet::test();
-    //     sheet.test_set_values(1, 1, 2, 2, vec!["a", "b", "c", "d"]);
-    //     let ops = sheet.values_ops_for_column(2);
-    //     assert_eq!(ops.len(), 1);
-    // }
+    #[test]
+    #[parallel]
+    fn test_values_ops_for_column() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_values(1, 1, 2, 2, vec!["a", "b", "c", "d"]);
+        let ops = sheet.values_ops_for_row(2);
+        assert_eq!(ops.len(), 1);
+    }
 }
