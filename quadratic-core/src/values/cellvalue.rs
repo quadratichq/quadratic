@@ -106,7 +106,7 @@ impl CellValue {
             CellValue::Image(_) => "image",
             CellValue::Date(_) => "date",
             CellValue::Time(_) => "time",
-            CellValue::DateTime(_) => "date+time",
+            CellValue::DateTime(_) => "date time",
         }
     }
     /// Returns a formula-source-code representation of the value.

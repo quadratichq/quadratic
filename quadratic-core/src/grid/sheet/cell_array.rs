@@ -226,7 +226,7 @@ mod tests {
             x: 3,
             y: 1,
             value: "2024-08-15T01:20:00.000".into(),
-            type_name: "date+time".into(),
+            type_name: "date time".into(),
         }));
         assert!(response.contains(&JsGetCellResponse {
             x: 2,
