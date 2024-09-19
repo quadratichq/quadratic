@@ -1,3 +1,5 @@
+import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
+import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandList } from '@/shared/shadcn/ui/command';
@@ -6,7 +8,7 @@ import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { Command } from './CommandPaletteListItem';
+import { Command, CommandPaletteListItem, CommandPaletteListItemDynamicProps } from './CommandPaletteListItem';
 import { BordersHook } from './commands/Borders';
 import codeCommandGroup from './commands/Code';
 import { columnRowCommandGroup } from './commands/ColumnRow';
@@ -91,7 +93,37 @@ export const CommandPalette = () => {
       <CommandList>
         {commandGroups.map(({ heading, commands }) => {
           let filteredCommands: Array<Command & { fuzzysortResult: any }> = [];
-          commands.forEach((command, i) => {
+          commands.forEach((commandOrAction, i) => {
+            // Right now, we are in the process of centralizing all actions.
+            // That means for each command palette item will either be:
+            // 1) a `Command` type (the OLD way)
+            // 2) an `Action` type (the new way)
+            // Once we convert all actions to the new format, we can remove this
+            // intermediate step of converting an `Action` to a `Command` and
+            // just expect that they'll all be `Action` types.
+            let command;
+            if (typeof commandOrAction === 'string') {
+              const actionSpec = defaultActionSpec[commandOrAction];
+              command = {
+                ...actionSpec,
+                label: actionSpec.labelVerbose ? actionSpec.labelVerbose : actionSpec.label,
+                Component: (props: CommandPaletteListItemDynamicProps) => (
+                  <CommandPaletteListItem
+                    {...props}
+                    // This works fine for `run` functions that don't require anything
+                    // But how will we handle the case where we want some actions require
+                    // different args to the `run` function?
+                    // @ts-expect-error
+                    action={actionSpec.run}
+                    icon={'Icon' in actionSpec && actionSpec.Icon ? <actionSpec.Icon /> : null}
+                    shortcut={keyboardShortcutEnumToDisplay(commandOrAction)}
+                  />
+                ),
+              };
+            } else {
+              command = commandOrAction;
+            }
+
             const { label, keywords, isAvailable } = command;
 
             // Is the command even available?

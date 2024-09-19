@@ -5,7 +5,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { zoomIn, zoomInOut, zoomOut, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
 import { moveViewport } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { GoToIcon } from '@/shared/components/Icons';
+import { CodeIcon, GoToIcon } from '@/shared/components/Icons';
 
 type ViewActionSpec = Pick<
   ActionSpecRecord,
@@ -166,7 +166,8 @@ export const viewActionsSpec: ViewActionSpec = {
     },
   },
   [Action.ShowCellTypeMenu]: {
-    label: 'Show cell type menu',
+    label: 'Code editor',
+    Icon: CodeIcon,
     run: () => {
       openCodeEditor();
     },

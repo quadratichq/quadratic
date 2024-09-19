@@ -114,6 +114,7 @@ export const editActionsSpec: EditActionSpec = {
       if (!pixiAppSettings.setEditorInteractionState) return;
       pixiAppSettings.setEditorInteractionState((prev) => ({ ...prev, showSearch: true }));
     },
+    keywords: ['search'],
   },
   [Action.FindInAllSheets]: {
     label: 'Find in all sheets',
@@ -122,6 +123,7 @@ export const editActionsSpec: EditActionSpec = {
       if (!pixiAppSettings.setEditorInteractionState) return;
       pixiAppSettings.setEditorInteractionState((prev) => ({ ...prev, showSearch: { sheet_id: undefined } }));
     },
+    keywords: ['search'],
   },
   [Action.CopyAsPng]: {
     label: 'Copy as PNG',

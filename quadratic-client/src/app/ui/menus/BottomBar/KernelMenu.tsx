@@ -4,7 +4,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
-import { SidebarToggle } from '@/app/ui/QuadraticSidebar';
+import { SidebarToggle, SidebarTooltip } from '@/app/ui/QuadraticSidebar';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { LanguageState } from '@/app/web-workers/languageTypes';
@@ -79,16 +79,18 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <SidebarToggle>
-          <MemoryIcon />
-          {running > 0 && (
-            <div className="pointer-events-none absolute right-0 top-0 rounded-full bg-warning px-1 text-[10px] text-background">
-              {running}
-            </div>
-          )}
-        </SidebarToggle>
-      </DropdownMenuTrigger>
+      <SidebarTooltip label="Kernel">
+        <DropdownMenuTrigger asChild>
+          <SidebarToggle>
+            <MemoryIcon />
+            {running > 0 && (
+              <div className="pointer-events-none absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-warning text-[10px] text-background">
+                {running}
+              </div>
+            )}
+          </SidebarToggle>
+        </DropdownMenuTrigger>
+      </SidebarTooltip>
       <DropdownMenuContent side="right">
         <DropdownMenuLabel>
           Status: {pythonCodeRunning || javascriptCodeRunning || connectionCodeRunning ? 'running' : 'idle'}

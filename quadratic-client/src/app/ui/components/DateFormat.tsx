@@ -120,9 +120,10 @@ export const DateFormat = (props: DateFormatProps) => {
   }, [original, current]);
 
   const apply = useCallback(() => {
-    quadraticCore.setDateTimeFormat(sheets.getRustSelection(), `${date} ${time}`, sheets.getCursorPosition());
+    const format = !date && !time && custom ? custom : `${date} ${time}`;
+    quadraticCore.setDateTimeFormat(sheets.getRustSelection(), format, sheets.getCursorPosition());
     closeMenu();
-  }, [closeMenu, date, time]);
+  }, [closeMenu, custom, date, time]);
 
   const changeDate = useCallback(
     (value: string) => {
