@@ -34,6 +34,9 @@ impl TryFrom<Spanned<&CellValue>> for Criterion {
             | CellValue::Code(_)
             | CellValue::Logical(_)
             | CellValue::Instant(_)
+            | CellValue::Date(_)
+            | CellValue::Time(_)
+            | CellValue::DateTime(_)
             | CellValue::Image(_)
             | CellValue::Duration(_) => Ok(Criterion::Compare {
                 compare_fn: CompareFn::Eql,
@@ -101,6 +104,18 @@ impl Criterion {
             },
             CellValue::Duration(rhs) => match lhs {
                 CellValue::Duration(lhs) => compare_fn.compare(lhs, rhs),
+                _ => false,
+            },
+            CellValue::Date(d) => match lhs {
+                CellValue::Date(lhs) => compare_fn.compare(lhs, d),
+                _ => false,
+            },
+            CellValue::Time(t) => match lhs {
+                CellValue::Time(lhs) => compare_fn.compare(lhs, t),
+                _ => false,
+            },
+            CellValue::DateTime(dt) => match lhs {
+                CellValue::DateTime(lhs) => compare_fn.compare(lhs, dt),
                 _ => false,
             },
             CellValue::Error(_) => false,

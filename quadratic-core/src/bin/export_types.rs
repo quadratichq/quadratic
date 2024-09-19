@@ -3,13 +3,14 @@ use std::fs::create_dir_all;
 use controller::operations::clipboard::PasteSpecial;
 use grid::{
     formats::format::Format,
-    js_types::{JsSheetFill, JsValidationWarning},
+    js_types::{JsCellValue, JsSheetFill, JsValidationWarning},
     sheet::validations::{
         validation::{
             Validation, ValidationDisplay, ValidationDisplaySheet, ValidationError,
             ValidationMessage, ValidationStyle,
         },
         validation_rules::{
+            validation_date_time::{DateTimeRange, ValidationDateTime},
             validation_list::{ValidationList, ValidationListSource},
             validation_logical::ValidationLogical,
             validation_number::{NumberRange, ValidationNumber},
@@ -85,6 +86,7 @@ fn main() {
         grid::js_types::CellFormatSummary,
         grid::js_types::JsClipboard,
         grid::js_types::JsRowHeight,
+        grid::js_types::JsPos,
         ArraySize,
         Axis,
         Instant,
@@ -129,11 +131,14 @@ fn main() {
         ValidationDisplay,
         ValidationDisplaySheet,
         ValidationNumber,
+        ValidationDateTime,
         NumberRange,
+        DateTimeRange,
         TextCase,
         TextMatch,
         ValidationText,
-        JsValidationWarning
+        JsValidationWarning,
+        JsCellValue,
     );
 
     if create_dir_all("../quadratic-client/src/app/quadratic-core-types").is_ok() {

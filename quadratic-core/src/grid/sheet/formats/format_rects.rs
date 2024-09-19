@@ -17,11 +17,11 @@ impl Sheet {
         &mut self,
         rects: &[Rect],
         formats: &Formats,
-    ) -> (Vec<Operation>, Vec<i64>) {
+    ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>) {
         let mut formats_iter = formats.iter_values();
 
-        // tracks client changes
-        let mut renders = HashSet::new();
+        // tracks which hashes than need to be updated
+        let mut dirty_hashes = HashSet::new();
         let mut html = HashSet::new();
         let mut fills = HashSet::new();
         let mut resize_rows = HashSet::new();
@@ -37,7 +37,8 @@ impl Sheet {
                         old_formats.push(old);
 
                         if format_update.render_cells_changed() {
-                            renders.insert(pos);
+                            let (x, y) = pos.quadrant();
+                            dirty_hashes.insert(Pos { x, y });
                         }
                         if format_update.html_changed() {
                             html.insert(pos);
@@ -59,10 +60,9 @@ impl Sheet {
         });
 
         if old_formats == *formats {
-            return (vec![], vec![]);
+            return (vec![], HashSet::new(), HashSet::new());
         }
 
-        self.send_render_cells(&renders);
         self.send_html_output(&html);
         self.send_fills(&fills);
 
@@ -75,7 +75,8 @@ impl Sheet {
                 },
                 formats: old_formats,
             }],
-            resize_rows.into_iter().collect(),
+            dirty_hashes,
+            resize_rows,
         )
     }
 }
@@ -87,12 +88,12 @@ mod test {
     use super::*;
     use crate::{
         grid::{formats::format::Format, RenderSize},
-        wasm_bindings::js::{expect_js_call, hash_test},
+        wasm_bindings::js::expect_js_call,
         CellValue,
     };
 
     #[test]
-    #[serial]
+    #[parallel]
     fn set_formats_rects() {
         let mut sheet = Sheet::test();
         let formats = Formats::repeat(
@@ -126,11 +127,6 @@ mod test {
                 ),
             }
         );
-
-        let cells =
-            serde_json::to_string(&sheet.get_render_cells(Rect::from_numbers(0, 0, 2, 2))).unwrap();
-        let args = format!("{},{},{},{}", sheet.id, 0, 0, hash_test(&cells));
-        expect_js_call("jsRenderCellSheets", args, true);
     }
 
     #[test]

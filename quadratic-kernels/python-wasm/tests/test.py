@@ -2,12 +2,13 @@ import importlib
 import inspect
 import sys
 import unittest
-from datetime import datetime
+from datetime import date, datetime, time
 from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import numpy as np
 import pandas as pd
+
 from inspect_python_test import *
 from process_output_test import *
 from quadratic_py.utils import attempt_fix_await, to_python_type, to_quadratic_type
@@ -261,31 +262,34 @@ class TestUtils(TestCase):
         assert to_quadratic_type("true") == ("true", "text")
         assert to_quadratic_type("false") == ("false", "text")
 
-        # instant
+        # dates
         assert to_quadratic_type(pd.Timestamp("2012-11-10")) == (
-            "1352505600",
-            "instant",
+            "2012-11-10T00:00:00",
+            "date time",
         )
         assert to_quadratic_type(pd.Timestamp("2012-11-10T03:30")) == (
-            "1352518200",
-            "instant",
+            "2012-11-10T03:30:00",
+            "date time",
         )
         assert to_quadratic_type(np.datetime64("2012-11-10")) == (
-            "1352505600",
-            "instant",
+            "2012-11-10T00:00:00",
+            "date time",
         )
         assert to_quadratic_type(np.datetime64("2012-11-10T03:30")) == (
-            "1352518200",
-            "instant",
+            "2012-11-10T03:30:00",
+            "date time",
         )
         assert to_quadratic_type(datetime.strptime("2012-11-10", "%Y-%m-%d")) == (
-            "1352505600",
-            "instant",
+            "2012-11-10T00:00:00",
+            "date time",
         )
         assert to_quadratic_type(
             datetime.strptime("2012-11-10 03:30", "%Y-%m-%d %H:%M")
-        ) == ("1352518200", "instant")
+        ) == ("2012-11-10T03:30:00", "date time")
         # assert to_quadratic_type("2012-11-10") == ("1352505600", "instant")
+
+        assert to_quadratic_type(date(2012, 12, 21)) == ("2012-12-21", "date")
+        assert to_quadratic_type(time(3, 30)) == ("03:30:00", "time")
 
         # TODO(ddimaria): implement when we implement duration in Rust
         # duration
@@ -311,12 +315,10 @@ class TestUtils(TestCase):
         assert to_python_type("123abc", "text") == "123abc"
         assert to_python_type("abc123", "text") == "abc123"
 
-        # instant
-        assert to_python_type("1352505600", "instant") == pd.Timestamp(
-            "2012-11-10 00:00:00+00:00"
-        )
-        assert to_python_type("1352518200", "instant") == pd.Timestamp(
-            "2012-11-10 03:30:00+00:00"
+        # date
+        assert to_python_type("2012-11-10T00:00:00", "date") == datetime(2012, 11, 10)
+        assert to_python_type("2012-11-10T03:30:00", "date") == datetime(
+            2012, 11, 10, 3, 30
         )
 
 
