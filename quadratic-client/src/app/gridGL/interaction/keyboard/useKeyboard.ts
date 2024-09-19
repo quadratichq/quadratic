@@ -2,10 +2,11 @@ import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Size } from '@/app/gridGL/types/size';
+import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { useGridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { keyboardCell } from './keyboardCell';
 import { keyboardClipboard } from './keyboardClipboard';
 import { keyboardCode } from './keyboardCode';
@@ -28,6 +29,23 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
   const { presentationMode, setPresentationMode } = useGridSettings();
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const { name: fileName } = useFileContext();
+
+  useEffect(() => {
+    const preventBrowserShortcuts = (e: KeyboardEvent) => {
+      if (
+        matchShortcut('show_command_palette', e) ||
+        matchShortcut('show_go_to_menu', e) ||
+        matchShortcut('toggle_presentation_mode', e)
+      ) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('keydown', preventBrowserShortcuts);
+    return () => {
+      document.removeEventListener('keydown', preventBrowserShortcuts);
+    };
+  }, []);
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if (pixiAppSettings.input.show && inlineEditorHandler.isOpen()) return;
