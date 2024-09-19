@@ -108,6 +108,18 @@ impl Column {
             || self.date_time.get(y).is_some()
     }
 
+    pub fn has_format_in_row(&self, y: i64) -> bool {
+        self.align.get(y).is_some()
+            || self.vertical_align.get(y).is_some()
+            || self.wrap.get(y).is_some()
+            || self.numeric_format.get(y).is_some()
+            || self.numeric_decimals.get(y).is_some()
+            || self.bold.get(y).is_some()
+            || self.italic.get(y).is_some()
+            || self.text_color.get(y).is_some()
+            || self.fill_color.get(y).is_some()
+    }
+
     /// Gets the Format for a column (which will eventually replace the data structure)
     pub fn format(&self, y: i64) -> Option<Format> {
         let format = Format {
@@ -765,5 +777,47 @@ mod test {
         assert_eq!(cd.get(3), None);
         assert_eq!(cd.get(4), Some(false));
         assert_eq!(cd.get(5), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn has_format_in_row() {
+        let mut cd: Column = Column::new(0);
+        cd.align.set(1, Some(CellAlign::Center));
+        cd.vertical_align.set(2, Some(CellVerticalAlign::Middle));
+        cd.wrap.set(3, Some(CellWrap::Wrap));
+        cd.numeric_format.set(
+            4,
+            Some(NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None,
+            }),
+        );
+        cd.numeric_decimals.set(5, Some(2));
+        cd.numeric_commas.set(6, Some(true));
+        cd.bold.set(7, Some(true));
+        cd.italic.set(8, Some(true));
+        cd.text_color.set(9, Some("red".to_string()));
+        cd.fill_color.set(10, Some("blue".to_string()));
+        cd.render_size.set(
+            11,
+            Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string(),
+            }),
+        );
+
+        assert!(cd.has_format_in_row(1));
+        assert!(cd.has_format_in_row(2));
+        assert!(cd.has_format_in_row(3));
+        assert!(cd.has_format_in_row(4));
+        assert!(cd.has_format_in_row(5));
+        assert!(cd.has_format_in_row(6));
+        assert!(cd.has_format_in_row(7));
+        assert!(cd.has_format_in_row(8));
+        assert!(cd.has_format_in_row(9));
+        assert!(cd.has_format_in_row(10));
+        assert!(cd.has_format_in_row(11));
+        assert!(!cd.has_format_in_row(12));
     }
 }

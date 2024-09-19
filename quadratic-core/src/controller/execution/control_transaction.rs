@@ -115,7 +115,7 @@ impl GridController {
                 !self.redo_stack.is_empty(),
             );
 
-            transaction.send_validations.iter().for_each(|sheet_id| {
+            transaction.validations.iter().for_each(|sheet_id| {
                 if let Some(sheet) = self.try_sheet(*sheet_id) {
                     sheet.send_all_validations();
                 }

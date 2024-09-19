@@ -221,6 +221,28 @@ impl Sheet {
         }
     }
 
+    /// Returns the lower and upper bounds of formatting in a row, or `None` if
+    /// the row has no formatting.
+    pub fn row_bounds_formats(&self, row: i64) -> Option<(i64, i64)> {
+        let column_has_row = |(_x, column): &(&i64, &Column)| column.has_format_in_row(row);
+        let min = if let Some((index, _)) = self.columns.iter().find(column_has_row) {
+            Some(*index)
+        } else {
+            None
+        };
+        let max = if let Some((index, _)) = self.columns.iter().rfind(column_has_row) {
+            Some(*index)
+        } else {
+            None
+        };
+
+        if let (Some(min), Some(max)) = (min, max) {
+            Some((min.min(max), max.max(max)))
+        } else {
+            None
+        }
+    }
+
     /// Returns the lower and upper bounds of a range of rows, or 'None' if the rows are empty
     ///
     /// If `ignore_formatting` is `true`, only data is considered; if it
@@ -927,5 +949,11 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.bounds(false), GridBounds::Empty);
+    }
+
+    #[test]
+    #[parallel]
+    fn row_bounds_formats() {
+        todo!();
     }
 }

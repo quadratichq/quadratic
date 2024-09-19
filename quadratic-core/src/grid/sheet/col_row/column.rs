@@ -6,15 +6,13 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
-    grid::formats::Formats,
+    grid::{formats::Formats, Sheet},
     renderer_constants::CELL_SHEET_HEIGHT,
     selection::Selection,
     Pos, SheetPos,
 };
 
-use super::Sheet;
-
-const MAX_OPERATION_SIZE: i64 = 10000;
+use super::MAX_OPERATION_SIZE_COL_ROW;
 
 impl Sheet {
     // create reverse operations for values in the column broken up by MAX_OPERATION_SIZE
@@ -24,7 +22,7 @@ impl Sheet {
         if let Some((min, max)) = self.column_bounds(column, true) {
             let mut current_min = min;
             while current_min <= max {
-                let current_max = (current_min + MAX_OPERATION_SIZE).min(max);
+                let current_max = (current_min + MAX_OPERATION_SIZE_COL_ROW).min(max);
                 let mut values = CellValues::new(1, (current_max - current_min) as u32 + 1);
 
                 if let Some(col) = self.columns.get(&column) {
@@ -35,7 +33,7 @@ impl Sheet {
                     }
                 }
                 reverse_operations.push(Operation::SetCellValues {
-                    sheet_pos: SheetPos::new(self.id, column, min),
+                    sheet_pos: crate::SheetPos::new(self.id, column, min),
                     values,
                 });
                 current_min = current_max + 1;
@@ -52,7 +50,7 @@ impl Sheet {
         if let Some(range) = self.columns.get(&column).and_then(|c| c.format_range()) {
             let mut current_min = range.start;
             while current_min <= range.end {
-                let current_max = (current_min + MAX_OPERATION_SIZE).min(range.end);
+                let current_max = (current_min + MAX_OPERATION_SIZE_COL_ROW).min(range.end);
                 let mut formats = Formats::new();
 
                 for y in current_min..=current_max {
@@ -133,9 +131,16 @@ impl Sheet {
         }
 
         // remove the column's code runs from the sheet
-        self.code_runs.retain(|pos, _| {
+        self.code_runs.retain(|pos, code_run| {
             if pos.x == column {
                 transaction.add_code_cell(self.id, *pos);
+
+                // signal that html and image cells are removed
+                if code_run.is_html() {
+                    transaction.add_html_cell(self.id, *pos);
+                } else if code_run.is_image() {
+                    transaction.add_image_cell(self.id, *pos);
+                }
                 false
             } else {
                 true
@@ -181,6 +186,16 @@ impl Sheet {
                     x: old_pos.x - 1,
                     y: old_pos.y,
                 };
+
+                // signal html and image cells to update
+                if code_run.is_html() {
+                    transaction.add_html_cell(self.id, old_pos);
+                    transaction.add_html_cell(self.id, new_pos);
+                } else if code_run.is_image() {
+                    transaction.add_image_cell(self.id, old_pos);
+                    transaction.add_image_cell(self.id, new_pos);
+                }
+
                 self.code_runs.insert(new_pos, code_run);
 
                 // signal client to update the code runs
@@ -272,6 +287,16 @@ impl Sheet {
                 y: old_pos.y,
             };
             if let Some(code_run) = self.code_runs.shift_remove(&old_pos) {
+                // signal html and image cells to update
+                if code_run.is_html() {
+                    transaction.add_html_cell(self.id, old_pos);
+                    transaction.add_html_cell(self.id, new_pos);
+                    dbgjs!("html is moving...");
+                } else if code_run.is_image() {
+                    transaction.add_image_cell(self.id, old_pos);
+                    transaction.add_image_cell(self.id, new_pos);
+                }
+
                 self.code_runs.insert(new_pos, code_run);
 
                 // signal the client to updates to the code cells (to draw the code arrays)
@@ -557,5 +582,14 @@ mod tests {
             sheet.bounds(false),
             GridBounds::NonEmpty(Rect::new(1, 1, 4, 1))
         );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_values_ops_for_column() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_values(1, 1, 2, 2, vec!["a", "b", "c", "d"]);
+        let ops = sheet.values_ops_for_column(2);
+        assert_eq!(ops.len(), 1);
     }
 }

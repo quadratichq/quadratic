@@ -61,8 +61,8 @@ pub struct PendingTransaction {
     // cursor saved for an Undo or Redo
     pub cursor_undo_redo: Option<String>,
 
-    // whether to resend the validations after the transaction completes
-    pub send_validations: HashSet<SheetId>,
+    // sheets w/updated validations
+    pub validations: HashSet<SheetId>,
 
     pub resize_rows: HashMap<SheetId, HashSet<i64>>,
 
@@ -71,7 +71,7 @@ pub struct PendingTransaction {
 
     pub viewport_buffer: Option<ViewportBuffer>,
 
-    // whether to send the updated borders to sheets
+    // sheets with updated borders
     pub sheet_borders: HashSet<SheetId>,
 
     // code cells to update
@@ -82,6 +82,9 @@ pub struct PendingTransaction {
 
     // image cells to update
     pub image_cells: HashMap<SheetId, HashSet<Pos>>,
+
+    // sheets w/updated fill cells
+    pub fill_cells: HashSet<SheetId>,
 }
 
 impl Default for PendingTransaction {
@@ -101,7 +104,7 @@ impl Default for PendingTransaction {
             complete: false,
             generate_thumbnail: false,
             cursor_undo_redo: None,
-            send_validations: HashSet::new(),
+            validations: HashSet::new(),
             resize_rows: HashMap::new(),
             dirty_hashes: HashMap::new(),
             viewport_buffer: None,
@@ -109,6 +112,7 @@ impl Default for PendingTransaction {
             code_cells: HashMap::new(),
             html_cells: HashMap::new(),
             image_cells: HashMap::new(),
+            fill_cells: HashSet::new(),
         }
     }
 }
