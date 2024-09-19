@@ -171,29 +171,27 @@ function UserAvatar({
     });
   };
   return (
-    <div className="relative hidden lg:block">
+    <div className="hidden lg:relative lg:flex lg:items-center">
       <Tooltip>
         <TooltipTrigger asChild>
           <button onClick={handleFollow}>
-            <div>
-              <Avatar
-                sx={{
-                  bgcolor: bgColor ?? colors.quadraticSecondary,
-                  ...sharedAvatarSxProps,
-                  pointerEvents: 'auto',
-                  cursor: 'pointer',
-                  position: 'relative',
-                }}
-                alt={displayName}
-                src={getAuth0AvatarSrc(picture)}
-                imgProps={{ crossOrigin: 'anonymous' }}
-                style={{
-                  border: `2px solid ${border}`,
-                }}
-              >
-                {initial}
-              </Avatar>
-            </div>
+            <Avatar
+              sx={{
+                bgcolor: bgColor ?? colors.quadraticSecondary,
+                ...sharedAvatarSxProps,
+                pointerEvents: 'auto',
+                cursor: 'pointer',
+                position: 'relative',
+              }}
+              alt={displayName}
+              src={getAuth0AvatarSrc(picture)}
+              imgProps={{ crossOrigin: 'anonymous' }}
+              style={{
+                border: `2px solid ${border}`,
+              }}
+            >
+              {initial}
+            </Avatar>
           </button>
         </TooltipTrigger>
         <TooltipPortal>
