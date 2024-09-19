@@ -114,7 +114,7 @@ impl CellValue {
             }
             "image" => CellValue::Image(value.into()),
             "date" => Self::from_js_date(value),
-            "date time" | "date time" => Self::from_js_date_time(value),
+            "date time" => Self::from_js_date_time(value),
             _ => CellValue::unpack_date_time(value)
                 .or_else(|| CellValue::unpack_duration(value))
                 .unwrap_or_else(|| CellValue::Text(value.clone())),
