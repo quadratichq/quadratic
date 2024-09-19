@@ -40,7 +40,7 @@ export const ViewMenubarMenu = () => {
   return (
     <MenubarMenu>
       <MenubarTrigger>View</MenubarTrigger>
-      <MenubarContent>
+      <MenubarContent className="pointer-move-ignore">
         <MenubarItem onClick={() => setShowHeadings((prev) => !prev)}>
           <MenubarItemCheckbox checked={showHeadings} /> Show row and column headings
         </MenubarItem>

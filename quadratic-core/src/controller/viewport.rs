@@ -111,6 +111,12 @@ impl GridController {
                         .dirty_hashes
                         .insert(viewport_sheet_id, remaining_hashes);
                 }
+            } else {
+                for (&sheet_id, dirty_hashes) in transaction.dirty_hashes.iter_mut() {
+                    self.send_render_cells_from_hash(sheet_id, dirty_hashes);
+                    dirty_hashes.clear();
+                }
+                transaction.dirty_hashes.clear();
             }
         }
     }
