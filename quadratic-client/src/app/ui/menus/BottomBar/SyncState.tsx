@@ -8,14 +8,6 @@ import { CloseIcon } from '@/shared/components/Icons';
 import { ShowAfter } from '@/shared/components/ShowAfter';
 import { DOCUMENTATION_OFFLINE } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/shared/shadcn/ui/dropdown-menu';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { timeAgo } from '@/shared/utils/timeAgo';
 import { CircularProgress } from '@mui/material';
@@ -88,57 +80,38 @@ export default function SyncState() {
     };
   }, [addGlobalSnackbar]);
 
-  const [open, setOpen] = useState(false);
-
   let tooltip: string;
   let message: string;
   let icon = null;
   let className = '';
 
   const loadingIcon = <CircularProgress size="0.5rem" />;
-  const errorClassName = 'bg-destructive text-background';
 
-  if (['waiting to reconnect', 'connecting'].includes(syncState) && multiplayer.brokenConnection) {
-    className = 'text-destructive';
-    message = 'Offline';
-    tooltip = 'Your changes are only saved locally.';
-  } else if (['not connected', 'connecting', 'waiting to reconnect', 'startup'].includes(syncState)) {
-    message = 'Connecting…';
-    tooltip = 'Attempting to connect…';
-    icon = loadingIcon;
+  if (syncState === 'connected') {
+    message = 'Connected';
+    tooltip = 'All changes saved';
   } else if (syncState === 'syncing') {
     message = 'Syncing…';
-    tooltip = 'Your recent changes are saved locally.';
+    tooltip = 'Recent changes saved locally';
     icon = loadingIcon;
-  } else if (syncState === 'connected') {
-    message = 'Connected';
-    tooltip = 'Your changes are saved.';
   } else {
-    className = errorClassName;
-    message = 'Offline';
-    tooltip = 'Your changes are only saved locally.';
+    className = 'text-destructive';
+    icon = loadingIcon;
+    message = 'Offline, reconnecting…';
+    tooltip = 'Recent changes only saved locally';
+  }
+
+  if (unsavedTransactions > 0) {
+    tooltip += ` (syncing ${unsavedTransactions} ${pluralize('item', unsavedTransactions)}…)`;
   }
 
   return (
     <>
-      <DropdownMenu open={open} onOpenChange={setOpen}>
-        <DropdownMenuTrigger asChild>
-          <BottomBarItem className={className} icon={icon} onClick={() => {}}>
-            <TooltipPopover label={tooltip}>
-              <div>{message}</div>
-            </TooltipPopover>
-          </BottomBarItem>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <DropdownMenuLabel>Status</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem>
-            {unsavedTransactions === 0
-              ? 'Nothing waiting to sync'
-              : `Syncing ${unsavedTransactions} ${pluralize('item', unsavedTransactions)}.`}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <BottomBarItem className={className} icon={icon}>
+        <TooltipPopover label={tooltip}>
+          <div>{message}</div>
+        </TooltipPopover>
+      </BottomBarItem>
       {showOfflineMsg && (
         <ShowAfter delay={5000}>
           <div className="fixed bottom-16 right-2 z-10 w-96 rounded bg-destructive p-4 pr-8 text-sm text-background">
