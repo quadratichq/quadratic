@@ -102,14 +102,11 @@ export class Pointer {
   };
 
   private pointerMove = (e: InteractionEvent): void => {
-    // if the top menu is open, skip checking pointerMove
-    const target = e.data.originalEvent.target as HTMLElement;
-    if (target) {
-      const contextMenu = document.querySelector('.top-bar-menubar');
-      if (contextMenu?.contains(target)) {
-        return;
-      }
-    }
+    // ignore pointerMove if the target is a child of an element with class pointer-move-stop-propagation
+    const target = e.data.originalEvent.target as HTMLElement | null;
+    const isWithinPointerMoveIgnore = !!target?.closest('.pointer-move-ignore');
+    if (isWithinPointerMoveIgnore) return;
+
     if (this.isMoreThanOneTouch(e) || this.isOverCodeEditor(e)) return;
     const world = pixiApp.viewport.toWorld(e.data.global);
     const event = e.data.originalEvent as PointerEvent;

@@ -6,7 +6,7 @@ export const HelpMenubarMenu = () => {
   return (
     <MenubarMenu>
       <MenubarTrigger>Help</MenubarTrigger>
-      <MenubarContent className="top-bar-menubar">
+      <MenubarContent className="pointer-move-ignore">
         <MenubarItemAction action={Action.HelpDocs} actionArgs={undefined} />
         <MenubarItemAction action={Action.HelpFeedback} actionArgs={undefined} />
         <MenubarItemAction action={Action.HelpContactUs} actionArgs={undefined} />
