@@ -102,9 +102,11 @@ export class Pointer {
   };
 
   private pointerMove = (e: InteractionEvent): void => {
-    if (e.data.originalEvent.target) {
-      const target = e.data.originalEvent.target as HTMLElement;
-      if (target.tagName !== 'CANVAS') {
+    // if the top menu is open, skip checking pointerMove
+    const target = e.data.originalEvent.target as HTMLElement;
+    if (target) {
+      const contextMenu = document.querySelector('.top-bar-menubar');
+      if (contextMenu?.contains(target)) {
         return;
       }
     }

@@ -6,7 +6,7 @@ export const EditMenubarMenu = () => {
   return (
     <MenubarMenu>
       <MenubarTrigger>Edit</MenubarTrigger>
-      <MenubarContent>
+      <MenubarContent className="top-bar-menubar">
         <MenubarItemAction action={Action.Undo} actionArgs={undefined} />
         <MenubarItemAction action={Action.Redo} actionArgs={undefined} />
 

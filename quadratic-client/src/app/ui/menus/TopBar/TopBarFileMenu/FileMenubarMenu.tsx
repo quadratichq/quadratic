@@ -31,7 +31,7 @@ export const FileMenubarMenu = () => {
   return (
     <MenubarMenu>
       <MenubarTrigger>File</MenubarTrigger>
-      <MenubarContent>
+      <MenubarContent className="top-bar-menubar">
         {createNewFileAction.isAvailable(isAvailableArgs) && (
           <MenubarItem onClick={() => createNewFileAction.run({ setEditorInteractionState })}>
             <DraftIcon /> {createNewFileAction.label}
