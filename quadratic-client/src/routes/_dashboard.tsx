@@ -1,8 +1,10 @@
 import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
+import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { Empty } from '@/dashboard/components/Empty';
-import { useRootRouteLoaderData } from '@/routes/_root';
+import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
+import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
@@ -10,11 +12,10 @@ import { useTheme } from '@/shared/hooks/useTheme';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
 import { cn } from '@/shared/shadcn/utils';
-import { LiveChatWidget } from '@livechat/widget-react';
 import { ExclamationTriangleIcon, HamburgerMenuIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Link,
   LoaderFunctionArgs,
@@ -22,7 +23,6 @@ import {
   ShouldRevalidateFunctionArgs,
   isRouteErrorResponse,
   redirect,
-  redirectDocument,
   useLocation,
   useNavigation,
   useRevalidator,
@@ -30,24 +30,21 @@ import {
   useRouteLoaderData,
   useSearchParams,
 } from 'react-router-dom';
+import { RecoilRoot, useRecoilState } from 'recoil';
 
-const DRAWER_WIDTH = 264;
+export const DRAWER_WIDTH = 264;
 export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
-
-/**
- * Dashboard state & context
- */
-type DashboardState = {};
-const initialDashboardState: DashboardState = {};
-const DashboardContext = createContext(initialDashboardState);
-export const useDashboardContext = () => useContext(DashboardContext);
 
 /**
  * Revalidation
  */
 export const shouldRevalidate = ({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) => {
-  // Re-validate if we're going to a teams route, otherwise skip
-  return nextUrl.pathname.startsWith('/teams/');
+  return (
+    currentUrl.pathname === '/' ||
+    currentUrl.pathname.startsWith('/file/') ||
+    nextUrl.pathname === '/' ||
+    nextUrl.pathname.startsWith('/teams/')
+  );
 };
 
 /**
@@ -79,7 +76,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
 
   // 1) Check the URL for a team UUID
   // FYI: if you have a UUID in the URL or localstorage, it doesn’t mean you
-  // have acces to it (maybe you were removed from a team, so it’s a 404)
+  // have access to it (maybe you were removed from a team, so it’s a 404)
   // So we have to ensure we A) have a UUID, and B) it's in the list of teams
   // we have access to from the server.
   if (uuidFromUrl) {
@@ -98,7 +95,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
     // 4) there's no teams in the API, so create one and send the user to it
   } else if (teams.length === 0) {
     const newTeam = await apiClient.teams.create({ name: 'My Team' });
-    return redirectDocument(ROUTES.TEAM(newTeam.uuid));
+    return redirect(ROUTES.TEAM(newTeam.uuid));
   }
 
   // This should never happen, but if it does, we'll log it to sentry
@@ -115,6 +112,13 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
   if (url.pathname === '/') {
     // If there are search params, keep 'em
     return redirect(ROUTES.TEAM(initialActiveTeamUuid) + url.search);
+  }
+  // If it was a shortcut team route, redirect there
+  // e.g. /?team-shortcut=connections
+  const teamShortcut = url.searchParams.get('team-shortcut');
+  if (teamShortcut) {
+    url.searchParams.delete('team-shortcut');
+    return redirect(ROUTES.TEAM_CONNECTIONS(initialActiveTeamUuid) + url.search);
   }
 
   /**
@@ -163,10 +167,8 @@ export const Component = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const contentPaneRef = useRef<HTMLDivElement>(null);
   const revalidator = useRevalidator();
-  const { loggedInUser: user } = useRootRouteLoaderData();
 
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
-  const navbar = <DashboardSidebar isLoading={isLoading} />;
 
   // Trigger the theme in the root of the app
   useTheme();
@@ -180,15 +182,25 @@ export const Component = () => {
   // Ensure long-running browser sessions still have a token
   useCheckForAuthorizationTokenOnWindowFocus();
 
+  // Revalidate when arriving on this page after reload document followed by back button
+  useEffect(() => {
+    const handlePageShow = (e: PageTransitionEvent) => {
+      revalidator.revalidate();
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => {
+      window.removeEventListener('pageshow', handlePageShow);
+    };
+  }, [revalidator]);
+
   return (
-    <DashboardContext.Provider value={{}}>
-      <LiveChatWidget license="14763831" customerEmail={user?.email} customerName={user?.name} />
+    <RecoilRoot>
       <div className={`h-full lg:flex lg:flex-row`}>
         <div
           ref={contentPaneRef}
           className={cn(
-            `relative order-2 h-full w-full px-4 pb-10 transition-all sm:pt-0 lg:px-10`,
-            isLoading ? 'overflow-hidden' : 'overflow-scroll',
+            `relative order-2 flex h-full w-full flex-grow flex-col px-4 pb-10 transition-all sm:pt-0 lg:px-10`,
+            isLoading ? 'overflow-hidden' : 'overflow-auto',
             isLoading && 'pointer-events-none opacity-25'
           )}
         >
@@ -200,7 +212,7 @@ export const Component = () => {
                 </Button>
               </SheetTrigger>
               <SheetContent className="p-0" style={{ width: DRAWER_WIDTH }}>
-                {navbar}
+                <DashboardSidebar isLoading={isLoading} />
               </SheetContent>
             </Sheet>
           </div>
@@ -210,13 +222,36 @@ export const Component = () => {
           className={`order-1 hidden flex-shrink-0 border-r border-r-border lg:block`}
           style={{ width: DRAWER_WIDTH }}
         >
-          {navbar}
+          <DashboardSidebar isLoading={isLoading} />
         </div>
         {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.EDUCATION && <EducationDialog />}
       </div>
-    </DashboardContext.Provider>
+      <NewFileDialogWrapper />
+      <ImportProgressList />
+    </RecoilRoot>
   );
 };
+
+function NewFileDialogWrapper() {
+  const [newFileDialogState, setNewFileDialogState] = useRecoilState(newFileDialogAtom);
+  const {
+    activeTeam: {
+      connections,
+      team: { uuid: teamUuid },
+    },
+  } = useDashboardRouteLoaderData();
+
+  if (!newFileDialogState.show) return null;
+
+  return (
+    <NewFileDialog
+      connections={connections}
+      teamUuid={teamUuid}
+      onClose={() => setNewFileDialogState((prev) => ({ ...prev, show: false }))}
+      isPrivate={newFileDialogState.isPrivate}
+    />
+  );
+}
 
 export const ErrorBoundary = () => {
   const error = useRouteError();

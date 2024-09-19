@@ -1,5 +1,5 @@
 import { events } from '@/app/events/events';
-import { useUndo } from '@/app/events/useUndo';
+import { useEvents } from '@/app/events/useEvents';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
@@ -53,14 +53,12 @@ export function QuadraticApp() {
   // wait for offline sync
   useEffect(() => {
     if (offlineLoading) {
-      const updateOfflineLoading = (transactions: number) => {
-        if (transactions === 0) {
-          setOfflineLoading(false);
-        }
+      const updateOfflineLoading = () => {
+        setOfflineLoading(false);
       };
-      events.on('offlineTransactions', updateOfflineLoading);
+      events.on('offlineTransactionsApplied', updateOfflineLoading);
       return () => {
-        events.off('offlineTransactions', updateOfflineLoading);
+        events.off('offlineTransactionsApplied', updateOfflineLoading);
       };
     }
   }, [offlineLoading]);
@@ -78,11 +76,12 @@ export function QuadraticApp() {
     }
   }, [multiplayerLoading]);
 
-  // don't wait for multiplayer sync if unable to connect
   useEffect(() => {
     if (multiplayerLoading) {
       const updateMultiplayerLoading = (state: MultiplayerState) => {
-        if (state === 'not connected' || state === 'no internet') {
+        // don't wait for multiplayer sync if unable to connect
+        if (state === 'waiting to reconnect' || state === 'not connected' || state === 'no internet') {
+          setOfflineLoading(false);
           setMultiplayerLoading(false);
         }
       };
@@ -93,7 +92,7 @@ export function QuadraticApp() {
     }
   }, [multiplayerLoading]);
 
-  useUndo();
+  useEvents();
 
   // Show loading screen until everything is loaded
   if (offlineLoading || multiplayerLoading) {

@@ -1,4 +1,7 @@
 use crate::grid::sheet::validations::validation::{Validation, ValidationStyle};
+use crate::grid::sheet::validations::validation_rules::validation_date_time::{
+    DateTimeRange, ValidationDateTime,
+};
 use crate::grid::sheet::validations::validation_rules::validation_list::{
     ValidationList, ValidationListSource,
 };
@@ -147,6 +150,39 @@ fn import_validation_rule(rule: &current_validations::ValidationRule) -> Validat
                     .collect(),
             })
         }
+        current_validations::ValidationRule::DateTime(dt) => {
+            ValidationRule::DateTime(ValidationDateTime {
+                ignore_blank: dt.ignore_blank,
+                require_date: dt.require_date,
+                require_time: dt.require_time,
+                prohibit_date: dt.prohibit_date,
+                prohibit_time: dt.prohibit_time,
+                ranges: dt
+                    .ranges
+                    .iter()
+                    .map(|range| match range {
+                        current_validations::DateTimeRange::DateRange(min, max) => {
+                            DateTimeRange::DateRange(min.to_owned(), max.to_owned())
+                        }
+                        current_validations::DateTimeRange::DateEqual(entry) => {
+                            DateTimeRange::DateEqual(entry.to_owned())
+                        }
+                        current_validations::DateTimeRange::DateNotEqual(entry) => {
+                            DateTimeRange::DateNotEqual(entry.to_owned())
+                        }
+                        current_validations::DateTimeRange::TimeRange(min, max) => {
+                            DateTimeRange::TimeRange(min.to_owned(), max.to_owned())
+                        }
+                        current_validations::DateTimeRange::TimeEqual(entry) => {
+                            DateTimeRange::TimeEqual(entry.to_owned())
+                        }
+                        current_validations::DateTimeRange::TimeNotEqual(entry) => {
+                            DateTimeRange::TimeNotEqual(entry.to_owned())
+                        }
+                    })
+                    .collect(),
+            })
+        }
     }
 }
 
@@ -251,6 +287,39 @@ fn export_validation_rule(rule: &ValidationRule) -> current_validations::Validat
                         }
                         NumberRange::NotEqual(entry) => {
                             current_validations::NumberRange::NotEqual(entry.clone())
+                        }
+                    })
+                    .collect(),
+            })
+        }
+        ValidationRule::DateTime(dt) => {
+            current_validations::ValidationRule::DateTime(current_validations::ValidationDateTime {
+                ignore_blank: dt.ignore_blank,
+                require_date: dt.require_date,
+                require_time: dt.require_time,
+                prohibit_date: dt.prohibit_date,
+                prohibit_time: dt.prohibit_time,
+                ranges: dt
+                    .ranges
+                    .iter()
+                    .map(|range| match range {
+                        DateTimeRange::DateRange(min, max) => {
+                            current_validations::DateTimeRange::DateRange(*min, *max)
+                        }
+                        DateTimeRange::DateEqual(entry) => {
+                            current_validations::DateTimeRange::DateEqual(entry.clone())
+                        }
+                        DateTimeRange::DateNotEqual(entry) => {
+                            current_validations::DateTimeRange::DateNotEqual(entry.clone())
+                        }
+                        DateTimeRange::TimeRange(min, max) => {
+                            current_validations::DateTimeRange::TimeRange(*min, *max)
+                        }
+                        DateTimeRange::TimeEqual(entry) => {
+                            current_validations::DateTimeRange::TimeEqual(entry.clone())
+                        }
+                        DateTimeRange::TimeNotEqual(entry) => {
+                            current_validations::DateTimeRange::TimeNotEqual(entry.clone())
                         }
                     })
                     .collect(),
@@ -434,6 +503,55 @@ mod tests {
                             min: Some(1),
                             max: Some(10),
                         },
+                    ],
+                }),
+                message: crate::grid::sheet::validations::validation::ValidationMessage {
+                    show: true,
+                    title: Some("title".to_owned()),
+                    message: Some("message".to_owned()),
+                },
+                error: crate::grid::sheet::validations::validation::ValidationError {
+                    show: true,
+                    style: crate::grid::sheet::validations::validation::ValidationStyle::Warning,
+                    title: Some("title".to_owned()),
+                    message: Some("message".to_owned()),
+                },
+            }],
+            warnings,
+        };
+        let imported = import_validations(&export_validations(&validations));
+        assert_eq!(validations, imported);
+    }
+
+    #[test]
+    fn import_export_validation_date_time() {
+        let validation_id = Uuid::new_v4();
+        let mut warnings = HashMap::new();
+        warnings.insert(Pos { x: 1, y: 2 }, validation_id);
+
+        let validations = Validations {
+            validations: vec![Validation {
+                id: validation_id,
+                selection: Selection {
+                    sheet_id: SheetId::test(),
+                    x: 1,
+                    y: 2,
+                    rects: Some(vec![Rect::new(3, 4, 5, 6), Rect::new(7, 8, 9, 10)]),
+                    rows: Some(vec![1, 2, 3]),
+                    columns: Some(vec![4, 5, 6]),
+                    all: true,
+                },
+                rule: ValidationRule::DateTime(ValidationDateTime {
+                    ignore_blank: true,
+                    require_date: true,
+                    require_time: true,
+                    prohibit_date: true,
+                    prohibit_time: true,
+                    ranges: vec![
+                        DateTimeRange::DateRange(Some(1i64), Some(10i64)),
+                        DateTimeRange::DateNotEqual(vec![5i64, -10i64]),
+                        DateTimeRange::TimeRange(Some(1i32), Some(10i32)),
+                        DateTimeRange::TimeNotEqual(vec![5i32, -10i32]),
                     ],
                 }),
                 message: crate::grid::sheet::validations::validation::ValidationMessage {

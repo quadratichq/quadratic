@@ -2,16 +2,16 @@ use std::fmt;
 use std::hash::Hash;
 use std::str::FromStr;
 
-use anyhow::{bail, Result};
+use anyhow::Result;
 use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
-use chrono::{TimeZone, Utc};
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use serde::{Deserialize, Serialize};
 
 use super::{Duration, Instant, IsBlank};
 use crate::{
-    controller::operations::operation::Operation,
-    grid::{formatting::CellFmtArray, CodeCellLanguage, NumericFormat, NumericFormatKind, Sheet},
-    CodeResult, Pos, RunError, RunErrorMsg, RunLengthEncoding, SheetRect,
+    date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
+    grid::{CodeCellLanguage, NumericFormat, NumericFormatKind},
+    CodeResult, RunError, RunErrorMsg,
 };
 
 // todo: fill this out
@@ -42,7 +42,14 @@ pub enum CellValue {
     /// Logical value.
     Logical(bool),
     /// Instant in time.
+    #[cfg_attr(test, proptest(skip))]
     Instant(Instant),
+    #[cfg_attr(test, proptest(skip))]
+    DateTime(NaiveDateTime),
+    #[cfg_attr(test, proptest(skip))]
+    Date(NaiveDate),
+    #[cfg_attr(test, proptest(skip))]
+    Time(NaiveTime),
     /// Duration of time.
     Duration(Duration),
     /// Error value.
@@ -64,6 +71,9 @@ impl fmt::Display for CellValue {
             CellValue::Logical(false) => write!(f, "FALSE"),
             CellValue::Instant(i) => write!(f, "{i}"),
             CellValue::Duration(d) => write!(f, "{d}"),
+            CellValue::Date(d) => write!(f, "{d}"),
+            CellValue::Time(d) => write!(f, "{d}"),
+            CellValue::DateTime(dt) => write!(f, "{dt}"),
             CellValue::Error(e) => write!(f, "{}", e.msg),
             CellValue::Html(s) => write!(f, "{}", s),
             CellValue::Code(code) => write!(f, "{:?}", code),
@@ -93,6 +103,9 @@ impl CellValue {
             CellValue::Html(_) => "html",
             CellValue::Code(_) => "code",
             CellValue::Image(_) => "image",
+            CellValue::Date(_) => "date",
+            CellValue::Time(_) => "time",
+            CellValue::DateTime(_) => "date time",
         }
     }
     /// Returns a formula-source-code representation of the value.
@@ -109,6 +122,9 @@ impl CellValue {
             CellValue::Html(s) => s.clone(),
             CellValue::Code(_) => todo!("repr of code"),
             CellValue::Image(_) => todo!("repr of image"),
+            CellValue::Date(d) => d.to_string(),
+            CellValue::Time(d) => d.to_string(),
+            CellValue::DateTime(d) => d.to_string(),
         }
     }
 
@@ -153,6 +169,9 @@ impl CellValue {
             CellValue::Instant(_) => todo!("repr of Instant"),
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
+            CellValue::Date(d) => d.format(DEFAULT_DATE_FORMAT).to_string(),
+            CellValue::Time(d) => d.format(DEFAULT_TIME_FORMAT).to_string(),
+            CellValue::DateTime(d) => d.format(DEFAULT_DATE_TIME_FORMAT).to_string(),
 
             // these should not render
             CellValue::Code(_) => String::new(),
@@ -249,10 +268,38 @@ impl CellValue {
             CellValue::Logical(true) => "true".to_string(),
             CellValue::Logical(false) => "false".to_string(),
             CellValue::Instant(_) => todo!("repr of Instant"),
+
+            // todo: these formats should be a user-definable format (we'll need it for localization)
+            CellValue::Date(d) => d.format("%m/%d/%Y").to_string(),
+            CellValue::Time(t) => t.format("%-I:%M %p").to_string(),
+            CellValue::DateTime(t) => t.format("%m/%d/%Y %-I:%M %p").to_string(),
+
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
 
             // this should not be editable
+            CellValue::Code(_) => String::new(),
+            CellValue::Image(_) => String::new(),
+        }
+    }
+
+    /// Returns the value as a string that can be used by get_cells in languages
+    pub fn to_get_cells(&self) -> String {
+        match self {
+            CellValue::Blank => String::new(),
+            CellValue::Text(s) => s.to_string(),
+            CellValue::Html(_) => String::new(),
+            CellValue::Number(n) => n.to_string(),
+            CellValue::Logical(true) => "true".to_string(),
+            CellValue::Logical(false) => "false".to_string(),
+            CellValue::Instant(_) => todo!("repr of Instant"),
+            CellValue::Date(d) => d.format("%Y-%m-%d").to_string(),
+            CellValue::Time(t) => t.format("%H:%M:%S%.3f").to_string(),
+            CellValue::DateTime(t) => t.format("%Y-%m-%dT%H:%M:%S%.3f").to_string(),
+            CellValue::Duration(_) => todo!("repr of Duration"),
+            CellValue::Error(_) => "[error]".to_string(),
+
+            // these should not return a value
             CellValue::Code(_) => String::new(),
             CellValue::Image(_) => String::new(),
         }
@@ -308,22 +355,6 @@ impl CellValue {
         })
     }
 
-    pub fn unpack_str_unix_timestamp(value: &str) -> anyhow::Result<CellValue> {
-        let parsed: i64 = value.parse()?;
-        Self::unpack_unix_timestamp(parsed)
-    }
-
-    pub fn unpack_unix_timestamp(value: i64) -> anyhow::Result<CellValue> {
-        let timestamp = match Utc.timestamp_opt(value, 0) {
-            chrono::LocalResult::Single(timestamp) => timestamp,
-            _ => bail!("Could not parse timestamp: {}", value),
-        };
-        // TODO(ddimaria): convert to Instant when they're implement
-        Ok(CellValue::Text(
-            timestamp.format("%Y-%m-%d %H:%M:%S").to_string(),
-        ))
-    }
-
     pub fn unpack_str_float(value: &str, default: CellValue) -> CellValue {
         BigDecimal::from_str(value).map_or_else(|_| default, CellValue::Number)
     }
@@ -372,6 +403,11 @@ impl CellValue {
             }
             (CellValue::Logical(a), CellValue::Logical(b)) => a.cmp(b),
             (CellValue::Instant(a), CellValue::Instant(b)) => a.cmp(b),
+            (CellValue::Date(a), CellValue::Date(b)) => a.cmp(b),
+            (CellValue::Time(a), CellValue::Time(b)) => a.cmp(b),
+            (CellValue::DateTime(a), CellValue::DateTime(b)) => a.cmp(b),
+            (CellValue::DateTime(a), CellValue::Date(b)) => a.date().cmp(b),
+            (CellValue::Date(a), CellValue::DateTime(b)) => a.cmp(&b.date()),
             (CellValue::Duration(a), CellValue::Duration(b)) => a.cmp(b),
             (CellValue::Blank, CellValue::Blank) => std::cmp::Ordering::Equal,
 
@@ -380,6 +416,9 @@ impl CellValue {
             | (CellValue::Logical(_), _)
             | (CellValue::Instant(_), _)
             | (CellValue::Duration(_), _)
+            | (CellValue::Date(_), _)
+            | (CellValue::Time(_), _)
+            | (CellValue::DateTime(_), _)
             | (CellValue::Html(_), _)
             | (CellValue::Code(_), _)
             | (CellValue::Image(_), _)
@@ -409,6 +448,27 @@ impl CellValue {
     /// converts blanks to zeros.
     #[allow(clippy::should_implement_trait)]
     pub fn cmp(&self, other: &Self) -> CodeResult<std::cmp::Ordering> {
+        fn type_id(v: &CellValue) -> u8 {
+            // Sort order, based on the results of Excel's `SORT()` function.
+            // The comparison operators are the same, except that blank coerces
+            // to zero before comparison.
+            match v {
+                CellValue::Number(_) => 0,
+                CellValue::Text(_) => 1,
+                CellValue::Logical(_) => 2,
+                CellValue::Error(_) => 3,
+                CellValue::Instant(_) => 4,
+                CellValue::Duration(_) => 5,
+                CellValue::Blank => 6,
+                CellValue::Html(_) => 7,
+                CellValue::Code(_) => 8,
+                CellValue::Image(_) => 9,
+                CellValue::Date(_) => 10,
+                CellValue::Time(_) => 11,
+                CellValue::DateTime(_) => 12,
+            }
+        }
+
         // Coerce blank to zero.
         let mut lhs = self;
         let mut rhs = other;
@@ -488,84 +548,6 @@ impl CellValue {
             (_, true) => CellValue::Logical(is_true),
             _ => CellValue::Text(String::from(value)),
         }
-    }
-
-    /// Convert stringified values and types from JS to CellValue
-    ///
-    /// `value` is the stringified value
-    /// `js_type` is the stringified CelLValue type
-    pub fn from_js(
-        value: &String,
-        js_type: &str,
-        pos: Pos,
-        sheet: &mut Sheet,
-    ) -> Result<(CellValue, Vec<Operation>)> {
-        let mut ops = vec![];
-        let sheet_rect = SheetRect::single_pos(pos, sheet.id);
-
-        let cell_value = match js_type {
-            "text" => {
-                let is_html = value.to_lowercase().starts_with("<html>")
-                    || value.to_lowercase().starts_with("<div>");
-
-                match is_html {
-                    true => CellValue::Html(value.to_string()),
-                    false => CellValue::Text(value.to_string()),
-                }
-            }
-            "number" => {
-                if let Some((currency, number)) = CellValue::unpack_currency(value) {
-                    let numeric_format = NumericFormat {
-                        kind: NumericFormatKind::Currency,
-                        symbol: Some(currency),
-                    };
-                    sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
-
-                    ops.push(Operation::SetCellFormats {
-                        sheet_rect,
-                        attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
-                            Some(numeric_format),
-                            1,
-                        )),
-                    });
-
-                    // We no longer automatically set numeric decimals for
-                    // currency; instead, we handle changes in currency decimal
-                    // length by using 2 if currency is set by default.
-
-                    CellValue::Number(number)
-                } else if let Ok(number) = BigDecimal::from_str(value) {
-                    CellValue::Number(number)
-                } else if let Some(number) = CellValue::unpack_percentage(value) {
-                    let numeric_format = NumericFormat {
-                        kind: NumericFormatKind::Percentage,
-                        symbol: None,
-                    };
-                    sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
-                    ops.push(Operation::SetCellFormats {
-                        sheet_rect,
-                        attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
-                            Some(numeric_format),
-                            1,
-                        )),
-                    });
-
-                    CellValue::Number(number)
-                } else {
-                    bail!("Could not parse number: {}", value);
-                }
-            }
-            "logical" => {
-                let is_true = value.eq_ignore_ascii_case("true");
-                CellValue::Logical(is_true)
-            }
-            "instant" => CellValue::unpack_str_unix_timestamp(value)?,
-            "duration" => CellValue::Text("not implemented".into()),
-            "image" => CellValue::Image(value.into()),
-            _ => CellValue::Text(value.into()),
-        };
-
-        Ok((cell_value, ops))
     }
 
     pub fn is_html(&self) -> bool {
@@ -874,23 +856,36 @@ mod test {
 
     #[test]
     #[parallel]
-    fn test_image() {
-        let value = CellValue::Image("test".into());
-        assert_eq!(value.to_string(), "test");
-        assert_eq!(value.type_name(), "image");
-
-        let sheet = &mut Sheet::test();
-        let value = CellValue::from_js(&"test".to_string(), "image", (0, 1).into(), sheet);
-        assert_eq!(value.unwrap().0, CellValue::Image("test".into()));
-    }
-
-    #[test]
-    #[parallel]
     fn test_is_image() {
         let value = CellValue::Image("test".into());
         assert!(value.is_image());
         let value = CellValue::Text("test".into());
         assert!(!value.is_image());
+    }
+
+    #[test]
+    #[parallel]
+    fn to_get_cells() {
+        let value = CellValue::Number(BigDecimal::from_str("123123.1233").unwrap());
+        assert_eq!(value.to_get_cells(), "123123.1233");
+
+        let value = CellValue::Logical(true);
+        assert_eq!(value.to_get_cells(), "true");
+
+        let value = CellValue::Logical(false);
+        assert_eq!(value.to_get_cells(), "false");
+
+        let value = CellValue::Text("test".into());
+        assert_eq!(value.to_get_cells(), "test");
+
+        let value = CellValue::Date(NaiveDate::parse_from_str("2021-09-01", "%Y-%m-%d").unwrap());
+        assert_eq!(value.to_get_cells(), "2021-09-01");
+
+        let value = CellValue::DateTime(
+            NaiveDateTime::parse_from_str("2024-08-15T10:53:48.750", "%Y-%m-%dT%H:%M:%S%.f")
+                .unwrap(),
+        );
+        assert_eq!(value.to_get_cells(), "2024-08-15T10:53:48.750");
     }
 
     #[test]

@@ -10,6 +10,8 @@ pub mod arrow;
 pub mod cell_values;
 pub mod cellvalue;
 mod convert;
+pub mod date_time;
+mod from_js;
 mod isblank;
 pub mod parquet;
 mod time;
@@ -174,6 +176,14 @@ impl Value {
         match self {
             Value::Single(v) => v.unwrap_err(),
             other => panic!("expected error value; got {other:?}"),
+        }
+    }
+    /// Returns a list of all errors in the value.
+    pub fn errors(&self) -> Vec<&crate::RunError> {
+        match self {
+            Value::Single(v) => v.error().into_iter().collect(),
+            Value::Array(a) => a.errors().collect(),
+            Value::Tuple(t) => t.iter().flat_map(|a| a.errors()).collect(),
         }
     }
 }

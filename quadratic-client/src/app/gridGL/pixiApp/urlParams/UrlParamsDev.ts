@@ -6,6 +6,7 @@ import { SheetCursorSave } from '@/app/grid/sheet/SheetCursor';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { IViewportTransformState } from 'pixi-viewport';
 
 const URL_STATE_PARAM = 'state';
@@ -16,18 +17,22 @@ interface SheetState {
   viewport?: IViewportTransformState;
 }
 
-interface State {
+export interface UrlParamsDevState {
   sheets: Record<string, SheetState>;
   sheetId?: string;
   code?: { x: number; y: number; sheetId: string; language: CodeCellLanguage };
+  validation?: boolean | string;
+  insertAndRunCodeInNewSheet?: { language: CodeCellLanguage; codeString: string };
 }
 
 export class UrlParamsDev {
   dirty = false;
+  noUpdates = false;
 
-  private state: State = {
+  private state: UrlParamsDevState = {
     sheets: {},
     code: undefined,
+    insertAndRunCodeInNewSheet: undefined,
   };
 
   constructor(params: URLSearchParams) {
@@ -35,17 +40,22 @@ export class UrlParamsDev {
     if (read) {
       // We need this timeout to ensure the setEditorInteraction is set in
       // pixiAppSettings before we try to load the code.
+      try {
+        this.state = JSON.parse(atob(read));
+      } catch (e) {
+        console.warn('Unable to parse URL param ?state=', e);
+      }
+
       setTimeout(() => {
-        try {
-          this.state = JSON.parse(atob(read));
-          this.loadSheets();
-          this.loadCode();
-        } catch (e) {
-          console.warn('Unable to parse URL param ?state=', e);
+        this.loadSheets();
+        this.loadCode();
+        this.loadValidation();
+        this.loadCodeAndRun();
+        if (!this.noUpdates) {
+          this.setupListeners();
         }
       }, WAIT_FOR_SET_EDITOR_INTERACTION_STATE_TIMEOUT_MS);
     }
-    this.setupListeners();
   }
 
   // Loads the sheet.cursor state from the URL.
@@ -73,7 +83,7 @@ export class UrlParamsDev {
         if (!pixiAppSettings.setEditorInteractionState) {
           throw new Error('Expected setEditorInteractionState to be set in urlParams.loadCode');
         }
-        pixiAppSettings.setEditorInteractionState?.({
+        pixiAppSettings.setEditorInteractionState({
           ...pixiAppSettings.editorInteractionState,
           showCodeEditor: true,
           mode: code,
@@ -87,10 +97,75 @@ export class UrlParamsDev {
     }
   }
 
+  private loadValidation() {
+    if (this.state.validation) {
+      if (!pixiAppSettings.setEditorInteractionState) {
+        throw new Error('Expected setEditorInteractionState to be set in urlParams.loadValidation');
+      }
+      pixiAppSettings.setEditorInteractionState({
+        ...pixiAppSettings.editorInteractionState,
+        showValidation: this.state.validation,
+      });
+    }
+  }
+
+  private loadCodeAndRun() {
+    if (this.state.insertAndRunCodeInNewSheet) {
+      const x = 0;
+      const y = 0;
+      const sheetId = sheets.current;
+      const { language, codeString } = this.state.insertAndRunCodeInNewSheet;
+
+      // For dev purposes: see what is loading & running
+      // console.log(
+      //   [
+      //     `Inserting:`,
+      //     `x: ${x}`,
+      //     `y: ${y}`,
+      //     `sheetId: ${sheetId}`,
+      //     `language: ${JSON.stringify(language)}`,
+      //     `codeString:\n  ${codeString.split('\n').join('\n  ')}`,
+      //   ].join('\n')
+      // );
+
+      if (!pixiAppSettings.setEditorInteractionState) {
+        throw new Error('Expected setEditorInteractionState to be set in urlParams.insertAndRunCodeInNewSheet');
+      }
+      pixiAppSettings.setEditorInteractionState?.({
+        ...pixiAppSettings.editorInteractionState,
+        showCodeEditor: true,
+        mode: language,
+        selectedCell: {
+          x,
+          y,
+        },
+        selectedCellSheet: sheetId,
+      });
+
+      quadraticCore.setCodeCellValue({
+        x,
+        y,
+        sheetId,
+        language,
+        codeString,
+      });
+
+      // Remove the `state` param when we're done
+      const url = new URL(window.location.href);
+      const params = new URLSearchParams(url.search);
+      params.delete('state');
+      url.search = params.toString();
+      window.history.replaceState(null, '', url.toString());
+
+      this.noUpdates = true;
+    }
+  }
+
   private setupListeners() {
     events.on('cursorPosition', this.updateCursorViewport);
     events.on('changeSheet', this.updateSheet);
     events.on('codeEditor', this.updateCode);
+    events.on('validation', this.updateValidation);
     pixiApp.viewport.on('moved', this.updateCursorViewport);
     pixiApp.viewport.on('zoomed', this.updateCursorViewport);
   }
@@ -120,6 +195,17 @@ export class UrlParamsDev {
         sheetId: selectedCellSheet,
         language: mode as CodeCellLanguage,
       };
+    }
+    this.dirty = true;
+  };
+
+  private updateValidation = () => {
+    const state = pixiAppSettings.editorInteractionState;
+    const { showValidation } = state;
+    if (!showValidation) {
+      this.state.validation = undefined;
+    } else {
+      this.state.validation = showValidation;
     }
     this.dirty = true;
   };

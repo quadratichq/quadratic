@@ -3,7 +3,7 @@ import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandList } from '@/shared/shadcn/ui/command';
 import fuzzysort from 'fuzzysort';
 import mixpanel from 'mixpanel-browser';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { Command } from './CommandPaletteListItem';
@@ -19,8 +19,8 @@ import importCommandGroup from './commands/Import';
 import searchCommandGroup from './commands/Search';
 import getSheetCommandGroup from './commands/Sheets';
 import textCommandGroup from './commands/Text';
-import viewCommandGroup from './commands/View';
 import { validationCommandGroup } from './commands/Validation';
+import viewCommandGroup from './commands/View';
 
 export const CommandPalette = () => {
   const { isAuthenticated } = useRootRouteLoaderData();
@@ -32,11 +32,18 @@ export const CommandPalette = () => {
   const { permissions } = editorInteractionState;
 
   // Fn that closes the command palette and gets passed down to individual ListItems
-  const closeCommandPalette = () => {
+  const closeCommandPalette = useCallback(() => {
     setEditorInteractionState((state) => ({
       ...state,
       showCellTypeMenu: false,
       showCommandPalette: false,
+    }));
+  }, [setEditorInteractionState]);
+
+  const openDateFormat = () => {
+    setEditorInteractionState((state) => ({
+      ...state,
+      annotationState: 'date-format',
     }));
   };
 
@@ -65,8 +72,18 @@ export const CommandPalette = () => {
 
   return (
     <CommandDialog
-      dialogProps={{ open: editorInteractionState.showCommandPalette, onOpenChange: closeCommandPalette }}
+      dialogProps={{
+        open: editorInteractionState.showCommandPalette,
+        onOpenChange: closeCommandPalette,
+      }}
       commandProps={{ shouldFilter: false }}
+      overlayProps={{
+        onPointerDown: (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          closeCommandPalette();
+        },
+      }}
     >
       <CommandInput
         value={activeSearchValue}
@@ -114,6 +131,7 @@ export const CommandPalette = () => {
                   label={label}
                   fuzzysortResult={fuzzysortResult}
                   closeCommandPalette={closeCommandPalette}
+                  openDateFormat={openDateFormat}
                 />
               ))}
             </CommandGroup>

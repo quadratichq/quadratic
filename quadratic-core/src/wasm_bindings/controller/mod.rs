@@ -1,7 +1,7 @@
 use super::*;
 use crate::grid::js_types::*;
 use crate::wasm_bindings::controller::sheet_info::SheetInfo;
-use js_sys::Uint8Array;
+use js_sys::{ArrayBuffer, Uint8Array};
 use std::str::FromStr;
 
 pub mod auto_complete;
@@ -28,7 +28,7 @@ impl GridController {
     /// Imports a [`GridController`] from a JSON string.
     #[wasm_bindgen(js_name = "newFromFile")]
     pub fn js_new_from_file(
-        file: &[u8],
+        file: Vec<u8>,
         last_sequence_num: u32,
         initialize: bool,
     ) -> Result<GridController, JsValue> {
@@ -88,6 +88,9 @@ impl GridController {
 
                             // sends all validations to the client
                             sheet.send_all_validations();
+
+                            // sends all validation warnings to the client
+                            sheet.send_all_validation_warnings();
                         }
                     });
                 }
@@ -98,15 +101,27 @@ impl GridController {
     }
 
     #[wasm_bindgen(js_name = "test")]
+    #[cfg(test)]
     pub fn js_test() -> GridController {
         GridController::test()
     }
 
-    /// Exports a [`GridController`] to a file. Returns a `String`.
-    #[wasm_bindgen(js_name = "exportToFile")]
-    pub fn js_export_to_file(&mut self) -> Result<Uint8Array, JsValue> {
-        match file::export(self.grid_mut()) {
-            Ok(file) => Ok(Uint8Array::from(&file[..])),
+    /// Exports a [`GridController`] to a file (consumes the grid). Returns a `ArrayBuffer`.
+    /// This is useful when exporting the grid to a file from dashboard, saves memory while exporting.
+    #[wasm_bindgen(js_name = "exportGridToFile")]
+    pub fn js_export_grid_to_file(self) -> Result<ArrayBuffer, JsValue> {
+        match file::export(self.into_grid()) {
+            Ok(file) => Ok(Uint8Array::from(&file[..]).buffer()),
+            Err(e) => Err(JsValue::from_str(&e.to_string())),
+        }
+    }
+
+    /// Exports a [`GridController`] to a file (exports the grid using clone). Returns a `ArrayBuffer`.
+    /// This is required when exporting the open file from app, requires a clone because the grid is still being used.
+    #[wasm_bindgen(js_name = "exportOpenGridToFile")]
+    pub fn js_export_open_grid_to_file(&self) -> Result<ArrayBuffer, JsValue> {
+        match file::export(self.grid().clone()) {
+            Ok(file) => Ok(Uint8Array::from(&file[..]).buffer()),
             Err(e) => Err(JsValue::from_str(&e.to_string())),
         }
     }

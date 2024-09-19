@@ -118,6 +118,11 @@ model Team {
     stripeCurrentPeriodEnd        DateTime?           @map("stripe_current_period_end")
     stripeSubscriptionLastUpdated DateTime?           @map("stripe_subscription_last_updated")
 
+    // Key/value storage used by Quadratic client on the Team.
+    // It remembers things like closing the onboarding banner.
+    // Use for client-specific data that is not useful to the server or other services
+    clientDataKv Json @default("{}") @map("client_data_kv")
+
     @@index([uuid])
 }
 
@@ -130,6 +135,7 @@ enum TeamRole {
 enum ConnectionType {
     POSTGRES
     MYSQL
+    MSSQL
 }
 
 model Connection {

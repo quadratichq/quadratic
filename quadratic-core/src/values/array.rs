@@ -319,6 +319,10 @@ impl Array {
     pub fn first_error(&self) -> Option<&RunError> {
         self.values.iter().find_map(|v| v.error())
     }
+    /// Iterates over errors in the array.
+    pub fn errors(&self) -> impl Iterator<Item = &RunError> {
+        self.values.iter().filter_map(|v| v.error())
+    }
     /// Returns the first error in the array if there is one; otherwise returns
     /// the original array.
     pub fn into_non_error_array(self) -> CodeResult<Self> {
@@ -333,6 +337,10 @@ impl Array {
         sheet: &mut Sheet,
         v: Vec<Vec<Vec<String>>>,
     ) -> (Option<Array>, Vec<Operation>) {
+        // catch the unlikely case where we receive an array of empty arrays
+        if v[0].is_empty() {
+            return (None, vec![]);
+        }
         let size = ArraySize::new(v[0].len() as u32, v.len() as u32).unwrap();
         let mut ops = vec![];
         let Pos { mut x, mut y } = start;
@@ -412,5 +420,19 @@ impl Spanned<Array> {
         } else {
             Err(RunErrorMsg::ExactArraySizeMismatch { expected, got }.with_span(self.span))
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn from_string_list_empty() {
+        let mut sheet = Sheet::test();
+        assert_eq!(
+            Array::from_string_list(Pos { x: 0, y: 0 }, &mut sheet, vec![vec![], vec![]]),
+            (None, vec![])
+        );
     }
 }

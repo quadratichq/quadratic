@@ -23,6 +23,7 @@ import { Cursor } from '../UI/Cursor';
 import { GridLines } from '../UI/GridLines';
 import { HtmlPlaceholders } from '../UI/HtmlPlaceholders';
 import { UIMultiPlayerCursor } from '../UI/UIMultiplayerCursor';
+import { UIValidations } from '../UI/UIValidations';
 import { BoxCells } from '../UI/boxCells';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { CellsSheets } from '../cells/CellsSheets';
@@ -32,7 +33,6 @@ import { Update } from './Update';
 import { Viewport } from './Viewport';
 import './pixiApp.css';
 import { urlParams } from './urlParams/urlParams';
-import { UIValidations } from '../UI/UIValidations';
 
 utils.skipHello();
 
@@ -95,7 +95,7 @@ export class PixiApp {
     urlParams.init();
 
     if (this.sheetsCreated) {
-      renderWebWorker.pixiIsReady(sheets.current, this.viewport.getVisibleBounds());
+      renderWebWorker.pixiIsReady(sheets.current, this.viewport.getVisibleBounds(), this.viewport.scale.x);
     }
     return new Promise((resolve) => {
       this.waitingForFirstRender = resolve;
@@ -328,6 +328,7 @@ export class PixiApp {
   adjustHeadings(options: { sheetId: string; delta: number; row?: number; column?: number }): void {
     this.cellsSheets.adjustHeadings(options);
     this.cellsSheets.adjustOffsetsBorders(options.sheetId);
+    this.cellsSheets.adjustCellsImages(options.sheetId);
     htmlCellsHandler.updateOffsets([sheets.sheet.id]);
     if (sheets.sheet.id === options.sheetId) {
       this.gridLines.dirty = true;

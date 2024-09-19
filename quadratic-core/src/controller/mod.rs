@@ -15,6 +15,7 @@ pub mod transaction;
 pub mod transaction_summary;
 pub mod transaction_types;
 pub mod user_actions;
+pub mod viewport;
 
 #[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
@@ -52,9 +53,17 @@ impl GridController {
         &mut self.grid
     }
 
+    pub fn into_grid(self) -> Grid {
+        self.grid
+    }
+
+    pub fn new() -> Self {
+        Self::from_grid(Grid::new(), 0)
+    }
+
     // create a new gc for testing purposes in both Rust and TS
     pub fn test() -> Self {
-        Self::from_grid(Grid::new(), 0)
+        Self::from_grid(Grid::test(), 0)
     }
 
     // get the last active transaction for testing purposes

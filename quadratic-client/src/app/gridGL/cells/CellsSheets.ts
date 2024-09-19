@@ -29,7 +29,7 @@ export class CellsSheets extends Container<CellsSheet> {
         this.current = child;
       }
     }
-    renderWebWorker.pixiIsReady(sheets.sheet.id, pixiApp.viewport.getVisibleBounds());
+    renderWebWorker.pixiIsReady(sheets.sheet.id, pixiApp.viewport.getVisibleBounds(), pixiApp.viewport.scale.x);
   }
 
   isReady(): boolean {
@@ -152,6 +152,11 @@ export class CellsSheets extends Container<CellsSheet> {
   adjustOffsetsBorders(sheetId: string): void {
     const cellsSheet = this.getById(sheetId);
     cellsSheet?.adjustOffsets();
+  }
+
+  adjustCellsImages(sheetId: string): void {
+    const cellsSheet = this.getById(sheetId);
+    cellsSheet?.cellsImages.reposition(sheetId);
   }
 
   showLabel(x: number, y: number, sheetId: string, show: boolean) {

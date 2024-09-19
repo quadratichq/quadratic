@@ -42,8 +42,10 @@
     "Signin",
     "smallpop",
     "Southborough",
+    "Strftime",
     "szhsin",
     "thiserror",
+    "Timelike",
     "unspill",
     "vals",
     "websockets",
@@ -77,6 +79,9 @@
     "editor.formatOnSave": true
   },
   "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[jsonc]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   }
 }

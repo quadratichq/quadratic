@@ -1,13 +1,14 @@
-use super::operation::Operation;
-use crate::{
-    cell_values::CellValues,
-    controller::GridController,
-    grid::{formatting::CellFmtArray, NumericFormat, NumericFormatKind},
-    selection::Selection,
-    CellValue, RunLengthEncoding, SheetPos, SheetRect,
-};
-use bigdecimal::BigDecimal;
 use std::str::FromStr;
+
+use bigdecimal::BigDecimal;
+
+use super::operation::Operation;
+use crate::cell_values::CellValues;
+use crate::controller::GridController;
+use crate::grid::formatting::CellFmtArray;
+use crate::grid::{CodeCellLanguage, NumericFormat, NumericFormatKind};
+use crate::selection::Selection;
+use crate::{CellValue, CodeCellValue, RunLengthEncoding, SheetPos, SheetRect};
 
 // when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
 // there is an unmerged alternative that might be interesting: https://github.com/declanvk/bigdecimal-rs/commit/b0a2ea3a403ddeeeaeef1ddfc41ff2ae4a4252d6
@@ -76,6 +77,18 @@ impl GridController {
                 )),
             });
             CellValue::Number(percent)
+        } else if let Some(time) = CellValue::unpack_time(value) {
+            time
+        } else if let Some(date) = CellValue::unpack_date(value) {
+            date
+        } else if let Some(date_time) = CellValue::unpack_date_time(value) {
+            date_time
+        } else if let Some(code) = value.strip_prefix("=") {
+            ops.push(Operation::ComputeCode { sheet_pos });
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: code.to_string(),
+            })
         } else {
             CellValue::Text(value.into())
         };
@@ -137,15 +150,14 @@ mod test {
     use std::str::FromStr;
 
     use bigdecimal::BigDecimal;
-
-    use crate::{
-        cell_values::CellValues,
-        controller::{operations::operation::Operation, GridController},
-        grid::{CodeCellLanguage, SheetId},
-        selection::Selection,
-        CellValue, Rect, SheetPos,
-    };
     use serial_test::parallel;
+
+    use crate::cell_values::CellValues;
+    use crate::controller::operations::operation::Operation;
+    use crate::controller::GridController;
+    use crate::grid::{CodeCellLanguage, SheetId};
+    use crate::selection::Selection;
+    use crate::{CellValue, CodeCellValue, Rect, SheetPos};
 
     #[test]
     #[parallel]
@@ -244,6 +256,47 @@ mod test {
         assert_eq!(
             value,
             CellValue::Number(BigDecimal::from_str("123456789.01").unwrap())
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn formula_to_cell_value() {
+        let mut gc = GridController::test();
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 2,
+            sheet_id: SheetId::test(),
+        };
+
+        let (ops, value) = gc.string_to_cell_value(sheet_pos, "=1+1");
+        assert_eq!(ops.len(), 1);
+        assert_eq!(
+            value,
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "1+1".to_string(),
+            })
+        );
+
+        let (ops, value) = gc.string_to_cell_value(sheet_pos, "=1/0");
+        assert_eq!(ops.len(), 1);
+        assert_eq!(
+            value,
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "1/0".to_string(),
+            })
+        );
+
+        let (ops, value) = gc.string_to_cell_value(sheet_pos, "=A1+A2");
+        assert_eq!(ops.len(), 1);
+        assert_eq!(
+            value,
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "A1+A2".to_string(),
+            })
         );
     }
 

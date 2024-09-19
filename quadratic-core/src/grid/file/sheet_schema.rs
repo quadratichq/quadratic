@@ -12,7 +12,7 @@ pub enum SheetSchema {
 
 impl SheetSchema {
     /// Imports a Sheet from the schema.
-    pub fn into_latest(&self) -> Result<Sheet> {
+    pub fn into_latest(self) -> Result<Sheet> {
         match self {
             SheetSchema::V1_6(sheet) => current::import_sheet(sheet),
         }
@@ -20,7 +20,7 @@ impl SheetSchema {
 }
 
 /// Exports a Sheet to the latest schema version.
-pub fn export_sheet(sheet: &Sheet) -> SheetSchema {
+pub fn export_sheet(sheet: Sheet) -> SheetSchema {
     let schema = current::export_sheet(sheet);
     SheetSchema::V1_6(schema)
 }
@@ -36,7 +36,7 @@ mod test {
         let mut sheet = Sheet::test();
         sheet.set_cell_value((0, 0).into(), "Hello, world!".to_string());
         sheet.calculate_bounds();
-        let schema = export_sheet(&sheet);
+        let schema = export_sheet(sheet.clone());
         let imported = schema.into_latest().unwrap();
         assert_eq!(sheet, imported);
     }

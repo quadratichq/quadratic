@@ -19,6 +19,7 @@ export type Command = {
 export interface CommandPaletteListItemDynamicProps {
   label: string;
   closeCommandPalette: () => void;
+  openDateFormat: () => void;
   fuzzysortResult: Fuzzysort.Result | null;
   value: string;
 }
@@ -52,6 +53,10 @@ export const CommandPaletteListItem = (props: CommandPaletteListItemProps) => {
         mixpanel.track('[CommandPalette].run', { label });
         closeCommandPalette();
         action();
+      }}
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
       }}
       disabled={disabled}
     >

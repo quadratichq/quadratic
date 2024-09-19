@@ -1,4 +1,5 @@
 import { downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
+import { xhrFromApi } from '@/shared/api/xhrFromApi';
 import * as Sentry from '@sentry/react';
 import { Buffer } from 'buffer';
 import mixpanel from 'mixpanel-browser';
@@ -97,11 +98,15 @@ export const apiClient = {
       file,
       teamUuid,
       isPrivate,
+      abortController,
+      onUploadProgress,
     }: {
       // TODO(ddimaria): remove Partial and "contents" once we duplicate directly on S3
       file?: Partial<Pick<ApiTypes['/v0/files.POST.request'], 'name' | 'contents' | 'version'>>;
       teamUuid: ApiTypes['/v0/files.POST.request']['teamUuid'];
       isPrivate: ApiTypes['/v0/files.POST.request']['isPrivate'];
+      abortController?: AbortController;
+      onUploadProgress?: (uploadProgress: number) => void;
     }) {
       if (file === undefined) {
         file = {
@@ -110,9 +115,14 @@ export const apiClient = {
         };
       }
 
-      return fetchFromApi(
+      return xhrFromApi(
         `/v0/files`,
-        { method: 'POST', body: JSON.stringify({ ...file, teamUuid, isPrivate }) },
+        {
+          method: 'POST',
+          data: { ...file, teamUuid, isPrivate },
+          abortController,
+          onUploadProgress,
+        },
         ApiSchemas['/v0/files.POST.response']
       );
     },

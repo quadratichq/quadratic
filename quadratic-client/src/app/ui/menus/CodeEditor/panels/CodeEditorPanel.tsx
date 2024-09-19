@@ -1,9 +1,12 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
+import { getConnectionInfo } from '@/app/helpers/codeCellLanguage';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { PanelPositionBottomIcon, PanelPositionLeftIcon } from '@/app/ui/icons';
+import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { CodeEditorPanelData, PanelPosition } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import { useConnectionSchemaBrowserTableQueryActionInsertQuery } from '@/dashboard/hooks/useConnectionSchemaBrowserTableQueryAction';
 import { useRootRouteLoaderData } from '@/routes/_root';
+import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { cn } from '@/shared/shadcn/utils';
 import { IconButton } from '@mui/material';
@@ -20,9 +23,11 @@ export const CodeEditorPanel = memo((props: Props) => {
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
     userMakingRequest: { teamPermissions },
+    team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
+  const { editorRef } = useCodeEditor();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const isConnection = codeCellIsAConnection(editorInteractionState.mode);
+  const connectionInfo = getConnectionInfo(editorInteractionState.mode);
   const { codeEditorPanelData } = props;
   const { panelPosition, setPanelPosition } = codeEditorPanelData;
 
@@ -34,7 +39,17 @@ export const CodeEditorPanel = memo((props: Props) => {
     [setPanelPosition]
   );
 
-  const showSchemaViewer = Boolean(isAuthenticated && isConnection && teamPermissions?.includes('TEAM_EDIT'));
+  const { TableQueryAction } = useConnectionSchemaBrowserTableQueryActionInsertQuery({ editorRef });
+  const schemaBrowser =
+    isAuthenticated && connectionInfo !== undefined && teamPermissions?.includes('TEAM_EDIT') ? (
+      <ConnectionSchemaBrowser
+        teamUuid={teamUuid}
+        type={connectionInfo.kind}
+        uuid={connectionInfo.id}
+        TableQueryAction={TableQueryAction}
+      />
+    ) : undefined;
+
   const showAiAssistant = Boolean(isAuthenticated);
 
   return (
@@ -50,14 +65,14 @@ export const CodeEditorPanel = memo((props: Props) => {
 
       {panelPosition === 'left' && (
         <CodeEditorPanelSide
-          showSchemaViewer={showSchemaViewer}
+          schemaBrowser={schemaBrowser}
           showAiAssistant={showAiAssistant}
           codeEditorPanelData={props.codeEditorPanelData}
         />
       )}
       {panelPosition === 'bottom' && (
         <CodeEditorPanelBottom
-          showSchemaViewer={showSchemaViewer}
+          schemaBrowser={schemaBrowser}
           showAiAssistant={showAiAssistant}
           codeEditorPanelData={props.codeEditorPanelData}
         />

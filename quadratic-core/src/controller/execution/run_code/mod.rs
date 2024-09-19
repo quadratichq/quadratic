@@ -2,14 +2,12 @@ use chrono::Utc;
 
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
+use crate::controller::transaction_types::JsCodeResult;
+use crate::controller::GridController;
 use crate::error_core::{CoreError, Result};
 use crate::grid::js_types::JsHtmlOutput;
-use crate::grid::CodeRunResult;
-use crate::{
-    controller::{transaction_types::JsCodeResult, GridController},
-    grid::{CodeCellLanguage, CodeRun},
-    Array, CellValue, Pos, RunError, RunErrorMsg, SheetPos, SheetRect, Span, Value,
-};
+use crate::grid::{CodeCellLanguage, CodeRun, CodeRunResult};
+use crate::{Array, CellValue, Pos, RunError, RunErrorMsg, SheetPos, SheetRect, Span, Value};
 
 pub mod get_cells;
 pub mod run_connection;
@@ -150,7 +148,7 @@ impl GridController {
 
         if transaction.is_user() {
             self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
-            self.check_all_spills(transaction, sheet_pos.sheet_id);
+            self.check_all_spills(transaction, sheet_pos.sheet_id, true);
         }
         transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
 
@@ -175,7 +173,7 @@ impl GridController {
                 }
             }
             self.send_updated_bounds_rect(&sheet_rect, false);
-            self.send_render_cells(&sheet_rect);
+            self.add_dirty_hashes_from_sheet_rect(transaction, sheet_rect);
             if transaction.is_user() {
                 if let Some(sheet) = self.try_sheet(sheet_id) {
                     let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into());
@@ -359,7 +357,7 @@ impl GridController {
             let error_msg = js_code_result
                 .std_err
                 .clone()
-                .unwrap_or_else(|| "Unknown Python Error".into());
+                .unwrap_or_else(|| "Unknown Error".into());
             let msg = RunErrorMsg::PythonError(error_msg.into());
             let span = js_code_result.line_number.map(|line_number| Span {
                 start: line_number,
@@ -398,9 +396,9 @@ mod test {
 
     use serial_test::{parallel, serial};
 
-    use crate::{wasm_bindings::js::expect_js_call_count, CodeCellValue};
-
     use super::*;
+    use crate::wasm_bindings::js::expect_js_call_count;
+    use crate::CodeCellValue;
 
     #[test]
     #[parallel]

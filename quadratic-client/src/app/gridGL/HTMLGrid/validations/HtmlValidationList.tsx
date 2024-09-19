@@ -10,6 +10,7 @@ import { inlineEditorEvents } from '../inlineEditor/inlineEditorEvents';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { Coordinate } from '../../types/size';
+import { pixiApp } from '../../pixiApp/PixiApp';
 
 interface Props {
   htmlValidationsData: HtmlValidationsData;
@@ -28,13 +29,15 @@ export const HtmlValidationList = (props: Props) => {
   const listCoordinate = useRef<Coordinate | undefined>();
 
   const inlineEditorStatus = useInlineEditorStatus();
-
   useEffect(() => {
     // this closes the dropdown when the cursor moves except when the user
     // clicked on the dropdown in a different cells (this handles the race
     // condition between changing the cell and opening the annotation)
-    if (location?.x !== listCoordinate.current?.x && location?.y !== listCoordinate.current?.y) {
+    if (location?.x !== listCoordinate.current?.x || location?.y !== listCoordinate.current?.y) {
       setEditorInteractionState((prev) => ({ ...prev, annotationState: undefined }));
+      setList(undefined);
+      setIndex(-1);
+      listCoordinate.current = location ? { x: location.x, y: location.y } : undefined;
     }
   }, [location, location?.x, location?.y, setEditorInteractionState, validation]);
 
@@ -142,13 +145,20 @@ export const HtmlValidationList = (props: Props) => {
 
   if (editorInteractionState.annotationState !== 'dropdown' || !offsets || !list || readOnly) return;
 
+  const viewportBottom = pixiApp.viewport.bottom;
+
   return (
     <div
       className={cn(
-        'border.gray-300 pointer-events-auto absolute cursor-pointer border bg-white text-gray-500',
+        'border.gray-300 pointer-events-auto absolute cursor-pointer overflow-y-auto border bg-white text-gray-500',
         inlineEditorStatus ? 'mt-1' : 'mt-0'
       )}
-      style={{ top: offsets.bottom, left: offsets.left, minWidth: offsets.width }}
+      style={{
+        top: offsets.bottom,
+        left: offsets.left,
+        minWidth: offsets.width,
+        maxHeight: `min(50vh, calc(${viewportBottom - offsets.bottom}px))`,
+      }}
     >
       <div className="block w-full px-1">
         {list

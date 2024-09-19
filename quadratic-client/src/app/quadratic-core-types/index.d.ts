@@ -2,7 +2,7 @@
 // Do not modify it manually.
 
 export type CodeCellLanguage = "Python" | "Formula" | { "Connection": { kind: ConnectionKind, id: string, } } | "Javascript";
-export type ConnectionKind = "POSTGRES" | "MYSQL";
+export type ConnectionKind = "POSTGRES" | "MYSQL" | "MSSQL";
 export interface JsHtmlOutput { sheet_id: string, x: bigint, y: bigint, html: string | null, w: string | null, h: string | null, }
 export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: Array<SheetRect> | null, }
 export interface JsRenderCodeCell { x: number, y: number, w: number, h: number, language: CodeCellLanguage, state: JsRenderCodeCellState, spill_error: Array<Pos> | null, }
@@ -22,9 +22,10 @@ export type NumericFormatKind = "NUMBER" | "CURRENCY" | "PERCENTAGE" | "EXPONENT
 export interface SheetId { id: string, }
 export interface JsRenderCell { x: bigint, y: bigint, value: string, language?: CodeCellLanguage, align?: CellAlign, verticalAlign?: CellVerticalAlign, wrap?: CellWrap, bold?: boolean, italic?: boolean, textColor?: string, special: JsRenderCellSpecial | null, number?: JsNumber, }
 export interface JsRenderFill { x: bigint, y: bigint, w: number, h: number, color: string, }
-export interface CellFormatSummary { bold: boolean | null, italic: boolean | null, commas: boolean | null, textColor: string | null, fillColor: string | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, }
+export interface CellFormatSummary { bold: boolean | null, italic: boolean | null, commas: boolean | null, textColor: string | null, fillColor: string | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, dateTime: string | null, cellType: CellType | null, }
 export interface JsClipboard { plainText: string, html: string, }
 export interface JsRowHeight { row: bigint, height: number, }
+export interface JsPos { x: bigint, y: bigint, }
 export interface ArraySize { w: number, h: number, }
 export type Axis = "X" | "Y";
 export interface Instant { seconds: number, }
@@ -55,11 +56,11 @@ export interface SheetBounds { sheet_id: string, bounds: GridBounds, bounds_with
 export type TransactionName = "Unknown" | "ResizeColumn" | "ResizeRow" | "ResizeRows" | "Autocomplete" | "SetBorders" | "SetCells" | "SetFormats" | "CutClipboard" | "PasteClipboard" | "SetCode" | "RunCode" | "Import" | "SetSheetMetadata" | "SheetAdd" | "SheetDelete" | "DuplicateSheet" | "MoveCells" | "Validation";
 export interface JsGetCellResponse { x: bigint, y: bigint, value: string, type_name: string, }
 export interface SummarizeSelectionResult { count: bigint, sum: number | null, average: number | null, }
-export interface Format { align: CellAlign | null, vertical_align: CellVerticalAlign | null, wrap: CellWrap | null, numeric_format: NumericFormat | null, numeric_decimals: number | null, numeric_commas: boolean | null, bold: boolean | null, italic: boolean | null, text_color: string | null, fill_color: string | null, render_size: RenderSize | null, }
+export interface Format { align: CellAlign | null, vertical_align: CellVerticalAlign | null, wrap: CellWrap | null, numeric_format: NumericFormat | null, numeric_decimals: number | null, numeric_commas: boolean | null, bold: boolean | null, italic: boolean | null, text_color: string | null, fill_color: string | null, render_size: RenderSize | null, date_time: string | null, }
 export interface JsSheetFill { columns: Array<[bigint, [string, bigint]]>, rows: Array<[bigint, [string, bigint]]>, all: string | null, }
 export interface ColumnRow { column: number, row: number, }
 export interface Validation { id: string, selection: Selection, rule: ValidationRule, message: ValidationMessage, error: ValidationError, }
-export type ValidationRule = "None" | { "List": ValidationList } | { "Logical": ValidationLogical } | { "Text": ValidationText } | { "Number": ValidationNumber };
+export type ValidationRule = "None" | { "List": ValidationList } | { "Logical": ValidationLogical } | { "Text": ValidationText } | { "Number": ValidationNumber } | { "DateTime": ValidationDateTime };
 export interface ValidationError { show: boolean, style: ValidationStyle, title: string | null, message: string | null, }
 export interface ValidationMessage { show: boolean, title: string | null, message: string | null, }
 export interface ValidationLogical { show_checkbox: boolean, ignore_blank: boolean, }
@@ -69,8 +70,11 @@ export type ValidationStyle = "Stop" | "Warning" | "Information";
 export interface ValidationDisplay { checkbox: boolean, list: boolean, }
 export interface ValidationDisplaySheet { columns: Array<[bigint, ValidationDisplay]> | null, rows: Array<[bigint, ValidationDisplay]> | null, all: ValidationDisplay | null, }
 export interface ValidationNumber { ignore_blank: boolean, ranges: Array<NumberRange>, }
+export interface ValidationDateTime { ignore_blank: boolean, require_date: boolean, require_time: boolean, prohibit_date: boolean, prohibit_time: boolean, ranges: Array<DateTimeRange>, }
 export type NumberRange = { "Range": [number | null, number | null] } | { "Equal": Array<number> } | { "NotEqual": Array<number> };
+export type DateTimeRange = { "DateRange": [bigint | null, bigint | null] } | { "DateEqual": Array<bigint> } | { "DateNotEqual": Array<bigint> } | { "TimeRange": [number | null, number | null] } | { "TimeEqual": Array<number> } | { "TimeNotEqual": Array<number> };
 export type TextCase = { "CaseInsensitive": Array<string> } | { "CaseSensitive": Array<string> };
 export type TextMatch = { "Exactly": TextCase } | { "Contains": TextCase } | { "NotContains": TextCase } | { "TextLength": { min: number | null, max: number | null, } };
 export interface ValidationText { ignore_blank: boolean, text_match: Array<TextMatch>, }
 export interface JsValidationWarning { x: bigint, y: bigint, validation: string | null, style: ValidationStyle | null, }
+export interface JsCellValue { value: string, kind: string, }

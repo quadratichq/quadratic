@@ -43,7 +43,6 @@ impl Display for SheetId {
     }
 }
 
-#[cfg(test)]
 impl SheetId {
     pub fn test() -> Self {
         Self {

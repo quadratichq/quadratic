@@ -43,6 +43,7 @@ impl Sheet {
             text_color: column.text_color.get(y),
             fill_color: column.fill_color.get(y),
             render_size: column.render_size.get(y),
+            date_time: column.date_time.get(y),
         });
         if include_sheet {
             let column = self.try_format_column(x);
@@ -111,6 +112,10 @@ impl Sheet {
         if let Some(render_size) = update.render_size.as_ref() {
             old_format.render_size = Some(column.render_size.get(y));
             column.render_size.set(y, render_size.clone());
+        }
+        if let Some(dt) = update.date_time.as_ref() {
+            old_format.date_time = Some(column.date_time.get(y));
+            column.date_time.set(y, dt.clone());
         }
 
         if send_client {

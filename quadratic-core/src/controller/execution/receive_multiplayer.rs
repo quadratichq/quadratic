@@ -1,16 +1,15 @@
 use std::collections::VecDeque;
 
-use super::TransactionType;
-use crate::controller::{
-    active_transactions::{
-        pending_transaction::PendingTransaction, unsaved_transactions::UnsavedTransaction,
-    },
-    operations::operation::Operation,
-    transaction::{Transaction, TransactionServer},
-    GridController,
-};
 use chrono::{Duration, TimeDelta, Utc};
 use uuid::Uuid;
+
+use super::TransactionType;
+use crate::controller::active_transactions::pending_transaction::PendingTransaction;
+use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::controller::active_transactions::unsaved_transactions::UnsavedTransaction;
+use crate::controller::operations::operation::Operation;
+use crate::controller::transaction::{Transaction, TransactionServer};
+use crate::controller::GridController;
 
 // seconds to wait before requesting wait_for_transactions
 const SECONDS_TO_WAIT_FOR_GET_TRANSACTIONS: i64 = 5;
@@ -29,7 +28,7 @@ impl GridController {
             ..Default::default()
         };
         self.client_apply_transaction(&mut transaction, sequence_num);
-        self.finalize_transaction(&mut transaction);
+        self.finalize_transaction(transaction);
     }
 
     /// Rolls back unsaved transactions to apply earlier transactions received from the server.
@@ -79,10 +78,15 @@ impl GridController {
 
     /// Used by the server to apply transactions. Since the server owns the sequence_num,
     /// there's no need to check or alter the execution order.
-    pub fn server_apply_transaction(&mut self, operations: Vec<Operation>) {
+    pub fn server_apply_transaction(
+        &mut self,
+        operations: Vec<Operation>,
+        transaction_name: Option<TransactionName>,
+    ) {
         let mut transaction = PendingTransaction {
             transaction_type: TransactionType::Server,
             operations: operations.into(),
+            transaction_name: transaction_name.unwrap_or(TransactionName::Unknown),
             ..Default::default()
         };
         self.start_transaction(&mut transaction);
@@ -112,7 +116,11 @@ impl GridController {
                     );
                 }
             }
-        } else if cfg!(target_family = "wasm") || cfg!(test) {
+        }
+
+        if (cfg!(target_family = "wasm") || cfg!(test))
+            && sequence_num >= self.transactions.last_sequence_num
+        {
             crate::wasm_bindings::js::jsMultiplayerSynced();
         }
     }
@@ -220,7 +228,7 @@ impl GridController {
     /// Received transactions from the server
     pub fn received_transactions(&mut self, transactions: &[TransactionServer]) {
         // used to track client changes when combining transactions
-        let mut results = PendingTransaction {
+        let results = PendingTransaction {
             transaction_type: TransactionType::Multiplayer,
             ..Default::default()
         };
@@ -248,7 +256,7 @@ impl GridController {
             }
         });
         self.reapply_unsaved_transactions();
-        self.finalize_transaction(&mut results);
+        self.finalize_transaction(results);
     }
 
     /// Called by TS for each offline transaction it has in its offline queue.
@@ -274,7 +282,7 @@ impl GridController {
                 }
             }
         } else {
-            let transaction = &mut PendingTransaction {
+            let mut transaction = PendingTransaction {
                 id: transaction_id,
                 transaction_type: TransactionType::Unsaved,
                 ..Default::default()
@@ -283,7 +291,7 @@ impl GridController {
                 .operations
                 .extend(unsaved_transaction.forward.operations.clone());
 
-            self.start_transaction(transaction);
+            self.start_transaction(&mut transaction);
             self.finalize_transaction(transaction);
         }
     }
@@ -291,16 +299,17 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
-        controller::{transaction::Transaction, transaction_types::JsCodeResult, GridController},
-        grid::{CodeCellLanguage, Sheet},
-        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
-        CellValue, CodeCellValue, Pos, SheetPos,
-    };
     use bigdecimal::BigDecimal;
     use serial_test::{parallel, serial};
     use uuid::Uuid;
+
+    use super::*;
+    use crate::controller::transaction::Transaction;
+    use crate::controller::transaction_types::JsCodeResult;
+    use crate::controller::GridController;
+    use crate::grid::{CodeCellLanguage, Sheet};
+    use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
+    use crate::{CellValue, CodeCellValue, Pos, SheetPos};
 
     #[test]
     #[parallel]
@@ -423,7 +432,7 @@ mod tests {
 
         let mut server = GridController::test();
         server.grid.try_sheet_mut(server.sheet_ids()[0]).unwrap().id = sheet_id;
-        server.server_apply_transaction(operations);
+        server.server_apply_transaction(operations, None);
         let sheet = server.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.display_value(Pos { x: 0, y: 0 }),
@@ -638,8 +647,6 @@ mod tests {
     #[test]
     #[serial]
     fn test_send_request_transactions() {
-        clear_js_calls();
-
         let mut client = GridController::test();
         let sheet_id = client.sheet_ids()[0];
 
@@ -674,7 +681,7 @@ mod tests {
 
         client.receive_sequence_num(2);
 
-        expect_js_call_count("jsMultiplayerSynced", 0, true);
+        clear_js_calls();
 
         // we send our last_sequence_num + 1 to the server so it can provide all later transactions
         assert_eq!(client.transactions.last_sequence_num, 0);
