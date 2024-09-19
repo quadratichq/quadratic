@@ -20,17 +20,26 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { ApiOutlined, BarChartOutlined, IntegrationInstructionsOutlined } from '@mui/icons-material';
 import mixpanel from 'mixpanel-browser';
 import * as monaco from 'monaco-editor';
+import { useCallback, useMemo } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
-type CodeEditorEmptyStateProps = {
+interface CodeEditorEmptyStateProps {
   editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>;
-};
+}
 
 export function CodeEditorEmptyState({ editorRef }: CodeEditorEmptyStateProps) {
   const mode = useRecoilValue(editorInteractionStateModeAtom);
-  const codeCell = getCodeCell(mode);
+  const codeCell = useMemo(() => getCodeCell(mode), [mode]);
   const setShowSnippetsPopover = useSetRecoilState(codeEditorShowSnippetsPopoverAtom);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
+
+  const fillWithSnippet = useCallback(
+    (code: string) => {
+      setEditorContent(code);
+      editorRef.current?.focus();
+    },
+    [editorRef, setEditorContent]
+  );
 
   // Must meet these criteria to even show in the UI
   if (editorContent !== '') {
@@ -39,11 +48,6 @@ export function CodeEditorEmptyState({ editorRef }: CodeEditorEmptyStateProps) {
   if (!(codeCell?.id === 'Javascript' || codeCell?.id === 'Python')) {
     return null;
   }
-
-  const fillWithSnippet = (code: string) => {
-    setEditorContent(code);
-    editorRef.current?.focus();
-  };
 
   const buttons = [
     {

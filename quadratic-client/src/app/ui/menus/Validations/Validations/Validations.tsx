@@ -34,6 +34,10 @@ export const Validations = () => {
     checkValidations();
   }, [sheetId, validations]);
 
+  const addValidation = useCallback(() => {
+    setShowValidation('new');
+  }, [setShowValidation]);
+
   const removeValidations = useCallback(() => {
     quadraticCore.removeValidations(sheetId);
   }, [sheetId]);
@@ -63,7 +67,7 @@ export const Validations = () => {
             <Button variant="secondary" onClick={removeValidations}>
               Remove All
             </Button>
-            <Button onClick={() => setShowValidation('new')} autoFocus>
+            <Button onClick={addValidation} autoFocus>
               Add Validation
             </Button>
           </div>

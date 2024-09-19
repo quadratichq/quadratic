@@ -1,7 +1,7 @@
 import { aiAssistantMessagesAtom } from '@/app/atoms/aiAssistantAtom';
 import { colors } from '@/app/theme/colors';
 import { Anthropic, OpenAI } from '@/app/ui/icons';
-import { CodeBlockParser } from '@/app/ui/menus/AIAssistant/AICodeBlockParser';
+import { AICodeBlockParser } from '@/app/ui/menus/AIAssistant/AICodeBlockParser';
 import { isAnthropicModel } from '@/app/ui/menus/AIAssistant/useAIRequestToAPI';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { Avatar } from '@/shared/components/Avatar';
@@ -63,7 +63,7 @@ export function AIAssistantMessages() {
                   >
                     {user?.name}
                   </Avatar>
-                  <CodeBlockParser input={message.content} />
+                  <AICodeBlockParser input={message.content} />
                 </>
               ) : (
                 <>
@@ -76,7 +76,7 @@ export function AIAssistantMessages() {
                   >
                     {isAnthropicModel(message.model) ? <Anthropic /> : <OpenAI />}
                   </Avatar>
-                  <CodeBlockParser input={message.content} />
+                  <AICodeBlockParser input={message.content} />
                 </>
               )}
             </div>

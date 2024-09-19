@@ -6,20 +6,27 @@ import { cn } from '@/shared/shadcn/utils';
 import { Close } from '@mui/icons-material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { IconButton } from '@mui/material';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 
 export const ValidationHeader = (props: { validationData: ValidationData }) => {
   const { unsaved, sheetId } = props.validationData;
   const setShowValidation = useSetRecoilState(editorInteractionStateShowValidationAtom);
-
   const [sheetName] = useState(` - ${sheets.getById(sheetId)?.name}`);
+
+  const back = useCallback(() => {
+    setShowValidation(true);
+  }, [setShowValidation]);
+
+  const close = useCallback(() => {
+    setShowValidation(false);
+  }, [setShowValidation]);
 
   return (
     <div className="mb-2 flex items-center justify-between border-b border-b-gray-100 pb-2">
       <div className="flex items-center gap-1">
         <TooltipHint title="Back to Data Validations for the sheet" placement="bottom">
-          <IconButton size="small" onClick={() => setShowValidation(true)}>
+          <IconButton size="small" onClick={back}>
             <ArrowBackIcon />
           </IconButton>
         </TooltipHint>
@@ -34,7 +41,7 @@ export const ValidationHeader = (props: { validationData: ValidationData }) => {
         </div>
       </div>
       <TooltipHint title="Close" shortcut="ESC" placement="bottom">
-        <IconButton size="small" onClick={() => setShowValidation(false)}>
+        <IconButton size="small" onClick={close}>
           <Close />
         </IconButton>
       </TooltipHint>

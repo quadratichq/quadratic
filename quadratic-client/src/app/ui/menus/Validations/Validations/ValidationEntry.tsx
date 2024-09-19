@@ -48,6 +48,18 @@ export const ValidationEntry = (props: Props) => {
 
   const selection = useMemo(() => getSelectionString(validation.selection), [validation.selection]);
 
+  const selectValidation = useCallback(() => {
+    setShowValidation(validation.id);
+  }, [setShowValidation, validation.id]);
+
+  const handleDeleteValidation = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      deleteValidation(validation.id);
+    },
+    [deleteValidation, validation.id]
+  );
+
   const ref = useCallback(
     (node: HTMLButtonElement) => {
       if (active) {
@@ -62,7 +74,7 @@ export const ValidationEntry = (props: Props) => {
       ref={ref}
       variant="ghost"
       className={cn('h-fit w-full border-b border-gray-100', highlight ? 'bg-gray-50' : '')}
-      onClick={() => setShowValidation(validation.id)}
+      onClick={selectValidation}
     >
       <div className="group flex w-full items-center justify-between py-2">
         <div className="flex shrink flex-col items-start text-left">
@@ -74,10 +86,7 @@ export const ValidationEntry = (props: Props) => {
             className="invisible px-1 hover:bg-white group-hover:visible"
             asChild
             variant="outline"
-            onClick={(e) => {
-              deleteValidation(validation.id);
-              e.stopPropagation();
-            }}
+            onClick={handleDeleteValidation}
           >
             <span>
               <DeleteIcon className="text-gray-400" />

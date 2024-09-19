@@ -8,7 +8,7 @@ import {
   showHeadingsAtom,
 } from '@/app/atoms/gridSettingsAtom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
-import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarFileMenu/MenubarItemAction';
+import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
 import { CheckSmallIcon, CropFreeIcon, ZoomInIcon } from '@/shared/components/Icons';
 import {
   MenubarContent,

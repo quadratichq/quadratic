@@ -162,9 +162,7 @@ export const CodeEditor = () => {
         setCodeString(codeCell.code_string);
         setCellsAccessed(codeCell.cells_accessed);
         setConsoleOutput({ stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined });
-        if (!pushCodeCell) {
-          setEditorContent(initialCode ?? codeCell.code_string);
-        }
+        if (!pushCodeCell) setEditorContent(initialCode ?? codeCell.code_string);
         const newEvaluationResult = codeCell.evaluation_result ? JSON.parse(codeCell.evaluation_result) : {};
         setEvaluationResult({ ...newEvaluationResult, ...codeCell.return_info });
         setSpillError(codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as Coordinate)));

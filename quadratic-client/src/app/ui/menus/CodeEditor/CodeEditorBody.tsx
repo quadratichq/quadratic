@@ -38,14 +38,14 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 // import { Diagnostic } from 'vscode-languageserver-types';
 // import { typescriptLibrary } from '@/web-workers/javascriptWebWorker/worker/javascript/typescriptLibrary';
 
-type CodeEditorBodyProps = {
+interface CodeEditorBodyProps {
   closeEditor: (skipSaveCheck: boolean) => void;
   cellsAccessed?: SheetRect[] | null;
   cellLocation: SheetPosTS;
   editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>;
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // diagnostics?: Diagnostic[];
-};
+}
 
 // need to track globally since monaco is a singleton
 let registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
@@ -56,14 +56,11 @@ let registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
 
 export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   const { closeEditor, cellsAccessed, cellLocation, editorRef } = props;
-
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
   const modifiedEditorContent = useRecoilValue(codeEditorModifiedEditorContentAtom);
-
   const {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
-
   const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
   const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
   const language = useRecoilValue(editorInteractionStateModeAtom);

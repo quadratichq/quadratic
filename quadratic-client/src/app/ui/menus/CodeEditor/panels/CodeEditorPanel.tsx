@@ -12,7 +12,7 @@ import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { cn } from '@/shared/shadcn/utils';
 import { IconButton } from '@mui/material';
 import * as monaco from 'monaco-editor';
-import { MouseEvent, memo, useCallback } from 'react';
+import { MouseEvent, memo, useCallback, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type CodeEditorPanelProps = {
@@ -27,7 +27,7 @@ export const CodeEditorPanel = memo(({ editorRef, codeEditorRef }: CodeEditorPan
     team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
   const mode = useRecoilValue(editorInteractionStateModeAtom);
-  const connectionInfo = getConnectionInfo(mode);
+  const connectionInfo = useMemo(() => getConnectionInfo(mode), [mode]);
   const { panelPosition, setPanelPosition } = useCodeEditorPanelData();
 
   const changePanelPosition = useCallback(

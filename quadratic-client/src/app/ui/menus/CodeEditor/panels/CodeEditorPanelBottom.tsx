@@ -59,7 +59,6 @@ export function CodeEditorPanelBottom({ schemaBrowser }: Props) {
         </Button>
         <TabsList>
           {schemaBrowser && <TabsTrigger value="data-browser">Schema</TabsTrigger>}
-
           <TabsTrigger
             value="console"
             className={cn(

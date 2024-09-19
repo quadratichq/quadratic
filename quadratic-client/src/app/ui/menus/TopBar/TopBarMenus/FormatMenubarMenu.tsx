@@ -4,7 +4,7 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { BorderMenu } from '@/app/ui/components/BorderMenu';
 import { DateFormat } from '@/app/ui/components/DateFormat';
 import { QColorPicker } from '@/app/ui/components/qColorPicker';
-import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarFileMenu/MenubarItemAction';
+import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
 import {
   BorderAllIcon,
   FormatAlignLeftIcon,

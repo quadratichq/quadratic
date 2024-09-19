@@ -9,6 +9,7 @@ import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { LinkNewTab } from '@/app/ui/components/LinkNewTab';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { JavaScript } from '@/app/ui/icons';
+import '@/app/ui/styles/floating-dialog.css';
 import { DatabaseIcon } from '@/shared/components/Icons';
 import {
   DOCUMENTATION_FORMULAS_URL,
@@ -29,8 +30,6 @@ import {
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import '../../styles/floating-dialog.css';
-
 export interface CellTypeOption {
   name: string;
   searchStrings?: string[];

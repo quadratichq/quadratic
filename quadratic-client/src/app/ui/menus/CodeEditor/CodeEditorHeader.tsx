@@ -27,14 +27,14 @@ import * as monaco from 'monaco-editor';
 import { useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
-type CodeEditorHeaderProps = {
+interface CodeEditorHeaderProps {
   cellLocation: SheetPosTS | undefined;
   unsaved: boolean;
   saveAndRunCell: () => void;
   cancelRun: () => void;
   closeEditor: () => void;
   editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>;
-};
+}
 
 export const CodeEditorHeader = (props: CodeEditorHeaderProps) => {
   const { cellLocation, unsaved, saveAndRunCell, cancelRun, closeEditor, editorRef } = props;

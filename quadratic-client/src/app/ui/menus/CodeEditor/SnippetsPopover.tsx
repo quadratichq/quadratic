@@ -27,13 +27,13 @@ import * as monaco from 'monaco-editor';
 import { ReactNode, useEffect, useMemo } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
-type SnippetsPopoverProps = {
+interface SnippetsPopoverProps {
   editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>;
-};
+}
 
 export function SnippetsPopover({ editorRef }: SnippetsPopoverProps) {
   const [showSnippetsPopover, setShowSnippetsPopover] = useRecoilState(codeEditorShowSnippetsPopoverAtom);
-  const editorInteractionStateMode = useRecoilValue(editorInteractionStateModeAtom);
+  const mode = useRecoilValue(editorInteractionStateModeAtom);
   const theme = useTheme();
 
   useEffect(() => {
@@ -42,13 +42,10 @@ export function SnippetsPopover({ editorRef }: SnippetsPopoverProps) {
     }
   }, [showSnippetsPopover]);
 
-  const snippets = useMemo(
-    () => (editorInteractionStateMode === 'Javascript' ? snippetsJS : snippetsPY),
-    [editorInteractionStateMode]
-  );
+  const snippets = useMemo(() => (mode === 'Javascript' ? snippetsJS : snippetsPY), [mode]);
   const documentationLink = useMemo(
-    () => (editorInteractionStateMode === 'Javascript' ? DOCUMENTATION_JAVASCRIPT_URL : DOCUMENTATION_PYTHON_URL),
-    [editorInteractionStateMode]
+    () => (mode === 'Javascript' ? DOCUMENTATION_JAVASCRIPT_URL : DOCUMENTATION_PYTHON_URL),
+    [mode]
   );
   return (
     <Popover open={showSnippetsPopover} onOpenChange={setShowSnippetsPopover}>

@@ -40,7 +40,6 @@ const createSelector = <T extends keyof CodeEditorState>(key: T) =>
         [key]: newValue instanceof DefaultValue ? prev[key] : newValue,
       })),
   });
-
 export const codeEditorCodeStringAtom = createSelector('codeString');
 export const codeEditorEvaluationResultAtom = createSelector('evaluationResult');
 export const codeEditorConsoleOutputAtom = createSelector('consoleOutput');

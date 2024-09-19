@@ -48,29 +48,24 @@ export default function QuadraticUI() {
     team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
   const connectionsFetcher = useConnectionsFetcher();
-
+  const navigation = useNavigation();
+  const { uuid } = useParams() as { uuid: string };
+  const { name, renameFile } = useFileContext();
   const showCodeEditor = useRecoilValue(editorInteractionStateShowCodeEditorAtom);
   const [showShareFileMenu, setShowShareFileMenu] = useRecoilState(editorInteractionStateShowShareFileMenuAtom);
   const [showNewFileMenu, setShowNewFileMenu] = useRecoilState(editorInteractionStateShowNewFileMenuAtom);
   const [showRenameFileMenu, setShowRenameFileMenu] = useRecoilState(editorInteractionStateShowRenameFileMenuAtom);
-
-  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
-  const canEditFile = useMemo(() => hasPermissionToEditFile(permissions), [permissions]);
-
-  const { users } = useMultiplayerUsers();
   const editorInteractionStateFollow = useRecoilValue(editorInteractionStateFollowAtom);
+  const { users } = useMultiplayerUsers();
   const follow = useMemo(
     () =>
       editorInteractionStateFollow ? users.find((user) => user.session_id === editorInteractionStateFollow) : undefined,
     [editorInteractionStateFollow, users]
   );
-
-  const navigation = useNavigation();
-  const { uuid } = useParams() as { uuid: string };
-  const { name, renameFile } = useFileContext();
-
   const presentationMode = useRecoilValue(presentationModeAtom);
   const setShowHeadings = useSetRecoilState(showHeadingsAtom);
+  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
+  const canEditFile = useMemo(() => hasPermissionToEditFile(permissions), [permissions]);
 
   // Resize the canvas when user goes in/out of presentation mode
   useEffect(() => {

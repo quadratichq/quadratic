@@ -15,7 +15,7 @@ export const useEditorReturn = (
 ) => {
   const language = useRecoilValue(editorInteractionStateModeAtom);
   const evaluationResult = useRecoilValue(codeEditorEvaluationResultAtom);
-  let decorations = useRef<monaco.editor.IEditorDecorationsCollection | undefined>(undefined);
+  const decorations = useRef<monaco.editor.IEditorDecorationsCollection | undefined>(undefined);
   const codeCell = getCodeCell(language);
 
   useEffect(() => {

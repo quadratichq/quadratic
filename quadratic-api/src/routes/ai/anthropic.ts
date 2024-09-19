@@ -35,8 +35,10 @@ anthropic_router.post('/anthropic/chat', validateAccessToken, ai_rate_limiter, a
   } catch (error: any) {
     if (error.response) {
       response.status(error.response.status).json(error.response.data);
+      console.log(error.response.status, error.response.data);
     } else {
       response.status(400).json(error.message);
+      console.log(error.message);
     }
   }
 });

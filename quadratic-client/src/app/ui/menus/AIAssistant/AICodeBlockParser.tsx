@@ -33,6 +33,6 @@ export function parseCodeBlocks(input: string): Array<string | JSX.Element> {
   return blocks;
 }
 
-export function CodeBlockParser({ input }: { input: string }): JSX.Element {
+export function AICodeBlockParser({ input }: { input: string }): JSX.Element {
   return <div className="flex select-text flex-col gap-4 whitespace-normal">{parseCodeBlocks(input)}</div>;
 }

@@ -11,7 +11,7 @@ export const useEditorDiagnostics = (
   language?: CodeCellLanguage,
   diagnostics?: Diagnostic[]
 ) => {
-  let currentDiagnostics = useRef<monaco.editor.IEditorDecorationsCollection | undefined>(undefined);
+  const currentDiagnostics = useRef<monaco.editor.IEditorDecorationsCollection | undefined>(undefined);
 
   useEffect(() => {
     if (language === 'Formula') return;
@@ -30,7 +30,7 @@ export const useEditorDiagnostics = (
 
       if (currentDiagnostics) currentDiagnostics.current?.clear();
 
-      let markers = diagnostics.map(({ message, range, severity }) => ({
+      const markers = diagnostics.map(({ message, range, severity }) => ({
         message,
         severity: (severity as monaco.MarkerSeverity) || monacoInst.MarkerSeverity.Error,
         startLineNumber: range.start.line + 1,
