@@ -7,8 +7,8 @@ import { sheets } from '../../grid/controller/Sheets';
 import { colors } from '../../theme/colors';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
-import { drawColumnRowCursor, drawMultiCursor } from './drawCursor';
 import { Coordinate } from '../types/size';
+import { drawColumnRowCursor, drawMultiCursor } from './drawCursor';
 
 export const CURSOR_THICKNESS = 2;
 export const FILL_ALPHA = 0.1;
@@ -77,7 +77,7 @@ export class Cursor extends Container {
     const showInput = pixiAppSettings.input.show;
 
     let { x, y, width, height } = sheet.getCellOffsets(cell.x, cell.y);
-    const color = colors.cursorCell;
+    const color = pixiApp.accentColor;
     const editor_selected_cell = editorInteractionState.selectedCell;
 
     // draw cursor but leave room for cursor indicator if needed
@@ -153,7 +153,7 @@ export class Cursor extends Container {
 
     this.startCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
     if (cursor.multiCursor) {
-      drawMultiCursor(this.graphics, colors.cursorCell, FILL_ALPHA, cursor.multiCursor);
+      drawMultiCursor(this.graphics, pixiApp.accentColor, FILL_ALPHA, cursor.multiCursor);
 
       // endCell is only interesting for one multiCursor since we use it to draw
       // the indicator, which is only active for one multiCursor
@@ -194,14 +194,14 @@ export class Cursor extends Container {
       this.indicator.y = y - indicatorSize / 2;
       this.graphics.lineStyle(0);
       // have cursor color match code editor mode
-      let color = colors.cursorCell;
+      let color = pixiApp.accentColor;
       if (
         inlineEditorHandler.getShowing(cell.x, cell.y) ||
         (editorInteractionState.showCodeEditor &&
           editor_selected_cell.x === cell.x &&
           editor_selected_cell.y === cell.y)
       )
-        color = colors.cursorCell;
+        color = pixiApp.accentColor;
       this.graphics.beginFill(color).drawShape(this.indicator).endFill();
     }
   }
@@ -265,7 +265,7 @@ export class Cursor extends Container {
           drawColumnRowCursor({
             g: this.graphics,
             columnRow,
-            color: colors.cursorCell,
+            color: pixiApp.accentColor,
             alpha: FILL_ALPHA,
             cursorPosition: sheets.sheet.cursor.cursorPosition,
           });

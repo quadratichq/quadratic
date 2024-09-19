@@ -6,6 +6,7 @@ import { CellsImages } from '@/app/gridGL/cells/cellsImages/CellsImages';
 import { ensureVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { isEmbed } from '@/app/helpers/isEmbed';
+import { colors } from '@/app/theme/colors';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { HEADING_SIZE } from '@/shared/constants/gridConstants';
@@ -70,6 +71,8 @@ export class PixiApp {
   loading = true;
   destroyed = false;
   paused = true;
+
+  accentColor = colors.cursorCell;
 
   // for testing purposes
   debug!: Graphics;
@@ -215,6 +218,25 @@ export class PixiApp {
     this.viewport.destroy();
     this.removeListeners();
     this.destroyed = true;
+  }
+
+  setAccentColor(newAccentColor: string): void {
+    this.accentColor = Number(`0x${newAccentColor}`);
+
+    // Copied from resize
+    if (!this.parent || this.destroyed) return;
+    const width = this.parent.offsetWidth;
+    const height = this.parent.offsetHeight;
+    this.canvas.width = this.renderer.resolution * width;
+    this.canvas.height = this.renderer.resolution * height;
+    this.renderer.resize(width, height);
+    this.viewport.resize(width, height);
+    this.gridLines.dirty = true;
+    this.axesLines.dirty = true;
+    this.headings.dirty = true;
+    this.cursor.dirty = true;
+    this.cellHighlights.dirty = true;
+    this.render();
   }
 
   resize = (): void => {

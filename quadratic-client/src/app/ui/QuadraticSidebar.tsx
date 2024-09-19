@@ -8,6 +8,7 @@ import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
 import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
@@ -112,6 +113,7 @@ export const QuadraticSidebar = () => {
         </SidebarTooltip>
       </div>
       <div className="mb-2 mt-auto flex flex-col items-center gap-1">
+        <ThemePickerMenu />
         {provideFeedbackAction.isAvailable(isAvailableArgs) && (
           <SidebarTooltip label={provideFeedbackAction.label}>
             <SidebarToggle
@@ -141,7 +143,8 @@ export const SidebarToggle = React.forwardRef<HTMLButtonElement, React.Component
         {...props}
         ref={ref}
         className={cn(
-          'relative h-8 w-8 rounded text-muted-foreground hover:bg-border hover:text-foreground aria-pressed:bg-border data-[state=open]:bg-border'
+          'relative h-8 w-8 rounded text-muted-foreground hover:bg-border hover:text-foreground aria-pressed:bg-border data-[state=open]:bg-border',
+          props.className
         )}
       >
         {children}
