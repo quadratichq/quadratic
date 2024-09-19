@@ -43,7 +43,7 @@ export const QuadraticSidebar = () => {
   const canDoTeamsStuff = isAvailableBecauseFileLocationIsAccessibleAndWriteable(isAvailableArgs);
 
   return (
-    <nav className="hidden h-full w-12 flex-shrink-0 flex-col border-r border-border bg-accent lg:flex">
+    <nav className="hidden h-full w-12 flex-shrink-0 flex-col border-r border-border bg-accent md:flex">
       <div className="flex h-12 items-center justify-center border-b border-border">
         <SidebarTooltip label="Back to dashboard">
           <Link
