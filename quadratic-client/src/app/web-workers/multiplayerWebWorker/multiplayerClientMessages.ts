@@ -60,12 +60,12 @@ export interface ClientMultiplayerCellEdit {
   cellEdit?: CellEdit;
 }
 
-export interface clientMultiplayerViewport {
+export interface ClientMultiplayerViewport {
   type: 'clientMultiplayerViewport';
   viewport: string;
 }
 
-export interface clientMultiplayerCodeRunning {
+export interface ClientMultiplayerCodeRunning {
   type: 'clientMultiplayerCodeRunning';
   sheetPos: string;
 }
@@ -94,6 +94,14 @@ export interface ClientMultiplayerRefreshJwt {
   id: number;
 }
 
+export interface ClientMultiplayerOnline {
+  type: 'clientMultiplayerOnline';
+}
+
+export interface ClientMultiplayerOffline {
+  type: 'clientMultiplayerOffline';
+}
+
 export type MultiplayerClientMessage =
   | MultiplayerClientState
   | MultiplayerClientUserUpdate
@@ -108,7 +116,9 @@ export type ClientMultiplayerMessage =
   | ClientMultiplayerSelection
   | ClientMultiplayerSheet
   | ClientMultiplayerCellEdit
-  | clientMultiplayerViewport
-  | clientMultiplayerCodeRunning
+  | ClientMultiplayerViewport
+  | ClientMultiplayerCodeRunning
   | ClientMultiplayerFollow
-  | ClientMultiplayerRefreshJwt;
+  | ClientMultiplayerRefreshJwt
+  | ClientMultiplayerOnline
+  | ClientMultiplayerOffline;
