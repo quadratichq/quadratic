@@ -32,6 +32,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
 
   useEffect(() => {
     const preventBrowserShortcuts = (e: KeyboardEvent) => {
+      console.log('preventBrowserShortcuts', e);
       if (
         matchShortcut('show_command_palette', e) ||
         matchShortcut('show_go_to_menu', e) ||
@@ -41,9 +42,9 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       }
     };
 
-    document.addEventListener('keydown', preventBrowserShortcuts);
+    window.addEventListener('keydown', preventBrowserShortcuts);
     return () => {
-      document.removeEventListener('keydown', preventBrowserShortcuts);
+      window.removeEventListener('keydown', preventBrowserShortcuts);
     };
   }, []);
 
