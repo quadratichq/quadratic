@@ -22,7 +22,7 @@ export const InsertMenubarMenu = () => {
   return (
     <MenubarMenu>
       <MenubarTrigger>Insert</MenubarTrigger>
-      <MenubarContent onCloseAutoFocus={(e) => e.preventDefault()}>
+      <MenubarContent onCloseAutoFocus={(e) => e.preventDefault()} className="pointer-move-ignore">
         <MenubarSub>
           <MenubarSubTrigger>
             <CodeIcon /> Code

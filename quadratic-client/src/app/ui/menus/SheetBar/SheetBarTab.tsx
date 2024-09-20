@@ -109,6 +109,7 @@ function TabWrapper({ children, sheet, active }: any) {
   const { follow } = useRecoilValue(editorInteractionStateAtom);
   return (
     <Stack
+      className={cn(active && 'text-primary')}
       direction="row"
       alignItems="center"
       gap={theme.spacing(0.25)}
@@ -131,11 +132,6 @@ function TabWrapper({ children, sheet, active }: any) {
           width: 'calc(100% - 2px)',
           backgroundColor: sheet.color ? sheet.color : 'transparent',
         },
-        ...(active
-          ? {
-              color: theme.palette.primary.main,
-            }
-          : {}),
         '&:hover .MuiIconButton-root': {
           opacity: 1,
           visibility: 'visible',
