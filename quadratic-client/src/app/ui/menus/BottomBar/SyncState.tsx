@@ -2,71 +2,44 @@ import { events } from '@/app/events/events';
 import { pluralize } from '@/app/helpers/pluralize';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
-import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/shared/shadcn/ui/dropdown-menu';
-import { timeAgo } from '@/shared/utils/timeAgo';
-import { Check, ErrorOutline } from '@mui/icons-material';
-import { CircularProgress, Tooltip, useTheme } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
-import BottomBarItem from './BottomBarItem';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { CloseIcon } from '@/shared/components/Icons';
+import { ShowAfter } from '@/shared/components/ShowAfter';
 import { DOCUMENTATION_OFFLINE } from '@/shared/constants/urls';
+import { Button } from '@/shared/shadcn/ui/button';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
+import { timeAgo } from '@/shared/utils/timeAgo';
+import { CircularProgress } from '@mui/material';
+import { useEffect, useState } from 'react';
+import BottomBarItem from './BottomBarItem';
 
-const TIMEOUT_TO_SHOW_DISCONNECT_MESSAGE = 1000;
+// const TIMEOUT_TO_SHOW_DISCONNECT_MESSAGE = 1000;
 
 export default function SyncState() {
-  const theme = useTheme();
-
   const [syncState, setSyncState] = useState<MultiplayerState>(multiplayer.state);
   const { addGlobalSnackbar } = useGlobalSnackbar();
+  const [showOfflineMsg, setShowOfflineMsg] = useState(false);
 
-  const [disconnectMessage, setDisconnectMessage] = useState(false);
-  const timeout = useRef<number | null>(null);
   useEffect(() => {
     const updateState = (state: MultiplayerState) => {
-      if (state === 'waiting to reconnect' || state === 'no internet') {
-        if (!timeout.current && !disconnectMessage) {
-          timeout.current = window.setTimeout(() => {
-            const message = (
-              <div>
-                Connection to the Quadratic server was lost. Your changes are only saved locally.{' '}
-                <a className="underline" href={DOCUMENTATION_OFFLINE}>
-                  Learn more
-                </a>
-                .
-              </div>
-            );
-            addGlobalSnackbar(message, {
-              severity: 'warning',
-              button: { title: 'Refresh', callback: () => window.location.reload() },
-            });
-            timeout.current = null;
-            setDisconnectMessage(true);
-          }, TIMEOUT_TO_SHOW_DISCONNECT_MESSAGE);
+      setSyncState((prevState) => {
+        // If they dismissed it, don't show it again if they've gone from offline -> online
+        if ((prevState === 'connected' || prevState === 'syncing') && !(state === 'connected' || state === 'syncing')) {
+          setShowOfflineMsg(true);
         }
-      }
-      if (state === 'connected' && timeout.current) {
-        window.clearTimeout(timeout.current);
-        timeout.current = null;
-      }
-      if (state === 'connected' && disconnectMessage) {
-        setDisconnectMessage(false);
-        addGlobalSnackbar('Connection to the Quadratic server was reestablished.', { severity: 'success' });
-      }
-      setSyncState(state);
+        // If they didn't dismiss it, make sure it hides if they go from offline -> online
+        if (!(prevState === 'connected' || prevState === 'syncing') && (state === 'connected' || state === 'syncing')) {
+          setShowOfflineMsg(false);
+        }
+        return state;
+      });
     };
     events.on('multiplayerState', updateState);
     return () => {
       events.off('multiplayerState', updateState);
     };
-  }, [addGlobalSnackbar, disconnectMessage]);
+  }, []);
 
   const [unsavedTransactions, setUnsavedTransactions] = useState(0);
   useEffect(() => {
@@ -107,56 +80,57 @@ export default function SyncState() {
     };
   }, [addGlobalSnackbar]);
 
-  const [open, setOpen] = useState(false);
-
   let tooltip: string;
-  let icon: JSX.Element;
-  let message: string | JSX.Element;
+  let message: string;
+  let icon = null;
+  let className = '';
 
-  if (['waiting to reconnect', 'connecting'].includes(syncState) && multiplayer.brokenConnection) {
-    icon = <CircularProgress size="0.5rem" />;
-    message = <span style={{ color: theme.palette.error.main }}>Reconnecting…</span>;
-    tooltip =
-      'Attempting to connect to the Quadratic server after losing connection. Your changes may only be saved locally…';
-  } else if (['not connected', 'connecting', 'waiting to reconnect', 'startup'].includes(syncState)) {
-    icon = <CircularProgress size="0.5rem" />;
-    message = <span>Connecting…</span>;
-    tooltip = 'Connecting to the Quadratic server…';
+  const loadingIcon = <CircularProgress size="0.5rem" />;
+
+  if (syncState === 'connected') {
+    message = 'Connected';
+    tooltip = 'All changes saved';
   } else if (syncState === 'syncing') {
-    icon = <CircularProgress size="0.5rem" />;
-    message = <span>Syncing...</span>;
-    tooltip = 'Syncing changes to the Quadratic server. Your recent changes are saved locally.';
-  } else if (syncState === 'connected') {
-    icon = <Check fontSize="inherit" />;
-    message = <span>Connected</span>;
-    tooltip = 'Connected to the Quadratic server. Your changes are saved.';
-  } else if (syncState === 'no internet') {
-    icon = <ErrorOutline fontSize="inherit" style={{ color: theme.palette.error.main }} />;
-    message = <span style={{ color: theme.palette.error.main }}>Offline</span>;
-    tooltip = 'Your internet connection appears not to be working. Your changes are only saved locally.';
+    message = 'Syncing…';
+    tooltip = 'Recent changes saved locally';
+    icon = loadingIcon;
   } else {
-    icon = <ErrorOutline fontSize="inherit" style={{ color: theme.palette.error.main }} />;
-    tooltip =
-      "Connection to the Quadratic server was lost. We'll continue trying to reconnect. Your changes are only saved locally.";
-    message = <span style={{ color: theme.palette.error.main }}>Offline</span>;
+    className = 'text-destructive';
+    icon = loadingIcon;
+    message = 'Offline, reconnecting…';
+    tooltip = 'Recent changes only saved locally';
+  }
+
+  if (unsavedTransactions > 0) {
+    tooltip += ` (syncing ${unsavedTransactions} ${pluralize('item', unsavedTransactions)}…)`;
   }
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
-        <BottomBarItem icon={icon} onClick={() => {}}>
-          <Tooltip title={tooltip}>{message}</Tooltip>
-        </BottomBarItem>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        <DropdownMenuLabel className={`flexz zw-full zjustify-between`}>Status</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem className={`flexz zw-full zjustify-between`}>
-          {unsavedTransactions === 0
-            ? 'Nothing waiting to sync'
-            : `Syncing ${unsavedTransactions} ${pluralize('item', unsavedTransactions)}.`}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <BottomBarItem className={className} icon={icon}>
+        <TooltipPopover label={tooltip}>
+          <div>{message}</div>
+        </TooltipPopover>
+      </BottomBarItem>
+      {showOfflineMsg && (
+        <ShowAfter delay={5000}>
+          <div className="fixed bottom-16 right-2 z-10 w-96 rounded bg-destructive p-4 pr-8 text-sm text-background">
+            Connection lost. Your changes are only saved locally.{' '}
+            <a className="underline" href={DOCUMENTATION_OFFLINE}>
+              Learn more
+            </a>
+            .
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="absolute right-1 top-1 !bg-transparent opacity-80 hover:text-background hover:opacity-100"
+              onClick={() => setShowOfflineMsg(false)}
+            >
+              <CloseIcon />
+            </Button>
+          </div>
+        </ShowAfter>
+      )}
+    </>
   );
 }

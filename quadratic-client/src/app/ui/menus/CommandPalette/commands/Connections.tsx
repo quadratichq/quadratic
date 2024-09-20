@@ -1,5 +1,6 @@
 import { isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { DatabaseIcon } from '@/shared/components/Icons';
 import { useSetRecoilState } from 'recoil';
 import { CommandGroup, CommandPaletteListItem, CommandPaletteListItemDynamicProps } from '../CommandPaletteListItem';
 
@@ -18,6 +19,7 @@ const commands: CommandGroup = {
             action={() => {
               setEditorInteractionState((prev) => ({ ...prev, showCellTypeMenu: true }));
             }}
+            icon={<DatabaseIcon />}
           />
         );
       },
@@ -34,6 +36,7 @@ const commands: CommandGroup = {
             action={() => {
               setEditorInteractionState((prev) => ({ ...prev, showConnectionsMenu: true }));
             }}
+            icon={<DatabaseIcon />}
           />
         );
       },
