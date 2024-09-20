@@ -1,4 +1,3 @@
-import { colors } from '@/app/theme/colors';
 import './ResizeControl.css';
 
 interface ResizeControlProps {
@@ -13,13 +12,7 @@ export function ResizeControl({ disabled, setState, position, style }: ResizeCon
     <div
       className={`resize-control resize-control--position-${position} ${disabled ? 'resize-control--disabled' : ''}`}
       data-position={position}
-      style={
-        {
-          ...style,
-          '--resize-control-highlight': colors.quadraticPrimary,
-          '--resize-control-background': colors.mediumGray,
-        } as React.CSSProperties
-      }
+      style={style}
       onMouseDown={(e) => {
         if (disabled) return;
 
