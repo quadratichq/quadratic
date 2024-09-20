@@ -13,7 +13,9 @@
 
 import { Bounds } from '@/app/grid/sheet/Bounds';
 import { CellsDrawRects } from '@/app/gridGL/cells/cellsLabel/CellsDrawRects';
-import { Coordinate, DrawRects } from '@/app/gridGL/types/size';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { Link } from '@/app/gridGL/types/links';
+import { DrawRects } from '@/app/gridGL/types/size';
 import { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import { CellsTextHashContent } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashContent';
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
@@ -52,7 +54,7 @@ export class CellsTextHash extends Container {
 
   content: CellsTextHashContent;
 
-  links: Coordinate[];
+  links: Link[];
 
   newDrawRects: DrawRects[];
   drawRects: CellsDrawRects;
@@ -173,7 +175,17 @@ export class CellsTextHash extends Container {
     return this.warnings.intersectsErrorMarkerValidation(world);
   }
 
-  intersectsLink(cell: Coordinate): boolean {
-    return this.links.some((link) => cell.x === link.x && cell.y === link.y);
-  }
+  intersectsLink = (world: Point): Link | undefined => {
+    for (const link of this.links) {
+      const textRectangle = new Rectangle(
+        link.textRectangle.x + this.x,
+        link.textRectangle.y + this.y,
+        link.textRectangle.width,
+        link.textRectangle.height
+      );
+      const isLink = intersects.rectanglePoint(textRectangle, world);
+      if (isLink) return { pos: link.pos, textRectangle };
+    }
+    return undefined;
+  };
 }

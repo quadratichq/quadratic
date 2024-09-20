@@ -3,7 +3,7 @@ import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Coordinate } from '@/app/gridGL/types/size';
+import { Link } from '@/app/gridGL/types/links';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
 import { openLink } from '@/app/helpers/links';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -14,38 +14,43 @@ const HOVER_DELAY = 500;
 export class PointerLink {
   cursor?: string;
 
-  private pos?: Coordinate;
+  private link?: Link;
   private text?: string;
   private subtext?: string;
   private hoverTimeout?: NodeJS.Timeout;
 
-  private emitHoverTooltip = (pos?: Coordinate, text?: string, subtext?: string) => {
-    if (text !== this.text || subtext !== this.subtext || pos?.x !== this.pos?.x || pos?.y !== this.pos?.y) {
+  private emitHoverTooltip = (link?: Link, text?: string, subtext?: string) => {
+    if (
+      text !== this.text ||
+      subtext !== this.subtext ||
+      link?.pos?.x !== this.link?.pos?.x ||
+      link?.pos?.y !== this.link?.pos?.y
+    ) {
       clearTimeout(this.hoverTimeout);
-      this.pos = pos;
+      this.link = link;
       this.text = text;
       this.subtext = subtext;
       this.hoverTimeout = undefined;
-      events.emit('hoverTooltip', pos, undefined, undefined);
+      events.emit('hoverTooltip', link?.textRectangle, undefined, undefined);
     } else if (!this.hoverTimeout) {
       this.hoverTimeout = setTimeout(() => {
-        events.emit('hoverTooltip', pos, text, subtext);
+        events.emit('hoverTooltip', link?.textRectangle, text, subtext);
       }, HOVER_DELAY);
     }
   };
 
-  private checkHoverLink = (world: Point): Coordinate | undefined => {
+  private checkHoverLink = (world: Point): Link | undefined => {
     if (!pixiApp.cellsSheets.current) {
       throw new Error('Expected cellsSheets.current to be defined in PointerLink');
     }
-    const cellsLabels = pixiApp.cellsSheets.current.cellsLabels;
-    return cellsLabels.intersectsLink(world);
+    const link = pixiApp.cellsSheets.current.cellsLabels.intersectsLink(world);
+    return link;
   };
 
-  pointerMove = (world: Point, _event: PointerEvent): boolean => {
+  pointerMove = (world: Point, event: PointerEvent): boolean => {
     const link = this.checkHoverLink(world);
     if (link) {
-      this.cursor = 'pointer';
+      this.cursor = matchShortcut(Action.CmdClick, event) ? 'pointer' : undefined;
       const tooltipText = 'Open link ';
       const tooltipSubtext = `(${defaultActionSpec[Action.CmdClick].label})`;
       this.emitHoverTooltip(link, tooltipText, tooltipSubtext);
@@ -60,8 +65,8 @@ export class PointerLink {
     const { multiCursor } = sheets.sheet.cursor;
     if (matchShortcut(Action.CmdClick, event) && !multiCursor) {
       const link = this.checkHoverLink(world);
-      if (link) {
-        quadraticCore.getDisplayCell(pixiApp.cellsSheets.current?.sheetId ?? '', link.x, link.y).then((url) => {
+      if (link?.pos) {
+        quadraticCore.getDisplayCell(pixiApp.cellsSheets.current?.sheetId ?? '', link.pos.x, link.pos.y).then((url) => {
           if (url) openLink(url);
         });
         return true;

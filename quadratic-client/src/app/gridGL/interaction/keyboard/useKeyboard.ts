@@ -4,6 +4,7 @@ import { keyboardCell } from '@/app/gridGL/interaction/keyboard/keyboardCell';
 import { keyboardClipboard } from '@/app/gridGL/interaction/keyboard/keyboardClipboard';
 import { keyboardCode } from '@/app/gridGL/interaction/keyboard/keyboardCode';
 import { keyboardDropdown } from '@/app/gridGL/interaction/keyboard/keyboardDropdown';
+import { keyboardLink } from '@/app/gridGL/interaction/keyboard/keyboardLink';
 import { keyboardPosition } from '@/app/gridGL/interaction/keyboard/keyboardPosition';
 import { keyboardSearch } from '@/app/gridGL/interaction/keyboard/keyboardSearch';
 import { keyboardSelect } from '@/app/gridGL/interaction/keyboard/keyboardSelect';
@@ -21,7 +22,12 @@ export interface IProps {
 
 export const pixiKeyboardCanvasProps: { headerSize: Size } = { headerSize: { width: 0, height: 0 } };
 
-export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void } => {
+export const useKeyboard = (
+  props: IProps
+): {
+  onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void;
+  onKeyUp: (event: React.KeyboardEvent<HTMLElement>) => void;
+} => {
   const { editorInteractionState, setEditorInteractionState } = props;
   const { presentationMode, setPresentationMode } = useGridSettings();
   const { addGlobalSnackbar } = useGlobalSnackbar();
@@ -29,6 +35,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if (pixiAppSettings.input.show && inlineEditorHandler.isOpen()) return;
     if (
+      keyboardLink(event) ||
       keyboardViewport({
         event,
         editorInteractionState,
@@ -70,7 +77,16 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
     }
   };
 
+  const onKeyUp = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (keyboardLink(event)) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+  };
+
   return {
     onKeyDown,
+    onKeyUp,
   };
 };
