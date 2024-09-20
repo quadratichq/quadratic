@@ -54,7 +54,7 @@ export default function SyncState() {
       const message = (
         <div>
           We applied {timestamps.length} unsynced changes from {to}. You can undo these changes.{' '}
-          <a className="underline" href={DOCUMENTATION_OFFLINE}>
+          <a className="underline" href={DOCUMENTATION_OFFLINE} target="_blank" rel="noopener noreferrer">
             Learn More
           </a>
           .
@@ -116,7 +116,7 @@ export default function SyncState() {
         <ShowAfter delay={5000}>
           <div className="fixed bottom-16 right-2 z-10 w-96 rounded bg-destructive p-4 pr-8 text-sm text-background">
             Connection lost. Your changes are only saved locally.{' '}
-            <a className="underline" href={DOCUMENTATION_OFFLINE}>
+            <a className="underline" href={DOCUMENTATION_OFFLINE} target="_blank" rel="noopener noreferrer">
               Learn more
             </a>
             .
