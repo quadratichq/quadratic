@@ -436,6 +436,10 @@ impl<B: BlockContent> ColumnData<B> {
         changed
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     #[cfg(test)]
     pub fn print(&self) {
         if let Some(bounds) = self.range() {
@@ -816,5 +820,14 @@ mod test {
         assert!(cd.has_format_in_row(10));
         assert!(cd.has_format_in_row(11));
         assert!(!cd.has_format_in_row(12));
+    }
+
+    #[test]
+    #[parallel]
+    fn is_empty() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+        assert!(cd.is_empty());
+        cd.set(1, Some(true));
+        assert!(!cd.is_empty());
     }
 }

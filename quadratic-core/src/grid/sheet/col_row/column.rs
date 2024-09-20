@@ -168,6 +168,9 @@ impl Sheet {
         for col in columns_to_update {
             if let Some(mut column_data) = self.columns.remove(&col) {
                 column_data.x -= 1;
+                if !column_data.fill_color.is_empty() {
+                    transaction.fill_cells.insert(self.id);
+                }
                 self.columns.insert(col - 1, column_data);
                 updated_cols.insert(col - 1);
             }
@@ -232,8 +235,6 @@ impl Sheet {
                 }
             }
         });
-
-        // todo: fill_color needs a separate update
 
         reverse_operations
     }

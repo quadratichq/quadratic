@@ -172,6 +172,12 @@ impl GridController {
                         self.send_image(pos.to_sheet_pos(*sheet_id));
                     });
                 });
+
+            transaction.fill_cells.iter().for_each(|sheet_id| {
+                if let Some(sheet) = self.try_sheet(*sheet_id) {
+                    sheet.resend_fills();
+                }
+            });
         }
     }
 

@@ -82,6 +82,9 @@ impl GridController {
                 if new_code_run.is_none() && !transaction.is_server() {
                     transaction.add_code_cell(sheet_id, pos);
                 }
+            } else {
+                // ensure the code cell is updated
+                transaction.add_code_cell(sheet_id, pos);
             }
         }
 

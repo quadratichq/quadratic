@@ -121,7 +121,12 @@ impl Sheet {
     }
 
     /// Removes format at row and shifts remaining formats to the left by 1.
-    fn formats_remove_and_shift_up(&mut self, row: i64, updated_rows: &mut HashSet<i64>) {
+    fn formats_remove_and_shift_up(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        row: i64,
+        updated_rows: &mut HashSet<i64>,
+    ) {
         if let GridBounds::NonEmpty(bounds) = self.bounds(false) {
             for x in bounds.min.x..=bounds.max.x {
                 if let Some(column) = self.columns.get_mut(&x) {
@@ -157,6 +162,7 @@ impl Sheet {
                     }
                     if column.fill_color.remove_and_shift_left(row) {
                         updated_rows.insert(row);
+                        transaction.fill_cells.insert(self.id);
                     }
                     if column.render_size.remove_and_shift_left(row) {
                         updated_rows.insert(row);
@@ -257,7 +263,7 @@ impl Sheet {
         }
 
         // update the indices of all column-based formats impacted by the deletion
-        self.formats_remove_and_shift_up(row, &mut updated_rows);
+        self.formats_remove_and_shift_up(transaction, row, &mut updated_rows);
 
         // send the value hashes that have changed to the client
         let dirty_hashes = transaction
@@ -279,8 +285,6 @@ impl Sheet {
             sheet_id: self.id,
             row,
         });
-
-        // todo: fill_color needs a separate update
 
         reverse_operations
     }
