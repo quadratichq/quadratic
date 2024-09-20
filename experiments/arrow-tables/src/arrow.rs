@@ -34,7 +34,7 @@ pub fn create_table() -> RecordBatch {
     .unwrap()
 }
 
-fn sort_column(batch: &RecordBatch, col_idx: usize) -> RecordBatch {
+pub fn sort_column(batch: &RecordBatch, col_idx: usize) -> RecordBatch {
     let array = batch.column(col_idx);
 
     // Sort the column

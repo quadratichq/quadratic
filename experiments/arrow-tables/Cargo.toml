@@ -10,4 +10,6 @@ version.workspace = true
 [dependencies]
 arrow = { version = "53.0.0", features = ["prettyprint"] }
 datafusion = "42.0.0"
+strum = { version = "0.26.3", features = ["derive"] }
+strum_macros = "0.26.4"
 tokio = { version = "1.40.0", features = ["full"] }
