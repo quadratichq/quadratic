@@ -397,6 +397,122 @@ impl Selection {
             Some(selection)
         }
     }
+
+    /// Returns whether a Selection contains a rect that includes the column
+    pub fn rects_contain_column(&self, column: i64) -> bool {
+        if let Some(rects) = self.rects.as_ref() {
+            rects.iter().any(|r| column >= r.min.x && column <= r.max.x)
+        } else {
+            false
+        }
+    }
+
+    // Returns whether a Selection contains a rect that includes the row
+    pub fn rects_contain_row(&self, row: i64) -> bool {
+        if let Some(rects) = self.rects.as_ref() {
+            rects.iter().any(|r| row >= r.min.y && row <= r.max.y)
+        } else {
+            false
+        }
+    }
+
+    /// Returns an updated Selection by growing any rects that overlap the column
+    pub fn grow_selection_rect_column(selection: &Selection, column: i64) -> Selection {
+        if let Some(rects) = selection.rects.as_ref() {
+            Selection {
+                rects: rects.iter().map(|r| {
+                    if column >= r.min.x && column <= r.max.x {
+                        Rect::new(r.min.x, r.min.y, r.max.x + 1, r.max.y)
+                    } else {
+                        r
+                    }
+                }),
+                ..selection.clone()
+            }
+        } else {
+            selection.clone()
+        }
+    }
+
+    /// Returns an updated Selection by growing any rects that overlap the row.
+    pub fn grow_selection_rect_row(selection: &Selection, row: i64) -> Selection {
+        if let Some(rects) = selection.rects.as_ref() {
+            Selection {
+                rects: rects.iter().map(|r| {
+                    if row >= r.min.y && row <= r.max.y {
+                        Rect::new(r.min.x, r.min.y, r.max.x, r.max.y + 1)
+                    } else {
+                        r.clone()
+                    }
+                }),
+                ..selection.clone()
+            }
+        } else {
+            selection.clone()
+        }
+    }
+
+    /// Updates a Selection by shrinking any rects that overlap the row.
+    pub fn shrink_selection_row_columns(selection: &Selection, column: i64) -> Option<Selection> {
+        if let Some(rects) = selection.rects.as_ref() {
+            let new_rects = rects.iter().filter_map(|r| {
+                if column >= r.min.x && column <= r.max.x {
+                    if r.width() == 1 {
+                        None
+                    } else {
+                        Some(Rect::new(r.min.x, r.min.y, r.max.x - 1, r.max.y))
+                    }
+                } else {
+                    r
+                }
+            });
+            if new_rects.is_empty()
+                && !selection.all
+                && selection.columns.is_none()
+                && selection.rows.is_none()
+            {
+                None
+            } else {
+                Some(Selection {
+                    rects: Some(new_rects),
+                    ..selection.clone()
+                })
+            }
+        } else {
+            Some(selection.clone())
+        }
+    }
+
+    /// Updates a Selection by shrinking any rects that overlap the row.
+    pub fn shrink_selection_row_rows(selection: &Selection, row: i64) -> Option<Selection> {
+        if let Some(rects) = selection.rects.as_ref() {
+            let new_rects = rects.iter().filter_map(|r| {
+                if row >= r.min.y && row <= r.max.y {
+                    if r.height() == 1 {
+                        None
+                    } else {
+                        Some(Rect::new(r.min.x, r.min.y, r.max.x, r.max.y - 1))
+                    }
+                } else {
+                    r
+                }
+            });
+            if new_rects.is_empty()
+                && !selection.all
+                && selection.columns.is_none()
+                && selection.rows.is_none()
+            {
+                None
+            } else {
+                Some(Selection {
+                    rects: Some(new_rects),
+                    ..selection.clone()
+                })
+            }
+        } else {
+            Some(selection.clone())
+        }
+    }
 }
 
 impl FromStr for Selection {
@@ -979,5 +1095,45 @@ mod test {
                 ..Default::default()
             }
         );
+    }
+
+    #[test]
+    #[parallel]
+    fn selection_rects_contains_column() {
+        let selection = Selection {
+            rects: Some(vec![Rect::new(1, 1, 2, 2)]),
+            ..Default::default()
+        };
+        assert!(selection.rects_contain_column(1));
+        assert!(selection.rects_contain_column(2));
+        assert!(!selection.rects_contain_column(3));
+
+        let selection = Selection {
+            all: true,
+            columns: Some(vec![1]),
+            rows: Some(vec![1]),
+            ..Default::default()
+        };
+        assert_eq!(selection.rects_contain_column(1), false);
+    }
+
+    #[test]
+    #[parallel]
+    fn selection_rects_contains_row() {
+        let selection = Selection {
+            rects: Some(vec![Rect::new(1, 1, 2, 2)]),
+            ..Default::default()
+        };
+        assert!(selection.rects_contain_row(1));
+        assert!(selection.rects_contain_row(2));
+        assert!(!selection.rects_contain_row(3));
+
+        let selection = Selection {
+            all: true,
+            columns: Some(vec![1]),
+            rows: Some(vec![1]),
+            ..Default::default()
+        };
+        assert_eq!(selection.rects_contain_row(1), false);
     }
 }
