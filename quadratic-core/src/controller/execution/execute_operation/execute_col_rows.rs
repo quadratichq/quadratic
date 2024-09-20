@@ -138,7 +138,8 @@ impl GridController {
             }
 
             if transaction.is_user() {
-                // adjust formulas to account for deleted column
+                // adjust formulas to account for deleted column (needs to be
+                // here since it's across sheets)
                 self.adjust_formulas(transaction, sheet_id, sheet_name, Some(column), None, -1);
 
                 // update information for all cells to the right of the deleted column
@@ -175,7 +176,8 @@ impl GridController {
             }
 
             if transaction.is_user() {
-                // adjust formulas to account for deleted row
+                // adjust formulas to account for deleted column (needs to be
+                // here since it's across sheets)
                 self.adjust_formulas(transaction, sheet_id, sheet_name, None, Some(row), -1);
 
                 // update information for all cells below the deleted row
@@ -212,7 +214,8 @@ impl GridController {
             }
 
             if transaction.is_user() {
-                // adjust formulas to account for inserted column
+                // adjust formulas to account for deleted column (needs to be
+                // here since it's across sheets)
                 self.adjust_formulas(transaction, sheet_id, sheet_name, Some(column), None, 1);
 
                 // update information for all cells to the right of the deleted column
@@ -249,7 +252,8 @@ impl GridController {
             }
 
             if transaction.is_user() {
-                // adjust formulas to account for inserted row
+                // adjust formulas to account for deleted column (needs to be
+                // here since it's across sheets)
                 self.adjust_formulas(transaction, sheet_id, sheet_name, None, Some(row), 1);
 
                 // update information for all cells below the deleted row
