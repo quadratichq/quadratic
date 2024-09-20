@@ -11,7 +11,7 @@ use crate::{
 use super::{active_transactions::pending_transaction::PendingTransaction, GridController};
 
 impl GridController {
-    fn send_render_cells_from_hash(&self, sheet_id: SheetId, modified: HashSet<Pos>) {
+    pub fn send_render_cells_from_hash(&self, sheet_id: SheetId, modified: &HashSet<Pos>) {
         // send the modified cells to the render web worker
         modified.iter().for_each(|modified| {
             if let Some(sheet) = self.try_sheet(sheet_id) {
@@ -53,7 +53,7 @@ impl GridController {
                 });
             }
         }
-        self.send_render_cells_from_hash(sheet_rect.sheet_id, modified);
+        self.send_render_cells_from_hash(sheet_rect.sheet_id, &modified);
     }
 
     /// Sends the modified cell sheets to the render web worker based on a
@@ -81,7 +81,7 @@ impl GridController {
                 }
             }
         }
-        self.send_render_cells_from_hash(selection.sheet_id, modified);
+        self.send_render_cells_from_hash(selection.sheet_id, &modified);
     }
 
     // deprecated

@@ -1,7 +1,7 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { formatDate, formatDateTime, formatTime, parseTime } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { formatDateTime, formatTime, parseTime } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { ValidationInput } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationInput';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -22,6 +22,22 @@ export const CalendarPicker = () => {
   const showTime = editorInteractionState.annotationState === 'calendar-time';
   const showCalendar =
     editorInteractionState.annotationState === 'calendar' || editorInteractionState.annotationState === 'calendar-time';
+
+  useEffect(() => {
+    const close = (opened: boolean) => {
+      if (!opened) {
+        setEditorInteractionState((state) => ({
+          ...state,
+          annotationState: undefined,
+        }));
+      }
+    };
+    inlineEditorEvents.on('status', close);
+
+    return () => {
+      inlineEditorEvents.off('status', close);
+    };
+  }, [setEditorInteractionState]);
 
   const [value, setValue] = useState<string | undefined>();
   const [date, setDate] = useState<Date | undefined>();
@@ -72,9 +88,9 @@ export const CalendarPicker = () => {
     let replacement: string;
     if (showTime) {
       newDate.setHours(date.getHours(), date.getMinutes(), date.getSeconds());
-      replacement = formatDateTime(dateToDateTimeString(newDate), dateFormat);
+      replacement = dateToDateTimeString(newDate);
     } else {
-      replacement = formatDate(dateToDateString(newDate), dateFormat);
+      replacement = dateToDateString(newDate);
     }
     setDate(newDate);
     inlineEditorEvents.emit('replaceText', replacement, false);
