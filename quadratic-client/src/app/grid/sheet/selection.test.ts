@@ -3,10 +3,16 @@ import type { RectangleLike } from './SheetCursor';
 import {
   defaultSelection,
   getSelectionString,
+  growSelectionRectColumn,
+  growSelectionRectRow,
   parseCoordinate,
   parseNumberList,
   parseRange,
   parseSelectionString,
+  selectionRectContainsColumn,
+  selectionRectContainsRow,
+  shrinkSelectionRectColumn,
+  shrinkSelectionRectRow,
 } from './selection';
 import { Selection } from '@/app/quadratic-core-types';
 
@@ -132,4 +138,60 @@ it('parseSelectionString', () => {
     column: 12,
   });
   expect(parseSelectionString('', sheetId).error).toEqual(undefined);
+});
+
+describe('grow and shrink selection', () => {
+  it('selectionRectContainsColumn', () => {
+    let selection = mockSelection({ rects: [{ x: 1, y: 1, width: 2, height: 2 }] });
+    expect(selectionRectContainsColumn(selection, 1)).toBe(true);
+    expect(selectionRectContainsColumn(selection, 2)).toBe(true);
+    expect(selectionRectContainsColumn(selection, 3)).toBe(false);
+
+    selection = mockSelection({ all: true, columns: [1], rows: [1] });
+    expect(selectionRectContainsColumn(selection, 1)).toBe(false);
+  });
+
+  it('selectionRectContainsRow', () => {
+    let selection = mockSelection({ rects: [{ x: 1, y: 1, width: 2, height: 2 }] });
+    expect(selectionRectContainsRow(selection, 1)).toBe(true);
+    expect(selectionRectContainsRow(selection, 2)).toBe(true);
+    expect(selectionRectContainsRow(selection, 3)).toBe(false);
+
+    selection = mockSelection({ all: true, columns: [1], rows: [1] });
+    expect(selectionRectContainsRow(selection, 1)).toBe(false);
+  });
+
+  it('growSelectionRectColumn', () => {
+    const selection = mockSelection({ rects: [{ x: 1, y: 1, width: 2, height: 2 }] });
+    expect(growSelectionRectColumn(selection, 1)).toEqual(
+      mockSelection({ rects: [{ x: 1, y: 1, width: 3, height: 2 }] })
+    );
+
+    expect(growSelectionRectColumn(selection, 3)).toEqual(selection);
+  });
+
+  it('growSelectionRectRow', () => {
+    const selection = mockSelection({ rects: [{ x: 1, y: 1, width: 2, height: 2 }] });
+    expect(growSelectionRectRow(selection, 1)).toEqual(mockSelection({ rects: [{ x: 1, y: 1, width: 2, height: 3 }] }));
+
+    expect(growSelectionRectRow(selection, 3)).toEqual(selection);
+  });
+
+  it('shrinkSelectionRectColumn', () => {
+    const selection = mockSelection({ rects: [{ x: 1, y: 1, width: 2, height: 2 }] });
+    expect(shrinkSelectionRectColumn(selection, 1)).toEqual(
+      mockSelection({ rects: [{ x: 1, y: 1, width: 1, height: 2 }] })
+    );
+
+    expect(shrinkSelectionRectColumn(selection, 3)).toEqual(selection);
+  });
+
+  it('shrinkSelectionRectRow', () => {
+    const selection = mockSelection({ rects: [{ x: 1, y: 1, width: 2, height: 2 }] });
+    expect(shrinkSelectionRectRow(selection, 1)).toEqual(
+      mockSelection({ rects: [{ x: 1, y: 1, width: 2, height: 1 }] })
+    );
+
+    expect(shrinkSelectionRectRow(selection, 3)).toEqual(selection);
+  });
 });
