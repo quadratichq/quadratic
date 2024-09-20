@@ -16,43 +16,33 @@ export function javascriptConvertOutputType(
   if (typeof value === 'number') {
     if (isNaN(value)) {
       message.push(
-        `Warning: Unsupported output type: 'NaN' ${
-          x !== undefined && y !== undefined ? `at cell(${column + x}, ${row + y})` : ''
-        }`
+        `Warning: Unsupported output type: 'NaN' at cell(${column + (x ?? 0)}, ${row + (y ?? 0)}), value ${value}`
       );
       return null;
     } else if (value === Infinity) {
-      message.push(
-        `Warning: Unsupported output type: 'Infinity' ${
-          x !== undefined && y !== undefined ? `at cell(${column + x}, ${row + y})` : ''
-        }`
-      );
+      message.push(`Warning: Unsupported output type: 'Infinity' at cell(${column + (x ?? 0)}, ${row + (y ?? 0)})`);
       return null;
     }
     return { output: [value.toString(), 'number'], displayType: 'number' };
   } else if (typeof value === 'string' && value.includes('[object Promise]')) {
     message.push(
-      'WARNING: Unsupported output type: `Promise`' +
-        (x !== undefined && y !== undefined ? `at cell(${column + x}, ${row + y})` : '') +
-        '. Likely you are missing `await` before a call that returns a Promise, e.g., `await fetch(...)`.'
+      `WARNING: Unsupported output type: \`Promise\` at cell(${column + (x ?? 0)}, ${
+        row + (y ?? 0)
+      }). Likely you are missing \`await\` before a call that returns a Promise, e.g., \`await fetch(...)\`.`
     );
     return null;
   } else if (value instanceof Date) {
     if (isNaN(value as any)) {
       message.push(
-        `WARNING: Unsupported output type: 'Invalid Date' ${
-          x !== undefined && y !== undefined ? `at cell(${column + x}, ${row + y})` : ''
-        }`
+        `WARNING: Unsupported output type: 'Invalid Date' at cell(${column + (x ?? 0)}, ${
+          row + (y ?? 0)
+        }), value ${value}`
       );
       return null;
     }
     return { output: [value.toISOString(), 'date time'], displayType: 'Date' };
   } else if (typeof value === 'function') {
-    message.push(
-      `WARNING: Unsupported output type: 'function' ${
-        x !== undefined && y !== undefined ? `at cell(${column + x}, ${row + y})` : ''
-      }`
-    );
+    message.push(`WARNING: Unsupported output type: 'function' at cell(${column + (x ?? 0)}, ${row + (y ?? 0)})`);
     return null;
   } else if (value instanceof Blob && (value as Blob).type.includes('image')) {
     const image = new FileReaderSync().readAsDataURL(value as Blob);
@@ -68,9 +58,9 @@ export function javascriptConvertOutputType(
     return { output: ['', 'array'], displayType: 'empty array' };
   } else {
     message.push(
-      `WARNING: Unsupported output type "${typeof value}" ${
-        x !== undefined && y !== undefined ? `at cell(${column + x}, ${row + y})` : ''
-      }`
+      `WARNING: Unsupported output type "${typeof value}" at cell(${column + (x ?? 0)}, ${
+        row + (y ?? 0)
+      }), value ${value}`
     );
     return null;
   }
