@@ -69,7 +69,7 @@ pub fn get_string_array_child(children: &Vec<ArrayRef>, index: usize) -> Vec<Opt
         .collect::<Vec<_>>()
 }
 
-pub fn insert_value(table: UnionArray, value: CellValue) -> UnionArray {
+pub fn append(table: UnionArray, value: CellValue) -> UnionArray {
     let index = value.to_index();
     let data_type = DataType::from(&value);
 
@@ -138,6 +138,110 @@ pub fn insert_value(table: UnionArray, value: CellValue) -> UnionArray {
     UnionArray::try_new(union_fields, type_ids, Some(offsets), children).unwrap()
 }
 
+pub fn insert_at(table: UnionArray, value: CellValue, row: usize) -> UnionArray {
+    let index = value.to_index();
+    let data_type = DataType::from(&value);
+
+    let (mut union_fields, mut type_ids, mut offsets, mut children) = table.into_parts();
+
+    let mut type_ids_vec = type_ids.iter().collect::<Vec<_>>();
+    let mut offsets = offsets.unwrap();
+    let mut offsets_vec = offsets.into_iter().collect::<Vec<_>>();
+    let mut union_fields_vec = union_fields
+        .iter()
+        .map(|(i, f)| (i, f.to_owned()))
+        .collect::<Vec<_>>();
+    let has_union_field = union_fields_vec.iter().any(|(i, _)| i == &index);
+
+    // added
+    let slice = &[index];
+    type_ids_vec.splice(row..row, slice);
+
+    // removed
+    // type_ids_vec.push(&index);
+    type_ids = type_ids_vec
+        .into_iter()
+        .cloned()
+        .collect::<ScalarBuffer<i8>>();
+
+    // if the union field doesn't exist, create it then add the new child array
+    if !has_union_field {
+        let field = Field::new(data_type.to_string(), data_type.to_owned(), false);
+        union_fields_vec.push((index, Arc::new(field)));
+        union_fields = union_fields_vec.into_iter().collect::<UnionFields>();
+        offsets_vec.push(&0);
+        offsets = offsets_vec
+            .into_iter()
+            .cloned()
+            .collect::<ScalarBuffer<i32>>();
+
+        let child = value.to_array();
+        children.push(child);
+    }
+    // append to the existing child array
+    else {
+        let child_index = children
+            .iter()
+            .position(|c| c.data_type() == &data_type)
+            .unwrap();
+
+        let offset = match value {
+            CellValue::Int32(v) => {
+                let mut child = get_native_child::<Int32Type, i32>(&children, child_index);
+
+                // added
+                child.splice(row..row, [Some(v)]);
+
+                // removed
+                // child.push(Some(v));
+
+                // let offset = (child.len() - 1) as i32;
+                children[child_index] = Arc::new(Int32Array::from(child)) as Arc<dyn Array>;
+                row as i32
+            }
+            CellValue::String(v) => {
+                let mut child = get_string_array_child(&children, child_index);
+
+                // added
+                child.splice(row..row, [Some(v.as_str())]);
+
+                // removed
+                // child.push(Some(&v));
+
+                // let offset = (child.len() - 1) as i32;
+                children[child_index] = Arc::new(StringArray::from(child)) as Arc<dyn Array>;
+                row as i32
+            }
+        };
+        // added
+        offsets_vec.splice(row..row, [&offset]);
+        let offsets_vec_end = offsets_vec
+            .iter()
+            .enumerate()
+            .skip(row + 1)
+            .map(|(i, mut offset)| {
+                let mut new_offset: i32 = **offset;
+
+                if type_ids[i] == index {
+                    new_offset = **offset + 1;
+                }
+                new_offset
+            })
+            .collect::<Vec<_>>();
+
+        offsets_vec.splice(row + 1..offsets_vec.len(), &offsets_vec_end);
+
+        // removed
+        // offsets_vec.push(&offset);
+        offsets = offsets_vec
+            .into_iter()
+            .cloned()
+            .collect::<ScalarBuffer<i32>>();
+    }
+
+    UnionArray::try_new(union_fields, type_ids, Some(offsets), children).unwrap()
+}
+
 fn array_ref_to_string(array: &ArrayRef) -> String {
     match array.data_type() {
         DataType::Boolean => {
@@ -197,7 +301,7 @@ pub fn heterogeneous_union_to_record_batch(union_array: &UnionArray) -> RecordBa
 }
 
 pub fn homogeneous_union_to_record_batch(union_array: &UnionArray) -> RecordBatch {
-    let (union_fields, type_ids, _, columns) = union_array.clone().into_parts();
+    let (union_fields, _, _, columns) = union_array.clone().into_parts();
 
     let union_fields = union_fields
         .iter()
@@ -238,36 +342,46 @@ fn filter_rows(batch: &RecordBatch, col_idx: usize, value: &str) -> RecordBatch 
 mod tests {
     // use arrow::util::pretty;
 
-    use arrow::util::pretty;
-
-    use crate::arrow::sort_column;
-
     use super::*;
+    use crate::arrow::sort_column;
+    use arrow::util::pretty;
 
     #[test]
     fn union() {
         let table = new_union_array();
 
-        let table = insert_value(table, CellValue::Int32(1));
-        let table = insert_value(table, CellValue::String("first".into()));
-        let table = insert_value(table, CellValue::Int32(2));
-        let table = insert_value(table, CellValue::String("second".into()));
-        let table = insert_value(table, CellValue::String("third".into()));
+        let table = append(table, CellValue::Int32(1));
+        let table = append(table, CellValue::String("first".into()));
+        let table = append(table, CellValue::Int32(2));
+        let table = append(table, CellValue::String("second".into()));
+        let table = append(table, CellValue::String("third".into()));
+        let table = insert_at(table, CellValue::String("inserted".into()), 1);
+        // let table = insert_at(table, CellValue::String("inserted2".into()), 2);
 
         // println!("{:?}", table);
 
-        // println!("table {:?}", table.value(0));
-        // println!("table {:?}", table.value(1));
-        // println!("table {:?}", table.value(2));
-        // println!("table {:?}", table.value(3));
-        // println!("table {:?}", table.value(4));
+        // assert_eq!(table.len(), 5);
+        // assert_eq!(
+        //     *table.value(0),
+        //     Arc::new(Int32Array::from(vec![1])) as Arc<dyn Array>
+        // );
+        // assert_eq!(
+        //     *table.value(1),
+        //     Arc::new(StringArray::from(vec!["first"])) as Arc<dyn Array>
+        // );
+        // assert_eq!(
+        //     *table.value(2),
+        //     Arc::new(Int32Array::from(vec![2])) as Arc<dyn Array>
+        // );
+        // assert_eq!(
+        //     *table.value(3),
+        //     Arc::new(StringArray::from(vec!["second"])) as Arc<dyn Array>
+        // );
+        // assert_eq!(
+        //     *table.value(4),
+        //     Arc::new(StringArray::from(vec!["third"])) as Arc<dyn Array>
+        // );
 
-        // let (union_fields, type_ids, offsets, children) = table.into_parts();
-
-        // println!("union_fields {:?}", union_fields);
-        // println!("type_ids {:?}", type_ids);
-        // println!("offsets {:?}", offsets);
-        // println!("children {:?}", children);
         println!("{:?}", table);
 
         println!("Original");
