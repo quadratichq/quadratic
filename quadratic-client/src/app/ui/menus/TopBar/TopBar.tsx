@@ -53,7 +53,7 @@ export const TopBar = () => {
           </div>
         )}
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-0 self-stretch px-2 lg:hidden">
+          <DropdownMenuTrigger className="flex items-center gap-0 self-stretch px-2 md:hidden">
             <QuadraticLogo />
           </DropdownMenuTrigger>
           <DropdownMenuContent>

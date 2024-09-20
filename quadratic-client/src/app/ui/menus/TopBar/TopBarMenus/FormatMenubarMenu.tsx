@@ -27,7 +27,7 @@ export const FormatMenubarMenu = () => {
   return (
     <MenubarMenu>
       <MenubarTrigger>Format</MenubarTrigger>
-      <MenubarContent>
+      <MenubarContent className="pointer-move-ignore">
         <MenubarSub>
           <MenubarSubTrigger>
             <Number123Icon /> Number
