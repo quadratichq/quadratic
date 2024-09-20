@@ -144,7 +144,6 @@ export default function QuadraticUI() {
         />
       )}
       <ConnectionsMenu />
-      <PermissionOverlay />
       {!isEmbed && <PermissionOverlay />}
       <UpdateAlertVersion />
       <UserMessage />
