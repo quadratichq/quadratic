@@ -36,6 +36,10 @@ pub struct Pos {
 impl Pos {
     pub const ORIGIN: Self = Self { x: 0, y: 0 };
 
+    pub fn new(x: i64, y: i64) -> Self {
+        Self { x, y }
+    }
+
     pub fn to_sheet_pos(&self, sheet_id: SheetId) -> SheetPos {
         SheetPos {
             x: self.x,
@@ -271,5 +275,12 @@ mod test {
         };
         pos.to_quadrant();
         assert_eq!(pos, Pos { x: -2, y: -2 });
+    }
+
+    #[test]
+    #[parallel]
+    fn pos_new() {
+        let pos = Pos::new(1, 2);
+        assert_eq!(pos, Pos { x: 1, y: 2 });
     }
 }

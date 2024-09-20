@@ -198,30 +198,74 @@ impl GridController {
 
     pub fn execute_insert_column(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::InsertColumn { sheet_id, column } = op {
+            let sheet_name: String;
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
                 let reverse = sheet.insert_column(transaction, column);
                 transaction.reverse_operations.extend(reverse);
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds();
-                if !transaction.is_server() {
-                    self.send_updated_bounds(sheet_id);
+                sheet_name = sheet.name.clone();
+            } else {
+                // nothing more can be done
+                return;
+            }
+
+            if transaction.is_user() {
+                // adjust formulas to account for inserted column
+                self.adjust_formulas(transaction, sheet_id, sheet_name, Some(column), None, 1);
+
+                // update information for all cells to the right of the deleted column
+                if let Some(sheet) = self.try_sheet(sheet_id) {
+                    if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+                        let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
+                        sheet_rect.min.x = column + 1;
+                        self.check_deleted_code_runs(transaction, &sheet_rect);
+                        self.add_compute_operations(transaction, &sheet_rect, None);
+                        self.check_all_spills(transaction, sheet_rect.sheet_id, true);
+                    }
                 }
+            }
+
+            if !transaction.is_server() {
+                self.send_updated_bounds(sheet_id);
             }
         }
     }
 
     pub fn execute_insert_row(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::InsertRow { sheet_id, row } = op {
+            let sheet_name: String;
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
                 let reverse = sheet.insert_row(transaction, row);
                 transaction.reverse_operations.extend(reverse);
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds();
-                if !transaction.is_server() {
-                    self.send_updated_bounds(sheet_id);
+                sheet_name = sheet.name.clone();
+            } else {
+                // nothing more can be done
+                return;
+            }
+
+            if transaction.is_user() {
+                // adjust formulas to account for inserted row
+                self.adjust_formulas(transaction, sheet_id, sheet_name, None, Some(row), 1);
+
+                // update information for all cells below the deleted row
+                if let Some(sheet) = self.try_sheet(sheet_id) {
+                    if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+                        let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
+                        sheet_rect.min.y = row + 1;
+                        self.check_deleted_code_runs(transaction, &sheet_rect);
+                        self.add_compute_operations(transaction, &sheet_rect, None);
+                        self.check_all_spills(transaction, sheet_rect.sheet_id, true);
+                    }
                 }
+            }
+
+            if !transaction.is_server() {
+                self.send_updated_bounds(sheet_id);
             }
         }
     }

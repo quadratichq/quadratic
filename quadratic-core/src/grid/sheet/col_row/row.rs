@@ -27,14 +27,13 @@ impl Sheet {
             while current_min <= max {
                 let current_max = (current_min + MAX_OPERATION_SIZE_COL_ROW).min(max);
                 let mut values = CellValues::new((current_max - current_min) as u32 + 1, 1);
-
                 for x in current_min..=current_max {
                     if let Some(cell) = self.cell_value(Pos { x, y: row }) {
-                        values.set(0, (x - current_min) as u32, cell);
+                        values.set((x - current_min) as u32, 0, cell);
                     }
                 }
                 reverse_operations.push(Operation::SetCellValues {
-                    sheet_pos: crate::SheetPos::new(self.id, min, row),
+                    sheet_pos: SheetPos::new(self.id, min, row),
                     values,
                 });
                 current_min = current_max + 1;
@@ -190,12 +189,6 @@ impl Sheet {
                     formats: Formats::repeat(format.to_replace(), 1),
                 });
             }
-
-            // reverse operation to create the column (this will also shift all impacted columns)
-            reverse_operations.push(Operation::InsertRow {
-                sheet_id: self.id,
-                row,
-            });
         }
 
         // remove the column's code runs from the sheet
@@ -279,6 +272,12 @@ impl Sheet {
                     dirty_hashes.insert(pos);
                 }
             }
+        });
+
+        // reverse operation to create the column (this will also shift all impacted columns)
+        reverse_operations.push(Operation::InsertRow {
+            sheet_id: self.id,
+            row,
         });
 
         // todo: fill_color needs a separate update
