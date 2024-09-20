@@ -46,7 +46,6 @@ export class CellsFills extends Container {
     });
     events.on('sheetMetaFills', (sheetId, fills) => {
       if (sheetId === this.cellsSheet.sheetId) {
-        console.log('sheetMetaFills', fills);
         if (this.isMetaEmpty(fills)) {
           this.metaFill = undefined;
           this.meta.clear();

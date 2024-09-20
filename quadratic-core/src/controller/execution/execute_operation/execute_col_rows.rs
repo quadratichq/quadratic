@@ -78,6 +78,7 @@ impl GridController {
                             let new_code = replace_cell_references_with(
                                 &code.code,
                                 *pos,
+                                |_, cell_ref| cell_ref,
                                 |coord_sheet_name, cell_ref| {
                                     let coord_sheet_name =
                                         coord_sheet_name.as_ref().unwrap_or(&sheet.name);
@@ -102,7 +103,6 @@ impl GridController {
                                         cell_ref
                                     }
                                 },
-                                |_, cell_ref| cell_ref,
                             );
                             if new_code != code.code {
                                 let code_cell_value = CellValue::Code(CodeCellValue {
@@ -441,6 +441,114 @@ mod tests {
         assert_eq!(
             sheet.bounds(false),
             GridBounds::NonEmpty(Rect::new(1, 1, 1, 4))
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn delete_column_formula() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_cell_value(
+            SheetPos {
+                x: 3,
+                y: 1,
+                sheet_id,
+            },
+            "1".into(),
+            None,
+        );
+
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "D1".into(),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.rendered_value(Pos { x: 1, y: 1 }).unwrap(),
+            "1".to_string()
+        );
+
+        gc.delete_row(sheet_id, 2, None);
+
+        // rerun the code cell to get the new value
+        gc.rerun_code_cell(SheetPos::new(sheet_id, 1, 1), None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.rendered_value(Pos { x: 1, y: 1 }).unwrap(),
+            "1".to_string()
+        );
+
+        gc.undo(None);
+        gc.rerun_code_cell(SheetPos::new(sheet_id, 1, 1), None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.rendered_value(Pos { x: 1, y: 1 }).unwrap(),
+            "1".to_string()
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn delete_row_formula() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 3,
+                sheet_id,
+            },
+            "1".into(),
+            None,
+        );
+
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "B3".into(),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.rendered_value(Pos { x: 1, y: 1 }).unwrap(),
+            "1".to_string()
+        );
+
+        gc.delete_row(sheet_id, 2, None);
+
+        // rerun the code cell to get the new value
+        gc.rerun_code_cell(SheetPos::new(sheet_id, 1, 1), None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.rendered_value(Pos { x: 1, y: 1 }).unwrap(),
+            "1".to_string()
+        );
+
+        gc.undo(None);
+        gc.rerun_code_cell(SheetPos::new(sheet_id, 1, 1), None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.rendered_value(Pos { x: 1, y: 1 }).unwrap(),
+            "1".to_string()
         );
     }
 }
