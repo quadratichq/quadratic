@@ -22,7 +22,6 @@ impl Borders {
 
     pub(crate) fn print(&self) {
         if let Some(mut rect) = self.bounds() {
-            dbg!(&rect);
             // extend the borders to include the last column and row
             rect.max.x += 1;
             rect.max.y += 1;
