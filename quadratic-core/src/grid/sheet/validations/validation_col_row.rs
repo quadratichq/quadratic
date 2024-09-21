@@ -1,0 +1,247 @@
+use crate::controller::operations::operation::Operation;
+
+use super::{validation::Validation, Validations};
+
+impl Validations {
+    /// Removes a column from all validations.
+    ///
+    /// Returns a list of operations that reverse the changes.
+    pub fn remove_column(&mut self, column: i64) -> Vec<Operation> {
+        let mut reverse_operations = Vec::new();
+
+        self.validations.retain_mut(|validation| {
+            let original_selection = validation.selection.clone();
+            if validation.selection.removed_column(column) {
+                reverse_operations.push(Operation::SetValidation {
+                    validation: Validation {
+                        selection: original_selection,
+                        ..validation.clone()
+                    },
+                });
+                !validation.selection.is_empty()
+            } else {
+                true
+            }
+        });
+
+        reverse_operations
+    }
+
+    /// Removes a row from all validations.
+    ///
+    /// Returns a list of operations that reverse the changes.
+    pub fn remove_row(&mut self, row: i64) -> Vec<Operation> {
+        let mut reverse_operations = Vec::new();
+
+        self.validations.retain_mut(|validation| {
+            let original_selection = validation.selection.clone();
+            if validation.selection.removed_row(row) {
+                reverse_operations.push(Operation::SetValidation {
+                    validation: Validation {
+                        selection: original_selection,
+                        ..validation.clone()
+                    },
+                });
+                !validation.selection.is_empty()
+            } else {
+                true
+            }
+        });
+
+        reverse_operations
+    }
+
+    /// Inserts a column into all validations.
+    ///
+    /// Returns a list of operations that reverse the changes.
+    pub fn insert_column(&mut self, column: i64) -> Vec<Operation> {
+        let mut reverse_operations = Vec::new();
+
+        self.validations.iter_mut().for_each(|validation| {
+            let original_selection = validation.selection.clone();
+            if validation.selection.inserted_column(column) {
+                reverse_operations.push(Operation::SetValidation {
+                    validation: Validation {
+                        selection: original_selection,
+                        ..validation.clone()
+                    },
+                });
+            }
+        });
+
+        reverse_operations
+    }
+
+    /// Inserts a row into all validations.
+    ///
+    /// Returns a list of operations that reverse the changes.
+    pub fn insert_row(&mut self, row: i64) -> Vec<Operation> {
+        let mut reverse_operations = Vec::new();
+
+        self.validations.iter_mut().for_each(|validation| {
+            let original_selection = validation.selection.clone();
+            if validation.selection.inserted_row(row) {
+                reverse_operations.push(Operation::SetValidation {
+                    validation: Validation {
+                        selection: original_selection,
+                        ..validation.clone()
+                    },
+                });
+            }
+        });
+
+        reverse_operations
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serial_test::parallel;
+    use uuid::Uuid;
+
+    use crate::{
+        grid::sheet::validations::validation_rules::{
+            validation_logical::ValidationLogical, ValidationRule,
+        },
+        selection::Selection,
+        Rect,
+    };
+
+    use super::*;
+
+    #[test]
+    #[parallel]
+    fn remove_column() {
+        let mut validations = Validations::default();
+
+        // rect and columns to be updated
+        let validation_rect_columns = Validation {
+            id: Uuid::new_v4(),
+            selection: Selection {
+                rects: Some(vec![Rect::new(1, 1, 3, 3)]),
+                columns: Some(vec![1, 2, 3]),
+                ..Default::default()
+            },
+            rule: ValidationRule::Logical(ValidationLogical::default()),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        validations.set(validation_rect_columns.clone());
+
+        // to be removed
+        let validation_removed = Validation {
+            id: Uuid::new_v4(),
+            selection: Selection {
+                rects: Some(vec![Rect::new(2, 2, 1, 1)]),
+                columns: Some(vec![2]),
+                ..Default::default()
+            },
+            rule: ValidationRule::Logical(ValidationLogical::default()),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        validations.set(validation_removed.clone());
+
+        // nothing to do with this one
+        let validation_not_changed = Validation {
+            id: Uuid::new_v4(),
+            selection: Selection {
+                rects: Some(vec![Rect::new(-10, -10, 1, 1)]),
+                columns: Some(vec![-10]),
+                rows: Some(vec![1, 2, 3, 4]),
+                ..Default::default()
+            },
+            rule: ValidationRule::Logical(ValidationLogical::default()),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        validations.set(validation_not_changed.clone());
+
+        // remove column 2
+        let operations = validations.remove_column(2);
+        assert_eq!(operations.len(), 2);
+
+        assert_eq!(validations.validations.len(), 2);
+
+        assert_eq!(
+            validations.validations[0],
+            Validation {
+                selection: Selection {
+                    rects: Some(vec![Rect::new(1, 1, 2, 3)]),
+                    columns: Some(vec![1, 2]),
+                    ..validation_rect_columns.selection
+                },
+                ..validation_rect_columns
+            }
+        );
+        assert_eq!(validations.validations[1], validation_not_changed);
+    }
+
+    #[test]
+    #[parallel]
+    fn remove_row() {
+        let mut validations = Validations::default();
+
+        // rect and columns to be updated
+        let validation_rect_rows = Validation {
+            id: Uuid::new_v4(),
+            selection: Selection {
+                rects: Some(vec![Rect::new(1, 1, 3, 3)]),
+                rows: Some(vec![1, 2, 3]),
+                ..Default::default()
+            },
+            rule: ValidationRule::Logical(ValidationLogical::default()),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        validations.set(validation_rect_rows.clone());
+
+        // to be removed
+        let validation_removed = Validation {
+            id: Uuid::new_v4(),
+            selection: Selection {
+                rects: Some(vec![Rect::new(2, 2, 1, 1)]),
+                rows: Some(vec![2]),
+                ..Default::default()
+            },
+            rule: ValidationRule::Logical(ValidationLogical::default()),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        validations.set(validation_removed.clone());
+
+        // nothing to do with this one
+        let validation_not_changed = Validation {
+            id: Uuid::new_v4(),
+            selection: Selection {
+                rects: Some(vec![Rect::new(-10, -10, 1, 1)]),
+                columns: Some(vec![1, 2, 3, 4]),
+                rows: Some(vec![-10]),
+                ..Default::default()
+            },
+            rule: ValidationRule::Logical(ValidationLogical::default()),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        validations.set(validation_not_changed.clone());
+
+        // remove row 2
+        let operations = validations.remove_row(2);
+        assert_eq!(operations.len(), 2);
+
+        assert_eq!(validations.validations.len(), 2);
+
+        assert_eq!(
+            validations.validations[0],
+            Validation {
+                selection: Selection {
+                    rects: Some(vec![Rect::new(1, 1, 3, 2)]),
+                    rows: Some(vec![1, 2]),
+                    ..validation_rect_rows.selection
+                },
+                ..validation_rect_rows
+            }
+        );
+        assert_eq!(validations.validations[1], validation_not_changed);
+    }
+}

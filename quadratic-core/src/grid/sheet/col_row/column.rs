@@ -105,8 +105,6 @@ impl Sheet {
             reverse_operations.extend(self.code_runs_for_column(column));
             reverse_operations.extend(self.borders.get_column_ops(self.id, column));
 
-            // todo: create reverse operations for validations
-
             // create reverse operation for column-based formatting
             if let Some(format) = self.try_format_column(column) {
                 reverse_operations.push(Operation::SetCellFormatsSelection {
@@ -235,6 +233,8 @@ impl Sheet {
                 }
             }
         });
+
+        reverse_operations.extend(self.validations.remove_column(column));
 
         reverse_operations
     }
