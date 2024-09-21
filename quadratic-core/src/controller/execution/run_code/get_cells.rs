@@ -53,7 +53,7 @@ impl GridController {
                 }
                 let run_error = RunError {
                     span: None,
-                    msg: RunErrorMsg::PythonError(msg.clone().into()),
+                    msg: RunErrorMsg::CodeRunError(msg.clone().into()),
                 };
                 let error = match self.code_cell_sheet_error(&mut transaction, &run_error) {
                     Ok(_) => CoreError::CodeCellSheetError(msg.to_owned()),

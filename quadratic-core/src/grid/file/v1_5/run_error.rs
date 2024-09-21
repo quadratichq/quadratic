@@ -89,7 +89,7 @@ impl RunError {
                 end: span.end,
             }),
             msg: match error.msg.clone() {
-                crate::RunErrorMsg::PythonError(str) => RunErrorMsg::PythonError(str),
+                crate::RunErrorMsg::CodeRunError(str) => RunErrorMsg::PythonError(str),
                 crate::RunErrorMsg::Spill => RunErrorMsg::Spill,
                 crate::RunErrorMsg::Unimplemented(str) => RunErrorMsg::Unimplemented(str),
                 crate::RunErrorMsg::UnknownError => RunErrorMsg::UnknownError,
@@ -184,7 +184,7 @@ impl From<RunError> for crate::RunError {
                 end: span.end,
             }),
             msg: match error.msg {
-                RunErrorMsg::PythonError(str) => crate::RunErrorMsg::PythonError(str),
+                RunErrorMsg::PythonError(str) => crate::RunErrorMsg::CodeRunError(str),
                 RunErrorMsg::Spill => crate::RunErrorMsg::Spill,
                 RunErrorMsg::Unimplemented(str) => crate::RunErrorMsg::Unimplemented(str),
                 RunErrorMsg::UnknownError => crate::RunErrorMsg::UnknownError,
