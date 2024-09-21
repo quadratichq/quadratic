@@ -297,8 +297,16 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use serial_test::parallel;
+    use uuid::Uuid;
 
-    use crate::{grid::CodeCellLanguage, Pos, Rect, SheetPos};
+    use crate::{
+        grid::{
+            sheet::validations::{validation::Validation, validation_rules::ValidationRule},
+            CodeCellLanguage,
+        },
+        selection::Selection,
+        Pos, Rect, SheetPos,
+    };
 
     use super::*;
 
@@ -553,6 +561,144 @@ mod tests {
         assert_eq!(
             sheet.rendered_value(Pos { x: 1, y: 1 }).unwrap(),
             "1".to_string()
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn insert_column_validation() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.update_validation(
+            Validation {
+                id: Uuid::new_v4(),
+                selection: Selection {
+                    sheet_id,
+                    rects: Some(vec![Rect::new(1, 1, 3, 3)]),
+                    columns: Some(vec![2]),
+                    ..Default::default()
+                },
+                rule: ValidationRule::Logical(Default::default()),
+                message: Default::default(),
+                error: Default::default(),
+            },
+            None,
+        );
+
+        gc.insert_column(sheet_id, 2, None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.validations.validations.len(), 1);
+
+        assert_eq!(
+            sheet.validations.validations[0].selection.columns,
+            Some(vec![3])
+        );
+        assert_eq!(
+            sheet.validations.validations[0].selection.rects,
+            Some(vec![Rect::new(1, 1, 4, 3)])
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn insert_row_validation() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.update_validation(
+            Validation {
+                id: Uuid::new_v4(),
+                selection: Selection {
+                    sheet_id,
+                    rects: Some(vec![Rect::new(1, 1, 3, 3)]),
+                    rows: Some(vec![2]),
+                    ..Default::default()
+                },
+                rule: ValidationRule::Logical(Default::default()),
+                message: Default::default(),
+                error: Default::default(),
+            },
+            None,
+        );
+
+        gc.insert_row(sheet_id, 2, None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.validations.validations.len(), 1);
+
+        assert_eq!(
+            sheet.validations.validations[0].selection.rows,
+            Some(vec![3])
+        );
+        assert_eq!(
+            sheet.validations.validations[0].selection.rects,
+            Some(vec![Rect::new(1, 1, 3, 4)])
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn delete_column_validation() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.update_validation(
+            Validation {
+                id: Uuid::new_v4(),
+                selection: Selection {
+                    sheet_id,
+                    rects: Some(vec![Rect::new(1, 1, 3, 3)]),
+                    columns: Some(vec![2]),
+                    ..Default::default()
+                },
+                rule: ValidationRule::Logical(Default::default()),
+                message: Default::default(),
+                error: Default::default(),
+            },
+            None,
+        );
+
+        gc.delete_column(sheet_id, 2, None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.validations.validations.len(), 1);
+
+        assert_eq!(sheet.validations.validations[0].selection.columns, None);
+        assert_eq!(
+            sheet.validations.validations[0].selection.rects,
+            Some(vec![Rect::new(1, 1, 2, 3)])
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn delete_row_validation() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.update_validation(
+            Validation {
+                id: Uuid::new_v4(),
+                selection: Selection {
+                    sheet_id,
+                    rects: Some(vec![Rect::new(1, 1, 3, 3)]),
+                    rows: Some(vec![2]),
+                    ..Default::default()
+                },
+                rule: ValidationRule::Logical(Default::default()),
+                message: Default::default(),
+                error: Default::default(),
+            },
+            None,
+        );
+
+        gc.delete_row(sheet_id, 2, None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.validations.validations.len(), 1);
+
+        assert_eq!(sheet.validations.validations[0].selection.rows, None);
+        assert_eq!(
+            sheet.validations.validations[0].selection.rects,
+            Some(vec![Rect::new(1, 1, 3, 2)])
         );
     }
 }

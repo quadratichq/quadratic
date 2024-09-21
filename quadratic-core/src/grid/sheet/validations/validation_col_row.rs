@@ -244,4 +244,110 @@ mod tests {
         );
         assert_eq!(validations.validations[1], validation_not_changed);
     }
+
+    #[test]
+    #[parallel]
+    fn inserted_column() {
+        let mut validations = Validations::default();
+
+        // rect and rows to be updated
+        let validation_rect_cols = Validation {
+            id: Uuid::new_v4(),
+            selection: Selection {
+                rects: Some(vec![Rect::new(1, 1, 3, 3)]),
+                columns: Some(vec![1, 2, 3]),
+                ..Default::default()
+            },
+            rule: ValidationRule::Logical(ValidationLogical::default()),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        validations.set(validation_rect_cols.clone());
+
+        // nothing to do with this one
+        let validation_not_changed = Validation {
+            id: Uuid::new_v4(),
+            selection: Selection {
+                rects: Some(vec![Rect::new(-10, -10, 1, 1)]),
+                columns: Some(vec![-10]),
+                ..Default::default()
+            },
+            rule: ValidationRule::Logical(ValidationLogical::default()),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        validations.set(validation_not_changed.clone());
+
+        // insert column 2
+        let operations = validations.insert_column(2);
+        assert_eq!(operations.len(), 1);
+
+        assert_eq!(validations.validations.len(), 2);
+
+        assert_eq!(
+            validations.validations[0],
+            Validation {
+                selection: Selection {
+                    rects: Some(vec![Rect::new(1, 1, 4, 3)]),
+                    columns: Some(vec![1, 3, 4]),
+                    ..validation_rect_cols.selection
+                },
+                ..validation_rect_cols
+            }
+        );
+        assert_eq!(validations.validations[1], validation_not_changed);
+    }
+
+    #[test]
+    #[parallel]
+    fn inserted_row() {
+        let mut validations = Validations::default();
+
+        // rect and columns to be updated
+        let validation_rect_rows = Validation {
+            id: Uuid::new_v4(),
+            selection: Selection {
+                rects: Some(vec![Rect::new(1, 1, 3, 3)]),
+                rows: Some(vec![1, 2, 3]),
+                ..Default::default()
+            },
+            rule: ValidationRule::Logical(ValidationLogical::default()),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        validations.set(validation_rect_rows.clone());
+
+        // nothing to do with this one
+        let validation_not_changed = Validation {
+            id: Uuid::new_v4(),
+            selection: Selection {
+                rects: Some(vec![Rect::new(-10, -10, 1, 1)]),
+                rows: Some(vec![-10]),
+                ..Default::default()
+            },
+            rule: ValidationRule::Logical(ValidationLogical::default()),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        validations.set(validation_not_changed.clone());
+
+        // insert row 2
+        let operations = validations.insert_row(2);
+        assert_eq!(operations.len(), 1);
+
+        assert_eq!(validations.validations.len(), 2);
+
+        assert_eq!(
+            validations.validations[0],
+            Validation {
+                selection: Selection {
+                    rects: Some(vec![Rect::new(1, 1, 3, 4)]),
+                    rows: Some(vec![1, 3, 4]),
+                    ..validation_rect_rows.selection
+                },
+                ..validation_rect_rows
+            }
+        );
+        assert_eq!(validations.validations[1], validation_not_changed);
+    }
 }

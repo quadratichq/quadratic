@@ -234,7 +234,11 @@ impl Sheet {
             }
         });
 
-        reverse_operations.extend(self.validations.remove_column(column));
+        let validations_reverse = self.validations.remove_column(column);
+        if !validations_reverse.is_empty() {
+            reverse_operations.extend(validations_reverse);
+            transaction.validations.insert(self.id);
+        }
 
         reverse_operations
     }
@@ -339,7 +343,11 @@ impl Sheet {
             }
         });
 
-        // todo: fill_color needs a separate update
+        let validations_reverse = self.validations.insert_column(column);
+        if !validations_reverse.is_empty() {
+            reverse_operations.extend(validations_reverse);
+            transaction.validations.insert(self.id);
+        }
 
         reverse_operations
     }

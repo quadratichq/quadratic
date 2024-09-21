@@ -286,6 +286,12 @@ impl Sheet {
             row,
         });
 
+        let validations_reverse = self.validations.remove_row(row);
+        if !validations_reverse.is_empty() {
+            reverse_operations.extend(validations_reverse);
+            transaction.validations.insert(self.id);
+        }
+
         reverse_operations
     }
 
@@ -434,7 +440,11 @@ impl Sheet {
             }
         });
 
-        // todo: fill_color needs a separate update
+        let validations_reverse = self.validations.insert_row(row);
+        if !validations_reverse.is_empty() {
+            reverse_operations.extend(validations_reverse);
+            transaction.validations.insert(self.id);
+        }
 
         reverse_operations
     }
