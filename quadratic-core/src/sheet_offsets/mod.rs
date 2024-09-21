@@ -38,10 +38,10 @@ pub type OffsetWidthHeight = (Vec<(i64, f64)>, Vec<(i64, f64)>);
 
 impl SheetOffsets {
     /// exports offsets to a GridFile
-    pub fn export(&self) -> OffsetWidthHeight {
+    pub fn export(self) -> OffsetWidthHeight {
         (
-            self.column_widths.iter_sizes().collect(),
-            self.row_heights.iter_sizes().collect(),
+            self.column_widths.into_iter_sizes().collect(),
+            self.row_heights.into_iter_sizes().collect(),
         )
     }
 
