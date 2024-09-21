@@ -21,13 +21,13 @@ use crate::{
 // }
 
 fn upgrade_borders(borders: current::Borders) -> Result<v1_7::BordersSchema> {
-    fn convert_border_style(border_style: &current::CellBorder) -> Result<BorderStyle> {
+    fn convert_border_style(border_style: current::CellBorder) -> Result<BorderStyle> {
         let mut color = Rgba::color_from_str(&border_style.color)?;
 
         // the alpha was set incorrectly to 1; should be 255
         color.alpha = 255;
 
-        let line = match border_style.line.as_ref() {
+        let line = match border_style.line.as_str() {
             "line1" => CellBorderLine::Line1,
             "line2" => CellBorderLine::Line2,
             "line3" => CellBorderLine::Line3,
@@ -47,23 +47,23 @@ fn upgrade_borders(borders: current::Borders) -> Result<v1_7::BordersSchema> {
         let col: i64 = col_id
             .parse::<i64>()
             .expect("Failed to parse col_id as i64");
-        for (row, row_borders) in sheet_borders {
-            if let Some(left_old) = row_borders[0].as_ref() {
+        for (row, mut row_borders) in sheet_borders {
+            if let Some(left_old) = row_borders[0].take() {
                 if let Ok(style) = convert_border_style(left_old) {
                     borders_new.set(col, row, None, None, Some(style), None);
                 }
             }
-            if let Some(right_old) = row_borders[2].as_ref() {
+            if let Some(right_old) = row_borders[2].take() {
                 if let Ok(style) = convert_border_style(right_old) {
                     borders_new.set(col, row, None, None, None, Some(style));
                 }
             }
-            if let Some(top_old) = row_borders[1].as_ref() {
+            if let Some(top_old) = row_borders[1].take() {
                 if let Ok(style) = convert_border_style(top_old) {
                     borders_new.set(col, row, Some(style), None, None, None);
                 }
             }
-            if let Some(bottom_old) = row_borders[3].as_ref() {
+            if let Some(bottom_old) = row_borders[3].take() {
                 if let Ok(style) = convert_border_style(bottom_old) {
                     borders_new.set(col, row, None, Some(style), None, None);
                 }
@@ -71,25 +71,25 @@ fn upgrade_borders(borders: current::Borders) -> Result<v1_7::BordersSchema> {
         }
     }
 
-    let borders = export_borders(&borders_new);
+    let borders = export_borders(borders_new);
     Ok(borders)
 }
 
-pub fn upgrade_sheet(sheet: &current::Sheet) -> Result<v1_7::SheetSchema> {
+pub fn upgrade_sheet(sheet: current::Sheet) -> Result<v1_7::SheetSchema> {
     Ok(v1_7::SheetSchema {
-        id: sheet.id.clone(),
-        name: sheet.name.clone(),
-        color: sheet.color.clone(),
-        order: sheet.order.clone(),
-        offsets: sheet.offsets.clone(),
-        columns: sheet.columns.clone(),
-        code_runs: sheet.code_runs.clone(),
-        formats_all: sheet.formats_all.clone(),
-        formats_columns: sheet.formats_columns.clone(),
-        formats_rows: sheet.formats_rows.clone(),
-        rows_resize: sheet.rows_resize.clone(),
-        validations: sheet.validations.clone(),
-        borders: upgrade_borders(sheet.borders.clone())?,
+        id: sheet.id,
+        name: sheet.name,
+        color: sheet.color,
+        order: sheet.order,
+        offsets: sheet.offsets,
+        columns: sheet.columns,
+        code_runs: sheet.code_runs,
+        formats_all: sheet.formats_all,
+        formats_columns: sheet.formats_columns,
+        formats_rows: sheet.formats_rows,
+        rows_resize: sheet.rows_resize,
+        validations: sheet.validations,
+        borders: upgrade_borders(sheet.borders)?,
     })
 }
 
@@ -98,7 +98,7 @@ pub fn upgrade(grid: current::GridSchema) -> Result<v1_7::GridSchema> {
         version: Some("1.7".to_string()),
         sheets: grid
             .sheets
-            .iter()
+            .into_iter()
             .map(upgrade_sheet)
             .collect::<Result<_, _>>()?,
     };

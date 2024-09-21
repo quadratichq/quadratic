@@ -3,7 +3,7 @@ use chrono::Utc;
 use indexmap::IndexMap;
 
 use crate::{
-    grid::{CodeRun, CodeRunResult, Sheet},
+    grid::{CodeRun, CodeRunResult},
     Pos, Value,
 };
 
@@ -13,60 +13,63 @@ use super::{
 };
 
 pub(crate) fn import_code_cell_builder(
-    sheet: &current::SheetSchema,
+    code_runs: Vec<(current::PosSchema, current::CodeRunSchema)>,
 ) -> Result<IndexMap<Pos, CodeRun>> {
-    let mut code_runs = IndexMap::new();
+    let mut new_code_runs = IndexMap::new();
 
-    sheet.code_runs.iter().for_each(|(pos, code_run)| {
+    code_runs.into_iter().for_each(|(pos, code_run)| {
         let cells_accessed = code_run
             .cells_accessed
-            .iter()
-            .map(|sheet_rect| crate::SheetRect::from(sheet_rect.clone()))
+            .into_iter()
+            .map(crate::SheetRect::from)
             .collect();
 
         let result = match &code_run.result {
             current::CodeRunResultSchema::Ok(output) => CodeRunResult::Ok(match output {
                 current::OutputValueSchema::Single(value) => {
-                    Value::Single(import_cell_value(value))
+                    Value::Single(import_cell_value(value.to_owned()))
                 }
                 current::OutputValueSchema::Array(current::OutputArraySchema { size, values }) => {
                     Value::Array(crate::Array::from(
                         values
                             .chunks(size.w as usize)
-                            .map(|row| row.iter().map(import_cell_value).collect::<Vec<_>>())
+                            .map(|row| {
+                                row.iter()
+                                    .map(|value| import_cell_value(value.to_owned()))
+                                    .collect::<Vec<_>>()
+                            })
                             .collect::<Vec<Vec<_>>>(),
                     ))
                 }
             }),
-            current::CodeRunResultSchema::Err(error) => CodeRunResult::Err(error.clone().into()),
+            current::CodeRunResultSchema::Err(error) => CodeRunResult::Err(error.to_owned().into()),
         };
-        code_runs.insert(
+        new_code_runs.insert(
             Pos { x: pos.x, y: pos.y },
             CodeRun {
-                formatted_code_string: code_run.formatted_code_string.to_owned(),
+                formatted_code_string: code_run.formatted_code_string,
                 last_modified: code_run.last_modified.unwrap_or(Utc::now()), // this is required but fall back to now if failed
-                std_out: code_run.std_out.to_owned(),
-                std_err: code_run.std_err.to_owned(),
+                std_out: code_run.std_out,
+                std_err: code_run.std_err,
                 spill_error: code_run.spill_error,
                 cells_accessed,
                 result,
-                return_type: code_run.return_type.to_owned(),
-                line_number: code_run.line_number.to_owned(),
-                output_type: code_run.output_type.to_owned(),
+                return_type: code_run.return_type,
+                line_number: code_run.line_number,
+                output_type: code_run.output_type,
             },
         );
     });
-    Ok(code_runs)
+    Ok(new_code_runs)
 }
 
 pub(crate) fn export_rows_code_runs(
-    sheet: &Sheet,
+    code_runs: IndexMap<Pos, CodeRun>,
 ) -> Vec<(current::PosSchema, current::CodeRunSchema)> {
-    sheet
-        .code_runs
-        .iter()
+    code_runs
+        .into_iter()
         .map(|(pos, code_run)| {
-            let result = match &code_run.result {
+            let result = match code_run.result {
                 CodeRunResult::Ok(output) => match output {
                     Value::Single(cell_value) => current::CodeRunResultSchema::Ok(
                         current::OutputValueSchema::Single(export_cell_value(cell_value)),
@@ -79,7 +82,9 @@ pub(crate) fn export_rows_code_runs(
                             },
                             values: array
                                 .rows()
-                                .flat_map(|row| row.iter().map(export_cell_value))
+                                .flat_map(|row| {
+                                    row.iter().map(|value| export_cell_value(value.to_owned()))
+                                })
                                 .collect(),
                         }),
                     ),
@@ -89,27 +94,27 @@ pub(crate) fn export_rows_code_runs(
                     }),
                 },
                 CodeRunResult::Err(error) => current::CodeRunResultSchema::Err(
-                    current::RunErrorSchema::from_grid_run_error(error.to_owned()),
+                    current::RunErrorSchema::from_grid_run_error(error),
                 ),
             };
 
             (
-                current::PosSchema::from(*pos),
+                current::PosSchema::from(pos),
                 current::CodeRunSchema {
-                    formatted_code_string: code_run.formatted_code_string.clone(),
+                    formatted_code_string: code_run.formatted_code_string,
                     last_modified: Some(code_run.last_modified),
-                    std_out: code_run.std_out.clone(),
-                    std_err: code_run.std_err.clone(),
+                    std_out: code_run.std_out,
+                    std_err: code_run.std_err,
                     spill_error: code_run.spill_error,
                     cells_accessed: code_run
                         .cells_accessed
-                        .iter()
-                        .map(|sheet_rect| current::SheetRectSchema::from(*sheet_rect))
+                        .into_iter()
+                        .map(current::SheetRectSchema::from)
                         .collect(),
                     result,
-                    return_type: code_run.return_type.clone(),
+                    return_type: code_run.return_type,
                     line_number: code_run.line_number,
-                    output_type: code_run.output_type.clone(),
+                    output_type: code_run.output_type,
                 },
             )
         })

@@ -18,7 +18,7 @@ impl SheetSchema {
         match self {
             SheetSchema::V1_7(sheet) => super::serialize::sheets::import_sheet(sheet),
             SheetSchema::V1_6(sheet) => {
-                super::serialize::sheets::import_sheet(v1_6::file::upgrade_sheet(&sheet)?)
+                super::serialize::sheets::import_sheet(v1_6::file::upgrade_sheet(sheet)?)
             }
         }
     }

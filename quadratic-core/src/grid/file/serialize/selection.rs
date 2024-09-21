@@ -1,42 +1,43 @@
 use super::current;
 use crate::selection::Selection;
 
-pub fn import_selection(selection: &current::SelectionSchema) -> Selection {
+pub fn import_selection(selection: current::SelectionSchema) -> Selection {
     Selection {
         sheet_id: selection.sheet_id.to_owned(),
         x: selection.x,
         y: selection.y,
         rects: selection
             .rects
-            .as_ref()
             .map(|rects| rects.iter().map(|r| r.into()).collect()),
-        rows: selection.rows.clone(),
-        columns: selection.columns.clone(),
+        rows: selection.rows,
+        columns: selection.columns,
         all: selection.all,
     }
 }
 
-pub fn export_selection(selection: &Selection) -> current::SelectionSchema {
+pub fn export_selection(selection: Selection) -> current::SelectionSchema {
     current::SelectionSchema {
         sheet_id: selection.sheet_id,
         x: selection.x,
         y: selection.y,
         rects: selection
             .rects
-            .as_ref()
             .map(|rects| rects.iter().map(|r| r.into()).collect()),
-        rows: selection.rows.clone(),
-        columns: selection.columns.clone(),
+        rows: selection.rows,
+        columns: selection.columns,
         all: selection.all,
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use serial_test::parallel;
+
     use super::*;
     use crate::{grid::SheetId, Rect};
 
     #[test]
+    #[parallel]
     fn import_export_selection() {
         let selection = Selection {
             sheet_id: SheetId::test(),
@@ -47,7 +48,7 @@ mod tests {
             columns: Some(vec![4, 5, 6]),
             all: true,
         };
-        let imported = import_selection(&export_selection(&selection));
+        let imported = import_selection(export_selection(selection.clone()));
         assert_eq!(selection, imported);
     }
 }
