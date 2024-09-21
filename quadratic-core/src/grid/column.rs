@@ -724,10 +724,10 @@ mod test {
     #[parallel]
     fn insert_and_shift_right_end() {
         let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
-        assert_eq!(cd.insert_and_shift_right(1), false);
+        assert!(!cd.insert_and_shift_right(1));
         cd.set_range(1..4, true);
         cd.set_range(5..6, false);
-        assert_eq!(cd.insert_and_shift_right(4), true);
+        assert!(cd.insert_and_shift_right(4));
         assert_eq!(cd.get(1), Some(true));
         assert_eq!(cd.get(2), Some(true));
         assert_eq!(cd.get(3), Some(true));
@@ -769,10 +769,10 @@ mod test {
     #[parallel]
     fn remove_and_shift_left_end() {
         let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
-        assert_eq!(cd.remove_and_shift_left(1), false);
+        assert!(!cd.remove_and_shift_left(1));
         cd.set_range(1..4, true);
         cd.set_range(5..6, false);
-        assert_eq!(cd.remove_and_shift_left(3), true);
+        assert!(cd.remove_and_shift_left(3));
         assert_eq!(cd.get(1), Some(true));
         assert_eq!(cd.get(2), Some(true));
         assert_eq!(cd.get(3), None);

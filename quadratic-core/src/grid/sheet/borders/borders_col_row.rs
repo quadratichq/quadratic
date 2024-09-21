@@ -749,9 +749,11 @@ mod tests {
         let ops = sheet.borders.get_column_ops(sheet_id, 1);
         assert_eq!(ops.len(), 1);
 
-        let mut selection = Selection::default();
-        selection.sheet_id = sheet_id;
-        selection.rects = Some(vec![Rect::new(1, 1, 1, 2)]);
+        let selection = Selection {
+            sheet_id,
+            rects: Some(vec![Rect::new(1, 1, 1, 2)]),
+            ..Selection::default()
+        };
         assert_eq!(
             ops[0],
             Operation::SetBordersSelection {
@@ -778,9 +780,11 @@ mod tests {
         let ops = sheet.borders.get_row_ops(sheet_id, 1);
         assert_eq!(ops.len(), 1);
 
-        let mut selection = Selection::default();
-        selection.sheet_id = sheet_id;
-        selection.rects = Some(vec![Rect::new(1, 1, 2, 1)]);
+        let selection = Selection {
+            sheet_id,
+            rects: Some(vec![Rect::new(1, 1, 2, 1)]),
+            ..Selection::default()
+        };
         assert_eq!(
             ops[0],
             Operation::SetBordersSelection {

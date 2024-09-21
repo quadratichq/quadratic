@@ -175,23 +175,31 @@ impl Sheet {
         }
     }
 
-    pub fn delete_row(&mut self, transaction: &mut PendingTransaction, row: i64) -> Vec<Operation> {
-        let mut reverse_operations = Vec::new();
-
+    pub fn delete_row(&mut self, transaction: &mut PendingTransaction, row: i64) {
         // create undo operations for the deleted column (only when needed since
         // it's a bit expensive)
         if transaction.is_user_undo_redo() {
-            reverse_operations.extend(self.values_ops_for_row(row));
-            reverse_operations.extend(self.formats_ops_for_row(row));
-            reverse_operations.extend(self.code_runs_for_row(row));
-            reverse_operations.extend(self.borders.get_row_ops(self.id, row));
+            transaction
+                .reverse_operations
+                .extend(self.values_ops_for_row(row));
+            transaction
+                .reverse_operations
+                .extend(self.formats_ops_for_row(row));
+            transaction
+                .reverse_operations
+                .extend(self.code_runs_for_row(row));
+            transaction
+                .reverse_operations
+                .extend(self.borders.get_row_ops(self.id, row));
 
             // create reverse operation for row-based formatting
             if let Some(format) = self.try_format_row(row) {
-                reverse_operations.push(Operation::SetCellFormatsSelection {
-                    selection: Selection::rows(&[row], self.id),
-                    formats: Formats::repeat(format.to_replace(), 1),
-                });
+                transaction
+                    .reverse_operations
+                    .push(Operation::SetCellFormatsSelection {
+                        selection: Selection::rows(&[row], self.id),
+                        formats: Formats::repeat(format.to_replace(), 1),
+                    });
             }
         }
 
@@ -264,10 +272,7 @@ impl Sheet {
         self.formats_remove_and_shift_up(transaction, row, &mut updated_rows);
 
         // send the value hashes that have changed to the client
-        let dirty_hashes = transaction
-            .dirty_hashes
-            .entry(self.id)
-            .or_insert_with(HashSet::new);
+        let dirty_hashes = transaction.dirty_hashes.entry(self.id).or_default();
         updated_rows.iter().for_each(|row| {
             if let Some((start, end)) = self.row_bounds(*row, false) {
                 for x in (start..=end).step_by(CELL_SHEET_WIDTH as usize) {
@@ -279,14 +284,12 @@ impl Sheet {
         });
 
         // reverse operation to create the column (this will also shift all impacted columns)
-        reverse_operations.push(Operation::InsertRow {
+        transaction.reverse_operations.push(Operation::InsertRow {
             sheet_id: self.id,
             row,
         });
 
         self.validations.remove_row(transaction, self.id, row);
-
-        reverse_operations
     }
 
     /// Removes any value at row and shifts the remaining values up by 1.
@@ -418,10 +421,7 @@ impl Sheet {
         }
 
         // signal client to update the hashes for changed columns
-        let dirty_hashes = transaction
-            .dirty_hashes
-            .entry(self.id)
-            .or_insert_with(HashSet::new);
+        let dirty_hashes = transaction.dirty_hashes.entry(self.id).or_default();
         updated_rows.iter().for_each(|row| {
             if let Some((start, end)) = self.row_bounds(*row, false) {
                 for x in (start..=end).step_by(CELL_SHEET_WIDTH as usize) {
@@ -536,10 +536,12 @@ mod test {
 
         sheet.calculate_bounds();
 
-        let mut transaction = PendingTransaction::default();
-        transaction.transaction_type = TransactionType::User;
-        let ops = sheet.delete_row(&mut transaction, 1);
-        assert_eq!(ops.len(), 4);
+        let mut transaction = PendingTransaction {
+            transaction_type: TransactionType::User,
+            ..Default::default()
+        };
+        sheet.delete_row(&mut transaction, 1);
+        assert_eq!(transaction.reverse_operations.len(), 4);
 
         assert_eq!(
             sheet.cell_value(Pos { x: 1, y: 1 }),

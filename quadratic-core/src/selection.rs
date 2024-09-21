@@ -484,16 +484,16 @@ impl Selection {
         self.columns = self.columns.as_mut().map(|column_in_vec| {
             column_in_vec
                 .iter()
-                .filter_map(|c| {
-                    if *c == column {
+                .filter_map(|c| match c.cmp(&column) {
+                    std::cmp::Ordering::Equal => {
                         changed = true;
                         None
-                    } else if *c > column {
+                    }
+                    std::cmp::Ordering::Greater => {
                         changed = true;
                         Some(*c - 1)
-                    } else {
-                        Some(*c)
                     }
+                    std::cmp::Ordering::Less => Some(*c),
                 })
                 .collect()
         });
@@ -531,16 +531,16 @@ impl Selection {
         self.rows = self.rows.as_mut().map(|row_in_vec| {
             row_in_vec
                 .iter()
-                .filter_map(|r| {
-                    if *r == row {
+                .filter_map(|r| match r.cmp(&row) {
+                    std::cmp::Ordering::Equal => {
                         changed = true;
                         None
-                    } else if *r >= row {
+                    }
+                    std::cmp::Ordering::Greater => {
                         changed = true;
                         Some(*r - 1)
-                    } else {
-                        Some(*r)
                     }
+                    std::cmp::Ordering::Less => Some(*r),
                 })
                 .collect()
         });
@@ -1186,7 +1186,7 @@ mod test {
                 ..Default::default()
             }
         );
-        assert!(!selection.inserted_column(10))
+        assert!(!selection.inserted_column(10));
     }
 
     #[test]

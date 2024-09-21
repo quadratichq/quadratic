@@ -231,7 +231,7 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.borders.bounds(), Some(Rect::new(1, 1, 2, 2)))
+        assert_eq!(sheet.borders.bounds(), Some(Rect::new(1, 1, 2, 2)));
     }
 
     #[test]

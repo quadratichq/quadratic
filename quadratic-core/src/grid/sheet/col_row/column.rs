@@ -226,10 +226,7 @@ impl Sheet {
         }
 
         // send the value hashes that have changed to the client
-        let dirty_hashes = transaction
-            .dirty_hashes
-            .entry(self.id)
-            .or_insert_with(HashSet::new);
+        let dirty_hashes = transaction.dirty_hashes.entry(self.id).or_default();
         updated_cols.iter().for_each(|col| {
             if let Some((start, end)) = self.column_bounds(*col, false) {
                 for y in (start..=end).step_by(CELL_SHEET_HEIGHT as usize) {
@@ -243,20 +240,16 @@ impl Sheet {
         self.validations.remove_column(transaction, self.id, column);
     }
 
-    pub fn insert_column(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        column: i64,
-    ) -> Vec<Operation> {
-        let mut reverse_operations = Vec::new();
-
+    pub fn insert_column(&mut self, transaction: &mut PendingTransaction, column: i64) {
         // create undo operations for the inserted column
         if transaction.is_user_undo_redo() {
             // reverse operation to delete the column (this will also shift all impacted columns)
-            reverse_operations.push(Operation::DeleteColumn {
-                sheet_id: self.id,
-                column,
-            });
+            transaction
+                .reverse_operations
+                .push(Operation::DeleteColumn {
+                    sheet_id: self.id,
+                    column,
+                });
         }
 
         let mut updated_cols = HashSet::new();
@@ -329,10 +322,7 @@ impl Sheet {
         }
 
         // signal client to update the hashes for changed columns
-        let dirty_hashes = transaction
-            .dirty_hashes
-            .entry(self.id)
-            .or_insert_with(HashSet::new);
+        let dirty_hashes = transaction.dirty_hashes.entry(self.id).or_default();
         updated_cols.iter().for_each(|col| {
             if let Some((start, end)) = self.column_bounds(*col, false) {
                 for y in (start..=end).step_by(CELL_SHEET_HEIGHT as usize) {
@@ -344,8 +334,6 @@ impl Sheet {
         });
 
         self.validations.insert_column(transaction, self.id, column);
-
-        reverse_operations
     }
 }
 
@@ -426,8 +414,10 @@ mod tests {
             ),
         );
 
-        let mut transaction = PendingTransaction::default();
-        transaction.transaction_type = TransactionType::User;
+        let mut transaction = PendingTransaction {
+            transaction_type: TransactionType::User,
+            ..Default::default()
+        };
         sheet.delete_column(&mut transaction, 0);
         assert_eq!(transaction.reverse_operations.len(), 3);
         assert_eq!(sheet.columns.len(), 3);

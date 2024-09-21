@@ -22,7 +22,7 @@ impl Validations {
         self.validations.retain_mut(|validation| {
             let original_selection = validation.selection.clone();
             if validation.selection.removed_column(column) {
-                transaction.validation_changed(sheet_id, &validation, Some(&original_selection));
+                transaction.validation_changed(sheet_id, validation, Some(&original_selection));
                 reverse_operations.push(Operation::SetValidation {
                     validation: Validation {
                         selection: original_selection,
@@ -52,7 +52,7 @@ impl Validations {
         self.validations.retain_mut(|validation| {
             let original_selection = validation.selection.clone();
             if validation.selection.removed_row(row) {
-                transaction.validation_changed(sheet_id, &validation, Some(&original_selection));
+                transaction.validation_changed(sheet_id, validation, Some(&original_selection));
                 reverse_operations.push(Operation::SetValidation {
                     validation: Validation {
                         selection: original_selection,
@@ -82,7 +82,7 @@ impl Validations {
         self.validations.iter_mut().for_each(|validation| {
             let original_selection = validation.selection.clone();
             if validation.selection.inserted_column(column) {
-                transaction.validation_changed(sheet_id, &validation, Some(&original_selection));
+                transaction.validation_changed(sheet_id, validation, Some(&original_selection));
                 reverse_operations.push(Operation::SetValidation {
                     validation: Validation {
                         selection: original_selection,
@@ -109,7 +109,7 @@ impl Validations {
         self.validations.iter_mut().for_each(|validation| {
             let original_selection = validation.selection.clone();
             if validation.selection.inserted_row(row) {
-                transaction.validation_changed(sheet_id, &validation, Some(&original_selection));
+                transaction.validation_changed(sheet_id, validation, Some(&original_selection));
                 reverse_operations.push(Operation::SetValidation {
                     validation: Validation {
                         selection: original_selection,

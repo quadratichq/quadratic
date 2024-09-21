@@ -74,7 +74,7 @@ pub fn parse_and_check_formula(formula_string: &str, x: i64, y: i64) -> bool {
 /// ```
 pub fn replace_internal_cell_references(source: &str, pos: Pos) -> String {
     let replace_fn = |range_ref: RangeRef| range_ref.a1_string(pos);
-    replace_cell_range_references(source, pos, &replace_fn)
+    replace_cell_range_references(source, pos, replace_fn)
 }
 
 /// Replace A1 notation in a formula with internal cell references (RC
@@ -90,7 +90,7 @@ pub fn replace_internal_cell_references(source: &str, pos: Pos) -> String {
 /// ```
 pub fn replace_a1_notation(source: &str, pos: Pos) -> String {
     let replace_fn = |range_ref: RangeRef| range_ref.to_string();
-    replace_cell_range_references(source, pos, &replace_fn)
+    replace_cell_range_references(source, pos, replace_fn)
 }
 
 /// Replace all cell references with internal cell references (RC notation) by
@@ -355,7 +355,7 @@ mod tests {
     #[test]
     #[parallel]
     fn test_replace_xy_shift() {
-        let pos = pos![C6].into();
+        let pos = pos![C6];
         let src = "SUM(A4,B$6, C7)";
         let expected = "SUM(A2,B$5, C8)";
 

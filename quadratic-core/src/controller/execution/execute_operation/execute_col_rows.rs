@@ -111,7 +111,7 @@ impl GridController {
                                 });
                                 let sheet_pos = pos.to_sheet_pos(sheet_id);
                                 transaction.operations.push_back(Operation::SetCellValues {
-                                    sheet_pos: sheet_pos.clone(),
+                                    sheet_pos,
                                     values: code_cell_value.into(),
                                 });
                             }
@@ -119,7 +119,7 @@ impl GridController {
                     }
                 }
             });
-        })
+        });
     }
 
     pub fn execute_delete_column(&mut self, transaction: &mut PendingTransaction, op: Operation) {
@@ -163,8 +163,7 @@ impl GridController {
         if let Operation::DeleteRow { sheet_id, row } = op.clone() {
             let sheet_name: String;
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-                let reverse = sheet.delete_row(transaction, row);
-                transaction.reverse_operations.extend(reverse);
+                sheet.delete_row(transaction, row);
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds();
@@ -201,8 +200,7 @@ impl GridController {
         if let Operation::InsertColumn { sheet_id, column } = op {
             let sheet_name: String;
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-                let reverse = sheet.insert_column(transaction, column);
-                transaction.reverse_operations.extend(reverse);
+                sheet.insert_column(transaction, column);
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds();

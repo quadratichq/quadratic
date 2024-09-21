@@ -205,26 +205,17 @@ impl PendingTransaction {
 
     /// Adds a code cell to the transaction
     pub fn add_code_cell(&mut self, sheet_id: SheetId, pos: Pos) {
-        self.code_cells
-            .entry(sheet_id)
-            .or_insert_with(HashSet::new)
-            .insert(pos);
+        self.code_cells.entry(sheet_id).or_default().insert(pos);
     }
 
     /// Adds an html cell to the transaction
     pub fn add_html_cell(&mut self, sheet_id: SheetId, pos: Pos) {
-        self.html_cells
-            .entry(sheet_id)
-            .or_insert_with(HashSet::new)
-            .insert(pos);
+        self.html_cells.entry(sheet_id).or_default().insert(pos);
     }
 
     /// Adds an image cell to the transaction
     pub fn add_image_cell(&mut self, sheet_id: SheetId, pos: Pos) {
-        self.image_cells
-            .entry(sheet_id)
-            .or_insert_with(HashSet::new)
-            .insert(pos);
+        self.image_cells.entry(sheet_id).or_default().insert(pos);
     }
 
     /// Updates the dirty hashes for a validation. This includes triggering the
@@ -241,14 +232,14 @@ impl PendingTransaction {
             let dirty_hashes = validation.selection.rects_to_hashes();
             self.dirty_hashes
                 .entry(sheet_id)
-                .or_insert_with(HashSet::new)
+                .or_default()
                 .extend(dirty_hashes);
 
             if let Some(changed_selection) = changed_selection {
                 let changed_hashes = changed_selection.rects_to_hashes();
                 self.dirty_hashes
                     .entry(sheet_id)
-                    .or_insert_with(HashSet::new)
+                    .or_default()
                     .extend(changed_hashes);
             }
         }
@@ -335,7 +326,7 @@ mod tests {
         transaction.add_code_cell(sheet_id, pos);
         assert_eq!(transaction.code_cells.len(), 1);
         assert_eq!(transaction.code_cells[&sheet_id].len(), 1);
-        assert_eq!(transaction.code_cells[&sheet_id].contains(&pos), true);
+        assert!(transaction.code_cells[&sheet_id].contains(&pos));
     }
 
     #[test]
@@ -347,7 +338,7 @@ mod tests {
         transaction.add_html_cell(sheet_id, pos);
         assert_eq!(transaction.html_cells.len(), 1);
         assert_eq!(transaction.html_cells[&sheet_id].len(), 1);
-        assert_eq!(transaction.html_cells[&sheet_id].contains(&pos), true);
+        assert!(transaction.html_cells[&sheet_id].contains(&pos));
     }
 
     #[test]
