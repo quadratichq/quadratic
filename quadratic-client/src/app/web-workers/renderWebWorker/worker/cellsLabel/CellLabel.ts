@@ -115,6 +115,8 @@ export class CellLabel {
 
   private actualLeft: number;
   private actualRight: number;
+  private actualTop: number;
+  private actualBottom: number;
 
   private getText(cell: JsRenderCell) {
     switch (cell?.special) {
@@ -133,6 +135,15 @@ export class CellLabel {
           return cell?.value;
         }
     }
+  }
+
+  get textRectangle() {
+    return new Rectangle(
+      this.actualLeft,
+      this.actualTop,
+      this.actualRight - this.actualLeft,
+      this.actualBottom - this.actualTop
+    );
   }
 
   constructor(cellsLabels: CellsLabels, cell: JsRenderCell, screenRectangle: Rectangle) {
@@ -172,6 +183,8 @@ export class CellLabel {
 
     this.actualLeft = this.AABB.left;
     this.actualRight = this.AABB.right;
+    this.actualTop = this.AABB.top;
+    this.actualBottom = this.AABB.bottom;
 
     this.bold = !!cell?.bold;
     this.italic = !!cell?.italic || isError || isChart;
@@ -294,10 +307,15 @@ export class CellLabel {
     if (this.verticalAlign === 'bottom') {
       const actualTop = this.AABB.bottom - this.textHeight;
       this.position.y = actualTop;
+      this.actualTop = this.position.y;
     } else if (this.verticalAlign === 'middle') {
       const actualTop = Math.max(this.AABB.top, this.AABB.top + (this.AABB.height - this.textHeight) / 2);
       this.position.y = Math.max(actualTop, this.AABB.top);
+      this.actualTop = this.position.y;
+    } else {
+      this.actualTop = this.position.y;
     }
+    this.actualBottom = Math.min(this.AABB.bottom, this.position.y + this.textHeight);
   };
 
   public updateText = (labelMeshes: LabelMeshes): void => {

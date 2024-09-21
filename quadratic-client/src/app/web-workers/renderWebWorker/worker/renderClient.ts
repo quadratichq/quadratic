@@ -6,6 +6,7 @@
  */
 
 import { debugWebWorkersMessages } from '@/app/debugFlags';
+import { Link } from '@/app/gridGL/types/links';
 import { Coordinate, DrawRects } from '@/app/gridGL/types/size';
 import { Rectangle } from 'pixi.js';
 import {
@@ -83,7 +84,7 @@ class RenderClient {
     viewRectangle: { x: number; y: number; width: number; height: number },
     overflowGridLines: Coordinate[],
     content: Uint32Array,
-    links: Coordinate[],
+    links: Link[],
     drawRects: DrawRects[]
   ) {
     const message: RenderClientCellsTextHashClear = {

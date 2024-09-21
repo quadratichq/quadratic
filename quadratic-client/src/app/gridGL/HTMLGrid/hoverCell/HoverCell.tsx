@@ -15,7 +15,7 @@ import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import './HoverCell.css';
 
-export const HOVER_CELL_FADE_IN_OUT_DELAY = 250;
+export const HOVER_CELL_FADE_IN_OUT_DELAY = 500;
 
 export interface EditingCell {
   x: number;
