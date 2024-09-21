@@ -118,6 +118,7 @@ impl GridController {
             transaction.validations.iter().for_each(|sheet_id| {
                 if let Some(sheet) = self.try_sheet(*sheet_id) {
                     sheet.send_all_validations();
+                    sheet.send_all_validation_warnings();
                 }
             });
 

@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{collections::HashSet, str::FromStr};
 
 use crate::{grid::SheetId, Pos, Rect, SheetPos, SheetRect};
 use serde::{Deserialize, Serialize};
@@ -564,6 +564,23 @@ impl Selection {
         }
 
         changed
+    }
+
+    /// Converts the rects in a selection to a set of quadrant positions.
+    pub fn rects_to_hashes(&self) -> HashSet<Pos> {
+        let mut hashes = HashSet::new();
+        if let Some(rects) = self.rects.as_ref() {
+            for rect in rects {
+                for x in rect.min.x..=rect.max.x {
+                    for y in rect.min.y..=rect.max.y {
+                        let mut pos = Pos { x, y };
+                        pos.to_quadrant();
+                        hashes.insert(pos);
+                    }
+                }
+            }
+        }
+        hashes
     }
 }
 
@@ -1252,5 +1269,19 @@ mod test {
         };
         selection.removed_row(1);
         assert!(selection.rows.is_none());
+    }
+
+    #[test]
+    #[parallel]
+    fn rects_to_hashes() {
+        let selection = Selection {
+            sheet_id: SheetId::test(),
+            rects: Some(vec![Rect::new(1, 1, 3, 3), Rect::new(-3, -3, -1, -1)]),
+            ..Default::default()
+        };
+        assert_eq!(
+            selection.rects_to_hashes(),
+            HashSet::from([Pos { x: -1, y: -1 }, Pos { x: 0, y: 0 }])
+        );
     }
 }

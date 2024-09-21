@@ -186,8 +186,6 @@ impl Sheet {
             reverse_operations.extend(self.code_runs_for_row(row));
             reverse_operations.extend(self.borders.get_row_ops(self.id, row));
 
-            // todo: create reverse operations for validations
-
             // create reverse operation for row-based formatting
             if let Some(format) = self.try_format_row(row) {
                 reverse_operations.push(Operation::SetCellFormatsSelection {
@@ -286,11 +284,7 @@ impl Sheet {
             row,
         });
 
-        let validations_reverse = self.validations.remove_row(row);
-        if !validations_reverse.is_empty() {
-            reverse_operations.extend(validations_reverse);
-            transaction.validations.insert(self.id);
-        }
+        self.validations.remove_row(transaction, self.id, row);
 
         reverse_operations
     }
@@ -369,13 +363,11 @@ impl Sheet {
         }
     }
 
-    pub fn insert_row(&mut self, transaction: &mut PendingTransaction, row: i64) -> Vec<Operation> {
-        let mut reverse_operations = Vec::new();
-
+    pub fn insert_row(&mut self, transaction: &mut PendingTransaction, row: i64) {
         // create undo operations for the inserted column
         if transaction.is_user_undo_redo() {
             // reverse operation to delete the row (this will also shift all impacted rows)
-            reverse_operations.push(Operation::DeleteRow {
+            transaction.reverse_operations.push(Operation::DeleteRow {
                 sheet_id: self.id,
                 row,
             });
@@ -440,13 +432,7 @@ impl Sheet {
             }
         });
 
-        let validations_reverse = self.validations.insert_row(row);
-        if !validations_reverse.is_empty() {
-            reverse_operations.extend(validations_reverse);
-            transaction.validations.insert(self.id);
-        }
-
-        reverse_operations
+        self.validations.insert_row(transaction, self.id, row);
     }
 }
 

@@ -126,8 +126,7 @@ impl GridController {
         if let Operation::DeleteColumn { sheet_id, column } = op.clone() {
             let sheet_name: String;
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-                let reverse = sheet.delete_column(transaction, column);
-                transaction.reverse_operations.extend(reverse);
+                sheet.delete_column(transaction, column);
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds();
@@ -240,8 +239,7 @@ impl GridController {
         if let Operation::InsertRow { sheet_id, row } = op {
             let sheet_name: String;
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-                let reverse = sheet.insert_row(transaction, row);
-                transaction.reverse_operations.extend(reverse);
+                sheet.insert_row(transaction, row);
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds();

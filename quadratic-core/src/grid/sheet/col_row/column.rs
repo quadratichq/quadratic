@@ -90,34 +90,40 @@ impl Sheet {
     }
 
     /// Deletes columns and returns the operations to undo the deletion.
-    pub fn delete_column(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        column: i64,
-    ) -> Vec<Operation> {
-        let mut reverse_operations = Vec::new();
-
+    pub fn delete_column(&mut self, transaction: &mut PendingTransaction, column: i64) {
         // create undo operations for the deleted column (only when needed since
         // it's a bit expensive)
         if transaction.is_user_undo_redo() {
-            reverse_operations.extend(self.values_ops_for_column(column));
-            reverse_operations.extend(self.formats_ops_for_column(column));
-            reverse_operations.extend(self.code_runs_for_column(column));
-            reverse_operations.extend(self.borders.get_column_ops(self.id, column));
+            transaction
+                .reverse_operations
+                .extend(self.values_ops_for_column(column));
+            transaction
+                .reverse_operations
+                .extend(self.formats_ops_for_column(column));
+            transaction
+                .reverse_operations
+                .extend(self.code_runs_for_column(column));
+            transaction
+                .reverse_operations
+                .extend(self.borders.get_column_ops(self.id, column));
 
             // create reverse operation for column-based formatting
             if let Some(format) = self.try_format_column(column) {
-                reverse_operations.push(Operation::SetCellFormatsSelection {
-                    selection: Selection::columns(&[column], self.id),
-                    formats: Formats::repeat(format.to_replace(), 1),
-                });
+                transaction
+                    .reverse_operations
+                    .push(Operation::SetCellFormatsSelection {
+                        selection: Selection::columns(&[column], self.id),
+                        formats: Formats::repeat(format.to_replace(), 1),
+                    });
             }
 
             // reverse operation to create the column (this will also shift all impacted columns)
-            reverse_operations.push(Operation::InsertColumn {
-                sheet_id: self.id,
-                column,
-            });
+            transaction
+                .reverse_operations
+                .push(Operation::InsertColumn {
+                    sheet_id: self.id,
+                    column,
+                });
         }
 
         let mut updated_cols = HashSet::new();
@@ -234,13 +240,7 @@ impl Sheet {
             }
         });
 
-        let validations_reverse = self.validations.remove_column(column);
-        if !validations_reverse.is_empty() {
-            reverse_operations.extend(validations_reverse);
-            transaction.validations.insert(self.id);
-        }
-
-        reverse_operations
+        self.validations.remove_column(transaction, self.id, column);
     }
 
     pub fn insert_column(
@@ -343,11 +343,7 @@ impl Sheet {
             }
         });
 
-        let validations_reverse = self.validations.insert_column(column);
-        if !validations_reverse.is_empty() {
-            reverse_operations.extend(validations_reverse);
-            transaction.validations.insert(self.id);
-        }
+        self.validations.insert_column(transaction, self.id, column);
 
         reverse_operations
     }
@@ -432,8 +428,8 @@ mod tests {
 
         let mut transaction = PendingTransaction::default();
         transaction.transaction_type = TransactionType::User;
-        let ops = sheet.delete_column(&mut transaction, 0);
-        assert_eq!(ops.len(), 3);
+        sheet.delete_column(&mut transaction, 0);
+        assert_eq!(transaction.reverse_operations.len(), 3);
         assert_eq!(sheet.columns.len(), 3);
 
         assert_eq!(

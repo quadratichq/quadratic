@@ -12,7 +12,8 @@ use crate::{
     controller::{
         execution::TransactionType, operations::operation::Operation, transaction::Transaction,
     },
-    grid::{CodeCellLanguage, SheetId},
+    grid::{sheet::validations::validation::Validation, CodeCellLanguage, SheetId},
+    selection::Selection,
     viewport::ViewportBuffer,
     Pos, SheetPos, SheetRect,
 };
@@ -224,6 +225,33 @@ impl PendingTransaction {
             .entry(sheet_id)
             .or_insert_with(HashSet::new)
             .insert(pos);
+    }
+
+    /// Updates the dirty hashes for a validation. This includes triggering the
+    /// validation changes for a Sheet and any dirty hashes resulting from a
+    /// change in a checkbox or dropdown.
+    pub fn validation_changed(
+        &mut self,
+        sheet_id: SheetId,
+        validation: &Validation,
+        changed_selection: Option<&Selection>,
+    ) {
+        self.validations.insert(sheet_id);
+        if validation.render_special().is_some() {
+            let dirty_hashes = validation.selection.rects_to_hashes();
+            self.dirty_hashes
+                .entry(sheet_id)
+                .or_insert_with(HashSet::new)
+                .extend(dirty_hashes);
+
+            if let Some(changed_selection) = changed_selection {
+                let changed_hashes = changed_selection.rects_to_hashes();
+                self.dirty_hashes
+                    .entry(sheet_id)
+                    .or_insert_with(HashSet::new)
+                    .extend(changed_hashes);
+            }
+        }
     }
 }
 

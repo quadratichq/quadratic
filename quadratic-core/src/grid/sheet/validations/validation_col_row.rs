@@ -1,17 +1,28 @@
-use crate::controller::operations::operation::Operation;
+use crate::{
+    controller::{
+        active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation,
+    },
+    grid::SheetId,
+};
 
 use super::{validation::Validation, Validations};
 
 impl Validations {
-    /// Removes a column from all validations.
-    ///
-    /// Returns a list of operations that reverse the changes.
-    pub fn remove_column(&mut self, column: i64) -> Vec<Operation> {
+    /// Removes a column from all validations. Adds undo operations and client
+    /// signalling to the transaction.
+    pub fn remove_column(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        sheet_id: SheetId,
+        column: i64,
+    ) {
         let mut reverse_operations = Vec::new();
 
         self.validations.retain_mut(|validation| {
             let original_selection = validation.selection.clone();
             if validation.selection.removed_column(column) {
+                transaction.validation_changed(sheet_id, &validation, Some(&original_selection));
                 reverse_operations.push(Operation::SetValidation {
                     validation: Validation {
                         selection: original_selection,
@@ -24,18 +35,24 @@ impl Validations {
             }
         });
 
-        reverse_operations
+        transaction.reverse_operations.extend(reverse_operations);
     }
 
     /// Removes a row from all validations.
     ///
     /// Returns a list of operations that reverse the changes.
-    pub fn remove_row(&mut self, row: i64) -> Vec<Operation> {
+    pub fn remove_row(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        sheet_id: SheetId,
+        row: i64,
+    ) {
         let mut reverse_operations = Vec::new();
 
         self.validations.retain_mut(|validation| {
             let original_selection = validation.selection.clone();
             if validation.selection.removed_row(row) {
+                transaction.validation_changed(sheet_id, &validation, Some(&original_selection));
                 reverse_operations.push(Operation::SetValidation {
                     validation: Validation {
                         selection: original_selection,
@@ -48,18 +65,24 @@ impl Validations {
             }
         });
 
-        reverse_operations
+        transaction.reverse_operations.extend(reverse_operations);
     }
 
     /// Inserts a column into all validations.
     ///
     /// Returns a list of operations that reverse the changes.
-    pub fn insert_column(&mut self, column: i64) -> Vec<Operation> {
+    pub fn insert_column(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        sheet_id: SheetId,
+        column: i64,
+    ) {
         let mut reverse_operations = Vec::new();
 
         self.validations.iter_mut().for_each(|validation| {
             let original_selection = validation.selection.clone();
             if validation.selection.inserted_column(column) {
+                transaction.validation_changed(sheet_id, &validation, Some(&original_selection));
                 reverse_operations.push(Operation::SetValidation {
                     validation: Validation {
                         selection: original_selection,
@@ -69,18 +92,24 @@ impl Validations {
             }
         });
 
-        reverse_operations
+        transaction.reverse_operations.extend(reverse_operations);
     }
 
     /// Inserts a row into all validations.
     ///
     /// Returns a list of operations that reverse the changes.
-    pub fn insert_row(&mut self, row: i64) -> Vec<Operation> {
+    pub fn insert_row(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        sheet_id: SheetId,
+        row: i64,
+    ) {
         let mut reverse_operations = Vec::new();
 
         self.validations.iter_mut().for_each(|validation| {
             let original_selection = validation.selection.clone();
             if validation.selection.inserted_row(row) {
+                transaction.validation_changed(sheet_id, &validation, Some(&original_selection));
                 reverse_operations.push(Operation::SetValidation {
                     validation: Validation {
                         selection: original_selection,
@@ -90,7 +119,7 @@ impl Validations {
             }
         });
 
-        reverse_operations
+        transaction.reverse_operations.extend(reverse_operations);
     }
 }
 
@@ -157,9 +186,12 @@ mod tests {
         };
         validations.set(validation_not_changed.clone());
 
+        let mut transaction = PendingTransaction::default();
+        let sheet_id = SheetId::test();
+
         // remove column 2
-        let operations = validations.remove_column(2);
-        assert_eq!(operations.len(), 2);
+        validations.remove_column(&mut transaction, sheet_id, 2);
+        assert_eq!(transaction.reverse_operations.len(), 2);
 
         assert_eq!(validations.validations.len(), 2);
 
@@ -226,8 +258,10 @@ mod tests {
         validations.set(validation_not_changed.clone());
 
         // remove row 2
-        let operations = validations.remove_row(2);
-        assert_eq!(operations.len(), 2);
+        let mut transaction = PendingTransaction::default();
+        let sheet_id = SheetId::test();
+        validations.remove_row(&mut transaction, sheet_id, 2);
+        assert_eq!(transaction.reverse_operations.len(), 2);
 
         assert_eq!(validations.validations.len(), 2);
 
@@ -279,8 +313,10 @@ mod tests {
         validations.set(validation_not_changed.clone());
 
         // insert column 2
-        let operations = validations.insert_column(2);
-        assert_eq!(operations.len(), 1);
+        let mut transaction = PendingTransaction::default();
+        let sheet_id = SheetId::test();
+        validations.insert_column(&mut transaction, sheet_id, 2);
+        assert_eq!(transaction.reverse_operations.len(), 1);
 
         assert_eq!(validations.validations.len(), 2);
 
@@ -332,8 +368,10 @@ mod tests {
         validations.set(validation_not_changed.clone());
 
         // insert row 2
-        let operations = validations.insert_row(2);
-        assert_eq!(operations.len(), 1);
+        let mut transaction = PendingTransaction::default();
+        let sheet_id = SheetId::test();
+        validations.insert_row(&mut transaction, sheet_id, 2);
+        assert_eq!(transaction.reverse_operations.len(), 1);
 
         assert_eq!(validations.validations.len(), 2);
 
