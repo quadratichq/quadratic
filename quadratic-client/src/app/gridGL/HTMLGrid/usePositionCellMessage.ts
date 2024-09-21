@@ -21,15 +21,15 @@ interface Props {
 }
 
 interface PositionCellMessage {
-  top: number | undefined;
-  left: number | undefined;
+  top: number;
+  left: number;
 }
 
 export const usePositionCellMessage = (props: Props): PositionCellMessage => {
   const annotationState = useRecoilValue(editorInteractionStateAnnotationStateAtom);
   const { div, offsets, forceLeft, forceTop, direction: side } = props;
-  const [top, setTop] = useState<number | undefined>();
-  const [left, setLeft] = useState<number | undefined>();
+  const [top, setTop] = useState(0);
+  const [left, setLeft] = useState(0);
   const { leftHeading, topHeading } = useHeadingSize();
 
   useEffect(() => {

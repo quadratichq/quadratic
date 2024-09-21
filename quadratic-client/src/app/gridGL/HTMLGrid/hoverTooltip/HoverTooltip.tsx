@@ -1,8 +1,6 @@
 import { events } from '@/app/events/events';
-import { sheets } from '@/app/grid/controller/Sheets';
 import { usePositionCellMessage } from '@/app/gridGL/HTMLGrid/usePositionCellMessage';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Coordinate } from '@/app/gridGL/types/size';
 import { Rectangle } from 'pixi.js';
 import { useCallback, useEffect, useState } from 'react';
 import './HoverTooltip.css';
@@ -10,12 +8,12 @@ import './HoverTooltip.css';
 export function HoverTooltip() {
   const [offsets, setOffsets] = useState<Rectangle>(new Rectangle());
   const [text, setText] = useState<string | undefined>();
+  const [subtext, setSubtext] = useState<string | undefined>();
 
-  const handleTooltipEvent = useCallback((pos?: Coordinate, text?: string) => {
-    if (pos) {
-      setOffsets(sheets.sheet.getCellOffsets(pos.x, pos.y));
-    }
+  const handleTooltipEvent = useCallback((rect?: Rectangle, text?: string, subtext?: string) => {
+    setOffsets(rect ? new Rectangle(rect.x, rect.y, rect.width, rect.height) : new Rectangle());
     setText(text);
+    setSubtext(subtext);
   }, []);
 
   useEffect(() => {
@@ -38,13 +36,14 @@ export function HoverTooltip() {
       style={{
         left,
         top,
-        visibility: text !== undefined ? 'visible' : 'hidden',
-        opacity: text !== undefined ? 1 : 0,
+        visibility: text !== undefined && subtext !== undefined ? 'visible' : 'hidden',
+        opacity: text !== undefined && subtext !== undefined ? 1 : 0,
         transformOrigin: `0 0`,
         transform: `scale(${1 / pixiApp.viewport.scale.x})`,
       }}
     >
-      {text}
+      <span>{text}</span>
+      <span className="opacity-50">{subtext}</span>
     </div>
   );
 }

@@ -13,6 +13,7 @@ import { debugShowHashUpdates, debugShowLoadingHashes } from '@/app/debugFlags';
 import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { Link } from '@/app/gridGL/types/links';
 import { Coordinate, DrawRects } from '@/app/gridGL/types/size';
 import { JsRenderCell } from '@/app/quadratic-core-types';
 import { CellLabel } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
@@ -40,7 +41,7 @@ export class CellsTextHash {
   private drawRects: DrawRects[] = [];
 
   // tracks which cells have links
-  private links: Coordinate[] = [];
+  private links: Link[] = [];
 
   hashX: number;
   hashY: number;
@@ -105,7 +106,6 @@ export class CellsTextHash {
     if (cell.special !== 'Checkbox') {
       const cellLabel = new CellLabel(this.cellsLabels, cell, rectangle);
       this.labels.set(this.getKey(cell), cellLabel);
-      if (cellLabel.link) this.links.push(cellLabel.location);
     }
     if (cell.special === 'Checkbox') {
       this.special.addCheckbox(
@@ -129,7 +129,6 @@ export class CellsTextHash {
   private createLabels(cells: JsRenderCell[]) {
     this.labels = new Map();
     this.content.clear();
-    this.links = [];
     cells.forEach((cell) => this.createLabel(cell));
     this.loaded = true;
   }
@@ -354,6 +353,7 @@ export class CellsTextHash {
     }
     this.dirtyBuffers = false;
 
+    this.links = [];
     this.drawRects = [];
 
     // creates labelMeshes webGL buffers based on size
@@ -371,6 +371,9 @@ export class CellsTextHash {
         minY = Math.min(minY, bounds.minY);
         maxX = Math.max(maxX, bounds.maxX);
         maxY = Math.max(maxY, bounds.maxY);
+      }
+      if (cellLabel.link) {
+        this.links.push({ pos: cellLabel.location, textRectangle: cellLabel.textRectangle });
       }
       this.drawRects.push({ rects: cellLabel.horizontalLines, tint: cellLabel.tint });
     });

@@ -5,6 +5,7 @@ import { keyboardCell } from '@/app/gridGL/interaction/keyboard/keyboardCell';
 import { keyboardClipboard } from '@/app/gridGL/interaction/keyboard/keyboardClipboard';
 import { keyboardCode } from '@/app/gridGL/interaction/keyboard/keyboardCode';
 import { keyboardDropdown } from '@/app/gridGL/interaction/keyboard/keyboardDropdown';
+import { keyboardLink } from '@/app/gridGL/interaction/keyboard/keyboardLink';
 import { keyboardPosition } from '@/app/gridGL/interaction/keyboard/keyboardPosition';
 import { keyboardSearch } from '@/app/gridGL/interaction/keyboard/keyboardSearch';
 import { keyboardSelect } from '@/app/gridGL/interaction/keyboard/keyboardSelect';
@@ -17,7 +18,10 @@ import { useRecoilState } from 'recoil';
 
 export const pixiKeyboardCanvasProps: { headerSize: Size } = { headerSize: { width: 0, height: 0 } };
 
-export const useKeyboard = (): { onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void } => {
+export const useKeyboard = (): {
+  onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void;
+  onKeyUp: (event: React.KeyboardEvent<HTMLElement>) => void;
+} => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [presentationMode, setPresentationMode] = useRecoilState(presentationModeAtom);
   const { addGlobalSnackbar } = useGlobalSnackbar();
@@ -25,6 +29,7 @@ export const useKeyboard = (): { onKeyDown: (event: React.KeyboardEvent<HTMLElem
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if (pixiAppSettings.input.show && inlineEditorHandler.isOpen()) return;
     if (
+      keyboardLink(event) ||
       keyboardViewport({
         event,
         editorInteractionState,
@@ -66,7 +71,16 @@ export const useKeyboard = (): { onKeyDown: (event: React.KeyboardEvent<HTMLElem
     }
   };
 
+  const onKeyUp = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (keyboardLink(event)) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+  };
+
   return {
     onKeyDown,
+    onKeyUp,
   };
 };
