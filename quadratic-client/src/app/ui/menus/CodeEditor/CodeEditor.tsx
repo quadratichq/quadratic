@@ -10,28 +10,29 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { Diagnostic } from 'vscode-languageserver-types';
+import { hasPermissionToEditFile } from '@/app/actions';
+import { Action } from '@/app/actions/actions';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useConnectionState } from '@/app/atoms/useConnectionState';
 import { useJavascriptState } from '@/app/atoms/useJavascriptState';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
+import { CodeEditorBody } from '@/app/ui/menus/CodeEditor/CodeEditorBody';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { CodeEditorEmptyState } from '@/app/ui/menus/CodeEditor/CodeEditorEmptyState';
+import { CodeEditorHeader } from '@/app/ui/menus/CodeEditor/CodeEditorHeader';
 import { CodeEditorPanel } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanel';
 import { CodeEditorPanels } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelsResize';
 import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import { ReturnTypeInspector } from '@/app/ui/menus/CodeEditor/ReturnTypeInspector';
+import { SaveChangesAlert } from '@/app/ui/menus/CodeEditor/SaveChangesAlert';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
+import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { cn } from '@/shared/shadcn/utils';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
-import { hasPermissionToEditFile } from '../../../actions';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
-import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/pythonWebWorker';
 import './CodeEditor.css';
-import { CodeEditorBody } from './CodeEditorBody';
-import { CodeEditorHeader } from './CodeEditorHeader';
-import { ReturnTypeInspector } from './ReturnTypeInspector';
-import { SaveChangesAlert } from './SaveChangesAlert';
 
 export const dispatchEditorAction = (name: string) => {
   window.dispatchEvent(new CustomEvent('run-editor-action', { detail: name }));
@@ -293,41 +294,41 @@ export const CodeEditor = () => {
     }
 
     // Command + S
-    if (matchShortcut('save', event)) {
+    if (matchShortcut(Action.Save, event)) {
       event.preventDefault();
       saveAndRunCell();
     }
 
     // Command + Enter
-    if (matchShortcut('execute_code', event)) {
+    if (matchShortcut(Action.ExecuteCode, event)) {
       event.preventDefault();
       event.stopPropagation();
       saveAndRunCell();
     }
 
     // Command + Escape
-    if (matchShortcut('cancel_execution', event)) {
+    if (matchShortcut(Action.CancelExecution, event)) {
       event.preventDefault();
       event.stopPropagation();
       cancelRun();
     }
 
     // Command + Plus
-    if (matchShortcut('zoom_in', event)) {
+    if (matchShortcut(Action.ZoomIn, event)) {
       event.preventDefault();
       event.stopPropagation();
       dispatchEditorAction('editor.action.fontZoomIn');
     }
 
     // Command + Minus
-    if (matchShortcut('zoom_out', event)) {
+    if (matchShortcut(Action.ZoomOut, event)) {
       event.preventDefault();
       event.stopPropagation();
       dispatchEditorAction('editor.action.fontZoomOut');
     }
 
     // Command + 0
-    if (matchShortcut('zoom_to_100', event)) {
+    if (matchShortcut(Action.ZoomTo100, event)) {
       event.preventDefault();
       event.stopPropagation();
       dispatchEditorAction('editor.action.fontZoomReset');
