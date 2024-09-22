@@ -1,6 +1,5 @@
 import { events } from '@/app/events/events';
 import { convertColorStringToTint } from '@/app/helpers/convertColor';
-import { colors } from '@/app/theme/colors';
 import { Container, Graphics } from 'pixi.js';
 import { CellsImage } from '../cells/cellsImages/CellsImage';
 import { pixiApp } from '../pixiApp/PixiApp';
@@ -58,7 +57,8 @@ export class UICellImages extends Container {
       this.borders.clear();
       const images = pixiApp.cellsSheets.current?.getCellsImages();
       if (!images) return true;
-      const color = convertColorStringToTint(colors.quadraticPrimary);
+      const hslColorFromCssVar = window.getComputedStyle(document.documentElement).getPropertyValue('--primary');
+      const color = convertColorStringToTint(`hsl(${hslColorFromCssVar})`);
       this.borders.lineStyle({ color, width: 1 });
       images.forEach((image) => {
         this.borders.drawRect(image.x, image.y, image.width, image.height);
@@ -74,7 +74,8 @@ export class UICellImages extends Container {
 
       this.resizing.clear();
       if (this.active) {
-        const color = convertColorStringToTint(colors.quadraticPrimary);
+        const hslColorFromCssVar = window.getComputedStyle(document.documentElement).getPropertyValue('--primary');
+        const color = convertColorStringToTint(`hsl(${hslColorFromCssVar})`);
         this.resizing.lineStyle({ color, width: IMAGE_BORDER_WIDTH });
 
         // vertical line on the right

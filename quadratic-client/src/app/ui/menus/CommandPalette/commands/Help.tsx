@@ -1,39 +1,52 @@
-import { ExternalLinkIcon, FeedbackIcon } from '@/app/ui/icons';
-import { useSetRecoilState } from 'recoil';
-import { provideFeedbackAction, viewDocsAction } from '../../../../actions';
-import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
+import { Action } from '@/app/actions/actions';
+import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
+
+const docsAction = defaultActionSpec[Action.HelpDocs];
+const feedbackAction = defaultActionSpec[Action.HelpFeedback];
+const contactAction = defaultActionSpec[Action.HelpContactUs];
 
 const commands: CommandGroup = {
   heading: 'Help',
   commands: [
     {
-      label: viewDocsAction.label,
+      label: docsAction.label,
       Component: (props) => (
         <CommandPaletteListItem
           {...props}
-          icon={<ExternalLinkIcon />}
+          icon={docsAction.Icon ? <docsAction.Icon /> : undefined}
           action={() => {
-            viewDocsAction.run();
+            docsAction.run();
           }}
         />
       ),
     },
     {
-      label: provideFeedbackAction.label,
-      isAvailable: provideFeedbackAction.isAvailable,
+      label: feedbackAction.label,
+      isAvailable: feedbackAction.isAvailable,
       Component: (props) => {
-        const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
         return (
           <CommandPaletteListItem
             {...props}
-            icon={<FeedbackIcon />}
+            icon={feedbackAction.Icon ? <feedbackAction.Icon /> : undefined}
             action={() => {
-              provideFeedbackAction.run({ setEditorInteractionState });
+              feedbackAction.run();
             }}
           />
         );
       },
+    },
+    {
+      label: contactAction.label,
+      Component: (props) => (
+        <CommandPaletteListItem
+          {...props}
+          icon={contactAction.Icon ? <contactAction.Icon /> : undefined}
+          action={() => {
+            contactAction.run();
+          }}
+        />
+      ),
     },
   ],
 };

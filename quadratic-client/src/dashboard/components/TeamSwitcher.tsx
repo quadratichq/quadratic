@@ -1,6 +1,7 @@
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { TeamAction } from '@/routes/teams.$teamUuid';
+import { AddIcon, ArrowDropDownIcon, CheckIcon, LogoutIcon, RefreshIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -13,7 +14,6 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
-import { CaretSortIcon, CheckCircledIcon, ExitIcon, PlusIcon, ReloadIcon } from '@radix-ui/react-icons';
 import { ReactNode } from 'react';
 import { Link, useFetcher, useNavigate, useSubmit } from 'react-router-dom';
 
@@ -43,10 +43,10 @@ export function TeamSwitcher({ appIsLoading }: Props) {
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className="flex justify-between px-3 font-semibold">
           <div className="select-none truncate">{optimisticActiveTeamName}</div>
-          <div className="relative">
-            <CaretSortIcon />
-            <ReloadIcon
-              className={`absolute left-0 top-0 ml-auto mr-1 animate-spin bg-background text-primary transition-opacity ${
+          <div className="relative flex items-center">
+            <ArrowDropDownIcon />
+            <RefreshIcon
+              className={`absolute left-0 top-0 ml-auto animate-spin bg-background text-primary transition-opacity ${
                 appIsLoading ? '' : ' opacity-0'
               }`}
             />
@@ -76,7 +76,7 @@ export function TeamSwitcher({ appIsLoading }: Props) {
                   {isPaid ? <DotFilledIcon className="text-success" /> : <DotIcon className="text-warning" />}
                 </IconWrapper> */}
 
-                <IconWrapper>{isActive && <CheckCircledIcon />}</IconWrapper>
+                <IconWrapper>{isActive && <CheckIcon />}</IconWrapper>
                 <div className="flex flex-col">
                   <div>{name}</div>
                   <Type variant="caption">
@@ -100,7 +100,7 @@ export function TeamSwitcher({ appIsLoading }: Props) {
           }}
         >
           <IconWrapper>
-            <PlusIcon />
+            <AddIcon />
           </IconWrapper>
           Create team
         </DropdownMenuItem>
@@ -112,7 +112,7 @@ export function TeamSwitcher({ appIsLoading }: Props) {
           }}
         >
           <IconWrapper>
-            <ExitIcon />
+            <LogoutIcon />
           </IconWrapper>
           Log out
         </DropdownMenuItem>

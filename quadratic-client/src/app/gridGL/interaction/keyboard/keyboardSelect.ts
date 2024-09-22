@@ -1,16 +1,17 @@
+import { Action } from '@/app/actions/actions';
 import { sheets } from '@/app/grid/controller/Sheets.js';
+import { selectAllCells, selectColumns, selectRows } from '@/app/gridGL/helpers/selectCells';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
-import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCells';
 
 export function keyboardSelect(event: React.KeyboardEvent<HTMLElement>): boolean {
   // Select all
-  if (matchShortcut('select_all', event)) {
+  if (matchShortcut(Action.SelectAll, event)) {
     selectAllCells();
     return true;
   }
 
   // Select column
-  if (matchShortcut('select_column', event)) {
+  if (matchShortcut(Action.SelectColumn, event)) {
     const cursor = sheets.sheet.cursor;
     if (cursor.columnRow?.all || cursor.columnRow?.rows?.length) {
       selectAllCells();
@@ -28,7 +29,7 @@ export function keyboardSelect(event: React.KeyboardEvent<HTMLElement>): boolean
   }
 
   // Select row
-  if (matchShortcut('select_row', event)) {
+  if (matchShortcut(Action.SelectRow, event)) {
     const cursor = sheets.sheet.cursor;
     if (cursor.columnRow?.all || cursor.columnRow?.columns?.length) {
       selectAllCells();

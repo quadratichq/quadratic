@@ -1,34 +1,23 @@
-import { ButtonBase, ButtonBaseProps, Tooltip, useTheme } from '@mui/material';
+import { Button, ButtonProps } from '@/shared/shadcn/ui/button';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 
-interface Props extends ButtonBaseProps {
+interface Props extends ButtonProps {
   buttonRef?: any;
-  tooltip?: string;
+  tooltip: string;
 }
 
-export const SheetBarButton = ({ children, buttonRef, tooltip, ...rest }: Props) => {
-  const theme = useTheme();
-
-  const buttonStyles = {
-    px: theme.spacing(1.5),
-    '&:hover': {
-      background: theme.palette.action.hover,
-
-      '& svg': {
-        fill: theme.palette.text.primary,
-      },
-    },
-  };
-
+export const SheetBarButton = ({ children, buttonRef, tooltip, className, ...rest }: Props) => {
   const buttonProps = {
     ...rest,
     ...(buttonRef ? { ref: buttonRef } : {}),
+    className: `h-full px-5 ${className ? className : ''}`,
   };
 
   return (
-    <Tooltip title={tooltip ?? ''}>
-      <ButtonBase sx={buttonStyles} {...buttonProps}>
+    <TooltipPopover label={tooltip ?? ''}>
+      <Button variant="ghost" size="icon-sm" {...buttonProps}>
         {children}
-      </ButtonBase>
-    </Tooltip>
+      </Button>
+    </TooltipPopover>
   );
 };

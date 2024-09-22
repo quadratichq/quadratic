@@ -1,6 +1,6 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
-import { ExternalLinkIcon } from '@/app/ui/icons';
+import { ExternalLinkIcon } from '@/shared/components/Icons';
 import {
   DOCUMENTATION_JAVASCRIPT_URL,
   DOCUMENTATION_PYTHON_URL,
@@ -147,10 +147,10 @@ export function SnippetsPopover() {
           onClick={() => {
             mixpanel.track('[Snippets].clickDocs');
           }}
-          className="flex w-full items-center gap-4 border-t border-border px-3 py-2 text-sm text-muted-foreground hover:underline"
+          className="flex w-full items-center justify-between gap-4 border-t border-border px-3 py-2 text-sm text-muted-foreground hover:underline"
         >
-          <ExternalLinkIcon style={{ fontSize: '.875rem' }} className="opacity-80" />
           Read the docs
+          <ExternalLinkIcon className="float-right opacity-50" />
         </ExternalLink>
       </PopoverContent>
     </Popover>
