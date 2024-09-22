@@ -66,8 +66,6 @@ impl GridController {
                 Operation::DeleteRow { .. } => self.execute_delete_row(transaction, op),
                 Operation::InsertColumn { .. } => self.execute_insert_column(transaction, op),
                 Operation::InsertRow { .. } => self.execute_insert_row(transaction, op),
-                Operation::MoveColumn { .. } => self.execute_move_column(transaction, op),
-                Operation::MoveRow { .. } => self.execute_move_row(transaction, op),
             }
 
             if cfg!(target_family = "wasm") || cfg!(test) {

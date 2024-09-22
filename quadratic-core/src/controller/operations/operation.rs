@@ -158,16 +158,6 @@ pub enum Operation {
         sheet_id: SheetId,
         row: i64,
     },
-    MoveColumn {
-        sheet_id: SheetId,
-        column: i64,
-        new_column: i64,
-    },
-    MoveRow {
-        sheet_id: SheetId,
-        row: i64,
-        new_row: i64,
-    },
 }
 
 impl fmt::Display for Operation {
@@ -315,28 +305,6 @@ impl fmt::Display for Operation {
             }
             Operation::InsertRow { sheet_id, row } => {
                 write!(fmt, "InsertRow {{ sheet_id: {}, row: {} }}", sheet_id, row)
-            }
-            Operation::MoveColumn {
-                sheet_id,
-                column,
-                new_column,
-            } => {
-                write!(
-                    fmt,
-                    "MoveColumn {{ sheet_id: {}, column: {}, new_column: {} }}",
-                    sheet_id, column, new_column
-                )
-            }
-            Operation::MoveRow {
-                sheet_id,
-                row,
-                new_row,
-            } => {
-                write!(
-                    fmt,
-                    "MoveRow {{ sheet_id: {}, row: {}, new_row: {} }}",
-                    sheet_id, row, new_row
-                )
             }
         }
     }

@@ -269,25 +269,6 @@ impl GridController {
             }
         }
     }
-
-    pub fn execute_move_column(&mut self, _transaction: &mut PendingTransaction, op: Operation) {
-        if let Operation::MoveColumn {
-            ..
-            /*sheet_id,
-            column,
-            new_column,*/
-        } = op
-        {}
-    }
-
-    pub fn execute_move_row(&mut self, _transaction: &mut PendingTransaction, op: Operation) {
-        if let Operation::MoveRow {..
-            /*sheet_id,
-            row,
-            new_row,*/
-        } = op
-        {}
-    }
 }
 
 #[cfg(test)]
