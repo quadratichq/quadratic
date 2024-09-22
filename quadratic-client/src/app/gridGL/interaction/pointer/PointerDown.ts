@@ -54,16 +54,20 @@ export class PointerDown {
 
     // If right click and we have a multi cell selection.
     // If the user has clicked inside the selection.
-    if (rightClick && cursor.multiCursor) {
-      const lastMultiCursor = cursor.multiCursor[cursor.multiCursor.length - 1];
-      if (
-        column >= lastMultiCursor.left &&
-        column <= lastMultiCursor.right &&
-        row >= lastMultiCursor.top &&
-        row <= lastMultiCursor.bottom
-      )
-        // Ignore this click. User is accessing the RightClickMenu.
-        return;
+    if (rightClick) {
+      if (!cursor.includesCell(column, row)) {
+        cursor.changePosition({
+          cursorPosition: { x: column, y: row },
+          multiCursor: null,
+          ensureVisible: false,
+        });
+        // hack to ensure that the context menu opens after the cursor changes
+        // position (otherwise it may close immediately)
+        setTimeout(() => events.emit('gridContextMenu', world, column, row));
+      } else {
+        events.emit('gridContextMenu', world, column, row);
+      }
+      return;
     }
 
     if (this.doubleClickTimeout) {
@@ -219,6 +223,7 @@ export class PointerDown {
           columnRow,
           keyboardMovePosition: { x: this.position.x, y: this.position.y },
           cursorPosition: { x: this.position.x, y: this.position.y },
+          multiCursor: null,
           ensureVisible: false,
         });
       }

@@ -1,3 +1,4 @@
+import { ArrowDropDownIcon, ViewGridIcon, ViewListIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
@@ -9,7 +10,6 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { cn } from '@/shared/shadcn/utils';
-import { ChevronDownIcon, DashboardIcon, DropdownMenuIcon, ListBulletIcon } from '@radix-ui/react-icons';
 import { Dispatch, SetStateAction } from 'react';
 
 export type ViewPreferences = {
@@ -114,7 +114,7 @@ export function FileListViewControlsDropdown({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="text-muted-foreground">
-                {sortButtonLabel} <ChevronDownIcon className="ml-1" />
+                {sortButtonLabel} <ArrowDropDownIcon className="ml-0.5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-52">
@@ -135,7 +135,7 @@ export function FileListViewControlsDropdown({
           </DropdownMenu>
         )}
 
-        <div>
+        <div className="text-muted-foreground">
           <Button
             className={cn(viewPreferences.layout === Layout.Grid && 'bg-accent', `!opacity-100`)}
             variant="ghost"
@@ -143,7 +143,7 @@ export function FileListViewControlsDropdown({
             disabled={viewPreferences.layout === Layout.Grid}
             onClick={() => setViewPreferences((prev: any) => ({ ...prev, layout: Layout.Grid }))}
           >
-            <DashboardIcon />
+            <ViewGridIcon />
           </Button>
           <Button
             className={cn(viewPreferences.layout === Layout.List && 'bg-accent', `!opacity-100`)}
@@ -152,7 +152,7 @@ export function FileListViewControlsDropdown({
             disabled={viewPreferences.layout === Layout.List}
             onClick={() => setViewPreferences((prev: any) => ({ ...prev, layout: Layout.List }))}
           >
-            <ListBulletIcon />
+            <ViewListIcon />
           </Button>
         </div>
       </div>
@@ -161,7 +161,7 @@ export function FileListViewControlsDropdown({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="icon">
-              <DropdownMenuIcon />
+              <ArrowDropDownIcon />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56">
