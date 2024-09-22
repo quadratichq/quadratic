@@ -485,7 +485,7 @@ mod tests {
             "1".to_string()
         );
 
-        gc.delete_row(sheet_id, 2, None);
+        gc.delete_rows(sheet_id, vec![2], None);
 
         // rerun the code cell to get the new value
         gc.rerun_code_cell(SheetPos::new(sheet_id, 1, 1), None);
@@ -539,7 +539,7 @@ mod tests {
             "1".to_string()
         );
 
-        gc.delete_row(sheet_id, 2, None);
+        gc.delete_rows(sheet_id, vec![2], None);
 
         // rerun the code cell to get the new value
         gc.rerun_code_cell(SheetPos::new(sheet_id, 1, 1), None);
@@ -653,7 +653,7 @@ mod tests {
             None,
         );
 
-        gc.delete_column(sheet_id, 2, None);
+        gc.delete_columns(sheet_id, vec![2], None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 1);
@@ -686,7 +686,7 @@ mod tests {
             None,
         );
 
-        gc.delete_row(sheet_id, 2, None);
+        gc.delete_rows(sheet_id, vec![2], None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 1);
@@ -695,6 +695,70 @@ mod tests {
         assert_eq!(
             sheet.validations.validations[0].selection.rects,
             Some(vec![Rect::new(1, 1, 3, 2)])
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn delete_columns() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_cell_values(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            vec![vec!["A", "B", "C", "D"]],
+            None,
+        );
+
+        gc.delete_columns(sheet_id, vec![2, 3], None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.bounds(false),
+            GridBounds::NonEmpty(Rect::new(1, 1, 2, 1))
+        );
+
+        gc.undo(None);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.bounds(false),
+            GridBounds::NonEmpty(Rect::new(1, 1, 4, 1))
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn delete_row() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_cell_values(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            vec![vec!["A"], vec!["B"], vec!["C"], vec!["D"]],
+            None,
+        );
+
+        gc.delete_rows(sheet_id, vec![2, 3], None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.bounds(false),
+            GridBounds::NonEmpty(Rect::new(1, 1, 1, 2))
+        );
+
+        gc.undo(None);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.bounds(false),
+            GridBounds::NonEmpty(Rect::new(1, 1, 1, 4))
         );
     }
 }

@@ -1098,11 +1098,11 @@ class QuadraticCore {
   //#endregion
   //#region manipulate columns and rows
 
-  deleteColumn(sheetId: string, column: number, cursor: string) {
+  deleteColumns(sheetId: string, columns: number[], cursor: string) {
     this.send({
-      type: 'clientCoreDeleteColumn',
+      type: 'clientCoreDeleteColumns',
       sheetId,
-      column,
+      columns,
       cursor,
     });
   }
@@ -1116,11 +1116,11 @@ class QuadraticCore {
     });
   }
 
-  deleteRow(sheetId: string, row: number, cursor: string) {
+  deleteRows(sheetId: string, rows: number[], cursor: string) {
     this.send({
-      type: 'clientCoreDeleteRow',
+      type: 'clientCoreDeleteRows',
       sheetId,
-      row,
+      rows,
       cursor,
     });
   }

@@ -73,13 +73,13 @@ export const GridContextMenu = () => {
         <MenuItemAction action={Action.PasteFormattingOnly} />
         <MenuItemAction action={Action.CopyAsPng} />
         <MenuItemAction action={Action.DownloadAsCsv} />
-        {isColumnRowAvailable && <MenuDivider />}
-        <MenuItemAction action={Action.InsertColumnLeft} />
-        <MenuItemAction action={Action.InsertColumnRight} />
+        <MenuDivider />
+        {isColumnRowAvailable && <MenuItemAction action={Action.InsertColumnLeft} />}
+        {isColumnRowAvailable && <MenuItemAction action={Action.InsertColumnRight} />}
         <MenuItemAction action={Action.DeleteColumn} />
         {isColumnRowAvailable && <MenuDivider />}
-        <MenuItemAction action={Action.InsertRowAbove} />
-        <MenuItemAction action={Action.InsertRowBelow} />
+        {isColumnRowAvailable && <MenuItemAction action={Action.InsertRowAbove} />}
+        {isColumnRowAvailable && <MenuItemAction action={Action.InsertRowBelow} />}
         <MenuItemAction action={Action.DeleteRow} />
       </ControlledMenu>
     </div>

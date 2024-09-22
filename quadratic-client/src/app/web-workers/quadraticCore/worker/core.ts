@@ -1030,9 +1030,9 @@ class Core {
     }
   }
 
-  deleteColumn(sheetId: string, column: number, cursor: string) {
+  deleteColumns(sheetId: string, columns: number[], cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.deleteColumn(sheetId, BigInt(column), cursor);
+    this.gridController.deleteColumn(sheetId, JSON.stringify(columns), cursor);
   }
 
   insertColumn(sheetId: string, column: number, cursor: string) {
@@ -1040,9 +1040,9 @@ class Core {
     this.gridController.insertColumn(sheetId, BigInt(column), cursor);
   }
 
-  deleteRow(sheetId: string, row: number, cursor: string) {
+  deleteRows(sheetId: string, rows: number[], cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.deleteRow(sheetId, BigInt(row), cursor);
+    this.gridController.deleteRows(sheetId, JSON.stringify(rows), cursor);
   }
 
   insertRow(sheetId: string, row: number, cursor: string) {

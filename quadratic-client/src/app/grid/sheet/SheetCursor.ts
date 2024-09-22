@@ -259,4 +259,32 @@ export class SheetCursor {
       return this.cursorPosition.x === column && this.cursorPosition.y === row;
     }
   }
+
+  // Returns the columns that are selected.
+  getColumnsSelection(): number[] {
+    const columns = new Set<number>();
+    if (this.columnRow?.columns) {
+      this.columnRow.columns.forEach((column) => columns.add(column));
+    }
+    if (this.multiCursor) {
+      for (const rect of this.multiCursor) {
+        columns.add(rect.x);
+      }
+    }
+    return Array.from(columns);
+  }
+
+  // Returns the rows that are selected.
+  getRowsSelection(): number[] {
+    const rows = new Set<number>();
+    if (this.columnRow?.rows) {
+      this.columnRow.rows.forEach((row) => rows.add(row));
+    }
+    if (this.multiCursor) {
+      for (const rect of this.multiCursor) {
+        rows.add(rect.y);
+      }
+    }
+    return Array.from(rows);
+  }
 }

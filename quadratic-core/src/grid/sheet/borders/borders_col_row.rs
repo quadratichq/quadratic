@@ -819,7 +819,7 @@ mod tests {
             None,
         );
 
-        gc.delete_row(sheet_id, 2, None);
+        gc.delete_rows(sheet_id, vec![2], None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(

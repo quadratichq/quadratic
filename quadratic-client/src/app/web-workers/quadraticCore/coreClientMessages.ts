@@ -966,17 +966,17 @@ export interface CoreClientGetCellValue {
   value: JsCellValue | undefined;
 }
 
-export interface ClientCoreDeleteColumn {
-  type: 'clientCoreDeleteColumn';
+export interface ClientCoreDeleteColumns {
+  type: 'clientCoreDeleteColumns';
   sheetId: string;
-  column: number;
+  columns: number[];
   cursor: string;
 }
 
-export interface ClientCoreDeleteRow {
-  type: 'clientCoreDeleteRow';
+export interface ClientCoreDeleteRows {
+  type: 'clientCoreDeleteRows';
   sheetId: string;
-  row: number;
+  rows: number[];
   cursor: string;
 }
 
@@ -1067,8 +1067,8 @@ export type ClientCoreMessage =
   | ClientCoreGetDisplayCell
   | ClientCoreValidateInput
   | ClientCoreGetCellValue
-  | ClientCoreDeleteColumn
-  | ClientCoreDeleteRow
+  | ClientCoreDeleteColumns
+  | ClientCoreDeleteRows
   | ClientCoreInsertColumn
   | ClientCoreInsertRow;
 

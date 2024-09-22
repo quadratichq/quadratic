@@ -7,8 +7,19 @@ use crate::{
 };
 
 impl GridController {
-    pub fn delete_column(&mut self, sheet_id: SheetId, column: i64, cursor: Option<String>) {
-        let ops = vec![Operation::DeleteColumn { sheet_id, column }];
+    pub fn delete_columns(
+        &mut self,
+        sheet_id: SheetId,
+        mut columns: Vec<i64>,
+        cursor: Option<String>,
+    ) {
+        columns.sort_unstable();
+        columns.dedup();
+        columns.reverse();
+        let ops = columns
+            .into_iter()
+            .map(|column| Operation::DeleteColumn { sheet_id, column })
+            .collect();
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
 
@@ -17,8 +28,17 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
 
-    pub fn delete_row(&mut self, sheet_id: SheetId, row: i64, cursor: Option<String>) {
-        let ops = vec![Operation::DeleteRow { sheet_id, row }];
+    pub fn delete_rows(&mut self, sheet_id: SheetId, mut rows: Vec<i64>, cursor: Option<String>) {
+        rows.sort_unstable();
+        rows.dedup();
+        rows.reverse();
+        let ops = rows
+            .iter()
+            .map(|row| Operation::DeleteRow {
+                sheet_id,
+                row: *row,
+            })
+            .collect();
         self.start_user_transaction(ops, cursor, TransactionName::ManipulateColumnRow);
     }
 
@@ -58,7 +78,7 @@ mod tests {
             }))
         );
 
-        gc.delete_row(sheet_id, 1, None);
+        gc.delete_rows(sheet_id, vec![1], None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.cell_value(Pos::new(1, 1)), None);
@@ -103,7 +123,7 @@ mod tests {
             }))
         );
 
-        gc.delete_row(sheet_id, 2, None);
+        gc.delete_rows(sheet_id, vec![2], None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(

@@ -556,12 +556,12 @@ class CoreClient {
         });
         return;
 
-      case 'clientCoreDeleteColumn':
-        core.deleteColumn(e.data.sheetId, e.data.column, e.data.cursor);
+      case 'clientCoreDeleteColumns':
+        core.deleteColumns(e.data.sheetId, e.data.columns, e.data.cursor);
         return;
 
-      case 'clientCoreDeleteRow':
-        core.deleteRow(e.data.sheetId, e.data.row, e.data.cursor);
+      case 'clientCoreDeleteRows':
+        core.deleteRows(e.data.sheetId, e.data.rows, e.data.cursor);
         return;
 
       case 'clientCoreInsertColumn':

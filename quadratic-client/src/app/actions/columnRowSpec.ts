@@ -26,12 +26,14 @@ const insertColumnRight: ActionSpec<void> = {
     quadraticCore.insertColumn(sheets.sheet.id, sheets.sheet.cursor.cursorPosition.x + 1, sheets.getCursorPosition()),
 };
 
-const deleteColumn: ActionSpec<void> = {
-  label: 'Delete column',
-  isAvailable: isColumnRowAvailable,
+const deleteColumns: ActionSpec<void> = {
+  label: 'Delete columns',
+  isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => !isEmbed && isAuthenticated,
   Icon: DeleteIcon,
-  run: () =>
-    quadraticCore.deleteColumn(sheets.sheet.id, sheets.sheet.cursor.cursorPosition.x, sheets.getCursorPosition()),
+  run: () => {
+    const columns = sheets.sheet.cursor.getColumnsSelection();
+    quadraticCore.deleteColumns(sheets.sheet.id, columns, sheets.getCursorPosition());
+  },
 };
 
 const insertRowAbove: ActionSpec<void> = {
@@ -49,18 +51,21 @@ const insertRowBelow: ActionSpec<void> = {
     quadraticCore.insertRow(sheets.sheet.id, sheets.sheet.cursor.cursorPosition.y + 1, sheets.getCursorPosition()),
 };
 
-const deleteRow: ActionSpec<void> = {
-  label: 'Delete row',
-  isAvailable: isColumnRowAvailable,
+const deleteRows: ActionSpec<void> = {
+  label: 'Delete rows',
+  isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => !isEmbed && isAuthenticated,
   Icon: DeleteIcon,
-  run: () => quadraticCore.deleteRow(sheets.sheet.id, sheets.sheet.cursor.cursorPosition.y, sheets.getCursorPosition()),
+  run: () => {
+    const rows = sheets.sheet.cursor.getRowsSelection();
+    quadraticCore.deleteRows(sheets.sheet.id, rows, sheets.getCursorPosition());
+  },
 };
 
 export const columnRowSpec = {
   [Action.InsertColumnLeft]: insertColumnLeft,
   [Action.InsertColumnRight]: insertColumnRight,
-  [Action.DeleteColumn]: deleteColumn,
+  [Action.DeleteColumn]: deleteColumns,
   [Action.InsertRowAbove]: insertRowAbove,
   [Action.InsertRowBelow]: insertRowBelow,
-  [Action.DeleteRow]: deleteRow,
+  [Action.DeleteRow]: deleteRows,
 };
