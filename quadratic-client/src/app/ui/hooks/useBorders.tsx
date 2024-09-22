@@ -53,11 +53,6 @@ export const useBorders = (): UseBordersResults => {
   );
 
   const clearBorders = useCallback((): void => {
-    const cursor = sheets.sheet.cursor;
-    if (cursor.multiCursor && cursor.multiCursor.length > 1) {
-      console.log('TODO: implement multiCursor border support');
-      return;
-    }
     quadraticCore.setBorders(sheets.getRustSelection(), 'clear');
   }, []);
 
