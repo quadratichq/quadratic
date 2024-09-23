@@ -7,21 +7,19 @@ import { useRecoilValue } from 'recoil';
 
 export const useEditorOnSelectionChange = (
   isValidRef: boolean,
-  editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>,
-  monacoRef: React.MutableRefObject<Monaco | null>
+  editorInst: monaco.editor.IStandaloneCodeEditor | null,
+  monacoInst: Monaco | null
 ) => {
   const language = useRecoilValue(editorInteractionStateModeAtom);
   useEffect(() => {
     if (language !== 'Formula') return;
 
-    const editor = editorRef.current;
-    if (!isValidRef || !editor) return;
+    if (!isValidRef || !editorInst || !monacoInst) return;
 
-    const model = editor.getModel();
-    const monacoInst = monacoRef.current;
-    if (!monacoInst || !model) return;
+    const model = editorInst.getModel();
+    if (!model) return;
 
-    editor.onDidChangeCursorPosition((e) => {
+    editorInst.onDidChangeCursorPosition((e) => {
       pixiApp.cellHighlights.getHighlightedCells().find((value) => {
         const span = value.span;
         const startPosition = model.getPositionAt(span.start);
@@ -43,5 +41,5 @@ export const useEditorOnSelectionChange = (
         return false;
       });
     });
-  }, [isValidRef, editorRef, monacoRef, language]);
+  }, [isValidRef, editorInst, monacoInst, language]);
 };

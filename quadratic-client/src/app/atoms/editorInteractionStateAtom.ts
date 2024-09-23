@@ -31,7 +31,7 @@ export interface EditorInteractionState {
   waitingForEditorClose?: {
     selectedCellSheet: string;
     selectedCell: Coordinate;
-    mode?: CodeCellLanguage;
+    mode: CodeCellLanguage;
     showCellTypeMenu: boolean;
     inlineEditor?: boolean;
     initialCode?: string;
@@ -87,8 +87,7 @@ export const editorInteractionStateAtom = atom<EditorInteractionState>({
           oldValue.showNewFileMenu ||
           oldValue.showRenameFileMenu ||
           oldValue.showShareFileMenu ||
-          oldValue.showSearch ||
-          oldValue.showAIAssistant;
+          oldValue.showSearch;
         const newModelShow =
           newValue.showCellTypeMenu ||
           newValue.showCodeEditor ||
@@ -99,8 +98,7 @@ export const editorInteractionStateAtom = atom<EditorInteractionState>({
           newValue.showNewFileMenu ||
           newValue.showRenameFileMenu ||
           newValue.showShareFileMenu ||
-          newValue.showSearch ||
-          newValue.showAIAssistant;
+          newValue.showSearch;
         if (oldModalShow && !newModelShow) {
           focusGrid();
         }
@@ -142,7 +140,22 @@ export const editorInteractionStateSelectedCellSheetAtom = createSelector('selec
 export const editorInteractionStateSelectedCellAtom = createSelector('selectedCell');
 export const editorInteractionStateInitialCodeAtom = createSelector('initialCode');
 export const editorInteractionStateFollowAtom = createSelector('follow');
-export const editorInteractionStateModeAtom = createSelector('mode');
+
+export const editorInteractionStateModeAtom = selector<CodeCellLanguage | undefined>({
+  key: 'editorInteractionStateModeAtom',
+  get: ({ get }) => get(editorInteractionStateAtom).mode,
+  set: ({ get, set }, newValue) => {
+    set(editorInteractionStateAtom, (prev) => ({
+      ...prev,
+      mode: newValue instanceof DefaultValue ? prev.mode : newValue,
+    }));
+
+    const showCodeEditor = get(editorInteractionStateShowCodeEditorAtom);
+    if (showCodeEditor) {
+    }
+  },
+});
+
 export const editorInteractionStateEditorEscapePressedAtom = createSelector('editorEscapePressed');
 export const editorInteractionStateWaitingForEditorCloseAtom = createSelector('waitingForEditorClose');
 export const editorInteractionStateUndoAtom = createSelector('undo');

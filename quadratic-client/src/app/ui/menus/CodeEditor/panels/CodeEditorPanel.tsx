@@ -16,11 +16,11 @@ import { MouseEvent, memo, useCallback, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type CodeEditorPanelProps = {
-  editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>;
+  editorInst: monaco.editor.IStandaloneCodeEditor | null;
   codeEditorRef: React.RefObject<HTMLDivElement>;
 };
 
-export const CodeEditorPanel = memo(({ editorRef, codeEditorRef }: CodeEditorPanelProps) => {
+export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPanelProps) => {
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
     userMakingRequest: { teamPermissions },
@@ -38,7 +38,7 @@ export const CodeEditorPanel = memo(({ editorRef, codeEditorRef }: CodeEditorPan
     [setPanelPosition]
   );
 
-  const { TableQueryAction } = useConnectionSchemaBrowserTableQueryActionInsertQuery({ editorRef });
+  const { TableQueryAction } = useConnectionSchemaBrowserTableQueryActionInsertQuery({ editorInst });
   const schemaBrowser =
     isAuthenticated && connectionInfo !== undefined && teamPermissions?.includes('TEAM_EDIT') ? (
       <ConnectionSchemaBrowser

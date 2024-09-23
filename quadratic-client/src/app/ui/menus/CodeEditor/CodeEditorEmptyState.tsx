@@ -1,4 +1,8 @@
-import { codeEditorEditorContentAtom, codeEditorShowSnippetsPopoverAtom } from '@/app/atoms/codeEditorAtom';
+import {
+  codeEditorEditorContentAtom,
+  codeEditorShowDiffEditorAtom,
+  codeEditorShowSnippetsPopoverAtom,
+} from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import { BoxIcon, SheetComeFromIcon, SheetGoToIcon } from '@/app/ui/icons';
@@ -24,25 +28,26 @@ import { useCallback, useMemo } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 interface CodeEditorEmptyStateProps {
-  editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>;
+  editorInst: monaco.editor.IStandaloneCodeEditor | null;
 }
 
-export function CodeEditorEmptyState({ editorRef }: CodeEditorEmptyStateProps) {
+export function CodeEditorEmptyState({ editorInst }: CodeEditorEmptyStateProps) {
   const mode = useRecoilValue(editorInteractionStateModeAtom);
   const codeCell = useMemo(() => getCodeCell(mode), [mode]);
   const setShowSnippetsPopover = useSetRecoilState(codeEditorShowSnippetsPopoverAtom);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
+  const showDiffEditor = useRecoilValue(codeEditorShowDiffEditorAtom);
 
   const fillWithSnippet = useCallback(
     (code: string) => {
       setEditorContent(code);
-      editorRef.current?.focus();
+      editorInst?.focus();
     },
-    [editorRef, setEditorContent]
+    [editorInst, setEditorContent]
   );
 
   // Must meet these criteria to even show in the UI
-  if (editorContent !== '') {
+  if (editorContent !== '' || showDiffEditor) {
     return null;
   }
   if (!(codeCell?.id === 'Javascript' || codeCell?.id === 'Python')) {

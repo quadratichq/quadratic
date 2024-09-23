@@ -5,7 +5,7 @@ import { AICodeBlockParser } from '@/app/ui/menus/AIAssistant/AICodeBlockParser'
 import { isAnthropicModel } from '@/app/ui/menus/AIAssistant/useAIRequestToAPI';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { Avatar } from '@/shared/components/Avatar';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import './AIAssistantMessages.css';
 
@@ -13,16 +13,36 @@ export function AIAssistantMessages() {
   const messages = useRecoilValue(aiAssistantMessagesAtom);
   const { loggedInUser: user } = useRootRouteLoaderData();
 
-  const aiResponseRef = useRef<HTMLDivElement>(null);
-  // Scroll to the bottom of the AI content when component mounts
-  useEffect(() => {
-    if (aiResponseRef.current) {
-      aiResponseRef.current.scrollTop = aiResponseRef.current.scrollHeight;
-    }
+  const [div, setDiv] = useState<HTMLDivElement | null>(null);
+  const ref = useCallback((node: HTMLDivElement | null) => {
+    setDiv(node);
+    node?.scrollTo({
+      top: node.scrollHeight,
+      behavior: 'smooth',
+    });
   }, []);
+
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const handleScroll = useCallback(() => {
+    if (!div) return;
+    const isScrolledToBottom = div.scrollHeight - div.scrollTop === div.clientHeight;
+    setShouldAutoScroll(isScrolledToBottom);
+  }, [div]);
+
+  const scrollToBottom = useCallback(() => {
+    if (!shouldAutoScroll || !div) return;
+    div.scrollTo({
+      top: div.scrollHeight,
+      behavior: 'smooth',
+    });
+  }, [div, shouldAutoScroll]);
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
+
   return (
     <div
-      ref={aiResponseRef}
+      ref={ref}
       className="select-text overflow-y-auto whitespace-pre-wrap px-2 text-sm outline-none"
       spellCheck={false}
       onKeyDown={(e) => {
@@ -32,6 +52,7 @@ export function AIAssistantMessages() {
           e.preventDefault();
         }
       }}
+      onScroll={handleScroll}
       // Disable Grammarly
       data-gramm="false"
       data-gramm_editor="false"

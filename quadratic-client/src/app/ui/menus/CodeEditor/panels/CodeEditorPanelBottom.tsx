@@ -21,11 +21,11 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 
 export type PanelTab = 'console' | 'data-browser';
 
-interface Props {
+interface CodeEditorPanelBottomProps {
   schemaBrowser: ReactNode | undefined;
 }
 
-export function CodeEditorPanelBottom({ schemaBrowser }: Props) {
+export function CodeEditorPanelBottom({ schemaBrowser }: CodeEditorPanelBottomProps) {
   const { bottomHidden, setBottomHidden } = useCodeEditorPanelData();
   const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
   const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);

@@ -33,11 +33,14 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setEditorInteractionState((prev) => ({
         ...prev,
-        showCodeEditor: true,
-        mode: 'Python',
-        selectedCell: { x: cursor.x, y: cursor.y },
-        selectedCellSheet: sheets.sheet.id,
-        initialCode: '',
+        waitingForEditorClose: {
+          selectedCellSheet: sheets.sheet.id,
+          selectedCell: { x: cursor.x, y: cursor.y },
+          mode: 'Python',
+          showCellTypeMenu: false,
+          inlineEditor: false,
+          initialCode: '',
+        },
       }));
     },
   },
@@ -49,11 +52,14 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setEditorInteractionState((prev) => ({
         ...prev,
-        showCodeEditor: true,
-        mode: 'Javascript',
-        selectedCell: { x: cursor.x, y: cursor.y },
-        selectedCellSheet: sheets.sheet.id,
-        initialCode: '',
+        waitingForEditorClose: {
+          selectedCellSheet: sheets.sheet.id,
+          selectedCell: { x: cursor.x, y: cursor.y },
+          mode: 'Javascript',
+          showCellTypeMenu: false,
+          inlineEditor: false,
+          initialCode: '',
+        },
       }));
     },
   },
@@ -65,11 +71,14 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setEditorInteractionState((prev) => ({
         ...prev,
-        showCodeEditor: true,
-        mode: 'Formula',
-        selectedCell: { x: cursor.x, y: cursor.y },
-        selectedCellSheet: sheets.sheet.id,
-        initialCode: '',
+        waitingForEditorClose: {
+          selectedCellSheet: sheets.sheet.id,
+          selectedCell: { x: cursor.x, y: cursor.y },
+          mode: 'Formula',
+          showCellTypeMenu: false,
+          inlineEditor: false,
+          initialCode: '',
+        },
       }));
     },
   },
@@ -81,11 +90,14 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setEditorInteractionState((prev) => ({
         ...prev,
-        showCodeEditor: true,
-        mode: 'Python',
-        selectedCell: { x: cursor.x, y: cursor.y },
-        selectedCellSheet: sheets.sheet.id,
-        initialCode: SNIPPET_PY_CHART,
+        waitingForEditorClose: {
+          selectedCellSheet: sheets.sheet.id,
+          selectedCell: { x: cursor.x, y: cursor.y },
+          mode: 'Python',
+          showCellTypeMenu: false,
+          inlineEditor: false,
+          initialCode: SNIPPET_PY_CHART,
+        },
       }));
     },
   },
@@ -97,11 +109,14 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setEditorInteractionState((prev) => ({
         ...prev,
-        showCodeEditor: true,
-        mode: 'Javascript',
-        selectedCell: { x: cursor.x, y: cursor.y },
-        selectedCellSheet: sheets.sheet.id,
-        initialCode: SNIPPET_JS_CHART,
+        waitingForEditorClose: {
+          selectedCellSheet: sheets.sheet.id,
+          selectedCell: { x: cursor.x, y: cursor.y },
+          mode: 'Javascript',
+          showCellTypeMenu: false,
+          inlineEditor: false,
+          initialCode: SNIPPET_JS_CHART,
+        },
       }));
     },
   },
@@ -113,11 +128,14 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setEditorInteractionState((prev) => ({
         ...prev,
-        showCodeEditor: true,
-        mode: 'Javascript',
-        selectedCell: { x: cursor.x, y: cursor.y },
-        selectedCellSheet: sheets.sheet.id,
-        initialCode: SNIPPET_JS_API,
+        waitingForEditorClose: {
+          selectedCellSheet: sheets.sheet.id,
+          selectedCell: { x: cursor.x, y: cursor.y },
+          mode: 'Javascript',
+          showCellTypeMenu: false,
+          inlineEditor: false,
+          initialCode: SNIPPET_JS_API,
+        },
       }));
     },
   },
@@ -129,11 +147,14 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setEditorInteractionState((prev) => ({
         ...prev,
-        showCodeEditor: true,
-        mode: 'Python',
-        selectedCell: { x: cursor.x, y: cursor.y },
-        selectedCellSheet: sheets.sheet.id,
-        initialCode: SNIPPET_PY_API,
+        waitingForEditorClose: {
+          selectedCellSheet: sheets.sheet.id,
+          selectedCell: { x: cursor.x, y: cursor.y },
+          mode: 'Python',
+          showCellTypeMenu: false,
+          inlineEditor: false,
+          initialCode: SNIPPET_PY_API,
+        },
       }));
     },
   },

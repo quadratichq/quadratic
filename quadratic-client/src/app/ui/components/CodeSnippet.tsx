@@ -1,12 +1,25 @@
-import { codeEditorEditorContentAtom, codeEditorModifiedEditorContentAtom } from '@/app/atoms/codeEditorAtom';
+import { codeEditorModifiedEditorContentAtom } from '@/app/atoms/codeEditorAtom';
+import {
+  editorInteractionStateModeAtom,
+  editorInteractionStateSelectedCellAtom,
+  editorInteractionStateSelectedCellSheetAtom,
+  editorInteractionStateWaitingForEditorCloseAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import Editor from '@monaco-editor/react';
-import { ContentCopyOutlined, ContentPasteGoOutlined, DifferenceOutlined } from '@mui/icons-material';
+import {
+  ContentCopyOutlined,
+  ContentPasteGoOutlined,
+  DifferenceOutlined,
+  PlayArrowOutlined,
+} from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useState } from 'react';
-import { useSetRecoilState } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 interface Props {
   code: string;
@@ -29,7 +42,8 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
         <div className="lowercase text-muted-foreground">{language}</div>
 
         <div className="flex items-center gap-1">
-          <CodeSnippetInsertButton text={code} language={language} />
+          <CodeSnippetRunButton text={code} language={language} />
+          <CodeSnippetReplaceButton text={code} language={language} />
           <CodeSnippetDiffEditor text={code} />
           <CodeSnippetCopyButton text={code} language={language} />
         </div>
@@ -69,18 +83,51 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
   );
 }
 
-function CodeSnippetInsertButton({ language, text }: { language: Props['language']; text: string }) {
-  const setEditorContent = useSetRecoilState(codeEditorEditorContentAtom);
-
-  // Replace what's in the editor with the given text
-  const handleInsertReplace = useCallback(() => {
-    mixpanel.track('[AI].code.replace', { language });
-    setEditorContent(text);
-  }, [language, text, setEditorContent]);
+function CodeSnippetRunButton({ language, text }: { language: Props['language']; text: string }) {
+  const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
+  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
+  const mode = useRecoilValue(editorInteractionStateModeAtom);
+  const handleSaveAndRun = useCallback(() => {
+    mixpanel.track('[AI].code.run', { language });
+    quadraticCore.setCodeCellValue({
+      sheetId: selectedCellSheet ? selectedCellSheet : sheets.current,
+      x: selectedCell.x,
+      y: selectedCell.y,
+      codeString: text ?? '',
+      language: mode ?? 'Python',
+      cursor: sheets.getCursorPosition(),
+    });
+  }, [language, mode, selectedCell, selectedCellSheet, text]);
 
   return (
-    <TooltipHint title={'Insert and replace'}>
-      <IconButton size="small" onClick={handleInsertReplace}>
+    <TooltipHint title={'Save and run code'}>
+      <IconButton size="small" onClick={handleSaveAndRun}>
+        <PlayArrowOutlined fontSize="inherit" color="inherit" className="text-muted-foreground" />
+      </IconButton>
+    </TooltipHint>
+  );
+}
+
+function CodeSnippetReplaceButton({ language, text }: { language: Props['language']; text: string }) {
+  const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
+  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
+  const mode = useRecoilValue(editorInteractionStateModeAtom);
+  const setWaitingForEditorClose = useSetRecoilState(editorInteractionStateWaitingForEditorCloseAtom);
+  const handleReplace = useCallback(() => {
+    mixpanel.track('[AI].code.replace', { language });
+    setWaitingForEditorClose({
+      selectedCellSheet: selectedCellSheet ? selectedCellSheet : sheets.current,
+      selectedCell,
+      mode: mode ?? 'Python',
+      showCellTypeMenu: false,
+      inlineEditor: false,
+      initialCode: text,
+    });
+  }, [language, mode, selectedCell, selectedCellSheet, setWaitingForEditorClose, text]);
+
+  return (
+    <TooltipHint title={'Open in code editor'}>
+      <IconButton size="small" onClick={handleReplace} disabled={!language}>
         <ContentPasteGoOutlined fontSize="inherit" color="inherit" className="text-muted-foreground" />
       </IconButton>
     </TooltipHint>
@@ -88,14 +135,26 @@ function CodeSnippetInsertButton({ language, text }: { language: Props['language
 }
 
 function CodeSnippetDiffEditor({ text }: { text: string }) {
+  const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
+  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
+  const mode = useRecoilValue(editorInteractionStateModeAtom);
+  const setWaitingForEditorClose = useSetRecoilState(editorInteractionStateWaitingForEditorCloseAtom);
   const setModifiedEditorContent = useSetRecoilState(codeEditorModifiedEditorContentAtom);
   const handleEditorDiff = useCallback(() => {
     mixpanel.track('[AI].code.diff');
+    setWaitingForEditorClose({
+      selectedCellSheet: selectedCellSheet ? selectedCellSheet : sheets.current,
+      selectedCell,
+      mode: mode ?? 'Python',
+      showCellTypeMenu: false,
+      inlineEditor: false,
+      initialCode: undefined,
+    });
     setModifiedEditorContent(text);
-  }, [text, setModifiedEditorContent]);
+  }, [setWaitingForEditorClose, selectedCellSheet, selectedCell, mode, setModifiedEditorContent, text]);
 
   return (
-    <TooltipHint title={'Show diff in Code Editor'}>
+    <TooltipHint title={'Show diff in code editor'}>
       <IconButton onClick={handleEditorDiff} size="small">
         <DifferenceOutlined fontSize="inherit" color="inherit" className="text-muted-foreground" />
       </IconButton>
@@ -105,17 +164,14 @@ function CodeSnippetDiffEditor({ text }: { text: string }) {
 
 function CodeSnippetCopyButton({ language, text }: { language: Props['language']; text: string }) {
   const [tooltipMsg, setTooltipMsg] = useState<string>('Copy');
-  const handleCopy = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
-      mixpanel.track('[AI].code.copy', { language });
-      navigator.clipboard.writeText(text);
-      setTooltipMsg('Copied!');
-      setTimeout(() => {
-        setTooltipMsg('Copy');
-      }, 2000);
-    },
-    [language, text]
-  );
+  const handleCopy = useCallback(() => {
+    mixpanel.track('[AI].code.copy', { language });
+    navigator.clipboard.writeText(text);
+    setTooltipMsg('Copied!');
+    setTimeout(() => {
+      setTooltipMsg('Copy');
+    }, 2000);
+  }, [language, text]);
 
   return (
     <TooltipHint title={tooltipMsg}>

@@ -1,20 +1,31 @@
-import { Coordinate } from '@/app/gridGL/types/size';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { Coordinate, SheetPosTS } from '@/app/gridGL/types/size';
+import { SheetRect } from '@/app/quadratic-core-types';
 import { PanelTab } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { atom, DefaultValue, selector } from 'recoil';
 
-type CodeEditorState = {
+export interface ConsoleOutput {
+  stdOut?: string;
+  stdErr?: string;
+}
+
+interface CodeEditorState {
+  cellLocation?: SheetPosTS;
   codeString?: string;
   evaluationResult?: EvaluationResult;
-  consoleOutput?: { stdOut?: string; stdErr?: string };
+  consoleOutput?: ConsoleOutput;
   spillError?: Coordinate[];
   panelBottomActiveTab: PanelTab;
   showSnippetsPopover: boolean;
   editorContent?: string;
   modifiedEditorContent?: string;
-};
+  showSaveChangesAlert: boolean;
+  cellsAccessed: SheetRect[] | undefined | null;
+}
 
 const defaultCodeEditorState: CodeEditorState = {
+  cellLocation: undefined,
   codeString: undefined,
   evaluationResult: undefined,
   consoleOutput: undefined,
@@ -23,6 +34,8 @@ const defaultCodeEditorState: CodeEditorState = {
   showSnippetsPopover: false,
   editorContent: undefined,
   modifiedEditorContent: undefined,
+  showSaveChangesAlert: false,
+  cellsAccessed: undefined,
 };
 
 export const codeEditorAtom = atom<CodeEditorState>({
@@ -40,12 +53,16 @@ const createSelector = <T extends keyof CodeEditorState>(key: T) =>
         [key]: newValue instanceof DefaultValue ? prev[key] : newValue,
       })),
   });
+
+export const codeEditorCellLocationAtom = createSelector('cellLocation');
 export const codeEditorCodeStringAtom = createSelector('codeString');
 export const codeEditorEvaluationResultAtom = createSelector('evaluationResult');
 export const codeEditorConsoleOutputAtom = createSelector('consoleOutput');
 export const codeEditorSpillErrorAtom = createSelector('spillError');
 export const codeEditorPanelBottomActiveTabAtom = createSelector('panelBottomActiveTab');
 export const codeEditorShowSnippetsPopoverAtom = createSelector('showSnippetsPopover');
+export const codeEditorShowSaveChangesAlertAtom = createSelector('showSaveChangesAlert');
+export const codeEditorCellsAccessedAtom = createSelector('cellsAccessed');
 
 export const codeEditorEditorContentAtom = selector<string | undefined>({
   key: 'codeEditorEditorContentAtom',
@@ -58,3 +75,18 @@ export const codeEditorEditorContentAtom = selector<string | undefined>({
     })),
 });
 export const codeEditorModifiedEditorContentAtom = createSelector('modifiedEditorContent');
+export const codeEditorShowDiffEditorAtom = selector<boolean>({
+  key: 'codeEditorShowDiffEditorAtom',
+  get: ({ get }) =>
+    get(codeEditorAtom).modifiedEditorContent !== undefined &&
+    get(codeEditorAtom).modifiedEditorContent !== get(codeEditorAtom).editorContent,
+});
+
+export const codeEditorUnsavedChangesAtom = selector<boolean>({
+  key: 'codeEditorUnsavedChangesAtom',
+  get: ({ get }) => {
+    const unsavedChanges = get(codeEditorAtom).editorContent !== get(codeEditorAtom).codeString;
+    pixiAppSettings.unsavedEditorChanges = unsavedChanges ? get(codeEditorAtom).editorContent : undefined;
+    return unsavedChanges;
+  },
+});

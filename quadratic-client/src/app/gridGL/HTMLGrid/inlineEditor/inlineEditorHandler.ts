@@ -489,11 +489,13 @@ class InlineEditorHandler {
     }
     pixiAppSettings.setEditorInteractionState({
       ...pixiAppSettings.editorInteractionState,
-      mode: 'Formula',
-      selectedCell: { x: this.location.x, y: this.location.y },
-      selectedCellSheet: this.location.sheetId,
-      initialCode: inlineEditorMonaco.get().slice(1),
-      showCodeEditor: true,
+      waitingForEditorClose: {
+        selectedCellSheet: this.location.sheetId,
+        selectedCell: { x: this.location.x, y: this.location.y },
+        mode: 'Formula',
+        showCellTypeMenu: false,
+        initialCode: inlineEditorMonaco.get().slice(1),
+      },
     });
     this.close(0, 0, true);
   };
