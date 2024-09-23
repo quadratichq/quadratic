@@ -67,7 +67,6 @@ def parse_duration(value: str) -> relativedelta:
     for m in re.compile(r'([-\d\.]+)([a-zµ]+)').finditer(value.lower()):
         count = float(m.group(1))
         unit = m.group(2)
-        print(count,unit)
         match unit:
             case "y": ret.years += count
             case "mo": ret.months += count
