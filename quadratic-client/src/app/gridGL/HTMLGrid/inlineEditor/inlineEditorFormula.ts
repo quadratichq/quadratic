@@ -12,7 +12,7 @@ import { getA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
 import { ParseFormulaReturnType } from '@/app/helpers/formulaNotation';
 import { checkFormula, parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { colors } from '@/app/theme/colors';
-import { extractCellsFromParseFormula } from '@/app/ui/menus/CodeEditor/useEditorCellHighlights';
+import { extractCellsFromParseFormula } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
 import * as monaco from 'monaco-editor';
 import { editor } from 'monaco-editor';
 

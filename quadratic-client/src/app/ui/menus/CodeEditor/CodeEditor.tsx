@@ -21,12 +21,14 @@ import { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { CodeEditorBody } from '@/app/ui/menus/CodeEditor/CodeEditorBody';
 import { CodeEditorEmptyState } from '@/app/ui/menus/CodeEditor/CodeEditorEmptyState';
 import { CodeEditorHeader } from '@/app/ui/menus/CodeEditor/CodeEditorHeader';
+import { useCloseCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useCloseCodeEditor';
+import { useOnKeyDownCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useOnKeyDownCodeEditor';
+import { useUpdateCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useUpdateCodeEditor';
 import { CodeEditorPanel } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanel';
 import { CodeEditorPanels } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelsResize';
 import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { ReturnTypeInspector } from '@/app/ui/menus/CodeEditor/ReturnTypeInspector';
 import { SaveChangesAlert } from '@/app/ui/menus/CodeEditor/SaveChangesAlert';
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/useCodeEditor';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { cn } from '@/shared/shadcn/utils';
 import mixpanel from 'mixpanel-browser';
@@ -62,7 +64,9 @@ export const CodeEditor = () => {
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
 
-  const { onKeyDownEditor, closeEditor, updateCodeEditor } = useCodeEditor({
+  const { updateCodeEditor } = useUpdateCodeEditor();
+  const { onKeyDownCodeEditor } = useOnKeyDownCodeEditor();
+  const { closeEditor } = useCloseCodeEditor({
     editorInst,
   });
 
@@ -196,7 +200,7 @@ export const CodeEditor = () => {
               ? '100%'
               : `${codeEditorPanelData.editorHeightPercentage}%`,
         }}
-        onKeyDownCapture={onKeyDownEditor}
+        onKeyDownCapture={onKeyDownCodeEditor}
         onPointerEnter={() => {
           // todo: handle multiplayer code editor here
           multiplayer.sendMouseMove();

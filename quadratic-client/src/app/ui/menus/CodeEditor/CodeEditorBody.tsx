@@ -19,6 +19,10 @@ import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
+import { useCloseCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useCloseCodeEditor';
+import { useEditorCellHighlights } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
+import { useEditorOnSelectionChange } from '@/app/ui/menus/CodeEditor/hooks/useEditorOnSelectionChange';
+import { useEditorReturn } from '@/app/ui/menus/CodeEditor/hooks/useEditorReturn';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import {
   provideCompletionItems as provideCompletionItemsPython,
@@ -26,10 +30,6 @@ import {
   provideSignatureHelp as provideSignatureHelpPython,
 } from '@/app/ui/menus/CodeEditor/PythonLanguageModel';
 import { QuadraticEditorTheme } from '@/app/ui/menus/CodeEditor/quadraticEditorTheme';
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/useCodeEditor';
-import { useEditorCellHighlights } from '@/app/ui/menus/CodeEditor/useEditorCellHighlights';
-import { useEditorOnSelectionChange } from '@/app/ui/menus/CodeEditor/useEditorOnSelectionChange';
-import { useEditorReturn } from '@/app/ui/menus/CodeEditor/useEditorReturn';
 import { javascriptLibraryForEditor } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generatedJavascriptForEditor';
 import { pyrightWorker, uri } from '@/app/web-workers/pythonLanguageServer/worker';
 import useEventListener from '@/shared/hooks/useEventListener';
@@ -89,7 +89,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   useEditorOnSelectionChange(isValidRef, editorInst, monacoInst);
   useEditorReturn(isValidRef, editorInst, monacoInst);
 
-  const { closeEditor } = useCodeEditor({
+  const { closeEditor } = useCloseCodeEditor({
     editorInst,
   });
 
