@@ -56,6 +56,7 @@ import {
   CoreClientHasRenderCells,
   CoreClientLoad,
   CoreClientMessage,
+  CoreClientNeighborText,
   CoreClientSearch,
   CoreClientSummarizeSelection,
   CoreClientValidateInput,
@@ -696,6 +697,22 @@ class QuadraticCore {
         search,
         searchOptions,
         id,
+      });
+    });
+  }
+
+  neighborText(sheetId: string, x: number, y: number): Promise<string[]> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientNeighborText) => {
+        resolve(message.text);
+      };
+      this.send({
+        type: 'clientCoreNeighborText',
+        id,
+        sheetId,
+        x,
+        y,
       });
     });
   }

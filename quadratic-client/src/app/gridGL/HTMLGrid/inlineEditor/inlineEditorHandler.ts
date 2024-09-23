@@ -331,7 +331,7 @@ class InlineEditorHandler {
       // need to show the change to A1 notation
       pixiApp.headings.dirty = true;
     } else {
-      inlineEditorMonaco.setLanguage('plaintext');
+      inlineEditorMonaco.setLanguage('inline-editor');
     }
 
     pixiAppSettings.setInlineEditorState((prev) => ({
@@ -545,7 +545,7 @@ class InlineEditorHandler {
     return true;
   }
 
-  private replaceText = (text: string, highlight: boolean) => {
+  private replaceText = (text: string, highlight: boolean | number) => {
     if (!this.open) return;
     inlineEditorMonaco.set(text, highlight);
   };

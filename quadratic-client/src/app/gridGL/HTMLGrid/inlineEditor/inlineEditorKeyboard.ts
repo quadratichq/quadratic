@@ -56,6 +56,14 @@ class InlineEditorKeyboard {
     if (pixiAppSettings.editorInteractionState.annotationState === 'dropdown') {
       keyboardDropdown(e, pixiAppSettings.editorInteractionState);
       e.stopPropagation();
+      e.preventDefault();
+      return;
+    }
+
+    if (inlineEditorMonaco.autocompleteState === 'list') {
+      events.emit('suggestionDropdownKeyboard', e.key as 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape');
+      e.stopPropagation();
+      e.preventDefault();
       return;
     }
 
@@ -153,10 +161,14 @@ class InlineEditorKeyboard {
 
     // Tab key
     else if (matchShortcut(Action.SaveInlineEditorMoveRight, e)) {
-      e.stopPropagation();
-      e.preventDefault();
-      if (!(await this.handleValidationError())) {
-        inlineEditorHandler.close(1, 0, false);
+      if (inlineEditorMonaco.autocompleteSuggestionShowing) {
+        inlineEditorMonaco.autocompleteSuggestionShowing = false;
+      } else {
+        e.stopPropagation();
+        e.preventDefault();
+        if (!(await this.handleValidationError())) {
+          inlineEditorHandler.close(1, 0, false);
+        }
       }
     }
 

@@ -3,6 +3,8 @@ use crate::{grid::CodeRunResult, CellValue, Pos, SheetPos, Value};
 use super::Sheet;
 use serde::{Deserialize, Serialize};
 
+const MAX_NEIGHBOR_TEXT: usize = 1000;
+
 #[derive(Default, Debug, Serialize, Deserialize, PartialEq, Clone, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct SearchOptions {
@@ -187,24 +189,40 @@ impl Sheet {
         results
     }
 
-    /// Returns a Vec<String> of all the neighboring text in the column.
+    /// Returns a Vec<String> of all the neighboring text in the column. Search
+    /// results limited to MAX_NEIGHBOR_TEXT.
+    ///
+    /// This is called only one time to return all neighboring values. If we
+    /// move to readers, rust can handle the comparisons by passing in the
+    /// current input value.
     pub fn neighbor_text(&self, pos: Pos) -> Vec<String> {
         let mut text = vec![];
         if let Some(column) = self.columns.get(&pos.x) {
             // walk forwards
             let mut y = pos.y + 1;
             while let Some(CellValue::Text(t)) = column.values.get(&y) {
+                if text.len() + 1 > MAX_NEIGHBOR_TEXT {
+                    break;
+                }
                 text.push(t.clone());
                 y += 1;
             }
 
             // walk backwards
             let mut y = pos.y - 1;
-            while let Some(CellValue::Text(t)) = column.values.get(&y) {
-                text.push(t.clone());
-                y -= 1;
+            while y >= 0 {
+                if let Some(CellValue::Text(t)) = column.values.get(&y) {
+                    if text.len() + 1 > MAX_NEIGHBOR_TEXT {
+                        break;
+                    }
+                    text.push(t.clone());
+                    y -= 1;
+                } else {
+                    break;
+                }
             }
         }
+        text.sort();
         text.dedup();
         text
     }
@@ -579,7 +597,7 @@ mod test {
         sheet.set_cell_value(Pos { x: 1, y: 3 }, CellValue::Text("C".into()));
 
         let neighbors = sheet.neighbor_text(Pos { x: 1, y: 2 });
-        assert_eq!(neighbors, vec!["C".to_string(), "A".to_string()]);
+        assert_eq!(neighbors, vec!["A".to_string(), "C".to_string()]);
     }
 
     #[test]
@@ -611,10 +629,10 @@ mod test {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 1, y: 0 }, CellValue::Text("B".into()));
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
-        sheet.set_cell_value(Pos { x: 1, y: 3 }, CellValue::Text("A".into()));
+        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("B".into()));
+        sheet.set_cell_value(Pos { x: 1, y: 4 }, CellValue::Text("B".into()));
 
-        let mut neighbors = sheet.neighbor_text(Pos { x: 1, y: 2 });
-        neighbors.sort();
+        let neighbors = sheet.neighbor_text(Pos { x: 1, y: 3 });
         assert_eq!(neighbors, vec!["A".to_string(), "B".to_string()]);
     }
 
@@ -628,7 +646,7 @@ mod test {
         sheet.set_cell_value(Pos { x: 1, y: 3 }, CellValue::Text("D".into()));
 
         let neighbors = sheet.neighbor_text(Pos { x: 1, y: 2 });
-        assert_eq!(neighbors, vec!["D".to_string(), "A".to_string()]);
+        assert_eq!(neighbors, vec!["A".to_string(), "D".to_string()]);
     }
 
     #[test]
@@ -637,5 +655,19 @@ mod test {
         let sheet = Sheet::test();
         let neighbors = sheet.neighbor_text(Pos { x: 1, y: 1 });
         assert!(neighbors.is_empty());
+    }
+
+    #[test]
+    #[parallel]
+    fn max_neighbor_text() {
+        let mut sheet = Sheet::test();
+        for y in 0..MAX_NEIGHBOR_TEXT + 10 {
+            sheet.set_cell_value(Pos { x: 1, y: y as i64 }, CellValue::Text(y.to_string()));
+        }
+        let neighbors = sheet.neighbor_text(Pos {
+            x: 1,
+            y: MAX_NEIGHBOR_TEXT as i64 / 2,
+        });
+        assert_eq!(neighbors.len(), MAX_NEIGHBOR_TEXT);
     }
 }
