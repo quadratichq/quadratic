@@ -2,9 +2,10 @@ use arrow::array::ArrayRef;
 use arrow_array::array::Array;
 use async_trait::async_trait;
 use bytes::{Bytes, BytesMut};
+use futures_util::stream::StreamExt;
 use parquet::arrow::ArrowWriter;
 use serde::{Deserialize, Serialize};
-use snowflake_api::{QueryResult, SnowflakeApi};
+use snowflake_api::{QueryResult, RawQueryResult, SnowflakeApi};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -97,36 +98,44 @@ impl Connection for SnowflakeConnection {
         max_bytes: Option<u64>,
     ) -> Result<(Bytes, bool)> {
         let mut parquet = BytesMut::new();
+        let mut over_the_limit = false;
 
-        let row_stream = client
-            .exec(sql)
+        let query_result = client
+            .exec_raw(sql, true)
             .await
             .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
 
-        match row_stream {
-            QueryResult::Arrow(a) => {
-                for batch in a {
-                    let file = Vec::new();
-                    let mut writer = ArrowWriter::try_new(file, batch.schema(), None)?;
+        if let RawQueryResult::Stream(mut bytes_stream) = query_result {
+            let mut chunks = vec![];
 
-                    writer.write(&batch)?;
+            while let Some(bytes) = bytes_stream.next().await {
+                let bytes = bytes.map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
 
-                    let bytes = writer.into_inner()?;
-
-                    if let Some(max_bytes) = max_bytes {
-                        if (parquet.len() + bytes.len()) as u64 > max_bytes {
-                            return Ok((parquet.into(), true));
-                        }
+                if let Some(max_bytes) = max_bytes {
+                    if (chunks.len() + bytes.len()) as u64 > max_bytes {
+                        over_the_limit = true;
+                        break;
                     }
-
-                    parquet.extend_from_slice(&bytes);
                 }
+
+                chunks.push(bytes);
             }
-            QueryResult::Json(j) => unimplemented!("{j}"),
-            QueryResult::Empty => { /* noop */ }
+
+            let batches = RawQueryResult::flat_bytes_to_batches(chunks)?;
+
+            for batch in batches {
+                let file = Vec::new();
+                let mut writer = ArrowWriter::try_new(file, batch.schema(), None)?;
+
+                writer.write(&batch)?;
+
+                let bytes = writer.into_inner()?;
+
+                parquet.extend_from_slice(&bytes);
+            }
         }
 
-        Ok((parquet.into(), false))
+        Ok((parquet.into(), over_the_limit))
     }
 
     async fn schema(&self, client: &mut Self::Conn) -> Result<DatabaseSchema> {
