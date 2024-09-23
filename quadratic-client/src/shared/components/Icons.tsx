@@ -77,7 +77,7 @@ export const BorderRightIcon: IconComponent = (props) => {
 };
 
 export const BorderTopIcon: IconComponent = (props) => {
-  return <Icon {...props}>border_bottom</Icon>;
+  return <Icon {...props}>border_top</Icon>;
 };
 
 export const BorderBottomIcon: IconComponent = (props) => {
