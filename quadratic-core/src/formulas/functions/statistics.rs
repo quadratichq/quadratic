@@ -14,7 +14,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// Returns the arithmetic mean of all values.
             #[examples("AVERAGE(A1:A6)", "AVERAGE(A1, A3, A5, B1:B6)")]
             fn AVERAGE(span: Span, numbers: (Iter<f64>)) {
-                util::average(span, numbers)
+                CellValue::average(span, numbers)
             }
         ),
         formula_fn!(
@@ -39,7 +39,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 let criteria = Criterion::try_from(*criteria)?;
                 let numbers =
                     criteria.iter_matching_coerced::<f64>(eval_range, numbers_range.as_ref())?;
-                util::average(span, numbers)
+                CellValue::average(*span, numbers)
             }
         ),
         formula_fn!(
