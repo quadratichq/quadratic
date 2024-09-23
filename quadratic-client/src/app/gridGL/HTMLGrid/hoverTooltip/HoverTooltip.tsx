@@ -11,7 +11,6 @@ export const HoverTooltip = () => {
   const [subtext, setSubtext] = useState<string | undefined>();
 
   const handleTooltipEvent = useCallback((rect?: Rectangle, text?: string, subtext?: string) => {
-    console.log('handleTooltipEvent', rect, text, subtext);
     setOffsets(rect ? new Rectangle(rect.x, rect.y, rect.width, rect.height) : new Rectangle());
     setText(text);
     setSubtext(subtext);
