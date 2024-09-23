@@ -40,20 +40,7 @@ impl GridController {
         );
 
         let old_code_run = if let Some(new_code_run) = &new_code_run {
-            if new_code_run.is_html()
-                && (cfg!(target_family = "wasm") || cfg!(test))
-                && !transaction.is_server()
-            {
-                transaction.add_html_cell(sheet_id, pos);
-            }
-            if new_code_run.is_image()
-                && (cfg!(target_family = "wasm") || cfg!(test))
-                && !transaction.is_server()
-            {
-                transaction.add_image_cell(sheet_id, pos);
-            }
             let (old_index, old_code_run) = sheet.code_runs.insert_full(pos, new_code_run.clone());
-
             // keep the orderings of the code runs consistent, particularly when undoing/redoing
             let index = if index > sheet.code_runs.len() - 1 {
                 sheet.code_runs.len() - 1
@@ -65,27 +52,9 @@ impl GridController {
         } else {
             sheet.code_runs.shift_remove(&pos)
         };
+
         if old_code_run == new_code_run {
             return;
-        }
-
-        if cfg!(target_family = "wasm") || cfg!(test) {
-            // if there was html here, send the html update to the client
-            if let Some(old_code_run) = &old_code_run {
-                if old_code_run.is_html() && !transaction.is_server() {
-                    transaction.add_html_cell(sheet_id, pos);
-                }
-                if old_code_run.is_image() && !transaction.is_server() {
-                    transaction.add_image_cell(sheet_id, pos);
-                }
-                // if the code run is being removed, tell the client that there is no longer a code cell
-                if new_code_run.is_none() && !transaction.is_server() {
-                    transaction.add_code_cell(sheet_id, pos);
-                }
-            } else {
-                // ensure the code cell is updated
-                transaction.add_code_cell(sheet_id, pos);
-            }
         }
 
         let sheet_rect = match (&old_code_run, &new_code_run) {
@@ -108,30 +77,14 @@ impl GridController {
             }
         };
 
-        transaction.forward_operations.push(Operation::SetCodeRun {
-            sheet_pos,
-            code_run: new_code_run,
-            index,
-        });
-
-        transaction.reverse_operations.push(Operation::SetCodeRun {
-            sheet_pos,
-            code_run: old_code_run,
-            index,
-        });
-
-        if transaction.is_user() {
-            self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
-            self.check_all_spills(transaction, sheet_pos.sheet_id, true);
-        }
-        transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
-
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            if let Some(sheet) = self.try_sheet(sheet_id) {
-                sheet.send_code_cell(sheet_pos.into());
-            }
+            transaction.add_from_code_run(sheet_id, pos, &old_code_run);
+            transaction.add_from_code_run(sheet_id, pos, &new_code_run);
+
             self.send_updated_bounds_rect(&sheet_rect, false);
+
             self.add_dirty_hashes_from_sheet_rect(transaction, sheet_rect);
+
             if transaction.is_user() {
                 if let Some(sheet) = self.try_sheet(sheet_id) {
                     let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into());
@@ -142,6 +95,27 @@ impl GridController {
                 }
             }
         }
+
+        if transaction.is_user_undo_redo() {
+            transaction.forward_operations.push(Operation::SetCodeRun {
+                sheet_pos,
+                code_run: new_code_run,
+                index,
+            });
+
+            transaction.reverse_operations.push(Operation::SetCodeRun {
+                sheet_pos,
+                code_run: old_code_run,
+                index,
+            });
+
+            if transaction.is_user() {
+                self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
+                self.check_all_spills(transaction, sheet_pos.sheet_id, true);
+            }
+        }
+
+        transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
     }
 
     /// continues the calculate cycle after an async call

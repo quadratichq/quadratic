@@ -12,7 +12,7 @@ use crate::{
     controller::{
         execution::TransactionType, operations::operation::Operation, transaction::Transaction,
     },
-    grid::{sheet::validations::validation::Validation, CodeCellLanguage, SheetId},
+    grid::{sheet::validations::validation::Validation, CodeCellLanguage, CodeRun, SheetId},
     selection::Selection,
     viewport::ViewportBuffer,
     Pos, SheetPos, SheetRect,
@@ -203,6 +203,19 @@ impl PendingTransaction {
         matches!(self.transaction_type, TransactionType::Multiplayer)
     }
 
+    /// Adds a code cell, html cell and image cell to the transaction from a CodeRun
+    pub fn add_from_code_run(&mut self, sheet_id: SheetId, pos: Pos, code_run: &Option<CodeRun>) {
+        if let Some(code_run) = &code_run {
+            self.add_code_cell(sheet_id, pos);
+            if code_run.is_html() {
+                self.add_html_cell(sheet_id, pos);
+            }
+            if code_run.is_image() {
+                self.add_image_cell(sheet_id, pos);
+            }
+        }
+    }
+
     /// Adds a code cell to the transaction
     pub fn add_code_cell(&mut self, sheet_id: SheetId, pos: Pos) {
         self.code_cells.entry(sheet_id).or_default().insert(pos);
@@ -248,9 +261,14 @@ impl PendingTransaction {
 
 #[cfg(test)]
 mod tests {
-    use crate::{controller::operations::operation::Operation, grid::SheetId};
+    use crate::{
+        controller::operations::operation::Operation,
+        grid::{CodeRunResult, SheetId},
+        CellValue, Value,
+    };
 
     use super::*;
+    use chrono::Utc;
     use serial_test::parallel;
 
     #[test]
@@ -315,6 +333,53 @@ mod tests {
             ..Default::default()
         };
         assert!(!transaction.is_user());
+    }
+
+    #[test]
+    #[parallel]
+    fn test_add_from_code_run() {
+        let mut transaction = PendingTransaction::default();
+        let sheet_id = SheetId::new();
+        let pos = Pos { x: 0, y: 0 };
+
+        transaction.add_from_code_run(sheet_id, pos, &None);
+        assert_eq!(transaction.code_cells.len(), 0);
+        assert_eq!(transaction.html_cells.len(), 0);
+        assert_eq!(transaction.image_cells.len(), 0);
+
+        let code_run = CodeRun {
+            std_out: None,
+            std_err: None,
+            formatted_code_string: None,
+            cells_accessed: HashSet::new(),
+            result: CodeRunResult::Ok(Value::Single(CellValue::Html("html".to_string()))),
+            return_type: None,
+            line_number: None,
+            output_type: None,
+            spill_error: false,
+            last_modified: Utc::now(),
+        };
+        transaction.add_from_code_run(sheet_id, pos, &Some(code_run));
+        assert_eq!(transaction.code_cells.len(), 1);
+        assert_eq!(transaction.html_cells.len(), 1);
+        assert_eq!(transaction.image_cells.len(), 0);
+
+        let code_run = CodeRun {
+            std_out: None,
+            std_err: None,
+            formatted_code_string: None,
+            cells_accessed: HashSet::new(),
+            result: CodeRunResult::Ok(Value::Single(CellValue::Image("image".to_string()))),
+            return_type: None,
+            line_number: None,
+            output_type: None,
+            spill_error: false,
+            last_modified: Utc::now(),
+        };
+        transaction.add_from_code_run(sheet_id, pos, &Some(code_run));
+        assert_eq!(transaction.code_cells.len(), 1);
+        assert_eq!(transaction.html_cells.len(), 1);
+        assert_eq!(transaction.image_cells.len(), 1);
     }
 
     #[test]
