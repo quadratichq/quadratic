@@ -5,13 +5,17 @@ import { Rectangle } from 'pixi.js';
 import { useCallback, useEffect, useState } from 'react';
 import './HoverTooltip.css';
 
+const Y_OFFSET = 2;
+
 export const HoverTooltip = () => {
   const [offsets, setOffsets] = useState<Rectangle>(new Rectangle());
   const [text, setText] = useState<string | undefined>();
   const [subtext, setSubtext] = useState<string | undefined>();
 
   const handleTooltipEvent = useCallback((rect?: Rectangle, text?: string, subtext?: string) => {
-    setOffsets(rect ? new Rectangle(rect.x, rect.y, rect.width, rect.height) : new Rectangle());
+    setOffsets(
+      rect ? new Rectangle(rect.x, rect.y - Y_OFFSET, rect.width, rect.height + 2 * Y_OFFSET) : new Rectangle()
+    );
     setText(text);
     setSubtext(subtext);
   }, []);
@@ -23,11 +27,34 @@ export const HoverTooltip = () => {
     };
   }, [handleTooltipEvent]);
 
+  useEffect(() => {
+    const remove = () => {
+      setOffsets(new Rectangle());
+      setText(undefined);
+      setSubtext(undefined);
+    };
+
+    pixiApp.viewport.on('moved', remove);
+    pixiApp.viewport.on('zoomed', remove);
+    events.on('cursorPosition', remove);
+    return () => {
+      pixiApp.viewport.off('moved', remove);
+      pixiApp.viewport.off('zoomed', remove);
+      events.off('cursorPosition', remove);
+    };
+  }, []);
+
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((node: HTMLDivElement) => {
     setDiv(node);
   }, []);
-  const { top, left } = usePositionCellMessage({ div, offsets, direction: 'vertical', forceTop: true });
+  const { top, left } = usePositionCellMessage({
+    div,
+    offsets,
+    direction: 'vertical',
+    forceTop: true,
+    centerHorizontal: true,
+  });
 
   return (
     <div
@@ -36,8 +63,8 @@ export const HoverTooltip = () => {
       style={{
         left,
         top,
-        visibility: text !== undefined && subtext !== undefined ? 'visible' : 'hidden',
-        opacity: text !== undefined && subtext !== undefined ? 1 : 0,
+        visibility: div !== null && text !== undefined && subtext !== undefined ? 'visible' : 'hidden',
+        opacity: div !== null && text !== undefined && subtext !== undefined ? 1 : 0,
         transformOrigin: `0 0`,
         transform: `scale(${1 / pixiApp.viewport.scale.x})`,
       }}
