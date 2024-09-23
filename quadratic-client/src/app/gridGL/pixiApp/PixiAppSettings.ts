@@ -2,10 +2,12 @@ import { defaultInlineEditor, InlineEditorState } from '@/app/atoms/inlineEditor
 import { events } from '@/app/events/events';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
+import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { SetterOrUpdater } from 'recoil';
 import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../grid/controller/Sheets';
-import { defaultGridSettings, GridSettings } from '../../ui/menus/TopBar/SubMenus/useGridSettings';
+import { defaultGridSettings, GridSettings } from '../../ui/hooks/useGridSettings';
 import { pixiApp } from './PixiApp';
 
 export enum PanMode {
@@ -35,9 +37,11 @@ class PixiAppSettings {
   unsavedEditorChanges?: string;
 
   temporarilyHideCellTypeOutlines = false;
+  gridSettings = defaultGridSettings;
+  setGridSettings?: SetterOrUpdater<GridSettings>;
   editorInteractionState = editorInteractionStateDefault;
-  setEditorInteractionState?: (value: EditorInteractionState) => void;
-  addGlobalSnackbar?: (message: string, options?: { severity?: 'error' | 'warning' }) => void;
+  setEditorInteractionState?: SetterOrUpdater<EditorInteractionState>;
+  addGlobalSnackbar?: GlobalSnackbar['addGlobalSnackbar'];
   inlineEditorState = defaultInlineEditor;
   setInlineEditorState?: (fn: (prev: InlineEditorState) => InlineEditorState) => void;
 
@@ -83,9 +87,14 @@ class PixiAppSettings {
     return this.editorInteractionState.permissions;
   }
 
+  updateGridSettings(gridSettings: GridSettings, setGridSettings: SetterOrUpdater<GridSettings>): void {
+    this.gridSettings = gridSettings;
+    this.setGridSettings = setGridSettings;
+  }
+
   updateEditorInteractionState(
     editorInteractionState: EditorInteractionState,
-    setEditorInteractionState: (value: EditorInteractionState) => void
+    setEditorInteractionState: SetterOrUpdater<EditorInteractionState>
   ): void {
     this.editorInteractionState = editorInteractionState;
     this.setEditorInteractionState = setEditorInteractionState;
