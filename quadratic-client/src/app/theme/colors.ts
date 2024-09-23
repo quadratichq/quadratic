@@ -17,23 +17,25 @@ export const colors = {
   cellColorWarning: 0xffb74d,
   cellColorInfo: 0x4fc3f7,
 
-  cursorCell: 0x6cd4ff,
+  cursorCell: 0x2463eb,
   searchCell: 0x50c878,
 
   // todo: this is new and should be reviewed
-  movingCells: 0x6cd4ff,
+  movingCells: 0x2463eb,
 
   gridBackground: 0xffffff,
 
   independence: 0x5d576b,
   headerBackgroundColor: 0xffffff,
-  headerSelectedBackgroundColor: 0xe7f7ff,
-  headerSelectedRowColumnBackgroundColor: 0xb6e7ff,
+  headerSelectedBackgroundColor: 0x2463eb,
+  headerSelectedBackgroundColorAlpha: 0.1,
+  headerSelectedRowColumnBackgroundColor: 0x2463eb,
+  headerSelectedRowColumnBackgroundColorAlpha: 0.25,
   headerCornerBackgroundColor: 0xffffff,
   boxCellsDeleteColor: Number(`0x${muiColors.red['400'].replace('#', '')}`),
   htmlPlaceholderThumbnailColor: 0xeeeeee,
   htmlPlaceholderThumbnailBorderColor: 0,
-  boxCellsColor: 0x6cd4ff,
+  boxCellsColor: 0x2463eb,
   boxCellsAlpha: 0.333,
   gridHeadingLabel: 0x233143, // same as gridLines, no alpha
   defaultBorderColor: 0,

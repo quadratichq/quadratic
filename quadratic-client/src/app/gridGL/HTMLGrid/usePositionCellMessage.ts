@@ -33,12 +33,16 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
       if (!div || !offsets) return;
 
       const viewport = pixiApp.viewport;
+      const scale = pixiApp.viewport.scale.x;
       const bounds = viewport.getVisibleBounds();
 
       if (side === 'vertical') {
         setLeft(offsets.left);
         setTop(offsets.bottom);
       } else {
+        const offsetWidth = div.offsetWidth * scale;
+        const offsetHeight = div.offsetHeight * scale;
+
         // checks whether the inline editor or dropdown is open; if so, always
         // show to the left to avoid overlapping the content
         let triggerLeft = false;
@@ -46,21 +50,21 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
           triggerLeft = inlineEditorHandler.isOpen() || editorInteractionState.annotationState === 'dropdown';
         }
         // only box to the left if it doesn't fit.
-        if (triggerLeft || offsets.right + div.offsetWidth > bounds.right) {
+        if (triggerLeft || offsets.right + offsetWidth > bounds.right) {
           // box to the left
-          setLeft(offsets.left - div.offsetWidth);
+          setLeft(offsets.left - offsetWidth);
         } else {
           // box to the right
           setLeft(offsets.right);
         }
 
         // only box going up if it doesn't fit.
-        if (offsets.top + div.offsetHeight < bounds.bottom) {
+        if (offsets.top + offsetHeight < bounds.bottom) {
           // box going down
           setTop(offsets.top);
         } else {
           // box going up
-          setTop(offsets.bottom - div.offsetHeight);
+          setTop(offsets.bottom - offsetHeight);
         }
       }
     };

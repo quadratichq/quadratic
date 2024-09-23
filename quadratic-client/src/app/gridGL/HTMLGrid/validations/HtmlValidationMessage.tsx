@@ -147,7 +147,7 @@ export const HtmlValidationMessage = (props: Props) => {
     <div
       ref={ref}
       className="pointer-events-none absolute w-64 max-w-xs rounded-md border border-gray-300 bg-popover bg-white p-4 text-popover-foreground shadow-md outline-none"
-      style={{ top, left }}
+      style={{ top, left, transformOrigin: `0 0`, transform: `scale(${1 / pixiApp.viewport.scale.x})` }}
     >
       <div className="leading-2 whitespace-normal" style={wrapStyle}>
         <div className="flex items-start justify-between gap-2">

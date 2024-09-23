@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useGridSettings } from '../menus/TopBar/SubMenus/useGridSettings';
+import { useEffect, useState } from 'react';
+import { useGridSettings } from '../hooks/useGridSettings';
 import { QuadraticSnackBar } from './QuadraticSnackBar';
 
 export default function PresentationModeHint() {

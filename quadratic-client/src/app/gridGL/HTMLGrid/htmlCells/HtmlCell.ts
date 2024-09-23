@@ -232,10 +232,10 @@ export class HtmlCell {
     const side = this.hoverSide;
 
     if (side === 'right' || side === 'corner') {
-      this.right.style.backgroundColor = colors.quadraticPrimary;
+      this.right.style.backgroundColor = 'hsl(var(--primary))';
     }
     if (side === 'bottom' || side === 'corner') {
-      this.bottom.style.backgroundColor = colors.quadraticPrimary;
+      this.bottom.style.backgroundColor = 'hsl(var(--primary))';
     }
 
     if (side === 'corner') {

@@ -1,5 +1,6 @@
 import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { RefreshIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
@@ -14,7 +15,6 @@ import {
 } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ReloadIcon } from '@radix-ui/react-icons';
 import { TeamSchema } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -110,7 +110,7 @@ export const Component = () => {
                   Cancel
                 </Button>
                 <Button type="submit" variant="default" disabled={disabled}>
-                  {fetcher.state !== 'idle' && <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />} Create team
+                  {fetcher.state !== 'idle' && <RefreshIcon className="mr-2 h-4 w-4 animate-spin" />} Create team
                 </Button>
               </div>
             </form>
