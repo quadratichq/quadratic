@@ -21,6 +21,10 @@ impl CellValue {
             .map(|dt| CellValue::DateTime(dt.naive_utc()))
             .ok()
     }
+
+    pub fn unpack_duration(value: &str) -> Option<CellValue> {
+        value.parse().map(CellValue::Duration).ok()
+    }
 }
 
 #[cfg(test)]
