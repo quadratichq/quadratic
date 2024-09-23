@@ -319,8 +319,8 @@ class InlineEditorHandler {
     const align = this.formatSummary?.align ?? 'left';
     const verticalAlign = this.formatSummary?.verticalAlign ?? 'top';
     const wrap = this.formatSummary?.wrap ?? 'overflow';
-    const underline = this.formatSummary?.underline ?? false;
-    const strikeThrough = this.formatSummary?.strikeThrough ?? false;
+    const underline = this.temporaryUnderline ?? this.formatSummary?.underline ?? false;
+    const strikeThrough = this.temporaryStrikeThrough ?? this.formatSummary?.strikeThrough ?? false;
     const { width: inlineEditorWidth, height: inlineEditorHeight } = inlineEditorMonaco.updateTextLayout(
       cellContentWidth,
       cellContentHeight,
