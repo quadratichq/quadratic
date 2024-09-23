@@ -186,6 +186,28 @@ impl Sheet {
         });
         results
     }
+
+    /// Returns a Vec<String> of all the neighboring text in the column.
+    pub fn neighbor_text(&self, pos: Pos) -> Vec<String> {
+        let mut text = vec![];
+        if let Some(column) = self.columns.get(&pos.x) {
+            // walk forwards
+            let mut y = pos.y + 1;
+            while let Some(CellValue::Text(t)) = column.values.get(&y) {
+                text.push(t.clone());
+                y += 1;
+            }
+
+            // walk backwards
+            let mut y = pos.y - 1;
+            while let Some(CellValue::Text(t)) = column.values.get(&y) {
+                text.push(t.clone());
+                y -= 1;
+            }
+        }
+        text.dedup();
+        text
+    }
 }
 
 #[cfg(test)]
@@ -546,5 +568,74 @@ mod test {
         );
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], SheetPos::new(sheet.id, 3, 3));
+    }
+
+    #[test]
+    #[parallel]
+    fn neighbor_text_single_column() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
+        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("B".into()));
+        sheet.set_cell_value(Pos { x: 1, y: 3 }, CellValue::Text("C".into()));
+
+        let neighbors = sheet.neighbor_text(Pos { x: 1, y: 2 });
+        assert_eq!(neighbors, vec!["C".to_string(), "A".to_string()]);
+    }
+
+    #[test]
+    #[parallel]
+    fn neighbor_text_with_gaps() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
+        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("B".into()));
+        sheet.set_cell_value(Pos { x: 1, y: 5 }, CellValue::Text("C".into()));
+
+        let neighbors = sheet.neighbor_text(Pos { x: 1, y: 3 });
+        assert!(neighbors.iter().any(|t| *t == "A".to_string()));
+        assert!(neighbors.iter().any(|t| *t == "B".to_string()));
+    }
+
+    #[test]
+    #[parallel]
+    fn neighbor_text_no_neighbors() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
+
+        let neighbors = sheet.neighbor_text(Pos { x: 1, y: 1 });
+        assert!(neighbors.is_empty());
+    }
+
+    #[test]
+    #[parallel]
+    fn neighbor_text_deduplication() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(Pos { x: 1, y: 0 }, CellValue::Text("B".into()));
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
+        sheet.set_cell_value(Pos { x: 1, y: 3 }, CellValue::Text("A".into()));
+
+        let mut neighbors = sheet.neighbor_text(Pos { x: 1, y: 2 });
+        neighbors.sort();
+        assert_eq!(neighbors, vec!["A".to_string(), "B".to_string()]);
+    }
+
+    #[test]
+    #[parallel]
+    fn neighbor_text_multiple_columns() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("A".into()));
+        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("B".into()));
+        sheet.set_cell_value(Pos { x: 2, y: 2 }, CellValue::Text("C".into()));
+        sheet.set_cell_value(Pos { x: 1, y: 3 }, CellValue::Text("D".into()));
+
+        let neighbors = sheet.neighbor_text(Pos { x: 1, y: 2 });
+        assert_eq!(neighbors, vec!["D".to_string(), "A".to_string()]);
+    }
+
+    #[test]
+    #[parallel]
+    fn neighbor_text_empty_column() {
+        let sheet = Sheet::test();
+        let neighbors = sheet.neighbor_text(Pos { x: 1, y: 1 });
+        assert!(neighbors.is_empty());
     }
 }
