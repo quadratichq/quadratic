@@ -438,12 +438,14 @@ impl CellValue {
             CellValue::Text(_) => 1,
             CellValue::Logical(_) => 2,
             CellValue::Error(_) => 3,
-            CellValue::Instant(_) => 4,
-            CellValue::Duration(_) => 5,
-            CellValue::Blank => 6,
-            CellValue::Html(_) => 7,
-            CellValue::Code(_) => 8,
-            CellValue::Image(_) => 9,
+            CellValue::Instant(_) | CellValue::DateTime(_) => 4,
+            CellValue::Date(_) => 5,
+            CellValue::Time(_) => 6,
+            CellValue::Duration(_) => 7,
+            CellValue::Blank => 8,
+            CellValue::Html(_) => 9,
+            CellValue::Code(_) => 10,
+            CellValue::Image(_) => 11,
         }
     }
 
@@ -451,27 +453,6 @@ impl CellValue {
     /// converts blanks to zeros.
     #[allow(clippy::should_implement_trait)]
     pub fn cmp(&self, other: &Self) -> CodeResult<std::cmp::Ordering> {
-        fn type_id(v: &CellValue) -> u8 {
-            // Sort order, based on the results of Excel's `SORT()` function.
-            // The comparison operators are the same, except that blank coerces
-            // to zero before comparison.
-            match v {
-                CellValue::Number(_) => 0,
-                CellValue::Text(_) => 1,
-                CellValue::Logical(_) => 2,
-                CellValue::Error(_) => 3,
-                CellValue::Instant(_) => 4,
-                CellValue::Duration(_) => 5,
-                CellValue::Blank => 6,
-                CellValue::Html(_) => 7,
-                CellValue::Code(_) => 8,
-                CellValue::Image(_) => 9,
-                CellValue::Date(_) => 10,
-                CellValue::Time(_) => 11,
-                CellValue::DateTime(_) => 12,
-            }
-        }
-
         // Coerce blank to zero.
         let mut lhs = self;
         let mut rhs = other;
@@ -587,11 +568,9 @@ impl CellValue {
             CellValue::Instant(Instant { seconds }) => {
                 CellValueHash::Instant(seconds.to_ne_bytes())
             }
-            CellValue::Duration(Duration {
-                years,
-                months,
-                seconds,
-            }) => CellValueHash::Duration(*years, *months, seconds.to_ne_bytes()),
+            CellValue::Duration(Duration { months, seconds }) => {
+                CellValueHash::Duration(*months, seconds.to_ne_bytes())
+            }
             CellValue::Error(e) => CellValueHash::Error(e.msg.clone()),
             _ => CellValueHash::Unknown(self.type_id()),
         }
@@ -916,7 +895,7 @@ pub enum CellValueHash {
     Number(BigDecimal),
     Logical(bool),
     Instant([u8; 8]),
-    Duration(i32, i32, [u8; 8]),
+    Duration(i32, [u8; 8]),
     Error(RunErrorMsg),
     Unknown(u8),
 }
