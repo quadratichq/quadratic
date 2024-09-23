@@ -83,6 +83,7 @@ export const useCodeEditor = ({ editorInst }: { editorInst: monaco.editor.IStand
         setSpillError(codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as Coordinate)));
         setEditorMode(codeCell.language);
       } else {
+        setCellLocation({ sheetId, x: pos.x, y: pos.y });
         setCodeString('');
         setEditorContent(initialCode ?? '');
         setEvaluationResult(undefined);
@@ -110,6 +111,9 @@ export const useCodeEditor = ({ editorInst }: { editorInst: monaco.editor.IStand
       } else if (!skipSaveCheck && unsavedChanges) {
         setShowSaveChangesAlert(true);
       } else {
+        setCodeString(undefined);
+        setEditorContent(undefined);
+        setModifiedEditorContent(undefined);
         setEditorInteractionState((prev) => ({
           ...prev,
           editorEscapePressed: false,
@@ -118,9 +122,6 @@ export const useCodeEditor = ({ editorInst }: { editorInst: monaco.editor.IStand
         }));
         pixiApp.cellHighlights.clear();
         multiplayer.sendEndCellEdit();
-        setCodeString(undefined);
-        setEditorContent(undefined);
-        setModifiedEditorContent(undefined);
         editorInst?.dispose();
       }
     },
@@ -149,8 +150,6 @@ export const useCodeEditor = ({ editorInst }: { editorInst: monaco.editor.IStand
       cursor: sheets.getCursorPosition(),
     });
 
-    setCodeString(editorContent ?? '');
-
     mixpanel.track('[CodeEditor].cellRun', {
       type: mode,
     });
@@ -162,7 +161,7 @@ export const useCodeEditor = ({ editorInst }: { editorInst: monaco.editor.IStand
         send_to: 'AW-11007319783/C-yfCJOe6JkZEOe92YAp',
       });
     }
-  }, [cellLocation, editorContent, editorMode, mode, setCodeString]);
+  }, [cellLocation, editorContent, editorMode, mode]);
 
   const cancelRun = useCallback(() => {
     if (mode === 'Python') {

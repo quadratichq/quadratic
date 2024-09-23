@@ -91,7 +91,6 @@ export const CodeEditor = () => {
             waitingForEditorClose: undefined,
             showCodeEditor: false,
           }));
-          editorInst?.dispose();
         } else {
           setEditorInteractionState((oldState) => ({
             ...oldState,
@@ -106,7 +105,7 @@ export const CodeEditor = () => {
         }
       }
     }
-  }, [editorInst, setEditorInteractionState, setShowSaveChangesAlert, unsavedChanges, waitingForEditorClose]);
+  }, [setEditorInteractionState, setShowSaveChangesAlert, unsavedChanges, waitingForEditorClose]);
 
   useEffect(() => {
     updateCodeEditor(selectedCellSheet, selectedCell, undefined, initialCode);
