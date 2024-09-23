@@ -3,6 +3,7 @@ import operator
 import re
 import traceback
 from datetime import date, datetime, time, timedelta
+from dateutil.relativedelta import relativedelta
 from decimal import Decimal, DecimalException
 from typing import Tuple
 
@@ -61,6 +62,29 @@ def normalize_bool(value: str) -> bool:
     return value
 
 
+def parse_duration(value: str) -> relativedelta:
+    ret = relativedelta()
+    for m in re.compile(r'([-\d\.]+)([a-zµ]+)').finditer(value.lower()):
+        count = float(m.group(1))
+        unit = m.group(2)
+        print(count,unit)
+        match unit:
+            case "y": ret.years += count
+            case "mo": ret.months += count
+            case "w": ret.weeks += count
+            case "d": ret.days += count
+            case "h": ret.hours += count
+            case "m": ret.minutes += count
+            case "s": ret.seconds += count
+            case "ms": ret.microseconds += count * 1000
+            case "µs": ret.microseconds += count
+            case "ns": ret.microseconds += count / 1000
+            case "ps": ret.microseconds += count / 1000 / 1000
+            case "fs": ret.microseconds += count / 1000 / 1000 / 1000
+            case "as": ret.microseconds += count / 1000 / 1000 / 1000 / 1000
+    return ret
+
+
 # Convert from python types to quadratic types
 def to_quadratic_type(
     value: (
@@ -72,8 +96,8 @@ def to_quadratic_type(
         | date
         | time
         | datetime
-        | pd.Period
         | timedelta
+        | relativedelta
         | None
     ),
 ) -> Tuple[str, str]:
@@ -104,6 +128,13 @@ def to_quadratic_type(
             return (to_iso_format(value), "date")
         elif isinstance(value, time):
             return (to_iso_format(value), "time")
+        elif isinstance(value, timedelta):
+            return (f"{value.days}d {value.seconds}s {value.microseconds}µs", "duration")
+        elif isinstance(value.normalized(), relativedelta):
+            # Exclude `value.weeks` because it is redundant with `value.days`
+            return (f"{value.years}y {value.months}mo "
+                    f"{value.days}d {value.hours}h {value.minutes}m "
+                    f"{value.seconds}s {value.microseconds}µs", "duration")
         else:
             return (str(value), "text")
     except Exception as e:
@@ -129,6 +160,8 @@ def to_python_type(value: str, value_type: str) -> int | float | str | bool:
             return datetime.fromisoformat(value)
         elif value_type == "date time":
             return datetime.fromisoformat(value)
+        elif value_type == "duration":
+            return parse_duration(value)
         else:
             return value
     except:
