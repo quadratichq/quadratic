@@ -7,13 +7,14 @@ import { Link } from '@/app/gridGL/types/links';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
 import { openLink } from '@/app/helpers/links';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Point } from 'pixi.js';
+import { Point, Rectangle } from 'pixi.js';
 
 const HOVER_DELAY = 500;
 
 export class PointerLink {
   cursor?: string;
 
+  private point?: Point;
   private link?: Link;
   private text?: string;
   private subtext?: string;
@@ -31,10 +32,18 @@ export class PointerLink {
       this.text = text;
       this.subtext = subtext;
       this.hoverTimeout = undefined;
-      events.emit('hoverTooltip', link?.textRectangle, undefined, undefined);
+      events.emit('hoverTooltip', undefined, undefined, undefined);
     } else if (!this.hoverTimeout) {
       this.hoverTimeout = setTimeout(() => {
-        events.emit('hoverTooltip', link?.textRectangle, text, subtext);
+        const rect = this.link
+          ? new Rectangle(
+              this.point?.x ?? this.link.textRectangle.x,
+              this.link.textRectangle.y,
+              this.link.textRectangle.width,
+              this.link.textRectangle.height
+            )
+          : undefined;
+        events.emit('hoverTooltip', rect, text, subtext);
       }, HOVER_DELAY);
     }
   };
@@ -48,6 +57,7 @@ export class PointerLink {
   };
 
   pointerMove = (world: Point, event: PointerEvent): boolean => {
+    this.point = world;
     const link = this.checkHoverLink(world);
     if (link) {
       this.cursor = matchShortcut(Action.CmdClick, event) ? 'pointer' : undefined;

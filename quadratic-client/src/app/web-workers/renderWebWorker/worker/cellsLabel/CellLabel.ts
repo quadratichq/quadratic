@@ -54,8 +54,6 @@ const STRIKE_THROUGH_OFFSET = 32;
 export const FONT_SIZE = 14;
 export const LINE_HEIGHT = 16;
 
-const URL_REGEX = /[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/i;
-
 export class CellLabel {
   private cellsLabels: CellsLabels;
   private position = new Point();
@@ -113,12 +111,19 @@ export class CellLabel {
   overflowRight = 0;
   overflowLeft = 0;
 
+  // bounds with overflow
   private actualLeft: number;
   private actualRight: number;
   private actualTop: number;
   private actualBottom: number;
 
-  private getText(cell: JsRenderCell) {
+  // bounds after clipping
+  private textLeft: number;
+  private textRight: number;
+  private textTop: number;
+  private textBottom: number;
+
+  private getText = (cell: JsRenderCell) => {
     switch (cell?.special) {
       case 'SpillError':
         return SPILL_ERROR_TEXT;
@@ -135,15 +140,10 @@ export class CellLabel {
           return cell?.value;
         }
     }
-  }
+  };
 
   get textRectangle() {
-    return new Rectangle(
-      this.actualLeft,
-      this.actualTop,
-      this.actualRight - this.actualLeft,
-      this.actualBottom - this.actualTop
-    );
+    return new Rectangle(this.textLeft, this.textTop, this.textRight - this.textLeft, this.textBottom - this.textTop);
   }
 
   constructor(cellsLabels: CellsLabels, cell: JsRenderCell, screenRectangle: Rectangle) {
@@ -186,6 +186,11 @@ export class CellLabel {
     this.actualTop = this.AABB.top;
     this.actualBottom = this.AABB.bottom;
 
+    this.textLeft = this.AABB.left;
+    this.textRight = this.AABB.right;
+    this.textTop = this.AABB.top;
+    this.textBottom = this.AABB.bottom;
+
     this.bold = !!cell?.bold;
     this.italic = !!cell?.italic || isError || isChart;
     this.updateFontName();
@@ -209,6 +214,20 @@ export class CellLabel {
     this.cellClipTop = this.AABB.top;
     this.cellClipBottom = this.AABB.bottom;
     this.maxWidth = this.wrap === 'wrap' ? this.AABB.width - CELL_TEXT_MARGIN_LEFT * 3 : undefined;
+  };
+
+  private isLink = (cell: JsRenderCell): boolean => {
+    if (cell.number !== undefined || cell.special !== undefined) return false;
+    try {
+      new URL(cell.value);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  private isNumber = (): boolean => {
+    return this.number !== undefined;
   };
 
   checkLeftClip = (nextLeft: number, labelMeshes: LabelMeshes): boolean => {
@@ -249,15 +268,6 @@ export class CellLabel {
       return true;
     }
     return false;
-  };
-
-  private isNumber = (): boolean => {
-    return this.number !== undefined;
-  };
-
-  private isLink = (cell: JsRenderCell): boolean => {
-    if (cell.number !== undefined || cell.special !== undefined) return false;
-    return URL_REGEX.test(cell.value);
   };
 
   private checkNumberClip = (): boolean => {
@@ -559,6 +569,11 @@ export class CellLabel {
     const clipTop = this.cellClipTop ?? -Infinity;
     const clipBottom = this.cellClipBottom ?? Infinity;
 
+    let textLeft = Infinity;
+    let textRight = -Infinity;
+    let textTop = Infinity;
+    let textBottom = -Infinity;
+
     for (let i = 0; i < this.chars.length; i++) {
       const char = this.chars[i];
       let horizontalOffset =
@@ -573,22 +588,31 @@ export class CellLabel {
       const textureUvs = char.charData.uvs;
       const buffer = labelMesh.getBuffer();
 
+      const charLeft = xPos;
+      const charRight = xPos + textureFrame.width * scale;
+      const charTop = yPos;
+      const charBottom = yPos + textureFrame.height * scale;
+
       // remove letters that are outside the clipping bounds
-      if (
-        xPos <= clipLeft ||
-        xPos + textureFrame.width * scale >= clipRight ||
-        yPos <= clipTop ||
-        yPos + textureFrame.height * scale >= clipBottom
-      ) {
+      if (charLeft <= clipLeft || charRight >= clipRight || charTop <= clipTop || charBottom >= clipBottom) {
         // this removes extra characters from the mesh after a clip
         buffer.reduceSize(6);
 
         // update line width to the actual width of the text rendered after the clip
         this.lineWidths[char.line] = Math.min(this.lineWidths[char.line], char.position.x);
       } else {
+        textLeft = Math.min(textLeft, charLeft);
+        textRight = Math.max(textRight, charRight);
+        textTop = Math.min(textTop, charTop);
+        textBottom = Math.max(textBottom, charBottom);
         this.insertBuffers({ buffer, bounds, xPos, yPos, textureFrame, textureUvs, scale, color });
       }
     }
+
+    this.textLeft = textLeft;
+    this.textRight = textRight;
+    this.textTop = textTop;
+    this.textBottom = textBottom;
 
     this.horizontalLines = [];
 

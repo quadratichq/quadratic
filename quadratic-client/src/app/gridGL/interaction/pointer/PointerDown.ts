@@ -223,6 +223,7 @@ export class PointerDown {
           columnRow,
           keyboardMovePosition: { x: this.position.x, y: this.position.y },
           cursorPosition: { x: this.position.x, y: this.position.y },
+          multiCursor: null,
           ensureVisible: false,
         });
       }

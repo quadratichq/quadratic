@@ -191,7 +191,7 @@ class InlineEditorMonaco {
     if (!domNode) {
       throw new Error('Expected domNode to be defined in setUnderline');
     }
-    if (underline) {
+    if (underline && !inlineEditorHandler.formula) {
       domNode.setAttribute('data-underline', 'true');
     } else {
       domNode.removeAttribute('data-underline');
@@ -206,7 +206,7 @@ class InlineEditorMonaco {
     if (!domNode) {
       throw new Error('Expected domNode to be defined in setUnderline');
     }
-    if (strikeThrough) {
+    if (strikeThrough && !inlineEditorHandler.formula) {
       domNode.setAttribute('data-strike-through', 'true');
     } else {
       domNode.removeAttribute('data-strike-through');
