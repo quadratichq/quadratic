@@ -64,8 +64,8 @@ export const createFormulaStyleHighlights = () => {
 
 export const useEditorCellHighlights = (
   isValidRef: boolean,
-  editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>,
-  monacoRef: React.MutableRefObject<Monaco | null>,
+  editorInst: monaco.editor.IStandaloneCodeEditor | null,
+  monacoInst: Monaco | null,
   cellsAccessed?: SheetRect[] | null
 ) => {
   const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
@@ -81,11 +81,9 @@ export const useEditorCellHighlights = (
   }, [language]);
 
   useEffect(() => {
-    const editor = editorRef.current;
-    const monacoInst = monacoRef.current;
-    if (!isValidRef || !editor || !monacoInst) return;
+    if (!isValidRef || !editorInst || !monacoInst) return;
 
-    const model = editor.getModel();
+    const model = editorInst.getModel();
     if (!model) return;
 
     const onChangeModel = async () => {
@@ -94,7 +92,7 @@ export const useEditorCellHighlights = (
       const cellColorReferences = new Map<string, number>();
       let newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
 
-      const modelValue = editor.getValue();
+      const modelValue = editorInst.getValue();
       let parsed;
       if (language === 'Python' || language === 'Javascript') {
         parsed = parseCellsAccessed(cellsAccessed) as ParseFormulaReturnType;
@@ -131,7 +129,7 @@ export const useEditorCellHighlights = (
             },
           });
 
-          const editorCursorPosition = editor.getPosition();
+          const editorCursorPosition = editorInst.getPosition();
 
           if (editorCursorPosition && range.containsPosition(editorCursorPosition)) {
             pixiApp.cellHighlights.setHighlightedCell(index);
@@ -139,11 +137,11 @@ export const useEditorCellHighlights = (
         });
 
         // update the cell references in the editor
-        decorations.current = editorRef.current?.createDecorationsCollection(newDecorations);
+        decorations.current = editorInst.createDecorationsCollection(newDecorations);
       }
     };
 
     onChangeModel();
-    editor.onDidChangeModelContent(() => onChangeModel());
-  }, [isValidRef, editorRef, monacoRef, selectedCell, selectedCellSheet, language, cellsAccessed]);
+    editorInst.onDidChangeModelContent(() => onChangeModel());
+  }, [isValidRef, editorInst, monacoInst, selectedCell, selectedCellSheet, language, cellsAccessed]);
 };

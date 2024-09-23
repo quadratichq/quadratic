@@ -1,5 +1,10 @@
 import { hasPermissionToEditFile } from '@/app/actions';
-import { codeEditorEditorContentAtom } from '@/app/atoms/codeEditorAtom';
+import {
+  codeEditorCellLocationAtom,
+  codeEditorCellsAccessedAtom,
+  codeEditorEditorContentAtom,
+  codeEditorUnsavedChangesAtom,
+} from '@/app/atoms/codeEditorAtom';
 import {
   editorInteractionStateModeAtom,
   editorInteractionStatePermissionsAtom,
@@ -10,7 +15,7 @@ import {
 import { events } from '@/app/events/events';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import { codeCellIsAConnection, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
-import { CodeCellLanguage, SheetRect } from '@/app/quadratic-core-types';
+import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
@@ -21,6 +26,7 @@ import {
   provideSignatureHelp as provideSignatureHelpPython,
 } from '@/app/ui/menus/CodeEditor/PythonLanguageModel';
 import { QuadraticEditorTheme } from '@/app/ui/menus/CodeEditor/quadraticEditorTheme';
+import { useCodeEditor } from '@/app/ui/menus/CodeEditor/useCodeEditor';
 import { useEditorCellHighlights } from '@/app/ui/menus/CodeEditor/useEditorCellHighlights';
 import { useEditorOnSelectionChange } from '@/app/ui/menus/CodeEditor/useEditorOnSelectionChange';
 import { useEditorReturn } from '@/app/ui/menus/CodeEditor/useEditorReturn';
@@ -39,27 +45,33 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 // import { typescriptLibrary } from '@/web-workers/javascriptWebWorker/worker/javascript/typescriptLibrary';
 
 interface CodeEditorBodyProps {
-  closeEditor: (skipSaveCheck: boolean) => void;
-  cellsAccessed?: SheetRect[] | null;
-  cellLocation: SheetPosTS;
-  editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>;
+  editorInst: monaco.editor.IStandaloneCodeEditor | null;
+  setEditorInst: React.Dispatch<React.SetStateAction<monaco.editor.IStandaloneCodeEditor | null>>;
+
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // diagnostics?: Diagnostic[];
 }
 
 // need to track globally since monaco is a singleton
-let registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
+const registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
   Formula: false,
   Python: false,
   Javascript: false,
 };
 
 export const CodeEditorBody = (props: CodeEditorBodyProps) => {
-  const { closeEditor, cellsAccessed, cellLocation, editorRef } = props;
+  const { editorInst, setEditorInst } = props;
+  const cellLocation = useRecoilValue(codeEditorCellLocationAtom);
+  const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
+  const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
+  const cellsAccessedState = useRecoilValue(codeEditorCellsAccessedAtom);
+  const cellsAccessed = useMemo(
+    () => (!unsavedChanges ? cellsAccessedState : []),
+    [cellsAccessedState, unsavedChanges]
+  );
   const {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
-  const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
   const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
   const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
   const language = useRecoilValue(editorInteractionStateModeAtom);
@@ -72,34 +84,37 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   );
   const showCodeEditor = useRecoilValue(editorInteractionStateShowCodeEditorAtom);
   const [isValidRef, setIsValidRef] = useState(false);
-  const monacoRef = useRef<Monaco | null>(null);
-  useEditorCellHighlights(isValidRef, editorRef, monacoRef, cellsAccessed);
-  useEditorOnSelectionChange(isValidRef, editorRef, monacoRef);
-  useEditorReturn(isValidRef, editorRef, monacoRef);
+  const [monacoInst, setMonacoInst] = useState<Monaco | null>(null);
+  useEditorCellHighlights(isValidRef, editorInst, monacoInst, cellsAccessed);
+  useEditorOnSelectionChange(isValidRef, editorInst, monacoInst);
+  useEditorReturn(isValidRef, editorInst, monacoInst);
+
+  const { closeEditor } = useCodeEditor({
+    editorInst,
+  });
 
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // useEditorDiagnostics(isValidRef, editorRef, monacoRef, language, diagnostics);
 
   useEffect(() => {
-    if (showCodeEditor) {
+    if (editorInst) {
       // focus editor on show editor change
-      editorRef.current?.focus();
-      editorRef.current?.setPosition({ lineNumber: 0, column: 0 });
+      editorInst.focus();
+      editorInst.setPosition({ lineNumber: 0, column: 0 });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showCodeEditor]);
+  }, [editorInst, showCodeEditor]);
 
   useEffect(() => {
     const insertText = (text: string) => {
-      if (!editorRef.current) return;
-      const position = editorRef.current.getPosition();
-      const model = editorRef.current.getModel();
+      if (!editorInst) return;
+      const position = editorInst.getPosition();
+      const model = editorInst.getModel();
       if (!position || !model) return;
-      const selection = editorRef.current.getSelection();
+      const selection = editorInst.getSelection();
       const range =
         selection || new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column);
       model.applyEdits([{ range, text }]);
-      editorRef.current.focus();
+      editorInst.focus();
     };
     events.on('insertCodeEditorText', insertText);
     return () => {
@@ -117,23 +132,22 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   useEffect(() => {
     if (
       lastLocation.current &&
-      cellLocation.sheetId === lastLocation.current.sheetId &&
-      cellLocation.x === lastLocation.current.x &&
-      cellLocation.y === lastLocation.current.y
+      cellLocation?.sheetId === lastLocation.current.sheetId &&
+      cellLocation?.x === lastLocation.current.x &&
+      cellLocation?.y === lastLocation.current.y
     ) {
       return;
     }
     lastLocation.current = cellLocation;
-    const editor = editorRef.current;
-    if (!editor) return;
+    if (!editorInst) return;
 
-    const model = editor.getModel();
+    const model = editorInst.getModel();
     if (!model) return;
 
     setTimeout(() => {
       (model as any)._commandManager.clear();
     }, 250);
-  }, [cellLocation, editorRef]);
+  }, [cellLocation, editorInst]);
 
   const addCommands = useCallback(
     (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
@@ -149,12 +163,16 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
     [closeEditor, language, selectedCell, selectedCellSheet]
   );
 
-  const runEditorAction = (e: CustomEvent<string>) => editorRef.current?.getAction(e.detail)?.run();
+  const runEditorAction = useCallback((e: CustomEvent<string>) => editorInst?.getAction(e.detail)?.run(), [editorInst]);
   useEventListener('run-editor-action', runEditorAction);
+
   const onMount = useCallback(
     (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
-      editorRef.current = editor;
-      monacoRef.current = monaco;
+      setEditorInst((prev) => {
+        prev?.dispose();
+        return editor;
+      });
+      setMonacoInst(monaco);
       setIsValidRef(true);
 
       editor.focus();
@@ -190,7 +208,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
 
         // load the document in the python language server
         pyrightWorker?.openDocument({
-          textDocument: { text: editorRef.current?.getValue() ?? '', uri, languageId: 'python' },
+          textDocument: { text: editor.getValue() ?? '', uri, languageId: 'python' },
         });
         registered.Python = true;
       }
@@ -203,12 +221,12 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
         registered.Javascript = true;
       }
     },
-    [addCommands, editorRef, monacoLanguage]
+    [addCommands, monacoLanguage, setEditorInst]
   );
 
-  useEffect(() => {
-    return () => editorRef.current?.dispose();
-  }, [editorRef]);
+  if (editorContent === undefined) {
+    return null;
+  }
 
   return (
     <div

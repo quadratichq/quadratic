@@ -28,10 +28,10 @@ import { ReactNode, useEffect, useMemo } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 interface SnippetsPopoverProps {
-  editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>;
+  editorInst: monaco.editor.IStandaloneCodeEditor | null;
 }
 
-export function SnippetsPopover({ editorRef }: SnippetsPopoverProps) {
+export function SnippetsPopover({ editorInst }: SnippetsPopoverProps) {
   const [showSnippetsPopover, setShowSnippetsPopover] = useRecoilState(codeEditorShowSnippetsPopoverAtom);
   const mode = useRecoilValue(editorInteractionStateModeAtom);
   const theme = useTheme();
@@ -94,15 +94,15 @@ export function SnippetsPopover({ editorRef }: SnippetsPopoverProps) {
                   onSelect={() => {
                     mixpanel.track('[Snippets].selected', { label });
 
-                    if (editorRef.current) {
-                      const selection = editorRef.current.getSelection();
+                    if (editorInst) {
+                      const selection = editorInst.getSelection();
                       if (!selection) return;
                       const id = { major: 1, minor: 1 };
                       const text = code;
                       const op = { identifier: id, range: selection, text: text, forceMoveMarkers: true };
-                      editorRef.current.executeEdits('my-source', [op]);
+                      editorInst.executeEdits('my-source', [op]);
                       setShowSnippetsPopover(false);
-                      editorRef.current.focus();
+                      editorInst.focus();
                     }
                   }}
                   className="flex flex-col items-start"

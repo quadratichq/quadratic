@@ -24,10 +24,10 @@ import { useCallback, useMemo } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 interface CodeEditorEmptyStateProps {
-  editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>;
+  editorInst: monaco.editor.IStandaloneCodeEditor | null;
 }
 
-export function CodeEditorEmptyState({ editorRef }: CodeEditorEmptyStateProps) {
+export function CodeEditorEmptyState({ editorInst }: CodeEditorEmptyStateProps) {
   const mode = useRecoilValue(editorInteractionStateModeAtom);
   const codeCell = useMemo(() => getCodeCell(mode), [mode]);
   const setShowSnippetsPopover = useSetRecoilState(codeEditorShowSnippetsPopoverAtom);
@@ -36,9 +36,9 @@ export function CodeEditorEmptyState({ editorRef }: CodeEditorEmptyStateProps) {
   const fillWithSnippet = useCallback(
     (code: string) => {
       setEditorContent(code);
-      editorRef.current?.focus();
+      editorInst?.focus();
     },
-    [editorRef, setEditorContent]
+    [editorInst, setEditorContent]
   );
 
   // Must meet these criteria to even show in the UI

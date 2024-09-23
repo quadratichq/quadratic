@@ -9,8 +9,8 @@ import { useRecoilValue } from 'recoil';
 // highlight the return line and add a return icon next to the line number
 export const useEditorReturn = (
   isValidRef: boolean,
-  editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>,
-  monacoRef: React.MutableRefObject<Monaco | null>
+  editorInst: monaco.editor.IStandaloneCodeEditor | null,
+  monacoInst: Monaco | null
   // codeEditorReturn?: ComputedPythonReturnType
 ) => {
   const language = useRecoilValue(editorInteractionStateModeAtom);
@@ -21,12 +21,9 @@ export const useEditorReturn = (
   useEffect(() => {
     if (codeCell?.id === 'Formula' || codeCell?.type === 'connection') return;
 
-    const editor = editorRef.current;
-    const monacoInst = monacoRef.current;
+    if (!isValidRef || !editorInst || !monacoInst) return;
 
-    if (!isValidRef || !editor || !monacoInst) return;
-
-    const model = editor.getModel();
+    const model = editorInst.getModel();
 
     if (!model) return;
 
@@ -53,7 +50,7 @@ export const useEditorReturn = (
       // ]);
 
       if (evaluationResult.line_number && evaluationResult.output_type) {
-        decorations.current = editorRef.current?.createDecorationsCollection([
+        decorations.current = editorInst.createDecorationsCollection([
           {
             range: new monaco.Range(evaluationResult.line_number, 0, evaluationResult.line_number, 0),
             options: {
@@ -67,6 +64,6 @@ export const useEditorReturn = (
     onChangeModel();
 
     // remove the return highlight and decoration when the model changes
-    editor.onDidChangeModelContent(() => decorations.current?.clear());
-  }, [isValidRef, editorRef, monacoRef, codeCell, evaluationResult]);
+    editorInst.onDidChangeModelContent(() => decorations.current?.clear());
+  }, [isValidRef, editorInst, monacoInst, codeCell, evaluationResult]);
 };

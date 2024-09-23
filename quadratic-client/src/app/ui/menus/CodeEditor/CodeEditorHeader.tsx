@@ -1,4 +1,5 @@
 import { hasPermissionToEditFile } from '@/app/actions';
+import { codeEditorCellLocationAtom, codeEditorUnsavedChangesAtom } from '@/app/atoms/codeEditorAtom';
 import {
   editorInteractionStateModeAtom,
   editorInteractionStatePermissionsAtom,
@@ -6,7 +7,6 @@ import {
 } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { SheetPosTS } from '@/app/gridGL/types/size';
 import { codeCellIsAConnection, getCodeCell, getConnectionUuid, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
@@ -14,6 +14,7 @@ import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
 import { SnippetsPopover } from '@/app/ui/menus/CodeEditor/SnippetsPopover';
+import { useCodeEditor } from '@/app/ui/menus/CodeEditor/useCodeEditor';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
@@ -26,16 +27,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 interface CodeEditorHeaderProps {
-  cellLocation: SheetPosTS | undefined;
-  unsaved: boolean;
-  saveAndRunCell: () => void;
-  cancelRun: () => void;
-  closeEditor: () => void;
-  editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>;
+  editorInst: monaco.editor.IStandaloneCodeEditor | null;
 }
 
-export const CodeEditorHeader = (props: CodeEditorHeaderProps) => {
-  const { cellLocation, unsaved, saveAndRunCell, cancelRun, closeEditor, editorRef } = props;
+export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
   const {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
@@ -51,6 +46,8 @@ export const CodeEditorHeader = (props: CodeEditorHeaderProps) => {
   const codeCell = useMemo(() => getCodeCell(mode), [mode]);
   const connectionsFetcher = useConnectionsFetcher();
   const language = useMemo(() => getLanguage(mode), [mode]);
+  const cellLocation = useRecoilValue(codeEditorCellLocationAtom);
+  const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
 
   // Get the connection name (it's possible the user won't have access to it
   // because they're in a file they have access to but not the team — or
@@ -75,6 +72,10 @@ export const CodeEditorHeader = (props: CodeEditorHeaderProps) => {
     () => sheets.getById(selectedCellSheet)?.name,
     [selectedCellSheet]
   );
+
+  const { cancelRun, closeEditor, saveAndRunCell } = useCodeEditor({
+    editorInst,
+  });
 
   useEffect(() => {
     const updateSheetName = () => setCurrentSheetId(sheets.sheet.id);
@@ -163,11 +164,11 @@ export const CodeEditorHeader = (props: CodeEditorHeaderProps) => {
       <div
         className={cn(
           `relative`,
-          unsaved &&
+          unsavedChanges &&
             `after:pointer-events-none after:absolute after:-bottom-0.5 after:-right-0.5 after:h-3 after:w-3 after:rounded-full after:border-2 after:border-solid after:border-background after:bg-gray-400 after:content-['']`
         )}
       >
-        <TooltipHint title={`${codeCell?.label}${unsaved ? ' · Unsaved changes' : ''}`} placement="bottom">
+        <TooltipHint title={`${codeCell?.label}${unsavedChanges ? ' · Unsaved changes' : ''}`} placement="bottom">
           <div className="flex items-center">
             <LanguageIcon language={codeCell?.id} fontSize="small" />
           </div>
@@ -198,7 +199,7 @@ export const CodeEditorHeader = (props: CodeEditorHeaderProps) => {
           <>
             {['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
 
-            {['Python', 'Javascript'].includes(language as string) && <SnippetsPopover editorRef={editorRef} />}
+            {['Python', 'Javascript'].includes(language as string) && <SnippetsPopover editorInst={editorInst} />}
 
             {!isRunningComputation ? (
               <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
@@ -221,7 +222,7 @@ export const CodeEditorHeader = (props: CodeEditorHeaderProps) => {
         )}
 
         <TooltipHint title="Close" shortcut="ESC" placement="bottom">
-          <IconButton id="QuadraticCodeEditorCloseButtonID" size="small" onClick={closeEditor}>
+          <IconButton id="QuadraticCodeEditorCloseButtonID" size="small" onClick={() => closeEditor(false)}>
             <Close />
           </IconButton>
         </TooltipHint>

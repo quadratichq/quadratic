@@ -11,30 +11,16 @@ export const openCodeEditor = async () => {
   const { x, y } = cursorPosition;
   const cell = await quadraticCore.getRenderCell(sheets.sheet.id, x, y);
   if (cell?.language) {
-    if (editorInteractionState.showCodeEditor) {
-      // Open code editor, or move change editor if already open.
-      setEditorInteractionState({
-        ...editorInteractionState,
-        showCellTypeMenu: false,
-        waitingForEditorClose: {
-          selectedCell: { x, y },
-          selectedCellSheet: sheets.sheet.id,
-          mode: cell.language,
-          showCellTypeMenu: false,
-          initialCode: undefined,
-        },
-      });
-    } else {
-      setEditorInteractionState({
-        ...editorInteractionState,
-        showCellTypeMenu: false,
+    setEditorInteractionState({
+      ...editorInteractionState,
+      waitingForEditorClose: {
         selectedCell: { x, y },
         selectedCellSheet: sheets.sheet.id,
         mode: cell.language,
-        showCodeEditor: true,
+        showCellTypeMenu: !editorInteractionState.showCodeEditor,
         initialCode: undefined,
-      });
-    }
+      },
+    });
   } else if (editorInteractionState.showCodeEditor) {
     // code editor is already open, so check it for save before closing
     setEditorInteractionState({
@@ -52,8 +38,8 @@ export const openCodeEditor = async () => {
     setEditorInteractionState({
       ...editorInteractionState,
       showCellTypeMenu: true,
-      selectedCell: { x, y },
       selectedCellSheet: sheets.sheet.id,
+      selectedCell: { x, y },
       mode: undefined,
       initialCode: undefined,
     });

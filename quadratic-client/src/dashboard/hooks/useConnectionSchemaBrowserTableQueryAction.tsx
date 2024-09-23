@@ -4,6 +4,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { ClipboardCopyIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
+import * as monaco from 'monaco-editor';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { Link } from 'react-router-dom';
 
@@ -43,7 +44,11 @@ export const useConnectionSchemaBrowserTableQueryActionNewFile = ({
   };
 };
 
-export const useConnectionSchemaBrowserTableQueryActionInsertQuery = ({ editorRef }: { editorRef: any }) => {
+export const useConnectionSchemaBrowserTableQueryActionInsertQuery = ({
+  editorInst,
+}: {
+  editorInst: monaco.editor.IStandaloneCodeEditor | null;
+}) => {
   return {
     TableQueryAction: ({ query }: { query: string }) => (
       <TooltipPopover label="Insert query">
@@ -54,19 +59,19 @@ export const useConnectionSchemaBrowserTableQueryActionInsertQuery = ({ editorRe
           onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
             mixpanel.track('[Connections].schemaViewer.insertQuery');
 
-            if (editorRef.current) {
-              const model = editorRef.current.getModel();
+            if (editorInst) {
+              const model = editorInst.getModel();
               if (!model) return;
 
               const range = model.getFullModelRange();
-              editorRef.current.executeEdits('insert-query', [
+              editorInst.executeEdits('insert-query', [
                 {
                   range,
                   text: query,
                 },
               ]);
 
-              editorRef.current.focus();
+              editorInst.focus();
             }
           }}
         >

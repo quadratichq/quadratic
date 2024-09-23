@@ -1,4 +1,10 @@
-import { codeEditorEditorContentAtom } from '@/app/atoms/codeEditorAtom';
+import {
+  editorInteractionStateModeAtom,
+  editorInteractionStateSelectedCellAtom,
+  editorInteractionStateSelectedCellSheetAtom,
+  editorInteractionStateWaitingForEditorCloseAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
 import Editor from '@monaco-editor/react';
@@ -6,7 +12,7 @@ import { ContentCopyOutlined, ContentPasteGoOutlined } from '@mui/icons-material
 import { IconButton } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useState } from 'react';
-import { useSetRecoilState } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 interface Props {
   code: string;
@@ -69,17 +75,25 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
 }
 
 function CodeSnippetInsertButton({ language, text }: { language: Props['language']; text: string }) {
-  const setEditorContent = useSetRecoilState(codeEditorEditorContentAtom);
-
-  // Replace what's in the editor with the given text
-  const handleInsertReplace = useCallback(() => {
+  const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
+  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
+  const mode = useRecoilValue(editorInteractionStateModeAtom);
+  const setWaitingForEditorClose = useSetRecoilState(editorInteractionStateWaitingForEditorCloseAtom);
+  const handleReplace = useCallback(() => {
     mixpanel.track('[AI].code.replace', { language });
-    setEditorContent(text);
-  }, [language, text, setEditorContent]);
+    setWaitingForEditorClose({
+      selectedCellSheet: selectedCellSheet ? selectedCellSheet : sheets.current,
+      selectedCell,
+      mode: mode ?? 'Python',
+      showCellTypeMenu: false,
+      inlineEditor: false,
+      initialCode: text,
+    });
+  }, [language, mode, selectedCell, selectedCellSheet, setWaitingForEditorClose, text]);
 
   return (
-    <TooltipHint title={'Insert and replace'}>
-      <IconButton size="small" onClick={handleInsertReplace}>
+    <TooltipHint title={'Open in code editor'}>
+      <IconButton size="small" onClick={handleReplace} disabled={!language}>
         <ContentPasteGoOutlined fontSize="inherit" color="inherit" className="text-muted-foreground" />
       </IconButton>
     </TooltipHint>
@@ -88,17 +102,14 @@ function CodeSnippetInsertButton({ language, text }: { language: Props['language
 
 function CodeSnippetCopyButton({ language, text }: { language: Props['language']; text: string }) {
   const [tooltipMsg, setTooltipMsg] = useState<string>('Copy');
-  const handleCopy = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
-      mixpanel.track('[AI].code.copy', { language });
-      navigator.clipboard.writeText(text);
-      setTooltipMsg('Copied!');
-      setTimeout(() => {
-        setTooltipMsg('Copy');
-      }, 2000);
-    },
-    [language, text]
-  );
+  const handleCopy = useCallback(() => {
+    mixpanel.track('[AI].code.copy', { language });
+    navigator.clipboard.writeText(text);
+    setTooltipMsg('Copied!');
+    setTimeout(() => {
+      setTooltipMsg('Copy');
+    }, 2000);
+  }, [language, text]);
 
   return (
     <TooltipHint title={tooltipMsg}>
