@@ -13,10 +13,14 @@ pub mod error_core;
 pub mod ext;
 pub mod formulas;
 pub mod grid;
-mod position;
+mod pos;
+mod rect;
+pub mod renderer_constants;
 mod rle;
 pub mod selection;
 pub mod sheet_offsets;
+mod sheet_rect;
+pub mod small_timestamp;
 mod span;
 pub mod test_util;
 mod values;
@@ -27,8 +31,10 @@ pub mod wasm_bindings;
 
 pub use error_run::*;
 pub use ext::*;
-pub use position::*;
+pub use pos::*;
+pub use rect::*;
 pub use rle::RunLengthEncoding;
+pub use sheet_rect::*;
 
 pub use span::*;
 pub use values::*;

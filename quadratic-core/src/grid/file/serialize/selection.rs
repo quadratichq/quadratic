@@ -1,7 +1,7 @@
-use crate::grid::file::v1_6::schema_validation as current_validations;
+use super::current;
 use crate::selection::Selection;
 
-pub fn import_selection(selection: &current_validations::Selection) -> Selection {
+pub fn import_selection(selection: &current::SelectionSchema) -> Selection {
     Selection {
         sheet_id: selection.sheet_id.to_owned(),
         x: selection.x,
@@ -16,8 +16,8 @@ pub fn import_selection(selection: &current_validations::Selection) -> Selection
     }
 }
 
-pub fn export_selection(selection: &Selection) -> current_validations::Selection {
-    current_validations::Selection {
+pub fn export_selection(selection: &Selection) -> current::SelectionSchema {
+    current::SelectionSchema {
         sheet_id: selection.sheet_id,
         x: selection.x,
         y: selection.y,

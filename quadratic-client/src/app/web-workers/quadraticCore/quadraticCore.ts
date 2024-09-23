@@ -29,7 +29,6 @@ import {
   Validation,
 } from '@/app/quadratic-core-types';
 import { authClient } from '@/auth';
-import { Rectangle } from 'pixi.js';
 import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
 import {
   ClientCoreCellHasContent,
@@ -113,9 +112,6 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientSheetRenderCells') {
       events.emit('renderCells', e.data.sheetId, e.data.renderCells);
       return;
-    } else if (e.data.type === 'coreClientSheetBorders') {
-      events.emit('sheetBorders', e.data.sheetId, e.data.borders);
-      return;
     } else if (e.data.type === 'coreClientSheetCodeCellRender') {
       events.emit('renderCodeCells', e.data.sheetId, e.data.codeCells);
       return;
@@ -180,6 +176,9 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientMultiplayerSynced') {
       events.emit('multiplayerSynced');
+      return;
+    } else if (e.data.type === 'coreClientBordersSheet') {
+      events.emit('bordersSheet', e.data.sheetId, e.data.borders);
       return;
     }
 
@@ -817,16 +816,12 @@ class QuadraticCore {
 
   //#region Borders
 
-  setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle) {
+  setBorders(selection: Selection, borderSelection: BorderSelection, style?: BorderStyle) {
     this.send({
-      type: 'clientCoreSetRegionBorders',
-      sheetId,
-      x: rectangle.x,
-      y: rectangle.y,
-      width: rectangle.width,
-      height: rectangle.height,
-      selection: JSON.stringify(selection),
-      style: style ? JSON.stringify(style) : undefined,
+      type: 'clientCoreSetBorders',
+      selection,
+      borderSelection,
+      style,
       cursor: sheets.getCursorPosition(),
     });
   }
@@ -1115,6 +1110,45 @@ class QuadraticCore {
         y,
         input,
       });
+    });
+  }
+
+  //#endregion
+  //#region manipulate columns and rows
+
+  deleteColumns(sheetId: string, columns: number[], cursor: string) {
+    this.send({
+      type: 'clientCoreDeleteColumns',
+      sheetId,
+      columns,
+      cursor,
+    });
+  }
+
+  insertColumn(sheetId: string, column: number, cursor: string) {
+    this.send({
+      type: 'clientCoreInsertColumn',
+      sheetId,
+      column,
+      cursor,
+    });
+  }
+
+  deleteRows(sheetId: string, rows: number[], cursor: string) {
+    this.send({
+      type: 'clientCoreDeleteRows',
+      sheetId,
+      rows,
+      cursor,
+    });
+  }
+
+  insertRow(sheetId: string, row: number, cursor: string) {
+    this.send({
+      type: 'clientCoreInsertRow',
+      sheetId,
+      row,
+      cursor,
     });
   }
 

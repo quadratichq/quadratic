@@ -8,18 +8,17 @@ use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::str;
-use v1_6::schema::GridSchema;
+use v1_7::schema::GridSchema as current;
 
-pub mod current;
-mod selection;
+pub mod serialize;
 pub mod sheet_schema;
 mod v1_3;
 mod v1_4;
 mod v1_5;
 mod v1_6;
-mod validations;
+mod v1_7;
 
-pub static CURRENT_VERSION: &str = "1.6";
+pub static CURRENT_VERSION: &str = "1.7";
 pub static SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Json;
 pub static COMPRESSION_FORMAT: CompressionFormat = CompressionFormat::Zlib;
 pub static HEADER_SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Bincode;
@@ -32,6 +31,11 @@ pub struct FileVersion {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "version")]
 enum GridFile {
+    #[serde(rename = "1.7")]
+    V1_7 {
+        #[serde(flatten)]
+        grid: v1_7::schema::GridSchema,
+    },
     #[serde(rename = "1.6")]
     V1_6 {
         #[serde(flatten)]
@@ -55,14 +59,17 @@ enum GridFile {
 }
 
 impl GridFile {
-    fn into_latest(self) -> Result<v1_6::schema::GridSchema> {
+    fn into_latest(self) -> Result<v1_7::schema::GridSchema> {
         match self {
-            GridFile::V1_6 { grid } => Ok(grid),
-            GridFile::V1_5 { grid } => v1_5::file::upgrade(grid),
-            GridFile::V1_4 { grid } => v1_5::file::upgrade(v1_4::file::upgrade(grid)?),
-            GridFile::V1_3 { grid } => {
-                v1_5::file::upgrade(v1_4::file::upgrade(v1_3::file::upgrade(grid)?)?)
+            GridFile::V1_7 { grid } => Ok(grid),
+            GridFile::V1_6 { grid } => v1_6::file::upgrade(grid),
+            GridFile::V1_5 { grid } => v1_6::file::upgrade(v1_5::file::upgrade(grid)?),
+            GridFile::V1_4 { grid } => {
+                v1_6::file::upgrade(v1_5::file::upgrade(v1_4::file::upgrade(grid)?)?)
             }
+            GridFile::V1_3 { grid } => v1_6::file::upgrade(v1_5::file::upgrade(
+                v1_4::file::upgrade(v1_3::file::upgrade(grid)?)?,
+            )?),
         }
     }
 }
@@ -83,13 +90,32 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
 
     // we're currently not doing anything with the file version, but will in
     // the future as we use different serialization and compression methods
-    let _file_version = deserialize::<FileVersion>(&HEADER_SERIALIZATION_FORMAT, header)?;
-    let schema =
-        decompress_and_deserialize::<GridSchema>(&SERIALIZATION_FORMAT, &COMPRESSION_FORMAT, data)?;
-
-    drop(file_contents);
-
-    current::import(schema)
+    let file_version = deserialize::<FileVersion>(&HEADER_SERIALIZATION_FORMAT, header)?;
+    match file_version.version.as_str() {
+        "1.6" => {
+            let schema = decompress_and_deserialize::<v1_6::schema::GridSchema>(
+                &SERIALIZATION_FORMAT,
+                &COMPRESSION_FORMAT,
+                data,
+            )?;
+            drop(file_contents);
+            let schema = v1_6::file::upgrade(schema)?;
+            Ok(serialize::import(schema)?)
+        }
+        "1.7" => {
+            let schema = decompress_and_deserialize::<current>(
+                &SERIALIZATION_FORMAT,
+                &COMPRESSION_FORMAT,
+                data,
+            )?;
+            drop(file_contents);
+            Ok(serialize::import(schema)?)
+        }
+        _ => Err(anyhow::anyhow!(
+            "Unsupported file version: {}",
+            file_version.version
+        )),
+    }
 }
 
 fn import_json(file_contents: String) -> Result<Grid> {
@@ -99,7 +125,7 @@ fn import_json(file_contents: String) -> Result<Grid> {
     })?;
     drop(file_contents);
     let file = json.into_latest()?;
-    current::import(file)
+    serialize::import(file)
 }
 
 pub fn export(grid: Grid) -> Result<Vec<u8>> {
@@ -108,12 +134,9 @@ pub fn export(grid: Grid) -> Result<Vec<u8>> {
     };
     let header = serialize(&HEADER_SERIALIZATION_FORMAT, &version)?;
 
-    let converted = current::export(grid)?;
-    let compressed = serialize_and_compress::<GridSchema>(
-        &SERIALIZATION_FORMAT,
-        &COMPRESSION_FORMAT,
-        converted,
-    )?;
+    let converted = serialize::export(grid)?;
+    let compressed =
+        serialize_and_compress::<current>(&SERIALIZATION_FORMAT, &COMPRESSION_FORMAT, converted)?;
     let data = add_header(header, compressed)?;
 
     Ok(data)
@@ -122,14 +145,7 @@ pub fn export(grid: Grid) -> Result<Vec<u8>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        color::Rgba,
-        grid::{
-            generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellBorderLine,
-            CodeCellLanguage,
-        },
-        ArraySize, CellValue, CodeCellValue, Pos, Rect,
-    };
+    use crate::{grid::CodeCellLanguage, ArraySize, CellValue, CodeCellValue, Pos};
     use serial_test::parallel;
 
     const V1_3_FILE: &[u8] =
@@ -259,16 +275,18 @@ mod tests {
     #[test]
     #[parallel]
     fn process_a_v1_4_borders_file() {
-        let mut grid = Grid::new();
-        let sheets = grid.sheets_mut();
-        let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
-        let selection = vec![BorderSelection::Bottom];
-        let style = BorderStyle {
-            color: Rgba::color_from_str("#000000").unwrap(),
-            line: CellBorderLine::Line1,
-        };
-        let borders = generate_borders(&sheets[0], &rect, selection, Some(style));
-        set_rect_borders(&mut sheets[0], &rect, borders);
+        // let mut grid = Grid::new();
+        // let sheets = grid.sheets_mut();
+        // let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
+        // let selection = vec![BorderSelection::Bottom];
+        // let style = BorderStyle {
+        //     color: Rgba::color_from_str("#000000").unwrap(),
+        //     line: CellBorderLine::Line1,
+        // };
+
+        // todo...
+        // let borders = generate_borders(&sheets[0], &rect, selection, Some(style));
+        // set_rect_borders(&mut sheets[0], &rect, borders);
         // println!("{:#?}", sheets[0].borders);
 
         // todo: this does not work

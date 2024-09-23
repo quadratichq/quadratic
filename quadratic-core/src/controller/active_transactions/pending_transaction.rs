@@ -12,7 +12,8 @@ use crate::{
     controller::{
         execution::TransactionType, operations::operation::Operation, transaction::Transaction,
     },
-    grid::{CodeCellLanguage, SheetId},
+    grid::{sheet::validations::validation::Validation, CodeCellLanguage, CodeRun, SheetId},
+    selection::Selection,
     viewport::ViewportBuffer,
     Pos, SheetPos, SheetRect,
 };
@@ -61,14 +62,30 @@ pub struct PendingTransaction {
     // cursor saved for an Undo or Redo
     pub cursor_undo_redo: Option<String>,
 
-    // whether to resend the validations after the transaction completes
-    pub send_validations: HashSet<SheetId>,
+    // sheets w/updated validations
+    pub validations: HashSet<SheetId>,
 
     pub resize_rows: HashMap<SheetId, HashSet<i64>>,
 
+    // which hashes are dirty
     pub dirty_hashes: HashMap<SheetId, HashSet<Pos>>,
 
     pub viewport_buffer: Option<ViewportBuffer>,
+
+    // sheets with updated borders
+    pub sheet_borders: HashSet<SheetId>,
+
+    // code cells to update
+    pub code_cells: HashMap<SheetId, HashSet<Pos>>,
+
+    // html cells to update
+    pub html_cells: HashMap<SheetId, HashSet<Pos>>,
+
+    // image cells to update
+    pub image_cells: HashMap<SheetId, HashSet<Pos>>,
+
+    // sheets w/updated fill cells
+    pub fill_cells: HashSet<SheetId>,
 }
 
 impl Default for PendingTransaction {
@@ -76,8 +93,6 @@ impl Default for PendingTransaction {
         PendingTransaction {
             id: Uuid::new_v4(),
             transaction_name: TransactionName::Unknown,
-            // sheet_id: None,
-            // rect: None,
             cursor: None,
             transaction_type: TransactionType::User,
             operations: VecDeque::new(),
@@ -90,10 +105,15 @@ impl Default for PendingTransaction {
             complete: false,
             generate_thumbnail: false,
             cursor_undo_redo: None,
-            send_validations: HashSet::new(),
+            validations: HashSet::new(),
             resize_rows: HashMap::new(),
             dirty_hashes: HashMap::new(),
             viewport_buffer: None,
+            sheet_borders: HashSet::new(),
+            code_cells: HashMap::new(),
+            html_cells: HashMap::new(),
+            image_cells: HashMap::new(),
+            fill_cells: HashSet::new(),
         }
     }
 }
@@ -182,13 +202,73 @@ impl PendingTransaction {
     pub fn is_multiplayer(&self) -> bool {
         matches!(self.transaction_type, TransactionType::Multiplayer)
     }
+
+    /// Adds a code cell, html cell and image cell to the transaction from a CodeRun
+    pub fn add_from_code_run(&mut self, sheet_id: SheetId, pos: Pos, code_run: &Option<CodeRun>) {
+        if let Some(code_run) = &code_run {
+            self.add_code_cell(sheet_id, pos);
+            if code_run.is_html() {
+                self.add_html_cell(sheet_id, pos);
+            }
+            if code_run.is_image() {
+                self.add_image_cell(sheet_id, pos);
+            }
+        }
+    }
+
+    /// Adds a code cell to the transaction
+    pub fn add_code_cell(&mut self, sheet_id: SheetId, pos: Pos) {
+        self.code_cells.entry(sheet_id).or_default().insert(pos);
+    }
+
+    /// Adds an html cell to the transaction
+    pub fn add_html_cell(&mut self, sheet_id: SheetId, pos: Pos) {
+        self.html_cells.entry(sheet_id).or_default().insert(pos);
+    }
+
+    /// Adds an image cell to the transaction
+    pub fn add_image_cell(&mut self, sheet_id: SheetId, pos: Pos) {
+        self.image_cells.entry(sheet_id).or_default().insert(pos);
+    }
+
+    /// Updates the dirty hashes for a validation. This includes triggering the
+    /// validation changes for a Sheet and any dirty hashes resulting from a
+    /// change in a checkbox or dropdown.
+    pub fn validation_changed(
+        &mut self,
+        sheet_id: SheetId,
+        validation: &Validation,
+        changed_selection: Option<&Selection>,
+    ) {
+        self.validations.insert(sheet_id);
+        if validation.render_special().is_some() {
+            let dirty_hashes = validation.selection.rects_to_hashes();
+            self.dirty_hashes
+                .entry(sheet_id)
+                .or_default()
+                .extend(dirty_hashes);
+
+            if let Some(changed_selection) = changed_selection {
+                let changed_hashes = changed_selection.rects_to_hashes();
+                self.dirty_hashes
+                    .entry(sheet_id)
+                    .or_default()
+                    .extend(changed_hashes);
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{controller::operations::operation::Operation, grid::SheetId};
+    use crate::{
+        controller::operations::operation::Operation,
+        grid::{CodeRunResult, SheetId},
+        CellValue, Value,
+    };
 
     use super::*;
+    use chrono::Utc;
     use serial_test::parallel;
 
     #[test]
@@ -234,6 +314,7 @@ mod tests {
     }
 
     #[test]
+    #[parallel]
     fn is_user() {
         let transaction = PendingTransaction {
             transaction_type: TransactionType::User,
@@ -252,5 +333,87 @@ mod tests {
             ..Default::default()
         };
         assert!(!transaction.is_user());
+    }
+
+    #[test]
+    #[parallel]
+    fn test_add_from_code_run() {
+        let mut transaction = PendingTransaction::default();
+        let sheet_id = SheetId::new();
+        let pos = Pos { x: 0, y: 0 };
+
+        transaction.add_from_code_run(sheet_id, pos, &None);
+        assert_eq!(transaction.code_cells.len(), 0);
+        assert_eq!(transaction.html_cells.len(), 0);
+        assert_eq!(transaction.image_cells.len(), 0);
+
+        let code_run = CodeRun {
+            std_out: None,
+            std_err: None,
+            formatted_code_string: None,
+            cells_accessed: HashSet::new(),
+            result: CodeRunResult::Ok(Value::Single(CellValue::Html("html".to_string()))),
+            return_type: None,
+            line_number: None,
+            output_type: None,
+            spill_error: false,
+            last_modified: Utc::now(),
+        };
+        transaction.add_from_code_run(sheet_id, pos, &Some(code_run));
+        assert_eq!(transaction.code_cells.len(), 1);
+        assert_eq!(transaction.html_cells.len(), 1);
+        assert_eq!(transaction.image_cells.len(), 0);
+
+        let code_run = CodeRun {
+            std_out: None,
+            std_err: None,
+            formatted_code_string: None,
+            cells_accessed: HashSet::new(),
+            result: CodeRunResult::Ok(Value::Single(CellValue::Image("image".to_string()))),
+            return_type: None,
+            line_number: None,
+            output_type: None,
+            spill_error: false,
+            last_modified: Utc::now(),
+        };
+        transaction.add_from_code_run(sheet_id, pos, &Some(code_run));
+        assert_eq!(transaction.code_cells.len(), 1);
+        assert_eq!(transaction.html_cells.len(), 1);
+        assert_eq!(transaction.image_cells.len(), 1);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_add_code_cell() {
+        let mut transaction = PendingTransaction::default();
+        let sheet_id = SheetId::new();
+        let pos = Pos { x: 0, y: 0 };
+        transaction.add_code_cell(sheet_id, pos);
+        assert_eq!(transaction.code_cells.len(), 1);
+        assert_eq!(transaction.code_cells[&sheet_id].len(), 1);
+        assert!(transaction.code_cells[&sheet_id].contains(&pos));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_add_html_cell() {
+        let mut transaction = PendingTransaction::default();
+        let sheet_id = SheetId::new();
+        let pos = Pos { x: 0, y: 0 };
+        transaction.add_html_cell(sheet_id, pos);
+        assert_eq!(transaction.html_cells.len(), 1);
+        assert_eq!(transaction.html_cells[&sheet_id].len(), 1);
+        assert!(transaction.html_cells[&sheet_id].contains(&pos));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_add_image_cell() {
+        let mut transaction = PendingTransaction::default();
+        let sheet_id = SheetId::new();
+        let pos = Pos { x: 0, y: 0 };
+        transaction.add_image_cell(sheet_id, pos);
+        assert_eq!(transaction.image_cells.len(), 1);
+        assert_eq!(transaction.image_cells[&sheet_id].len(), 1);
     }
 }

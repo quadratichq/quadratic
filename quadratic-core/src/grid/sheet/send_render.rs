@@ -1,7 +1,7 @@
 use super::Sheet;
 use crate::{
-    controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     grid::GridBounds,
+    renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     Pos, Rect,
 };
 use std::collections::HashSet;
@@ -208,6 +208,18 @@ impl Sheet {
         let fills = self.get_sheet_fills();
         if let Ok(fills) = serde_json::to_string(&fills) {
             crate::wasm_bindings::js::jsSheetMetaFills(self.id.to_string(), fills);
+        }
+    }
+
+    /// Sends all column-based fills in the sheet.
+    pub fn resend_fills(&self) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+
+        let fills = self.get_all_render_fills();
+        if let Ok(fills) = serde_json::to_string(&fills) {
+            crate::wasm_bindings::js::jsSheetFills(self.id.to_string(), fills);
         }
     }
 

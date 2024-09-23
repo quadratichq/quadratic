@@ -195,6 +195,8 @@ impl GridController {
         } else {
             None
         };
+
+        // todo...
         self.set_cell_render_size(rect.to_sheet_rect(sheet_id), value, cursor);
         Ok(())
     }

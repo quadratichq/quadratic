@@ -22,7 +22,7 @@ use functions::FormulaFnArgs;
 use params::{Param, ParamKind};
 pub use parser::{
     find_cell_references, parse_and_check_formula, parse_formula, replace_a1_notation,
-    replace_internal_cell_references,
+    replace_cell_references_with, replace_internal_cell_references,
 };
 use wildcards::wildcard_pattern_to_regex;
 

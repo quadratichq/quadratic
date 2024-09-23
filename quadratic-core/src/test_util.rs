@@ -1,7 +1,7 @@
 use crate::{
     controller::GridController,
     formulas::replace_internal_cell_references,
-    grid::{Bold, CodeCellLanguage, FillColor, Sheet, SheetId},
+    grid::{Bold, CodeCellLanguage, FillColor, GridBounds, Sheet, SheetId},
     CellValue, Pos, Rect,
 };
 use std::collections::HashMap;
@@ -163,6 +163,16 @@ pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, rect: Re
         return;
     };
     print_table_sheet(sheet, rect);
+}
+
+/// Util to print the entire sheet
+pub fn print_sheet(sheet: &Sheet) {
+    let bounds = sheet.bounds(true);
+    if let GridBounds::NonEmpty(rect) = bounds {
+        print_table_sheet(sheet, rect);
+    } else {
+        println!("Sheet is empty");
+    }
 }
 
 /// Util to print a simple grid to assist in TDD

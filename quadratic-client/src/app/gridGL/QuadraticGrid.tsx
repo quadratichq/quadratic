@@ -93,7 +93,8 @@ export default function QuadraticGrid() {
       }}
       onContextMenu={(event) => {
         event.preventDefault();
-        setShowContextMenu(true);
+        // If it's not already visible, show the context menu
+        // setShowContextMenu(true);
       }}
       onMouseDown={onMouseDown}
       onClick={() => setShowContextMenu(false)}
