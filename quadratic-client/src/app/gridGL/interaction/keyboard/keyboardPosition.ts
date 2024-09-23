@@ -1,13 +1,14 @@
 //! keyboardPosition() handles the movement of the cursor using the arrow keys,
 //! including shift, meta, and ctrl keys.
 
+import { Action } from '@/app/actions/actions';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { moveViewport } from '@/app/gridGL/interaction/viewportHelper';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
-import { sheets } from '../../../grid/controller/Sheets';
-import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 
 function setCursorPosition(x: number, y: number) {
   const newPos = { x, y };
@@ -323,110 +324,110 @@ function moveCursor(deltaX: number, deltaY: number) {
 
 export function keyboardPosition(event: KeyboardEvent): boolean {
   // Move cursor up
-  if (matchShortcut('move_cursor_up', event)) {
+  if (matchShortcut(Action.MoveCursorUp, event)) {
     moveCursor(0, -1);
     return true;
   }
 
   // Move cursor to the top of the content block of cursor cell
-  if (matchShortcut('jump_cursor_content_top', event)) {
+  if (matchShortcut(Action.JumpCursorContentTop, event)) {
     jumpCursor(0, -1, false);
     return true;
   }
 
   // Expand selection up
-  if (matchShortcut('expand_selection_up', event)) {
+  if (matchShortcut(Action.ExpandSelectionUp, event)) {
     expandSelection(0, -1);
     return true;
   }
 
   // Expand selection to the top of the content block of cursor cell
-  if (matchShortcut('expand_selection_content_top', event)) {
+  if (matchShortcut(Action.ExpandSelectionContentTop, event)) {
     jumpCursor(0, -1, true);
     return true;
   }
 
   // Move cursor down
-  if (matchShortcut('move_cursor_down', event)) {
+  if (matchShortcut(Action.MoveCursorDown, event)) {
     moveCursor(0, 1);
     return true;
   }
 
   // Move cursor to the bottom of the content block of cursor cell
-  if (matchShortcut('jump_cursor_content_bottom', event)) {
+  if (matchShortcut(Action.JumpCursorContentBottom, event)) {
     jumpCursor(0, 1, false);
     return true;
   }
 
   // Expand selection down
-  if (matchShortcut('expand_selection_down', event)) {
+  if (matchShortcut(Action.ExpandSelectionDown, event)) {
     expandSelection(0, 1);
     return true;
   }
 
   // Expand selection to the bottom of the content block of cursor cell
-  if (matchShortcut('expand_selection_content_bottom', event)) {
+  if (matchShortcut(Action.ExpandSelectionContentBottom, event)) {
     jumpCursor(0, 1, true);
     return true;
   }
 
   // Move cursor left
-  if (matchShortcut('move_cursor_left', event)) {
+  if (matchShortcut(Action.MoveCursorLeft, event)) {
     moveCursor(-1, 0);
     return true;
   }
 
   // Move cursor to the left of the content block of cursor cell
-  if (matchShortcut('jump_cursor_content_left', event)) {
+  if (matchShortcut(Action.JumpCursorContentLeft, event)) {
     jumpCursor(-1, 0, false);
     return true;
   }
 
   // Expand selection left
-  if (matchShortcut('expand_selection_left', event)) {
+  if (matchShortcut(Action.ExpandSelectionLeft, event)) {
     expandSelection(-1, 0);
     return true;
   }
 
   // Expand selection to the left of the content block of cursor cell
-  if (matchShortcut('expand_selection_content_left', event)) {
+  if (matchShortcut(Action.ExpandSelectionContentLeft, event)) {
     jumpCursor(-1, 0, true);
     return true;
   }
 
   // Move cursor right
-  if (matchShortcut('move_cursor_right', event)) {
+  if (matchShortcut(Action.MoveCursorRight, event)) {
     moveCursor(1, 0);
     return true;
   }
 
   // Move cursor to the right of the content block of cursor cell
-  if (matchShortcut('jump_cursor_content_right', event)) {
+  if (matchShortcut(Action.JumpCursorContentRight, event)) {
     jumpCursor(1, 0, false);
     return true;
   }
 
   // Expand selection right
-  if (matchShortcut('expand_selection_right', event)) {
+  if (matchShortcut(Action.ExpandSelectionRight, event)) {
     expandSelection(1, 0);
     return true;
   }
 
   // Expand selection to the right of the content block of cursor cell
-  if (matchShortcut('expand_selection_content_right', event)) {
+  if (matchShortcut(Action.ExpandSelectionContentRight, event)) {
     jumpCursor(1, 0, true);
     return true;
   }
 
   // Move cursor to A0, reset viewport position with A0 at top left
-  if (matchShortcut('goto_A0', event)) {
+  if (matchShortcut(Action.GotoA0, event)) {
     setCursorPosition(0, 0);
     moveViewport({ topLeft: { x: 0, y: 0 }, force: true });
     return true;
   }
 
   // Move cursor to the bottom right of the sheet content
-  if (matchShortcut('goto_bottom_right', event)) {
+  if (matchShortcut(Action.GotoBottomRight, event)) {
     const sheet = sheets.sheet;
     const bounds = sheet.getBounds(true);
     if (bounds) {
@@ -448,7 +449,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
   }
 
   // Move cursor to the start of the row content
-  if (matchShortcut('goto_row_start', event)) {
+  if (matchShortcut(Action.GotoRowStart, event)) {
     const sheet = sheets.sheet;
     const bounds = sheet.getBounds(true);
     if (bounds) {
@@ -474,7 +475,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
   }
 
   // Move cursor to the end of the row content
-  if (matchShortcut('goto_row_end', event)) {
+  if (matchShortcut(Action.GotoRowEnd, event)) {
     const sheet = sheets.sheet;
     const bounds = sheet.getBounds(true);
     if (bounds) {
@@ -500,13 +501,13 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
   }
 
   // Move viewport up
-  if (matchShortcut('page_up', event)) {
+  if (matchShortcut(Action.PageUp, event)) {
     moveViewport({ pageUp: true });
     return true;
   }
 
   // Move viewport down
-  if (matchShortcut('page_down', event)) {
+  if (matchShortcut(Action.PageDown, event)) {
     moveViewport({ pageDown: true });
     return true;
   }
