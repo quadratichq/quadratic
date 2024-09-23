@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use smallvec::SmallVec;
 
@@ -90,7 +90,18 @@ fn get_functions() -> Vec<FormulaFunction> {
             }
         ),
         formula_fn!(
-            /// TODO: documentation
+            /// Removes duplicates rows or columns from an array.
+            ///
+            /// Rows or columns are returned in the order they initially appear;
+            /// subsequent appearances are removed.
+            ///
+            /// If `by_column` is `true`, then the function operations on
+            /// columns. If `by_column` is `false` or omitted, then the function
+            /// operates on rows.
+            ///
+            /// If `exactly_once` is true, then rows and columns that appear
+            /// multiple times are omitted; only rows or columns that appear
+            /// exactly once are included in the output.
             #[examples("UNIQUE()")]
             fn UNIQUE(
                 span: Span,
@@ -120,6 +131,10 @@ fn get_functions() -> Vec<FormulaFunction> {
                     }) {
                         slice_counts[i].1 += 1;
                     } else {
+                        // Save the index.
+                        let index = slice_counts.len();
+                        possible_indices.push(index);
+                        // Record the slice.
                         slice_counts.push((slice, 1));
                     }
                 }
@@ -127,7 +142,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                     .into_iter()
                     .filter(|(_, count)| match exactly_once {
                         Some(true) => *count == 1,
-                        None | Some(false) => *count > 0,
+                        None | Some(false) => true,
                     })
                     .map(|(slice, _)| slice);
                 Array::from_slices(axis, new_slices)
@@ -261,5 +276,96 @@ mod tests {
     fn test_formula_sort() {}
 
     #[test]
-    fn test_formula_unique() {}
+    fn test_formula_unique() {
+        let source_data = array![
+            1, 2;
+            "hello", 2;
+            "oh", 4;
+            (), 4;
+            0, 4;
+            0, 4;
+            (), ();
+            (), ();
+            0, 0;
+            0, 4;
+            1, 2;
+            "HELLO", 2; // case insensitive!
+            "HI", 2;
+        ];
+
+        let g = Grid::from_array(pos![A1], &source_data);
+
+        let expected_unique = array![
+            1, 2;
+            "hello", 2;
+            "oh", 4;
+            (), 4;
+            0, 4;
+            (), ();
+            0, 0;
+            "HI", 2;
+        ];
+        let expected_exactly_once = array![
+            "oh", 4;
+            (), 4;
+            0, 0;
+            "HI", 2;
+        ];
+
+        assert_eq!(source_data.height(), 13); // If this changes, update all the formulas too
+
+        assert_eq!(
+            eval_to_string(&g, "=UNIQUE(A1:B13)"),
+            expected_unique.to_string(),
+        );
+        assert_eq!(
+            eval_to_string(&g, "=UNIQUE(A1:B13,)"),
+            expected_unique.to_string(),
+        );
+        assert_eq!(
+            eval_to_string(&g, "=UNIQUE(A1:B13,,)"),
+            expected_unique.to_string(),
+        );
+        assert_eq!(
+            eval_to_string(&g, "=UNIQUE(A1:B13,FALSE,FALSE)"),
+            expected_unique.to_string(),
+        );
+        assert_eq!(
+            eval_to_string(&g, "=UNIQUE(A1:B13,,TRUE)"),
+            expected_exactly_once.to_string(),
+        );
+        assert_eq!(
+            eval_to_string(&g, "=UNIQUE(A1:B13,FALSE,TRUE)"),
+            expected_exactly_once.to_string(),
+        );
+
+        let g = Grid::from_array(pos![A1], &source_data.transpose());
+        let expected_unique = expected_unique.transpose();
+        let expected_exactly_once = expected_exactly_once.transpose();
+
+        assert_eq!(
+            pos![M2], // If this changes, update all the formulas too
+            crate::Pos {
+                x: source_data.height() as i64 - 1, // minus 1 because range is inclusive and we start at column 0
+                y: source_data.width() as i64, // minus 1 because range is inclusive, plus 1 because we start at row 1
+            },
+        );
+
+        assert_eq!(
+            eval_to_string(&g, "=UNIQUE(A1:M2,TRUE)"),
+            expected_unique.to_string(),
+        );
+        assert_eq!(
+            eval_to_string(&g, "=UNIQUE(A1:M2,TRUE,)"),
+            expected_unique.to_string(),
+        );
+        assert_eq!(
+            eval_to_string(&g, "=UNIQUE(A1:M2,TRUE,FALSE)"),
+            expected_unique.to_string(),
+        );
+        assert_eq!(
+            eval_to_string(&g, "=UNIQUE(A1:M2,TRUE,TRUE)"),
+            expected_exactly_once.to_string(),
+        );
+    }
 }
