@@ -1,6 +1,6 @@
 import { events } from '@/app/events/events';
-import { SheetDeleteIcon, SheetDuplicateIcon, SheetGoToIcon, SheetIcon } from '@/app/ui/icons';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { SheetIcon } from '@/shared/components/Icons';
 import { useEffect, useMemo, useState } from 'react';
 import { isAvailableBecauseCanEditFile } from '../../../../actions';
 import { sheets } from '../../../../grid/controller/Sheets';
@@ -37,7 +37,7 @@ const ListItems = () => {
               <CommandPaletteListItem
                 {...props}
                 action={() => quadraticCore.duplicateSheet(sheets.sheet.id, sheets.getCursorPosition())}
-                icon={<SheetDuplicateIcon />}
+                icon={<SheetIcon />}
               />
             );
           },
@@ -55,7 +55,7 @@ const ListItems = () => {
                   }
                   setTimeout(focusGrid);
                 }}
-                icon={<SheetDeleteIcon />}
+                icon={<SheetIcon />}
               />
             );
           },
@@ -70,7 +70,7 @@ const ListItems = () => {
                 return (
                   <CommandPaletteListItem
                     {...props}
-                    icon={<SheetGoToIcon style={{ color: sheet.color ? sheet.color : 'currentColor' }} />}
+                    icon={<SheetIcon style={{ color: sheet.color ? sheet.color : 'currentColor' }} />}
                     action={() => (sheets.current = sheet.id)}
                   />
                 );

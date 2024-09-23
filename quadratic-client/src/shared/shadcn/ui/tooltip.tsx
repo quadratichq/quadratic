@@ -9,6 +9,8 @@ const Tooltip = TooltipPrimitive.Root;
 
 const TooltipTrigger = TooltipPrimitive.Trigger;
 
+const TooltipPortal = TooltipPrimitive.Portal;
+
 const TooltipContent = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
@@ -43,19 +45,17 @@ const TooltipPopover = ({
   shortcut?: string;
 }) => {
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>{children}</TooltipTrigger>
-        <TooltipPrimitive.Portal>
-          <TooltipContent>
-            <p>
-              {label} {shortcut && <span className="opacity-50">({shortcut})</span>}
-            </p>
-          </TooltipContent>
-        </TooltipPrimitive.Portal>
-      </Tooltip>
-    </TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipPortal>
+        <TooltipContent>
+          <p>
+            {label} {shortcut && <span className="opacity-50">({shortcut})</span>}
+          </p>
+        </TooltipContent>
+      </TooltipPortal>
+    </Tooltip>
   );
 };
 
-export { Tooltip, TooltipContent, TooltipPopover, TooltipProvider, TooltipTrigger };
+export { Tooltip, TooltipContent, TooltipPopover, TooltipPortal, TooltipProvider, TooltipTrigger };

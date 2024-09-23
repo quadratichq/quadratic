@@ -1,6 +1,6 @@
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Box } from '@mui/material';
 import { ControlledMenu, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
+import '@szhsin/react-menu/dist/index.css';
 import mixpanel from 'mixpanel-browser';
 import { ColorResult } from 'react-color';
 import { sheets } from '../../../grid/controller/Sheets';
@@ -18,7 +18,7 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
   const { contextMenu, handleClose, handleRename } = props;
 
   return (
-    <Box sx={{ fontSize: '.875rem' }}>
+    <div className="text-sm text-foreground">
       <ControlledMenu
         state={!!contextMenu ? 'open' : 'closed'}
         onClose={handleClose}
@@ -105,6 +105,6 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
           window.setTimeout(focusGrid, 0);
         }}
       /> */}
-    </Box>
+    </div>
   );
 };

@@ -1,6 +1,7 @@
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { Empty } from '@/dashboard/components/Empty';
+import { AddIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import {
   ConnectionsListConnection,
@@ -13,7 +14,7 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { cn } from '@/shared/shadcn/utils';
 import { timeAgo } from '@/shared/utils/timeAgo';
-import { Cross2Icon, Pencil1Icon, PlusIcon } from '@radix-ui/react-icons';
+import { Cross2Icon, Pencil1Icon } from '@radix-ui/react-icons';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 
@@ -47,7 +48,7 @@ export const ConnectionsList = ({
                 handleNavigateToCreateView(type as ConnectionType);
               }}
             >
-              <PlusIcon className="absolute bottom-2 right-2 opacity-30 group-hover:opacity-100" />
+              <AddIcon className="absolute bottom-1 right-1 opacity-30 group-hover:opacity-100" />
               <Logo className="h-[40px] w-[160px]" />
             </Button>
           ))}
