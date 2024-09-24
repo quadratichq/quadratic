@@ -1,7 +1,6 @@
 import {
+  codeEditorCodeCellAtom,
   codeEditorConsoleOutputAtom,
-  codeEditorLanguageAtom,
-  codeEditorLocationAtom,
   codeEditorPanelBottomActiveTabAtom,
   codeEditorSpillErrorAtom,
 } from '@/app/atoms/codeEditorAtom';
@@ -25,8 +24,7 @@ interface CodeEditorPanelBottomProps {
 
 export function CodeEditorPanelBottom({ schemaBrowser }: CodeEditorPanelBottomProps) {
   const { bottomHidden, setBottomHidden } = useCodeEditorPanelData();
-  const location = useRecoilValue(codeEditorLocationAtom);
-  const language = useRecoilValue(codeEditorLanguageAtom);
+  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
   const consoleOutput = useRecoilValue(codeEditorConsoleOutputAtom);
   const spillError = useRecoilValue(codeEditorSpillErrorAtom);
   const [panelBottomActiveTab, setPanelBottomActiveTab] = useRecoilState(codeEditorPanelBottomActiveTabAtom);
@@ -71,7 +69,7 @@ export function CodeEditorPanelBottom({ schemaBrowser }: CodeEditorPanelBottomPr
 
           {consoleOutput?.stdErr ? (
             <TooltipPopover label={'Ask AI to fix error'}>
-              <Button className="ml-2" size="sm" onClick={() => events.emit('askAICodeCell', location, language)}>
+              <Button className="ml-2" size="sm" onClick={() => events.emit('askAICodeCell', codeCell)}>
                 <AIIcon />
               </Button>
             </TooltipPopover>

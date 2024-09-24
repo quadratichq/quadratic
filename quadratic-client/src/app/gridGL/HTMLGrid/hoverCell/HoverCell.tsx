@@ -6,6 +6,7 @@ import { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import { usePositionCellMessage } from '@/app/gridGL/HTMLGrid/usePositionCellMessage';
 import { HtmlValidationMessage } from '@/app/gridGL/HTMLGrid/validations/HtmlValidationMessage';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { pluralize } from '@/app/helpers/pluralize';
 import { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
@@ -15,7 +16,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { Rectangle } from 'pixi.js';
-import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import './HoverCell.css';
 
@@ -236,6 +237,15 @@ function HoverCellRunError({ codeCellCore, onClick }: { codeCellCore: JsCodeCell
   const x = Number(codeCellCore.x);
   const y = Number(codeCellCore.y);
 
+  const codeCell: CodeCell = useMemo(
+    () => ({
+      sheetId: sheets.current,
+      pos: { x, y },
+      language: codeCellCore.language,
+    }),
+    [codeCellCore.language, x, y]
+  );
+
   return (
     <>
       <div className="hover-cell-header">
@@ -246,7 +256,7 @@ function HoverCellRunError({ codeCellCore, onClick }: { codeCellCore: JsCodeCell
             <Button
               size="sm"
               onClick={() => {
-                events.emit('askAICodeCell', { sheetId: sheets.current, pos: { x, y } }, codeCellCore.language);
+                events.emit('askAICodeCell', codeCell);
                 onClick();
               }}
             >
@@ -262,8 +272,7 @@ function HoverCellRunError({ codeCellCore, onClick }: { codeCellCore: JsCodeCell
                   ...prev,
                   modifiedEditorContent: undefined,
                   waitingForEditorClose: {
-                    location: { sheetId: sheets.current, pos: { x, y } },
-                    language: codeCellCore.language,
+                    codeCell,
                     showCellTypeMenu: false,
                     inlineEditor: false,
                     initialCode: codeCellCore.code_string,

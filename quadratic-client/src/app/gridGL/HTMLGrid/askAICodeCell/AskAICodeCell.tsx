@@ -2,7 +2,6 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { Coordinate } from '@/app/gridGL/types/size';
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/AIAssistant/useSubmitAIAssistantPrompt';
 import { AIIcon } from '@/shared/components/Icons';
 import { useCallback, useEffect, useState } from 'react';
@@ -18,10 +17,10 @@ export function AskAICodeCell() {
   const submitPrompt = useSubmitAIAssistantPrompt();
 
   const askAI = useCallback(
-    (location: CodeCell, language: CodeCellLanguage) => {
+    (codeCell: CodeCell) => {
       if (loading) return;
 
-      const { sheetId, pos } = location;
+      const { sheetId, pos } = codeCell;
       setSheetId(sheetId);
       const rectangle = sheets.getById(sheetId)?.getCellOffsets(pos.x, pos.y);
       if (rectangle) {
@@ -30,7 +29,7 @@ export function AskAICodeCell() {
           y: rectangle.y + rectangle.height / 2 - AI_ICON_SIZE / 2,
         });
         setLoading(true);
-        submitPrompt({ location, language, userPrompt: 'Fix the error in the code cell', clearMessages: true })
+        submitPrompt({ codeCell, userPrompt: 'Fix the error in the code cell', clearMessages: true })
           .catch(console.error)
           .finally(() => {
             setLoading(false);

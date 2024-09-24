@@ -1,7 +1,7 @@
 import {
+  codeEditorCodeCellAtom,
   codeEditorEditorContentAtom,
   codeEditorEvaluationResultAtom,
-  codeEditorLanguageAtom,
   codeEditorLoadingAtom,
   codeEditorUnsavedChangesAtom,
 } from '@/app/atoms/codeEditorAtom';
@@ -16,7 +16,7 @@ import { codeEditorBaseStyles } from './styles';
 export function ReturnTypeInspector() {
   const theme = useTheme();
   const loading = useRecoilValue(codeEditorLoadingAtom);
-  const language = useRecoilValue(codeEditorLanguageAtom);
+  const { language } = useRecoilValue(codeEditorCodeCellAtom);
   const mode = useMemo(() => getLanguage(language), [language]);
 
   const editorContent = useRecoilValue(codeEditorEditorContentAtom);

@@ -54,11 +54,11 @@ export class UrlParamsUser {
         pixiAppSettings.setCodeEditorState?.((prev) => ({
           ...prev,
           showCodeEditor: true,
-          location: {
+          codeCell: {
             sheetId: sheets.current,
             pos: { x, y },
+            language,
           },
-          language,
         }));
       }
     }
@@ -78,15 +78,15 @@ export class UrlParamsUser {
     if (this.dirty) {
       this.dirty = false;
       const url = new URLSearchParams(window.location.search);
-      const { showCodeEditor, location, language } = pixiAppSettings.codeEditorState;
+      const { showCodeEditor, codeCell } = pixiAppSettings.codeEditorState;
 
       // if code editor is open, we use its x, y, and sheet name
-      if (showCodeEditor && language) {
-        url.set('code', getLanguage(language).toLowerCase());
-        url.set('x', location.pos.x.toString());
-        url.set('y', location.pos.y.toString());
-        if (location.sheetId !== sheets.getFirst().id) {
-          const sheetName = sheets.getById(location.sheetId)?.name;
+      if (showCodeEditor) {
+        url.set('code', getLanguage(codeCell.language).toLowerCase());
+        url.set('x', codeCell.pos.x.toString());
+        url.set('y', codeCell.pos.y.toString());
+        if (codeCell.sheetId !== sheets.getFirst().id) {
+          const sheetName = sheets.getById(codeCell.sheetId)?.name;
           if (!sheetName) {
             throw new Error('Expected to find sheet in urlParams.updateParams');
           }

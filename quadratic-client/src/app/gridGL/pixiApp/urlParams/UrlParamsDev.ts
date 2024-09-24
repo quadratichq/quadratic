@@ -86,11 +86,11 @@ export class UrlParamsDev {
         pixiAppSettings.setCodeEditorState((prev) => ({
           ...prev,
           showCodeEditor: true,
-          location: {
+          codeCell: {
             sheetId,
             pos: { x, y },
+            language: code,
           },
-          language: code,
         }));
       }
     }
@@ -133,11 +133,11 @@ export class UrlParamsDev {
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
         showCodeEditor: true,
-        location: {
+        codeCell: {
           sheetId,
           pos: { x, y },
+          language,
         },
-        language,
       }));
 
       quadraticCore.setCodeCellValue({
@@ -182,15 +182,15 @@ export class UrlParamsDev {
   };
 
   private updateCode = () => {
-    const { showCodeEditor, location, language } = pixiAppSettings.codeEditorState;
+    const { showCodeEditor, codeCell } = pixiAppSettings.codeEditorState;
     if (!showCodeEditor) {
       this.state.code = undefined;
     } else {
       this.state.code = {
-        x: location.pos.x,
-        y: location.pos.y,
-        sheetId: location.sheetId,
-        language,
+        sheetId: codeCell.sheetId,
+        x: codeCell.pos.x,
+        y: codeCell.pos.y,
+        language: codeCell.language,
       };
     }
     this.dirty = true;

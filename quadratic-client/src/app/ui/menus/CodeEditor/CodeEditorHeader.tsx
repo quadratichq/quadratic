@@ -1,7 +1,6 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import {
-  codeEditorLanguageAtom,
-  codeEditorLocationAtom,
+  codeEditorCodeCellAtom,
   codeEditorShowDiffEditorAtom,
   codeEditorUnsavedChangesAtom,
 } from '@/app/atoms/codeEditorAtom';
@@ -41,13 +40,12 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
 
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
-  const location = useRecoilValue(codeEditorLocationAtom);
-  const language = useRecoilValue(codeEditorLanguageAtom);
+  const codeCellState = useRecoilValue(codeEditorCodeCellAtom);
   const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
   const showDiffEditor = useRecoilValue(codeEditorShowDiffEditorAtom);
-  const codeCell = useMemo(() => getCodeCell(language), [language]);
-  const mode = useMemo(() => getLanguage(language), [language]);
-  const isConnection = useMemo(() => codeCellIsAConnection(language), [language]);
+  const codeCell = useMemo(() => getCodeCell(codeCellState.language), [codeCellState.language]);
+  const language = useMemo(() => getLanguage(codeCellState.language), [codeCellState.language]);
+  const isConnection = useMemo(() => codeCellIsAConnection(codeCellState.language), [codeCellState.language]);
   const hasPermission = useMemo(
     () => hasPermissionToEditFile(permissions) && (isConnection ? teamPermissions?.includes('TEAM_EDIT') : true),
     [permissions, teamPermissions, isConnection]
@@ -60,23 +58,23 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
   // the connection was deleted)
   const currentConnectionName = useMemo(() => {
     if (connectionsFetcher.data) {
-      const connectionUuid = getConnectionUuid(language);
+      const connectionUuid = getConnectionUuid(codeCellState.language);
       const foundConnection = connectionsFetcher.data.connections.find(({ uuid }) => uuid === connectionUuid);
       if (foundConnection) {
         return foundConnection.name;
       }
     }
     return '';
-  }, [connectionsFetcher.data, language]);
+  }, [codeCellState.language, connectionsFetcher.data]);
 
   // Keep track of the current sheet ID so we know whether to show the sheet name or not
   const currentCodeEditorCellIsNotInActiveSheet = useMemo(
-    () => currentSheetId !== location.sheetId,
-    [currentSheetId, location.sheetId]
+    () => currentSheetId !== codeCellState.sheetId,
+    [currentSheetId, codeCellState.sheetId]
   );
   const currentSheetNameOfActiveCodeEditorCell = useMemo(
-    () => sheets.getById(location.sheetId)?.name,
-    [location.sheetId]
+    () => sheets.getById(codeCellState.sheetId)?.name,
+    [codeCellState.sheetId]
   );
 
   const { cancelRun } = useCancelRun();
@@ -97,12 +95,11 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
   useEffect(() => {
     // update running computation for player
     const playerState = (_state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
-      if (!location) return;
       if (
         current &&
         current.sheetPos.sheetId === sheets.sheet.id &&
-        current.sheetPos.x === location.pos.x &&
-        current.sheetPos.y === location.pos.y
+        current.sheetPos.x === codeCellState.pos.x &&
+        current.sheetPos.y === codeCellState.pos.y
       ) {
         setIsRunningComputation('player');
       } else if (
@@ -110,8 +107,8 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
         awaitingExecution.find(
           (cell) =>
             cell.sheetPos.sheetId === sheets.sheet.id &&
-            cell.sheetPos.x === location.pos.x &&
-            cell.sheetPos.y === location.pos.y
+            cell.sheetPos.x === codeCellState.pos.x &&
+            cell.sheetPos.y === codeCellState.pos.y
         )
       ) {
         setIsRunningComputation('player');
@@ -127,14 +124,15 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
 
     // update running computation for multiplayer
     const multiplayerUpdate = (users: MultiplayerUser[]) => {
-      if (!location) return;
       if (
         users.find(
           (user) =>
             user.parsedCodeRunning &&
             user.parsedCodeRunning.find(
               (sheetPos) =>
-                sheetPos.sheetId === location.sheetId && sheetPos.x === location.pos.x && sheetPos.y === location.pos.y
+                sheetPos.sheetId === codeCellState.sheetId &&
+                sheetPos.x === codeCellState.pos.x &&
+                sheetPos.y === codeCellState.pos.y
             )
         )
       ) {
@@ -159,7 +157,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
       events.off('connectionState', playerState);
       events.off('multiplayerUpdate', multiplayerUpdate);
     };
-  }, [location]);
+  }, [codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);
 
   return (
     <div className="flex items-center px-3 py-1">
@@ -179,7 +177,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
 
       <div className="mx-2 flex flex-col truncate">
         <div className="text-sm font-medium leading-4">
-          Cell ({location.pos.x}, {location.pos.y})
+          Cell ({codeCellState.pos.x}, {codeCellState.pos.y})
           {currentCodeEditorCellIsNotInActiveSheet && (
             <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
           )}
@@ -192,7 +190,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
 
       <div className="ml-auto flex flex-shrink-0 items-center gap-2">
         {isRunningComputation && (
-          <TooltipHint title={`${mode} executing…`} placement="bottom">
+          <TooltipHint title={`${language} executing…`} placement="bottom">
             <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
           </TooltipHint>
         )}
@@ -203,9 +201,9 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
               <CodeEditorDiffButtons />
             ) : (
               <>
-                {['Python', 'Javascript', 'Formula'].includes(mode as string) && <CodeEditorRefButton />}
+                {['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
 
-                {['Python', 'Javascript'].includes(mode as string) && <SnippetsPopover editorInst={editorInst} />}
+                {['Python', 'Javascript'].includes(language as string) && <SnippetsPopover editorInst={editorInst} />}
 
                 {!isRunningComputation ? (
                   <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">

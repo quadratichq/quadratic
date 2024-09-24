@@ -76,16 +76,8 @@ ${
   );
 
   const getCodeCellContext = useCallback(
-    async ({
-      location,
-      language,
-      model,
-    }: {
-      location: CodeCell;
-      language: CodeCellLanguage;
-      model: AnthropicModel | OpenAIModel;
-    }) => {
-      const { sheetId, pos } = location;
+    async ({ codeCell, model }: { codeCell: CodeCell; model: AnthropicModel | OpenAIModel }) => {
+      const { sheetId, pos, language } = codeCell;
       const codeCellCore = await quadraticCore.getCodeCell(sheetId, pos.x, pos.y);
       const codeString = codeCellCore?.code_string ?? '';
       const consoleOutput = {

@@ -1,5 +1,4 @@
 import { CodeCell } from '@/app/gridGL/types/codeCell';
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { AIMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
 
@@ -15,10 +14,7 @@ type AIAssistantState = {
     currentSheet: boolean;
     visibleData: boolean;
     cursorSelection: boolean;
-    codeCell?: {
-      location: CodeCell;
-      language: CodeCellLanguage;
-    };
+    codeCell?: CodeCell;
   };
 };
 

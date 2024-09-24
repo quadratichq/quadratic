@@ -1,8 +1,7 @@
 import { aiAssistantContextAtom } from '@/app/atoms/aiAssistantAtom';
 import {
   codeEditorAtom,
-  codeEditorLanguageAtom,
-  codeEditorLocationAtom,
+  codeEditorCodeCellAtom,
   codeEditorModifiedEditorContentAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -84,23 +83,22 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
 }
 
 function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
-  const location = useRecoilValue(codeEditorLocationAtom);
-  const cellLanguage = useRecoilValue(codeEditorLanguageAtom);
+  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
   const setModifiedEditorContent = useSetRecoilState(codeEditorModifiedEditorContentAtom);
   const aiAssistantContext = useRecoilValue(aiAssistantContextAtom);
 
   const handleSaveAndRun = useCallback(() => {
     mixpanel.track('[AI].code.run', { language });
     quadraticCore.setCodeCellValue({
-      sheetId: location.sheetId,
-      x: location.pos.x,
-      y: location.pos.y,
+      sheetId: codeCell.sheetId,
+      x: codeCell.pos.x,
+      y: codeCell.pos.y,
       codeString: text ?? '',
-      language: cellLanguage,
+      language: codeCell.language,
       cursor: sheets.getCursorPosition(),
     });
     setModifiedEditorContent(undefined);
-  }, [cellLanguage, language, location.pos.x, location.pos.y, location.sheetId, setModifiedEditorContent, text]);
+  }, [codeCell.language, codeCell.pos.x, codeCell.pos.y, codeCell.sheetId, language, setModifiedEditorContent, text]);
 
   return (
     <TooltipHint title={'Save and run code'}>
@@ -112,24 +110,23 @@ function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['
 }
 
 function CodeSnippetReplaceButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
-  const location = useRecoilValue(codeEditorLocationAtom);
-  const cellLanguage = useRecoilValue(codeEditorLanguageAtom);
+  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
   const aiAssistantContext = useRecoilValue(aiAssistantContextAtom);
+
   const handleReplace = useCallback(() => {
     mixpanel.track('[AI].code.replace', { language });
     setCodeEditorState((prev) => ({
       ...prev,
       modifiedEditorContent: undefined,
       waitingForEditorClose: {
-        location,
-        language: cellLanguage,
+        codeCell,
         showCellTypeMenu: false,
         inlineEditor: false,
         initialCode: text,
       },
     }));
-  }, [cellLanguage, language, location, setCodeEditorState, text]);
+  }, [codeCell, language, setCodeEditorState, text]);
 
   return (
     <TooltipHint title={'Open in code editor'}>
@@ -141,8 +138,7 @@ function CodeSnippetReplaceButton({ language, text }: { language: CodeSnippetPro
 }
 
 function CodeSnippetDiffEditor({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
-  const location = useRecoilValue(codeEditorLocationAtom);
-  const cellLanguage = useRecoilValue(codeEditorLanguageAtom);
+  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
   const aiAssistantContext = useRecoilValue(aiAssistantContextAtom);
 
@@ -152,14 +148,13 @@ function CodeSnippetDiffEditor({ language, text }: { language: CodeSnippetProps[
       ...prev,
       modifiedEditorContent: text,
       waitingForEditorClose: {
-        location,
-        language: cellLanguage,
+        codeCell,
         showCellTypeMenu: false,
         inlineEditor: false,
         initialCode: undefined,
       },
     }));
-  }, [cellLanguage, location, setCodeEditorState, text]);
+  }, [codeCell, setCodeEditorState, text]);
 
   return (
     <TooltipHint title={'Show diff in code editor'}>

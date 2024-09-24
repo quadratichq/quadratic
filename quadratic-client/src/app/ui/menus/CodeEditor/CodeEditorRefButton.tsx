@@ -1,4 +1,4 @@
-import { codeEditorLanguageAtom, codeEditorLocationAtom } from '@/app/atoms/codeEditorAtom';
+import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
@@ -18,8 +18,7 @@ import { useRecoilValue } from 'recoil';
 
 export const CodeEditorRefButton = () => {
   const [relative, setRelative] = useLocalStorage('insertCellRefRelative', false);
-  const location = useRecoilValue(codeEditorLocationAtom);
-  const language = useRecoilValue(codeEditorLanguageAtom);
+  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
 
   const [disabled, setDisabled] = useState(true);
   useEffect(() => {
@@ -33,9 +32,9 @@ export const CodeEditorRefButton = () => {
       } else {
         setDisabled(
           !sheets.sheet.cursor.multiCursor &&
-            location.sheetId === sheets.sheet.id &&
-            location.pos.x === sheets.sheet.cursor.cursorPosition.x &&
-            location.pos.y === sheets.sheet.cursor.cursorPosition.y
+            codeCell.sheetId === sheets.sheet.id &&
+            codeCell.pos.x === sheets.sheet.cursor.cursorPosition.x &&
+            codeCell.pos.y === sheets.sheet.cursor.cursorPosition.y
         );
       }
     };
@@ -45,7 +44,7 @@ export const CodeEditorRefButton = () => {
       events.off('cursorPosition', checkDisabled);
       events.off('changeSheet', checkDisabled);
     };
-  }, [location.pos.x, location.pos.y, location.sheetId]);
+  }, [codeCell.pos.x, codeCell.pos.y, codeCell.sheetId]);
 
   const tooltip = useMemo(
     () =>
@@ -65,7 +64,7 @@ export const CodeEditorRefButton = () => {
             disabled={disabled}
             size="small"
             color="primary"
-            onClick={() => insertCellRef(location.pos, location.sheetId, language, relative)}
+            onClick={() => insertCellRef(codeCell.pos, codeCell.sheetId, codeCell.language, relative)}
           >
             <HighlightAltIcon fontSize="small" />
           </IconButton>

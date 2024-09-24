@@ -24,11 +24,11 @@ export const useUpdateCodeEditor = () => {
           ...prev,
           showCodeEditor: true,
           loading: false,
-          location: {
+          codeCell: {
             sheetId,
             pos: { x, y },
+            language: codeCell.language,
           },
-          language: codeCell.language,
           codeString: codeCell.code_string,
           editorContent: initialCode ?? codeCell.code_string,
           modifiedEditorContent: undefined,
@@ -41,9 +41,10 @@ export const useUpdateCodeEditor = () => {
         setCodeEditorState((prev) => ({
           ...prev,
           loading: false,
-          location: {
+          codeCell: {
             sheetId,
             pos: { x, y },
+            language: prev.codeCell.language,
           },
           codeString: '',
           editorContent: initialCode ?? '',

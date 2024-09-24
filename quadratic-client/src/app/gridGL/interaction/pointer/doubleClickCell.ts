@@ -29,11 +29,11 @@ export async function doubleClickCell(options: {
         escapePressed: false,
         modifiedEditorContent: undefined,
         waitingForEditorClose: {
-          location: {
+          codeCell: {
             sheetId: sheets.current,
             pos: { x: column, y: row },
+            language,
           },
-          language,
           showCellTypeMenu: false,
           inlineEditor: formula,
         },
@@ -55,11 +55,11 @@ export async function doubleClickCell(options: {
           escapePressed: false,
           modifiedEditorContent: undefined,
           waitingForEditorClose: {
-            location: {
+            codeCell: {
               sheetId: sheets.current,
               pos: { x: column, y: row },
+              language,
             },
-            language,
             showCellTypeMenu: false,
           },
         });

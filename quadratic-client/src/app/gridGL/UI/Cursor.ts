@@ -78,14 +78,14 @@ export class Cursor extends Container {
 
     let { x, y, width, height } = sheet.getCellOffsets(cell.x, cell.y);
     const color = colors.cursorCell;
-    const cellLocation = codeEditorState.location;
+    const codeCell = codeEditorState.codeCell;
 
     // draw cursor but leave room for cursor indicator if needed
     const indicatorSize =
       hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions) &&
       (!pixiAppSettings.codeEditorState.showCodeEditor ||
-        cursor.cursorPosition.x !== cellLocation.pos.x ||
-        cursor.cursorPosition.y !== cellLocation.pos.y)
+        cursor.cursorPosition.x !== codeCell.pos.x ||
+        cursor.cursorPosition.y !== codeCell.pos.y)
         ? Math.max(INDICATOR_SIZE / viewport.scale.x, 4)
         : 0;
     this.indicator.width = this.indicator.height = indicatorSize;
@@ -110,7 +110,7 @@ export class Cursor extends Container {
     }
 
     // hide cursor if code editor is open and CodeCursor is in the same cell
-    if (codeEditorState.showCodeEditor && cellLocation.pos.x === cell.x && cellLocation.pos.y === cell.y) {
+    if (codeEditorState.showCodeEditor && codeCell.pos.x === cell.x && codeCell.pos.y === cell.y) {
       this.cursorRectangle = undefined;
       return;
     }
@@ -179,7 +179,7 @@ export class Cursor extends Container {
 
     if (viewport.scale.x > HIDE_INDICATORS_BELOW_SCALE) {
       const { codeEditorState } = pixiAppSettings;
-      const cellLocation = codeEditorState.location;
+      const codeCell = codeEditorState.codeCell;
       const cell = cursor.cursorPosition;
 
       // draw cursor indicator
@@ -193,7 +193,7 @@ export class Cursor extends Container {
       let color = colors.cursorCell;
       if (
         inlineEditorHandler.getShowing(cell.x, cell.y) ||
-        (codeEditorState.showCodeEditor && cellLocation.pos.x === cell.x && cellLocation.pos.y === cell.y)
+        (codeEditorState.showCodeEditor && codeCell.pos.x === cell.x && codeCell.pos.y === cell.y)
       )
         color = colors.cursorCell;
       this.graphics.beginFill(color).drawShape(this.indicator).endFill();
@@ -212,17 +212,17 @@ export class Cursor extends Container {
       offsets.height = inlineEditorHandler.height + CURSOR_THICKNESS;
     } else {
       const { codeEditorState } = pixiAppSettings;
-      const cellLocation = codeEditorState.location;
-      if (!codeEditorState.showCodeEditor || sheets.sheet.id !== cellLocation.sheetId) {
+      const codeCell = codeEditorState.codeCell;
+      if (!codeEditorState.showCodeEditor || sheets.sheet.id !== codeCell.sheetId) {
         return;
       }
-      offsets = sheets.sheet.getCellOffsets(cellLocation.pos.x, cellLocation.pos.y);
+      offsets = sheets.sheet.getCellOffsets(codeCell.pos.x, codeCell.pos.y);
       color =
-        codeEditorState.language === 'Python'
+        codeCell.language === 'Python'
           ? colors.cellColorUserPython
-          : codeEditorState.language === 'Formula'
+          : codeCell.language === 'Formula'
           ? colors.cellColorUserFormula
-          : codeEditorState.language === 'Javascript'
+          : codeCell.language === 'Javascript'
           ? colors.cellColorUserJavascript
           : colors.independence;
     }

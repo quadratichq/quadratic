@@ -8,7 +8,6 @@ import {
 } from '@/app/atoms/aiAssistantAtom';
 import { editorInteractionStateShowAIAssistantAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useAIAssistantModel } from '@/app/ui/menus/AIAssistant/useAIAssistantModel';
 import { useAIRequestToAPI } from '@/app/ui/menus/AIAssistant/useAIRequestToAPI';
 import { useCodeCellContextMessages } from '@/app/ui/menus/AIAssistant/useCodeCellContextMessages';
@@ -31,13 +30,11 @@ export function useSubmitAIAssistantPrompt() {
 
   const submitPrompt = useCallback(
     async ({
-      location,
-      language,
+      codeCell,
       userPrompt,
       clearMessages,
     }: {
-      location: CodeCell;
-      language: CodeCellLanguage;
+      codeCell: CodeCell;
       userPrompt: string;
       clearMessages?: boolean;
     }) => {
@@ -52,18 +49,14 @@ export function useSubmitAIAssistantPrompt() {
 
       let aiContext = defaultAIAssistantState.context;
       setContext((prev) => {
-        aiContext = { ...prev, codeCell: { location, language } };
+        aiContext = { ...prev, codeCell };
         return aiContext;
       });
 
       const abortController = new AbortController();
       setAbortController(abortController);
 
-      const { codeContext } = await getCodeCellContext({
-        location,
-        language,
-        model,
-      });
+      const { codeContext } = await getCodeCellContext({ codeCell, model });
 
       let updatedMessages: (UserMessage | AIMessage)[] = [];
       setMessages((prevMessages) => {

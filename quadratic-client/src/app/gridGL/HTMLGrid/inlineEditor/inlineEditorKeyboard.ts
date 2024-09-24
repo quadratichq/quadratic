@@ -299,9 +299,10 @@ class InlineEditorKeyboard {
       });
       pixiAppSettings.setCodeEditorState?.({
         ...pixiAppSettings.codeEditorState,
-        location: {
+        codeCell: {
           sheetId: sheets.current,
           pos: { x: cursor.x, y: cursor.y },
+          language: pixiAppSettings.codeEditorState.codeCell.language,
         },
       });
     }

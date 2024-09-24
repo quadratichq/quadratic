@@ -1,6 +1,6 @@
 import {
+  codeEditorCodeCellAtom,
   codeEditorConsoleOutputAtom,
-  codeEditorLanguageAtom,
   codeEditorSpillErrorAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
@@ -12,7 +12,7 @@ import { useRecoilValue } from 'recoil';
 export function Console() {
   const consoleOutput = useRecoilValue(codeEditorConsoleOutputAtom);
   const spillError = useRecoilValue(codeEditorSpillErrorAtom);
-  const language = useRecoilValue(codeEditorLanguageAtom);
+  const { language } = useRecoilValue(codeEditorCodeCellAtom);
   const codeCell = useMemo(() => getCodeCell(language), [language]);
   const hasOutput = useMemo(
     () => Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError),

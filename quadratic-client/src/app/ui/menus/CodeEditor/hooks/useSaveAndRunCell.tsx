@@ -1,7 +1,6 @@
 import {
+  codeEditorCodeCellAtom,
   codeEditorEditorContentAtom,
-  codeEditorLanguageAtom,
-  codeEditorLocationAtom,
   codeEditorModifiedEditorContentAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -9,18 +8,16 @@ import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import mixpanel from 'mixpanel-browser';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 export const useSaveAndRunCell = () => {
-  const location = useRecoilValue(codeEditorLocationAtom);
-  const language = useRecoilValue(codeEditorLanguageAtom);
-  const mode = useMemo(() => getLanguage(language), [language]);
+  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
   const editorContent = useRecoilValue(codeEditorEditorContentAtom);
   const setModifiedEditorContent = useSetRecoilState(codeEditorModifiedEditorContentAtom);
 
   const saveAndRunCell = useCallback(() => {
-    const { sheetId, pos } = location;
+    const { sheetId, pos, language } = codeCell;
     if (!sheetId) return;
 
     quadraticCore.setCodeCellValue({
@@ -35,7 +32,7 @@ export const useSaveAndRunCell = () => {
     setModifiedEditorContent(undefined);
 
     mixpanel.track('[CodeEditor].cellRun', {
-      type: mode,
+      type: getLanguage(codeCell.language),
     });
 
     // Google Ads Conversion for running a cell
@@ -45,7 +42,7 @@ export const useSaveAndRunCell = () => {
         send_to: 'AW-11007319783/C-yfCJOe6JkZEOe92YAp',
       });
     }
-  }, [editorContent, language, location, mode, setModifiedEditorContent]);
+  }, [codeCell, editorContent, setModifiedEditorContent]);
 
   return { saveAndRunCell };
 };

@@ -19,13 +19,12 @@ export const openCodeEditor = async () => {
       ...codeEditorState,
       modifiedEditorContent: undefined,
       waitingForEditorClose: {
-        location: {
+        codeCell: {
           sheetId: sheets.current,
           pos: { x, y },
+          language: cell.language,
         },
-        language: cell.language,
-        showCellTypeMenu: !codeEditorState.showCodeEditor,
-        initialCode: undefined,
+        showCellTypeMenu: false,
       },
     });
   } else if (codeEditorState.showCodeEditor) {
@@ -34,13 +33,12 @@ export const openCodeEditor = async () => {
       ...codeEditorState,
       modifiedEditorContent: undefined,
       waitingForEditorClose: {
-        location: {
+        codeCell: {
           sheetId: sheets.current,
           pos: { x, y },
+          language: 'Python',
         },
-        language: 'Python',
         showCellTypeMenu: true,
-        initialCode: undefined,
       },
     });
   } else {
@@ -52,9 +50,10 @@ export const openCodeEditor = async () => {
     setCodeEditorState({
       ...codeEditorState,
       modifiedEditorContent: undefined,
-      location: {
+      codeCell: {
         sheetId: sheets.current,
         pos: { x, y },
+        language: codeEditorState.codeCell.language,
       },
     });
   }

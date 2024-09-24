@@ -1,4 +1,4 @@
-import { codeEditorLanguageAtom, codeEditorShowSnippetsPopoverAtom } from '@/app/atoms/codeEditorAtom';
+import { codeEditorCodeCellAtom, codeEditorShowSnippetsPopoverAtom } from '@/app/atoms/codeEditorAtom';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { snippetsJS } from '@/app/ui/menus/CodeEditor/snippetsJS';
 import { snippetsPY } from '@/app/ui/menus/CodeEditor/snippetsPY';
@@ -32,7 +32,7 @@ interface SnippetsPopoverProps {
 
 export function SnippetsPopover({ editorInst }: SnippetsPopoverProps) {
   const [showSnippetsPopover, setShowSnippetsPopover] = useRecoilState(codeEditorShowSnippetsPopoverAtom);
-  const language = useRecoilValue(codeEditorLanguageAtom);
+  const { language } = useRecoilValue(codeEditorCodeCellAtom);
   const theme = useTheme();
 
   useEffect(() => {

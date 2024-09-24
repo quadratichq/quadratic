@@ -4,7 +4,7 @@ import {
   aiAssistantLoadingAtom,
   aiAssistantPromptAtom,
 } from '@/app/atoms/aiAssistantAtom';
-import { codeEditorLanguageAtom, codeEditorLocationAtom } from '@/app/atoms/codeEditorAtom';
+import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
@@ -24,8 +24,7 @@ type AIAssistantUserMessageFormProps = {
 };
 
 export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessageFormProps) {
-  const location = useRecoilValue(codeEditorLocationAtom);
-  const language = useRecoilValue(codeEditorLanguageAtom);
+  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
   const abortController = useRecoilValue(aiAssistantAbortControllerAtom);
   const [prompt, setPrompt] = useRecoilState(aiAssistantPromptAtom);
   const [loading, setLoading] = useRecoilState(aiAssistantLoadingAtom);
@@ -34,10 +33,10 @@ export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessage
   const submitPrompt = useSubmitAIAssistantPrompt();
 
   const abortPrompt = useCallback(() => {
-    mixpanel.track('[AI].prompt.cancel', { language: getConnectionKind(language) });
+    mixpanel.track('[AI].prompt.cancel', { language: getConnectionKind(codeCell.language) });
     abortController?.abort();
     setLoading(false);
-  }, [abortController, language, setLoading]);
+  }, [abortController, codeCell.language, setLoading]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   // Focus the input when relevant & the tab comes into focus
@@ -63,11 +62,10 @@ export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessage
             event.preventDefault();
             if (prompt.trim().length === 0) return;
 
-            mixpanel.track('[AI].prompt.send', { language: getConnectionKind(language) });
+            mixpanel.track('[AI].prompt.send', { language: getConnectionKind(codeCell.language) });
 
             submitPrompt({
-              location,
-              language,
+              codeCell,
               userPrompt: prompt,
             });
             event.currentTarget.focus();
@@ -124,7 +122,7 @@ export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessage
                 size="icon-sm"
                 onClick={(e) => {
                   e.stopPropagation();
-                  submitPrompt({ location, language, userPrompt: prompt });
+                  submitPrompt({ codeCell, userPrompt: prompt });
                 }}
                 disabled={prompt.length === 0}
               >

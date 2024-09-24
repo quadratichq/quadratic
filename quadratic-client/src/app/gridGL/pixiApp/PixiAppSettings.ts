@@ -152,7 +152,7 @@ class PixiAppSettings {
 
   get showA1Notation(): boolean {
     if (
-      (this.codeEditorState.showCodeEditor && this.codeEditorState.language === 'Formula') ||
+      (this.codeEditorState.showCodeEditor && this.codeEditorState.codeCell.language === 'Formula') ||
       inlineEditorHandler.isEditingFormula()
     ) {
       return true;

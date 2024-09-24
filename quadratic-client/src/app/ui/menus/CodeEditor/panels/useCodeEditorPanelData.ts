@@ -1,4 +1,4 @@
-import { codeEditorLanguageAtom } from '@/app/atoms/codeEditorAtom';
+import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { adjustPercentages } from '@/app/ui/menus/CodeEditor/panels/adjustPercentages';
 import useLocalStorage, { SetValue } from '@/shared/hooks/useLocalStorage';
@@ -43,7 +43,7 @@ const HEIGHT_PERCENT_2 = [50, 50];
 const HEIGHT_PERCENT_1 = [100];
 
 export const useCodeEditorPanelData = (): CodeEditorPanelData => {
-  const language = useRecoilValue(codeEditorLanguageAtom);
+  const { language } = useRecoilValue(codeEditorCodeCellAtom);
   const [editorWidth, setEditorWidth] = useLocalStorage<number>(
     'codeEditorWidth',
     window.innerWidth * 0.35 // default to 35% of the window width

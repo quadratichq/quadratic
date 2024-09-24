@@ -2,7 +2,7 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { CodeCellLanguage, SheetRect } from '@/app/quadratic-core-types';
+import { SheetRect } from '@/app/quadratic-core-types';
 import { PanelTab } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { atom, DefaultValue, selector } from 'recoil';
@@ -16,8 +16,7 @@ export interface CodeEditorState {
   showCodeEditor: boolean;
   escapePressed: boolean;
   loading: boolean;
-  location: CodeCell;
-  language: CodeCellLanguage;
+  codeCell: CodeCell;
   codeString?: string;
   evaluationResult?: EvaluationResult;
   consoleOutput?: ConsoleOutput;
@@ -30,8 +29,7 @@ export interface CodeEditorState {
   showSaveChangesAlert: boolean;
   cellsAccessed?: SheetRect[] | null;
   waitingForEditorClose?: {
-    location: CodeCell;
-    language: CodeCellLanguage;
+    codeCell: CodeCell;
     showCellTypeMenu: boolean;
     inlineEditor?: boolean;
     initialCode?: string;
@@ -42,11 +40,11 @@ export const defaultCodeEditorState: CodeEditorState = {
   showCodeEditor: false,
   escapePressed: false,
   loading: false,
-  location: {
+  codeCell: {
     sheetId: '',
     pos: { x: 0, y: 0 },
+    language: 'Python',
   },
-  language: 'Python',
   codeString: undefined,
   evaluationResult: undefined,
   consoleOutput: undefined,
@@ -96,8 +94,7 @@ const createSelector = <T extends keyof CodeEditorState>(key: T) =>
   });
 export const codeEditorEscapePressedAtom = createSelector('escapePressed');
 export const codeEditorLoadingAtom = createSelector('loading');
-export const codeEditorLocationAtom = createSelector('location');
-export const codeEditorLanguageAtom = createSelector('language');
+export const codeEditorCodeCellAtom = createSelector('codeCell');
 export const codeEditorCodeStringAtom = createSelector('codeString');
 export const codeEditorEvaluationResultAtom = createSelector('evaluationResult');
 export const codeEditorConsoleOutputAtom = createSelector('consoleOutput');

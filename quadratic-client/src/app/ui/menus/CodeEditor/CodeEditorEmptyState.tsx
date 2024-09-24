@@ -1,6 +1,6 @@
 import {
+  codeEditorCodeCellAtom,
   codeEditorEditorContentAtom,
-  codeEditorLanguageAtom,
   codeEditorLoadingAtom,
   codeEditorModifiedEditorContentAtom,
   codeEditorShowDiffEditorAtom,
@@ -35,7 +35,7 @@ interface CodeEditorEmptyStateProps {
 
 export function CodeEditorEmptyState({ editorInst }: CodeEditorEmptyStateProps) {
   const loading = useRecoilValue(codeEditorLoadingAtom);
-  const language = useRecoilValue(codeEditorLanguageAtom);
+  const { language } = useRecoilValue(codeEditorCodeCellAtom);
   const codeCell = useMemo(() => getCodeCell(language), [language]);
   const setShowSnippetsPopover = useSetRecoilState(codeEditorShowSnippetsPopoverAtom);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);

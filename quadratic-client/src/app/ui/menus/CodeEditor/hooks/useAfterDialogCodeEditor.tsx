@@ -34,9 +34,8 @@ export const useAfterDialogCodeEditor = ({
       setShowCellTypeMenu(waitingForEditorClose.showCellTypeMenu);
       setCodeEditorState((prev) => ({
         ...prev,
-        location: waitingForEditorClose.location,
-        language: waitingForEditorClose.language,
         showCodeEditor: !waitingForEditorClose.showCellTypeMenu && !waitingForEditorClose.inlineEditor,
+        codeCell: waitingForEditorClose.codeCell,
         initialCode: waitingForEditorClose.initialCode,
         waitingForEditorClose: undefined,
       }));

@@ -35,11 +35,11 @@ export const insertActionsSpec: InsertActionSpec = {
         ...prev,
         modifiedEditorContent: undefined,
         waitingForEditorClose: {
-          location: {
+          codeCell: {
             sheetId: sheets.current,
             pos: { x: cursor.x, y: cursor.y },
+            language: 'Python',
           },
-          language: 'Python',
           showCellTypeMenu: false,
           inlineEditor: false,
           initialCode: '',
@@ -57,11 +57,11 @@ export const insertActionsSpec: InsertActionSpec = {
         ...prev,
         modifiedEditorContent: undefined,
         waitingForEditorClose: {
-          location: {
+          codeCell: {
             sheetId: sheets.current,
             pos: { x: cursor.x, y: cursor.y },
+            language: 'Javascript',
           },
-          language: 'Javascript',
           showCellTypeMenu: false,
           inlineEditor: false,
           initialCode: '',
@@ -79,11 +79,11 @@ export const insertActionsSpec: InsertActionSpec = {
         ...prev,
         modifiedEditorContent: undefined,
         waitingForEditorClose: {
-          location: {
+          codeCell: {
             sheetId: sheets.current,
             pos: { x: cursor.x, y: cursor.y },
+            language: 'Formula',
           },
-          language: 'Formula',
           showCellTypeMenu: false,
           inlineEditor: false,
           initialCode: '',
@@ -101,11 +101,11 @@ export const insertActionsSpec: InsertActionSpec = {
         ...prev,
         modifiedEditorContent: undefined,
         waitingForEditorClose: {
-          location: {
+          codeCell: {
             sheetId: sheets.current,
             pos: { x: cursor.x, y: cursor.y },
+            language: 'Python',
           },
-          language: 'Python',
           showCellTypeMenu: false,
           inlineEditor: false,
           initialCode: SNIPPET_PY_CHART,
@@ -123,11 +123,11 @@ export const insertActionsSpec: InsertActionSpec = {
         ...prev,
         modifiedEditorContent: undefined,
         waitingForEditorClose: {
-          location: {
+          codeCell: {
             sheetId: sheets.current,
             pos: { x: cursor.x, y: cursor.y },
+            language: 'Javascript',
           },
-          language: 'Javascript',
           showCellTypeMenu: false,
           inlineEditor: false,
           initialCode: SNIPPET_JS_CHART,
@@ -145,11 +145,11 @@ export const insertActionsSpec: InsertActionSpec = {
         ...prev,
         modifiedEditorContent: undefined,
         waitingForEditorClose: {
-          location: {
+          codeCell: {
             sheetId: sheets.current,
             pos: { x: cursor.x, y: cursor.y },
+            language: 'Javascript',
           },
-          language: 'Javascript',
           showCellTypeMenu: false,
           inlineEditor: false,
           initialCode: SNIPPET_JS_API,
@@ -167,11 +167,11 @@ export const insertActionsSpec: InsertActionSpec = {
         ...prev,
         modifiedEditorContent: undefined,
         waitingForEditorClose: {
-          location: {
+          codeCell: {
             sheetId: sheets.current,
             pos: { x: cursor.x, y: cursor.y },
+            language: 'Python',
           },
-          language: 'Python',
           showCellTypeMenu: false,
           inlineEditor: false,
           initialCode: SNIPPET_PY_API,
@@ -228,8 +228,8 @@ export const insertActionsSpec: InsertActionSpec = {
     labelVerbose: 'Insert cell reference',
     run: () => {
       if (pixiAppSettings.codeEditorState.showCodeEditor) {
-        const { location, language } = pixiAppSettings.codeEditorState;
-        insertCellRef(location.pos, location.sheetId, language);
+        const { sheetId, pos, language } = pixiAppSettings.codeEditorState.codeCell;
+        insertCellRef(pos, sheetId, language);
       }
     },
   },
