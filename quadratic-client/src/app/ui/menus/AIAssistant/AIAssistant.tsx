@@ -7,7 +7,6 @@ import { AIAssistantUserMessageForm } from '@/app/ui/menus/AIAssistant/AIAssista
 import { useAIAssistantPanelWidth } from '@/app/ui/menus/AIAssistant/useAIAssistantPanelWidth';
 import { useCallback, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
-import './AIAssistant.css';
 
 export const AIAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   const showAIAssistant = useRecoilValue(editorInteractionStateShowAIAssistantAtom);

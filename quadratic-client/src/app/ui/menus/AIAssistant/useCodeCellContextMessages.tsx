@@ -1,4 +1,4 @@
-import { CodeCell } from '@/app/atoms/aiAssistantAtom';
+import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
@@ -76,8 +76,16 @@ ${
   );
 
   const getCodeCellContext = useCallback(
-    async ({ codeCell, model }: { codeCell: CodeCell; model: AnthropicModel | OpenAIModel }) => {
-      const { sheetId, pos, language } = codeCell;
+    async ({
+      location,
+      language,
+      model,
+    }: {
+      location: CodeCell;
+      language: CodeCellLanguage;
+      model: AnthropicModel | OpenAIModel;
+    }) => {
+      const { sheetId, pos } = location;
       const codeCellCore = await quadraticCore.getCodeCell(sheetId, pos.x, pos.y);
       const codeString = codeCellCore?.code_string ?? '';
       const consoleOutput = {

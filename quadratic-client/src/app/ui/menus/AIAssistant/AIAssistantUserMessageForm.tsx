@@ -3,14 +3,8 @@ import {
   aiAssistantContextAtom,
   aiAssistantLoadingAtom,
   aiAssistantPromptAtom,
-  CodeCell,
 } from '@/app/atoms/aiAssistantAtom';
-import {
-  editorInteractionStateModeAtom,
-  editorInteractionStateSelectedCellAtom,
-  editorInteractionStateSelectedCellSheetAtom,
-} from '@/app/atoms/editorInteractionStateAtom';
-import { sheets } from '@/app/grid/controller/Sheets';
+import { codeEditorLanguageAtom, codeEditorLocationAtom } from '@/app/atoms/codeEditorAtom';
 import { getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
@@ -22,7 +16,7 @@ import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { ArrowUpward, Stop } from '@mui/icons-material';
 import { CircularProgress } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 type AIAssistantUserMessageFormProps = {
@@ -30,30 +24,20 @@ type AIAssistantUserMessageFormProps = {
 };
 
 export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessageFormProps) {
-  const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
-  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
+  const location = useRecoilValue(codeEditorLocationAtom);
+  const language = useRecoilValue(codeEditorLanguageAtom);
   const abortController = useRecoilValue(aiAssistantAbortControllerAtom);
   const [prompt, setPrompt] = useRecoilState(aiAssistantPromptAtom);
   const [loading, setLoading] = useRecoilState(aiAssistantLoadingAtom);
   const aiAssistantContext = useRecoilValue(aiAssistantContextAtom);
-  const mode = useRecoilValue(editorInteractionStateModeAtom);
-  const codeCell: CodeCell = useMemo(
-    () =>
-      aiAssistantContext.codeCell ?? {
-        sheetId: selectedCellSheet ? selectedCellSheet : sheets.current,
-        pos: selectedCell,
-        language: mode ?? 'Python',
-      },
-    [aiAssistantContext.codeCell, mode, selectedCell, selectedCellSheet]
-  );
 
   const submitPrompt = useSubmitAIAssistantPrompt();
 
   const abortPrompt = useCallback(() => {
-    mixpanel.track('[AI].prompt.cancel', { language: getConnectionKind(mode) });
+    mixpanel.track('[AI].prompt.cancel', { language: getConnectionKind(language) });
     abortController?.abort();
     setLoading(false);
-  }, [abortController, mode, setLoading]);
+  }, [abortController, language, setLoading]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   // Focus the input when relevant & the tab comes into focus
@@ -79,10 +63,11 @@ export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessage
             event.preventDefault();
             if (prompt.trim().length === 0) return;
 
-            mixpanel.track('[AI].prompt.send', { language: getConnectionKind(mode) });
+            mixpanel.track('[AI].prompt.send', { language: getConnectionKind(language) });
 
             submitPrompt({
-              codeCell,
+              location,
+              language,
               userPrompt: prompt,
             });
             event.currentTarget.focus();
@@ -139,7 +124,7 @@ export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessage
                 size="icon-sm"
                 onClick={(e) => {
                   e.stopPropagation();
-                  submitPrompt({ codeCell, userPrompt: prompt });
+                  submitPrompt({ location, language, userPrompt: prompt });
                 }}
                 disabled={prompt.length === 0}
               >

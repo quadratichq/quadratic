@@ -4,10 +4,11 @@ import {
   aiAssistantLoadingAtom,
   aiAssistantMessagesAtom,
   aiAssistantPromptAtom,
-  CodeCell,
   defaultAIAssistantState,
 } from '@/app/atoms/aiAssistantAtom';
 import { editorInteractionStateShowAIAssistantAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { CodeCell } from '@/app/gridGL/types/codeCell';
+import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useAIAssistantModel } from '@/app/ui/menus/AIAssistant/useAIAssistantModel';
 import { useAIRequestToAPI } from '@/app/ui/menus/AIAssistant/useAIRequestToAPI';
 import { useCodeCellContextMessages } from '@/app/ui/menus/AIAssistant/useCodeCellContextMessages';
@@ -30,11 +31,13 @@ export function useSubmitAIAssistantPrompt() {
 
   const submitPrompt = useCallback(
     async ({
-      codeCell,
+      location,
+      language,
       userPrompt,
       clearMessages,
     }: {
-      codeCell: CodeCell;
+      location: CodeCell;
+      language: CodeCellLanguage;
       userPrompt: string;
       clearMessages?: boolean;
     }) => {
@@ -49,7 +52,7 @@ export function useSubmitAIAssistantPrompt() {
 
       let aiContext = defaultAIAssistantState.context;
       setContext((prev) => {
-        aiContext = { ...prev, codeCell };
+        aiContext = { ...prev, codeCell: { location, language } };
         return aiContext;
       });
 
@@ -57,7 +60,8 @@ export function useSubmitAIAssistantPrompt() {
       setAbortController(abortController);
 
       const { codeContext } = await getCodeCellContext({
-        codeCell,
+        location,
+        language,
         model,
       });
 

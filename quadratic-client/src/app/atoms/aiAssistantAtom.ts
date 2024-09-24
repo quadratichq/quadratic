@@ -1,13 +1,7 @@
-import { Coordinate } from '@/app/gridGL/types/size';
+import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { AIMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
-
-export type CodeCell = {
-  sheetId: string;
-  pos: Coordinate;
-  language: CodeCellLanguage;
-};
 
 type AIAssistantState = {
   abortController?: AbortController;
@@ -21,7 +15,10 @@ type AIAssistantState = {
     currentSheet: boolean;
     visibleData: boolean;
     cursorSelection: boolean;
-    codeCell?: CodeCell;
+    codeCell?: {
+      location: CodeCell;
+      language: CodeCellLanguage;
+    };
   };
 };
 

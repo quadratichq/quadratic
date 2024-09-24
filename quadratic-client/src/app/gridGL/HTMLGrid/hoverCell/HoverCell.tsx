@@ -1,5 +1,4 @@
-import { CodeCell } from '@/app/atoms/aiAssistantAtom';
-import { editorInteractionStateWaitingForEditorCloseAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { showCodePeekAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -16,7 +15,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { Rectangle } from 'pixi.js';
-import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import './HoverCell.css';
 
@@ -232,20 +231,10 @@ export function HoverCell() {
 }
 
 function HoverCellRunError({ codeCellCore, onClick }: { codeCellCore: JsCodeCell; onClick: () => void }) {
-  const setEditorInteractionStateWaitingForEditorClose = useSetRecoilState(
-    editorInteractionStateWaitingForEditorCloseAtom
-  );
+  const setCodeEditorState = useSetRecoilState(codeEditorAtom);
   const language = getLanguage(codeCellCore.language);
   const x = Number(codeCellCore.x);
   const y = Number(codeCellCore.y);
-
-  const codeCell: CodeCell = useMemo(() => {
-    return {
-      sheetId: sheets.current,
-      pos: { x, y },
-      language: codeCellCore.language,
-    };
-  }, [codeCellCore.language, x, y]);
 
   return (
     <>
@@ -257,7 +246,7 @@ function HoverCellRunError({ codeCellCore, onClick }: { codeCellCore: JsCodeCell
             <Button
               size="sm"
               onClick={() => {
-                events.emit('askAICodeCell', codeCell);
+                events.emit('askAICodeCell', { sheetId: sheets.current, pos: { x, y } }, codeCellCore.language);
                 onClick();
               }}
             >
@@ -269,14 +258,17 @@ function HoverCellRunError({ codeCellCore, onClick }: { codeCellCore: JsCodeCell
             <Button
               size="sm"
               onClick={() => {
-                setEditorInteractionStateWaitingForEditorClose({
-                  selectedCellSheet: codeCell.sheetId,
-                  selectedCell: codeCell.pos,
-                  mode: codeCell.language,
-                  showCellTypeMenu: false,
-                  inlineEditor: false,
-                  initialCode: codeCellCore.code_string,
-                });
+                setCodeEditorState((prev) => ({
+                  ...prev,
+                  modifiedEditorContent: undefined,
+                  waitingForEditorClose: {
+                    location: { sheetId: sheets.current, pos: { x, y } },
+                    language: codeCellCore.language,
+                    showCellTypeMenu: false,
+                    inlineEditor: false,
+                    initialCode: codeCellCore.code_string,
+                  },
+                }));
                 onClick();
               }}
             >
