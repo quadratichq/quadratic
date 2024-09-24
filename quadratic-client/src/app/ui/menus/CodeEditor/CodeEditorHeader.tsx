@@ -215,24 +215,20 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
 
                 {!isRunningComputation ? (
                   <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
-                    <span>
-                      <IconButton
-                        id="QuadraticCodeEditorRunButtonID"
-                        size="small"
-                        color="primary"
-                        onClick={saveAndRunCell}
-                      >
-                        <PlayArrow />
-                      </IconButton>
-                    </span>
+                    <IconButton
+                      id="QuadraticCodeEditorRunButtonID"
+                      size="small"
+                      color="primary"
+                      onClick={saveAndRunCell}
+                    >
+                      <PlayArrow />
+                    </IconButton>
                   </TooltipHint>
                 ) : (
                   <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
-                    <span>
-                      <IconButton size="small" color="primary" onClick={cancelRun} disabled={!isRunningComputation}>
-                        <Stop />
-                      </IconButton>
-                    </span>
+                    <IconButton size="small" color="primary" onClick={cancelRun} disabled={!isRunningComputation}>
+                      <Stop />
+                    </IconButton>
                   </TooltipHint>
                 )}
               </>

@@ -16,7 +16,19 @@ export async function doubleClickCell(options: {
 
   if (inlineEditorHandler.isEditingFormula()) return;
   if (multiplayer.cellIsBeingEdited(column, row, sheets.sheet.id)) return;
-  if (!pixiAppSettings.setEditorInteractionState || !pixiAppSettings.editorInteractionState) return;
+  if (
+    !pixiAppSettings.setEditorInteractionState ||
+    !pixiAppSettings.editorInteractionState ||
+    !pixiAppSettings.setCodeEditorState
+  ) {
+    return;
+  }
+
+  pixiAppSettings.setCodeEditorState((prev) => ({
+    ...prev,
+    modifiedEditorContent: undefined,
+  }));
+
   const hasPermission = hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions);
 
   // Open the correct code editor

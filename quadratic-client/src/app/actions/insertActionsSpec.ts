@@ -42,6 +42,10 @@ export const insertActionsSpec: InsertActionSpec = {
           initialCode: '',
         },
       }));
+      pixiAppSettings.setCodeEditorState?.((prev) => ({
+        ...prev,
+        modifiedEditorContent: undefined,
+      }));
     },
   },
   [Action.InsertCodeJavascript]: {
@@ -60,6 +64,10 @@ export const insertActionsSpec: InsertActionSpec = {
           inlineEditor: false,
           initialCode: '',
         },
+      }));
+      pixiAppSettings.setCodeEditorState?.((prev) => ({
+        ...prev,
+        modifiedEditorContent: undefined,
       }));
     },
   },
@@ -80,6 +88,10 @@ export const insertActionsSpec: InsertActionSpec = {
           initialCode: '',
         },
       }));
+      pixiAppSettings.setCodeEditorState?.((prev) => ({
+        ...prev,
+        modifiedEditorContent: undefined,
+      }));
     },
   },
   [Action.InsertChartPython]: {
@@ -98,6 +110,10 @@ export const insertActionsSpec: InsertActionSpec = {
           inlineEditor: false,
           initialCode: SNIPPET_PY_CHART,
         },
+      }));
+      pixiAppSettings.setCodeEditorState?.((prev) => ({
+        ...prev,
+        modifiedEditorContent: undefined,
       }));
     },
   },
@@ -118,6 +134,10 @@ export const insertActionsSpec: InsertActionSpec = {
           initialCode: SNIPPET_JS_CHART,
         },
       }));
+      pixiAppSettings.setCodeEditorState?.((prev) => ({
+        ...prev,
+        modifiedEditorContent: undefined,
+      }));
     },
   },
   [Action.InsertApiRequestJavascript]: {
@@ -137,6 +157,10 @@ export const insertActionsSpec: InsertActionSpec = {
           initialCode: SNIPPET_JS_API,
         },
       }));
+      pixiAppSettings.setCodeEditorState?.((prev) => ({
+        ...prev,
+        modifiedEditorContent: undefined,
+      }));
     },
   },
   [Action.InsertApiRequestPython]: {
@@ -155,6 +179,10 @@ export const insertActionsSpec: InsertActionSpec = {
           inlineEditor: false,
           initialCode: SNIPPET_PY_API,
         },
+      }));
+      pixiAppSettings.setCodeEditorState?.((prev) => ({
+        ...prev,
+        modifiedEditorContent: undefined,
       }));
     },
   },

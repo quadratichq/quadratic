@@ -1,4 +1,8 @@
-import { codeEditorCellLocationAtom, codeEditorEditorContentAtom } from '@/app/atoms/codeEditorAtom';
+import {
+  codeEditorCellLocationAtom,
+  codeEditorEditorContentAtom,
+  codeEditorModifiedEditorContentAtom,
+} from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
@@ -6,7 +10,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useMemo } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 export const useSaveAndRunCell = () => {
   const editorMode = useRecoilValue(editorInteractionStateModeAtom);
@@ -14,6 +18,7 @@ export const useSaveAndRunCell = () => {
 
   const cellLocation = useRecoilValue(codeEditorCellLocationAtom);
   const editorContent = useRecoilValue(codeEditorEditorContentAtom);
+  const setModifiedEditorContent = useSetRecoilState(codeEditorModifiedEditorContentAtom);
 
   const saveAndRunCell = useCallback(async () => {
     if (cellLocation === undefined) throw new Error(`cellLocation is undefined in CodeEditor#saveAndRunCell`);
@@ -28,6 +33,8 @@ export const useSaveAndRunCell = () => {
       cursor: sheets.getCursorPosition(),
     });
 
+    setModifiedEditorContent(undefined);
+
     mixpanel.track('[CodeEditor].cellRun', {
       type: mode,
     });
@@ -39,7 +46,7 @@ export const useSaveAndRunCell = () => {
         send_to: 'AW-11007319783/C-yfCJOe6JkZEOe92YAp',
       });
     }
-  }, [cellLocation, editorContent, editorMode, mode]);
+  }, [cellLocation, editorContent, editorMode, mode, setModifiedEditorContent]);
 
   return { saveAndRunCell };
 };

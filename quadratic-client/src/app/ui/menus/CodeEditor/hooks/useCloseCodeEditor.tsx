@@ -2,6 +2,7 @@ import {
   codeEditorCellLocationAtom,
   codeEditorCodeStringAtom,
   codeEditorEditorContentAtom,
+  codeEditorModifiedEditorContentAtom,
   codeEditorShowSaveChangesAlertAtom,
   codeEditorUnsavedChangesAtom,
 } from '@/app/atoms/codeEditorAtom';
@@ -17,6 +18,7 @@ export const useCloseCodeEditor = ({ editorInst }: { editorInst: monaco.editor.I
   const setCellLocation = useSetRecoilState(codeEditorCellLocationAtom);
   const setCodeString = useSetRecoilState(codeEditorCodeStringAtom);
   const setEditorContent = useSetRecoilState(codeEditorEditorContentAtom);
+  const setModifiedEditorContent = useSetRecoilState(codeEditorModifiedEditorContentAtom);
   const setShowSaveChangesAlert = useSetRecoilState(codeEditorShowSaveChangesAlertAtom);
   const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
 
@@ -28,6 +30,7 @@ export const useCloseCodeEditor = ({ editorInst }: { editorInst: monaco.editor.I
         setCellLocation(undefined);
         setCodeString(undefined);
         setEditorContent(undefined);
+        setModifiedEditorContent(undefined);
         setEditorInteractionState((prev) => {
           return {
             ...prev,
@@ -47,6 +50,7 @@ export const useCloseCodeEditor = ({ editorInst }: { editorInst: monaco.editor.I
       setCodeString,
       setEditorContent,
       setEditorInteractionState,
+      setModifiedEditorContent,
       setShowSaveChangesAlert,
       unsavedChanges,
     ]

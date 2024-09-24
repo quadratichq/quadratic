@@ -16,7 +16,6 @@ import { useSetRecoilState } from 'recoil';
 
 export const useUpdateCodeEditor = () => {
   const setEditorMode = useSetRecoilState(editorInteractionStateModeAtom);
-
   const setCellLocation = useSetRecoilState(codeEditorCellLocationAtom);
   const setCodeString = useSetRecoilState(codeEditorCodeStringAtom);
   const setEditorContent = useSetRecoilState(codeEditorEditorContentAtom);
@@ -28,10 +27,12 @@ export const useUpdateCodeEditor = () => {
   const updateCodeEditor = useCallback(
     async (sheetId: string, pos: Coordinate, pushCodeCell?: JsCodeCell, initialCode?: string) => {
       if (!sheetId) return;
+
+      setCellLocation({ sheetId, x: pos.x, y: pos.y });
       const codeCell = pushCodeCell ?? (await quadraticCore.getCodeCell(sheetId, pos.x, pos.y));
 
       if (codeCell) {
-        setCellLocation({ sheetId, x: pos.x, y: pos.y });
+        setEditorMode(codeCell.language);
         setCodeString(codeCell.code_string);
         setEditorContent(initialCode ?? codeCell.code_string);
         const newEvaluationResult = codeCell.evaluation_result ? JSON.parse(codeCell.evaluation_result) : {};
@@ -39,9 +40,7 @@ export const useUpdateCodeEditor = () => {
         setCellsAccessed(codeCell.cells_accessed);
         setConsoleOutput({ stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined });
         setSpillError(codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as Coordinate)));
-        setEditorMode(codeCell.language);
       } else {
-        setCellLocation({ sheetId, x: pos.x, y: pos.y });
         setCodeString('');
         setEditorContent(initialCode ?? '');
         setEvaluationResult(undefined);

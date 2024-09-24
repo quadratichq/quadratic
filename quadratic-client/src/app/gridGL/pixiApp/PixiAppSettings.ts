@@ -1,3 +1,4 @@
+import { CodeEditorState, defaultCodeEditorState } from '@/app/atoms/codeEditorAtom';
 import { defaultEditorInteractionState, EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { defaultGridSettings, GridSettings } from '@/app/atoms/gridSettingsAtom';
 import { defaultInlineEditor, InlineEditorState } from '@/app/atoms/inlineEditorAtom';
@@ -44,6 +45,8 @@ class PixiAppSettings {
   addGlobalSnackbar?: GlobalSnackbar['addGlobalSnackbar'];
   inlineEditorState = defaultInlineEditor;
   setInlineEditorState?: (fn: (prev: InlineEditorState) => InlineEditorState) => void;
+  codeEditorState = defaultCodeEditorState;
+  setCodeEditorState?: SetterOrUpdater<CodeEditorState>;
 
   constructor() {
     const settings = localStorage.getItem('viewSettings');
@@ -122,6 +125,11 @@ class PixiAppSettings {
     if (pixiApp.cursor) {
       pixiApp.cursor.dirty = true;
     }
+  }
+
+  updateCodeEditorState(codeEditorState: CodeEditorState, setCodeEditorState: SetterOrUpdater<CodeEditorState>): void {
+    this.codeEditorState = codeEditorState;
+    this.setCodeEditorState = setCodeEditorState;
   }
 
   get showGridLines(): boolean {

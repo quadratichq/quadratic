@@ -1,3 +1,4 @@
+import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { gridSettingsAtom } from '@/app/atoms/gridSettingsAtom';
 import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
@@ -10,10 +11,19 @@ import { useRecoilState } from 'recoil';
 export const PixiAppSettings = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [inlineEditorState, setInlineEditorState] = useRecoilState(inlineEditorAtom);
+  const [codeEditorState, setCodeEditorState] = useRecoilState(codeEditorAtom);
   useEffect(() => {
     pixiAppSettings.updateEditorInteractionState(editorInteractionState, setEditorInteractionState);
     pixiAppSettings.updateInlineEditorState(inlineEditorState, setInlineEditorState);
-  }, [editorInteractionState, inlineEditorState, setEditorInteractionState, setInlineEditorState]);
+    pixiAppSettings.updateCodeEditorState(codeEditorState, setCodeEditorState);
+  }, [
+    codeEditorState,
+    editorInteractionState,
+    inlineEditorState,
+    setCodeEditorState,
+    setEditorInteractionState,
+    setInlineEditorState,
+  ]);
 
   const { addGlobalSnackbar } = useGlobalSnackbar();
   useEffect(() => {

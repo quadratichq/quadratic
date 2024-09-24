@@ -140,22 +140,7 @@ export const editorInteractionStateSelectedCellSheetAtom = createSelector('selec
 export const editorInteractionStateSelectedCellAtom = createSelector('selectedCell');
 export const editorInteractionStateInitialCodeAtom = createSelector('initialCode');
 export const editorInteractionStateFollowAtom = createSelector('follow');
-
-export const editorInteractionStateModeAtom = selector<CodeCellLanguage | undefined>({
-  key: 'editorInteractionStateModeAtom',
-  get: ({ get }) => get(editorInteractionStateAtom).mode,
-  set: ({ get, set }, newValue) => {
-    set(editorInteractionStateAtom, (prev) => ({
-      ...prev,
-      mode: newValue instanceof DefaultValue ? prev.mode : newValue,
-    }));
-
-    const showCodeEditor = get(editorInteractionStateShowCodeEditorAtom);
-    if (showCodeEditor) {
-    }
-  },
-});
-
+export const editorInteractionStateModeAtom = createSelector('mode');
 export const editorInteractionStateEditorEscapePressedAtom = createSelector('editorEscapePressed');
 export const editorInteractionStateWaitingForEditorCloseAtom = createSelector('waitingForEditorClose');
 export const editorInteractionStateUndoAtom = createSelector('undo');

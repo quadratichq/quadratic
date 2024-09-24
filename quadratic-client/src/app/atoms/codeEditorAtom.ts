@@ -10,7 +10,7 @@ export interface ConsoleOutput {
   stdErr?: string;
 }
 
-interface CodeEditorState {
+export interface CodeEditorState {
   loading: boolean;
   cellLocation?: SheetPosTS;
   codeString?: string;
@@ -22,10 +22,10 @@ interface CodeEditorState {
   editorContent?: string;
   modifiedEditorContent?: string;
   showSaveChangesAlert: boolean;
-  cellsAccessed: SheetRect[] | undefined | null;
+  cellsAccessed?: SheetRect[] | null;
 }
 
-const defaultCodeEditorState: CodeEditorState = {
+export const defaultCodeEditorState: CodeEditorState = {
   loading: false,
   cellLocation: undefined,
   codeString: undefined,
@@ -64,20 +64,11 @@ export const codeEditorConsoleOutputAtom = createSelector('consoleOutput');
 export const codeEditorSpillErrorAtom = createSelector('spillError');
 export const codeEditorPanelBottomActiveTabAtom = createSelector('panelBottomActiveTab');
 export const codeEditorShowSnippetsPopoverAtom = createSelector('showSnippetsPopover');
+export const codeEditorEditorContentAtom = createSelector('editorContent');
+export const codeEditorModifiedEditorContentAtom = createSelector('modifiedEditorContent');
 export const codeEditorShowSaveChangesAlertAtom = createSelector('showSaveChangesAlert');
 export const codeEditorCellsAccessedAtom = createSelector('cellsAccessed');
 
-export const codeEditorEditorContentAtom = selector<string | undefined>({
-  key: 'codeEditorEditorContentAtom',
-  get: ({ get }) => get(codeEditorAtom).editorContent,
-  set: ({ set }, newValue) =>
-    set(codeEditorAtom, (prev) => ({
-      ...prev,
-      editorContent: newValue instanceof DefaultValue ? prev.editorContent : newValue,
-      modifiedEditorContent: undefined,
-    })),
-});
-export const codeEditorModifiedEditorContentAtom = createSelector('modifiedEditorContent');
 export const codeEditorShowDiffEditorAtom = selector<boolean>({
   key: 'codeEditorShowDiffEditorAtom',
   get: ({ get }) =>
