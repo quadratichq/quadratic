@@ -3,45 +3,56 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 export const openCodeEditor = async () => {
-  const { editorInteractionState, setEditorInteractionState } = pixiAppSettings;
+  const { codeEditorState, setCodeEditorState, setEditorInteractionState } = pixiAppSettings;
+  if (!setCodeEditorState) {
+    throw new Error('Expected setCodeEditorState to be defined in openCodeEditor');
+  }
+
   if (!setEditorInteractionState) {
     throw new Error('Expected setEditorInteractionState to be defined in openCodeEditor');
   }
-  const cursorPosition = sheets.sheet.cursor.cursorPosition;
-  const { x, y } = cursorPosition;
+
+  const { x, y } = sheets.sheet.cursor.cursorPosition;
   const cell = await quadraticCore.getRenderCell(sheets.sheet.id, x, y);
   if (cell?.language) {
-    setEditorInteractionState({
-      ...editorInteractionState,
+    setCodeEditorState({
+      ...codeEditorState,
       waitingForEditorClose: {
-        selectedCellSheet: sheets.sheet.id,
-        selectedCell: { x, y },
-        mode: cell.language,
-        showCellTypeMenu: !editorInteractionState.showCodeEditor,
+        location: {
+          sheetId: sheets.current,
+          pos: { x, y },
+        },
+        language: cell.language,
+        showCellTypeMenu: !codeEditorState.showCodeEditor,
         initialCode: undefined,
       },
     });
-  } else if (editorInteractionState.showCodeEditor) {
+  } else if (codeEditorState.showCodeEditor) {
     // code editor is already open, so check it for save before closing
-    setEditorInteractionState({
-      ...editorInteractionState,
+    setCodeEditorState({
+      ...codeEditorState,
       waitingForEditorClose: {
+        location: {
+          sheetId: sheets.current,
+          pos: { x, y },
+        },
+        language: 'Python',
         showCellTypeMenu: true,
-        selectedCellSheet: sheets.sheet.id,
-        selectedCell: { x, y },
-        mode: 'Python',
         initialCode: undefined,
       },
     });
   } else {
     // just open the code editor selection menu
-    setEditorInteractionState({
-      ...editorInteractionState,
+    setEditorInteractionState((prev) => ({
+      ...prev,
       showCellTypeMenu: true,
-      selectedCellSheet: sheets.sheet.id,
-      selectedCell: { x, y },
-      mode: undefined,
-      initialCode: undefined,
+    }));
+    setCodeEditorState({
+      ...codeEditorState,
+      location: {
+        sheetId: sheets.current,
+        pos: { x, y },
+      },
     });
   }
 };

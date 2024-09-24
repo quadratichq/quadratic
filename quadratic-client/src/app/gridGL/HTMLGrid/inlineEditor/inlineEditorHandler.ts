@@ -481,18 +481,21 @@ class InlineEditorHandler {
   // Handler for the click for the expand code editor button.
   openCodeEditor = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     e.stopPropagation();
-    if (!pixiAppSettings.setEditorInteractionState) {
-      throw new Error('Expected setEditorInteractionState to be defined in openCodeEditor');
+    if (!pixiAppSettings.setCodeEditorState) {
+      throw new Error('Expected setCodeEditorState to be defined in openCodeEditor');
     }
     if (!this.location) {
       throw new Error('Expected location to be defined in openCodeEditor');
     }
-    pixiAppSettings.setEditorInteractionState({
-      ...pixiAppSettings.editorInteractionState,
+    const { sheetId, x, y } = this.location;
+    pixiAppSettings.setCodeEditorState({
+      ...pixiAppSettings.codeEditorState,
       waitingForEditorClose: {
-        selectedCellSheet: this.location.sheetId,
-        selectedCell: { x: this.location.x, y: this.location.y },
-        mode: 'Formula',
+        location: {
+          sheetId,
+          pos: { x, y },
+        },
+        language: 'Formula',
         showCellTypeMenu: false,
         initialCode: inlineEditorMonaco.get().slice(1),
       },

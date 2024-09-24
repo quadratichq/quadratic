@@ -1,9 +1,8 @@
 import {
-  editorInteractionStateModeAtom,
-  editorInteractionStateSelectedCellAtom,
-  editorInteractionStateSelectedCellSheetAtom,
-  editorInteractionStateWaitingForEditorCloseAtom,
-} from '@/app/atoms/editorInteractionStateAtom';
+  codeEditorLanguageAtom,
+  codeEditorLocationAtom,
+  codeEditorWaitingForEditorClose,
+} from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
@@ -75,21 +74,22 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
 }
 
 function CodeSnippetInsertButton({ language, text }: { language: Props['language']; text: string }) {
-  const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
-  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
-  const mode = useRecoilValue(editorInteractionStateModeAtom);
-  const setWaitingForEditorClose = useSetRecoilState(editorInteractionStateWaitingForEditorCloseAtom);
+  const cellLocation = useRecoilValue(codeEditorLocationAtom);
+  const cellLanguage = useRecoilValue(codeEditorLanguageAtom);
+  const setWaitingForEditorClose = useSetRecoilState(codeEditorWaitingForEditorClose);
   const handleReplace = useCallback(() => {
     mixpanel.track('[AI].code.replace', { language });
     setWaitingForEditorClose({
-      selectedCellSheet: selectedCellSheet ? selectedCellSheet : sheets.current,
-      selectedCell,
-      mode: mode ?? 'Python',
+      location: {
+        sheetId: cellLocation.sheetId ? cellLocation.sheetId : sheets.current,
+        pos: cellLocation.pos,
+      },
+      language: cellLanguage,
       showCellTypeMenu: false,
       inlineEditor: false,
       initialCode: text,
     });
-  }, [language, mode, selectedCell, selectedCellSheet, setWaitingForEditorClose, text]);
+  }, [cellLanguage, cellLocation.pos, cellLocation.sheetId, language, setWaitingForEditorClose, text]);
 
   return (
     <TooltipHint title={'Open in code editor'}>

@@ -1,9 +1,10 @@
-import { codeEditorShowSaveChangesAlertAtom } from '@/app/atoms/codeEditorAtom';
 import {
-  editorInteractionStateAtom,
-  editorInteractionStateEditorEscapePressedAtom,
-  editorInteractionStateWaitingForEditorCloseAtom,
-} from '@/app/atoms/editorInteractionStateAtom';
+  codeEditorAtom,
+  codeEditorEscapePressedAtom,
+  codeEditorShowSaveChangesAlertAtom,
+  codeEditorWaitingForEditorClose,
+} from '@/app/atoms/codeEditorAtom';
+import { editorInteractionStateShowCellTypeMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { useCloseCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useCloseCodeEditor';
 import * as monaco from 'monaco-editor';
@@ -15,10 +16,11 @@ export const useAfterDialogCodeEditor = ({
 }: {
   editorInst: monaco.editor.IStandaloneCodeEditor | null;
 }) => {
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
-  const editorEscapePressed = useRecoilValue(editorInteractionStateEditorEscapePressedAtom);
-  const waitingForEditorClose = useRecoilValue(editorInteractionStateWaitingForEditorCloseAtom);
+  const editorEscapePressed = useRecoilValue(codeEditorEscapePressedAtom);
+  const waitingForEditorClose = useRecoilValue(codeEditorWaitingForEditorClose);
   const setShowSaveChangesAlert = useSetRecoilState(codeEditorShowSaveChangesAlertAtom);
+  const setCodeEditorState = useSetRecoilState(codeEditorAtom);
+  const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const { closeEditor } = useCloseCodeEditor({
     editorInst,
   });
@@ -29,13 +31,12 @@ export const useAfterDialogCodeEditor = ({
       closeEditor(true);
     }
     if (waitingForEditorClose) {
-      setEditorInteractionState((oldState) => ({
-        ...oldState,
-        selectedCell: waitingForEditorClose.selectedCell,
-        selectedCellSheet: waitingForEditorClose.selectedCellSheet,
-        mode: waitingForEditorClose.mode,
+      setShowCellTypeMenu(waitingForEditorClose.showCellTypeMenu);
+      setCodeEditorState((prev) => ({
+        ...prev,
+        location: waitingForEditorClose.location,
+        language: waitingForEditorClose.language,
         showCodeEditor: !waitingForEditorClose.showCellTypeMenu && !waitingForEditorClose.inlineEditor,
-        showCellTypeMenu: waitingForEditorClose.showCellTypeMenu,
         initialCode: waitingForEditorClose.initialCode,
         waitingForEditorClose: undefined,
       }));
@@ -45,7 +46,14 @@ export const useAfterDialogCodeEditor = ({
     } else {
       closeEditor(true);
     }
-  }, [closeEditor, editorEscapePressed, setEditorInteractionState, setShowSaveChangesAlert, waitingForEditorClose]);
+  }, [
+    closeEditor,
+    editorEscapePressed,
+    setCodeEditorState,
+    setShowCellTypeMenu,
+    setShowSaveChangesAlert,
+    waitingForEditorClose,
+  ]);
 
   return { afterDialog };
 };

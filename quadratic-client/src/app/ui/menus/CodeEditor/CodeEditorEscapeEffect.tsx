@@ -1,12 +1,15 @@
-import { codeEditorShowSaveChangesAlertAtom, codeEditorUnsavedChangesAtom } from '@/app/atoms/codeEditorAtom';
-import { editorInteractionStateEditorEscapePressedAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  codeEditorEscapePressedAtom,
+  codeEditorShowSaveChangesAlertAtom,
+  codeEditorUnsavedChangesAtom,
+} from '@/app/atoms/codeEditorAtom';
 import { useCloseCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useCloseCodeEditor';
 import * as monaco from 'monaco-editor';
 import { useEffect } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 export const CodeEditorEscapeEffect = ({ editorInst }: { editorInst: monaco.editor.IStandaloneCodeEditor | null }) => {
-  const editorEscapePressed = useRecoilValue(editorInteractionStateEditorEscapePressedAtom);
+  const escapePressed = useRecoilValue(codeEditorEscapePressedAtom);
   const setShowSaveChangesAlert = useSetRecoilState(codeEditorShowSaveChangesAlertAtom);
   const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
   const { closeEditor } = useCloseCodeEditor({
@@ -15,14 +18,14 @@ export const CodeEditorEscapeEffect = ({ editorInst }: { editorInst: monaco.edit
 
   // handle when escape is pressed when escape does not have focus
   useEffect(() => {
-    if (editorEscapePressed) {
+    if (escapePressed) {
       if (unsavedChanges) {
         setShowSaveChangesAlert(true);
       } else {
         closeEditor(true);
       }
     }
-  }, [closeEditor, editorEscapePressed, setShowSaveChangesAlert, unsavedChanges]);
+  }, [closeEditor, escapePressed, setShowSaveChangesAlert, unsavedChanges]);
 
   return null;
 };

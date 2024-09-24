@@ -1,7 +1,8 @@
 import { cellTypeMenuOpenedCountAtom } from '@/app/atoms/cellTypeMenuOpenedCountAtom';
+import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import {
-  editorInteractionStateAtom,
   editorInteractionStateShowCellTypeMenuAtom,
+  editorInteractionStateShowConnectionsMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
@@ -29,7 +30,7 @@ import {
 } from '@/shared/shadcn/ui/command';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilState, useSetRecoilState } from 'recoil';
 export interface CellTypeOption {
   name: string;
   searchStrings?: string[];
@@ -80,8 +81,9 @@ let CELL_TYPE_OPTIONS: CellTypeOption[] = [
 ];
 
 export default function CellTypeMenu() {
-  const showCellTypeMenu = useRecoilValue(editorInteractionStateShowCellTypeMenuAtom);
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const [showCellTypeMenu, setShowCellTypeMenu] = useRecoilState(editorInteractionStateShowCellTypeMenuAtom);
+  const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
+  const setCodeEditorState = useSetRecoilState(codeEditorAtom);
   const setCellTypeMenuOpenedCount = useSetRecoilState(cellTypeMenuOpenedCountAtom);
   const fetcher = useConnectionsFetcher();
 
@@ -94,24 +96,26 @@ export default function CellTypeMenu() {
   }, []);
 
   const close = useCallback(() => {
-    setEditorInteractionState((prev) => ({
-      ...prev,
-      showCellTypeMenu: false,
-    }));
-  }, [setEditorInteractionState]);
+    setShowCellTypeMenu(false);
+  }, [setShowCellTypeMenu]);
 
   const openEditor = useCallback(
     (mode: CodeCellLanguage) => {
       mixpanel.track('[CellTypeMenu].selected', { mode });
-      setEditorInteractionState((prev) => ({
+      setShowCellTypeMenu(false);
+      setCodeEditorState((prev) => ({
         ...prev,
         showCodeEditor: true,
-        showCellTypeMenu: false,
-        mode,
+        language: mode,
       }));
     },
-    [setEditorInteractionState]
+    [setCodeEditorState, setShowCellTypeMenu]
   );
+
+  const manageConnections = useCallback(() => {
+    setShowCellTypeMenu(false);
+    setShowConnectionsMenu(true);
+  }, [setShowCellTypeMenu, setShowConnectionsMenu]);
 
   if (!showCellTypeMenu) {
     return null;
@@ -167,13 +171,7 @@ export default function CellTypeMenu() {
                 </>
               }
               icon={<DatabaseIcon className="text-muted-foreground opacity-80" />}
-              onSelect={() => {
-                setEditorInteractionState((prev) => ({
-                  ...prev,
-                  showCellTypeMenu: false,
-                  showConnectionsMenu: true,
-                }));
-              }}
+              onSelect={manageConnections}
             />
           </CommandGroup>
         )}

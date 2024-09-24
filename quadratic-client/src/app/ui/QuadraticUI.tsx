@@ -1,12 +1,10 @@
 import {
   editorInteractionStateFollowAtom,
-  editorInteractionStateShowCodeEditorAtom,
   editorInteractionStateShowNewFileMenuAtom,
   editorInteractionStateShowRenameFileMenuAtom,
   editorInteractionStateShowShareFileMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
-import { presentationModeAtom, showHeadingsAtom } from '@/app/atoms/gridSettingsAtom';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import QuadraticGrid from '@/app/gridGL/QuadraticGrid';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { FileDragDropWrapper } from '@/app/ui/components/FileDragDropWrapper';
@@ -18,7 +16,6 @@ import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { BottomBar } from '@/app/ui/menus/BottomBar/BottomBar';
 import CellTypeMenu from '@/app/ui/menus/CellTypeMenu';
 import CodeEditor from '@/app/ui/menus/CodeEditor';
-import { CodeEditorEffects } from '@/app/ui/menus/CodeEditor/CodeEditorEffects';
 import CommandPalette from '@/app/ui/menus/CommandPalette';
 import ConnectionsMenu from '@/app/ui/menus/ConnectionsMenu';
 import FeedbackMenu from '@/app/ui/menus/FeedbackMenu';
@@ -34,10 +31,9 @@ import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { useEffect, useMemo } from 'react';
-import { isMobile } from 'react-device-detect';
+import { useMemo } from 'react';
 import { useNavigation, useParams } from 'react-router';
-import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 
 export default function QuadraticUI() {
   const {
@@ -47,7 +43,6 @@ export default function QuadraticUI() {
   const navigation = useNavigation();
   const { uuid } = useParams() as { uuid: string };
   const { name, renameFile } = useFileContext();
-  const showCodeEditor = useRecoilValue(editorInteractionStateShowCodeEditorAtom);
   const [showShareFileMenu, setShowShareFileMenu] = useRecoilState(editorInteractionStateShowShareFileMenuAtom);
   const [showNewFileMenu, setShowNewFileMenu] = useRecoilState(editorInteractionStateShowNewFileMenuAtom);
   const [showRenameFileMenu, setShowRenameFileMenu] = useRecoilState(editorInteractionStateShowRenameFileMenuAtom);
@@ -59,21 +54,6 @@ export default function QuadraticUI() {
     [editorInteractionStateFollow, users]
   );
   const presentationMode = useRecoilValue(presentationModeAtom);
-  const setShowHeadings = useSetRecoilState(showHeadingsAtom);
-
-  // Resize the canvas when user goes in/out of presentation mode
-  useEffect(() => {
-    pixiApp.resize();
-  }, [presentationMode, showCodeEditor]);
-
-  // For mobile, set Headers to not visible by default
-  useEffect(() => {
-    if (isMobile) {
-      setShowHeadings(false);
-      pixiApp.viewportChanged();
-    }
-    // eslint-disable-next-line
-  }, []);
 
   return (
     <div
@@ -106,7 +86,6 @@ export default function QuadraticUI() {
             {!presentationMode && <SheetBar />}
           </FileDragDropWrapper>
           <CodeEditor />
-          <CodeEditorEffects />
           <ValidationPanel />
           <Following follow={follow} />
           <div

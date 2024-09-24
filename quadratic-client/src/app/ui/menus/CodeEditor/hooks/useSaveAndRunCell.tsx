@@ -1,5 +1,8 @@
-import { codeEditorCellLocationAtom, codeEditorEditorContentAtom } from '@/app/atoms/codeEditorAtom';
-import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  codeEditorEditorContentAtom,
+  codeEditorLanguageAtom,
+  codeEditorLocationAtom,
+} from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -9,22 +12,21 @@ import { useCallback, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const useSaveAndRunCell = () => {
-  const editorMode = useRecoilValue(editorInteractionStateModeAtom);
-  const mode = useMemo(() => getLanguage(editorMode), [editorMode]);
-
-  const cellLocation = useRecoilValue(codeEditorCellLocationAtom);
+  const location = useRecoilValue(codeEditorLocationAtom);
+  const language = useRecoilValue(codeEditorLanguageAtom);
+  const mode = useMemo(() => getLanguage(language), [language]);
   const editorContent = useRecoilValue(codeEditorEditorContentAtom);
 
-  const saveAndRunCell = useCallback(async () => {
-    if (cellLocation === undefined) throw new Error(`cellLocation is undefined in CodeEditor#saveAndRunCell`);
-    if (editorMode === undefined) throw new Error(`Language ${editorMode} not supported in CodeEditor#saveAndRunCell`);
+  const saveAndRunCell = useCallback(() => {
+    const { sheetId, pos } = location;
+    if (!sheetId) return;
 
     quadraticCore.setCodeCellValue({
-      sheetId: cellLocation.sheetId,
-      x: cellLocation.x,
-      y: cellLocation.y,
+      sheetId,
+      x: pos.x,
+      y: pos.y,
       codeString: editorContent ?? '',
-      language: editorMode,
+      language,
       cursor: sheets.getCursorPosition(),
     });
 
@@ -39,7 +41,7 @@ export const useSaveAndRunCell = () => {
         send_to: 'AW-11007319783/C-yfCJOe6JkZEOe92YAp',
       });
     }
-  }, [cellLocation, editorContent, editorMode, mode]);
+  }, [editorContent, language, location, mode]);
 
   return { saveAndRunCell };
 };

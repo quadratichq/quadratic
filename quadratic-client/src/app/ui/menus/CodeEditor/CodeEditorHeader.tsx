@@ -1,10 +1,10 @@
 import { hasPermissionToEditFile } from '@/app/actions';
-import { codeEditorCellLocationAtom, codeEditorUnsavedChangesAtom } from '@/app/atoms/codeEditorAtom';
 import {
-  editorInteractionStateModeAtom,
-  editorInteractionStatePermissionsAtom,
-  editorInteractionStateSelectedCellSheetAtom,
-} from '@/app/atoms/editorInteractionStateAtom';
+  codeEditorLanguageAtom,
+  codeEditorLocationAtom,
+  codeEditorUnsavedChangesAtom,
+} from '@/app/atoms/codeEditorAtom';
+import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { codeCellIsAConnection, getCodeCell, getConnectionUuid, getLanguage } from '@/app/helpers/codeCellLanguage';
@@ -36,43 +36,44 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
   const {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
-  const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
-  const mode = useRecoilValue(editorInteractionStateModeAtom);
+
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
-  const isConnection = useMemo(() => codeCellIsAConnection(mode), [mode]);
+  const location = useRecoilValue(codeEditorLocationAtom);
+  const language = useRecoilValue(codeEditorLanguageAtom);
+  const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
+  const codeCell = useMemo(() => getCodeCell(language), [language]);
+  const mode = useMemo(() => getLanguage(language), [language]);
+  const isConnection = useMemo(() => codeCellIsAConnection(language), [language]);
   const hasPermission = useMemo(
     () => hasPermissionToEditFile(permissions) && (isConnection ? teamPermissions?.includes('TEAM_EDIT') : true),
     [permissions, teamPermissions, isConnection]
   );
-  const codeCell = useMemo(() => getCodeCell(mode), [mode]);
+
   const connectionsFetcher = useConnectionsFetcher();
-  const language = useMemo(() => getLanguage(mode), [mode]);
-  const cellLocation = useRecoilValue(codeEditorCellLocationAtom);
-  const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
 
   // Get the connection name (it's possible the user won't have access to it
   // because they're in a file they have access to but not the team — or
   // the connection was deleted)
   const currentConnectionName = useMemo(() => {
     if (connectionsFetcher.data) {
-      const connectionUuid = getConnectionUuid(mode);
+      const connectionUuid = getConnectionUuid(language);
       const foundConnection = connectionsFetcher.data.connections.find(({ uuid }) => uuid === connectionUuid);
       if (foundConnection) {
         return foundConnection.name;
       }
     }
     return '';
-  }, [connectionsFetcher.data, mode]);
+  }, [connectionsFetcher.data, language]);
 
   // Keep track of the current sheet ID so we know whether to show the sheet name or not
   const currentCodeEditorCellIsNotInActiveSheet = useMemo(
-    () => currentSheetId !== selectedCellSheet,
-    [currentSheetId, selectedCellSheet]
+    () => currentSheetId !== location.sheetId,
+    [currentSheetId, location.sheetId]
   );
   const currentSheetNameOfActiveCodeEditorCell = useMemo(
-    () => sheets.getById(selectedCellSheet)?.name,
-    [selectedCellSheet]
+    () => sheets.getById(location.sheetId)?.name,
+    [location.sheetId]
   );
 
   const { cancelRun } = useCancelRun();
@@ -93,21 +94,21 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
   useEffect(() => {
     // update running computation for player
     const playerState = (_state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
-      if (!cellLocation) return;
+      if (!location) return;
       if (
         current &&
-        current.sheetPos.x === cellLocation.x &&
-        current.sheetPos.y === cellLocation.y &&
-        current.sheetPos.sheetId === sheets.sheet.id
+        current.sheetPos.sheetId === sheets.sheet.id &&
+        current.sheetPos.x === location.pos.x &&
+        current.sheetPos.y === location.pos.y
       ) {
         setIsRunningComputation('player');
       } else if (
         awaitingExecution?.length &&
         awaitingExecution.find(
           (cell) =>
-            cell.sheetPos.x === cellLocation.x &&
-            cell.sheetPos.y === cellLocation.y &&
-            cell.sheetPos.sheetId === sheets.sheet.id
+            cell.sheetPos.sheetId === sheets.sheet.id &&
+            cell.sheetPos.x === location.pos.x &&
+            cell.sheetPos.y === location.pos.y
         )
       ) {
         setIsRunningComputation('player');
@@ -123,16 +124,14 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
 
     // update running computation for multiplayer
     const multiplayerUpdate = (users: MultiplayerUser[]) => {
-      if (!cellLocation) return;
+      if (!location) return;
       if (
         users.find(
           (user) =>
             user.parsedCodeRunning &&
             user.parsedCodeRunning.find(
               (sheetPos) =>
-                sheetPos.sheetId === cellLocation.sheetId &&
-                sheetPos.x === cellLocation.x &&
-                sheetPos.y === cellLocation.y
+                sheetPos.sheetId === location.sheetId && sheetPos.x === location.pos.x && sheetPos.y === location.pos.y
             )
         )
       ) {
@@ -157,9 +156,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
       events.off('connectionState', playerState);
       events.off('multiplayerUpdate', multiplayerUpdate);
     };
-  }, [cellLocation]);
-
-  if (!cellLocation) return null;
+  }, [location]);
 
   return (
     <div className="flex items-center px-3 py-1">
@@ -179,7 +176,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
 
       <div className="mx-2 flex flex-col truncate">
         <div className="text-sm font-medium leading-4">
-          Cell ({cellLocation.x}, {cellLocation.y})
+          Cell ({location.pos.x}, {location.pos.y})
           {currentCodeEditorCellIsNotInActiveSheet && (
             <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
           )}
@@ -192,32 +189,28 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
 
       <div className="ml-auto flex flex-shrink-0 items-center gap-2">
         {isRunningComputation && (
-          <TooltipHint title={`${language} executing…`} placement="bottom">
+          <TooltipHint title={`${mode} executing…`} placement="bottom">
             <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
           </TooltipHint>
         )}
 
         {hasPermission && (
           <>
-            {['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
+            {['Python', 'Javascript', 'Formula'].includes(mode as string) && <CodeEditorRefButton />}
 
-            {['Python', 'Javascript'].includes(language as string) && <SnippetsPopover editorInst={editorInst} />}
+            {['Python', 'Javascript'].includes(mode as string) && <SnippetsPopover editorInst={editorInst} />}
 
             {!isRunningComputation ? (
               <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
-                <span>
-                  <IconButton id="QuadraticCodeEditorRunButtonID" size="small" color="primary" onClick={saveAndRunCell}>
-                    <PlayArrow />
-                  </IconButton>
-                </span>
+                <IconButton id="QuadraticCodeEditorRunButtonID" size="small" color="primary" onClick={saveAndRunCell}>
+                  <PlayArrow />
+                </IconButton>
               </TooltipHint>
             ) : (
               <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
-                <span>
-                  <IconButton size="small" color="primary" onClick={cancelRun} disabled={!isRunningComputation}>
-                    <Stop />
-                  </IconButton>
-                </span>
+                <IconButton size="small" color="primary" onClick={cancelRun} disabled={!isRunningComputation}>
+                  <Stop />
+                </IconButton>
               </TooltipHint>
             )}
           </>

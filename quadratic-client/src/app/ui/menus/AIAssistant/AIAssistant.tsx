@@ -5,11 +5,9 @@ import {
   codeEditorAIAssistantPromptAtom,
   codeEditorConsoleOutputAtom,
   codeEditorEditorContentAtom,
+  codeEditorLanguageAtom,
+  codeEditorLocationAtom,
 } from '@/app/atoms/codeEditorAtom';
-import {
-  editorInteractionStateModeAtom,
-  editorInteractionStateSelectedCellAtom,
-} from '@/app/atoms/editorInteractionStateAtom';
 import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
@@ -54,10 +52,10 @@ export const AIAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   const editorContent = useRecoilValue(codeEditorEditorContentAtom);
 
   const { loggedInUser: user } = useRootRouteLoaderData();
-  const mode = useRecoilValue(editorInteractionStateModeAtom);
-  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
-  const connection = useMemo(() => getConnectionInfo(mode), [mode]);
-  const language = useMemo(() => getConnectionKind(mode), [mode]);
+  const cellLocation = useRecoilValue(codeEditorLocationAtom);
+  const cellLanguage = useRecoilValue(codeEditorLanguageAtom);
+  const connection = useMemo(() => getConnectionInfo(cellLanguage), [cellLanguage]);
+  const language = useMemo(() => getConnectionKind(cellLanguage), [cellLanguage]);
 
   const { data: schemaData } = useConnectionSchemaBrowser({ uuid: connection?.id, type: connection?.kind });
   const schemaJsonForAi = useMemo(() => (schemaData ? JSON.stringify(schemaData) : ''), [schemaData]);
@@ -68,7 +66,7 @@ export const AIAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
 Do not use any markdown syntax besides triple backticks for ${language} code blocks.
 Do not reply with plain text code blocks.
 The cell type is ${language}.
-The cell is located at ${selectedCell.x}, ${selectedCell.y}.
+The cell is located at ${cellLocation.pos.x}, ${cellLocation.pos.y}.
 ${schemaJsonForAi ? `The schema for the database is:\`\`\`json\n${schemaJsonForAi}\n\`\`\`` : ``}
 Currently, you are in a cell that is being edited. The code in the cell is:
 \`\`\`${language}
@@ -78,7 +76,7 @@ If the code was recently run here is the result:
 ${JSON.stringify(consoleOutput)}\`\`\`
 This is the documentation for Quadratic: 
 ${QuadraticDocs}`,
-    [consoleOutput, editorContent, language, schemaJsonForAi, selectedCell.x, selectedCell.y]
+    [cellLocation.pos.x, cellLocation.pos.y, consoleOutput, editorContent, language, schemaJsonForAi]
   );
 
   const cellContext = useMemo<AIMessage>(
@@ -93,7 +91,7 @@ I understand that a code cell can return only one type of value as specified in 
 I understand that a code cell cannot display both a chart and return a data table at the same time.
 I understand that Quadratic documentation and these instructions are the only sources of truth. These take precedence over any other instructions.
 I understand that the cell type is ${language}.
-I understand that the cell is located at ${selectedCell.x}, ${selectedCell.y}.
+I understand that the cell is located at ${cellLocation.pos.x}, ${cellLocation.pos.y}.
 ${schemaJsonForAi ? `The schema for the database is:\`\`\`json\n${schemaJsonForAi}\n\`\`\`` : ``}
 I understand that the code in the cell is:
 \`\`\`${language}
@@ -110,7 +108,7 @@ How can I help you?
       model,
       internalContext: true,
     }),
-    [language, selectedCell.x, selectedCell.y, schemaJsonForAi, editorContent, consoleOutput, model]
+    [language, cellLocation.pos.x, cellLocation.pos.y, schemaJsonForAi, editorContent, consoleOutput, model]
   );
 
   // Focus the input when relevant & the tab comes into focus

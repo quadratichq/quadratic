@@ -1,5 +1,5 @@
 import { Events } from '@/app/gridGL/Events';
-import { PixiAppSettings } from '@/app/gridGL/PixiAppSettings';
+import { PixiAppEffects } from '@/app/gridGL/PixiAppEffects';
 import { FileProvider } from '@/app/ui/components/FileProvider';
 import QuadraticUI from '@/app/ui/QuadraticUI';
 import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
@@ -9,7 +9,7 @@ export default function QuadraticUIContext() {
     <FileProvider>
       <TooltipProvider>
         <QuadraticUI />
-        <PixiAppSettings />
+        <PixiAppEffects />
         <Events />
       </TooltipProvider>
     </FileProvider>

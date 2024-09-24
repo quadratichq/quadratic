@@ -1,4 +1,4 @@
-import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { codeEditorLanguageAtom } from '@/app/atoms/codeEditorAtom';
 import { useConnectionState } from '@/app/atoms/useConnectionState';
 import { useJavascriptState } from '@/app/atoms/useJavascriptState';
 import { usePythonState } from '@/app/atoms/usePythonState';
@@ -11,8 +11,8 @@ import { useCallback, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const useCancelRun = () => {
-  const editorMode = useRecoilValue(editorInteractionStateModeAtom);
-  const mode = useMemo(() => getLanguage(editorMode), [editorMode]);
+  const language = useRecoilValue(codeEditorLanguageAtom);
+  const mode = useMemo(() => getLanguage(language), [language]);
 
   const { pythonState } = usePythonState();
   const javascriptState = useJavascriptState();

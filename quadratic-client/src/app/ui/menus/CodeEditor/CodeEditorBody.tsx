@@ -1,20 +1,16 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import {
-  codeEditorCellLocationAtom,
   codeEditorCellsAccessedAtom,
   codeEditorEditorContentAtom,
+  codeEditorLanguageAtom,
   codeEditorLoadingAtom,
+  codeEditorLocationAtom,
+  codeEditorShowCodeEditorAtom,
   codeEditorUnsavedChangesAtom,
 } from '@/app/atoms/codeEditorAtom';
-import {
-  editorInteractionStateModeAtom,
-  editorInteractionStatePermissionsAtom,
-  editorInteractionStateSelectedCellAtom,
-  editorInteractionStateSelectedCellSheetAtom,
-  editorInteractionStateShowCodeEditorAtom,
-} from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
-import { SheetPosTS } from '@/app/gridGL/types/size';
+import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { codeCellIsAConnection, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
@@ -55,10 +51,14 @@ const registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
 
 export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   const { editorInst, setEditorInst } = props;
-  const loading = useRecoilValue(codeEditorLoadingAtom);
-  const cellLocation = useRecoilValue(codeEditorCellLocationAtom);
+  const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
+  const location = useRecoilValue(codeEditorLocationAtom);
+  const language = useRecoilValue(codeEditorLanguageAtom);
+  const monacoLanguage = useMemo(() => getLanguageForMonaco(language), [language]);
+  const isConnection = useMemo(() => codeCellIsAConnection(language), [language]);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
   const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
+  const loading = useRecoilValue(codeEditorLoadingAtom);
   const cellsAccessedState = useRecoilValue(codeEditorCellsAccessedAtom);
   const cellsAccessed = useMemo(
     () => (!unsavedChanges ? cellsAccessedState : []),
@@ -67,17 +67,13 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   const {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
-  const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
-  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
-  const language = useRecoilValue(editorInteractionStateModeAtom);
-  const monacoLanguage = useMemo(() => getLanguageForMonaco(language), [language]);
-  const isConnection = useMemo(() => codeCellIsAConnection(language), [language]);
+
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const canEdit = useMemo(
     () => hasPermissionToEditFile(permissions) && (isConnection ? teamPermissions?.includes('TEAM_EDIT') : true),
     [isConnection, permissions, teamPermissions]
   );
-  const showCodeEditor = useRecoilValue(editorInteractionStateShowCodeEditorAtom);
+
   const [isValidRef, setIsValidRef] = useState(false);
   const [monacoInst, setMonacoInst] = useState<Monaco | null>(null);
   useEditorCellHighlights(isValidRef, editorInst, monacoInst, cellsAccessed);
@@ -112,10 +108,9 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
     return () => {
       events.off('insertCodeEditorText', insertText);
     };
-  });
+  }, [editorInst]);
 
-  const lastLocation = useRef<SheetPosTS | undefined>();
-
+  const lastLocation = useRef<CodeCell | undefined>();
   // This is to clear monaco editor's undo/redo stack when the cell location
   // changes useEffect gets triggered when the cell location changes, but the
   // editor content is not loaded in the editor new editor content for the next
@@ -124,13 +119,13 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   useEffect(() => {
     if (
       lastLocation.current &&
-      cellLocation?.sheetId === lastLocation.current.sheetId &&
-      cellLocation?.x === lastLocation.current.x &&
-      cellLocation?.y === lastLocation.current.y
+      location.sheetId === lastLocation.current.sheetId &&
+      location.pos.x === lastLocation.current.pos.x &&
+      location.pos.x === lastLocation.current.pos.y
     ) {
       return;
     }
-    lastLocation.current = cellLocation;
+    lastLocation.current = location;
     if (!editorInst) return;
 
     const model = editorInst.getModel();
@@ -139,7 +134,8 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
     setTimeout(() => {
       (model as any)._commandManager.clear();
     }, 250);
-  }, [cellLocation, editorInst]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editorInst, location.sheetId, location.pos.x, location.pos.y]);
 
   const addCommands = useCallback(
     (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
@@ -149,10 +145,10 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
         '!findWidgetVisible && !inReferenceSearchEditor && !editorHasSelection && !suggestWidgetVisible'
       );
       editor.addCommand(monaco.KeyCode.KeyL | monaco.KeyMod.CtrlCmd, () => {
-        insertCellRef(selectedCell, selectedCellSheet, language);
+        insertCellRef(location.pos, location.sheetId, language);
       });
     },
-    [closeEditor, language, selectedCell, selectedCellSheet]
+    [closeEditor, language, location.pos, location.sheetId]
   );
 
   const runEditorAction = useCallback((e: CustomEvent<string>) => editorInst?.getAction(e.detail)?.run(), [editorInst]);
@@ -217,7 +213,11 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   );
 
   if (editorContent === undefined || loading) {
-    return null;
+    return (
+      <div className="flex justify-center">
+        <CircularProgress style={{ width: '18px', height: '18px' }} />
+      </div>
+    );
   }
 
   return (

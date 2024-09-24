@@ -5,8 +5,8 @@ import {
 } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
+import { codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import {
-  editorInteractionStateShowCodeEditorAtom,
   editorInteractionStateShowCommandPaletteAtom,
   editorInteractionStateShowConnectionsMenuAtom,
   editorInteractionStateShowFeedbackMenuAtom,
@@ -40,7 +40,7 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 
 export const QuadraticSidebar = () => {
   const isRunningAsyncAction = useRecoilValue(editorInteractionStateShowIsRunningAsyncActionAtom);
-  const showCodeEditor = useRecoilValue(editorInteractionStateShowCodeEditorAtom);
+  const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
   const toggleCodeEditor = useMemo(() => defaultActionSpec[Action.ShowCellTypeMenu], []);
   const [showCellTypeOutlines, setShowCellTypeOutlines] = useRecoilState(showCellTypeOutlinesAtom);
   const [showConnectionsMenu, setShowConnectionsMenu] = useRecoilState(editorInteractionStateShowConnectionsMenuAtom);

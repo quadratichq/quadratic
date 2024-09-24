@@ -80,19 +80,18 @@ export class UrlParamsDev {
       const { x, y, sheetId, language: code } = this.state.code;
       const sheet = sheets.getById(sheetId);
       if (sheet) {
-        if (!pixiAppSettings.setEditorInteractionState) {
+        if (!pixiAppSettings.setCodeEditorState) {
           throw new Error('Expected setEditorInteractionState to be set in urlParams.loadCode');
         }
-        pixiAppSettings.setEditorInteractionState({
-          ...pixiAppSettings.editorInteractionState,
+        pixiAppSettings.setCodeEditorState((prev) => ({
+          ...prev,
           showCodeEditor: true,
-          mode: code,
-          selectedCell: {
-            x,
-            y,
+          location: {
+            sheetId,
+            pos: { x, y },
           },
-          selectedCellSheet: sheetId,
-        });
+          language: code,
+        }));
       }
     }
   }
@@ -128,19 +127,18 @@ export class UrlParamsDev {
       //   ].join('\n')
       // );
 
-      if (!pixiAppSettings.setEditorInteractionState) {
+      if (!pixiAppSettings.setCodeEditorState) {
         throw new Error('Expected setEditorInteractionState to be set in urlParams.insertAndRunCodeInNewSheet');
       }
-      pixiAppSettings.setEditorInteractionState?.({
-        ...pixiAppSettings.editorInteractionState,
+      pixiAppSettings.setCodeEditorState((prev) => ({
+        ...prev,
         showCodeEditor: true,
-        mode: language,
-        selectedCell: {
-          x,
-          y,
+        location: {
+          sheetId,
+          pos: { x, y },
         },
-        selectedCellSheet: sheetId,
-      });
+        language,
+      }));
 
       quadraticCore.setCodeCellValue({
         x,
@@ -184,16 +182,15 @@ export class UrlParamsDev {
   };
 
   private updateCode = () => {
-    const state = pixiAppSettings.editorInteractionState;
-    const { showCodeEditor, mode, selectedCell, selectedCellSheet } = state;
+    const { showCodeEditor, location, language } = pixiAppSettings.codeEditorState;
     if (!showCodeEditor) {
       this.state.code = undefined;
     } else {
       this.state.code = {
-        x: selectedCell.x,
-        y: selectedCell.y,
-        sheetId: selectedCellSheet,
-        language: mode as CodeCellLanguage,
+        x: location.pos.x,
+        y: location.pos.y,
+        sheetId: location.sheetId,
+        language,
       };
     }
     this.dirty = true;

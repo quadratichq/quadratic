@@ -1,5 +1,3 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { keyboardCell } from '@/app/gridGL/interaction/keyboard/keyboardCell';
 import { keyboardClipboard } from '@/app/gridGL/interaction/keyboard/keyboardClipboard';
@@ -13,8 +11,6 @@ import { keyboardUndoRedo } from '@/app/gridGL/interaction/keyboard/keyboardUndo
 import { keyboardViewport } from '@/app/gridGL/interaction/keyboard/keyboardViewport';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Size } from '@/app/gridGL/types/size';
-import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { useRecoilState } from 'recoil';
 
 export const pixiKeyboardCanvasProps: { headerSize: Size } = { headerSize: { width: 0, height: 0 } };
 
@@ -22,30 +18,17 @@ export const useKeyboard = (): {
   onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void;
   onKeyUp: (event: React.KeyboardEvent<HTMLElement>) => void;
 } => {
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const [presentationMode, setPresentationMode] = useRecoilState(presentationModeAtom);
-  const { addGlobalSnackbar } = useGlobalSnackbar();
-
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if (pixiAppSettings.input.show && inlineEditorHandler.isOpen()) return;
     if (
       keyboardLink(event) ||
-      keyboardViewport({
-        event,
-        editorInteractionState,
-        setEditorInteractionState,
-        presentationMode,
-        setPresentationMode,
-      }) ||
-      keyboardSearch(event, editorInteractionState, setEditorInteractionState) ||
-      keyboardClipboard({
-        event,
-        addGlobalSnackbar,
-      }) ||
-      keyboardDropdown(event.nativeEvent, editorInteractionState) ||
+      keyboardViewport(event) ||
+      keyboardSearch(event) ||
+      keyboardClipboard(event) ||
+      keyboardDropdown(event.nativeEvent) ||
       keyboardUndoRedo(event) ||
       keyboardSelect(event) ||
-      keyboardCode(event, editorInteractionState) ||
+      keyboardCode(event) ||
       keyboardPosition(event.nativeEvent)
     ) {
       event.preventDefault();
@@ -58,13 +41,7 @@ export const useKeyboard = (): {
       return;
     }
 
-    if (
-      keyboardCell({
-        event,
-        editorInteractionState,
-        setEditorInteractionState,
-      })
-    ) {
+    if (keyboardCell(event)) {
       event.preventDefault();
       event.stopPropagation();
       return;

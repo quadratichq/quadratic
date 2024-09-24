@@ -1,6 +1,8 @@
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { Coordinate, SheetPosTS } from '@/app/gridGL/types/size';
-import { SheetRect } from '@/app/quadratic-core-types';
+import { CodeCell } from '@/app/gridGL/types/codeCell';
+import { Coordinate } from '@/app/gridGL/types/size';
+import { focusGrid } from '@/app/helpers/focusGrid';
+import { CodeCellLanguage, SheetRect } from '@/app/quadratic-core-types';
 import { PanelTab } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { AIMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -11,49 +13,86 @@ export interface ConsoleOutput {
   stdErr?: string;
 }
 
-interface CodeEditorState {
+export interface CodeEditorState {
   aiAssistant: {
     abortController?: AbortController;
     loading: boolean;
     messages: (UserMessage | AIMessage)[];
     prompt: string;
   };
+  showCodeEditor: boolean;
+  escapePressed: boolean;
   loading: boolean;
-  cellLocation?: SheetPosTS;
+  location: CodeCell;
+  language: CodeCellLanguage;
   codeString?: string;
   evaluationResult?: EvaluationResult;
   consoleOutput?: ConsoleOutput;
   spillError?: Coordinate[];
   panelBottomActiveTab: PanelTab;
   showSnippetsPopover: boolean;
+  initialCode?: string;
   editorContent?: string;
   showSaveChangesAlert: boolean;
   cellsAccessed: SheetRect[] | undefined | null;
+  waitingForEditorClose?: {
+    location: CodeCell;
+    language: CodeCellLanguage;
+    showCellTypeMenu: boolean;
+    inlineEditor?: boolean;
+    initialCode?: string;
+  };
 }
 
-const defaultCodeEditorState: CodeEditorState = {
+export const defaultCodeEditorState: CodeEditorState = {
   aiAssistant: {
     abortController: undefined,
     loading: false,
     messages: [],
     prompt: '',
   },
+  showCodeEditor: false,
+  escapePressed: false,
   loading: false,
-  cellLocation: undefined,
+  location: {
+    sheetId: '',
+    pos: { x: 0, y: 0 },
+  },
+  language: 'Python',
   codeString: undefined,
   evaluationResult: undefined,
   consoleOutput: undefined,
   spillError: undefined,
   panelBottomActiveTab: 'ai-assistant',
   showSnippetsPopover: false,
+  initialCode: undefined,
   editorContent: undefined,
   showSaveChangesAlert: false,
   cellsAccessed: undefined,
+  waitingForEditorClose: undefined,
 };
 
 export const codeEditorAtom = atom<CodeEditorState>({
   key: 'codeEditorAtom',
   default: defaultCodeEditorState,
+});
+
+export const codeEditorShowCodeEditorAtom = selector<CodeEditorState['showCodeEditor']>({
+  key: 'codeEditorShowCodeEditorAtom',
+  get: ({ get }) => get(codeEditorAtom)['showCodeEditor'],
+  set: ({ set }, newValue) =>
+    set(codeEditorAtom, (prev) => {
+      if (prev.showCodeEditor && !newValue) {
+        focusGrid();
+      }
+      if (!newValue) {
+        return defaultCodeEditorState;
+      }
+      return {
+        ...prev,
+        showCodeEditor: newValue instanceof DefaultValue ? prev['showCodeEditor'] : newValue,
+      };
+    }),
 });
 
 const createSelector = <T extends keyof CodeEditorState>(key: T) =>
@@ -66,18 +105,22 @@ const createSelector = <T extends keyof CodeEditorState>(key: T) =>
         [key]: newValue instanceof DefaultValue ? prev[key] : newValue,
       })),
   });
-
+export const codeEditorEscapePressedAtom = createSelector('escapePressed');
 export const codeEditorLoadingAtom = createSelector('loading');
-export const codeEditorCellLocationAtom = createSelector('cellLocation');
+export const codeEditorLocationAtom = createSelector('location');
+export const codeEditorLanguageAtom = createSelector('language');
 export const codeEditorCodeStringAtom = createSelector('codeString');
 export const codeEditorEvaluationResultAtom = createSelector('evaluationResult');
 export const codeEditorConsoleOutputAtom = createSelector('consoleOutput');
 export const codeEditorSpillErrorAtom = createSelector('spillError');
 export const codeEditorPanelBottomActiveTabAtom = createSelector('panelBottomActiveTab');
 export const codeEditorShowSnippetsPopoverAtom = createSelector('showSnippetsPopover');
+export const codeEditorInitialCodeAtom = createSelector('initialCode');
 export const codeEditorEditorContentAtom = createSelector('editorContent');
 export const codeEditorShowSaveChangesAlertAtom = createSelector('showSaveChangesAlert');
 export const codeEditorCellsAccessedAtom = createSelector('cellsAccessed');
+export const codeEditorWaitingForEditorClose = createSelector('waitingForEditorClose');
+
 export const codeEditorUnsavedChangesAtom = selector<boolean>({
   key: 'codeEditorUnsavedChangesAtom',
   get: ({ get }) => {

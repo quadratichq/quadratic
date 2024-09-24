@@ -1,5 +1,8 @@
-import { codeEditorConsoleOutputAtom, codeEditorSpillErrorAtom } from '@/app/atoms/codeEditorAtom';
-import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  codeEditorConsoleOutputAtom,
+  codeEditorLanguageAtom,
+  codeEditorSpillErrorAtom,
+} from '@/app/atoms/codeEditorAtom';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import { colors } from '@/app/theme/colors';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from '@/app/ui/menus/CodeEditor/styles';
@@ -9,8 +12,8 @@ import { useRecoilValue } from 'recoil';
 export function Console() {
   const consoleOutput = useRecoilValue(codeEditorConsoleOutputAtom);
   const spillError = useRecoilValue(codeEditorSpillErrorAtom);
-  const mode = useRecoilValue(editorInteractionStateModeAtom);
-  const codeCell = useMemo(() => getCodeCell(mode), [mode]);
+  const language = useRecoilValue(codeEditorLanguageAtom);
+  const codeCell = useMemo(() => getCodeCell(language), [language]);
   const hasOutput = useMemo(
     () => Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError),
     [consoleOutput, spillError]

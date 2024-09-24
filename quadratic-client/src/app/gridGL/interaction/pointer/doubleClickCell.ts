@@ -16,23 +16,24 @@ export async function doubleClickCell(options: {
 
   if (inlineEditorHandler.isEditingFormula()) return;
   if (multiplayer.cellIsBeingEdited(column, row, sheets.sheet.id)) return;
-  if (!pixiAppSettings.setEditorInteractionState || !pixiAppSettings.editorInteractionState) return;
+  if (!pixiAppSettings.setEditorInteractionState || !pixiAppSettings.setCodeEditorState) return;
   const hasPermission = hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions);
 
   // Open the correct code editor
   if (language) {
     const formula = language === 'Formula';
 
-    if (pixiAppSettings.editorInteractionState.showCodeEditor) {
-      pixiAppSettings.setEditorInteractionState({
-        ...pixiAppSettings.editorInteractionState,
-        editorEscapePressed: false,
-        showCellTypeMenu: false,
+    if (pixiAppSettings.codeEditorState.showCodeEditor) {
+      pixiAppSettings.setCodeEditorState({
+        ...pixiAppSettings.codeEditorState,
+        escapePressed: false,
         waitingForEditorClose: {
-          selectedCell: { x: column, y: row },
-          selectedCellSheet: sheets.sheet.id,
-          mode: language,
-          showCellTypeMenu: !language,
+          location: {
+            sheetId: sheets.current,
+            pos: { x: column, y: row },
+          },
+          language,
+          showCellTypeMenu: false,
           inlineEditor: formula,
         },
       });
@@ -44,17 +45,21 @@ export async function doubleClickCell(options: {
         if (cursor.x !== column || cursor.y !== row) {
           sheets.sheet.cursor.changePosition({ cursorPosition: { x: column, y: row } });
         }
+
         pixiAppSettings.changeInput(true, cell);
       } else {
-        pixiAppSettings.setEditorInteractionState({
-          ...pixiAppSettings.editorInteractionState,
-          showCellTypeMenu: false,
+        pixiAppSettings.setCodeEditorState({
+          ...pixiAppSettings.codeEditorState,
           showCodeEditor: true,
-          selectedCell: { x: column, y: row },
-          selectedCellSheet: sheets.sheet.id,
-          mode: language,
-          editorEscapePressed: false,
-          waitingForEditorClose: undefined,
+          escapePressed: false,
+          waitingForEditorClose: {
+            location: {
+              sheetId: sheets.current,
+              pos: { x: column, y: row },
+            },
+            language,
+            showCellTypeMenu: false,
+          },
         });
       }
     }

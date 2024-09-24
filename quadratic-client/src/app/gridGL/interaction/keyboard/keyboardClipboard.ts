@@ -1,14 +1,14 @@
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { copySelectionToPNG, fullClipboardSupport } from '@/app/grid/actions/clipboard/clipboard';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
-import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 
-export function keyboardClipboard(props: {
-  event: React.KeyboardEvent<HTMLElement>;
-  addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'];
-}): boolean {
-  const { addGlobalSnackbar, event } = props;
+export function keyboardClipboard(event: React.KeyboardEvent<HTMLElement>): boolean {
+  const { addGlobalSnackbar } = pixiAppSettings;
+  if (!addGlobalSnackbar) {
+    throw new Error('Expected addGlobalSnackbar to be defined in keyboardClipboard');
+  }
 
   // Copy as PNG
   if (fullClipboardSupport() && matchShortcut(Action.CopyAsPng, event)) {
