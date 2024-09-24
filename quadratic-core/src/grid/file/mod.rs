@@ -145,7 +145,12 @@ pub fn export(grid: Grid) -> Result<Vec<u8>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{grid::CodeCellLanguage, ArraySize, CellValue, CodeCellValue, Pos};
+    use crate::{
+        controller::GridController,
+        grid::{BorderSelection, BorderStyle, CodeCellLanguage},
+        selection::Selection,
+        ArraySize, CellValue, CodeCellValue, Pos, SheetPos,
+    };
     use serial_test::parallel;
 
     const V1_3_FILE: &[u8] =
@@ -275,27 +280,19 @@ mod tests {
     #[test]
     #[parallel]
     fn process_a_v1_4_borders_file() {
-        // let mut grid = Grid::new();
-        // let sheets = grid.sheets_mut();
-        // let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
-        // let selection = vec![BorderSelection::Bottom];
-        // let style = BorderStyle {
-        //     color: Rgba::color_from_str("#000000").unwrap(),
-        //     line: CellBorderLine::Line1,
-        // };
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
 
-        // todo...
-        // let borders = generate_borders(&sheets[0], &rect, selection, Some(style));
-        // set_rect_borders(&mut sheets[0], &rect, borders);
-        // println!("{:#?}", sheets[0].borders);
+        gc.set_borders_selection(
+            Selection::sheet_pos(SheetPos::new(sheet_id, 0, 0)),
+            BorderSelection::Bottom,
+            Some(BorderStyle::default()),
+            None,
+        );
 
-        // todo: this does not work
-        // let _exported = export(&mut grid).unwrap();
-        // println!("{}", _exported);
-        // let _imported = import(&_exported).unwrap();
-        // println!("{:#?}", imported.sheets()[0].borders);
-        // // println!("{:?}", serde_json::to_string(&sheet.column_).unwrap());
-        // println!("{:#?}", &sheets[0].borders.per_cell.borders);
+        let exported = export(gc.grid().clone()).unwrap();
+        let imported = import(exported).unwrap();
+        assert_eq!(imported, gc.grid().clone());
     }
 
     #[test]

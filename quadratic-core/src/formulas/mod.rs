@@ -8,6 +8,7 @@ mod lexer;
 pub mod lsp;
 mod params;
 mod parser;
+pub mod util;
 mod wildcards;
 
 #[cfg(test)]

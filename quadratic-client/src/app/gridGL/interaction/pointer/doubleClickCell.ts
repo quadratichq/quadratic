@@ -1,10 +1,10 @@
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { hasPermissionToEditFile } from '../../../actions';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 export async function doubleClickCell(options: {
   column: number;

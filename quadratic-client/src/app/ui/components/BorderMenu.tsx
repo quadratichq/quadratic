@@ -5,6 +5,7 @@ import { QColorPicker } from '@/app/ui/components/qColorPicker';
 import { useBorders } from '@/app/ui/hooks/useBorders';
 import { CheckSmallIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import { useRecoilValue } from 'recoil';
@@ -40,23 +41,29 @@ export const BorderMenu = () => {
   return (
     <div>
       <ToggleGroup.Root type="single" className="flex flex-row border-b border-border pb-1">
-        {borderActionKeys.map((actionKey, i) => {
+        {borderActionKeys.map((actionKey) => {
+          const label = defaultActionSpec[actionKey].label;
           const Icon = 'Icon' in defaultActionSpec[actionKey] ? defaultActionSpec[actionKey].Icon : undefined;
           const run = defaultActionSpec[actionKey].run;
           return (
-            <ToggleGroup.Item autoFocus={i === 0} asChild value={actionKey} key={actionKey}>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="focus-visible:bg-accent"
-                key={actionKey}
-                onClick={() => {
-                  run(borders);
-                }}
-              >
-                {Icon && <Icon />}
-              </Button>
-            </ToggleGroup.Item>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <ToggleGroup.Item asChild value={actionKey} key={actionKey}>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="focus-visible:bg-accent"
+                    key={actionKey}
+                    onClick={() => {
+                      run(borders);
+                    }}
+                  >
+                    {Icon && <Icon />}
+                  </Button>
+                </ToggleGroup.Item>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">{label}</TooltipContent>
+            </Tooltip>
           );
         })}
       </ToggleGroup.Root>

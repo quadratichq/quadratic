@@ -20,20 +20,20 @@ use crate::Pos;
 
 use super::selection::{export_selection, import_selection};
 
-pub fn import_validations(validations: &current::ValidationsSchema) -> Validations {
+pub fn import_validations(validations: current::ValidationsSchema) -> Validations {
     Validations {
         validations: validations
             .validations
-            .iter()
+            .into_iter()
             .map(|validation| {
                 Validation {
-            id: validation.id.to_owned(),
-            selection: import_selection(&validation.selection),
-            rule: import_validation_rule(&validation.rule),
+            id: validation.id,
+            selection: import_selection(validation.selection),
+            rule: import_validation_rule(validation.rule),
             message: crate::grid::sheet::validations::validation::ValidationMessage {
                 show: validation.message.show,
-                title: validation.message.title.to_owned(),
-                message: validation.message.message.to_owned(),
+                title: validation.message.title,
+                message: validation.message.message,
             },
             error: crate::grid::sheet::validations::validation::ValidationError {
                 show: validation.error.show,
@@ -48,31 +48,29 @@ pub fn import_validations(validations: &current::ValidationsSchema) -> Validatio
                         crate::grid::sheet::validations::validation::ValidationStyle::Information
                     }
                 },
-                title: validation.error.title.to_owned(),
-                message: validation.error.message.to_owned(),
+                title: validation.error.title,
+                message: validation.error.message,
             },
         }
             })
             .collect(),
         warnings: validations
             .warnings
-            .iter()
-            .map(|(pos, id)| (Pos { x: pos.x, y: pos.y }, *id))
+            .into_iter()
+            .map(|(pos, id)| (Pos { x: pos.x, y: pos.y }, id))
             .collect(),
     }
 }
 
-fn import_validation_rule(rule: &current::ValidationRuleSchema) -> ValidationRule {
+fn import_validation_rule(rule: current::ValidationRuleSchema) -> ValidationRule {
     match rule {
         current::ValidationRuleSchema::None => ValidationRule::None,
         current::ValidationRuleSchema::List(list) => ValidationRule::List(ValidationList {
-            source: match &list.source {
+            source: match list.source {
                 current::ValidationListSourceSchema::Selection(selection) => {
                     ValidationListSource::Selection(import_selection(selection))
                 }
-                current::ValidationListSourceSchema::List(list) => {
-                    ValidationListSource::List(list.iter().map(|s| s.to_owned()).collect())
-                }
+                current::ValidationListSourceSchema::List(list) => ValidationListSource::List(list),
             },
             ignore_blank: list.ignore_blank,
             drop_down: list.drop_down,
@@ -87,42 +85,29 @@ fn import_validation_rule(rule: &current::ValidationRuleSchema) -> ValidationRul
             ignore_blank: text.ignore_blank,
             text_match: text
                 .text_match
-                .iter()
+                .into_iter()
                 .map(|m| match m {
                     current::TextMatchSchema::Exactly(
                         current::TextCaseSchema::CaseInsensitive(cases),
-                    ) => TextMatch::Exactly(TextCase::CaseInsensitive(
-                        cases.iter().map(|case| case.to_owned()).collect(),
-                    )),
+                    ) => TextMatch::Exactly(TextCase::CaseInsensitive(cases)),
                     current::TextMatchSchema::Exactly(current::TextCaseSchema::CaseSensitive(
                         cases,
-                    )) => TextMatch::Exactly(TextCase::CaseSensitive(
-                        cases.iter().map(|case| case.to_owned()).collect(),
-                    )),
+                    )) => TextMatch::Exactly(TextCase::CaseSensitive(cases)),
                     current::TextMatchSchema::Contains(
                         current::TextCaseSchema::CaseInsensitive(cases),
-                    ) => TextMatch::Contains(TextCase::CaseInsensitive(
-                        cases.iter().map(|case| case.to_owned()).collect(),
-                    )),
+                    ) => TextMatch::Contains(TextCase::CaseInsensitive(cases)),
                     current::TextMatchSchema::Contains(current::TextCaseSchema::CaseSensitive(
                         cases,
-                    )) => TextMatch::Contains(TextCase::CaseSensitive(
-                        cases.iter().map(|case| case.to_owned()).collect(),
-                    )),
+                    )) => TextMatch::Contains(TextCase::CaseSensitive(cases)),
                     current::TextMatchSchema::NotContains(
                         current::TextCaseSchema::CaseInsensitive(cases),
-                    ) => TextMatch::NotContains(TextCase::CaseInsensitive(
-                        cases.iter().map(|case| case.to_owned()).collect(),
-                    )),
+                    ) => TextMatch::NotContains(TextCase::CaseInsensitive(cases)),
                     current::TextMatchSchema::NotContains(
                         current::TextCaseSchema::CaseSensitive(cases),
-                    ) => TextMatch::NotContains(TextCase::CaseSensitive(
-                        cases.iter().map(|case| case.to_owned()).collect(),
-                    )),
-                    current::TextMatchSchema::TextLength { min, max } => TextMatch::TextLength {
-                        min: min.to_owned(),
-                        max: max.to_owned(),
-                    },
+                    ) => TextMatch::NotContains(TextCase::CaseSensitive(cases)),
+                    current::TextMatchSchema::TextLength { min, max } => {
+                        TextMatch::TextLength { min, max }
+                    }
                 })
                 .collect(),
         }),
@@ -130,17 +115,11 @@ fn import_validation_rule(rule: &current::ValidationRuleSchema) -> ValidationRul
             ignore_blank: number.ignore_blank,
             ranges: number
                 .ranges
-                .iter()
+                .into_iter()
                 .map(|range| match range {
-                    current::NumberRangeSchema::Range(min, max) => {
-                        NumberRange::Range(min.to_owned(), max.to_owned())
-                    }
-                    current::NumberRangeSchema::Equal(entry) => {
-                        NumberRange::Equal(entry.to_owned())
-                    }
-                    current::NumberRangeSchema::NotEqual(entry) => {
-                        NumberRange::NotEqual(entry.to_owned())
-                    }
+                    current::NumberRangeSchema::Range(min, max) => NumberRange::Range(min, max),
+                    current::NumberRangeSchema::Equal(entry) => NumberRange::Equal(entry),
+                    current::NumberRangeSchema::NotEqual(entry) => NumberRange::NotEqual(entry),
                 })
                 .collect(),
         }),
@@ -153,25 +132,25 @@ fn import_validation_rule(rule: &current::ValidationRuleSchema) -> ValidationRul
                 prohibit_time: dt.prohibit_time,
                 ranges: dt
                     .ranges
-                    .iter()
+                    .into_iter()
                     .map(|range| match range {
                         current::DateTimeRangeSchema::DateRange(min, max) => {
-                            DateTimeRange::DateRange(min.to_owned(), max.to_owned())
+                            DateTimeRange::DateRange(min, max)
                         }
                         current::DateTimeRangeSchema::DateEqual(entry) => {
-                            DateTimeRange::DateEqual(entry.to_owned())
+                            DateTimeRange::DateEqual(entry)
                         }
                         current::DateTimeRangeSchema::DateNotEqual(entry) => {
-                            DateTimeRange::DateNotEqual(entry.to_owned())
+                            DateTimeRange::DateNotEqual(entry)
                         }
                         current::DateTimeRangeSchema::TimeRange(min, max) => {
-                            DateTimeRange::TimeRange(min.to_owned(), max.to_owned())
+                            DateTimeRange::TimeRange(min, max)
                         }
                         current::DateTimeRangeSchema::TimeEqual(entry) => {
-                            DateTimeRange::TimeEqual(entry.to_owned())
+                            DateTimeRange::TimeEqual(entry)
                         }
                         current::DateTimeRangeSchema::TimeNotEqual(entry) => {
-                            DateTimeRange::TimeNotEqual(entry.to_owned())
+                            DateTimeRange::TimeNotEqual(entry)
                         }
                     })
                     .collect(),
@@ -180,18 +159,18 @@ fn import_validation_rule(rule: &current::ValidationRuleSchema) -> ValidationRul
     }
 }
 
-fn export_validation_rule(rule: &ValidationRule) -> current::ValidationRuleSchema {
+fn export_validation_rule(rule: ValidationRule) -> current::ValidationRuleSchema {
     match rule {
         ValidationRule::None => current::ValidationRuleSchema::None,
         ValidationRule::List(list) => {
             current::ValidationRuleSchema::List(current::ValidationListSchema {
-                source: match &list.source {
+                source: match list.source {
                     ValidationListSource::Selection(selection) => {
                         current::ValidationListSourceSchema::Selection(export_selection(selection))
                     }
-                    ValidationListSource::List(list) => current::ValidationListSourceSchema::List(
-                        list.iter().map(|s| s.to_owned()).collect(),
-                    ),
+                    ValidationListSource::List(list) => {
+                        current::ValidationListSourceSchema::List(list)
+                    }
                 },
                 ignore_blank: list.ignore_blank,
                 drop_down: list.drop_down,
@@ -208,55 +187,40 @@ fn export_validation_rule(rule: &ValidationRule) -> current::ValidationRuleSchem
                 ignore_blank: text.ignore_blank,
                 text_match: text
                     .text_match
-                    .iter()
+                    .into_iter()
                     .map(|m| match m {
                         TextMatch::Exactly(TextCase::CaseInsensitive(cases)) => {
                             current::TextMatchSchema::Exactly(
-                                current::TextCaseSchema::CaseInsensitive(
-                                    cases.iter().map(|case| case.to_owned()).collect(),
-                                ),
+                                current::TextCaseSchema::CaseInsensitive(cases),
                             )
                         }
                         TextMatch::Exactly(TextCase::CaseSensitive(cases)) => {
                             current::TextMatchSchema::Exactly(
-                                current::TextCaseSchema::CaseSensitive(
-                                    cases.iter().map(|case| case.to_owned()).collect(),
-                                ),
+                                current::TextCaseSchema::CaseSensitive(cases),
                             )
                         }
                         TextMatch::Contains(TextCase::CaseInsensitive(cases)) => {
                             current::TextMatchSchema::Contains(
-                                current::TextCaseSchema::CaseInsensitive(
-                                    cases.iter().map(|case| case.to_owned()).collect(),
-                                ),
+                                current::TextCaseSchema::CaseInsensitive(cases),
                             )
                         }
                         TextMatch::Contains(TextCase::CaseSensitive(cases)) => {
                             current::TextMatchSchema::Contains(
-                                current::TextCaseSchema::CaseSensitive(
-                                    cases.iter().map(|case| case.to_owned()).collect(),
-                                ),
+                                current::TextCaseSchema::CaseSensitive(cases),
                             )
                         }
                         TextMatch::NotContains(TextCase::CaseInsensitive(cases)) => {
                             current::TextMatchSchema::NotContains(
-                                current::TextCaseSchema::CaseInsensitive(
-                                    cases.iter().map(|case| case.to_owned()).collect(),
-                                ),
+                                current::TextCaseSchema::CaseInsensitive(cases),
                             )
                         }
                         TextMatch::NotContains(TextCase::CaseSensitive(cases)) => {
                             current::TextMatchSchema::NotContains(
-                                current::TextCaseSchema::CaseSensitive(
-                                    cases.iter().map(|case| case.to_owned()).collect(),
-                                ),
+                                current::TextCaseSchema::CaseSensitive(cases),
                             )
                         }
                         TextMatch::TextLength { min, max } => {
-                            current::TextMatchSchema::TextLength {
-                                min: min.to_owned(),
-                                max: max.to_owned(),
-                            }
+                            current::TextMatchSchema::TextLength { min, max }
                         }
                     })
                     .collect(),
@@ -267,17 +231,11 @@ fn export_validation_rule(rule: &ValidationRule) -> current::ValidationRuleSchem
                 ignore_blank: number.ignore_blank,
                 ranges: number
                     .ranges
-                    .iter()
+                    .into_iter()
                     .map(|range| match range {
-                        NumberRange::Range(min, max) => {
-                            current::NumberRangeSchema::Range(*min, *max)
-                        }
-                        NumberRange::Equal(entry) => {
-                            current::NumberRangeSchema::Equal(entry.clone())
-                        }
-                        NumberRange::NotEqual(entry) => {
-                            current::NumberRangeSchema::NotEqual(entry.clone())
-                        }
+                        NumberRange::Range(min, max) => current::NumberRangeSchema::Range(min, max),
+                        NumberRange::Equal(entry) => current::NumberRangeSchema::Equal(entry),
+                        NumberRange::NotEqual(entry) => current::NumberRangeSchema::NotEqual(entry),
                     })
                     .collect(),
             })
@@ -291,25 +249,25 @@ fn export_validation_rule(rule: &ValidationRule) -> current::ValidationRuleSchem
                 prohibit_time: dt.prohibit_time,
                 ranges: dt
                     .ranges
-                    .iter()
+                    .into_iter()
                     .map(|range| match range {
                         DateTimeRange::DateRange(min, max) => {
-                            current::DateTimeRangeSchema::DateRange(*min, *max)
+                            current::DateTimeRangeSchema::DateRange(min, max)
                         }
                         DateTimeRange::DateEqual(entry) => {
-                            current::DateTimeRangeSchema::DateEqual(entry.clone())
+                            current::DateTimeRangeSchema::DateEqual(entry)
                         }
                         DateTimeRange::DateNotEqual(entry) => {
-                            current::DateTimeRangeSchema::DateNotEqual(entry.clone())
+                            current::DateTimeRangeSchema::DateNotEqual(entry)
                         }
                         DateTimeRange::TimeRange(min, max) => {
-                            current::DateTimeRangeSchema::TimeRange(*min, *max)
+                            current::DateTimeRangeSchema::TimeRange(min, max)
                         }
                         DateTimeRange::TimeEqual(entry) => {
-                            current::DateTimeRangeSchema::TimeEqual(entry.clone())
+                            current::DateTimeRangeSchema::TimeEqual(entry)
                         }
                         DateTimeRange::TimeNotEqual(entry) => {
-                            current::DateTimeRangeSchema::TimeNotEqual(entry.clone())
+                            current::DateTimeRangeSchema::TimeNotEqual(entry)
                         }
                     })
                     .collect(),
@@ -318,19 +276,19 @@ fn export_validation_rule(rule: &ValidationRule) -> current::ValidationRuleSchem
     }
 }
 
-pub fn export_validations(validations: &Validations) -> current::ValidationsSchema {
+pub fn export_validations(validations: Validations) -> current::ValidationsSchema {
     current::ValidationsSchema {
         validations: validations
             .validations
-            .iter()
+            .into_iter()
             .map(|validation| current::ValidationSchema {
-                selection: export_selection(&validation.selection),
-                id: validation.id.to_owned(),
-                rule: export_validation_rule(&validation.rule),
+                selection: export_selection(validation.selection),
+                id: validation.id,
+                rule: export_validation_rule(validation.rule),
                 message: current::ValidationMessageSchema {
                     show: validation.message.show,
-                    title: validation.message.title.to_owned(),
-                    message: validation.message.message.to_owned(),
+                    title: validation.message.title,
+                    message: validation.message.message,
                 },
                 error: current::ValidationErrorSchema {
                     show: validation.error.show,
@@ -339,15 +297,15 @@ pub fn export_validations(validations: &Validations) -> current::ValidationsSche
                         ValidationStyle::Stop => current::ValidationStyleSchema::Stop,
                         ValidationStyle::Information => current::ValidationStyleSchema::Information,
                     },
-                    title: validation.error.title.to_owned(),
-                    message: validation.error.message.to_owned(),
+                    title: validation.error.title,
+                    message: validation.error.message,
                 },
             })
             .collect(),
         warnings: validations
             .warnings
-            .iter()
-            .map(|(pos, id)| (current::PosSchema { x: pos.x, y: pos.y }, *id))
+            .into_iter()
+            .map(|(pos, id)| (current::PosSchema { x: pos.x, y: pos.y }, id))
             .collect(),
     }
 }
@@ -356,6 +314,7 @@ pub fn export_validations(validations: &Validations) -> current::ValidationsSche
 mod tests {
     use std::collections::HashMap;
 
+    use serial_test::parallel;
     use uuid::Uuid;
 
     use crate::{grid::SheetId, selection::Selection, Rect};
@@ -363,6 +322,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[parallel]
     fn import_export_validations() {
         let validation_id = Uuid::new_v4();
         let mut warnings = HashMap::new();
@@ -407,11 +367,12 @@ mod tests {
             }],
             warnings,
         };
-        let imported = import_validations(&export_validations(&validations));
+        let imported = import_validations(export_validations(validations.clone()));
         assert_eq!(validations, imported);
     }
 
     #[test]
+    #[parallel]
     fn import_export_validation_numbers() {
         let validation_id = Uuid::new_v4();
         let mut warnings = HashMap::new();
@@ -450,11 +411,12 @@ mod tests {
             }],
             warnings,
         };
-        let imported = import_validations(&export_validations(&validations));
+        let imported = import_validations(export_validations(validations.clone()));
         assert_eq!(validations, imported);
     }
 
     #[test]
+    #[parallel]
     fn import_export_validation_text() {
         let validation_id = Uuid::new_v4();
         let mut warnings = HashMap::new();
@@ -507,11 +469,12 @@ mod tests {
             }],
             warnings,
         };
-        let imported = import_validations(&export_validations(&validations));
+        let imported = import_validations(export_validations(validations.clone()));
         assert_eq!(validations, imported);
     }
 
     #[test]
+    #[parallel]
     fn import_export_validation_date_time() {
         let validation_id = Uuid::new_v4();
         let mut warnings = HashMap::new();
@@ -556,7 +519,7 @@ mod tests {
             }],
             warnings,
         };
-        let imported = import_validations(&export_validations(&validations));
+        let imported = import_validations(export_validations(validations.clone()));
         assert_eq!(validations, imported);
     }
 }

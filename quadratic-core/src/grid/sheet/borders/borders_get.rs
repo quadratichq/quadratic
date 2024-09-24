@@ -4,20 +4,7 @@ impl Borders {
     /// Gets a BorderStyleCellUpdate for a cell that will override the current
     /// cell. This is called by the clipboard.
     pub fn update_override(&self, x: i64, y: i64) -> BorderStyleCellUpdate {
-        let mut cell = BorderStyleCell::default();
-
-        if self.all.top.is_some() {
-            cell.top = self.all.top;
-        }
-        if self.all.bottom.is_some() {
-            cell.bottom = self.all.bottom;
-        }
-        if self.all.left.is_some() {
-            cell.left = self.all.left;
-        }
-        if self.all.right.is_some() {
-            cell.right = self.all.right;
-        }
+        let mut cell = self.all;
 
         // for columns and rows, we'll have to compare the timestamps to get the correct value
         let column = self.columns.get(&x);
@@ -91,49 +78,25 @@ impl Borders {
                 }
             }
             (Some(column), None) => {
-                if column.top.is_some() {
-                    cell.top = column.top;
-                }
-                if column.bottom.is_some() {
-                    cell.bottom = column.bottom;
-                }
-                if column.left.is_some() {
-                    cell.left = column.left;
-                }
-                if column.right.is_some() {
-                    cell.right = column.right;
-                }
+                cell.top = column.top.or(cell.top);
+                cell.bottom = column.bottom.or(cell.bottom);
+                cell.left = column.left.or(cell.left);
+                cell.right = column.right.or(cell.right);
             }
             (None, Some(row)) => {
-                if row.top.is_some() {
-                    cell.top = row.top;
-                }
-                if row.bottom.is_some() {
-                    cell.bottom = row.bottom;
-                }
-                if row.left.is_some() {
-                    cell.left = row.left;
-                }
-                if row.right.is_some() {
-                    cell.right = row.right;
-                }
+                cell.top = row.top.or(cell.top);
+                cell.bottom = row.bottom.or(cell.bottom);
+                cell.left = row.left.or(cell.left);
+                cell.right = row.right.or(cell.right);
             }
             (None, None) => {}
         }
 
         let c = self.get(x, y);
-        if c.top.is_some() {
-            cell.top = c.top;
-        }
-        if c.bottom.is_some() {
-            cell.bottom = c.bottom;
-        }
-        if c.left.is_some() {
-            cell.left = c.left;
-        }
-        if c.right.is_some() {
-            cell.right = c.right;
-        }
+        cell.top = c.top.or(cell.top);
+        cell.bottom = c.bottom.or(cell.bottom);
+        cell.left = c.left.or(cell.left);
+        cell.right = c.right.or(cell.right);
 
         cell.override_border(false)
     }

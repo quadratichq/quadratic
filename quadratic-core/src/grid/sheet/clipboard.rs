@@ -97,7 +97,6 @@ impl Sheet {
                         || italic
                         || text_color.is_some()
                         || fill_color.is_some()
-                        // || cell_border.is_some()
                         || cell_align.is_some()
                         || cell_vertical_align.is_some()
                         || cell_wrap.is_some()
@@ -125,28 +124,6 @@ impl Sheet {
                                 );
                             }
                         }
-                        // if let Some(cell_border) = cell_border {
-                        //     for (side, border) in cell_border.borders.iter().enumerate() {
-                        //         let side = match side {
-                        //             0 => "-left",
-                        //             1 => "-top",
-                        //             2 => "-right",
-                        //             3 => "-bottom",
-                        //             _ => "",
-                        //         };
-                        //         if let Some(border) = border {
-                        //             style.push_str(
-                        //                 format!(
-                        //                     "border{}: {} {};",
-                        //                     side,
-                        //                     border.line.as_css_string(),
-                        //                     border.color.as_rgb_hex()
-                        //                 )
-                        //                 .as_str(),
-                        //             );
-                        //         }
-                        //     }
-                        // }
                         if let Some(cell_align) = cell_align {
                             style.push_str(cell_align.as_css_string());
                         }

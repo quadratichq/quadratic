@@ -264,6 +264,10 @@ impl<B: BlockContent> ColumnData<B> {
         self.0.values()
     }
 
+    pub fn into_blocks(self) -> impl Iterator<Item = Block<B>> {
+        self.0.into_values()
+    }
+
     pub fn has_blocks_in_range(&self, y_range: Range<i64>) -> bool {
         self.blocks_covering_range(y_range).next().is_some()
     }

@@ -109,11 +109,15 @@ impl CellValue {
                 CellValue::Logical(is_true)
             }
             "instant" => CellValue::Text("not implemented".into()), //unpack_str_unix_timestamp(value)?,
-            "duration" => CellValue::Text("not implemented".into()),
+            "duration" => {
+                CellValue::unpack_duration(value).unwrap_or(CellValue::Text(value.into()))
+            }
             "image" => CellValue::Image(value.into()),
             "date" => Self::from_js_date(value),
             "date time" => Self::from_js_date_time(value),
-            _ => CellValue::unpack_date_time(value).unwrap_or(CellValue::Text(value.into())),
+            _ => CellValue::unpack_date_time(value)
+                .or_else(|| CellValue::unpack_duration(value))
+                .unwrap_or_else(|| CellValue::Text(value.clone())),
         };
 
         Ok((cell_value, ops))

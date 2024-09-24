@@ -53,8 +53,8 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{
-            formats::format_update::FormatUpdate, js_types::CellFormatSummary, CodeCellLanguage,
-            SheetId,
+            formats::format_update::FormatUpdate, js_types::CellFormatSummary, BorderSelection,
+            BorderStyle, CellBorderLine, CodeCellLanguage, SheetId,
         },
         CellValue, CodeCellValue, Pos, Rect, SheetPos, SheetRect,
     };
@@ -359,15 +359,20 @@ mod test {
     fn test_copy_borders_to_clipboard() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-
-        // todo...
-        // set_borders(&mut gc, sheet_id);
 
         let selection = Selection::rect(
             Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 }),
             sheet_id,
         );
+
+        gc.set_borders_selection(
+            selection.clone(),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
         let clipboard = sheet.copy_to_clipboard(&selection).unwrap();
 
         gc.paste_from_clipboard(
@@ -378,20 +383,11 @@ mod test {
             None,
         );
 
-        // todo...
-        // let borders = gc
-        //     .sheet(sheet_id)
-        //     .borders()
-        //     .per_cell
-        //     .borders
-        //     .iter()
-        //     .collect::<Vec<_>>();
-
-        // // compare the border info stored in the block's content
-        // assert_eq!(
-        //     borders[0].1.blocks().next().unwrap().content,
-        //     borders[1].1.blocks().next().unwrap().content
-        // );
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.borders.get(3, 3).top.unwrap().line,
+            CellBorderLine::default()
+        );
     }
 
     #[test]
@@ -399,51 +395,41 @@ mod test {
     fn test_copy_borders_inside() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
 
-        // let selection = vec![BorderSelection::Outer];
-        // let style = BorderStyle {
-        //     color: Rgba::color_from_str("#000000").unwrap(),
-        //     line: CellBorderLine::Line1,
-        // };
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::new(0, 0, 4, 4, sheet_id)),
+            BorderSelection::Outer,
+            Some(BorderStyle::default()),
+            None,
+        );
 
-        // todo...
-        // let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 4, y: 4 });
-        // let borders = generate_borders(sheet, &rect, selection, Some(style));
-        // set_rect_borders(sheet, &rect, borders);
+        let sheet = gc.sheet(sheet_id);
+        let borders = sheet.borders.borders_in_sheet().unwrap();
+        assert!(borders.horizontal.as_ref().unwrap().iter().any(|border| {
+            border.x == 0
+                && border.y == 0
+                && border.width == 5
+                && border.line == CellBorderLine::default()
+        }));
+        assert!(borders.horizontal.as_ref().unwrap().iter().any(|border| {
+            border.x == 0
+                && border.y == 5
+                && border.width == 5
+                && border.line == CellBorderLine::default()
+        }));
+        assert!(borders.vertical.as_ref().unwrap().iter().any(|border| {
+            border.x == 0
+                && border.y == 0
+                && border.height == 5
+                && border.line == CellBorderLine::default()
+        }));
 
-        // todo....
-        // // weird: can't test them by comparing arrays since the order is seemingly random
-        // let borders = sheet.render_borders();
-        // assert!(borders.horizontal.iter().any(|border| {
-        //     border.x == 0
-        //         && border.y == 0
-        //         && border.w == Some(5)
-        //         && border.h.is_none()
-        //         && border.style == style
-        // }));
-        // assert!(borders.horizontal.iter().any(|border| {
-        //     border.x == 0
-        //         && border.y == 5
-        //         && border.w == Some(5)
-        //         && border.h.is_none()
-        //         && border.style == style
-        // }));
-        // assert!(borders.vertical.iter().any(|border| {
-        //     border.x == 0
-        //         && border.y == 0
-        //         && border.w.is_none()
-        //         && border.h == Some(5)
-        //         && border.style == style
-        // }));
-
-        // assert!(borders.vertical.iter().any(|border| {
-        //     border.x == 5
-        //         && border.y == 0
-        //         && border.w.is_none()
-        //         && border.h == Some(5)
-        //         && border.style == style
-        // }));
+        assert!(borders.vertical.as_ref().unwrap().iter().any(|border| {
+            border.x == 5
+                && border.y == 0
+                && border.height == 5
+                && border.line == CellBorderLine::default()
+        }));
 
         let (_, html) = sheet
             .copy_to_clipboard(&Selection::rect(
@@ -459,36 +445,33 @@ mod test {
             None,
         );
 
-        // let sheet = gc.sheet_mut(sheet_id);
-        // let borders = sheet.render_borders();
-        // assert!(borders.horizontal.iter().any(|border| {
-        //     border.x == 0
-        //         && border.y == 10
-        //         && border.w == Some(5)
-        //         && border.h.is_none()
-        //         && border.style == style
-        // }));
-        // assert!(borders.horizontal.iter().any(|border| {
-        //     border.x == 0
-        //         && border.y == 15
-        //         && border.w == Some(5)
-        //         && border.h.is_none()
-        //         && border.style == style
-        // }));
-        // assert!(borders.vertical.iter().any(|border| {
-        //     border.x == 0
-        //         && border.y == 10
-        //         && border.w.is_none()
-        //         && border.h == Some(5)
-        //         && border.style == style
-        // }));
-        // assert!(borders.vertical.iter().any(|border| {
-        //     border.x == 5
-        //         && border.y == 10
-        //         && border.w.is_none()
-        //         && border.h == Some(5)
-        //         && border.style == style
-        // }));
+        let sheet = gc.sheet(sheet_id);
+        let borders = sheet.borders.borders_in_sheet().unwrap();
+        assert!(borders.horizontal.as_ref().unwrap().iter().any(|border| {
+            border.x == 0
+                && border.y == 10
+                && border.width == 5
+                && border.line == CellBorderLine::default()
+        }));
+        assert!(borders.horizontal.as_ref().unwrap().iter().any(|border| {
+            border.x == 0
+                && border.y == 15
+                && border.width == 5
+                && border.line == CellBorderLine::default()
+        }));
+        assert!(borders.vertical.as_ref().unwrap().iter().any(|border| {
+            border.x == 0
+                && border.y == 10
+                && border.height == 5
+                && border.line == CellBorderLine::default()
+        }));
+
+        assert!(borders.vertical.as_ref().unwrap().iter().any(|border| {
+            border.x == 5
+                && border.y == 10
+                && border.height == 5
+                && border.line == CellBorderLine::default()
+        }));
     }
 
     #[test]
