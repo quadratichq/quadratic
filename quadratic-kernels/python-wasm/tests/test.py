@@ -262,7 +262,7 @@ class TestUtils(TestCase):
         assert to_quadratic_type("true") == ("true", "text")
         assert to_quadratic_type("false") == ("false", "text")
 
-        # dates
+        # date time
         assert to_quadratic_type(pd.Timestamp("2012-11-10")) == (
             "2012-11-10T00:00:00",
             "date time",
@@ -286,13 +286,25 @@ class TestUtils(TestCase):
         assert to_quadratic_type(
             datetime.strptime("2012-11-10 03:30", "%Y-%m-%d %H:%M")
         ) == ("2012-11-10T03:30:00", "date time")
-        # assert to_quadratic_type("2012-11-10") == ("1352505600", "instant")
 
+        # date
         assert to_quadratic_type(date(2012, 12, 21)) == ("2012-12-21", "date")
+
+        # time
+        assert to_quadratic_type(time(3, 30)) == ("03:30:00", "time")
         assert to_quadratic_type(time(3, 30)) == ("03:30:00", "time")
 
-        # TODO(ddimaria): implement when we implement duration in Rust
         # duration
+        assert to_quadratic_type(relativedelta(
+            years=1,
+            months=2,
+            weeks=3,
+            days=4,
+            hours=5,
+            minutes=6,
+            seconds=7.5,
+            microseconds=155,
+        )) == ("1y 2mo 25d 5h 6m 7.5s 155µs", "duration")
 
     def test_to_python_type(self):
         # blank
@@ -319,6 +331,20 @@ class TestUtils(TestCase):
         assert to_python_type("2012-11-10T00:00:00", "date") == datetime(2012, 11, 10)
         assert to_python_type("2012-11-10T03:30:00", "date") == datetime(
             2012, 11, 10, 3, 30
+        )
+
+        # duration
+        assert to_python_type("1y 2mo 3w 4d 5h 6m 7.5s 3ms 4µs", "duration") == relativedelta(
+            years=1,
+            months=2,
+            days=25, # no weeks!
+            hours=5,
+            minutes=6,
+            seconds=7.5,
+            microseconds=3004,
+        )
+        assert to_python_type("1µs 2ns 3ps 4fs 5as", "duration") == relativedelta(
+            microseconds=1.002003004005,
         )
 
 
