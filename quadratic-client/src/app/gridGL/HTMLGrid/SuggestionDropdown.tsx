@@ -26,7 +26,7 @@ export const SuggestionDropDown = () => {
       if (values) {
         setOffsets(sheet.getCellOffsets(pos.x, pos.y));
       }
-    }; // https://hello.herelhdjfkjksdhfjkasdhfkjhaskdjfhkjsadf
+    };
 
     const valueChanged = (input = inlineEditorMonaco.get()) => {
       if (inlineEditorHandler.formula || input.trim() === '' || !list) {
