@@ -1,5 +1,4 @@
-import { codeEditorShowSnippetsPopoverAtom } from '@/app/atoms/codeEditorAtom';
-import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { codeEditorLanguageAtom, codeEditorShowSnippetsPopoverAtom } from '@/app/atoms/codeEditorAtom';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { snippetsJS } from '@/app/ui/menus/CodeEditor/snippetsJS';
 import { snippetsPY } from '@/app/ui/menus/CodeEditor/snippetsPY';
@@ -33,7 +32,7 @@ interface SnippetsPopoverProps {
 
 export function SnippetsPopover({ editorInst }: SnippetsPopoverProps) {
   const [showSnippetsPopover, setShowSnippetsPopover] = useRecoilState(codeEditorShowSnippetsPopoverAtom);
-  const mode = useRecoilValue(editorInteractionStateModeAtom);
+  const language = useRecoilValue(codeEditorLanguageAtom);
   const theme = useTheme();
 
   useEffect(() => {
@@ -42,10 +41,10 @@ export function SnippetsPopover({ editorInst }: SnippetsPopoverProps) {
     }
   }, [showSnippetsPopover]);
 
-  const snippets = useMemo(() => (mode === 'Javascript' ? snippetsJS : snippetsPY), [mode]);
+  const snippets = useMemo(() => (language === 'Javascript' ? snippetsJS : snippetsPY), [language]);
   const documentationLink = useMemo(
-    () => (mode === 'Javascript' ? DOCUMENTATION_JAVASCRIPT_URL : DOCUMENTATION_PYTHON_URL),
-    [mode]
+    () => (language === 'Javascript' ? DOCUMENTATION_JAVASCRIPT_URL : DOCUMENTATION_PYTHON_URL),
+    [language]
   );
   return (
     <Popover open={showSnippetsPopover} onOpenChange={setShowSnippetsPopover}>

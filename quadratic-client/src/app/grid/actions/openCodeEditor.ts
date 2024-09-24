@@ -3,59 +3,59 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 export const openCodeEditor = async () => {
-  const { setEditorInteractionState, setCodeEditorState } = pixiAppSettings;
-  if (!setEditorInteractionState) {
-    throw new Error('Expected setEditorInteractionState to be defined in openCodeEditor');
-  }
-
+  const { codeEditorState, setCodeEditorState, setEditorInteractionState } = pixiAppSettings;
   if (!setCodeEditorState) {
     throw new Error('Expected setCodeEditorState to be defined in openCodeEditor');
   }
 
-  // close diff editor if open
-  setCodeEditorState((prev) => ({
-    ...prev,
-    modifiedEditorContent: undefined,
-  }));
+  if (!setEditorInteractionState) {
+    throw new Error('Expected setEditorInteractionState to be defined in openCodeEditor');
+  }
 
-  const cursorPosition = sheets.sheet.cursor.cursorPosition;
-  const { x, y } = cursorPosition;
+  const { x, y } = sheets.sheet.cursor.cursorPosition;
   const cell = await quadraticCore.getRenderCell(sheets.sheet.id, x, y);
-
-  setEditorInteractionState((prev) => {
-    if (cell?.language) {
-      return {
-        ...prev,
-        waitingForEditorClose: {
-          selectedCellSheet: sheets.sheet.id,
-          selectedCell: { x, y },
-          mode: cell.language,
-          showCellTypeMenu: !prev.showCodeEditor,
-          initialCode: undefined,
+  if (cell?.language) {
+    setCodeEditorState({
+      ...codeEditorState,
+      modifiedEditorContent: undefined,
+      waitingForEditorClose: {
+        location: {
+          sheetId: sheets.current,
+          pos: { x, y },
         },
-      };
-    } else if (prev.showCodeEditor) {
-      // code editor is already open, so check it for save before closing
-      return {
-        ...prev,
-        waitingForEditorClose: {
-          showCellTypeMenu: true,
-          selectedCellSheet: sheets.sheet.id,
-          selectedCell: { x, y },
-          mode: 'Python',
-          initialCode: undefined,
-        },
-      };
-    } else {
-      // just open the code editor selection menu
-      return {
-        ...prev,
-        showCellTypeMenu: true,
-        selectedCellSheet: sheets.sheet.id,
-        selectedCell: { x, y },
-        mode: undefined,
+        language: cell.language,
+        showCellTypeMenu: !codeEditorState.showCodeEditor,
         initialCode: undefined,
-      };
-    }
-  });
+      },
+    });
+  } else if (codeEditorState.showCodeEditor) {
+    // code editor is already open, so check it for save before closing
+    setCodeEditorState({
+      ...codeEditorState,
+      modifiedEditorContent: undefined,
+      waitingForEditorClose: {
+        location: {
+          sheetId: sheets.current,
+          pos: { x, y },
+        },
+        language: 'Python',
+        showCellTypeMenu: true,
+        initialCode: undefined,
+      },
+    });
+  } else {
+    // just open the code editor selection menu
+    setEditorInteractionState((prev) => ({
+      ...prev,
+      showCellTypeMenu: true,
+    }));
+    setCodeEditorState({
+      ...codeEditorState,
+      modifiedEditorContent: undefined,
+      location: {
+        sheetId: sheets.current,
+        pos: { x, y },
+      },
+    });
+  }
 };

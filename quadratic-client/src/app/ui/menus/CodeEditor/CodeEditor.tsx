@@ -1,5 +1,6 @@
-import { editorInteractionStateShowCodeEditorAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { CodeEditorBody } from '@/app/ui/menus/CodeEditor/CodeEditorBody';
+import { CodeEditorEffects } from '@/app/ui/menus/CodeEditor/CodeEditorEffects';
 import { CodeEditorEmptyState } from '@/app/ui/menus/CodeEditor/CodeEditorEmptyState';
 import { CodeEditorEscapeEffect } from '@/app/ui/menus/CodeEditor/CodeEditorEscapeEffect';
 import { CodeEditorHeader } from '@/app/ui/menus/CodeEditor/CodeEditorHeader';
@@ -21,81 +22,84 @@ export const dispatchEditorAction = (name: string) => {
 };
 
 export const CodeEditor = () => {
-  const showCodeEditor = useRecoilValue(editorInteractionStateShowCodeEditorAtom);
+  const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
   const [editorInst, setEditorInst] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
   const { onKeyDownCodeEditor } = useOnKeyDownCodeEditor();
   const codeEditorRef = useRef<HTMLDivElement | null>(null);
   const codeEditorPanelData = useCodeEditorPanelData();
 
-  if (!showCodeEditor) {
-    return null;
-  }
-
   return (
-    <div
-      ref={codeEditorRef}
-      className={cn(
-        'relative flex h-full bg-background',
-        codeEditorPanelData.panelPosition === 'left' ? '' : 'flex-col'
+    <>
+      <CodeEditorEffects />
+
+      {showCodeEditor && (
+        <div
+          ref={codeEditorRef}
+          className={cn(
+            'relative flex h-full bg-background',
+            codeEditorPanelData.panelPosition === 'left' ? '' : 'flex-col'
+          )}
+          style={{
+            width: `${
+              codeEditorPanelData.editorWidth +
+              (codeEditorPanelData.panelPosition === 'left' ? codeEditorPanelData.panelWidth : 0)
+            }px`,
+            borderLeft: '1px solid black',
+          }}
+        >
+          <div
+            id="QuadraticCodeEditorID"
+            className={cn(
+              'flex min-h-0 shrink select-none flex-col',
+              codeEditorPanelData.panelPosition === 'left' ? 'order-2' : 'order-1'
+            )}
+            style={{
+              width: `${codeEditorPanelData.editorWidth}px`,
+              height:
+                codeEditorPanelData.panelPosition === 'left' || codeEditorPanelData.bottomHidden
+                  ? '100%'
+                  : `${codeEditorPanelData.editorHeightPercentage}%`,
+            }}
+            onKeyDownCapture={onKeyDownCodeEditor}
+            onPointerEnter={() => {
+              // todo: handle multiplayer code editor here
+              multiplayer.sendMouseMove();
+            }}
+          >
+            <SaveChangesAlert editorInst={editorInst} />
+
+            <CodeEditorHeader editorInst={editorInst} />
+
+            <CodeEditorBody editorInst={editorInst} setEditorInst={setEditorInst} />
+
+            <CodeEditorEmptyState editorInst={editorInst} />
+
+            <ReturnTypeInspector />
+
+            <CodeEditorEscapeEffect editorInst={editorInst} />
+          </div>
+
+          <div
+            className={cn(
+              codeEditorPanelData.panelPosition === 'left' ? 'order-1' : 'order-2',
+              'relative flex flex-col bg-background'
+            )}
+            style={{
+              width: codeEditorPanelData.panelPosition === 'left' ? `${codeEditorPanelData.panelWidth}px` : '100%',
+              height:
+                codeEditorPanelData.panelPosition === 'left'
+                  ? '100%'
+                  : codeEditorPanelData.bottomHidden
+                  ? 'auto'
+                  : 100 - codeEditorPanelData.editorHeightPercentage + '%',
+            }}
+          >
+            <CodeEditorPanel editorInst={editorInst} codeEditorRef={codeEditorRef} />
+          </div>
+
+          <CodeEditorPanels codeEditorRef={codeEditorRef} />
+        </div>
       )}
-      style={{
-        width: `${
-          codeEditorPanelData.editorWidth +
-          (codeEditorPanelData.panelPosition === 'left' ? codeEditorPanelData.panelWidth : 0)
-        }px`,
-        borderLeft: '1px solid black',
-      }}
-    >
-      <div
-        id="QuadraticCodeEditorID"
-        className={cn(
-          'flex min-h-0 shrink select-none flex-col',
-          codeEditorPanelData.panelPosition === 'left' ? 'order-2' : 'order-1'
-        )}
-        style={{
-          width: `${codeEditorPanelData.editorWidth}px`,
-          height:
-            codeEditorPanelData.panelPosition === 'left' || codeEditorPanelData.bottomHidden
-              ? '100%'
-              : `${codeEditorPanelData.editorHeightPercentage}%`,
-        }}
-        onKeyDownCapture={onKeyDownCodeEditor}
-        onPointerEnter={() => {
-          // todo: handle multiplayer code editor here
-          multiplayer.sendMouseMove();
-        }}
-      >
-        <SaveChangesAlert editorInst={editorInst} />
-
-        <CodeEditorHeader editorInst={editorInst} />
-
-        <CodeEditorBody editorInst={editorInst} setEditorInst={setEditorInst} />
-
-        <CodeEditorEmptyState editorInst={editorInst} />
-
-        <ReturnTypeInspector />
-
-        <CodeEditorEscapeEffect editorInst={editorInst} />
-      </div>
-
-      <div
-        className={cn(
-          codeEditorPanelData.panelPosition === 'left' ? 'order-1' : 'order-2',
-          'relative flex flex-col bg-background'
-        )}
-        style={{
-          width: codeEditorPanelData.panelPosition === 'left' ? `${codeEditorPanelData.panelWidth}px` : '100%',
-          height:
-            codeEditorPanelData.panelPosition === 'left'
-              ? '100%'
-              : codeEditorPanelData.bottomHidden
-              ? 'auto'
-              : 100 - codeEditorPanelData.editorHeightPercentage + '%',
-        }}
-      >
-        <CodeEditorPanel editorInst={editorInst} codeEditorRef={codeEditorRef} />
-      </div>
-      <CodeEditorPanels codeEditorRef={codeEditorRef} />
-    </div>
+    </>
   );
 };

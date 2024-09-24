@@ -152,7 +152,7 @@ class PixiAppSettings {
 
   get showA1Notation(): boolean {
     if (
-      (this.editorInteractionState.showCodeEditor && this.editorInteractionState.mode === 'Formula') ||
+      (this.codeEditorState.showCodeEditor && this.codeEditorState.language === 'Formula') ||
       inlineEditorHandler.isEditingFormula()
     ) {
       return true;
@@ -161,7 +161,7 @@ class PixiAppSettings {
   }
 
   get showCodePeek(): boolean {
-    return !this.settings.presentationMode && this.editorInteractionState.showCodeEditor;
+    return !this.settings.presentationMode && this.codeEditorState.showCodeEditor;
   }
 
   setDirty(dirty: { cursor?: boolean; headings?: boolean; gridLines?: boolean }): void {

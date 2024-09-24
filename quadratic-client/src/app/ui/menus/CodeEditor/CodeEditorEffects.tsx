@@ -1,19 +1,15 @@
 import {
-  codeEditorCellLocationAtom,
-  codeEditorLoadingAtom,
+  codeEditorAtom,
+  codeEditorInitialCodeAtom,
+  codeEditorLanguageAtom,
+  codeEditorLocationAtom,
   codeEditorPanelBottomActiveTabAtom,
+  codeEditorShowCodeEditorAtom,
   codeEditorShowSaveChangesAlertAtom,
   codeEditorUnsavedChangesAtom,
+  codeEditorWaitingForEditorClose,
 } from '@/app/atoms/codeEditorAtom';
-import {
-  editorInteractionStateAtom,
-  editorInteractionStateInitialCodeAtom,
-  editorInteractionStateModeAtom,
-  editorInteractionStateSelectedCellAtom,
-  editorInteractionStateSelectedCellSheetAtom,
-  editorInteractionStateShowCodeEditorAtom,
-  editorInteractionStateWaitingForEditorCloseAtom,
-} from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateShowCellTypeMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
@@ -25,20 +21,18 @@ import { useEffect, useMemo } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 export const CodeEditorEffects = () => {
-  const showCodeEditor = useRecoilValue(editorInteractionStateShowCodeEditorAtom);
-  const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
-  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
-  const editorMode = useRecoilValue(editorInteractionStateModeAtom);
-  const mode = useMemo(() => getLanguage(editorMode), [editorMode]);
-  const initialCode = useRecoilValue(editorInteractionStateInitialCodeAtom);
-  const waitingForEditorClose = useRecoilValue(editorInteractionStateWaitingForEditorCloseAtom);
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
 
-  const setLoading = useSetRecoilState(codeEditorLoadingAtom);
-  const cellLocation = useRecoilValue(codeEditorCellLocationAtom);
+  const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
+  const location = useRecoilValue(codeEditorLocationAtom);
+  const language = useRecoilValue(codeEditorLanguageAtom);
+  const mode = useMemo(() => getLanguage(language), [language]);
+  const initialCode = useRecoilValue(codeEditorInitialCodeAtom);
+  const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
+  const waitingForEditorClose = useRecoilValue(codeEditorWaitingForEditorClose);
   const setPanelBottomActiveTab = useSetRecoilState(codeEditorPanelBottomActiveTabAtom);
   const setShowSaveChangesAlert = useSetRecoilState(codeEditorShowSaveChangesAlertAtom);
-  const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
+  const setCodeEditorState = useSetRecoilState(codeEditorAtom);
 
   const { updateCodeEditor } = useUpdateCodeEditor();
 
@@ -51,13 +45,9 @@ export const CodeEditorEffects = () => {
       codeCell?: JsCodeCell;
       renderCodeCell?: JsRenderCodeCell;
     }) => {
-      if (
-        showCodeEditor &&
-        options.sheetId === cellLocation?.sheetId &&
-        options.x === cellLocation?.x &&
-        options.y === cellLocation?.y
-      ) {
-        updateCodeEditor(options.sheetId, { x: options.x, y: options.y }, options.codeCell, undefined);
+      const { sheetId, x, y, codeCell } = options;
+      if (showCodeEditor && sheetId === location.sheetId && x === location.pos.x && y === location.pos.y) {
+        updateCodeEditor(sheetId, x, y, codeCell, undefined);
       }
     };
 
@@ -65,17 +55,11 @@ export const CodeEditorEffects = () => {
     return () => {
       events.off('updateCodeCell', update);
     };
-  }, [cellLocation, showCodeEditor, updateCodeEditor]);
+  }, [location.pos.x, location.pos.y, location.sheetId, showCodeEditor, updateCodeEditor]);
 
   useEffect(() => {
-    let prevLoading = false;
-    setLoading((prev) => {
-      prevLoading = prev;
-      return true;
-    });
-    if (prevLoading) return;
-    updateCodeEditor(selectedCellSheet, selectedCell, undefined, initialCode).then(() => setLoading(false));
-  }, [initialCode, selectedCell, selectedCellSheet, setLoading, updateCodeEditor]);
+    updateCodeEditor(location.sheetId, location.pos.x, location.pos.y, undefined, initialCode);
+  }, [initialCode, location.sheetId, location.pos.x, location.pos.y, updateCodeEditor]);
 
   // handle someone trying to open a different code editor
   useEffect(() => {
@@ -89,31 +73,30 @@ export const CodeEditorEffects = () => {
       else {
         if (waitingForEditorClose.inlineEditor) {
           pixiAppSettings.changeInput(true);
-          setEditorInteractionState((oldState) => ({
-            ...oldState,
+          setCodeEditorState((prev) => ({
+            ...prev,
             waitingForEditorClose: undefined,
             showCodeEditor: false,
           }));
         } else {
-          setEditorInteractionState((oldState) => ({
-            ...oldState,
+          setShowCellTypeMenu(waitingForEditorClose.showCellTypeMenu);
+          setCodeEditorState((prev) => ({
+            ...prev,
             waitingForEditorClose: undefined,
-            selectedCellSheet: waitingForEditorClose.selectedCellSheet,
-            selectedCell: waitingForEditorClose.selectedCell,
-            mode: waitingForEditorClose.mode,
+            location: waitingForEditorClose.location,
+            language: waitingForEditorClose.language,
             showCodeEditor: !waitingForEditorClose.showCellTypeMenu && !waitingForEditorClose.inlineEditor,
-            showCellTypeMenu: waitingForEditorClose.showCellTypeMenu,
             initialCode: waitingForEditorClose.initialCode,
           }));
         }
       }
     }
-  }, [setEditorInteractionState, setShowSaveChangesAlert, unsavedChanges, waitingForEditorClose]);
+  }, [setCodeEditorState, setShowCellTypeMenu, setShowSaveChangesAlert, unsavedChanges, waitingForEditorClose]);
 
   useEffect(() => {
-    mixpanel.track('[CodeEditor].opened', { type: editorMode });
+    mixpanel.track('[CodeEditor].opened', { type: language });
     multiplayer.sendCellEdit({ text: '', cursor: 0, codeEditor: true, inlineCodeEditor: false });
-  }, [editorMode]);
+  }, [language]);
 
   // Trigger vanilla changes to code editor
   useEffect(() => {
@@ -121,7 +104,7 @@ export const CodeEditorEffects = () => {
       events.emit('codeEditor');
       setPanelBottomActiveTab(mode === 'Connection' ? 'data-browser' : 'console');
     }
-  }, [cellLocation, mode, showCodeEditor, setPanelBottomActiveTab]);
+  }, [location.sheetId, location.pos.x, location.pos.y, mode, showCodeEditor, setPanelBottomActiveTab]);
 
   return null;
 };

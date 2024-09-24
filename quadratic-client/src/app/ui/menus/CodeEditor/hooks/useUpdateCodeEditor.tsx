@@ -1,13 +1,4 @@
-import {
-  codeEditorCellLocationAtom,
-  codeEditorCellsAccessedAtom,
-  codeEditorCodeStringAtom,
-  codeEditorConsoleOutputAtom,
-  codeEditorEditorContentAtom,
-  codeEditorEvaluationResultAtom,
-  codeEditorSpillErrorAtom,
-} from '@/app/atoms/codeEditorAtom';
-import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { JsCodeCell, Pos } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -15,50 +6,56 @@ import { useCallback } from 'react';
 import { useSetRecoilState } from 'recoil';
 
 export const useUpdateCodeEditor = () => {
-  const setEditorMode = useSetRecoilState(editorInteractionStateModeAtom);
-  const setCellLocation = useSetRecoilState(codeEditorCellLocationAtom);
-  const setCodeString = useSetRecoilState(codeEditorCodeStringAtom);
-  const setEditorContent = useSetRecoilState(codeEditorEditorContentAtom);
-  const setEvaluationResult = useSetRecoilState(codeEditorEvaluationResultAtom);
-  const setConsoleOutput = useSetRecoilState(codeEditorConsoleOutputAtom);
-  const setSpillError = useSetRecoilState(codeEditorSpillErrorAtom);
-  const setCellsAccessed = useSetRecoilState(codeEditorCellsAccessedAtom);
+  const setCodeEditorState = useSetRecoilState(codeEditorAtom);
 
   const updateCodeEditor = useCallback(
-    async (sheetId: string, pos: Coordinate, pushCodeCell?: JsCodeCell, initialCode?: string) => {
+    async (sheetId: string, x: number, y: number, pushCodeCell?: JsCodeCell, initialCode?: string) => {
       if (!sheetId) return;
 
-      setCellLocation({ sheetId, x: pos.x, y: pos.y });
-      const codeCell = pushCodeCell ?? (await quadraticCore.getCodeCell(sheetId, pos.x, pos.y));
+      let codeCell = pushCodeCell;
+      if (!codeCell) {
+        setCodeEditorState((prev) => ({ ...prev, loading: true }));
+        codeCell = await quadraticCore.getCodeCell(sheetId, x, y);
+      }
 
       if (codeCell) {
-        setEditorMode(codeCell.language);
-        setCodeString(codeCell.code_string);
-        setEditorContent(initialCode ?? codeCell.code_string);
         const newEvaluationResult = codeCell.evaluation_result ? JSON.parse(codeCell.evaluation_result) : {};
-        setEvaluationResult({ ...newEvaluationResult, ...codeCell.return_info });
-        setCellsAccessed(codeCell.cells_accessed);
-        setConsoleOutput({ stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined });
-        setSpillError(codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as Coordinate)));
+        setCodeEditorState((prev) => ({
+          ...prev,
+          showCodeEditor: true,
+          loading: false,
+          location: {
+            sheetId,
+            pos: { x, y },
+          },
+          language: codeCell.language,
+          codeString: codeCell.code_string,
+          editorContent: initialCode ?? codeCell.code_string,
+          modifiedEditorContent: undefined,
+          evaluationResult: { ...newEvaluationResult, ...codeCell.return_info },
+          cellsAccessed: codeCell.cells_accessed,
+          consoleOutput: { stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined },
+          spillError: codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as Coordinate)),
+        }));
       } else {
-        setCodeString('');
-        setEditorContent(initialCode ?? '');
-        setEvaluationResult(undefined);
-        setCellsAccessed(undefined);
-        setConsoleOutput(undefined);
-        setSpillError(undefined);
+        setCodeEditorState((prev) => ({
+          ...prev,
+          loading: false,
+          location: {
+            sheetId,
+            pos: { x, y },
+          },
+          codeString: '',
+          editorContent: initialCode ?? '',
+          modifiedEditorContent: undefined,
+          evaluationResult: undefined,
+          cellsAccessed: undefined,
+          consoleOutput: undefined,
+          spillError: undefined,
+        }));
       }
     },
-    [
-      setCellLocation,
-      setCellsAccessed,
-      setCodeString,
-      setConsoleOutput,
-      setEditorContent,
-      setEditorMode,
-      setEvaluationResult,
-      setSpillError,
-    ]
+    [setCodeEditorState]
   );
 
   return { updateCodeEditor };

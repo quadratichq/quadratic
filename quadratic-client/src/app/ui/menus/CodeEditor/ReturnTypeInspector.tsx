@@ -1,9 +1,10 @@
 import {
   codeEditorEditorContentAtom,
   codeEditorEvaluationResultAtom,
+  codeEditorLanguageAtom,
+  codeEditorLoadingAtom,
   codeEditorUnsavedChangesAtom,
 } from '@/app/atoms/codeEditorAtom';
-import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { DOCUMENTATION_JAVASCRIPT_RETURN_DATA, DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { useTheme } from '@mui/material';
@@ -14,8 +15,9 @@ import { codeEditorBaseStyles } from './styles';
 
 export function ReturnTypeInspector() {
   const theme = useTheme();
-  const editorMode = useRecoilValue(editorInteractionStateModeAtom);
-  const mode = useMemo(() => getLanguage(editorMode), [editorMode]);
+  const loading = useRecoilValue(codeEditorLoadingAtom);
+  const language = useRecoilValue(codeEditorLanguageAtom);
+  const mode = useMemo(() => getLanguage(language), [language]);
 
   const editorContent = useRecoilValue(codeEditorEditorContentAtom);
 
@@ -85,7 +87,7 @@ export function ReturnTypeInspector() {
     );
   }
 
-  if (message === undefined || editorMode === 'Formula' || !editorContent) {
+  if (message === undefined || language === 'Formula' || !editorContent || loading) {
     return null;
   }
 

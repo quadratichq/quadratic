@@ -150,10 +150,10 @@ export function getShareUrlParams(): string {
   if (sheets.sheet !== sheets.getFirst()) {
     url += `&sheet=${sheets.sheet.name}`;
   }
-  const state = pixiAppSettings.editorInteractionState;
-  if (state.showCodeEditor) {
-    url += `&codeLanguage=${state.mode}&codeX=${state.selectedCell.x}&codeY=${state.selectedCell.y}`;
-    if (state.selectedCellSheet !== sheets.sheet.id) {
+  const { showCodeEditor, location, language } = pixiAppSettings.codeEditorState;
+  if (showCodeEditor) {
+    url += `&codeLanguage=${language}&codeX=${location.pos.x}&codeY=${location.pos.y}`;
+    if (location.sheetId !== sheets.current) {
       url += `&codeSheet=${sheets.sheet.name}`;
     }
   }

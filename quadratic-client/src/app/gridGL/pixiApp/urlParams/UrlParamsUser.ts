@@ -50,13 +50,16 @@ export class UrlParamsUser {
         if (!pixiAppSettings.setEditorInteractionState) {
           throw new Error('Expected setEditorInteractionState to be set in urlParams.loadCode');
         }
-        pixiAppSettings.setEditorInteractionState?.({
-          ...pixiAppSettings.editorInteractionState,
+        const { x, y } = sheets.sheet.cursor.cursorPosition;
+        pixiAppSettings.setCodeEditorState?.((prev) => ({
+          ...prev,
           showCodeEditor: true,
-          mode: language,
-          selectedCellSheet: sheets.sheet.id,
-          selectedCell: { x: sheets.sheet.cursor.cursorPosition.x, y: sheets.sheet.cursor.cursorPosition.y },
-        });
+          location: {
+            sheetId: sheets.current,
+            pos: { x, y },
+          },
+          language,
+        }));
       }
     }
   }
@@ -75,15 +78,15 @@ export class UrlParamsUser {
     if (this.dirty) {
       this.dirty = false;
       const url = new URLSearchParams(window.location.search);
-      const state = pixiAppSettings.editorInteractionState;
+      const { showCodeEditor, location, language } = pixiAppSettings.codeEditorState;
 
       // if code editor is open, we use its x, y, and sheet name
-      if (state.showCodeEditor && state.mode) {
-        url.set('code', getLanguage(state.mode).toLowerCase());
-        url.set('x', state.selectedCell.x.toString());
-        url.set('y', state.selectedCell.y.toString());
-        if (state.selectedCellSheet !== sheets.getFirst().id) {
-          const sheetName = sheets.getById(state.selectedCellSheet)?.name;
+      if (showCodeEditor && language) {
+        url.set('code', getLanguage(language).toLowerCase());
+        url.set('x', location.pos.x.toString());
+        url.set('y', location.pos.y.toString());
+        if (location.sheetId !== sheets.getFirst().id) {
+          const sheetName = sheets.getById(location.sheetId)?.name;
           if (!sheetName) {
             throw new Error('Expected to find sheet in urlParams.updateParams');
           }

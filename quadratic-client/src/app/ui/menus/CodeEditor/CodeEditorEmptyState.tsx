@@ -1,10 +1,11 @@
 import {
   codeEditorEditorContentAtom,
+  codeEditorLanguageAtom,
+  codeEditorLoadingAtom,
   codeEditorModifiedEditorContentAtom,
   codeEditorShowDiffEditorAtom,
   codeEditorShowSnippetsPopoverAtom,
 } from '@/app/atoms/codeEditorAtom';
-import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import { BoxIcon, SheetComeFromIcon, SheetGoToIcon } from '@/app/ui/icons';
 import {
@@ -33,8 +34,9 @@ interface CodeEditorEmptyStateProps {
 }
 
 export function CodeEditorEmptyState({ editorInst }: CodeEditorEmptyStateProps) {
-  const mode = useRecoilValue(editorInteractionStateModeAtom);
-  const codeCell = useMemo(() => getCodeCell(mode), [mode]);
+  const loading = useRecoilValue(codeEditorLoadingAtom);
+  const language = useRecoilValue(codeEditorLanguageAtom);
+  const codeCell = useMemo(() => getCodeCell(language), [language]);
   const setShowSnippetsPopover = useSetRecoilState(codeEditorShowSnippetsPopoverAtom);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
   const setModifiedEditorContent = useSetRecoilState(codeEditorModifiedEditorContentAtom);
@@ -50,7 +52,7 @@ export function CodeEditorEmptyState({ editorInst }: CodeEditorEmptyStateProps) 
   );
 
   // Must meet these criteria to even show in the UI
-  if (editorContent !== '' || showDiffEditor) {
+  if (editorContent !== '' || showDiffEditor || loading) {
     return null;
   }
   if (!(codeCell?.id === 'Javascript' || codeCell?.id === 'Python')) {

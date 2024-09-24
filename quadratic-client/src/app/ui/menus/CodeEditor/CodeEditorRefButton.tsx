@@ -1,8 +1,4 @@
-import {
-  editorInteractionStateModeAtom,
-  editorInteractionStateSelectedCellAtom,
-  editorInteractionStateSelectedCellSheetAtom,
-} from '@/app/atoms/editorInteractionStateAtom';
+import { codeEditorLanguageAtom, codeEditorLocationAtom } from '@/app/atoms/codeEditorAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
@@ -22,9 +18,8 @@ import { useRecoilValue } from 'recoil';
 
 export const CodeEditorRefButton = () => {
   const [relative, setRelative] = useLocalStorage('insertCellRefRelative', false);
-  const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
-  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
-  const mode = useRecoilValue(editorInteractionStateModeAtom);
+  const location = useRecoilValue(codeEditorLocationAtom);
+  const language = useRecoilValue(codeEditorLanguageAtom);
 
   const [disabled, setDisabled] = useState(true);
   useEffect(() => {
@@ -38,9 +33,9 @@ export const CodeEditorRefButton = () => {
       } else {
         setDisabled(
           !sheets.sheet.cursor.multiCursor &&
-            selectedCell.x === sheets.sheet.cursor.cursorPosition.x &&
-            selectedCell.y === sheets.sheet.cursor.cursorPosition.y &&
-            selectedCellSheet === sheets.sheet.id
+            location.sheetId === sheets.sheet.id &&
+            location.pos.x === sheets.sheet.cursor.cursorPosition.x &&
+            location.pos.y === sheets.sheet.cursor.cursorPosition.y
         );
       }
     };
@@ -50,7 +45,7 @@ export const CodeEditorRefButton = () => {
       events.off('cursorPosition', checkDisabled);
       events.off('changeSheet', checkDisabled);
     };
-  }, [selectedCell.x, selectedCell.y, selectedCellSheet]);
+  }, [location.pos.x, location.pos.y, location.sheetId]);
 
   const tooltip = useMemo(
     () =>
@@ -70,7 +65,7 @@ export const CodeEditorRefButton = () => {
             disabled={disabled}
             size="small"
             color="primary"
-            onClick={() => insertCellRef(selectedCell, selectedCellSheet, mode, relative)}
+            onClick={() => insertCellRef(location.pos, location.sheetId, language, relative)}
           >
             <HighlightAltIcon fontSize="small" />
           </IconButton>

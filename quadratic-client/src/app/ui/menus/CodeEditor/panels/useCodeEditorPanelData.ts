@@ -1,4 +1,4 @@
-import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { codeEditorLanguageAtom } from '@/app/atoms/codeEditorAtom';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { adjustPercentages } from '@/app/ui/menus/CodeEditor/panels/adjustPercentages';
 import useLocalStorage, { SetValue } from '@/shared/hooks/useLocalStorage';
@@ -43,7 +43,7 @@ const HEIGHT_PERCENT_2 = [50, 50];
 const HEIGHT_PERCENT_1 = [100];
 
 export const useCodeEditorPanelData = (): CodeEditorPanelData => {
-  const mode = useRecoilValue(editorInteractionStateModeAtom);
+  const language = useRecoilValue(codeEditorLanguageAtom);
   const [editorWidth, setEditorWidth] = useLocalStorage<number>(
     'codeEditorWidth',
     window.innerWidth * 0.35 // default to 35% of the window width
@@ -52,7 +52,7 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
   // this stores the height when editor is in vertical mode
   const [editorHeightPercentage, setEditorHeightPercentage] = useLocalStorage<number>(`codeEditorHeightPercentage`, 75);
 
-  const type = useMemo(() => getLanguage(mode), [mode]);
+  const type = useMemo(() => getLanguage(language), [language]);
 
   // this stores the width/height when editor is in horizontal mode
   const [panelWidth, setPanelWidth] = useLocalStorage('codeEditorPanelWidth', MIN_WIDTH_PANEL);

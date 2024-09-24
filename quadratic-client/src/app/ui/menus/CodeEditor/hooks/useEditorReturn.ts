@@ -1,5 +1,4 @@
-import { codeEditorEvaluationResultAtom } from '@/app/atoms/codeEditorAtom';
-import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { codeEditorEvaluationResultAtom, codeEditorLanguageAtom } from '@/app/atoms/codeEditorAtom';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
@@ -13,7 +12,7 @@ export const useEditorReturn = (
   monacoInst: Monaco | null
   // codeEditorReturn?: ComputedPythonReturnType
 ) => {
-  const language = useRecoilValue(editorInteractionStateModeAtom);
+  const language = useRecoilValue(codeEditorLanguageAtom);
   const evaluationResult = useRecoilValue(codeEditorEvaluationResultAtom);
   const decorations = useRef<monaco.editor.IEditorDecorationsCollection | undefined>(undefined);
   const codeCell = getCodeCell(language);

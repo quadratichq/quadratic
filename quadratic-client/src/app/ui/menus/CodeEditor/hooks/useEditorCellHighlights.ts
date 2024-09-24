@@ -1,8 +1,4 @@
-import {
-  editorInteractionStateModeAtom,
-  editorInteractionStateSelectedCellAtom,
-  editorInteractionStateSelectedCellSheetAtom,
-} from '@/app/atoms/editorInteractionStateAtom';
+import { codeEditorLanguageAtom, codeEditorLocationAtom } from '@/app/atoms/codeEditorAtom';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { ParseFormulaReturnType, Span } from '@/app/helpers/formulaNotation';
@@ -68,9 +64,8 @@ export const useEditorCellHighlights = (
   monacoInst: Monaco | null,
   cellsAccessed?: SheetRect[] | null
 ) => {
-  const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
-  const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
-  const language = useRecoilValue(editorInteractionStateModeAtom);
+  const location = useRecoilValue(codeEditorLocationAtom);
+  const language = useRecoilValue(codeEditorLanguageAtom);
   const decorations = useRef<monaco.editor.IEditorDecorationsCollection | undefined>(undefined);
 
   // Dynamically generate the classnames we'll use for cell references by pulling
@@ -97,14 +92,14 @@ export const useEditorCellHighlights = (
       if (language === 'Python' || language === 'Javascript') {
         parsed = parseCellsAccessed(cellsAccessed) as ParseFormulaReturnType;
       } else if (language === 'Formula') {
-        parsed = (await parseFormula(modelValue, selectedCell.x, selectedCell.y)) as ParseFormulaReturnType;
+        parsed = (await parseFormula(modelValue, location.pos.x, location.pos.y)) as ParseFormulaReturnType;
       }
 
       if (parsed) {
-        pixiApp.cellHighlights.fromFormula(parsed, selectedCell, selectedCellSheet);
+        pixiApp.cellHighlights.fromFormula(parsed, location.pos, location.sheetId);
         if (language !== 'Formula') return;
 
-        const extractedCells = extractCellsFromParseFormula(parsed, selectedCell, selectedCellSheet);
+        const extractedCells = extractCellsFromParseFormula(parsed, location.pos, location.sheetId);
         extractedCells.forEach((value, index) => {
           const { cellId, span } = value;
           const startPosition = model.getPositionAt(span.start);
@@ -143,5 +138,5 @@ export const useEditorCellHighlights = (
 
     onChangeModel();
     editorInst.onDidChangeModelContent(() => onChangeModel());
-  }, [isValidRef, editorInst, monacoInst, selectedCell, selectedCellSheet, language, cellsAccessed]);
+  }, [cellsAccessed, editorInst, isValidRef, language, location.pos, location.sheetId, monacoInst]);
 };

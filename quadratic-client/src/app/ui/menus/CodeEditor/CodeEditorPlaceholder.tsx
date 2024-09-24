@@ -1,5 +1,4 @@
-import { codeEditorEditorContentAtom } from '@/app/atoms/codeEditorAtom';
-import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { codeEditorEditorContentAtom, codeEditorLanguageAtom } from '@/app/atoms/codeEditorAtom';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from '@/app/ui/menus/CodeEditor/styles';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
@@ -8,8 +7,8 @@ import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export function CodeEditorPlaceholder() {
-  const mode = useRecoilValue(editorInteractionStateModeAtom);
-  const codeCell = useMemo(() => getCodeCell(mode), [mode]);
+  const language = useRecoilValue(codeEditorLanguageAtom);
+  const codeCell = useMemo(() => getCodeCell(language), [language]);
   const [showPlaceholder, setShowPlaceholder] = useLocalStorage<boolean>('showCodeEditorPlaceholder', true);
   const editorContent = useRecoilValue(codeEditorEditorContentAtom);
 

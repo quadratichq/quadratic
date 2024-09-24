@@ -1,4 +1,4 @@
-import { editorInteractionStateModeAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { codeEditorLanguageAtom } from '@/app/atoms/codeEditorAtom';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
@@ -10,7 +10,7 @@ export const useEditorOnSelectionChange = (
   editorInst: monaco.editor.IStandaloneCodeEditor | null,
   monacoInst: Monaco | null
 ) => {
-  const language = useRecoilValue(editorInteractionStateModeAtom);
+  const language = useRecoilValue(codeEditorLanguageAtom);
   useEffect(() => {
     if (language !== 'Formula') return;
 
