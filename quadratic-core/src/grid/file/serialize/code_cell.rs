@@ -1,6 +1,7 @@
 use anyhow::Result;
 use chrono::Utc;
 use indexmap::IndexMap;
+use itertools::Itertools;
 
 use crate::{
     grid::{CodeRun, CodeRunResult},
@@ -24,7 +25,7 @@ pub(crate) fn import_code_cell_builder(
             .map(crate::SheetRect::from)
             .collect();
 
-        let result = match &code_run.result {
+        let result = match code_run.result {
             current::CodeRunResultSchema::Ok(output) => CodeRunResult::Ok(match output {
                 current::OutputValueSchema::Single(value) => {
                     Value::Single(import_cell_value(value.to_owned()))
@@ -32,12 +33,10 @@ pub(crate) fn import_code_cell_builder(
                 current::OutputValueSchema::Array(current::OutputArraySchema { size, values }) => {
                     Value::Array(crate::Array::from(
                         values
+                            .into_iter()
                             .chunks(size.w as usize)
-                            .map(|row| {
-                                row.iter()
-                                    .map(|value| import_cell_value(value.to_owned()))
-                                    .collect::<Vec<_>>()
-                            })
+                            .into_iter()
+                            .map(|row| row.into_iter().map(import_cell_value).collect::<Vec<_>>())
                             .collect::<Vec<Vec<_>>>(),
                     ))
                 }
