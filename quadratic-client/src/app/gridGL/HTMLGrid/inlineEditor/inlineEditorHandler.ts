@@ -491,11 +491,11 @@ class InlineEditorHandler {
     pixiAppSettings.setCodeEditorState({
       ...pixiAppSettings.codeEditorState,
       waitingForEditorClose: {
-        location: {
+        codeCell: {
           sheetId,
           pos: { x, y },
+          language: 'Formula',
         },
-        language: 'Formula',
         showCellTypeMenu: false,
         initialCode: inlineEditorMonaco.get().slice(1),
       },

@@ -1,4 +1,4 @@
-import { codeEditorLanguageAtom } from '@/app/atoms/codeEditorAtom';
+import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { useConnectionState } from '@/app/atoms/useConnectionState';
 import { useJavascriptState } from '@/app/atoms/useJavascriptState';
 import { usePythonState } from '@/app/atoms/usePythonState';
@@ -11,7 +11,7 @@ import { useCallback, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const useCancelRun = () => {
-  const language = useRecoilValue(codeEditorLanguageAtom);
+  const { language } = useRecoilValue(codeEditorCodeCellAtom);
   const mode = useMemo(() => getLanguage(language), [language]);
 
   const { pythonState } = usePythonState();

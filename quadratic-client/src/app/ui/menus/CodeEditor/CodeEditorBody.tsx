@@ -1,10 +1,9 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import {
   codeEditorCellsAccessedAtom,
+  codeEditorCodeCellAtom,
   codeEditorEditorContentAtom,
-  codeEditorLanguageAtom,
   codeEditorLoadingAtom,
-  codeEditorLocationAtom,
   codeEditorShowCodeEditorAtom,
   codeEditorUnsavedChangesAtom,
 } from '@/app/atoms/codeEditorAtom';
@@ -52,10 +51,9 @@ const registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
 export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   const { editorInst, setEditorInst } = props;
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
-  const location = useRecoilValue(codeEditorLocationAtom);
-  const language = useRecoilValue(codeEditorLanguageAtom);
-  const monacoLanguage = useMemo(() => getLanguageForMonaco(language), [language]);
-  const isConnection = useMemo(() => codeCellIsAConnection(language), [language]);
+  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
+  const monacoLanguage = useMemo(() => getLanguageForMonaco(codeCell.language), [codeCell.language]);
+  const isConnection = useMemo(() => codeCellIsAConnection(codeCell.language), [codeCell.language]);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
   const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
   const loading = useRecoilValue(codeEditorLoadingAtom);
@@ -119,13 +117,13 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   useEffect(() => {
     if (
       lastLocation.current &&
-      location.sheetId === lastLocation.current.sheetId &&
-      location.pos.x === lastLocation.current.pos.x &&
-      location.pos.x === lastLocation.current.pos.y
+      codeCell.sheetId === lastLocation.current.sheetId &&
+      codeCell.pos.x === lastLocation.current.pos.x &&
+      codeCell.pos.x === lastLocation.current.pos.y
     ) {
       return;
     }
-    lastLocation.current = location;
+    lastLocation.current = codeCell;
     if (!editorInst) return;
 
     const model = editorInst.getModel();
@@ -135,7 +133,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
       (model as any)._commandManager.clear();
     }, 250);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editorInst, location.sheetId, location.pos.x, location.pos.y]);
+  }, [editorInst, codeCell.sheetId, codeCell.pos.x, codeCell.pos.y]);
 
   const addCommands = useCallback(
     (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
@@ -145,10 +143,10 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
         '!findWidgetVisible && !inReferenceSearchEditor && !editorHasSelection && !suggestWidgetVisible'
       );
       editor.addCommand(monaco.KeyCode.KeyL | monaco.KeyMod.CtrlCmd, () => {
-        insertCellRef(location.pos, location.sheetId, language);
+        insertCellRef(codeCell.pos, codeCell.sheetId, codeCell.language);
       });
     },
-    [closeEditor, language, location.pos, location.sheetId]
+    [closeEditor, codeCell.language, codeCell.pos, codeCell.sheetId]
   );
 
   const runEditorAction = useCallback((e: CustomEvent<string>) => editorInst?.getAction(e.detail)?.run(), [editorInst]);
@@ -249,7 +247,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
           wordWrap: 'on',
 
           // need to ignore unused b/c of the async wrapper around the code and import code
-          showUnused: language === 'Javascript' ? false : true,
+          showUnused: codeCell.language === 'Javascript' ? false : true,
         }}
       />
       <CodeEditorPlaceholder />

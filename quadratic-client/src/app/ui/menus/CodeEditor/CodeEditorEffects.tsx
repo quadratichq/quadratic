@@ -1,8 +1,7 @@
 import {
   codeEditorAtom,
+  codeEditorCodeCellAtom,
   codeEditorInitialCodeAtom,
-  codeEditorLanguageAtom,
-  codeEditorLocationAtom,
   codeEditorPanelBottomActiveTabAtom,
   codeEditorShowCodeEditorAtom,
   codeEditorShowSaveChangesAlertAtom,
@@ -24,9 +23,8 @@ export const CodeEditorEffects = () => {
   const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
 
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
-  const location = useRecoilValue(codeEditorLocationAtom);
-  const language = useRecoilValue(codeEditorLanguageAtom);
-  const mode = useMemo(() => getLanguage(language), [language]);
+  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
+  const language = useMemo(() => getLanguage(codeCell.language), [codeCell.language]);
   const initialCode = useRecoilValue(codeEditorInitialCodeAtom);
   const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
   const waitingForEditorClose = useRecoilValue(codeEditorWaitingForEditorClose);
@@ -45,9 +43,9 @@ export const CodeEditorEffects = () => {
       codeCell?: JsCodeCell;
       renderCodeCell?: JsRenderCodeCell;
     }) => {
-      const { sheetId, x, y, codeCell } = options;
-      if (showCodeEditor && sheetId === location.sheetId && x === location.pos.x && y === location.pos.y) {
-        updateCodeEditor(sheetId, x, y, codeCell, undefined);
+      const { sheetId, x, y, codeCell: codeCellCore } = options;
+      if (showCodeEditor && sheetId === codeCell.sheetId && x === codeCell.pos.x && y === codeCell.pos.y) {
+        updateCodeEditor(sheetId, x, y, codeCellCore, undefined);
       }
     };
 
@@ -55,11 +53,11 @@ export const CodeEditorEffects = () => {
     return () => {
       events.off('updateCodeCell', update);
     };
-  }, [location.pos.x, location.pos.y, location.sheetId, showCodeEditor, updateCodeEditor]);
+  }, [codeCell.pos.x, codeCell.pos.y, codeCell.sheetId, showCodeEditor, updateCodeEditor]);
 
   useEffect(() => {
-    updateCodeEditor(location.sheetId, location.pos.x, location.pos.y, undefined, initialCode);
-  }, [initialCode, location.sheetId, location.pos.x, location.pos.y, updateCodeEditor]);
+    updateCodeEditor(codeCell.sheetId, codeCell.pos.x, codeCell.pos.y, undefined, initialCode);
+  }, [codeCell.pos.x, codeCell.pos.y, codeCell.sheetId, initialCode, updateCodeEditor]);
 
   // handle someone trying to open a different code editor
   useEffect(() => {
@@ -82,11 +80,10 @@ export const CodeEditorEffects = () => {
           setShowCellTypeMenu(waitingForEditorClose.showCellTypeMenu);
           setCodeEditorState((prev) => ({
             ...prev,
-            waitingForEditorClose: undefined,
-            location: waitingForEditorClose.location,
-            language: waitingForEditorClose.language,
             showCodeEditor: !waitingForEditorClose.showCellTypeMenu && !waitingForEditorClose.inlineEditor,
+            codeCell: waitingForEditorClose.codeCell,
             initialCode: waitingForEditorClose.initialCode,
+            waitingForEditorClose: undefined,
           }));
         }
       }
@@ -102,9 +99,9 @@ export const CodeEditorEffects = () => {
   useEffect(() => {
     if (showCodeEditor) {
       events.emit('codeEditor');
-      setPanelBottomActiveTab(mode === 'Connection' ? 'data-browser' : 'console');
+      setPanelBottomActiveTab(language === 'Connection' ? 'data-browser' : 'ai-assistant');
     }
-  }, [location.sheetId, location.pos.x, location.pos.y, mode, showCodeEditor, setPanelBottomActiveTab]);
+  }, [codeCell.sheetId, codeCell.pos.x, codeCell.pos.y, language, showCodeEditor, setPanelBottomActiveTab]);
 
   return null;
 };

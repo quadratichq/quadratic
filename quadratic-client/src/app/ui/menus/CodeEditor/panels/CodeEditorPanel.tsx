@@ -1,4 +1,4 @@
-import { codeEditorLanguageAtom } from '@/app/atoms/codeEditorAtom';
+import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { getConnectionInfo } from '@/app/helpers/codeCellLanguage';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { PanelPositionBottomIcon, PanelPositionLeftIcon } from '@/app/ui/icons';
@@ -26,7 +26,7 @@ export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPa
     userMakingRequest: { teamPermissions },
     team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
-  const language = useRecoilValue(codeEditorLanguageAtom);
+  const { language } = useRecoilValue(codeEditorCodeCellAtom);
   const connectionInfo = useMemo(() => getConnectionInfo(language), [language]);
   const { panelPosition, setPanelPosition } = useCodeEditorPanelData();
 

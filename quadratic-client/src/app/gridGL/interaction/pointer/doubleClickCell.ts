@@ -28,11 +28,11 @@ export async function doubleClickCell(options: {
         ...pixiAppSettings.codeEditorState,
         escapePressed: false,
         waitingForEditorClose: {
-          location: {
+          codeCell: {
             sheetId: sheets.current,
             pos: { x: column, y: row },
+            language,
           },
-          language,
           showCellTypeMenu: false,
           inlineEditor: formula,
         },
@@ -53,11 +53,11 @@ export async function doubleClickCell(options: {
           showCodeEditor: true,
           escapePressed: false,
           waitingForEditorClose: {
-            location: {
+            codeCell: {
               sheetId: sheets.current,
               pos: { x: column, y: row },
+              language,
             },
-            language,
             showCellTypeMenu: false,
           },
         });

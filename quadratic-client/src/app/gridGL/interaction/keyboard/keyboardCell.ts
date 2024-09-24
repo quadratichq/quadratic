@@ -17,8 +17,8 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 function inCodeEditor(codeEditorState: CodeEditorState, cursor: SheetCursor): boolean {
   if (!codeEditorState.showCodeEditor) return false;
   const cursorPosition = cursor.cursorPosition;
-  const selectedX = codeEditorState.location.pos.x;
-  const selectedY = codeEditorState.location.pos.y;
+  const selectedX = codeEditorState.codeCell.pos.x;
+  const selectedY = codeEditorState.codeCell.pos.y;
 
   // selectedCell is inside single cursor
   if (selectedX === cursorPosition.x && selectedY === cursorPosition.y) {

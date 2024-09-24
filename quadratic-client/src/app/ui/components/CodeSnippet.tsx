@@ -1,8 +1,4 @@
-import {
-  codeEditorLanguageAtom,
-  codeEditorLocationAtom,
-  codeEditorWaitingForEditorClose,
-} from '@/app/atoms/codeEditorAtom';
+import { codeEditorCodeCellAtom, codeEditorWaitingForEditorClose } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
@@ -74,22 +70,21 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
 }
 
 function CodeSnippetInsertButton({ language, text }: { language: Props['language']; text: string }) {
-  const cellLocation = useRecoilValue(codeEditorLocationAtom);
-  const cellLanguage = useRecoilValue(codeEditorLanguageAtom);
+  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
   const setWaitingForEditorClose = useSetRecoilState(codeEditorWaitingForEditorClose);
   const handleReplace = useCallback(() => {
     mixpanel.track('[AI].code.replace', { language });
     setWaitingForEditorClose({
-      location: {
-        sheetId: cellLocation.sheetId ? cellLocation.sheetId : sheets.current,
-        pos: cellLocation.pos,
+      codeCell: {
+        sheetId: codeCell.sheetId ? codeCell.sheetId : sheets.current,
+        pos: codeCell.pos,
+        language: codeCell.language,
       },
-      language: cellLanguage,
       showCellTypeMenu: false,
       inlineEditor: false,
       initialCode: text,
     });
-  }, [cellLanguage, cellLocation.pos, cellLocation.sheetId, language, setWaitingForEditorClose, text]);
+  }, [codeCell.language, codeCell.pos, codeCell.sheetId, language, setWaitingForEditorClose, text]);
 
   return (
     <TooltipHint title={'Open in code editor'}>

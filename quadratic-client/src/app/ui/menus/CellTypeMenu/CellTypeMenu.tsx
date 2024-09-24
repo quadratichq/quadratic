@@ -100,13 +100,16 @@ export default function CellTypeMenu() {
   }, [setShowCellTypeMenu]);
 
   const openEditor = useCallback(
-    (mode: CodeCellLanguage) => {
-      mixpanel.track('[CellTypeMenu].selected', { mode });
+    (language: CodeCellLanguage) => {
+      mixpanel.track('[CellTypeMenu].selected', { language });
       setShowCellTypeMenu(false);
       setCodeEditorState((prev) => ({
         ...prev,
         showCodeEditor: true,
-        language: mode,
+        codeCell: {
+          ...prev.codeCell,
+          language,
+        },
       }));
     },
     [setCodeEditorState, setShowCellTypeMenu]
