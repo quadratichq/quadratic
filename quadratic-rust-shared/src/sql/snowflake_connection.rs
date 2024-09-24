@@ -5,6 +5,7 @@ use bytes::{Bytes, BytesMut};
 use futures_util::stream::StreamExt;
 use parquet::arrow::ArrowWriter;
 use serde::{Deserialize, Serialize};
+use snowflake_api::responses::ExecResponse;
 use snowflake_api::{QueryResult, RawQueryResult, SnowflakeApi};
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -98,44 +99,57 @@ impl Connection for SnowflakeConnection {
         max_bytes: Option<u64>,
     ) -> Result<(Bytes, bool)> {
         let mut parquet = BytesMut::new();
-        let mut over_the_limit = false;
-
+        let query_error = |e: String| SharedError::Sql(Sql::Query(e));
         let query_result = client
             .exec_raw(sql, true)
             .await
-            .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
+            .map_err(|e| query_error(e.to_string()))?;
 
         if let RawQueryResult::Stream(mut bytes_stream) = query_result {
             let mut chunks = vec![];
 
             while let Some(bytes) = bytes_stream.next().await {
-                let bytes = bytes.map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
+                let bytes = bytes.map_err(|e| query_error(e.to_string()))?;
 
                 if let Some(max_bytes) = max_bytes {
                     if (chunks.len() + bytes.len()) as u64 > max_bytes {
-                        over_the_limit = true;
-                        break;
+                        return Ok((parquet.into(), true));
                     }
                 }
 
                 chunks.push(bytes);
             }
 
-            let batches = RawQueryResult::flat_bytes_to_batches(chunks)?;
+            let bytes = chunks.into_iter().flatten().collect::<Vec<u8>>();
+            let resp = serde_json::from_slice::<ExecResponse>(&bytes)
+                .map_err(|e| query_error(e.to_string()))?;
+            let raw_query_result = client
+                .parse_arrow_raw_response(resp)
+                .await
+                .map_err(|e| query_error(e.to_string()))?;
+            let query_result = raw_query_result
+                .deserialize_arrow()
+                .map_err(|e| query_error(e.to_string()))?;
 
-            for batch in batches {
-                let file = Vec::new();
-                let mut writer = ArrowWriter::try_new(file, batch.schema(), None)?;
+            if let QueryResult::Arrow(batches) = query_result {
+                for batch in batches {
+                    let file = Vec::new();
+                    let mut writer = ArrowWriter::try_new(file, batch.schema(), None)?;
 
-                writer.write(&batch)?;
+                    writer.write(&batch)?;
 
-                let bytes = writer.into_inner()?;
+                    let bytes = writer.into_inner()?;
 
-                parquet.extend_from_slice(&bytes);
+                    parquet.extend_from_slice(&bytes);
+                }
+
+                return Ok((parquet.into(), false));
             }
         }
 
-        Ok((parquet.into(), over_the_limit))
+        Err(SharedError::Sql(Sql::Query(
+            "Could not convert to Arrow".to_string(),
+        )))
     }
 
     async fn schema(&self, client: &mut Self::Conn) -> Result<DatabaseSchema> {
@@ -341,7 +355,7 @@ mod tests {
         let result = connection
             .query(
                 &mut client.unwrap(),
-                "select * from all_native_data_types.public.all_native_data_types;",
+                "select * from all_native_data_types;",
                 max_bytes,
             )
             .await
