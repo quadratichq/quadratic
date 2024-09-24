@@ -1,3 +1,4 @@
+import { CodeCell } from '@/app/atoms/aiAssistantAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Coordinate } from '@/app/gridGL/types/size';
@@ -16,9 +17,10 @@ export function AskAICodeCell() {
   const submitPrompt = useSubmitAIAssistantPrompt();
 
   const askAI = useCallback(
-    (sheetId: string, pos: Coordinate) => {
+    (codeCell: CodeCell) => {
       if (loading) return;
 
+      const { sheetId, pos } = codeCell;
       setSheetId(sheetId);
       const rectangle = sheets.getById(sheetId)?.getCellOffsets(pos.x, pos.y);
       if (rectangle) {
@@ -26,13 +28,13 @@ export function AskAICodeCell() {
           x: rectangle.x + rectangle.width - AI_ICON_SIZE,
           y: rectangle.y + rectangle.height / 2 - AI_ICON_SIZE / 2,
         });
-        submitPrompt({ sheetId, pos, userPrompt: 'Fix the error in the code cell', clearMessages: true })
+        setLoading(true);
+        submitPrompt({ codeCell, userPrompt: 'Fix the error in the code cell', clearMessages: true })
           .catch(console.error)
           .finally(() => {
             setLoading(false);
             setDisplayPos(undefined);
           });
-        setLoading(true);
       } else {
         setDisplayPos(undefined);
         setLoading(false);

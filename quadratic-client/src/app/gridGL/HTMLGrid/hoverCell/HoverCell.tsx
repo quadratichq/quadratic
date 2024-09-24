@@ -1,3 +1,4 @@
+import { CodeCell } from '@/app/atoms/aiAssistantAtom';
 import { editorInteractionStateWaitingForEditorCloseAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { showCodePeekAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
@@ -15,7 +16,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { Rectangle } from 'pixi.js';
-import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import './HoverCell.css';
 
@@ -127,19 +128,19 @@ export function HoverCell() {
           const language = getLanguage(renderCodeCell.language);
           const sheetId = sheets.sheet.id;
           const { x, y } = renderCodeCell;
-          const codeCell = await quadraticCore.getCodeCell(sheetId, x, y);
+          const codeCellCore = await quadraticCore.getCodeCell(sheetId, x, y);
 
           if (renderCodeCell.state === 'RunError') {
             setOnlyCode(false);
-            if (codeCell) {
-              setText(<HoverCellRunError codeCell={codeCell} onClick={hideHoverCell} />);
+            if (codeCellCore) {
+              setText(<HoverCellRunError codeCellCore={codeCellCore} onClick={hideHoverCell} />);
             }
           } else {
             setOnlyCode(true);
             setText(
               <>
                 <div className="hover-cell-header">{language} Code</div>
-                <div className="code-body">{codeCell?.code_string}</div>
+                <div className="code-body">{codeCellCore?.code_string}</div>
               </>
             );
           }
@@ -230,14 +231,22 @@ export function HoverCell() {
   );
 }
 
-function HoverCellRunError({ codeCell, onClick }: { codeCell: JsCodeCell; onClick: () => void }) {
+function HoverCellRunError({ codeCellCore, onClick }: { codeCellCore: JsCodeCell; onClick: () => void }) {
   const setEditorInteractionStateWaitingForEditorClose = useSetRecoilState(
     editorInteractionStateWaitingForEditorCloseAtom
   );
-  const language = getLanguage(codeCell.language);
-  const sheetId = sheets.sheet.id;
-  const x = Number(codeCell.x);
-  const y = Number(codeCell.y);
+  const language = getLanguage(codeCellCore.language);
+  const x = Number(codeCellCore.x);
+  const y = Number(codeCellCore.y);
+
+  const codeCell: CodeCell = useMemo(() => {
+    return {
+      sheetId: sheets.current,
+      pos: { x, y },
+      language: codeCellCore.language,
+    };
+  }, [codeCellCore.language, x, y]);
+
   return (
     <>
       <div className="hover-cell-header">
@@ -248,7 +257,7 @@ function HoverCellRunError({ codeCell, onClick }: { codeCell: JsCodeCell; onClic
             <Button
               size="sm"
               onClick={() => {
-                events.emit('askAICodeCell', sheetId, { x, y });
+                events.emit('askAICodeCell', codeCell);
                 onClick();
               }}
             >
@@ -261,12 +270,12 @@ function HoverCellRunError({ codeCell, onClick }: { codeCell: JsCodeCell; onClic
               size="sm"
               onClick={() => {
                 setEditorInteractionStateWaitingForEditorClose({
-                  selectedCellSheet: sheetId,
-                  selectedCell: { x, y },
+                  selectedCellSheet: codeCell.sheetId,
+                  selectedCell: codeCell.pos,
                   mode: codeCell.language,
                   showCellTypeMenu: false,
                   inlineEditor: false,
-                  initialCode: codeCell.code_string,
+                  initialCode: codeCellCore.code_string,
                 });
                 onClick();
               }}
@@ -279,11 +288,11 @@ function HoverCellRunError({ codeCell, onClick }: { codeCell: JsCodeCell; onClic
 
       <div className="hover-cell-body">
         <div>There was an error running the code in this cell.</div>
-        <div className="hover-cell-error-msg">{codeCell.std_err}</div>
+        <div className="hover-cell-error-msg">{codeCellCore.std_err}</div>
       </div>
 
       <div className="hover-cell-header-space">{language} Code</div>
-      <div className="code-body">{codeCell.code_string}</div>
+      <div className="code-body">{codeCellCore.code_string}</div>
     </>
   );
 }

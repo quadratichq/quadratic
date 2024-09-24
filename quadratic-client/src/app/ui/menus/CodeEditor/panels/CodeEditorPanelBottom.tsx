@@ -1,13 +1,17 @@
+import { CodeCell } from '@/app/atoms/aiAssistantAtom';
 import {
+  codeEditorCellLocationAtom,
   codeEditorConsoleOutputAtom,
   codeEditorPanelBottomActiveTabAtom,
   codeEditorSpillErrorAtom,
 } from '@/app/atoms/codeEditorAtom';
 import {
+  editorInteractionStateModeAtom,
   editorInteractionStateSelectedCellAtom,
   editorInteractionStateSelectedCellSheetAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { AIIcon } from '@/shared/components/Icons';
@@ -29,6 +33,8 @@ export function CodeEditorPanelBottom({ schemaBrowser }: CodeEditorPanelBottomPr
   const { bottomHidden, setBottomHidden } = useCodeEditorPanelData();
   const selectedCellSheet = useRecoilValue(editorInteractionStateSelectedCellSheetAtom);
   const selectedCell = useRecoilValue(editorInteractionStateSelectedCellAtom);
+  const mode = useRecoilValue(editorInteractionStateModeAtom);
+  const cellLocation = useRecoilValue(codeEditorCellLocationAtom);
   const consoleOutput = useRecoilValue(codeEditorConsoleOutputAtom);
   const spillError = useRecoilValue(codeEditorSpillErrorAtom);
   const [panelBottomActiveTab, setPanelBottomActiveTab] = useRecoilState(codeEditorPanelBottomActiveTabAtom);
@@ -36,6 +42,13 @@ export function CodeEditorPanelBottom({ schemaBrowser }: CodeEditorPanelBottomPr
     () => Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError),
     [consoleOutput?.stdErr?.length, consoleOutput?.stdOut?.length, spillError]
   );
+  const codeCell: CodeCell = useMemo(() => {
+    return {
+      sheetId: cellLocation?.sheetId ?? (selectedCellSheet ? selectedCellSheet : sheets.current),
+      pos: cellLocation ? { x: cellLocation.x, y: cellLocation.y } : selectedCell,
+      language: mode ?? 'Python',
+    };
+  }, [cellLocation, mode, selectedCell, selectedCellSheet]);
 
   return (
     <Tabs
@@ -73,13 +86,7 @@ export function CodeEditorPanelBottom({ schemaBrowser }: CodeEditorPanelBottomPr
 
           {consoleOutput?.stdErr ? (
             <TooltipPopover label={'Ask AI to fix error'}>
-              <Button
-                className="ml-2"
-                size="sm"
-                onClick={() => {
-                  events.emit('askAICodeCell', selectedCellSheet, selectedCell);
-                }}
-              >
+              <Button className="ml-2" size="sm" onClick={() => events.emit('askAICodeCell', codeCell)}>
                 <AIIcon />
               </Button>
             </TooltipPopover>

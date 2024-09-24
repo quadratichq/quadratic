@@ -4,10 +4,10 @@ import {
   aiAssistantLoadingAtom,
   aiAssistantMessagesAtom,
   aiAssistantPromptAtom,
+  CodeCell,
   defaultAIAssistantState,
 } from '@/app/atoms/aiAssistantAtom';
 import { editorInteractionStateShowAIAssistantAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { Coordinate } from '@/app/gridGL/types/size';
 import { useAIAssistantModel } from '@/app/ui/menus/AIAssistant/useAIAssistantModel';
 import { useAIRequestToAPI } from '@/app/ui/menus/AIAssistant/useAIRequestToAPI';
 import { useCodeCellContextMessages } from '@/app/ui/menus/AIAssistant/useCodeCellContextMessages';
@@ -30,13 +30,11 @@ export function useSubmitAIAssistantPrompt() {
 
   const submitPrompt = useCallback(
     async ({
-      sheetId,
-      pos,
+      codeCell,
       userPrompt,
       clearMessages,
     }: {
-      sheetId: string;
-      pos: Coordinate;
+      codeCell: CodeCell;
       userPrompt: string;
       clearMessages?: boolean;
     }) => {
@@ -51,7 +49,7 @@ export function useSubmitAIAssistantPrompt() {
 
       let aiContext = defaultAIAssistantState.context;
       setContext((prev) => {
-        aiContext = { ...prev, codeCell: { sheetId, pos } };
+        aiContext = { ...prev, codeCell };
         return aiContext;
       });
 
@@ -59,8 +57,7 @@ export function useSubmitAIAssistantPrompt() {
       setAbortController(abortController);
 
       const { codeContext } = await getCodeCellContext({
-        sheetId,
-        pos,
+        codeCell,
         model,
       });
 

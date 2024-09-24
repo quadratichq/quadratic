@@ -1,10 +1,12 @@
 import { Coordinate } from '@/app/gridGL/types/size';
+import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { AIMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
 
 export type CodeCell = {
   sheetId: string;
   pos: Coordinate;
+  language: CodeCellLanguage;
 };
 
 type AIAssistantState = {

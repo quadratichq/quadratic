@@ -1,3 +1,4 @@
+import { CodeCell } from '@/app/atoms/aiAssistantAtom';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
@@ -75,17 +76,17 @@ ${
   );
 
   const getCodeCellContext = useCallback(
-    async ({ sheetId, pos, model }: { sheetId: string; pos: Coordinate; model: AnthropicModel | OpenAIModel }) => {
-      const codeCell = await quadraticCore.getCodeCell(sheetId, pos.x, pos.y);
-      const cellLanguage = codeCell?.language ?? 'Python';
-      const codeString = codeCell?.code_string ?? '';
+    async ({ codeCell, model }: { codeCell: CodeCell; model: AnthropicModel | OpenAIModel }) => {
+      const { sheetId, pos, language } = codeCell;
+      const codeCellCore = await quadraticCore.getCodeCell(sheetId, pos.x, pos.y);
+      const codeString = codeCellCore?.code_string ?? '';
       const consoleOutput = {
-        std_out: codeCell?.std_out ?? '',
-        std_err: codeCell?.std_err ?? '',
+        std_out: codeCellCore?.std_out ?? '',
+        std_err: codeCellCore?.std_err ?? '',
       };
 
       let schemaData;
-      const connection = getConnectionInfo(cellLanguage);
+      const connection = getConnectionInfo(language);
       if (connection) {
         schemaData = await connectionClient.schemas.get(
           connection.kind.toLowerCase() as 'postgres' | 'mysql' | 'mssql',
@@ -94,14 +95,7 @@ ${
       }
       const schemaJsonForAi = schemaData ? JSON.stringify(schemaData) : undefined;
 
-      const codeContext = getCodeCellContextMessages(
-        model,
-        pos,
-        cellLanguage,
-        codeString,
-        consoleOutput,
-        schemaJsonForAi
-      );
+      const codeContext = getCodeCellContextMessages(model, pos, language, codeString, consoleOutput, schemaJsonForAi);
 
       return { codeContext };
     },

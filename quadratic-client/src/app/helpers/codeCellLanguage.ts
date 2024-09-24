@@ -87,3 +87,14 @@ export const getConnectionKind = (language?: CodeCellLanguage): string | undefin
 
   return undefined;
 };
+
+export const getCodeCellLanguage = (language: string): CodeCellLanguage | undefined => {
+  switch (language.toLowerCase()) {
+    case 'python':
+      return 'Python';
+    case 'javascript':
+      return 'Javascript';
+    case 'formula':
+      return 'Formula';
+  }
+};

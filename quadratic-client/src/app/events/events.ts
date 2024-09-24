@@ -1,7 +1,8 @@
+import { CodeCell } from '@/app/atoms/aiAssistantAtom';
 import { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import { PanMode } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { Coordinate, SheetPosTS } from '@/app/gridGL/types/size';
+import { SheetPosTS } from '@/app/gridGL/types/size';
 import {
   JsBordersSheet,
   JsCodeCell,
@@ -130,7 +131,7 @@ interface EventTypes {
   gridContextMenu: (world: Point, row?: number, column?: number) => void;
 
   // ask AI to fix error in code cell
-  askAICodeCell: (sheetId: string, pos: Coordinate) => void;
+  askAICodeCell: (codeCell: CodeCell) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();
