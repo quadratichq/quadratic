@@ -130,6 +130,11 @@ impl Offsets {
         self.sizes.iter().map(|(&k, &v)| (k, v))
     }
 
+    /// Iterates over the sizes of all columns/rows - owned.
+    pub fn into_iter_sizes(self) -> impl Iterator<Item = (i64, f64)> {
+        self.sizes.into_iter()
+    }
+
     /// Gets a list of changes between this and another `Offsets` structure.
     /// This is used by TS to rapidly change positioning of CellSheets after an offsets change.
     ///
