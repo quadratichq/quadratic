@@ -88,6 +88,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
           width: `calc(100% - ${leftHeading}px)`,
           height: `calc(100% - ${topHeading}px)`,
           pointerEvents: 'none',
+          textRendering: 'optimizeLegibility',
         }}
       >
         <div style={{ position: 'relative' }}>

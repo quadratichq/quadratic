@@ -15,9 +15,8 @@ mod statistics;
 mod string;
 mod tests;
 mod trigonometry;
-mod util;
 
-use super::{CellRef, Criterion, Ctx, Param, ParamKind};
+use super::{util, CellRef, Criterion, Ctx, Param, ParamKind};
 use crate::{
     Array, Axis, CellValue, CodeResult, CoerceInto, IsBlank, RunError, RunErrorMsg, Span, Spanned,
     SpannedIterExt, Value,

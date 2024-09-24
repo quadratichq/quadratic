@@ -83,6 +83,8 @@ impl GridController {
             date
         } else if let Some(date_time) = CellValue::unpack_date_time(value) {
             date_time
+        } else if let Some(duration) = CellValue::unpack_duration(value) {
+            duration
         } else if let Some(code) = value.strip_prefix("=") {
             ops.push(Operation::ComputeCode { sheet_pos });
             CellValue::Code(CodeCellValue {

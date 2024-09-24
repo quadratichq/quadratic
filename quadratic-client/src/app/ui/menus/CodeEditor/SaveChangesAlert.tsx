@@ -1,7 +1,8 @@
 import { codeEditorShowSaveChangesAlertAtom } from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/useCodeEditor';
+import { useAfterDialogCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useAfterDialogCodeEditor';
+import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRunCell';
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import * as monaco from 'monaco-editor';
 import { useCallback, useEffect, useRef } from 'react';
@@ -12,7 +13,8 @@ interface SaveChangesAlertProps {
 }
 
 export const SaveChangesAlert = ({ editorInst }: SaveChangesAlertProps) => {
-  const { afterDialog, saveAndRunCell } = useCodeEditor({
+  const { saveAndRunCell } = useSaveAndRunCell();
+  const { afterDialog } = useAfterDialogCodeEditor({
     editorInst,
   });
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);

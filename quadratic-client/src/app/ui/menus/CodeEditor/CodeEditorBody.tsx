@@ -3,6 +3,7 @@ import {
   codeEditorCellLocationAtom,
   codeEditorCellsAccessedAtom,
   codeEditorEditorContentAtom,
+  codeEditorLoadingAtom,
   codeEditorModifiedEditorContentAtom,
   codeEditorShowDiffEditorAtom,
   codeEditorUnsavedChangesAtom,
@@ -21,6 +22,10 @@ import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
+import { useCloseCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useCloseCodeEditor';
+import { useEditorCellHighlights } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
+import { useEditorOnSelectionChange } from '@/app/ui/menus/CodeEditor/hooks/useEditorOnSelectionChange';
+import { useEditorReturn } from '@/app/ui/menus/CodeEditor/hooks/useEditorReturn';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import {
   provideCompletionItems as provideCompletionItemsPython,
@@ -28,10 +33,6 @@ import {
   provideSignatureHelp as provideSignatureHelpPython,
 } from '@/app/ui/menus/CodeEditor/PythonLanguageModel';
 import { QuadraticEditorTheme } from '@/app/ui/menus/CodeEditor/quadraticEditorTheme';
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/useCodeEditor';
-import { useEditorCellHighlights } from '@/app/ui/menus/CodeEditor/useEditorCellHighlights';
-import { useEditorOnSelectionChange } from '@/app/ui/menus/CodeEditor/useEditorOnSelectionChange';
-import { useEditorReturn } from '@/app/ui/menus/CodeEditor/useEditorReturn';
 import { javascriptLibraryForEditor } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generatedJavascriptForEditor';
 import { pyrightWorker, uri } from '@/app/web-workers/pythonLanguageServer/worker';
 import useEventListener from '@/shared/hooks/useEventListener';
@@ -41,17 +42,10 @@ import { CircularProgress } from '@mui/material';
 import * as monaco from 'monaco-editor';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-// TODO(ddimaria): leave this as we're looking to add this back in once improved
-// import { useEditorDiagnostics } from './useEditorDiagnostics';
-// import { Diagnostic } from 'vscode-languageserver-types';
-// import { typescriptLibrary } from '@/web-workers/javascriptWebWorker/worker/javascript/typescriptLibrary';
 
 interface CodeEditorBodyProps {
   editorInst: monaco.editor.IStandaloneCodeEditor | null;
   setEditorInst: React.Dispatch<React.SetStateAction<monaco.editor.IStandaloneCodeEditor | null>>;
-
-  // TODO(ddimaria): leave this as we're looking to add this back in once improved
-  // diagnostics?: Diagnostic[];
 }
 
 // need to track globally since monaco is a singleton
@@ -63,6 +57,7 @@ const registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
 
 export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   const { editorInst, setEditorInst } = props;
+  const loading = useRecoilValue(codeEditorLoadingAtom);
   const cellLocation = useRecoilValue(codeEditorCellLocationAtom);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
   const showDiffEditor = useRecoilValue(codeEditorShowDiffEditorAtom);
@@ -93,12 +88,9 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   useEditorOnSelectionChange(isValidRef, editorInst, monacoInst);
   useEditorReturn(isValidRef, editorInst, monacoInst);
 
-  const { closeEditor } = useCodeEditor({
+  const { closeEditor } = useCloseCodeEditor({
     editorInst,
   });
-
-  // TODO(ddimaria): leave this as we're looking to add this back in once improved
-  // useEditorDiagnostics(isValidRef, editorRef, monacoRef, language, diagnostics);
 
   useEffect(() => {
     if (editorInst) {
@@ -246,7 +238,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
     [addCommandsDiff]
   );
 
-  if (!showDiffEditor && editorContent === undefined) {
+  if (!showDiffEditor && (editorContent === undefined || loading)) {
     return null;
   }
 

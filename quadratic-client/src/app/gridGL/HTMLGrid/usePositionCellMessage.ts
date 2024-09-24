@@ -5,7 +5,7 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { useHeadingSize } from '@/app/gridGL/HTMLGrid/useHeadingSize';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Rectangle } from 'pixi.js';
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 interface Props {
@@ -18,6 +18,8 @@ interface Props {
   forceTop?: boolean;
 
   direction?: 'vertical' | 'horizontal';
+
+  centerHorizontal?: boolean;
 }
 
 interface PositionCellMessage {
@@ -27,12 +29,12 @@ interface PositionCellMessage {
 
 export const usePositionCellMessage = (props: Props): PositionCellMessage => {
   const annotationState = useRecoilValue(editorInteractionStateAnnotationStateAtom);
-  const { div, offsets, forceLeft, forceTop, direction: side } = props;
+  const { div, offsets, forceLeft, forceTop, direction: side, centerHorizontal } = props;
   const [top, setTop] = useState(0);
   const [left, setLeft] = useState(0);
   const { leftHeading, topHeading } = useHeadingSize();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const updatePosition = () => {
       if (!div || !offsets) return;
 
@@ -46,7 +48,7 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
       const leftHeadingScaled = leftHeading / scale;
 
       if (side === 'vertical') {
-        let left = offsets.left;
+        let left = offsets.left - (centerHorizontal ? offsetWidth / 2 : 0);
         left = Math.min(left, bounds.right - offsetWidth);
         left = Math.max(left, bounds.left + leftHeadingScaled);
         setLeft(left);
@@ -98,7 +100,7 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
       pixiApp.viewport.off('moved', updatePosition);
       window.removeEventListener('resize', updatePosition);
     };
-  }, [div, annotationState, forceLeft, leftHeading, offsets, side, topHeading, forceTop]);
+  }, [centerHorizontal, div, annotationState, forceLeft, forceTop, leftHeading, offsets, side, topHeading]);
 
   return { top, left };
 };

@@ -19,7 +19,9 @@ import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { CodeEditorDiffButtons } from '@/app/ui/menus/CodeEditor/CodeEditorDiffButtons';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
 import { SnippetsPopover } from '@/app/ui/menus/CodeEditor/SnippetsPopover';
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/useCodeEditor';
+import { useCancelRun } from '@/app/ui/menus/CodeEditor/hooks/useCancelRun';
+import { useCloseCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useCloseCodeEditor';
+import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRunCell';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
@@ -79,9 +81,9 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
     [selectedCellSheet]
   );
 
-  const { cancelRun, closeEditor, saveAndRunCell } = useCodeEditor({
-    editorInst,
-  });
+  const { cancelRun } = useCancelRun();
+  const { saveAndRunCell } = useSaveAndRunCell();
+  const { closeEditor } = useCloseCodeEditor({ editorInst });
 
   useEffect(() => {
     const updateSheetName = () => setCurrentSheetId(sheets.sheet.id);

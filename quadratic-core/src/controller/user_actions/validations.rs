@@ -93,7 +93,7 @@ impl GridController {
         if validation.error.style != ValidationStyle::Stop {
             return None;
         }
-        let cell_value = CellValue::to_cell_value(input);
+        let cell_value = CellValue::parse_from_str(input);
         if validation.rule.validate(sheet, Some(&cell_value)) {
             None
         } else {

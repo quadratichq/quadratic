@@ -21,6 +21,7 @@ import { AIAssistant } from '@/app/ui/menus/AIAssistant/AIAssistant';
 import { BottomBar } from '@/app/ui/menus/BottomBar/BottomBar';
 import CellTypeMenu from '@/app/ui/menus/CellTypeMenu';
 import CodeEditor from '@/app/ui/menus/CodeEditor';
+import { CodeEditorEffects } from '@/app/ui/menus/CodeEditor/CodeEditorEffects';
 import CommandPalette from '@/app/ui/menus/CommandPalette';
 import ConnectionsMenu from '@/app/ui/menus/ConnectionsMenu';
 import FeedbackMenu from '@/app/ui/menus/FeedbackMenu';
@@ -113,6 +114,7 @@ export default function QuadraticUI() {
             {!presentationMode && <SheetBar />}
           </FileDragDropWrapper>
           <CodeEditor />
+          <CodeEditorEffects />
           <ValidationPanel />
           <Following follow={follow} />
           <div
