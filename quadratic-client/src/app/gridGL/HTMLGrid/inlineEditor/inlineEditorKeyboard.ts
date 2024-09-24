@@ -60,13 +60,6 @@ class InlineEditorKeyboard {
       return;
     }
 
-    if (inlineEditorMonaco.autocompleteState === 'list') {
-      events.emit('suggestionDropdownKeyboard', e.key as 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape');
-      e.stopPropagation();
-      e.preventDefault();
-      return;
-    }
-
     if (inlineEditorHandler.isEditingFormula()) {
       e.stopPropagation();
       e.preventDefault();
@@ -124,6 +117,16 @@ class InlineEditorKeyboard {
   // when on a different sheet, via window's keyDown listener).
   keyDown = async (e: KeyboardEvent) => {
     events.emit('hoverCell');
+
+    if (
+      inlineEditorMonaco.autocompleteShowingList &&
+      ['ArrowDown', 'ArrowUp', 'Enter', 'Escape', 'Tab'].includes(e.key)
+    ) {
+      events.emit('suggestionDropdownKeyboard', e.key as 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab');
+      e.preventDefault();
+      return;
+    }
+
     if (inlineEditorHandler.cursorIsMoving) {
       this.escapeBackspacePressed = ['Escape', 'Backspace'].includes(e.code);
     } else {

@@ -127,7 +127,7 @@ interface EventTypes {
   // context menu opens on a grid heading
   gridContextMenu: (world: Point, column: number, row: number) => void;
 
-  suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape') => void;
+  suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

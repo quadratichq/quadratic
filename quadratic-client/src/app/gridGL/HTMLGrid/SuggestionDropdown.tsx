@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { cn } from '@/shared/shadcn/utils';
 import { useInlineEditorStatus } from './inlineEditor/useInlineEditorStatus';
 import { useCallback, useEffect, useState } from 'react';
@@ -30,26 +29,26 @@ export const SuggestionDropDown = () => {
     }; // https://hello.herelhdjfkjksdhfjkasdhfkjhaskdjfhkjsadf
 
     const valueChanged = (input = inlineEditorMonaco.get()) => {
-      console.log(input, list);
       if (inlineEditorHandler.formula || input.trim() === '' || !list) {
-        inlineEditorMonaco.autocompleteState = 'none';
+        inlineEditorMonaco.autocompleteShowingList = false;
         setFilteredList(undefined);
         return;
       }
       const lowerCaseValue = input.toLowerCase();
       const possibleValues = list.filter((v) => v.toLowerCase().startsWith(lowerCaseValue));
-      console.log(possibleValues);
+      console.log(possibleValues.length);
       if (possibleValues.length === 1) {
         setFilteredList(undefined);
-        inlineEditorMonaco.autocompleteState = 'inline';
+        inlineEditorMonaco.autocompleteShowingList = false;
+        setTimeout(() => inlineEditorMonaco.triggerSuggestion(), 100);
       } else if (possibleValues.length > 1) {
         const lowerCaseValue = input.toLowerCase();
         const possibleValues = list.filter((v) => v.toLowerCase().startsWith(lowerCaseValue));
         setFilteredList(possibleValues);
-        inlineEditorMonaco.autocompleteState = 'list';
+        inlineEditorMonaco.autocompleteShowingList = true;
       } else {
         setFilteredList(undefined);
-        inlineEditorMonaco.autocompleteState = 'none';
+        inlineEditorMonaco.autocompleteShowingList = false;
       }
     };
 
@@ -64,13 +63,14 @@ export const SuggestionDropDown = () => {
 
   const changeValue = useCallback((value: string) => {
     inlineEditorEvents.emit('replaceText', value, 0);
+    inlineEditorHandler.close(0, 1, false);
+    inlineEditorMonaco.autocompleteShowingList = false;
   }, []);
 
   // handle keyboard events when list is open
   const [index, setIndex] = useState(-1);
   useEffect(() => {
-    const dropdownKeyboard = (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape') => {
-      console.log(key);
+    const dropdownKeyboard = (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => {
       if (!filteredList) return;
 
       if (key === 'ArrowDown' || key === 'ArrowUp') {
@@ -79,9 +79,6 @@ export const SuggestionDropDown = () => {
             key === 'ArrowDown'
               ? (index + 1) % filteredList.length
               : (index - 1 + filteredList.length) % filteredList.length;
-          if (inlineEditorHandler.isOpen()) {
-            inlineEditorEvents.emit('replaceText', filteredList[i], true);
-          }
           return i;
         });
       } else if (key === 'Enter') {
@@ -89,7 +86,8 @@ export const SuggestionDropDown = () => {
           changeValue(filteredList[index]);
         }
       } else if (key === 'Escape') {
-        // todo...
+        inlineEditorMonaco.autocompleteShowingList = false;
+        setFilteredList(undefined);
       }
     };
 

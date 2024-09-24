@@ -37,7 +37,7 @@ class InlineEditorMonaco {
 
   // used to populate autocomplete suggestion (dropdown is handled in autocompleteDropDown.tsx)
   autocompleteList?: string[];
-  autocompleteState: 'inline' | 'list' | 'none' = 'none';
+  autocompleteShowingList = false;
   autocompleteSuggestionShowing = false;
 
   // Helper function to get the model without having to check if editor or model
@@ -391,7 +391,8 @@ class InlineEditorMonaco {
     monaco.languages.register({ id: 'inline-editor' });
     monaco.languages.registerCompletionItemProvider('inline-editor', {
       provideCompletionItems: (model, position) => {
-        if (!this.autocompleteList || this.autocompleteState !== 'inline') return;
+        console.log(this.autocompleteShowingList, this.autocompleteList);
+        if (!this.autocompleteList || this.autocompleteShowingList) return;
         const lowerCase = this.get().toLowerCase();
         if (!this.autocompleteList.find((t) => t.toLowerCase().startsWith(lowerCase))) {
           this.autocompleteSuggestionShowing = false;
