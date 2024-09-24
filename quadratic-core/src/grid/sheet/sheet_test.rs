@@ -60,7 +60,7 @@ impl Sheet {
             }),
         );
 
-        self.set_code_run(
+        self.set_data_table(
             crate::Pos { x, y },
             Some(crate::grid::CodeRun {
                 std_out: None,
@@ -127,7 +127,7 @@ impl Sheet {
                 code: "code".to_string(),
             }),
         );
-        self.set_code_run(
+        self.set_data_table(
             Pos { x, y },
             Some(CodeRun {
                 std_out: None,
@@ -175,7 +175,7 @@ impl Sheet {
             }
         }
 
-        self.set_code_run(
+        self.set_data_table(
             Pos { x, y },
             Some(CodeRun {
                 std_out: None,

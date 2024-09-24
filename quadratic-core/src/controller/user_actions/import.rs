@@ -326,7 +326,7 @@ mod tests {
 
             // all code cells should have valid function names,
             // valid functions may not be implemented yet
-            let code_run = sheet.code_run(pos).unwrap();
+            let code_run = sheet.data_table(pos).unwrap();
             if let CodeRunResult::Err(error) = &code_run.result {
                 if error.msg == RunErrorMsg::BadFunctionName {
                     panic!("expected valid function name")

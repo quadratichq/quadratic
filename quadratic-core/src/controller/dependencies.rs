@@ -7,7 +7,7 @@ use crate::{SheetPos, SheetRect};
 use super::GridController;
 
 impl GridController {
-    /// Searches all code_runs in all sheets for cells that are dependent on the given sheet_rect.
+    /// Searches all data_tables in all sheets for cells that are dependent on the given sheet_rect.
     pub fn get_dependent_code_cells(&self, sheet_rect: &SheetRect) -> Option<HashSet<SheetPos>> {
         let mut dependent_cells = HashSet::new();
 
@@ -67,7 +67,7 @@ mod test {
             sheet_id,
         };
         cells_accessed.insert(sheet_rect);
-        sheet.set_code_run(
+        sheet.set_data_table(
             Pos { x: 0, y: 2 },
             Some(CodeRun {
                 formatted_code_string: None,

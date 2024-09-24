@@ -198,7 +198,7 @@ impl GridController {
 
         let result = CodeRunResult::Err(error.clone());
 
-        let new_code_run = match sheet.code_run(pos) {
+        let new_code_run = match sheet.data_table(pos) {
             Some(old_code_run) => {
                 CodeRun {
                     formatted_code_string: old_code_run.formatted_code_string.clone(),
@@ -375,7 +375,7 @@ mod test {
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        assert_eq!(sheet.code_run(sheet_pos.into()), Some(&new_code_run));
+        assert_eq!(sheet.data_table(sheet_pos.into()), Some(&new_code_run));
 
         // todo: need a way to test the js functions as that replaced these
         // let summary = transaction.send_transaction(true);
@@ -404,7 +404,7 @@ mod test {
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        assert_eq!(sheet.code_run(sheet_pos.into()), Some(&new_code_run));
+        assert_eq!(sheet.data_table(sheet_pos.into()), Some(&new_code_run));
 
         // todo: need a way to test the js functions as that replaced these
         // let summary = transaction.send_transaction(true);
@@ -418,7 +418,7 @@ mod test {
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        assert_eq!(sheet.code_run(sheet_pos.into()), None);
+        assert_eq!(sheet.data_table(sheet_pos.into()), None);
 
         // todo: need a way to test the js functions as that replaced these
         // let summary = transaction.send_transaction(true);

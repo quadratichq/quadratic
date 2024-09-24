@@ -371,7 +371,7 @@ mod test {
         );
         assert!(
             gc.sheet(sheet_id)
-                .code_run(Pos { x: 1, y: 0 })
+                .data_table(Pos { x: 1, y: 0 })
                 .unwrap()
                 .spill_error
         );
@@ -392,7 +392,7 @@ mod test {
         gc.redo(None);
         assert!(
             gc.sheet(sheet_id)
-                .code_run(Pos { x: 1, y: 0 })
+                .data_table(Pos { x: 1, y: 0 })
                 .unwrap()
                 .spill_error
         );
@@ -431,7 +431,7 @@ mod test {
                 code: "this shouldn't work".into(),
             }))
         );
-        let result = sheet.code_run(pos).unwrap();
+        let result = sheet.data_table(pos).unwrap();
         assert!(!result.spill_error);
         assert!(result.std_err.is_some());
 
@@ -449,7 +449,7 @@ mod test {
                 code: "{0,1/0;2/0,0}".into(),
             }))
         );
-        let result = sheet.code_run(pos).unwrap();
+        let result = sheet.data_table(pos).unwrap();
         assert!(!result.spill_error);
         assert!(result.std_err.is_some());
     }

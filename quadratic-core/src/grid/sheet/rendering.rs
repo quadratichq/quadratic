@@ -645,7 +645,7 @@ mod tests {
                 code: "1 + 1".to_string(),
             }),
         );
-        sheet.set_code_run(
+        sheet.set_data_table(
             Pos { x: 2, y: 3 },
             Some(CodeRun {
                 formatted_code_string: None,
@@ -1043,7 +1043,7 @@ mod tests {
             line_number: None,
             output_type: None,
         };
-        sheet.set_code_run(pos, Some(run));
+        sheet.set_data_table(pos, Some(run));
         sheet.set_cell_value(pos, code);
         let rendering = sheet.get_render_code_cell(pos);
         assert_eq!(
@@ -1088,7 +1088,7 @@ mod tests {
             line_number: None,
             output_type: None,
         };
-        sheet.set_code_run(pos, Some(run));
+        sheet.set_data_table(pos, Some(run));
         sheet.set_cell_value(pos, code);
         sheet.send_all_images();
         expect_js_call(

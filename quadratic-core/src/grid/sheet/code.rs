@@ -14,7 +14,7 @@ impl Sheet {
     /// Sets or deletes a code run.
     ///
     /// Returns the old value if it was set.
-    pub fn set_code_run(&mut self, pos: Pos, code_run: Option<CodeRun>) -> Option<CodeRun> {
+    pub fn set_data_table(&mut self, pos: Pos, code_run: Option<CodeRun>) -> Option<CodeRun> {
         if let Some(code_run) = code_run {
             self.data_tables.insert(pos, code_run)
         } else {
@@ -22,12 +22,12 @@ impl Sheet {
         }
     }
 
-    /// Returns a CodeCell at a Pos
-    pub fn code_run(&self, pos: Pos) -> Option<&CodeRun> {
+    /// Returns a DatatTable at a Pos
+    pub fn data_table(&self, pos: Pos) -> Option<&CodeRun> {
         self.data_tables.get(&pos)
     }
 
-    /// Gets column bounds for code_runs that output to the columns
+    /// Gets column bounds for data_tables that output to the columns
     pub fn code_columns_bounds(&self, column_start: i64, column_end: i64) -> Option<Range<i64>> {
         let mut min: Option<i64> = None;
         let mut max: Option<i64> = None;
@@ -49,7 +49,7 @@ impl Sheet {
         }
     }
 
-    /// Gets the row bounds for code_runs that output to the rows
+    /// Gets the row bounds for data_tables that output to the rows
     pub fn code_rows_bounds(&self, row_start: i64, row_end: i64) -> Option<Range<i64>> {
         let mut min: Option<i64> = None;
         let mut max: Option<i64> = None;
@@ -75,16 +75,18 @@ impl Sheet {
     ///
     /// Note: spill error will return a CellValue::Blank to ensure calculations can continue.
     pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
-        self.data_tables.iter().find_map(|(code_cell_pos, code_run)| {
-            if code_run.output_rect(*code_cell_pos, false).contains(pos) {
-                code_run.cell_value_at(
-                    (pos.x - code_cell_pos.x) as u32,
-                    (pos.y - code_cell_pos.y) as u32,
-                )
-            } else {
-                None
-            }
-        })
+        self.data_tables
+            .iter()
+            .find_map(|(code_cell_pos, code_run)| {
+                if code_run.output_rect(*code_cell_pos, false).contains(pos) {
+                    code_run.cell_value_at(
+                        (pos.x - code_cell_pos.x) as u32,
+                        (pos.y - code_cell_pos.y) as u32,
+                    )
+                } else {
+                    None
+                }
+            })
     }
 
     pub fn iter_code_output_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, &CodeRun)> {
@@ -105,7 +107,7 @@ impl Sheet {
     }
 
     /// Returns whether a rect overlaps the output of a code cell.
-    /// It will only check code_cells until it finds the code_run at code_pos (since later code_runs do not cause spills in earlier ones)
+    /// It will only check code_cells until it finds the code_run at code_pos (since later data_tables do not cause spills in earlier ones)
     pub fn has_code_cell_in_rect(&self, rect: &Rect, code_pos: Pos) -> bool {
         for (pos, code_run) in &self.data_tables {
             if pos == &code_pos {
@@ -126,18 +128,20 @@ impl Sheet {
         let code_cell = if let Some(cell_value) = self.cell_value(pos) {
             Some(cell_value)
         } else {
-            self.data_tables.iter().find_map(|(code_cell_pos, code_run)| {
-                if code_run.output_rect(*code_cell_pos, false).contains(pos) {
-                    if let Some(code_value) = self.cell_value(*code_cell_pos) {
-                        code_pos = *code_cell_pos;
-                        Some(code_value)
+            self.data_tables
+                .iter()
+                .find_map(|(code_cell_pos, code_run)| {
+                    if code_run.output_rect(*code_cell_pos, false).contains(pos) {
+                        if let Some(code_value) = self.cell_value(*code_cell_pos) {
+                            code_pos = *code_cell_pos;
+                            Some(code_value)
+                        } else {
+                            None
+                        }
                     } else {
                         None
                     }
-                } else {
-                    None
-                }
-            })
+                })
         };
 
         let code_cell = code_cell?;
@@ -150,7 +154,7 @@ impl Sheet {
                     code_cell.code = replaced;
                 }
 
-                if let Some(code_run) = self.code_run(code_pos) {
+                if let Some(code_run) = self.data_table(code_pos) {
                     let evaluation_result =
                         serde_json::to_string(&code_run.result).unwrap_or("".into());
                     let spill_error = if code_run.spill_error {
@@ -259,11 +263,11 @@ mod test {
             output_type: None,
             spill_error: false,
         };
-        let old = sheet.set_code_run(Pos { x: 0, y: 0 }, Some(code_run.clone()));
+        let old = sheet.set_data_table(Pos { x: 0, y: 0 }, Some(code_run.clone()));
         assert_eq!(old, None);
-        assert_eq!(sheet.code_run(Pos { x: 0, y: 0 }), Some(&code_run));
-        assert_eq!(sheet.code_run(Pos { x: 0, y: 0 }), Some(&code_run));
-        assert_eq!(sheet.code_run(Pos { x: 1, y: 0 }), None);
+        assert_eq!(sheet.data_table(Pos { x: 0, y: 0 }), Some(&code_run));
+        assert_eq!(sheet.data_table(Pos { x: 0, y: 0 }), Some(&code_run));
+        assert_eq!(sheet.data_table(Pos { x: 1, y: 0 }), None);
     }
 
     #[test]
@@ -284,13 +288,13 @@ mod test {
             spill_error: false,
             last_modified: Utc::now(),
         };
-        sheet.set_code_run(Pos { x: 0, y: 0 }, Some(code_run.clone()));
+        sheet.set_data_table(Pos { x: 0, y: 0 }, Some(code_run.clone()));
         assert_eq!(
             sheet.get_code_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
-        assert_eq!(sheet.code_run(Pos { x: 0, y: 0 }), Some(&code_run));
-        assert_eq!(sheet.code_run(Pos { x: 1, y: 1 }), None);
+        assert_eq!(sheet.data_table(Pos { x: 0, y: 0 }), Some(&code_run));
+        assert_eq!(sheet.data_table(Pos { x: 1, y: 1 }), None);
     }
 
     #[test]
@@ -318,7 +322,7 @@ mod test {
             spill_error: false,
             last_modified: Utc::now(),
         };
-        sheet.set_code_run(Pos { x: 0, y: 0 }, Some(code_run.clone()));
+        sheet.set_data_table(Pos { x: 0, y: 0 }, Some(code_run.clone()));
         assert_eq!(
             sheet.edit_code_value(Pos { x: 0, y: 0 }),
             Some(JsCodeCell {
@@ -409,9 +413,9 @@ mod test {
             spill_error: false,
             last_modified: Utc::now(),
         };
-        sheet.set_code_run(Pos { x: 0, y: 0 }, Some(code_run.clone()));
-        sheet.set_code_run(Pos { x: 1, y: 1 }, Some(code_run.clone()));
-        sheet.set_code_run(Pos { x: 2, y: 3 }, Some(code_run.clone()));
+        sheet.set_data_table(Pos { x: 0, y: 0 }, Some(code_run.clone()));
+        sheet.set_data_table(Pos { x: 1, y: 1 }, Some(code_run.clone()));
+        sheet.set_data_table(Pos { x: 2, y: 3 }, Some(code_run.clone()));
 
         assert_eq!(sheet.code_columns_bounds(0, 0), Some(0..3));
         assert_eq!(sheet.code_columns_bounds(1, 1), Some(1..4));
@@ -440,9 +444,9 @@ mod test {
             spill_error: false,
             last_modified: Utc::now(),
         };
-        sheet.set_code_run(Pos { x: 0, y: 0 }, Some(code_run.clone()));
-        sheet.set_code_run(Pos { x: 1, y: 1 }, Some(code_run.clone()));
-        sheet.set_code_run(Pos { x: 3, y: 2 }, Some(code_run.clone()));
+        sheet.set_data_table(Pos { x: 0, y: 0 }, Some(code_run.clone()));
+        sheet.set_data_table(Pos { x: 1, y: 1 }, Some(code_run.clone()));
+        sheet.set_data_table(Pos { x: 3, y: 2 }, Some(code_run.clone()));
 
         assert_eq!(sheet.code_rows_bounds(0, 0), Some(0..3));
         assert_eq!(sheet.code_rows_bounds(1, 1), Some(1..4));

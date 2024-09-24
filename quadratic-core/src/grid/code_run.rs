@@ -1,6 +1,6 @@
 //! CodeRun is the output of a CellValue::Code type
 //!
-//! This lives in sheet.code_runs. CodeRun is optional within sheet.code_runs for
+//! This lives in sheet.data_tables. CodeRun is optional within sheet.data_tables for
 //! any given CellValue::Code type (ie, if it doesn't exist then a run hasn't been
 //! performed yet).
 

@@ -218,7 +218,7 @@ impl GridController {
     pub fn send_image(&self, sheet_pos: SheetPos) {
         if cfg!(target_family = "wasm") || cfg!(test) {
             if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
-                let image = sheet.code_run(sheet_pos.into()).and_then(|code_run| {
+                let image = sheet.data_table(sheet_pos.into()).and_then(|code_run| {
                     code_run
                         .cell_value_at(0, 0)
                         .and_then(|cell_value| match cell_value {

@@ -283,7 +283,7 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        let run = sheet.code_run(Pos { x: 0, y: 0 }).unwrap();
+        let run = sheet.data_table(Pos { x: 0, y: 0 }).unwrap();
         assert!(run.spill_error);
         let reasons = sheet.find_spill_error_reasons(
             &run.output_rect(Pos { x: 0, y: 0 }, true),

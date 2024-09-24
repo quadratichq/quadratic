@@ -261,8 +261,8 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect) {
     println!("\nsheet: {}\n{}", sheet.id, table);
 }
 
-/// Prints the order of the code_runs to the console.
-pub fn print_code_run_order(sheet: &Sheet) {
+/// Prints the order of the data_tables to the console.
+pub fn print_data_table_order(sheet: &Sheet) {
     dbgjs!(sheet
         .data_tables
         .iter()

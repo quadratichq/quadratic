@@ -58,16 +58,16 @@ impl GridController {
         }
     }
 
-    /// Checks if a code_cell has a spill error by comparing its output to both CellValues in that range, and earlier code_runs output.
+    /// Checks if a code_cell has a spill error by comparing its output to both CellValues in that range, and earlier data_tables output.
     fn check_spill(&self, sheet_id: SheetId, index: usize) -> Option<bool> {
         if let Some(sheet) = self.grid.try_sheet(sheet_id) {
-            if let Some((pos, code_run)) = sheet.data_tables.get_index(index) {
+            if let Some((pos, data_table)) = sheet.data_tables.get_index(index) {
                 // output sizes of 1x1 cannot spill
-                if matches!(code_run.output_size(), ArraySize::_1X1) {
+                if matches!(data_table.output_size(), ArraySize::_1X1) {
                     return None;
                 }
 
-                let output: Rect = code_run
+                let output: Rect = data_table
                     .output_sheet_rect(pos.to_sheet_pos(sheet_id), true)
                     .into();
 
@@ -76,10 +76,10 @@ impl GridController {
                     || sheet.has_code_cell_in_rect(&output, *pos)
                 {
                     // if spill error has not been set, then set it and start the more expensive checks for all later code_cells.
-                    if !code_run.spill_error {
+                    if !data_table.spill_error {
                         return Some(true);
                     }
-                } else if code_run.spill_error {
+                } else if data_table.spill_error {
                     // release the code_cell's spill error, then start the more expensive checks for all later code_cells.
                     return Some(false);
                 }
@@ -88,7 +88,7 @@ impl GridController {
         None
     }
 
-    /// Checks all code_runs for changes in spill_errors.
+    /// Checks all data_tables for changes in spill_errors.
     pub fn check_all_spills(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -266,7 +266,7 @@ mod tests {
         gc.check_all_spills(transaction, sheet_id, false);
 
         let sheet = gc.sheet(sheet_id);
-        let code_run = sheet.code_run(Pos { x: 0, y: 0 }).unwrap();
+        let code_run = sheet.data_table(Pos { x: 0, y: 0 }).unwrap();
         assert!(code_run.spill_error);
 
         // should be a spill caused by 0,1
@@ -285,7 +285,7 @@ mod tests {
         );
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        let code_run = sheet.code_run(Pos { x: 0, y: 0 });
+        let code_run = sheet.data_table(Pos { x: 0, y: 0 });
         assert!(code_run.is_some());
         assert!(!code_run.unwrap().spill_error);
 
@@ -423,7 +423,7 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn test_check_deleted_code_runs() {
+    fn test_check_deleted_data_tables() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
         let code_run = CodeRun {
@@ -440,6 +440,6 @@ mod tests {
         };
         let pos = Pos { x: 0, y: 0 };
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_code_run(pos, Some(code_run.clone()));
+        sheet.set_data_table(pos, Some(code_run.clone()));
     }
 }

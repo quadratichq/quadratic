@@ -107,7 +107,7 @@ impl Sheet {
             .collect::<Vec<_>>()
     }
 
-    fn search_code_runs(
+    fn search_data_tables(
         &self,
         query: &String,
         case_sensitive: bool,
@@ -116,7 +116,7 @@ impl Sheet {
         let mut results = vec![];
         self.data_tables
             .iter()
-            .for_each(|(pos, code_run)| match &code_run.result {
+            .for_each(|(pos, data_table)| match &data_table.result {
                 CodeRunResult::Ok(value) => match value {
                     Value::Single(v) => {
                         if self.compare_cell_value(
@@ -125,7 +125,7 @@ impl Sheet {
                             *pos,
                             case_sensitive,
                             whole_cell,
-                            false, // code_runs can never have code within them (although that would be cool if they did ;)
+                            false, // data_tables can never have code within them (although that would be cool if they did ;)
                         ) {
                             results.push(pos.to_sheet_pos(self.id));
                         }
@@ -143,7 +143,7 @@ impl Sheet {
                                     },
                                     case_sensitive,
                                     whole_cell,
-                                    false, // code_runs can never have code within them (although that would be cool if they did ;)
+                                    false, // data_tables can never have code within them (although that would be cool if they did ;)
                                 ) {
                                     results.push(SheetPos {
                                         x: pos.x + x as i64,
@@ -175,7 +175,7 @@ impl Sheet {
         let whole_cell = options.whole_cell.unwrap_or(false);
         let search_code = options.search_code.unwrap_or(false);
         let mut results = self.search_cell_values(&query, case_sensitive, whole_cell, search_code);
-        results.extend(self.search_code_runs(&query, case_sensitive, whole_cell));
+        results.extend(self.search_data_tables(&query, case_sensitive, whole_cell));
         results.sort_by(|a, b| {
             let order = a.x.cmp(&b.x);
             if order == std::cmp::Ordering::Equal {
@@ -473,7 +473,7 @@ mod test {
             output_type: None,
             last_modified: Utc::now(),
         };
-        sheet.set_code_run(Pos { x: 1, y: 2 }, Some(code_run));
+        sheet.set_data_table(Pos { x: 1, y: 2 }, Some(code_run));
 
         let results = sheet.search(
             &"hello".into(),
@@ -515,7 +515,7 @@ mod test {
             output_type: None,
             last_modified: Utc::now(),
         };
-        sheet.set_code_run(Pos { x: 1, y: 2 }, Some(code_run));
+        sheet.set_data_table(Pos { x: 1, y: 2 }, Some(code_run));
 
         let results = sheet.search(
             &"abc".into(),

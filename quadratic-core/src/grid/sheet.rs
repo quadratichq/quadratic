@@ -203,14 +203,14 @@ impl Sheet {
         self.columns.iter()
     }
 
-    /// Returns the cell_value at a Pos using both column.values and code_runs (i.e., what would be returned if code asked
+    /// Returns the cell_value at a Pos using both column.values and data_tables (i.e., what would be returned if code asked
     /// for it).
     pub fn display_value(&self, pos: Pos) -> Option<CellValue> {
         let cell_value = self
             .get_column(pos.x)
             .and_then(|column| column.values.get(&pos.y));
 
-        // if CellValue::Code, then we need to get the value from code_runs
+        // if CellValue::Code, then we need to get the value from data_tables
         if let Some(cell_value) = cell_value {
             match cell_value {
                 CellValue::Code(_) => self
@@ -221,7 +221,7 @@ impl Sheet {
                 _ => Some(cell_value.clone()),
             }
         } else {
-            // if there is no CellValue at Pos, then we still need to check code_runs
+            // if there is no CellValue at Pos, then we still need to check data_tables
             self.get_code_cell_value(pos)
         }
     }
@@ -234,7 +234,7 @@ impl Sheet {
         })
     }
 
-    /// Returns the cell_value at the Pos in column.values. This does not check or return results within code_runs.
+    /// Returns the cell_value at the Pos in column.values. This does not check or return results within data_tables.
     pub fn cell_value(&self, pos: Pos) -> Option<CellValue> {
         let column = self.get_column(pos.x)?;
         column.values.get(&pos.y).cloned()
@@ -246,7 +246,7 @@ impl Sheet {
     }
 
     /// Returns the cell value at a position using both `column.values` and
-    /// `code_runs`, for use when a formula references a cell.
+    /// `data_tables`, for use when a formula references a cell.
     pub fn get_cell_for_formula(&self, pos: Pos) -> CellValue {
         let cell_value = self
             .get_column(pos.x)

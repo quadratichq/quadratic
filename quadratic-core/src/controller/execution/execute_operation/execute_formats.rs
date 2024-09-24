@@ -67,7 +67,7 @@ impl GridController {
                         // RenderSize is always sent as a 1,1 rect. TODO: we need to refactor formats to make it less generic.
                         if let Some(sheet) = self.grid.try_sheet(sheet_rect.sheet_id) {
                             if let Some(code_run) =
-                                sheet.code_run((sheet_rect.min.x, sheet_rect.min.y).into())
+                                sheet.data_table((sheet_rect.min.x, sheet_rect.min.y).into())
                             {
                                 if code_run.is_html() {
                                     self.send_html_output_rect(&sheet_rect);
@@ -197,7 +197,7 @@ mod test {
                 code: "code".to_string(),
             }),
         );
-        sheet.set_code_run(
+        sheet.set_data_table(
             Pos { x: 0, y: 0 },
             Some(CodeRun {
                 formatted_code_string: None,

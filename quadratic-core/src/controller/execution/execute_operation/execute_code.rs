@@ -39,7 +39,7 @@ impl GridController {
     }
 
     // delete any code runs within the sheet_rect.
-    pub(super) fn check_deleted_code_runs(
+    pub(super) fn check_deleted_data_tables(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_rect: &SheetRect,
@@ -50,7 +50,7 @@ impl GridController {
             return;
         };
         let rect: Rect = (*sheet_rect).into();
-        let code_runs_to_delete: Vec<Pos> = sheet
+        let data_tables_to_delete: Vec<Pos> = sheet
             .data_tables
             .iter()
             .filter_map(|(pos, _)| {
@@ -71,7 +71,7 @@ impl GridController {
                 }
             })
             .collect();
-        code_runs_to_delete.iter().for_each(|pos| {
+        data_tables_to_delete.iter().for_each(|pos| {
             self.finalize_code_run(transaction, pos.to_sheet_pos(sheet_id), None, None);
         });
     }
@@ -200,7 +200,7 @@ mod tests {
             Some(CellValue::Blank)
         );
 
-        let code_cell = sheet.code_run(Pos { x: 1, y: 0 });
+        let code_cell = sheet.data_table(Pos { x: 1, y: 0 });
         assert!(code_cell.unwrap().spill_error);
     }
 

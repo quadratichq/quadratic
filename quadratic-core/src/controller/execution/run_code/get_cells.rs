@@ -180,7 +180,7 @@ mod test {
         assert!(result.is_err());
         let sheet = gc.sheet(sheet_id);
         let error = sheet
-            .code_run(Pos { x: 0, y: 0 })
+            .data_table(Pos { x: 0, y: 0 })
             .unwrap()
             .clone()
             .std_err
