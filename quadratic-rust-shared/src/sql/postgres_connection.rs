@@ -107,7 +107,7 @@ impl Connection for PostgresConnection {
         pool: &mut Self::Conn,
         sql: &str,
         max_bytes: Option<u64>,
-    ) -> Result<(Bytes, bool)> {
+    ) -> Result<(Bytes, bool, usize)> {
         let mut rows = vec![];
         let mut over_the_limit = false;
 
@@ -134,7 +134,9 @@ impl Connection for PostgresConnection {
                 .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
         }
 
-        Ok((Self::to_parquet(rows)?, over_the_limit))
+        let (bytes, num_records) = Self::to_parquet(rows)?;
+
+        Ok((bytes, over_the_limit, num_records))
     }
 
     async fn schema(&self, pool: &mut Self::Conn) -> Result<DatabaseSchema> {

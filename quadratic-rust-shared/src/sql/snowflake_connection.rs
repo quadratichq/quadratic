@@ -1,7 +1,7 @@
 use arrow::array::ArrayRef;
 use arrow_array::array::Array;
 use async_trait::async_trait;
-use bytes::{Bytes, BytesMut};
+use bytes::Bytes;
 use futures_util::stream::StreamExt;
 use parquet::arrow::ArrowWriter;
 use serde::{Deserialize, Serialize};
@@ -97,8 +97,7 @@ impl Connection for SnowflakeConnection {
         client: &mut Self::Conn,
         sql: &str,
         max_bytes: Option<u64>,
-    ) -> Result<(Bytes, bool)> {
-        let mut parquet = BytesMut::new();
+    ) -> Result<(Bytes, bool, usize)> {
         let query_error = |e: String| SharedError::Sql(Sql::Query(e));
         let query_result = client
             .exec_raw(sql, true)
@@ -113,7 +112,7 @@ impl Connection for SnowflakeConnection {
 
                 if let Some(max_bytes) = max_bytes {
                     if (chunks.len() + bytes.len()) as u64 > max_bytes {
-                        return Ok((parquet.into(), true));
+                        return Ok((Bytes::new(), true, 0));
                     }
                 }
 
@@ -130,20 +129,19 @@ impl Connection for SnowflakeConnection {
             let query_result = raw_query_result
                 .deserialize_arrow()
                 .map_err(|e| query_error(e.to_string()))?;
+            let mut num_records = 0;
 
             if let QueryResult::Arrow(batches) = query_result {
+                let file = Vec::new();
+                let mut writer = ArrowWriter::try_new(file, batches[0].schema(), None)?;
+
                 for batch in batches {
-                    let file = Vec::new();
-                    let mut writer = ArrowWriter::try_new(file, batch.schema(), None)?;
-
+                    num_records += batch.num_rows();
                     writer.write(&batch)?;
-
-                    let bytes = writer.into_inner()?;
-
-                    parquet.extend_from_slice(&bytes);
                 }
 
-                return Ok((parquet.into(), false));
+                let parquet = writer.into_inner()?;
+                return Ok((parquet.into(), false, num_records));
             }
         }
 
@@ -334,7 +332,7 @@ mod tests {
     }
 
     // to record: cargo test --features record-request-mock
-    async fn test_query(max_bytes: Option<u64>) -> (Bytes, bool) {
+    async fn test_query(max_bytes: Option<u64>) -> (Bytes, bool, usize) {
         let connection = new_snowflake_connection();
         let scenario = "snowflake-connection";
         let url = format!(
@@ -378,15 +376,17 @@ mod tests {
     #[tokio::test]
     #[traced_test]
     async fn test_snowflake_query() {
-        let (rows, over_the_limit) = test_query(None).await;
+        let (rows, over_the_limit, num_records) = test_query(None).await;
 
         // ensure the parquet file is the same as the bytes
         assert!(compare_parquet_file_with_bytes(PARQUET_FILE, rows));
         assert_eq!(over_the_limit, false);
+        assert_eq!(num_records, 2);
 
         // // test if we're over the limit
-        let (_, over_the_limit) = test_query(Some(10)).await;
+        let (_, over_the_limit, num_records) = test_query(Some(10)).await;
         assert_eq!(over_the_limit, true);
+        assert_eq!(num_records, 0);
     }
 
     #[tokio::test]

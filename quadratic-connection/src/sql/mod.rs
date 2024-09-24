@@ -41,11 +41,11 @@ pub(crate) async fn query_generic<T: Connection>(
     headers.insert("ELAPSED-DATABASE-CONNECTION-MS", time_header(start_connect));
 
     let start_query = Instant::now();
-    let (parquet, over_the_limit) = connection
+    let (parquet, over_the_limit, num_records) = connection
         .query(&mut pool, &sql_query.query, max_response_bytes)
         .await?;
 
-    headers.insert("RECORD-COUNT", number_header(0));
+    headers.insert("RECORD-COUNT", number_header(num_records));
     headers.insert("ELAPSED-DATABASE-QUERY-MS", time_header(start_query));
     headers.insert("OVER-THE-LIMIT", number_header(over_the_limit));
 
