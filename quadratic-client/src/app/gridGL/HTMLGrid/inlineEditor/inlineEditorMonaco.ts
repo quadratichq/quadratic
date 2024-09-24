@@ -436,6 +436,14 @@ class InlineEditorMonaco {
     const selection = this.editor.getSelection();
     return selection ? !selection.isEmpty() : false;
   }
+
+  // triggers the inline suggestion for the current text (used when manually entering text)
+  triggerSuggestion() {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in triggerSelection');
+    }
+    this.editor.trigger(null, 'editor.action.inlineSuggest.trigger', null);
+  }
 }
 
 export const inlineEditorMonaco = new InlineEditorMonaco();

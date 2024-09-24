@@ -198,6 +198,7 @@ class InlineEditorHandler {
       this.temporaryBold = this.formatSummary?.bold || undefined;
       this.temporaryItalic = this.formatSummary?.italic || undefined;
       inlineEditorMonaco.set(value);
+      inlineEditorMonaco.triggerSuggestion();
       inlineEditorMonaco.setBackgroundColor(
         this.formatSummary.fillColor ? convertColorStringToHex(this.formatSummary.fillColor) : '#ffffff'
       );
