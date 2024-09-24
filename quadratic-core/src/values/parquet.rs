@@ -5,7 +5,6 @@ use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 use crate::{arrow::arrow_col_to_cell_value_vec, CellValue};
 
 pub fn parquet_to_vec(file: Vec<u8>) -> Result<Vec<Vec<CellValue>>> {
-    dbgjs!("a");
     if file.is_empty() {
         return Ok(vec![]);
     }
