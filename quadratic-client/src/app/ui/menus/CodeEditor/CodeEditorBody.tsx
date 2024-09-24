@@ -3,6 +3,7 @@ import {
   codeEditorCellLocationAtom,
   codeEditorCellsAccessedAtom,
   codeEditorEditorContentAtom,
+  codeEditorLoadingAtom,
   codeEditorUnsavedChangesAtom,
 } from '@/app/atoms/codeEditorAtom';
 import {
@@ -39,17 +40,10 @@ import { CircularProgress } from '@mui/material';
 import * as monaco from 'monaco-editor';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-// TODO(ddimaria): leave this as we're looking to add this back in once improved
-// import { useEditorDiagnostics } from './useEditorDiagnostics';
-// import { Diagnostic } from 'vscode-languageserver-types';
-// import { typescriptLibrary } from '@/web-workers/javascriptWebWorker/worker/javascript/typescriptLibrary';
 
 interface CodeEditorBodyProps {
   editorInst: monaco.editor.IStandaloneCodeEditor | null;
   setEditorInst: React.Dispatch<React.SetStateAction<monaco.editor.IStandaloneCodeEditor | null>>;
-
-  // TODO(ddimaria): leave this as we're looking to add this back in once improved
-  // diagnostics?: Diagnostic[];
 }
 
 // need to track globally since monaco is a singleton
@@ -61,6 +55,7 @@ const registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
 
 export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   const { editorInst, setEditorInst } = props;
+  const loading = useRecoilValue(codeEditorLoadingAtom);
   const cellLocation = useRecoilValue(codeEditorCellLocationAtom);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
   const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
@@ -92,9 +87,6 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   const { closeEditor } = useCloseCodeEditor({
     editorInst,
   });
-
-  // TODO(ddimaria): leave this as we're looking to add this back in once improved
-  // useEditorDiagnostics(isValidRef, editorRef, monacoRef, language, diagnostics);
 
   useEffect(() => {
     if (editorInst) {
@@ -224,7 +216,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
     [addCommands, monacoLanguage, setEditorInst]
   );
 
-  if (editorContent === undefined) {
+  if (editorContent === undefined || loading) {
     return null;
   }
 

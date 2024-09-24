@@ -14,8 +14,8 @@ export const openCodeEditor = async () => {
     setEditorInteractionState({
       ...editorInteractionState,
       waitingForEditorClose: {
-        selectedCell: { x, y },
         selectedCellSheet: sheets.sheet.id,
+        selectedCell: { x, y },
         mode: cell.language,
         showCellTypeMenu: !editorInteractionState.showCodeEditor,
         initialCode: undefined,
@@ -27,8 +27,8 @@ export const openCodeEditor = async () => {
       ...editorInteractionState,
       waitingForEditorClose: {
         showCellTypeMenu: true,
-        selectedCell: { x, y },
         selectedCellSheet: sheets.sheet.id,
+        selectedCell: { x, y },
         mode: 'Python',
         initialCode: undefined,
       },

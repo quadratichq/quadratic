@@ -18,6 +18,7 @@ interface CodeEditorState {
     messages: (UserMessage | AIMessage)[];
     prompt: string;
   };
+  loading: boolean;
   cellLocation?: SheetPosTS;
   codeString?: string;
   evaluationResult?: EvaluationResult;
@@ -37,6 +38,7 @@ const defaultCodeEditorState: CodeEditorState = {
     messages: [],
     prompt: '',
   },
+  loading: false,
   cellLocation: undefined,
   codeString: undefined,
   evaluationResult: undefined,
@@ -65,6 +67,7 @@ const createSelector = <T extends keyof CodeEditorState>(key: T) =>
       })),
   });
 
+export const codeEditorLoadingAtom = createSelector('loading');
 export const codeEditorCellLocationAtom = createSelector('cellLocation');
 export const codeEditorCodeStringAtom = createSelector('codeString');
 export const codeEditorEvaluationResultAtom = createSelector('evaluationResult');

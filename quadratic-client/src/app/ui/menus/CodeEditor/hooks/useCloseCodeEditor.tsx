@@ -1,4 +1,5 @@
 import {
+  codeEditorCellLocationAtom,
   codeEditorCodeStringAtom,
   codeEditorEditorContentAtom,
   codeEditorShowSaveChangesAlertAtom,
@@ -13,6 +14,7 @@ import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 export const useCloseCodeEditor = ({ editorInst }: { editorInst: monaco.editor.IStandaloneCodeEditor | null }) => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const setCellLocation = useSetRecoilState(codeEditorCellLocationAtom);
   const setCodeString = useSetRecoilState(codeEditorCodeStringAtom);
   const setEditorContent = useSetRecoilState(codeEditorEditorContentAtom);
   const setShowSaveChangesAlert = useSetRecoilState(codeEditorShowSaveChangesAlertAtom);
@@ -23,20 +25,31 @@ export const useCloseCodeEditor = ({ editorInst }: { editorInst: monaco.editor.I
       if (!skipSaveCheck && unsavedChanges) {
         setShowSaveChangesAlert(true);
       } else {
+        setCellLocation(undefined);
         setCodeString(undefined);
         setEditorContent(undefined);
-        setEditorInteractionState((prev) => ({
-          ...prev,
-          editorEscapePressed: false,
-          showCodeEditor: false,
-          initialCode: undefined,
-        }));
+        setEditorInteractionState((prev) => {
+          return {
+            ...prev,
+            editorEscapePressed: false,
+            showCodeEditor: false,
+            initialCode: undefined,
+          };
+        });
         pixiApp.cellHighlights.clear();
         multiplayer.sendEndCellEdit();
         editorInst?.dispose();
       }
     },
-    [editorInst, setCodeString, setEditorContent, setEditorInteractionState, setShowSaveChangesAlert, unsavedChanges]
+    [
+      editorInst,
+      setCellLocation,
+      setCodeString,
+      setEditorContent,
+      setEditorInteractionState,
+      setShowSaveChangesAlert,
+      unsavedChanges,
+    ]
   );
 
   return { closeEditor };
