@@ -1,0 +1,26 @@
+/**
+ * Because items in the menubar render conditionally, we don't always know
+ * if multiple separators will render next to each other.
+ *
+ * Example:
+ *
+ * <MenubarMenu>
+ *   <MenubarItem>File</MenubarItem>
+ *   <MenubarSeparator />
+ *   <MenubarItem>Edit</MenubarItem>
+ *   <MenubarSeparator />
+ *   <MenubarItem>Help</MenubarItem>
+ * </MenubarMenu>
+ *
+ * If the "File" one doesn't render, then we have a separator when we
+ * don't need one. Hiding this via JS is a lot more complicated than
+ * doing it in CSS. So we just make sure that the first and last elements
+ * in the list are never separators. And that two subsequent separators
+ * never show.
+ */
+
+[data-radix-menubar-content] > :first-child:is([role='separator']),
+[data-radix-menubar-content] > [role='separator'] + [role='separator'],
+[data-radix-menubar-content] > :last-child:is([role='separator']) {
+  display: none;
+}

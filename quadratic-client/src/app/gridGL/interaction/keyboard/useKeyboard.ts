@@ -2,8 +2,7 @@ import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Size } from '@/app/gridGL/types/size';
-import { useFileContext } from '@/app/ui/components/FileProvider';
-import { useGridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
+import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import React from 'react';
 import { keyboardCell } from './keyboardCell';
@@ -27,7 +26,6 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
   const { editorInteractionState, setEditorInteractionState } = props;
   const { presentationMode, setPresentationMode } = useGridSettings();
   const { addGlobalSnackbar } = useGlobalSnackbar();
-  const { name: fileName } = useFileContext();
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if (pixiAppSettings.input.show && inlineEditorHandler.isOpen()) return;
@@ -43,7 +41,6 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       keyboardClipboard({
         event,
         addGlobalSnackbar,
-        fileName,
       }) ||
       keyboardDropdown(event.nativeEvent, editorInteractionState) ||
       keyboardUndoRedo(event) ||
