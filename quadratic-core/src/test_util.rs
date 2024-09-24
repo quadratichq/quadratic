@@ -264,7 +264,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect) {
 /// Prints the order of the code_runs to the console.
 pub fn print_code_run_order(sheet: &Sheet) {
     dbgjs!(sheet
-        .code_runs
+        .data_tables
         .iter()
         .map(|(pos, _)| pos)
         .collect::<Vec<_>>());

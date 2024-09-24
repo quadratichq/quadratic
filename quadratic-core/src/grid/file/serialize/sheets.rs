@@ -28,7 +28,7 @@ pub fn import_sheet(sheet: current::SheetSchema) -> Result<Sheet> {
         offsets: SheetOffsets::import(sheet.offsets),
         columns: import_column_builder(sheet.columns)?,
 
-        code_runs: import_code_cell_builder(sheet.code_runs)?,
+        data_tables: import_code_cell_builder(sheet.code_runs)?,
         data_bounds: GridBounds::Empty,
         format_bounds: GridBounds::Empty,
 
@@ -60,7 +60,7 @@ pub(crate) fn export_sheet(sheet: Sheet) -> current::SheetSchema {
         validations: export_validations(sheet.validations),
         rows_resize: export_rows_size(sheet.rows_resize),
         borders: export_borders(sheet.borders),
-        code_runs: export_rows_code_runs(sheet.code_runs),
+        code_runs: export_rows_code_runs(sheet.data_tables),
         columns: export_column_builder(sheet.columns),
     }
 }

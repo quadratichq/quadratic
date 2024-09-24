@@ -33,24 +33,25 @@ impl GridController {
         // index for SetCodeRun is either set by execute_set_code_run or calculated
         let index = index.unwrap_or(
             sheet
-                .code_runs
+                .data_tables
                 .iter()
                 .position(|(p, _)| p == &pos)
-                .unwrap_or(sheet.code_runs.len()),
+                .unwrap_or(sheet.data_tables.len()),
         );
 
         let old_code_run = if let Some(new_code_run) = &new_code_run {
-            let (old_index, old_code_run) = sheet.code_runs.insert_full(pos, new_code_run.clone());
+            let (old_index, old_code_run) =
+                sheet.data_tables.insert_full(pos, new_code_run.clone());
             // keep the orderings of the code runs consistent, particularly when undoing/redoing
-            let index = if index > sheet.code_runs.len() - 1 {
-                sheet.code_runs.len() - 1
+            let index = if index > sheet.data_tables.len() - 1 {
+                sheet.data_tables.len() - 1
             } else {
                 index
             };
-            sheet.code_runs.move_index(old_index, index);
+            sheet.data_tables.move_index(old_index, index);
             old_code_run
         } else {
-            sheet.code_runs.shift_remove(&pos)
+            sheet.data_tables.shift_remove(&pos)
         };
 
         if old_code_run == new_code_run {

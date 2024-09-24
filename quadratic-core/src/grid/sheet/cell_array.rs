@@ -130,7 +130,7 @@ impl Sheet {
         }
 
         // then check code runs
-        for (pos, code_run) in &self.code_runs {
+        for (pos, code_run) in &self.data_tables {
             // once we reach the code_pos, no later code runs can be the cause of the spill error
             if pos == &code_pos {
                 break;

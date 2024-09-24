@@ -71,7 +71,7 @@ impl Sheet {
     fn code_runs_for_row(&self, row: i64) -> Vec<Operation> {
         let mut reverse_operations = Vec::new();
 
-        self.code_runs
+        self.data_tables
             .iter()
             .enumerate()
             .for_each(|(index, (pos, code_run))| {
@@ -204,7 +204,7 @@ impl Sheet {
         }
 
         // remove the column's code runs from the sheet
-        self.code_runs.retain(|pos, code_run| {
+        self.data_tables.retain(|pos, code_run| {
             if pos.y == row {
                 transaction.add_code_cell(self.id, *pos);
 
@@ -238,14 +238,14 @@ impl Sheet {
 
         // update the indices of all code_runs impacted by the deletion
         let mut code_runs_to_move = Vec::new();
-        for (pos, _) in self.code_runs.iter() {
+        for (pos, _) in self.data_tables.iter() {
             if pos.y > row {
                 code_runs_to_move.push(*pos);
             }
         }
         code_runs_to_move.sort_unstable();
         for old_pos in code_runs_to_move {
-            if let Some(code_run) = self.code_runs.shift_remove(&old_pos) {
+            if let Some(code_run) = self.data_tables.shift_remove(&old_pos) {
                 let new_pos = Pos {
                     x: old_pos.x,
                     y: old_pos.y - 1,
@@ -260,7 +260,7 @@ impl Sheet {
                     transaction.add_image_cell(self.id, new_pos);
                 }
 
-                self.code_runs.insert(new_pos, code_run);
+                self.data_tables.insert(new_pos, code_run);
 
                 // signal client to update the code runs
                 transaction.add_code_cell(self.id, old_pos);
@@ -382,7 +382,7 @@ impl Sheet {
 
         // update the indices of all code_runs impacted by the insertion
         let mut code_runs_to_move = Vec::new();
-        for (pos, _) in self.code_runs.iter() {
+        for (pos, _) in self.data_tables.iter() {
             if pos.y >= row {
                 code_runs_to_move.push(*pos);
             }
@@ -394,7 +394,7 @@ impl Sheet {
                 x: old_pos.x,
                 y: old_pos.y + 1,
             };
-            if let Some(code_run) = self.code_runs.shift_remove(&old_pos) {
+            if let Some(code_run) = self.data_tables.shift_remove(&old_pos) {
                 // signal html and image cells to update
                 if code_run.is_html() {
                     transaction.add_html_cell(self.id, old_pos);
@@ -404,7 +404,7 @@ impl Sheet {
                     transaction.add_image_cell(self.id, new_pos);
                 }
 
-                self.code_runs.insert(new_pos, code_run);
+                self.data_tables.insert(new_pos, code_run);
 
                 // signal the client to updates to the code cells (to draw the code arrays)
                 transaction.add_code_cell(self.id, old_pos);
@@ -554,8 +554,8 @@ mod test {
                 ..Default::default()
             }
         );
-        assert!(sheet.code_runs.get(&Pos { x: 1, y: 2 }).is_some());
-        assert!(sheet.code_runs.get(&Pos { x: 1, y: 3 }).is_some());
+        assert!(sheet.data_tables.get(&Pos { x: 1, y: 2 }).is_some());
+        assert!(sheet.data_tables.get(&Pos { x: 1, y: 3 }).is_some());
     }
 
     #[test]
@@ -624,8 +624,8 @@ mod test {
         );
         assert_eq!(sheet.borders.get(5, 1).top, None);
 
-        assert!(sheet.code_runs.get(&Pos { x: 4, y: 1 }).is_none());
-        assert!(sheet.code_runs.get(&Pos { x: 4, y: 2 }).is_some());
+        assert!(sheet.data_tables.get(&Pos { x: 4, y: 1 }).is_none());
+        assert!(sheet.data_tables.get(&Pos { x: 4, y: 2 }).is_some());
 
         assert_eq!(
             sheet.display_value(Pos { x: 4, y: 2 }),

@@ -19,7 +19,7 @@ impl GridController {
         delta: i64,
     ) {
         self.grid.sheets().iter().for_each(|sheet| {
-            sheet.code_runs.iter().for_each(|(pos, code_run)| {
+            sheet.data_tables.iter().for_each(|(pos, code_run)| {
                 if let Some(column) = column {
                     if code_run.cells_accessed.iter().any(|sheet_rect| {
                         // if the cells accessed is beyond the column that was deleted

@@ -16,22 +16,22 @@ impl Sheet {
     /// Returns the old value if it was set.
     pub fn set_code_run(&mut self, pos: Pos, code_run: Option<CodeRun>) -> Option<CodeRun> {
         if let Some(code_run) = code_run {
-            self.code_runs.insert(pos, code_run)
+            self.data_tables.insert(pos, code_run)
         } else {
-            self.code_runs.shift_remove(&pos)
+            self.data_tables.shift_remove(&pos)
         }
     }
 
     /// Returns a CodeCell at a Pos
     pub fn code_run(&self, pos: Pos) -> Option<&CodeRun> {
-        self.code_runs.get(&pos)
+        self.data_tables.get(&pos)
     }
 
     /// Gets column bounds for code_runs that output to the columns
     pub fn code_columns_bounds(&self, column_start: i64, column_end: i64) -> Option<Range<i64>> {
         let mut min: Option<i64> = None;
         let mut max: Option<i64> = None;
-        for (pos, code_run) in &self.code_runs {
+        for (pos, code_run) in &self.data_tables {
             let output_rect = code_run.output_rect(*pos, false);
             if output_rect.min.x <= column_end && output_rect.max.x >= column_start {
                 min = min
@@ -53,7 +53,7 @@ impl Sheet {
     pub fn code_rows_bounds(&self, row_start: i64, row_end: i64) -> Option<Range<i64>> {
         let mut min: Option<i64> = None;
         let mut max: Option<i64> = None;
-        for (pos, code_run) in &self.code_runs {
+        for (pos, code_run) in &self.data_tables {
             let output_rect = code_run.output_rect(*pos, false);
             if output_rect.min.y <= row_end && output_rect.max.y >= row_start {
                 min = min
@@ -75,7 +75,7 @@ impl Sheet {
     ///
     /// Note: spill error will return a CellValue::Blank to ensure calculations can continue.
     pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
-        self.code_runs.iter().find_map(|(code_cell_pos, code_run)| {
+        self.data_tables.iter().find_map(|(code_cell_pos, code_run)| {
             if code_run.output_rect(*code_cell_pos, false).contains(pos) {
                 code_run.cell_value_at(
                     (pos.x - code_cell_pos.x) as u32,
@@ -88,7 +88,7 @@ impl Sheet {
     }
 
     pub fn iter_code_output_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, &CodeRun)> {
-        self.code_runs
+        self.data_tables
             .iter()
             .filter_map(move |(pos, code_cell_value)| {
                 let output_rect = code_cell_value.output_rect(*pos, false);
@@ -107,7 +107,7 @@ impl Sheet {
     /// Returns whether a rect overlaps the output of a code cell.
     /// It will only check code_cells until it finds the code_run at code_pos (since later code_runs do not cause spills in earlier ones)
     pub fn has_code_cell_in_rect(&self, rect: &Rect, code_pos: Pos) -> bool {
-        for (pos, code_run) in &self.code_runs {
+        for (pos, code_run) in &self.data_tables {
             if pos == &code_pos {
                 // once we reach the code_cell, we can stop checking
                 return false;
@@ -126,7 +126,7 @@ impl Sheet {
         let code_cell = if let Some(cell_value) = self.cell_value(pos) {
             Some(cell_value)
         } else {
-            self.code_runs.iter().find_map(|(code_cell_pos, code_run)| {
+            self.data_tables.iter().find_map(|(code_cell_pos, code_run)| {
                 if code_run.output_rect(*code_cell_pos, false).contains(pos) {
                     if let Some(code_value) = self.cell_value(*code_cell_pos) {
                         code_pos = *code_cell_pos;

@@ -36,7 +36,7 @@ impl Sheet {
 
         self.calculate_bounds();
 
-        self.code_runs.iter().for_each(|(pos, code_cell_value)| {
+        self.data_tables.iter().for_each(|(pos, code_cell_value)| {
             let output_rect = code_cell_value.output_rect(*pos, false);
             self.data_bounds.add(output_rect.min);
             self.data_bounds.add(output_rect.max);

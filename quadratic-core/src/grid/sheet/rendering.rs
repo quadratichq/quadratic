@@ -286,7 +286,7 @@ impl Sheet {
     }
 
     pub fn get_single_html_output(&self, pos: Pos) -> Option<JsHtmlOutput> {
-        let run = self.code_runs.get(&pos)?;
+        let run = self.data_tables.get(&pos)?;
         if !run.is_html() {
             return None;
         }
@@ -307,7 +307,7 @@ impl Sheet {
     }
 
     pub fn get_html_output(&self) -> Vec<JsHtmlOutput> {
-        self.code_runs
+        self.data_tables
             .iter()
             .filter_map(|(pos, run)| {
                 let output = run.cell_value_at(0, 0)?;
@@ -376,7 +376,7 @@ impl Sheet {
     }
 
     pub fn get_render_code_cell(&self, pos: Pos) -> Option<JsRenderCodeCell> {
-        let run = self.code_runs.get(&pos)?;
+        let run = self.data_tables.get(&pos)?;
         let code = self.cell_value(pos)?;
         let output_size = run.output_size();
         let (state, w, h, spill_error) = if run.spill_error {
@@ -416,7 +416,7 @@ impl Sheet {
 
     /// Returns data for all rendering code cells
     pub fn get_all_render_code_cells(&self) -> Vec<JsRenderCodeCell> {
-        self.code_runs
+        self.data_tables
             .iter()
             .filter_map(|(pos, run)| {
                 if let Some(code) = self.cell_value(*pos) {
@@ -473,7 +473,7 @@ impl Sheet {
             return;
         }
 
-        self.code_runs.iter().for_each(|(pos, run)| {
+        self.data_tables.iter().for_each(|(pos, run)| {
             if let Some(CellValue::Image(image)) = run.cell_value_at(0, 0) {
                 let (w, h) = if let Some(render_size) = self.render_size(*pos) {
                     (Some(render_size.w), Some(render_size.h))

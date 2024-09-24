@@ -89,7 +89,7 @@ impl GridController {
             return vec![];
         };
         let mut code_cell_positions = sheet
-            .code_runs
+            .data_tables
             .iter()
             .map(|(pos, code_run)| (pos.to_sheet_pos(sheet_id), code_run))
             .collect::<Vec<_>>();
@@ -112,7 +112,7 @@ impl GridController {
             .iter()
             .flat_map(|sheet| {
                 sheet
-                    .code_runs
+                    .data_tables
                     .iter()
                     .map(|(pos, code_run)| (pos.to_sheet_pos(sheet.id), code_run))
             })

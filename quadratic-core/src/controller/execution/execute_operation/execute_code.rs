@@ -51,7 +51,7 @@ impl GridController {
         };
         let rect: Rect = (*sheet_rect).into();
         let code_runs_to_delete: Vec<Pos> = sheet
-            .code_runs
+            .data_tables
             .iter()
             .filter_map(|(pos, _)| {
                 // only delete code runs that are within the sheet_rect

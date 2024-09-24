@@ -52,7 +52,7 @@ pub struct Sheet {
     pub columns: BTreeMap<i64, Column>,
 
     #[serde(with = "crate::util::indexmap_serde")]
-    pub code_runs: IndexMap<Pos, CodeRun>,
+    pub data_tables: IndexMap<Pos, CodeRun>,
 
     // todo: we need to redo this struct to track the timestamp for all formats
     // applied to column and rows to properly use the latest column or row
@@ -104,7 +104,7 @@ impl Sheet {
 
             columns: BTreeMap::new(),
 
-            code_runs: IndexMap::new(),
+            data_tables: IndexMap::new(),
 
             formats_columns: BTreeMap::new(),
             formats_rows: BTreeMap::new(),
@@ -194,7 +194,7 @@ impl Sheet {
         }
 
         // remove code_cells where the rect overlaps the anchor cell
-        self.code_runs.retain(|pos, _| !rect.contains(*pos));
+        self.data_tables.retain(|pos, _| !rect.contains(*pos));
 
         old_cell_values_array
     }
@@ -214,7 +214,7 @@ impl Sheet {
         if let Some(cell_value) = cell_value {
             match cell_value {
                 CellValue::Code(_) => self
-                    .code_runs
+                    .data_tables
                     .get(&pos)
                     .and_then(|run| run.cell_value_at(0, 0)),
                 CellValue::Blank => self.get_code_cell_value(pos),
@@ -254,7 +254,7 @@ impl Sheet {
 
         if let Some(cell_value) = cell_value {
             match cell_value {
-                CellValue::Blank | CellValue::Code(_) => match self.code_runs.get(&pos) {
+                CellValue::Blank | CellValue::Code(_) => match self.data_tables.get(&pos) {
                     Some(run) => run.get_cell_for_formula(0, 0),
                     None => CellValue::Blank,
                 },
@@ -358,7 +358,7 @@ impl Sheet {
     /// Deletes all data and formatting in the sheet, effectively recreating it.
     pub fn clear(&mut self) {
         self.columns.clear();
-        self.code_runs.clear();
+        self.data_tables.clear();
         self.recalculate_bounds();
     }
 

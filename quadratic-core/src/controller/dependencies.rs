@@ -12,7 +12,7 @@ impl GridController {
         let mut dependent_cells = HashSet::new();
 
         self.grid.sheets().iter().for_each(|sheet| {
-            sheet.code_runs.iter().for_each(|(pos, code_run)| {
+            sheet.data_tables.iter().for_each(|(pos, code_run)| {
                 code_run.cells_accessed.iter().for_each(|cell_accessed| {
                     if sheet_rect.intersects(*cell_accessed) {
                         dependent_cells.insert(pos.to_sheet_pos(sheet.id));

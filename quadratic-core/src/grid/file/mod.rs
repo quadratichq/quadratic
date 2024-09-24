@@ -219,7 +219,7 @@ mod tests {
     fn process_a_v1_3_single_formula_file() {
         let imported = import(V1_3_SINGLE_FORMULAS_CODE_CELL_FILE.to_vec()).unwrap();
         assert!(imported.sheets[0]
-            .code_runs
+            .data_tables
             .get(&Pos { x: 0, y: 2 })
             .is_some());
         let cell_value = imported.sheets[0].cell_value(Pos { x: 0, y: 2 }).unwrap();
@@ -371,7 +371,7 @@ mod tests {
         );
         assert_eq!(
             sheet
-                .code_runs
+                .data_tables
                 .get(&Pos { x: 0, y: 3 })
                 .unwrap()
                 .output_size(),
@@ -384,9 +384,9 @@ mod tests {
                 code: "// fix by putting a let statement in front of x \nx = 5; ".to_string(),
             })
         );
-        assert_eq!(sheet.code_runs.len(), 10);
+        assert_eq!(sheet.data_tables.len(), 10);
         assert_eq!(
-            sheet.code_runs.get(&Pos { x: 2, y: 6 }).unwrap().std_err,
+            sheet.data_tables.get(&Pos { x: 2, y: 6 }).unwrap().std_err,
             Some("x is not defined".into())
         );
     }

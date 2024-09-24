@@ -114,7 +114,7 @@ impl Sheet {
         whole_cell: bool,
     ) -> Vec<SheetPos> {
         let mut results = vec![];
-        self.code_runs
+        self.data_tables
             .iter()
             .for_each(|(pos, code_run)| match &code_run.result {
                 CodeRunResult::Ok(value) => match value {

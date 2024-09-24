@@ -69,7 +69,7 @@ impl Sheet {
                 }));
             }
             if !skip_code_runs {
-                for (pos, code_run) in self.code_runs.iter() {
+                for (pos, code_run) in self.data_tables.iter() {
                     match code_run.result {
                         CodeRunResult::Ok(ref value) => match value {
                             Value::Single(v) => {
@@ -141,7 +141,7 @@ impl Sheet {
                 }
             }
             if !skip_code_runs {
-                for (pos, code_run) in self.code_runs.iter() {
+                for (pos, code_run) in self.data_tables.iter() {
                     let rect = code_run.output_rect(*pos, false);
                     if columns
                         .iter()
@@ -183,7 +183,7 @@ impl Sheet {
                 }
             }
             if !skip_code_runs {
-                for (pos, code_run) in self.code_runs.iter() {
+                for (pos, code_run) in self.data_tables.iter() {
                     let rect = code_run.output_rect(*pos, false);
                     for y in rect.min.y..=rect.max.y {
                         if rows.contains(&y) {
@@ -231,7 +231,7 @@ impl Sheet {
                 }
             }
             if !skip_code_runs {
-                for (pos, code_run) in self.code_runs.iter() {
+                for (pos, code_run) in self.data_tables.iter() {
                     let rect = code_run.output_rect(*pos, false);
                     for x in rect.min.x..=rect.max.x {
                         for y in rect.min.y..=rect.max.y {
