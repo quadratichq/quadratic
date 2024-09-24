@@ -9,7 +9,7 @@ use crate::{
     auth::Claims,
     connection::get_api_connection,
     error::Result,
-    server::{test_connection, SqlQuery, TestResponse},
+    server::{SqlQuery, TestResponse},
     state::State,
 };
 

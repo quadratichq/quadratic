@@ -5232,6 +5232,7 @@ checksum = "1b6b67fb9a61334225b5b790716f609cd58395f895b3fe8b328786812a40bc3b"
 [[package]]
 name = "snowflake-api"
 version = "0.10.0"
+source = "git+https://github.com/quadratichq/snowflake-rs#a97cb268d8f127472eb33f1ae8a03bc627c3a03b"
 dependencies = [
  "arrow 53.0.0",
  "async-trait",
