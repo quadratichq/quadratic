@@ -271,6 +271,7 @@ export class SheetCursor {
         columns.add(rect.x);
       }
     }
+    columns.add(this.cursorPosition.x);
     return Array.from(columns);
   }
 
@@ -285,6 +286,7 @@ export class SheetCursor {
         rows.add(rect.y);
       }
     }
+    rows.add(this.cursorPosition.y);
     return Array.from(rows);
   }
 }

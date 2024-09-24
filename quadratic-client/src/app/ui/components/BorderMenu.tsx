@@ -46,7 +46,7 @@ export const BorderMenu = () => {
           const Icon = 'Icon' in defaultActionSpec[actionKey] ? defaultActionSpec[actionKey].Icon : undefined;
           const run = defaultActionSpec[actionKey].run;
           return (
-            <Tooltip>
+            <Tooltip key={actionKey}>
               <TooltipTrigger asChild>
                 <ToggleGroup.Item asChild value={actionKey} key={actionKey}>
                   <Button
