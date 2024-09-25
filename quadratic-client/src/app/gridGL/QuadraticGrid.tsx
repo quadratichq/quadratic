@@ -35,8 +35,6 @@ export default function QuadraticGrid() {
     };
   }, []);
 
-  const setShowContextMenu = useSetRecoilState(editorInteractionStateShowContextMenuAtom);
-
   // Pan mode
   const onMouseUp = () => {
     mouseIsDown = false;
@@ -76,6 +74,8 @@ export default function QuadraticGrid() {
     }
     return false;
   };
+
+  const setShowContextMenu = useSetRecoilState(editorInteractionStateShowContextMenuAtom);
 
   const { onKeyDown: onKeyDownFromUseKeyboard, onKeyUp: onKeyUpFromUseKeyboard } = useKeyboard();
 

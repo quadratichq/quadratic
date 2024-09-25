@@ -45,7 +45,7 @@ export function AIAssistantContextModelMenu() {
           key={'current sheet'}
           checked={context.currentSheet}
           onCheckedChange={() => setContext((prev) => ({ ...prev, currentSheet: !prev.currentSheet }))}
-          disabled={true} // TODO: enable after implementing current sheet
+          disabled={true} // TODO: enable after implementing cursor selection
         >
           <span>Current sheet</span>
         </DropdownMenuCheckboxItem>
@@ -61,7 +61,6 @@ export function AIAssistantContextModelMenu() {
           key={'cursor selection'}
           checked={context.cursorSelection}
           onCheckedChange={() => setContext((prev) => ({ ...prev, cursorSelection: !prev.cursorSelection }))}
-          disabled={true} // TODO: enable after implementing cursor selection
         >
           <span>Cursor selection</span>
         </DropdownMenuCheckboxItem>

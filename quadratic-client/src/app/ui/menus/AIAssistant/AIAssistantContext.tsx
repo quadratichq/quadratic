@@ -9,11 +9,16 @@ export const AIAssistantContext = () => {
   const loading = useRecoilValue(aiAssistantLoadingAtom);
 
   return (
-    <div className={`z-10 mx-3 mt-2 flex select-none items-center gap-2 text-xs ${loading ? 'opacity-60' : ''} `}>
+    <div
+      className={`z-10 mx-3 mt-2 flex select-none flex-wrap items-center gap-2 text-xs ${loading ? 'opacity-60' : ''} `}
+    >
       <span>{'Context: '}</span>
-
       {!!context.codeCell && <CodeCellContext codeCell={context.codeCell} />}
-
+      {!!context.cursorSelection && <span>{'[Cursor selection]'}</span>}
+      {!!context.currentSheet && <span>{'[Current sheet]'}</span>}
+      {!!context.allSheets && <span>{'[All sheets]'}</span>}
+      {!!context.connections && <span>{'[Connections]'}</span>}
+      {!!context.quadraticDocs && <span>{'[Quadratic docs]'}</span>}
       <AIAssistantContextModelMenu />
     </div>
   );
