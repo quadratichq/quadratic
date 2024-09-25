@@ -87,6 +87,8 @@ export const SuggestionDropDown = () => {
       } else if (key === 'Escape') {
         inlineEditorMonaco.autocompleteShowingList = false;
         setFilteredList(undefined);
+      } else if (key === 'Tab') {
+        inlineEditorMonaco.autocompleteSuggestionShowing = false;
       }
     };
 
