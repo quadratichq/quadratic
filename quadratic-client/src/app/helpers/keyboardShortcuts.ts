@@ -10,7 +10,10 @@ import { isMac } from '@/shared/utils/isMac';
  * @param {KeyboardEvent | React.KeyboardEvent<Element>} event - The keyboard event
  * @returns {boolean} Whether the keyboard event should trigger the action
  */
-export const matchShortcut = (action: Action, event: KeyboardEvent | React.KeyboardEvent<Element>): boolean => {
+export const matchShortcut = (
+  action: Action,
+  event: KeyboardEvent | React.KeyboardEvent<Element> | PointerEvent
+): boolean => {
   const shortcuts = isMac ? defaultShortcuts[action]?.mac : defaultShortcuts[action]?.windows;
   if (!shortcuts) {
     return false;
@@ -22,7 +25,7 @@ export const matchShortcut = (action: Action, event: KeyboardEvent | React.Keybo
       eventKeys.ctrlKey === event.ctrlKey &&
       eventKeys.altKey === event.altKey &&
       eventKeys.shiftKey === event.shiftKey &&
-      eventKeys.key?.toLowerCase() === event.key.toLowerCase()
+      (eventKeys.key !== undefined && 'key' in event ? eventKeys.key?.toLowerCase() === event.key.toLowerCase() : true)
     );
   });
 };

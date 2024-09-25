@@ -583,6 +583,24 @@ class QuadraticCore {
     });
   }
 
+  setCellUnderline(selection: Selection, underline: boolean, cursor?: string) {
+    this.send({
+      type: 'clientCoreSetCellUnderline',
+      selection,
+      underline,
+      cursor,
+    });
+  }
+
+  setCellStrikeThrough(selection: Selection, strikeThrough: boolean, cursor?: string) {
+    this.send({
+      type: 'clientCoreSetCellStrikeThrough',
+      selection,
+      strikeThrough,
+      cursor,
+    });
+  }
+
   setCellAlign(selection: Selection, align: CellAlign, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellAlign',

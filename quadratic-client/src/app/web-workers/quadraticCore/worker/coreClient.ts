@@ -256,6 +256,14 @@ class CoreClient {
         await core.setCellTextColor(e.data.selection, e.data.color, e.data.cursor);
         return;
 
+      case 'clientCoreSetCellUnderline':
+        await core.setCellUnderline(e.data.selection, e.data.underline, e.data.cursor);
+        return;
+
+      case 'clientCoreSetCellStrikeThrough':
+        await core.setCellStrikeThrough(e.data.selection, e.data.strikeThrough, e.data.cursor);
+        return;
+
       case 'clientCoreSetCellFillColor':
         await core.setCellFillColor(e.data.selection, e.data.fillColor, e.data.cursor);
         return;

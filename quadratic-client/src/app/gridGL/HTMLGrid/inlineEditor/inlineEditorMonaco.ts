@@ -105,7 +105,9 @@ class InlineEditorMonaco {
     height: number,
     textAlign: CellAlign,
     verticalAlign: CellVerticalAlign,
-    textWrap: CellWrap
+    textWrap: CellWrap,
+    underline: boolean,
+    strikeThrough: boolean
   ): { width: number; height: number } => {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in layout');
@@ -125,7 +127,10 @@ class InlineEditorMonaco {
     });
 
     // horizontal text alignment
-    domNode.dataset.textAlign = textAlign;
+    domNode.setAttribute('data-text-align', textAlign);
+
+    this.setUnderline(underline);
+    this.setStrikeThrough(strikeThrough);
 
     // vertical text alignment
     const contentHeight = this.editor.getContentHeight();
@@ -181,6 +186,36 @@ class InlineEditorMonaco {
       throw new Error('Expected editor to be defined in setFontFamily');
     }
     this.editor.updateOptions({ fontFamily });
+  }
+
+  setUnderline(underline: boolean) {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in setUnderline');
+    }
+    const domNode = this.editor.getDomNode();
+    if (!domNode) {
+      throw new Error('Expected domNode to be defined in setUnderline');
+    }
+    if (underline && !inlineEditorHandler.formula) {
+      domNode.setAttribute('data-underline', 'true');
+    } else {
+      domNode.removeAttribute('data-underline');
+    }
+  }
+
+  setStrikeThrough(strikeThrough: boolean) {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in setStrikeThrough');
+    }
+    const domNode = this.editor.getDomNode();
+    if (!domNode) {
+      throw new Error('Expected domNode to be defined in setUnderline');
+    }
+    if (strikeThrough && !inlineEditorHandler.formula) {
+      domNode.setAttribute('data-strike-through', 'true');
+    } else {
+      domNode.removeAttribute('data-strike-through');
+    }
   }
 
   // Changes the column of the cursor in the inline editor
