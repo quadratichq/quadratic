@@ -3,44 +3,12 @@
 
 export interface ArraySize { w: number, h: number, }
 export type Axis = "X" | "Y";
-<<<<<<< HEAD
-export interface Instant { seconds: number, }
-export interface Duration { months: number, seconds: number, }
-export interface RunError { span: Span | null, msg: RunErrorMsg, }
-export type RunErrorMsg = { "PythonError": string } | "Spill" | { "Unimplemented": string } | "UnknownError" | { "InternalError": string } | { "Unterminated": string } | { "Expected": { expected: string, got: string | null, } } | { "Unexpected": string } | { "TooManyArguments": { func_name: string, max_arg_count: number, } } | { "MissingRequiredArgument": { func_name: string, arg_name: string, } } | "BadFunctionName" | "BadCellReference" | "BadNumber" | { "BadOp": { op: string, ty1: string, ty2: string | null, use_duration_instead: boolean, } } | "NaN" | { "ExactArraySizeMismatch": { expected: ArraySize, got: ArraySize, } } | { "ExactArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | { "ArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | "EmptyArray" | "NonRectangularArray" | "NonLinearArray" | "ArrayTooBig" | "CircularReference" | "Overflow" | "DivideByZero" | "NegativeExponent" | "NotANumber" | "Infinity" | "IndexOutOfBounds" | "NoMatch" | "InvalidArgument";
-export interface Pos { x: bigint, y: bigint, }
-export interface Rect { min: Pos, max: Pos, }
-export interface Span { start: number, end: number, }
-export interface SearchOptions { case_sensitive?: boolean, whole_cell?: boolean, search_code?: boolean, sheet_id?: string, }
-export interface SheetPos { x: bigint, y: bigint, sheet_id: SheetId, }
-export interface SheetRect { min: Pos, max: Pos, sheet_id: SheetId, }
-export interface Selection { sheet_id: SheetId, x: bigint, y: bigint, rects: Array<Rect> | null, rows: Array<bigint> | null, columns: Array<bigint> | null, all: boolean, }
-export interface Placement { index: number, position: number, size: number, }
-export interface ColumnRow { column: number, row: number, }
-export interface SheetInfo { sheet_id: string, name: string, order: string, color: string | null, offsets: string, bounds: GridBounds, bounds_without_formatting: GridBounds, }
-export type PasteSpecial = "None" | "Values" | "Formats";
-export interface Rgba { red: number, green: number, blue: number, alpha: number, }
-export type CellBorderLine = "line1" | "line2" | "line3" | "dotted" | "dashed" | "double" | "clear";
 export type BorderSelection = "all" | "inner" | "outer" | "horizontal" | "vertical" | "left" | "top" | "right" | "bottom" | "clear";
 export interface BorderStyle { color: Rgba, line: CellBorderLine, }
 export interface BorderStyleCell { top: BorderStyleTimestamp | null, bottom: BorderStyleTimestamp | null, left: BorderStyleTimestamp | null, right: BorderStyleTimestamp | null, }
 export interface BorderStyleTimestamp { color: Rgba, line: CellBorderLine, timestamp: SmallTimestamp, }
-export interface JsBorderHorizontal { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, width: bigint, }
-export interface JsBorderVertical { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, height: bigint, }
-export interface JsBordersSheet { all: BorderStyleCell | null, columns: Record<string, BorderStyleCell> | null, rows: Record<string, BorderStyleCell> | null, horizontal: Array<JsBorderHorizontal> | null, vertical: Array<JsBorderVertical> | null, }
-export interface JsCodeResult { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: Array<string> | null, output_array: Array<Array<Array<string>>> | null, output_display_type: string | null, cancel_compute: boolean | null, }
-export interface MinMax { min: number, max: number, }
-export interface TransientResize { row: bigint | null, column: bigint | null, old_size: number, new_size: number, }
-export interface SheetBounds { sheet_id: string, bounds: GridBounds, bounds_without_formatting: GridBounds, }
-export type TransactionName = "Unknown" | "ResizeColumn" | "ResizeRow" | "ResizeRows" | "Autocomplete" | "SetBorders" | "SetCells" | "SetFormats" | "CutClipboard" | "PasteClipboard" | "SetCode" | "RunCode" | "Import" | "SetSheetMetadata" | "SheetAdd" | "SheetDelete" | "DuplicateSheet" | "MoveCells" | "Validation";
-export interface JsGetCellResponse { x: bigint, y: bigint, value: string, type_name: string, }
-export interface SummarizeSelectionResult { count: bigint, sum: number | null, average: number | null, }
-export interface Format { align: CellAlign | null, vertical_align: CellVerticalAlign | null, wrap: CellWrap | null, numeric_format: NumericFormat | null, numeric_decimals: number | null, numeric_commas: boolean | null, bold: boolean | null, italic: boolean | null, text_color: string | null, fill_color: string | null, render_size: RenderSize | null, date_time: string | null, }
-=======
-export type BorderSelection = "all" | "inner" | "outer" | "horizontal" | "vertical" | "left" | "top" | "right" | "bottom" | "clear";
-export interface BorderStyle { color: Rgba, line: CellBorderLine, }
 export type CellAlign = "center" | "left" | "right";
-export type CellBorderLine = "line1" | "line2" | "line3" | "dotted" | "dashed" | "double";
+export type CellBorderLine = "line1" | "line2" | "line3" | "dotted" | "dashed" | "double" | "clear";
 export interface CellFormatSummary { bold: boolean | null, italic: boolean | null, commas: boolean | null, textColor: string | null, fillColor: string | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, dateTime: string | null, cellType: CellType | null, underline: boolean | null, strikeThrough: boolean | null, }
 export interface CellRef { sheet: string | null, x: CellRefCoord, y: CellRefCoord, }
 export type CellRefCoord = { "type": "Relative", "coord": bigint } | { "type": "Absolute", "coord": bigint };
@@ -54,6 +22,9 @@ export interface Duration { months: number, seconds: number, }
 export interface Format { align: CellAlign | null, vertical_align: CellVerticalAlign | null, wrap: CellWrap | null, numeric_format: NumericFormat | null, numeric_decimals: number | null, numeric_commas: boolean | null, bold: boolean | null, italic: boolean | null, text_color: string | null, fill_color: string | null, render_size: RenderSize | null, date_time: string | null, underline: boolean | null, strike_through: boolean | null, }
 export type GridBounds = { "type": "empty" } | { "type": "nonEmpty" } & Rect;
 export interface Instant { seconds: number, }
+export interface JsBorderHorizontal { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, width: bigint, }
+export interface JsBorderVertical { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, height: bigint, }
+export interface JsBordersSheet { all: BorderStyleCell | null, columns: Record<string, BorderStyleCell> | null, rows: Record<string, BorderStyleCell> | null, horizontal: Array<JsBorderHorizontal> | null, vertical: Array<JsBorderVertical> | null, }
 export interface JsCellValue { value: string, kind: string, }
 export interface JsClipboard { plainText: string, html: string, }
 export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: Array<SheetRect> | null, }
@@ -62,15 +33,12 @@ export interface JsGetCellResponse { x: bigint, y: bigint, value: string, type_n
 export interface JsHtmlOutput { sheet_id: string, x: bigint, y: bigint, html: string | null, w: string | null, h: string | null, }
 export interface JsNumber { decimals: number | null, commas: boolean | null, format: NumericFormat | null, }
 export interface JsPos { x: bigint, y: bigint, }
-export interface JsRenderBorder { x: bigint, y: bigint, w?: number, h?: number, style: BorderStyle, }
-export interface JsRenderBorders { horizontal: Array<JsRenderBorder>, vertical: Array<JsRenderBorder>, }
 export interface JsRenderCell { x: bigint, y: bigint, value: string, language?: CodeCellLanguage, align?: CellAlign, verticalAlign?: CellVerticalAlign, wrap?: CellWrap, bold?: boolean, italic?: boolean, textColor?: string, special?: JsRenderCellSpecial, number?: JsNumber, underline?: boolean, strikeThrough?: boolean, }
 export type JsRenderCellSpecial = "Chart" | "SpillError" | "RunError" | "Logical" | "Checkbox" | "List";
 export interface JsRenderCodeCell { x: number, y: number, w: number, h: number, language: CodeCellLanguage, state: JsRenderCodeCellState, spill_error: Array<Pos> | null, }
 export type JsRenderCodeCellState = "NotYetRun" | "RunError" | "SpillError" | "Success";
 export interface JsRenderFill { x: bigint, y: bigint, w: number, h: number, color: string, }
 export interface JsRowHeight { row: bigint, height: number, }
->>>>>>> origin/qa
 export interface JsSheetFill { columns: Array<[bigint, [string, bigint]]>, rows: Array<[bigint, [string, bigint]]>, all: string | null, }
 export interface JsValidationWarning { x: bigint, y: bigint, validation: string | null, style: ValidationStyle | null, }
 export interface MinMax { min: number, max: number, }
