@@ -2,9 +2,10 @@
 
 use std::fmt::Display;
 
+use serde::{Deserialize, Serialize};
+
 use super::format_update::FormatUpdate;
 use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat, RenderSize};
-use serde::{Deserialize, Serialize};
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq, ts_rs::TS)]
 pub struct Format {
@@ -20,6 +21,8 @@ pub struct Format {
     pub fill_color: Option<String>,
     pub render_size: Option<RenderSize>,
     pub date_time: Option<String>,
+    pub underline: Option<bool>,
+    pub strike_through: Option<bool>,
 }
 
 impl Format {
@@ -36,6 +39,8 @@ impl Format {
             && self.fill_color.is_none()
             && self.render_size.is_none()
             && self.date_time.is_none()
+            && self.underline.is_none()
+            && self.strike_through.is_none()
     }
 
     /// Clears all formatting.
@@ -52,6 +57,8 @@ impl Format {
         self.fill_color = None;
         self.render_size = None;
         self.date_time = None;
+        self.underline = None;
+        self.strike_through = None;
     }
 
     /// Merges a FormatUpdate into this Format, returning a FormatUpdate to undo the change.
@@ -105,6 +112,14 @@ impl Format {
             old.date_time = Some(self.date_time.clone());
             self.date_time.clone_from(date_time);
         }
+        if let Some(underline) = update.underline {
+            old.underline = Some(self.underline);
+            self.underline = underline;
+        }
+        if let Some(strike_through) = update.strike_through {
+            old.strike_through = Some(self.strike_through);
+            self.strike_through = strike_through;
+        }
         old
     }
 
@@ -155,6 +170,12 @@ impl Format {
         }
         if self.date_time.is_some() && update.date_time.is_some() {
             old.date_time = Some(None);
+        }
+        if self.underline.is_some() && update.underline.is_some() {
+            old.underline = Some(None);
+        }
+        if self.strike_through.is_some() && update.strike_through.is_some() {
+            old.strike_through = Some(None);
         }
         if old.is_default() {
             None
@@ -214,6 +235,8 @@ impl Format {
                 .clone()
                 .map_or(Some(None), |r| Some(Some(r))),
             date_time: self.date_time.clone().map_or(Some(None), |d| Some(Some(d))),
+            underline: self.underline.map_or(Some(None), |u| Some(Some(u))),
+            strike_through: self.strike_through.map_or(Some(None), |s| Some(Some(s))),
         }
     }
 }
@@ -254,6 +277,12 @@ impl Display for Format {
         if let Some(date_time) = &self.date_time {
             s.push_str(&format!("date_time: {:?}, ", date_time));
         }
+        if let Some(underline) = self.underline {
+            s.push_str(&format!("underline: {:?}, ", underline));
+        }
+        if let Some(strike_through) = self.strike_through {
+            s.push_str(&format!("strike_through: {:?}, ", strike_through));
+        }
         write!(f, "{}", s)
     }
 }
@@ -274,6 +303,8 @@ impl From<&Format> for FormatUpdate {
             fill_color: format.fill_color.clone().map(Some),
             render_size: format.render_size.clone().map(Some),
             date_time: format.date_time.clone().map(Some),
+            underline: format.underline.map(Some),
+            strike_through: format.strike_through.map(Some),
         }
     }
 }
@@ -294,15 +325,18 @@ impl From<Format> for FormatUpdate {
             fill_color: format.fill_color.clone().map(Some),
             render_size: format.render_size.clone().map(Some),
             date_time: format.date_time.clone().map(Some),
+            underline: format.underline.map(Some),
+            strike_through: format.strike_through.map(Some),
         }
     }
 }
 
 #[cfg(test)]
 mod test {
+    use serial_test::parallel;
+
     use super::*;
     use crate::grid::{CellAlign, CellWrap, NumericFormat, NumericFormatKind, RenderSize};
-    use serial_test::parallel;
 
     #[test]
     #[parallel]
@@ -333,6 +367,8 @@ mod test {
                 h: "2".to_string(),
             }),
             date_time: Some("%H".to_string()),
+            underline: Some(true),
+            strike_through: Some(true),
         };
 
         format.clear();
@@ -349,6 +385,8 @@ mod test {
         assert_eq!(format.fill_color, None);
         assert_eq!(format.render_size, None);
         assert_eq!(format.date_time, None);
+        assert_eq!(format.underline, None);
+        assert_eq!(format.strike_through, None);
     }
 
     #[test]
@@ -373,6 +411,8 @@ mod test {
                 h: "2".to_string(),
             }),
             date_time: Some("%H".to_string()),
+            underline: Some(true),
+            strike_through: Some(true),
         };
 
         let update = FormatUpdate {
@@ -394,6 +434,8 @@ mod test {
                 h: "4".to_string(),
             })),
             date_time: Some(Some("%M".to_string())),
+            underline: Some(Some(true)),
+            strike_through: Some(Some(true)),
         };
 
         let clear_update = format
@@ -414,6 +456,8 @@ mod test {
                 fill_color: Some(None),
                 render_size: Some(None),
                 date_time: Some(None),
+                underline: Some(None),
+                strike_through: Some(None),
             }
         );
     }
@@ -441,6 +485,8 @@ mod test {
                 h: "2".to_string(),
             })),
             date_time: Some(Some("%H".to_string())),
+            underline: Some(Some(true)),
+            strike_through: Some(Some(true)),
         };
 
         let old = format.merge_update_into(&update);
@@ -469,6 +515,8 @@ mod test {
             })
         );
         assert_eq!(format.date_time, Some("%H".to_string()));
+        assert_eq!(format.underline, Some(true));
+        assert_eq!(format.strike_through, Some(true));
 
         let undo = format.merge_update_into(&old);
         assert!(format.is_default());
@@ -550,6 +598,8 @@ mod test {
                 h: "2".to_string(),
             }),
             date_time: Some("%H".to_string()),
+            underline: Some(true),
+            strike_through: Some(true),
         };
 
         let update: FormatUpdate = (&format).into();
@@ -578,6 +628,8 @@ mod test {
             }))
         );
         assert_eq!(update.date_time, Some(Some("%H".to_string())));
+        assert_eq!(update.underline, Some(Some(true)));
+        assert_eq!(update.strike_through, Some(Some(true)));
     }
 
     #[test]
@@ -602,6 +654,8 @@ mod test {
                 h: "2".to_string(),
             }),
             date_time: Some("%H".to_string()),
+            underline: Some(true),
+            strike_through: Some(true),
         };
 
         let update: FormatUpdate = format.into();
@@ -630,6 +684,8 @@ mod test {
             }))
         );
         assert_eq!(update.date_time, Some(Some("%H".to_string())));
+        assert_eq!(update.underline, Some(Some(true)));
+        assert_eq!(update.strike_through, Some(Some(true)));
     }
 
     #[test]
@@ -651,6 +707,8 @@ mod test {
                 fill_color: Some(None),
                 render_size: Some(None),
                 date_time: Some(None),
+                underline: Some(None),
+                strike_through: Some(None),
             }
         );
     }

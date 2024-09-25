@@ -240,6 +240,14 @@ export const FormatItalicIcon: IconComponent = (props) => {
   return <Icon {...props}>format_italic</Icon>;
 };
 
+export const FormatUnderlinedIcon: IconComponent = (props) => {
+  return <Icon {...props}>format_underlined</Icon>;
+};
+
+export const FormatStrikethroughIcon: IconComponent = (props) => {
+  return <Icon {...props}>format_strikethrough</Icon>;
+};
+
 export const FormatNumberAutomaticIcon: IconComponent = (props) => {
   return <Icon {...props}>award_star</Icon>;
 };

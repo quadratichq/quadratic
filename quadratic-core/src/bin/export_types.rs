@@ -1,50 +1,52 @@
 use std::fs::create_dir_all;
 
 use controller::operations::clipboard::PasteSpecial;
+use formulas::{CellRef, CellRefCoord, RangeRef};
+use grid::formats::format::Format;
+use grid::js_types::{
+    CellFormatSummary, JsCellValue, JsClipboard, JsPos, JsRenderFill, JsRowHeight, JsSheetFill,
+    JsValidationWarning,
+};
+use grid::sheet::validations::validation::{
+    Validation, ValidationDisplay, ValidationDisplaySheet, ValidationError, ValidationMessage,
+    ValidationStyle,
+};
+use grid::sheet::validations::validation_rules::validation_date_time::{
+    DateTimeRange, ValidationDateTime,
+};
+use grid::sheet::validations::validation_rules::validation_list::{
+    ValidationList, ValidationListSource,
+};
+use grid::sheet::validations::validation_rules::validation_logical::ValidationLogical;
+use grid::sheet::validations::validation_rules::validation_number::{
+    NumberRange, ValidationNumber,
+};
+use grid::sheet::validations::validation_rules::validation_text::{
+    TextCase, TextMatch, ValidationText,
+};
+use grid::sheet::validations::validation_rules::ValidationRule;
 use grid::{
-    formats::format::Format,
-    js_types::{JsCellValue, JsSheetFill, JsValidationWarning},
-    sheet::validations::{
-        validation::{
-            Validation, ValidationDisplay, ValidationDisplaySheet, ValidationError,
-            ValidationMessage, ValidationStyle,
-        },
-        validation_rules::{
-            validation_date_time::{DateTimeRange, ValidationDateTime},
-            validation_list::{ValidationList, ValidationListSource},
-            validation_logical::ValidationLogical,
-            validation_number::{NumberRange, ValidationNumber},
-            validation_text::{TextCase, TextMatch, ValidationText},
-            ValidationRule,
-        },
-    },
+    CellAlign, CellVerticalAlign, CellWrap, GridBounds, NumericFormat, NumericFormatKind, SheetId,
 };
-use quadratic_core::{
-    color::Rgba,
-    controller::{
-        active_transactions::transaction_name::TransactionName,
-        execution::run_code::get_cells::JsGetCellResponse, transaction_types::JsCodeResult,
-    },
-    grid::{
-        js_types::{
-            JsCodeCell, JsHtmlOutput, JsNumber, JsRenderBorder, JsRenderBorders, JsRenderCell,
-            JsRenderCellSpecial, JsRenderCodeCell, JsRenderCodeCellState,
-        },
-        sheet::search::SearchOptions,
-        BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage, ConnectionKind,
-    },
-    selection::Selection,
-    sheet_offsets::{
-        resize_transient::TransientResize,
-        sheet_offsets_wasm::{ColumnRow, Placement},
-    },
-    wasm_bindings::controller::{
-        bounds::MinMax,
-        sheet_info::{SheetBounds, SheetInfo},
-        summarize::SummarizeSelectionResult,
-    },
-    Rect, *,
+use quadratic_core::color::Rgba;
+use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
+use quadratic_core::controller::execution::run_code::get_cells::JsGetCellResponse;
+use quadratic_core::controller::transaction_types::JsCodeResult;
+use quadratic_core::grid::js_types::{
+    JsCodeCell, JsHtmlOutput, JsNumber, JsRenderBorder, JsRenderBorders, JsRenderCell,
+    JsRenderCellSpecial, JsRenderCodeCell, JsRenderCodeCellState,
 };
+use quadratic_core::grid::sheet::search::SearchOptions;
+use quadratic_core::grid::{
+    BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage, ConnectionKind,
+};
+use quadratic_core::selection::Selection;
+use quadratic_core::sheet_offsets::resize_transient::TransientResize;
+use quadratic_core::sheet_offsets::sheet_offsets_wasm::{ColumnRow, Placement};
+use quadratic_core::wasm_bindings::controller::bounds::MinMax;
+use quadratic_core::wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo};
+use quadratic_core::wasm_bindings::controller::summarize::SummarizeSelectionResult;
+use quadratic_core::{Rect, *};
 use ts_rs::TS;
 
 macro_rules! generate_type_declarations {
@@ -62,83 +64,81 @@ fn main() {
     s += "// Do not modify it manually.\n\n";
 
     s += &generate_type_declarations!(
-        CodeCellLanguage,
-        ConnectionKind,
-        JsHtmlOutput,
-        JsCodeCell,
-        JsRenderCodeCell,
-        JsRenderCodeCellState,
-        JsRenderCellSpecial,
-        JsRenderCell,
-        JsNumber,
-        formulas::RangeRef,
-        formulas::CellRef,
-        formulas::CellRefCoord,
-        grid::GridBounds,
-        grid::CellAlign,
-        grid::CellVerticalAlign,
-        grid::CellWrap,
-        grid::NumericFormat,
-        grid::NumericFormatKind,
-        grid::SheetId,
-        grid::js_types::JsRenderCell,
-        grid::js_types::JsRenderFill,
-        grid::js_types::CellFormatSummary,
-        grid::js_types::JsClipboard,
-        grid::js_types::JsRowHeight,
-        grid::js_types::JsPos,
         ArraySize,
         Axis,
-        Instant,
-        Duration,
-        RunError,
-        RunErrorMsg,
-        Pos,
-        Rect,
-        Span,
-        SearchOptions,
-        SheetPos,
-        SheetRect,
-        Selection,
-        Placement,
-        ColumnRow,
-        SheetInfo,
-        PasteSpecial,
-        Rgba,
-        CellBorderLine,
         BorderSelection,
         BorderStyle,
+        CellAlign,
+        CellBorderLine,
+        CellFormatSummary,
+        CellRef,
+        CellRefCoord,
+        CellVerticalAlign,
+        CellWrap,
+        CodeCellLanguage,
+        ColumnRow,
+        ConnectionKind,
+        DateTimeRange,
+        Duration,
+        Format,
+        GridBounds,
+        Instant,
+        JsCellValue,
+        JsClipboard,
+        JsCodeCell,
+        JsCodeResult,
+        JsGetCellResponse,
+        JsHtmlOutput,
+        JsNumber,
+        JsPos,
         JsRenderBorder,
         JsRenderBorders,
-        JsCodeResult,
-        MinMax,
-        TransientResize,
-        SheetBounds,
-        TransactionName,
-        JsGetCellResponse,
-        SummarizeSelectionResult,
-        Format,
+        JsRenderCell,
+        JsRenderCellSpecial,
+        JsRenderCodeCell,
+        JsRenderCodeCellState,
+        JsRenderFill,
+        JsRowHeight,
         JsSheetFill,
-        ColumnRow,
-        Validation,
-        ValidationRule,
-        ValidationError,
-        ValidationMessage,
-        ValidationLogical,
-        ValidationList,
-        ValidationListSource,
-        ValidationStyle,
-        ValidationDisplay,
-        ValidationDisplaySheet,
-        ValidationNumber,
-        ValidationDateTime,
+        JsValidationWarning,
+        MinMax,
         NumberRange,
-        DateTimeRange,
+        NumericFormat,
+        NumericFormatKind,
+        PasteSpecial,
+        Placement,
+        Pos,
+        RangeRef,
+        Rect,
+        Rgba,
+        RunError,
+        RunErrorMsg,
+        SearchOptions,
+        Selection,
+        SheetBounds,
+        SheetId,
+        SheetInfo,
+        SheetPos,
+        SheetRect,
+        Span,
+        SummarizeSelectionResult,
         TextCase,
         TextMatch,
-        ValidationText,
-        JsValidationWarning,
-        JsCellValue,
+        TransactionName,
+        TransientResize,
+        Validation,
+        ValidationDateTime,
+        ValidationDisplay,
+        ValidationDisplaySheet,
+        ValidationError,
+        ValidationList,
+        ValidationListSource,
+        ValidationLogical,
+        ValidationMessage,
+        ValidationNumber,
+        ValidationRule,
+        ValidationStyle,
+        ValidationText
     );
 
     if create_dir_all("../quadratic-client/src/app/quadratic-core-types").is_ok() {

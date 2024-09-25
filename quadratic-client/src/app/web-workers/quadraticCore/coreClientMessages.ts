@@ -339,6 +339,20 @@ export interface ClientCoreSetCellTextColor {
   cursor?: string;
 }
 
+export interface ClientCoreSetCellUnderline {
+  type: 'clientCoreSetCellUnderline';
+  selection: Selection;
+  underline: boolean;
+  cursor?: string;
+}
+
+export interface ClientCoreSetCellStrikeThrough {
+  type: 'clientCoreSetCellStrikeThrough';
+  selection: Selection;
+  strikeThrough: boolean;
+  cursor?: string;
+}
+
 export interface ClientCoreSetCellAlign {
   type: 'clientCoreSetCellAlign';
   selection: Selection;
@@ -982,6 +996,8 @@ export type ClientCoreMessage =
   | ClientCoreSetCellItalic
   | ClientCoreSetCellFillColor
   | ClientCoreSetCellTextColor
+  | ClientCoreSetCellUnderline
+  | ClientCoreSetCellStrikeThrough
   | ClientCoreSetCellAlign
   | ClientCoreSetCellVerticalAlign
   | ClientCoreSetCellWrap
