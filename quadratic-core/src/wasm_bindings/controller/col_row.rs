@@ -14,9 +14,15 @@ impl GridController {
 
     #[allow(non_snake_case)]
     #[wasm_bindgen(js_name = "insertColumn")]
-    pub fn js_insert_column(&mut self, sheet_id: &str, column: i64, cursor: Option<String>) {
+    pub fn js_insert_column(
+        &mut self,
+        sheet_id: &str,
+        column: i64,
+        after: bool,
+        cursor: Option<String>,
+    ) {
         if let Ok(sheet_id) = SheetId::from_str(sheet_id) {
-            self.insert_column(sheet_id, column, cursor);
+            self.insert_column(sheet_id, column, after, cursor);
         }
     }
 
@@ -31,9 +37,9 @@ impl GridController {
 
     #[allow(non_snake_case)]
     #[wasm_bindgen(js_name = "insertRow")]
-    pub fn js_insert_row(&mut self, sheet_id: &str, row: i64, cursor: Option<String>) {
+    pub fn js_insert_row(&mut self, sheet_id: &str, row: i64, after: bool, cursor: Option<String>) {
         if let Ok(sheet_id) = SheetId::from_str(sheet_id) {
-            self.insert_row(sheet_id, row, cursor);
+            self.insert_row(sheet_id, row, after, cursor);
         }
     }
 }

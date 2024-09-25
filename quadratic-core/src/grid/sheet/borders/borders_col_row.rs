@@ -875,7 +875,7 @@ mod tests {
             None,
         );
 
-        gc.insert_row(sheet_id, 2, None);
+        gc.insert_row(sheet_id, 2, true, None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(

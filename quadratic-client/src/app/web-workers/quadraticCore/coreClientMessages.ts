@@ -984,6 +984,7 @@ export interface ClientCoreInsertColumn {
   type: 'clientCoreInsertColumn';
   sheetId: string;
   column: number;
+  right: boolean;
   cursor: string;
 }
 
@@ -991,6 +992,7 @@ export interface ClientCoreInsertRow {
   type: 'clientCoreInsertRow';
   sheetId: string;
   row: number;
+  below: boolean;
   cursor: string;
 }
 

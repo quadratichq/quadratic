@@ -221,6 +221,7 @@ impl Sheet {
         if let Ok(fills) = serde_json::to_string(&fills) {
             crate::wasm_bindings::js::jsSheetFills(self.id.to_string(), fills);
         }
+        self.send_sheet_fills();
     }
 
     /// Sends all fills to the client. TODO: the fills should be sent in

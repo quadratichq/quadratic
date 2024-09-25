@@ -72,6 +72,7 @@ impl Column {
                 self.italic.range(),
                 self.text_color.range(),
                 self.fill_color.range(),
+                self.render_size.range(),
                 self.date_time.range(),
             ])
         }
@@ -89,6 +90,7 @@ impl Column {
             self.italic.range(),
             self.text_color.range(),
             self.fill_color.range(),
+            self.render_size.range(),
             self.date_time.range(),
         ])
     }

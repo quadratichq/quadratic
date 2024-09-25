@@ -197,10 +197,15 @@ impl GridController {
     }
 
     pub fn execute_insert_column(&mut self, transaction: &mut PendingTransaction, op: Operation) {
-        if let Operation::InsertColumn { sheet_id, column } = op {
+        if let Operation::InsertColumn {
+            sheet_id,
+            column,
+            copy_formats,
+        } = op
+        {
             let sheet_name: String;
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-                sheet.insert_column(transaction, column);
+                sheet.insert_column(transaction, column, copy_formats);
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds();
@@ -211,11 +216,11 @@ impl GridController {
             }
 
             if transaction.is_user() {
-                // adjust formulas to account for deleted column (needs to be
+                // adjust formulas to account for inserted column (needs to be
                 // here since it's across sheets)
                 self.adjust_formulas(transaction, sheet_id, sheet_name, Some(column), None, 1);
 
-                // update information for all cells to the right of the deleted column
+                // update information for all cells to the right of the inserted column
                 if let Some(sheet) = self.try_sheet(sheet_id) {
                     if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
                         let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
@@ -234,10 +239,15 @@ impl GridController {
     }
 
     pub fn execute_insert_row(&mut self, transaction: &mut PendingTransaction, op: Operation) {
-        if let Operation::InsertRow { sheet_id, row } = op {
+        if let Operation::InsertRow {
+            sheet_id,
+            row,
+            copy_formats,
+        } = op
+        {
             let sheet_name: String;
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-                sheet.insert_row(transaction, row);
+                sheet.insert_row(transaction, row, copy_formats);
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds();
@@ -394,7 +404,7 @@ mod tests {
             sheet.bounds(false),
             GridBounds::NonEmpty(Rect::new(1, 1, 3, 1))
         );
-        gc.insert_column(sheet_id, 3, None);
+        gc.insert_column(sheet_id, 3, true, None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -424,7 +434,7 @@ mod tests {
             sheet.bounds(false),
             GridBounds::NonEmpty(Rect::new(1, 1, 1, 3))
         );
-        gc.insert_row(sheet_id, 3, None);
+        gc.insert_row(sheet_id, 3, true, None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -562,7 +572,7 @@ mod tests {
             None,
         );
 
-        gc.insert_column(sheet_id, 2, None);
+        gc.insert_column(sheet_id, 2, true, None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 1);
@@ -598,7 +608,7 @@ mod tests {
             None,
         );
 
-        gc.insert_row(sheet_id, 2, None);
+        gc.insert_row(sheet_id, 2, true, None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 1);
