@@ -10,6 +10,7 @@ import {
   Format,
   JsBordersSheet,
   JsCellValue,
+  JsCellValueSelection,
   JsCodeCell,
   JsHtmlOutput,
   JsRenderCell,
@@ -980,6 +981,18 @@ export interface CoreClientGetCellValue {
   value: JsCellValue | undefined;
 }
 
+export interface ClientCoreGetCellValueSelection {
+  type: 'clientCoreGetCellValueSelection';
+  id: number;
+  selection: Selection;
+}
+
+export interface CoreClientGetCellValueSelection {
+  type: 'coreClientGetCellValueSelection';
+  id: number;
+  value: JsCellValueSelection | undefined;
+}
+
 export interface ClientCoreDeleteColumns {
   type: 'clientCoreDeleteColumns';
   sheetId: string;
@@ -1086,7 +1099,8 @@ export type ClientCoreMessage =
   | ClientCoreDeleteColumns
   | ClientCoreDeleteRows
   | ClientCoreInsertColumn
-  | ClientCoreInsertRow;
+  | ClientCoreInsertRow
+  | ClientCoreGetCellValueSelection;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1149,4 +1163,5 @@ export type CoreClientMessage =
   | CoreClientMultiplayerSynced
   | CoreClientValidateInput
   | CoreClientBordersSheet
-  | CoreClientGetCellValue;
+  | CoreClientGetCellValue
+  | CoreClientGetCellValueSelection;

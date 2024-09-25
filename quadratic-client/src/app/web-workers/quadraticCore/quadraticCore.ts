@@ -17,6 +17,7 @@ import {
   CodeCellLanguage,
   Format,
   JsCellValue,
+  JsCellValueSelection,
   JsCodeCell,
   JsRenderCell,
   MinMax,
@@ -352,6 +353,20 @@ class QuadraticCore {
         sheetId,
         x,
         y,
+        id,
+      });
+    });
+  }
+
+  getCellValueSelection(selection: Selection): Promise<JsCellValueSelection | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { value: JsCellValueSelection | undefined }) => {
+        resolve(message.value);
+      };
+      this.send({
+        type: 'clientCoreGetCellValueSelection',
+        selection,
         id,
       });
     });

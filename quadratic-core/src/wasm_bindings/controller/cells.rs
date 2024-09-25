@@ -112,4 +112,18 @@ impl GridController {
         self.delete_cells(&selection, cursor);
         Ok(())
     }
+
+    /// gets values, types with position for all cells in selection
+    /// returns a stringified array of JsCellValueSelection
+    #[wasm_bindgen(js_name = "getCellValueSelection")]
+    pub fn js_get_cell_value_selection(&self, selection: String) -> Result<String, JsValue> {
+        let selection =
+            Selection::from_str(&selection).map_err(|_| JsValue::from_str("Invalid selection"))?;
+        if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+            let cell_value_selection = sheet.js_cell_value_selection(selection);
+            Ok(serde_json::to_string(&cell_value_selection).unwrap_or_default())
+        } else {
+            Ok(String::new())
+        }
+    }
 }

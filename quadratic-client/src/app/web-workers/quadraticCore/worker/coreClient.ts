@@ -564,6 +564,14 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreGetCellValueSelection':
+        this.send({
+          type: 'coreClientGetCellValueSelection',
+          id: e.data.id,
+          value: core.getCellValueSelection(e.data.selection),
+        });
+        return;
+
       case 'clientCoreDeleteColumns':
         core.deleteColumns(e.data.sheetId, e.data.columns, e.data.cursor);
         return;

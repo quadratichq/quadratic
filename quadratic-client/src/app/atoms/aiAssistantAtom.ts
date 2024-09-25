@@ -32,7 +32,7 @@ export const defaultAIAssistantState: AIAssistantState = {
     allSheets: false,
     currentSheet: false,
     visibleData: false,
-    cursorSelection: false,
+    cursorSelection: true,
     codeCell: undefined,
   },
 };

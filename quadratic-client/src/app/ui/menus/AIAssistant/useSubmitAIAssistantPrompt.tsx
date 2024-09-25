@@ -12,6 +12,7 @@ import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { useAIAssistantModel } from '@/app/ui/menus/AIAssistant/useAIAssistantModel';
 import { useAIRequestToAPI } from '@/app/ui/menus/AIAssistant/useAIRequestToAPI';
 import { useCodeCellContextMessages } from '@/app/ui/menus/AIAssistant/useCodeCellContextMessages';
+import { useCursorSelectionContextMessages } from '@/app/ui/menus/AIAssistant/useCursorSelectionContextMessages';
 import { useQuadraticContextMessages } from '@/app/ui/menus/AIAssistant/useQuadraticContextMessages';
 import { AIMessage, PromptMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
@@ -27,6 +28,7 @@ export function useSubmitAIAssistantPrompt() {
   const handleAIRequestToAPI = useAIRequestToAPI();
   const setShowAIAssistant = useSetRecoilState(showAIAssistantAtom);
   const { quadraticContext } = useQuadraticContextMessages();
+  const { getCursorSelectionContext } = useCursorSelectionContextMessages();
   const { getCodeCellContext } = useCodeCellContextMessages();
 
   const submitPrompt = useCallback(
@@ -61,6 +63,10 @@ export function useSubmitAIAssistantPrompt() {
       });
 
       const contextMessages: (UserMessage | AIMessage)[] = [];
+      if (aiContext.cursorSelection) {
+        const cursorContext = await getCursorSelectionContext({ model });
+        contextMessages.push(...cursorContext);
+      }
       if (aiContext.codeCell) {
         const codeContext = await getCodeCellContext({ codeCell: aiContext.codeCell, model });
         contextMessages.push(...codeContext);
@@ -99,6 +105,7 @@ export function useSubmitAIAssistantPrompt() {
     },
     [
       getCodeCellContext,
+      getCursorSelectionContext,
       handleAIRequestToAPI,
       model,
       quadraticContext,

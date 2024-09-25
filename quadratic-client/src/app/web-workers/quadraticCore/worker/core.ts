@@ -16,6 +16,7 @@ import {
   CodeCellLanguage,
   Format,
   JsCellValue,
+  JsCellValueSelection,
   JsCodeCell,
   JsCodeResult,
   JsRenderCell,
@@ -1047,6 +1048,14 @@ class Core {
     const cellValue = this.gridController.getCellValue(sheetId, posToPos(x, y));
     if (cellValue) {
       return JSON.parse(cellValue);
+    }
+  }
+
+  getCellValueSelection(selection: Selection): JsCellValueSelection | undefined {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const cellValueSelection = this.gridController.getCellValueSelection(JSON.stringify(selection, bigIntReplacer));
+    if (cellValueSelection) {
+      return JSON.parse(cellValueSelection);
     }
   }
 

@@ -58,6 +58,22 @@ pub struct JsCellValue {
     pub kind: String,
 }
 
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+pub struct JsCellValuePos {
+    pub value: String,
+    pub kind: String,
+    pub pos: JsPos,
+}
+
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+pub struct JsCellValueSelection {
+    pub all: Vec<Vec<Option<JsCellValuePos>>>,
+    pub columns: Vec<Vec<Option<JsCellValuePos>>>,
+    pub rows: Vec<Vec<Option<JsCellValuePos>>>,
+    pub rects: Vec<Vec<Vec<Option<JsCellValuePos>>>>,
+    pub cursor: Option<JsCellValuePos>,
+}
+
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
@@ -247,7 +263,7 @@ impl fmt::Display for JsRowHeight {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
+#[derive(Default, Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct JsPos {

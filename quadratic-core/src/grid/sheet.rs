@@ -13,7 +13,9 @@ use super::column::Column;
 use super::formats::format::Format;
 use super::formatting::CellFmtAttr;
 use super::ids::SheetId;
-use super::js_types::{CellFormatSummary, CellType, JsCellValue};
+use super::js_types::{
+    CellFormatSummary, CellType, JsCellValue, JsCellValuePos, JsCellValueSelection,
+};
 use super::resize::ResizeMap;
 use super::{CellWrap, CodeRun, NumericFormatKind};
 use crate::selection::Selection;
@@ -232,6 +234,74 @@ impl Sheet {
             value: value.to_string(),
             kind: value.type_name().to_string(),
         })
+    }
+
+    /// Returns the JsCellValuePos at a position
+    pub fn js_cell_value_pos(&self, pos: Pos) -> Option<JsCellValuePos> {
+        self.display_value(pos)
+            .map(|cell_value| cell_value.to_cell_value_pos(pos))
+    }
+
+    /// Returns JsCellValuePos for selection
+    pub fn js_cell_value_selection(&self, selection: Selection) -> JsCellValueSelection {
+        let mut cell_value_selection = JsCellValueSelection::default();
+
+        cell_value_selection.cursor = self.js_cell_value_pos(selection.source());
+
+        if selection.all {
+            if let GridBounds::NonEmpty(rect) = self.bounds(true) {
+                let mut rect_values = Vec::new();
+                for y in rect.y_range() {
+                    let mut row_values = Vec::new();
+                    for x in rect.x_range() {
+                        row_values.push(self.js_cell_value_pos((x, y).into()));
+                    }
+                    rect_values.push(row_values);
+                }
+                cell_value_selection.all = rect_values;
+            }
+            return cell_value_selection;
+        }
+
+        if let Some(rects) = selection.rects {
+            for rect in rects {
+                let mut rect_values = Vec::new();
+                for y in rect.y_range() {
+                    let mut row_values = Vec::new();
+                    for x in rect.x_range() {
+                        row_values.push(self.js_cell_value_pos((x, y).into()));
+                    }
+                    rect_values.push(row_values);
+                }
+                cell_value_selection.rects.push(rect_values);
+            }
+        }
+
+        if let Some(rows) = selection.rows {
+            for y in rows {
+                let mut row_values = Vec::new();
+                if let Some((start, end)) = self.row_bounds(y, true) {
+                    for x in start..=end {
+                        row_values.push(self.js_cell_value_pos((x, y).into()));
+                    }
+                }
+                cell_value_selection.rows.push(row_values);
+            }
+        }
+
+        if let Some(columns) = selection.columns {
+            for x in columns {
+                let mut column_values = Vec::new();
+                if let Some((start, end)) = self.column_bounds(x, true) {
+                    for y in start..=end {
+                        column_values.push(self.js_cell_value_pos((x, y).into()));
+                    }
+                }
+                cell_value_selection.columns.push(column_values);
+            }
+        }
+
+        cell_value_selection
     }
 
     /// Returns the cell_value at the Pos in column.values. This does not check or return results within code_runs.
