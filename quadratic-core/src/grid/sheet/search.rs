@@ -609,8 +609,8 @@ mod test {
         sheet.set_cell_value(Pos { x: 1, y: 5 }, CellValue::Text("C".into()));
 
         let neighbors = sheet.neighbor_text(Pos { x: 1, y: 3 });
-        assert!(neighbors.iter().any(|t| *t == "A".to_string()));
-        assert!(neighbors.iter().any(|t| *t == "B".to_string()));
+        assert!(neighbors.iter().any(|t| t == &"A".to_string()));
+        assert!(neighbors.iter().any(|t| t == &"B".to_string()));
     }
 
     #[test]
