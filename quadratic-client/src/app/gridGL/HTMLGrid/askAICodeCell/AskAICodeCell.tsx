@@ -29,7 +29,7 @@ export function AskAICodeCell() {
           y: rectangle.y + rectangle.height / 2 - AI_ICON_SIZE / 2,
         });
         setLoading(true);
-        submitPrompt({ codeCell, userPrompt: 'Fix the error in the code cell', clearMessages: true })
+        submitPrompt({ userPrompt: 'Fix the error in the code cell', clearMessages: true, codeCell })
           .catch(console.error)
           .finally(() => {
             setLoading(false);

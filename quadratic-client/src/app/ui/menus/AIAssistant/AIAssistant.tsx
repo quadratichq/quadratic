@@ -1,4 +1,4 @@
-import { editorInteractionStateShowAIAssistantAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { showAIAssistantAtom } from '@/app/atoms/aiAssistantAtom';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { AIAssistantContext } from '@/app/ui/menus/AIAssistant/AIAssistantContext';
 import { AIAssistantHeader } from '@/app/ui/menus/AIAssistant/AIAssistantHeader';
@@ -9,7 +9,7 @@ import { useCallback, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const AIAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
-  const showAIAssistant = useRecoilValue(editorInteractionStateShowAIAssistantAtom);
+  const showAIAssistant = useRecoilValue(showAIAssistantAtom);
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const { panelWidth, setPanelWidth } = useAIAssistantPanelWidth();
 

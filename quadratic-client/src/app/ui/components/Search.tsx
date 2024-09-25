@@ -39,6 +39,7 @@ export function Search() {
   const onChange = async (search: string, updatedSearchOptions = searchOptions) => {
     if (search.length > 0) {
       const found = await quadraticCore.search(search, updatedSearchOptions);
+      console.log(found);
       if (found.length) {
         setResults(found);
         setCurrent(0);

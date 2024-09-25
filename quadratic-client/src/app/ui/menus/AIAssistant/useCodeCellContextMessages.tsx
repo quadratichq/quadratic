@@ -97,7 +97,7 @@ ${
 
       const codeContext = getCodeCellContextMessages(model, pos, language, codeString, consoleOutput, schemaJsonForAi);
 
-      return { codeContext };
+      return codeContext;
     },
     [getCodeCellContextMessages]
   );

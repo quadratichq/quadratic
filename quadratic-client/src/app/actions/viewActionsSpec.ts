@@ -127,7 +127,6 @@ export const viewActionsSpec: ViewActionSpec = {
           showShareFileMenu: false,
           showSearch: false,
           showValidation: false,
-          showAIAssistant: false,
         }));
       }
     },

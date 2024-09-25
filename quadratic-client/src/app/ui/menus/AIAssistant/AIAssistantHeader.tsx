@@ -1,12 +1,15 @@
-import { aiAssistantMessagesAtom, aiAssistantMessagesCountAtom } from '@/app/atoms/aiAssistantAtom';
-import { editorInteractionStateShowAIAssistantAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  aiAssistantMessagesAtom,
+  aiAssistantMessagesCountAtom,
+  showAIAssistantAtom,
+} from '@/app/atoms/aiAssistantAtom';
 import { ChevronLeftIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { IconButton } from '@mui/material';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 export function AIAssistantHeader() {
-  const setShowAIAssistant = useSetRecoilState(editorInteractionStateShowAIAssistantAtom);
+  const setShowAIAssistant = useSetRecoilState(showAIAssistantAtom);
   const messagesCount = useRecoilValue(aiAssistantMessagesCountAtom);
   const setMessages = useSetRecoilState(aiAssistantMessagesAtom);
 

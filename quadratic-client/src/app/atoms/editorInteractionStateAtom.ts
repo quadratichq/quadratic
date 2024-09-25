@@ -16,7 +16,6 @@ export interface EditorInteractionState {
   showSearch: boolean | SearchOptions;
   showContextMenu: boolean;
   showValidation: boolean | string;
-  showAIAssistant: boolean;
   annotationState?: 'dropdown' | 'date-format' | 'calendar' | 'calendar-time';
   permissions: FilePermission[];
   uuid: string;
@@ -38,7 +37,6 @@ export const defaultEditorInteractionState: EditorInteractionState = {
   showSearch: false,
   showContextMenu: false,
   showValidation: false,
-  showAIAssistant: true,
   annotationState: undefined,
   permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
   uuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
@@ -108,7 +106,6 @@ export const editorInteractionStateShowShareFileMenuAtom = createSelector('showS
 export const editorInteractionStateShowSearchAtom = createSelector('showSearch');
 export const editorInteractionStateShowContextMenuAtom = createSelector('showContextMenu');
 export const editorInteractionStateShowValidationAtom = createSelector('showValidation');
-export const editorInteractionStateShowAIAssistantAtom = createSelector('showAIAssistant');
 
 export const editorInteractionStateAnnotationStateAtom = createSelector('annotationState');
 export const editorInteractionStatePermissionsAtom = createSelector('permissions');

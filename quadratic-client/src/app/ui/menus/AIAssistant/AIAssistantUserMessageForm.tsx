@@ -1,11 +1,8 @@
 import {
   aiAssistantAbortControllerAtom,
-  aiAssistantContextAtom,
   aiAssistantLoadingAtom,
   aiAssistantPromptAtom,
 } from '@/app/atoms/aiAssistantAtom';
-import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
-import { getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { AIAssistantSelectModelMenu } from '@/app/ui/menus/AIAssistant/AIAssistantSelectModelMenu';
@@ -15,7 +12,6 @@ import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { ArrowUpward, Stop } from '@mui/icons-material';
 import { CircularProgress } from '@mui/material';
-import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
@@ -24,19 +20,16 @@ type AIAssistantUserMessageFormProps = {
 };
 
 export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessageFormProps) {
-  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
   const abortController = useRecoilValue(aiAssistantAbortControllerAtom);
   const [prompt, setPrompt] = useRecoilState(aiAssistantPromptAtom);
   const [loading, setLoading] = useRecoilState(aiAssistantLoadingAtom);
-  const aiAssistantContext = useRecoilValue(aiAssistantContextAtom);
 
   const submitPrompt = useSubmitAIAssistantPrompt();
 
   const abortPrompt = useCallback(() => {
-    mixpanel.track('[AI].prompt.cancel', { language: getConnectionKind(codeCell.language) });
     abortController?.abort();
     setLoading(false);
-  }, [abortController, codeCell.language, setLoading]);
+  }, [abortController, setLoading]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   // Focus the input when relevant & the tab comes into focus
@@ -62,10 +55,7 @@ export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessage
             event.preventDefault();
             if (prompt.trim().length === 0) return;
 
-            mixpanel.track('[AI].prompt.send', { language: getConnectionKind(codeCell.language) });
-
             submitPrompt({
-              codeCell,
               userPrompt: prompt,
             });
             event.currentTarget.focus();
@@ -122,7 +112,7 @@ export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessage
                 size="icon-sm"
                 onClick={(e) => {
                   e.stopPropagation();
-                  submitPrompt({ codeCell, userPrompt: prompt });
+                  submitPrompt({ userPrompt: prompt });
                 }}
                 disabled={prompt.length === 0}
               >

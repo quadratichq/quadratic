@@ -1,11 +1,7 @@
-import { aiAssistantContextAtom } from '@/app/atoms/aiAssistantAtom';
-import {
-  codeEditorAtom,
-  codeEditorCodeCellAtom,
-  codeEditorModifiedEditorContentAtom,
-} from '@/app/atoms/codeEditorAtom';
+import { codeEditorAtom, codeEditorModifiedEditorContentAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
+import { useGetCodeCell } from '@/app/ui/menus/AIAssistant/useGetCodeCell';
 import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import Editor from '@monaco-editor/react';
@@ -18,7 +14,7 @@ import {
 import { IconButton } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useState } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useSetRecoilState } from 'recoil';
 
 interface CodeSnippetProps {
   code: string;
@@ -83,12 +79,12 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
 }
 
 function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
-  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
   const setModifiedEditorContent = useSetRecoilState(codeEditorModifiedEditorContentAtom);
-  const aiAssistantContext = useRecoilValue(aiAssistantContextAtom);
+  const { getCodeCell } = useGetCodeCell();
 
   const handleSaveAndRun = useCallback(() => {
     mixpanel.track('[AI].code.run', { language });
+    const codeCell = getCodeCell();
     quadraticCore.setCodeCellValue({
       sheetId: codeCell.sheetId,
       x: codeCell.pos.x,
@@ -98,7 +94,7 @@ function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['
       cursor: sheets.getCursorPosition(),
     });
     setModifiedEditorContent(undefined);
-  }, [codeCell.language, codeCell.pos.x, codeCell.pos.y, codeCell.sheetId, language, setModifiedEditorContent, text]);
+  }, [getCodeCell, language, setModifiedEditorContent, text]);
 
   return (
     <TooltipHint title={'Save and run code'}>
@@ -110,12 +106,12 @@ function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['
 }
 
 function CodeSnippetReplaceButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
-  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
-  const aiAssistantContext = useRecoilValue(aiAssistantContextAtom);
+  const { getCodeCell } = useGetCodeCell();
 
   const handleReplace = useCallback(() => {
     mixpanel.track('[AI].code.replace', { language });
+    const codeCell = getCodeCell();
     setCodeEditorState((prev) => ({
       ...prev,
       modifiedEditorContent: undefined,
@@ -126,7 +122,7 @@ function CodeSnippetReplaceButton({ language, text }: { language: CodeSnippetPro
         initialCode: text,
       },
     }));
-  }, [codeCell, language, setCodeEditorState, text]);
+  }, [getCodeCell, language, setCodeEditorState, text]);
 
   return (
     <TooltipHint title={'Open in code editor'}>
@@ -138,12 +134,12 @@ function CodeSnippetReplaceButton({ language, text }: { language: CodeSnippetPro
 }
 
 function CodeSnippetDiffEditor({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
-  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
-  const aiAssistantContext = useRecoilValue(aiAssistantContextAtom);
+  const { getCodeCell } = useGetCodeCell();
 
   const handleEditorDiff = useCallback(() => {
     mixpanel.track('[AI].code.diff');
+    const codeCell = getCodeCell();
     setCodeEditorState((prev) => ({
       ...prev,
       modifiedEditorContent: text,
@@ -154,7 +150,7 @@ function CodeSnippetDiffEditor({ language, text }: { language: CodeSnippetProps[
         initialCode: undefined,
       },
     }));
-  }, [codeCell, setCodeEditorState, text]);
+  }, [getCodeCell, setCodeEditorState, text]);
 
   return (
     <TooltipHint title={'Show diff in code editor'}>

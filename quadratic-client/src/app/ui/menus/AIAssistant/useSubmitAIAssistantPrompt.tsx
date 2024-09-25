@@ -4,9 +4,10 @@ import {
   aiAssistantLoadingAtom,
   aiAssistantMessagesAtom,
   aiAssistantPromptAtom,
+  AIAssistantState,
   defaultAIAssistantState,
+  showAIAssistantAtom,
 } from '@/app/atoms/aiAssistantAtom';
-import { editorInteractionStateShowAIAssistantAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { useAIAssistantModel } from '@/app/ui/menus/AIAssistant/useAIAssistantModel';
 import { useAIRequestToAPI } from '@/app/ui/menus/AIAssistant/useAIRequestToAPI';
@@ -21,22 +22,22 @@ export function useSubmitAIAssistantPrompt() {
   const setLoading = useSetRecoilState(aiAssistantLoadingAtom);
   const setMessages = useSetRecoilState(aiAssistantMessagesAtom);
   const setPrompt = useSetRecoilState(aiAssistantPromptAtom);
-  const setContext = useSetRecoilState(aiAssistantContextAtom);
+  const setAIContext = useSetRecoilState(aiAssistantContextAtom);
   const [model] = useAIAssistantModel();
   const handleAIRequestToAPI = useAIRequestToAPI();
-  const setShowAIAssistant = useSetRecoilState(editorInteractionStateShowAIAssistantAtom);
+  const setShowAIAssistant = useSetRecoilState(showAIAssistantAtom);
   const { quadraticContext } = useQuadraticContextMessages();
   const { getCodeCellContext } = useCodeCellContextMessages();
 
   const submitPrompt = useCallback(
     async ({
-      codeCell,
       userPrompt,
       clearMessages,
+      codeCell,
     }: {
-      codeCell: CodeCell;
       userPrompt: string;
       clearMessages?: boolean;
+      codeCell?: CodeCell;
     }) => {
       setShowAIAssistant(true);
 
@@ -47,27 +48,29 @@ export function useSubmitAIAssistantPrompt() {
       });
       if (previousLoading) return;
 
-      let aiContext = defaultAIAssistantState.context;
-      setContext((prev) => {
-        aiContext = { ...prev, codeCell };
-        return aiContext;
-      });
-
       const abortController = new AbortController();
       setAbortController(abortController);
 
-      const { codeContext } = await getCodeCellContext({ codeCell, model });
+      let aiContext: AIAssistantState['context'] = defaultAIAssistantState.context;
+      setAIContext((prev) => {
+        aiContext = {
+          ...prev,
+          codeCell: codeCell ?? prev.codeCell,
+        };
+        return aiContext;
+      });
+
+      const contextMessages: (UserMessage | AIMessage)[] = [];
+      if (aiContext.codeCell) {
+        const codeContext = await getCodeCellContext({ codeCell: aiContext.codeCell, model });
+        contextMessages.push(...codeContext);
+      }
 
       let updatedMessages: (UserMessage | AIMessage)[] = [];
       setMessages((prevMessages) => {
-        const lastContextMessage = prevMessages
-          .filter((prevMessage) => prevMessage.role === 'user' && prevMessage.internalContext)
-          .pop();
-        const contextChanged = lastContextMessage?.content !== codeContext[0].content;
-        const newContext = contextChanged ? codeContext : [];
         updatedMessages = clearMessages
-          ? [...newContext, { role: 'user', content: userPrompt, internalContext: false }]
-          : [...prevMessages, ...newContext, { role: 'user', content: userPrompt, internalContext: false }];
+          ? [...contextMessages, { role: 'user', content: userPrompt, internalContext: false }]
+          : [...prevMessages, ...contextMessages, { role: 'user', content: userPrompt, internalContext: false }];
         return updatedMessages;
       });
 
@@ -99,8 +102,8 @@ export function useSubmitAIAssistantPrompt() {
       handleAIRequestToAPI,
       model,
       quadraticContext,
+      setAIContext,
       setAbortController,
-      setContext,
       setLoading,
       setMessages,
       setPrompt,
