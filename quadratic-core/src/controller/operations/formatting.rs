@@ -1,10 +1,8 @@
-use crate::{
-    controller::GridController,
-    grid::{formatting::CellFmtArray, NumericCommas, NumericFormat, NumericFormatKind},
-    RunLengthEncoding, SheetPos, SheetRect,
-};
-
 use super::operation::Operation;
+use crate::controller::GridController;
+use crate::grid::formatting::CellFmtArray;
+use crate::grid::{NumericCommas, NumericFormat, NumericFormatKind};
+use crate::{RunLengthEncoding, SheetPos, SheetRect};
 
 impl GridController {
     pub fn set_currency_operations(

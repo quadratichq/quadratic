@@ -48,6 +48,8 @@ pub(crate) fn import_format(format: current::FormatSchema) -> Format {
             h: render_size.h,
         }),
         date_time: format.date_time,
+        underline: format.underline,
+        strike_through: format.strike_through,
     }
 }
 
@@ -125,6 +127,8 @@ pub(crate) fn export_format(format: Format) -> Option<current::FormatSchema> {
                     h: render_size.h,
                 }),
             date_time: format.date_time,
+            underline: format.underline,
+            strike_through: format.strike_through,
         })
     }
 }

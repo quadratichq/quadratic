@@ -95,7 +95,7 @@ export default function QuadraticGrid() {
     return false;
   };
 
-  const { onKeyDown: onKeyDownFromUseKeyboard } = useKeyboard({
+  const { onKeyDown: onKeyDownFromUseKeyboard, onKeyUp: onKeyUpFromUseKeyboard } = useKeyboard({
     editorInteractionState,
     setEditorInteractionState,
   });
@@ -117,7 +117,9 @@ export default function QuadraticGrid() {
       onKeyDown={(e) => {
         onKeyDown(e) || onKeyDownFromUseKeyboard(e);
       }}
-      onKeyUp={onKeyUp}
+      onKeyUp={(e) => {
+        onKeyUp(e) || onKeyUpFromUseKeyboard(e);
+      }}
     >
       <HTMLGridContainer parent={container} />
       <ImportProgress />
