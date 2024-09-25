@@ -3,7 +3,7 @@ use crate::color::Rgba;
 use crate::controller::operations::clipboard::{Clipboard, ClipboardOrigin};
 use crate::formulas::replace_a1_notation;
 use crate::grid::formats::Formats;
-use crate::grid::{get_cell_borders_in_rect, CodeCellLanguage, Sheet};
+use crate::grid::{CodeCellLanguage, Sheet};
 use crate::selection::Selection;
 use crate::{CellValue, Pos, Rect};
 
@@ -292,7 +292,8 @@ mod tests {
     use super::*;
     use crate::controller::operations::clipboard::PasteSpecial;
     use crate::controller::GridController;
-    use crate::Rect;
+    use crate::grid::{BorderSelection, BorderStyle, CellBorderLine};
+    use crate::{Rect, SheetRect};
 
     #[test]
     #[parallel]

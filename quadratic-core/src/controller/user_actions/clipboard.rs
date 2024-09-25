@@ -112,7 +112,8 @@ mod test {
             }),
             true,
             None,
-        );
+        )
+        .unwrap();
 
         set_cell_value(&mut gc, sheet_id, "underline", 5, 3);
         gc.set_cell_underline(

@@ -8,6 +8,7 @@ use grid::js_types::{
     CellFormatSummary, JsCellValue, JsClipboard, JsPos, JsRenderFill, JsRowHeight, JsSheetFill,
     JsValidationWarning,
 };
+use grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp};
 use grid::sheet::validations::validation::{
     Validation, ValidationDisplay, ValidationDisplaySheet, ValidationError, ValidationMessage,
     ValidationStyle,
@@ -27,33 +28,15 @@ use grid::sheet::validations::validation_rules::validation_text::{
 };
 use grid::sheet::validations::validation_rules::ValidationRule;
 use grid::{
-    formats::format::Format,
-    js_types::{JsCellValue, JsSheetFill, JsValidationWarning},
-    sheet::{
-        borders::{BorderStyleCell, BorderStyleTimestamp},
-        validations::{
-            validation::{
-                Validation, ValidationDisplay, ValidationDisplaySheet, ValidationError,
-                ValidationMessage, ValidationStyle,
-            },
-            validation_rules::{
-                validation_date_time::{DateTimeRange, ValidationDateTime},
-                validation_list::{ValidationList, ValidationListSource},
-                validation_logical::ValidationLogical,
-                validation_number::{NumberRange, ValidationNumber},
-                validation_text::{TextCase, TextMatch, ValidationText},
-                ValidationRule,
-            },
-        },
-    },
+    CellAlign, CellVerticalAlign, CellWrap, GridBounds, NumericFormat, NumericFormatKind, SheetId,
 };
 use quadratic_core::color::Rgba;
 use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
 use quadratic_core::controller::execution::run_code::get_cells::JsGetCellResponse;
 use quadratic_core::controller::transaction_types::JsCodeResult;
 use quadratic_core::grid::js_types::{
-    JsCodeCell, JsHtmlOutput, JsNumber, JsRenderBorder, JsRenderBorders, JsRenderCell,
-    JsRenderCellSpecial, JsRenderCodeCell, JsRenderCodeCellState,
+    JsCodeCell, JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
+    JsRenderCodeCellState,
 };
 use quadratic_core::grid::sheet::search::SearchOptions;
 use quadratic_core::grid::{
@@ -65,33 +48,6 @@ use quadratic_core::sheet_offsets::sheet_offsets_wasm::{ColumnRow, Placement};
 use quadratic_core::wasm_bindings::controller::bounds::MinMax;
 use quadratic_core::wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo};
 use quadratic_core::wasm_bindings::controller::summarize::SummarizeSelectionResult;
-use quadratic_core::{
-    color::Rgba,
-    controller::{
-        active_transactions::transaction_name::TransactionName,
-        execution::run_code::get_cells::JsGetCellResponse, transaction_types::JsCodeResult,
-    },
-    grid::{
-        js_types::{
-            JsCodeCell, JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial,
-            JsRenderCodeCell, JsRenderCodeCellState,
-        },
-        sheet::search::SearchOptions,
-        BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage, ConnectionKind,
-    },
-    selection::Selection,
-    sheet_offsets::{
-        resize_transient::TransientResize,
-        sheet_offsets_wasm::{ColumnRow, Placement},
-    },
-    wasm_bindings::controller::{
-        bounds::MinMax,
-        sheet_info::{SheetBounds, SheetInfo},
-        summarize::SummarizeSelectionResult,
-    },
-    CellAlign, CellVerticalAlign, CellWrap, GridBounds, NumericFormat, NumericFormatKind, Rect,
-    SheetId, *,
-};
 use quadratic_core::{Rect, *};
 use ts_rs::TS;
 
@@ -142,8 +98,6 @@ fn main() {
         JsHtmlOutput,
         JsNumber,
         JsPos,
-        JsRenderBorder,
-        JsRenderBorders,
         JsRenderCell,
         JsRenderCellSpecial,
         JsRenderCodeCell,
