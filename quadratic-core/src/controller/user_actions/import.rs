@@ -78,7 +78,7 @@ mod tests {
     use std::str::FromStr;
 
     use crate::{
-        grid::{CodeCellLanguage, CodeRunResult},
+        grid::CodeCellLanguage,
         test_util::{assert_cell_value_row, print_table},
         wasm_bindings::js::clear_js_calls,
         CellValue, CodeCellValue, Rect, RunError, RunErrorMsg, Span,
@@ -326,8 +326,8 @@ mod tests {
 
             // all code cells should have valid function names,
             // valid functions may not be implemented yet
-            let code_run = sheet.data_table(pos).unwrap();
-            if let CodeRunResult::Err(error) = &code_run.result {
+            let code_run = sheet.data_table(pos).unwrap().code_run().unwrap();
+            if let Some(error) = &code_run.error {
                 if error.msg == RunErrorMsg::BadFunctionName {
                     panic!("expected valid function name")
                 }

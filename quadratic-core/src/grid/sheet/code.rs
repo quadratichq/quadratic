@@ -4,8 +4,9 @@ use super::Sheet;
 use crate::{
     formulas::replace_internal_cell_references,
     grid::{
+        data_table::DataTable,
         js_types::{JsCodeCell, JsReturnInfo},
-        CodeCellLanguage, CodeRun, RenderSize,
+        CodeCellLanguage, DataTableKind, RenderSize,
     },
     CellValue, Pos, Rect,
 };
@@ -14,16 +15,16 @@ impl Sheet {
     /// Sets or deletes a code run.
     ///
     /// Returns the old value if it was set.
-    pub fn set_data_table(&mut self, pos: Pos, code_run: Option<CodeRun>) -> Option<CodeRun> {
-        if let Some(code_run) = code_run {
-            self.data_tables.insert(pos, code_run)
+    pub fn set_data_table(&mut self, pos: Pos, data_table: Option<DataTable>) -> Option<DataTable> {
+        if let Some(data_table) = data_table {
+            self.data_tables.insert(pos, data_table)
         } else {
             self.data_tables.shift_remove(&pos)
         }
     }
 
     /// Returns a DatatTable at a Pos
-    pub fn data_table(&self, pos: Pos) -> Option<&CodeRun> {
+    pub fn data_table(&self, pos: Pos) -> Option<&DataTable> {
         self.data_tables.get(&pos)
     }
 
@@ -31,8 +32,8 @@ impl Sheet {
     pub fn code_columns_bounds(&self, column_start: i64, column_end: i64) -> Option<Range<i64>> {
         let mut min: Option<i64> = None;
         let mut max: Option<i64> = None;
-        for (pos, code_run) in &self.data_tables {
-            let output_rect = code_run.output_rect(*pos, false);
+        for (pos, data_table) in &self.data_tables {
+            let output_rect = data_table.output_rect(*pos, false);
             if output_rect.min.x <= column_end && output_rect.max.x >= column_start {
                 min = min
                     .map(|min| Some(min.min(output_rect.min.y)))
@@ -53,8 +54,8 @@ impl Sheet {
     pub fn code_rows_bounds(&self, row_start: i64, row_end: i64) -> Option<Range<i64>> {
         let mut min: Option<i64> = None;
         let mut max: Option<i64> = None;
-        for (pos, code_run) in &self.data_tables {
-            let output_rect = code_run.output_rect(*pos, false);
+        for (pos, data_table) in &self.data_tables {
+            let output_rect = data_table.output_rect(*pos, false);
             if output_rect.min.y <= row_end && output_rect.max.y >= row_start {
                 min = min
                     .map(|min| Some(min.min(output_rect.min.x)))
@@ -77,9 +78,9 @@ impl Sheet {
     pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
         self.data_tables
             .iter()
-            .find_map(|(code_cell_pos, code_run)| {
-                if code_run.output_rect(*code_cell_pos, false).contains(pos) {
-                    code_run.cell_value_at(
+            .find_map(|(code_cell_pos, data_table)| {
+                if data_table.output_rect(*code_cell_pos, false).contains(pos) {
+                    data_table.cell_value_at(
                         (pos.x - code_cell_pos.x) as u32,
                         (pos.y - code_cell_pos.y) as u32,
                     )
@@ -89,7 +90,7 @@ impl Sheet {
             })
     }
 
-    pub fn iter_code_output_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, &CodeRun)> {
+    pub fn iter_code_output_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, &DataTable)> {
         self.data_tables
             .iter()
             .filter_map(move |(pos, code_cell_value)| {
@@ -107,14 +108,14 @@ impl Sheet {
     }
 
     /// Returns whether a rect overlaps the output of a code cell.
-    /// It will only check code_cells until it finds the code_run at code_pos (since later data_tables do not cause spills in earlier ones)
+    /// It will only check code_cells until it finds the data_table at code_pos (since later data_tables do not cause spills in earlier ones)
     pub fn has_code_cell_in_rect(&self, rect: &Rect, code_pos: Pos) -> bool {
-        for (pos, code_run) in &self.data_tables {
+        for (pos, data_table) in &self.data_tables {
             if pos == &code_pos {
                 // once we reach the code_cell, we can stop checking
                 return false;
             }
-            if code_run.output_rect(*pos, false).intersects(*rect) {
+            if data_table.output_rect(*pos, false).intersects(*rect) {
                 return true;
             }
         }
@@ -130,8 +131,8 @@ impl Sheet {
         } else {
             self.data_tables
                 .iter()
-                .find_map(|(code_cell_pos, code_run)| {
-                    if code_run.output_rect(*code_cell_pos, false).contains(pos) {
+                .find_map(|(code_cell_pos, data_table)| {
+                    if data_table.output_rect(*code_cell_pos, false).contains(pos) {
                         if let Some(code_value) = self.cell_value(*code_cell_pos) {
                             code_pos = *code_cell_pos;
                             Some(code_value)
@@ -154,17 +155,24 @@ impl Sheet {
                     code_cell.code = replaced;
                 }
 
-                if let Some(code_run) = self.data_table(code_pos) {
+                if let Some(data_table) = self.data_table(code_pos) {
                     let evaluation_result =
-                        serde_json::to_string(&code_run.result).unwrap_or("".into());
-                    let spill_error = if code_run.spill_error {
+                        serde_json::to_string(&data_table.value).unwrap_or("".into());
+                    let spill_error = if data_table.spill_error {
                         Some(self.find_spill_error_reasons(
-                            &code_run.output_rect(code_pos, true),
+                            &data_table.output_rect(code_pos, true),
                             code_pos,
                         ))
                     } else {
                         None
                     };
+
+                    #[allow(unreachable_patterns)]
+                    let code_run = match &data_table.kind {
+                        DataTableKind::CodeRun(code_run) => code_run,
+                        _ => unreachable!(),
+                    };
+
                     Some(JsCodeCell {
                         x: code_pos.x,
                         y: code_pos.y,
@@ -205,7 +213,7 @@ mod test {
     use super::*;
     use crate::{
         controller::GridController,
-        grid::{js_types::JsRenderCellSpecial, CodeCellLanguage, CodeRunResult, RenderSize},
+        grid::{js_types::JsRenderCellSpecial, CodeCellLanguage, CodeRun, RenderSize},
         Array, CodeCellValue, SheetPos, Value,
     };
     use bigdecimal::BigDecimal;
@@ -247,7 +255,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn test_set_code_run() {
+    fn test_set_data_table() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.grid_mut().try_sheet_mut(sheet_id).unwrap();
@@ -255,24 +263,28 @@ mod test {
             std_out: None,
             std_err: None,
             formatted_code_string: None,
-            last_modified: Utc::now(),
             cells_accessed: HashSet::new(),
-            result: CodeRunResult::Ok(Value::Single(CellValue::Number(BigDecimal::from(2)))),
+            error: None,
             return_type: Some("number".into()),
             line_number: None,
             output_type: None,
-            spill_error: false,
         };
-        let old = sheet.set_data_table(Pos { x: 0, y: 0 }, Some(code_run.clone()));
+        let data_table = DataTable {
+            kind: DataTableKind::CodeRun(code_run),
+            value: Value::Single(CellValue::Number(BigDecimal::from(2))),
+            spill_error: false,
+            last_modified: Utc::now(),
+        };
+        let old = sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         assert_eq!(old, None);
-        assert_eq!(sheet.data_table(Pos { x: 0, y: 0 }), Some(&code_run));
-        assert_eq!(sheet.data_table(Pos { x: 0, y: 0 }), Some(&code_run));
+        assert_eq!(sheet.data_table(Pos { x: 0, y: 0 }), Some(&data_table));
+        assert_eq!(sheet.data_table(Pos { x: 0, y: 0 }), Some(&data_table));
         assert_eq!(sheet.data_table(Pos { x: 1, y: 0 }), None);
     }
 
     #[test]
     #[parallel]
-    fn test_get_code_run() {
+    fn test_get_data_table() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.grid_mut().try_sheet_mut(sheet_id).unwrap();
@@ -281,19 +293,23 @@ mod test {
             std_out: None,
             formatted_code_string: None,
             cells_accessed: HashSet::new(),
-            result: CodeRunResult::Ok(Value::Single(CellValue::Number(BigDecimal::from(2)))),
+            error: None,
             return_type: Some("number".into()),
             line_number: None,
             output_type: None,
+        };
+        let data_table = DataTable {
+            kind: DataTableKind::CodeRun(code_run),
+            value: Value::Single(CellValue::Number(BigDecimal::from(2))),
             spill_error: false,
             last_modified: Utc::now(),
         };
-        sheet.set_data_table(Pos { x: 0, y: 0 }, Some(code_run.clone()));
+        sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         assert_eq!(
             sheet.get_code_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
-        assert_eq!(sheet.data_table(Pos { x: 0, y: 0 }), Some(&code_run));
+        assert_eq!(sheet.data_table(Pos { x: 0, y: 0 }), Some(&data_table));
         assert_eq!(sheet.data_table(Pos { x: 1, y: 1 }), None);
     }
 
@@ -315,14 +331,18 @@ mod test {
             std_out: None,
             formatted_code_string: None,
             cells_accessed: HashSet::new(),
-            result: CodeRunResult::Ok(Value::Array(Array::from(vec![vec!["1", "2", "3"]]))),
+            error: None,
             return_type: Some("number".into()),
             line_number: None,
             output_type: None,
+        };
+        let data_table = DataTable {
+            kind: DataTableKind::CodeRun(code_run),
+            value: Value::Array(Array::from(vec![vec!["1", "2", "3"]])),
             spill_error: false,
             last_modified: Utc::now(),
         };
-        sheet.set_data_table(Pos { x: 0, y: 0 }, Some(code_run.clone()));
+        sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         assert_eq!(
             sheet.edit_code_value(Pos { x: 0, y: 0 }),
             Some(JsCodeCell {
@@ -402,20 +422,20 @@ mod test {
             std_out: None,
             formatted_code_string: None,
             cells_accessed: HashSet::new(),
-            result: CodeRunResult::Ok(Value::Array(Array::from(vec![
-                vec!["1"],
-                vec!["2"],
-                vec!["3"],
-            ]))),
+            error: None,
             return_type: Some("number".into()),
             line_number: None,
             output_type: None,
+        };
+        let data_table = DataTable {
+            kind: DataTableKind::CodeRun(code_run),
+            value: Value::Array(Array::from(vec![vec!["1"], vec!["2"], vec!["3"]])),
             spill_error: false,
             last_modified: Utc::now(),
         };
-        sheet.set_data_table(Pos { x: 0, y: 0 }, Some(code_run.clone()));
-        sheet.set_data_table(Pos { x: 1, y: 1 }, Some(code_run.clone()));
-        sheet.set_data_table(Pos { x: 2, y: 3 }, Some(code_run.clone()));
+        sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
+        sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));
+        sheet.set_data_table(Pos { x: 2, y: 3 }, Some(data_table.clone()));
 
         assert_eq!(sheet.code_columns_bounds(0, 0), Some(0..3));
         assert_eq!(sheet.code_columns_bounds(1, 1), Some(1..4));
@@ -437,16 +457,20 @@ mod test {
             std_out: None,
             formatted_code_string: None,
             cells_accessed: HashSet::new(),
-            result: CodeRunResult::Ok(Value::Array(Array::from(vec![vec!["1", "2", "3'"]]))),
+            error: None,
             return_type: Some("number".into()),
             line_number: None,
             output_type: None,
+        };
+        let data_table = DataTable {
+            kind: DataTableKind::CodeRun(code_run),
+            value: Value::Array(Array::from(vec![vec!["1", "2", "3'"]])),
             spill_error: false,
             last_modified: Utc::now(),
         };
-        sheet.set_data_table(Pos { x: 0, y: 0 }, Some(code_run.clone()));
-        sheet.set_data_table(Pos { x: 1, y: 1 }, Some(code_run.clone()));
-        sheet.set_data_table(Pos { x: 3, y: 2 }, Some(code_run.clone()));
+        sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
+        sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));
+        sheet.set_data_table(Pos { x: 3, y: 2 }, Some(data_table.clone()));
 
         assert_eq!(sheet.code_rows_bounds(0, 0), Some(0..3));
         assert_eq!(sheet.code_rows_bounds(1, 1), Some(1..4));

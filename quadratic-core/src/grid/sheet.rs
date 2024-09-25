@@ -10,6 +10,7 @@ use validations::Validations;
 
 use super::bounds::GridBounds;
 use super::column::Column;
+use super::data_table::DataTable;
 use super::formats::format::Format;
 use super::formatting::CellFmtAttr;
 use super::ids::SheetId;
@@ -35,6 +36,7 @@ pub mod row_resize;
 pub mod search;
 pub mod selection;
 pub mod send_render;
+#[cfg(test)]
 pub mod sheet_test;
 pub mod summarize;
 pub mod validations;
@@ -52,7 +54,7 @@ pub struct Sheet {
     pub columns: BTreeMap<i64, Column>,
 
     #[serde(with = "crate::util::indexmap_serde")]
-    pub data_tables: IndexMap<Pos, CodeRun>,
+    pub data_tables: IndexMap<Pos, DataTable>,
 
     // todo: we need to redo this struct to track the timestamp for all formats
     // applied to column and rows to properly use the latest column or row
@@ -201,6 +203,15 @@ impl Sheet {
 
     pub fn iter_columns(&self) -> impl Iterator<Item = (&i64, &Column)> {
         self.columns.iter()
+    }
+
+    pub fn iter_code_runs(&self) -> impl Iterator<Item = (&Pos, &CodeRun)> {
+        let result = self
+            .data_tables
+            .iter()
+            .flat_map(|(pos, data_table)| data_table.code_run().map(|code_run| (pos, code_run)));
+
+        result
     }
 
     /// Returns the cell_value at a Pos using both column.values and data_tables (i.e., what would be returned if code asked

@@ -5,7 +5,7 @@ use crate::controller::operations::operation::Operation;
 use crate::controller::transaction_types::JsCodeResult;
 use crate::controller::GridController;
 use crate::error_core::{CoreError, Result};
-use crate::grid::{CodeCellLanguage, CodeRun, CodeRunResult};
+use crate::grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind};
 use crate::{Array, CellValue, Pos, RunError, RunErrorMsg, SheetPos, SheetRect, Span, Value};
 
 pub mod get_cells;
@@ -20,7 +20,7 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
-        new_code_run: Option<CodeRun>,
+        new_data_table: Option<DataTable>,
         index: Option<usize>,
     ) {
         let sheet_id = sheet_pos.sheet_id;
@@ -39,9 +39,9 @@ impl GridController {
                 .unwrap_or(sheet.data_tables.len()),
         );
 
-        let old_code_run = if let Some(new_code_run) = &new_code_run {
-            let (old_index, old_code_run) =
-                sheet.data_tables.insert_full(pos, new_code_run.clone());
+        let old_data_table = if let Some(new_data_table) = &new_data_table {
+            let (old_index, old_data_table) =
+                sheet.data_tables.insert_full(pos, new_data_table.clone());
             // keep the orderings of the code runs consistent, particularly when undoing/redoing
             let index = if index > sheet.data_tables.len() - 1 {
                 sheet.data_tables.len() - 1
@@ -49,16 +49,16 @@ impl GridController {
                 index
             };
             sheet.data_tables.move_index(old_index, index);
-            old_code_run
+            old_data_table
         } else {
             sheet.data_tables.shift_remove(&pos)
         };
 
-        if old_code_run == new_code_run {
+        if old_data_table == new_data_table {
             return;
         }
 
-        let sheet_rect = match (&old_code_run, &new_code_run) {
+        let sheet_rect = match (&old_data_table, &new_data_table) {
             (None, None) => sheet_pos.into(),
             (None, Some(code_cell_value)) => code_cell_value.output_sheet_rect(sheet_pos, false),
             (Some(old_code_cell_value), None) => {
@@ -79,8 +79,8 @@ impl GridController {
         };
 
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            transaction.add_from_code_run(sheet_id, pos, &old_code_run);
-            transaction.add_from_code_run(sheet_id, pos, &new_code_run);
+            transaction.add_from_code_run(sheet_id, pos, &old_data_table);
+            transaction.add_from_code_run(sheet_id, pos, &new_data_table);
 
             self.send_updated_bounds_rect(&sheet_rect, false);
 
@@ -100,13 +100,13 @@ impl GridController {
         if transaction.is_user_undo_redo() {
             transaction.forward_operations.push(Operation::SetCodeRun {
                 sheet_pos,
-                code_run: new_code_run,
+                code_run: new_data_table,
                 index,
             });
 
             transaction.reverse_operations.push(Operation::SetCodeRun {
                 sheet_pos,
-                code_run: old_code_run,
+                code_run: old_data_table,
                 index,
             });
 
@@ -139,7 +139,7 @@ impl GridController {
             }
             Some(waiting_for_async) => match waiting_for_async {
                 CodeCellLanguage::Python | CodeCellLanguage::Javascript => {
-                    let new_code_run = self.js_code_result_to_code_cell_value(
+                    let new_data_table = self.js_code_result_to_code_cell_value(
                         transaction,
                         result,
                         current_sheet_pos,
@@ -149,7 +149,7 @@ impl GridController {
                     self.finalize_code_run(
                         transaction,
                         current_sheet_pos,
-                        Some(new_code_run),
+                        Some(new_data_table),
                         None,
                     );
                 }
@@ -196,20 +196,21 @@ impl GridController {
             return Ok(());
         };
 
-        let result = CodeRunResult::Err(error.clone());
+        let code_run = sheet
+            .data_table(pos)
+            .map(|data_table| data_table.code_run())
+            .flatten();
 
-        let new_code_run = match sheet.data_table(pos) {
+        let new_code_run = match code_run {
             Some(old_code_run) => {
                 CodeRun {
                     formatted_code_string: old_code_run.formatted_code_string.clone(),
-                    result,
+                    error: Some(error.to_owned()),
                     return_type: None,
                     line_number: old_code_run.line_number,
                     output_type: old_code_run.output_type.clone(),
                     std_out: None,
                     std_err: Some(error.msg.to_string()),
-                    spill_error: false,
-                    last_modified: Utc::now(),
 
                     // keep the old cells_accessed to better rerun after an error
                     cells_accessed: old_code_run.cells_accessed.clone(),
@@ -217,7 +218,7 @@ impl GridController {
             }
             None => CodeRun {
                 formatted_code_string: None,
-                result,
+                error: Some(error.to_owned()),
                 return_type: None,
                 line_number: error
                     .span
@@ -225,13 +226,17 @@ impl GridController {
                 output_type: None,
                 std_out: None,
                 std_err: Some(error.msg.to_string()),
-                spill_error: false,
-                last_modified: Utc::now(),
                 cells_accessed: transaction.cells_accessed.clone(),
             },
         };
+        let new_data_table = DataTable {
+            kind: DataTableKind::CodeRun(new_code_run),
+            value: Value::Single(CellValue::Blank),
+            spill_error: false,
+            last_modified: Utc::now(),
+        };
         transaction.waiting_for_async = None;
-        self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
+        self.finalize_code_run(transaction, sheet_pos, Some(new_data_table), None);
 
         Ok(())
     }
@@ -242,13 +247,13 @@ impl GridController {
         transaction: &mut PendingTransaction,
         js_code_result: JsCodeResult,
         start: SheetPos,
-    ) -> CodeRun {
+    ) -> DataTable {
         let Some(sheet) = self.try_sheet_mut(start.sheet_id) else {
             // todo: this is probably not the best place to handle this
             // sheet may have been deleted before the async operation completed
-            return CodeRun {
+            let code_run = CodeRun {
                 formatted_code_string: None,
-                result: CodeRunResult::Err(RunError {
+                error: Some(RunError {
                     span: None,
                     msg: RunErrorMsg::PythonError(
                         "Sheet was deleted before the async operation completed".into(),
@@ -259,12 +264,16 @@ impl GridController {
                 output_type: js_code_result.output_display_type,
                 std_out: None,
                 std_err: None,
-                spill_error: false,
-                last_modified: Utc::now(),
                 cells_accessed: transaction.cells_accessed.clone(),
             };
+            return DataTable {
+                kind: DataTableKind::CodeRun(code_run),
+                value: Value::Single(CellValue::Blank), // TODO(ddimaria): this will eventually be an empty vec
+                spill_error: false,
+                last_modified: Utc::now(),
+            };
         };
-        let result = if js_code_result.success {
+        let value = if js_code_result.success {
             let result = if let Some(array_output) = js_code_result.output_array {
                 let (array, ops) = Array::from_string_list(start.into(), sheet, array_output);
                 transaction.reverse_operations.extend(ops);
@@ -285,8 +294,12 @@ impl GridController {
             } else {
                 Value::Single(CellValue::Blank)
             };
-            CodeRunResult::Ok(result)
+            result
         } else {
+            Value::Single(CellValue::Blank) // TODO(ddimaria): this will eventually be an empty vec
+        };
+
+        let error = {
             let error_msg = js_code_result
                 .std_err
                 .clone()
@@ -296,30 +309,34 @@ impl GridController {
                 start: line_number,
                 end: line_number,
             });
-            CodeRunResult::Err(RunError { span, msg })
+            RunError { span, msg }
         };
 
-        let return_type = match result {
-            CodeRunResult::Ok(Value::Single(ref cell_value)) => Some(cell_value.type_name().into()),
-            CodeRunResult::Ok(Value::Array(_)) => Some("array".into()),
-            CodeRunResult::Ok(Value::Tuple(_)) => Some("tuple".into()),
-            CodeRunResult::Err(_) => None,
+        let return_type = match value {
+            Value::Single(ref cell_value) => Some(cell_value.type_name().into()),
+            Value::Array(_) => Some("array".into()),
+            Value::Tuple(_) => Some("tuple".into()),
         };
 
         let code_run = CodeRun {
             formatted_code_string: None,
-            result,
+            error: Some(error),
             return_type,
             line_number: js_code_result.line_number,
             output_type: js_code_result.output_display_type,
             std_out: js_code_result.std_out,
             std_err: js_code_result.std_err,
-            spill_error: false,
-            last_modified: Utc::now(),
             cells_accessed: transaction.cells_accessed.clone(),
         };
+
+        let data_table = DataTable {
+            kind: DataTableKind::CodeRun(code_run),
+            value,
+            spill_error: false,
+            last_modified: Utc::now(),
+        };
         transaction.cells_accessed.clear();
-        code_run
+        data_table
     }
 }
 
@@ -363,19 +380,23 @@ mod test {
             formatted_code_string: None,
             std_err: None,
             std_out: None,
-            result: CodeRunResult::Ok(Value::Single(CellValue::Text("delete me".to_string()))),
+            error: None,
             return_type: Some("text".into()),
             line_number: None,
             output_type: None,
-            last_modified: Utc::now(),
             cells_accessed: HashSet::new(),
-            spill_error: false,
         };
-        gc.finalize_code_run(transaction, sheet_pos, Some(new_code_run.clone()), None);
+        let new_data_table = DataTable {
+            kind: DataTableKind::CodeRun(new_code_run),
+            value: Value::Single(CellValue::Text("delete me".to_string())),
+            spill_error: false,
+            last_modified: Utc::now(),
+        };
+        gc.finalize_code_run(transaction, sheet_pos, Some(new_data_table.clone()), None);
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        assert_eq!(sheet.data_table(sheet_pos.into()), Some(&new_code_run));
+        assert_eq!(sheet.data_table(sheet_pos.into()), Some(&new_data_table));
 
         // todo: need a way to test the js functions as that replaced these
         // let summary = transaction.send_transaction(true);
@@ -392,19 +413,23 @@ mod test {
             formatted_code_string: None,
             std_err: None,
             std_out: None,
-            result: CodeRunResult::Ok(Value::Single(CellValue::Text("replace me".to_string()))),
+            error: None,
             return_type: Some("text".into()),
             line_number: None,
             output_type: None,
-            last_modified: Utc::now(),
             cells_accessed: HashSet::new(),
-            spill_error: false,
         };
-        gc.finalize_code_run(transaction, sheet_pos, Some(new_code_run.clone()), None);
+        let new_data_table = DataTable {
+            kind: DataTableKind::CodeRun(new_code_run),
+            value: Value::Single(CellValue::Text("replace me".to_string())),
+            spill_error: false,
+            last_modified: Utc::now(),
+        };
+        gc.finalize_code_run(transaction, sheet_pos, Some(new_data_table.clone()), None);
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        assert_eq!(sheet.data_table(sheet_pos.into()), Some(&new_code_run));
+        assert_eq!(sheet.data_table(sheet_pos.into()), Some(&new_data_table));
 
         // todo: need a way to test the js functions as that replaced these
         // let summary = transaction.send_transaction(true);

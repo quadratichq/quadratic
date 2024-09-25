@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::grid::file::v1_6::schema as v1_6;
 use crate::grid::file::v1_6::schema_validation as v1_6_validation;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 pub type IdSchema = v1_6::Id;
@@ -13,7 +14,6 @@ pub type RunErrorSchema = v1_6::RunError;
 pub type FormatSchema = v1_6::Format;
 pub type ValidationsSchema = v1_6_validation::Validations;
 pub type ResizeSchema = v1_6::Resize;
-pub type CodeRunSchema = v1_6::CodeRun;
 pub type CodeRunResultSchema = v1_6::CodeRunResult;
 pub type OutputValueSchema = v1_6::OutputValue;
 pub type OutputArraySchema = v1_6::OutputArray;
@@ -33,6 +33,8 @@ pub type CellBorderSchema = v1_6::CellBorder;
 pub type ColumnRepeatSchema<T> = v1_6::ColumnRepeat<T>;
 pub type RenderSizeSchema = v1_6::RenderSize;
 pub type RunErrorMsgSchema = v1_6::RunErrorMsg;
+pub type AxisSchema = v1_6::Axis;
+pub type SpanSchema = v1_6::Span;
 
 pub type SelectionSchema = v1_6_validation::Selection;
 
@@ -113,11 +115,55 @@ pub struct SheetSchema {
     pub order: String,
     pub offsets: OffsetsSchema,
     pub columns: Vec<(i64, ColumnSchema)>,
-    pub code_runs: Vec<(PosSchema, CodeRunSchema)>,
+    pub data_tables: Vec<(PosSchema, DataTableSchema)>,
     pub formats_all: Option<FormatSchema>,
     pub formats_columns: Vec<(i64, (FormatSchema, i64))>,
     pub formats_rows: Vec<(i64, (FormatSchema, i64))>,
     pub rows_resize: Vec<(i64, ResizeSchema)>,
     pub validations: ValidationsSchema,
     pub borders: BordersSchema,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CodeRunSchema {
+    pub formatted_code_string: Option<String>,
+    pub std_out: Option<String>,
+    pub std_err: Option<String>,
+    pub cells_accessed: Vec<SheetRectSchema>,
+    pub error: Option<RunErrorSchema>,
+    pub return_type: Option<String>,
+    pub line_number: Option<u32>,
+    pub output_type: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum DataTableKindSchema {
+    CodeRun(CodeRunSchema),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DataTableSchema {
+    pub kind: DataTableKindSchema,
+    pub value: OutputValueSchema,
+    pub spill_error: bool,
+    pub last_modified: Option<DateTime<Utc>>,
+}
+
+impl From<i8> for AxisSchema {
+    fn from(val: i8) -> Self {
+        match val {
+            0 => AxisSchema::X,
+            1 => AxisSchema::Y,
+            _ => panic!("Invalid Axis value: {}", val),
+        }
+    }
+}
+
+impl Into<i8> for AxisSchema {
+    fn into(self) -> i8 {
+        match self {
+            AxisSchema::X => 0,
+            AxisSchema::Y => 1,
+        }
+    }
 }

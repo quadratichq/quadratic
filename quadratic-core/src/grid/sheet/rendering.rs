@@ -1,14 +1,11 @@
-use code_run::CodeRunResult;
-
 use crate::{
     grid::{
-        code_run,
         formats::format::Format,
         js_types::{
             JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
             JsRenderCodeCellState, JsRenderFill, JsSheetFill, JsValidationWarning,
         },
-        CellAlign, CodeCellLanguage, CodeRun, Column,
+        CellAlign, CodeCellLanguage, Column, DataTable,
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     CellValue, Pos, Rect, RunError, RunErrorMsg, Value,
@@ -158,13 +155,13 @@ impl Sheet {
     fn get_code_cells(
         &self,
         code: &CellValue,
-        run: &CodeRun,
+        data_table: &DataTable,
         output_rect: &Rect,
         code_rect: &Rect,
     ) -> Vec<JsRenderCell> {
         let mut cells = vec![];
         if let CellValue::Code(code) = code {
-            if run.spill_error {
+            if data_table.spill_error {
                 cells.push(self.get_render_cell(
                     code_rect.min.x,
                     code_rect.min.y,
@@ -175,7 +172,7 @@ impl Sheet {
                     })),
                     Some(code.language.to_owned()),
                 ));
-            } else if let Some(error) = run.get_error() {
+            } else if let Some(error) = data_table.get_error() {
                 cells.push(self.get_render_cell(
                     code_rect.min.x,
                     code_rect.min.y,
@@ -208,7 +205,7 @@ impl Sheet {
                 for x in x_start..=x_end {
                     let column = self.get_column(x);
                     for y in y_start..=y_end {
-                        let value = run.cell_value_at(
+                        let value = data_table.cell_value_at(
                             (x - code_rect.min.x) as u32,
                             (y - code_rect.min.y) as u32,
                         );
@@ -376,11 +373,11 @@ impl Sheet {
     }
 
     pub fn get_render_code_cell(&self, pos: Pos) -> Option<JsRenderCodeCell> {
-        let run = self.data_tables.get(&pos)?;
+        let data_table = self.data_tables.get(&pos)?;
         let code = self.cell_value(pos)?;
-        let output_size = run.output_size();
-        let (state, w, h, spill_error) = if run.spill_error {
-            let reasons = self.find_spill_error_reasons(&run.output_rect(pos, true), pos);
+        let output_size = data_table.output_size();
+        let (state, w, h, spill_error) = if data_table.spill_error {
+            let reasons = self.find_spill_error_reasons(&data_table.output_rect(pos, true), pos);
             (
                 JsRenderCodeCellState::SpillError,
                 output_size.w.get(),
@@ -388,16 +385,17 @@ impl Sheet {
                 Some(reasons),
             )
         } else {
-            match run.result {
-                CodeRunResult::Err(_) | CodeRunResult::Ok(Value::Single(CellValue::Error(_))) => {
-                    (JsRenderCodeCellState::RunError, 1, 1, None)
-                }
-                CodeRunResult::Ok(_) => (
+            if data_table.has_error()
+                || matches!(data_table.value, Value::Single(CellValue::Error(_)))
+            {
+                (JsRenderCodeCellState::RunError, 1, 1, None)
+            } else {
+                (
                     JsRenderCodeCellState::Success,
                     output_size.w.get(),
                     output_size.h.get(),
                     None,
-                ),
+                )
             }
         };
         Some(JsRenderCodeCell {
@@ -418,14 +416,16 @@ impl Sheet {
     pub fn get_all_render_code_cells(&self) -> Vec<JsRenderCodeCell> {
         self.data_tables
             .iter()
-            .filter_map(|(pos, run)| {
+            .filter_map(|(pos, data_table)| {
                 if let Some(code) = self.cell_value(*pos) {
                     match &code {
                         CellValue::Code(code) => {
-                            let output_size = run.output_size();
-                            let (state, w, h, spill_error) = if run.spill_error {
-                                let reasons = self
-                                    .find_spill_error_reasons(&run.output_rect(*pos, true), *pos);
+                            let output_size = data_table.output_size();
+                            let (state, w, h, spill_error) = if data_table.spill_error {
+                                let reasons = self.find_spill_error_reasons(
+                                    &data_table.output_rect(*pos, true),
+                                    *pos,
+                                );
                                 (
                                     JsRenderCodeCellState::SpillError,
                                     output_size.w.get(),
@@ -433,16 +433,15 @@ impl Sheet {
                                     Some(reasons),
                                 )
                             } else {
-                                match run.result {
-                                    CodeRunResult::Ok(_) => (
+                                if data_table.has_error() {
+                                    (JsRenderCodeCellState::RunError, 1, 1, None)
+                                } else {
+                                    (
                                         JsRenderCodeCellState::Success,
                                         output_size.w.get(),
                                         output_size.h.get(),
                                         None,
-                                    ),
-                                    CodeRunResult::Err(_) => {
-                                        (JsRenderCodeCellState::RunError, 1, 1, None)
-                                    }
+                                    )
                                 }
                             };
                             Some(JsRenderCodeCell {
@@ -612,7 +611,7 @@ mod tests {
                 validation::{Validation, ValidationStyle},
                 validation_rules::{validation_logical::ValidationLogical, ValidationRule},
             },
-            Bold, CellVerticalAlign, CellWrap, Italic, RenderSize,
+            Bold, CellVerticalAlign, CellWrap, CodeRun, DataTableKind, Italic, RenderSize,
         },
         selection::Selection,
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
@@ -645,18 +644,22 @@ mod tests {
                 code: "1 + 1".to_string(),
             }),
         );
+        let code_run = CodeRun {
+            formatted_code_string: None,
+            std_err: None,
+            std_out: None,
+            cells_accessed: HashSet::new(),
+            error: None,
+            return_type: Some("text".into()),
+            line_number: None,
+            output_type: None,
+        };
         sheet.set_data_table(
             Pos { x: 2, y: 3 },
-            Some(CodeRun {
-                formatted_code_string: None,
-                std_err: None,
-                std_out: None,
+            Some(DataTable {
+                kind: DataTableKind::CodeRun(code_run),
+                value: Value::Single(CellValue::Text("hello".to_string())),
                 spill_error: false,
-                cells_accessed: HashSet::new(),
-                result: CodeRunResult::Ok(Value::Single(CellValue::Text("hello".to_string()))),
-                return_type: Some("text".into()),
-                line_number: None,
-                output_type: None,
                 last_modified: Utc::now(),
             }),
         );
@@ -858,27 +861,29 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: "".to_string(),
         });
-
-        // code_run is always 3x2
         let code_run = CodeRun {
             std_out: None,
             std_err: None,
             formatted_code_string: None,
-            last_modified: Utc::now(),
             cells_accessed: HashSet::new(),
-            result: CodeRunResult::Ok(Value::Array(
-                vec![vec!["1", "2", "3"], vec!["4", "5", "6"]].into(),
-            )),
+            error: None,
             return_type: Some("text".into()),
-            spill_error: false,
             line_number: None,
             output_type: None,
+        };
+
+        // data_table is always 3x2
+        let data_table = DataTable {
+            kind: DataTableKind::CodeRun(code_run),
+            value: Value::Array(vec![vec!["1", "2", "3"], vec!["4", "5", "6"]].into()),
+            spill_error: false,
+            last_modified: Utc::now(),
         };
 
         // render rect is larger than code rect
         let code_cells = sheet.get_code_cells(
             &code_cell,
-            &code_run,
+            &data_table,
             &Rect::from_numbers(0, 0, 10, 10),
             &Rect::from_numbers(5, 5, 3, 2),
         );
@@ -892,7 +897,7 @@ mod tests {
         // code rect overlaps render rect to the top-left
         let code_cells = sheet.get_code_cells(
             &code_cell,
-            &code_run,
+            &data_table,
             &Rect::from_numbers(2, 1, 10, 10),
             &Rect::from_numbers(0, 0, 3, 2),
         );
@@ -903,7 +908,7 @@ mod tests {
         // code rect overlaps render rect to the bottom-right
         let code_cells = sheet.get_code_cells(
             &code_cell,
-            &code_run,
+            &data_table,
             &Rect::from_numbers(0, 0, 3, 2),
             &Rect::from_numbers(2, 1, 10, 10),
         );
@@ -915,13 +920,18 @@ mod tests {
             std_out: None,
             std_err: None,
             formatted_code_string: None,
-            last_modified: Utc::now(),
             cells_accessed: HashSet::new(),
-            result: CodeRunResult::Ok(Value::Single(CellValue::Number(1.into()))),
+            error: None,
             return_type: Some("number".into()),
-            spill_error: false,
             line_number: None,
             output_type: None,
+        };
+
+        let code_run = DataTable {
+            kind: DataTableKind::CodeRun(code_run),
+            value: Value::Single(CellValue::Number(1.into())),
+            spill_error: false,
+            last_modified: Utc::now(),
         };
         let code_cells = sheet.get_code_cells(
             &code_cell,
@@ -1031,19 +1041,23 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: "1 + 1".to_string(),
         });
-        let run = CodeRun {
+        let code_run = CodeRun {
             std_out: None,
             std_err: None,
             formatted_code_string: None,
-            last_modified: Utc::now(),
             cells_accessed: HashSet::new(),
-            result: CodeRunResult::Ok(Value::Single(CellValue::Number(2.into()))),
+            error: None,
             return_type: Some("number".into()),
-            spill_error: false,
             line_number: None,
             output_type: None,
         };
-        sheet.set_data_table(pos, Some(run));
+        let data_table = DataTable {
+            kind: DataTableKind::CodeRun(code_run),
+            value: Value::Single(CellValue::Number(2.into())),
+            spill_error: false,
+            last_modified: Utc::now(),
+        };
+        sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
         let rendering = sheet.get_render_code_cell(pos);
         assert_eq!(
@@ -1076,19 +1090,23 @@ mod tests {
         let pos = (0, 0).into();
         let image = "image".to_string();
         let code = CellValue::Image(image.clone());
-        let run = CodeRun {
+        let code_run = CodeRun {
             std_out: None,
             std_err: None,
             formatted_code_string: None,
-            last_modified: Utc::now(),
             cells_accessed: HashSet::new(),
-            result: CodeRunResult::Ok(Value::Single(CellValue::Image(image.clone()))),
+            error: None,
             return_type: Some("image".into()),
-            spill_error: false,
             line_number: None,
             output_type: None,
         };
-        sheet.set_data_table(pos, Some(run));
+        let data_table = DataTable {
+            kind: DataTableKind::CodeRun(code_run),
+            value: Value::Single(CellValue::Image(image.clone())),
+            spill_error: false,
+            last_modified: Utc::now(),
+        };
+        sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
         sheet.send_all_images();
         expect_js_call(

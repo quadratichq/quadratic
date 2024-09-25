@@ -49,6 +49,15 @@ impl TryFrom<(u32, u32)> for ArraySize {
         Self::new_or_err(w, h)
     }
 }
+impl TryFrom<(i64, i64)> for ArraySize {
+    type Error = RunErrorMsg;
+
+    fn try_from((w, h): (i64, i64)) -> Result<Self, Self::Error> {
+        let w = w.try_into().map_err(|_| RunErrorMsg::ArrayTooBig)?;
+        let h = h.try_into().map_err(|_| RunErrorMsg::ArrayTooBig)?;
+        Self::new_or_err(w, h)
+    }
+}
 
 // TODO(ddimaria):`[][0]` is now being detected by clippy, fix this
 #[allow(clippy::out_of_bounds_indexing)]
@@ -137,5 +146,22 @@ impl Axis {
             },
             if len == 1 { "" } else { "s" },
         )
+    }
+}
+impl From<i8> for Axis {
+    fn from(val: i8) -> Self {
+        match val {
+            0 => Axis::X,
+            1 => Axis::Y,
+            _ => unreachable!(),
+        }
+    }
+}
+impl Into<i8> for Axis {
+    fn into(self) -> i8 {
+        match self {
+            Axis::X => 0,
+            Axis::Y => 1,
+        }
     }
 }

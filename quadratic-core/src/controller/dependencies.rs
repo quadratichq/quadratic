@@ -12,7 +12,7 @@ impl GridController {
         let mut dependent_cells = HashSet::new();
 
         self.grid.sheets().iter().for_each(|sheet| {
-            sheet.data_tables.iter().for_each(|(pos, code_run)| {
+            sheet.iter_code_runs().for_each(|(pos, code_run)| {
                 code_run.cells_accessed.iter().for_each(|cell_accessed| {
                     if sheet_rect.intersects(*cell_accessed) {
                         dependent_cells.insert(pos.to_sheet_pos(sheet.id));
@@ -37,7 +37,7 @@ mod test {
 
     use crate::{
         controller::GridController,
-        grid::{CodeCellLanguage, CodeRun, CodeRunResult},
+        grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
         CellValue, Pos, SheetPos, SheetRect, Value,
     };
     use serial_test::parallel;
@@ -67,19 +67,23 @@ mod test {
             sheet_id,
         };
         cells_accessed.insert(sheet_rect);
+        let code_run = CodeRun {
+            formatted_code_string: None,
+            std_err: None,
+            std_out: None,
+            error: None,
+            return_type: Some("text".into()),
+            line_number: None,
+            output_type: None,
+            cells_accessed: cells_accessed.clone(),
+        };
         sheet.set_data_table(
             Pos { x: 0, y: 2 },
-            Some(CodeRun {
-                formatted_code_string: None,
-                last_modified: Utc::now(),
-                std_err: None,
-                std_out: None,
+            Some(DataTable {
+                kind: DataTableKind::CodeRun(code_run),
+                value: Value::Single(CellValue::Text("test".to_string())),
                 spill_error: false,
-                result: CodeRunResult::Ok(Value::Single(CellValue::Text("test".to_string()))),
-                return_type: Some("text".into()),
-                line_number: None,
-                output_type: None,
-                cells_accessed: cells_accessed.clone(),
+                last_modified: Utc::now(),
             }),
         );
         let sheet_pos_02 = SheetPos {

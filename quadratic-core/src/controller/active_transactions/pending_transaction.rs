@@ -12,7 +12,7 @@ use crate::{
     controller::{
         execution::TransactionType, operations::operation::Operation, transaction::Transaction,
     },
-    grid::{sheet::validations::validation::Validation, CodeCellLanguage, CodeRun, SheetId},
+    grid::{sheet::validations::validation::Validation, CodeCellLanguage, DataTable, SheetId},
     selection::Selection,
     viewport::ViewportBuffer,
     Pos, SheetPos, SheetRect,
@@ -204,7 +204,7 @@ impl PendingTransaction {
     }
 
     /// Adds a code cell, html cell and image cell to the transaction from a CodeRun
-    pub fn add_from_code_run(&mut self, sheet_id: SheetId, pos: Pos, code_run: &Option<CodeRun>) {
+    pub fn add_from_code_run(&mut self, sheet_id: SheetId, pos: Pos, code_run: &Option<DataTable>) {
         if let Some(code_run) = &code_run {
             self.add_code_cell(sheet_id, pos);
             if code_run.is_html() {
@@ -263,7 +263,7 @@ impl PendingTransaction {
 mod tests {
     use crate::{
         controller::operations::operation::Operation,
-        grid::{CodeRunResult, SheetId},
+        grid::{CodeRun, DataTableKind, SheetId},
         CellValue, Value,
     };
 
@@ -352,14 +352,19 @@ mod tests {
             std_err: None,
             formatted_code_string: None,
             cells_accessed: HashSet::new(),
-            result: CodeRunResult::Ok(Value::Single(CellValue::Html("html".to_string()))),
+            error: None,
             return_type: None,
             line_number: None,
             output_type: None,
+        };
+
+        let data_table = DataTable {
+            kind: DataTableKind::CodeRun(code_run),
+            value: Value::Single(CellValue::Html("html".to_string())),
             spill_error: false,
             last_modified: Utc::now(),
         };
-        transaction.add_from_code_run(sheet_id, pos, &Some(code_run));
+        transaction.add_from_code_run(sheet_id, pos, &Some(data_table));
         assert_eq!(transaction.code_cells.len(), 1);
         assert_eq!(transaction.html_cells.len(), 1);
         assert_eq!(transaction.image_cells.len(), 0);
@@ -369,14 +374,19 @@ mod tests {
             std_err: None,
             formatted_code_string: None,
             cells_accessed: HashSet::new(),
-            result: CodeRunResult::Ok(Value::Single(CellValue::Image("image".to_string()))),
+            error: None,
             return_type: None,
             line_number: None,
             output_type: None,
+        };
+
+        let data_table = DataTable {
+            kind: DataTableKind::CodeRun(code_run),
+            value: Value::Single(CellValue::Image("image".to_string())),
             spill_error: false,
             last_modified: Utc::now(),
         };
-        transaction.add_from_code_run(sheet_id, pos, &Some(code_run));
+        transaction.add_from_code_run(sheet_id, pos, &Some(data_table));
         assert_eq!(transaction.code_cells.len(), 1);
         assert_eq!(transaction.html_cells.len(), 1);
         assert_eq!(transaction.image_cells.len(), 1);

@@ -115,7 +115,7 @@ mod tests {
     use crate::controller::active_transactions::pending_transaction::PendingTransaction;
     use crate::controller::GridController;
     use crate::grid::js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial};
-    use crate::grid::{CellAlign, CodeCellLanguage, CodeRun, CodeRunResult};
+    use crate::grid::{CellAlign, CodeCellLanguage, CodeRun, DataTable, DataTableKind};
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
     use crate::{Array, CellValue, Pos, Rect, SheetPos, Value};
 
@@ -429,17 +429,21 @@ mod tests {
         let code_run = CodeRun {
             std_err: None,
             std_out: None,
-            result: CodeRunResult::Ok(Value::Array(Array::from(vec![vec!["1"]]))),
+            error: None,
             return_type: Some("number".into()),
             line_number: None,
             output_type: None,
-            spill_error: false,
-            last_modified: Utc::now(),
             cells_accessed: HashSet::new(),
             formatted_code_string: None,
         };
+        let data_table = DataTable {
+            kind: DataTableKind::CodeRun(code_run),
+            value: Value::Array(Array::from(vec![vec!["1"]])),
+            spill_error: false,
+            last_modified: Utc::now(),
+        };
         let pos = Pos { x: 0, y: 0 };
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_data_table(pos, Some(code_run.clone()));
+        sheet.set_data_table(pos, Some(data_table.clone()));
     }
 }

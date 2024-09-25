@@ -386,7 +386,13 @@ mod tests {
         );
         assert_eq!(sheet.data_tables.len(), 10);
         assert_eq!(
-            sheet.data_tables.get(&Pos { x: 2, y: 6 }).unwrap().std_err,
+            sheet
+                .data_tables
+                .get(&Pos { x: 2, y: 6 })
+                .unwrap()
+                .code_run()
+                .unwrap()
+                .std_err,
             Some("x is not defined".into())
         );
     }

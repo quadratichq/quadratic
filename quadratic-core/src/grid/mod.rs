@@ -9,6 +9,7 @@ pub use borders::{
 pub use bounds::GridBounds;
 pub use code_run::*;
 pub use column::{Column, ColumnData};
+pub use data_table::*;
 pub use formatting::{
     Bold, CellAlign, CellFmtAttr, CellVerticalAlign, CellWrap, FillColor, Italic, NumericCommas,
     NumericDecimals, NumericFormat, NumericFormatKind, RenderSize, TextColor,
@@ -24,6 +25,7 @@ mod borders;
 mod bounds;
 mod code_run;
 mod column;
+mod data_table;
 pub mod file;
 pub mod formats;
 pub mod formatting;

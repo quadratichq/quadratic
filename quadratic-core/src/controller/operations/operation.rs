@@ -7,7 +7,7 @@ use crate::{
     grid::{
         file::sheet_schema::SheetSchema, formats::Formats, formatting::CellFmtArray,
         js_types::JsRowHeight, sheet::borders::BorderStyleCellUpdates,
-        sheet::validations::validation::Validation, CodeRun, Sheet, SheetBorders, SheetId,
+        sheet::validations::validation::Validation, DataTable, Sheet, SheetBorders, SheetId,
     },
     selection::Selection,
     SheetPos, SheetRect,
@@ -26,7 +26,7 @@ pub enum Operation {
     },
     SetCodeRun {
         sheet_pos: SheetPos,
-        code_run: Option<CodeRun>,
+        code_run: Option<DataTable>,
         index: usize,
     },
     ComputeCode {

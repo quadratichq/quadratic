@@ -197,18 +197,22 @@ mod test {
                 code: "code".to_string(),
             }),
         );
+        let code_run = CodeRun {
+            formatted_code_string: None,
+            output_type: None,
+            std_err: None,
+            std_out: None,
+            error: None,
+            cells_accessed: HashSet::new(),
+            return_type: None,
+            line_number: None,
+        };
         sheet.set_data_table(
             Pos { x: 0, y: 0 },
-            Some(CodeRun {
-                formatted_code_string: None,
+            Some(DataTable {
+                kind: DataTableKind::CodeRun(code_run),
+                value: Value::Single(CellValue::Image("image".to_string())),
                 spill_error: false,
-                output_type: None,
-                std_err: None,
-                std_out: None,
-                result: CodeRunResult::Ok(Value::Single(CellValue::Image("image".to_string()))),
-                cells_accessed: HashSet::new(),
-                return_type: None,
-                line_number: None,
                 last_modified: Utc::now(),
             }),
         );

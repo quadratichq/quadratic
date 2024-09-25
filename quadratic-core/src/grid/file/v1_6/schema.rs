@@ -8,7 +8,9 @@ use std::{
 use uuid::Uuid;
 
 use super::schema_validation::Validations;
+pub use crate::grid::file::v1_5::run_error::Axis;
 pub use v1_5::RunErrorMsg;
+pub use v1_5::Span;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GridSchema {

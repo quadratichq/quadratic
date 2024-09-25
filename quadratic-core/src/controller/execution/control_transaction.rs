@@ -9,7 +9,7 @@ use crate::controller::transaction::Transaction;
 use crate::controller::transaction_types::JsCodeResult;
 use crate::error_core::Result;
 use crate::grid::js_types::JsHtmlOutput;
-use crate::grid::{CodeRun, CodeRunResult};
+use crate::grid::{CodeRun, DataTable, DataTableKind};
 use crate::parquet::parquet_to_vec;
 use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
 use crate::{Pos, RunError, RunErrorMsg, Value};
@@ -250,27 +250,33 @@ impl GridController {
                 return_type = format!("{return_type}\n{extra}");
             }
 
-            let result = if let Some(error_msg) = &std_err {
-                let msg = RunErrorMsg::PythonError(error_msg.clone().into());
-                CodeRunResult::Err(RunError { span: None, msg })
-            } else {
-                CodeRunResult::Ok(Value::Array(array.into()))
-            };
-
+            let error = std_err.to_owned().map(|msg| RunError {
+                span: None,
+                msg: RunErrorMsg::PythonError(msg.into()),
+            });
             let code_run = CodeRun {
                 formatted_code_string: None,
-                result,
-                return_type: Some(return_type.clone()),
+                error,
+                return_type: Some(return_type.to_owned()),
                 line_number: Some(1),
                 output_type: Some(return_type),
                 std_out,
-                std_err,
+                std_err: std_err.to_owned(),
+                cells_accessed: transaction.cells_accessed.to_owned(),
+            };
+            let value = if std_err.is_some() {
+                Value::default() // TODO(ddimaria): this will be an empty vec
+            } else {
+                Value::Array(array.into())
+            };
+            let data_table = DataTable {
+                kind: DataTableKind::CodeRun(code_run),
+                value,
                 spill_error: false,
                 last_modified: Utc::now(),
-                cells_accessed: transaction.cells_accessed.clone(),
             };
 
-            self.finalize_code_run(&mut transaction, current_sheet_pos, Some(code_run), None);
+            self.finalize_code_run(&mut transaction, current_sheet_pos, Some(data_table), None);
             transaction.waiting_for_async = None;
             self.start_transaction(&mut transaction);
             self.finalize_transaction(transaction);
