@@ -70,6 +70,8 @@ impl Sheet {
                 fill_color: column.fill_color.get(y),
                 render_size: column.render_size.get(y),
                 date_time: column.date_time.get(y),
+                underline: column.underline.get(y),
+                strike_through: column.strike_through.get(y),
             })
             .filter(|format| !format.is_default())
     }
