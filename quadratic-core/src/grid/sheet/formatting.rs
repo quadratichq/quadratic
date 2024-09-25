@@ -1,13 +1,9 @@
-use crate::{
-    grid::{
-        formats::{format_update::FormatUpdate, Formats},
-        CellFmtAttr,
-    },
-    selection::Selection,
-    Pos, Rect, RunLengthEncoding, SheetRect,
-};
-
 use super::Sheet;
+use crate::grid::formats::format_update::FormatUpdate;
+use crate::grid::formats::Formats;
+use crate::grid::CellFmtAttr;
+use crate::selection::Selection;
+use crate::{Pos, Rect, RunLengthEncoding, SheetRect};
 
 impl Sheet {
     /// Set the cell formatting for a sheet_rect.
@@ -57,10 +53,9 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
-    use crate::Rect;
+    use serial_test::parallel;
 
     use super::*;
-    use serial_test::parallel;
 
     #[test]
     #[parallel]
@@ -82,5 +77,7 @@ mod tests {
         assert_eq!(format.text_color, Some(None));
         assert_eq!(format.fill_color, Some(None));
         assert_eq!(format.render_size, Some(None));
+        assert_eq!(format.underline, Some(None));
+        assert_eq!(format.strike_through, Some(None));
     }
 }

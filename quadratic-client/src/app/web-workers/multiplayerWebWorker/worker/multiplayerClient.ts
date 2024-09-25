@@ -33,6 +33,14 @@ class MultiplayerClient {
         multiplayerCore.init(e.ports[0]);
         break;
 
+      case 'clientMultiplayerOnline':
+        multiplayerServer.online();
+        break;
+
+      case 'clientMultiplayerOffline':
+        multiplayerServer.offline();
+        break;
+
       case 'clientMultiplayerMouseMove':
         multiplayerServer.userUpdate.x = e.data.x;
         multiplayerServer.userUpdate.y = e.data.y;

@@ -1,20 +1,14 @@
 use code_run::CodeRunResult;
 
-use crate::{
-    grid::{
-        code_run,
-        formats::format::Format,
-        js_types::{
-            JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
-            JsRenderCodeCellState, JsRenderFill, JsSheetFill, JsValidationWarning,
-        },
-        CellAlign, CodeCellLanguage, CodeRun, Column,
-    },
-    renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-    CellValue, Pos, Rect, RunError, RunErrorMsg, Value,
-};
-
 use super::Sheet;
+use crate::grid::formats::format::Format;
+use crate::grid::js_types::{
+    JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
+    JsRenderCodeCellState, JsRenderFill, JsSheetFill, JsValidationWarning,
+};
+use crate::grid::{code_run, CellAlign, CodeCellLanguage, CodeRun, Column};
+use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
+use crate::{CellValue, Pos, Rect, RunError, RunErrorMsg, Value};
 
 impl Sheet {
     /// checks columns for any column that has data that might render
@@ -112,6 +106,8 @@ impl Sheet {
                     text_color: format.text_color,
                     special,
                     number,
+                    underline: format.underline,
+                    strike_through: format.strike_through,
                 }
             }
             Some(column) => {
@@ -149,6 +145,8 @@ impl Sheet {
                     vertical_align: format.vertical_align,
                     special,
                     number,
+                    underline: format.underline,
+                    strike_through: format.strike_through,
                 }
             }
         }
