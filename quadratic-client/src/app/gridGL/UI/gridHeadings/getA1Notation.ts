@@ -21,14 +21,11 @@ function translateNumberToA1Notation(column: number): string {
  * @returns
  */
 export function getColumnA1Notation(column: number): string {
-  if (column < 0) return `n${translateNumberToA1Notation(-column - 1)}`;
   return translateNumberToA1Notation(column);
 }
 
 export function getRowA1Notation(row: number): string {
-  if (row > 0) return row.toString();
-  if (row === 0) return '0';
-  return `n${-row}`;
+  return row.toString();
 }
 
 export function getA1Notation(column: number, row: number): string {

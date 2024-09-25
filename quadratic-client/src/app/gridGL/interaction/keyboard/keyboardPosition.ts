@@ -313,7 +313,7 @@ function expandSelection(deltaX: number, deltaY: number) {
 
 function moveCursor(deltaX: number, deltaY: number) {
   const cursor = sheets.sheet.cursor;
-  const newPos = { x: cursor.cursorPosition.x + deltaX, y: cursor.cursorPosition.y + deltaY };
+  const newPos = { x: Math.max(0, cursor.cursorPosition.x + deltaX), y: Math.max(0, cursor.cursorPosition.y + deltaY) };
   cursor.changePosition({
     columnRow: null,
     multiCursor: null,
