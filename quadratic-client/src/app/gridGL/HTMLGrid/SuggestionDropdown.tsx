@@ -36,7 +36,6 @@ export const SuggestionDropDown = () => {
       }
       const lowerCaseValue = input.toLowerCase();
       const possibleValues = list.filter((v) => v.toLowerCase().startsWith(lowerCaseValue));
-      console.log(possibleValues.length);
       if (possibleValues.length === 1) {
         setFilteredList(undefined);
         inlineEditorMonaco.autocompleteShowingList = false;
@@ -117,7 +116,7 @@ export const SuggestionDropDown = () => {
       <div className="block w-full px-1">
         {filteredList.map((item, i) => (
           <div
-            className={cn('block w-full whitespace-nowrap px-1 hover:bg-gray-100', i === index ? 'bg-gray-100' : '')}
+            className={cn('block w-full whitespace-nowrap px-1 hover:bg-gray-100', i === index ? 'bg-gray-200' : '')}
             key={item}
             onClick={() => changeValue(item)}
           >
