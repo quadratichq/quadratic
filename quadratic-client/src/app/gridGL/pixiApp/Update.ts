@@ -54,6 +54,7 @@ export class Update {
 
   updateViewport(): void {
     const { viewport } = pixiApp;
+
     let dirty = false;
     if (this.lastViewportScale !== viewport.scale.x) {
       this.lastViewportScale = viewport.scale.x;
@@ -82,6 +83,16 @@ export class Update {
     }
   }
 
+  private clampViewport() {
+    const headingSize = pixiApp.headings.headingSize;
+    if (pixiApp.viewport.x > headingSize.width) {
+      pixiApp.viewport.x = headingSize.width;
+    }
+    if (pixiApp.viewport.y > headingSize.height) {
+      pixiApp.viewport.y = headingSize.height;
+    }
+  }
+
   // update loop w/debug checks
   private update = (): void => {
     if (pixiApp.destroyed) return;
@@ -101,7 +112,6 @@ export class Update {
 
     let rendererDirty =
       pixiApp.gridLines.dirty ||
-      pixiApp.axesLines.dirty ||
       pixiApp.headings.dirty ||
       pixiApp.boxCells.dirty ||
       pixiApp.multiplayerCursor.dirty ||
@@ -115,19 +125,21 @@ export class Update {
     if (rendererDirty && debugShowWhyRendering) {
       console.log(
         `dirty: ${pixiApp.viewport.dirty ? 'viewport ' : ''}${pixiApp.gridLines.dirty ? 'gridLines ' : ''}${
-          pixiApp.axesLines.dirty ? 'axesLines ' : ''
-        }${pixiApp.headings.dirty ? 'headings ' : ''}${pixiApp.cursor.dirty ? 'cursor ' : ''}${
+          pixiApp.headings.dirty ? 'headings ' : ''
+        }${pixiApp.cursor.dirty ? 'cursor ' : ''}${
           pixiApp.multiplayerCursor.dirty ? 'multiplayer cursor' : pixiApp.cellImages.dirty ? 'uiImageResize' : ''
         }
           ${pixiApp.multiplayerCursor.dirty ? 'multiplayer cursor' : ''}${pixiApp.cellMoving.dirty ? 'cellMoving' : ''}`
       );
     }
 
+    if (pixiApp.viewport.dirty) {
+      this.clampViewport();
+    }
+
     debugTimeReset();
     pixiApp.gridLines.update();
     debugTimeCheck('[Update] gridLines');
-    pixiApp.axesLines.update();
-    debugTimeCheck('[Update] axesLines');
     pixiApp.headings.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] headings');
     pixiApp.boxCells.update();

@@ -70,7 +70,6 @@ class PixiAppSettings {
       this.settings = defaultGridSettings;
     }
     pixiApp.gridLines.dirty = true;
-    pixiApp.axesLines.dirty = true;
     pixiApp.headings.dirty = true;
 
     if (
@@ -126,9 +125,6 @@ class PixiAppSettings {
 
   get showGridLines(): boolean {
     return !this.settings.presentationMode && this.settings.showGridLines;
-  }
-  get showGridAxes(): boolean {
-    return !this.settings.presentationMode && this.settings.showGridAxes;
   }
   get showHeadings(): boolean {
     return !this.settings.presentationMode && this.settings.showHeadings;

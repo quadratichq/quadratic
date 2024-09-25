@@ -1,4 +1,3 @@
-import { HEADING_SIZE } from '@/shared/constants/gridConstants';
 import { Point } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { intersects } from '../helpers/intersects';
@@ -126,7 +125,9 @@ export function moveViewport(options: {
   const sheet = sheets.sheet;
   const bounds = pixiApp.viewport.getVisibleBounds();
   const zoom = pixiApp.viewport.scale.x;
-  const adjust = pixiAppSettings.showHeadings ? HEADING_SIZE / zoom : 0;
+  const { width, height } = pixiApp.headings.headingSize;
+  const adjustX = width / zoom;
+  const adjustY = height / zoom;
 
   if (center) {
     const cell = sheet.getCellOffsets(center.x, center.y);
@@ -134,12 +135,12 @@ export function moveViewport(options: {
     pixiApp.viewport.moveCenter(cell.x + cell.width / 2, cell.y + cell.height / 2);
   } else if (topLeft) {
     const cell = sheet.getCellOffsets(topLeft.x, topLeft.y);
-    if (!force && intersects.rectanglePoint(bounds, new Point(cell.x - adjust, cell.y - adjust))) return;
-    pixiApp.viewport.moveCorner(cell.x - adjust, cell.y - adjust);
+    if (!force && intersects.rectanglePoint(bounds, new Point(cell.x - adjustX, cell.y - adjustY))) return;
+    pixiApp.viewport.moveCorner(cell.x - adjustX, cell.y - adjustY);
   } else if (pageUp) {
-    pixiApp.viewport.moveCorner(bounds.x, bounds.y - (bounds.height - adjust));
+    pixiApp.viewport.moveCorner(bounds.x, bounds.y - (bounds.height - adjustY));
   } else if (pageDown) {
-    pixiApp.viewport.moveCorner(bounds.x, bounds.y + (bounds.height - adjust));
+    pixiApp.viewport.moveCorner(bounds.x, bounds.y + (bounds.height - adjustY));
   }
 
   pixiApp.viewportChanged();

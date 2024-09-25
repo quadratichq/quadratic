@@ -5,7 +5,6 @@ import { debugGridSettings } from '../../debugFlags';
 
 const SETTINGS_KEY = 'viewSettings';
 export interface GridSettings {
-  showGridAxes: boolean;
   showHeadings: boolean;
   showGridLines: boolean;
   showCellTypeOutlines: boolean;
@@ -15,7 +14,6 @@ export interface GridSettings {
 }
 
 export const defaultGridSettings: GridSettings = {
-  showGridAxes: true,
   showHeadings: true,
   showGridLines: true,
   showCellTypeOutlines: true,
@@ -59,14 +57,12 @@ export const gridSettingsAtom = atom({
 });
 
 interface GridSettingsReturn {
-  showGridAxes: boolean;
   showHeadings: boolean;
   showGridLines: boolean;
   showCellTypeOutlines: boolean;
   showA1Notation: boolean;
   showCodePeek: boolean;
   presentationMode: boolean;
-  setShowGridAxes: (value: boolean) => void;
   setShowHeadings: (value: boolean) => void;
   setShowGridLines: (value: boolean) => void;
   setShowCellTypeOutlines: (value: boolean) => void;
@@ -77,15 +73,6 @@ interface GridSettingsReturn {
 
 export const useGridSettings = (): GridSettingsReturn => {
   const [settings, setSettings] = useRecoilState(gridSettingsAtom);
-
-  const setShowGridAxes = (value: boolean) =>
-    setSettings((currentState) => {
-      if (value !== currentState.showGridAxes) {
-        mixpanel.track('[Grid].[Settings].setShowGridAxes', { value });
-        return { ...currentState, showGridAxes: value };
-      }
-      return currentState;
-    });
 
   const setShowHeadings = (value: boolean) =>
     setSettings((currentState) => {
@@ -145,7 +132,6 @@ export const useGridSettings = (): GridSettingsReturn => {
 
   return {
     ...settings,
-    setShowGridAxes,
     setShowHeadings,
     setShowGridLines,
     setShowCellTypeOutlines,

@@ -38,14 +38,6 @@ export const ViewMenubarMenu = () => {
         </MenubarItem>
         <MenubarItem
           onClick={() => {
-            settings.setShowGridAxes(!settings.showGridAxes);
-            focusGrid();
-          }}
-        >
-          <MenubarItemCheckbox checked={settings.showGridAxes} /> Show grid axis
-        </MenubarItem>
-        <MenubarItem
-          onClick={() => {
             settings.setShowGridLines(!settings.showGridLines);
             focusGrid();
           }}

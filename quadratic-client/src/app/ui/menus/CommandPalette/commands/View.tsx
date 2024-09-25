@@ -25,22 +25,6 @@ const commands: CommandGroup = {
     },
 
     {
-      label: 'Axis',
-      Component: (props) => {
-        const settings = useGridSettings();
-        return (
-          <CommandPaletteListItem
-            {...props}
-            icon={<Checkbox checked={settings.showGridAxes} />}
-            action={() => {
-              settings.setShowGridAxes(!settings.showGridAxes);
-            }}
-          />
-        );
-      },
-    },
-
-    {
       label: 'Grid lines',
       Component: (props) => {
         const settings = useGridSettings();

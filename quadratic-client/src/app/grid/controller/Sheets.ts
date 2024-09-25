@@ -185,7 +185,6 @@ class Sheets {
       this._current = value;
       pixiApp.viewport.dirty = true;
       pixiApp.gridLines.dirty = true;
-      pixiApp.axesLines.dirty = true;
       pixiApp.headings.dirty = true;
       pixiApp.cursor.dirty = true;
       pixiApp.multiplayerCursor.dirty = true;
