@@ -158,7 +158,6 @@ export function HoverCell() {
     const addCell = (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => {
       setCell(cell);
       if (cell && !hoveringRef.current) {
-        console.log(hoveringRef.current);
         setOffsets(sheets.sheet.getCellOffsets(cell.x, cell.y));
         setDelay('validationId' in cell ? false : true);
         setLoading(true);
