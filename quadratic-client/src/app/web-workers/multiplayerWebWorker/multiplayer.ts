@@ -60,6 +60,8 @@ export class Multiplayer {
       }
     };
     window.addEventListener('beforeunload', alertUser);
+    window.addEventListener('online', () => this.sendOnline());
+    window.addEventListener('offline', () => this.sendOffline());
     events.on('changeSheet', this.sendChangeSheet);
     events.on('pythonState', this.pythonState);
     events.on('multiplayerState', (state: MultiplayerState) => {
@@ -223,6 +225,14 @@ export class Multiplayer {
 
   private sendChangeSheet = () => {
     this.send({ type: 'clientMultiplayerSheet', sheetId: sheets.sheet.id });
+  };
+
+  private sendOnline = () => {
+    this.send({ type: 'clientMultiplayerOnline' });
+  };
+
+  private sendOffline = () => {
+    this.send({ type: 'clientMultiplayerOffline' });
   };
 
   sendCellEdit(options: {
