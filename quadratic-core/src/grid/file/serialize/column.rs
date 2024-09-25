@@ -180,6 +180,8 @@ pub(crate) fn import_column_builder(
             set_column_format_string(&mut col.fill_color, column.fill_color);
             set_column_format_render_size(&mut col.render_size, column.render_size);
             set_column_format_string(&mut col.date_time, column.date_time);
+            set_column_format_bool(&mut col.underline, column.underline);
+            set_column_format_bool(&mut col.strike_through, column.strike_through);
 
             // todo: there's probably a better way of doing this
             for (y, value) in column.values.into_iter() {
@@ -390,6 +392,8 @@ pub(crate) fn export_column_builder(
                     render_size: export_column_data_render_size(column.render_size),
                     date_time: export_column_data_string(column.date_time),
                     values: export_values(column.values),
+                    underline: export_column_data_bool(column.underline),
+                    strike_through: export_column_data_bool(column.strike_through),
                 },
             )
         })
