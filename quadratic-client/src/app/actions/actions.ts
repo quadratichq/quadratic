@@ -1,4 +1,5 @@
 export enum Action {
+  CmdClick = 'cmd_click',
   FileDownload = 'file_download',
   FileShare = 'file_share',
   FileRename = 'file_rename',
@@ -77,6 +78,8 @@ export enum Action {
   ClearFormattingBorders = 'clear_formatting_borders',
   ToggleBold = 'toggle_bold',
   ToggleItalic = 'toggle_italic',
+  ToggleUnderline = 'toggle_underline',
+  ToggleStrikeThrough = 'toggle_strike_through',
   FillRight = 'fill_right',
   FillDown = 'fill_down',
   CancelExecution = 'cancel_execution',

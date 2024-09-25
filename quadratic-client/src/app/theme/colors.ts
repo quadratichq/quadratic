@@ -55,6 +55,7 @@ export const colors = {
   languageMysql: '#00758f',
   languageMssql: '#cfd8dc',
   languageJavascript: '#ca8a04',
+  link: '#2463eb',
 
   // todo: this can be change for dark background
   backgroundColor: 0xffffff,
