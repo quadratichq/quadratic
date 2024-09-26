@@ -86,6 +86,12 @@ pub struct PendingTransaction {
 
     // sheets w/updated fill cells
     pub fill_cells: HashSet<SheetId>,
+
+    // sheets w/updated offsets
+    pub sheet_info: HashSet<SheetId>,
+
+    // offsets modified (sheet_id, column, row, new_size)
+    pub offsets_modified: Vec<(SheetId, Option<i64>, Option<i64>, f64)>,
 }
 
 impl Default for PendingTransaction {
@@ -114,6 +120,8 @@ impl Default for PendingTransaction {
             html_cells: HashMap::new(),
             image_cells: HashMap::new(),
             fill_cells: HashSet::new(),
+            sheet_info: HashSet::new(),
+            offsets_modified: Vec::new(),
         }
     }
 }

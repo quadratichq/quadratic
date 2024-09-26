@@ -158,7 +158,10 @@ impl GridController {
                             if let Ok(html) = serde_json::to_string(&html) {
                                 crate::wasm_bindings::js::jsUpdateHtml(html);
                             } else {
-                                dbgjs!("Error serializing html");
+                                dbgjs!(format!(
+                                    "Error serializing html in finalize_transaction for {:?}",
+                                    pos
+                                ));
                             }
                         });
                     }
@@ -179,6 +182,17 @@ impl GridController {
                     sheet.resend_fills();
                 }
             });
+
+            transaction.sheet_info.iter().for_each(|sheet_id| {
+                self.send_sheet_info(*sheet_id);
+            });
+
+            transaction
+                .offsets_modified
+                .iter()
+                .for_each(|(sheet_id, column, row, new_size)| {
+                    self.send_offsets_modified(*sheet_id, *column, *row, *new_size);
+                });
         }
     }
 
