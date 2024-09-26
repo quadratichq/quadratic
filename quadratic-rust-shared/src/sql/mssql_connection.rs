@@ -315,7 +315,6 @@ mod tests {
     use super::*;
     // use std::io::Read;
     use bigdecimal::BigDecimal;
-    use tracing_test::traced_test;
 
     fn new_mssql_connection() -> MsSqlConnection {
         MsSqlConnection::new(
@@ -335,7 +334,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[traced_test]
     async fn test_mssql_connection() {
         let (_, client) = setup().await;
 
@@ -343,7 +341,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[traced_test]
     async fn test_mssql_query_to_arrow() {
         let (_, client) = setup().await;
         let sql = "SELECT TOP 1 * FROM [dbo].[all_native_data_types] ORDER BY id";
@@ -439,7 +436,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[traced_test]
     async fn test_mysql_schema() {
         let connection = new_mssql_connection();
         let mut client = connection.connect().await.unwrap();

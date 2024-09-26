@@ -2,10 +2,11 @@ use httpmock::prelude::*;
 use httpmock::Recording;
 use std::path::PathBuf;
 
-pub static FIXTURES_DIR: &str = "./fixtures";
+include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/auto_gen_path.rs"));
 
 pub fn scenario_path(scenario: &str) -> PathBuf {
-    PathBuf::from(format!("{FIXTURES_DIR}/{scenario}.yml"))
+    let scenario_path = format!("{FIXTURES_PATH}/{scenario}.yml");
+    PathBuf::from(scenario_path)
 }
 
 pub fn get_server(record: bool, scenario: &str, url: &str) -> MockServer {
@@ -46,7 +47,7 @@ pub fn record_start<'a>(recording_server: &'a MockServer) -> Recording<'a> {
 
 pub async fn record_stop(scenario: &str, recording: Recording<'_>) {
     let path = scenario_path(scenario);
-    let fixtures_path = PathBuf::from(FIXTURES_DIR);
+    let fixtures_path = PathBuf::from(FIXTURES_PATH);
     let saved_path = recording
         .save_to_async(fixtures_path, scenario)
         .await

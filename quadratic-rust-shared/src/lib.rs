@@ -9,7 +9,7 @@ pub mod quadratic_api;
 pub mod sql;
 pub mod utils;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test"))]
 pub mod test;
 
 // pub use aws::*;

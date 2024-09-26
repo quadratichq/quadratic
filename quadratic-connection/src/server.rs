@@ -60,8 +60,8 @@ pub(crate) struct SqlQuery {
 
 #[derive(Serialize, PartialEq, Debug)]
 pub(crate) struct TestResponse {
-    connected: bool,
-    message: Option<String>,
+    pub(crate) connected: bool,
+    pub(crate) message: Option<String>,
 }
 
 impl TestResponse {

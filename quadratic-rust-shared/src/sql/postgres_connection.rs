@@ -267,7 +267,6 @@ mod tests {
 
     use super::*;
     // use std::io::Read;
-    use tracing_test::traced_test;
 
     fn new_postgres_connection() -> PostgresConnection {
         PostgresConnection::new(
@@ -280,7 +279,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[traced_test]
     async fn test_postgres_connection() {
         let connection = new_postgres_connection();
         let mut pool = connection.connect().await.unwrap();
@@ -300,7 +298,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[traced_test]
     async fn test_postgres_schema() {
         let connection = new_postgres_connection();
         let mut pool = connection.connect().await.unwrap();

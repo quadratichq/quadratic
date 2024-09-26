@@ -18,6 +18,7 @@ bigdecimal = "0.3.0" # need this fixed to the sqlx dependency
 bytes = "1.6.0"
 chrono = "0.4.31"
 futures-util = "0.3.30"
+httpmock = { git = "https://github.com/quadratichq/httpmock", version = "0.8.0-alpha.1", features = ["proxy", "record"], optional = true }
 jsonwebtoken = "9.2.0"
 parquet = { version = "53.0.0", default-features = false, features = [
   "arrow",
@@ -55,8 +56,8 @@ uuid = { version = "1.6.1", features = ["serde", "v4"] }
 
 [features]
 record-request-mock = []
+test = ["httpmock"]
 
 [dev-dependencies]
-tracing-test = "0.2.4"
 arrow = { version = "53.0.0", features = ["prettyprint"] }
 httpmock = { git = "https://github.com/quadratichq/httpmock", version = "0.8.0-alpha.1", features = ["proxy", "record"] }

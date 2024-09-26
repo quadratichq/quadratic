@@ -228,7 +228,6 @@ mod tests {
     // use std::io::Read;
     use bigdecimal::BigDecimal;
     use serde_json::json;
-    use tracing_test::traced_test;
 
     fn new_mysql_connection() -> MySqlConnection {
         MySqlConnection::new(
@@ -248,7 +247,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[traced_test]
     async fn test_mysql_connection() {
         let (_, pool) = setup().await;
 
@@ -256,7 +254,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[traced_test]
     async fn test_mysql_query_to_arrow() {
         let (_, pool) = setup().await;
         let mut pool = pool.unwrap();
@@ -321,7 +318,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[traced_test]
     async fn test_mysql_schema() {
         let connection = new_mysql_connection();
         let mut pool = connection.connect().await.unwrap();

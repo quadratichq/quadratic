@@ -49,10 +49,10 @@ async fn get_connection(
             created_date: "".into(),
             updated_date: "".into(),
             type_details: SnowflakeConnection {
-                account_identifier: "0.0.0.0".into(),
-                username: "sa".into(),
-                password: "yourStrong(!)Password".into(),
-                database: "AllTypes".into(),
+                account_identifier: "TEST".into(),
+                username: "TEST".into(),
+                password: "TEST".into(),
+                database: "ALL_NATIVE_DATA_TYPES".into(),
                 warehouse: None,
                 schema: None,
                 role: None,
@@ -108,37 +108,34 @@ pub(crate) async fn schema(
 #[cfg(test)]
 mod tests {
 
-    use std::str::FromStr;
-
     use super::*;
-    use crate::num_vec;
-    use crate::test_util::{get_claims, new_state, response_bytes, str_vec, validate_parquet};
-    use arrow::datatypes::Date32Type;
-    use arrow_schema::{DataType, TimeUnit};
+    use crate::test_util::{get_claims, new_state, response_bytes};
     use bytes::Bytes;
-    use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
     use http::StatusCode;
+    use quadratic_rust_shared::parquet::utils::compare_parquet_file_with_bytes;
     use quadratic_rust_shared::sql::schema::{SchemaColumn, SchemaTable};
+    use quadratic_rust_shared::test::get_snowflake_parquet_path;
     use tracing_test::traced_test;
     use uuid::Uuid;
 
+    // TODO(ddimaria): removing this test for now until we can record different queries (only single for now)
+    // #[tokio::test]
+    // #[traced_test]
+    // async fn snowflake_test_connection() {
+    //     let state = Extension(new_state().await);
+    //     let connection_id = Uuid::new_v4();
+    //     let claims = get_claims();
+    //     let (snowflake_connection, _) = get_connection(&state, &claims, &connection_id)
+    //         .await
+    //         .unwrap();
+    //     let response = test(state, axum::Json(snowflake_connection)).await;
+
+    //     assert!(response.0.connected);
+    // }
+
     #[tokio::test]
     #[traced_test]
-    async fn mssql_test_connection() {
-        let state = Extension(new_state().await);
-        let connection_id = Uuid::new_v4();
-        let claims = get_claims();
-        let (mysql_connection, _) = get_connection(&state, &claims, &connection_id)
-            .await
-            .unwrap();
-        let response = test(state, axum::Json(mysql_connection)).await;
-
-        assert_eq!(response.0, TestResponse::new(true, None));
-    }
-
-    #[tokio::test]
-    #[traced_test]
-    async fn mssql_schema() {
+    async fn snowflake_schema() {
         let connection_id = Uuid::new_v4();
         let state = Extension(new_state().await);
         let response = schema(Path(connection_id), state, get_claims())
@@ -149,174 +146,99 @@ mod tests {
             id: response.0.id,
             name: "".into(),
             r#type: "".into(),
-            database: "AllTypes".into(),
+            database: "ALL_NATIVE_DATA_TYPES".into(),
             tables: vec![SchemaTable {
-                name: "all_native_data_types".into(),
-                schema: "dbo".into(),
+                name: "ALL_NATIVE_DATA_TYPES".into(),
+                schema: "PUBLIC".into(),
                 columns: vec![
                     SchemaColumn {
-                        name: "id".into(),
-                        r#type: "int".into(),
-                        is_nullable: false,
-                    },
-                    SchemaColumn {
-                        name: "tinyint_col".into(),
-                        r#type: "tinyint".into(),
+                        name: "INTEGER_COL".into(),
+                        r#type: "NUMBER".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "smallint_col".into(),
-                        r#type: "smallint".into(),
+                        name: "FLOAT_COL".into(),
+                        r#type: "FLOAT".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "int_col".into(),
-                        r#type: "int".into(),
+                        name: "NUMBER_COL".into(),
+                        r#type: "NUMBER".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "bigint_col".into(),
-                        r#type: "bigint".into(),
+                        name: "DECIMAL_COL".into(),
+                        r#type: "NUMBER".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "bit_col".into(),
-                        r#type: "bit".into(),
+                        name: "BOOLEAN_COL".into(),
+                        r#type: "BOOLEAN".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "decimal_col".into(),
-                        r#type: "decimal".into(),
+                        name: "VARCHAR_COL".into(),
+                        r#type: "TEXT".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "numeric_col".into(),
-                        r#type: "numeric".into(),
+                        name: "CHAR_COL".into(),
+                        r#type: "TEXT".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "money_col".into(),
-                        r#type: "money".into(),
+                        name: "STRING_COL".into(),
+                        r#type: "TEXT".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "smallmoney_col".into(),
-                        r#type: "smallmoney".into(),
+                        name: "BINARY_COL".into(),
+                        r#type: "BINARY".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "float_col".into(),
-                        r#type: "float".into(),
+                        name: "DATE_COL".into(),
+                        r#type: "DATE".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "real_col".into(),
-                        r#type: "real".into(),
+                        name: "TIME_COL".into(),
+                        r#type: "TIME".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "date_col".into(),
-                        r#type: "date".into(),
+                        name: "TIMESTAMP_NTZ_COL".into(),
+                        r#type: "TIMESTAMP_NTZ".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "time_col".into(),
-                        r#type: "time".into(),
+                        name: "TIMESTAMP_LTZ_COL".into(),
+                        r#type: "TIMESTAMP_LTZ".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "datetime2_col".into(),
-                        r#type: "datetime2".into(),
+                        name: "TIMESTAMP_TZ_COL".into(),
+                        r#type: "TIMESTAMP_TZ".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "datetimeoffset_col".into(),
-                        r#type: "datetimeoffset".into(),
+                        name: "VARIANT_COL".into(),
+                        r#type: "VARIANT".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "datetime_col".into(),
-                        r#type: "datetime".into(),
+                        name: "OBJECT_COL".into(),
+                        r#type: "OBJECT".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "smalldatetime_col".into(),
-                        r#type: "smalldatetime".into(),
+                        name: "ARRAY_COL".into(),
+                        r#type: "ARRAY".into(),
                         is_nullable: true,
                     },
                     SchemaColumn {
-                        name: "char_col".into(),
-                        r#type: "char".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "varchar_col".into(),
-                        r#type: "varchar".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "text_col".into(),
-                        r#type: "text".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "nchar_col".into(),
-                        r#type: "nchar".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "nvarchar_col".into(),
-                        r#type: "nvarchar".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "ntext_col".into(),
-                        r#type: "ntext".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "binary_col".into(),
-                        r#type: "binary".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "varbinary_col".into(),
-                        r#type: "varbinary".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "image_col".into(),
-                        r#type: "image".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "json_col".into(),
-                        r#type: "nvarchar".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "uniqueidentifier_col".into(),
-                        r#type: "uniqueidentifier".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "xml_col".into(),
-                        r#type: "xml".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "varchar_max_col".into(),
-                        r#type: "varchar".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "nvarchar_max_col".into(),
-                        r#type: "nvarchar".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "varbinary_max_col".into(),
-                        r#type: "varbinary".into(),
+                        name: "GEOGRAPHY_COL".into(),
+                        r#type: "GEOGRAPHY".into(),
                         is_nullable: true,
                     },
                 ],
@@ -328,103 +250,26 @@ mod tests {
 
     #[tokio::test]
     #[traced_test]
-    async fn mssql_query_all_data_types() {
+    async fn snowflake_query_all_data_types() {
         let connection_id = Uuid::new_v4();
         let sql_query = SqlQuery {
-            query: "SELECT TOP 1 * FROM [dbo].[all_native_data_types] ORDER BY id".into(),
+            query: "select * from all_native_data_types;".into(),
             connection_id,
         };
         let state = Extension(new_state().await);
         let data = query(state, get_claims(), Json(sql_query)).await.unwrap();
         let response = data.into_response();
 
-        let expected = vec![
-            (DataType::Int32, num_vec!(1_i32)),
-            (DataType::UInt8, num_vec!(255_u8)),
-            (DataType::Int16, num_vec!(32767_i16)),
-            (DataType::Int32, num_vec!(2147483647_i32)),
-            (DataType::Int64, num_vec!(9223372036854775807_i64)),
-            (DataType::Boolean, num_vec!(1_u8)),
-            (DataType::Float64, num_vec!(12345.67_f64)),
-            (DataType::Float64, num_vec!(12345.67_f64)),
-            (DataType::Float64, num_vec!(922337203685477.6_f64)),
-            (DataType::Float64, num_vec!(214748.3647_f64)),
-            (DataType::Float64, num_vec!(123456789.123456_f64)),
-            (DataType::Float32, num_vec!(123456.79_f32)),
-            (
-                DataType::Date32,
-                num_vec!(Date32Type::from_naive_date(
-                    NaiveDate::parse_from_str("2024-05-28", "%Y-%m-%d").unwrap(),
-                )),
-            ),
-            (
-                DataType::Time32(TimeUnit::Second),
-                num_vec!(NaiveTime::from_str("12:34:56.123456700")
-                    .unwrap()
-                    .num_seconds_from_midnight()),
-            ),
-            (
-                DataType::Timestamp(TimeUnit::Millisecond, None),
-                num_vec!(NaiveDateTime::from_str("2024-05-28T12:34:56.123456700")
-                    .unwrap()
-                    .and_utc()
-                    .timestamp_millis()),
-            ),
-            (
-                DataType::Timestamp(TimeUnit::Millisecond, None),
-                num_vec!(
-                    DateTime::<Local>::from_str("2024-05-28T16:04:56.123456700+05:30")
-                        .unwrap()
-                        .timestamp_millis()
-                ),
-            ),
-            (
-                DataType::Timestamp(TimeUnit::Millisecond, None),
-                num_vec!(NaiveDateTime::from_str("2024-05-28T12:34:56")
-                    .unwrap()
-                    .and_utc()
-                    .timestamp_millis()),
-            ),
-            (
-                DataType::Timestamp(TimeUnit::Millisecond, None),
-                num_vec!(NaiveDateTime::from_str("2024-05-28T12:34:00")
-                    .unwrap()
-                    .and_utc()
-                    .timestamp_millis()),
-            ),
-            (DataType::Utf8, str_vec("CHAR      ")),
-            (DataType::Utf8, str_vec("VARCHAR")),
-            (DataType::Utf8, str_vec("TEXT")),
-            (DataType::Utf8, str_vec("NCHAR     ")),
-            (DataType::Utf8, str_vec("NVARCHAR")),
-            (DataType::Utf8, str_vec("NTEXT")),
-            (
-                DataType::Utf8,
-                str_vec("\u{1}\u{2}\u{3}\u{4}\u{5}\0\0\0\0\0"),
-            ),
-            (DataType::Utf8, str_vec("\u{1}\u{2}\u{3}\u{4}\u{5}")),
-            (DataType::Utf8, str_vec("\u{1}\u{2}\u{3}\u{4}\u{5}")),
-            (DataType::Utf8, str_vec("{\"key\": \"value\"}")),
-            (
-                DataType::Utf8,
-                str_vec("abcb8303-a0a2-4392-848b-3b32181d224b"),
-            ),
-            (
-                DataType::Utf8,
-                str_vec("<root><element>value</element></root>"),
-            ),
-            (DataType::Utf8, str_vec("A".repeat(8000).as_str())),
-            (DataType::Utf8, str_vec("A".repeat(4000).as_str())),
-            (DataType::Utf8, str_vec("A".repeat(8000).as_str())),
-        ];
-
-        validate_parquet(response, expected).await;
+        assert!(compare_parquet_file_with_bytes(
+            &get_snowflake_parquet_path(),
+            response_bytes(response).await
+        ));
         // assert_eq!(response.status(), 200);
     }
 
     #[tokio::test]
     #[traced_test]
-    async fn mssql_query_max_response_bytes() {
+    async fn snowflake_query_max_response_bytes() {
         let connection_id = Uuid::new_v4();
         let sql_query = SqlQuery {
             query: "SELECT TOP 1 * FROM [dbo].[all_native_data_types] ORDER BY id".into(),
