@@ -158,7 +158,10 @@ impl GridController {
                             if let Ok(html) = serde_json::to_string(&html) {
                                 crate::wasm_bindings::js::jsUpdateHtml(html);
                             } else {
-                                dbgjs!("Error serializing html");
+                                dbgjs!(format!(
+                                    "Error serializing html in finalize_transaction for {:?}",
+                                    pos
+                                ));
                             }
                         });
                     }
