@@ -1,6 +1,6 @@
+import { CloseIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
-import { Cross2Icon } from '@radix-ui/react-icons';
 import React from 'react';
 import { FileListViewControlsDropdown, ViewPreferences } from './FilesListViewControlsDropdown';
 
@@ -27,7 +27,7 @@ export function FilesListViewControls({
             onClick={() => setFilterValue('')}
             aria-label="Clear filter"
           >
-            <Cross2Icon className={`h-4 w-4`} />
+            <CloseIcon className={`h-4 w-4`} />
           </Button>
         )}
       </div>

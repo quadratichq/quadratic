@@ -1,4 +1,3 @@
-import { deleteFile, downloadFileAction, duplicateFileAction, renameFileAction } from '@/app/actions';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import {
   Action as FileAction,
@@ -6,7 +5,9 @@ import {
   getActionFileDuplicate,
   getActionFileMove,
 } from '@/routes/api.files.$uuid';
+import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { DraftIcon, MoreVertIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button as Btn } from '@/shared/shadcn/ui/button';
 import {
@@ -19,11 +20,9 @@ import {
 import { Separator } from '@/shared/shadcn/ui/separator';
 import { cn } from '@/shared/shadcn/utils';
 import { timeAgo } from '@/shared/utils/timeAgo';
-import { DotsVerticalIcon, FileIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { useEffect, useRef, useState } from 'react';
 import { Link, SubmitOptions, useFetcher, useMatch, useSubmit } from 'react-router-dom';
-import { DialogRenameItem } from './DialogRenameItem';
 import { FilesListExampleFile, FilesListUserFile } from './FilesList';
 import { FilesListItemCore } from './FilesListItemCore';
 import { Layout, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
@@ -182,7 +181,7 @@ export function FilesListItemUserFile({
         // it becomes visible.
         className="absolute -top-[1px] left-0 z-0 flex items-center gap-1 rounded-full border border-background bg-primary px-2 py-0.5 text-sm text-primary-foreground opacity-0"
       >
-        <FileIcon />
+        <DraftIcon />
         {file.name.length > 16 ? file.name.slice(0, 16) + '…' : file.name}
       </div>
       <Link
@@ -209,13 +208,12 @@ export function FilesListItemUserFile({
                     variant="ghost"
                     size="icon"
                     className={cn(
-                      viewPreferences.layout === Layout.Grid
-                        ? 'absolute right-2 top-2 text-muted-foreground'
-                        : 'flex-shrink-0',
-                      'hover:border hover:bg-background hover:text-foreground hover:shadow-sm data-[state=open]:border data-[state=open]:bg-background data-[state=open]:text-foreground data-[state=open]:shadow-sm'
+                      viewPreferences.layout === Layout.Grid ? 'absolute right-2 top-2' : 'flex-shrink-0',
+                      'hover:border hover:bg-background hover:text-foreground hover:shadow-sm data-[state=open]:border data-[state=open]:bg-background data-[state=open]:text-foreground data-[state=open]:shadow-sm',
+                      'text-muted-foreground hover:text-foreground'
                     )}
                   >
-                    <DotsVerticalIcon className="h-4 w-4" />
+                    <MoreVertIcon className="text h-4 w-4" />
                   </Btn>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
@@ -223,12 +221,12 @@ export function FilesListItemUserFile({
                     <DropdownMenuItem onClick={handleShare}>Share</DropdownMenuItem>
                   )}
                   {permissions.includes('FILE_EDIT') && (
-                    <DropdownMenuItem onClick={handleDuplicate}>{duplicateFileAction.label}</DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleDuplicate}>Duplicate</DropdownMenuItem>
                   )}
                   {permissions.includes('FILE_EDIT') && (
-                    <DropdownMenuItem onClick={() => setOpen(true)}>{renameFileAction.label}</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setOpen(true)}>Rename</DropdownMenuItem>
                   )}
-                  <DropdownMenuItem onClick={handleDownload}>{downloadFileAction.label}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleDownload}>Download</DropdownMenuItem>
                   {canMoveFiles && (
                     <>
                       <DropdownMenuSeparator />
@@ -270,7 +268,7 @@ export function FilesListItemUserFile({
                   {permissions.includes('FILE_DELETE') && (
                     <>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleDelete}>{deleteFile.label}</DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleDelete}>Delete</DropdownMenuItem>
                     </>
                   )}
                 </DropdownMenuContent>

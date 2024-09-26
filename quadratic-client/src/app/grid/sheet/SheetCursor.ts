@@ -240,4 +240,12 @@ export class SheetCursor {
   overlapsSelection(selection: Selection): boolean {
     return selectionOverlapsSelection(this.getRustSelection(), selection);
   }
+
+  includesCell(column: number, row: number): boolean {
+    if (this.multiCursor) {
+      return this.multiCursor.some((rect) => rect.contains(column, row));
+    } else {
+      return this.cursorPosition.x === column && this.cursorPosition.y === row;
+    }
+  }
 }

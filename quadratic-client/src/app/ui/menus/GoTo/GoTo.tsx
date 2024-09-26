@@ -3,16 +3,16 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { moveViewport } from '@/app/gridGL/interaction/viewportHelper';
 import { Coordinate } from '@/app/gridGL/types/size';
 import '@/app/ui/styles/floating-dialog.css';
-import { CommandDialog, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
-import { ArrowForward } from '@mui/icons-material';
+import { GoToIcon } from '@/shared/components/Icons';
+import { Command, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
 import { Rectangle } from 'pixi.js';
 import React, { useCallback } from 'react';
-import { useRecoilState } from 'recoil';
+import { useSetRecoilState } from 'recoil';
 import { getCoordinatesFromUserInput } from './getCoordinatesFromUserInput';
 
 export const GoTo = () => {
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { showGoToMenu } = editorInteractionState;
+  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+
   const [value, setValue] = React.useState<string>('');
 
   const closeMenu = useCallback(() => {
@@ -60,17 +60,7 @@ export const GoTo = () => {
   }, [closeMenu, coordinates]);
 
   return (
-    <CommandDialog
-      dialogProps={{ open: showGoToMenu, onOpenChange: closeMenu }}
-      commandProps={{ shouldFilter: false }}
-      overlayProps={{
-        onPointerDown: (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          closeMenu();
-        },
-      }}
-    >
+    <Command shouldFilter={false}>
       <CommandInput
         value={value}
         onValueChange={(value) => {
@@ -90,9 +80,9 @@ export const GoTo = () => {
         >
           Go to {coordinates.length === 1 ? 'cell' : 'range'}:{' '}
           {coordinates.map(({ x, y }) => `(${x}, ${y})`).join(', ')}
-          <ArrowForward className="text-muted-foreground" />
+          <GoToIcon className="text-muted-foreground" />
         </CommandItem>
       </CommandList>
-    </CommandDialog>
+    </Command>
   );
 };

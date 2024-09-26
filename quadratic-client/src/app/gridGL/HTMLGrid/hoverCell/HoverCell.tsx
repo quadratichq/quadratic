@@ -1,17 +1,17 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
+import { usePositionCellMessage } from '@/app/gridGL/HTMLGrid/usePositionCellMessage';
+import { HtmlValidationMessage } from '@/app/gridGL/HTMLGrid/validations/HtmlValidationMessage';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { pluralize } from '@/app/helpers/pluralize';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
-import { useGridSettings } from '@/app/ui/menus/TopBar/SubMenus/useGridSettings';
+import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { Rectangle } from 'pixi.js';
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import './HoverCell.css';
-import { ErrorValidation } from '../../cells/CellsSheet';
-import { HtmlValidationMessage } from '../validations/HtmlValidationMessage';
-import { usePositionCellMessage } from '../usePositionCellMessage';
-import { Rectangle } from 'pixi.js';
 
 export interface EditingCell {
   x: number;
@@ -162,13 +162,19 @@ export const HoverCell = () => {
     asyncFunction();
   }, [cell]);
 
-  const { top, left } = usePositionCellMessage({ div: ref.current, offsets, forceLeft: false });
+  const { top, left } = usePositionCellMessage({ div: ref.current, offsets });
 
   return (
     <div
       ref={ref}
       className="absolute z-50 w-64 rounded-md border bg-popover p-4 text-popover-foreground opacity-0 shadow-md outline-none"
-      style={{ left, top, visibility: !onlyCode || showCodePeek ? 'visible' : 'hidden' }}
+      style={{
+        left,
+        top,
+        visibility: !onlyCode || showCodePeek ? 'visible' : 'hidden',
+        transformOrigin: `0 0`,
+        transform: `scale(${1 / pixiApp.viewport.scale.x})`,
+      }}
     >
       {text}
     </div>
