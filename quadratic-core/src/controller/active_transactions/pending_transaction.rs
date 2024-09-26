@@ -86,6 +86,9 @@ pub struct PendingTransaction {
 
     // sheets w/updated fill cells
     pub fill_cells: HashSet<SheetId>,
+
+    // sheets w/updated offsets
+    pub sheet_info: HashSet<SheetId>,
 }
 
 impl Default for PendingTransaction {
@@ -114,6 +117,7 @@ impl Default for PendingTransaction {
             html_cells: HashMap::new(),
             image_cells: HashMap::new(),
             fill_cells: HashSet::new(),
+            sheet_info: HashSet::new(),
         }
     }
 }
@@ -256,6 +260,11 @@ impl PendingTransaction {
                     .extend(changed_hashes);
             }
         }
+    }
+
+    /// Marks a sheet's offsets as dirty
+    pub fn sheet_info_changed(&mut self, sheet_id: SheetId) {
+        self.sheet_info.insert(sheet_id);
     }
 }
 

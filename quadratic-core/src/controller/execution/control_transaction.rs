@@ -179,6 +179,10 @@ impl GridController {
                     sheet.resend_fills();
                 }
             });
+
+            transaction.sheet_info.iter().for_each(|sheet_id| {
+                self.send_sheet_info(*sheet_id);
+            });
         }
     }
 

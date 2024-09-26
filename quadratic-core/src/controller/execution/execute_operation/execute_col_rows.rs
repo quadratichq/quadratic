@@ -283,7 +283,7 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use serial_test::parallel;
+    use serial_test::{parallel, serial};
     use uuid::Uuid;
 
     use crate::{
@@ -292,7 +292,8 @@ mod tests {
             CodeCellLanguage,
         },
         selection::Selection,
-        Pos, Rect, SheetPos,
+        wasm_bindings::js::expect_js_call_count,
+        Pos, Rect, SheetPos, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT,
     };
 
     use super::*;
@@ -751,5 +752,99 @@ mod tests {
             sheet.bounds(false),
             GridBounds::NonEmpty(Rect::new(1, 1, 1, 4))
         );
+    }
+
+    #[test]
+    #[serial]
+    fn insert_column_offsets() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.insert_column(sheet_id, 1, true, None);
+        expect_js_call_count("jsSheetInfoUpdate", 0, true);
+
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.offsets.set_column_width(1, 100.0);
+        sheet.offsets.set_column_width(2, 200.0);
+        sheet.offsets.set_column_width(4, 400.0);
+
+        gc.insert_column(sheet_id, 2, true, None);
+        expect_js_call_count("jsSheetInfoUpdate", 1, true);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.offsets.column_width(1), 100.0);
+        assert_eq!(sheet.offsets.column_width(2), DEFAULT_COLUMN_WIDTH);
+        assert_eq!(sheet.offsets.column_width(3), 200.0);
+        assert_eq!(sheet.offsets.column_width(5), 400.0);
+    }
+
+    #[test]
+    #[serial]
+    fn delete_column_offsets() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.delete_columns(sheet_id, vec![2], None);
+        expect_js_call_count("jsSheetInfoUpdate", 0, true);
+
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.offsets.set_column_width(1, 100.0);
+        sheet.offsets.set_column_width(2, 200.0);
+        sheet.offsets.set_column_width(4, 400.0);
+
+        gc.delete_columns(sheet_id, vec![2], None);
+        expect_js_call_count("jsSheetInfoUpdate", 1, true);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.offsets.column_width(1), 100.0);
+        assert_eq!(sheet.offsets.column_width(2), DEFAULT_COLUMN_WIDTH);
+        assert_eq!(sheet.offsets.column_width(3), 400.0);
+    }
+
+    #[test]
+    #[serial]
+    fn insert_row_offsets() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.insert_row(sheet_id, 1, true, None);
+        expect_js_call_count("jsSheetInfoUpdate", 0, true);
+
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.offsets.set_row_height(1, 100.0);
+        sheet.offsets.set_row_height(2, 200.0);
+        sheet.offsets.set_row_height(4, 400.0);
+
+        gc.insert_row(sheet_id, 2, true, None);
+        expect_js_call_count("jsSheetInfoUpdate", 1, true);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.offsets.row_height(1), 100.0);
+        assert_eq!(sheet.offsets.row_height(2), DEFAULT_ROW_HEIGHT);
+        assert_eq!(sheet.offsets.row_height(3), 200.0);
+        assert_eq!(sheet.offsets.row_height(5), 400.0);
+    }
+
+    #[test]
+    #[serial]
+    fn delete_row_offsets() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.delete_rows(sheet_id, vec![2, 3], None);
+        expect_js_call_count("jsSheetInfoUpdate", 0, true);
+
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.offsets.set_row_height(1, 100.0);
+        sheet.offsets.set_row_height(2, 200.0);
+        sheet.offsets.set_row_height(3, 200.0);
+        sheet.offsets.set_row_height(4, 400.0);
+
+        gc.delete_rows(sheet_id, vec![2, 3], None);
+        expect_js_call_count("jsSheetInfoUpdate", 1, true);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.offsets.row_height(1), 100.0);
+        assert_eq!(sheet.offsets.row_height(2), 400.0);
+        assert_eq!(sheet.offsets.row_height(3), DEFAULT_ROW_HEIGHT);
     }
 }

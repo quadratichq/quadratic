@@ -174,6 +174,22 @@ impl Sheet {
         }
     }
 
+    pub fn delete_row_offset(&mut self, transaction: &mut PendingTransaction, row: i64) {
+        let (changed, new_size) = self.offsets.delete_row(row);
+
+        if let Some(new_size) = new_size {
+            transaction.reverse_operations.push(Operation::ResizeRow {
+                sheet_id: self.id,
+                row,
+                new_size,
+                client_resized: false,
+            });
+        }
+        if changed && !transaction.is_server() {
+            transaction.sheet_info.insert(self.id);
+        }
+    }
+
     pub fn delete_row(&mut self, transaction: &mut PendingTransaction, row: i64) {
         // create undo operations for the deleted column (only when needed since
         // it's a bit expensive)
@@ -191,6 +207,8 @@ impl Sheet {
                 .reverse_operations
                 .extend(self.borders.get_row_ops(self.id, row));
         }
+
+        self.delete_row_offset(transaction, row);
 
         // remove the row's code runs from the sheet
         self.code_runs.retain(|pos, code_run| {
@@ -499,6 +517,10 @@ impl Sheet {
         self.validations.insert_row(transaction, self.id, row);
 
         self.copy_row_formats(transaction, row, copy_formats);
+
+        if self.offsets.insert_row(row) {
+            transaction.sheet_info.insert(self.id);
+        }
     }
 }
 
@@ -512,7 +534,7 @@ mod test {
             formats::{format::Format, format_update::FormatUpdate},
             BorderStyle, CellBorderLine, CellWrap,
         },
-        CellValue,
+        CellValue, DEFAULT_ROW_HEIGHT,
     };
 
     use super::*;
@@ -755,5 +777,36 @@ mod test {
         sheet.test_set_values(1, 1, 2, 2, vec!["a", "b", "c", "d"]);
         let ops = sheet.reverse_values_ops_for_row(2);
         assert_eq!(ops.len(), 1);
+    }
+
+    #[test]
+    #[parallel]
+    fn insert_row_offset() {
+        let mut sheet = Sheet::test();
+        sheet.offsets.set_row_height(1, 100.0);
+        sheet.offsets.set_row_height(2, 200.0);
+        sheet.offsets.set_row_height(4, 400.0);
+
+        let mut transaction = PendingTransaction::default();
+        sheet.insert_row(&mut transaction, 2, CopyFormats::None);
+        assert_eq!(sheet.offsets.row_height(1), 100.0);
+        assert_eq!(sheet.offsets.row_height(2), DEFAULT_ROW_HEIGHT);
+        assert_eq!(sheet.offsets.row_height(3), 200.0);
+        assert_eq!(sheet.offsets.row_height(5), 400.0);
+    }
+
+    #[test]
+    #[parallel]
+    fn delete_column_offset() {
+        let mut sheet = Sheet::test();
+        sheet.offsets.set_row_height(1, 100.0);
+        sheet.offsets.set_row_height(2, 200.0);
+        sheet.offsets.set_row_height(4, 400.0);
+
+        let mut transaction = PendingTransaction::default();
+        sheet.delete_row(&mut transaction, 2);
+        assert_eq!(sheet.offsets.row_height(1), 100.0);
+        assert_eq!(sheet.offsets.row_height(2), DEFAULT_ROW_HEIGHT);
+        assert_eq!(sheet.offsets.row_height(3), 400.0);
     }
 }

@@ -87,6 +87,23 @@ impl Sheet {
         reverse_operations
     }
 
+    pub fn delete_column_offset(&mut self, transaction: &mut PendingTransaction, column: i64) {
+        let (changed, new_size) = self.offsets.delete_column(column);
+        if let Some(new_size) = new_size {
+            transaction
+                .reverse_operations
+                .push(Operation::ResizeColumn {
+                    sheet_id: self.id,
+                    column,
+                    new_size,
+                    client_resized: false,
+                });
+        }
+        if changed && !transaction.is_server() {
+            transaction.sheet_info_changed(self.id);
+        }
+    }
+
     /// Deletes columns and returns the operations to undo the deletion.
     pub fn delete_column(&mut self, transaction: &mut PendingTransaction, column: i64) {
         // create undo operations for the deleted column (only when needed since
@@ -104,7 +121,11 @@ impl Sheet {
             transaction
                 .reverse_operations
                 .extend(self.borders.get_column_ops(self.id, column));
+        }
 
+        self.delete_column_offset(transaction, column);
+
+        if transaction.is_user_undo_redo() {
             // reverse operation to create the column (this will also shift all impacted columns)
             transaction
                 .reverse_operations
@@ -371,6 +392,10 @@ impl Sheet {
         self.validations.insert_column(transaction, self.id, column);
 
         self.copy_column_formats(transaction, column, copy_formats);
+
+        if self.offsets.insert_column(column) {
+            transaction.sheet_info_changed(self.id);
+        }
     }
 }
 
@@ -384,7 +409,7 @@ mod tests {
             formats::{format::Format, format_update::FormatUpdate},
             BorderStyle, CellBorderLine, CellWrap,
         },
-        CellValue,
+        CellValue, DEFAULT_COLUMN_WIDTH,
     };
 
     use super::*;
@@ -585,10 +610,43 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn test_values_ops_for_column() {
+    fn values_ops_for_column() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(1, 1, 2, 2, vec!["a", "b", "c", "d"]);
         let ops = sheet.reverse_values_ops_for_column(2);
         assert_eq!(ops.len(), 1);
+    }
+
+    #[test]
+    #[parallel]
+    fn insert_column_offset() {
+        let mut sheet = Sheet::test();
+
+        sheet.offsets.set_column_width(1, 100.0);
+        sheet.offsets.set_column_width(2, 200.0);
+        sheet.offsets.set_column_width(4, 400.0);
+
+        let mut transaction = PendingTransaction::default();
+        sheet.insert_column(&mut transaction, 2, CopyFormats::None);
+        assert_eq!(sheet.offsets.column_width(1), 100.0);
+        assert_eq!(sheet.offsets.column_width(2), DEFAULT_COLUMN_WIDTH);
+        assert_eq!(sheet.offsets.column_width(3), 200.0);
+        assert_eq!(sheet.offsets.column_width(5), 400.0);
+    }
+
+    #[test]
+    #[parallel]
+    fn delete_column_offset() {
+        let mut sheet = Sheet::test();
+
+        sheet.offsets.set_column_width(1, 100.0);
+        sheet.offsets.set_column_width(2, 200.0);
+        sheet.offsets.set_column_width(4, 400.0);
+
+        let mut transaction = PendingTransaction::default();
+        sheet.delete_column(&mut transaction, 2);
+        assert_eq!(sheet.offsets.column_width(1), 100.0);
+        assert_eq!(sheet.offsets.column_width(2), DEFAULT_COLUMN_WIDTH);
+        assert_eq!(sheet.offsets.column_width(3), 400.0);
     }
 }

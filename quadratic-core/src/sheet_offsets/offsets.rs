@@ -35,7 +35,6 @@ impl Offsets {
 
     /// Moves the column/row from `from_index` to `to_index`, shifting the ones
     /// between.
-    #[allow(unused)] // TODO: remove this attribute. this function is tested and will be useful later
     pub fn move_elem(&mut self, from_index: i64, to_index: i64) {
         let value_to_move = self.sizes.remove(&from_index);
 
@@ -161,6 +160,55 @@ impl Offsets {
             }
         }
         changes
+    }
+
+    /// Inserts an offset at the specified index and increments all later indices.
+    ///
+    /// Returns whether the offsets structure changed.
+    pub fn insert(&mut self, index: i64) -> bool {
+        let mut sizes = BTreeMap::new();
+        let mut changed = false;
+        for (&k, &v) in &self.sizes {
+            if k >= index {
+                changed = true;
+                sizes.insert(k + 1, v);
+            } else {
+                sizes.insert(k, v);
+            }
+        }
+        if changed {
+            self.sizes = sizes;
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Removes an offset at the specified index and decrements all later
+    /// indices.
+    ///
+    /// Returns a tuple of (bool, Option<f64>) where the bool indicates whether
+    /// the offsets structure changed.
+    pub fn delete(&mut self, index: i64) -> (bool, Option<f64>) {
+        let mut changed = false;
+        let mut old: Option<f64> = None;
+        self.sizes = self
+            .sizes
+            .iter()
+            .filter_map(|(&k, &v)| {
+                if k == index {
+                    old = Some(v);
+                    changed = true;
+                    None
+                } else if k > index {
+                    changed = true;
+                    Some((k - 1, v))
+                } else {
+                    Some((k, v))
+                }
+            })
+            .collect();
+        (changed, old)
     }
 }
 
@@ -291,5 +339,42 @@ mod tests {
             changes,
             vec![(-1, -10.0), (0, -10.0), (10, -40.0), (1, 20.0), (20, 30.0)]
         );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_insert() {
+        let mut offsets = Offsets::new(10.0);
+
+        assert!(!offsets.insert(0));
+
+        offsets.set_size(0, 20.0);
+        offsets.set_size(1, 30.0);
+        offsets.set_size(2, 40.0);
+
+        assert!(offsets.insert(1));
+
+        assert_eq!(offsets.get_size(0), 20.0);
+        assert_eq!(offsets.get_size(1), 10.0); // New inserted offset
+        assert_eq!(offsets.get_size(2), 30.0); // Shifted
+        assert_eq!(offsets.get_size(3), 40.0); // Shifted
+    }
+
+    #[test]
+    #[parallel]
+    fn test_delete() {
+        let mut offsets = Offsets::new(10.0);
+
+        assert!(!offsets.delete(0).0);
+
+        offsets.set_size(0, 20.0);
+        offsets.set_size(1, 30.0);
+        offsets.set_size(2, 40.0);
+
+        let deleted = offsets.delete(1);
+
+        assert_eq!(deleted, (true, Some(30.0)));
+        assert_eq!(offsets.get_size(0), 20.0);
+        assert_eq!(offsets.get_size(1), 40.0); // Shifted
     }
 }
