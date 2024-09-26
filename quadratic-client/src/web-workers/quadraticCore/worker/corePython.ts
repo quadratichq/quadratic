@@ -31,7 +31,7 @@ class CorePython {
         if (e.data.results.input_python_stack_trace) {
           e.data.results.std_err = e.data.results.input_python_stack_trace;
         }
-        
+
         core.calculationComplete(e.data.transactionId, e.data.results);
         break;
 
