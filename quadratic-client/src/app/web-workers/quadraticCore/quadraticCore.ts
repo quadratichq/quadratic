@@ -18,6 +18,7 @@ import {
   Format,
   JsCellValue,
   JsCodeCell,
+  JsPos,
   JsRenderCell,
   MinMax,
   PasteSpecial,
@@ -56,6 +57,8 @@ import {
   CoreClientHasRenderCells,
   CoreClientLoad,
   CoreClientMessage,
+  CoreClientMoveCodeCellDown,
+  CoreClientMoveCodeCellRight,
   CoreClientSearch,
   CoreClientSummarizeSelection,
   CoreClientValidateInput,
@@ -895,6 +898,42 @@ class QuadraticCore {
       targetX,
       targetY,
       cursor: sheets.getCursorPosition(),
+    });
+  }
+
+  moveCodeCellRight(sheetId: string, x: number, y: number, sheetEnd: boolean): Promise<JsPos> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientMoveCodeCellRight) => {
+        resolve(message.pos);
+      };
+      return this.send({
+        type: 'clientCoreMoveCodeCellRight',
+        sheetId,
+        x,
+        y,
+        sheetEnd,
+        cursor: sheets.getCursorPosition(),
+        id,
+      });
+    });
+  }
+
+  moveCodeCellDown(sheetId: string, x: number, y: number, sheetEnd: boolean): Promise<JsPos> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientMoveCodeCellDown) => {
+        resolve(message.pos);
+      };
+      this.send({
+        type: 'clientCoreMoveCodeCellDown',
+        sheetId,
+        x,
+        y,
+        sheetEnd,
+        cursor: sheets.getCursorPosition(),
+        id,
+      });
     });
   }
 

@@ -510,6 +510,22 @@ class CoreClient {
         core.moveCells(e.data);
         return;
 
+      case 'clientCoreMoveCodeCellDown':
+        this.send({
+          type: 'coreClientMoveCodeCellDown',
+          pos: core.moveCodeCellDown(e.data),
+          id: e.data.id,
+        });
+        return;
+
+      case 'clientCoreMoveCodeCellRight':
+        this.send({
+          type: 'coreClientMoveCodeCellRight',
+          pos: core.moveCodeCellRight(e.data),
+          id: e.data.id,
+        });
+        return;
+
       case 'clientCoreSetDateTimeFormat':
         core.setDateTimeFormat(e.data.selection, e.data.format, e.data.cursor);
         return;

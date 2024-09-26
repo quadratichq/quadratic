@@ -1,18 +1,23 @@
+import { codeEditorCodeCellAtom, codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { showCodePeekAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import { usePositionCellMessage } from '@/app/gridGL/HTMLGrid/usePositionCellMessage';
 import { HtmlValidationMessage } from '@/app/gridGL/HTMLGrid/validations/HtmlValidationMessage';
+import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { pluralize } from '@/app/helpers/pluralize';
 import { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { ArrowDoubleDown, ArrowDoubleRight, ArrowDown, ArrowRight } from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { Rectangle } from 'pixi.js';
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import './HoverCell.css';
 
 export const HOVER_CELL_FADE_IN_OUT_DELAY = 500;
@@ -72,93 +77,75 @@ export function HoverCell() {
 
   const [text, setText] = useState<ReactNode>();
   const [onlyCode, setOnlyCode] = useState(false);
-  const updateText = useCallback(async (cell: JsRenderCodeCell | EditingCell | ErrorValidation) => {
-    const errorValidationCell = 'validationId' in cell ? cell : undefined;
-    const renderCodeCell = 'language' in cell && 'state' in cell && 'spill_error' in cell ? cell : undefined;
-    const editingCell = 'user' in cell && 'codeEditor' in cell ? cell : undefined;
+  const updateText = useCallback(
+    async (cell: JsRenderCodeCell | EditingCell | ErrorValidation) => {
+      const errorValidationCell = 'validationId' in cell ? cell : undefined;
+      const renderCodeCell = 'language' in cell && 'state' in cell && 'spill_error' in cell ? cell : undefined;
+      const editingCell = 'user' in cell && 'codeEditor' in cell ? cell : undefined;
 
-    if (errorValidationCell) {
-      const offsets = sheets.sheet.getCellOffsets(errorValidationCell.x, errorValidationCell.y);
-      const validation = sheets.sheet.getValidationById(errorValidationCell.validationId);
-      setOnlyCode(false);
-      if (validation) {
-        setText(
-          <div className="relative">
-            <HtmlValidationMessage
-              column={errorValidationCell.x}
-              row={errorValidationCell.y}
-              offsets={offsets}
-              validation={validation}
-              hoverError
-            />
-          </div>
-        );
-      }
-    } else if (renderCodeCell) {
-      const spillError = renderCodeCell.spill_error;
+      if (errorValidationCell) {
+        const offsets = sheets.sheet.getCellOffsets(errorValidationCell.x, errorValidationCell.y);
+        const validation = sheets.sheet.getValidationById(errorValidationCell.validationId);
+        setOnlyCode(false);
+        if (validation) {
+          setText(
+            <div className="relative">
+              <HtmlValidationMessage
+                column={errorValidationCell.x}
+                row={errorValidationCell.y}
+                offsets={offsets}
+                validation={validation}
+                hoverError
+              />
+            </div>
+          );
+        }
+      } else if (renderCodeCell) {
+        if (renderCodeCell.state === 'SpillError') {
+          setOnlyCode(false);
+          setText(<HoverCellSpillError renderCodeCell={renderCodeCell} onClick={hideHoverCell} />);
+        } else {
+          const language = getLanguage(renderCodeCell.language);
+          const sheetId = sheets.sheet.id;
+          const { x, y } = renderCodeCell;
+          const codeCell = await quadraticCore.getCodeCell(sheetId, x, y);
 
-      if (spillError) {
+          if (renderCodeCell.state === 'RunError') {
+            setOnlyCode(false);
+            if (codeCell) {
+              setText(<HoverCellRunError codeCell={codeCell} />);
+            }
+          } else {
+            setOnlyCode(true);
+            setText(
+              <>
+                <div className="hover-cell-header">{language} Code</div>
+                <div className="code-body">{codeCell?.code_string}</div>
+              </>
+            );
+          }
+        }
+      } else if (editingCell) {
         setOnlyCode(false);
         setText(
           <>
-            <div className="hover-cell-header">Spill Error</div>
+            <div className="hover-cell-header">Multiplayer Edit</div>
             <div className="hover-cell-body">
-              <div>Array output could not expand because it would overwrite existing values.</div>
-              <div>
-                To fix this, remove content in {pluralize('cell', spillError.length)}{' '}
-                {spillError.map((pos, index) => (
-                  <div key={`${pos.x},${pos.y}`}>
-                    <code className="hover-cell-code">
-                      ({String(pos.x)}, {String(pos.y)})
-                    </code>
-                    {index !== spillError.length - 1 ? (index === spillError.length - 2 ? ', and ' : ', ') : '.'}
-                  </div>
-                ))}
-              </div>
+              {editingCell.codeEditor ? 'The code in this cell' : 'This cell'} is being edited by {editingCell.user}.
             </div>
           </>
         );
-      } else {
-        const language = getLanguage(renderCodeCell.language);
-        const sheetId = sheets.sheet.id;
-        const { x, y } = renderCodeCell;
-        const codeCell = await quadraticCore.getCodeCell(sheetId, x, y);
-
-        if (renderCodeCell.state === 'RunError') {
-          setOnlyCode(false);
-          if (codeCell) {
-            setText(<HoverCellRunError codeCell={codeCell} />);
-          }
-        } else {
-          setOnlyCode(true);
-          setText(
-            <>
-              <div className="hover-cell-header">{language} Code</div>
-              <div className="code-body">{codeCell?.code_string}</div>
-            </>
-          );
-        }
       }
-    } else if (editingCell) {
-      setOnlyCode(false);
-      setText(
-        <>
-          <div className="hover-cell-header">Multiplayer Edit</div>
-          <div className="hover-cell-body">
-            {editingCell.codeEditor ? 'The code in this cell' : 'This cell'} is being edited by {editingCell.user}.
-          </div>
-        </>
-      );
-    }
 
-    setLoading(false);
-  }, []);
+      setLoading(false);
+    },
+    [hideHoverCell]
+  );
 
   useEffect(() => {
     const addCell = (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => {
       setCell(cell);
       if (cell && !hoveringRef.current) {
-        console.log(hoveringRef.current);
         setOffsets(sheets.sheet.getCellOffsets(cell.x, cell.y));
         setDelay('validationId' in cell ? false : true);
         setLoading(true);
@@ -242,6 +229,131 @@ function HoverCellRunError({ codeCell }: { codeCell: JsCodeCell }) {
 
       <div className="hover-cell-header-space">{language} Code</div>
       <div className="code-body">{codeCell.code_string}</div>
+    </>
+  );
+}
+
+function HoverCellSpillError({ renderCodeCell, onClick }: { renderCodeCell: JsRenderCodeCell; onClick: () => void }) {
+  const spillError = renderCodeCell.spill_error;
+  const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
+  const [codeCell, setCodeCell] = useRecoilState(codeEditorCodeCellAtom);
+
+  const handleModeCodeCellDown = useCallback(
+    (sheetEnd: boolean) => {
+      const sheetId = sheets.current;
+      quadraticCore.moveCodeCellDown(sheetId, renderCodeCell.x, renderCodeCell.y, sheetEnd).then((pos) => {
+        const min = { x: Number(pos.x), y: Number(pos.y) };
+        if (
+          showCodeEditor &&
+          codeCell.sheetId === sheetId &&
+          codeCell.pos.x === renderCodeCell.x &&
+          codeCell.pos.y === renderCodeCell.y
+        ) {
+          setCodeCell((prev) => ({ ...prev, pos: { x: min.x, y: min.y } }));
+        }
+        const max = { x: Number(pos.x) + renderCodeCell.w - 1, y: Number(pos.y) + renderCodeCell.h - 1 };
+        ensureRectVisible(min, max);
+      });
+      onClick();
+    },
+    [
+      renderCodeCell.x,
+      renderCodeCell.y,
+      renderCodeCell.w,
+      renderCodeCell.h,
+      onClick,
+      showCodeEditor,
+      codeCell.sheetId,
+      codeCell.pos.x,
+      codeCell.pos.y,
+      setCodeCell,
+    ]
+  );
+
+  const handleModeCodeCellRight = useCallback(
+    (sheetEnd: boolean) => {
+      const sheetId = sheets.current;
+      quadraticCore.moveCodeCellRight(sheetId, renderCodeCell.x, renderCodeCell.y, sheetEnd).then((pos) => {
+        const min = { x: Number(pos.x), y: Number(pos.y) };
+        if (
+          showCodeEditor &&
+          codeCell.sheetId === sheetId &&
+          codeCell.pos.x === renderCodeCell.x &&
+          codeCell.pos.y === renderCodeCell.y
+        ) {
+          setCodeCell((prev) => ({ ...prev, pos: { x: min.x, y: min.y } }));
+        }
+        const max = { x: Number(pos.x) + renderCodeCell.w - 1, y: Number(pos.y) + renderCodeCell.h - 1 };
+        ensureRectVisible(min, max);
+      });
+      onClick();
+    },
+    [
+      renderCodeCell.x,
+      renderCodeCell.y,
+      renderCodeCell.w,
+      renderCodeCell.h,
+      onClick,
+      showCodeEditor,
+      codeCell.sheetId,
+      codeCell.pos.x,
+      codeCell.pos.y,
+      setCodeCell,
+    ]
+  );
+
+  if (!spillError) {
+    return null;
+  }
+
+  return (
+    <>
+      <div className="hover-cell-header">
+        <span>Spill Error</span>
+
+        <div className="flex gap-3">
+          <TooltipPopover label={'Fix spill error - move down after all data'}>
+            <Button className="h-6 w-6" size="sm" variant="success" onClick={() => handleModeCodeCellDown(true)}>
+              <ArrowDoubleDown />
+            </Button>
+          </TooltipPopover>
+
+          <TooltipPopover label={'Fix spill error - move down to nearest empty space'}>
+            <Button className="h-6 w-6" size="sm" variant="success" onClick={() => handleModeCodeCellDown(false)}>
+              <ArrowDown />
+            </Button>
+          </TooltipPopover>
+
+          <TooltipPopover label={'Fix spill error - move right to nearest empty space'}>
+            <Button className="h-6 w-6" size="sm" variant="success" onClick={() => handleModeCodeCellRight(false)}>
+              <ArrowRight />
+            </Button>
+          </TooltipPopover>
+
+          <TooltipPopover label={'Fix spill error - move right after all data'}>
+            <Button className="h-6 w-6" size="sm" variant="success" onClick={() => handleModeCodeCellRight(true)}>
+              <ArrowDoubleRight />
+            </Button>
+          </TooltipPopover>
+        </div>
+      </div>
+
+      <div className="hover-cell-body">
+        <div>Array output could not expand because it would overwrite existing values.</div>
+
+        <div>
+          To fix this, remove content in {pluralize('cell', spillError.length)}{' '}
+          {spillError.map((pos, index) => (
+            <div key={`${pos.x},${pos.y}`}>
+              <code className="hover-cell-code">
+                ({String(pos.x)}, {String(pos.y)})
+              </code>
+
+              {index !== spillError.length - 1 ? (index === spillError.length - 2 ? ', and ' : ', ') : '.'}
+            </div>
+          ))}
+        </div>
+      </div>
     </>
   );
 }

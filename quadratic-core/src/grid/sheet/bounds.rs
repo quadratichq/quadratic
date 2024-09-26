@@ -353,6 +353,91 @@ impl Sheet {
         }
     }
 
+    /// finds the nearest column that can be used to place a rect
+    /// if reverse is true it searches to the left of the start
+    ///
+    pub fn find_next_column_for_rect(
+        &self,
+        column_start: i64,
+        row: i64,
+        reverse: bool,
+        rect: Rect,
+    ) -> i64 {
+        let mut rect_start_x = column_start;
+        let bounds = self.bounds(true);
+        match bounds {
+            GridBounds::Empty => rect_start_x,
+            GridBounds::NonEmpty(sheet_rect) => {
+                while (!reverse && rect_start_x <= sheet_rect.max.x)
+                    || (reverse && (rect_start_x - 1 + rect.width() as i64) >= sheet_rect.min.x)
+                {
+                    let mut is_valid = true;
+                    for x in rect_start_x..(rect_start_x + rect.width() as i64) {
+                        if let Some(next_row_with_content) = self.find_next_row(row, x, false, true)
+                        {
+                            if (next_row_with_content - row) < rect.height() as i64 {
+                                rect_start_x = if !reverse {
+                                    x + 1
+                                } else {
+                                    x - rect.width() as i64
+                                };
+                                is_valid = false;
+                                break;
+                            }
+                        }
+                    }
+                    if is_valid {
+                        return rect_start_x;
+                    }
+                }
+                rect_start_x
+            }
+        }
+    }
+
+    /// finds the nearest column that can be used to place a rect
+    /// if reverse is true it searches to the left of the start
+    ///
+    pub fn find_next_row_for_rect(
+        &self,
+        row_start: i64,
+        column: i64,
+        reverse: bool,
+        rect: Rect,
+    ) -> i64 {
+        let mut rect_start_y = row_start;
+        let bounds = self.bounds(true);
+        match bounds {
+            GridBounds::Empty => rect_start_y,
+            GridBounds::NonEmpty(sheet_rect) => {
+                while (!reverse && rect_start_y <= sheet_rect.max.y)
+                    || (reverse && (rect_start_y - 1 + rect.height() as i64) >= sheet_rect.min.y)
+                {
+                    let mut is_valid = true;
+                    for y in rect_start_y..(rect_start_y + rect.height() as i64) {
+                        if let Some(next_column_with_content) =
+                            self.find_next_column(column, y, false, true)
+                        {
+                            if (next_column_with_content - column) < rect.width() as i64 {
+                                rect_start_y = if !reverse {
+                                    y + 1
+                                } else {
+                                    y - rect.height() as i64
+                                };
+                                is_valid = false;
+                                break;
+                            }
+                        }
+                    }
+                    if is_valid {
+                        return rect_start_y;
+                    }
+                }
+                rect_start_y
+            }
+        }
+    }
+
     /// Returns the bounds of the sheet.
     ///
     /// Returns `(data_bounds, format_bounds)`.

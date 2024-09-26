@@ -1,8 +1,10 @@
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::clipboard::PasteSpecial;
 use crate::controller::GridController;
+use crate::grid::js_types::JsPos;
+use crate::grid::{GridBounds, SheetId};
 use crate::selection::Selection;
-use crate::{SheetPos, SheetRect};
+use crate::{Rect, SheetPos, SheetRect};
 
 // To view you clipboard contents, go to https://evercoder.github.io/clipboard-inspector/
 // To decode the html, use https://codebeautify.org/html-decode-string
@@ -44,6 +46,78 @@ impl GridController {
     pub fn move_cells(&mut self, source: SheetRect, dest: SheetPos, cursor: Option<String>) {
         let ops = self.move_cells_operations(source, dest);
         self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
+    }
+
+    pub fn move_code_cell_down(
+        &mut self,
+        sheet_id: SheetId,
+        x: i64,
+        y: i64,
+        sheet_end: bool,
+        cursor: Option<String>,
+    ) -> JsPos {
+        if let Some(sheet) = self.try_sheet(sheet_id) {
+            let source = SheetRect::from_numbers(x, y, 1, 1, sheet_id);
+            let mut dest = SheetPos::new(sheet_id, x, y);
+            if sheet_end {
+                if let GridBounds::NonEmpty(rect) = sheet.bounds(true) {
+                    dest = SheetPos::new(sheet_id, x, rect.max.y + 1);
+                }
+            } else if let Some(code_cell) = sheet.get_render_code_cell((x, y).into()) {
+                let rect = Rect::from_numbers(
+                    code_cell.x as i64,
+                    code_cell.y as i64,
+                    code_cell.w as i64,
+                    code_cell.h as i64,
+                );
+                let row = sheet.find_next_row_for_rect(y + 1, x, false, rect);
+                dest = SheetPos::new(sheet_id, x, row);
+            }
+            let dest_post = JsPos {
+                x: dest.x,
+                y: dest.y,
+            };
+            let ops = self.move_cells_operations(source, dest);
+            self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
+            return dest_post;
+        }
+        JsPos { x, y }
+    }
+
+    pub fn move_code_cell_right(
+        &mut self,
+        sheet_id: SheetId,
+        x: i64,
+        y: i64,
+        sheet_end: bool,
+        cursor: Option<String>,
+    ) -> JsPos {
+        if let Some(sheet) = self.try_sheet(sheet_id) {
+            let source = SheetRect::from_numbers(x, y, 1, 1, sheet_id);
+            let mut dest = SheetPos::new(sheet_id, x, y);
+            if sheet_end {
+                if let GridBounds::NonEmpty(rect) = sheet.bounds(true) {
+                    dest = SheetPos::new(sheet_id, rect.max.x + 1, y);
+                }
+            } else if let Some(code_cell) = sheet.get_render_code_cell((x, y).into()) {
+                let rect = Rect::from_numbers(
+                    code_cell.x as i64,
+                    code_cell.y as i64,
+                    code_cell.w as i64,
+                    code_cell.h as i64,
+                );
+                let col = sheet.find_next_column_for_rect(x + 1, y, false, rect);
+                dest = SheetPos::new(sheet_id, col, y);
+            }
+            let dest_post = JsPos {
+                x: dest.x,
+                y: dest.y,
+            };
+            let ops = self.move_cells_operations(source, dest);
+            self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
+            return dest_post;
+        }
+        JsPos { x, y }
     }
 }
 

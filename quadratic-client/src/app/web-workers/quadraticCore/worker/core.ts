@@ -16,6 +16,7 @@ import {
   JsCellValue,
   JsCodeCell,
   JsCodeResult,
+  JsPos,
   JsRenderCell,
   MinMax,
   SearchOptions,
@@ -37,6 +38,8 @@ import {
   ClientCoreImportFile,
   ClientCoreLoad,
   ClientCoreMoveCells,
+  ClientCoreMoveCodeCellDown,
+  ClientCoreMoveCodeCellRight,
   ClientCoreSummarizeSelection,
 } from '../coreClientMessages';
 import { coreClient } from './coreClient';
@@ -988,6 +991,28 @@ class Core {
     this.gridController.moveCells(
       JSON.stringify(message.source, bigIntReplacer),
       JSON.stringify(dest, bigIntReplacer),
+      message.cursor
+    );
+  }
+
+  moveCodeCellDown(message: ClientCoreMoveCodeCellDown): JsPos {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    return this.gridController.moveCodeCellDown(
+      message.sheetId,
+      BigInt(message.x),
+      BigInt(message.y),
+      message.sheetEnd,
+      message.cursor
+    );
+  }
+
+  moveCodeCellRight(message: ClientCoreMoveCodeCellRight): JsPos {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    return this.gridController.moveCodeCellRight(
+      message.sheetId,
+      BigInt(message.x),
+      BigInt(message.y),
+      message.sheetEnd,
       message.cursor
     );
   }

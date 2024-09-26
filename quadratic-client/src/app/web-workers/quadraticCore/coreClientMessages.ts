@@ -9,6 +9,7 @@ import {
   JsCellValue,
   JsCodeCell,
   JsHtmlOutput,
+  JsPos,
   JsRenderBorders,
   JsRenderCell,
   JsRenderCodeCell,
@@ -866,6 +867,38 @@ export interface ClientCoreMoveCells {
   cursor: string;
 }
 
+export interface ClientCoreMoveCodeCellRight {
+  type: 'clientCoreMoveCodeCellRight';
+  sheetId: string;
+  x: number;
+  y: number;
+  sheetEnd: boolean;
+  cursor: string;
+  id: number;
+}
+
+export interface CoreClientMoveCodeCellRight {
+  type: 'coreClientMoveCodeCellRight';
+  pos: JsPos;
+  id: number;
+}
+
+export interface ClientCoreMoveCodeCellDown {
+  type: 'clientCoreMoveCodeCellDown';
+  sheetId: string;
+  x: number;
+  y: number;
+  sheetEnd: boolean;
+  cursor: string;
+  id: number;
+}
+
+export interface CoreClientMoveCodeCellDown {
+  type: 'coreClientMoveCodeCellDown';
+  pos: JsPos;
+  id: number;
+}
+
 export interface CoreClientSetCursorSelection {
   type: 'coreClientSetCursorSelection';
   selection: Selection;
@@ -1057,7 +1090,9 @@ export type ClientCoreMessage =
   | ClientCoreGetValidationList
   | ClientCoreGetDisplayCell
   | ClientCoreValidateInput
-  | ClientCoreGetCellValue;
+  | ClientCoreGetCellValue
+  | ClientCoreMoveCodeCellRight
+  | ClientCoreMoveCodeCellDown;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1120,4 +1155,6 @@ export type CoreClientMessage =
   | CoreClientResizeRowHeights
   | CoreClientMultiplayerSynced
   | CoreClientValidateInput
-  | CoreClientGetCellValue;
+  | CoreClientGetCellValue
+  | CoreClientMoveCodeCellRight
+  | CoreClientMoveCodeCellDown;
