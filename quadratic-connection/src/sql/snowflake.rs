@@ -111,10 +111,8 @@ mod tests {
     use std::str::FromStr;
 
     use super::*;
-    use crate::{
-        num_vec, test_connection,
-        test_util::{get_claims, new_state, response_bytes, str_vec, validate_parquet},
-    };
+    use crate::num_vec;
+    use crate::test_util::{get_claims, new_state, response_bytes, str_vec, validate_parquet};
     use arrow::datatypes::Date32Type;
     use arrow_schema::{DataType, TimeUnit};
     use bytes::Bytes;
@@ -127,7 +125,15 @@ mod tests {
     #[tokio::test]
     #[traced_test]
     async fn mssql_test_connection() {
-        test_connection!(get_connection);
+        let state = Extension(new_state().await);
+        let connection_id = Uuid::new_v4();
+        let claims = get_claims();
+        let (mysql_connection, _) = get_connection(&state, &claims, &connection_id)
+            .await
+            .unwrap();
+        let response = test(state, axum::Json(mysql_connection)).await;
+
+        assert_eq!(response.0, TestResponse::new(true, None));
     }
 
     #[tokio::test]
