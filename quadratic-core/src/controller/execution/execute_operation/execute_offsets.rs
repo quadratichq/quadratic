@@ -49,12 +49,9 @@ impl GridController {
                     || transaction.is_multiplayer()
                     || (!client_resized && transaction.is_user()))
             {
-                crate::wasm_bindings::js::jsOffsetsModified(
-                    sheet_id.to_string(),
-                    Some(column),
-                    None,
-                    new_size,
-                );
+                transaction
+                    .offsets_modified
+                    .push((sheet_id, Some(column), None, new_size));
             }
 
             if transaction.is_user() {
@@ -113,12 +110,9 @@ impl GridController {
                     || transaction.is_multiplayer()
                     || (!client_resized && transaction.is_user()))
             {
-                crate::wasm_bindings::js::jsOffsetsModified(
-                    sheet_id.to_string(),
-                    None,
-                    Some(row),
-                    new_size,
-                );
+                transaction
+                    .offsets_modified
+                    .push((sheet_id, None, Some(row), new_size));
             }
 
             if !transaction.is_server() {

@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::cmp::Ordering;
+use std::collections::{BTreeMap, HashMap};
 use std::ops::Range;
 
 #[cfg(feature = "js")]
@@ -164,51 +165,65 @@ impl Offsets {
 
     /// Inserts an offset at the specified index and increments all later indices.
     ///
-    /// Returns whether the offsets structure changed.
-    pub fn insert(&mut self, index: i64) -> bool {
+    /// Returns a vector of changes made to the offsets structure, where each change
+    /// is represented as a tuple (index, new_size).
+    pub fn insert(&mut self, index: i64) -> Vec<(i64, f64)> {
+        let mut changed = HashMap::new();
         let mut sizes = BTreeMap::new();
-        let mut changed = false;
-        for (&k, &v) in &self.sizes {
-            if k >= index {
-                changed = true;
-                sizes.insert(k + 1, v);
-            } else {
-                sizes.insert(k, v);
+        let keys = self.sizes.keys().sorted_by_key(|k| -**k);
+
+        for k in keys {
+            if let Some(size) = self.sizes.get(k) {
+                if *k >= index {
+                    changed.insert(*k + 1, *size);
+                    changed.insert(*k, self.default);
+                    sizes.insert(*k + 1, *size);
+                } else {
+                    sizes.insert(*k, *size);
+                }
             }
         }
-        if changed {
-            self.sizes = sizes;
-            true
-        } else {
-            false
-        }
+        self.sizes = sizes;
+        changed.into_iter().sorted_by_key(|(k, _)| *k).collect()
     }
 
     /// Removes an offset at the specified index and decrements all later
     /// indices.
     ///
-    /// Returns a tuple of (bool, Option<f64>) where the bool indicates whether
-    /// the offsets structure changed.
-    pub fn delete(&mut self, index: i64) -> (bool, Option<f64>) {
-        let mut changed = false;
+    /// Returns a tuple of (Vec<(i64, f64)>, Option<f64>) where the Vec contains
+    /// the changes made to the offsets structure, and the Option<f64> is the
+    /// old size of the removed offset, if it existed.
+    pub fn delete(&mut self, index: i64) -> (Vec<(i64, f64)>, Option<f64>) {
+        let mut changed = HashMap::new();
         let mut old: Option<f64> = None;
-        self.sizes = self
-            .sizes
-            .iter()
-            .filter_map(|(&k, &v)| {
-                if k == index {
-                    old = Some(v);
-                    changed = true;
-                    None
-                } else if k > index {
-                    changed = true;
-                    Some((k - 1, v))
-                } else {
-                    Some((k, v))
+        let keys = self.sizes.keys().sorted_unstable();
+
+        let mut sizes = BTreeMap::new();
+
+        for k in keys {
+            if let Some(size) = self.sizes.get(k) {
+                match k.cmp(&index) {
+                    Ordering::Equal => {
+                        old = Some(*size);
+                        changed.insert(*k, self.default);
+                    }
+                    Ordering::Greater => {
+                        changed.insert(*k - 1, *size);
+                        changed.insert(*k, self.default);
+                        sizes.insert(*k - 1, *size);
+                        sizes.remove(k);
+                    }
+                    Ordering::Less => {
+                        sizes.insert(*k, *size);
+                    }
                 }
-            })
-            .collect();
-        (changed, old)
+            }
+        }
+        self.sizes = sizes;
+        (
+            changed.into_iter().sorted_by_key(|(k, _)| *k).collect(),
+            old,
+        )
     }
 }
 
@@ -346,13 +361,16 @@ mod tests {
     fn test_insert() {
         let mut offsets = Offsets::new(10.0);
 
-        assert!(!offsets.insert(0));
+        assert_eq!(offsets.insert(0), vec![]);
 
         offsets.set_size(0, 20.0);
         offsets.set_size(1, 30.0);
         offsets.set_size(2, 40.0);
 
-        assert!(offsets.insert(1));
+        assert_eq!(
+            offsets.insert(1),
+            vec![(1, offsets.default), (2, 30.0), (3, 40.0)]
+        );
 
         assert_eq!(offsets.get_size(0), 20.0);
         assert_eq!(offsets.get_size(1), 10.0); // New inserted offset
@@ -365,7 +383,7 @@ mod tests {
     fn test_delete() {
         let mut offsets = Offsets::new(10.0);
 
-        assert!(!offsets.delete(0).0);
+        assert_eq!(offsets.delete(0), (vec![], None));
 
         offsets.set_size(0, 20.0);
         offsets.set_size(1, 30.0);
@@ -373,8 +391,9 @@ mod tests {
 
         let deleted = offsets.delete(1);
 
-        assert_eq!(deleted, (true, Some(30.0)));
+        assert_eq!(deleted, (vec![(1, 40.0), (2, offsets.default)], Some(30.0)));
         assert_eq!(offsets.get_size(0), 20.0);
         assert_eq!(offsets.get_size(1), 40.0); // Shifted
+        assert_eq!(offsets.get_size(2), offsets.default);
     }
 }

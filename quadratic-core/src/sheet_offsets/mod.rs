@@ -242,31 +242,35 @@ impl SheetOffsets {
 
     /// Inserts a column offset at the given column index.
     ///
-    /// Returns whether the offsets structure changed.
-    pub fn insert_column(&mut self, column: i64) -> bool {
+    /// Returns a vector of changes made to the offsets structure, where each change
+    /// is represented as a tuple (index, new_size).
+    pub fn insert_column(&mut self, column: i64) -> Vec<(i64, f64)> {
         self.column_widths.insert(column)
     }
 
     /// Deletes a column offset at the given column index.
     ///
-    /// Returns a tuple of (bool, old_size), where the bool is whether the
-    /// offsets structure changed and the old_size provides any delete value.
-    pub fn delete_column(&mut self, column: i64) -> (bool, Option<f64>) {
+    /// Returns a tuple of (Vec<(i64, f64)>, Option<f64>), where the Vec contains
+    /// the changes made to the offsets structure, and the Option<f64> is the
+    /// old size of the removed offset, if it existed.
+    pub fn delete_column(&mut self, column: i64) -> (Vec<(i64, f64)>, Option<f64>) {
         self.column_widths.delete(column)
     }
 
     /// Inserts a row offset at the given row index.
     ///
-    /// Returns whether the offset structure changed.
-    pub fn insert_row(&mut self, row: i64) -> bool {
+    /// Returns a vector of changes made to the offsets structure, where each change
+    /// is represented as a tuple (index, new_size).
+    pub fn insert_row(&mut self, row: i64) -> Vec<(i64, f64)> {
         self.row_heights.insert(row)
     }
 
     /// Deletes a row offset at the given row index.
     ///
-    /// Returns a tuple of (bool, old_size), where the bool is whether the
-    /// offsets structure changed and the old_size provides any delete value.
-    pub fn delete_row(&mut self, row: i64) -> (bool, Option<f64>) {
+    /// Returns a tuple of (Vec<(i64, f64)>, Option<f64>), where the Vec contains
+    /// the changes made to the offsets structure, and the Option<f64> is the
+    /// old size of the removed offset, if it existed.
+    pub fn delete_row(&mut self, row: i64) -> (Vec<(i64, f64)>, Option<f64>) {
         self.row_heights.delete(row)
     }
 }

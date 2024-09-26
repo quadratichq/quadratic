@@ -89,6 +89,9 @@ pub struct PendingTransaction {
 
     // sheets w/updated offsets
     pub sheet_info: HashSet<SheetId>,
+
+    // offsets modified (sheet_id, column, row, new_size)
+    pub offsets_modified: Vec<(SheetId, Option<i64>, Option<i64>, f64)>,
 }
 
 impl Default for PendingTransaction {
@@ -118,6 +121,7 @@ impl Default for PendingTransaction {
             image_cells: HashMap::new(),
             fill_cells: HashSet::new(),
             sheet_info: HashSet::new(),
+            offsets_modified: Vec::new(),
         }
     }
 }
@@ -260,11 +264,6 @@ impl PendingTransaction {
                     .extend(changed_hashes);
             }
         }
-    }
-
-    /// Marks a sheet's offsets as dirty
-    pub fn sheet_info_changed(&mut self, sheet_id: SheetId) {
-        self.sheet_info.insert(sheet_id);
     }
 }
 

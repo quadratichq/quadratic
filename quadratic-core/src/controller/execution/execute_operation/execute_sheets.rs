@@ -145,7 +145,7 @@ impl GridController {
                     order: original_order,
                 });
 
-            transaction.sheet_info_changed(target);
+            transaction.sheet_info.insert(target);
         }
     }
 
@@ -172,7 +172,7 @@ impl GridController {
                     name: old_name,
                 });
 
-            transaction.sheet_info_changed(sheet_id);
+            transaction.sheet_info.insert(sheet_id);
         }
     }
 
@@ -199,7 +199,7 @@ impl GridController {
                     color: old_color,
                 });
 
-            transaction.sheet_info_changed(sheet_id);
+            transaction.sheet_info.insert(sheet_id);
         }
     }
 

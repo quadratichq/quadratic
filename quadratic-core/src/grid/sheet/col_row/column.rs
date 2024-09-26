@@ -99,8 +99,12 @@ impl Sheet {
                     client_resized: false,
                 });
         }
-        if changed && !transaction.is_server() {
-            transaction.sheet_info_changed(self.id);
+        if !changed.is_empty() && !transaction.is_server() {
+            changed.iter().for_each(|(index, size)| {
+                transaction
+                    .offsets_modified
+                    .push((self.id, Some(*index), None, *size));
+            });
         }
     }
 
@@ -393,8 +397,13 @@ impl Sheet {
 
         self.copy_column_formats(transaction, column, copy_formats);
 
-        if self.offsets.insert_column(column) {
-            transaction.sheet_info_changed(self.id);
+        let changes = self.offsets.insert_column(column);
+        if !changes.is_empty() {
+            changes.iter().for_each(|(index, size)| {
+                transaction
+                    .offsets_modified
+                    .push((self.id, Some(*index), None, *size));
+            });
         }
     }
 }

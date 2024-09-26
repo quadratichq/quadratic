@@ -292,7 +292,7 @@ mod tests {
             CodeCellLanguage,
         },
         selection::Selection,
-        wasm_bindings::js::expect_js_call_count,
+        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
         Pos, Rect, SheetPos, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT,
     };
 
@@ -754,6 +754,14 @@ mod tests {
         );
     }
 
+    fn expect_js_offsets(sheet_id: SheetId, column: Option<i64>, row: Option<i64>, new_size: f64) {
+        expect_js_call(
+            "jsOffsetsModified",
+            format!("{},{:?},{:?},{}", sheet_id, column, row, new_size),
+            false,
+        );
+    }
+
     #[test]
     #[serial]
     fn insert_column_offsets() {
@@ -761,7 +769,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.insert_column(sheet_id, 1, true, None);
-        expect_js_call_count("jsSheetInfoUpdate", 0, true);
+        expect_js_call_count("jsOffsetsModified", 0, true);
 
         let sheet = gc.sheet_mut(sheet_id);
         sheet.offsets.set_column_width(1, 100.0);
@@ -769,7 +777,11 @@ mod tests {
         sheet.offsets.set_column_width(4, 400.0);
 
         gc.insert_column(sheet_id, 2, true, None);
-        expect_js_call_count("jsSheetInfoUpdate", 1, true);
+        expect_js_offsets(sheet_id, Some(2), None, DEFAULT_COLUMN_WIDTH);
+        expect_js_offsets(sheet_id, Some(3), None, 200.0);
+        expect_js_offsets(sheet_id, Some(4), None, DEFAULT_COLUMN_WIDTH);
+        expect_js_offsets(sheet_id, Some(5), None, 400.0);
+        clear_js_calls();
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.offsets.column_width(1), 100.0);
@@ -785,7 +797,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.delete_columns(sheet_id, vec![2], None);
-        expect_js_call_count("jsSheetInfoUpdate", 0, true);
+        expect_js_call_count("jsOffsetsModified", 0, true);
 
         let sheet = gc.sheet_mut(sheet_id);
         sheet.offsets.set_column_width(1, 100.0);
@@ -793,7 +805,10 @@ mod tests {
         sheet.offsets.set_column_width(4, 400.0);
 
         gc.delete_columns(sheet_id, vec![2], None);
-        expect_js_call_count("jsSheetInfoUpdate", 1, true);
+        expect_js_offsets(sheet_id, Some(2), None, DEFAULT_COLUMN_WIDTH);
+        expect_js_offsets(sheet_id, Some(3), None, 400.0);
+        expect_js_offsets(sheet_id, Some(4), None, DEFAULT_COLUMN_WIDTH);
+        clear_js_calls();
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.offsets.column_width(1), 100.0);
@@ -808,7 +823,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.insert_row(sheet_id, 1, true, None);
-        expect_js_call_count("jsSheetInfoUpdate", 0, true);
+        expect_js_call_count("jsOffsetsModified", 0, true);
 
         let sheet = gc.sheet_mut(sheet_id);
         sheet.offsets.set_row_height(1, 100.0);
@@ -816,7 +831,11 @@ mod tests {
         sheet.offsets.set_row_height(4, 400.0);
 
         gc.insert_row(sheet_id, 2, true, None);
-        expect_js_call_count("jsSheetInfoUpdate", 1, true);
+        expect_js_offsets(sheet_id, None, Some(2), DEFAULT_ROW_HEIGHT);
+        expect_js_offsets(sheet_id, None, Some(3), 200.0);
+        expect_js_offsets(sheet_id, None, Some(4), DEFAULT_ROW_HEIGHT);
+        expect_js_offsets(sheet_id, None, Some(5), 400.0);
+        clear_js_calls();
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.offsets.row_height(1), 100.0);
@@ -832,7 +851,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.delete_rows(sheet_id, vec![2, 3], None);
-        expect_js_call_count("jsSheetInfoUpdate", 0, true);
+        expect_js_call_count("jsOffsetsModified", 0, true);
 
         let sheet = gc.sheet_mut(sheet_id);
         sheet.offsets.set_row_height(1, 100.0);
@@ -841,7 +860,11 @@ mod tests {
         sheet.offsets.set_row_height(4, 400.0);
 
         gc.delete_rows(sheet_id, vec![2, 3], None);
-        expect_js_call_count("jsSheetInfoUpdate", 1, true);
+        expect_js_offsets(sheet_id, None, Some(2), 400.0);
+        expect_js_offsets(sheet_id, None, Some(3), DEFAULT_ROW_HEIGHT);
+        expect_js_offsets(sheet_id, None, Some(4), DEFAULT_ROW_HEIGHT);
+        clear_js_calls();
+
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.offsets.row_height(1), 100.0);
         assert_eq!(sheet.offsets.row_height(2), 400.0);

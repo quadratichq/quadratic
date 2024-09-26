@@ -183,6 +183,13 @@ impl GridController {
             transaction.sheet_info.iter().for_each(|sheet_id| {
                 self.send_sheet_info(*sheet_id);
             });
+
+            transaction
+                .offsets_modified
+                .iter()
+                .for_each(|(sheet_id, column, row, new_size)| {
+                    self.send_offsets_modified(*sheet_id, *column, *row, *new_size);
+                });
         }
     }
 
