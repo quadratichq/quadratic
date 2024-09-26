@@ -9,14 +9,14 @@ export const MODEL_OPTIONS: {
     enabled: boolean;
   };
 } = {
-  'claude-3-5-sonnet-20240620': {
-    displayName: 'Anthropic: claude-3.5-sonnet',
+  'gpt-4o': {
+    displayName: 'OpenAI: gpt-4o',
     temperature: 0,
     stream: true,
     enabled: true,
   },
-  'gpt-4o': {
-    displayName: 'OpenAI: gpt-4o',
+  'claude-3-5-sonnet-20240620': {
+    displayName: 'Anthropic: claude-3.5-sonnet',
     temperature: 0,
     stream: true,
     enabled: true,
