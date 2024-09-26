@@ -12,6 +12,10 @@
  */
 
 import { Bounds } from '@/app/grid/sheet/Bounds';
+import { CellsDrawRects } from '@/app/gridGL/cells/cellsLabel/CellsDrawRects';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { Link } from '@/app/gridGL/types/links';
+import { DrawRects } from '@/app/gridGL/types/size';
 import { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import { CellsTextHashContent } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashContent';
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
@@ -50,6 +54,11 @@ export class CellsTextHash extends Container {
 
   content: CellsTextHashContent;
 
+  links: Link[];
+
+  newDrawRects: DrawRects[];
+  drawRects: CellsDrawRects;
+
   constructor(sheetId: string, hashX: number, hashY: number, viewRectangle?: Rectangle) {
     super();
     this.AABB = new Rectangle(hashX * sheetHashWidth, hashY * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
@@ -62,6 +71,10 @@ export class CellsTextHash extends Container {
     this.warnings = this.addChild(new CellsTextHashValidations(this, sheetId));
 
     this.content = new CellsTextHashContent();
+    this.links = [];
+
+    this.newDrawRects = [];
+    this.drawRects = this.addChild(new CellsDrawRects());
 
     // we track the bounds of both the text and validations
     this.bounds = new Bounds();
@@ -71,6 +84,7 @@ export class CellsTextHash extends Container {
   clear() {
     this.entries.removeChildren();
     this.special.clear();
+    this.drawRects.clear();
   }
 
   addLabelMeshEntry(message: RenderClientLabelMeshEntry) {
@@ -82,6 +96,8 @@ export class CellsTextHash extends Container {
     this.newChildren.forEach((child) => this.entries.addChild(child));
     this.newChildren = [];
     this.special.update(special);
+    this.drawRects.update(this.newDrawRects);
+    this.newDrawRects = [];
   }
 
   updateHashBounds() {
@@ -158,4 +174,18 @@ export class CellsTextHash extends Container {
   intersectsErrorMarkerValidation(world: Point): ErrorValidation | undefined {
     return this.warnings.intersectsErrorMarkerValidation(world);
   }
+
+  intersectsLink = (world: Point): Link | undefined => {
+    for (const link of this.links) {
+      const textRectangle = new Rectangle(
+        link.textRectangle.x + this.x,
+        link.textRectangle.y + this.y,
+        link.textRectangle.width,
+        link.textRectangle.height
+      );
+      const isLink = intersects.rectanglePoint(textRectangle, world);
+      if (isLink) return { pos: link.pos, textRectangle };
+    }
+    return undefined;
+  };
 }

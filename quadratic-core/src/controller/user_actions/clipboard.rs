@@ -49,19 +49,19 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use crate::{
-        color::Rgba,
-        controller::GridController,
-        grid::{
-            formats::format_update::FormatUpdate, generate_borders, js_types::CellFormatSummary,
-            set_rect_borders, BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage,
-            Sheet, SheetId,
-        },
-        CellValue, CodeCellValue, Pos, Rect, SheetPos, SheetRect,
-    };
     use bigdecimal::BigDecimal;
     use serial_test::parallel;
+
+    use super::*;
+    use crate::color::Rgba;
+    use crate::controller::GridController;
+    use crate::grid::formats::format_update::FormatUpdate;
+    use crate::grid::js_types::CellFormatSummary;
+    use crate::grid::{
+        generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellBorderLine,
+        CodeCellLanguage, Sheet, SheetId,
+    };
+    use crate::{CellValue, CodeCellValue, Pos, Rect, SheetPos, SheetRect};
 
     fn set_borders(sheet: &mut Sheet) {
         let selection = vec![BorderSelection::All];
@@ -125,19 +125,39 @@ mod test {
             Some(true),
             None,
         );
+        set_cell_value(&mut gc, sheet_id, "underline", 5, 3);
+        gc.set_cell_underline(
+            SheetRect {
+                min: Pos { x: 5, y: 3 },
+                max: Pos { x: 5, y: 3 },
+                sheet_id,
+            },
+            Some(true),
+            None,
+        );
+        set_cell_value(&mut gc, sheet_id, "strike through", 7, 4);
+        gc.set_cell_strike_through(
+            SheetRect {
+                min: Pos { x: 7, y: 4 },
+                max: Pos { x: 7, y: 4 },
+                sheet_id,
+            },
+            Some(true),
+            None,
+        );
 
         let rect = Rect {
             min: Pos { x: 1, y: 1 },
-            max: Pos { x: 3, y: 2 },
+            max: Pos { x: 7, y: 4 },
         };
 
         let selection = Selection::rect(rect, sheet_id);
         let sheet = gc.sheet(sheet_id);
         let (plain_text, _) = sheet.copy_to_clipboard(&selection).unwrap();
-        assert_eq!(plain_text, String::from("1, 1\t\t\n\t\t12"));
+        assert_eq!(plain_text, String::from("1, 1\t\t\t\t\t\t\n\t\t12\t\t\t\t\n\t\t\t\tunderline\t\t\n\t\t\t\t\t\tstrike through"));
 
         let selection = Selection::rect(
-            Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 3, y: 3 }),
+            Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 7, y: 5 }),
             sheet_id,
         );
         let clipboard = sheet.copy_to_clipboard(&selection).unwrap();
@@ -182,7 +202,17 @@ mod test {
             sheet.cell_format_summary(Pos { x: 1, y: 1 }, false),
             CellFormatSummary {
                 bold: Some(true),
-                ..Default::default()
+                italic: None,
+                text_color: None,
+                fill_color: None,
+                commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None,
+                date_time: None,
+                cell_type: None,
+                underline: None,
+                strike_through: None,
             }
         );
         assert_eq!(
@@ -192,8 +222,60 @@ mod test {
         assert_eq!(
             sheet.cell_format_summary(Pos { x: 3, y: 2 }, false),
             CellFormatSummary {
+                bold: None,
                 italic: Some(true),
-                ..Default::default()
+                text_color: None,
+                fill_color: None,
+                commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None,
+                date_time: None,
+                cell_type: None,
+                underline: None,
+                strike_through: None
+            }
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 5, y: 3 }),
+            Some(CellValue::Text(String::from("underline")))
+        );
+        assert_eq!(
+            sheet.cell_format_summary(Pos { x: 5, y: 3 }, false),
+            CellFormatSummary {
+                bold: None,
+                italic: None,
+                text_color: None,
+                fill_color: None,
+                commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None,
+                date_time: None,
+                cell_type: None,
+                underline: Some(true),
+                strike_through: None
+            }
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 7, y: 4 }),
+            Some(CellValue::Text(String::from("strike through")))
+        );
+        assert_eq!(
+            sheet.cell_format_summary(Pos { x: 7, y: 4 }, false),
+            CellFormatSummary {
+                bold: None,
+                italic: None,
+                text_color: None,
+                fill_color: None,
+                commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None,
+                date_time: None,
+                cell_type: None,
+                underline: None,
+                strike_through: Some(true),
             }
         );
     }
@@ -711,14 +793,34 @@ mod test {
             sheet.cell_format_summary(Pos { x: 1, y: 1 }, false),
             CellFormatSummary {
                 bold: Some(true),
-                ..Default::default()
+                italic: None,
+                text_color: None,
+                fill_color: None,
+                commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None,
+                date_time: None,
+                cell_type: None,
+                underline: None,
+                strike_through: None
             }
         );
         assert_eq!(
             sheet.cell_format_summary(Pos { x: 2, y: 2 }, false),
             CellFormatSummary {
+                bold: None,
                 italic: Some(true),
-                ..Default::default()
+                text_color: None,
+                fill_color: None,
+                commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None,
+                date_time: None,
+                cell_type: None,
+                underline: None,
+                strike_through: None
             }
         );
     }
@@ -857,14 +959,34 @@ mod test {
             sheet.cell_format_summary(Pos { x: 1, y: 2 }, false),
             CellFormatSummary {
                 bold: Some(true),
-                ..Default::default()
+                italic: None,
+                text_color: None,
+                fill_color: None,
+                commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None,
+                date_time: None,
+                cell_type: None,
+                underline: None,
+                strike_through: None
             }
         );
         assert_eq!(
             sheet.cell_format_summary(Pos { x: 3, y: 4 }, false),
             CellFormatSummary {
+                bold: None,
+                italic: None,
+                text_color: None,
                 fill_color: Some("red".to_string()),
-                ..Default::default()
+                commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None,
+                date_time: None,
+                cell_type: None,
+                underline: None,
+                strike_through: None
             }
         );
     }

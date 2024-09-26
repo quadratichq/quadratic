@@ -1,13 +1,8 @@
 import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
-import { sheets } from '@/app/grid/controller/Sheets';
-import { downloadFile, downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
-import { FileContextType } from '@/app/ui/components/FileProvider';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { getActionFileDuplicate } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
-import { DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { ApiTypes, FilePermission, FilePermissionSchema, TeamPermission } from 'quadratic-shared/typesAndSchemas';
 import { SubmitFunction } from 'react-router-dom';
 import { SetterOrUpdater } from 'recoil';
@@ -63,7 +58,7 @@ export const hasPermissionToEditFile = (filePermissions: FilePermission[]) => fi
 // They are shared between actions here and command palette actions
 export const isAvailableBecauseCanEditFile = ({ filePermissions }: IsAvailableArgs) =>
   hasPermissionToEditFile(filePermissions);
-const isAvailableBecauseLoggedIn = ({ isAuthenticated }: IsAvailableArgs) => isAuthenticated;
+export const isAvailableBecauseLoggedIn = ({ isAuthenticated }: IsAvailableArgs) => isAuthenticated;
 export const isAvailableBecauseFileLocationIsAccessibleAndWriteable = ({
   fileTeamPrivacy,
   teamPermissions,
@@ -77,25 +72,12 @@ export const createNewFileAction = {
   },
 };
 
-export const renameFileAction = {
-  label: 'Rename',
-  isAvailable: isAvailableBecauseCanEditFile,
-};
-
 export const duplicateFileAction = {
   label: 'Duplicate',
   isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
   async run({ uuid, submit }: { uuid: string; submit: SubmitFunction }) {
     const data = getActionFileDuplicate({ redirect: true, isPrivate: true });
     submit(data, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
-  },
-};
-
-export const downloadFileAction = {
-  label: 'Download',
-  isAvailable: isAvailableBecauseLoggedIn,
-  async run({ name }: { name: FileContextType['name'] }) {
-    downloadQuadraticFile(name, await quadraticCore.export());
   },
 };
 
@@ -123,47 +105,6 @@ export const provideFeedbackAction = {
   },
 };
 
-export const viewDocsAction = {
-  label: 'Docs',
-  run() {
-    window.open(DOCUMENTATION_URL, '_blank')?.focus();
-  },
-};
-
-export const cutAction = {
-  label: 'Cut',
-  isAvailable: isAvailableBecauseCanEditFile,
-};
-
-export const pasteAction = {
-  label: 'Paste',
-  isAvailable: isAvailableBecauseCanEditFile,
-};
-
-export const pasteActionValues = {
-  label: 'Paste values only',
-  isAvailable: isAvailableBecauseCanEditFile,
-};
-
-export const pasteActionFormats = {
-  label: 'Paste formats only',
-  isAvailable: isAvailableBecauseCanEditFile,
-};
-
-export const undoAction = {
-  label: 'Undo',
-  isAvailable: isAvailableBecauseCanEditFile,
-};
-
-export const redoAction = {
-  label: 'Redo',
-  isAvailable: isAvailableBecauseCanEditFile,
-};
-
-export const copyAction = {
-  label: 'Copy',
-};
-
 export const rerunCellAction = {
   label: 'Run this code cell',
   isAvailable: isAvailableBecauseCanEditFile,
@@ -179,23 +120,9 @@ export const rerunSheetAction = {
   isAvailable: isAvailableBecauseCanEditFile,
 };
 
-export const downloadSelectionAsCsvAction = {
-  label: 'Download selection as CSV',
-  async run({ fileName }: { fileName: string }) {
-    downloadFile(fileName, await quadraticCore.exportCsvSelection(sheets.getRustSelection()), 'text/plain', 'csv');
-  },
-};
-
 export const dataValidations = {
   label: 'Data Validations',
   isAvailable: isAvailableBecauseCanEditFile,
-};
-
-export const findInSheet = {
-  label: 'Find in current sheet',
-};
-export const findInSheets = {
-  label: 'Find in all sheets',
 };
 
 export const resizeColumnAction = {

@@ -1,22 +1,15 @@
 use code_run::CodeRunResult;
 
-use crate::{
-    controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-    grid::{
-        borders::{get_render_horizontal_borders, get_render_vertical_borders},
-        code_run,
-        formats::format::Format,
-        js_types::{
-            JsHtmlOutput, JsNumber, JsRenderBorders, JsRenderCell, JsRenderCellSpecial,
-            JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsSheetFill,
-            JsValidationWarning,
-        },
-        CellAlign, CodeCellLanguage, CodeRun, Column,
-    },
-    CellValue, Pos, Rect, RunError, RunErrorMsg, Value,
-};
-
 use super::Sheet;
+use crate::controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
+use crate::grid::borders::{get_render_horizontal_borders, get_render_vertical_borders};
+use crate::grid::formats::format::Format;
+use crate::grid::js_types::{
+    JsHtmlOutput, JsNumber, JsRenderBorders, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
+    JsRenderCodeCellState, JsRenderFill, JsSheetFill, JsValidationWarning,
+};
+use crate::grid::{code_run, CellAlign, CodeCellLanguage, CodeRun, Column};
+use crate::{CellValue, Pos, Rect, RunError, RunErrorMsg, Value};
 
 impl Sheet {
     /// checks columns for any column that has data that might render
@@ -114,6 +107,8 @@ impl Sheet {
                     text_color: format.text_color,
                     special,
                     number,
+                    underline: format.underline,
+                    strike_through: format.strike_through,
                 }
             }
             Some(column) => {
@@ -151,6 +146,8 @@ impl Sheet {
                     vertical_align: format.vertical_align,
                     special,
                     number,
+                    underline: format.underline,
+                    strike_through: format.strike_through,
                 }
             }
         }
@@ -977,6 +974,27 @@ mod tests {
             }
             assert_eq!(rendering.special, Some(JsRenderCellSpecial::Logical));
         }
+    }
+
+    #[test]
+    #[parallel]
+    fn render_cells_duration() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value((0, 0, sheet_id).into(), "1 week, 3 days".to_string(), None);
+        gc.set_cell_value((0, 1, sheet_id).into(), "36 mo 500 ms".to_string(), None);
+        gc.set_cell_value((0, 2, sheet_id).into(), "1 min, 10 ms".to_string(), None);
+        gc.set_cell_value((0, 3, sheet_id).into(), "0.2 millisecond".to_string(), None);
+
+        let sheet = gc.sheet(sheet_id);
+        let rendering = sheet.get_render_cells(Rect {
+            min: (0, 0).into(),
+            max: (0, 3).into(),
+        });
+        assert_eq!(rendering[0].value, "10d");
+        assert_eq!(rendering[1].value, "3y 0d 0h 0m 0.5s");
+        assert_eq!(rendering[2].value, "1m 0.01s");
+        assert_eq!(rendering[3].value, "200µs");
     }
 
     #[test]

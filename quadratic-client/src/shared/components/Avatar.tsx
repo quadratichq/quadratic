@@ -1,4 +1,4 @@
-import { getAuth0AvatarSrc } from '@/shared/utils/auth0UserImageSrc';
+import { getAuth0AvatarSrc } from '@/app/helpers/links';
 import React, { ImgHTMLAttributes, forwardRef } from 'react';
 
 interface AvatarProps extends ImgHTMLAttributes<HTMLImageElement> {

@@ -1,20 +1,29 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { MULTIPLAYER_COLORS } from '@/app/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { TooltipHint } from '@/app/ui/components/TooltipHint';
+import { getAuth0AvatarSrc } from '@/app/helpers/links';
+import { colors } from '@/app/theme/colors';
+import { useMultiplayerUsers } from '@/app/ui/menus/TopBar/useMultiplayerUsers';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { getAuth0AvatarSrc } from '@/shared/utils/auth0UserImageSrc';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shared/shadcn/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { displayInitials, displayName } from '@/shared/utils/userUtil';
-import { Avatar, AvatarGroup, IconButton } from '@mui/material';
+import { Avatar, AvatarGroup } from '@mui/material';
 import { EyeOpenIcon } from '@radix-ui/react-icons';
+import { useSubmit } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { colors } from '../../../theme/colors';
-import { useMultiplayerUsers } from './useMultiplayerUsers';
 
 const sharedAvatarSxProps = { width: 24, height: 24, fontSize: '.8125rem' };
 
 export const TopBarUsers = () => {
+  const submit = useSubmit();
   const { loggedInUser: user } = useRootRouteLoaderData();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { users, followers } = useMultiplayerUsers();
@@ -30,8 +39,8 @@ export const TopBarUsers = () => {
     <>
       {/* TODO(ayush): create custom AvatarGroup component */}
       <AvatarGroup
-        spacing={16}
         componentsProps={{ additionalAvatar: { sx: sharedAvatarSxProps } }}
+        className="gap-1"
         sx={{
           alignSelf: 'center',
           alignItems: 'center',
@@ -42,15 +51,28 @@ export const TopBarUsers = () => {
         max={5}
       >
         {
-          <div className={`ml-2`}>
-            <You
-              displayName={displayName(user ?? anonymous, true)}
-              initial={displayInitials(user ?? anonymous)}
-              picture={user?.picture ?? ''}
-              border={multiplayer.colorString ?? 'black'}
-              bgColor={multiplayer.colorString}
-            />
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger>
+              <You
+                displayName={displayName(user ?? anonymous, true)}
+                initial={displayInitials(user ?? anonymous)}
+                picture={user?.picture ?? ''}
+                border={multiplayer.colorString ?? 'black'}
+                bgColor={multiplayer.colorString}
+              />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="text-sm">
+              <DropdownMenuItem disabled>{user?.email}</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  submit(null, { action: '/logout', method: 'POST' });
+                }}
+              >
+                Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         }
         {users.map((user) => {
           return (
@@ -87,22 +109,29 @@ function You({
   bgColor?: string;
 }) {
   return (
-    <TooltipHint title={displayName}>
-      <Avatar
-        sx={{
-          bgcolor: bgColor ?? colors.quadraticSecondary,
-          ...sharedAvatarSxProps,
-        }}
-        alt={displayName}
-        src={getAuth0AvatarSrc(picture)}
-        imgProps={{ crossOrigin: 'anonymous' }}
-        style={{
-          border: `2px solid ${border}`,
-        }}
-      >
-        {initial}
-      </Avatar>
-    </TooltipHint>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Avatar
+          sx={{
+            bgcolor: bgColor ?? colors.quadraticSecondary,
+            ...sharedAvatarSxProps,
+          }}
+          alt={displayName}
+          src={getAuth0AvatarSrc(picture)}
+          imgProps={{ crossOrigin: 'anonymous' }}
+          style={{
+            border: `2px solid ${border}`,
+          }}
+        >
+          {initial}
+        </Avatar>
+      </TooltipTrigger>
+      <TooltipPortal>
+        <TooltipContent>
+          <p>{displayName}</p>
+        </TooltipContent>
+      </TooltipPortal>
+    </Tooltip>
   );
 }
 
@@ -142,13 +171,10 @@ function UserAvatar({
     });
   };
   return (
-    <div className="relative">
-      <TooltipHint
-        title={displayName}
-        shortcut={follower ? 'following you' : `Click to ${follow ? 'unfollow' : 'follow'}`}
-      >
-        <IconButton sx={{ borderRadius: 0, px: '.25rem' }} onClick={handleFollow}>
-          <div>
+    <div className="hidden lg:relative lg:flex lg:items-center">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button onClick={handleFollow}>
             <Avatar
               sx={{
                 bgcolor: bgColor ?? colors.quadraticSecondary,
@@ -166,9 +192,19 @@ function UserAvatar({
             >
               {initial}
             </Avatar>
-          </div>
-        </IconButton>
-      </TooltipHint>
+          </button>
+        </TooltipTrigger>
+        <TooltipPortal>
+          <TooltipContent>
+            <p>
+              {displayName}{' '}
+              <span className="opacity-70">
+                ({follower ? 'following you' : `Click to ${follow ? 'unfollow' : 'follow'}`})
+              </span>
+            </p>
+          </TooltipContent>
+        </TooltipPortal>
+      </Tooltip>
       {follow && (
         <div className="pointer-events-none absolute bottom-1 left-1/2 flex h-5  w-5 items-center justify-center rounded-full bg-white">
           <EyeOpenIcon />
