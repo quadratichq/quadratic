@@ -23,7 +23,7 @@ export const convertNumber = (n: string, format: JsNumber, currentFractionDigits
   if (currentFractionDigits === undefined) {
     if (format.decimals !== null) {
       currentFractionDigits = format.decimals;
-    } else if (isCurrency || isScientific) {
+    } else if (isCurrency || isScientific || isPercent) {
       currentFractionDigits = 2;
     }
   }
