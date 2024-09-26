@@ -209,13 +209,13 @@ ORDER BY
                 .entry(table_name.to_owned())
                 .or_insert_with(|| SchemaTable {
                     name: table_name,
-                    schema: safe_get(row.get(3), "Schema"),
+                    schema: safe_get(row.get(1), "Schema"),
                     columns: vec![],
                 })
                 .columns
                 .push(SchemaColumn {
-                    name: safe_get(row.get(4), "Column"),
-                    r#type: safe_get(row.get(5), "Type"),
+                    name: safe_get(row.get(3), "Column"),
+                    r#type: safe_get(row.get(4), "Type"),
                     is_nullable: row.get(5).map_or("NO", |v| v).to_uppercase() == "YES",
                 });
         }
