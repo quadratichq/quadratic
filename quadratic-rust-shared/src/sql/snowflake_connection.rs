@@ -94,15 +94,22 @@ impl Connection for SnowflakeConnection {
 
     async fn query(
         &self,
-        client: &mut Self::Conn,
+        _client: &mut Self::Conn,
         sql: &str,
         max_bytes: Option<u64>,
     ) -> Result<(Bytes, bool, usize)> {
         let query_error = |e: String| SharedError::Sql(Sql::Query(e));
-        let query_result = client
+
+        #[cfg(test)]
+        let (mut _client, _recording) = tests::get_mocked(&self, "snowflake-connection").await;
+
+        let query_result = _client
             .exec_raw(sql, true)
             .await
             .map_err(|e| query_error(e.to_string()))?;
+
+        #[cfg(all(test, feature = "record-request-mock"))]
+        record_stop(scenario, _recording).await;
 
         if let RawQueryResult::Stream(mut bytes_stream) = query_result {
             let mut chunks = vec![];
@@ -122,7 +129,7 @@ impl Connection for SnowflakeConnection {
             let bytes = chunks.into_iter().flatten().collect::<Vec<u8>>();
             let resp = serde_json::from_slice::<ExecResponse>(&bytes)
                 .map_err(|e| query_error(e.to_string()))?;
-            let raw_query_result = client
+            let raw_query_result = _client
                 .parse_arrow_raw_response(resp)
                 .await
                 .map_err(|e| query_error(e.to_string()))?;
@@ -150,7 +157,7 @@ impl Connection for SnowflakeConnection {
         )))
     }
 
-    async fn schema(&self, client: &mut Self::Conn) -> Result<DatabaseSchema> {
+    async fn schema(&self, _client: &mut Self::Conn) -> Result<DatabaseSchema> {
         let database = self.database.to_owned();
         let sql = format!(
             "
@@ -182,10 +189,17 @@ impl Connection for SnowflakeConnection {
                 col.ordinal_position;"
         );
 
-        let row_stream = client
+        #[cfg(test)]
+        let (mut _client, _recording) =
+            tests::get_mocked(&self, "snowflake-connection-schema").await;
+
+        let row_stream = _client
             .exec(&sql)
             .await
             .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
+
+        #[cfg(all(test, feature = "record-request-mock"))]
+        record_stop(scenario, _recording).await;
 
         let mut data = vec![vec![]; 6];
 
@@ -249,7 +263,7 @@ impl Connection for SnowflakeConnection {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
 
     use crate::parquet::utils::compare_parquet_file_with_bytes;
     use crate::test::request::get_server;
@@ -258,6 +272,7 @@ mod tests {
     use crate::test::request::{record_start, record_stop};
 
     use super::*;
+    use httpmock::{MockServer, Recording};
     use tracing_test::traced_test;
 
     const PARQUET_FILE: &str = "data/parquet/all_native_data_types-snowflake.parquet";
@@ -272,6 +287,42 @@ mod tests {
             None,
             None,
         )
+    }
+
+    pub fn get_mock_server<'a>(
+        connection: &SnowflakeConnection,
+        scenario: &str,
+    ) -> (Option<Recording<'a>>, MockServer) {
+        let url = format!(
+            "https://{}.snowflakecomputing.com",
+            &connection.account_identifier
+        );
+        let server = get_server(cfg!(feature = "record-request-mock"), scenario, &url);
+
+        #[cfg(feature = "record-request-mock")]
+        return (Some(record_start(&server)), server);
+
+        (None, server)
+    }
+
+    pub async fn get_mocked_client(
+        connection: &SnowflakeConnection,
+        server: &MockServer,
+    ) -> SnowflakeApi {
+        connection
+            .connect()
+            .await
+            .map(|c| c.with_host(Some(server.base_url())))
+            .unwrap()
+    }
+
+    pub async fn get_mocked<'a>(
+        connection: &'a SnowflakeConnection,
+        scenario: &'a str,
+    ) -> (SnowflakeApi, Option<Recording<'a>>) {
+        let (recording, server) = tests::get_mock_server(&connection, scenario);
+        let client = tests::get_mocked_client(&connection, &server).await;
+        (client, recording)
     }
 
     // async fn _seed(
@@ -332,26 +383,12 @@ mod tests {
     }
 
     // to record: cargo test --features record-request-mock
-    async fn test_query(max_bytes: Option<u64>, scenario: &str) -> (Bytes, bool, usize) {
+    async fn test_query(max_bytes: Option<u64>) -> (Bytes, bool, usize) {
         let connection = new_snowflake_connection();
-        let url = format!(
-            "https://{}.snowflakecomputing.com",
-            &connection.account_identifier
-        );
-        let server = get_server(cfg!(feature = "record-request-mock"), scenario, &url);
-
-        #[cfg(feature = "record-request-mock")]
-        let recording = record_start(&server);
-
-        // get the snowflake client, using the mock server as the host (`server.base_url()`)
-        let client = connection
-            .connect()
-            .await
-            .map(|c| c.with_host(Some(server.base_url())));
-
+        let mut client = connection.connect().await.unwrap();
         let result = connection
             .query(
-                &mut client.unwrap(),
+                &mut client,
                 "select * from all_native_data_types;",
                 max_bytes,
             )
@@ -359,7 +396,7 @@ mod tests {
             .unwrap();
 
         #[cfg(feature = "record-request-mock")]
-        record_stop(scenario, recording).await;
+        record_stop(scenario, _recording).await;
 
         result
     }
@@ -375,8 +412,7 @@ mod tests {
     #[tokio::test]
     #[traced_test]
     async fn test_snowflake_query() {
-        let scenario = "snowflake-connection";
-        let (rows, over_the_limit, num_records) = test_query(None, scenario).await;
+        let (rows, over_the_limit, num_records) = test_query(None).await;
 
         // ensure the parquet file is the same as the bytes
         assert!(compare_parquet_file_with_bytes(PARQUET_FILE, rows));
@@ -384,7 +420,7 @@ mod tests {
         assert_eq!(num_records, 2);
 
         // // test if we're over the limit
-        let (_, over_the_limit, num_records) = test_query(Some(10), scenario).await;
+        let (_, over_the_limit, num_records) = test_query(Some(10)).await;
         assert_eq!(over_the_limit, true);
         assert_eq!(num_records, 0);
     }
@@ -394,26 +430,8 @@ mod tests {
     #[traced_test]
     async fn test_snowflake_schema() {
         let connection = new_snowflake_connection();
-        let scenario = "snowflake-connection-schema";
-        let url = format!(
-            "https://{}.snowflakecomputing.com",
-            &connection.account_identifier
-        );
-        let server = get_server(cfg!(feature = "record-request-mock"), scenario, &url);
-
-        #[cfg(feature = "record-request-mock")]
-        let recording = record_start(&server);
-
-        // get the snowflake client, using the mock server as the host (`server.base_url()`)
-        let mut client = connection
-            .connect()
-            .await
-            .map(|c| c.with_host(Some(server.base_url())))
-            .unwrap();
+        let mut client = connection.connect().await.unwrap();
         let schema = connection.schema(&mut client).await.unwrap();
-
-        #[cfg(feature = "record-request-mock")]
-        record_stop(scenario, recording).await;
 
         let expected = vec![
             SchemaColumn {
