@@ -37,7 +37,7 @@ const CodeEditorContext = createContext<Context>({
     loading: [false, () => {}],
     messages: [[], () => {}],
     prompt: ['', () => {}],
-    model: ['claude-3-5-sonnet-20240620', () => {}],
+    model: ['gpt-4o', () => {}],
   },
   codeString: [undefined, () => {}],
   consoleOutput: [undefined, () => {}],
@@ -57,7 +57,7 @@ export const CodeEditorProvider = () => {
     loading: useState<Context['aiAssistant']['loading'][0]>(false),
     messages: useState<Context['aiAssistant']['messages'][0]>([]),
     controllerRef: useRef<Context['aiAssistant']['controllerRef']['current']>(null),
-    model: useState<Context['aiAssistant']['model'][0]>('claude-3-5-sonnet-20240620'),
+    model: useState<Context['aiAssistant']['model'][0]>('gpt-4o'),
   };
   const codeString = useState<Context['codeString'][0]>(undefined); // update code cell
   const consoleOutput = useState<Context['consoleOutput'][0]>(undefined);
