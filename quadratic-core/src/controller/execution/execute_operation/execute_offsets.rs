@@ -51,7 +51,9 @@ impl GridController {
             {
                 transaction
                     .offsets_modified
-                    .push((sheet_id, Some(column), None, new_size));
+                    .entry(sheet_id)
+                    .or_default()
+                    .insert((Some(column), None), new_size);
             }
 
             if transaction.is_user() {
@@ -112,7 +114,9 @@ impl GridController {
             {
                 transaction
                     .offsets_modified
-                    .push((sheet_id, None, Some(row), new_size));
+                    .entry(sheet_id)
+                    .or_default()
+                    .insert((None, Some(row)), new_size);
             }
 
             if !transaction.is_server() {
@@ -138,10 +142,6 @@ impl GridController {
                 // sheet may have been deleted
                 return;
             };
-            transaction.forward_operations.push(Operation::ResizeRows {
-                sheet_id,
-                row_heights: row_heights.clone(),
-            });
 
             let old_row_heights: Vec<JsRowHeight> = row_heights
                 .iter()
@@ -158,18 +158,21 @@ impl GridController {
                 return;
             }
 
+            transaction.forward_operations.push(Operation::ResizeRows {
+                sheet_id,
+                row_heights: row_heights.clone(),
+            });
+
             transaction.reverse_operations.push(Operation::ResizeRows {
                 sheet_id,
                 row_heights: old_row_heights,
             });
 
             if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-                if let Ok(row_heights_string) = serde_json::to_string(&row_heights) {
-                    crate::wasm_bindings::js::jsResizeRowHeights(
-                        sheet_id.to_string(),
-                        row_heights_string,
-                    );
-                }
+                let offsets_modified = transaction.offsets_modified.entry(sheet_id).or_default();
+                row_heights.iter().for_each(|&JsRowHeight { row, height }| {
+                    offsets_modified.insert((None, Some(row)), height);
+                });
             }
 
             if !transaction.is_server() {

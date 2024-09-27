@@ -103,7 +103,9 @@ impl Sheet {
             changed.iter().for_each(|(index, size)| {
                 transaction
                     .offsets_modified
-                    .push((self.id, Some(*index), None, *size));
+                    .entry(self.id)
+                    .or_default()
+                    .insert((Some(*index), None), *size);
             });
         }
     }
@@ -402,7 +404,9 @@ impl Sheet {
             changes.iter().for_each(|(index, size)| {
                 transaction
                     .offsets_modified
-                    .push((self.id, Some(*index), None, *size));
+                    .entry(self.id)
+                    .or_default()
+                    .insert((Some(*index), None), *size);
             });
         }
     }

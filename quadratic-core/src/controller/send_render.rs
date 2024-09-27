@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use crate::{
     grid::{js_types::JsRenderFill, RenderSize, SheetId},
@@ -219,17 +219,17 @@ impl GridController {
     pub fn send_offsets_modified(
         &self,
         sheet_id: SheetId,
-        column: Option<i64>,
-        row: Option<i64>,
-        new_size: f64,
+        offsets: &HashMap<(Option<i64>, Option<i64>), f64>,
     ) {
         if cfg!(target_family = "wasm") || cfg!(test) {
-            crate::wasm_bindings::js::jsOffsetsModified(
-                sheet_id.to_string(),
-                column,
-                row,
-                new_size,
-            );
+            offsets.iter().for_each(|(&(column, row), &size)| {
+                crate::wasm_bindings::js::jsOffsetsModified(
+                    sheet_id.to_string(),
+                    column,
+                    row,
+                    size,
+                );
+            });
         }
     }
 

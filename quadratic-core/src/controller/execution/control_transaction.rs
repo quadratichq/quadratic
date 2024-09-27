@@ -38,6 +38,19 @@ impl GridController {
 
             self.process_visible_dirty_hashes(transaction);
 
+            transaction.sheet_info.iter().for_each(|sheet_id| {
+                self.send_sheet_info(*sheet_id);
+            });
+            transaction.sheet_info.clear();
+
+            transaction
+                .offsets_modified
+                .iter()
+                .for_each(|(sheet_id, offsets)| {
+                    self.send_offsets_modified(*sheet_id, offsets);
+                });
+            transaction.offsets_modified.clear();
+
             if transaction.has_async > 0 {
                 self.transactions.update_async_transaction(transaction);
                 break;
@@ -182,17 +195,6 @@ impl GridController {
                     sheet.resend_fills();
                 }
             });
-
-            transaction.sheet_info.iter().for_each(|sheet_id| {
-                self.send_sheet_info(*sheet_id);
-            });
-
-            transaction
-                .offsets_modified
-                .iter()
-                .for_each(|(sheet_id, column, row, new_size)| {
-                    self.send_offsets_modified(*sheet_id, *column, *row, *new_size);
-                });
         }
     }
 
