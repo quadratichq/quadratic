@@ -1,13 +1,17 @@
-use std::io::Cursor;
+use std::{borrow::Cow, io::Cursor};
 
 use anyhow::{anyhow, bail, Result};
-use chrono::{NaiveDate, NaiveTime};
+use chrono::{NaiveDate, NaiveTime, Utc};
 
 use crate::{
     cell_values::CellValues,
+    cellvalue::Import,
     controller::GridController,
-    grid::{file::sheet_schema::export_sheet, CodeCellLanguage, Sheet, SheetId},
-    CellValue, CodeCellValue, Pos, SheetPos,
+    grid::{
+        file::sheet_schema::export_sheet, CodeCellLanguage, DataTable, DataTableKind, Sheet,
+        SheetId,
+    },
+    Array, ArraySize, CellValue, CodeCellValue, Pos, SheetPos, Value,
 };
 use bytes::Bytes;
 use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
@@ -29,8 +33,8 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
         let file: &[u8] = match String::from_utf8_lossy(&file) {
-            std::borrow::Cow::Borrowed(_) => &file,
-            std::borrow::Cow::Owned(_) => {
+            Cow::Borrowed(_) => &file,
+            Cow::Owned(_) => {
                 if let Some(utf) = read_utf16(&file) {
                     return self.import_csv_operations(
                         sheet_id,
@@ -61,7 +65,7 @@ impl GridController {
 
         // then create operations using MAXIMUM_IMPORT_LINES to break up the SetCellValues operations
         let mut ops = vec![] as Vec<Operation>;
-        let mut cell_values = CellValues::new(width, height.min(IMPORT_LINES_PER_OPERATION));
+        let mut cell_values = Array::new_empty(ArraySize::new(width, height).unwrap());
         let mut current_y = 0;
         let mut y: u32 = 0;
         for entry in reader.records() {
@@ -78,24 +82,46 @@ impl GridController {
                             value,
                         );
                         ops.extend(operations);
-                        cell_values.set(x as u32, y, cell_value);
+                        // cell_values.set(x as u32, y, cell_value.clone());
+                        cell_values.set(x as u32, y, cell_value).unwrap();
                     }
                 }
             }
+
             y += 1;
+
             if y >= IMPORT_LINES_PER_OPERATION {
-                ops.push(Operation::SetCellValues {
+                // ops.push(Operation::SetCellValues {
+                //     sheet_pos: SheetPos {
+                //         x: insert_at.x,
+                //         y: insert_at.y + current_y as i64,
+                //         sheet_id,
+                //     },
+                //     values: cell_values,
+                // });
+                let data_table = DataTable {
+                    kind: DataTableKind::Import(Import {
+                        file_name: file_name.to_string(),
+                    }),
+                    value: Value::Array(cell_values),
+                    spill_error: false,
+                    last_modified: Utc::now(),
+                };
+                ops.push(Operation::SetCodeRun {
                     sheet_pos: SheetPos {
                         x: insert_at.x,
                         y: insert_at.y + current_y as i64,
                         sheet_id,
                     },
-                    values: cell_values,
+                    code_run: Some(data_table),
+                    index: y as usize,
                 });
+
                 current_y += y;
                 y = 0;
+
                 let h = (height - current_y).min(IMPORT_LINES_PER_OPERATION);
-                cell_values = CellValues::new(width, h);
+                cell_values = Array::new_empty(ArraySize::new(width, h).unwrap());
 
                 // update the progress bar every time there's a new operation
                 if cfg!(target_family = "wasm") || cfg!(test) {
@@ -113,13 +139,22 @@ impl GridController {
         }
 
         // finally add the final operation
-        ops.push(Operation::SetCellValues {
+        let data_table = DataTable {
+            kind: DataTableKind::Import(Import {
+                file_name: file_name.to_string(),
+            }),
+            value: Value::Array(cell_values),
+            spill_error: false,
+            last_modified: Utc::now(),
+        };
+        ops.push(Operation::SetCodeRun {
             sheet_pos: SheetPos {
                 x: insert_at.x,
                 y: insert_at.y + current_y as i64,
                 sheet_id,
             },
-            values: cell_values,
+            code_run: Some(data_table),
+            index: y as usize,
         });
         Ok(ops)
     }

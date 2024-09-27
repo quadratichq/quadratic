@@ -4,6 +4,7 @@
 //! any given CellValue::Code type (ie, if it doesn't exist then a run hasn't been
 //! performed yet).
 
+use crate::cellvalue::Import;
 use crate::grid::CodeRun;
 use crate::{ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value};
 use chrono::{DateTime, Utc};
@@ -18,6 +19,7 @@ struct DataTableColumn {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum DataTableKind {
     CodeRun(CodeRun),
+    Import(Import),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -32,12 +34,14 @@ impl DataTable {
     pub fn code_run(&self) -> Option<&CodeRun> {
         match self.kind {
             DataTableKind::CodeRun(ref code_run) => Some(code_run),
+            _ => None,
         }
     }
 
     pub fn has_error(&self) -> bool {
         match self.kind {
             DataTableKind::CodeRun(ref code_run) => code_run.error.is_some(),
+            _ => false,
         }
     }
 

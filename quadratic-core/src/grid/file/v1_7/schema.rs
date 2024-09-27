@@ -140,6 +140,7 @@ pub struct CodeRunSchema {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum DataTableKindSchema {
     CodeRun(CodeRunSchema),
+    Import(ImportSchema),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

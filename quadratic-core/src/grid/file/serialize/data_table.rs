@@ -157,6 +157,11 @@ pub(crate) fn import_data_table_builder(
                 current::DataTableKindSchema::CodeRun(code_run) => {
                     DataTableKind::CodeRun(import_code_run_builder(code_run)?)
                 }
+                current::DataTableKindSchema::Import(import) => {
+                    DataTableKind::Import(crate::cellvalue::Import {
+                        file_name: import.file_name,
+                    })
+                }
             },
             last_modified: data_table.last_modified.unwrap_or(Utc::now()), // this is required but fall back to now if failed
             spill_error: data_table.spill_error,
@@ -319,6 +324,14 @@ pub(crate) fn export_data_table_runs(
                         value,
                     }
                 }
+                DataTableKind::Import(import) => current::DataTableSchema {
+                    kind: current::DataTableKindSchema::Import(current::ImportSchema {
+                        file_name: import.file_name,
+                    }),
+                    last_modified: Some(data_table.last_modified),
+                    spill_error: data_table.spill_error,
+                    value,
+                },
             };
 
             (current::PosSchema::from(pos), data_table)
