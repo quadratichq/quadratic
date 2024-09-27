@@ -51,8 +51,8 @@ export class SheetCursor {
   constructor(sheet: Sheet) {
     this.sheetId = sheet.id;
     this.boxCells = false;
-    this.keyboardMovePosition = { x: 0, y: 0 };
-    this.cursorPosition = { x: 0, y: 0 };
+    this.keyboardMovePosition = { x: 1, y: 1 };
+    this.cursorPosition = { x: 1, y: 1 };
   }
 
   set viewport(save: IViewportTransformState) {

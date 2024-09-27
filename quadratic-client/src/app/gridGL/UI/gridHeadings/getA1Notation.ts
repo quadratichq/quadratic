@@ -2,9 +2,12 @@
  * Turns a positive column number into A1 notation
  * based on https://www.labnol.org/convert-column-a1-notation-210601
  * @param column
- * @returns
+ * @returns a string
  */
-function translateNumberToA1Notation(column: number): string {
+export function getColumnA1Notation(column: number): string {
+  // adjust for 1-indexing (ie, A1 starts at 1 instead of 0)
+  column -= 1;
+
   const a1Notation: string[] = [];
   const totalAlphabets = 'Z'.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
   let block = column;
@@ -13,15 +16,6 @@ function translateNumberToA1Notation(column: number): string {
     block = Math.floor(block / totalAlphabets) - 1;
   }
   return a1Notation.join('');
-}
-
-/**
- * Turns a quadratic numbered column into A1 notation
- * @param column
- * @returns
- */
-export function getColumnA1Notation(column: number): string {
-  return translateNumberToA1Notation(column);
 }
 
 export function getRowA1Notation(row: number): string {

@@ -84,12 +84,16 @@ export class Update {
   }
 
   private clampViewport() {
+    const { viewport } = pixiApp;
+    // const bounds = viewport.getVisibleBounds();
     const headingSize = pixiApp.headings.headingSize;
-    if (pixiApp.viewport.x > headingSize.width) {
-      pixiApp.viewport.x = headingSize.width;
+    const maxX = headingSize.width; // + bounds.width - CELL_WIDTH;
+    if (viewport.x > maxX) {
+      viewport.x = maxX;
     }
-    if (pixiApp.viewport.y > headingSize.height) {
-      pixiApp.viewport.y = headingSize.height;
+    const maxY = headingSize.height; // + bounds.height - CELL_HEIGHT;
+    if (viewport.y > maxY) {
+      viewport.y = maxY;
     }
   }
 

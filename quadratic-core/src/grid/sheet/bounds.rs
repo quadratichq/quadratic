@@ -1,3 +1,6 @@
+//! Calculates all bounds for the sheet: data, formatting, and borders. We cache
+//! this value and only recalculate when necessary.
+
 use crate::{
     grid::{bounds::BoundsRect, Column, GridBounds},
     selection::Selection,
