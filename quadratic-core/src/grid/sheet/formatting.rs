@@ -7,6 +7,8 @@ use crate::{Pos, Rect, RunLengthEncoding, SheetRect};
 
 impl Sheet {
     /// Set the cell formatting for a sheet_rect.
+    ///
+    /// This is deprecated but needed by the old execute_formats
     pub fn set_cell_formats_for_type<A: CellFmtAttr>(
         &mut self,
         sheet_rect: &SheetRect,

@@ -1,7 +1,7 @@
 use super::Sheet;
 use crate::{
-    controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     grid::GridBounds,
+    renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     Pos, Rect,
 };
 use std::collections::HashSet;

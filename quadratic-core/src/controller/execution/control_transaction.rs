@@ -6,11 +6,11 @@ use crate::controller::active_transactions::pending_transaction::PendingTransact
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
 use crate::controller::transaction::Transaction;
-use crate::controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
 use crate::controller::transaction_types::JsCodeResult;
 use crate::error_core::Result;
 use crate::grid::{CodeRun, CodeRunResult};
 use crate::parquet::parquet_to_vec;
+use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
 use crate::{Pos, RunError, RunErrorMsg, Value};
 
 impl GridController {

@@ -10,7 +10,11 @@ export interface BorderCull {
 
 export const borderLineWidth = 1;
 
-function setTexture(sprite: Sprite | TilingSprite, horizontal: boolean, borderLine?: CellBorderLine): void {
+export function setBorderTexture(
+  sprite: Sprite | TilingSprite,
+  horizontal: boolean,
+  borderLine?: CellBorderLine
+): void {
   if (borderLine === 'dashed') {
     sprite.texture = horizontal ? generatedTextures.dashedHorizontal : generatedTextures.dashedVertical;
   } else if (borderLine === 'dotted') {
@@ -43,7 +47,7 @@ export function drawBorder(options: {
 
   if (options.top) {
     const top = options.getSprite(tiling);
-    setTexture(top, true, borderType);
+    setBorderTexture(top, true, borderType);
     top.tint = options.tint;
     top.alpha = options.alpha;
     top.width = options.width + lineWidth;
@@ -52,7 +56,7 @@ export function drawBorder(options: {
 
     if (doubleDistance) {
       const top = options.getSprite(tiling);
-      setTexture(top, true, borderType);
+      setBorderTexture(top, true, borderType);
       top.tint = options.tint;
       top.alpha = options.alpha;
       top.width = options.width + lineWidth - ((options.left ? 1 : 0) + (options.right ? 1 : 0)) * doubleDistance;
@@ -66,7 +70,7 @@ export function drawBorder(options: {
 
   if (options.bottom) {
     const bottom = options.getSprite(tiling);
-    setTexture(bottom, true, borderType);
+    setBorderTexture(bottom, true, borderType);
     bottom.tint = options.tint;
     bottom.alpha = options.alpha;
     const width = options.width + (options.right ? 0 : lineWidth);
@@ -80,7 +84,7 @@ export function drawBorder(options: {
 
     if (doubleDistance) {
       const bottom = options.getSprite(tiling);
-      setTexture(bottom, true, borderType);
+      setBorderTexture(bottom, true, borderType);
       bottom.tint = options.tint;
       bottom.alpha = options.alpha;
       const width = options.width + lineWidth - ((options.left ? 1 : 0) + (options.right ? 1 : 0)) * doubleDistance;
@@ -99,7 +103,7 @@ export function drawBorder(options: {
 
   if (options.left) {
     const left = options.getSprite(tiling);
-    setTexture(left, false, borderType);
+    setBorderTexture(left, false, borderType);
     left.tint = options.tint;
     left.alpha = options.alpha;
     left.width = lineWidth;
@@ -112,7 +116,7 @@ export function drawBorder(options: {
     });
     if (doubleDistance) {
       const left = options.getSprite(tiling);
-      setTexture(left, false, borderType);
+      setBorderTexture(left, false, borderType);
       left.tint = options.tint;
       left.alpha = options.alpha;
       left.width = lineWidth;
@@ -131,7 +135,7 @@ export function drawBorder(options: {
 
   if (options.right) {
     const right = options.getSprite(tiling);
-    setTexture(right, false, borderType);
+    setBorderTexture(right, false, borderType);
     right.tint = options.tint;
     right.alpha = options.alpha;
     right.width = lineWidth;
@@ -148,7 +152,7 @@ export function drawBorder(options: {
 
     if (doubleDistance) {
       const right = options.getSprite(tiling);
-      setTexture(right, false, borderType);
+      setBorderTexture(right, false, borderType);
       right.tint = options.tint;
       right.alpha = options.alpha;
       right.width = lineWidth;
@@ -207,7 +211,7 @@ export function drawCellBorder(options: {
     const doubleDistance = borderType === 'double' ? lineWidth * 2 : 0;
 
     const top = getSprite(tiling);
-    setTexture(top, true, borderType);
+    setBorderTexture(top, true, borderType);
     const color = horizontal.color ? convertColor(horizontal.color) : colors.defaultBorderColor;
     top.tint = color;
     top.alpha = horizontal.color ? horizontal.color.alpha : 1;
@@ -220,7 +224,7 @@ export function drawCellBorder(options: {
     });
     if (doubleDistance) {
       const top = getSprite(tiling);
-      setTexture(top, true, borderType);
+      setBorderTexture(top, true, borderType);
       top.tint = color;
       top.width = position.width + lineWidth; // todo - ((options.left ? 1 : 0) + (options.right ? 1 : 0)) * doubleDistance;
       top.height = lineWidth;
@@ -242,7 +246,7 @@ export function drawCellBorder(options: {
     const doubleDistance = borderType === 'double' ? lineWidth * 2 : 0;
 
     const left = options.getSprite(tiling);
-    setTexture(left, false, borderType);
+    setBorderTexture(left, false, borderType);
     const color = vertical.color ? convertColor(vertical.color) : colors.defaultBorderColor;
     left.tint = color;
     left.alpha = vertical.color ? vertical.color.alpha : 1;
@@ -256,7 +260,7 @@ export function drawCellBorder(options: {
 
     if (doubleDistance) {
       const left = options.getSprite(tiling);
-      setTexture(left, false, borderType);
+      setBorderTexture(left, false, borderType);
       left.tint = color;
       left.width = lineWidth;
       left.height = position.height + lineWidth; // todo - ((options.top ? 1 : 0) + (options.bottom ? 1 : 0)) * doubleDistance;

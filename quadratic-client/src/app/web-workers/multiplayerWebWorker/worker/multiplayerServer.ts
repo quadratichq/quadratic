@@ -302,6 +302,7 @@ export class MultiplayerServer {
       this.waitingForConnection.push(this.sendTransaction.bind(this, transactionMessage));
       return;
     }
+
     multiplayerClient.sendState('syncing');
     const message: SendTransaction = {
       type: 'Transaction',
