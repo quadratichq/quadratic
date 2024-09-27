@@ -20,6 +20,9 @@ use crate::{
 
 use super::transaction_name::TransactionName;
 
+// offsets modified ((column, row) -> new_size)
+type SheetOffsets = HashMap<(Option<i64>, Option<i64>), f64>;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct PendingTransaction {
     pub id: Uuid,
@@ -90,8 +93,8 @@ pub struct PendingTransaction {
     // sheets w/updated offsets
     pub sheet_info: HashSet<SheetId>,
 
-    // offsets modified (sheet_id -> ((column, row) -> new_size))
-    pub offsets_modified: HashMap<SheetId, HashMap<(Option<i64>, Option<i64>), f64>>,
+    // offsets modified (sheet_id -> SheetOffsets)
+    pub offsets_modified: HashMap<SheetId, SheetOffsets>,
 }
 
 impl Default for PendingTransaction {

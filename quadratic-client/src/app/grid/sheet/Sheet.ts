@@ -149,10 +149,10 @@ export class Sheet {
     return new Rectangle(topLeft.left, topLeft.top, bottomRight.right - topLeft.left, bottomRight.bottom - topLeft.top);
   }
 
-  updateSheetOffsets(column: number | undefined, row: number | undefined, size: number) {
-    if (column !== undefined) {
+  updateSheetOffsets(column: number | null, row: number | null, size: number) {
+    if (column !== null) {
       this.offsets.setColumnWidth(column, size);
-    } else if (row !== undefined) {
+    } else if (row !== null) {
       this.offsets.setRowHeight(row, size);
     }
   }

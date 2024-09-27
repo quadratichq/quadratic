@@ -4,6 +4,7 @@ import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { gridHeadingAtom } from '@/app/atoms/gridHeadingAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
@@ -13,13 +14,12 @@ import { Point } from 'pixi.js';
 import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilState } from 'recoil';
 import { pixiApp } from '../pixiApp/PixiApp';
-import { sheets } from '@/app/grid/controller/Sheets';
 
 export const GridContextMenu = () => {
   const [show, setShow] = useRecoilState(gridHeadingAtom);
 
   const onClose = useCallback(() => {
-    setShow({ world: undefined, column: undefined, row: undefined });
+    setShow({ world: undefined, column: null, row: null });
     focusGrid();
   }, [setShow]);
 
@@ -34,7 +34,7 @@ export const GridContextMenu = () => {
   }, [onClose]);
 
   useEffect(() => {
-    const updateGridMenu = (world: Point, column?: number, row?: number) => {
+    const updateGridMenu = (world: Point, column: number | null, row: number | null) => {
       setShow({ world, column, row });
     };
     events.on('gridContextMenu', updateGridMenu);

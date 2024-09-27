@@ -67,7 +67,7 @@ extern "C" {
         code_cell: Option<String>,        /*JsCodeCell*/
         render_code_cell: Option<String>, /*JsRenderCodeCell*/
     );
-    pub fn jsOffsetsModified(sheet_id: String, column: Option<i64>, row: Option<i64>, size: f64);
+    pub fn jsOffsetsModified(sheet_id: String, offsets: String /* Vec<JsOffset> */);
     pub fn jsSetCursor(cursor: String);
     pub fn jsSetCursorSelection(selection: String);
     pub fn jsUpdateHtml(html: String /*JsHtmlOutput*/);
@@ -116,8 +116,6 @@ extern "C" {
 
     // rows: Vec<i64>
     pub fn jsRequestRowHeights(transaction_id: String, sheet_id: String, rows: String);
-    // row_heights: Vec<JsRowHeight>
-    pub fn jsResizeRowHeights(sheet_id: String, row_heights: String);
 
     pub fn jsSheetValidations(sheet_id: String, validations: String /* Vec<Validation> */);
     pub fn jsValidationWarning(
@@ -367,10 +365,10 @@ pub fn jsUpdateCodeCell(
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsOffsetsModified(sheet_id: String, column: Option<i64>, row: Option<i64>, size: f64) {
+pub fn jsOffsetsModified(sheet_id: String, offsets: String /*Vec<JsOffset>*/) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsOffsetsModified",
-        format!("{},{:?},{:?},{}", sheet_id, column, row, size),
+        format!("{},{}", sheet_id, offsets),
     ));
 }
 
@@ -578,15 +576,6 @@ pub fn jsRequestRowHeights(
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsRequestRowHeights",
         format!("{},{},{}", transaction_id, sheet_id, rows),
-    ));
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
-pub fn jsResizeRowHeights(sheet_id: String, row_heights: String /*Vec<JsRowHeight>*/) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsResizeRowHeights",
-        format!("{},{}", sheet_id, row_heights),
     ));
 }
 

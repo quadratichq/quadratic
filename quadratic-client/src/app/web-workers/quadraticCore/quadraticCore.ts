@@ -98,7 +98,7 @@ class QuadraticCore {
       events.emit('setCursor', e.data.cursor);
       return;
     } else if (e.data.type === 'coreClientSheetOffsets') {
-      events.emit('sheetOffsets', e.data.sheetId, e.data.column, e.data.row, e.data.size);
+      events.emit('sheetOffsets', e.data.sheetId, e.data.offsets);
       return;
     } else if (e.data.type === 'coreClientHtmlOutput') {
       events.emit('htmlOutput', e.data.html);
@@ -167,9 +167,6 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientSheetValidations') {
       events.emit('sheetValidations', e.data.sheetId, e.data.validations);
-      return;
-    } else if (e.data.type === 'coreClientResizeRowHeights') {
-      events.emit('resizeRowHeights', e.data.sheetId, e.data.rowHeights);
       return;
     } else if (e.data.type === 'coreClientRenderValidationWarnings') {
       events.emit('renderValidationWarnings', e.data.sheetId, e.data.hashX, e.data.hashY, e.data.validationWarnings);

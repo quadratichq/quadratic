@@ -9,7 +9,15 @@ import { debugShowLoadingHashes } from '@/app/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { isFloatEqual } from '@/app/helpers/float';
-import { ColumnRow, JsPos, JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import {
+  ColumnRow,
+  JsOffset,
+  JsPos,
+  JsRenderCell,
+  JsRowHeight,
+  SheetBounds,
+  SheetInfo,
+} from '@/app/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
@@ -360,15 +368,15 @@ export class CellsLabels {
   };
 
   // adjust headings without recalculating the glyph geometries
-  adjustHeadings(delta: number, column?: number, row?: number) {
-    if (column !== undefined) {
+  adjustHeadings(delta: number, column: number | null, row: number | null) {
+    if (column !== null) {
       const existing = this.dirtyColumnHeadings.get(column);
       if (existing) {
         this.dirtyColumnHeadings.set(column, existing + delta);
       } else {
         this.dirtyColumnHeadings.set(column, delta);
       }
-    } else if (row !== undefined) {
+    } else if (row !== null) {
       const existing = this.dirtyRowHeadings.get(row);
       if (existing) {
         this.dirtyRowHeadings.set(row, existing + delta);
@@ -407,12 +415,12 @@ export class CellsLabels {
     }
   }
 
-  setOffsetsDelta(column: number | undefined, row: number | undefined, delta: number) {
-    if (column !== undefined) {
+  setOffsetsDelta(column: number | null, row: number | null, delta: number) {
+    if (column !== null) {
       const size = this.sheetOffsets.getColumnWidth(column) - delta;
       this.sheetOffsets.setColumnWidth(column, size);
       this.columnTransient = true;
-    } else if (row !== undefined) {
+    } else if (row !== null) {
       const size = this.sheetOffsets.getRowHeight(row) - delta;
       this.sheetOffsets.setRowHeight(row, size);
       this.rowTransient = true;
@@ -422,13 +430,13 @@ export class CellsLabels {
     }
   }
 
-  setOffsetsSize(column: number | undefined, row: number | undefined, size: number) {
+  setOffsetSize(column: number | null, row: number | null, size: number) {
     let delta = 0;
-    if (column !== undefined) {
+    if (column !== null) {
       delta = this.sheetOffsets.getColumnWidth(column) - size;
       this.sheetOffsets.setColumnWidth(column, size);
       this.columnTransient = false;
-    } else if (row !== undefined) {
+    } else if (row !== null) {
       delta = this.sheetOffsets.getRowHeight(row) - size;
       this.sheetOffsets.setRowHeight(row, size);
       this.rowTransient = false;
@@ -436,6 +444,12 @@ export class CellsLabels {
     if (delta) {
       this.adjustHeadings(delta, column, row);
     }
+  }
+
+  setOffsetsSize(offsets: JsOffset[]) {
+    offsets.forEach(({ column, row, size }) => {
+      this.setOffsetSize(column, row, size);
+    });
   }
 
   showLabel(x: number, y: number, show: boolean) {
@@ -525,11 +539,5 @@ export class CellsLabels {
       ({ row, height }) => !isFloatEqual(height, this.sheetOffsets.getRowHeight(Number(row)))
     );
     return changesRowHeights;
-  }
-
-  resizeRowHeights(rowHeights: JsRowHeight[]) {
-    rowHeights.forEach(({ row, height }) => {
-      this.setOffsetsSize(undefined, Number(row), height);
-    });
   }
 }

@@ -250,6 +250,25 @@ impl fmt::Display for JsRowHeight {
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
+pub struct JsOffset {
+    pub column: Option<i32>,
+    pub row: Option<i32>,
+    pub size: f64,
+}
+
+impl fmt::Display for JsOffset {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "JsOffset(column: {:?}, row: {:?}, size: {})",
+            self.column, self.row, self.size
+        )
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
 pub struct JsPos {
     pub x: i64,
     pub y: i64,
