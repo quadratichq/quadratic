@@ -34,12 +34,14 @@ import * as Sentry from '@sentry/react';
 import { Buffer } from 'buffer';
 import {
   ClientCoreFindNextColumn,
+  ClientCoreFindNextColumnForRect,
   ClientCoreFindNextRow,
+  ClientCoreFindNextRowForRect,
   ClientCoreImportFile,
   ClientCoreLoad,
   ClientCoreMoveCells,
-  ClientCoreMoveCodeCellDown,
-  ClientCoreMoveCodeCellRight,
+  ClientCoreMoveCodeCellHorizontally,
+  ClientCoreMoveCodeCellVertically,
   ClientCoreSummarizeSelection,
 } from '../coreClientMessages';
 import { coreClient } from './coreClient';
@@ -882,6 +884,42 @@ class Core {
     });
   }
 
+  findNextColumnForRect(data: ClientCoreFindNextColumnForRect): Promise<number> {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        resolve(
+          this.gridController.findNextColumnForRect(
+            data.sheetId,
+            data.columnStart,
+            data.row,
+            data.width,
+            data.height,
+            data.reverse
+          )
+        );
+      });
+    });
+  }
+
+  findNextRowForRect(data: ClientCoreFindNextRowForRect): Promise<number> {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        resolve(
+          this.gridController.findNextRowForRect(
+            data.sheetId,
+            data.column,
+            data.rowStart,
+            data.width,
+            data.height,
+            data.reverse
+          )
+        );
+      });
+    });
+  }
+
   commitTransientResize(sheetId: string, transientResize: string, cursor: string) {
     this.clientQueue.push(() => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -995,24 +1033,26 @@ class Core {
     );
   }
 
-  moveCodeCellDown(message: ClientCoreMoveCodeCellDown): JsPos {
+  moveCodeCellVertically(message: ClientCoreMoveCodeCellVertically): JsPos {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    return this.gridController.moveCodeCellDown(
+    return this.gridController.moveCodeCellVertically(
       message.sheetId,
       BigInt(message.x),
       BigInt(message.y),
       message.sheetEnd,
+      message.reverse,
       message.cursor
     );
   }
 
-  moveCodeCellRight(message: ClientCoreMoveCodeCellRight): JsPos {
+  moveCodeCellHorizontally(message: ClientCoreMoveCodeCellHorizontally): JsPos {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    return this.gridController.moveCodeCellRight(
+    return this.gridController.moveCodeCellHorizontally(
       message.sheetId,
       BigInt(message.x),
       BigInt(message.y),
       message.sheetEnd,
+      message.reverse,
       message.cursor
     );
   }

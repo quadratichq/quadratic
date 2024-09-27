@@ -449,6 +449,22 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreFindNextColumnForRect':
+        this.send({
+          type: 'coreClientFindNextColumnForRect',
+          id: e.data.id,
+          column: await core.findNextColumnForRect(e.data),
+        });
+        return;
+
+      case 'clientCoreFindNextRowForRect':
+        this.send({
+          type: 'coreClientFindNextRowForRect',
+          id: e.data.id,
+          row: await core.findNextRowForRect(e.data),
+        });
+        return;
+
       case 'clientCoreCommitTransientResize':
         core.commitTransientResize(e.data.sheetId, e.data.transientResize, e.data.cursor);
         return;
@@ -510,18 +526,18 @@ class CoreClient {
         core.moveCells(e.data);
         return;
 
-      case 'clientCoreMoveCodeCellDown':
+      case 'clientCoreMoveCodeCellVertically':
         this.send({
-          type: 'coreClientMoveCodeCellDown',
-          pos: core.moveCodeCellDown(e.data),
+          type: 'coreClientMoveCodeCellVertically',
+          pos: core.moveCodeCellVertically(e.data),
           id: e.data.id,
         });
         return;
 
-      case 'clientCoreMoveCodeCellRight':
+      case 'clientCoreMoveCodeCellHorizontally':
         this.send({
-          type: 'coreClientMoveCodeCellRight',
-          pos: core.moveCodeCellRight(e.data),
+          type: 'coreClientMoveCodeCellHorizontally',
+          pos: core.moveCodeCellHorizontally(e.data),
           id: e.data.id,
         });
         return;

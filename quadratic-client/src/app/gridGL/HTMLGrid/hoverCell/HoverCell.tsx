@@ -241,18 +241,20 @@ function HoverCellSpillError({ renderCodeCell, onClick }: { renderCodeCell: JsRe
   const handleModeCodeCellDown = useCallback(
     (sheetEnd: boolean) => {
       const sheetId = sheets.current;
-      quadraticCore.moveCodeCellDown(sheetId, renderCodeCell.x, renderCodeCell.y, sheetEnd).then((pos) => {
+      quadraticCore.moveCodeCellVertically(sheetId, renderCodeCell.x, renderCodeCell.y, sheetEnd, false).then((pos) => {
         const min = { x: Number(pos.x), y: Number(pos.y) };
-        if (
-          showCodeEditor &&
-          codeCell.sheetId === sheetId &&
-          codeCell.pos.x === renderCodeCell.x &&
-          codeCell.pos.y === renderCodeCell.y
-        ) {
-          setCodeCell((prev) => ({ ...prev, pos: { x: min.x, y: min.y } }));
+        if (min.x !== renderCodeCell.x || min.y !== renderCodeCell.y) {
+          if (
+            showCodeEditor &&
+            codeCell.sheetId === sheetId &&
+            codeCell.pos.x === renderCodeCell.x &&
+            codeCell.pos.y === renderCodeCell.y
+          ) {
+            setCodeCell((prev) => ({ ...prev, pos: { x: min.x, y: min.y } }));
+          }
+          const max = { x: Number(pos.x) + renderCodeCell.w - 1, y: Number(pos.y) + renderCodeCell.h - 1 };
+          ensureRectVisible(min, max);
         }
-        const max = { x: Number(pos.x) + renderCodeCell.w - 1, y: Number(pos.y) + renderCodeCell.h - 1 };
-        ensureRectVisible(min, max);
       });
       onClick();
     },
@@ -273,19 +275,23 @@ function HoverCellSpillError({ renderCodeCell, onClick }: { renderCodeCell: JsRe
   const handleModeCodeCellRight = useCallback(
     (sheetEnd: boolean) => {
       const sheetId = sheets.current;
-      quadraticCore.moveCodeCellRight(sheetId, renderCodeCell.x, renderCodeCell.y, sheetEnd).then((pos) => {
-        const min = { x: Number(pos.x), y: Number(pos.y) };
-        if (
-          showCodeEditor &&
-          codeCell.sheetId === sheetId &&
-          codeCell.pos.x === renderCodeCell.x &&
-          codeCell.pos.y === renderCodeCell.y
-        ) {
-          setCodeCell((prev) => ({ ...prev, pos: { x: min.x, y: min.y } }));
-        }
-        const max = { x: Number(pos.x) + renderCodeCell.w - 1, y: Number(pos.y) + renderCodeCell.h - 1 };
-        ensureRectVisible(min, max);
-      });
+      quadraticCore
+        .moveCodeCellHorizontally(sheetId, renderCodeCell.x, renderCodeCell.y, sheetEnd, false)
+        .then((pos) => {
+          const min = { x: Number(pos.x), y: Number(pos.y) };
+          if (min.x !== renderCodeCell.x || min.y !== renderCodeCell.y) {
+            if (
+              showCodeEditor &&
+              codeCell.sheetId === sheetId &&
+              codeCell.pos.x === renderCodeCell.x &&
+              codeCell.pos.y === renderCodeCell.y
+            ) {
+              setCodeCell((prev) => ({ ...prev, pos: { x: min.x, y: min.y } }));
+            }
+            const max = { x: Number(pos.x) + renderCodeCell.w - 1, y: Number(pos.y) + renderCodeCell.h - 1 };
+            ensureRectVisible(min, max);
+          }
+        });
       onClick();
     },
     [

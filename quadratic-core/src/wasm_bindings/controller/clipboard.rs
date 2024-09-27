@@ -70,31 +70,33 @@ impl GridController {
         Ok(())
     }
 
-    #[wasm_bindgen(js_name = "moveCodeCellDown")]
-    pub fn js_move_code_cell_down(
+    #[wasm_bindgen(js_name = "moveCodeCellVertically")]
+    pub fn js_move_code_cell_vertically(
         &mut self,
         sheet_id: String,
         x: i64,
         y: i64,
         sheet_end: bool,
+        reverse: bool,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Invalid sheet id")?;
-        let dest = self.move_code_cell_down(sheet_id, x, y, sheet_end, cursor);
+        let dest = self.move_code_cell_vertically(sheet_id, x, y, sheet_end, reverse, cursor);
         Ok(serde_wasm_bindgen::to_value(&dest).map_err(|e| e.to_string())?)
     }
 
-    #[wasm_bindgen(js_name = "moveCodeCellRight")]
-    pub fn js_move_code_cell_right(
+    #[wasm_bindgen(js_name = "moveCodeCellHorizontally")]
+    pub fn js_move_code_cell_horizontally(
         &mut self,
         sheet_id: String,
         x: i64,
         y: i64,
         sheet_end: bool,
+        reverse: bool,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Invalid sheet id")?;
-        let dest = self.move_code_cell_right(sheet_id, x, y, sheet_end, cursor);
+        let dest = self.move_code_cell_horizontally(sheet_id, x, y, sheet_end, reverse, cursor);
         Ok(serde_wasm_bindgen::to_value(&dest).map_err(|e| e.to_string())?)
     }
 }

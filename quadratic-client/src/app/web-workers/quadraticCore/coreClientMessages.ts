@@ -784,6 +784,40 @@ export interface CoreClientFindNextRow {
   row?: number;
 }
 
+export interface ClientCoreFindNextColumnForRect {
+  type: 'clientCoreFindNextColumnForRect';
+  id: number;
+  sheetId: string;
+  columnStart: number;
+  row: number;
+  width: number;
+  height: number;
+  reverse: boolean;
+}
+
+export interface CoreClientFindNextColumnForRect {
+  type: 'coreClientFindNextColumnForRect';
+  id: number;
+  column: number;
+}
+
+export interface ClientCoreFindNextRowForRect {
+  type: 'clientCoreFindNextRowForRect';
+  id: number;
+  sheetId: string;
+  column: number;
+  rowStart: number;
+  width: number;
+  height: number;
+  reverse: boolean;
+}
+
+export interface CoreClientFindNextRowForRect {
+  type: 'coreClientFindNextRowForRect';
+  id: number;
+  row: number;
+}
+
 export interface ClientCoreCommitTransientResize {
   type: 'clientCoreCommitTransientResize';
   sheetId: string;
@@ -867,34 +901,36 @@ export interface ClientCoreMoveCells {
   cursor: string;
 }
 
-export interface ClientCoreMoveCodeCellRight {
-  type: 'clientCoreMoveCodeCellRight';
+export interface ClientCoreMoveCodeCellVertically {
+  type: 'clientCoreMoveCodeCellVertically';
   sheetId: string;
   x: number;
   y: number;
   sheetEnd: boolean;
+  reverse: boolean;
   cursor: string;
   id: number;
 }
 
-export interface CoreClientMoveCodeCellRight {
-  type: 'coreClientMoveCodeCellRight';
+export interface CoreClientMoveCodeCellVertically {
+  type: 'coreClientMoveCodeCellVertically';
   pos: JsPos;
   id: number;
 }
 
-export interface ClientCoreMoveCodeCellDown {
-  type: 'clientCoreMoveCodeCellDown';
+export interface ClientCoreMoveCodeCellHorizontally {
+  type: 'clientCoreMoveCodeCellHorizontally';
   sheetId: string;
   x: number;
   y: number;
   sheetEnd: boolean;
+  reverse: boolean;
   cursor: string;
   id: number;
 }
 
-export interface CoreClientMoveCodeCellDown {
-  type: 'coreClientMoveCodeCellDown';
+export interface CoreClientMoveCodeCellHorizontally {
+  type: 'coreClientMoveCodeCellHorizontally';
   pos: JsPos;
   id: number;
 }
@@ -1091,8 +1127,10 @@ export type ClientCoreMessage =
   | ClientCoreGetDisplayCell
   | ClientCoreValidateInput
   | ClientCoreGetCellValue
-  | ClientCoreMoveCodeCellRight
-  | ClientCoreMoveCodeCellDown;
+  | ClientCoreFindNextColumnForRect
+  | ClientCoreFindNextRowForRect
+  | ClientCoreMoveCodeCellVertically
+  | ClientCoreMoveCodeCellHorizontally;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1156,5 +1194,7 @@ export type CoreClientMessage =
   | CoreClientMultiplayerSynced
   | CoreClientValidateInput
   | CoreClientGetCellValue
-  | CoreClientMoveCodeCellRight
-  | CoreClientMoveCodeCellDown;
+  | CoreClientFindNextColumnForRect
+  | CoreClientFindNextRowForRect
+  | CoreClientMoveCodeCellVertically
+  | CoreClientMoveCodeCellHorizontally;

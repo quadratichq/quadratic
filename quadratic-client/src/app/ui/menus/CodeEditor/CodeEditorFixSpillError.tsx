@@ -19,30 +19,38 @@ export const CodeEditorFixSpillError = () => {
 
   const handleModeCodeCellDown = useCallback(
     (sheetEnd: boolean) => {
-      quadraticCore.moveCodeCellDown(sheets.current, codeCell.pos.x, codeCell.pos.y, sheetEnd).then((pos) => {
-        const min = { x: Number(pos.x), y: Number(pos.y) };
-        setCodeCell((prev) => ({ ...prev, pos: min }));
-        const max = {
-          x: Number(pos.x) + (evaluationResult?.size?.w ?? 1) - 1,
-          y: Number(pos.y) + (evaluationResult?.size?.h ?? 1) - 1,
-        };
-        ensureRectVisible(min, max);
-      });
+      quadraticCore
+        .moveCodeCellVertically(sheets.current, codeCell.pos.x, codeCell.pos.y, sheetEnd, false)
+        .then((pos) => {
+          const min = { x: Number(pos.x), y: Number(pos.y) };
+          if (min.x !== codeCell.pos.x || min.y !== codeCell.pos.y) {
+            setCodeCell((prev) => ({ ...prev, pos: min }));
+            const max = {
+              x: Number(pos.x) + (evaluationResult?.size?.w ?? 1) - 1,
+              y: Number(pos.y) + (evaluationResult?.size?.h ?? 1) - 1,
+            };
+            ensureRectVisible(min, max);
+          }
+        });
     },
     [codeCell.pos.x, codeCell.pos.y, evaluationResult?.size?.h, evaluationResult?.size?.w, setCodeCell]
   );
 
   const handleModeCodeCellRight = useCallback(
     (sheetEnd: boolean) => {
-      quadraticCore.moveCodeCellRight(sheets.current, codeCell.pos.x, codeCell.pos.y, sheetEnd).then((pos) => {
-        const min = { x: Number(pos.x), y: Number(pos.y) };
-        setCodeCell((prev) => ({ ...prev, pos: min }));
-        const max = {
-          x: Number(pos.x) + (evaluationResult?.size?.w ?? 1) - 1,
-          y: Number(pos.y) + (evaluationResult?.size?.h ?? 1) - 1,
-        };
-        ensureRectVisible(min, max);
-      });
+      quadraticCore
+        .moveCodeCellHorizontally(sheets.current, codeCell.pos.x, codeCell.pos.y, sheetEnd, false)
+        .then((pos) => {
+          const min = { x: Number(pos.x), y: Number(pos.y) };
+          if (min.x !== codeCell.pos.x || min.y !== codeCell.pos.y) {
+            setCodeCell((prev) => ({ ...prev, pos: min }));
+            const max = {
+              x: Number(pos.x) + (evaluationResult?.size?.w ?? 1) - 1,
+              y: Number(pos.y) + (evaluationResult?.size?.h ?? 1) - 1,
+            };
+            ensureRectVisible(min, max);
+          }
+        });
     },
     [codeCell.pos.x, codeCell.pos.y, evaluationResult?.size?.h, evaluationResult?.size?.w, setCodeCell]
   );
