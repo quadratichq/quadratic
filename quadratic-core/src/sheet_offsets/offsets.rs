@@ -1,3 +1,11 @@
+//! This contains one direction of offsets (eg, the column widths or the row
+//! heights). The SheetOffsets is made up of two of these Offsets.
+//!
+//! Right now this is optimized for sheets with less offset entries and
+//! smaller offsets. There was a TS version that kept cached values for larger
+//! offsets. As we move to larger sheets, we may have to bring that
+//! back, as this can get slow at very large indices.
+
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap};
@@ -74,22 +82,12 @@ impl Offsets {
 
     /// Iterates over the pixel positions of a range of columns/rows.
     pub fn iter_offsets(&self, index_range: Range<i64>) -> impl '_ + Iterator<Item = f64> {
-        let start = index_range.start;
-        let mut current_position = if start < 0 {
-            self.default * start as f64
-                - self
-                    .sizes
-                    .range(start..0)
-                    .map(|(_k, v)| v - self.default)
-                    .sum::<f64>()
-        } else {
-            self.default * start as f64
-                + self
-                    .sizes
-                    .range(0..start)
-                    .map(|(_k, v)| v - self.default)
-                    .sum::<f64>()
-        };
+        let mut current_position = self.default * (index_range.start - 1) as f64
+            + self
+                .sizes
+                .range(1..index_range.start)
+                .map(|(_, v)| v - self.default)
+                .sum::<f64>();
         index_range.map(move |index| {
             let ret = current_position;
             current_position += self.get_size(index);
@@ -99,25 +97,15 @@ impl Offsets {
 
     /// returns the entry index and screen position for a screen coordinate
     pub fn find_offset(&self, pixel: f64) -> (i64, f64) {
-        if pixel >= 0.0 {
-            let mut index = 0;
-            let mut position = 0.0;
-            let mut next_width = self.get_size(index);
-            while position + next_width <= pixel {
-                position += next_width;
-                index += 1;
-                next_width = self.get_size(index);
-            }
-            (index, position)
-        } else {
-            let mut index = -1;
-            let mut position = -self.get_size(-1);
-            while position > pixel {
-                index -= 1;
-                position -= self.get_size(index);
-            }
-            (index, position)
+        let mut index = 1;
+        let mut position = 0.0;
+        let mut next_width = self.get_size(index);
+        while position + next_width <= pixel {
+            position += next_width;
+            index += 1;
+            next_width = self.get_size(index);
         }
+        (index, position)
     }
 
     /// Returns the total size of a range of columns/rows.
@@ -133,34 +121,6 @@ impl Offsets {
     /// Iterates over the sizes of all columns/rows - owned.
     pub fn into_iter_sizes(self) -> impl Iterator<Item = (i64, f64)> {
         self.sizes.into_iter()
-    }
-
-    /// Gets a list of changes between this and another `Offsets` structure.
-    /// This is used by TS to rapidly change positioning of CellSheets after an offsets change.
-    ///
-    /// * self: the old offsets structure that will be replaced
-    /// * offsets: the new offset structure with changes
-    ///
-    /// Returns `Vec<(offset_index, offset_delta)>`
-    pub fn changes(&self, offsets: &Offsets) -> Vec<(i64, f64)> {
-        let mut changes = Vec::new();
-
-        // find all changes in the old offset structure compared to the new one
-        for (k, v) in &self.sizes {
-            if let Some(old_v) = offsets.sizes.get(k) {
-                if *v != *old_v {
-                    changes.push((*k, *old_v - *v));
-                }
-            } else if *v != offsets.default {
-                changes.push((*k, self.default - *v));
-            }
-        }
-        for (k, v) in &offsets.sizes {
-            if !self.sizes.contains_key(k) && *v != self.default {
-                changes.push((*k, *v - self.default));
-            }
-        }
-        changes
     }
 
     /// Inserts an offset at the specified index and increments all later indices.
@@ -236,41 +196,21 @@ mod tests {
     #[parallel]
     fn test_offsets_structure() {
         let mut offsets = Offsets::new(10.0);
-        assert_eq!(offsets.get_size(0), 10.0);
-        assert_eq!(
-            offsets.iter_offsets(0..3).collect_vec(),
-            vec![0.0, 10.0, 20.0],
-        );
-        assert_eq!(offsets.iter_offsets(2..3).collect_vec(), vec![20.0]);
-        assert_eq!(
-            offsets.iter_offsets(-2..1).collect_vec(),
-            vec![-20.0, -10.0, 0.0],
-        );
-
-        assert_eq!(offsets.set_size(-2, 5.0), 10.0);
-        assert_eq!(offsets.set_size(0, 100.0), 10.0);
-        assert_eq!(offsets.set_size(2, 500.0), 10.0);
-        assert_eq!(offsets.set_size(2, 1000.0), 500.0);
-
-        assert_eq!(
-            offsets.iter_offsets(-3..0).collect_vec(),
-            vec![-25.0, -15.0, -10.0],
-        );
-        assert_eq!(
-            offsets.iter_offsets(-2..1).collect_vec(),
-            vec![-15.0, -10.0, 0.0],
-        );
-        assert_eq!(
-            offsets.iter_offsets(-1..2).collect_vec(),
-            vec![-10.0, 0.0, 100.0],
-        );
-        assert_eq!(
-            offsets.iter_offsets(0..3).collect_vec(),
-            vec![0.0, 100.0, 110.0],
-        );
+        assert_eq!(offsets.get_size(1), 10.0);
         assert_eq!(
             offsets.iter_offsets(1..4).collect_vec(),
-            vec![100.0, 110.0, 1110.0],
+            vec![0.0, 10.0, 20.0],
+        );
+        assert_eq!(offsets.iter_offsets(2..4).collect_vec(), vec![10.0, 20.0]);
+
+        assert_eq!(offsets.set_size(1, 100.0), 10.0);
+        assert_eq!(offsets.set_size(3, 500.0), 10.0);
+        assert_eq!(offsets.set_size(3, 1000.0), 500.0);
+
+        assert_eq!(offsets.iter_offsets(1..3).collect_vec(), vec![0.0, 100.0],);
+        assert_eq!(
+            offsets.iter_offsets(1..5).collect_vec(),
+            vec![0.0, 100.0, 110.0, 1110.0],
         );
     }
 
@@ -299,61 +239,26 @@ mod tests {
     fn test_find_offsets_default() {
         let offsets = Offsets::new(10.0);
 
-        assert_eq!(offsets.find_offset(0.0), (0, 0.0));
-        assert_eq!(offsets.find_offset(9.0), (0, 0.0));
+        assert_eq!(offsets.find_offset(0.0), (1, 0.0));
+        assert_eq!(offsets.find_offset(10.0), (2, 10.0));
 
-        // 0 .. 10 .. 20 .^. 30
-        assert_eq!(offsets.find_offset(25.0), (2, 20.0));
-
-        assert_eq!(offsets.find_offset(-9.0), (-1, -10.0));
-
-        // -30 .^. -20 .. -10 .. 0
-        assert_eq!(offsets.find_offset(-25.0), (-3, -30.0));
+        // 1 .. 10 .. 20 .^. 30
+        assert_eq!(offsets.find_offset(25.0), (3, 20.0));
     }
 
     #[test]
     #[parallel]
     fn test_find_offsets_changed() {
         let mut offsets = Offsets::new(10.0);
-        offsets.set_size(0, 20.0);
-        offsets.set_size(-1, 20.0);
+        offsets.set_size(1, 20.0);
 
-        assert_eq!(offsets.find_offset(0.0), (0, 0.0));
-        assert_eq!(offsets.find_offset(10.0), (0, 0.0));
-        assert_eq!(offsets.find_offset(20.0), (1, 20.0));
+        assert_eq!(offsets.find_offset(0.0), (1, 0.0));
+        assert_eq!(offsets.find_offset(10.0), (1, 0.0));
+        assert_eq!(offsets.find_offset(20.0), (2, 20.0));
 
         // 0 .. 20 .. 30 .^. 40
-        assert_eq!(offsets.find_offset(25.0), (1, 20.0));
-        assert_eq!(offsets.find_offset(35.0), (2, 30.0));
-
-        assert_eq!(offsets.find_offset(-9.0), (-1, -20.0));
-
-        // -40 .. -30 .. -20 .. 0
-        assert_eq!(offsets.find_offset(-20.0), (-1, -20.0));
-        assert_eq!(offsets.find_offset(-21.0), (-2, -30.0));
-
-        // -40 .^. -30 .. -20 .. 0
-        assert_eq!(offsets.find_offset(-35.0), (-3, -40.0));
-    }
-
-    #[test]
-    #[parallel]
-    fn test_changes() {
-        let mut first = Offsets::new(10.0);
-        first.set_size(0, 20.0);
-        first.set_size(-1, 25.0);
-        first.set_size(10, 50.0);
-
-        let mut second = Offsets::new(10.0);
-        second.set_size(0, 10.0);
-        second.set_size(-1, 15.0);
-        second.set_size(1, 30.0);
-        second.set_size(20, 40.0);
-        let changes = first.changes(&second);
-        assert_eq!(
-            changes,
-            vec![(-1, -10.0), (0, -10.0), (10, -40.0), (1, 20.0), (20, 30.0)]
-        );
+        assert_eq!(offsets.find_offset(25.0), (2, 20.0));
+        assert_eq!(offsets.find_offset(35.0), (3, 30.0));
     }
 
     #[test]
@@ -361,21 +266,21 @@ mod tests {
     fn test_insert() {
         let mut offsets = Offsets::new(10.0);
 
-        assert_eq!(offsets.insert(0), vec![]);
+        assert_eq!(offsets.insert(1), vec![]);
 
-        offsets.set_size(0, 20.0);
-        offsets.set_size(1, 30.0);
-        offsets.set_size(2, 40.0);
+        offsets.set_size(1, 20.0);
+        offsets.set_size(2, 30.0);
+        offsets.set_size(3, 40.0);
 
         assert_eq!(
-            offsets.insert(1),
-            vec![(1, offsets.default), (2, 30.0), (3, 40.0)]
+            offsets.insert(2),
+            vec![(2, offsets.default), (3, 30.0), (4, 40.0)]
         );
 
-        assert_eq!(offsets.get_size(0), 20.0);
-        assert_eq!(offsets.get_size(1), 10.0); // New inserted offset
-        assert_eq!(offsets.get_size(2), 30.0); // Shifted
-        assert_eq!(offsets.get_size(3), 40.0); // Shifted
+        assert_eq!(offsets.get_size(1), 20.0);
+        assert_eq!(offsets.get_size(2), 10.0);
+        assert_eq!(offsets.get_size(3), 30.0);
+        assert_eq!(offsets.get_size(4), 40.0);
     }
 
     #[test]
@@ -383,17 +288,17 @@ mod tests {
     fn test_delete() {
         let mut offsets = Offsets::new(10.0);
 
-        assert_eq!(offsets.delete(0), (vec![], None));
+        assert_eq!(offsets.delete(1), (vec![], None));
 
-        offsets.set_size(0, 20.0);
-        offsets.set_size(1, 30.0);
-        offsets.set_size(2, 40.0);
+        offsets.set_size(1, 20.0);
+        offsets.set_size(2, 30.0);
+        offsets.set_size(3, 40.0);
 
-        let deleted = offsets.delete(1);
+        let deleted = offsets.delete(2);
 
-        assert_eq!(deleted, (vec![(1, 40.0), (2, offsets.default)], Some(30.0)));
-        assert_eq!(offsets.get_size(0), 20.0);
-        assert_eq!(offsets.get_size(1), 40.0); // Shifted
-        assert_eq!(offsets.get_size(2), offsets.default);
+        assert_eq!(deleted, (vec![(2, 40.0), (3, offsets.default)], Some(30.0)));
+        assert_eq!(offsets.get_size(1), 20.0);
+        assert_eq!(offsets.get_size(2), 40.0);
+        assert_eq!(offsets.get_size(3), offsets.default);
     }
 }
