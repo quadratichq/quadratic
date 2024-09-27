@@ -54,6 +54,28 @@ impl Sheet {
         }
     }
 
+    /// Gets a format for a cell, returning Format::default if not set.
+    pub fn try_format_cell(&self, x: i64, y: i64) -> Option<Format> {
+        self.get_column(x)
+            .map(|column| Format {
+                align: column.align.get(y),
+                vertical_align: column.vertical_align.get(y),
+                wrap: column.wrap.get(y),
+                numeric_format: column.numeric_format.get(y),
+                numeric_decimals: column.numeric_decimals.get(y),
+                numeric_commas: column.numeric_commas.get(y),
+                bold: column.bold.get(y),
+                italic: column.italic.get(y),
+                text_color: column.text_color.get(y),
+                fill_color: column.fill_color.get(y),
+                render_size: column.render_size.get(y),
+                date_time: column.date_time.get(y),
+                underline: column.underline.get(y),
+                strike_through: column.strike_through.get(y),
+            })
+            .filter(|format| !format.is_default())
+    }
+
     /// Sets a cell's format based on a FormatUpdate. Returns FormatUpdate, which is
     /// used to undo the change.
     /// * send_client - if true, send the changes to the client

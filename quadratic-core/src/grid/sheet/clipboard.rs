@@ -91,7 +91,6 @@ impl Sheet {
                     let cell_wrap = summary.wrap;
                     let underline = summary.underline.unwrap_or(false);
                     let strike_through = summary.strike_through.unwrap_or(false);
-                    // let cell_border = self.borders().per_cell.to_owned().get_cell_border(pos);
 
                     if bold
                         || italic
@@ -102,7 +101,6 @@ impl Sheet {
                         || cell_align.is_some()
                         || cell_vertical_align.is_some()
                         || cell_wrap.is_some()
-                    // || cell_border.is_some()
                     {
                         style.push_str("style=\"");
 
@@ -134,6 +132,24 @@ impl Sheet {
                                 );
                             }
                         }
+                        if let Some(cell_align) = cell_align {
+                            style.push_str(cell_align.as_css_string());
+                        }
+                        if let Some(cell_vertical_align) = cell_vertical_align {
+                            style.push_str(cell_vertical_align.as_css_string());
+                        }
+                        if let Some(cell_wrap) = cell_wrap {
+                            style.push_str(cell_wrap.as_css_string());
+                        }
+                        if underline && !strike_through {
+                            style.push_str("text-decoration:underline;");
+                        } else if !underline && strike_through {
+                            style.push_str("text-decoration:line-through;");
+                        } else if underline && strike_through {
+                            style.push_str("text-decoration:underline line-through;");
+                        }
+
+                        // todo...
                         // if let Some(cell_border) = cell_border {
                         //     for (side, border) in cell_border.borders.iter().enumerate() {
                         //         let side = match side {
@@ -156,15 +172,6 @@ impl Sheet {
                         //         }
                         //     }
                         // }
-                        if let Some(cell_align) = cell_align {
-                            style.push_str(cell_align.as_css_string());
-                        }
-                        if let Some(cell_vertical_align) = cell_vertical_align {
-                            style.push_str(cell_vertical_align.as_css_string());
-                        }
-                        if let Some(cell_wrap) = cell_wrap {
-                            style.push_str(cell_wrap.as_css_string());
-                        }
 
                         style.push('"');
                     }
@@ -293,8 +300,7 @@ mod tests {
     use crate::controller::operations::clipboard::PasteSpecial;
     use crate::controller::GridController;
     use crate::grid::{BorderSelection, BorderStyle, CellBorderLine};
-    use crate::Rect;
-    use crate::SheetRect;
+    use crate::{Rect, SheetRect};
 
     #[test]
     #[parallel]

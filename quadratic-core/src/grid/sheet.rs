@@ -244,9 +244,10 @@ impl Sheet {
 
     /// Returns JsCellValuePos for selection
     pub fn js_cell_value_selection(&self, selection: Selection) -> JsCellValueSelection {
-        let mut cell_value_selection = JsCellValueSelection::default();
-
-        cell_value_selection.cursor = self.js_cell_value_pos(selection.source());
+        let mut cell_value_selection = JsCellValueSelection {
+            cursor: self.js_cell_value_pos(selection.source()),
+            ..Default::default()
+        };
 
         if selection.all {
             if let GridBounds::NonEmpty(rect) = self.bounds(true) {

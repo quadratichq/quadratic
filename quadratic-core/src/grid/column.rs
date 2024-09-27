@@ -73,6 +73,7 @@ impl Column {
                 self.italic.range(),
                 self.text_color.range(),
                 self.fill_color.range(),
+                self.render_size.range(),
                 self.date_time.range(),
                 self.underline.range(),
                 self.strike_through.range(),
@@ -92,6 +93,7 @@ impl Column {
             self.italic.range(),
             self.text_color.range(),
             self.fill_color.range(),
+            self.render_size.range(),
             self.date_time.range(),
             self.underline.range(),
             self.strike_through.range(),
@@ -271,6 +273,10 @@ impl<B: BlockContent> ColumnData<B> {
 
     pub fn blocks(&self) -> impl Iterator<Item = &Block<B>> {
         self.0.values()
+    }
+
+    pub fn into_blocks(self) -> impl Iterator<Item = Block<B>> {
+        self.0.into_values()
     }
 
     pub fn has_blocks_in_range(&self, y_range: Range<i64>) -> bool {

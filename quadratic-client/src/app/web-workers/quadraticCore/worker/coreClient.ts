@@ -613,11 +613,11 @@ class CoreClient {
         return;
 
       case 'clientCoreInsertColumn':
-        core.insertColumn(e.data.sheetId, e.data.column, e.data.cursor);
+        core.insertColumn(e.data.sheetId, e.data.column, e.data.right, e.data.cursor);
         return;
 
       case 'clientCoreInsertRow':
-        core.insertRow(e.data.sheetId, e.data.row, e.data.cursor);
+        core.insertRow(e.data.sheetId, e.data.row, e.data.below, e.data.cursor);
         return;
 
       default:

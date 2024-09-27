@@ -271,6 +271,7 @@ export class SheetCursor {
         columns.add(rect.x);
       }
     }
+    columns.add(this.cursorPosition.x);
     return Array.from(columns);
   }
 
@@ -285,6 +286,12 @@ export class SheetCursor {
         rows.add(rect.y);
       }
     }
+    rows.add(this.cursorPosition.y);
     return Array.from(rows);
+  }
+
+  // Returns true if the cursor is only selecting a single cell
+  onlySingleSelection(): boolean {
+    return !this.multiCursor?.length && !this.columnRow;
   }
 }
