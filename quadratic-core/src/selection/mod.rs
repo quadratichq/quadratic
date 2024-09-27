@@ -1,10 +1,16 @@
+//! The current selected cells in a sheet.
+
 use std::{collections::HashSet, str::FromStr};
 
 use crate::{grid::SheetId, Pos, Rect, SheetPos, SheetRect};
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+mod selection_create;
+mod selection_from_a1;
+mod selection_to_a1;
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
 pub struct Selection {
     pub sheet_id: SheetId,
 
@@ -12,130 +18,26 @@ pub struct Selection {
     pub x: i64,
     pub y: i64,
 
-    // These are used instead of an Enum to make the TS conversion easier.
     pub rects: Option<Vec<Rect>>,
     pub rows: Option<Vec<i64>>,
     pub columns: Option<Vec<i64>>,
     pub all: bool,
 }
 
+impl Default for Selection {
+    fn default() -> Self {
+        Selection {
+            sheet_id: SheetId::test(),
+            x: 1,
+            y: 1,
+            rects: None,
+            rows: None,
+            columns: None,
+            all: false,
+        }
+    }
+}
 impl Selection {
-    pub fn new(sheet_id: SheetId) -> Self {
-        Selection {
-            all: false,
-            sheet_id,
-            x: 0,
-            y: 0,
-            rects: None,
-            rows: None,
-            columns: None,
-        }
-    }
-
-    /// Creates a selection via a single sheet rect
-    pub fn sheet_rect(sheet_rect: SheetRect) -> Self {
-        Selection {
-            sheet_id: sheet_rect.sheet_id,
-            x: sheet_rect.min.x,
-            y: sheet_rect.min.y,
-            rects: Some(vec![sheet_rect.into()]),
-            rows: None,
-            columns: None,
-            all: false,
-        }
-    }
-
-    /// Creates a selection via a single sheet position
-    pub fn sheet_pos(sheet_pos: SheetPos) -> Self {
-        Selection {
-            sheet_id: sheet_pos.sheet_id,
-            x: sheet_pos.x,
-            y: sheet_pos.y,
-            rects: Some(vec![Rect::from_numbers(sheet_pos.x, sheet_pos.y, 1, 1)]),
-            rows: None,
-            columns: None,
-            all: false,
-        }
-    }
-
-    /// Creates a new selection with a single sheet position
-    pub fn new_sheet_pos(x: i64, y: i64, sheet_id: SheetId) -> Self {
-        Selection {
-            sheet_id,
-            x,
-            y,
-            all: false,
-            rects: Some(vec![Rect::from_numbers(x, y, 1, 1)]),
-            rows: None,
-            columns: None,
-        }
-    }
-
-    /// Creates an all selection
-    pub fn all(sheet_id: SheetId) -> Self {
-        Selection {
-            sheet_id,
-            x: 0,
-            y: 0,
-            rects: None,
-            rows: None,
-            columns: None,
-            all: true,
-        }
-    }
-
-    /// Creates a selection with columns
-    pub fn columns(columns: &[i64], sheet_id: SheetId) -> Self {
-        Selection {
-            sheet_id,
-            x: columns[0],
-            y: 0,
-            rects: None,
-            rows: None,
-            columns: Some(columns.to_vec()),
-            all: false,
-        }
-    }
-
-    /// Creates a selection with rows
-    pub fn rows(rows: &[i64], sheet_id: SheetId) -> Self {
-        Selection {
-            sheet_id,
-            x: 0,
-            y: rows[0],
-            rects: None,
-            rows: Some(rows.to_vec()),
-            columns: None,
-            all: false,
-        }
-    }
-
-    /// Creates a selection via  single rect
-    pub fn rect(rect: Rect, sheet_id: SheetId) -> Self {
-        Selection {
-            sheet_id,
-            x: rect.min.x,
-            y: rect.min.y,
-            rects: Some(vec![rect]),
-            rows: None,
-            columns: None,
-            all: false,
-        }
-    }
-
-    /// Create a selection via a single position.
-    pub fn pos(x: i64, y: i64, sheet_id: SheetId) -> Self {
-        Selection {
-            sheet_id,
-            x,
-            y,
-            rects: Some(vec![Rect::from_numbers(x, y, 1, 1)]),
-            rows: None,
-            columns: None,
-            all: false,
-        }
-    }
-
     pub fn has_sheet_selection(&self) -> bool {
         self.rows.is_some() || self.columns.is_some() || self.all
     }
@@ -584,14 +486,6 @@ impl Selection {
     }
 }
 
-impl FromStr for Selection {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        serde_json::from_str::<Selection>(s).map_err(|e| e.to_string())
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
@@ -599,139 +493,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn selection_from_str_rects() {
-        let s = r#"{"sheet_id":{"id":"00000000-0000-0000-0000-000000000000"},"x":0,"y":1,"rects":[{"min":{"x":0,"y":1},"max":{"x":3,"y":4}}],"rows":null,"columns":null,"all":false}"#;
-        let selection: Selection = Selection::from_str(s).unwrap();
-        assert_eq!(
-            selection,
-            Selection {
-                sheet_id: SheetId::test(),
-                x: 0,
-                y: 1,
-                rects: Some(vec![Rect::from_numbers(0, 1, 4, 4)]),
-                rows: None,
-                columns: None,
-                all: false
-            }
-        );
-    }
-
-    #[test]
-    #[parallel]
-    fn selection_from_str_rows() {
-        let s = r#"{"sheet_id":{"id":"00000000-0000-0000-0000-000000000000"},"x":0,"y":3,"rects":null,"rows":[3,5],"columns":null,"all":false}"#;
-        let selection: Selection = Selection::from_str(s).unwrap();
-        assert_eq!(
-            selection,
-            Selection {
-                sheet_id: SheetId::test(),
-                x: 0,
-                y: 3,
-                rects: None,
-                rows: Some(vec!(3, 5)),
-                columns: None,
-                all: false
-            }
-        );
-    }
-
-    #[test]
-    #[parallel]
-    fn selection_from_str_columns() {
-        let s = r#"{"sheet_id":{"id":"00000000-0000-0000-0000-000000000000"},"x":7,"y":0,"rects":null,"rows":null,"columns":[7, 8, 9],"all":false}"#;
-        let selection: Selection = Selection::from_str(s).unwrap();
-        assert_eq!(
-            selection,
-            Selection {
-                x: 7,
-                y: 0,
-                sheet_id: SheetId::test(),
-                rects: None,
-                rows: None,
-                columns: Some(vec!(7, 8, 9)),
-                all: false
-            }
-        );
-    }
-
-    #[test]
-    #[parallel]
-    fn selection_from_str_all() {
-        let s = r#"{"sheet_id":{"id":"00000000-0000-0000-0000-000000000000"},"x":0,"y":0,"rects":null,"rows":null,"columns":null,"all":true}"#;
-        let selection: Selection = Selection::from_str(s).unwrap();
-        assert_eq!(
-            selection,
-            Selection {
-                x: 0,
-                y: 0,
-                sheet_id: SheetId::test(),
-                rects: None,
-                rows: None,
-                columns: None,
-                all: true
-            }
-        );
-    }
-
-    #[test]
-    #[parallel]
-    fn selection_from_rect() {
-        let rect = Rect::from_numbers(0, 0, 1, 1);
-        let selection = Selection::rect(rect, SheetId::test());
-        assert_eq!(
-            selection,
-            Selection {
-                x: 0,
-                y: 0,
-                sheet_id: SheetId::test(),
-                rects: Some(vec!(rect)),
-                rows: None,
-                columns: None,
-                all: false
-            }
-        );
-    }
-
-    #[test]
-    #[parallel]
-    fn selection_from_pos() {
-        let selection = Selection::pos(0, 0, SheetId::test());
-        assert_eq!(
-            selection,
-            Selection {
-                x: 0,
-                y: 0,
-                sheet_id: SheetId::test(),
-                rects: Some(vec!(Rect::from_numbers(0, 0, 1, 1))),
-                rows: None,
-                columns: None,
-                all: false
-            }
-        );
-    }
-
-    #[test]
-    #[parallel]
-    fn selection_from_sheet_rect() {
-        let sheet_rect = SheetRect::from_numbers(0, 0, 1, 1, SheetId::test());
-        let selection = Selection::sheet_rect(sheet_rect);
-        assert_eq!(
-            selection,
-            Selection {
-                x: 0,
-                y: 0,
-                sheet_id: SheetId::test(),
-                rects: Some(vec!(Rect::from_numbers(0, 0, 1, 1))),
-                rows: None,
-                columns: None,
-                all: false
-            }
-        );
-    }
-
-    #[test]
-    #[parallel]
-    fn largest_rect() {
+    fn test_largest_rect() {
         let sheet_id = SheetId::test();
         let selection = Selection {
             sheet_id,
@@ -767,7 +529,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn pos_in_selection() {
+    fn test_pos_in_selection() {
         let sheet_id = SheetId::test();
         let selection = Selection {
             sheet_id,
@@ -807,7 +569,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn origin() {
+    fn test_origin() {
         let sheet_id = SheetId::test();
         let selection = Selection {
             sheet_id,
@@ -827,7 +589,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn translate() {
+    fn test_translate() {
         let sheet_id = SheetId::test();
         let selection = Selection {
             sheet_id,
@@ -857,7 +619,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn count() {
+    fn test_count() {
         let sheet_id = SheetId::test();
         let selection = Selection {
             sheet_id,
@@ -886,45 +648,37 @@ mod test {
 
     #[test]
     #[parallel]
-    fn selection_columns() {
+    fn test_selection_columns() {
         let sheet_id = SheetId::test();
         let selection = Selection::columns(&[1, 2, 3], sheet_id);
         assert_eq!(
             selection,
             Selection {
                 sheet_id,
-                x: 1,
-                y: 0,
-                rects: None,
-                rows: None,
                 columns: Some(vec![1, 2, 3]),
-                all: false
+                ..Default::default()
             }
         );
     }
 
     #[test]
     #[parallel]
-    fn selection_rows() {
+    fn test_selection_rows() {
         let sheet_id = SheetId::test();
         let selection = Selection::rows(&[1, 2, 3], sheet_id);
         assert_eq!(
             selection,
             Selection {
                 sheet_id,
-                x: 0,
-                y: 1,
-                rects: None,
                 rows: Some(vec![1, 2, 3]),
-                columns: None,
-                all: false
+                ..Default::default()
             }
         );
     }
 
     #[test]
     #[parallel]
-    fn contains_column() {
+    fn test_contains_column() {
         let sheet_id = SheetId::test();
         let selection = Selection::columns(&[1, 2, 3], sheet_id);
         assert!(selection.contains_column(1));
@@ -933,7 +687,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn contains_row() {
+    fn test_contains_row() {
         let sheet_id = SheetId::test();
         let selection = Selection::rows(&[1, 2, 3], sheet_id);
         assert!(selection.contains_row(1));
@@ -942,7 +696,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn in_rect() {
+    fn test_in_rect() {
         let sheet_id = SheetId::test();
         let selection = Selection {
             sheet_id,
@@ -959,7 +713,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn is_empty() {
+    fn test_is_empty() {
         let sheet_id = SheetId::test();
         let selection = Selection {
             sheet_id,
@@ -986,7 +740,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn translate_in_place() {
+    fn test_translate_in_place() {
         let sheet_id = SheetId::test();
         let mut selection = Selection {
             sheet_id,
@@ -1014,7 +768,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn intersection() {
+    fn test_intersection() {
         let sheet_id = SheetId::test();
         let selection1 = Selection {
             sheet_id,
@@ -1063,7 +817,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn count_parts() {
+    fn test_count_parts() {
         let sheet_id = SheetId::test();
         let selection = Selection {
             sheet_id,
@@ -1115,60 +869,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn selection_sheet_pos() {
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 2,
-            sheet_id: SheetId::test(),
-        };
-        let selection = Selection::sheet_pos(sheet_pos);
-        assert_eq!(
-            selection,
-            Selection {
-                sheet_id: sheet_pos.sheet_id,
-                x: sheet_pos.x,
-                y: sheet_pos.y,
-                rects: Some(vec![Rect::from_numbers(sheet_pos.x, sheet_pos.y, 1, 1)]),
-                rows: None,
-                columns: None,
-                all: false,
-            }
-        );
-    }
-
-    #[test]
-    #[parallel]
-    fn new_sheet_pos() {
-        let sheet_id = SheetId::test();
-        let selection = Selection::new_sheet_pos(1, 1, sheet_id);
-        assert_eq!(
-            selection,
-            Selection {
-                sheet_id,
-                x: 1,
-                y: 1,
-                rects: Some(vec![Rect::new(1, 1, 1, 1)]),
-                ..Default::default()
-            }
-        );
-    }
-
-    #[test]
-    #[parallel]
-    fn new() {
-        let selection = Selection::new(SheetId::test());
-        assert_eq!(
-            selection,
-            Selection {
-                sheet_id: SheetId::test(),
-                ..Default::default()
-            }
-        );
-    }
-
-    #[test]
-    #[parallel]
-    fn inserted_column() {
+    fn test_inserted_column() {
         let sheet_id = SheetId::test();
         let mut selection = Selection {
             sheet_id,
@@ -1191,7 +892,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn inserted_row() {
+    fn test_inserted_row() {
         let sheet_id = SheetId::test();
         let mut selection = Selection {
             sheet_id,
@@ -1213,7 +914,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn removed_column() {
+    fn test_removed_column() {
         let sheet_id = SheetId::test();
         let mut selection = Selection {
             sheet_id,
@@ -1243,7 +944,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn removed_row() {
+    fn test_removed_row() {
         let sheet_id = SheetId::test();
         let mut selection = Selection {
             sheet_id,
@@ -1273,7 +974,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn rects_to_hashes() {
+    fn test_rects_to_hashes() {
         let selection = Selection {
             sheet_id: SheetId::test(),
             rects: Some(vec![Rect::new(1, 1, 3, 3), Rect::new(-3, -3, -1, -1)]),

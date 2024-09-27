@@ -1,6 +1,7 @@
 use quadratic_core::sheet_offsets::SheetOffsets;
 use wasm_bindgen::prelude::*;
 
+pub mod a1;
 pub mod date_time;
 pub mod jsexpr;
 pub mod lsp;

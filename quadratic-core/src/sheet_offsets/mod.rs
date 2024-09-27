@@ -273,47 +273,63 @@ impl SheetOffsets {
     pub fn delete_row(&mut self, row: i64) -> (Vec<(i64, f64)>, Option<f64>) {
         self.row_heights.delete(row)
     }
+
+    /// Returns the default column width and row height.
+    pub fn defaults(&self) -> (f64, f64) {
+        (self.column_width(0), self.row_height(0))
+    }
 }
 
 #[cfg(test)]
 mod test {
     use serial_test::parallel;
 
+    use super::*;
+
+    use crate::Rect;
+
     #[test]
     #[parallel]
-    fn screen_rect_cell_offsets() {
-        let sheet = super::SheetOffsets::default();
-        let rect = super::Rect::from_numbers(0, 0, 1, 1);
-        let screen_rect = sheet.screen_rect_cell_offsets(rect);
+    fn test_screen_rect_cell_offsets() {
+        let offsets = SheetOffsets::default();
+        let rect = Rect::new(1, 1, 1, 1);
+        let screen_rect = offsets.screen_rect_cell_offsets(rect);
         assert_eq!(screen_rect.x, 0.0);
         assert_eq!(screen_rect.y, 0.0);
-        assert_eq!(screen_rect.w, 100.0);
-        assert_eq!(screen_rect.h, 21.0);
+        assert_eq!(screen_rect.w, offsets.defaults().0);
+        assert_eq!(screen_rect.h, offsets.defaults().1);
 
-        let rect = super::Rect::from_numbers(0, 0, 2, 2);
-        let screen_rect = sheet.screen_rect_cell_offsets(rect);
+        let rect = Rect::new(1, 1, 2, 2);
+        let screen_rect = offsets.screen_rect_cell_offsets(rect);
         assert_eq!(screen_rect.x, 0.0);
         assert_eq!(screen_rect.y, 0.0);
-        assert_eq!(screen_rect.w, 100.0 * 2.0);
-        assert_eq!(screen_rect.h, 21.0 * 2.0);
+        assert_eq!(screen_rect.w, offsets.defaults().0 * 2.0);
+        assert_eq!(screen_rect.h, offsets.defaults().1 * 2.0);
     }
 
     #[test]
     #[parallel]
     fn rect_cell_offsets() {
-        let sheet = super::SheetOffsets::default();
-        let rect = super::Rect::from_numbers(0, 0, 1, 1);
-        let rect = sheet.rect_cell_offsets(rect);
+        let offsets = SheetOffsets::default();
+        let rect = Rect::new(1, 1, 1, 1);
+        let rect = offsets.rect_cell_offsets(rect);
         assert_eq!(rect.min.x, 0);
         assert_eq!(rect.min.y, 0);
-        assert_eq!(rect.max.x, 100);
-        assert_eq!(rect.max.y, 21);
+        assert_eq!(rect.max.x, offsets.defaults().0 as i64);
+        assert_eq!(rect.max.y, offsets.defaults().1 as i64);
 
-        let rect = super::Rect::from_numbers(0, 0, 2, 2);
-        let rect = sheet.rect_cell_offsets(rect);
+        let rect = Rect::from_numbers(1, 1, 2, 2);
+        let rect = offsets.rect_cell_offsets(rect);
         assert_eq!(rect.min.x, 0);
         assert_eq!(rect.min.y, 0);
-        assert_eq!(rect.max.x, 200);
-        assert_eq!(rect.max.y, 42);
+        assert_eq!(rect.max.x, (offsets.defaults().0 * 2.0) as i64);
+        assert_eq!(rect.max.y, (offsets.defaults().1 * 2.0) as i64);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_defaults() {
+        let sheet = super::SheetOffsets::default();
+        assert_eq!(sheet.defaults(), (100.0, 21.0));
     }
 }
