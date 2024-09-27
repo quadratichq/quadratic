@@ -1,7 +1,6 @@
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { JsCodeCell, Pos } from '@/app/quadratic-core-types';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useCallback } from 'react';
 import { useSetRecoilState } from 'recoil';
 
@@ -9,14 +8,8 @@ export const useUpdateCodeEditor = () => {
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
 
   const updateCodeEditor = useCallback(
-    async (sheetId: string, x: number, y: number, pushCodeCell?: JsCodeCell, initialCode?: string) => {
+    (sheetId: string, x: number, y: number, codeCell?: JsCodeCell, initialCode?: string) => {
       if (!sheetId) return;
-
-      let codeCell = pushCodeCell;
-      if (!codeCell) {
-        setCodeEditorState((prev) => ({ ...prev, loading: true }));
-        codeCell = await quadraticCore.getCodeCell(sheetId, x, y);
-      }
 
       if (codeCell) {
         const newEvaluationResult = codeCell.evaluation_result ? JSON.parse(codeCell.evaluation_result) : {};

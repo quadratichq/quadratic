@@ -3,6 +3,7 @@ import { CodeEditorBody } from '@/app/ui/menus/CodeEditor/CodeEditorBody';
 import { CodeEditorEffects } from '@/app/ui/menus/CodeEditor/CodeEditorEffects';
 import { CodeEditorEmptyState } from '@/app/ui/menus/CodeEditor/CodeEditorEmptyState';
 import { CodeEditorEscapeEffect } from '@/app/ui/menus/CodeEditor/CodeEditorEscapeEffect';
+import { CodeEditorFixSpillError } from '@/app/ui/menus/CodeEditor/CodeEditorFixSpillError';
 import { CodeEditorHeader } from '@/app/ui/menus/CodeEditor/CodeEditorHeader';
 import { useOnKeyDownCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useOnKeyDownCodeEditor';
 import { CodeEditorPanel } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanel';
@@ -69,6 +70,8 @@ export const CodeEditor = () => {
             <SaveChangesAlert editorInst={editorInst} />
 
             <CodeEditorHeader editorInst={editorInst} />
+
+            <CodeEditorFixSpillError />
 
             <CodeEditorBody editorInst={editorInst} setEditorInst={setEditorInst} />
 
