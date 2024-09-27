@@ -255,7 +255,7 @@ mod test {
             std_err: None,
             formatted_code_string: None,
             cells_accessed: HashSet::new(),
-            return_type: None,
+            return_type: Some("number".into()),
             line_number: None,
             output_type: None,
             error: None,

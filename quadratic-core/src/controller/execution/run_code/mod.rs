@@ -273,6 +273,7 @@ impl GridController {
                 last_modified: Utc::now(),
             };
         };
+
         let value = if js_code_result.success {
             let result = if let Some(array_output) = js_code_result.output_array {
                 let (array, ops) = Array::from_string_list(start.into(), sheet, array_output);
@@ -299,7 +300,7 @@ impl GridController {
             Value::Single(CellValue::Blank) // TODO(ddimaria): this will eventually be an empty vec
         };
 
-        let error = {
+        let error = (!js_code_result.success).then_some({
             let error_msg = js_code_result
                 .std_err
                 .clone()
@@ -310,17 +311,19 @@ impl GridController {
                 end: line_number,
             });
             RunError { span, msg }
-        };
+        });
 
-        let return_type = match value {
-            Value::Single(ref cell_value) => Some(cell_value.type_name().into()),
-            Value::Array(_) => Some("array".into()),
-            Value::Tuple(_) => Some("tuple".into()),
-        };
+        let return_type = js_code_result.success.then_some({
+            match value {
+                Value::Single(ref cell_value) => cell_value.type_name().into(),
+                Value::Array(_) => "array".into(),
+                Value::Tuple(_) => "tuple".into(),
+            }
+        });
 
         let code_run = CodeRun {
             formatted_code_string: None,
-            error: Some(error),
+            error,
             return_type,
             line_number: js_code_result.line_number,
             output_type: js_code_result.output_display_type,
