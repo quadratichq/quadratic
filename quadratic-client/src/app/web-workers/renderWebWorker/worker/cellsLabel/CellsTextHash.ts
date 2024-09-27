@@ -13,16 +13,17 @@ import { debugShowHashUpdates, debugShowLoadingHashes } from '@/app/debugFlags';
 import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
-import { Coordinate } from '@/app/gridGL/types/size';
+import { Link } from '@/app/gridGL/types/links';
+import { Coordinate, DrawRects } from '@/app/gridGL/types/size';
 import { JsRenderCell } from '@/app/quadratic-core-types';
+import { CellLabel } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
+import { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsLabels';
+import { CellsTextHashContent } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashContent';
+import { CellsTextHashSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
+import { LabelMeshes } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/LabelMeshes';
+import { renderClient } from '@/app/web-workers/renderWebWorker/worker/renderClient';
+import { renderCore } from '@/app/web-workers/renderWebWorker/worker/renderCore';
 import { Rectangle } from 'pixi.js';
-import { renderClient } from '../renderClient';
-import { renderCore } from '../renderCore';
-import { CellLabel } from './CellLabel';
-import { CellsLabels } from './CellsLabels';
-import { CellsTextHashContent } from './CellsTextHashContent';
-import { CellsTextHashSpecial } from './CellsTextHashSpecial';
-import { LabelMeshes } from './LabelMeshes';
 
 // Draw hashed regions of cell glyphs (the text + text formatting)
 export class CellsTextHash {
@@ -36,6 +37,11 @@ export class CellsTextHash {
 
   // tracks which grid lines should not be drawn for this hash
   private overflowGridLines: Coordinate[] = [];
+
+  private drawRects: DrawRects[] = [];
+
+  // tracks which cells have links
+  private links: Link[] = [];
 
   hashX: number;
   hashY: number;
@@ -60,12 +66,12 @@ export class CellsTextHash {
   // screen coordinates
   viewRectangle: Rectangle;
 
-  special: CellsTextHashSpecial;
+  private special: CellsTextHashSpecial;
 
-  columnsMaxCache?: Map<number, number>;
-  rowsMaxCache?: Map<number, number>;
+  private columnsMaxCache?: Map<number, number>;
+  private rowsMaxCache?: Map<number, number>;
 
-  content: CellsTextHashContent;
+  private content: CellsTextHashContent;
 
   constructor(cellsLabels: CellsLabels, hashX: number, hashY: number) {
     this.cellsLabels = cellsLabels;
@@ -131,6 +137,9 @@ export class CellsTextHash {
     if (debugShowLoadingHashes) console.log(`[CellsTextHash] Unloading ${this.hashX}, ${this.hashY}`);
     this.loaded = false;
     this.labels.clear();
+    this.content.clear();
+    this.links = [];
+    this.drawRects = [];
     this.labelMeshes.clear();
     this.overflowGridLines = [];
   };
@@ -142,14 +151,16 @@ export class CellsTextHash {
     }
   };
 
-  sendViewRectangle = () => {
+  sendCellsTextHashClear = () => {
     renderClient.sendCellsTextHashClear(
       this.cellsLabels.sheetId,
       this.hashX,
       this.hashY,
       this.viewRectangle,
       this.overflowGridLines,
-      this.content.export()
+      this.content.export(),
+      this.links,
+      this.drawRects
     );
   };
 
@@ -234,7 +245,7 @@ export class CellsTextHash {
     this.dirtyText = false;
 
     this.labelMeshes.clear();
-    this.labels.forEach((child) => child.updateText(this.labelMeshes));
+    this.labels.forEach((label) => label.updateText(this.labelMeshes));
     this.overflowClip();
 
     const columnsMax = new Map<number, number>();
@@ -337,10 +348,13 @@ export class CellsTextHash {
 
   private updateBuffers = (): void => {
     if (!this.loaded) {
-      this.sendViewRectangle();
+      this.sendCellsTextHashClear();
       return;
     }
     this.dirtyBuffers = false;
+
+    this.links = [];
+    this.drawRects = [];
 
     // creates labelMeshes webGL buffers based on size
     this.labelMeshes.prepare();
@@ -358,6 +372,10 @@ export class CellsTextHash {
         maxX = Math.max(maxX, bounds.maxX);
         maxY = Math.max(maxY, bounds.maxY);
       }
+      if (cellLabel.link) {
+        this.links.push({ pos: cellLabel.location, textRectangle: cellLabel.textRectangle });
+      }
+      this.drawRects.push({ rects: cellLabel.horizontalLines, tint: cellLabel.tint });
     });
     if (minX !== Infinity && minY !== Infinity) {
       this.viewRectangle.x = minX;
@@ -369,14 +387,7 @@ export class CellsTextHash {
     this.special.extendViewRectangle(this.viewRectangle);
 
     // prepares the client's CellsTextHash for new content
-    renderClient.sendCellsTextHashClear(
-      this.cellsLabels.sheetId,
-      this.hashX,
-      this.hashY,
-      this.viewRectangle,
-      this.overflowGridLines,
-      this.content.export()
-    );
+    this.sendCellsTextHashClear();
 
     // completes the rendering for the CellsTextHash
     this.labelMeshes.finalize();

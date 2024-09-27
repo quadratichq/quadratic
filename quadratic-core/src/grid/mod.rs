@@ -1,6 +1,3 @@
-use crate::CellValue;
-#[cfg(test)]
-use crate::{Array, Pos};
 use block::{Block, BlockContent, SameValue};
 pub use borders::{
     BorderSelection, BorderStyle, CellBorderLine, CellBorders, CellSide, IdSpaceBorders,
@@ -12,13 +9,18 @@ pub use column::{Column, ColumnData};
 pub use data_table::*;
 pub use formatting::{
     Bold, CellAlign, CellFmtAttr, CellVerticalAlign, CellWrap, FillColor, Italic, NumericCommas,
-    NumericDecimals, NumericFormat, NumericFormatKind, RenderSize, TextColor,
+    NumericDecimals, NumericFormat, NumericFormatKind, RenderSize, StrikeThrough, TextColor,
+    Underline,
 };
 pub use ids::*;
 use serde::{Deserialize, Serialize};
 pub use sheet::Sheet;
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
+
+use crate::CellValue;
+#[cfg(test)]
+use crate::{Array, Pos};
 
 mod block;
 mod borders;

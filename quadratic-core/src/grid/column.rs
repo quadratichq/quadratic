@@ -7,7 +7,6 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::ops::Range;
 
-use crate::grid::block::{contiguous_optional_blocks, OptionBlock};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
@@ -15,6 +14,7 @@ use smallvec::{smallvec, SmallVec};
 use super::formats::format::Format;
 use super::formatting::*;
 use super::{Block, BlockContent, SameValue};
+use crate::grid::block::{contiguous_optional_blocks, OptionBlock};
 use crate::{CellValue, IsBlank};
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
@@ -34,9 +34,10 @@ pub struct Column {
     pub text_color: ColumnData<SameValue<String>>,
     pub fill_color: ColumnData<SameValue<String>>,
     pub render_size: ColumnData<SameValue<RenderSize>>,
-
     #[serde(default)]
     pub date_time: ColumnData<SameValue<String>>,
+    pub underline: ColumnData<SameValue<bool>>,
+    pub strike_through: ColumnData<SameValue<bool>>,
 }
 
 impl Column {
@@ -72,7 +73,10 @@ impl Column {
                 self.italic.range(),
                 self.text_color.range(),
                 self.fill_color.range(),
+                self.render_size.range(),
                 self.date_time.range(),
+                self.underline.range(),
+                self.strike_through.range(),
             ])
         }
     }
@@ -89,7 +93,10 @@ impl Column {
             self.italic.range(),
             self.text_color.range(),
             self.fill_color.range(),
+            self.render_size.range(),
             self.date_time.range(),
+            self.underline.range(),
+            self.strike_through.range(),
         ])
     }
 
@@ -111,6 +118,8 @@ impl Column {
             || self.fill_color.get(y).is_some()
             || self.render_size.get(y).is_some()
             || self.date_time.get(y).is_some()
+            || self.underline.get(y).is_some()
+            || self.strike_through.get(y).is_some()
     }
 
     pub fn has_anything_in_row(&self, y: i64) -> bool {
@@ -132,6 +141,8 @@ impl Column {
             fill_color: self.fill_color.get(y),
             render_size: self.render_size.get(y),
             date_time: self.date_time.get(y),
+            underline: self.underline.get(y),
+            strike_through: self.strike_through.get(y),
         };
         if format.is_default() {
             None
@@ -503,8 +514,9 @@ impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq>
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use serial_test::parallel;
+
+    use super::*;
 
     #[test]
     #[parallel]
@@ -587,6 +599,9 @@ mod test {
                 h: "2".to_string(),
             },
         );
+        cd.underline.set_range(Range { start: 0, end: 10 }, true);
+        cd.strike_through
+            .set_range(Range { start: 0, end: 10 }, true);
 
         let format = cd.format(0).unwrap();
         assert_eq!(format.align, Some(CellAlign::Center));
@@ -612,6 +627,8 @@ mod test {
                 h: "2".to_string()
             })
         );
+        assert_eq!(format.underline, Some(true));
+        assert_eq!(format.strike_through, Some(true));
     }
 
     #[test]
@@ -649,6 +666,9 @@ mod test {
                 h: "2".to_string(),
             },
         );
+        cd.underline.set_range(Range { start: 0, end: 10 }, true);
+        cd.strike_through
+            .set_range(Range { start: 0, end: 10 }, true);
 
         let range = cd.format_range().unwrap();
         assert_eq!(range.start, 0);

@@ -1,14 +1,12 @@
-use crate::grid::file::v1_5::schema as v1_5;
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashMap,
-    fmt::{self, Display},
-};
+use std::collections::HashMap;
+use std::fmt::{self, Display};
 use uuid::Uuid;
 
 use super::schema_validation::Validations;
 pub use crate::grid::file::v1_5::run_error::Axis;
+use crate::grid::file::v1_5::schema as v1_5;
 pub use v1_5::RunErrorMsg;
 pub use v1_5::Span;
 
@@ -109,6 +107,10 @@ pub struct Format {
 
     #[serde(default)]
     pub date_time: Option<String>,
+    #[serde(default)]
+    pub underline: Option<bool>,
+    #[serde(default)]
+    pub strike_through: Option<bool>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -204,9 +206,16 @@ pub struct Column {
     pub text_color: HashMap<String, ColumnRepeat<String>>,
     pub fill_color: HashMap<String, ColumnRepeat<String>>,
     pub render_size: HashMap<String, ColumnRepeat<RenderSize>>,
-
     #[serde(default)]
     pub date_time: HashMap<String, ColumnRepeat<String>>,
+
+    // Same as comment for `vertical_align`
+    #[serde(skip_serializing_if = "HashMap::is_empty", default)]
+    pub underline: HashMap<String, ColumnRepeat<bool>>,
+
+    // Same as comment for `vertical_align`
+    #[serde(skip_serializing_if = "HashMap::is_empty", default)]
+    pub strike_through: HashMap<String, ColumnRepeat<bool>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

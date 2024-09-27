@@ -76,6 +76,8 @@ export const FormatMenubarMenu = () => {
           <MenubarSubContent>
             <MenubarItemAction action={Action.ToggleBold} actionArgs={undefined} />
             <MenubarItemAction action={Action.ToggleItalic} actionArgs={undefined} />
+            <MenubarItemAction action={Action.ToggleUnderline} actionArgs={undefined} />
+            <MenubarItemAction action={Action.ToggleStrikeThrough} actionArgs={undefined} />
           </MenubarSubContent>
         </MenubarSub>
 

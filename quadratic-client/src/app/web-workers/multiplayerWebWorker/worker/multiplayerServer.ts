@@ -73,7 +73,7 @@ export class MultiplayerServer {
   private lastHeartbeat = 0;
   private updateId?: number;
 
-  init(message: ClientMultiplayerInit) {
+  init = (message: ClientMultiplayerInit) => {
     this.sessionId = message.sessionId;
     this.fileId = message.fileId;
     this.user = message.user;
@@ -89,17 +89,19 @@ export class MultiplayerServer {
       y: message.y,
     };
     this.connect(true);
+  };
 
-    self.addEventListener('online', () => {
-      if (this.state === 'no internet') {
-        this.state = 'not connected';
-      }
-    });
-    self.addEventListener('offline', () => {
-      this.state = 'no internet';
-      this.websocket?.close();
-    });
-  }
+  online = () => {
+    if (this.state === 'no internet') {
+      this.state = 'not connected';
+      this.reconnect(true);
+    }
+  };
+
+  offline = () => {
+    this.state = 'no internet';
+    this.websocket?.close();
+  };
 
   get state() {
     return this._state;
@@ -181,8 +183,9 @@ export class MultiplayerServer {
     if (debugShowMultiplayer) console.log(`[Multiplayer] Joined room ${this.fileId}.`);
   }
 
-  private reconnect = () => {
-    if (this.state === 'no internet' || this.connectionTimeout) return;
+  private reconnect = (force = false) => {
+    if (this.state === 'no internet' || (!force && this.connectionTimeout)) return;
+    clearTimeout(this.connectionTimeout);
     console.log(`[Multiplayer] websocket closed. Reconnecting in ${RECONNECT_AFTER_ERROR_TIMEOUT / 1000}s...`);
     this.state = 'waiting to reconnect';
     this.connectionTimeout = self.setTimeout(async () => {

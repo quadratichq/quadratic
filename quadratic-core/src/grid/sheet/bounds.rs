@@ -225,17 +225,16 @@ impl Sheet {
     /// the row has no formatting.
     pub fn row_bounds_formats(&self, row: i64) -> Option<(i64, i64)> {
         let column_has_row = |(_x, column): &(&i64, &Column)| column.has_format_in_row(row);
-        let min = if let Some((index, _)) = self.columns.iter().find(column_has_row) {
-            Some(*index)
-        } else {
-            None
-        };
-        let max = if let Some((index, _)) = self.columns.iter().rfind(column_has_row) {
-            Some(*index)
-        } else {
-            None
-        };
-
+        let min = self
+            .columns
+            .iter()
+            .find(column_has_row)
+            .map(|(index, _)| *index);
+        let max = self
+            .columns
+            .iter()
+            .rfind(column_has_row)
+            .map(|(index, _)| *index);
         if let (Some(min), Some(max)) = (min, max) {
             Some((min.min(max), max.max(max)))
         } else {

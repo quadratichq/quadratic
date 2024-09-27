@@ -1,12 +1,11 @@
-use crate::{
-    cell_values::CellValues,
-    color::Rgba,
-    controller::operations::clipboard::{Clipboard, ClipboardOrigin},
-    formulas::replace_a1_notation,
-    grid::{formats::Formats, CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, Sheet},
-    selection::Selection,
-    CellValue, Pos, Rect,
-};
+use crate::cell_values::CellValues;
+use crate::color::Rgba;
+use crate::controller::operations::clipboard::{Clipboard, ClipboardOrigin};
+use crate::formulas::replace_a1_notation;
+use crate::grid::formats::Formats;
+use crate::grid::{CodeCellLanguage, Sheet};
+use crate::selection::Selection;
+use crate::{CellValue, Pos, Rect};
 
 impl Sheet {
     /// Copies the selection to the clipboard.
@@ -87,11 +86,11 @@ impl Sheet {
                     let italic = summary.italic.unwrap_or(false);
                     let text_color = summary.text_color;
                     let fill_color = summary.fill_color;
-
-                    // let cell_border = self.borders().per_cell.to_owned().get_cell_border(pos);
-                    let cell_align = self.get_formatting_value::<CellAlign>(pos);
-                    let cell_vertical_align = self.get_formatting_value::<CellVerticalAlign>(pos);
-                    let cell_wrap = self.get_formatting_value::<CellWrap>(pos);
+                    let cell_align = summary.align;
+                    let cell_vertical_align = summary.vertical_align;
+                    let cell_wrap = summary.wrap;
+                    let underline = summary.underline.unwrap_or(false);
+                    let strike_through = summary.strike_through.unwrap_or(false);
 
                     if bold
                         || italic
@@ -100,6 +99,8 @@ impl Sheet {
                         || cell_align.is_some()
                         || cell_vertical_align.is_some()
                         || cell_wrap.is_some()
+                        || underline
+                        || strike_through
                     {
                         style.push_str("style=\"");
 
@@ -133,6 +134,37 @@ impl Sheet {
                         if let Some(cell_wrap) = cell_wrap {
                             style.push_str(cell_wrap.as_css_string());
                         }
+                        if underline && !strike_through {
+                            style.push_str("text-decoration:underline;");
+                        } else if !underline && strike_through {
+                            style.push_str("text-decoration:line-through;");
+                        } else if underline && strike_through {
+                            style.push_str("text-decoration:underline line-through;");
+                        }
+
+                        // todo...
+                        // if let Some(cell_border) = cell_border {
+                        //     for (side, border) in cell_border.borders.iter().enumerate() {
+                        //         let side = match side {
+                        //             0 => "-left",
+                        //             1 => "-top",
+                        //             2 => "-right",
+                        //             3 => "-bottom",
+                        //             _ => "",
+                        //         };
+                        //         if let Some(border) = border {
+                        //             style.push_str(
+                        //                 format!(
+                        //                     "border{}: {} {};",
+                        //                     side,
+                        //                     border.line.as_css_string(),
+                        //                     border.color.as_rgb_hex()
+                        //                 )
+                        //                 .as_str(),
+                        //             );
+                        //         }
+                        //     }
+                        // }
 
                         style.push('"');
                     }
@@ -255,13 +287,13 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
-        controller::{operations::clipboard::PasteSpecial, GridController},
-        grid::{BorderSelection, BorderStyle, CellBorderLine},
-        Rect, SheetRect,
-    };
     use serial_test::parallel;
+
+    use super::*;
+    use crate::controller::operations::clipboard::PasteSpecial;
+    use crate::controller::GridController;
+    use crate::grid::{BorderSelection, BorderStyle, CellBorderLine};
+    use crate::{Rect, SheetRect};
 
     #[test]
     #[parallel]

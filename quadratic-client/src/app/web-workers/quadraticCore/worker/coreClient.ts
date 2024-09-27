@@ -255,6 +255,14 @@ class CoreClient {
         await core.setCellTextColor(e.data.selection, e.data.color, e.data.cursor);
         return;
 
+      case 'clientCoreSetCellUnderline':
+        await core.setCellUnderline(e.data.selection, e.data.underline, e.data.cursor);
+        return;
+
+      case 'clientCoreSetCellStrikeThrough':
+        await core.setCellStrikeThrough(e.data.selection, e.data.strikeThrough, e.data.cursor);
+        return;
+
       case 'clientCoreSetCellFillColor':
         await core.setCellFillColor(e.data.selection, e.data.fillColor, e.data.cursor);
         return;
@@ -565,11 +573,11 @@ class CoreClient {
         return;
 
       case 'clientCoreInsertColumn':
-        core.insertColumn(e.data.sheetId, e.data.column, e.data.cursor);
+        core.insertColumn(e.data.sheetId, e.data.column, e.data.right, e.data.cursor);
         return;
 
       case 'clientCoreInsertRow':
-        core.insertRow(e.data.sheetId, e.data.row, e.data.cursor);
+        core.insertRow(e.data.sheetId, e.data.row, e.data.below, e.data.cursor);
         return;
 
       default:

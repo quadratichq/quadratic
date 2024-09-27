@@ -387,6 +387,26 @@ class Core {
     });
   }
 
+  setCellUnderline(selection: Selection, underline: boolean, cursor?: string) {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        this.gridController.setCellUnderline(JSON.stringify(selection, bigIntReplacer), underline, cursor);
+        resolve(undefined);
+      });
+    });
+  }
+
+  setCellStrikeThrough(selection: Selection, strikeThrough: boolean, cursor?: string) {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        this.gridController.setCellStrikeThrough(JSON.stringify(selection, bigIntReplacer), strikeThrough, cursor);
+        resolve(undefined);
+      });
+    });
+  }
+
   setCellFillColor(selection: Selection, fillColor?: string, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
@@ -1035,9 +1055,9 @@ class Core {
     this.gridController.deleteColumn(sheetId, JSON.stringify(columns), cursor);
   }
 
-  insertColumn(sheetId: string, column: number, cursor: string) {
+  insertColumn(sheetId: string, column: number, right: boolean, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.insertColumn(sheetId, BigInt(column), cursor);
+    this.gridController.insertColumn(sheetId, BigInt(column), right, cursor);
   }
 
   deleteRows(sheetId: string, rows: number[], cursor: string) {
@@ -1045,9 +1065,9 @@ class Core {
     this.gridController.deleteRows(sheetId, JSON.stringify(rows), cursor);
   }
 
-  insertRow(sheetId: string, row: number, cursor: string) {
+  insertRow(sheetId: string, row: number, below: boolean, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.insertRow(sheetId, BigInt(row), cursor);
+    this.gridController.insertRow(sheetId, BigInt(row), below, cursor);
   }
 }
 

@@ -224,6 +224,32 @@ impl GridController {
         Ok(())
     }
 
+    /// Sets cell bold formatting given as an optional [`bool`].
+    #[wasm_bindgen(js_name = "setCellUnderline")]
+    pub fn js_set_underline(
+        &mut self,
+        selection: String,
+        underline: bool,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        self.set_underline_selection(selection, underline, cursor)?;
+        Ok(())
+    }
+
+    /// Sets cell bold formatting given as an optional [`bool`].
+    #[wasm_bindgen(js_name = "setCellStrikeThrough")]
+    pub fn js_set_strike_through(
+        &mut self,
+        selection: String,
+        strike_through: bool,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        self.set_strike_through_selection(selection, strike_through, cursor)?;
+        Ok(())
+    }
+
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "clearFormatting")]
     pub fn js_clear_formatting(

@@ -257,6 +257,36 @@ class InlineEditorKeyboard {
       }
     }
 
+    // toggle underline
+    else if (matchShortcut(Action.ToggleUnderline, e)) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (inlineEditorHandler.location) {
+        inlineEditorHandler.toggleUnderline();
+        const selection = getSingleSelection(
+          inlineEditorHandler.location.sheetId,
+          inlineEditorHandler.location.x,
+          inlineEditorHandler.location.y
+        );
+        quadraticCore.setCellUnderline(selection, !!inlineEditorHandler.temporaryUnderline);
+      }
+    }
+
+    // toggle strike-through
+    else if (matchShortcut(Action.ToggleStrikeThrough, e)) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (inlineEditorHandler.location) {
+        inlineEditorHandler.toggleStrikeThrough();
+        const selection = getSingleSelection(
+          inlineEditorHandler.location.sheetId,
+          inlineEditorHandler.location.x,
+          inlineEditorHandler.location.y
+        );
+        quadraticCore.setCellStrikeThrough(selection, !!inlineEditorHandler.temporaryStrikeThrough);
+      }
+    }
+
     // trigger cell type menu
     else if (matchShortcut(Action.ShowCellTypeMenu, e) && inlineEditorMonaco.get().length === 0) {
       e.preventDefault();

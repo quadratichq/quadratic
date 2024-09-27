@@ -581,6 +581,24 @@ class QuadraticCore {
     });
   }
 
+  setCellUnderline(selection: Selection, underline: boolean, cursor?: string) {
+    this.send({
+      type: 'clientCoreSetCellUnderline',
+      selection,
+      underline,
+      cursor,
+    });
+  }
+
+  setCellStrikeThrough(selection: Selection, strikeThrough: boolean, cursor?: string) {
+    this.send({
+      type: 'clientCoreSetCellStrikeThrough',
+      selection,
+      strikeThrough,
+      cursor,
+    });
+  }
+
   setCellAlign(selection: Selection, align: CellAlign, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellAlign',
@@ -1107,11 +1125,12 @@ class QuadraticCore {
     });
   }
 
-  insertColumn(sheetId: string, column: number, cursor: string) {
+  insertColumn(sheetId: string, column: number, right: boolean, cursor: string) {
     this.send({
       type: 'clientCoreInsertColumn',
       sheetId,
       column,
+      right,
       cursor,
     });
   }
@@ -1125,11 +1144,12 @@ class QuadraticCore {
     });
   }
 
-  insertRow(sheetId: string, row: number, cursor: string) {
+  insertRow(sheetId: string, row: number, below: boolean, cursor: string) {
     this.send({
       type: 'clientCoreInsertRow',
       sheetId,
       row,
+      below,
       cursor,
     });
   }

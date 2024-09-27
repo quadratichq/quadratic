@@ -1,25 +1,24 @@
 use std::collections::HashSet;
 
+use chrono::Utc;
+
 use crate::{
     cell_values::CellValues,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::Operation,
+        operations::operation::{CopyFormats, Operation},
     },
-    grid::{
-        formats::{format_update::FormatUpdate, Formats},
-        GridBounds, Sheet,
-    },
+    grid::{formats::Formats, GridBounds, Sheet},
     renderer_constants::CELL_SHEET_WIDTH,
     selection::Selection,
-    Pos, SheetPos,
+    Pos, Rect, SheetPos,
 };
 
 use super::MAX_OPERATION_SIZE_COL_ROW;
 
 impl Sheet {
     // create reverse operations for values in the row broken up by MAX_OPERATION_SIZE
-    fn values_ops_for_row(&self, row: i64) -> Vec<Operation> {
+    fn reverse_values_ops_for_row(&self, row: i64) -> Vec<Operation> {
         let mut reverse_operations = Vec::new();
 
         if let Some((min, max)) = self.row_bounds(row, true) {
@@ -44,27 +43,27 @@ impl Sheet {
     }
 
     /// Creates reverse operations for cell formatting within the row.
-    fn formats_ops_for_row(&self, row: i64) -> Vec<Operation> {
-        let mut reverse_operations = Vec::new();
-        // create reverse operations for rows formatting broken up by MAX_OPERATION_SIZE
+    fn reverse_formats_ops_for_row(&self, row: i64) -> Vec<Operation> {
+        let mut formats = Formats::new();
+        let mut selection = Selection::new(self.id);
 
-        if let Some((min, max)) = self.row_bounds(row, false) {
-            let mut formats = Formats::new();
-            for x in min..=max {
-                if let Some(column) = self.columns.get(&x) {
-                    if let Some(format) = column.format(row) {
-                        formats.push(format.to_replace());
-                    } else {
-                        formats.push(FormatUpdate::default());
-                    }
-                }
-            }
-            reverse_operations.push(Operation::SetCellFormatsSelection {
-                selection: Selection::columns(&[row], self.id),
-                formats,
-            });
+        if let Some(format) = self.try_format_row(row) {
+            selection.rows = Some(vec![row]);
+            formats.push(format.to_replace());
         }
-        reverse_operations
+
+        if let Some((min, max)) = self.row_bounds_formats(row) {
+            for x in min..=max {
+                let format = self.format_cell(x, row, false).to_replace();
+                formats.push(format);
+            }
+            selection.rects = Some(vec![Rect::new(min, row, max, row)]);
+        }
+        if !selection.is_empty() {
+            vec![Operation::SetCellFormatsSelection { selection, formats }]
+        } else {
+            vec![]
+        }
     }
 
     /// Creates reverse operations for code runs within the column.
@@ -175,33 +174,45 @@ impl Sheet {
         }
     }
 
+    pub fn delete_row_offset(&mut self, transaction: &mut PendingTransaction, row: i64) {
+        let (changed, new_size) = self.offsets.delete_row(row);
+
+        if let Some(new_size) = new_size {
+            transaction.reverse_operations.push(Operation::ResizeRow {
+                sheet_id: self.id,
+                row,
+                new_size,
+                client_resized: false,
+            });
+        }
+        if !changed.is_empty() && !transaction.is_server() {
+            changed.iter().for_each(|(index, size)| {
+                transaction
+                    .offsets_modified
+                    .push((self.id, None, Some(*index), *size));
+            });
+        }
+    }
+
     pub fn delete_row(&mut self, transaction: &mut PendingTransaction, row: i64) {
         // create undo operations for the deleted column (only when needed since
         // it's a bit expensive)
         if transaction.is_user_undo_redo() {
             transaction
                 .reverse_operations
-                .extend(self.values_ops_for_row(row));
+                .extend(self.reverse_values_ops_for_row(row));
             transaction
                 .reverse_operations
-                .extend(self.formats_ops_for_row(row));
+                .extend(self.reverse_formats_ops_for_row(row));
             transaction
                 .reverse_operations
                 .extend(self.code_runs_for_row(row));
             transaction
                 .reverse_operations
                 .extend(self.borders.get_row_ops(self.id, row));
-
-            // create reverse operation for row-based formatting
-            if let Some(format) = self.try_format_row(row) {
-                transaction
-                    .reverse_operations
-                    .push(Operation::SetCellFormatsSelection {
-                        selection: Selection::rows(&[row], self.id),
-                        formats: Formats::repeat(format.to_replace(), 1),
-                    });
-            }
         }
+
+        self.delete_row_offset(transaction, row);
 
         // remove the column's code runs from the sheet
         self.data_tables.retain(|pos, code_run| {
@@ -222,9 +233,11 @@ impl Sheet {
 
         let mut updated_rows = HashSet::new();
 
-        // remove the column's formats from the sheet
-        if self.formats_rows.contains_key(&row) {
-            self.formats_rows.remove(&row);
+        // remove the row's formats from the sheet
+        if let Some((format, _)) = self.formats_rows.remove(&row) {
+            if format.fill_color.is_some() {
+                transaction.fill_cells.insert(self.id);
+            }
             updated_rows.insert(row);
         }
 
@@ -271,6 +284,24 @@ impl Sheet {
         // update the indices of all column-based formats impacted by the deletion
         self.formats_remove_and_shift_up(transaction, row, &mut updated_rows);
 
+        // update the indices of all row-based formats impacted by the deletion
+        let mut formats_to_update = Vec::new();
+        for r in self.formats_rows.keys() {
+            if *r > row {
+                formats_to_update.push(*r);
+            }
+        }
+        for row in formats_to_update {
+            if let Some(format) = self.formats_rows.remove(&row) {
+                if format.0.fill_color.is_some() {
+                    transaction.fill_cells.insert(self.id);
+                }
+                self.formats_rows.insert(row - 1, format);
+                updated_rows.insert(row);
+                updated_rows.insert(row - 1);
+            }
+        }
+
         // send the value hashes that have changed to the client
         let dirty_hashes = transaction.dirty_hashes.entry(self.id).or_default();
         updated_rows.iter().for_each(|row| {
@@ -287,6 +318,7 @@ impl Sheet {
         transaction.reverse_operations.push(Operation::InsertRow {
             sheet_id: self.id,
             row,
+            copy_formats: CopyFormats::None,
         });
 
         self.validations.remove_row(transaction, self.id, row);
@@ -366,7 +398,46 @@ impl Sheet {
         }
     }
 
-    pub fn insert_row(&mut self, transaction: &mut PendingTransaction, row: i64) {
+    /// Copies row formats to the new row.
+    ///
+    /// We don't need reverse operations since the updated column will be
+    /// deleted during an undo.
+    fn copy_row_formats(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        row: i64,
+        copy_formats: CopyFormats,
+    ) {
+        let delta = match copy_formats {
+            CopyFormats::After => 1,
+            CopyFormats::Before => -1,
+            CopyFormats::None => return,
+        };
+        if let Some((min, max)) = self.row_bounds_formats(row + delta) {
+            for x in min..=max {
+                if let Some(format) = self.try_format_cell(x, row + delta) {
+                    if format.fill_color.is_some() {
+                        transaction.fill_cells.insert(self.id);
+                    }
+                    self.set_format_cell(Pos { x, y: row }, &format.to_replace(), false);
+                }
+            }
+        }
+        if let Some((format, _)) = self.formats_rows.get(&(row + delta)) {
+            if format.fill_color.is_some() {
+                transaction.fill_cells.insert(self.id);
+            }
+            self.formats_rows
+                .insert(row, (format.clone(), Utc::now().timestamp()));
+        }
+    }
+
+    pub fn insert_row(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        row: i64,
+        copy_formats: CopyFormats,
+    ) {
         // create undo operations for the inserted column
         if transaction.is_user_undo_redo() {
             // reverse operation to delete the row (this will also shift all impacted rows)
@@ -420,6 +491,21 @@ impl Sheet {
             transaction.sheet_borders.insert(self.id);
         }
 
+        // update the indices of all column-based formats impacted by the deletion
+        let mut formats_to_update = Vec::new();
+        for r in self.formats_rows.keys() {
+            if *r >= row {
+                formats_to_update.push(*r);
+            }
+        }
+        formats_to_update.reverse();
+        for row in formats_to_update {
+            if let Some(format) = self.formats_rows.remove(&row) {
+                self.formats_rows.insert(row + 1, format);
+                updated_rows.insert(row + 1);
+            }
+        }
+
         // signal client to update the hashes for changed columns
         let dirty_hashes = transaction.dirty_hashes.entry(self.id).or_default();
         updated_rows.iter().for_each(|row| {
@@ -433,6 +519,17 @@ impl Sheet {
         });
 
         self.validations.insert_row(transaction, self.id, row);
+
+        self.copy_row_formats(transaction, row, copy_formats);
+
+        let changes = self.offsets.insert_row(row);
+        if !changes.is_empty() {
+            changes.iter().for_each(|(index, size)| {
+                transaction
+                    .offsets_modified
+                    .push((self.id, None, Some(*index), *size));
+            });
+        }
     }
 }
 
@@ -442,8 +539,11 @@ mod test {
 
     use crate::{
         controller::execution::TransactionType,
-        grid::{formats::format::Format, BorderStyle, CellBorderLine, CellWrap},
-        CellValue,
+        grid::{
+            formats::{format::Format, format_update::FormatUpdate},
+            BorderStyle, CellBorderLine, CellWrap,
+        },
+        CellValue, DEFAULT_ROW_HEIGHT,
     };
 
     use super::*;
@@ -541,7 +641,7 @@ mod test {
             ..Default::default()
         };
         sheet.delete_row(&mut transaction, 1);
-        assert_eq!(transaction.reverse_operations.len(), 4);
+        assert_eq!(transaction.reverse_operations.len(), 3);
 
         assert_eq!(
             sheet.cell_value(Pos { x: 1, y: 1 }),
@@ -593,7 +693,7 @@ mod test {
 
         let mut transaction = PendingTransaction::default();
 
-        sheet.insert_row(&mut transaction, 1);
+        sheet.insert_row(&mut transaction, 1, CopyFormats::None);
 
         assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
         assert_eq!(
@@ -641,7 +741,7 @@ mod test {
 
         let mut transaction = PendingTransaction::default();
 
-        sheet.insert_row(&mut transaction, 2);
+        sheet.insert_row(&mut transaction, 2, CopyFormats::None);
 
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
@@ -666,7 +766,7 @@ mod test {
 
         let mut transaction = PendingTransaction::default();
 
-        sheet.insert_row(&mut transaction, 3);
+        sheet.insert_row(&mut transaction, 3, CopyFormats::None);
 
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
@@ -684,7 +784,38 @@ mod test {
     fn test_values_ops_for_column() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(1, 1, 2, 2, vec!["a", "b", "c", "d"]);
-        let ops = sheet.values_ops_for_row(2);
+        let ops = sheet.reverse_values_ops_for_row(2);
         assert_eq!(ops.len(), 1);
+    }
+
+    #[test]
+    #[parallel]
+    fn insert_row_offset() {
+        let mut sheet = Sheet::test();
+        sheet.offsets.set_row_height(1, 100.0);
+        sheet.offsets.set_row_height(2, 200.0);
+        sheet.offsets.set_row_height(4, 400.0);
+
+        let mut transaction = PendingTransaction::default();
+        sheet.insert_row(&mut transaction, 2, CopyFormats::None);
+        assert_eq!(sheet.offsets.row_height(1), 100.0);
+        assert_eq!(sheet.offsets.row_height(2), DEFAULT_ROW_HEIGHT);
+        assert_eq!(sheet.offsets.row_height(3), 200.0);
+        assert_eq!(sheet.offsets.row_height(5), 400.0);
+    }
+
+    #[test]
+    #[parallel]
+    fn delete_column_offset() {
+        let mut sheet = Sheet::test();
+        sheet.offsets.set_row_height(1, 100.0);
+        sheet.offsets.set_row_height(2, 200.0);
+        sheet.offsets.set_row_height(4, 400.0);
+
+        let mut transaction = PendingTransaction::default();
+        sheet.delete_row(&mut transaction, 2);
+        assert_eq!(sheet.offsets.row_height(1), 100.0);
+        assert_eq!(sheet.offsets.row_height(2), DEFAULT_ROW_HEIGHT);
+        assert_eq!(sheet.offsets.row_height(3), 400.0);
     }
 }
