@@ -35,6 +35,7 @@ pub type RenderSizeSchema = v1_6::RenderSize;
 pub type RunErrorMsgSchema = v1_6::RunErrorMsg;
 pub type AxisSchema = v1_6::Axis;
 pub type SpanSchema = v1_6::Span;
+pub type ImportSchema = v1_6::Import;
 
 pub type SelectionSchema = v1_6_validation::Selection;
 

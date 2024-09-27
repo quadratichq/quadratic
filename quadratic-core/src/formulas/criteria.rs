@@ -32,6 +32,7 @@ impl TryFrom<Spanned<&CellValue>> for Criterion {
             | CellValue::Number(_)
             | CellValue::Html(_)
             | CellValue::Code(_)
+            | CellValue::Import(_)
             | CellValue::Logical(_)
             | CellValue::Instant(_)
             | CellValue::Date(_)
@@ -122,6 +123,7 @@ impl Criterion {
             CellValue::Html(_) => false,
             CellValue::Code(_) => false,
             CellValue::Image(_) => false,
+            CellValue::Import(_) => false,
         }
     }
 

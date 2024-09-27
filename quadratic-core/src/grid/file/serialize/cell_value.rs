@@ -1,5 +1,6 @@
 use super::current;
 use crate::{
+    cellvalue::Import,
     grid::{CodeCellLanguage, ConnectionKind},
     CellValue, CodeCellValue,
 };
@@ -40,6 +41,9 @@ pub fn export_cell_value(cell_value: CellValue) -> current::CellValueSchema {
             current::CellValueSchema::Error(current::RunErrorSchema::from_grid_run_error(*error))
         }
         CellValue::Image(image) => current::CellValueSchema::Image(image),
+        CellValue::Import(import) => current::CellValueSchema::Import(current::ImportSchema {
+            file_name: import.file_name,
+        }),
     }
 }
 
@@ -91,6 +95,9 @@ pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
         current::CellValueSchema::DateTime(dt) => CellValue::DateTime(dt),
         current::CellValueSchema::Error(error) => CellValue::Error(Box::new(error.into())),
         current::CellValueSchema::Image(text) => CellValue::Image(text),
+        current::CellValueSchema::Import(import) => {
+            CellValue::Import(Import::new(import.file_name))
+        }
     }
 }
 

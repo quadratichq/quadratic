@@ -132,6 +132,7 @@ impl<'a> TryFrom<&'a CellValue> for String {
             CellValue::Html(s) => Ok(s.clone()),
             CellValue::Code(_) => Ok(String::new()),
             CellValue::Image(_) => Ok(String::new()),
+            CellValue::Import(_) => Ok(String::new()),
         }
     }
 }
@@ -175,6 +176,7 @@ impl<'a> TryFrom<&'a CellValue> for f64 {
             CellValue::Html(_) => Ok(0.0),
             CellValue::Code(_) => Ok(0.0),
             CellValue::Image(_) => Ok(0.0),
+            CellValue::Import(_) => Ok(0.0),
         }
     }
 }
