@@ -6,6 +6,7 @@ use crate::{grid::SheetId, Pos, Rect, SheetPos, SheetRect};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+mod a1;
 mod selection_create;
 mod selection_from_a1;
 mod selection_to_a1;
@@ -483,6 +484,54 @@ impl Selection {
             }
         }
         hashes
+    }
+
+    /// Adds a rect to the selection.
+    pub fn add_rect(&mut self, rect: Rect) {
+        if self.all {
+            self.all = false;
+        }
+        if let Some(rects) = &mut self.rects {
+            rects.push(rect);
+        } else {
+            self.rects = Some(vec![rect]);
+        }
+    }
+
+    /// Adds column(s) to the selection. Also fixes the ordering and removes
+    /// duplicates.
+    pub fn add_columns(&mut self, columns: Vec<i64>) {
+        if self.all {
+            self.all = false;
+        }
+        let mut new_columns = columns;
+        new_columns.sort_unstable();
+        new_columns.dedup();
+        if let Some(existing_columns) = &mut self.columns {
+            existing_columns.extend(new_columns);
+            existing_columns.sort_unstable();
+            existing_columns.dedup();
+        } else {
+            self.columns = Some(new_columns);
+        }
+    }
+
+    /// Adds row(s) to the selection. Also fixes the ordering and removes
+    /// duplicates.
+    pub fn add_rows(&mut self, rows: Vec<i64>) {
+        if self.all {
+            self.all = false;
+        }
+        let mut new_rows = rows;
+        new_rows.sort_unstable();
+        new_rows.dedup();
+        if let Some(existing_rows) = &mut self.rows {
+            existing_rows.extend(new_rows);
+            existing_rows.sort_unstable();
+            existing_rows.dedup();
+        } else {
+            self.rows = Some(new_rows);
+        }
     }
 }
 
@@ -983,6 +1032,86 @@ mod test {
         assert_eq!(
             selection.rects_to_hashes(),
             HashSet::from([Pos { x: -1, y: -1 }, Pos { x: 0, y: 0 }])
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_add_rect() {
+        let mut selection = Selection::default();
+        selection.add_rect(Rect::new(1, 1, 3, 3));
+        assert_eq!(
+            selection,
+            Selection {
+                rects: Some(vec![Rect::new(1, 1, 3, 3)]),
+                ..Default::default()
+            }
+        );
+
+        selection.add_rect(Rect::new(4, 4, 6, 6));
+        assert_eq!(
+            selection,
+            Selection {
+                rects: Some(vec![Rect::new(1, 1, 3, 3), Rect::new(4, 4, 6, 6)]),
+                ..Default::default()
+            }
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_add_columns() {
+        let mut selection = Selection::default();
+        selection.add_columns(vec![1, 2, 3]);
+        assert_eq!(
+            selection,
+            Selection {
+                columns: Some(vec![1, 2, 3]),
+                x: 1,
+                ..Default::default()
+            }
+        );
+
+        selection.add_columns(vec![4, 5, 6]);
+        assert_eq!(
+            selection,
+            Selection {
+                columns: Some(vec![1, 2, 3, 4, 5, 6]),
+                x: 1,
+                ..Default::default()
+            }
+        );
+
+        selection.add_columns(vec![5, 6, 4]);
+        assert_eq!(
+            selection,
+            Selection {
+                columns: Some(vec![1, 2, 3, 4, 5, 6]),
+                ..Default::default()
+            }
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_add_rows() {
+        let mut selection = Selection::default();
+        selection.add_rows(vec![1, 2, 3]);
+        assert_eq!(
+            selection,
+            Selection {
+                rows: Some(vec![1, 2, 3]),
+                ..Default::default()
+            }
+        );
+
+        selection.add_rows(vec![5, 4, 6]);
+        assert_eq!(
+            selection,
+            Selection {
+                rows: Some(vec![1, 2, 3, 4, 5, 6]),
+                ..Default::default()
+            }
         );
     }
 }

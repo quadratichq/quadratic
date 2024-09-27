@@ -9,6 +9,7 @@ import { Rectangle } from 'pixi.js';
 import React, { useCallback } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { getCoordinatesFromUserInput } from './getCoordinatesFromUserInput';
+import { posToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 
 export const GoTo = () => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
@@ -66,7 +67,7 @@ export const GoTo = () => {
         onValueChange={(value) => {
           setValue(value);
         }}
-        placeholder="Enter a cell “0, 0” or range “0, 0, -5, -5”"
+        placeholder="Enter a cell “A1” or selection"
         omitIcon={true}
       />
       <CommandList className="p-2">
@@ -78,8 +79,7 @@ export const GoTo = () => {
             e.stopPropagation();
           }}
         >
-          Go to {coordinates.length === 1 ? 'cell' : 'range'}:{' '}
-          {coordinates.map(({ x, y }) => `(${x}, ${y})`).join(', ')}
+          Go to {convertedInput}
           <GoToIcon className="text-muted-foreground" />
         </CommandItem>
       </CommandList>

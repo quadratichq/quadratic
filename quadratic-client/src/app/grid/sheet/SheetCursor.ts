@@ -189,7 +189,7 @@ export class SheetCursor {
     }
   }
 
-  getRustSelection(): Selection {
+  getRustSelection(includeSingleRect = true): Selection {
     const sheet_id = { id: this.sheetId };
     const columns = this.columnRow?.columns ? this.columnRow.columns.map((x) => BigInt(x)) : null;
     const rows = this.columnRow?.rows ? this.columnRow.rows.map((y) => BigInt(y)) : null;
@@ -200,7 +200,7 @@ export class SheetCursor {
         min: { x: BigInt(rect.x), y: BigInt(rect.y) },
         max: { x: BigInt(rect.x + rect.width - 1), y: BigInt(rect.y + rect.height - 1) },
       }));
-    } else if (!this.columnRow) {
+    } else if (!this.columnRow && includeSingleRect) {
       rects = [
         {
           min: { x: BigInt(this.cursorPosition.x), y: BigInt(this.cursorPosition.y) },
