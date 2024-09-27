@@ -198,8 +198,7 @@ impl GridController {
 
         let code_run = sheet
             .data_table(pos)
-            .map(|data_table| data_table.code_run())
-            .flatten();
+            .and_then(|data_table| data_table.code_run());
 
         let new_code_run = match code_run {
             Some(old_code_run) => {
@@ -275,7 +274,8 @@ impl GridController {
         };
 
         let value = if js_code_result.success {
-            let result = if let Some(array_output) = js_code_result.output_array {
+            
+            if let Some(array_output) = js_code_result.output_array {
                 let (array, ops) = Array::from_string_list(start.into(), sheet, array_output);
                 transaction.reverse_operations.extend(ops);
                 if let Some(array) = array {
@@ -294,8 +294,7 @@ impl GridController {
                 Value::Single(cell_value)
             } else {
                 Value::Single(CellValue::Blank)
-            };
-            result
+            }
         } else {
             Value::Single(CellValue::Blank) // TODO(ddimaria): this will eventually be an empty vec
         };

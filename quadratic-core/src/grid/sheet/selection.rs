@@ -76,7 +76,7 @@ impl Sheet {
                             if count >= max_count.unwrap_or(i64::MAX) {
                                 return None;
                             }
-                            cells.insert(*pos, &v);
+                            cells.insert(*pos, v);
                         }
                         Value::Array(a) => {
                             for x in 0..a.width() {

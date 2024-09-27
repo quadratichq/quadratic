@@ -157,9 +157,9 @@ impl From<i8> for Axis {
         }
     }
 }
-impl Into<i8> for Axis {
-    fn into(self) -> i8 {
-        match self {
+impl From<Axis> for i8 {
+    fn from(val: Axis) -> Self {
+        match val {
             Axis::X => 0,
             Axis::Y => 1,
         }

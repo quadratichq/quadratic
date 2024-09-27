@@ -383,19 +383,17 @@ impl Sheet {
                 output_size.h.get(),
                 Some(reasons),
             )
+        } else if data_table.has_error()
+            || matches!(data_table.value, Value::Single(CellValue::Error(_)))
+        {
+            (JsRenderCodeCellState::RunError, 1, 1, None)
         } else {
-            if data_table.has_error()
-                || matches!(data_table.value, Value::Single(CellValue::Error(_)))
-            {
-                (JsRenderCodeCellState::RunError, 1, 1, None)
-            } else {
-                (
-                    JsRenderCodeCellState::Success,
-                    output_size.w.get(),
-                    output_size.h.get(),
-                    None,
-                )
-            }
+            (
+                JsRenderCodeCellState::Success,
+                output_size.w.get(),
+                output_size.h.get(),
+                None,
+            )
         };
         Some(JsRenderCodeCell {
             x: pos.x as i32,
@@ -431,17 +429,15 @@ impl Sheet {
                                     output_size.h.get(),
                                     Some(reasons),
                                 )
+                            } else if data_table.has_error() {
+                                (JsRenderCodeCellState::RunError, 1, 1, None)
                             } else {
-                                if data_table.has_error() {
-                                    (JsRenderCodeCellState::RunError, 1, 1, None)
-                                } else {
-                                    (
-                                        JsRenderCodeCellState::Success,
-                                        output_size.w.get(),
-                                        output_size.h.get(),
-                                        None,
-                                    )
-                                }
+                                (
+                                    JsRenderCodeCellState::Success,
+                                    output_size.w.get(),
+                                    output_size.h.get(),
+                                    None,
+                                )
                             };
                             Some(JsRenderCodeCell {
                                 x: pos.x as i32,
