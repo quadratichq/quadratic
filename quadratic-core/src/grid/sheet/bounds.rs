@@ -372,7 +372,8 @@ impl Sheet {
                     || (reverse && (rect_start_x - 1 + rect.width() as i64) >= sheet_rect.min.x)
                 {
                     let mut is_valid = true;
-                    for x in rect_start_x..(rect_start_x + rect.width() as i64) {
+                    let rect_range = rect_start_x..(rect_start_x + rect.width() as i64);
+                    for x in rect_range {
                         if let Some(next_row_with_content) = self.find_next_row(row, x, false, true)
                         {
                             if (next_row_with_content - row) < rect.height() as i64 {
@@ -414,7 +415,8 @@ impl Sheet {
                     || (reverse && (rect_start_y - 1 + rect.height() as i64) >= sheet_rect.min.y)
                 {
                     let mut is_valid = true;
-                    for y in rect_start_y..(rect_start_y + rect.height() as i64) {
+                    let rect_range = rect_start_y..(rect_start_y + rect.height() as i64);
+                    for y in rect_range {
                         if let Some(next_column_with_content) =
                             self.find_next_column(column, y, false, true)
                         {
