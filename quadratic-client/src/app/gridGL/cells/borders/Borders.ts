@@ -174,13 +174,15 @@ export class Borders extends Container {
   // Takes the borders.all, .columns, and .rows, and then draws any borders
   // within the visible bounds.
   private drawSheetBorders() {
+    this.cellLines.removeChildren();
     this.sheetLines.removeChildren();
+
     const borders = this.borders;
     if (!borders) return;
 
-    if (!borders.all && !borders.columns && !borders.rows) return;
-
     this.drawAll();
+    this.drawHorizontal();
+    this.drawVertical();
 
     const bounds = pixiApp.viewport.getVisibleBounds();
     const offsets = sheets.sheet.offsets;
