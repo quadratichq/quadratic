@@ -9,6 +9,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { Rectangle } from 'pixi.js';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { events } from '@/app/events/events';
+import { validationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
 
 export const SuggestionDropDown = () => {
   const inlineEditorStatus = useInlineEditorStatus();
@@ -20,6 +21,33 @@ export const SuggestionDropDown = () => {
     const populateList = async () => {
       const sheet = sheets.sheet;
       const pos = sheet.cursor.cursorPosition;
+
+      // if there are validations, don't autocomplete
+      // todo: we can make this better by showing only validated values
+      const validations = sheets.sheet.getValidation(pos.x, pos.y);
+      if (validations?.length) {
+        const validation = validations[0];
+        if (validationRuleSimple(validation) === 'logical') {
+          const values = ['TRUE', 'FALSE'];
+          setList(values);
+          inlineEditorMonaco.autocompleteList = values;
+        } else if (validationRuleSimple(validation) === 'list') {
+          if (validation && validationRuleSimple(validation) === 'list') {
+            quadraticCore.getValidationList(sheets.sheet.id, pos.x, pos.y).then((values) => {
+              if (values) {
+                // we set the list to undefined so the dropdown doesn't show (it will show only if validation is set to show list)
+                // we still want the autocomplete to work so we send the values to the monaco editor
+                setList(undefined);
+                inlineEditorMonaco.autocompleteList = values;
+              }
+            });
+          }
+        } else {
+          setList(undefined);
+          inlineEditorMonaco.autocompleteShowingList = false;
+        }
+        return;
+      }
       const values = await quadraticCore.neighborText(sheet.id, pos.x, pos.y);
       setList(values);
       inlineEditorMonaco.autocompleteList = values;
