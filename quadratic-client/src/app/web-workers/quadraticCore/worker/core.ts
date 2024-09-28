@@ -316,20 +316,25 @@ class Core {
       this.clientQueue.push(async () => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
 
-        for (let data of receive_transactions.transactions) {
-          // convert the base64 encoded string of operations into buffers
-          if (typeof data.operations === 'string') {
-            data.operations = Buffer.from(data.operations, 'base64');
-          }
+        let formattedTransactions = receive_transactions.transactions.map((transaction) => ({
+          id: transaction.id,
+          file_id: transaction.file_id,
+          sequence_num: transaction.sequence_num,
+          operations:
+            typeof transaction.operations === 'string'
+              ? Array.from(Buffer.from(transaction.operations, 'base64'))
+              : Array.from(transaction.operations),
+        }));
+        receive_transactions.transactions = [];
 
-          this.gridController.multiplayerTransaction(data.id, data.sequence_num, new Uint8Array(data.operations));
-        }
+        const transactionsBuffer = JSON.stringify(formattedTransactions);
+        formattedTransactions = [];
 
-        // TODO(ddimaria): re-enable 5 - 7 days after we roll out the compressed
-        // transactions PR, so that we'll know all transactions are of the same version.
-        //
-        // const transactionsBuffer = JSON.stringify(receive_transactions.transactions);
-        // this.gridController.receiveMultiplayerTransactions(transactionsBuffer);
+        this.gridController.receiveMultiplayerTransactions(transactionsBuffer);
+
+        // sends multiplayer synced to the client, to proceed from file loading screen
+        coreClient.sendMultiplayerSynced();
+
         if (await offline.unsentTransactionsCount()) {
           coreClient.sendMultiplayerState('syncing');
         } else {
