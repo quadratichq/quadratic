@@ -73,6 +73,8 @@ export class CellsTextHash {
 
   private content: CellsTextHashContent;
 
+  renderCellReceivedTime = 0;
+
   constructor(cellsLabels: CellsLabels, hashX: number, hashY: number) {
     this.cellsLabels = cellsLabels;
     this.labels = new Map();
@@ -185,6 +187,7 @@ export class CellsTextHash {
             this.AABB.width + 1,
             this.AABB.height + 1
           );
+          this.renderCellReceivedTime = Date.now();
         } catch (e) {
           this.dirty = true;
           console.warn(`[CellsTextHash] update: Error getting render cells: ${e}`);
@@ -204,20 +207,16 @@ export class CellsTextHash {
         this.createLabels(cells);
       }
       this.updateText();
-      if (visibleOrNeighbor) {
-        this.updateBuffers();
-      } else {
-        this.dirtyBuffers = true;
+      this.updateBuffers();
+      if (!visibleOrNeighbor) {
         this.unload();
       }
       return true;
     } else if (this.dirtyText) {
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating text ${this.hashX}, ${this.hashY}`);
       this.updateText();
-      if (visibleOrNeighbor) {
-        this.updateBuffers();
-      } else {
-        this.dirtyBuffers = true;
+      this.updateBuffers();
+      if (!visibleOrNeighbor) {
         this.unload();
       }
       return true;
