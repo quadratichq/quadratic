@@ -5,6 +5,7 @@ import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer'
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH } from '@/shared/constants/gridConstants';
+import { isMac } from '@/shared/utils/isMac';
 import { InteractivePointerEvent, Point } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../../actions';
 import { sheets } from '../../../grid/controller/Sheets';
@@ -127,7 +128,8 @@ export class PointerHeading {
       // then it add or removes the clicked column or row. If shift is pressed,
       // then it selects all columns or rows between the last clicked column or
       // row and the current one.
-      const isRightClick = (event as MouseEvent).button === 2;
+      const isRightClick =
+        (event as MouseEvent).button === 2 || (isMac && (event as MouseEvent).button === 0 && event.ctrlKey);
       if (event.ctrlKey || event.metaKey || isRightClick) {
         if (intersects.column !== null) {
           let column = intersects.column;
@@ -145,7 +147,7 @@ export class PointerHeading {
             }
           } else {
             if (columns.includes(column)) {
-              if (isRightClick || event.ctrlKey) {
+              if (isRightClick) {
                 events.emit('gridContextMenu', world, column, null);
               } else {
                 selectColumns(
@@ -155,7 +157,7 @@ export class PointerHeading {
                 );
               }
             } else {
-              if (isRightClick || event.ctrlKey) {
+              if (isRightClick) {
                 selectColumns([column], undefined, true);
                 // need the timeout to allow the cursor events to complete
                 setTimeout(() => events.emit('gridContextMenu', world, column, null));
@@ -180,7 +182,7 @@ export class PointerHeading {
             }
           } else {
             if (rows.includes(row)) {
-              if (isRightClick || event.ctrlKey) {
+              if (isRightClick) {
                 events.emit('gridContextMenu', world, null, row);
               } else {
                 selectRows(
@@ -190,7 +192,7 @@ export class PointerHeading {
                 );
               }
             } else {
-              if (isRightClick || event.ctrlKey) {
+              if (isRightClick) {
                 selectRows([row], undefined, true);
                 // need the timeout to allow the cursor events to complete
                 setTimeout(() => events.emit('gridContextMenu', world, null, row));
