@@ -1,17 +1,14 @@
 use std::{borrow::Cow, io::Cursor};
 
 use anyhow::{anyhow, bail, Result};
-use chrono::{NaiveDate, NaiveTime, Utc};
+use chrono::{NaiveDate, NaiveTime};
 
 use crate::{
     cell_values::CellValues,
     cellvalue::Import,
     controller::GridController,
-    grid::{
-        file::sheet_schema::export_sheet, CodeCellLanguage, DataTable, DataTableKind, Sheet,
-        SheetId,
-    },
-    Array, ArraySize, CellValue, CodeCellValue, Pos, SheetPos, Value,
+    grid::{file::sheet_schema::export_sheet, CodeCellLanguage, DataTable, Sheet, SheetId},
+    Array, ArraySize, CellValue, CodeCellValue, Pos, SheetPos,
 };
 use bytes::Bytes;
 use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
@@ -68,6 +65,7 @@ impl GridController {
         let mut cell_values = Array::new_empty(ArraySize::new(width, height).unwrap());
         let mut current_y = 0;
         let mut y: u32 = 0;
+
         for entry in reader.records() {
             match entry {
                 Err(e) => return Err(error(format!("line {}: {}", current_y + y + 1, e))),
@@ -91,22 +89,9 @@ impl GridController {
             y += 1;
 
             if y >= IMPORT_LINES_PER_OPERATION {
-                // ops.push(Operation::SetCellValues {
-                //     sheet_pos: SheetPos {
-                //         x: insert_at.x,
-                //         y: insert_at.y + current_y as i64,
-                //         sheet_id,
-                //     },
-                //     values: cell_values,
-                // });
-                let data_table = DataTable {
-                    kind: DataTableKind::Import(Import {
-                        file_name: file_name.to_string(),
-                    }),
-                    value: Value::Array(cell_values),
-                    spill_error: false,
-                    last_modified: Utc::now(),
-                };
+                let import = Import::new(file_name.into());
+                let data_table = DataTable::from((import, cell_values));
+
                 ops.push(Operation::SetCodeRun {
                     sheet_pos: SheetPos {
                         x: insert_at.x,
@@ -139,14 +124,9 @@ impl GridController {
         }
 
         // finally add the final operation
-        let data_table = DataTable {
-            kind: DataTableKind::Import(Import {
-                file_name: file_name.to_string(),
-            }),
-            value: Value::Array(cell_values),
-            spill_error: false,
-            last_modified: Utc::now(),
-        };
+        let import = Import::new(file_name.into());
+        let data_table = DataTable::from((import, cell_values));
+
         ops.push(Operation::SetCodeRun {
             sheet_pos: SheetPos {
                 x: insert_at.x,
@@ -156,6 +136,7 @@ impl GridController {
             code_run: Some(data_table),
             index: y as usize,
         });
+
         Ok(ops)
     }
 
@@ -460,23 +441,27 @@ mod test {
             "smallpop.csv",
             pos,
         );
+
+        let values = vec![
+            vec!["city", "Southborough"],
+            vec!["region", "MA"],
+            vec!["country", "United States"],
+            vec!["population", "a lot of people"],
+        ];
+        let import = Import::new("smallpop.csv".into());
+        let data_table = DataTable::from((import, values.into()));
+        let expected = Operation::SetCodeRun {
+            sheet_pos: SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            code_run: Some(data_table),
+            index: 2,
+        };
+
         assert_eq!(ops.as_ref().unwrap().len(), 1);
-        assert_eq!(
-            ops.unwrap()[0],
-            Operation::SetCellValues {
-                sheet_pos: SheetPos {
-                    x: 0,
-                    y: 0,
-                    sheet_id
-                },
-                values: CellValues::from(vec![
-                    vec!["city", "Southborough"],
-                    vec!["region", "MA"],
-                    vec!["country", "United States"],
-                    vec!["population", "a lot of people"]
-                ]),
-            }
-        );
+        assert_eq!(ops.unwrap()[0], expected);
     }
 
     #[test]

@@ -6,7 +6,9 @@
 
 use crate::cellvalue::Import;
 use crate::grid::CodeRun;
-use crate::{ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value};
+use crate::{
+    Array, ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value,
+};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -28,6 +30,17 @@ pub struct DataTable {
     pub value: Value,
     pub spill_error: bool,
     pub last_modified: DateTime<Utc>,
+}
+
+impl From<(Import, Array)> for DataTable {
+    fn from((import, cell_values): (Import, Array)) -> Self {
+        DataTable {
+            kind: DataTableKind::Import(import),
+            value: Value::Array(cell_values),
+            spill_error: false,
+            last_modified: Utc::now(),
+        }
+    }
 }
 
 impl DataTable {
