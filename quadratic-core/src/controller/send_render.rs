@@ -225,7 +225,7 @@ impl GridController {
         offsets: &HashMap<(Option<i64>, Option<i64>), f64>,
     ) {
         if cfg!(target_family = "wasm") || cfg!(test) {
-            let offsets = offsets
+            let mut offsets = offsets
                 .iter()
                 .map(|(&(column, row), &size)| JsOffset {
                     column: column.map(|c| c as i32),
@@ -233,6 +233,7 @@ impl GridController {
                     size,
                 })
                 .collect::<Vec<JsOffset>>();
+            offsets.sort_by(|a, b| a.row.cmp(&b.row).then(a.column.cmp(&b.column)));
             let offsets = serde_json::to_string(&offsets).unwrap();
             crate::wasm_bindings::js::jsOffsetsModified(sheet_id.to_string(), offsets);
         }

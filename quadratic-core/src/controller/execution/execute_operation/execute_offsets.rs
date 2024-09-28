@@ -191,7 +191,12 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use crate::{controller::GridController, wasm_bindings::js::expect_js_call};
+    use std::collections::HashMap;
+
+    use crate::{
+        controller::GridController,
+        wasm_bindings::js::{clear_js_calls, expect_js_offsets},
+    };
     use serial_test::serial;
 
     // also see tests in sheet_offsets.rs
@@ -199,6 +204,8 @@ mod tests {
     #[test]
     #[serial]
     fn test_execute_operation_resize_column() {
+        clear_js_calls();
+
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let column = 0;
@@ -212,22 +219,16 @@ mod tests {
             .column_width(column as i64);
         assert_eq!(column_width, new_size);
 
-        expect_js_call(
-            "jsOffsetsModified",
-            format!(
-                "{},{:?},{:?},{}",
-                sheet_id,
-                Some(column),
-                None::<i64>,
-                new_size
-            ),
-            true,
-        );
+        let mut offsets = HashMap::<(Option<i64>, Option<i64>), f64>::new();
+        offsets.insert((Some(column as i64), None), new_size);
+        expect_js_offsets(sheet_id, offsets, true);
     }
 
     #[test]
     #[serial]
     fn test_execute_operation_resize_row() {
+        clear_js_calls();
+
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let row = 0;
@@ -241,16 +242,8 @@ mod tests {
             .row_height(row as i64);
         assert_eq!(row_height, new_size);
 
-        expect_js_call(
-            "jsOffsetsModified",
-            format!(
-                "{},{:?},{:?},{}",
-                sheet_id,
-                None::<i64>,
-                Some(row),
-                new_size
-            ),
-            true,
-        );
+        let mut offsets = HashMap::<(Option<i64>, Option<i64>), f64>::new();
+        offsets.insert((None, Some(row as i64)), new_size);
+        expect_js_offsets(sheet_id, offsets, true);
     }
 }

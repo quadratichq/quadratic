@@ -188,6 +188,38 @@ pub fn expect_js_call_count(name: &str, count: usize, clear: bool) {
 }
 
 #[cfg(test)]
+use js_types::JsOffset;
+
+#[cfg(test)]
+use std::collections::HashMap;
+
+#[cfg(test)]
+pub fn expect_js_offsets(
+    sheet_id: SheetId,
+    offsets: HashMap<(Option<i64>, Option<i64>), f64>,
+    clear: bool,
+) {
+    let mut offsets = offsets
+        .iter()
+        .map(|(&(column, row), &size)| JsOffset {
+            column: column.map(|c| c as i32),
+            row: row.map(|r| r as i32),
+            size,
+        })
+        .collect::<Vec<JsOffset>>();
+
+    offsets.sort_by(|a, b| a.row.cmp(&b.row).then(a.column.cmp(&b.column)));
+
+    let offsets = serde_json::to_string(&offsets).unwrap();
+
+    expect_js_call(
+        "jsOffsetsModified",
+        format!("{},{}", sheet_id, offsets),
+        clear,
+    );
+}
+
+#[cfg(test)]
 pub fn clear_js_calls() {
     TEST_ARRAY.lock().unwrap().clear();
 }

@@ -38,19 +38,6 @@ impl GridController {
 
             self.process_visible_dirty_hashes(transaction);
 
-            transaction.sheet_info.iter().for_each(|sheet_id| {
-                self.send_sheet_info(*sheet_id);
-            });
-            transaction.sheet_info.clear();
-
-            transaction
-                .offsets_modified
-                .iter()
-                .for_each(|(sheet_id, offsets)| {
-                    self.send_offsets_modified(*sheet_id, offsets);
-                });
-            transaction.offsets_modified.clear();
-
             if transaction.has_async > 0 {
                 self.transactions.update_async_transaction(transaction);
                 break;
@@ -60,6 +47,19 @@ impl GridController {
                 .next()
                 .map(|(&k, v)| (k, v.clone()))
             {
+                transaction.sheet_info.iter().for_each(|sheet_id| {
+                    self.send_sheet_info(*sheet_id);
+                });
+                transaction.sheet_info.clear();
+
+                transaction
+                    .offsets_modified
+                    .iter()
+                    .for_each(|(sheet_id, offsets)| {
+                        self.send_offsets_modified(*sheet_id, offsets);
+                    });
+                transaction.offsets_modified.clear();
+
                 transaction.resize_rows.remove(&sheet_id);
                 let resizing = self.start_auto_resize_row_heights(
                     transaction,
