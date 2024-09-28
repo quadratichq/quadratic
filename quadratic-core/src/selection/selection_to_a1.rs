@@ -1,7 +1,6 @@
-use a1::A1;
 use itertools::Itertools;
 
-use crate::Rect;
+use crate::{Rect, A1};
 
 use super::*;
 

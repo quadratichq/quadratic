@@ -6,7 +6,6 @@ use crate::{grid::SheetId, Pos, Rect, SheetPos, SheetRect};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-mod a1;
 mod selection_create;
 mod selection_from_a1;
 mod selection_to_a1;

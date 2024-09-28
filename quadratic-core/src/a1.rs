@@ -115,6 +115,15 @@ impl A1 {
             })
             .unwrap_or_else(|| A1::try_from_row(a1).map(|y| vec![y]))
     }
+
+    // Example of how to use the Error type in a method
+    pub fn some_method(input: &str) -> Result<(), A1Error> {
+        if input.is_empty() {
+            Err(A1Error::InvalidColumn(input.to_string()))
+        } else {
+            Ok(())
+        }
+    }
 }
 
 impl From<Pos> for String {

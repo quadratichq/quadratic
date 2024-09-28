@@ -1,9 +1,6 @@
-use crate::{grid::SheetId, Rect};
+use crate::{grid::SheetId, A1Error, Rect, A1};
 
-use super::{
-    a1::{A1Error, A1},
-    Selection,
-};
+use super::Selection;
 
 impl Selection {
     /// Create a selection from an A1 string

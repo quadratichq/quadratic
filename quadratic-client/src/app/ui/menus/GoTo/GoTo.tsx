@@ -1,14 +1,16 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { moveViewport } from '@/app/gridGL/interaction/viewportHelper';
 import { Coordinate } from '@/app/gridGL/types/size';
+import { selectionToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import '@/app/ui/styles/floating-dialog.css';
 import { GoToIcon } from '@/shared/components/Icons';
 import { Command, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
 import { Rectangle } from 'pixi.js';
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useSetRecoilState } from 'recoil';
-import { getCoordinatesFromUserInput } from './getCoordinatesFromUserInput';
 
 export const GoTo = () => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
@@ -22,42 +24,56 @@ export const GoTo = () => {
     }));
   }, [setEditorInteractionState]);
 
-  const coordinates = getCoordinatesFromUserInput(value);
+  const convertedInput = useMemo(() => {
+    if (!value) return '';
+    try {
+      console.log(value);
+      const converted = a1toSelection(value);
+      console.log(converted);
+      if (converted) {
+        return `Go to ${converted}`;
+      } else {
+        return 'Invalid input';
+      }
+    } catch (e) {
+      return 'Invalid input';
+    }
+  }, [value]);
 
   const onSelect = useCallback(() => {
-    const [coor1, coor2] = coordinates;
+    // const [coor1, coor2] = coordinates;
 
-    // GoTo Cell
-    let cursorPosition = coor1;
-    let keyboardMovePosition = coor1;
-    let multiCursor: undefined | Rectangle[];
+    // // GoTo Cell
+    // let cursorPosition = coor1;
+    // let keyboardMovePosition = coor1;
+    // let multiCursor: undefined | Rectangle[];
 
-    // GoTo range
-    if (coor2) {
-      // User has given us two arbitrary points. We need to figure out the
-      // upper left to bottom right coordinates of a rectangle between those coordinates
-      const originPosition: Coordinate = { x: Math.min(coor1.x, coor2.x), y: Math.min(coor1.y, coor2.y) };
-      const terminalPosition: Coordinate = { x: Math.max(coor1.x, coor2.x), y: Math.max(coor1.y, coor2.y) };
+    // // GoTo range
+    // if (coor2) {
+    //   // User has given us two arbitrary points. We need to figure out the
+    //   // upper left to bottom right coordinates of a rectangle between those coordinates
+    //   const originPosition: Coordinate = { x: Math.min(coor1.x, coor2.x), y: Math.min(coor1.y, coor2.y) };
+    //   const terminalPosition: Coordinate = { x: Math.max(coor1.x, coor2.x), y: Math.max(coor1.y, coor2.y) };
 
-      keyboardMovePosition = originPosition;
-      cursorPosition = originPosition;
-      multiCursor = [
-        new Rectangle(
-          originPosition.x,
-          originPosition.y,
-          terminalPosition.x - originPosition.x + 1,
-          terminalPosition.y - originPosition.y + 1
-        ),
-      ];
-    }
-    sheets.sheet.cursor.changePosition({
-      keyboardMovePosition,
-      cursorPosition,
-      multiCursor,
-    });
-    moveViewport({ topLeft: cursorPosition });
+    //   keyboardMovePosition = originPosition;
+    //   cursorPosition = originPosition;
+    //   multiCursor = [
+    //     new Rectangle(
+    //       originPosition.x,
+    //       originPosition.y,
+    //       terminalPosition.x - originPosition.x + 1,
+    //       terminalPosition.y - originPosition.y + 1
+    //     ),
+    //   ];
+    // }
+    // sheets.sheet.cursor.changePosition({
+    //   keyboardMovePosition,
+    //   cursorPosition,
+    //   multiCursor,
+    // });
+    // moveViewport({ topLeft: cursorPosition });
     closeMenu();
-  }, [closeMenu, coordinates]);
+  }, [closeMenu, value]);
 
   return (
     <Command shouldFilter={false}>
@@ -78,7 +94,7 @@ export const GoTo = () => {
             e.stopPropagation();
           }}
         >
-          Go to {convertedInput}
+          {convertedInput}
           <GoToIcon className="text-muted-foreground" />
         </CommandItem>
       </CommandList>
