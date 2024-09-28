@@ -181,14 +181,8 @@ export class CellsLabels {
     if (!neighborRect) return false;
 
     const applyColumnDelta = (hash: CellsTextHash, column: number, delta: number, transient: boolean) => {
-      if (!delta) return;
-      if (hash.adjustHeadings({ column, delta })) {
-        if (transient) {
-          hash.dirtyText = true;
-          if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
-            hash.dirtyBuffers = true;
-          }
-        }
+      if (delta && hash.adjustHeadings({ column, delta })) {
+        hash.dirtyText = !transient;
       }
     };
 
@@ -197,25 +191,19 @@ export class CellsLabels {
       dirtyColumnHeadings.forEach((delta, column) => {
         const columnHash = Math.floor(column / sheetHashWidth);
         if (hash.hashX === columnHash) {
-          applyColumnDelta(hash, column, delta, true);
+          applyColumnDelta(hash, column, delta, false);
         } else if (hash.hashX > columnHash) {
           totalNeighborDelta += delta;
         }
       });
       // column is one less than hash column as it has to applied to all labels in the hash
       const column = hash.hashX * sheetHashWidth - 1;
-      applyColumnDelta(hash, column, totalNeighborDelta, !columnTransient);
+      applyColumnDelta(hash, column, totalNeighborDelta, columnTransient);
     });
 
     const applyRowDelta = (hash: CellsTextHash, row: number, delta: number, transient: boolean) => {
-      if (!delta) return;
-      if (transient) {
-        if (hash.adjustHeadings({ row, delta })) {
-          hash.dirtyText = true;
-          if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
-            hash.dirtyBuffers = true;
-          }
-        }
+      if (delta && hash.adjustHeadings({ row, delta })) {
+        hash.dirtyText = !transient;
       }
     };
 
@@ -224,14 +212,14 @@ export class CellsLabels {
       dirtyRowHeadings.forEach((delta, row) => {
         const rowHash = Math.floor(row / sheetHashHeight);
         if (hash.hashY === rowHash) {
-          applyRowDelta(hash, row, delta, true);
+          applyRowDelta(hash, row, delta, false);
         } else if (hash.hashY > rowHash) {
           totalNeighborDelta += delta;
         }
       });
       // row is one less than hash row as it has to applied to all labels in the hash
       const row = hash.hashY * sheetHashHeight - 1;
-      applyRowDelta(hash, row, totalNeighborDelta, !rowTransient);
+      applyRowDelta(hash, row, totalNeighborDelta, rowTransient);
     });
 
     return true;
@@ -288,11 +276,11 @@ export class CellsLabels {
     // visible and in need of rendering, and (3) not visible and loaded.
     this.cellsTextHash.forEach((hash) => {
       if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) {
-        if (!hash.clientLoaded || hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
+        if (!hash.loaded || !hash.clientLoaded || hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
           visibleDirtyHashes.push(hash);
         }
       } else if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect) && !findHashToDelete) {
-        if (!hash.clientLoaded || hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
+        if (!hash.loaded || !hash.clientLoaded || hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
           notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         }
       } else {
@@ -309,7 +297,10 @@ export class CellsLabels {
       return;
     }
 
+    // if hashes are visible then sort smallest to largest by y and return the first one
     visibleDirtyHashes.sort((a, b) => a.hashY - b.hashY);
+
+    // otherwise sort notVisible by distance from viewport.topLeft (by smallest to largest so we can use pop)
     notVisibleDirtyHashes.sort((a, b) => a.distance - b.distance);
 
     const runningTransaction = renderText.viewportBuffer.size > 0;
@@ -328,18 +319,12 @@ export class CellsLabels {
         return { hash: hashWithRenderCells[0], visible: true };
       }
     } else if (visibleDirtyHashes.length) {
-      // if hashes are visible then sort smallest to largest by y and return the first one
-      visibleDirtyHashes.sort((a, b) => a.hashY - b.hashY);
-
       if (debugShowLoadingHashes)
         console.log(
           `[CellsTextHash] rendering visible: ${visibleDirtyHashes[0].hashX}, ${visibleDirtyHashes[0].hashY}`
         );
       return { hash: visibleDirtyHashes[0], visible: true };
     } else if (notVisibleDirtyHashes.length) {
-      // otherwise sort notVisible by distance from viewport.topLeft (by smallest to largest so we can use pop)
-      notVisibleDirtyHashes.sort((a, b) => a.distance - b.distance);
-
       if (debugShowLoadingHashes) {
         console.log(
           `[CellsTextHash] rendering offscreen: ${notVisibleDirtyHashes[0].hash.hashX}, ${notVisibleDirtyHashes[0].hash.hashY}`

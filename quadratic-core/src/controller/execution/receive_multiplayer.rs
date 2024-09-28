@@ -116,11 +116,7 @@ impl GridController {
                     );
                 }
             }
-        }
-
-        if (cfg!(target_family = "wasm") || cfg!(test))
-            && sequence_num >= self.transactions.last_sequence_num
-        {
+        } else if cfg!(target_family = "wasm") || cfg!(test) {
             crate::wasm_bindings::js::jsMultiplayerSynced();
         }
     }
@@ -226,7 +222,7 @@ impl GridController {
     }
 
     /// Received transactions from the server
-    pub fn received_transactions(&mut self, transactions: &[TransactionServer]) {
+    pub fn received_transactions(&mut self, transactions: Vec<TransactionServer>) {
         // used to track client changes when combining transactions
         let results = PendingTransaction {
             transaction_type: TransactionType::Multiplayer,
@@ -689,7 +685,7 @@ mod tests {
         // todo...
         // assert_eq!(client_summary.request_transactions, Some(1));
 
-        client.received_transactions(&[
+        client.received_transactions(vec![
             TransactionServer {
                 file_id: Uuid::new_v4(),
                 id: Uuid::new_v4(),
@@ -768,7 +764,7 @@ mod tests {
         let transaction_id = client.async_transactions()[0].id;
 
         // we receive the first transaction while waiting for the async call to complete
-        client.received_transactions(&[TransactionServer {
+        client.received_transactions(vec![TransactionServer {
             file_id: Uuid::new_v4(),
             id: Uuid::new_v4(),
             sequence_num: 1,
@@ -865,7 +861,7 @@ mod tests {
         let transaction_id = client.async_transactions()[0].id;
 
         // we receive the first transaction while waiting for the async call to complete
-        client.received_transactions(&[TransactionServer {
+        client.received_transactions(vec![TransactionServer {
             file_id: Uuid::new_v4(),
             id: Uuid::new_v4(),
             sequence_num: 1,

@@ -186,7 +186,7 @@ export class CellsTextHash {
             this.AABB.height + 1
           );
         } catch (e) {
-          this.dirty = dirty;
+          this.dirty = true;
           console.warn(`[CellsTextHash] update: Error getting render cells: ${e}`);
           return false;
         }
@@ -205,7 +205,7 @@ export class CellsTextHash {
       }
       this.updateText();
       if (visibleOrNeighbor) {
-        queueMicrotask(() => this.updateBuffers());
+        this.updateBuffers();
       } else {
         this.dirtyBuffers = true;
         this.unload();
@@ -215,7 +215,7 @@ export class CellsTextHash {
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating text ${this.hashX}, ${this.hashY}`);
       this.updateText();
       if (visibleOrNeighbor) {
-        queueMicrotask(() => this.updateBuffers());
+        this.updateBuffers();
       } else {
         this.dirtyBuffers = true;
         this.unload();
@@ -223,10 +223,8 @@ export class CellsTextHash {
       return true;
     } else if (this.dirtyBuffers) {
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating buffers ${this.hashX}, ${this.hashY}`);
-      queueMicrotask(() => {
-        this.updateText();
-        this.updateBuffers();
-      });
+      this.updateText();
+      this.updateBuffers();
       if (!visibleOrNeighbor) {
         this.unload();
       }

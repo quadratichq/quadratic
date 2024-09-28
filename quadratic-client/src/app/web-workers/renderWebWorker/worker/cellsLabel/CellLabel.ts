@@ -423,7 +423,11 @@ export class CellLabel {
       chars.push(charRenderData);
       pos.x += charData.xAdvance + this.letterSpacing;
       prevCharCode = charCode;
-      if (maxWidth !== undefined && isFloatGreaterThan(pos.x, maxWidth / scale)) {
+      if (
+        maxWidth !== undefined &&
+        isFloatGreaterThan(pos.x, maxWidth / scale) &&
+        isFloatLessThan(charData.xAdvance + this.letterSpacing, maxWidth / scale)
+      ) {
         const start = lastBreakPos === -1 ? i - spacesRemoved : 1 + lastBreakPos - spacesRemoved;
         const count = lastBreakPos === -1 ? 1 : 1 + i - lastBreakPos;
         removeItems(chars, start, count);

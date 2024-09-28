@@ -275,7 +275,7 @@ pub struct JsPos {
 }
 impl fmt::Display for JsPos {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "JsPos(x: {}, x: {})", self.x, self.x)
+        write!(f, "JsPos(x: {}, y: {})", self.x, self.y)
     }
 }
 impl From<Pos> for JsPos {

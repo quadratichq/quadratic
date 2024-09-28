@@ -73,13 +73,12 @@ impl GridController {
             }
         }
 
-        self.process_visible_dirty_hashes(transaction);
-        self.process_remaining_dirty_hashes(transaction);
+        self.process_dirty_hashes(transaction);
         self.clear_viewport_buffer(transaction);
     }
 
     /// Finalizes the transaction and pushes it to the various stacks (if needed)
-    pub(super) fn finalize_transaction(&mut self, transaction: PendingTransaction) {
+    pub(super) fn finalize_transaction(&mut self, mut transaction: PendingTransaction) {
         if transaction.has_async > 0 {
             self.transactions.update_async_transaction(&transaction);
             return;
@@ -127,6 +126,19 @@ impl GridController {
                 !self.undo_stack.is_empty(),
                 !self.redo_stack.is_empty(),
             );
+
+            transaction.sheet_info.iter().for_each(|sheet_id| {
+                self.send_sheet_info(*sheet_id);
+            });
+
+            transaction
+                .offsets_modified
+                .iter()
+                .for_each(|(sheet_id, offsets)| {
+                    self.send_offsets_modified(*sheet_id, offsets);
+                });
+
+            self.process_dirty_hashes(&mut transaction);
 
             transaction.validations.iter().for_each(|sheet_id| {
                 if let Some(sheet) = self.try_sheet(*sheet_id) {
