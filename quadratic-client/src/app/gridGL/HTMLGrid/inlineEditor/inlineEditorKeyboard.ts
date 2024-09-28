@@ -14,6 +14,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { inlineEditorEvents } from './inlineEditorEvents';
 
 class InlineEditorKeyboard {
   escapeBackspacePressed = false;
@@ -299,7 +300,13 @@ class InlineEditorKeyboard {
         selectedCell: { x: cursor.x, y: cursor.y },
         selectedCellSheet: sheets.sheet.id,
       });
+    } else if (matchShortcut(Action.InsertToday, e)) {
+      const today = new Date();
+      // todo: this should be based on locale (maybe?)
+      const formattedDate = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
+      inlineEditorEvents.emit('replaceText', formattedDate, false);
     }
+
     // Fallback for all other keys (used to end cursorIsMoving and return
     // control to the formula box)
     else {

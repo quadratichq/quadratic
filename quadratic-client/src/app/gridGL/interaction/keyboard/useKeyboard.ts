@@ -1,4 +1,6 @@
+import { Action } from '@/app/actions/actions';
 import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { keyboardCell } from '@/app/gridGL/interaction/keyboard/keyboardCell';
 import { keyboardClipboard } from '@/app/gridGL/interaction/keyboard/keyboardClipboard';
@@ -12,7 +14,9 @@ import { keyboardUndoRedo } from '@/app/gridGL/interaction/keyboard/keyboardUndo
 import { keyboardViewport } from '@/app/gridGL/interaction/keyboard/keyboardViewport';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Size } from '@/app/gridGL/types/size';
+import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
 import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 
 export interface IProps {
@@ -57,6 +61,16 @@ export const useKeyboard = (
       event.preventDefault();
       event.stopPropagation();
       return;
+    }
+
+    // todo: we need to reorganize this so we can handle shortcuts in keyboardCell when ctrl or meta is pressed
+    // insert today's date if the inline editor is not open
+    if (matchShortcut(Action.InsertToday, event)) {
+      const sheet = sheets.sheet;
+      const cursor = sheet.cursor;
+      const today = new Date();
+      const formattedDate = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
+      quadraticCore.setCellValue(sheet.id, cursor.cursorPosition.x, cursor.cursorPosition.y, formattedDate);
     }
 
     // Prevent these commands if "command" key is being pressed
