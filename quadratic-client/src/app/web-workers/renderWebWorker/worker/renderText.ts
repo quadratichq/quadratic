@@ -78,8 +78,6 @@ class RenderText {
     let sheetIds = Array.from(this.cellsLabels.keys());
     if (this.sheetId) {
       sheetIds = [this.sheetId, ...sheetIds.filter((sheetId) => sheetId !== this.sheetId)];
-    } else {
-      sheetIds = Array.from(this.cellsLabels.keys());
     }
     let firstRender = true;
     let render = false;

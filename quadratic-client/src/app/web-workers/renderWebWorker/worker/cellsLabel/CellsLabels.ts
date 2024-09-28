@@ -40,7 +40,7 @@ export class CellsLabels {
   // bounds without formatting
   bounds?: Rectangle;
 
-  offsetsReceivedTime = 0;
+  offsetsModifiedReceivedTime = 0;
 
   // Keep track of headings that need adjusting during next update tick;
   // we aggregate all requests between update ticks
@@ -169,6 +169,7 @@ export class CellsLabels {
 
   private updateHeadings = (): boolean => {
     if (!this.dirtyColumnHeadings.size && !this.dirtyRowHeadings.size) return false;
+
     // make a copy so new dirty markings are properly handled
     const dirtyColumnHeadings = new Map(this.dirtyColumnHeadings);
     const columnTransient = this.columnTransient;
@@ -179,14 +180,27 @@ export class CellsLabels {
     this.dirtyRowHeadings.clear();
     this.rowTransient = false;
 
+    const bounds = renderText.viewport;
     const neighborRect = this.getViewportNeighborBounds();
-    if (!neighborRect) return false;
+    if (!bounds || !neighborRect) return false;
+
+    const visibleDirtyHashes: CellsTextHash[] = [];
+    const neighborDirtyHashes: CellsTextHash[] = [];
 
     const applyColumnDelta = (hash: CellsTextHash, column: number, delta: number, transient: boolean) => {
       if (!delta) return;
-      if ((!transient && hash.renderCellReceivedTime < this.offsetsReceivedTime) || !hash.dirtyText) {
+      if (hash.renderCellsReceivedTime < this.offsetsModifiedReceivedTime || !hash.dirtyText) {
         hash.adjustHeadings({ column, delta });
         hash.dirtyText ||= !transient;
+        if (hash.dirtyText) {
+          if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) {
+            visibleDirtyHashes.push(hash);
+          } else if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
+            neighborDirtyHashes.push(hash);
+          } else {
+            hash.unloadClient();
+          }
+        }
       }
     };
 
@@ -196,8 +210,10 @@ export class CellsLabels {
         const columnHash = Math.floor(column / sheetHashWidth);
         if (hash.hashX === columnHash) {
           applyColumnDelta(hash, column, delta, false);
-        } else if (hash.hashX > columnHash) {
-          totalNeighborDelta += delta;
+        } else if ((hash.hashX >= 0 && column >= 0) || (hash.hashX < 0 && column < 0)) {
+          if (Math.abs(hash.hashX) > Math.abs(columnHash)) {
+            totalNeighborDelta += delta;
+          }
         }
       });
       // column is one less than hash column as it has to applied to all labels in the hash
@@ -207,9 +223,19 @@ export class CellsLabels {
 
     const applyRowDelta = (hash: CellsTextHash, row: number, delta: number, transient: boolean) => {
       if (!delta) return;
-      if ((!transient && hash.renderCellReceivedTime < this.offsetsReceivedTime) || !hash.dirtyText) {
-        hash.adjustHeadings({ row, delta });
-        hash.dirtyText = !transient;
+      if (hash.renderCellsReceivedTime < this.offsetsModifiedReceivedTime || !hash.dirtyText) {
+        if (hash.adjustHeadings({ row, delta })) {
+          hash.dirtyText ||= !transient;
+          if (hash.dirtyText) {
+            if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) {
+              visibleDirtyHashes.push(hash);
+            } else if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
+              neighborDirtyHashes.push(hash);
+            } else {
+              hash.unloadClient();
+            }
+          }
+        }
       }
     };
 
@@ -219,13 +245,20 @@ export class CellsLabels {
         const rowHash = Math.floor(row / sheetHashHeight);
         if (hash.hashY === rowHash) {
           applyRowDelta(hash, row, delta, false);
-        } else if (hash.hashY > rowHash) {
-          totalNeighborDelta += delta;
+        } else if ((hash.hashY >= 0 && row >= 0) || (hash.hashY < 0 && row < 0)) {
+          if (Math.abs(hash.hashY) > Math.abs(rowHash)) {
+            totalNeighborDelta += delta;
+          }
         }
       });
       // row is one less than hash row as it has to applied to all labels in the hash
       const row = hash.hashY * sheetHashHeight - 1;
       applyRowDelta(hash, row, totalNeighborDelta, rowTransient);
+    });
+
+    [...visibleDirtyHashes, ...neighborDirtyHashes].forEach((hash) => {
+      hash.updateText();
+      hash.updateBuffers();
     });
 
     return true;
@@ -282,11 +315,11 @@ export class CellsLabels {
     // visible and in need of rendering, and (3) not visible and loaded.
     this.cellsTextHash.forEach((hash) => {
       if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) {
-        if (!hash.clientLoaded || hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
+        if (!hash.loaded || !hash.clientLoaded || hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
           visibleDirtyHashes.push(hash);
         }
       } else if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect) && !findHashToDelete) {
-        if (!hash.clientLoaded || hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
+        if (!hash.loaded || !hash.clientLoaded || hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
           notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         }
       } else {
@@ -330,7 +363,7 @@ export class CellsLabels {
           `[CellsTextHash] rendering visible: ${visibleDirtyHashes[0].hashX}, ${visibleDirtyHashes[0].hashY}`
         );
       return { hash: visibleDirtyHashes[0], visible: true };
-    } else if (notVisibleDirtyHashes.length) {
+    } else if (notVisibleDirtyHashes.length && !findHashToDelete) {
       if (debugShowLoadingHashes) {
         console.log(
           `[CellsTextHash] rendering offscreen: ${notVisibleDirtyHashes[0].hash.hashX}, ${notVisibleDirtyHashes[0].hash.hashY}`
@@ -384,7 +417,7 @@ export class CellsLabels {
       cellsHash = new CellsTextHash(this, hashX, hashY);
       this.cellsTextHash.set(key, cellsHash);
     }
-    cellsHash.renderCellReceivedTime = Date.now();
+    cellsHash.renderCellsReceivedTime = Date.now();
     cellsHash.dirty = renderCells;
   }
 
@@ -408,6 +441,7 @@ export class CellsLabels {
   }
 
   setOffsetsDelta = (column: number | null, row: number | null, delta: number) => {
+    this.offsetsModifiedReceivedTime = Date.now();
     if (column !== null) {
       const size = this.sheetOffsets.getColumnWidth(column) - delta;
       this.sheetOffsets.setColumnWidth(column, size);
@@ -423,7 +457,7 @@ export class CellsLabels {
   };
 
   setOffsetsSize = (offsets: JsOffset[]) => {
-    this.offsetsReceivedTime = Date.now();
+    this.offsetsModifiedReceivedTime = Date.now();
     offsets.forEach(({ column, row, size }) => {
       let delta = 0;
       if (column !== null) {

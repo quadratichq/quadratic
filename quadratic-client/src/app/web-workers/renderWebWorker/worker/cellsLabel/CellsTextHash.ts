@@ -73,7 +73,7 @@ export class CellsTextHash {
 
   private content: CellsTextHashContent;
 
-  renderCellReceivedTime = 0;
+  renderCellsReceivedTime = 0;
 
   constructor(cellsLabels: CellsLabels, hashX: number, hashY: number) {
     this.cellsLabels = cellsLabels;
@@ -128,22 +128,25 @@ export class CellsTextHash {
     this.content.add(cell.x, cell.y);
   }
 
-  private createLabels(cells: JsRenderCell[]) {
+  private createLabels = (cells: JsRenderCell[]) => {
+    this.unload();
     this.labels = new Map();
     this.content.clear();
     cells.forEach((cell) => this.createLabel(cell));
     this.loaded = true;
-  }
+  };
 
   unload = () => {
-    if (debugShowLoadingHashes) console.log(`[CellsTextHash] Unloading ${this.hashX}, ${this.hashY}`);
-    this.loaded = false;
-    this.labels.clear();
-    this.content.clear();
-    this.links = [];
-    this.drawRects = [];
-    this.labelMeshes.clear();
-    this.overflowGridLines = [];
+    if (this.loaded) {
+      if (debugShowLoadingHashes) console.log(`[CellsTextHash] Unloading ${this.hashX}, ${this.hashY}`);
+      this.loaded = false;
+      this.labels.clear();
+      this.content.clear();
+      this.links = [];
+      this.drawRects = [];
+      this.labelMeshes.clear();
+      this.overflowGridLines = [];
+    }
   };
 
   unloadClient = () => {
@@ -187,7 +190,7 @@ export class CellsTextHash {
             this.AABB.width + 1,
             this.AABB.height + 1
           );
-          this.renderCellReceivedTime = Date.now();
+          this.renderCellsReceivedTime = Date.now();
         } catch (e) {
           this.dirty = true;
           console.warn(`[CellsTextHash] update: Error getting render cells: ${e}`);
@@ -234,7 +237,7 @@ export class CellsTextHash {
     return false;
   };
 
-  private updateText = () => {
+  updateText = () => {
     if (!this.loaded || this.dirty) {
       return;
     }
@@ -343,8 +346,8 @@ export class CellsTextHash {
     }
   }
 
-  private updateBuffers = (): void => {
-    if (!this.loaded) {
+  updateBuffers = (): void => {
+    if (!this.loaded || this.dirty || this.dirtyText) {
       this.sendCellsTextHashClear();
       return;
     }
