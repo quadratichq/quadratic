@@ -244,7 +244,7 @@ export class PointerHeading {
       const hasPermission = hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions);
       const headingResize = this.active ? this.resizing : headings.intersectsHeadingGridLine(world);
       if (hasPermission && headingResize) {
-        this.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';
+        this.cursor = headingResize.column !== null ? 'col-resize' : 'row-resize';
       } else {
         this.cursor = headings.intersectsHeadings(world) ? 'pointer' : undefined;
       }
