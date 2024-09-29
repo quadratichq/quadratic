@@ -150,7 +150,9 @@ impl Connection for MsSqlConnection {
 
     async fn schema(&self, client: &mut Self::Conn) -> Result<DatabaseSchema> {
         let database = self.database.as_ref().ok_or_else(|| {
-            SharedError::Sql(Sql::Schema("Database name is required for MsSQL".into()))
+            SharedError::Sql(Sql::Schema(
+                "Database name is required for MS SQL Server".into(),
+            ))
         })?;
 
         let sql = format!(
