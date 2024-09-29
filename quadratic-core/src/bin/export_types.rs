@@ -1,5 +1,6 @@
 use std::fs::create_dir_all;
 
+use crate::grid::sheet::borders::{JsBorderHorizontal, JsBorderVertical, JsBordersSheet};
 use controller::operations::clipboard::PasteSpecial;
 use formulas::{CellRef, CellRefCoord, RangeRef};
 use grid::formats::format::Format;
@@ -7,6 +8,7 @@ use grid::js_types::{
     CellFormatSummary, JsCellValue, JsClipboard, JsPos, JsRenderFill, JsRowHeight, JsSheetFill,
     JsValidationWarning,
 };
+use grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp};
 use grid::sheet::validations::validation::{
     Validation, ValidationDisplay, ValidationDisplaySheet, ValidationError, ValidationMessage,
     ValidationStyle,
@@ -33,8 +35,8 @@ use quadratic_core::controller::active_transactions::transaction_name::Transacti
 use quadratic_core::controller::execution::run_code::get_cells::JsGetCellResponse;
 use quadratic_core::controller::transaction_types::JsCodeResult;
 use quadratic_core::grid::js_types::{
-    JsCodeCell, JsHtmlOutput, JsNumber, JsRenderBorder, JsRenderBorders, JsRenderCell,
-    JsRenderCellSpecial, JsRenderCodeCell, JsRenderCodeCellState,
+    JsCodeCell, JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
+    JsRenderCodeCellState,
 };
 use quadratic_core::grid::sheet::search::SearchOptions;
 use quadratic_core::grid::{
@@ -68,6 +70,8 @@ fn main() {
         Axis,
         BorderSelection,
         BorderStyle,
+        BorderStyleCell,
+        BorderStyleTimestamp,
         CellAlign,
         CellBorderLine,
         CellFormatSummary,
@@ -83,6 +87,9 @@ fn main() {
         Format,
         GridBounds,
         Instant,
+        JsBorderHorizontal,
+        JsBorderVertical,
+        JsBordersSheet,
         JsCellValue,
         JsClipboard,
         JsCodeCell,
@@ -91,8 +98,6 @@ fn main() {
         JsHtmlOutput,
         JsNumber,
         JsPos,
-        JsRenderBorder,
-        JsRenderBorders,
         JsRenderCell,
         JsRenderCellSpecial,
         JsRenderCodeCell,
