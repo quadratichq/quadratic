@@ -268,8 +268,6 @@ export class PixiApp {
 
   reset(): void {
     this.viewport.scale.set(1);
-    const { x, y } = this.getStartingViewport();
-    this.viewport.position.set(x, y);
     pixiAppSettings.setEditorInteractionState?.(editorInteractionStateDefault);
   }
 
@@ -285,15 +283,6 @@ export class PixiApp {
     this.paused = false;
     this.reset();
     this.setViewportDirty();
-  }
-
-  getStartingViewport(): { x: number; y: number } {
-    if (pixiAppSettings.showHeadings) {
-      const headings = this.headings.headingSize;
-      return { x: headings.width, y: headings.height };
-    } else {
-      return { x: 1, y: 1 };
-    }
   }
 
   saveMultiplayerViewport(): string {

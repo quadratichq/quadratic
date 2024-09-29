@@ -60,8 +60,8 @@ export class SheetCursor {
   }
   get viewport(): IViewportTransformState {
     if (!this._viewport) {
-      const { x, y } = pixiApp.getStartingViewport();
-      return { x, y, scaleX: 1, scaleY: 1 };
+      const heading = pixiApp.headings.headingSize;
+      return { x: -heading.width, y: -heading.height, scaleX: 1, scaleY: 1 };
     }
     return this._viewport;
   }
