@@ -399,12 +399,12 @@ mod test {
 
         // User transaction
         let mut transaction = PendingTransaction::default();
-        transaction.dirty_hashes.insert(
+        transaction.add_dirty_hashes_from_sheet_cell_positions(
             sheet_id,
             HashSet::from([
-                Pos { x: 0, y: 0 },   // Inside viewport
-                Pos { x: 5, y: 5 },   // Inside viewport
-                Pos { x: 15, y: 15 }, // Outside viewport
+                Pos { x: -5, y: -5 },     // Inside viewport
+                Pos { x: 5, y: 5 },       // Inside viewport
+                Pos { x: 1500, y: 1500 }, // Outside viewport
             ]),
         );
         gc.process_visible_dirty_hashes(&mut transaction);
@@ -421,9 +421,14 @@ mod test {
             transaction_type: TransactionType::Server,
             ..Default::default()
         };
-        transaction
-            .dirty_hashes
-            .insert(sheet_id, HashSet::from([Pos { x: 0, y: 0 }]));
+        transaction.add_dirty_hashes_from_sheet_cell_positions(
+            sheet_id,
+            HashSet::from([
+                Pos { x: -5, y: -5 },     // Inside viewport
+                Pos { x: 5, y: 5 },       // Inside viewport
+                Pos { x: 1500, y: 1500 }, // Outside viewport
+            ]),
+        );
         gc.process_visible_dirty_hashes(&mut transaction);
         assert!(!transaction.dirty_hashes.is_empty());
         expect_js_call_count("jsRenderCellSheets", 0, false);

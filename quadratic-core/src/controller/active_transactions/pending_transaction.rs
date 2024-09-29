@@ -184,10 +184,6 @@ impl PendingTransaction {
         sheet_id: SheetId,
         positions: HashSet<Pos>,
     ) {
-        if (!cfg!(target_family = "wasm") && !cfg!(test)) || self.is_server() {
-            return;
-        }
-
         let mut hashes = HashSet::new();
         positions.iter().for_each(|pos| {
             let quadrant = pos.quadrant();
@@ -202,10 +198,6 @@ impl PendingTransaction {
     }
 
     pub fn add_dirty_hashes_from_sheet_rect(&mut self, sheet_rect: SheetRect) {
-        if (!cfg!(target_family = "wasm") && !cfg!(test)) || self.is_server() {
-            return;
-        }
-
         let hashes = sheet_rect.to_hashes();
         let dirty_hashes = self.dirty_hashes.entry(sheet_rect.sheet_id).or_default();
         dirty_hashes.extend(hashes);
