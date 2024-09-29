@@ -4,6 +4,7 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 import { sheets } from '@/app/grid/controller/Sheets';
 import { moveViewport } from '@/app/gridGL/interaction/viewportHelper';
 import { Coordinate } from '@/app/gridGL/types/size';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { Selection } from '@/app/quadratic-core-types';
 import {
   a1StringToSelection,
@@ -28,6 +29,7 @@ export const GoTo = () => {
       ...state,
       showGoToMenu: false,
     }));
+    focusGrid();
   }, [setEditorInteractionState]);
 
   const convertedInput = useMemo(() => {
