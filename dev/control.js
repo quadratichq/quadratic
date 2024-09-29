@@ -445,7 +445,7 @@ export class Control {
         this.signals.rustClient = new AbortController();
         this.rustClient = spawn("npm", [
             "run",
-            this.cli.options.rustClient ? "dev" : "build",
+            this.cli.options.rustClient ? (this.cli.options.perf ? "dev:perf" : "dev") : "build",
             "--workspace=quadratic-rust-client",
         ], { signal: this.signals.rustClient.signal });
         this.ui.printOutput("rustClient", (data) => this.handleResponse("rustClient", data, {
