@@ -48,10 +48,10 @@ export class Viewport extends PixiViewport {
   }
 
   loadViewport() {
-    const lastViewport = sheets.sheet.cursor.viewport;
-    if (lastViewport) {
-      this.position.set(lastViewport.x, lastViewport.y);
-      this.scale.set(lastViewport.scaleX, lastViewport.scaleY);
+    const vp = sheets.sheet.cursor.viewport;
+    if (vp) {
+      this.position.set(vp.x, vp.y);
+      this.scale.set(vp.scaleX, vp.scaleY);
       this.dirty = true;
     }
   }

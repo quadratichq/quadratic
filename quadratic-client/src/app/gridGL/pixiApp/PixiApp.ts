@@ -186,8 +186,13 @@ export class PixiApp {
     this.cursor.dirty = true;
     this.cellHighlights.dirty = true;
     this.cellsSheets?.cull(this.viewport.getVisibleBounds());
-    sheets.sheet.cursor.viewport = this.viewport.lastViewport!;
-    multiplayer.sendViewport(this.saveMultiplayerViewport());
+
+    // we only set the viewport if update has completed firstRenderComplete
+    // (otherwise we can't get this.headings.headingSize) -- this is a hack
+    if (this.update.firstRenderComplete) {
+      sheets.sheet.cursor.viewport = this.viewport.lastViewport!;
+      multiplayer.sendViewport(this.saveMultiplayerViewport());
+    }
   };
 
   attach(parent: HTMLDivElement): void {

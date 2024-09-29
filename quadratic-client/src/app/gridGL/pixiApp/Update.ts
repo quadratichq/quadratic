@@ -27,6 +27,8 @@ export class Update {
 
   private lastSheetId = '';
 
+  firstRenderComplete = false;
+
   constructor() {
     if (debugShowFPS) {
       this.fps = new FPS();
@@ -79,6 +81,7 @@ export class Update {
     }
     if (dirty) {
       pixiApp.viewportChanged();
+      this.clampViewport();
       this.sendRenderViewport();
     }
   }
@@ -137,10 +140,6 @@ export class Update {
       );
     }
 
-    if (pixiApp.viewport.dirty) {
-      this.clampViewport();
-    }
-
     debugTimeReset();
     pixiApp.gridLines.update();
     debugTimeCheck('[Update] gridLines');
@@ -174,6 +173,11 @@ export class Update {
     } else {
       debugRendererLight(false);
       thumbnail.check();
+    }
+
+    if (!this.firstRenderComplete) {
+      this.firstRenderComplete = true;
+      pixiApp.viewport.loadViewport();
     }
 
     this.raf = requestAnimationFrame(this.update);
