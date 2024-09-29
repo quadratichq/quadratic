@@ -136,9 +136,7 @@ extern "C" {
     // hashes: Vec<JsPos>
     pub fn jsHashesDirty(sheet_id: String, hashes: String);
 
-    pub fn jsSendViewportBuffer(transaction_id: String, buffer: SharedArrayBuffer);
-
-    pub fn jsClearViewportBuffer(transaction_id: String);
+    pub fn jsSendViewportBuffer(buffer: SharedArrayBuffer);
 }
 
 #[cfg(test)]
@@ -642,18 +640,9 @@ pub fn jsHashesDirty(sheet_id: String, hashes: String /*Vec<JsPos>*/) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSendViewportBuffer(transaction_id: String, buffer: [u8; 56]) {
+pub fn jsSendViewportBuffer(buffer: [u8; 112]) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsSendViewportBuffer",
-        format!("{:?},{:?}", transaction_id, buffer),
-    ));
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
-pub fn jsClearViewportBuffer(transaction_id: String) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsSendViewportBuffer",
-        format!("{:?}", transaction_id),
+        format!("{:?}", buffer),
     ));
 }

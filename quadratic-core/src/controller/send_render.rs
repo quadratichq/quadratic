@@ -1,7 +1,12 @@
 use std::collections::HashSet;
 
+use itertools::Itertools;
+
 use crate::{
-    grid::{js_types::JsRenderFill, RenderSize, SheetId},
+    grid::{
+        js_types::{JsPos, JsRenderFill},
+        RenderSize, SheetId,
+    },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     selection::Selection,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
@@ -11,6 +16,114 @@ use crate::{
 use super::{active_transactions::pending_transaction::PendingTransaction, GridController};
 
 impl GridController {
+    pub fn send_viewport_buffer(&self) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+
+        crate::wasm_bindings::js::jsSendViewportBuffer(self.viewport_buffer.get_buffer());
+    }
+
+    pub fn process_visible_dirty_hashes(&self, transaction: &mut PendingTransaction) {
+        if (!cfg!(target_family = "wasm") && !cfg!(test))
+            || transaction.is_server()
+            || transaction.dirty_hashes.is_empty()
+        {
+            return;
+        }
+
+        if let Some((top_left, bottom_right, viewport_sheet_id)) =
+            self.viewport_buffer.get_viewport()
+        {
+            if let Some(dirty_hashes_in_viewport) =
+                transaction.dirty_hashes.remove(&viewport_sheet_id)
+            {
+                let center = Pos {
+                    x: (top_left.x + bottom_right.x) / 2,
+                    y: (top_left.y + bottom_right.y) / 2,
+                };
+                let nearest_dirty_hashes = dirty_hashes_in_viewport
+                    .iter()
+                    .cloned()
+                    .sorted_by(|a, b| {
+                        let a_distance = (a.x - center.x).abs() + (a.y - center.y).abs();
+                        let b_distance = (b.x - center.x).abs() + (b.y - center.y).abs();
+                        a_distance.cmp(&b_distance)
+                    })
+                    .collect();
+
+                let remaining_hashes =
+                    self.send_render_cells_in_viewport(viewport_sheet_id, nearest_dirty_hashes);
+                if !remaining_hashes.is_empty() {
+                    transaction
+                        .dirty_hashes
+                        .insert(viewport_sheet_id, remaining_hashes);
+                }
+            }
+        }
+    }
+
+    pub fn send_render_cells_in_viewport(
+        &self,
+        sheet_id: SheetId,
+        dirty_hashes: Vec<Pos>,
+    ) -> HashSet<Pos> {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || dirty_hashes.is_empty() {
+            return HashSet::new();
+        }
+
+        let mut remaining_hashes = HashSet::new();
+        if let Some(sheet) = self.try_sheet(sheet_id) {
+            for pos in dirty_hashes.into_iter() {
+                if let Some((top_left, bottom_right, viewport_sheet_id)) =
+                    self.viewport_buffer.get_viewport()
+                {
+                    if sheet_id == viewport_sheet_id
+                        && pos.x >= top_left.x
+                        && pos.x <= bottom_right.x
+                        && pos.y >= top_left.y
+                        && pos.y <= bottom_right.y
+                    {
+                        sheet.send_render_cells_in_hash(pos);
+                    } else {
+                        remaining_hashes.insert(pos);
+                    }
+                }
+            }
+        }
+        remaining_hashes
+    }
+
+    pub fn process_remaining_dirty_hashes(&self, transaction: &mut PendingTransaction) {
+        if (!cfg!(target_family = "wasm") && !cfg!(test))
+            || transaction.is_server()
+            || transaction.dirty_hashes.is_empty()
+        {
+            return;
+        }
+
+        for (&sheet_id, dirty_hashes) in transaction.dirty_hashes.iter_mut() {
+            self.flag_hashes_dirty(sheet_id, dirty_hashes);
+            dirty_hashes.clear();
+        }
+        transaction.dirty_hashes.clear();
+    }
+
+    pub fn flag_hashes_dirty(&self, sheet_id: SheetId, dirty_hashes: &HashSet<Pos>) {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || dirty_hashes.is_empty() {
+            return;
+        }
+
+        let hashes = dirty_hashes
+            .iter()
+            .map(|pos| JsPos::from(*pos))
+            .collect::<Vec<JsPos>>();
+
+        if let Ok(hashes_string) = serde_json::to_string(&hashes) {
+            crate::wasm_bindings::js::jsHashesDirty(sheet_id.to_string(), hashes_string);
+        }
+    }
+
     pub fn send_render_cells_from_hash(&self, sheet_id: SheetId, modified: &HashSet<Pos>) {
         // send the modified cells to the render web worker
         modified.iter().for_each(|modified| {
@@ -250,7 +363,10 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
-        controller::{transaction_types::JsCodeResult, GridController},
+        controller::{
+            active_transactions::pending_transaction::PendingTransaction,
+            execution::TransactionType, transaction_types::JsCodeResult, GridController,
+        },
         grid::{
             js_types::{JsHtmlOutput, JsRenderCell},
             sheet::validations::{
@@ -260,11 +376,87 @@ mod test {
             RenderSize, SheetId,
         },
         selection::Selection,
-        wasm_bindings::js::{clear_js_calls, expect_js_call, hash_test},
-        Rect,
+        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
+        Pos, Rect,
     };
     use serial_test::serial;
+    use std::collections::HashSet;
     use uuid::Uuid;
+
+    #[test]
+    #[serial]
+    fn test_process_visible_dirty_hashes() {
+        clear_js_calls();
+        let gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Empty transaction
+        let mut transaction = PendingTransaction::default();
+        gc.process_visible_dirty_hashes(&mut transaction);
+        assert!(transaction.dirty_hashes.is_empty());
+        expect_js_call_count("jsRenderCellSheets", 0, false);
+        expect_js_call_count("jsHashesDirty", 0, false);
+
+        // User transaction
+        let mut transaction = PendingTransaction::default();
+        transaction.dirty_hashes.insert(
+            sheet_id,
+            HashSet::from([
+                Pos { x: 0, y: 0 },   // Inside viewport
+                Pos { x: 5, y: 5 },   // Inside viewport
+                Pos { x: 15, y: 15 }, // Outside viewport
+            ]),
+        );
+        gc.process_visible_dirty_hashes(&mut transaction);
+        assert!(!transaction.dirty_hashes.is_empty());
+        expect_js_call_count("jsRenderCellSheets", 2, false);
+        expect_js_call_count("jsHashesDirty", 0, false);
+        gc.process_remaining_dirty_hashes(&mut transaction);
+        assert!(transaction.dirty_hashes.is_empty());
+        expect_js_call_count("jsRenderCellSheets", 0, false);
+        expect_js_call_count("jsHashesDirty", 1, false);
+
+        // Server transaction
+        let mut transaction = PendingTransaction {
+            transaction_type: TransactionType::Server,
+            ..Default::default()
+        };
+        transaction
+            .dirty_hashes
+            .insert(sheet_id, HashSet::from([Pos { x: 0, y: 0 }]));
+        gc.process_visible_dirty_hashes(&mut transaction);
+        assert!(!transaction.dirty_hashes.is_empty());
+        expect_js_call_count("jsRenderCellSheets", 0, false);
+        expect_js_call_count("jsHashesDirty", 0, false);
+        gc.process_remaining_dirty_hashes(&mut transaction);
+        assert!(!transaction.dirty_hashes.is_empty());
+        expect_js_call_count("jsRenderCellSheets", 0, false);
+        expect_js_call_count("jsHashesDirty", 0, false);
+    }
+
+    #[test]
+    #[serial]
+    fn test_process_remaining_dirty_hashes() {
+        clear_js_calls();
+
+        let gc = GridController::test();
+        let mut transaction = PendingTransaction::default();
+        let sheet_id = SheetId::new();
+        let positions: HashSet<Pos> = vec![Pos { x: 10, y: 10 }].into_iter().collect();
+
+        transaction.add_dirty_hashes_from_sheet_cell_positions(sheet_id, positions);
+        gc.process_remaining_dirty_hashes(&mut transaction);
+        assert!(transaction.dirty_hashes.is_empty());
+
+        let hashes: HashSet<Pos> = vec![Pos { x: 0, y: 0 }].into_iter().collect();
+        let hashes_string = serde_json::to_string(&hashes).unwrap();
+        expect_js_call(
+            "jsHashesDirty",
+            format!("{},{}", sheet_id, hashes_string),
+            false,
+        );
+        expect_js_call_count("jsRenderCellSheets", 0, true);
+    }
 
     #[test]
     #[serial]

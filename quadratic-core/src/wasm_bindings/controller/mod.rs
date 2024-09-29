@@ -38,6 +38,8 @@ impl GridController {
 
                 // populate data for client and text renderer
                 if initialize {
+                    grid.send_viewport_buffer();
+
                     // first recalculate all bounds in sheets
                     let mut html = vec![];
                     let sheets_info = grid

@@ -13,7 +13,6 @@ use crate::{
         execution::TransactionType, operations::operation::Operation, transaction::Transaction,
     },
     grid::{CodeCellLanguage, SheetId},
-    viewport::ViewportBuffer,
     Pos, SheetPos, SheetRect,
 };
 
@@ -67,8 +66,6 @@ pub struct PendingTransaction {
     pub resize_rows: HashMap<SheetId, HashSet<i64>>,
 
     pub dirty_hashes: HashMap<SheetId, HashSet<Pos>>,
-
-    pub viewport_buffer: Option<ViewportBuffer>,
 }
 
 impl Default for PendingTransaction {
@@ -93,7 +90,6 @@ impl Default for PendingTransaction {
             send_validations: HashSet::new(),
             resize_rows: HashMap::new(),
             dirty_hashes: HashMap::new(),
-            viewport_buffer: None,
         }
     }
 }
@@ -182,6 +178,38 @@ impl PendingTransaction {
     pub fn is_multiplayer(&self) -> bool {
         matches!(self.transaction_type, TransactionType::Multiplayer)
     }
+
+    pub fn add_dirty_hashes_from_sheet_cell_positions(
+        &mut self,
+        sheet_id: SheetId,
+        positions: HashSet<Pos>,
+    ) {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || self.is_server() {
+            return;
+        }
+
+        let mut hashes = HashSet::new();
+        positions.iter().for_each(|pos| {
+            let quadrant = pos.quadrant();
+            hashes.insert(Pos {
+                x: quadrant.0,
+                y: quadrant.1,
+            });
+        });
+
+        let dirty_hashes = self.dirty_hashes.entry(sheet_id).or_default();
+        dirty_hashes.extend(hashes);
+    }
+
+    pub fn add_dirty_hashes_from_sheet_rect(&mut self, sheet_rect: SheetRect) {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || self.is_server() {
+            return;
+        }
+
+        let hashes = sheet_rect.to_hashes();
+        let dirty_hashes = self.dirty_hashes.entry(sheet_rect.sheet_id).or_default();
+        dirty_hashes.extend(hashes);
+    }
 }
 
 #[cfg(test)]
@@ -252,5 +280,50 @@ mod tests {
             ..Default::default()
         };
         assert!(!transaction.is_user());
+    }
+
+    #[test]
+    #[parallel]
+    fn test_add_dirty_hashes_from_sheet_cell_positions() {
+        let sheet_id = SheetId::new();
+        let positions: HashSet<Pos> = vec![Pos { x: 1, y: 1 }, Pos { x: 16, y: 2 }]
+            .into_iter()
+            .collect();
+        let mut transaction = PendingTransaction::default();
+        transaction.add_dirty_hashes_from_sheet_cell_positions(sheet_id, positions);
+        assert_eq!(transaction.dirty_hashes.len(), 1);
+        assert_eq!(transaction.dirty_hashes.get(&sheet_id).unwrap().len(), 2);
+        assert!(transaction
+            .dirty_hashes
+            .get(&sheet_id)
+            .unwrap()
+            .contains(&Pos { x: 0, y: 0 }));
+        assert!(transaction
+            .dirty_hashes
+            .get(&sheet_id)
+            .unwrap()
+            .contains(&Pos { x: 1, y: 0 }));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_add_dirty_hashes_from_sheet_rect() {
+        let sheet_rect = SheetRect::single_pos(Pos { x: 0, y: 0 }, SheetId::new());
+        let mut transaction = PendingTransaction::default();
+        transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
+        assert_eq!(transaction.dirty_hashes.len(), 1);
+        assert_eq!(
+            transaction
+                .dirty_hashes
+                .get(&sheet_rect.sheet_id)
+                .unwrap()
+                .len(),
+            1
+        );
+        assert!(transaction
+            .dirty_hashes
+            .get(&sheet_rect.sheet_id)
+            .unwrap()
+            .contains(&Pos { x: 0, y: 0 }),);
     }
 }

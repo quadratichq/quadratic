@@ -74,12 +74,8 @@ class RenderCore {
         renderText.setHashesDirty(e.data.sheetId, e.data.hashes);
         break;
 
-      case 'coreRenderSetViewportBuffer':
-        renderText.setViewportBuffer(e.data.transactionId, e.data.buffer);
-        break;
-
-      case 'coreRenderClearViewportBuffer':
-        renderText.clearViewportBuffer(e.data.transactionId);
+      case 'coreRenderViewportBuffer':
+        renderText.receiveViewportBuffer(e.data.buffer);
         break;
 
       default:
