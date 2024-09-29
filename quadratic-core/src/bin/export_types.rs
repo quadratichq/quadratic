@@ -1,6 +1,7 @@
 use std::fs::create_dir_all;
 
 use crate::grid::sheet::borders::{JsBorderHorizontal, JsBorderVertical, JsBordersSheet};
+use crate::A1Error;
 use controller::operations::clipboard::PasteSpecial;
 use formulas::{CellRef, CellRefCoord, RangeRef};
 use grid::formats::format::Format;
@@ -66,6 +67,7 @@ fn main() {
     s += "// Do not modify it manually.\n\n";
 
     s += &generate_type_declarations!(
+        A1Error,
         ArraySize,
         Axis,
         BorderSelection,

@@ -1,8 +1,22 @@
+use serde::Serialize;
+use ts_rs::TS;
+
 use crate::{Pos, Rect};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq, TS)]
 pub enum A1Error {
+    InvalidSheetId(String),
+    InvalidSheetMap(String),
     InvalidColumn(String),
+    InvalidSheetName(String),
+    TooManySheets,
+}
+
+impl From<A1Error> for String {
+    fn from(error: A1Error) -> Self {
+        serde_json::to_string(&error)
+            .unwrap_or(format!("Failed to convert A1Error to string: {:?}", error))
+    }
 }
 
 pub struct A1 {}
@@ -33,7 +47,11 @@ impl A1 {
 
     /// Convert A1 notation column to a column index
     pub fn try_from_column(a1_column: &str) -> Option<u64> {
-        let a1_column = a1_column.to_uppercase();
+        let a1_column = a1_column.trim().to_uppercase();
+        if a1_column.is_empty() {
+            return None;
+        }
+
         let total_alphabets = (b'Z' - b'A' + 1) as u64;
         let mut result = 0;
         for (i, &c) in a1_column.as_bytes().iter().rev().enumerate() {
@@ -96,6 +114,9 @@ impl A1 {
             .map(|(from, to)| {
                 let (from, to) = match (A1::try_from_column(from), A1::try_from_column(to)) {
                     (Some(a), Some(b)) => (a.min(b), a.max(b)),
+
+                    // handles the case of a "A:" (partially inputted range)
+                    (Some(a), None) => (a, a),
                     _ => return None,
                 };
                 Some((from..=to).collect())
@@ -109,6 +130,9 @@ impl A1 {
             .map(|(from, to)| {
                 let (from, to) = match (A1::try_from_row(from), A1::try_from_row(to)) {
                     (Some(a), Some(b)) => (a.min(b), a.max(b)),
+
+                    // handles the case of a "1:" (partially inputted range)
+                    (Some(a), None) => (a, a),
                     _ => return None,
                 };
                 Some((from..=to).collect())
@@ -245,5 +269,11 @@ mod tests {
             Some(Rect::from_numbers(1, 1, 2, 2))
         );
         assert_eq!(A1::try_from_range("1:2"), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_try_from_column_empty() {
+        assert_eq!(A1::try_from_column(""), None);
     }
 }

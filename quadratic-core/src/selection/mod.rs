@@ -24,6 +24,15 @@ pub struct Selection {
     pub all: bool,
 }
 
+impl From<Selection> for String {
+    fn from(selection: Selection) -> Self {
+        serde_json::to_string(&selection).unwrap_or(format!(
+            "Failed to convert selection to string: {:?}",
+            selection
+        ))
+    }
+}
+
 impl Default for Selection {
     fn default() -> Self {
         Selection {

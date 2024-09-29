@@ -72,6 +72,10 @@ impl Selection {
     pub fn rects_to_a1(rects: &[Rect]) -> Vec<String> {
         let mut results = vec![];
         for rect in rects.iter() {
+            if rect.width() == 1 && rect.height() == 1 {
+                results.push(A1::pos_to_a1(rect.min.x as u64, rect.min.y as u64));
+                continue;
+            }
             // skip any negative values
             if rect.min.x <= 0 || rect.min.y <= 0 || rect.max.x <= 0 || rect.max.y <= 0 {
                 continue;
@@ -119,6 +123,8 @@ impl Selection {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use serial_test::parallel;
 
     use crate::grid::SheetId;
@@ -181,5 +187,36 @@ mod tests {
             rows: Some(vec![1, 2, 3, 4, 5, 10, 11, 12, 15]),
         };
         assert_eq!(selection.to_a1(), "A:E,J:L,O,1:5,10:12,15,A1:B2,C3:D4");
+    }
+
+    #[test]
+    #[parallel]
+    fn test_a1_with_one_sized_rect() {
+        let selection = Selection {
+            sheet_id: SheetId::test(),
+            x: 1,
+            y: 1,
+            all: false,
+            rects: Some(vec![Rect::new(1, 1, 1, 1)]),
+            columns: None,
+            rows: None,
+        };
+        assert_eq!(selection.to_a1(), "A1");
+    }
+
+    #[test]
+    #[parallel]
+    fn test_extra_comma() {
+        let sheet_id = SheetId::test();
+        let selection = Selection::from_a1("1,", sheet_id, HashMap::new()).unwrap();
+        assert_eq!(selection.to_a1(), "1");
+    }
+
+    #[test]
+    #[parallel]
+    fn test_multiple_one_sized_rects() {
+        let sheet_id = SheetId::test();
+        let selection = Selection::from_a1("A1,B1,C1", sheet_id, HashMap::new()).unwrap();
+        assert_eq!(selection.to_a1(), "A1,B1,C1");
     }
 }

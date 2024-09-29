@@ -4,8 +4,14 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 import { sheets } from '@/app/grid/controller/Sheets';
 import { moveViewport } from '@/app/gridGL/interaction/viewportHelper';
 import { Coordinate } from '@/app/gridGL/types/size';
-import { selectionToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { Selection } from '@/app/quadratic-core-types';
+import {
+  a1StringToSelection,
+  selectionToA1,
+  selectionToA1String,
+} from '@/app/quadratic-rust-client/quadratic_rust_client';
 import '@/app/ui/styles/floating-dialog.css';
+import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { GoToIcon } from '@/shared/components/Icons';
 import { Command, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
 import { Rectangle } from 'pixi.js';
@@ -25,53 +31,73 @@ export const GoTo = () => {
   }, [setEditorInteractionState]);
 
   const convertedInput = useMemo(() => {
-    if (!value) return '';
+    if (!value) {
+      return (
+        <span>
+          Go to <span className="font-bold">A1</span>
+        </span>
+      );
+    }
     try {
-      console.log(value);
-      const converted = a1toSelection(value);
-      console.log(converted);
-      if (converted) {
-        return `Go to ${converted}`;
-      } else {
-        return 'Invalid input';
+      const selection = a1StringToSelection(value, sheets.sheet.id, sheets.getRustSheetMap());
+      const selectionObject: Selection = JSON.parse(selection);
+      let sheetName = <></>;
+      if (selectionObject.sheet_id.id !== sheets.sheet.id) {
+        const name = sheets.getById(selectionObject.sheet_id.id)?.name;
+        sheetName = (
+          <span>
+            <span className="font-bold">{name}</span> at{' '}
+          </span>
+        );
       }
-    } catch (e) {
+
+      if (selection) {
+        const a1String = selectionToA1String(selection);
+        return (
+          <span>
+            Go to {sheetName}
+            <span className="font-bold">{a1String}</span>
+          </span>
+        );
+      } else {
+        return <span>Go to A1</span>;
+      }
+    } catch (e: any) {
+      if (e) {
+        const error = JSON.parse(e);
+        if (error?.InvalidSheetName) {
+          return (
+            <span>
+              Sheet <span className="font-bold">{error.InvalidSheetName}</span> not found
+            </span>
+          );
+        } else if (error?.TooManySheets) {
+          return <span>Only one sheet is supported</span>;
+        }
+      }
       return 'Invalid input';
     }
   }, [value]);
 
   const onSelect = useCallback(() => {
-    // const [coor1, coor2] = coordinates;
-
-    // // GoTo Cell
-    // let cursorPosition = coor1;
-    // let keyboardMovePosition = coor1;
-    // let multiCursor: undefined | Rectangle[];
-
-    // // GoTo range
-    // if (coor2) {
-    //   // User has given us two arbitrary points. We need to figure out the
-    //   // upper left to bottom right coordinates of a rectangle between those coordinates
-    //   const originPosition: Coordinate = { x: Math.min(coor1.x, coor2.x), y: Math.min(coor1.y, coor2.y) };
-    //   const terminalPosition: Coordinate = { x: Math.max(coor1.x, coor2.x), y: Math.max(coor1.y, coor2.y) };
-
-    //   keyboardMovePosition = originPosition;
-    //   cursorPosition = originPosition;
-    //   multiCursor = [
-    //     new Rectangle(
-    //       originPosition.x,
-    //       originPosition.y,
-    //       terminalPosition.x - originPosition.x + 1,
-    //       terminalPosition.y - originPosition.y + 1
-    //     ),
-    //   ];
-    // }
-    // sheets.sheet.cursor.changePosition({
-    //   keyboardMovePosition,
-    //   cursorPosition,
-    //   multiCursor,
-    // });
-    // moveViewport({ topLeft: cursorPosition });
+    // if empty, then move cursor to A1
+    if (!value) {
+      sheets.sheet.cursor.changePosition({
+        keyboardMovePosition: { x: 1, y: 1 },
+        cursorPosition: { x: 1, y: 1 },
+        multiCursor: null,
+        columnRow: null,
+        ensureVisible: true,
+      });
+    } else {
+      try {
+        const selection = a1StringToSelection(value, sheets.sheet.id, sheets.getRustSheetMap());
+        const s: Selection = JSON.parse(selection);
+        sheets.changeSelection(s);
+      } catch (_) {
+        // nothing to do if we can't parse the input
+      }
+    }
     closeMenu();
   }, [closeMenu, value]);
 

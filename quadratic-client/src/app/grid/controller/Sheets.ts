@@ -4,7 +4,8 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Sheet } from '../sheet/Sheet';
-import { SheetCursorSave } from '../sheet/SheetCursor';
+import { ColumnRowCursor, SheetCursorSave } from '../sheet/SheetCursor';
+import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 
 class Sheets {
   sheets: Sheet[];
@@ -330,6 +331,47 @@ class Sheets {
 
   getRustSelection(): Selection {
     return this.sheet.cursor.getRustSelection();
+  }
+
+  // Gets a stringified sheet name to id map for Rust's A1 functions
+  getRustSheetMap(): string {
+    const sheetMap: Record<string, string> = {};
+    sheets.forEach((sheet) => (sheetMap[sheet.name] = sheet.id));
+    return JSON.stringify(sheetMap);
+  }
+
+  // Changes the cursor to the incoming selection
+  changeSelection(selection: Selection, ensureVisible = true) {
+    // change the sheet id if needed
+    if (selection.sheet_id.id !== this.current) {
+      if (this.getById(selection.sheet_id.id)) {
+        this.current = selection.sheet_id.id;
+      }
+    }
+
+    // assign the cursor position
+    const pos = { x: Number(selection.x), y: Number(selection.y) };
+
+    // assign the multi cursor
+    const multiCursor = selection.rects?.map((rect) => rectToRectangle(rect)) ?? null;
+    let columnRow: ColumnRowCursor | null = null;
+    if (selection.all) {
+      columnRow = { all: true };
+    } else {
+      if (selection.rows || selection.columns) {
+        columnRow = {
+          rows: selection.rows?.map((row) => Number(row)),
+          columns: selection.columns?.map((column) => Number(column)),
+        };
+      }
+    }
+    sheets.sheet.cursor.changePosition({
+      keyboardMovePosition: pos,
+      cursorPosition: pos,
+      multiCursor,
+      columnRow,
+      ensureVisible,
+    });
   }
 }
 
