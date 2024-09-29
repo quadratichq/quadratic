@@ -3,9 +3,9 @@ import { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import { PanMode } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Coordinate, SheetPosTS } from '@/app/gridGL/types/size';
 import {
+  JsBordersSheet,
   JsCodeCell,
   JsHtmlOutput,
-  JsRenderBorders,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
@@ -61,7 +61,7 @@ interface EventTypes {
   sheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
   htmlOutput: (html: JsHtmlOutput[]) => void;
   htmlUpdate: (html: JsHtmlOutput) => void;
-  sheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
+  bordersSheet: (sheetId: string, borders?: JsBordersSheet) => void;
   renderCells: (sheetId: string, renderCells: JsRenderCell[]) => void;
   renderCodeCells: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
   resizeRowHeights: (sheetId: string, rowHeights: JsRowHeight[]) => void;

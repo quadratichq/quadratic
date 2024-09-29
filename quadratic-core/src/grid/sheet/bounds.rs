@@ -110,6 +110,8 @@ impl Sheet {
     ///
     /// If `ignore_formatting` is `true`, only data is considered; if it is
     /// `false`, then data and formatting are both considered.
+    ///
+    /// Borders are not included in this bounds call.
     pub fn bounds(&self, ignore_formatting: bool) -> GridBounds {
         match ignore_formatting {
             true => self.data_bounds,
@@ -368,13 +370,12 @@ impl Sheet {
 mod test {
     use crate::{
         controller::GridController,
-        grid::CellWrap,
         grid::{
             sheet::validations::{
                 validation::Validation,
                 validation_rules::{validation_logical::ValidationLogical, ValidationRule},
             },
-            CellAlign, CodeCellLanguage, GridBounds, Sheet,
+            BorderSelection, BorderStyle, CellAlign, CellWrap, CodeCellLanguage, GridBounds, Sheet,
         },
         selection::Selection,
         CellValue, Pos, Rect, SheetPos, SheetRect,
@@ -886,6 +887,7 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn recalculate_bounds_validations() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -908,5 +910,22 @@ mod test {
             sheet.data_bounds,
             GridBounds::NonEmpty(Rect::new(0, 0, 0, 0))
         );
+    }
+
+    #[test]
+    #[parallel]
+    fn empty_bounds_with_borders() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.bounds(false), GridBounds::Empty);
     }
 }

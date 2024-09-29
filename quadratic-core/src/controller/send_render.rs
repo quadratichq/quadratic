@@ -2,16 +2,13 @@ use std::collections::HashSet;
 
 use crate::{
     grid::{js_types::JsRenderFill, RenderSize, SheetId},
+    renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     selection::Selection,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
     CellValue, Pos, Rect, SheetPos, SheetRect,
 };
 
-use super::{
-    active_transactions::pending_transaction::PendingTransaction,
-    transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-    GridController,
-};
+use super::{active_transactions::pending_transaction::PendingTransaction, GridController};
 
 impl GridController {
     pub fn send_render_cells_from_hash(&self, sheet_id: SheetId, modified: &HashSet<Pos>) {
@@ -85,19 +82,6 @@ impl GridController {
             }
         }
         self.send_render_cells_from_hash(selection.sheet_id, &modified);
-    }
-
-    pub fn send_render_borders(&self, sheet_id: SheetId) {
-        if !cfg!(target_family = "wasm") && !cfg!(test) {
-            return;
-        }
-
-        if let Some(sheet) = self.try_sheet(sheet_id) {
-            let borders = sheet.render_borders();
-            if let Ok(borders) = serde_json::to_string(&borders) {
-                crate::wasm_bindings::js::jsSheetBorders(sheet_id.to_string(), borders);
-            }
-        }
     }
 
     /// Sends the modified fills to the client
