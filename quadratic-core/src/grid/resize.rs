@@ -45,6 +45,10 @@ impl ResizeMap {
     pub fn iter_resize(&self) -> impl '_ + Iterator<Item = (i64, Resize)> {
         self.resize_map.iter().map(|(&k, &v)| (k, v))
     }
+
+    pub fn into_iter_resize(self) -> impl Iterator<Item = (i64, Resize)> {
+        self.resize_map.into_iter()
+    }
 }
 
 #[cfg(test)]

@@ -1,3 +1,6 @@
+//! Stores column data, including formatting. This file is a bit confusing and
+//! should be refactored.
+
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
@@ -33,6 +36,7 @@ pub struct Column {
     pub underline: ColumnData<SameValue<bool>>,
     pub strike_through: ColumnData<SameValue<bool>>,
 }
+
 impl Column {
     pub fn new(x: i64) -> Self {
         Self {
@@ -173,7 +177,6 @@ impl<B: BlockContent> ColumnData<B> {
     }
 
     /// Adds blocks w/o regard to whether they overlap with existing blocks.
-    /// This is temporary and for use with column.values only!
     pub fn add_blocks(&mut self, blocks: impl IntoIterator<Item = Block<B>>) {
         for block in blocks {
             self.add_block(block);
@@ -258,6 +261,10 @@ impl<B: BlockContent> ColumnData<B> {
 
     pub fn blocks(&self) -> impl Iterator<Item = &Block<B>> {
         self.0.values()
+    }
+
+    pub fn into_blocks(self) -> impl Iterator<Item = Block<B>> {
+        self.0.into_values()
     }
 
     pub fn has_blocks_in_range(&self, y_range: Range<i64>) -> bool {
@@ -347,6 +354,15 @@ impl<B: BlockContent> ColumnData<B> {
                 (start..end).filter_map(|y| Some((y, block.get(y)?)))
             })
     }
+
+    pub fn min(&self) -> Option<i64> {
+        self.0.first_key_value().map(|(y, _)| *y)
+    }
+    pub fn max(&self) -> Option<i64> {
+        self.0
+            .last_key_value()
+            .map(|(y, block)| *y + block.len() as i64 - 1)
+    }
 }
 
 impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq>
@@ -380,6 +396,12 @@ impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq>
             replaced.extend(replaced_blocks.into_iter());
         }
         replaced
+    }
+
+    /// Sets a block at a specific y value without merging. This is used by serialize functions.
+    pub fn insert_block(&mut self, y: i64, len: usize, value: T) {
+        debug_assert!(!self.0.contains_key(&y));
+        self.set_range(y..y + len as i64, value);
     }
 }
 
@@ -544,5 +566,29 @@ mod test {
         let range = cd.format_range().unwrap();
         assert_eq!(range.start, 0);
         assert_eq!(range.end, 10);
+    }
+
+    #[test]
+    #[parallel]
+    fn min_max() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+
+        cd.set(1, Some(true));
+        cd.set(2, Some(true));
+        cd.set(3, Some(true));
+
+        assert_eq!(cd.min(), Some(1));
+        assert_eq!(cd.max(), Some(3));
+    }
+
+    #[test]
+    #[parallel]
+    fn insert_block() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+
+        cd.insert_block(3, 2, true);
+        assert_eq!(cd.get(3), Some(true));
+        assert_eq!(cd.get(4), Some(true));
+        assert_eq!(cd.get(5), None);
     }
 }

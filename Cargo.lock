@@ -3083,7 +3083,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-connection"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "arrow",
  "arrow-schema",
@@ -3125,7 +3125,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-core"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "anyhow",
  "arrow-array",
@@ -3179,7 +3179,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-files"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "axum",
  "axum-extra",
@@ -3211,7 +3211,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-multiplayer"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "axum",
  "axum-extra",
@@ -3245,7 +3245,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-rust-client"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "chrono",
  "console_error_panic_hook",
@@ -3260,7 +3260,7 @@ dependencies = [
 
 [[package]]
 name = "quadratic-rust-shared"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "arrow",
  "async-trait",
