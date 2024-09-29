@@ -9,6 +9,7 @@ use crate::{
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     selection::Selection,
+    viewport::ViewportBuffer,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
     CellValue, Pos, Rect, SheetPos, SheetRect,
 };
@@ -16,12 +17,14 @@ use crate::{
 use super::{active_transactions::pending_transaction::PendingTransaction, GridController};
 
 impl GridController {
-    pub fn send_viewport_buffer(&self) {
+    pub fn send_viewport_buffer(&mut self) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
 
-        crate::wasm_bindings::js::jsSendViewportBuffer(self.viewport_buffer.get_buffer());
+        let viewport_buffer = ViewportBuffer::default();
+        crate::wasm_bindings::js::jsSendViewportBuffer(viewport_buffer.get_buffer());
+        self.viewport_buffer = Some(viewport_buffer);
     }
 
     pub fn process_visible_dirty_hashes(&self, transaction: &mut PendingTransaction) {
@@ -32,32 +35,34 @@ impl GridController {
             return;
         }
 
-        if let Some((top_left, bottom_right, viewport_sheet_id)) =
-            self.viewport_buffer.get_viewport()
-        {
-            if let Some(dirty_hashes_in_viewport) =
-                transaction.dirty_hashes.remove(&viewport_sheet_id)
+        if let Some(viewport_buffer) = &self.viewport_buffer {
+            if let Some((top_left, bottom_right, viewport_sheet_id)) =
+                viewport_buffer.get_viewport()
             {
-                let center = Pos {
-                    x: (top_left.x + bottom_right.x) / 2,
-                    y: (top_left.y + bottom_right.y) / 2,
-                };
-                let nearest_dirty_hashes = dirty_hashes_in_viewport
-                    .iter()
-                    .cloned()
-                    .sorted_by(|a, b| {
-                        let a_distance = (a.x - center.x).abs() + (a.y - center.y).abs();
-                        let b_distance = (b.x - center.x).abs() + (b.y - center.y).abs();
-                        a_distance.cmp(&b_distance)
-                    })
-                    .collect();
+                if let Some(dirty_hashes_in_viewport) =
+                    transaction.dirty_hashes.remove(&viewport_sheet_id)
+                {
+                    let center = Pos {
+                        x: (top_left.x + bottom_right.x) / 2,
+                        y: (top_left.y + bottom_right.y) / 2,
+                    };
+                    let nearest_dirty_hashes = dirty_hashes_in_viewport
+                        .iter()
+                        .cloned()
+                        .sorted_by(|a, b| {
+                            let a_distance = (a.x - center.x).abs() + (a.y - center.y).abs();
+                            let b_distance = (b.x - center.x).abs() + (b.y - center.y).abs();
+                            a_distance.cmp(&b_distance)
+                        })
+                        .collect();
 
-                let remaining_hashes =
-                    self.send_render_cells_in_viewport(viewport_sheet_id, nearest_dirty_hashes);
-                if !remaining_hashes.is_empty() {
-                    transaction
-                        .dirty_hashes
-                        .insert(viewport_sheet_id, remaining_hashes);
+                    let remaining_hashes =
+                        self.send_render_cells_in_viewport(viewport_sheet_id, nearest_dirty_hashes);
+                    if !remaining_hashes.is_empty() {
+                        transaction
+                            .dirty_hashes
+                            .insert(viewport_sheet_id, remaining_hashes);
+                    }
                 }
             }
         }
@@ -73,20 +78,22 @@ impl GridController {
         }
 
         let mut remaining_hashes = HashSet::new();
-        if let Some(sheet) = self.try_sheet(sheet_id) {
-            for pos in dirty_hashes.into_iter() {
-                if let Some((top_left, bottom_right, viewport_sheet_id)) =
-                    self.viewport_buffer.get_viewport()
-                {
-                    if sheet_id == viewport_sheet_id
-                        && pos.x >= top_left.x
-                        && pos.x <= bottom_right.x
-                        && pos.y >= top_left.y
-                        && pos.y <= bottom_right.y
+        if let Some(viewport_buffer) = &self.viewport_buffer {
+            if let Some(sheet) = self.try_sheet(sheet_id) {
+                for pos in dirty_hashes.into_iter() {
+                    if let Some((top_left, bottom_right, viewport_sheet_id)) =
+                        viewport_buffer.get_viewport()
                     {
-                        sheet.send_render_cells_in_hash(pos);
-                    } else {
-                        remaining_hashes.insert(pos);
+                        if sheet_id == viewport_sheet_id
+                            && pos.x >= top_left.x
+                            && pos.x <= bottom_right.x
+                            && pos.y >= top_left.y
+                            && pos.y <= bottom_right.y
+                        {
+                            sheet.send_render_cells_in_hash(pos);
+                        } else {
+                            remaining_hashes.insert(pos);
+                        }
                     }
                 }
             }
@@ -387,7 +394,7 @@ mod test {
     #[serial]
     fn test_process_visible_dirty_hashes() {
         clear_js_calls();
-        let gc = GridController::test();
+        let gc = GridController::test_with_viewport_buffer();
         let sheet_id = gc.sheet_ids()[0];
 
         // Empty transaction
@@ -468,9 +475,8 @@ mod test {
     fn send_render_cells() {
         clear_js_calls();
 
-        let mut gc = GridController::test();
-        let sheet_id = SheetId::test();
-        gc.sheet_mut(gc.sheet_ids()[0]).id = sheet_id;
+        let mut gc = GridController::test_with_viewport_buffer();
+        let sheet_id = gc.sheet_ids()[0];
 
         gc.set_cell_value((0, 0, sheet_id).into(), "test 1".to_string(), None);
         let result = vec![JsRenderCell {
@@ -503,8 +509,7 @@ mod test {
     #[serial]
     fn send_fill_cells() {
         let mut gc = GridController::test();
-        let sheet_id = SheetId::test();
-        gc.sheet_mut(gc.sheet_ids()[0]).id = sheet_id;
+        let sheet_id = gc.sheet_ids()[0];
 
         gc.set_cell_fill_color((0, 0, 1, 1, sheet_id).into(), Some("red".to_string()), None);
         expect_js_call(
@@ -536,8 +541,7 @@ mod test {
     #[serial]
     fn send_html_output_rect() {
         let mut gc = GridController::test();
-        let sheet_id = SheetId::test();
-        gc.sheet_mut(gc.sheet_ids()[0]).id = sheet_id;
+        let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
             (0, 0, sheet_id).into(),
@@ -577,8 +581,7 @@ mod test {
     #[serial]
     fn send_html_output_rect_after_resize() {
         let mut gc = GridController::test();
-        let sheet_id = SheetId::test();
-        gc.sheet_mut(gc.sheet_ids()[0]).id = sheet_id;
+        let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
             (0, 0, sheet_id).into(),
@@ -626,9 +629,8 @@ mod test {
     #[test]
     #[serial]
     fn send_render_cells_from_rects() {
-        let mut gc = GridController::test();
-        let sheet_id = SheetId::test();
-        gc.sheet_mut(gc.sheet_ids()[0]).id = sheet_id;
+        let mut gc = GridController::test_with_viewport_buffer();
+        let sheet_id = gc.sheet_ids()[0];
 
         gc.set_cell_value((0, 0, sheet_id).into(), "test 1".to_string(), None);
         gc.set_cell_value((100, 100, sheet_id).into(), "test 2".to_string(), None);
@@ -662,8 +664,7 @@ mod test {
     #[serial]
     fn send_render_cells_selection() {
         let mut gc = GridController::test();
-        let sheet_id = SheetId::new();
-        gc.sheet_mut(gc.sheet_ids()[0]).id = sheet_id;
+        let sheet_id = gc.sheet_ids()[0];
 
         let rect = Rect::new(1, 1, 2, 2);
         let selection = Selection::rect(rect, sheet_id);

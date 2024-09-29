@@ -27,7 +27,7 @@ pub struct GridController {
 
     // the viewport buffer is a shared array buffer that is accessed by the render web worker and the controller
     // contains current viewport position and sheet id, updated by render web worker on viewport change
-    viewport_buffer: ViewportBuffer,
+    viewport_buffer: Option<ViewportBuffer>,
 }
 
 impl GridController {
@@ -66,6 +66,13 @@ impl GridController {
     // create a new gc for testing purposes in both Rust and TS
     pub fn test() -> Self {
         Self::from_grid(Grid::test(), 0)
+    }
+
+    // create a new gc for testing purposes with a viewport buffer
+    pub fn test_with_viewport_buffer() -> Self {
+        let mut gc = Self::from_grid(Grid::test(), 0);
+        gc.viewport_buffer = Some(ViewportBuffer::default());
+        gc
     }
 
     // get the last active transaction for testing purposes

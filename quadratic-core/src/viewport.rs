@@ -1,3 +1,4 @@
+#[cfg(not(test))]
 use wasm_bindgen::prelude::*;
 
 use crate::{grid::SheetId, Pos};
@@ -107,7 +108,6 @@ impl ViewportBuffer {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "js", wasm_bindgen)]
 #[cfg(test)]
 pub struct ViewportBuffer {
     buffer: Box<[u8; 112]>,
