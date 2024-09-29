@@ -265,8 +265,8 @@ export class GridHeadings extends Container {
     const offsets = sheets.sheet.offsets;
     const cursor = sheets.sheet.cursor;
 
-    const start = offsets.getYPlacement(bounds.top);
-    const end = offsets.getYPlacement(bounds.bottom);
+    const start = { index: 0, position: 0, size: 10 }; //offsets.getYPlacement(bounds.top);
+    const end = { index: 0, position: 0, size: 10 }; //offsets.getYPlacement(bounds.bottom);
     const topOffset = start.position;
     const bottomOffset = end.position + end.size;
     const topNumberLength = Math.round(topOffset / CELL_HEIGHT - 1).toString().length;
@@ -436,7 +436,7 @@ export class GridHeadings extends Container {
 
   private drawVertical() {
     this.drawVerticalBar();
-    this.verticalLabels();
+    // this.verticalLabels();
   }
 
   private drawCorner(): void {

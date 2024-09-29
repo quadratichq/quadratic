@@ -200,6 +200,7 @@ export class Control {
     togglePerf() {
         this.cli.options.perf = !this.cli.options.perf;
         this.restartCore();
+        this.restartRustClient();
     }
     async runCore(restart) {
         if (this.quitting)

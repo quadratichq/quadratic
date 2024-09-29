@@ -2,20 +2,12 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { moveViewport } from '@/app/gridGL/interaction/viewportHelper';
-import { Coordinate } from '@/app/gridGL/types/size';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { Selection } from '@/app/quadratic-core-types';
-import {
-  a1StringToSelection,
-  selectionToA1,
-  selectionToA1String,
-} from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { a1StringToSelection, selectionToA1String } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import '@/app/ui/styles/floating-dialog.css';
-import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { GoToIcon } from '@/shared/components/Icons';
 import { Command, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
-import { Rectangle } from 'pixi.js';
 import React, { useCallback, useMemo } from 'react';
 import { useSetRecoilState } from 'recoil';
 
@@ -66,16 +58,18 @@ export const GoTo = () => {
       }
     } catch (e: any) {
       if (e) {
-        const error = JSON.parse(e);
-        if (error?.InvalidSheetName) {
-          return (
-            <span>
-              Sheet <span className="font-bold">{error.InvalidSheetName}</span> not found
-            </span>
-          );
-        } else if (error?.TooManySheets) {
-          return <span>Only one sheet is supported</span>;
-        }
+        try {
+          const error = JSON.parse(e);
+          if (error?.InvalidSheetName) {
+            return (
+              <span>
+                Sheet <span className="font-bold">{error.InvalidSheetName}</span> not found
+              </span>
+            );
+          } else if (error?.TooManySheets) {
+            return <span>Only one sheet is supported</span>;
+          }
+        } catch (_) {}
       }
       return 'Invalid input';
     }
