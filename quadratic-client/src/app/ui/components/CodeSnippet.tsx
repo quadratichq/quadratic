@@ -38,6 +38,8 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
     syntax = 'sql';
   } else if (syntax === 'mssql') {
     syntax = 'sql';
+  } else if (syntax === 'snowflake') {
+    syntax = 'sql';
   }
 
   return (

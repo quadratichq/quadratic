@@ -24,6 +24,7 @@ pub fn export_cell_value(cell_value: CellValue) -> current::CellValueSchema {
                             ConnectionKind::Postgres => current::ConnectionKindSchema::Postgres,
                             ConnectionKind::Mysql => current::ConnectionKindSchema::Mysql,
                             ConnectionKind::Mssql => current::ConnectionKindSchema::Mssql,
+                            ConnectionKind::Snowflake => current::ConnectionKindSchema::Snowflake,
                         },
                         id,
                     }
@@ -73,6 +74,7 @@ pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
                             current::ConnectionKindSchema::Postgres => ConnectionKind::Postgres,
                             current::ConnectionKindSchema::Mysql => ConnectionKind::Mysql,
                             current::ConnectionKindSchema::Mssql => ConnectionKind::Mssql,
+                            current::ConnectionKindSchema::Snowflake => ConnectionKind::Snowflake,
                         },
                         id,
                     }
