@@ -117,7 +117,7 @@ impl GridController {
                     .reverse_operations
                     .extend(sheet.validations.set(validation.clone()));
 
-                transaction.send_validations.insert(sheet_id);
+                transaction.validations.insert(sheet_id);
 
                 if !transaction.is_server() {
                     self.send_updated_bounds(sheet_id);
@@ -178,7 +178,7 @@ impl GridController {
                     .reverse_operations
                     .extend(sheet.validations.remove(validation_id));
 
-                transaction.send_validations.insert(sheet.id);
+                transaction.validations.insert(sheet.id);
 
                 if !transaction.is_server() {
                     if let Some(selection) = selection {

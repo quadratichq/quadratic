@@ -182,6 +182,7 @@ impl SheetRect {
         hashes
     }
 }
+
 impl fmt::Display for SheetRect {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
