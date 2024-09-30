@@ -34,6 +34,7 @@ export async function doubleClickCell(options: {
             language,
           },
           showCellTypeMenu: false,
+          initialCode: '',
           inlineEditor: formula,
         },
       });
@@ -58,6 +59,7 @@ export async function doubleClickCell(options: {
               pos: { x: column, y: row },
               language,
             },
+            initialCode: '',
             showCellTypeMenu: false,
           },
         });

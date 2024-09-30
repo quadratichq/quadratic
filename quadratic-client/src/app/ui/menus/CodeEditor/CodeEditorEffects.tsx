@@ -2,6 +2,7 @@ import {
   codeEditorAtom,
   codeEditorCodeCellAtom,
   codeEditorInitialCodeAtom,
+  codeEditorLoadingAtom,
   codeEditorPanelBottomActiveTabAtom,
   codeEditorShowCodeEditorAtom,
   codeEditorShowSaveChangesAlertAtom,
@@ -15,6 +16,7 @@ import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { useUpdateCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useUpdateCodeEditor';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import mixpanel from 'mixpanel-browser';
 import { useEffect, useMemo } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
@@ -28,6 +30,7 @@ export const CodeEditorEffects = () => {
   const initialCode = useRecoilValue(codeEditorInitialCodeAtom);
   const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
   const waitingForEditorClose = useRecoilValue(codeEditorWaitingForEditorClose);
+  const setLoading = useSetRecoilState(codeEditorLoadingAtom);
   const setPanelBottomActiveTab = useSetRecoilState(codeEditorPanelBottomActiveTabAtom);
   const setShowSaveChangesAlert = useSetRecoilState(codeEditorShowSaveChangesAlertAtom);
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
@@ -56,8 +59,13 @@ export const CodeEditorEffects = () => {
   }, [codeCell.pos.x, codeCell.pos.y, codeCell.sheetId, showCodeEditor, updateCodeEditor]);
 
   useEffect(() => {
-    updateCodeEditor(codeCell.sheetId, codeCell.pos.x, codeCell.pos.y, undefined, initialCode);
-  }, [codeCell.pos.x, codeCell.pos.y, codeCell.sheetId, initialCode, updateCodeEditor]);
+    if (codeCell.sheetId && initialCode !== undefined) {
+      setLoading(true);
+      quadraticCore.getCodeCell(codeCell.sheetId, codeCell.pos.x, codeCell.pos.y).then((codeCellCore) => {
+        updateCodeEditor(codeCell.sheetId, codeCell.pos.x, codeCell.pos.y, codeCellCore, initialCode);
+      });
+    }
+  }, [codeCell.sheetId, codeCell.pos.x, codeCell.pos.y, initialCode, setLoading, updateCodeEditor]);
 
   // handle someone trying to open a different code editor
   useEffect(() => {
