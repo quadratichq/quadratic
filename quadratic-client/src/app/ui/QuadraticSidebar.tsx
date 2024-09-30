@@ -1,8 +1,4 @@
-import {
-  isAvailableBecauseCanEditFile,
-  isAvailableBecauseFileLocationIsAccessibleAndWriteable,
-  provideFeedbackAction,
-} from '@/app/actions';
+import { isAvailableBecauseCanEditFile, isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
@@ -15,14 +11,11 @@ import {
   CodeCellOutlineOff,
   CodeCellOutlineOn,
   DatabaseIcon,
-  DocumentationIcon,
-  FeedbackIcon,
   ManageSearch,
   MemoryIcon,
 } from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { ShowAfter } from '@/shared/components/ShowAfter';
-import { DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
@@ -108,25 +101,6 @@ export const QuadraticSidebar = () => {
             onPressedChange={() => setEditorInteractionState((prev) => ({ ...prev, showCommandPalette: true }))}
           >
             <ManageSearch />
-          </SidebarToggle>
-        </SidebarTooltip>
-      </div>
-      <div className="mb-2 mt-auto flex flex-col items-center gap-1">
-        {provideFeedbackAction.isAvailable(isAvailableArgs) && (
-          <SidebarTooltip label={provideFeedbackAction.label}>
-            <SidebarToggle
-              pressed={editorInteractionState.showFeedbackMenu}
-              onPressedChange={() => setEditorInteractionState((prev) => ({ ...prev, showFeedbackMenu: true }))}
-            >
-              <FeedbackIcon />
-            </SidebarToggle>
-          </SidebarTooltip>
-        )}
-        <SidebarTooltip label="Documentation">
-          <SidebarToggle asChild>
-            <Link to={DOCUMENTATION_URL} target="_blank" rel="noreferrer" className="flex">
-              <DocumentationIcon />
-            </Link>
           </SidebarToggle>
         </SidebarTooltip>
       </div>

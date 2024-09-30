@@ -68,7 +68,7 @@ export const FeedbackMenu = () => {
           <DialogDescription>
             Or{' '}
             <a href={CONTACT_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
-              contact us by some other form
+              contact us directly
             </a>
             {', '}
             we would love to hear from you!

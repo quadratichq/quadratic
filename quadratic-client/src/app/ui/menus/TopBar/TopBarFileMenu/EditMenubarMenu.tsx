@@ -20,9 +20,6 @@ export const EditMenubarMenu = () => {
         <MenubarItemAction action={Action.ShowGoToMenu} actionArgs={undefined} />
         <MenubarItemAction action={Action.FindInCurrentSheet} actionArgs={undefined} />
         <MenubarItemAction action={Action.FindInAllSheets} actionArgs={undefined} />
-        <MenubarSeparator />
-        <MenubarItemAction action={Action.CopyAsPng} actionArgs={undefined} />
-        <MenubarItemAction action={Action.DownloadAsCsv} actionArgs={undefined} />
       </MenubarContent>
     </MenubarMenu>
   );
