@@ -13,7 +13,7 @@ describe('convertNumber', () => {
     expect(convertNumber('1234.5678', { commas: null, decimals: 5, format: null })).toBe('1234.56780');
     expect(
       convertNumber('0.01234', { commas: null, decimals: null, format: { type: 'PERCENTAGE', symbol: null } })
-    ).toBe('1.234%');
+    ).toBe('1.23%');
     expect(
       convertNumber('123456789', { commas: null, decimals: null, format: { type: 'EXPONENTIAL', symbol: null } })
     ).toBe('1.23e+8');
@@ -86,4 +86,12 @@ describe('convertNumber', () => {
       0
     )
   ).toEqual(undefined);
+  expect(
+    reduceDecimals(
+      '0.3333333333333333',
+      '33.33333333333333%',
+      { commas: null, decimals: null, format: { type: 'PERCENTAGE', symbol: null } },
+      4
+    )
+  ).toEqual({ number: '33.3333%', currentFractionDigits: 4 });
 });
