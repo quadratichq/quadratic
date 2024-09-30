@@ -89,6 +89,8 @@ pub type SheetRect = v1_5::SheetRect;
 pub type Offsets = v1_5::Offsets;
 pub type Borders = v1_5::Borders;
 pub type RunError = v1_5::RunError;
+pub type Span = v1_5::Span;
+pub type Axis = v1_5::Axis;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Format {
