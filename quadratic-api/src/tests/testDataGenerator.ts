@@ -135,7 +135,7 @@ function getDefaultConnectionTypeDetails(type: ConnectionType) {
         port: '5432',
         database: 'postgres',
         username: 'root',
-        password: 'password',
+        password: '',
       };
     case 'MSSQL':
       return {
@@ -144,6 +144,16 @@ function getDefaultConnectionTypeDetails(type: ConnectionType) {
         database: 'msdb',
         username: 'sa',
         password: 'yourStrong(!)Password',
+      };
+    case 'SNOWFLAKE':
+      return {
+        account: 'xxxx-us-east-1',
+        port: '433',
+        warehouse: 'compute',
+        database: 'msdb',
+        user: 'snowman',
+        role: 'ACCOUNTADMIN',
+        password: 'password',
       };
     default:
       throw new Error(`No default connection data for type ${type}`);

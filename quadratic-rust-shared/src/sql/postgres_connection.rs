@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use arrow::datatypes::Date32Type;
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
+use bytes::Bytes;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
@@ -26,7 +27,7 @@ pub struct PostgresConnection {
     pub password: Option<String>,
     pub host: String,
     pub port: Option<String>,
-    pub database: Option<String>,
+    pub database: String,
 }
 
 impl PostgresConnection {
@@ -35,7 +36,7 @@ impl PostgresConnection {
         password: Option<String>,
         host: String,
         port: Option<String>,
-        database: Option<String>,
+        database: String,
     ) -> PostgresConnection {
         PostgresConnection {
             username,
@@ -44,6 +45,15 @@ impl PostgresConnection {
             port,
             database,
         }
+    }
+
+    async fn query_all(pool: &mut PgConnection, sql: &str) -> Result<Vec<PgRow>> {
+        let rows = sqlx::query(sql)
+            .fetch_all(pool)
+            .await
+            .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
+
+        Ok(rows)
     }
 }
 
@@ -68,6 +78,7 @@ impl Connection for PostgresConnection {
     async fn connect(&self) -> Result<Self::Conn> {
         let mut options = PgConnectOptions::new();
         options = options.host(&self.host);
+        options = options.database(&self.database);
 
         if let Some(ref username) = self.username {
             options = options.username(username);
@@ -83,10 +94,6 @@ impl Connection for PostgresConnection {
             })?);
         }
 
-        if let Some(ref database) = self.database {
-            options = options.database(database);
-        }
-
         let pool = options
             .connect()
             .await
@@ -100,7 +107,7 @@ impl Connection for PostgresConnection {
         pool: &mut Self::Conn,
         sql: &str,
         max_bytes: Option<u64>,
-    ) -> Result<(Vec<Self::Row>, bool)> {
+    ) -> Result<(Bytes, bool, usize)> {
         let mut rows = vec![];
         let mut over_the_limit = false;
 
@@ -127,14 +134,13 @@ impl Connection for PostgresConnection {
                 .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
         }
 
-        Ok((rows, over_the_limit))
+        let (bytes, num_records) = Self::to_parquet(rows)?;
+
+        Ok((bytes, over_the_limit, num_records))
     }
 
     async fn schema(&self, pool: &mut Self::Conn) -> Result<DatabaseSchema> {
-        let database = self.database.as_ref().ok_or_else(|| {
-            SharedError::Sql(Sql::Schema("Database name is required for MySQL".into()))
-        })?;
-
+        let database = self.database.to_owned();
         let sql = format!("
             select c.table_catalog as database, c.table_schema as schema, c.table_name as table, c.column_name, c.udt_name as column_type, c.is_nullable
             from information_schema.tables as t inner join information_schema.columns as c on t.table_name = c.table_name
@@ -144,10 +150,10 @@ impl Connection for PostgresConnection {
                     and c.table_catalog = '{database}'
             order by c.table_name, c.ordinal_position, c.column_name");
 
-        let (rows, _) = self.query(pool, &sql, None).await?;
+        let rows = Self::query_all(pool, &sql).await?;
 
         let mut schema = DatabaseSchema {
-            database: self.database.to_owned().unwrap_or_default(),
+            database,
             tables: BTreeMap::new(),
         };
 
@@ -261,7 +267,6 @@ mod tests {
 
     use super::*;
     // use std::io::Read;
-    use tracing_test::traced_test;
 
     fn new_postgres_connection() -> PostgresConnection {
         PostgresConnection::new(
@@ -269,24 +274,16 @@ mod tests {
             Some("password".into()),
             "127.0.0.1".into(),
             Some("5433".into()),
-            Some("postgres-connection".into()),
+            "postgres-connection".into(),
         )
     }
 
     #[tokio::test]
-    #[traced_test]
     async fn test_postgres_connection() {
         let connection = new_postgres_connection();
         let mut pool = connection.connect().await.unwrap();
-        let (rows, _) = connection
-            // .query(pool, "select * from \"FileCheckpoint\" limit 10")
-            .query(
-                &mut pool,
-                "select * from all_native_data_types order by id limit 1",
-                None,
-            )
-            .await
-            .unwrap();
+        let sql = "select * from all_native_data_types limit 1";
+        let rows = PostgresConnection::query_all(&mut pool, sql).await.unwrap();
 
         for row in &rows {
             for (index, col) in row.columns().iter().enumerate() {
@@ -301,7 +298,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[traced_test]
     async fn test_postgres_schema() {
         let connection = new_postgres_connection();
         let mut pool = connection.connect().await.unwrap();
