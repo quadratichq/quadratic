@@ -4,7 +4,7 @@ import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWork
 import { Container, Rectangle, Sprite } from 'pixi.js';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsArray } from './CellsArray';
-import { CellsBorders } from './CellsBorders';
+import { Borders } from './borders/Borders';
 import { CellsFills } from './CellsFills';
 import { CellsImage } from './cellsImages/CellsImage';
 import { CellsImages } from './cellsImages/CellsImages';
@@ -26,7 +26,7 @@ export interface ErrorValidation {
 
 export class CellsSheet extends Container {
   private cellsFills: CellsFills;
-  private cellsBorders: CellsBorders;
+  private borders: Borders;
   cellsArray: CellsArray;
   cellsImages: CellsImages;
 
@@ -45,7 +45,7 @@ export class CellsSheet extends Container {
 
     this.cellsLabels = this.addChild(new CellsLabels(this));
     this.cellsArray = this.addChild(new CellsArray(this));
-    this.cellsBorders = this.addChild(new CellsBorders(this));
+    this.borders = this.addChild(new Borders(this));
     this.cellsMarkers = this.addChild(new CellsMarkers());
     this.cellsImages = new CellsImages(this);
     this.visible = false;
@@ -87,7 +87,7 @@ export class CellsSheet extends Container {
   }
 
   adjustOffsets() {
-    this.cellsBorders.draw();
+    this.borders.setDirty();
   }
 
   updateCellsArray() {
@@ -100,6 +100,7 @@ export class CellsSheet extends Container {
 
   update() {
     this.cellsFills.update();
+    this.borders.update();
   }
 
   private renderValidations = (

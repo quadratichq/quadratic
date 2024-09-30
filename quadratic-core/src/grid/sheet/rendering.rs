@@ -1,14 +1,13 @@
 use code_run::CodeRunResult;
 
 use super::Sheet;
-use crate::controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
-use crate::grid::borders::{get_render_horizontal_borders, get_render_vertical_borders};
 use crate::grid::formats::format::Format;
 use crate::grid::js_types::{
-    JsHtmlOutput, JsNumber, JsRenderBorders, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
+    JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
     JsRenderCodeCellState, JsRenderFill, JsSheetFill, JsValidationWarning,
 };
 use crate::grid::{code_run, CellAlign, CodeCellLanguage, CodeRun, Column};
+use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
 use crate::{CellValue, Pos, Rect, RunError, RunErrorMsg, Value};
 
 impl Sheet {
@@ -463,14 +462,6 @@ impl Sheet {
             .collect()
     }
 
-    /// Returns borders to render in a sheet.
-    pub fn render_borders(&self) -> JsRenderBorders {
-        JsRenderBorders {
-            horizontal: get_render_horizontal_borders(self),
-            vertical: get_render_vertical_borders(self),
-        }
-    }
-
     /// Send images in this sheet to the client. Note: we only have images
     /// inside CodeRuns. We may open this up in the future to allow images to be
     /// placed directly on the grid without a CodeRun. In that case, we'll need
@@ -503,6 +494,35 @@ impl Sheet {
     pub fn send_all_validations(&self) {
         if let Ok(validations) = serde_json::to_string(&self.validations.validations) {
             crate::wasm_bindings::js::jsSheetValidations(self.id.to_string(), validations);
+        }
+    }
+
+    // Sends an update to a code cell. Sends a message regardless of whether the
+    // code cell is still present.
+    pub fn send_code_cell(&self, pos: Pos) {
+        if let (Some(code_cell), Some(render_code_cell)) =
+            (self.edit_code_value(pos), self.get_render_code_cell(pos))
+        {
+            if let (Ok(code_cell), Ok(render_code_cell)) = (
+                serde_json::to_string(&code_cell),
+                serde_json::to_string(&render_code_cell),
+            ) {
+                crate::wasm_bindings::js::jsUpdateCodeCell(
+                    self.id.to_string(),
+                    pos.x,
+                    pos.y,
+                    Some(code_cell),
+                    Some(render_code_cell),
+                );
+            }
+        } else {
+            crate::wasm_bindings::js::jsUpdateCodeCell(
+                self.id.to_string(),
+                pos.x,
+                pos.y,
+                None,
+                None,
+            );
         }
     }
 
@@ -570,6 +590,8 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     use std::collections::HashSet;
 
     use chrono::Utc;
@@ -588,8 +610,7 @@ mod tests {
                 validation::{Validation, ValidationStyle},
                 validation_rules::{validation_logical::ValidationLogical, ValidationRule},
             },
-            Bold, CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, CodeRun, CodeRunResult,
-            Italic, RenderSize, Sheet,
+            Bold, CellVerticalAlign, CellWrap, Italic, RenderSize,
         },
         selection::Selection,
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},

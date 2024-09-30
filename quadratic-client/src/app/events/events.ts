@@ -3,9 +3,9 @@ import { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import { PanMode } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import {
+  JsBordersSheet,
   JsCodeCell,
   JsHtmlOutput,
-  JsRenderBorders,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
@@ -61,7 +61,7 @@ interface EventTypes {
   sheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
   htmlOutput: (html: JsHtmlOutput[]) => void;
   htmlUpdate: (html: JsHtmlOutput) => void;
-  sheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
+  bordersSheet: (sheetId: string, borders?: JsBordersSheet) => void;
   renderCells: (sheetId: string, renderCells: JsRenderCell[]) => void;
   renderCodeCells: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
   resizeRowHeights: (sheetId: string, rowHeights: JsRowHeight[]) => void;
@@ -125,8 +125,9 @@ interface EventTypes {
 
   // when validation changes state
   validation: (validation: string | boolean) => void;
+
   // context menu opens on a grid heading
-  gridContextMenu: (world: Point, column: number, row: number) => void;
+  gridContextMenu: (world: Point, row?: number, column?: number) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

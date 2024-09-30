@@ -8,9 +8,9 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import {
+  JsBordersSheet,
   JsCodeCell,
   JsHtmlOutput,
-  JsRenderBorders,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
@@ -55,13 +55,12 @@ declare var self: WorkerGlobalScope &
       sheetId: string,
       column: bigint | undefined,
       row: bigint | undefined,
-      size: number,
-      borders: JsRenderBorders
+      size: number
     ) => void;
     sendSheetHtml: (html: JsHtmlOutput[]) => void;
     sendUpdateHtml: (html: JsHtmlOutput) => void;
     sendGenerateThumbnail: () => void;
-    sendSheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
+    sendBordersSheet: (sheetId: string, borders: JsBordersSheet) => void;
     sendSheetRenderCells: (sheetId: string, renderCells: JsRenderCell[]) => void;
     sendSheetCodeCell: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
     sendSheetBoundsUpdateClient: (sheetBounds: SheetInfo) => void;
@@ -115,7 +114,7 @@ class CoreClient {
     self.sendSheetHtml = coreClient.sendSheetHtml;
     self.sendUpdateHtml = coreClient.sendUpdateHtml;
     self.sendGenerateThumbnail = coreClient.sendGenerateThumbnail;
-    self.sendSheetBorders = coreClient.sendSheetBorders;
+    self.sendBordersSheet = coreClient.sendBordersSheet;
     self.sendSheetRenderCells = coreClient.sendSheetRenderCells;
     self.sendSheetCodeCell = coreClient.sendSheetCodeCell;
     self.sendSheetBoundsUpdateClient = coreClient.sendSheetBoundsUpdate;
@@ -380,17 +379,8 @@ class CoreClient {
         await core.pasteFromClipboard(e.data.selection, e.data.plainText, e.data.html, e.data.special, e.data.cursor);
         return;
 
-      case 'clientCoreSetRegionBorders':
-        await core.setRegionBorders(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.selection,
-          e.data.style,
-          e.data.cursor
-        );
+      case 'clientCoreSetBorders':
+        await core.setBorders(e.data.selection, e.data.borderSelection, e.data.style, e.data.cursor);
         return;
 
       case 'clientCoreSetCellRenderResize':
@@ -574,6 +564,22 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreDeleteColumns':
+        core.deleteColumns(e.data.sheetId, e.data.columns, e.data.cursor);
+        return;
+
+      case 'clientCoreDeleteRows':
+        core.deleteRows(e.data.sheetId, e.data.rows, e.data.cursor);
+        return;
+
+      case 'clientCoreInsertColumn':
+        core.insertColumn(e.data.sheetId, e.data.column, e.data.right, e.data.cursor);
+        return;
+
+      case 'clientCoreInsertRow':
+        core.insertRow(e.data.sheetId, e.data.row, e.data.below, e.data.cursor);
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core
@@ -633,20 +639,13 @@ class CoreClient {
     this.send({ type: 'coreClientSetCursorSelection', selection });
   };
 
-  sendSheetOffsets = (
-    sheetId: string,
-    column: bigint | undefined,
-    row: bigint | undefined,
-    size: number,
-    borders: JsRenderBorders
-  ) => {
+  sendSheetOffsets = (sheetId: string, column: bigint | undefined, row: bigint | undefined, size: number) => {
     this.send({
       type: 'coreClientSheetOffsets',
       sheetId,
       column: column === undefined ? undefined : Number(column),
       row: row === undefined ? undefined : Number(row),
       size,
-      borders,
     });
   };
 
@@ -662,8 +661,8 @@ class CoreClient {
     this.send({ type: 'coreClientGenerateThumbnail' });
   };
 
-  sendSheetBorders = (sheetId: string, borders: JsRenderBorders) => {
-    this.send({ type: 'coreClientSheetBorders', sheetId, borders });
+  sendBordersSheet = (sheetId: string, borders: JsBordersSheet) => {
+    this.send({ type: 'coreClientBordersSheet', sheetId, borders });
   };
 
   sendSheetRenderCells = (sheetId: string, renderCells: JsRenderCell[]) => {

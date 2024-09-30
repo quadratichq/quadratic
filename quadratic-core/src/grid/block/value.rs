@@ -26,7 +26,11 @@ impl BlockContent for CellValueBlockContent {
             Self::Values(array) => array.len(),
         }
     }
-
+    fn delta_len(&mut self, delta: isize) {
+        match self {
+            Self::Values(array) => array.extend(vec![CellValue::default(); delta as usize]),
+        }
+    }
     fn get(&self, index: usize) -> Option<Self::Item> {
         (index < self.len()).then(|| match self {
             Self::Values(array) => array[index].clone(),

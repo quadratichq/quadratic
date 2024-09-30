@@ -2,6 +2,7 @@ use std::collections::{btree_map, BTreeMap, HashSet};
 use std::str::FromStr;
 
 use bigdecimal::{BigDecimal, RoundingMode};
+use borders::Borders;
 use indexmap::IndexMap;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -15,16 +16,17 @@ use super::ids::SheetId;
 use super::js_types::{CellFormatSummary, CellType, JsCellValue};
 use super::resize::ResizeMap;
 use super::{CellWrap, CodeRun, NumericFormatKind};
-use crate::grid::{borders, SheetBorders};
 use crate::selection::Selection;
 use crate::sheet_offsets::SheetOffsets;
 use crate::{Array, CellValue, Pos, Rect};
 
+pub mod borders;
 pub mod bounds;
 pub mod cell_array;
 pub mod cell_values;
 pub mod clipboard;
 pub mod code;
+pub mod col_row;
 pub mod formats;
 pub mod formatting;
 pub mod rendering;
@@ -48,7 +50,6 @@ pub struct Sheet {
 
     #[serde(with = "crate::util::btreemap_serde")]
     pub columns: BTreeMap<i64, Column>,
-    pub(super) borders: SheetBorders,
 
     #[serde(with = "crate::util::indexmap_serde")]
     pub code_runs: IndexMap<Pos, CodeRun>,
@@ -87,6 +88,8 @@ pub struct Sheet {
     pub(super) format_bounds: GridBounds,
 
     pub(super) rows_resize: ResizeMap,
+
+    pub borders: Borders,
 }
 impl Sheet {
     /// Constructs a new empty sheet.
@@ -100,7 +103,6 @@ impl Sheet {
             offsets: SheetOffsets::default(),
 
             columns: BTreeMap::new(),
-            borders: SheetBorders::new(),
 
             code_runs: IndexMap::new(),
 
@@ -114,6 +116,8 @@ impl Sheet {
 
             validations: Validations::default(),
             rows_resize: ResizeMap::default(),
+
+            borders: Borders::default(),
         }
     }
 
@@ -197,16 +201,6 @@ impl Sheet {
 
     pub fn iter_columns(&self) -> impl Iterator<Item = (&i64, &Column)> {
         self.columns.iter()
-    }
-
-    /// Sets or deletes borders in a region.
-    pub fn set_region_borders(&mut self, rect: &Rect, borders: SheetBorders) -> SheetBorders {
-        borders::set_rect_borders(self, rect, borders)
-    }
-
-    /// Gets borders in a region.
-    pub fn get_rect_borders(&self, rect: Rect) -> SheetBorders {
-        borders::get_rect_borders(self, &rect)
     }
 
     /// Returns the cell_value at a Pos using both column.values and code_runs (i.e., what would be returned if code asked
@@ -348,16 +342,6 @@ impl Sheet {
         A::column_data_mut(column).set(pos.y, value)
     }
 
-    /// Returns all cell borders.
-    pub fn borders(&self) -> &SheetBorders {
-        &self.borders
-    }
-
-    /// Returns all cell borders.
-    pub fn mut_borders(&mut self) -> &mut SheetBorders {
-        &mut self.borders
-    }
-
     /// Returns a column of a sheet from the column index.
     pub(crate) fn get_column(&self, index: i64) -> Option<&Column> {
         self.columns.get(&index)
@@ -395,8 +379,8 @@ impl Sheet {
             return Some(decimals);
         }
 
-        // if currency, then use the default 2 decimal places
-        if kind == NumericFormatKind::Currency {
+        // if currency and percentage, then use the default 2 decimal places
+        if kind == NumericFormatKind::Currency || kind == NumericFormatKind::Percentage {
             return Some(2);
         }
 
@@ -587,7 +571,7 @@ mod test {
             2,
             "0.23",
             NumericFormatKind::Percentage,
-            Some(0),
+            Some(2),
         );
 
         // validate rounding
@@ -607,7 +591,7 @@ mod test {
             2,
             "9.1234567891",
             NumericFormatKind::Percentage,
-            Some(7),
+            Some(2),
         );
 
         assert_decimal_places_for_number(

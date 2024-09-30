@@ -54,7 +54,7 @@ export const connectionsByType: Record<ConnectionType, ConnectionTypeData<any>> 
     useConnectionForm: Mysql.useConnectionForm,
   },
   MSSQL: {
-    name: 'MsSQL',
+    name: 'MS SQL Server',
     Logo: MssqlLogo,
     ConnectionForm: Mssql.ConnectionForm,
     useConnectionForm: Mssql.useConnectionForm,

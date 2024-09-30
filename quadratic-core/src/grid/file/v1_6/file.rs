@@ -1,126 +1,153 @@
-use std::str::FromStr;
-
-use bigdecimal::BigDecimal;
+use anyhow::Result;
 
 use super::schema::{self as current};
-use crate::grid::{CodeCellLanguage, ConnectionKind};
-use crate::{CellValue, CodeCellValue};
+use crate::{
+    color::Rgba,
+    grid::{
+        file::{
+            serialize::borders::export_borders,
+            v1_7::schema::{self as v1_7},
+        },
+        sheet::borders::{BorderStyle, Borders, CellBorderLine},
+    },
+};
 
-pub fn export_cell_value(cell_value: CellValue) -> current::CellValue {
-    match cell_value {
-        CellValue::Blank => current::CellValue::Blank,
-        CellValue::Text(text) => current::CellValue::Text(text),
-        CellValue::Number(number) => export_cell_value_number(number),
-        CellValue::Html(html) => current::CellValue::Html(html),
-        CellValue::Code(cell_code) => current::CellValue::Code(current::CodeCell {
-            code: cell_code.code,
-            language: match cell_code.language {
-                CodeCellLanguage::Python => current::CodeCellLanguage::Python,
-                CodeCellLanguage::Formula => current::CodeCellLanguage::Formula,
-                CodeCellLanguage::Javascript => current::CodeCellLanguage::Javascript,
-                CodeCellLanguage::Connection { kind, id } => {
-                    current::CodeCellLanguage::Connection {
-                        kind: match kind {
-                            ConnectionKind::Postgres => current::ConnectionKind::Postgres,
-                            ConnectionKind::Mysql => current::ConnectionKind::Mysql,
-                            ConnectionKind::Mssql => current::ConnectionKind::Mssql,
-                            ConnectionKind::Snowflake => current::ConnectionKind::Snowflake,
-                        },
-                        id,
-                    }
-                }
-            },
-        }),
-        CellValue::Logical(logical) => current::CellValue::Logical(logical),
-        CellValue::Instant(instant) => current::CellValue::Instant(instant.to_string()),
-        CellValue::Duration(duration) => current::CellValue::Duration(duration.to_string()),
-        CellValue::Date(d) => current::CellValue::Date(d),
-        CellValue::Time(t) => current::CellValue::Time(t),
-        CellValue::DateTime(dt) => current::CellValue::DateTime(dt),
-        CellValue::Error(error) => {
-            current::CellValue::Error(current::RunError::from_grid_run_error(*error))
-        }
-        CellValue::Image(image) => current::CellValue::Image(image.clone()),
+// index for old borders enum
+// enum CellSide {
+//     Left = 0,
+//     Top = 1,
+//     Right = 2,
+//     Bottom = 3,
+// }
+
+fn upgrade_borders(borders: current::Borders) -> Result<v1_7::BordersSchema> {
+    fn convert_border_style(border_style: current::CellBorder) -> Result<BorderStyle> {
+        let mut color = Rgba::color_from_str(&border_style.color)?;
+
+        // the alpha was set incorrectly to 1; should be 255
+        color.alpha = 255;
+
+        let line = match border_style.line.as_str() {
+            "line1" => CellBorderLine::Line1,
+            "line2" => CellBorderLine::Line2,
+            "line3" => CellBorderLine::Line3,
+            "dotted" => CellBorderLine::Dotted,
+            "dashed" => CellBorderLine::Dashed,
+            "double" => CellBorderLine::Double,
+            _ => return Err(anyhow::anyhow!("Invalid border line style")),
+        };
+        Ok(BorderStyle { color, line })
     }
-}
 
-// Change BigDecimal to a current::CellValue (this will be used to convert BD to
-// various CellValue::Number* types, such as NumberF32, etc.)
-pub fn export_cell_value_number(number: BigDecimal) -> current::CellValue {
-    current::CellValue::Number(number.to_string())
-}
-
-// Change BigDecimal's serialization to a grid::CellValue (this will be used to
-// convert BD to various CellValue::Number* types, such as NumberF32, etc.)
-pub fn import_cell_value_number(number: String) -> CellValue {
-    CellValue::Number(BigDecimal::from_str(&number).unwrap_or_default())
-}
-
-pub fn import_cell_value(value: &current::CellValue) -> CellValue {
-    match value {
-        current::CellValue::Blank => CellValue::Blank,
-        current::CellValue::Text(text) => CellValue::Text(text.to_owned()),
-        current::CellValue::Number(number) => import_cell_value_number(number.to_owned()),
-        current::CellValue::Html(html) => CellValue::Html(html.to_owned()),
-        current::CellValue::Code(code_cell) => CellValue::Code(CodeCellValue {
-            code: code_cell.code.to_owned(),
-            language: match code_cell.language {
-                current::CodeCellLanguage::Python => CodeCellLanguage::Python,
-                current::CodeCellLanguage::Formula => CodeCellLanguage::Formula,
-                current::CodeCellLanguage::Javascript => CodeCellLanguage::Javascript,
-                current::CodeCellLanguage::Connection { ref kind, ref id } => {
-                    CodeCellLanguage::Connection {
-                        kind: match kind {
-                            current::ConnectionKind::Postgres => ConnectionKind::Postgres,
-                            current::ConnectionKind::Mysql => ConnectionKind::Mysql,
-                            current::ConnectionKind::Mssql => ConnectionKind::Mssql,
-                            current::ConnectionKind::Snowflake => ConnectionKind::Snowflake,
-                        },
-                        id: id.clone(),
-                    }
+    let mut borders_new = Borders::default();
+    for (col_id, sheet_borders) in borders {
+        if sheet_borders.is_empty() {
+            continue;
+        }
+        let col: i64 = col_id
+            .parse::<i64>()
+            .expect("Failed to parse col_id as i64");
+        for (row, mut row_borders) in sheet_borders {
+            if let Some(left_old) = row_borders[0].take() {
+                if let Ok(style) = convert_border_style(left_old) {
+                    borders_new.set(col, row, None, None, Some(style), None);
                 }
-            },
-        }),
-        current::CellValue::Logical(logical) => CellValue::Logical(*logical),
-        current::CellValue::Instant(instant) => {
-            CellValue::Instant(serde_json::from_str(instant).unwrap_or_default())
+            }
+            if let Some(right_old) = row_borders[2].take() {
+                if let Ok(style) = convert_border_style(right_old) {
+                    borders_new.set(col, row, None, None, None, Some(style));
+                }
+            }
+            if let Some(top_old) = row_borders[1].take() {
+                if let Ok(style) = convert_border_style(top_old) {
+                    borders_new.set(col, row, Some(style), None, None, None);
+                }
+            }
+            if let Some(bottom_old) = row_borders[3].take() {
+                if let Ok(style) = convert_border_style(bottom_old) {
+                    borders_new.set(col, row, None, Some(style), None, None);
+                }
+            }
         }
-        current::CellValue::Duration(duration) => {
-            CellValue::Duration(serde_json::from_str(duration).unwrap_or_default())
-        }
-        current::CellValue::Date(date) => CellValue::Date(*date),
-        current::CellValue::Time(time) => CellValue::Time(*time),
-        current::CellValue::DateTime(dt) => CellValue::DateTime(*dt),
-        current::CellValue::Error(error) => CellValue::Error(Box::new((*error).clone().into())),
-        current::CellValue::Image(text) => CellValue::Image(text.to_owned()),
     }
+
+    let borders = export_borders(borders_new);
+    Ok(borders)
+}
+
+pub fn upgrade_sheet(sheet: current::Sheet) -> Result<v1_7::SheetSchema> {
+    Ok(v1_7::SheetSchema {
+        id: sheet.id,
+        name: sheet.name,
+        color: sheet.color,
+        order: sheet.order,
+        offsets: sheet.offsets,
+        columns: sheet.columns,
+        code_runs: sheet.code_runs,
+        formats_all: sheet.formats_all,
+        formats_columns: sheet.formats_columns,
+        formats_rows: sheet.formats_rows,
+        rows_resize: sheet.rows_resize,
+        validations: sheet.validations,
+        borders: upgrade_borders(sheet.borders)?,
+    })
+}
+
+pub fn upgrade(grid: current::GridSchema) -> Result<v1_7::GridSchema> {
+    let new_grid = v1_7::GridSchema {
+        version: Some("1.7".to_string()),
+        sheets: grid
+            .sheets
+            .into_iter()
+            .map(upgrade_sheet)
+            .collect::<Result<_, _>>()?,
+    };
+    Ok(new_grid)
 }
 
 #[cfg(test)]
 mod tests {
-    use anyhow::{anyhow, Result};
     use serial_test::parallel;
 
-    use crate::grid::file::v1_5::schema::GridSchema;
+    use super::*;
 
-    const V1_5_FILE: &str =
-        include_str!("../../../../../quadratic-rust-shared/data/grid/v1_5_simple.grid");
+    use crate::{
+        controller::GridController,
+        grid::file::{export, import},
+    };
 
-    fn import(file_contents: &str) -> Result<GridSchema> {
-        serde_json::from_str::<GridSchema>(file_contents)
-            .map_err(|e| anyhow!("Could not import file: {:?}", e))
-    }
+    const V1_5_FILE: &[u8] =
+        include_bytes!("../../../../../quadratic-rust-shared/data/grid/v1_5_simple.grid");
 
-    fn export(grid_schema: &GridSchema) -> Result<String> {
-        serde_json::to_string(grid_schema).map_err(|e| anyhow!("Could not export file: {:?}", e))
-    }
+    const V1_6_BORDERS_FILE: &[u8] = include_bytes!("../../../../test-files/borders_1_6.grid");
 
     #[test]
     #[parallel]
     fn import_and_export_a_v1_5_file() {
-        let imported = import(V1_5_FILE).unwrap();
-        let exported = export(&imported).unwrap();
-        let imported_copy = import(&exported).unwrap();
+        let imported = import(V1_5_FILE.to_vec()).unwrap();
+        let exported = export(imported.clone()).unwrap();
+        let imported_copy = import(exported).unwrap();
         assert_eq!(imported_copy, imported);
+    }
+
+    #[test]
+    #[parallel]
+    fn import_and_export_a_v1_6_borders_file() {
+        let imported = import(V1_6_BORDERS_FILE.to_vec()).unwrap();
+        let exported = export(imported.clone()).unwrap();
+        let imported_copy = import(exported).unwrap();
+        assert_eq!(imported_copy, imported);
+
+        let gc = GridController::from_grid(imported, 0);
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet(sheet_id);
+
+        let border_0_0 = sheet.borders.get(0, 0);
+        assert_eq!(border_0_0.top.unwrap().line, CellBorderLine::Line1);
+        assert_eq!(border_0_0.top.unwrap().color, Rgba::new(0, 0, 0, 255));
+        assert_eq!(border_0_0.left.unwrap().line, CellBorderLine::Line1);
+        assert_eq!(border_0_0.left.unwrap().color, Rgba::new(0, 0, 0, 255));
+        assert_eq!(border_0_0.bottom, None);
+        assert_eq!(border_0_0.right, None);
     }
 }
