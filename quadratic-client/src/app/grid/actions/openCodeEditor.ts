@@ -49,6 +49,7 @@ export const openCodeEditor = async () => {
     }));
     setCodeEditorState({
       ...codeEditorState,
+      initialCode: '',
       codeCell: {
         sheetId: sheets.current,
         pos: { x, y },
