@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use arrow::datatypes::Date32Type;
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
+use bytes::Bytes;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use futures_util::{StreamExt, TryStreamExt};
 use serde::{Deserialize, Serialize};
@@ -25,7 +26,7 @@ pub struct MsSqlConnection {
     pub password: Option<String>,
     pub host: String,
     pub port: Option<String>,
-    pub database: Option<String>,
+    pub database: String,
 }
 
 impl MsSqlConnection {
@@ -34,7 +35,7 @@ impl MsSqlConnection {
         password: Option<String>,
         host: String,
         port: Option<String>,
-        database: Option<String>,
+        database: String,
     ) -> MsSqlConnection {
         MsSqlConnection {
             username,
@@ -43,6 +44,24 @@ impl MsSqlConnection {
             port,
             database,
         }
+    }
+
+    async fn query_all(client: &mut Client<Compat<TcpStream>>, sql: &str) -> Result<Vec<Row>> {
+        let mut rows = vec![];
+        let mut row_stream = client
+            .query(sql, &[])
+            .await
+            .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?
+            .into_row_stream();
+
+        while let Some(row_result) = row_stream.next().await {
+            match row_result {
+                Ok(row) => rows.push(row),
+                Err(e) => return Err(SharedError::Sql(Sql::Query(e.to_string()))),
+            }
+        }
+
+        Ok(rows)
     }
 }
 
@@ -66,17 +85,13 @@ impl Connection for MsSqlConnection {
 
     async fn connect(&self) -> Result<Client<Compat<TcpStream>>> {
         let mut config = Config::new();
-
         config.host(&self.host);
+        config.database(&self.database);
 
         if let Some(port) = &self.port {
             config.port(port.parse::<u16>().map_err(|_| {
                 SharedError::Sql(Sql::Connect("Could not parse port into a number".into()))
             })?);
-        }
-
-        if let Some(database) = &self.database {
-            config.database(database);
         }
 
         if let Some(username) = &self.username {
@@ -108,18 +123,18 @@ impl Connection for MsSqlConnection {
         client: &mut Self::Conn,
         sql: &str,
         max_bytes: Option<u64>,
-    ) -> Result<(Vec<Row>, bool)> {
+    ) -> Result<(Bytes, bool, usize)> {
         let mut rows = vec![];
         let mut over_the_limit = false;
 
-        let mut row_stream = client
-            .query(sql, &[])
-            .await
-            .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?
-            .into_row_stream();
-
         if let Some(max_bytes) = max_bytes {
             let mut bytes = 0;
+
+            let mut row_stream = client
+                .query(sql, &[])
+                .await
+                .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?
+                .into_row_stream();
 
             while let Some(row_result) = row_stream.next().await {
                 match row_result {
@@ -137,22 +152,16 @@ impl Connection for MsSqlConnection {
                 }
             }
         } else {
-            while let Some(row_result) = row_stream.next().await {
-                match row_result {
-                    Ok(row) => rows.push(row),
-                    Err(e) => return Err(SharedError::Sql(Sql::Query(e.to_string()))),
-                }
-            }
+            rows = Self::query_all(client, sql).await?;
         }
 
-        Ok((rows, over_the_limit))
+        let (bytes, num_records) = Self::to_parquet(rows)?;
+
+        Ok((bytes, over_the_limit, num_records))
     }
 
     async fn schema(&self, client: &mut Self::Conn) -> Result<DatabaseSchema> {
-        let database = self.database.as_ref().ok_or_else(|| {
-            SharedError::Sql(Sql::Schema("Database name is required for MsSQL".into()))
-        })?;
-
+        let database = self.database.to_owned();
         let sql = format!(
             "
 SELECT
@@ -184,38 +193,30 @@ ORDER BY
             .map_err(|e| SharedError::Sql(Sql::Schema(e.to_string())))?;
 
         let mut schema = DatabaseSchema {
-            database: self.database.to_owned().unwrap_or_default(),
+            database: self.database.to_owned(),
             tables: BTreeMap::new(),
         };
 
         for (index, row) in rows.into_iter().enumerate() {
-            let default_schema_name = format!("Unknown Schema - {}", index);
-            let schema_name: &str = row.get(1).unwrap_or(&default_schema_name);
-
-            let default_table_name = format!("Unknown Table - {}", index);
-            let table_name: &str = row.get(2).unwrap_or(&default_table_name);
-
-            let default_column_name = format!("Unknown Column - {}", index);
-            let column_name: &str = row.get(3).unwrap_or(&default_column_name);
-
-            let default_column_type = format!("Unknown Type - {}", index);
-            let column_type: &str = row.get(4).unwrap_or(&default_column_type);
-
-            let is_nullable: &str = row.get(5).unwrap_or("NO");
+            let safe_get = |data: Option<&str>, kind: &str| {
+                data.map(|s| s.to_string())
+                    .unwrap_or(format!("Unknown {kind} - {index}"))
+            };
+            let table_name = safe_get(row.get(2), "Table");
 
             schema
                 .tables
-                .entry(table_name.into())
+                .entry(table_name.to_owned())
                 .or_insert_with(|| SchemaTable {
-                    name: table_name.into(),
-                    schema: schema_name.into(),
+                    name: table_name,
+                    schema: safe_get(row.get(1), "Schema"),
                     columns: vec![],
                 })
                 .columns
                 .push(SchemaColumn {
-                    name: column_name.into(),
-                    r#type: column_type.into(),
-                    is_nullable: is_nullable.to_uppercase() == "YES",
+                    name: safe_get(row.get(3), "Column"),
+                    r#type: safe_get(row.get(4), "Type"),
+                    is_nullable: row.get(5).map_or("NO", |v| v).to_uppercase() == "YES",
                 });
         }
 
@@ -314,7 +315,6 @@ mod tests {
     use super::*;
     // use std::io::Read;
     use bigdecimal::BigDecimal;
-    use tracing_test::traced_test;
 
     fn new_mssql_connection() -> MsSqlConnection {
         MsSqlConnection::new(
@@ -322,7 +322,7 @@ mod tests {
             Some("yourStrong(!)Password".into()),
             "0.0.0.0".into(),
             Some("1433".into()),
-            Some("AllTypes".into()),
+            "AllTypes".into(),
         )
     }
 
@@ -334,7 +334,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[traced_test]
     async fn test_mssql_connection() {
         let (_, client) = setup().await;
 
@@ -342,15 +341,10 @@ mod tests {
     }
 
     #[tokio::test]
-    #[traced_test]
     async fn test_mssql_query_to_arrow() {
-        let (connection, client) = setup().await;
-        let (rows, over_the_limit) = connection
-            .query(
-                &mut client.unwrap(),
-                "SELECT TOP 1 * FROM [dbo].[all_native_data_types] ORDER BY id",
-                None,
-            )
+        let (_, client) = setup().await;
+        let sql = "SELECT TOP 1 * FROM [dbo].[all_native_data_types] ORDER BY id";
+        let rows = MsSqlConnection::query_all(&mut client.unwrap(), sql)
             .await
             .unwrap();
 
@@ -364,8 +358,6 @@ mod tests {
         let row = &rows[0];
         let columns = row.columns();
         let to_arrow = |index: usize| MsSqlConnection::to_arrow(row, &columns[index], index);
-
-        assert!(!over_the_limit);
 
         assert_eq!(to_arrow(0), ArrowType::Int32(1));
         assert_eq!(to_arrow(1), ArrowType::UInt8(255));
@@ -444,7 +436,6 @@ mod tests {
     }
 
     #[tokio::test]
-    #[traced_test]
     async fn test_mysql_schema() {
         let connection = new_mssql_connection();
         let mut client = connection.connect().await.unwrap();

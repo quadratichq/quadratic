@@ -6,7 +6,8 @@ const codeCellsById = {
   Python: { id: 'Python', label: 'Python', type: undefined },
   POSTGRES: { id: 'POSTGRES', label: 'Postgres', type: 'connection' },
   MYSQL: { id: 'MYSQL', label: 'MySQL', type: 'connection' },
-  MSSQL: { id: 'MSSQL', label: 'MsSQL', type: 'connection' },
+  MSSQL: { id: 'MSSQL', label: 'MS SQL Server', type: 'connection' },
+  SNOWFLAKE: { id: 'SNOWFLAKE', label: 'SNOWFLAKE', type: 'connection' },
 } as const;
 export type CodeCellIds = keyof typeof codeCellsById;
 // type CodeCell = (typeof codeCellsById)[CodeCellIds];
@@ -53,6 +54,8 @@ export const getLanguageForMonaco = (language?: CodeCellLanguage): string => {
       case 'MYSQL':
         return 'mysql';
       case 'MSSQL':
+        return 'sql';
+      case 'SNOWFLAKE':
         return 'sql';
     }
   }

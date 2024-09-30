@@ -29,6 +29,8 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
     syntax = 'sql';
   } else if (syntax === 'mssql') {
     syntax = 'sql';
+  } else if (syntax === 'snowflake') {
+    syntax = 'sql';
   }
 
   return (
