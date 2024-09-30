@@ -1,6 +1,7 @@
 import { events } from '@/app/events/events';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { isMac } from '@/shared/utils/isMac';
 import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { sheets } from '../../../grid/controller/Sheets';
@@ -50,11 +51,11 @@ export class PointerDown {
     this.positionRaw = world;
     const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
 
-    const rightClick = event.button === 2 || (event.button === 0 && event.ctrlKey);
+    const isRightClick = event.button === 2 || (isMac && event.button === 0 && event.ctrlKey);
 
     // If right click and we have a multi cell selection.
     // If the user has clicked inside the selection.
-    if (rightClick) {
+    if (isRightClick) {
       if (!cursor.includesCell(column, row)) {
         cursor.changePosition({
           cursorPosition: { x: column, y: row },
@@ -77,7 +78,7 @@ export class PointerDown {
 
       if (this.previousPosition && column === this.previousPosition.x && row === this.previousPosition.y) {
         // ignore right click
-        if (rightClick) {
+        if (isRightClick) {
           return;
         }
         event.preventDefault();
