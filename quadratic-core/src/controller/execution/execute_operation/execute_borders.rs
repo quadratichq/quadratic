@@ -90,9 +90,7 @@ impl GridController {
                         borders,
                     });
 
-                if (cfg!(test) || cfg!(target_family = "wasm")) && !transaction.is_server() {
-                    sheet.borders.send_sheet_borders(selection.sheet_id);
-                }
+                transaction.sheet_borders.insert(selection.sheet_id);
             }
             _ => unreachable!("Expected Operation::SetBordersSelection"),
         }

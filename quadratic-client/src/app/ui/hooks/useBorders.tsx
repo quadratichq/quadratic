@@ -21,7 +21,7 @@ export const useBorders = (): UseBordersResults => {
   const setBorderMenuState = useSetRecoilState(borderMenuAtom);
 
   const changeBorders = useCallback(
-    (options: ChangeBorder): void => {
+    (options: ChangeBorder) => {
       setBorderMenuState((prev) => {
         const selection = options.selection ?? prev.selection;
         const color = options.color ?? prev.color;

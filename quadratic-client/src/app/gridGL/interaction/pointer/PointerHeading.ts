@@ -127,7 +127,8 @@ export class PointerHeading {
       // then it add or removes the clicked column or row. If shift is pressed,
       // then it selects all columns or rows between the last clicked column or
       // row and the current one.
-      if (event.ctrlKey || event.metaKey) {
+      const isRightClick = (event as MouseEvent).button === 2;
+      if (event.ctrlKey || event.metaKey || isRightClick) {
         if (intersects.column !== undefined) {
           let column = intersects.column;
           const columns = cursor.columnRow?.columns || [];
@@ -144,13 +145,23 @@ export class PointerHeading {
             }
           } else {
             if (columns.includes(column)) {
-              selectColumns(
-                columns.filter((c) => c !== column),
-                undefined,
-                true
-              );
+              if (isRightClick || event.ctrlKey) {
+                events.emit('gridContextMenu', world, column, undefined);
+              } else {
+                selectColumns(
+                  columns.filter((c) => c !== column),
+                  undefined,
+                  true
+                );
+              }
             } else {
-              selectColumns([...columns, column], undefined, true);
+              if (isRightClick || event.ctrlKey) {
+                selectColumns([column], undefined, true);
+                // need the timeout to allow the cursor events to complete
+                setTimeout(() => events.emit('gridContextMenu', world, column, undefined));
+              } else {
+                selectColumns([...columns, column], undefined, true);
+              }
             }
           }
         } else if (intersects.row !== undefined) {
@@ -169,13 +180,23 @@ export class PointerHeading {
             }
           } else {
             if (rows.includes(row)) {
-              selectRows(
-                rows.filter((c) => c !== row),
-                undefined,
-                true
-              );
+              if (isRightClick || event.ctrlKey) {
+                events.emit('gridContextMenu', world, undefined, row);
+              } else {
+                selectRows(
+                  rows.filter((c) => c !== row),
+                  undefined,
+                  true
+                );
+              }
             } else {
-              selectRows([...rows, row], undefined, true);
+              if (isRightClick || event.ctrlKey) {
+                selectRows([row], undefined, true);
+                // need the timeout to allow the cursor events to complete
+                setTimeout(() => events.emit('gridContextMenu', world, undefined, row));
+              } else {
+                selectRows([...rows, row], undefined, true);
+              }
             }
           }
         }
@@ -200,11 +221,13 @@ export class PointerHeading {
       else {
         if (intersects.column !== undefined) {
           selectColumns([intersects.column]);
+          // check if we're trying to open the context menu
         } else if (intersects.row !== undefined) {
           selectRows([intersects.row]);
         }
       }
     }
+
     return true;
   }
 

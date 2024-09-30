@@ -5,7 +5,6 @@ use crate::controller::operations::operation::Operation;
 use crate::controller::transaction_types::JsCodeResult;
 use crate::controller::GridController;
 use crate::error_core::{CoreError, Result};
-use crate::grid::js_types::JsHtmlOutput;
 use crate::grid::{CodeCellLanguage, CodeRun, CodeRunResult};
 use crate::{Array, CellValue, Pos, RunError, RunErrorMsg, SheetPos, SheetRect, Span, Value};
 
@@ -40,23 +39,8 @@ impl GridController {
                 .unwrap_or(sheet.code_runs.len()),
         );
 
-        let mut update_html = false;
-        let mut update_image = false;
         let old_code_run = if let Some(new_code_run) = &new_code_run {
-            if new_code_run.is_html()
-                && (cfg!(target_family = "wasm") || cfg!(test))
-                && !transaction.is_server()
-            {
-                update_html = true;
-            }
-            if new_code_run.is_image()
-                && (cfg!(target_family = "wasm") || cfg!(test))
-                && !transaction.is_server()
-            {
-                update_image = true;
-            }
             let (old_index, old_code_run) = sheet.code_runs.insert_full(pos, new_code_run.clone());
-
             // keep the orderings of the code runs consistent, particularly when undoing/redoing
             let index = if index > sheet.code_runs.len() - 1 {
                 sheet.code_runs.len() - 1
@@ -68,30 +52,9 @@ impl GridController {
         } else {
             sheet.code_runs.shift_remove(&pos)
         };
+
         if old_code_run == new_code_run {
             return;
-        }
-
-        if cfg!(target_family = "wasm") || cfg!(test) {
-            // if there was html here, send the html update to the client
-            if let Some(old_code_run) = &old_code_run {
-                if old_code_run.is_html() && !transaction.is_server() {
-                    update_html = true;
-                }
-                if old_code_run.is_image() && !transaction.is_server() {
-                    update_image = true;
-                }
-                // if the code run is being removed, tell the client that there is no longer a code cell
-                if new_code_run.is_none() && !transaction.is_server() {
-                    crate::wasm_bindings::js::jsUpdateCodeCell(
-                        sheet_id.to_string(),
-                        sheet_pos.x,
-                        sheet_pos.y,
-                        None,
-                        None,
-                    );
-                }
-            }
         }
 
         let sheet_rect = match (&old_code_run, &new_code_run) {
@@ -114,64 +77,10 @@ impl GridController {
             }
         };
 
-        if update_html {
-            let html = sheet.get_single_html_output(pos).unwrap_or(JsHtmlOutput {
-                sheet_id: sheet_id.to_string(),
-                x: pos.x,
-                y: pos.y,
-                html: None,
-                w: None,
-                h: None,
-            });
-            if let Ok(html) = serde_json::to_string(&html) {
-                crate::wasm_bindings::js::jsUpdateHtml(html);
-            } else {
-                dbgjs!("Error serializing html");
-            }
-        }
-
-        if update_image {
-            self.send_image(sheet_pos);
-        }
-
-        transaction.forward_operations.push(Operation::SetCodeRun {
-            sheet_pos,
-            code_run: new_code_run,
-            index,
-        });
-
-        transaction.reverse_operations.push(Operation::SetCodeRun {
-            sheet_pos,
-            code_run: old_code_run,
-            index,
-        });
-
-        if transaction.is_user() {
-            self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
-            self.check_all_spills(transaction, sheet_pos.sheet_id, true);
-        }
-        transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
-
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            if let Some(sheet) = self.try_sheet(sheet_id) {
-                if let (Some(code_cell), Some(render_code_cell)) = (
-                    sheet.edit_code_value(sheet_pos.into()),
-                    sheet.get_render_code_cell(sheet_pos.into()),
-                ) {
-                    if let (Ok(code_cell), Ok(render_code_cell)) = (
-                        serde_json::to_string(&code_cell),
-                        serde_json::to_string(&render_code_cell),
-                    ) {
-                        crate::wasm_bindings::js::jsUpdateCodeCell(
-                            sheet_id.to_string(),
-                            sheet_pos.x,
-                            sheet_pos.y,
-                            Some(code_cell),
-                            Some(render_code_cell),
-                        );
-                    }
-                }
-            }
+            transaction.add_from_code_run(sheet_id, pos, &old_code_run);
+            transaction.add_from_code_run(sheet_id, pos, &new_code_run);
+
             self.send_updated_bounds_rect(&sheet_rect, false);
             transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
             if transaction.is_user() {
@@ -184,6 +93,27 @@ impl GridController {
                 }
             }
         }
+
+        if transaction.is_user_undo_redo() {
+            transaction.forward_operations.push(Operation::SetCodeRun {
+                sheet_pos,
+                code_run: new_code_run,
+                index,
+            });
+
+            transaction.reverse_operations.push(Operation::SetCodeRun {
+                sheet_pos,
+                code_run: old_code_run,
+                index,
+            });
+
+            if transaction.is_user() {
+                self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
+                self.check_all_spills(transaction, sheet_pos.sheet_id, true);
+            }
+        }
+
+        transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
     }
 
     /// continues the calculate cycle after an async call

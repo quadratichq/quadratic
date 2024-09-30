@@ -28,7 +28,9 @@ impl<B: BlockContent> Block<B> {
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
-
+    pub fn delta_len(&mut self, delta: isize) {
+        self.content.delta_len(delta);
+    }
     pub fn start(&self) -> i64 {
         self.y
     }
@@ -145,6 +147,8 @@ pub trait BlockContent: Sized + Serialize + for<'d> Deserialize<'d> + fmt::Debug
     fn unwrap_single_value(self) -> Self::Item;
     /// Returns the number of values in a block.
     fn len(&self) -> usize;
+    /// Increments the length of the block by `delta`.
+    fn delta_len(&mut self, delta: isize);
     /// Returns whether the block contains zero values.
     fn is_empty(&self) -> bool {
         self.len() == 0
