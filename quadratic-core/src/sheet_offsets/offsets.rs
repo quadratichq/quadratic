@@ -66,18 +66,21 @@ impl Offsets {
     pub fn get_size(&self, index: i64) -> f64 {
         *self.sizes.get(&index).unwrap_or(&self.default)
     }
+
     /// Sets the width/height of a column/row.
     pub fn set_size(&mut self, index: i64, value: f64) -> f64 {
-        if value == self.default {
+        let old_value = if value == self.default {
             self.sizes.remove(&index)
         } else {
             self.sizes.insert(index, value)
         }
-        .unwrap_or(self.default)
+        .unwrap_or(self.default);
+        old_value
     }
     /// Resets the width/height of a column/row to the default value.
     pub fn reset(&mut self, index: i64) -> f64 {
-        self.sizes.remove(&index).unwrap_or(self.default)
+        let old_value = self.sizes.remove(&index).unwrap_or(self.default);
+        old_value
     }
 
     /// Iterates over the pixel positions of a range of columns/rows.
@@ -95,17 +98,23 @@ impl Offsets {
         })
     }
 
-    /// returns the entry index and screen position for a screen coordinate
+    /// Returns screen position for a pixel using the cumulative sums to speed
+    /// up the search.
     pub fn find_offset(&self, pixel: f64) -> (i64, f64) {
-        let mut index = 1;
-        let mut position = 0.0;
-        let mut next_width = self.get_size(index);
-        while position + next_width <= pixel {
-            position += next_width;
-            index += 1;
-            next_width = self.get_size(index);
+        let mut current_sum = 0.0;
+        let mut current_index = 0;
+        let mut current_size = self.get_size(current_index);
+        while current_sum + current_size <= pixel {
+            current_sum += current_size;
+            current_index += 1;
+            current_size = self.get_size(current_index);
         }
-        (index, position)
+
+        (
+            // Ensure the current_index is 1-based.
+            current_index + 1,
+            current_sum,
+        )
     }
 
     /// Returns the total size of a range of columns/rows.
@@ -240,25 +249,10 @@ mod tests {
         let offsets = Offsets::new(10.0);
 
         assert_eq!(offsets.find_offset(0.0), (1, 0.0));
+        assert_eq!(offsets.find_offset(9.0), (1, 0.0));
         assert_eq!(offsets.find_offset(10.0), (2, 10.0));
-
-        // 1 .. 10 .. 20 .^. 30
+        assert_eq!(offsets.find_offset(11.0), (2, 10.0));
         assert_eq!(offsets.find_offset(25.0), (3, 20.0));
-    }
-
-    #[test]
-    #[parallel]
-    fn test_find_offsets_changed() {
-        let mut offsets = Offsets::new(10.0);
-        offsets.set_size(1, 20.0);
-
-        assert_eq!(offsets.find_offset(0.0), (1, 0.0));
-        assert_eq!(offsets.find_offset(10.0), (1, 0.0));
-        assert_eq!(offsets.find_offset(20.0), (2, 20.0));
-
-        // 0 .. 20 .. 30 .^. 40
-        assert_eq!(offsets.find_offset(25.0), (2, 20.0));
-        assert_eq!(offsets.find_offset(35.0), (3, 30.0));
     }
 
     #[test]

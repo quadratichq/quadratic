@@ -86,7 +86,7 @@ impl SheetOffsets {
 
     /// gets the screen coordinate and size for a pixel x-coordinate. Returns a [`Placement`]
     #[wasm_bindgen(js_name = "getXPlacement")]
-    pub fn js_x_placement(&self, x: f64) -> Placement {
+    pub fn js_x_placement(&mut self, x: f64) -> Placement {
         let index = self.column_from_x(x);
         Placement {
             index: index.0 as i32,
@@ -96,7 +96,7 @@ impl SheetOffsets {
     }
     /// gets the screen coordinate and size for a pixel y-coordinate. Returns a [`Placement`]
     #[wasm_bindgen(js_name = "getYPlacement")]
-    pub fn js_y_placement(&self, y: f64) -> Placement {
+    pub fn js_y_placement(&mut self, y: f64) -> Placement {
         let index = self.row_from_y(y);
         Placement {
             index: index.0 as i32,
@@ -107,7 +107,7 @@ impl SheetOffsets {
 
     /// gets the column and row based on the pixels' coordinates. Returns a (column, row) index
     #[wasm_bindgen(js_name = "getColumnRowFromScreen")]
-    pub fn js_get_column_row_from_screen(&self, x: f64, y: f64) -> String {
+    pub fn js_get_column_row_from_screen(&mut self, x: f64, y: f64) -> String {
         let column_row = ColumnRow {
             column: self.js_x_placement(x).index,
             row: self.js_y_placement(y).index,

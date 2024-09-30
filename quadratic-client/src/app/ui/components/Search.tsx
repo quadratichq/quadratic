@@ -3,6 +3,7 @@ import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { SearchOptions, SheetPos } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -105,6 +106,7 @@ export function Search() {
 
   const closeSearch = () => {
     events.emit('search');
+    focusGrid();
   };
 
   useEffect(() => {

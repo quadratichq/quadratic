@@ -105,11 +105,11 @@ impl SheetOffsets {
     }
 
     /// gets the column index from an x-coordinate on the screen
-    pub fn column_from_x(&self, x: f64) -> (i64, f64) {
+    pub fn column_from_x(&mut self, x: f64) -> (i64, f64) {
         self.column_widths.find_offset(x)
     }
     /// gets the column index from an x-coordinate on the screen
-    pub fn row_from_y(&self, y: f64) -> (i64, f64) {
+    pub fn row_from_y(&mut self, y: f64) -> (i64, f64) {
         self.row_heights.find_offset(y)
     }
 
