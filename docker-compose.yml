@@ -9,7 +9,6 @@ services:
       - ./docker/redis/data:/data
     profiles:
       - base
-      - all
 
   postgres:
     extends:
@@ -19,7 +18,6 @@ services:
       - ./docker/postgres/data:/var/lib/postgresql/data
     profiles:
       - base
-      - all
 
   localstack:
     extends:
@@ -31,7 +29,6 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock"
     profiles:
       - base
-      - all
 
   # nginx:
   #   restart: always
@@ -107,7 +104,6 @@ services:
     profiles:
       - client
       - frontend
-      - all
     volumes:
       # - ./docker/static/html:/usr/share/nginx/html
       - ./docker/static/conf/:/etc/nginx/conf.d/:ro
@@ -136,7 +132,6 @@ services:
     profiles:
       - api
       - frontend
-      - all
 
   quadratic-multiplayer:
     build:
@@ -163,7 +158,6 @@ services:
     profiles:
       - backend
       - quadratic-multiplayer
-      - all
     networks:
       - host
 
@@ -192,7 +186,6 @@ services:
     profiles:
       - backend
       - quadratic-files
-      - all
     networks:
       - host
 
@@ -219,7 +212,6 @@ services:
     profiles:
       - backend
       - quadratic-connection
-      - all
 
   # Databases to be used for testing by the connection service
 
@@ -243,10 +235,9 @@ services:
       - ./docker/postgres-connection/data:/var/lib/postgresql/data
       - ./docker/postgres-connection/scripts:/docker-entrypoint-initdb.d
     profiles:
-      - additional-databases
       - quadratic-connection
-      - quadratic-connection-test
-      - all
+      - quadratic-connection-db
+      - quadratic-connection-db-postgres
 
   mysql-connection:
     image: mysql:8
@@ -268,10 +259,9 @@ services:
       - ./docker/mysql-connection/data:/var/lib/mysql
       - ./docker/mysql-connection/scripts:/docker-entrypoint-initdb.d/
     profiles:
-      - additional-databases
       - quadratic-connection
-      - quadratic-connection-test
-      - all
+      - quadratic-connection-db
+      - quadratic-connection-db-mysql
 
   mssql-connection:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -285,7 +275,11 @@ services:
       MSSQL_SA_PASSWORD: yourStrong(!)Password
       MSSQL_PID: Express
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P '${MSSQL_SA_PASSWORD}' -Q 'SELECT 1' || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P '${MSSQL_SA_PASSWORD}' -Q 'SELECT 1' || exit 1",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -300,14 +294,13 @@ services:
       tail -f /dev/null
       "
     profiles:
-      - additional-databases
       - quadratic-connection
-      - quadratic-connection-test
-      - all
+      - quadratic-connection-db
+      - quadratic-connection-db-mssql
 
 volumes:
   docker:
     name: docker
 
 networks:
-  host: 
+  host:
