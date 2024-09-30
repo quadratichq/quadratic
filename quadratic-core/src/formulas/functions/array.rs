@@ -442,6 +442,70 @@ mod tests {
     }
 
     #[test]
+    fn test_formula_sort_types() {
+        let source_array = array![
+            "string B";
+            datetime("2024-09-28T12:30:00");
+            time("1:30");
+            Duration { months: 3, seconds: 2.0 };
+            datetime("2024-09-26T15:30:00");
+            true;
+            Duration { months: 4, seconds: 1.5 };
+            ();
+            false;
+            -10.0;
+            "string A";
+            date("2024-09-26");
+            3.0;
+            Duration { months: 4, seconds: 1.0 };
+            time("13:00");
+        ];
+
+        let g = Grid::from_array(pos![A1], &source_array);
+
+        let expected = array![
+            -10.0;
+            3.0;
+            "string A";
+            "string B";
+            false;
+            true;
+            datetime("2024-09-26T15:30:00");
+            datetime("2024-09-28T12:30:00");
+            date("2024-09-26");
+            time("1:30");
+            time("13:00");
+            Duration { months: 3, seconds: 2.0 };
+            Duration { months: 4, seconds: 1.0 };
+            Duration { months: 4, seconds: 1.5 };
+            ();
+        ];
+        assert_eq!(eval_to_string(&g, "=SORT(A1:A15)"), expected.to_string());
+
+        let expected = array![
+            ();
+            Duration { months: 4, seconds: 1.5 };
+            Duration { months: 4, seconds: 1.0 };
+            Duration { months: 3, seconds: 2.0 };
+            time("13:00");
+            time("1:30");
+            date("2024-09-26");
+            datetime("2024-09-28T12:30:00");
+            datetime("2024-09-26T15:30:00");
+            true;
+            false;
+            "string B";
+            "string A";
+            3.0;
+            -10.0;
+        ];
+        assert_eq!(
+            eval_to_string(&g, "=SORT(A1:A15,,-1)"),
+            expected.to_string(),
+        );
+    }
+
+    #[test]
     fn test_formula_unique() {
         let source_data = array![
             1, 2;
