@@ -46,6 +46,7 @@
     "szhsin",
     "thiserror",
     "Timelike",
+    "undoable",
     "unspill",
     "vals",
     "websockets",

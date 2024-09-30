@@ -4,9 +4,10 @@ use std::collections::HashMap;
 use crate::grid::{block::SameValue, ColumnData};
 pub use borders_style::*;
 
-pub mod borders_clear;
 pub mod borders_bounds;
+pub mod borders_clear;
 pub mod borders_clipboard;
+pub mod borders_col_row;
 pub mod borders_get;
 pub mod borders_render;
 pub mod borders_set;

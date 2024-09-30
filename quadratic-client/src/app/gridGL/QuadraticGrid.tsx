@@ -1,5 +1,4 @@
 import { Action } from '@/app/actions/actions';
-import { editorInteractionStateShowContextMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { HTMLGridContainer } from '@/app/gridGL/HTMLGrid/HTMLGridContainer';
 import { useKeyboard } from '@/app/gridGL/interaction/keyboard/useKeyboard';
@@ -9,7 +8,6 @@ import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { ImportProgress } from '@/app/ui/components/ImportProgress';
 import { Search } from '@/app/ui/components/Search';
 import { MouseEvent, useCallback, useEffect, useState } from 'react';
-import { useSetRecoilState } from 'recoil';
 
 // Keep track of state of mouse/space for panning mode
 let mouseIsDown = false;
@@ -34,8 +32,6 @@ export default function QuadraticGrid() {
       events.off('panMode', updatePanMode);
     };
   }, []);
-
-  const setShowContextMenu = useSetRecoilState(editorInteractionStateShowContextMenuAtom);
 
   // Pan mode
   const onMouseUp = () => {
@@ -91,12 +87,8 @@ export default function QuadraticGrid() {
         WebkitTapHighlightColor: 'transparent',
         cursor: panMode === PanMode.Enabled ? 'grab' : panMode === PanMode.Dragging ? 'grabbing' : 'unset',
       }}
-      onContextMenu={(event) => {
-        event.preventDefault();
-        setShowContextMenu(true);
-      }}
+      onContextMenu={(event) => event.preventDefault()}
       onMouseDown={onMouseDown}
-      onClick={() => setShowContextMenu(false)}
       onKeyDown={(e) => {
         onKeyDown(e) || onKeyDownFromUseKeyboard(e);
       }}

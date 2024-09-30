@@ -7,6 +7,7 @@ import { helpActionsSpec } from '@/app/actions/helpActionsSpec';
 import { insertActionsSpec } from '@/app/actions/insertActionsSpec';
 import { selectionActionsSpec } from '@/app/actions/selectionActionsSpec';
 import { viewActionsSpec } from '@/app/actions/viewActionsSpec';
+import { columnRowSpec } from './columnRowSpec';
 
 export const defaultActionSpec: ActionSpecRecord = {
   ...fileActionsSpec,
@@ -17,4 +18,5 @@ export const defaultActionSpec: ActionSpecRecord = {
   ...helpActionsSpec,
   ...selectionActionsSpec,
   ...codeActionsSpec,
+  ...columnRowSpec,
 };

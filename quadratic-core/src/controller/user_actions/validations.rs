@@ -35,6 +35,7 @@ impl GridController {
         sheet.validations.validations()
     }
 
+    /// Creates or updates a validation.
     pub fn update_validation(&mut self, validation: Validation, cursor: Option<String>) {
         let ops = vec![Operation::SetValidation { validation }];
         self.start_user_transaction(ops, cursor, TransactionName::Validation);
