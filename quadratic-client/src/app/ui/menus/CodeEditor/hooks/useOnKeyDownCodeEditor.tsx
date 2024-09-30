@@ -5,64 +5,64 @@ import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
 import { dispatchEditorAction } from '@/app/ui/menus/CodeEditor/CodeEditor';
 import { useCancelRun } from '@/app/ui/menus/CodeEditor/hooks/useCancelRun';
 import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRunCell';
-import { useCallback } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilCallback } from 'recoil';
 
 export const useOnKeyDownCodeEditor = () => {
-  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
-
   const { saveAndRunCell } = useSaveAndRunCell();
   const { cancelRun } = useCancelRun();
 
-  const onKeyDownCodeEditor = useCallback(
-    (event: React.KeyboardEvent<HTMLDivElement>) => {
-      // Command + Plus
-      if (matchShortcut(Action.ZoomIn, event)) {
-        event.preventDefault();
-        event.stopPropagation();
-        dispatchEditorAction('editor.action.fontZoomIn');
-      }
+  const onKeyDownCodeEditor = useRecoilCallback(
+    ({ snapshot }) =>
+      async (event: React.KeyboardEvent<HTMLDivElement>) => {
+        const permissions = await snapshot.getPromise(editorInteractionStatePermissionsAtom);
 
-      // Command + Minus
-      if (matchShortcut(Action.ZoomOut, event)) {
-        event.preventDefault();
-        event.stopPropagation();
-        dispatchEditorAction('editor.action.fontZoomOut');
-      }
+        // Command + Plus
+        if (matchShortcut(Action.ZoomIn, event)) {
+          event.preventDefault();
+          event.stopPropagation();
+          dispatchEditorAction('editor.action.fontZoomIn');
+        }
 
-      // Command + 0
-      if (matchShortcut(Action.ZoomTo100, event)) {
-        event.preventDefault();
-        event.stopPropagation();
-        dispatchEditorAction('editor.action.fontZoomReset');
-      }
+        // Command + Minus
+        if (matchShortcut(Action.ZoomOut, event)) {
+          event.preventDefault();
+          event.stopPropagation();
+          dispatchEditorAction('editor.action.fontZoomOut');
+        }
 
-      // Don't allow the shortcuts below for certain users
-      if (!hasPermissionToEditFile(permissions)) {
-        return;
-      }
+        // Command + 0
+        if (matchShortcut(Action.ZoomTo100, event)) {
+          event.preventDefault();
+          event.stopPropagation();
+          dispatchEditorAction('editor.action.fontZoomReset');
+        }
 
-      // Command + S
-      if (matchShortcut(Action.Save, event)) {
-        event.preventDefault();
-        saveAndRunCell();
-      }
+        // Don't allow the shortcuts below for certain users
+        if (!hasPermissionToEditFile(permissions)) {
+          return;
+        }
 
-      // Command + Enter
-      if (matchShortcut(Action.ExecuteCode, event)) {
-        event.preventDefault();
-        event.stopPropagation();
-        saveAndRunCell();
-      }
+        // Command + S
+        if (matchShortcut(Action.Save, event)) {
+          event.preventDefault();
+          saveAndRunCell();
+        }
 
-      // Command + Escape
-      if (matchShortcut(Action.CancelExecution, event)) {
-        event.preventDefault();
-        event.stopPropagation();
-        cancelRun();
-      }
-    },
-    [cancelRun, permissions, saveAndRunCell]
+        // Command + Enter
+        if (matchShortcut(Action.ExecuteCode, event)) {
+          event.preventDefault();
+          event.stopPropagation();
+          saveAndRunCell();
+        }
+
+        // Command + Escape
+        if (matchShortcut(Action.CancelExecution, event)) {
+          event.preventDefault();
+          event.stopPropagation();
+          cancelRun();
+        }
+      },
+    [saveAndRunCell, cancelRun]
   );
 
   return { onKeyDownCodeEditor };
