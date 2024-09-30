@@ -486,18 +486,19 @@ fn lookup<V: ToString + AsRef<CellValue>>(
             lookup_linear_search(needle, haystack.iter().rev(), preference).map(fix_rev_index)
         }
         LookupSearchMode::BinaryAscending => {
-            lookup_binary_search(needle, haystack, preference, |a, b| a.cmp(b))
+            lookup_binary_search(needle, haystack, preference, |a, b| a.partial_cmp(b))
         }
         LookupSearchMode::BinaryDescending => {
-            lookup_binary_search(needle, haystack, preference.reverse(), |a, b| b.cmp(a))
+            lookup_binary_search(needle, haystack, preference.reverse(), |a, b| {
+                b.partial_cmp(a)
+            })
         }
     }
     .filter(|&i| {
         // Only return a match if it's comparable (i.e., the same type).
         haystack
             .get(i)
-            .and_then(|candidate| candidate.as_ref().partial_cmp(needle).ok()?)
-            .is_some()
+            .is_some_and(|candidate| candidate.as_ref().type_id() == needle.type_id())
     }))
 }
 
@@ -524,7 +525,7 @@ fn lookup_linear_search<'a, V: 'a + AsRef<CellValue>>(
 
     for candidate @ (index, value) in haystack.enumerate() {
         // Compare the old value to the new one.
-        let cmp_result = value.partial_cmp(needle).ok().flatten();
+        let cmp_result = value.partial_cmp(needle).ok();
         let Some(cmp_result) = cmp_result else {
             continue;
         };
@@ -535,7 +536,7 @@ fn lookup_linear_search<'a, V: 'a + AsRef<CellValue>>(
             if let Some((_, old_best_value)) = best_match {
                 // If `value` is closer, then return it instead of
                 // `old_best_value`.
-                if old_best_value.partial_cmp(value) == Ok(Some(preference)) {
+                if old_best_value.partial_cmp(value) == Ok(preference) {
                     best_match = Some(candidate);
                 }
             } else {

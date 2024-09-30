@@ -126,8 +126,11 @@ fn get_functions() -> Vec<FormulaFunction> {
                         .or_default();
                     if let Some(&i) = possible_indices.iter().find(|&&i| {
                         let past_slice = &slice_counts[i].0;
+                        // We can't use `CellValue::eq()` because that method
+                        // considers blank and `0` to be equal, which is not
+                        // what we want here.
                         std::iter::zip(past_slice, &slice)
-                            .all(|(l, r)| l.partial_cmp(r) == Ok(Some(std::cmp::Ordering::Equal)))
+                            .all(|(l, r)| l.total_cmp(r) == std::cmp::Ordering::Equal)
                     }) {
                         slice_counts[i].1 += 1;
                     } else {

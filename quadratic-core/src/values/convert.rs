@@ -317,10 +317,7 @@ where
 
 impl<'a> CoerceInto for Spanned<&'a CellValue> {
     fn into_non_error_value(self) -> CodeResult<&'a CellValue> {
-        match self.inner {
-            CellValue::Error(e) => Err((**e).clone()),
-            other => Ok(other),
-        }
+        self.inner.as_non_error_value()
     }
 }
 impl CoerceInto for Spanned<CellValue> {

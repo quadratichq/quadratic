@@ -379,6 +379,13 @@ impl CellValue {
             other => Ok(other),
         }
     }
+    /// Converts an error value into an actual error.
+    pub fn as_non_error_value(&self) -> CodeResult<&Self> {
+        match self {
+            CellValue::Error(e) => Err((**e).clone()),
+            other => Ok(other),
+        }
+    }
 
     /// Coerces the value to a specific type; returns `None` if the conversion
     /// fails or the original value is `None`.
@@ -392,47 +399,10 @@ impl CellValue {
         }
     }
 
-    /// Compares two values but propagates errors and returns `None` in the case
-    /// of disparate types.
-    pub fn partial_cmp(&self, other: &Self) -> CodeResult<Option<std::cmp::Ordering>> {
-        Ok(Some(match (self, other) {
-            (CellValue::Error(e), _) | (_, CellValue::Error(e)) => return Err((**e).clone()),
-
-            (CellValue::Number(a), CellValue::Number(b)) => a.cmp(b),
-            (CellValue::Text(a), CellValue::Text(b)) => {
-                let a = crate::util::case_fold(a);
-                let b = crate::util::case_fold(b);
-                a.cmp(&b)
-            }
-            (CellValue::Logical(a), CellValue::Logical(b)) => a.cmp(b),
-            (CellValue::Instant(a), CellValue::Instant(b)) => a.cmp(b),
-            (CellValue::Date(a), CellValue::Date(b)) => a.cmp(b),
-            (CellValue::Time(a), CellValue::Time(b)) => a.cmp(b),
-            (CellValue::DateTime(a), CellValue::DateTime(b)) => a.cmp(b),
-            (CellValue::DateTime(a), CellValue::Date(b)) => a.date().cmp(b),
-            (CellValue::Date(a), CellValue::DateTime(b)) => a.cmp(&b.date()),
-            (CellValue::Duration(a), CellValue::Duration(b)) => a.cmp(b),
-            (CellValue::Blank, CellValue::Blank) => std::cmp::Ordering::Equal,
-
-            (CellValue::Number(_), _)
-            | (CellValue::Text(_), _)
-            | (CellValue::Logical(_), _)
-            | (CellValue::Instant(_), _)
-            | (CellValue::Duration(_), _)
-            | (CellValue::Date(_), _)
-            | (CellValue::Time(_), _)
-            | (CellValue::DateTime(_), _)
-            | (CellValue::Html(_), _)
-            | (CellValue::Code(_), _)
-            | (CellValue::Image(_), _)
-            | (CellValue::Blank, _) => return Ok(None),
-        }))
-    }
-
     /// Returns the sort order of a value, based on the results of Excel's
     /// `SORT()` function. The comparison operators are the same, except that
     /// blank coerces to `0`, `FALSE`, or `""` before comparison.
-    fn type_id(&self) -> u8 {
+    pub fn type_id(&self) -> u8 {
         match self {
             CellValue::Number(_) => 0,
             CellValue::Text(_) => 1,
@@ -452,10 +422,14 @@ impl CellValue {
     /// Compares two values using a total ordering that propagates errors and
     /// converts blanks to zeros.
     #[allow(clippy::should_implement_trait)]
-    pub fn cmp(&self, other: &Self) -> CodeResult<std::cmp::Ordering> {
+    pub fn partial_cmp(&self, other: &Self) -> CodeResult<std::cmp::Ordering> {
+        if self.is_blank() && other.eq_blank() || other.is_blank() && self.eq_blank() {
+            return Ok(std::cmp::Ordering::Equal);
+        }
+
         // Coerce blank to zero.
-        let mut lhs = self;
-        let mut rhs = other;
+        let mut lhs = self.as_non_error_value()?;
+        let mut rhs = other.as_non_error_value()?;
         let lhs_cell_value: CellValue;
         let rhs_cell_value: CellValue;
         if lhs.is_blank() {
@@ -466,10 +440,26 @@ impl CellValue {
             rhs_cell_value = CellValue::Number(BigDecimal::zero());
             rhs = &rhs_cell_value;
         }
+        Ok(lhs.total_cmp(&rhs))
+    }
 
-        Ok(lhs
-            .partial_cmp(rhs)?
-            .unwrap_or_else(|| lhs.type_id().cmp(&rhs.type_id())))
+    /// Compares two values according to the total sort order, with no coercion
+    /// and no errors.
+    pub fn total_cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match (self, other) {
+            (CellValue::Text(a), CellValue::Text(b)) => {
+                let a = crate::util::case_fold(&a);
+                let b = crate::util::case_fold(&b);
+                a.cmp(&b)
+            }
+            (CellValue::Number(a), CellValue::Number(b)) => a.cmp(b),
+            (CellValue::Logical(a), CellValue::Logical(b)) => a.cmp(b),
+            (CellValue::DateTime(a), CellValue::DateTime(b)) => a.cmp(b),
+            (CellValue::Date(a), CellValue::Date(b)) => a.cmp(b),
+            (CellValue::Time(a), CellValue::Time(b)) => a.cmp(b),
+            (CellValue::Duration(a), CellValue::Duration(b)) => a.cmp(b),
+            _ => self.type_id().cmp(&other.type_id()),
+        }
     }
 
     /// Returns whether `self == other` using a case-insensitive and
@@ -477,9 +467,7 @@ impl CellValue {
     ///
     /// Returns an error if either argument is [`CellValue::Error`].
     pub fn eq(&self, other: &Self) -> CodeResult<bool> {
-        Ok(self.is_blank() && other.eq_blank()
-            || other.is_blank() && self.eq_blank()
-            || self.cmp(other)? == std::cmp::Ordering::Equal)
+        Ok(self.partial_cmp(other)? == std::cmp::Ordering::Equal)
     }
     /// Returns whether blank can coerce to this cell value.
     fn eq_blank(&self) -> bool {
@@ -493,23 +481,23 @@ impl CellValue {
     }
     /// Returns whether `self < other` using `CellValue::cmp()`.
     pub fn lt(&self, other: &Self) -> CodeResult<bool> {
-        Ok(self.cmp(other)? == std::cmp::Ordering::Less)
+        Ok(self.partial_cmp(other)? == std::cmp::Ordering::Less)
     }
     /// Returns whether `self > other` using `CellValue::cmp()`.
     pub fn gt(&self, other: &Self) -> CodeResult<bool> {
-        Ok(self.cmp(other)? == std::cmp::Ordering::Greater)
+        Ok(self.partial_cmp(other)? == std::cmp::Ordering::Greater)
     }
     /// Returns whether `self <= other` using `CellValue::cmp()`.
     pub fn lte(&self, other: &Self) -> CodeResult<bool> {
         Ok(matches!(
-            self.cmp(other)?,
+            self.partial_cmp(other)?,
             std::cmp::Ordering::Less | std::cmp::Ordering::Equal,
         ))
     }
     /// Returns whether `self >= other` using `CellValue::cmp()`.
     pub fn gte(&self, other: &Self) -> CodeResult<bool> {
         Ok(matches!(
-            self.cmp(other)?,
+            self.partial_cmp(other)?,
             std::cmp::Ordering::Greater | std::cmp::Ordering::Equal,
         ))
     }
@@ -577,12 +565,11 @@ impl CellValue {
     }
 
     fn to_numeric(&self) -> CodeResult<CellValue> {
-        match self {
+        match self.as_non_error_value()? {
             CellValue::Blank => Ok(CellValue::Number(0.into())),
             CellValue::Text(s) => Ok(CellValue::parse_from_str(s)),
             CellValue::Logical(false) => Ok(CellValue::Number(0.into())),
             CellValue::Logical(true) => Ok(CellValue::Number(1.into())),
-            CellValue::Error(e) => Err((**e).clone()),
             _ => Ok(self.clone()),
         }
     }
