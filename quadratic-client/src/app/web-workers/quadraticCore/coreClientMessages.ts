@@ -980,6 +980,36 @@ export interface CoreClientGetCellValue {
   value: JsCellValue | undefined;
 }
 
+export interface ClientCoreDeleteColumns {
+  type: 'clientCoreDeleteColumns';
+  sheetId: string;
+  columns: number[];
+  cursor: string;
+}
+
+export interface ClientCoreDeleteRows {
+  type: 'clientCoreDeleteRows';
+  sheetId: string;
+  rows: number[];
+  cursor: string;
+}
+
+export interface ClientCoreInsertColumn {
+  type: 'clientCoreInsertColumn';
+  sheetId: string;
+  column: number;
+  right: boolean;
+  cursor: string;
+}
+
+export interface ClientCoreInsertRow {
+  type: 'clientCoreInsertRow';
+  sheetId: string;
+  row: number;
+  below: boolean;
+  cursor: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1054,7 +1084,11 @@ export type ClientCoreMessage =
   | ClientCoreGetValidationList
   | ClientCoreGetDisplayCell
   | ClientCoreValidateInput
-  | ClientCoreGetCellValue;
+  | ClientCoreGetCellValue
+  | ClientCoreDeleteColumns
+  | ClientCoreDeleteRows
+  | ClientCoreInsertColumn
+  | ClientCoreInsertRow;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

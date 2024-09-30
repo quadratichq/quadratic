@@ -112,21 +112,8 @@ export default function QuadraticGrid() {
         WebkitTapHighlightColor: 'transparent',
         cursor: panMode === PanMode.Enabled ? 'grab' : panMode === PanMode.Dragging ? 'grabbing' : 'unset',
       }}
-      onContextMenu={(event) => {
-        event.preventDefault();
-        // If it's not already visible, show the context menu
-        if (!editorInteractionState.showContextMenu) {
-          setEditorInteractionState((state) => ({ ...state, showContextMenu: true }));
-        }
-      }}
+      onContextMenu={(event) => event.preventDefault()}
       onMouseDown={onMouseDown}
-      onClick={() => {
-        // <FloatingContextMenu> prevents events from bubbling up to here, so
-        // we always hide the context menu if it's open
-        if (editorInteractionState.showContextMenu) {
-          setEditorInteractionState((state) => ({ ...state, showContextMenu: false }));
-        }
-      }}
       onKeyDown={(e) => {
         onKeyDown(e) || onKeyDownFromUseKeyboard(e);
       }}
