@@ -327,6 +327,7 @@ class Core {
         }));
         receive_transactions.transactions = [];
 
+        // TODO(ayush): find a better way to do this, avoid JSON.stringify and pass the buffer directly
         const transactionsBuffer = JSON.stringify(formattedTransactions);
         formattedTransactions = [];
 
