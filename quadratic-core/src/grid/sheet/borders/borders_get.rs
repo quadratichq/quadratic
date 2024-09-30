@@ -3,7 +3,7 @@ use super::{BorderStyleCell, BorderStyleCellUpdate, Borders};
 impl Borders {
     /// Gets a BorderStyleCellUpdate for a cell that will override the current
     /// cell. This is called by the clipboard.
-    pub fn get_update_override(&self, x: i64, y: i64) -> BorderStyleCellUpdate {
+    pub fn update_override(&self, x: i64, y: i64) -> BorderStyleCellUpdate {
         let mut cell = self.all;
 
         // for columns and rows, we'll have to compare the timestamps to get the correct value
@@ -183,7 +183,7 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
 
         // Check updated cell
-        let updated_cell = sheet.borders.get_update_override(0, 0);
+        let updated_cell = sheet.borders.update_override(0, 0);
         assert_eq!(
             updated_cell.top.unwrap().unwrap().line,
             CellBorderLine::default()
@@ -211,5 +211,25 @@ mod tests {
         assert_eq!(cell.bottom, None);
         assert_eq!(cell.left, None);
         assert_eq!(cell.right, None);
+    }
+
+    #[test]
+    #[parallel]
+    fn one_cell_get() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_borders_selection(
+            Selection::sheet_rect(crate::SheetRect::new(1, 1, 1, 1, sheet_id)),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let cell = sheet.borders.get(1, 1);
+        assert_eq!(cell.top.unwrap().line, CellBorderLine::default());
+        assert_eq!(cell.bottom.unwrap().line, CellBorderLine::default());
+        assert_eq!(cell.left.unwrap().line, CellBorderLine::default());
+        assert_eq!(cell.right.unwrap().line, CellBorderLine::default());
     }
 }

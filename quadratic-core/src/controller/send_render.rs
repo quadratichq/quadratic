@@ -215,6 +215,24 @@ impl GridController {
         }
     }
 
+    /// Sends individual offsets that have been modified to the client
+    pub fn send_offsets_modified(
+        &self,
+        sheet_id: SheetId,
+        column: Option<i64>,
+        row: Option<i64>,
+        new_size: f64,
+    ) {
+        if cfg!(target_family = "wasm") || cfg!(test) {
+            crate::wasm_bindings::js::jsOffsetsModified(
+                sheet_id.to_string(),
+                column,
+                row,
+                new_size,
+            );
+        }
+    }
+
     pub fn send_image(&self, sheet_pos: SheetPos) {
         if cfg!(target_family = "wasm") || cfg!(test) {
             if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
