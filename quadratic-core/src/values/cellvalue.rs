@@ -440,7 +440,7 @@ impl CellValue {
             rhs_cell_value = CellValue::Number(BigDecimal::zero());
             rhs = &rhs_cell_value;
         }
-        Ok(lhs.total_cmp(&rhs))
+        Ok(lhs.total_cmp(rhs))
     }
 
     /// Compares two values according to the total sort order, with no coercion
@@ -448,8 +448,8 @@ impl CellValue {
     pub fn total_cmp(&self, other: &Self) -> std::cmp::Ordering {
         match (self, other) {
             (CellValue::Text(a), CellValue::Text(b)) => {
-                let a = crate::util::case_fold(&a);
-                let b = crate::util::case_fold(&b);
+                let a = crate::util::case_fold(a);
+                let b = crate::util::case_fold(b);
                 a.cmp(&b)
             }
             (CellValue::Number(a), CellValue::Number(b)) => a.cmp(b),

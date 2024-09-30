@@ -54,7 +54,7 @@ fn get_functions() -> Vec<FormulaFunction> {
 
                 match axis {
                     None => {
-                        if *include.get(0).unwrap_or(&false) {
+                        if *include.first().unwrap_or(&false) {
                             Value::from(array.inner)
                         } else {
                             empty_result?
@@ -128,6 +128,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                     }
                 };
 
+                #[allow(clippy::redundant_closure)]
                 let compare_fn = match sort_order {
                     None => |a, b| CellValue::total_cmp(a, b),
                     Some(value) => match value.inner {
@@ -142,8 +143,8 @@ fn get_functions() -> Vec<FormulaFunction> {
                     axis,
                     array.slices(axis).sorted_by(|slice1, slice2| {
                         compare_fn(
-                            *slice1.get(index).expect("already checked bounds"),
-                            *slice2.get(index).expect("already checked bounds"),
+                            slice1.get(index).expect("already checked bounds"),
+                            slice2.get(index).expect("already checked bounds"),
                         )
                     }),
                 )?

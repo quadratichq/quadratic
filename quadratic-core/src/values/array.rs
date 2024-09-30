@@ -193,7 +193,7 @@ impl Array {
     ) -> Option<Self> {
         let slices = slices.into_iter().collect_vec();
         let main_len = slices.len() as u32;
-        let other_len = slices.get(0)?.len() as u32;
+        let other_len = slices.first()?.len() as u32;
         let size = ArraySize::new(other_len, main_len)?;
         let a = Self::new_row_major(size, slices.into_iter().flatten().cloned().collect()).ok();
         match axis {
