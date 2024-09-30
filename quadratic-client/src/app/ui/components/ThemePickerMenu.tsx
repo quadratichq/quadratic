@@ -1,22 +1,24 @@
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { SidebarToggle, SidebarTooltip } from '@/app/ui/QuadraticSidebar';
-import { CheckSmallIcon } from '@/shared/components/Icons';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/shared/shadcn/ui/dropdown-menu';
+  AppearanceDarkModeIcon,
+  AppearanceLightModeIcon,
+  AppearanceSystemModeIcon,
+  CheckSmallIcon,
+  ThemeIcon,
+} from '@/shared/components/Icons';
+import useLocalStorage from '@/shared/hooks/useLocalStorage';
+import { useTheme } from '@/shared/hooks/useTheme';
+import { Button } from '@/shared/shadcn/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
+import { cn } from '@/shared/shadcn/utils';
 import { useEffect, useState } from 'react';
 
 const themeIds = ['blue', 'violet', 'orange', 'green', 'rose', 'black'] as const;
 type ThemeId = (typeof themeIds)[number];
 
-export const ThemePickerMenu = () => {
-  // TODO: what about embedable view? should we show the file menu?
-
-  const [showThemeMenu, setShowThemeMenu] = useState(false);
-  const [activeThemeId, setActiveThemeId] = useState<ThemeId>('blue');
+const useAccentColor = () => {
+  const [activeThemeId, setActiveThemeId] = useLocalStorage<ThemeId>('accentColor', 'blue');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', activeThemeId);
@@ -31,33 +33,108 @@ export const ThemePickerMenu = () => {
     console.log('hex', hex);
   }, [activeThemeId]);
 
+  return { activeThemeId, setActiveThemeId };
+};
+
+export const ThemePickerMenu = () => {
+  // TODO: what about embedable view? should we show the file menu?
+
+  const [showThemeMenu, setShowThemeMenu] = useState(false);
+
   return (
-    <DropdownMenu defaultOpen={true}>
+    <Popover defaultOpen={true}>
       <SidebarTooltip label="Theme color">
-        <DropdownMenuTrigger asChild>
+        <PopoverTrigger asChild>
           <SidebarToggle
             pressed={showThemeMenu}
             onPressedChange={() => setShowThemeMenu(!showThemeMenu)}
-            className="relative before:absolute before:left-2 before:top-2 before:h-4 before:w-4 before:rounded-full before:border-2 before:border-primary before:bg-primary before:content-['']"
+            // className="relative before:absolute before:left-2 before:top-2 before:h-4 before:w-4 before:rounded-full before:border-2 before:border-primary before:bg-primary before:content-['']"
           >
-            <CheckSmallIcon className="relative text-background" />
+            <ThemeIcon className="text-primary" />
           </SidebarToggle>
-        </DropdownMenuTrigger>
+        </PopoverTrigger>
       </SidebarTooltip>
 
-      <DropdownMenuContent side="right" align="end">
-        {themeIds.map((themeId) => (
-          <DropdownMenuItem key={themeId} onClick={() => setActiveThemeId(themeId)}>
-            <span data-theme={themeId} className="mr-2 inline-block h-4 w-4 rounded-full bg-primary">
-              {themeId === activeThemeId && <CheckSmallIcon className="relative -left-0.5 -top-0.5 text-background" />}
-            </span>
-            <span className="capitalize">{themeId}</span>
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      <PopoverContent side="right" align="end" className="w-80">
+        <h2 className="text-md font-semibold">App customization</h2>
+        <p className="mb-4 text-xs text-muted-foreground">Pick a style you like</p>
+
+        <h3 className="mb-1 text-xs font-semibold">Accent color</h3>
+        <div className="grid grid-cols-3 gap-2">
+          <AccentColorPicker />
+        </div>
+
+        <h3 className="mb-1 mt-4 text-xs font-semibold">Appearance</h3>
+
+        <div className="grid grid-cols-3 gap-2">
+          <AppearancePicker />
+        </div>
+
+        <h3 className="mb-1 mt-4 text-xs font-semibold">Corners</h3>
+        <div className="grid grid-cols-3 gap-2">
+          {['square', 'soft', 'rounded'].map((item) => (
+            <Button
+              size="sm"
+              variant="outline"
+              className="capitalize"
+              onClick={() => {
+                if (item === 'square') {
+                  document.documentElement.style.setProperty('--radius', '0rem');
+                } else if (item === 'soft') {
+                  document.documentElement.style.setProperty('--radius', '0.5rem');
+                } else if (item === 'rounded') {
+                  document.documentElement.style.setProperty('--radius', '1rem');
+                }
+              }}
+            >
+              {item}
+            </Button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 };
+
+export function AppearancePicker() {
+  const [theme, setTheme] = useTheme();
+  return ['light', 'dark', 'system'].map((item) => (
+    <Button
+      size="sm"
+      variant="outline"
+      className={cn(item === theme && 'border-2 border-foreground', 'justify-start gap-1 capitalize')}
+      // @ts-expect-error
+      onClick={() => setTheme(item)}
+    >
+      {item === 'light' ? (
+        <AppearanceLightModeIcon />
+      ) : item === 'dark' ? (
+        <AppearanceDarkModeIcon />
+      ) : (
+        <AppearanceSystemModeIcon />
+      )}
+      {item}
+    </Button>
+  ));
+}
+
+export function AccentColorPicker() {
+  const { activeThemeId, setActiveThemeId } = useAccentColor();
+  return themeIds.map((themeId) => (
+    <Button
+      size="sm"
+      variant="outline"
+      key={themeId}
+      onClick={() => setActiveThemeId(themeId)}
+      className={cn(themeId === activeThemeId && 'border-2 border-foreground', 'justify-start')}
+    >
+      <span data-theme={themeId} className="-ml-1 mr-2 flex h-4 w-4 shrink-0 rounded-full bg-primary">
+        {themeId === activeThemeId && <CheckSmallIcon className="relative -left-0.5 -top-0.5 text-background" />}
+      </span>
+      <span className="capitalize">{themeId}</span>
+    </Button>
+  ));
+}
 
 function hslToHex(h: number, s: number, l: number) {
   // Normalize the saturation and lightness values

@@ -1,3 +1,4 @@
+import { AccountSection } from '@/dashboard/components/AccountSection';
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { Labs } from '@/dashboard/components/Labs';
 import { useRootRouteLoaderData } from '@/routes/_root';
@@ -13,7 +14,7 @@ export const Component = () => {
 
   return (
     <>
-      <div className="max-w-lg">
+      <div className="max-w-xl">
         <DashboardHeader
           title="My account"
           actions={
@@ -24,36 +25,36 @@ export const Component = () => {
             </Form>
           }
         />
-        <hr className="mt-1" />
-      </div>
 
-      <div className={`mt-6 flex max-w-lg flex-col gap-6`}>
-        <div>
-          <h3 className="text-lg font-medium">Your info</h3>
-          <p className="text-sm text-muted-foreground">
-            Currently you can’t change this information.{' '}
-            <a href={CONTACT_URL} className="underline hover:text-primary">
-              Contact us
-            </a>{' '}
-            if you’d like to.
-          </p>
-        </div>
-        <Row>
-          <Type variant="body2" className="font-bold">
-            Name
-          </Type>
-          <Type variant="body2">{user?.name}</Type>
-        </Row>
-        <Row>
-          <Type variant="body2" className="font-bold">
-            Email
-          </Type>
-          <Type variant="body2">{user?.email}</Type>
-        </Row>
+        <AccountSection
+          title="Your info"
+          description={
+            <>
+              Currently you can’t change this information.{' '}
+              <a href={CONTACT_URL} className="underline hover:text-primary">
+                Contact us
+              </a>{' '}
+              if you’d like to.
+            </>
+          }
+        >
+          <Row>
+            <Type variant="body2" className="font-bold">
+              Name
+            </Type>
+            <Type variant="body2">{user?.name}</Type>
+          </Row>
+          <Row>
+            <Type variant="body2" className="font-bold">
+              Email
+            </Type>
+            <Type variant="body2">{user?.email}</Type>
+          </Row>
+        </AccountSection>
 
-        <hr />
-
-        <Labs />
+        <AccountSection title="Labs" description="Experimental features">
+          <Labs />
+        </AccountSection>
       </div>
     </>
   );
@@ -61,7 +62,7 @@ export const Component = () => {
 
 function Row(props: { children: ReactNode }) {
   return (
-    <div className={`grid items-center`} style={{ gridTemplateColumns: '160px 1fr' }}>
+    <div className={`mt-4 grid items-center`} style={{ gridTemplateColumns: '160px 1fr' }}>
       {props.children}
     </div>
   );

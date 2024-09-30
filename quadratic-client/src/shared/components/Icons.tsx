@@ -36,6 +36,18 @@ export const AddIcon: IconComponent = (props) => {
   return <Icon {...props}>add</Icon>;
 };
 
+export const AppearanceLightModeIcon: IconComponent = (props) => {
+  return <Icon {...props}>light_mode</Icon>;
+};
+
+export const AppearanceDarkModeIcon: IconComponent = (props) => {
+  return <Icon {...props}>dark_mode</Icon>;
+};
+
+export const AppearanceSystemModeIcon: IconComponent = (props) => {
+  return <Icon {...props}>discover_tune</Icon>;
+};
+
 export const ApiIcon: IconComponent = (props) => {
   return <Icon {...props}>api</Icon>;
 };
@@ -377,6 +389,10 @@ export const SettingsIcon: IconComponent = (props) => {
 
 export const SheetIcon: IconComponent = (props) => {
   return <Icon {...props}>tab</Icon>;
+};
+
+export const ThemeIcon: IconComponent = (props) => {
+  return <Icon {...props}>contrast</Icon>;
 };
 
 export const VerticalAlignBottomIcon: IconComponent = (props) => {
