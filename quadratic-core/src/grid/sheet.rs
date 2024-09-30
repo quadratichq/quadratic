@@ -379,8 +379,8 @@ impl Sheet {
             return Some(decimals);
         }
 
-        // if currency, then use the default 2 decimal places
-        if kind == NumericFormatKind::Currency {
+        // if currency and percentage, then use the default 2 decimal places
+        if kind == NumericFormatKind::Currency || kind == NumericFormatKind::Percentage {
             return Some(2);
         }
 
@@ -571,7 +571,7 @@ mod test {
             2,
             "0.23",
             NumericFormatKind::Percentage,
-            Some(0),
+            Some(2),
         );
 
         // validate rounding
@@ -591,7 +591,7 @@ mod test {
             2,
             "9.1234567891",
             NumericFormatKind::Percentage,
-            Some(7),
+            Some(2),
         );
 
         assert_decimal_places_for_number(
