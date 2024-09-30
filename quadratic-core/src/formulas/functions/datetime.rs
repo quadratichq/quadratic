@@ -43,11 +43,50 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
 };
 
 fn get_functions() -> Vec<FormulaFunction> {
-    vec![]
+    vec![
+        formula_fn!(
+            /// Returns the current local date and time.
+            ///
+            /// This depends on the time configuration of the computer where the
+            /// formula is run, which may depend on timezone.
+            #[examples("NOW()")]
+            fn NOW() {
+                CellValue::DateTime(chrono::Local::now().naive_local())
+            }
+        ),
+        formula_fn!(
+            /// Returns the current local date.
+            ///
+            /// This depends on the time configuration of the computer where the
+            /// formula is run, which may depend on timezone.
+            #[examples("TODAY()")]
+            fn TODAY() {
+                CellValue::Date(chrono::Local::now().date_naive())
+            }
+        ),
+    ]
 }
 
 #[cfg(test)]
 #[cfg_attr(test, serial_test::parallel)]
 mod tests {
     use crate::formulas::tests::*;
+
+    #[test]
+    fn test_formula_now_today() {
+        // Hopefully we get a date time! There's not really anything else we can
+        // do to test this without duplicating the code in `fn NOW()`.
+        let g = Grid::new();
+        assert!(matches!(
+            eval(&g, "NOW()"),
+            Value::Single(CellValue::DateTime(_)),
+        ));
+
+        // Hopefully we get a date!
+        let g = Grid::new();
+        assert!(matches!(
+            eval(&g, "TODAY()"),
+            Value::Single(CellValue::Date(_)),
+        ));
+    }
 }
