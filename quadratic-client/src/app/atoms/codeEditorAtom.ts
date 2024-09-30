@@ -37,8 +37,8 @@ export interface CodeEditorState {
   waitingForEditorClose?: {
     codeCell: CodeCell;
     showCellTypeMenu: boolean;
+    initialCode: string;
     inlineEditor?: boolean;
-    initialCode?: string;
   };
 }
 
