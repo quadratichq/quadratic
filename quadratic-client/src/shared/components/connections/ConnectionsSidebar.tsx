@@ -4,7 +4,7 @@ import {
   TRUST_CENTER,
 } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { CopyIcon, ExternalLinkIcon } from '@radix-ui/react-icons';
 import { useState } from 'react';
 
@@ -66,35 +66,33 @@ function SidebarCopyButton({ contentToCopy }: { contentToCopy: string }) {
   const [copyTriggered, setCopyTriggered] = useState(false);
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger
-          onClick={(event) => {
-            event.preventDefault();
-          }}
-          asChild
-        >
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="absolute right-1 top-1 text-muted-foreground hover:text-foreground"
-            onClick={() => {
-              navigator.clipboard.writeText(contentToCopy);
-              setCopyTriggered(true);
-              setTimeout(() => setCopyTriggered(false), 1000);
-            }}
-          >
-            <CopyIcon />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent
-          onPointerDownOutside={(event) => {
-            event.preventDefault();
+    <Tooltip>
+      <TooltipTrigger
+        onClick={(event) => {
+          event.preventDefault();
+        }}
+        asChild
+      >
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="absolute right-1 top-1 text-muted-foreground hover:text-foreground"
+          onClick={() => {
+            navigator.clipboard.writeText(contentToCopy);
+            setCopyTriggered(true);
+            setTimeout(() => setCopyTriggered(false), 1000);
           }}
         >
-          {copyTriggered ? 'Copied!' : 'Copy'}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+          <CopyIcon />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent
+        onPointerDownOutside={(event) => {
+          event.preventDefault();
+        }}
+      >
+        {copyTriggered ? 'Copied!' : 'Copy'}
+      </TooltipContent>
+    </Tooltip>
   );
 }

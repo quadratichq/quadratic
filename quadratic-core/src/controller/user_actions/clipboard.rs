@@ -53,25 +53,13 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{
-            formats::format_update::FormatUpdate, js_types::CellFormatSummary, CodeCellLanguage,
-            SheetId,
+            formats::format_update::FormatUpdate, js_types::CellFormatSummary, BorderSelection,
+            BorderStyle, CellBorderLine, CodeCellLanguage, SheetId,
         },
         CellValue, CodeCellValue, Pos, Rect, SheetPos, SheetRect,
     };
     use bigdecimal::BigDecimal;
     use serial_test::parallel;
-
-    // fn set_borders(gc: &mut GridController, sheet_id: SheetId) {
-    //     gc.set_borders_selection(
-    //         Selection::sheet_rect(SheetRect::single_pos(Pos { x: 0, y: 0 }, sheet_id)),
-    //         BorderSelection::All,
-    //         Some(BorderStyle {
-    //             color: Rgba::color_from_str("#000000").unwrap(),
-    //             line: CellBorderLine::Line1,
-    //         }),
-    //         None,
-    //     );
-    // }
 
     fn set_cell_value(gc: &mut GridController, sheet_id: SheetId, value: &str, x: i64, y: i64) {
         gc.set_cell_value(SheetPos { x, y, sheet_id }, value.into(), None);
@@ -127,18 +115,39 @@ mod test {
         )
         .unwrap();
 
+        set_cell_value(&mut gc, sheet_id, "underline", 5, 3);
+        gc.set_cell_underline(
+            SheetRect {
+                min: Pos { x: 5, y: 3 },
+                max: Pos { x: 5, y: 3 },
+                sheet_id,
+            },
+            Some(true),
+            None,
+        );
+        set_cell_value(&mut gc, sheet_id, "strike through", 7, 4);
+        gc.set_cell_strike_through(
+            SheetRect {
+                min: Pos { x: 7, y: 4 },
+                max: Pos { x: 7, y: 4 },
+                sheet_id,
+            },
+            Some(true),
+            None,
+        );
+
         let rect = Rect {
             min: Pos { x: 1, y: 1 },
-            max: Pos { x: 3, y: 2 },
+            max: Pos { x: 7, y: 4 },
         };
 
         let selection = Selection::rect(rect, sheet_id);
         let sheet = gc.sheet(sheet_id);
         let (plain_text, _) = sheet.copy_to_clipboard(&selection).unwrap();
-        assert_eq!(plain_text, String::from("1, 1\t\t\n\t\t12"));
+        assert_eq!(plain_text, String::from("1, 1\t\t\t\t\t\t\n\t\t12\t\t\t\t\n\t\t\t\tunderline\t\t\n\t\t\t\t\t\tstrike through"));
 
         let selection = Selection::rect(
-            Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 3, y: 3 }),
+            Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 7, y: 5 }),
             sheet_id,
         );
         let clipboard = sheet.copy_to_clipboard(&selection).unwrap();
@@ -183,7 +192,17 @@ mod test {
             sheet.cell_format_summary(Pos { x: 1, y: 1 }, false),
             CellFormatSummary {
                 bold: Some(true),
-                ..Default::default()
+                italic: None,
+                text_color: None,
+                fill_color: None,
+                commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None,
+                date_time: None,
+                cell_type: None,
+                underline: None,
+                strike_through: None,
             }
         );
         assert_eq!(
@@ -193,8 +212,60 @@ mod test {
         assert_eq!(
             sheet.cell_format_summary(Pos { x: 3, y: 2 }, false),
             CellFormatSummary {
+                bold: None,
                 italic: Some(true),
-                ..Default::default()
+                text_color: None,
+                fill_color: None,
+                commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None,
+                date_time: None,
+                cell_type: None,
+                underline: None,
+                strike_through: None
+            }
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 5, y: 3 }),
+            Some(CellValue::Text(String::from("underline")))
+        );
+        assert_eq!(
+            sheet.cell_format_summary(Pos { x: 5, y: 3 }, false),
+            CellFormatSummary {
+                bold: None,
+                italic: None,
+                text_color: None,
+                fill_color: None,
+                commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None,
+                date_time: None,
+                cell_type: None,
+                underline: Some(true),
+                strike_through: None
+            }
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 7, y: 4 }),
+            Some(CellValue::Text(String::from("strike through")))
+        );
+        assert_eq!(
+            sheet.cell_format_summary(Pos { x: 7, y: 4 }, false),
+            CellFormatSummary {
+                bold: None,
+                italic: None,
+                text_color: None,
+                fill_color: None,
+                commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None,
+                date_time: None,
+                cell_type: None,
+                underline: None,
+                strike_through: Some(true),
             }
         );
     }
@@ -359,15 +430,20 @@ mod test {
     fn test_copy_borders_to_clipboard() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-
-        // todo...
-        // set_borders(&mut gc, sheet_id);
 
         let selection = Selection::rect(
             Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 }),
             sheet_id,
         );
+
+        gc.set_borders_selection(
+            selection.clone(),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
         let clipboard = sheet.copy_to_clipboard(&selection).unwrap();
 
         gc.paste_from_clipboard(
@@ -378,20 +454,11 @@ mod test {
             None,
         );
 
-        // todo...
-        // let borders = gc
-        //     .sheet(sheet_id)
-        //     .borders()
-        //     .per_cell
-        //     .borders
-        //     .iter()
-        //     .collect::<Vec<_>>();
-
-        // // compare the border info stored in the block's content
-        // assert_eq!(
-        //     borders[0].1.blocks().next().unwrap().content,
-        //     borders[1].1.blocks().next().unwrap().content
-        // );
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.borders.get(3, 3).top.unwrap().line,
+            CellBorderLine::default()
+        );
     }
 
     #[test]
@@ -399,51 +466,41 @@ mod test {
     fn test_copy_borders_inside() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
 
-        // let selection = vec![BorderSelection::Outer];
-        // let style = BorderStyle {
-        //     color: Rgba::color_from_str("#000000").unwrap(),
-        //     line: CellBorderLine::Line1,
-        // };
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::new(0, 0, 4, 4, sheet_id)),
+            BorderSelection::Outer,
+            Some(BorderStyle::default()),
+            None,
+        );
 
-        // todo...
-        // let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 4, y: 4 });
-        // let borders = generate_borders(sheet, &rect, selection, Some(style));
-        // set_rect_borders(sheet, &rect, borders);
+        let sheet = gc.sheet(sheet_id);
+        let borders = sheet.borders.borders_in_sheet().unwrap();
+        assert!(borders.horizontal.as_ref().unwrap().iter().any(|border| {
+            border.x == 0
+                && border.y == 0
+                && border.width == 5
+                && border.line == CellBorderLine::default()
+        }));
+        assert!(borders.horizontal.as_ref().unwrap().iter().any(|border| {
+            border.x == 0
+                && border.y == 5
+                && border.width == 5
+                && border.line == CellBorderLine::default()
+        }));
+        assert!(borders.vertical.as_ref().unwrap().iter().any(|border| {
+            border.x == 0
+                && border.y == 0
+                && border.height == 5
+                && border.line == CellBorderLine::default()
+        }));
 
-        // todo....
-        // // weird: can't test them by comparing arrays since the order is seemingly random
-        // let borders = sheet.render_borders();
-        // assert!(borders.horizontal.iter().any(|border| {
-        //     border.x == 0
-        //         && border.y == 0
-        //         && border.w == Some(5)
-        //         && border.h.is_none()
-        //         && border.style == style
-        // }));
-        // assert!(borders.horizontal.iter().any(|border| {
-        //     border.x == 0
-        //         && border.y == 5
-        //         && border.w == Some(5)
-        //         && border.h.is_none()
-        //         && border.style == style
-        // }));
-        // assert!(borders.vertical.iter().any(|border| {
-        //     border.x == 0
-        //         && border.y == 0
-        //         && border.w.is_none()
-        //         && border.h == Some(5)
-        //         && border.style == style
-        // }));
-
-        // assert!(borders.vertical.iter().any(|border| {
-        //     border.x == 5
-        //         && border.y == 0
-        //         && border.w.is_none()
-        //         && border.h == Some(5)
-        //         && border.style == style
-        // }));
+        assert!(borders.vertical.as_ref().unwrap().iter().any(|border| {
+            border.x == 5
+                && border.y == 0
+                && border.height == 5
+                && border.line == CellBorderLine::default()
+        }));
 
         let (_, html) = sheet
             .copy_to_clipboard(&Selection::rect(
@@ -459,36 +516,33 @@ mod test {
             None,
         );
 
-        // let sheet = gc.sheet_mut(sheet_id);
-        // let borders = sheet.render_borders();
-        // assert!(borders.horizontal.iter().any(|border| {
-        //     border.x == 0
-        //         && border.y == 10
-        //         && border.w == Some(5)
-        //         && border.h.is_none()
-        //         && border.style == style
-        // }));
-        // assert!(borders.horizontal.iter().any(|border| {
-        //     border.x == 0
-        //         && border.y == 15
-        //         && border.w == Some(5)
-        //         && border.h.is_none()
-        //         && border.style == style
-        // }));
-        // assert!(borders.vertical.iter().any(|border| {
-        //     border.x == 0
-        //         && border.y == 10
-        //         && border.w.is_none()
-        //         && border.h == Some(5)
-        //         && border.style == style
-        // }));
-        // assert!(borders.vertical.iter().any(|border| {
-        //     border.x == 5
-        //         && border.y == 10
-        //         && border.w.is_none()
-        //         && border.h == Some(5)
-        //         && border.style == style
-        // }));
+        let sheet = gc.sheet(sheet_id);
+        let borders = sheet.borders.borders_in_sheet().unwrap();
+        assert!(borders.horizontal.as_ref().unwrap().iter().any(|border| {
+            border.x == 0
+                && border.y == 10
+                && border.width == 5
+                && border.line == CellBorderLine::default()
+        }));
+        assert!(borders.horizontal.as_ref().unwrap().iter().any(|border| {
+            border.x == 0
+                && border.y == 15
+                && border.width == 5
+                && border.line == CellBorderLine::default()
+        }));
+        assert!(borders.vertical.as_ref().unwrap().iter().any(|border| {
+            border.x == 0
+                && border.y == 10
+                && border.height == 5
+                && border.line == CellBorderLine::default()
+        }));
+
+        assert!(borders.vertical.as_ref().unwrap().iter().any(|border| {
+            border.x == 5
+                && border.y == 10
+                && border.height == 5
+                && border.line == CellBorderLine::default()
+        }));
     }
 
     #[test]
@@ -721,14 +775,34 @@ mod test {
             sheet.cell_format_summary(Pos { x: 1, y: 1 }, false),
             CellFormatSummary {
                 bold: Some(true),
-                ..Default::default()
+                italic: None,
+                text_color: None,
+                fill_color: None,
+                commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None,
+                date_time: None,
+                cell_type: None,
+                underline: None,
+                strike_through: None
             }
         );
         assert_eq!(
             sheet.cell_format_summary(Pos { x: 2, y: 2 }, false),
             CellFormatSummary {
+                bold: None,
                 italic: Some(true),
-                ..Default::default()
+                text_color: None,
+                fill_color: None,
+                commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None,
+                date_time: None,
+                cell_type: None,
+                underline: None,
+                strike_through: None
             }
         );
     }
@@ -867,14 +941,34 @@ mod test {
             sheet.cell_format_summary(Pos { x: 1, y: 2 }, false),
             CellFormatSummary {
                 bold: Some(true),
-                ..Default::default()
+                italic: None,
+                text_color: None,
+                fill_color: None,
+                commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None,
+                date_time: None,
+                cell_type: None,
+                underline: None,
+                strike_through: None
             }
         );
         assert_eq!(
             sheet.cell_format_summary(Pos { x: 3, y: 4 }, false),
             CellFormatSummary {
+                bold: None,
+                italic: None,
+                text_color: None,
                 fill_color: Some("red".to_string()),
-                ..Default::default()
+                commas: None,
+                align: None,
+                vertical_align: None,
+                wrap: None,
+                date_time: None,
+                cell_type: None,
+                underline: None,
+                strike_through: None
             }
         );
     }

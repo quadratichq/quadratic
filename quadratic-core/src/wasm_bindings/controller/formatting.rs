@@ -196,7 +196,6 @@ impl GridController {
             None
         };
 
-        // todo...
         self.set_cell_render_size(rect.to_sheet_rect(sheet_id), value, cursor);
         Ok(())
     }
@@ -222,6 +221,32 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
         self.change_decimal_places_selection(selection, delta, cursor)?;
+        Ok(())
+    }
+
+    /// Sets cell bold formatting given as an optional [`bool`].
+    #[wasm_bindgen(js_name = "setCellUnderline")]
+    pub fn js_set_underline(
+        &mut self,
+        selection: String,
+        underline: bool,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        self.set_underline_selection(selection, underline, cursor)?;
+        Ok(())
+    }
+
+    /// Sets cell bold formatting given as an optional [`bool`].
+    #[wasm_bindgen(js_name = "setCellStrikeThrough")]
+    pub fn js_set_strike_through(
+        &mut self,
+        selection: String,
+        strike_through: bool,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        self.set_strike_through_selection(selection, strike_through, cursor)?;
         Ok(())
     }
 

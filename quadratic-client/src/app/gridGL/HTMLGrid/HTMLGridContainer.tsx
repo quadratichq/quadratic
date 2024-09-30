@@ -1,15 +1,18 @@
 import { events } from '@/app/events/events';
+import { Annotations } from '@/app/gridGL/HTMLGrid/annotations/Annotations';
+import { CodeHint } from '@/app/gridGL/HTMLGrid/CodeHint';
+import { CodeRunning } from '@/app/gridGL/HTMLGrid/codeRunning/CodeRunning';
+import { GridContextMenu } from '@/app/gridGL/HTMLGrid/GridContextMenu';
+import { HoverCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
+import { HoverTooltip } from '@/app/gridGL/HTMLGrid/hoverTooltip/HoverTooltip';
+import { HtmlCells } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCells';
 import { InlineEditor } from '@/app/gridGL/HTMLGrid/inlineEditor/InlineEditor';
 import { MultiplayerCursors } from '@/app/gridGL/HTMLGrid/multiplayerCursor/MulitplayerCursors';
+import { MultiplayerCellEdits } from '@/app/gridGL/HTMLGrid/multiplayerInput/MultiplayerCellEdits';
+import { useHeadingSize } from '@/app/gridGL/HTMLGrid/useHeadingSize';
+import { HtmlValidations } from '@/app/gridGL/HTMLGrid/validations/HtmlValidations';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { ReactNode, useCallback, useEffect, useState } from 'react';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { CodeHint } from './CodeHint';
-import { CodeRunning } from './codeRunning/CodeRunning';
-import { HoverCell } from './hoverCell/HoverCell';
-import { HtmlCells } from './htmlCells/HtmlCells';
-import { MultiplayerCellEdits } from './multiplayerInput/MultiplayerCellEdits';
-import { HtmlValidations } from './validations/HtmlValidations';
-import { Annotations } from './annotations/Annotations';
 
 interface Props {
   parent?: HTMLDivElement;
@@ -23,11 +26,6 @@ export interface HtmlGridContainerProps {
 export const HTMLGridContainer = (props: Props): ReactNode | null => {
   const { parent } = props;
 
-  const [container, setContainer] = useState<HTMLDivElement>();
-  const containerRef = useCallback((node: HTMLDivElement) => {
-    if (node) setContainer(node);
-  }, []);
-
   const [showInput, setShowInput] = useState(false);
   useEffect(() => {
     const changeInput = (input: boolean) => setShowInput(input);
@@ -37,15 +35,28 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
     };
   }, []);
 
+  // this one is not zoomed and positioned over the grid headings
+  const [normalContainer, setNormalContainer] = useState<HTMLDivElement>();
+  const normalRef = useCallback((node: HTMLDivElement) => {
+    if (node) setNormalContainer(node);
+  }, []);
+
+  const [zoomContainer, setZoomContainer] = useState<HTMLDivElement>();
+  const zoomRef = useCallback((node: HTMLDivElement) => {
+    if (node) setZoomContainer(node);
+  }, []);
+
   useEffect(() => {
-    if (!container || !parent) return;
+    if (!zoomContainer || !normalContainer || !parent) return;
     const viewport = pixiApp.viewport;
     const updateTransform = () => {
       viewport.updateTransform();
       let worldTransform = viewport.worldTransform;
-      container.style.transform = `matrix(${worldTransform.a}, ${worldTransform.b}, ${worldTransform.c}, ${
-        worldTransform.d
-      }, ${worldTransform.tx + parent.offsetLeft}, ${worldTransform.ty + parent.offsetTop})`;
+      const transform = `matrix(${worldTransform.a}, ${worldTransform.b}, ${worldTransform.c}, ${worldTransform.d}, ${
+        worldTransform.tx + parent.offsetLeft
+      }, ${worldTransform.ty + parent.offsetTop})`;
+      zoomContainer.style.transform = transform;
+      normalContainer.style.transform = transform;
     };
     updateTransform();
     viewport.on('moved', updateTransform);
@@ -58,58 +69,64 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
       viewport.off('zoomed', updateTransform);
       window.removeEventListener('resize', updateTransform);
     };
-  }, [parent, container]);
+  }, [normalContainer, parent, zoomContainer]);
 
-  const [topHeading, setTopHeading] = useState(0);
-  const [leftHeading, setLeftHeading] = useState(0);
-  useEffect(() => {
-    const updateHeadingSize = (width: number, height: number) => {
-      setLeftHeading(width);
-      setTopHeading(height);
-    };
-    events.on('headingSize', updateHeadingSize);
-    return () => {
-      events.off('headingSize', updateHeadingSize);
-    };
-  }, []);
+  const { leftHeading, topHeading } = useHeadingSize();
 
   if (!parent) return null;
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        left: `${leftHeading}px`,
-        top: `${topHeading}px`,
-        overflow: 'hidden',
-        width: `calc(100% - ${leftHeading}px)`,
-        height: `calc(100% - ${topHeading}px)`,
-        pointerEvents: 'none',
-      }}
-    >
-      <div style={{ position: 'relative' }}>
-        <div
-          ref={containerRef}
-          style={{
-            position: 'absolute',
-            top: `${-topHeading}px`,
-            left: `${-leftHeading}px`,
-            pointerEvents: 'none',
-          }}
-        >
-          <div style={{ position: 'relative' }}>
-            {!showInput && <CodeHint />}
-            <MultiplayerCellEdits />
-            <InlineEditor />
-            <HtmlCells />
-            <CodeRunning />
-            <HoverCell />
-            <MultiplayerCursors topHeading={topHeading} leftHeading={leftHeading} />
-            <HtmlValidations />
-            <Annotations />
+    <>
+      {/* This is positioned on the grid inside the headings and zoomed */}
+      <div
+        style={{
+          position: 'absolute',
+          left: `${leftHeading}px`,
+          top: `${topHeading}px`,
+          overflow: 'hidden',
+          width: `calc(100% - ${leftHeading}px)`,
+          height: `calc(100% - ${topHeading}px)`,
+          pointerEvents: 'none',
+          textRendering: 'optimizeLegibility',
+        }}
+      >
+        <div style={{ position: 'relative' }}>
+          <div
+            ref={zoomRef}
+            style={{
+              position: 'absolute',
+              top: `${-topHeading}px`,
+              left: `${-leftHeading}px`,
+              pointerEvents: 'none',
+            }}
+          >
+            <div style={{ position: 'relative' }}>
+              {!showInput && <CodeHint />}
+              <MultiplayerCellEdits />
+              <InlineEditor />
+              <HtmlCells />
+              <CodeRunning />
+              <HoverCell />
+              <HoverTooltip />
+              <MultiplayerCursors topHeading={topHeading} leftHeading={leftHeading} />
+              <HtmlValidations />
+              <Annotations />
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* This is positioned on the grid over the headings and not zoomed. It comes
+          after the above, so it's above it on the grid. */}
+      <div
+        ref={normalRef}
+        style={{
+          position: 'absolute',
+          pointerEvents: 'none',
+        }}
+      >
+        <GridContextMenu />
+      </div>
+    </>
   );
 };

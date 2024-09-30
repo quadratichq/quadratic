@@ -1,0 +1,32 @@
+.lineStyleBorder {
+  display: block;
+  width: 100%;
+}
+
+.normalBorder {
+  border-top: 1px solid black;
+}
+
+.doubleBorder {
+  border-top: 2px solid black;
+}
+
+.tripleBorder {
+  border-top: 3px solid black;
+}
+
+.dashedBorder {
+  border-top: 1px dashed black;
+}
+
+.dottedBorder {
+  border-top: 1px dotted black;
+}
+
+.twoLineBorder {
+  position: relative;
+  top: 2px;
+  border-top: 2px double black;
+  position: relative;
+  margin-bottom: 5px;
+}

@@ -111,15 +111,6 @@ impl BorderStyleTimestamp {
     /// If the style is clear, then returns None, otherwise returns the style.
     pub fn remove_clear(style: Option<BorderStyleTimestamp>) -> Option<BorderStyleTimestamp> {
         style.filter(|&style| style.line != CellBorderLine::Clear)
-        // if let Some(style) = style {
-        //     if style.line == CellBorderLine::Clear {
-        //         None
-        //     } else {
-        //         Some(style)
-        //     }
-        // } else {
-        //     None
-        // }
     }
 
     #[cfg(test)]

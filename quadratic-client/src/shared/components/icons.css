@@ -1,0 +1,30 @@
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-display: block;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: 'liga';
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
+.material-symbols-24 {
+  width: 24px;
+  height: 24px;
+  font-size: 24px;
+  font-variation-settings: 'OPSZ' 24;
+}
+
+.material-symbols-20 {
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+  font-variation-settings: 'OPSZ' 20;
+}

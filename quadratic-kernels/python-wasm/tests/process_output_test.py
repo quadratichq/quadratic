@@ -1,4 +1,5 @@
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 from unittest import TestCase
 
 import pandas as pd
@@ -76,6 +77,15 @@ class TestProcessOutput(TestCase):
             None,
             ("2021-01-01T00:00:00", "date time"),
             "datetime",
+        )
+        assert_pov(
+            self,
+            relativedelta(years=1, months=2, weeks=3, days=4, hours=5, minutes=6, seconds=7.5, microseconds=155),
+            None,
+            None,
+            None,
+            ("1y 2mo 25d 5h 6m 7.5s 155µs", "duration"),
+            "relativedelta",
         )
 
     def test_list(self):

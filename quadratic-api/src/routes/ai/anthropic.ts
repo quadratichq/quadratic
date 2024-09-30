@@ -56,6 +56,7 @@ anthropic_router.post(
       const chunks = await anthropic.messages.create({
         model,
         messages,
+        temperature: 0,
         max_tokens: 8192,
         stream: true,
       });

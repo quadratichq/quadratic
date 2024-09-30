@@ -197,26 +197,23 @@ export class HtmlCell {
 
   private intersects(e: InteractionEvent): 'right' | 'bottom' | 'corner' | 'body' | undefined {
     const rect = this.div.getBoundingClientRect();
-    const top = pixiApp.canvas.getBoundingClientRect().top;
+    const { left, top } = pixiApp.canvas.getBoundingClientRect();
     const viewport = pixiApp.viewport;
     const toleranceScaled = tolerance * viewport.scale.x;
-    const right = e.data.global.x - rect.right < toleranceScaled && e.data.global.x - rect.right > 0;
-    const bottom = Math.abs(e.data.global.y - rect.bottom + top) < toleranceScaled;
+    const pointerX = e.data.global.x + left;
+    const pointerY = e.data.global.y + top;
+    const right = pointerX - rect.right < toleranceScaled && pointerX - rect.right > 0;
+    const bottom = Math.abs(pointerY - rect.bottom) < toleranceScaled;
     if (right && bottom) {
       return 'corner';
     }
-    if (right && e.data.global.y + top > rect.top && e.data.global.y + top < rect.bottom) {
+    if (right && pointerY > rect.top && pointerY < rect.bottom) {
       return 'right';
     }
-    if (bottom && e.data.global.x > rect.left && e.data.global.x < rect.right) {
+    if (bottom && pointerX > rect.left && pointerX < rect.right) {
       return 'bottom';
     }
-    if (
-      e.data.global.x > rect.left &&
-      e.data.global.x < rect.right &&
-      e.data.global.y + top > rect.top &&
-      e.data.global.y + top < rect.bottom
-    ) {
+    if (pointerX > rect.left && pointerX < rect.right && pointerY > rect.top && pointerY < rect.bottom) {
       return 'body';
     }
   }
@@ -232,10 +229,10 @@ export class HtmlCell {
     const side = this.hoverSide;
 
     if (side === 'right' || side === 'corner') {
-      this.right.style.backgroundColor = colors.quadraticPrimary;
+      this.right.style.backgroundColor = 'hsl(var(--primary))';
     }
     if (side === 'bottom' || side === 'corner') {
-      this.bottom.style.backgroundColor = colors.quadraticPrimary;
+      this.bottom.style.backgroundColor = 'hsl(var(--primary))';
     }
 
     if (side === 'corner') {
