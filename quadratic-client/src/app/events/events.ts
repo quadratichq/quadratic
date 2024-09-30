@@ -1,7 +1,7 @@
 import { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import { PanMode } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { Coordinate, SheetPosTS } from '@/app/gridGL/types/size';
+import { SheetPosTS } from '@/app/gridGL/types/size';
 import {
   JsCodeCell,
   JsHtmlOutput,
@@ -127,9 +127,6 @@ interface EventTypes {
   validation: (validation: string | boolean) => void;
   // context menu opens on a grid heading
   gridContextMenu: (world: Point, column: number, row: number) => void;
-
-  // ask AI to fix error in code cell
-  askAICodeCell: (sheetId: string, pos: Coordinate) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();
