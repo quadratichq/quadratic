@@ -36,6 +36,10 @@ pub struct Pos {
 impl Pos {
     pub const ORIGIN: Self = Self { x: 0, y: 0 };
 
+    pub fn new(x: i64, y: i64) -> Self {
+        Self { x, y }
+    }
+
     pub fn to_sheet_pos(&self, sheet_id: SheetId) -> SheetPos {
         SheetPos {
             x: self.x,
@@ -50,6 +54,12 @@ impl Pos {
             self.x.div_euclid(CELL_SHEET_WIDTH as _),
             self.y.div_euclid(CELL_SHEET_HEIGHT as _),
         )
+    }
+
+    /// Converts from a Pos to a quadrant Pos.
+    pub fn to_quadrant(&mut self) {
+        self.x = self.x.div_euclid(CELL_SHEET_WIDTH as _);
+        self.y = self.y.div_euclid(CELL_SHEET_HEIGHT as _);
     }
 
     /// Returns an A1-style reference to the cell position.
@@ -127,8 +137,8 @@ impl SheetPos {
 #[cfg(test)]
 mod test {
     use crate::{
-        renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
         grid::SheetId,
+        renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
         Pos, SheetPos, SheetRect,
     };
     use serial_test::parallel;
@@ -243,5 +253,34 @@ mod test {
         let sheet_pos_str = serde_json::to_string(&sheet_pos).unwrap();
         let parsed_sheet_pos: SheetPos = sheet_pos_str.parse().unwrap();
         assert_eq!(parsed_sheet_pos, sheet_pos);
+    }
+
+    #[test]
+    #[parallel]
+    fn to_quadrant() {
+        let mut pos = Pos { x: 1, y: 2 };
+        pos.to_quadrant();
+        assert_eq!(pos, Pos { x: 0, y: 0 });
+
+        let mut pos = Pos {
+            x: CELL_SHEET_WIDTH as _,
+            y: CELL_SHEET_HEIGHT as _,
+        };
+        pos.to_quadrant();
+        assert_eq!(pos, Pos { x: 1, y: 1 });
+
+        let mut pos = Pos {
+            x: -2 * CELL_SHEET_WIDTH as i64,
+            y: -2 * CELL_SHEET_HEIGHT as i64,
+        };
+        pos.to_quadrant();
+        assert_eq!(pos, Pos { x: -2, y: -2 });
+    }
+
+    #[test]
+    #[parallel]
+    fn pos_new() {
+        let pos = Pos::new(1, 2);
+        assert_eq!(pos, Pos { x: 1, y: 2 });
     }
 }

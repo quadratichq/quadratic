@@ -1,15 +1,23 @@
+//! Cell references and ranges.
+//!
+//! TODO: We may want to refactor to replace the sheet_name with SheetId. We'll
+//! have to convert back when displaying, but this will ensure that the Sheet
+//! always stays properly referenced. We will also need to convert back for
+//! non-Quadratic clipboard operations.
+
 use std::fmt;
 use std::str::FromStr;
 
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use crate::formulas::{escape_string, parse_sheet_name};
 use crate::Pos;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+/// A reference to a cell or a range of cells.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
 #[serde(tag = "type")]
 pub enum RangeRef {
     // this is not yet used...
@@ -66,8 +74,8 @@ impl RangeRef {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+/// A reference to a single cell.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
 pub struct CellRef {
     pub sheet: Option<String>,
     pub x: CellRefCoord,
@@ -189,10 +197,9 @@ impl CellRef {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+/// A reference to an x or y value within a CellRef
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
 #[serde(tag = "type", content = "coord")]
-// todo: this needs to be refactored to include sheet
 pub enum CellRefCoord {
     Relative(i64),
     Absolute(i64),

@@ -2,15 +2,16 @@ use crate::controller::active_transactions::pending_transaction::PendingTransact
 use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
 
-pub mod execute_borders;
-pub mod execute_code;
-pub mod execute_cursor;
-pub mod execute_formats;
-pub mod execute_move_cells;
-pub mod execute_offsets;
-pub mod execute_sheets;
-pub mod execute_validation;
-pub mod execute_values;
+mod execute_borders;
+mod execute_code;
+mod execute_col_rows;
+mod execute_cursor;
+mod execute_formats;
+mod execute_move_cells;
+mod execute_offsets;
+mod execute_sheets;
+mod execute_validation;
+mod execute_values;
 
 impl GridController {
     /// Executes the given operation.
@@ -60,6 +61,11 @@ impl GridController {
                 Operation::SetValidationWarning { .. } => {
                     self.execute_set_validation_warning(transaction, op);
                 }
+
+                Operation::DeleteColumn { .. } => self.execute_delete_column(transaction, op),
+                Operation::DeleteRow { .. } => self.execute_delete_row(transaction, op),
+                Operation::InsertColumn { .. } => self.execute_insert_column(transaction, op),
+                Operation::InsertRow { .. } => self.execute_insert_row(transaction, op),
             }
 
             if cfg!(target_family = "wasm") || cfg!(test) {

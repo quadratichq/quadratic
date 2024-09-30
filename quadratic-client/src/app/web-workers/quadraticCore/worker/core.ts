@@ -1055,6 +1055,26 @@ class Core {
       return JSON.parse(cellValue);
     }
   }
+
+  deleteColumns(sheetId: string, columns: number[], cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.deleteColumn(sheetId, JSON.stringify(columns), cursor);
+  }
+
+  insertColumn(sheetId: string, column: number, right: boolean, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.insertColumn(sheetId, BigInt(column), right, cursor);
+  }
+
+  deleteRows(sheetId: string, rows: number[], cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.deleteRows(sheetId, JSON.stringify(rows), cursor);
+  }
+
+  insertRow(sheetId: string, row: number, below: boolean, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.insertRow(sheetId, BigInt(row), below, cursor);
+  }
 }
 
 export const core = new Core();
