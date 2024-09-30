@@ -320,10 +320,11 @@ export class CellsLabels {
         }
       } else if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect) && !findHashToDelete) {
         if (!hash.loaded || !hash.clientLoaded || hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
+          if (hash.clientLoaded) hash.unloadClient();
           notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         }
       } else {
-        if (hash.dirty || hash.dirtyText) {
+        if (hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
           if (hash.clientLoaded) hash.unloadClient();
           notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         } else if (hash.loaded) {

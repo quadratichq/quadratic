@@ -172,7 +172,18 @@ export class CellsTextHash {
   update = async (): Promise<boolean> => {
     const neighborRect = this.cellsLabels.getViewportNeighborBounds();
     if (!neighborRect) return false;
+
     const visibleOrNeighbor = intersects.rectangleRectangle(this.viewRectangle, neighborRect);
+    if (!visibleOrNeighbor) {
+      if (Array.isArray(this.dirty)) {
+        this.createLabels(this.dirty);
+        this.updateText();
+        this.updateBuffers();
+      }
+      this.unload();
+      return false;
+    }
+
     if (!this.loaded || this.dirty) {
       // If dirty is true, then we need to get the cells from the server; but we
       // need to keep open the case where we receive new cells after dirty is
@@ -206,33 +217,25 @@ export class CellsTextHash {
         this.special.clear();
       }
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating ${this.hashX}, ${this.hashY}`);
-      if (cells) {
-        this.createLabels(cells);
-      }
+
+      if (cells) this.createLabels(cells);
       this.updateText();
       this.updateBuffers();
-      if (!visibleOrNeighbor) {
-        this.unload();
-      }
+
       return true;
     } else if (this.dirtyText) {
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating text ${this.hashX}, ${this.hashY}`);
+
       this.updateText();
       this.updateBuffers();
-      if (!visibleOrNeighbor) {
-        this.unload();
-      }
+
       return true;
     } else if (this.dirtyBuffers) {
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating buffers ${this.hashX}, ${this.hashY}`);
-      this.updateText();
+
       this.updateBuffers();
-      if (!visibleOrNeighbor) {
-        this.unload();
-      }
+
       return true;
-    } else if (!visibleOrNeighbor) {
-      this.unload();
     }
     return false;
   };
